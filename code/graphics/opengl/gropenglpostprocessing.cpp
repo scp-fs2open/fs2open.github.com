@@ -12,6 +12,7 @@
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/shader_types.h"
 #include "graphics/grinternal.h"
 #include "graphics/openxr.h"
 #include "graphics/util/uniform_structs.h"
@@ -88,7 +89,11 @@ void opengl_post_pass_tonemap()
 		data->x0 = ppc.x0;
 		data->x1 = ppc.x1;
 		data->y0 = ppc.y0; 
-		data->exposure = ltp::current_exposure(); });
+		data->exposure = ltp::current_exposure();
+		// OpenGL never negotiates HDR10 output, so Gr_hdr_output_active is
+		// always false here and current_tonemapper() never returns HdrScene.
+		data->hdr_paperwhite_nits = 0.0f;
+		data->hdr_peak_nits = 0.0f; });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 
@@ -785,71 +790,9 @@ void gr_opengl_post_process_restore_zbuffer()
 	}
 }
 
-static void set_fxaa_defines(SCP_stringstream& sflags)
-{
-	// Since we require OpenGL 3.2 we always have support for GLSL 130
-	sflags << "#define FXAA_GLSL_120 0\n";
-	sflags << "#define FXAA_GLSL_130 1\n";
-
-	if (GLSL_version >= 400) {
-		// The gather function became part of the standard with GLSL 4.00
-		sflags << "#define FXAA_GATHER4_ALPHA 1\n";
-	}
-
-	switch (Gr_aa_mode) {
-	case AntiAliasMode::None:
-		sflags << "#define FXAA_QUALITY_PRESET 10\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/6.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/12.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_Low:
-		sflags << "#define FXAA_QUALITY_PRESET 12\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/8.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/16.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_Medium:
-		sflags << "#define FXAA_QUALITY_PRESET 26\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/12.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/24.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	case AntiAliasMode::FXAA_High:
-		sflags << "#define FXAA_QUALITY_PRESET 39\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD (1.0/15.0)\n";
-		sflags << "#define FXAA_QUALITY_EDGE_THRESHOLD_MIN (1.0/32.0)\n";
-		sflags << "#define FXAA_QUALITY_SUBPIX 0.33\n";
-		break;
-	default:
-		UNREACHABLE("Unhandled FXAA mode %d!", static_cast<int>(Gr_aa_mode));
-	}
-}
 void set_smaa_defines(SCP_stringstream& sflags)
 {
-	// Define what GLSL version we use
-	if (GLSL_version >= 400) {
-		sflags << "#define SMAA_GLSL_4\n";
-	} else {
-		sflags << "#define SMAA_GLSL_3\n";
-	}
-
-	switch (Gr_aa_mode) {
-	case AntiAliasMode::SMAA_Low:
-		sflags << "#define SMAA_PRESET_LOW\n";
-		break;
-	case AntiAliasMode::SMAA_Medium:
-		sflags << "#define SMAA_PRESET_MEDIUM\n";
-		break;
-	case AntiAliasMode::SMAA_High:
-		sflags << "#define SMAA_PRESET_HIGH\n";
-		break;
-	case AntiAliasMode::SMAA_Ultra:
-		sflags << "#define SMAA_PRESET_ULTRA\n";
-		break;
-	default:
-		UNREACHABLE("Unhandled SMAA mode %d!", static_cast<int>(Gr_aa_mode));
-	}
+	sflags << shader_get_smaa_defines(Gr_aa_mode, GLSL_version >= 400).c_str();
 }
 void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, int flags)
 {
@@ -868,7 +811,7 @@ void opengl_post_shader_header(SCP_stringstream& sflags, shader_type shader_t, i
 		snprintf(temp, 64, "#define SAMPLE_NUM %d\n", ls_params.samplenum);
 		sflags << temp;
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_FXAA) {
-		set_fxaa_defines(sflags);
+		sflags << shader_get_fxaa_defines(Gr_aa_mode, GLSL_version >= 400);
 	} else if (shader_t == SDR_TYPE_POST_PROCESS_SMAA_EDGE || shader_t == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
 	           shader_t == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
 		set_smaa_defines(sflags);

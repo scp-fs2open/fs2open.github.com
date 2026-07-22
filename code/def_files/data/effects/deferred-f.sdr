@@ -4,8 +4,30 @@
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
 
+#ifdef VULKAN
+layout(location = 0) out vec4 fragOut0;
+#else
 out vec4 fragOut0;
+#endif
 
+#ifdef VULKAN
+layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
+#define ColorBuffer sTextures[0]
+#define NormalBuffer sTextures[1]
+#define PositionBuffer sTextures[2]
+#define SpecBuffer sTextures[3]
+
+layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
+
+#ifdef ENV_MAP
+layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
+layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
+#endif
+
+#ifdef RT_SHADOWS
+layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
+#endif
+#else
 uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
@@ -16,8 +38,14 @@ uniform sampler2DArrayShadow shadow_map;
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 #endif
+#endif
 
-layout (std140) uniform globalDeferredData {
+#ifdef VULKAN
+layout(set = 0, binding = 1, std140)
+#else
+layout(std140)
+#endif
+uniform globalDeferredData {
 	mat4 inv_view_matrix;
 
 	float invScreenWidth;
@@ -25,9 +53,16 @@ layout (std140) uniform globalDeferredData {
 	float nearPlane;
 };
 
-layout (std140) uniform shadowCascadeParams {
+#ifdef VULKAN
+layout(set = 0, binding = 6, std140)
+#else
+layout(std140)
+#endif
+uniform shadowCascadeParams {
 	int cascade_offset;
 	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -35,12 +70,22 @@ layout (std140) uniform shadowCascadeParams {
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
-layout (std140) uniform matrixData {
+#ifdef VULKAN
+layout(set = 2, binding = 1, std140)
+#else
+layout(std140)
+#endif
+uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
-layout (std140) uniform lightData {
+#ifdef VULKAN
+layout(set = 0, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform lightData {
 	vec3 diffuseLightColor;
 	float coneAngle;
 
@@ -48,18 +93,18 @@ layout (std140) uniform lightData {
 	float coneInnerAngle;
 
 	vec3 coneDir;
-	bool dualCone;
+	int dualCone;
 
 	vec3 scale;
 	float lightRadius;
 
 	int lightType;
-	bool enable_shadows;
+	int enable_shadows;
 
 	float sourceRadius;
 };
 
-// Nearest point sphere and tube light calculations taken from 
+// Nearest point sphere and tube light calculations taken from
 // "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
 // Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
 
@@ -67,7 +112,7 @@ vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
 	// There's an extra max(...,sourceRadius) call here vs the version in the paper.
 	// This prevents the centerToRay calculation from choosing a point behind
 	// the reflection ray's origin (i.e. underneath the surface).
-	// this is necessary for situations where the fragment being shaded lies inside 
+	// this is necessary for situations where the fragment being shaded lies inside
 	// the sourceRadius of the light.
 	// Instead, we choose a point suffciently far away from the reflection origin (hence max(...,sourceRadius))
 	// so that we have a gradual transition as the shaded fragments along the surface
@@ -75,12 +120,13 @@ vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
 	vec3 centerToRay = max(dot(lightDir, reflectDir),sourceRadius) * reflectDir - lightDir;
 	return lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
 }
-void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDirOut, out float attenuation, out float area_normalisation)
+void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDirOut, out float attenuation, out float area_normalisation, out float lightDist)
 {
 	if (lightType == LT_DIRECTIONAL) {
 		lightDirOut = normalize(lightDir);
 		attenuation = 1.0;
 		area_normalisation = 1.0;
+		lightDist = RT_SHADOW_MAX_DISTANCE;
 	} else {
 		vec3 lightPosition = modelViewMatrix[3].xyz;
 		// Positional light source
@@ -93,6 +139,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// move lightDirOut towards the ray defined by reflectDir
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			dist = length(lightDirOut);
+			lightDist = dist;
 			// Energy conservation term
 			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
@@ -135,6 +182,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			// Same principle as in LT_POINT, treat chosen location as a spherelight.
 			lightDirOut = ExpandLightSize(lightDirOut, reflectDir);
 			float dist = length(lightDirOut);
+			lightDist = dist;
 			// Energy conservation term
 			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
 			area_normalisation = alpha/alpha_adjust;
@@ -150,10 +198,11 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			lightDirOut = lightPosition - position.xyz;
 			float coneDot = dot(normalize(-lightDirOut), coneDir);
 			float dist = length(lightDirOut);
+			lightDist = dist;
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 			area_normalisation = 1.0;
 
-			if(dualCone) {
+			if(dualCone != 0) {
 				if(abs(coneDot) < coneAngle) {
 					discard;
 				} else {
@@ -256,9 +305,18 @@ void main()
 		vec3 lightDir;
 		float attenuation;
 		float area_normalisation;
-		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
+		float lightDist;
+		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation, lightDist);
 
-		if (enable_shadows) {
+		if (enable_shadows != 0) {
+#ifdef RT_SHADOWS
+			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
+			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
+			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
+
+			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
+			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias);
+#else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];
 			for (int i = 0; i < NUM_SHADOW_CASCADES; i++) {
@@ -266,6 +324,7 @@ void main()
 			}
 
 			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+#endif
 		}
 
 		vec3 halfVec = normalize(lightDir + eyeDir);

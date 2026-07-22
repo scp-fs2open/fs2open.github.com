@@ -1090,22 +1090,18 @@ void model_set_detail_level(int n);
 #define MR_SHOW_OUTLINE_PRESET		(1<<14)		// Draw the object in outline mode. Color assumed to be set already.	
 #define MR_SHOW_INVISIBLE_FACES		(1<<15)		// Show invisible faces as green...
 #define MR_AUTOCENTER				(1<<16)		// Always use the center of the hull bounding box as the center, instead of the pivot point
-#define MR_EMPTY_SLOT3				(1<<17)		// draw bay paths
-#define MR_ALL_XPARENT				(1<<18)		// render it fully transparent
-#define MR_NO_ZBUFFER				(1<<19)		// switch z-buffering off completely 
-#define MR_NO_CULL					(1<<20)		// don't cull backfacing poly's
-#define MR_EMPTY_SLOT4				(1<<21)		// force a given texture to always be used
-#define MR_NO_BATCH					(1<<22)		// don't use submodel batching when rendering
-#define MR_EDGE_ALPHA				(1<<23)		// makes norms that are faceing away from you render more transparent -Bobboau
-#define MR_CENTER_ALPHA				(1<<24)		// oposite of above -Bobboau
-#define MR_NO_FOGGING				(1<<25)		// Don't fog - taylor
-#define MR_SHOW_OUTLINE_HTL			(1<<26)		// Show outlines (wireframe view) using HTL method
-#define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
-#define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
-#define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
-#define MR_EMPTY_SLOT5				(1<<30)		// Use a animated Shader - Valathil
-constexpr uint64_t MR_ATTACHED_MODEL = static_cast<uint64_t>(1) << static_cast<uint64_t>(31); // Used for attached weapon model lodding
-constexpr uint64_t MR_NO_INSIGNIA = static_cast<uint64_t>(1) << static_cast<uint64_t>(32);	// Disable the insignias for ... reasons.  Also << more than 31 causes UB, so that's (1<<32)
+#define MR_ALL_XPARENT				(1<<17)		// render it fully transparent
+#define MR_NO_ZBUFFER				(1<<18)		// switch z-buffering off completely 
+#define MR_NO_CULL					(1<<19)		// don't cull backfacing poly's
+#define MR_NO_BATCH					(1<<20)		// don't use submodel batching when rendering
+#define MR_EDGE_ALPHA				(1<<21)		// makes norms that are faceing away from you render more transparent -Bobboau
+#define MR_CENTER_ALPHA				(1<<22)		// oposite of above -Bobboau
+#define MR_NO_FOGGING				(1<<23)		// Don't fog - taylor
+#define MR_SHOW_OUTLINE_HTL			(1<<24)		// Show outlines (wireframe view) using HTL method
+#define MR_NO_GLOWMAPS				(1<<25)		// disable rendering of glowmaps - taylor
+#define MR_FULL_DETAIL				(1<<26)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
+#define MR_FORCE_CLAMP				(1<<27)		// force clamp - Hery
+#define MR_NO_INSIGNIA				(1<<28)		// Disable the insignias for ... reasons
 
 #define MR_DEBUG_PIVOTS				(1<<0)		// Show the pivot points
 #define MR_DEBUG_PATHS				(1<<1)		// Show the paths associated with a model

@@ -267,7 +267,7 @@ float smoothstep(float edge0, float edge1, float x) {
 namespace decals {
 
 void initialize() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		Decal_system_active = false;
 		return;
 	}

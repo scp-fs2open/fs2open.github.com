@@ -6,7 +6,7 @@ namespace util
 {
 
 /**
- * @brief A trivially-copyable value whose MOVE resets the source to a sentinel.
+ * @brief A handle-like value whose MOVE resets the source to a sentinel.
  *
  * Intended for raw owning handles (heap pointers, bitmap/sound handles) inside
  * structs that are stored by value in containers.  An implicitly-generated move
@@ -19,6 +19,15 @@ namespace util
  * Copies remain shallow by design: the wrapper does not know how to duplicate
  * the underlying resource.  Types whose copies must deep-copy (or never copy)
  * should delete or implement their own copy operations.
+ *
+ * Likewise, move-assignment OVERWRITES the destination's old value WITHOUT
+ * releasing it, because the wrapper does not know how to release the resource
+ * either.  This is correct when move-assignment only ever targets empty or
+ * moved-from elements (e.g. vector reallocation and erase shifts); a type
+ * whose occupied instances can be move-assigned over must release the old
+ * resource itself, either in hand-written move operations or by using a
+ * smart pointer member instead.  In short: reset_on_move occupies the niche
+ * between a raw handle and unique_ptr -- move hygiene without RAII.
  *
  * @tparam T        the handle type (e.g. some_type*, int)
  * @tparam NullVal  the sentinel a moved-from handle is reset to

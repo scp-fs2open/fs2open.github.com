@@ -547,7 +547,7 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 
 			auto gpoi = pip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != pip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)pip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -637,7 +637,7 @@ static void prop_model_change(int n, int prop_type)
 
 			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -1094,9 +1094,9 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 		// everything above was calculated relative to the heavy's position
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr))
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr))
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
 			mc_ret_val = 0;

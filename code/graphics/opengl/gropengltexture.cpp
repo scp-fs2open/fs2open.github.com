@@ -421,30 +421,26 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	}
 
 	// check for compressed image types
-	auto block_size = 0;
-	auto bm_handle = bm_is_compressed(bitmap_handle);
-	switch (bm_handle) {
+	auto bm_type = bm_is_compressed(bitmap_handle);
+	auto block_size = dds_block_size(bm_type);
+	switch (bm_type) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		block_size = 8;
 		break;
 
 	case DDS_DXT3:
 	case DDS_CUBEMAP_DXT3:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_DXT5:
 	case DDS_CUBEMAP_DXT5:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
-		block_size = 16;
 		break;
 
 	case KTX_ETC2_RGB:
@@ -453,7 +449,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	case KTX_ETC2_SRGBA_EAC:
 	case KTX_ETC2_RGB_A1:
 	case KTX_ETC2_SRGB_A1:
-		intFormat = ktx_map_ktx_format_to_gl_internal(bm_handle);
+		intFormat = ktx_map_ktx_format_to_gl_internal(bm_type);
 		block_size = ktx_etc_block_size(intFormat);
 		break;
 	}
@@ -474,8 +470,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			auto mipmap_h = bmap_h;
 
 			for (auto i = 0; i < mipmap_levels + base_level; i++) {
-				// size of data block (4x4)
-				dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+				dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 				if (i >= base_level) {
 					glCompressedTexSubImage3D(tSlot->texture_target, i - base_level, 0, 0, tSlot->array_index, mipmap_w,
@@ -601,8 +596,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			// check if it's a compressed cubemap first
 			if (block_size > 0) {
 				for (auto level = 0; level < mipmap_levels + base_level; level++) {
-					// size of data block (4x4)
-					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+					dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 					if (level >= base_level) {
 						// We skipped ahead to the base level so we can start uploading frames now
@@ -978,7 +972,11 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	auto base_level = 0;
 	auto resize = false;
-	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
+	// User bitmaps are excluded from culling because they are streaming surfaces (e.g. animations and
+	// video) that are updated through gr_update_texture() with the bitmap's own dimensions each frame,
+	// which requires the texture to match the bitmap's size.
+	if ( (Detail.hardware_textures < 4) && (bm_get_type(bitmap_handle) != BM_TYPE_USER)
+		&& (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
 		&& (bitmap_type != TCACHE_TYPE_CUBEMAP) && (bitmap_type != TCACHE_TYPE_3DTEX)
 		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
@@ -1236,7 +1234,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL)
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
 		return;
 
 //	opengl_tcache_flush ();
@@ -1247,7 +1245,7 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	float u_scale, v_scale;
 	int retval;
 
-	Assert( gr_screen.mode == GR_OPENGL );
+	Assert( gr_screen.mode == GraphicsAPI::OpenGL );
 
 	if ( !GL_should_preload ) {
 		return 0;
@@ -1565,6 +1563,13 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
 	if(!t->texture_id)
 		return;
+
+	// This overwrites the texture with data at the bitmap's own size, so the texture must not have been
+	// culled when it was created (user bitmaps are exempt from texture detail culling for this reason).
+	Assertion((t->w == width) && (t->h == height),
+		"gr_opengl_update_texture() called for bitmap %s with %dx%d data, but its texture is %dx%d.",
+		bm_get_filename(bitmap_handle), width, height, t->w, t->h);
+
 	int byte_mult = (bpp >> 3);
 	int true_byte_mult = (t->bpp >> 3);
 	ubyte* texmem = NULL;

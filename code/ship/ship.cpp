@@ -1154,18 +1154,10 @@ void ship_info::clone(const ship_info& other)
 	generic_debris_spew_num = other.generic_debris_spew_num;
 
 	if ( other.n_subsystems > 0 ) {
-		if( n_subsystems < 1 ) {
-			subsystems = new model_subsystem[other.n_subsystems];
-		} else {
-			delete[] subsystems;
-			subsystems = new model_subsystem[other.n_subsystems];
-		}
-
-		Assert(subsystems != nullptr);
-
-		for ( int i = 0; i < other.n_subsystems; i++ ) {
-			subsystems[i] = other.subsystems[i];
-		}
+		subsystems.reset(new model_subsystem[other.n_subsystems]);
+		std::copy(other.subsystems.get(), other.subsystems.get() + other.n_subsystems, subsystems.get());
+	} else {
+		subsystems.reset();
 	}
 	n_subsystems = other.n_subsystems;
 
@@ -1403,375 +1395,6 @@ void ship_info::clone(const ship_info& other)
 	default_subsys_death_effect = other.default_subsys_death_effect; 
 }
 
-void ship_info::move(ship_info&& other)
-{
-	std::swap(name, other.name);
-	std::swap(display_name, other.display_name);
-	std::swap(short_name, other.short_name);
-	species = other.species;
-	class_type = other.class_type;
-
-	std::swap(type_str, other.type_str);
-	std::swap(maneuverability_str, other.maneuverability_str);
-	std::swap(armor_str, other.armor_str);
-	std::swap(manufacturer_str, other.manufacturer_str);
-	std::swap(desc, other.desc);
-	std::swap(tech_desc, other.tech_desc);
-
-	std::swap(tech_title, other.tech_title);
-
-	std::swap(ship_length, other.ship_length);
-	std::swap(gun_mounts, other.gun_mounts);
-	std::swap(missile_banks, other.missile_banks);
-
-	std::swap(cockpit_pof_file, other.cockpit_pof_file);
-	std::swap(cockpit_offset, other.cockpit_offset);
-	cockpit_sway_val = other.cockpit_sway_val;
-	std::swap(pof_file, other.pof_file);
-	std::swap(pof_file_hud, other.pof_file_hud);
-	std::swap(pof_file_tech, other.pof_file_tech);
-	num_detail_levels = other.num_detail_levels;
-	std::swap(detail_distance, other.detail_distance);
-	collision_lod = other.collision_lod;
-
-	cockpit_model_num = other.cockpit_model_num;
-	model_num = other.model_num;
-	model_num_hud = other.model_num_hud;
-
-	hud_target_lod = other.hud_target_lod;
-	density = other.density;
-	damp = other.damp;
-	rotdamp = other.rotdamp;
-	delta_bank_const = other.delta_bank_const;
-	std::swap(max_vel, other.max_vel);
-	std::swap(min_vel, other.min_vel);
-	std::swap(max_rotvel, other.max_rotvel);
-	std::swap(rotation_time, other.rotation_time);
-	srotation_time = other.srotation_time;
-	max_rear_vel = other.max_rear_vel;
-	forward_accel = other.forward_accel;
-	forward_decel = other.forward_decel;
-	slide_accel = other.slide_accel;
-	slide_decel = other.slide_decel;
-	gravity_const = other.gravity_const;
-	dying_gravity_const = other.dying_gravity_const;
-
-	warpin_params_index = other.warpin_params_index;
-	warpout_params_index = other.warpout_params_index;
-
-	flags = other.flags;
-	ai_class = other.ai_class;
-	max_speed = other.max_speed;
-	min_speed = other.min_speed;
-	max_accel = other.max_accel;
-
-	collision_damage_type_idx = other.collision_damage_type_idx;
-	std::swap(collision_physics, other.collision_physics);
-
-	std::swap(shockwave, other.shockwave);
-	explosion_propagates = other.explosion_propagates;
-	explosion_splits_ship = other.explosion_splits_ship;
-	big_exp_visual_rad = other.big_exp_visual_rad;
-	prop_exp_rad_mult = other.prop_exp_rad_mult;
-	death_roll_r_mult = other.death_roll_r_mult;
-	death_fx_r_mult = other.death_fx_r_mult;
-	death_roll_time_mult = other.death_roll_time_mult;
-	death_roll_rotation_mult = other.death_roll_rotation_mult;
-	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
-	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
-	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
-	death_roll_base_time = other.death_roll_base_time;
-	death_fx_count = other.death_fx_count;
-	shockwave_count = other.shockwave_count;
-	std::swap(explosion_bitmap_anims, other.explosion_bitmap_anims);
-	skip_deathroll_chance = other.skip_deathroll_chance;
-
-	std::swap(impact_spew, other.impact_spew);
-	std::swap(damage_spew, other.damage_spew);
-	std::swap(death_roll_exp_particles, other.death_roll_exp_particles);
-	std::swap(pre_death_exp_particles, other.pre_death_exp_particles);
-	std::swap(propagating_exp_particles, other.propagating_exp_particles);
-	std::swap(split_particles, other.split_particles);
-	std::swap(knossos_end_particles, other.knossos_end_particles);
-	std::swap(regular_end_particles, other.regular_end_particles);
-	std::swap(debris_flame_particles, other.debris_flame_particles);
-	std::swap(shrapnel_flame_particles, other.shrapnel_flame_particles);
-	std::swap(debris_end_particles, other.debris_end_particles);
-	std::swap(shrapnel_end_particles, other.shrapnel_end_particles);
-	std::swap(default_subsys_debris_flame_particles, other.default_subsys_debris_flame_particles);
-	std::swap(default_subsys_shrapnel_flame_particles, other.default_subsys_shrapnel_flame_particles);
-
-	debris_min_lifetime = other.debris_min_lifetime;
-	debris_max_lifetime = other.debris_max_lifetime;
-	debris_min_speed = other.debris_min_speed;
-	debris_max_speed = other.debris_max_speed;
-	debris_min_rotspeed = other.debris_min_rotspeed;
-	debris_max_rotspeed = other.debris_max_rotspeed;
-	debris_damage_type_idx = other.debris_damage_type_idx;
-	debris_min_hitpoints = other.debris_min_hitpoints;
-	debris_max_hitpoints = other.debris_max_hitpoints;
-	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
-	debris_damage_mult = other.debris_damage_mult;
-	debris_arc_percent = other.debris_arc_percent;
-	debris_gravity_const = other.debris_gravity_const;
-	debris_density = other.debris_density;
-	debris_ambient_sound = other.debris_ambient_sound;
-	debris_collision_sound_light = other.debris_collision_sound_light;
-	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
-	debris_explosion_sound = other.debris_explosion_sound;
-	strcpy_s(generic_debris_pof_file, other.generic_debris_pof_file);
-	generic_debris_model_num = other.generic_debris_model_num;
-	generic_debris_num_submodels = other.generic_debris_num_submodels;
-	generic_debris_spew_num = other.generic_debris_spew_num;
-
-	std::swap(subsystems, other.subsystems);
-	std::swap(n_subsystems, other.n_subsystems);
-
-	power_output = other.power_output;
-	max_overclocked_speed = other.max_overclocked_speed;
-	max_weapon_reserve = other.max_weapon_reserve;
-	max_shield_regen_per_second = other.max_shield_regen_per_second;
-	shield_regen_hit_delay = other.shield_regen_hit_delay;
-	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
-
-	shield_weap_amount = other.shield_weap_amount;
-	shield_weap_efficiency = other.shield_weap_efficiency;
-	shield_weap_speed = other.shield_weap_speed;
-	weap_shield_amount = other.weap_shield_amount;
-	weap_shield_efficiency = other.weap_shield_efficiency;
-	weap_shield_speed = other.weap_shield_speed;
-
-	std::swap(afterburner_max_vel, other.afterburner_max_vel);
-	afterburner_forward_accel = other.afterburner_forward_accel;
-	afterburner_fuel_capacity = other.afterburner_fuel_capacity;
-	afterburner_burn_rate = other.afterburner_burn_rate;
-	afterburner_recover_rate = other.afterburner_recover_rate;
-	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
-	afterburner_reverse_accel = other.afterburner_reverse_accel;
-	afterburner_min_start_fuel = other.afterburner_min_start_fuel;
-	afterburner_min_fuel_to_burn = other.afterburner_min_fuel_to_burn;
-	afterburner_cooldown_time = other.afterburner_cooldown_time;
-
-	cmeasure_type = other.cmeasure_type;
-	cmeasure_max = other.cmeasure_max;
-
-	num_primary_banks = other.num_primary_banks;
-	std::swap(primary_bank_weapons, other.primary_bank_weapons);
-	std::swap(primary_bank_ammo_capacity, other.primary_bank_ammo_capacity);
-
-	num_secondary_banks = other.num_secondary_banks;
-	std::swap(secondary_bank_weapons, other.secondary_bank_weapons);
-	std::swap(secondary_bank_ammo_capacity, other.secondary_bank_ammo_capacity);
-
-	std::swap(draw_primary_models, other.draw_primary_models);
-	std::swap(draw_secondary_models, other.draw_secondary_models);
-	weapon_model_draw_distance = other.weapon_model_draw_distance;
-
-	max_hull_strength = other.max_hull_strength;
-	ship_recoil_modifier = other.ship_recoil_modifier;
-	ship_shudder_modifier = other.ship_shudder_modifier;
-
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		std::swap(dyn_firing_patterns_allowed[i], other.dyn_firing_patterns_allowed[i]);
-	}
-
-	max_shield_strength = other.max_shield_strength;
-	max_shield_recharge = other.max_shield_recharge;
-	auto_shield_spread = other.auto_shield_spread;
-	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
-	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
-	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
-	max_shield_impact_effect_radius = other.max_shield_impact_effect_radius;
-
-	std::swap(shield_point_augment_ctrls, other.shield_point_augment_ctrls);
-
-	hull_repair_rate = other.hull_repair_rate;
-	subsys_repair_rate = other.subsys_repair_rate;
-
-	hull_repair_max = other.hull_repair_max;
-	subsys_repair_max = other.subsys_repair_max;
-
-	sup_hull_repair_rate = other.sup_hull_repair_rate;
-	sup_shield_repair_rate = other.sup_shield_repair_rate;
-	sup_subsys_repair_rate = other.sup_subsys_repair_rate;
-
-	std::swap(closeup_pos, other.closeup_pos);
-	closeup_zoom = other.closeup_zoom;
-	std::swap(icon_closeup_pos, other.icon_closeup_pos);
-	icon_closeup_zoom = other.icon_closeup_zoom;
-
-	std::swap(closeup_pos_targetbox, other.closeup_pos_targetbox);
-	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
-
-	std::swap(chase_view_offset, other.chase_view_offset);
-	chase_view_rigidity = other.chase_view_rigidity;
-
-	std::swap(allowed_weapons, other.allowed_weapons);
-
-	std::swap(restricted_loadout_flag, other.restricted_loadout_flag);
-	std::swap(allowed_bank_restricted_weapons, other.allowed_bank_restricted_weapons);
-
-	shield_icon_index = other.shield_icon_index;
-	std::swap(icon_filename, other.icon_filename);
-	model_icon_angles = other.model_icon_angles;
-	std::swap(anim_filename, other.anim_filename);
-	std::swap(overhead_filename, other.overhead_filename);
-	selection_effect = other.selection_effect;
-	fs2_effect_grid_color = other.fs2_effect_grid_color;
-	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
-	fs2_effect_grid_density = other.fs2_effect_grid_density;
-	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
-
-	wingmen_status_dot_override = other.wingmen_status_dot_override;
-
-	bii_index_ship = other.bii_index_ship;
-	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
-	bii_index_wing = other.bii_index_wing;
-	bii_index_wing_with_cargo = other.bii_index_wing_with_cargo;
-
-	score = other.score;
-
-	scan_time = other.scan_time;
-	scan_range_normal = other.scan_range_normal;
-	scan_range_capital = other.scan_range_capital;
-	scanning_time_multiplier = other.scanning_time_multiplier;
-	scanning_range_multiplier = other.scanning_range_multiplier;
-
-	ask_help_shield_percent = other.ask_help_shield_percent;
-	ask_help_hull_percent = other.ask_help_hull_percent;
-
-	std::swap(ct_info, other.ct_info);
-	ct_count = other.ct_count;
-
-	std::swap(shield_color, other.shield_color);
-
-	uses_team_colors = other.uses_team_colors;
-	std::swap(default_team_name, other.default_team_name);
-
-	std::swap(afterburner_trail, other.afterburner_trail);
-	afterburner_trail_tex_stretch = other.afterburner_trail_tex_stretch;
-	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
-	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
-	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
-	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
-	afterburner_trail_life = other.afterburner_trail_life;
-	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
-	afterburner_trail_spread = other.afterburner_trail_spread;
-
-	std::swap(normal_thruster_particles, other.normal_thruster_particles);
-	std::swap(afterburner_thruster_particles, other.afterburner_thruster_particles);
-
-	std::swap(thruster_flame_info, other.thruster_flame_info);
-	std::swap(thruster_glow_info, other.thruster_glow_info);
-	std::swap(thruster_secondary_glow_info, other.thruster_secondary_glow_info);
-	std::swap(thruster_tertiary_glow_info, other.thruster_tertiary_glow_info);
-	std::swap(thruster_distortion_info, other.thruster_distortion_info);
-
-	thruster01_glow_rad_factor = other.thruster01_glow_rad_factor;
-	thruster02_glow_rad_factor = other.thruster02_glow_rad_factor;
-	thruster03_glow_rad_factor = other.thruster03_glow_rad_factor;
-	thruster02_glow_len_factor = other.thruster02_glow_len_factor;
-	thruster_dist_rad_factor = other.thruster_dist_rad_factor;
-	thruster_dist_len_factor = other.thruster_dist_len_factor;
-	thruster_glow_noise_mult = other.thruster_glow_noise_mult;
-
-	draw_distortion = other.draw_distortion;
-
-	std::swap(replacement_textures, other.replacement_textures);
-
-	armor_type_idx = other.armor_type_idx;
-	shield_armor_type_idx = other.shield_armor_type_idx;
-	
-	can_glide = other.can_glide;
-	glide_cap = other.glide_cap;
-	glide_dynamic_cap = other.glide_dynamic_cap;
-	glide_accel_mult = other.glide_accel_mult;
-	use_newtonian_damp = other.use_newtonian_damp;
-	newtonian_damp_override = other.newtonian_damp_override;
-
-	autoaim_fov = other.autoaim_fov;
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
-	}
-	autoaim_lock_snd = other.autoaim_lock_snd;
-	autoaim_lost_snd = other.autoaim_lost_snd;
-
-	aims_at_flight_cursor = other.aims_at_flight_cursor;
-	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
-	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
-
-	topdown_offset_def = other.topdown_offset_def;
-	std::swap(topdown_offset, other.topdown_offset);
-
-	engine_snd = other.engine_snd;
-	min_engine_vol = other.min_engine_vol;
-	glide_start_snd = other.glide_start_snd;
-	glide_end_snd = other.glide_end_snd;
-	flyby_snd  = other.flyby_snd;
-
-	std::swap(ship_sounds, other.ship_sounds);
-
-	std::swap(custom_data, other.custom_data);
-
-	std::swap(custom_strings, other.custom_strings);
-
-	std::swap(rcs_thrusters, other.rcs_thrusters);
-
-	radar_image_2d_idx = other.radar_image_2d_idx;
-	radar_color_image_2d_idx = other.radar_color_image_2d_idx;
-	radar_image_size = other.radar_image_size;
-	radar_projection_size_mult = other.radar_projection_size_mult;
-
-	ship_iff_info = other.ship_iff_info;
-
-	aiming_flags = other.aiming_flags;
-	minimum_convergence_distance = other.minimum_convergence_distance;
-	convergence_distance = other.convergence_distance;
-	std::swap(convergence_offset, other.convergence_offset);
-
-	emp_resistance_mod = other.emp_resistance_mod;
-
-	piercing_damage_draw_limit = other.piercing_damage_draw_limit;
-
-	damage_lightning_type = other.damage_lightning_type;
-
-	shield_impact_explosion_anim = other.shield_impact_explosion_anim;
-	std::swap(hud_gauges, other.hud_gauges);
-	hud_enabled = other.hud_enabled;
-	hud_retail = other.hud_retail;
-
-	std::swap(displays, other.displays);
-
-	std::swap(pathMetadata, other.pathMetadata);
-
-	std::swap(ship_passive_arcs, other.ship_passive_arcs);
-
-	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
-
-	animations = std::move(other.animations);
-	cockpit_animations = std::move(other.cockpit_animations);
-
-	default_subsys_death_effect = other.default_subsys_death_effect;
-}
-
-ship_info &ship_info::operator= (ship_info&& other) noexcept
-{
-	if (this != &other) {
-		move(std::move(other));
-	}
-	return *this;
-}
-
-ship_info::ship_info(ship_info&& other) noexcept
-{
-	// MageKing17 - Initialize these pointers to NULL because otherwise move() will leave them uninitialized.
-	subsystems = NULL;
-	n_subsystems = 0;
-
-	// Then we swap everything (well, everything that matters to the deconstructor).
-	move(std::move(other));
-}
-
 ship_info::ship_info()
 {
 	name[0] = '\0';
@@ -1906,7 +1529,6 @@ ship_info::ship_info()
 	generic_debris_spew_num = 20;
 
 	n_subsystems = 0;
-	subsystems = NULL;
 
 	power_output = 0.0f;
 	max_overclocked_speed = 0.0f;
@@ -2151,14 +1773,6 @@ ship_info::ship_info()
 	ship_passive_arcs.clear();
 
 	default_subsys_death_effect = particle::ParticleEffectHandle::invalid();
-}
-
-ship_info::~ship_info()
-{
-	if ( subsystems != NULL ) {
-		delete[] subsystems;
-		subsystems = nullptr;
-	}
 }
 
 const char* ship_info::get_display_name() const
@@ -5339,8 +4953,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				Warning(LOCATION, "Couldn't find preset %s in glowpoints.tbl when parsing ship: %s", name.data(), sip->name);
 				continue;
 			}
+			int gpo_index = (int)(gpo - glowpoint_bank_overrides.begin());
 			if(banks == "*") {
-				sip->glowpoint_bank_override_map[-1] = (void*)(&(*gpo));
+				sip->glowpoint_bank_override_map[-1] = gpo_index;
 				continue;
 			}
 			SCP_string banktoken;
@@ -5361,11 +4976,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					ifrom = atoi(from.data()) - 1;
 					ito = atoi(to.data()) - 1;
 					for(int bank = ifrom; bank <= ito; ++bank) {
-						sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
+						sip->glowpoint_bank_override_map[bank] = gpo_index;
 					}
 				} else {
 					int bank = atoi(banktoken.data()) - 1;
-					sip->glowpoint_bank_override_map[bank] = (void*)(&(*gpo));
+					sip->glowpoint_bank_override_map[bank] = gpo_index;
 				}
 			} while(end !=SCP_string::npos);
 		}
@@ -6035,7 +5650,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	// maybe warn
 	if (n_excess_subsystems > 0) {
-		Warning(LOCATION, "For %s '%s', number of existing subsystems (%d) plus additional subsystems (%d) exceeds max of %d; only the first %d additional subsystems will be used", info_type_name, sip->name, sip->n_subsystems, n_subsystems + n_excess_subsystems, MAX_MODEL_SUBSYSTEMS, n_subsystems);
+		Warning(LOCATION, "For %s '%s', number of existing subsystems (%d) plus additional subsystems (%d) exceeds max of %d; only the first %d additional subsystems will be used", info_type_name, sip->name, static_cast<int>(sip->n_subsystems), n_subsystems + n_excess_subsystems, MAX_MODEL_SUBSYSTEMS, n_subsystems);
 	}
 
 	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
@@ -6045,23 +5660,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
 		auto new_n = sip->n_subsystems + n_subsystems;
 
-		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[MAX(0,new_n)]);
+		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[new_n]);
 
-		if(sip->n_subsystems <= 0) {
-			sip->n_subsystems = n_subsystems;
-		} else {
-			// This used realloc originally so we need to copy the existing subsystems to the new storage
-			std::copy(sip->subsystems, sip->subsystems + sip->n_subsystems, subsys_storage.get());
+		// This used realloc originally so we need to copy the existing subsystems to the new storage
+		if (sip->n_subsystems > 0)
+			std::copy(sip->subsystems.get(), sip->subsystems.get() + sip->n_subsystems, subsys_storage.get());
 
-			// done with old storage
-			delete[] sip->subsystems;
-
-			sip->n_subsystems += n_subsystems;
-		}
-		sip->subsystems = subsys_storage.release();
-
-	    Assert(sip->subsystems != NULL);
-    }
+		sip->n_subsystems = new_n;
+		// the old storage (if any) is released by the assignment
+		sip->subsystems = std::move(subsys_storage);
+	}
 		
 	for ( int i = 0; i < n_subsystems; i++ ){
 		sip->subsystems[orig_n_subsystems+i] = subsystems[i];
@@ -7182,6 +6790,13 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
+// Defaulted here rather than in ship.h because the unique_ptr<WarpEffect>
+// members need the complete WarpEffect type at the point of definition.
+ship::ship() = default;
+ship::~ship() = default;
+ship::ship(ship &&) = default;				// NOLINT(performance-noexcept-move-constructor)
+ship &ship::operator=(ship &&) = default;	// NOLINT(performance-noexcept-move-constructor)
+
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
@@ -7216,12 +6831,8 @@ void ship::clear()
 	really_final_death_time = timestamp(-1);
 	deathroll_rotvel = vmd_zero_vector;
 
-	if (warpin_effect != nullptr)
-		delete warpin_effect;
-	if (warpout_effect != nullptr)
-		delete warpout_effect;
-	warpin_effect = nullptr;
-	warpout_effect = nullptr;
+	warpin_effect.reset();
+	warpout_effect.reset();
 
 	warpin_params_index = -1;
 	warpout_params_index = -1;
@@ -7520,7 +7131,7 @@ void ship_weapon::clear()
         primary_bank_weapons[i] = -1;
 
 		primary_bank_external_model_instance[i] = -1;
-		primary_bank_model_instance_check[i] = false;
+		primary_bank_model_instance_weapon[i] = -1;
 
         next_primary_fire_stamp[i] = timestamp(0);
         last_primary_fire_stamp[i] = timestamp(-1);
@@ -11750,9 +11361,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -11902,9 +11513,9 @@ static void ship_model_change(int n, int ship_type)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -12980,17 +12591,19 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 	shipp = &Ships[obj->instance];
 	swp = &shipp->weapons;
-	
-	if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
-		shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
-	if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
-		shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
-	if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
-		shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
-		if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
-			shipp->primary_rotate_ang[bank_to_stop] -= PI2;
-		if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
-			shipp->primary_rotate_ang[bank_to_stop] += PI2;
+
+	if(swp->primary_bank_weapons[bank_to_stop] >= 0){
+		if(shipp->primary_rotate_rate[bank_to_stop] > 0.0f)
+			shipp->primary_rotate_rate[bank_to_stop] -= Weapon_info[swp->primary_bank_weapons[bank_to_stop]].weapon_submodel_rotate_accell*flFrametime;
+		if(shipp->primary_rotate_rate[bank_to_stop] < 0.0f)
+			shipp->primary_rotate_rate[bank_to_stop] = 0.0f;
+		if(Ship_info[shipp->ship_info_index].draw_primary_models[bank_to_stop]){
+			shipp->primary_rotate_ang[bank_to_stop] += shipp->primary_rotate_rate[bank_to_stop]*flFrametime;
+			if(shipp->primary_rotate_ang[bank_to_stop] > PI2)
+				shipp->primary_rotate_ang[bank_to_stop] -= PI2;
+			if(shipp->primary_rotate_ang[bank_to_stop] < 0.0f)
+				shipp->primary_rotate_ang[bank_to_stop] += PI2;
+		}
 	}
 	
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
@@ -13120,6 +12733,40 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	}
 }
 
+
+// Gets the offset, relative to the ship's firing point, of the firing point within an external
+// weapon model that the next shot should be fired from.  Handles the "chain external model fps"
+// weapon flag: chained weapons cycle through the external model's firing points using the bank's
+// chain counter; non-chained weapons use the sub_shot index directly.
+//
+// fp_counter_index indexes swp->external_model_fp_counter[]: the bank number for primaries, or
+// the bank number plus MAX_SHIP_PRIMARY_BANKS for secondaries.  advance_counter should be true
+// when actually firing a shot, and false for queries such as the AI's line-of-sight check.
+vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot)
+{
+	if (weapon_model == nullptr || weapon_model->n_guns < 1 || weapon_model->gun_banks[0].num_slots < 1)
+		return vmd_zero_vector;
+
+	auto &bank = weapon_model->gun_banks[0];
+
+	if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp])
+	{
+		int &fp_counter = swp->external_model_fp_counter[fp_counter_index];
+
+		// the counter cycles through the firing points of the model's first gun bank
+		if (fp_counter < 0 || fp_counter >= bank.num_slots)
+			fp_counter = 0;
+
+		int fp = fp_counter;
+		if (advance_counter)
+			fp_counter++;
+
+		return bank.pnt[fp];
+	}
+
+	Assertion(sub_shot >= 0 && sub_shot < bank.num_slots, "sub_shot %d is out of range for the external model of weapon %s, which has %d firing points", sub_shot, wip->name, bank.num_slots);
+	return bank.pnt[sub_shot];
+}
 
 // fires a primary weapon for the given object.  It also handles multiplayer cases.
 // in multiplayer, the starting network signature, and number of banks fired are sent
@@ -13796,28 +13443,19 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					}
 
 					for (int j = 0; j < shot_count; j++) {
-						if (weapon_model)
-							if ((weapon_model->n_guns <= swp->external_model_fp_counter[bank_to_fire]) || (swp->external_model_fp_counter[bank_to_fire] < 0))
-								swp->external_model_fp_counter[bank_to_fire] = 0;
-
 						int sub_shots = 1;
-						// Use 0 instead of bank_to_fire as index when checking the number of external weapon model firingpoints
-						if (weapon_model && weapon_model->n_guns)
-							if (!(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
-								sub_shots = weapon_model->gun_banks[0].num_slots;
+						// weapons that don't chain their external model firing points fire from all of them at once
+						// (note that external model firing points always come from the model's first gun bank)
+						if (weapon_model && weapon_model->n_guns && !(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
+							sub_shots = weapon_model->gun_banks[0].num_slots;
 
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 							vec3d dir;
 							dir = pm->gun_banks[bank_to_fire].norm[pt];
-							// Use 0 instead of bank_to_fire as index to external weapon model firingpoints 
-							if (weapon_model && weapon_model->n_guns) {
-								if (winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
-									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[bank_to_fire]]);
-								} else {
-									vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
-								}
-							}
+
+							vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, winfo_p, weapon_model, bank_to_fire, true, s);
+							vm_vec_add2(&pnt, &external_fp_offset);
 
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
@@ -13953,7 +13591,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								multi_ship_record_add_rollback_wep(weapon_objnum);
 							}
 						}
-						swp->external_model_fp_counter[bank_to_fire]++;
 					}
 				}
 
@@ -14673,23 +14310,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			vec3d dir;
 			dir = pm->missile_banks[bank].norm[pnt_index++];
 
-			polymodel *weapon_model = NULL;
+			polymodel *weapon_model = nullptr;
 			if(wip->external_model_num >= 0){
 				weapon_model = model_get(wip->external_model_num);
 			}
 
-			if (weapon_model && weapon_model->n_guns) {
-				int external_bank = bank + MAX_SHIP_PRIMARY_BANKS;
-				if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
-					if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
-						swp->external_model_fp_counter[external_bank] = 0;
-					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
-					swp->external_model_fp_counter[external_bank]++;
-				} else {
-					// make it use the 0 index slot
-					vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
-				}
-			}
+			// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
+			vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, bank + MAX_SHIP_PRIMARY_BANKS, true);
+			vm_vec_add2(&pnt, &external_fp_offset);
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
@@ -16945,13 +16573,8 @@ void ship_close()
 	for (i=0; i<MAX_SHIPS; i++ )	{
 		ship *shipp = &Ships[i];
 
-		if(shipp->warpin_effect != NULL)
-			delete shipp->warpin_effect;
-		shipp->warpin_effect = NULL;
-
-		if(shipp->warpout_effect != NULL)
-			delete shipp->warpout_effect;
-		shipp->warpout_effect = NULL;
+		shipp->warpin_effect.reset();
+		shipp->warpout_effect.reset();
 	}
 
 	// free this too! -- Goober5000
@@ -21849,7 +21472,63 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj, uint64_t render_flags)
+// Lazily creates the model instance used to spin the Gun_rotation submodels of the external
+// weapon model in the given primary bank, recreating it if the bank's weapon has changed since
+// the last call (weapons can be swapped mid-mission by SEXPs, scripts, or rearming).  The ideal
+// place to create the instance would be in parse_object_create_sub, but the player can alter
+// the ship loadout after that function runs.
+// Returns the model instance number, or -1 if the bank's weapon doesn't need an instance.
+int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank)
+{
+	int weapon_idx = swp->primary_bank_weapons[bank];
+
+	if (swp->primary_bank_model_instance_weapon[bank] != weapon_idx)
+	{
+		// the weapon changed, so any existing instance belongs to the old weapon's model
+		if (swp->primary_bank_external_model_instance[bank] >= 0)
+		{
+			model_delete_instance(swp->primary_bank_external_model_instance[bank]);
+			swp->primary_bank_external_model_instance[bank] = -1;
+		}
+
+		if (weapon_idx >= 0 && Weapon_info[weapon_idx].external_model_num >= 0)
+		{
+			auto pm = model_get(Weapon_info[weapon_idx].external_model_num);
+
+			// create a model instance only if at least one submodel has gun rotation
+			for (int mn = 0; mn < pm->n_models; mn++)
+			{
+				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
+				{
+					swp->primary_bank_external_model_instance[bank] = model_create_instance(model_objnum_special::OBJNUM_NONE, Weapon_info[weapon_idx].external_model_num);
+					break;
+				}
+			}
+		}
+
+		swp->primary_bank_model_instance_weapon[bank] = weapon_idx;
+	}
+
+	return swp->primary_bank_external_model_instance[bank];
+}
+
+// Computes the position and orientation, in the ship model's frame, at which to render an
+// external weapon model on slot `slot` of weapon bank `bank`.  reload_slide_back is the
+// distance a partially reloaded missile is slid backward along the bank's -Z axis; pass
+// 0.0f for primaries and launcher-style secondaries, which don't slide.
+void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient)
+{
+	// "Bank" the external model by the angle offset
+	angles angs = { 0.0f, bank->external_model_angle_offset[slot], 0.0f };
+	vm_angles_2_matrix(outorient, &angs);
+
+	*outpnt = bank->pnt[slot];
+
+	if (reload_slide_back > 0.0f)
+		vm_vec_scale_add2(outpnt, &vmd_z_vector, -reload_slide_back);
+}
+
+void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj)
 {
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
@@ -21866,42 +21545,30 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	scene->push_transform(&obj->pos, &obj->orient);
 
 	auto ship_render_flags = ship_render_info->get_model_flags();
-	render_flags &= ~MR_SHOW_THRUSTERS;
-	ship_render_info->set_flags(render_flags);
+	ship_render_info->set_flags(ship_render_flags & ~MR_SHOW_THRUSTERS);
+
+	// weapon models aren't rendered beyond this distance, and they choose their detail
+	// level based on their own position rather than the ship's
+	ship_render_info->set_attached_model_draw_distance(sip->weapon_model_draw_distance);
 
 	//primary weapons
 	for ( i = 0; i < swp->num_primary_banks; i++ ) {
+		if ( swp->primary_bank_weapons[i] < 0 ) {
+			continue;
+		}
 		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
 		if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
 			continue;
 		}
 
-		// Lazily create the model instance here, if we need to.  The ideal place to put this
-		// would be in parse_object_create_sub, but the player can alter the ship loadout
-		// after that function runs.
-		if (!swp->primary_bank_model_instance_check[i])
-		{
-			auto pm = model_get(wip->external_model_num);
-
-			// create a model instance only if at least one submodel has gun rotation
-			for (int mn = 0; mn < pm->n_models; mn++)
-			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-				{
-					swp->primary_bank_external_model_instance[i] = model_create_instance(model_objnum_special::OBJNUM_NONE, wip->external_model_num);
-					break;
-				}
-			}
-
-			swp->primary_bank_model_instance_check[i] = true;
-		}
+		int external_model_instance = ship_get_external_weapon_model_instance(swp, i);
 
 		auto bank = &ship_pm->gun_banks[i];
 
-		if ( swp->primary_bank_external_model_instance[i] >= 0 )
+		if ( external_model_instance >= 0 )
 		{
-			auto pmi = model_get_instance(swp->primary_bank_external_model_instance[i]);
+			auto pmi = model_get_instance(external_model_instance);
 			auto pm = model_get(pmi->model_num);
 
 			// spin the submodels by the gun rotation
@@ -21917,66 +21584,62 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
-			// "Bank" the external model by the angle offset
-			angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-			matrix model_orient;
-			vm_angles_2_matrix(&model_orient, &angs);
+			vec3d slot_pnt;
+			matrix slot_orient;
+			ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-			model_render_queue(ship_render_info, scene, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &bank->pnt[k]);
+			model_render_queue(ship_render_info, scene, wip->external_model_num, external_model_instance, &slot_orient, &slot_pnt);
 		}
 	}
 
 	//secondary weapons
-	int num_secondaries_rendered = 0;
-	vec3d secondary_weapon_pos;
-
 	for (i = 0; i < swp->num_secondary_banks; i++) {
+		if ( swp->secondary_bank_weapons[i] < 0 ) {
+			continue;
+		}
 		auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-		if ( wip->external_model_num == -1 || !sip->draw_secondary_models[i] ) {
+		if ( wip->external_model_num < 0 || !sip->draw_secondary_models[i] ) {
 			continue;
 		}
 
 		auto bank = &ship_pm->missile_banks[i];
 
-		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {			
+		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
 			for(k = 0; k < bank->num_slots; k++) {
-				// "Bank" the external model by the angle offset
-				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-				matrix model_orient;
-				vm_angles_2_matrix(&model_orient, &angs);
+				vec3d slot_pnt;
+				matrix slot_orient;
+				ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &bank->pnt[k]);
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
 			}
 		} else {
-			num_secondaries_rendered = 0;
+			auto weapon_pm = model_get(wip->external_model_num);
+			int num_secondaries_rendered = 0;
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
-				secondary_weapon_pos = bank->pnt[k];
-
 				if ( num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i] ) {
 					break;
 				}
 
-				if ( shipp->secondary_point_reload_pct.get(i, k) <= 0.0 ) {
+				float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
+				if ( reload_pct <= 0.0f ) {
 					continue;
 				}
 
 				num_secondaries_rendered++;
 
-				vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-shipp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
+				vec3d slot_pnt;
+				matrix slot_orient;
+				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
 
-				// "Bank" the external model by the angle offset
-				angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-				matrix model_orient;
-				vm_angles_2_matrix(&model_orient, &angs);
-
-				model_render_queue(ship_render_info, scene, wip->external_model_num, &model_orient, &secondary_weapon_pos);
+				model_render_queue(ship_render_info, scene, wip->external_model_num, &slot_orient, &slot_pnt);
 			}
 		}
 	}
 
 	ship_render_info->set_flags(ship_render_flags);
+	ship_render_info->set_attached_model_draw_distance(-1.0f);
 
 	scene->pop_transform();
 }
@@ -22230,7 +21893,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	render_info.set_debug_flags(debug_flags);
 
 	//draw weapon models
-	ship_render_weapon_models(&render_info, scene, obj, render_flags);
+	ship_render_weapon_models(&render_info, scene, obj);
 
 	render_info.set_object_number(OBJ_INDEX(obj));
 	render_info.set_replacement_textures(pmi->texture_replace);

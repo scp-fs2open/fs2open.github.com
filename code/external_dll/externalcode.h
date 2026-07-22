@@ -23,7 +23,7 @@ public:
 	}
 
 protected:
-	bool LoadExternal( const char* externlib )
+	bool LoadExternal( const char* externlib, const char* basePath = nullptr )
 	{
 		if ( !externlib )
 			return FALSE;
@@ -46,6 +46,16 @@ protected:
 			}
 		}
 #endif
+
+		// check full path as a fallback for our own libraries
+		// NOTE: basePath is assumed to have a trailing slash!
+		if ( !m_library && basePath )
+		{
+			SCP_string fullpath = basePath;
+			fullpath += externlib;
+
+			m_library = SDL_LoadObject(fullpath.c_str());
+		}
 
 #ifndef NDEBUG
 		if (m_library == NULL)

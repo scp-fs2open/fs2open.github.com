@@ -677,6 +677,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
+				set_flag(profile, "$fix target updating with strafe:", AI::Profile_Flags::Fix_target_updating_with_strafe);
+
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
 				if (optional_string("$standard strafe triggers under this speed:")) {
@@ -987,5 +989,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_big_ship_waypoint_completion);
 		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 		flags.set(AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
+		flags.set(AI::Profile_Flags::Fix_standard_strafe);
+		flags.set(AI::Profile_Flags::Fix_target_updating_with_strafe);
 	}
 }

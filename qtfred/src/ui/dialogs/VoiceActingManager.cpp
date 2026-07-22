@@ -93,7 +93,7 @@ void VoiceActingManager::initializeUi()
 
 	// Filename settings
 	ui->includeSenderCheckBox->setChecked(_model->includeSenderInFilename());
-	ui->replaceCheckBox->setChecked(_model->noReplace());
+	ui->noReplaceCheckBox->setChecked(_model->noReplace());
 	ui->suffixComboBox->setCurrentIndex(suffixToIndex(_model->suffix()));
 
 	// Script export

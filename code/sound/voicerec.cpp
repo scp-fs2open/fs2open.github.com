@@ -56,6 +56,7 @@
 
 // FreeSpace includes
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"

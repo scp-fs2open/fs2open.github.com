@@ -15,6 +15,9 @@
 #include <QSignalBlocker>
 #include <QSettings>
 #include <QDateTime>
+#include <QPainter>
+#include <QVariantAnimation>
+#include <QEasingCurve>
 
 #include <project.h>
 
@@ -88,6 +91,47 @@ void copyActionSettings(QAction* action, T* target) {
 	// Double negate so that integers get promoted to a "true" boolean
 	action->setChecked(!!(*target));
 }
+
+// A translucent overlay that sweeps a soft white gleam left-to-right across
+// the status bar as its progress goes 0 -> 1. Used to celebrate a mission save.
+class StatusShineOverlay : public QWidget {
+public:
+	explicit StatusShineOverlay(QWidget* parent) : QWidget(parent) {
+		setAttribute(Qt::WA_TransparentForMouseEvents);
+		setAttribute(Qt::WA_NoSystemBackground);
+		setAttribute(Qt::WA_TranslucentBackground);
+	}
+
+	void setProgress(qreal p) {
+		_p = p;
+		update();
+	}
+
+protected:
+	void paintEvent(QPaintEvent*) override {
+		if (_p <= 0.0 || _p >= 1.0 || width() <= 0)
+			return;
+
+		const qreal w = width();
+		const qreal bandW = w * 0.5;    // width of the gleam
+		const qreal half = bandW / 2.0;
+		// The band center travels from fully off the left edge to fully off the
+		// right, so the gleam completely leaves the bar before the overlay vanishes.
+		const qreal center = -half + _p * (w + bandW);
+
+		QLinearGradient grad(center - half, 0.0, center + half, 0.0);
+
+		grad.setColorAt(0.0, QColor(255, 255, 255, 0));
+		grad.setColorAt(0.5, QColor(255, 255, 255, 170));
+		grad.setColorAt(1.0, QColor(255, 255, 255, 0));
+
+		QPainter painter(this);
+		painter.fillRect(rect(), grad);
+	}
+
+private:
+	qreal _p = 0.0;
+};
 
 }
 
@@ -930,9 +974,34 @@ void FredView::setLastSaved(const QDateTime& when) {
 
 	if (when.isValid()) {
 		_statusBarLastSaved->setText(tr("Last Saved: %1").arg(when.toString(QStringLiteral("MMM d, yyyy h:mm:ss AP"))));
+		triggerSaveShine();
 	} else {
 		_statusBarLastSaved->setText(tr("Last Saved: Never"));
 	}
+}
+
+void FredView::triggerSaveShine() {
+	auto* bar = statusBar();
+	if (!bar)
+		return;
+
+	auto* overlay = new StatusShineOverlay(bar);
+	overlay->setGeometry(bar->rect());
+	overlay->show();
+	overlay->raise();
+
+	auto* anim = new QVariantAnimation(overlay);
+	anim->setStartValue(0.0);
+	anim->setEndValue(1.0);
+	anim->setDuration(1000);
+	anim->setEasingCurve(QEasingCurve::InOutSine);
+	connect(anim, &QVariantAnimation::valueChanged, overlay, [overlay](const QVariant& v) {
+		overlay->setProgress(v.toReal());
+	});
+	connect(anim, &QVariantAnimation::finished, overlay, [overlay]() {
+		overlay->deleteLater();
+	});
+	anim->start(QAbstractAnimation::DeleteWhenStopped);
 }
 
 // ---------------------------------------------------------------------------
@@ -2386,16 +2455,32 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 
 	_inKeyReleaseHandler = false;
 }
+namespace {
+// Opens a single instance of a dialog parented to `parent`, wired for
+// delete-on-close.  If an instance is already open, it is raised and focused
+// rather than creating a second one.  Returns the newly-created dialog, or
+// nullptr if an existing instance was reused (so callers can do extra one-time
+// setup only on first open).
+template <typename DialogT>
+DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
+	if (auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly)) {
+		existing->raise();
+		existing->activateWindow();
+		return nullptr;
+	}
+	auto* dialog = new DialogT(parent, viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+	return dialog;
+}
+} // namespace
+
 void FredView::on_actionMission_Events_triggered(bool) {
-	auto eventEditor = new dialogs::MissionEventsDialog(this, _viewport);
-	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
-	eventEditor->show();
+	showSingleInstanceDialog<dialogs::MissionEventsDialog>(this, _viewport);
 }
 void FredView::on_actionMission_Cutscenes_triggered(bool)
 {
-	auto cutsceneEditor = new dialogs::MissionCutscenesDialog(this, _viewport);
-	cutsceneEditor->setAttribute(Qt::WA_DeleteOnClose);
-	cutsceneEditor->show();
+	showSingleInstanceDialog<dialogs::MissionCutscenesDialog>(this, _viewport);
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
 	_viewport->Selection_lock = enabled;
@@ -2425,37 +2510,26 @@ void FredView::onOtherKindSelected(int other_kind) {
 	_viewport->cur_other_kind = static_cast<OtherKind>(other_kind);
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
-	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
-	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
-	connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
-	asteroidFieldEditor->show();
+	if (auto* asteroidFieldEditor = showSingleInstanceDialog<dialogs::AsteroidEditorDialog>(this, _viewport)) {
+		connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
+	}
 }
 void FredView::on_actionVolumetric_Nebula_triggered(bool)
 {
-	auto volumetricNebulaEditor = new dialogs::VolumetricNebulaDialog(this, _viewport);
-	volumetricNebulaEditor->setAttribute(Qt::WA_DeleteOnClose);
-	volumetricNebulaEditor->show();
+	showSingleInstanceDialog<dialogs::VolumetricNebulaDialog>(this, _viewport);
 }
 void FredView::on_actionBriefing_triggered(bool) {
-	auto eventEditor = new dialogs::BriefingEditorDialog(this, _viewport);
-	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
-	eventEditor->show();
+	showSingleInstanceDialog<dialogs::BriefingEditorDialog>(this, _viewport);
 }
 void FredView::on_actionMission_Specs_triggered(bool) {
-	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
-	missionSpecEditor->setAttribute(Qt::WA_DeleteOnClose);
-	missionSpecEditor->show();
+	showSingleInstanceDialog<dialogs::MissionSpecDialog>(this, _viewport);
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {
-	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::WaypointEditorDialog>(this, _viewport);
 }
 void FredView::on_actionJump_Nodes_triggered(bool)
 {
-	auto editorDialog = new dialogs::JumpNodeEditorDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::JumpNodeEditorDialog>(this, _viewport);
 }
 void FredView::on_actionShips_triggered(bool)
 {
@@ -2500,38 +2574,26 @@ void FredView::on_actionProps_triggered(bool)
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
-	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
-	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
-	editorCampaign->show();
+	showSingleInstanceDialog<dialogs::CampaignEditorDialog>(this, _viewport);
 }
 void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
-	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::CommandBriefingDialog>(this, _viewport);
 }
 void FredView::on_actionDebriefing_triggered(bool)
 {
-	auto editorDialog = new dialogs::DebriefingDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::DebriefingDialog>(this, _viewport);
 }
 void FredView::on_actionReinforcements_triggered(bool) {
-	auto editorDialog = new dialogs::ReinforcementsDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::ReinforcementsDialog>(this, _viewport);
 }
 void FredView::on_actionLoadout_triggered(bool) {
-	auto editorDialog = new dialogs::TeamLoadoutDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::TeamLoadoutDialog>(this, _viewport);
 }
 void FredView::on_actionVariables_triggered(bool) {
-	auto editorDialog = new dialogs::VariableDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport);
 }
 
 DialogButton FredView::showButtonDialog(DialogType type,
@@ -3006,68 +3068,46 @@ void FredView::on_actionHelp_Topics_triggered(bool) {
 }
 
 void FredView::on_actionAbout_triggered(bool) {
-	auto dialog = new dialogs::AboutDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::AboutDialog>(this, _viewport);
 }
 void FredView::on_actionMission_Statistics_triggered(bool) {
-	auto dialog = new dialogs::MissionStatsDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::MissionStatsDialog>(this, _viewport);
 }
 
 void FredView::on_actionBackground_triggered(bool) {
-	auto dialog = new dialogs::BackgroundEditorDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::BackgroundEditorDialog>(this, _viewport);
 }
 
 void FredView::on_actionShield_System_triggered(bool) {
-	auto dialog = new dialogs::ShieldSystemDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::ShieldSystemDialog>(this, _viewport);
 }
 
 void FredView::on_actionSet_Global_Ship_Flags_triggered(bool) {
-	auto dialog = new dialogs::GlobalShipFlagsDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::GlobalShipFlagsDialog>(this, _viewport);
 }
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
-	auto dialog = new dialogs::VoiceActingManager(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::VoiceActingManager>(this, _viewport);
 }
 void FredView::on_actionMission_Goals_triggered(bool) {
-	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::MissionGoalsDialog>(this, _viewport);
 }
 
 void FredView::on_actionMusic_Player_triggered(bool)
 {
-	auto dialog = new dialogs::MusicPlayerDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::MusicPlayerDialog>(this, _viewport);
 }
 
 void FredView::on_actionCalculate_Relative_Coordinates_triggered(bool) {
-	auto dialog = new dialogs::RelativeCoordinatesDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::RelativeCoordinatesDialog>(this, _viewport);
 }
 
 void FredView::on_actionFiction_Viewer_triggered(bool) {
-	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::FictionViewerDialog>(this, _viewport);
 }
 
 void FredView::on_actionWaypointPathGenerator_triggered(bool) {
-	auto dialog = new dialogs::WaypointPathGeneratorDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	showSingleInstanceDialog<dialogs::WaypointPathGeneratorDialog>(this, _viewport);
 }
 } // namespace fred
 } // namespace fso

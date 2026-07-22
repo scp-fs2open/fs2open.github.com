@@ -2861,22 +2861,29 @@ int Fred_mission_save::save_mission_info()
 	// this is compatible with non-SCP variants - Goober5000
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0) ? 1 : 0);
 
+	// version-gated support options; see also check_for_25_1_data()
+	auto more_support_options_version = gameversion::version(25, 1);
+
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		if (optional_string_fred("+Disallow Support Rearm:")) {
-			parse_comments(2);
-		} else {
-			fout("\n+Disallow Support Rearm:");
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Disallow Support Rearm:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Disallow Support Rearm:");
+			}
+
+			fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
 		}
 
-		fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Allow Support Rearm Weapon Precedence:");
+			}
 
-		if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
-			parse_comments(2);
-		} else {
-			fout("\n+Allow Support Rearm Weapon Precedence:");
+			fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
 		}
-
-		fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
 	}
 
 	// here be WMCoolmon's hull and subsys repair stuff
@@ -2895,12 +2902,14 @@ int Fred_mission_save::save_mission_info()
 		}
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
 
-		if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
-			parse_comments(1);
-		} else {
-			fout("\n+Support Rearm Pool From Loadout:");
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
+				parse_comments(1);
+			} else {
+				fout("\n+Support Rearm Pool From Loadout:");
+			}
+			fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 		}
-		fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
 	}
 
 	if (Mission_all_attack) {
@@ -4511,7 +4520,23 @@ int Fred_mission_save::save_players()
 
 		fout(")");
 
-		if (save_config.save_format != MissionFormat::RETAIL && !The_mission.support_ships.rearm_pool_from_loadout) {
+		// version-gated support options; see also check_for_25_1_data()
+		auto more_support_options_version = gameversion::version(25, 1);
+
+		bool has_rearm_pool_entries = false;
+		if (save_config.save_format != MissionFormat::RETAIL && The_mission.required_fso_version >= more_support_options_version && !The_mission.support_ships.rearm_pool_from_loadout) {
+			for (j = 0; j < weapon_info_size(); j++) {
+				// mirror the skip conditions used when writing the pool below
+				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed] || Weapon_info[j].disallow_rearm) {
+					continue;
+				}
+				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
+					has_rearm_pool_entries = true;
+					break;
+				}
+			}
+		}
+		if (has_rearm_pool_entries) {
 			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
 				parse_comments(2);
 			} else {
@@ -4920,57 +4945,59 @@ int Fred_mission_save::save_waypoints()
 	parse_comments(2);
 	fout("\t\t;! %d lists total\n", Waypoint_lists.size());
 
-	SCP_list<CJumpNode>::iterator jnp;
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+	for (auto &jn : Jump_nodes) {
+		if (jn.GetSCPObjectNumber() < 0)
+			continue;
+
 		required_string_fred("$Jump Node:", "$Jump Node Name:");
 		parse_comments(2);
-		save_vector(jnp->GetSCPObject()->pos);
+		save_vector(jn.GetSCPObject()->pos);
 
 		required_string_fred("$Jump Node Name:", "$Jump Node:");
 		parse_comments();
-		fout(" %s", jnp->GetName());
+		fout(" %s", jn.GetName());
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 
 			// (If we are always saving display names, the "only/not written" comments do not apply)
 			// The display name is only written if it currently exists, to avoid introducing inconsistencies
-			if (save_config.always_save_display_names || jnp->HasDisplayName()) {
+			if (save_config.always_save_display_names || jn.HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
-				strcpy_s(truncated_name, jnp->GetName());
+				strcpy_s(truncated_name, jn.GetName());
 				end_string_at_first_hash_symbol(truncated_name);
 
 				// Also, the display name is not written if it's just the truncation of the name at the hash
-				if (save_config.always_save_display_names || strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
+				if (save_config.always_save_display_names || strcmp(jn.GetDisplayName(), truncated_name) != 0) {
 					if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 						parse_comments();
 					} else {
 						fout("\n+Display Name:");
 					}
 
-					fout_ext("", "%s", jnp->GetDisplayName());
+					fout_ext("", "%s", jn.GetDisplayName());
 				}
 			}
 
-			if (jnp->IsSpecialModel()) {
+			if (jn.IsSpecialModel()) {
 				if (optional_string_fred("+Model File:", "$Jump Node:")) {
 					parse_comments();
 				} else {
 					fout("\n+Model File:");
 				}
 
-				int model = jnp->GetModelNumber();
+				int model = jn.GetModelNumber();
 				polymodel* pm = model_get(model);
 				fout(" %s", pm->filename);
 			}
 
-			if (jnp->IsColored()) {
+			if (jn.IsColored()) {
 				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
 					parse_comments();
 				} else {
 					fout("\n+Alphacolor:");
 				}
 
-				const auto& jn_color = jnp->GetColor();
+				const auto& jn_color = jn.GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 
@@ -4978,17 +5005,17 @@ int Fred_mission_save::save_waypoints()
 			if (hidden_is_there)
 				parse_comments();
 
-			if (hidden_is_there || jnp->IsHidden()) {
+			if (hidden_is_there || jn.IsHidden()) {
 				if (!hidden_is_there)
 					fout("\n+Hidden:");
 
-				if (jnp->IsHidden())
+				if (jn.IsHidden())
 					fout(" %s", "true");
 				else
 					fout(" %s", "false");
 			}
 
-			const SCP_string& jn_layer = jnp->GetFredLayer();
+			const SCP_string& jn_layer = jn.GetFredLayer();
 			if (!jn_layer.empty() && !lcase_equal(jn_layer, "Default")) {
 				if (optional_string_fred("+Layer:", "$Jump Node:"))
 					parse_comments();

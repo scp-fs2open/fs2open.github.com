@@ -4,6 +4,8 @@
 #include "cutscene/VideoPresenter.h"
 #include "cutscene/ffmpeg/FFMPEGDecoder.h"
 
+#include "cmdline/cmdline.h"
+
 #include "graphics/2d.h"
 
 #include "globalincs/alphacolors.h"
@@ -52,7 +54,7 @@ void videoPlaybackInit(PlayerState* state) {
 
 	Assert(state != NULL);
 
-	if (gr_screen.mode != GR_STUB) {
+	if (gr_screen.mode != GraphicsAPI::Stub) {
 		// The video presenter is independent of the underlying graphics API
 		state->videoPresenter.reset(new VideoPresenter(state->props));
 	}

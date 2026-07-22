@@ -271,6 +271,8 @@ void model_unload(int modelnum, int force)
 
 	mprintf(("Unloading model '%s' from slot '%i'\n", pm->filename, num));
 
+	gr_model_unloaded(pm->id);
+
 	// so that the textures can be released
 	pm->used_this_mission = 0;
 
@@ -3245,7 +3247,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	if (sip != nullptr) {
 		n_subsystems = sip->n_subsystems;
-		subsystems = sip->subsystems;
+		subsystems = sip->subsystems.get();
 	}
 
 	num = -1;
@@ -3524,6 +3526,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	unpause_parse();
 	if (sip != nullptr)
 		sip->model_num = pm->id;
+
+	gr_model_loaded(pm->id);
+
 	return pm->id;
 }
 
@@ -6025,6 +6030,11 @@ void parse_glowpoint_table(const char *filename)
 
 void glowpoint_init()
 {
+	// ship_info and prop_info store indices into glowpoint_bank_overrides
+	extern bool Ships_inited;
+	extern bool Props_inited;
+	Assertion(!Ships_inited && !Props_inited, "glowpoint_init() must be called before ship_init() and prop_init()");
+
 	glowpoint_bank_overrides.clear();
 	parse_glowpoint_table("glowpoints.tbl");
 	parse_modular_table(NOX("*-gpo.tbm"), parse_glowpoint_table);

@@ -398,6 +398,10 @@ void WaypointEditorDialogModel::selectWaypointPathByIndex(int idx) {
 	initializeData();
 }
 
+int WaypointEditorDialogModel::getSelectedPathIndex() const {
+	return _selectedWaypointPaths.empty() ? -1 : _selectedWaypointPaths.front();
+}
+
 void WaypointEditorDialogModel::selectNextPath() {
 	if (Waypoint_lists.empty())
 		return;

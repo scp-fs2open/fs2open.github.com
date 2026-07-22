@@ -85,6 +85,158 @@ auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shado
                      .parser(parse_shadow_quality_func)
                      .finish();
 
+ShadowRenderMethod Shadow_render_method = ShadowRenderMethod::ShadowMap;
+
+static void parse_shadow_render_method_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	SCP_tolower(mode);
+
+	if (mode == "shadow map" || mode == "shadow maps") {
+		Shadow_render_method = ShadowRenderMethod::ShadowMap;
+	} else if (mode == "raytraced") {
+		Shadow_render_method = ShadowRenderMethod::Raytraced;
+	} else {
+		error_display(0, "%s is not a valid shadow render method setting", mode.c_str());
+	}
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto ShadowRenderMethodOption = options::OptionBuilder<ShadowRenderMethod>("Graphics.ShadowRenderMethod",
+                     std::pair<const char*, int>{"Shadow Method", -1},
+                     std::pair<const char*, int>{"Whether shadows are rendered via cascaded shadow maps or hardware raytracing", -1})
+                     // Raytraced is only ever offered on hardware that actually supports it.
+                     .enumerator([]() -> SCP_vector<ShadowRenderMethod> {
+                         if (shadows_raytracing_supported()) {
+                             return {ShadowRenderMethod::ShadowMap, ShadowRenderMethod::Raytraced};
+                         }
+                         return {ShadowRenderMethod::ShadowMap};
+                     })
+                     .display(options::MapValueDisplay<ShadowRenderMethod>({
+                         {ShadowRenderMethod::ShadowMap, {"Shadow Maps", -1}},
+                         {ShadowRenderMethod::Raytraced, {"Raytraced", -1}}
+                     }))
+                     // Live-apply: switching this only changes which shader variant/flags get
+                     // requested on the next draw (lazily compiled/cached), no restart needed.
+                     .bind_to(&Shadow_render_method)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return ShadowRenderMethod::ShadowMap; })
+                     .importance(79)
+                     .parser(parse_shadow_render_method_func)
+                     .finish();
+
+int Max_rt_shadow_lights = 4;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto MaxRtShadowLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadowLights",
+                     std::pair<const char*, int>{"Max Raytraced Shadow Lights", -1},
+                     std::pair<const char*, int>{"Maximum number of directional lights that cast raytraced shadows", -1})
+                     .enumerator([]() -> SCP_vector<int> {
+                         if (shadows_raytracing_supported()) {
+                             return {1, 2, 3, 4, 5, 6, 7, 8};
+                         }
+                         return {4}; // inert default when RT isn't supported
+                     })
+                     .bind_to(&Max_rt_shadow_lights)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return 4; })
+                     .importance(78)
+                     .finish();
+
+RTShadowQuality Rt_shadow_quality = RTShadowQuality::Low;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RTShadowQualityOption = options::OptionBuilder<RTShadowQuality>("Graphics.RTShadowQuality",
+                     std::pair<const char*, int>{"Raytraced Shadow Quality", -1},
+                     std::pair<const char*, int>{"Low shadows directional lights only (up to Max Raytraced Shadow Lights); High also shadows point, tube, and cone lights", -1})
+                     .enumerator([]() -> SCP_vector<RTShadowQuality> {
+                         if (shadows_raytracing_supported()) {
+                             return {RTShadowQuality::Low, RTShadowQuality::High};
+                         }
+                         return {RTShadowQuality::Low};
+                     })
+                     .display(options::MapValueDisplay<RTShadowQuality>({
+                         {RTShadowQuality::Low, {"Low", -1}},
+                         {RTShadowQuality::High, {"High", -1}}
+                     }))
+                     .bind_to(&Rt_shadow_quality)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return RTShadowQuality::Low; })
+                     .importance(77)
+                     .finish();
+
+int Max_rt_shadow_local_lights = 3;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto MaxRtShadowLocalLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadowLocalLights",
+                     std::pair<const char*, int>{"Max Raytraced Local Shadow Lights", -1},
+                     std::pair<const char*, int>{"Maximum number of point, tube, and cone lights that cast raytraced shadows (only used at High Raytraced Shadow Quality)", -1})
+                     .enumerator([]() -> SCP_vector<int> {
+                         if (shadows_raytracing_supported()) {
+                             return {4, 8, 16, 32, 64};
+                         }
+                         return {4}; // inert default when RT isn't supported
+                     })
+                     .bind_to(&Max_rt_shadow_local_lights)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return 4; })
+                     .importance(76)
+                     .finish();
+
+// Defaults confirmed by empirical testing via the LabUi slider: 0.5 clears acne on
+// even very close geometry, and distant geometry never needed more than 4.0.
+float Rt_shadow_bias_min = 0.5f;
+float Rt_shadow_bias_max = 4.0f;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RtShadowBiasMinOption = options::OptionBuilder<float>("Graphics.RtShadowBiasMin",
+                     std::pair<const char*, int>{"Min Raytraced Shadow Bias", -1},
+                     std::pair<const char*, int>{"Raytraced shadow ray origin offset (world units) used for geometry close to the camera, to avoid self-intersection shadow acne", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return 0.5f; })
+                     .range(0.0f, 4.0f)
+                     .bind_to(&Rt_shadow_bias_min)
+                     .importance(75)
+                     .finish();
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto RtShadowBiasMaxOption = options::OptionBuilder<float>("Graphics.RtShadowBiasMax",
+                     std::pair<const char*, int>{"Max Raytraced Shadow Bias", -1},
+                     std::pair<const char*, int>{"Raytraced shadow ray origin offset (world units) used for geometry far from the camera, to avoid self-intersection shadow acne", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return 4.0f; })
+                     .range(0.5f, 16.0f)
+                     .bind_to(&Rt_shadow_bias_max)
+                     .importance(74)
+                     .finish();
+
+bool shadows_raytracing_supported()
+{
+	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
+}
+
+bool shadows_use_raytracing()
+{
+	return Shadow_render_method == ShadowRenderMethod::Raytraced && shadows_raytracing_supported();
+}
+
+bool shadows_use_raytraced_local_lights()
+{
+	return shadows_use_raytracing() && Rt_shadow_quality == RTShadowQuality::High;
+}
+
 bool shadows_obj_in_frustum(const object *objp, const matrix *light_orient, const vec3d *min, const vec3d *max)
 {
 	vec3d pos, pos_rot;
@@ -109,11 +261,19 @@ void shadows_construct_light_proj(light_frustum_info *shadow_data)
 
 	shadow_data->proj_matrix.a1d[0] = 2.0f / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
 	shadow_data->proj_matrix.a1d[5] = 2.0f / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 	shadow_data->proj_matrix.a1d[12] = -(shadow_data->max.xyz.x + shadow_data->min.xyz.x) / ( shadow_data->max.xyz.x - shadow_data->min.xyz.x );
 	shadow_data->proj_matrix.a1d[13] = -(shadow_data->max.xyz.y + shadow_data->min.xyz.y) / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
-	shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 	shadow_data->proj_matrix.a1d[15] = 1.0f;
+
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
+		// Vulkan uses [0, 1] depth range
+		shadow_data->proj_matrix.a1d[10] = -1.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+		shadow_data->proj_matrix.a1d[14] = -shadow_data->min.xyz.z / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+	} else {
+		// OpenGL uses [-1, 1] depth range
+		shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+		shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+	}
 }
 
 void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float aspect, float z_near, float z_far)
@@ -537,8 +697,8 @@ static bool shadow_obj_clip_plane(const object* objp, shadow_render_list::clip_p
 
 	if (dfi.maintained_variables.bool_value) {
 		auto* dship = &Ships[dfi.maintained_variables.objp_value->instance];
-		WarpEffect* warp_effect = dship->is_arriving(ship::warpstage::BOTH, true)
-			? dship->warpin_effect : dship->warpout_effect;
+		auto* warp_effect = (dship->is_arriving(ship::warpstage::BOTH, true)
+			? dship->warpin_effect : dship->warpout_effect).get();
 		model_render_params dummy;
 		if (warp_effect->warpShipClip(&dummy)) {
 			clip->normal = dummy.get_clip_plane_normal();
@@ -635,7 +795,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
                         const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -649,6 +809,13 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 	if (Shadow_quality == ShadowQuality::Disabled) {
 		return;
 	}
+
+	// Rebuilds the raytraced-shadow TLAS alongside the cascaded shadow map below
+	// -- Vulkan-only, no-op everywhere else. Which one shading actually samples
+	// is decided per shadows_use_raytracing(). See VulkanRaytracingManager::buildTlas().
+	gr_build_shadow_tlas();
+
+	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
@@ -868,6 +1035,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 
 	static_data.cascade_offset = cascade_offset;
 	static_data.cascade_count = cascade_count;
+	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
+	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
 	Shadow_cascade_count = cascade_count;

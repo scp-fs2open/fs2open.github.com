@@ -38,7 +38,7 @@ struct deferred_light_data {
 	float coneInnerAngle;
 
 	vec3d coneDir;
-	float dualCone;
+	int dualCone;
 
 	vec3d scale;
 	float lightRadius;
@@ -144,7 +144,8 @@ const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
 struct shadow_cascade_static_data {
 	int cascade_offset;
 	int cascade_count;
-	float pad[2];
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
 };
 
@@ -231,7 +232,10 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+
+	float hdr_paperwhite_nits;
+	float hdr_peak_nits;
+	float pad[3];
 };
 
 struct smaa_data {
@@ -412,9 +416,15 @@ struct irrmap_data {
 	int face;
 };
 
-struct gamma_blit_data {
+// Final output-encode pass (gamma-correct-f.sdr). The SDR leg uses only `gamma`;
+// the HDR10 leg (SDR_FLAG_GAMMA_HDR10 / HDR10_OUTPUT variant) additionally uses
+// the paper-white and peak nits. `gamma` is field 0 so both legs read it from
+// the same std140 offset.
+struct gamma_encode_data {
 	float gamma;
-	float pad[3];
+	float hdr_paperwhite_nits; // HDR10_OUTPUT only
+	float hdr_peak_nits;       // HDR10_OUTPUT only
+	float pad[1];
 };
 
 } // namespace generic_data

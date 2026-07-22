@@ -170,7 +170,7 @@
        <item>
         <layout class="QGridLayout" name="fileSelectionGridLayout">
          <item row="2" column="2">
-          <widget class="QLineEdit" name="speechFileName">
+          <widget class="QLineEdit" name="speechFilename">
            <property name="text">
             <string/>
            </property>
@@ -248,7 +248,7 @@
           </widget>
          </item>
          <item row="1" column="2">
-          <widget class="QLineEdit" name="animationFileName">
+          <widget class="QLineEdit" name="animationFilename">
            <property name="text">
             <string/>
            </property>
@@ -307,9 +307,9 @@
   <tabstop>actionDeleteStage</tabstop>
   <tabstop>actionCopyToOtherTeams</tabstop>
   <tabstop>actionBriefingTextEditor</tabstop>
-  <tabstop>animationFileName</tabstop>
+  <tabstop>animationFilename</tabstop>
   <tabstop>actionBrowseAnimation</tabstop>
-  <tabstop>speechFileName</tabstop>
+  <tabstop>speechFilename</tabstop>
   <tabstop>actionBrowseSpeechFile</tabstop>
   <tabstop>actionTestSpeechFileButton</tabstop>
   <tabstop>actionLowResolutionFilenameEdit</tabstop>

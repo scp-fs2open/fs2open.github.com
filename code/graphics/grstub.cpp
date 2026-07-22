@@ -28,7 +28,7 @@ uint gr_stub_lock()
 	return 1;
 }
 
-gr_buffer_handle gr_stub_create_buffer(BufferType, BufferUsageHint)
+gr_buffer_handle gr_stub_create_buffer(BufferType, BufferUsageHint, bool)
 {
 	return {};
 }

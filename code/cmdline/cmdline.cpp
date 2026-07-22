@@ -357,6 +357,7 @@ cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
+cmdline_parm rt_shadows_arg("-rt_shadows", nullptr, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
@@ -514,6 +515,7 @@ cmdline_parm deprecated_res_arg("-res", "Deprecated, resolution, formatted like 
 cmdline_parm render_res_arg("-render_res", "Resolution, formatted like 1600x900", AT_STRING);
 cmdline_parm window_res_arg("-window_res", "Window resolution, formatted like 1600x900.", AT_STRING);
 cmdline_parm center_res_arg("-center_res", "Resolution of center monitor, formatted like 1600x900", AT_STRING);
+cmdline_parm hdr_nits_arg("-hdr", "Forces HDR output on, overriding the in-game HDR setting. Optionally takes paper white and peak luminance in nits, formatted like 400,1500, overriding the in-game HDR nits settings.", AT_STRING);
 cmdline_parm verify_vps_arg("-verify_vps", NULL, AT_NONE);	// Cmdline_verify_vps  -- spew VP crcs to vp_crcs.txt
 cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_fso.cfg files", AT_NONE);
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
@@ -528,6 +530,7 @@ cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
+cmdline_parm gr_sync_validation_arg("-gr_sync_validation", nullptr, AT_NONE); // Cmdline_gr_sync_validation (implies -gr_debug)
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
@@ -535,6 +538,7 @@ cmdline_parm luadev_arg("-luadev", "Make lua errors non-fatal", AT_NONE);	// Cmd
 cmdline_parm override_arg("-override_data", "Enable override directory", AT_NONE);	// Cmdline_override_data
 cmdline_parm imgui_debug_arg("-imgui_debug", nullptr, AT_NONE);
 cmdline_parm vulkan("-vulkan", nullptr, AT_NONE);
+cmdline_parm opengl("-opengl", nullptr, AT_NONE);
 cmdline_parm multithreading("-threads", nullptr, AT_INT);
 
 char *Cmdline_start_mission = NULL;
@@ -568,12 +572,13 @@ bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
+bool Cmdline_gr_sync_validation = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
 bool Cmdline_lua_devmode = false;
 bool Cmdline_override_data = false;
 bool Cmdline_show_imgui_debug = false;
-bool Cmdline_vulkan = false;
+GraphicsAPI Cmdline_graphics_api = GraphicsAPI::Default;
 int Cmdline_multithreading = 1;
 
 // Other
@@ -1850,6 +1855,22 @@ bool SetCmdlineParams()
 	if(center_res_arg.found()){
 		Cmdline_center_res = center_res_arg.str();
 	}
+	if (hdr_nits_arg.found()) {
+		// presence of the flag alone forces HDR output on, overriding the in-game HDR setting
+		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true");
+
+		if (hdr_nits_arg.has_param()) {
+			float paperwhite_nits = 0.0f, peak_nits = 0.0f;
+			if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
+				// std::to_string always includes a decimal point, so this is a valid JSON real
+				// (json_unpack's "f" format rejects a bare integer like "400")
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits));
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits));
+			} else {
+				Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
+			}
+		}
+	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();
 		Cmdline_use_last_pilot = 1;
@@ -2272,6 +2293,14 @@ bool SetCmdlineParams()
 		}
 	}
 
+	if( rt_shadows_arg.found() )
+	{
+		// Equivalent to picking "Raytraced" in the Shadow Method option. Silently
+		// has no effect if the renderer/hardware doesn't support
+		// CAPABILITY_RAYTRACED_SHADOWS -- the CSM path is used either way.
+		Shadow_render_method = ShadowRenderMethod::Raytraced;
+	}
+
 	if( no_deferred_lighting_arg.found() )
 	{
 		Cmdline_no_deferred_lighting = 1;
@@ -2335,6 +2364,16 @@ bool SetCmdlineParams()
 		Cmdline_graphics_debug_output = true;
 	}
 
+	if (gr_sync_validation_arg.found()) {
+		// Enables the Vulkan validation layer + debug messenger + synchronization
+		// validation feature (see VulkanRenderer::initializeInstance), but NOT the
+		// engine-level graphics debug output: -gr_debug additionally draws debug
+		// overlays (e.g. output_uniform_debug_data), which are unrelated to GPU
+		// sync validation and would otherwise appear as spurious on-screen
+		// artifacts. Keep this a pure GPU-validation switch.
+		Cmdline_gr_sync_validation = true;
+	}
+
 	if (log_to_stdout_arg.found()) {
 		Cmdline_log_to_stdout = true;
 	}
@@ -2360,7 +2399,10 @@ bool SetCmdlineParams()
 	}
 
 	if (vulkan.found()) {
-		Cmdline_vulkan = true;
+		Cmdline_graphics_api = GraphicsAPI::Vulkan;
+	}
+	else if (opengl.found()) {
+		Cmdline_graphics_api = GraphicsAPI::OpenGL;
 	}
 
 	//Deprecated flags - CommanderDJ

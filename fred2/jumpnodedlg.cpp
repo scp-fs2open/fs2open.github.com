@@ -86,20 +86,18 @@ BOOL jumpnode_dlg::Create()
 void jumpnode_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
-	SCP_list<CJumpNode>::iterator jnp;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
 	clear_menu(m);
 
-	i = 0; 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->GetName());
-		if (jnp->GetSCPObjectNumber() == cur_object_index) {
+	i = 0;
+	for (auto &jnp : Jump_nodes) {
+		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp.GetName());
+		if (jnp.GetSCPObjectNumber() == cur_object_index) {
 			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
 		}
 		i++;
-
 	}
 
 	m->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);

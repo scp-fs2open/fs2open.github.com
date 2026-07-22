@@ -9,6 +9,8 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <QStyle>
+#include <QStyleOptionComboBox>
 
 namespace fso::fred::dialogs {
 ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool editMultiple, int shipID, int wingID)
@@ -16,6 +18,20 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	  _model(new ShipGoalsDialogModel(this, viewport, editMultiple, shipID, wingID)), _viewport(viewport)
 {
 	ui->setupUi(this);
+
+	// Give the Object, Subsys/Docker's Bay, and Dockee's Bay dropdowns a wider
+	// minimum width so long ship/bay names remain readable. Size them to fit a
+	// 32-character string at the current font/DPI, identical across all three.
+	const auto wideComboMinWidth = [](QComboBox* combo) {
+		const int textWidth = combo->fontMetrics().averageCharWidth() * 32;
+		QStyleOptionComboBox opt;
+		opt.initFrom(combo);
+		// Let the style add the dropdown arrow and frame around the text.
+		return combo->style()
+			->sizeFromContents(QStyle::CT_ComboBox, &opt, QSize(textWidth, 0), combo)
+			.width();
+	};
+
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		const int row = i + 1; // row 0 is the header
 
@@ -25,6 +41,10 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 		subsys[i]    = new QComboBox(this);
 		docks[i]     = new QComboBox(this);
 		priority[i]  = new QSpinBox(this);
+
+		objects[i]->setMinimumWidth(wideComboMinWidth(objects[i]));
+		subsys[i]->setMinimumWidth(wideComboMinWidth(subsys[i]));
+		docks[i]->setMinimumWidth(wideComboMinWidth(docks[i]));
 
 		ui->gridLayout->addWidget(orderLabel,   row, 0);
 		ui->gridLayout->addWidget(behaviors[i], row, 1);

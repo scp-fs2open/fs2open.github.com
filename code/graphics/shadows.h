@@ -29,6 +29,56 @@ enum class ShadowQuality { Disabled = 0, Low = 1, Medium = 2, High = 3, Ultra = 
 
 extern ShadowQuality Shadow_quality;
 
+// Which technique is used to render shadows when Shadow_quality != Disabled.
+// Raytraced is only ever selectable when gr_is_capable(CAPABILITY_RAYTRACED_SHADOWS)
+// is true (Vulkan + hardware ray query support) -- see ShadowRenderMethodOption's
+// enumerator in shadows.cpp.
+enum class ShadowRenderMethod { ShadowMap = 0, Raytraced = 1 };
+
+extern ShadowRenderMethod Shadow_render_method;
+
+// Maximum number of directional lights that will cast raytraced shadows in a given frame.
+// Only meaningful when shadows_use_raytracing() is true -- see MaxRtShadowLightsOption's
+// enumerator in shadows.cpp.
+extern int Max_rt_shadow_lights;
+
+// Low: only directional lights cast raytraced shadows (capped by Max_rt_shadow_lights).
+// High: additionally, point/tube/cone lights cast raytraced shadows (capped by
+// Max_rt_shadow_local_lights). See RTShadowQualityOption's enumerator in shadows.cpp.
+enum class RTShadowQuality { Low = 0, High = 1 };
+
+extern RTShadowQuality Rt_shadow_quality;
+
+// Maximum number of point/tube/cone lights that will cast raytraced shadows in a given frame.
+// Independent of Max_rt_shadow_lights (which only counts directional lights). Only meaningful
+// when shadows_use_raytracing() && Rt_shadow_quality == RTShadowQuality::High -- see
+// MaxRtShadowLocalLightsOption's enumerator in shadows.cpp.
+extern int Max_rt_shadow_local_lights;
+
+// World-unit offset applied along the surface normal to the raytraced shadow ray's
+// origin, to avoid self-intersection against the source triangle. Scales with the
+// fragment's distance from the camera between these two bounds -- see
+// computeRtShadowBias() in shadows.sdr -- since geometry close to the camera needs
+// much less offset to clear acne than distant geometry does. Tunable in the in-game
+// options menu (Min/Max Raytraced Shadow Bias) and, for quick iteration, via the
+// LabUi "RT Shadow bias" slider (session-only override, does not touch the option).
+extern float Rt_shadow_bias_min;
+extern float Rt_shadow_bias_max;
+
+// Whether the current hardware/renderer can do anything with ShadowRenderMethod::Raytraced
+// at all (Vulkan + VK_KHR_acceleration_structure + VK_KHR_ray_query support). Independent
+// of which method is currently selected -- use this to decide whether to offer the choice.
+bool shadows_raytracing_supported();
+
+// Whether shading should actually sample the raytraced-shadow TLAS right now, i.e. both
+// the user has selected it AND the hardware supports it. This is the single source of
+// truth for that decision -- gate any new raytraced-shadow shader-flag or resource-binding
+// code on this, not on Shadow_render_method/shadows_raytracing_supported() separately.
+bool shadows_use_raytracing();
+
+// Whether point/tube/cone lights should additionally cast raytraced shadows this frame,
+// i.e. shadows_use_raytracing() is true AND the user has selected RTShadowQuality::High.
+bool shadows_use_raytraced_local_lights();
 
 extern matrix4 Shadow_view_matrix_light;
 extern matrix4 Shadow_view_matrix_render;

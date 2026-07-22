@@ -1177,6 +1177,7 @@ void g3_render_sphere(color *clr, vec3d* position, float radius)
 	material_def.set_blend_mode(ALPHA_BLEND_NONE);
 	material_def.set_depth_mode(ZBUFFER_TYPE_FULL);
 	material_def.set_color(*clr);
+	material_def.set_cull_mode(false);
 
 	gr_sphere(&material_def, radius);
 

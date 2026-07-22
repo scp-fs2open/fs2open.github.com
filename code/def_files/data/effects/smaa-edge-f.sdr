@@ -1,7 +1,13 @@
 
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0) uniform genericData {
+	vec2 smaa_rt_metrics;
+};
+#else
 layout (std140) uniform genericData {
 	vec2 smaa_rt_metrics;
 };
+#endif
 
 #define SMAA_RT_METRICS vec4(1.0 / smaa_rt_metrics, smaa_rt_metrics)
 
@@ -10,12 +16,21 @@ layout (std140) uniform genericData {
 
 #include "SMAA.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 1) in vec4 fragOffset[3];
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(set = 1, binding = 1) uniform sampler2D colorTex;
+#else
 in vec2 fragTexCoord;
 in vec4 fragOffset[3];
 
 out vec4 fragOut0;
 
 uniform sampler2D colorTex;
+#endif
 
 void main() {
 	fragOut0 = vec4(SMAALumaEdgeDetectionPS(fragTexCoord, fragOffset, colorTex), 0.0, 1.0);

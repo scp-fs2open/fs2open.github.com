@@ -575,7 +575,7 @@ in Milliseconds</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="0" colspan="2">
+          <item row="4" column="0" colspan="2">
            <widget class="QPlainTextEdit" name="messageContent">
             <property name="statusTip">
              <string>Message Text</string>
@@ -588,7 +588,7 @@ in Milliseconds</string>
             </property>
            </widget>
           </item>
-          <item row="4" column="0" colspan="2">
+          <item row="2" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_2">
             <property name="spacing">
              <number>0</number>
@@ -734,7 +734,7 @@ in Milliseconds</string>
             </item>
            </layout>
           </item>
-          <item row="2" column="0" colspan="2">
+          <item row="3" column="0" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_3">
             <item>
              <widget class="QLabel" name="label_9">

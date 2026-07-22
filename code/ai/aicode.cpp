@@ -6781,25 +6781,16 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		vec3d pnt = is_primary ? pm->gun_banks[primary_bank].pnt[swp->primary_next_slot[primary_bank]] : pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
 		vec3d firing_point;
 
-		//Following Section taken from ship.cpp ship_fire_secondary()
 		polymodel* weapon_model = nullptr;
 		if (wip->external_model_num >= 0) {
 			weapon_model = model_get(wip->external_model_num);
 		}
 
-		if (weapon_model && weapon_model->n_guns) {
-			int external_bank = is_primary ? primary_bank : secondary_bank + MAX_SHIP_PRIMARY_BANKS;
-			if (wip->wi_flags[Weapon::Info_Flags::External_weapon_fp]) {
-				if ((weapon_model->n_guns <= swp->external_model_fp_counter[external_bank]) || (swp->external_model_fp_counter[external_bank] < 0))
-					swp->external_model_fp_counter[external_bank] = 0;
-				vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[swp->external_model_fp_counter[external_bank]]);
-				swp->external_model_fp_counter[external_bank]++;
-			}
-			else {
-				// make it use the 0 index slot
-				vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[0]);
-			}
-		}
+		// use the same firing point the next shot will use
+		int external_bank = is_primary ? primary_bank : secondary_bank + MAX_SHIP_PRIMARY_BANKS;
+		vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, external_bank, false);
+		vm_vec_add2(&pnt, &external_fp_offset);
+
 		vm_vec_unrotate(&firing_point, &pnt, &firing_ship->orient);
 		vm_vec_add(&start, &firing_point, &firing_ship->pos);
 	}
@@ -15513,8 +15504,13 @@ void ai_frame(int objnum)
 		En_objp = NULL;
 	}
 
-	if (aip->mode == AIM_CHASE) {
-		if (En_objp == NULL) {
+	if (aip->mode == AIM_CHASE || ((The_mission.ai_profile->flags[AI::Profile_Flags::Fix_target_updating_with_strafe]) && aip->mode == AIM_STRAFE)) {
+		// If we're chasing or strafing against large ship but have lost our target, clear the active goal
+		// to ensure ai_process_mission_orders() re-evaluates our orders next frame.
+		// Without this fighter/bomber whose strafe target is destroyed drops to AIM_NONE (see ai_execute_behavior)
+		// with its active_goal still set, so a standing order like attack-any is never re-processed
+		// and the ship slows to zero and remains still until another order is issued.  
+		if (En_objp == nullptr) {
 			aip->active_goal = -1;
 		}
 	}

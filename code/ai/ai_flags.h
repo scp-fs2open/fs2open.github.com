@@ -176,6 +176,7 @@ namespace AI {
 		Dont_limit_change_in_speed_due_to_physics_whack,
 		Guards_ignore_protected_attackers,
 		Fix_standard_strafe,
+		Fix_target_updating_with_strafe,
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Fix_AI_shield_management_bug,

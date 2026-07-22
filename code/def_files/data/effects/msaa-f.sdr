@@ -1,5 +1,27 @@
 #include "z-compress.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
+
+layout(set = 1, binding = 1) uniform sampler2DMS msaaTex[6];
+#define texColor    msaaTex[0]
+#define texPos      msaaTex[1]
+#define texNormal   msaaTex[2]
+#define texSpecular msaaTex[3]
+#define texEmissive msaaTex[4]
+#define texDepth    msaaTex[5]
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	int samples;
+	float fov;
+};
+#else
 in vec4 fragTexCoord;
 out vec4 fragOut0;
 out vec4 fragOut1;
@@ -19,16 +41,19 @@ layout (std140) uniform genericData {
 	int samples;
 	float fov;
 };
+#endif
 
 const float voxelDepth = 2.5f;
 const float voxelDepthFalloff = 2.5f;
 
-#define SORT(a, b) if (a > b) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
+#define SORT(a, b) if (dists[a] > dists[b]) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
 
 //The following sorting networks for median calculation are NOT complete. Calculations that don't affect the
 //median entry are removed, and thus, while the median element is correct, the rest of the array is NOT fully sorted
 
 #ifdef SAMPLES_4
+
+#define SAMPLE_CNT 4
 
 float getMedianDist(ivec2 texel) {
 	float dists[4];
@@ -48,6 +73,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 #ifdef SAMPLES_8
+
+#define SAMPLE_CNT 8
 
 float getMedianDist(ivec2 texel) {
 	float dists[8];
@@ -79,6 +106,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 #ifdef SAMPLES_16
+
+#define SAMPLE_CNT 16
 
 float getMedianDist(ivec2 texel) {
 	float dists[16];
@@ -143,6 +172,8 @@ float getMedianDist(ivec2 texel) {
 
 #else
 
+#define SAMPLE_CNT samples
+
 //Fallback, do front first
 float getMedianDist(ivec2 texel) {
 	float minDist = -1000000;
@@ -160,7 +191,11 @@ float getMedianDist(ivec2 texel) {
 void main()
 {
 	vec2 texSize = textureSize(texColor);
+#ifdef VULKAN
+	ivec2 texel = ivec2(texSize * fragTexCoord);
+#else
 	ivec2 texel = ivec2(texSize * fragTexCoord.xy);
+#endif
 
 	float texelWidthFactor = tan(fov / texSize.y);
 	float dist = getMedianDist(texel);
@@ -173,7 +208,7 @@ void main()
 	vec4 emissive = vec4(0);
 	float depth = 0;
 
-	for(int i = 0; i < samples; i++) {
+	for(int i = 0; i < SAMPLE_CNT; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
 		localPos.z = uncompress_depth_value(localPos.z);
 		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive

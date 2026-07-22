@@ -735,7 +735,8 @@ void obj_delete(int objnum)
 	case OBJ_POINT:
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
-		break;  // requires no further action, handled by jumpnode deconstructor.
+		jumpnode_delete(objp);
+		break;
 	case OBJ_DEBRIS:
 		debris_delete( objp );
 		break;
@@ -1372,8 +1373,12 @@ void obj_move_all_post(object *objp, float frametime)
 
 					light_color.multiply_rgbai(r_mult, g_mult, b_mult, 1.f, intensity_mult);
 
-					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
-						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
+					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f) {
+						// LASER-rendered weapons (the common case: primary bolts) fire far more often
+						// than missiles, so excluding them from raytraced-shadow candidacy is a large,
+						// cheap cut to the number of lights that pass through that selection each frame.
+						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius, wi->render_type == WRT_LASER);
+					}
 				}
 			}
 
@@ -1940,15 +1945,17 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_ASTEROID:
 		asteroid_render(obj, scene);
 		break;
-	case OBJ_JUMP_NODE:
-		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
-			if ( jnp->GetSCPObject() != obj ) {
+	case OBJ_JUMP_NODE: {
+		int objnum = OBJ_INDEX(obj);
+		for ( auto &jnp : Jump_nodes ) {
+			if ( jnp.GetSCPObjectNumber() != objnum ) {
 				continue;
 			}
 
-			jnp->Render(scene, &obj->pos, &Eye_position);
+			jnp.Render(scene, &obj->pos, &Eye_position);
 		}
 		break;
+	}
 	case OBJ_WAYPOINT:
 		// 		if (Show_waypoints)	{
 		// 			gr_set_color( 128, 128, 128 );

@@ -45,6 +45,11 @@ int anchor_to_target(anchor_t anchor);
 
 anchor_t target_to_anchor(int target);
 
+// Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
+// name arrays via wing_name_lookup.  Consolidated from FRED's and qtFRED's
+// previously-duplicated copies.
+void update_custom_wing_indexes();
+
 void generate_weaponry_usage_list_team(int team, int* arr);
 
 void generate_weaponry_usage_list_wing(int wing_num, int* arr);
@@ -58,3 +63,55 @@ void ensure_valid_player_start_shipnum();
 // OBJ_START, demote every other player start to OBJ_SHIP, adjust Player_starts to match,
 // and repoint Player_start_shipnum.  Returns true if anything changed.
 bool set_single_player_start(int objnum);
+
+struct FredShipSlotConfig
+{
+	char (*fred_alt_names)[NAME_LENGTH + 1] = nullptr;
+	char (*fred_callsigns)[NAME_LENGTH + 1] = nullptr;
+
+	int *cur_ship = nullptr;
+};
+
+// Move the ship currently in Ships[from] into Ships[to], updating every
+// back-reference (Objects, Ai_info, Wings, Player_start_shipnum, Ship_registry,
+// and editor-side fields supplied via cfg).  Leaves Ships[from] empty.
+// Preconditions: from != to, Ships[from].objnum >= 0, Ships[to].objnum < 0.
+// No caller may hold a ship* to either slot across this call.
+// Fields in cfg whose pointers are nullptr are skipped.
+void reassign_ship_slot(int from, int to, const FredShipSlotConfig& cfg, bool resort_obj_list = true);
+
+// Swap the contents of two slots.  Both must be valid (Ships[a].objnum >= 0
+// and Ships[b].objnum >= 0).  Implemented as three calls to reassign_ship_slot
+// via a temporary empty slot.
+void swap_ship_slots(int a, int b, const FredShipSlotConfig& cfg);
+
+// Move the item at position from_pos in slots to position to_pos, shifting the
+// items in between by one position.
+void rotate_ship_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredShipSlotConfig& cfg);
+
+struct FredWingSlotConfig
+{
+	int (*wing_objects)[MAX_SHIPS_PER_WING] = nullptr;
+	int *cur_wing = nullptr;
+};
+
+// Move the wing currently in Wings[from] into Wings[to], updating every
+// back-reference (Ships[i].wingnum, Starting/Squadron/TVT_wings caches, and
+// editor-side fields supplied via cfg).  Leaves Wings[from] empty.
+// Preconditions: from != to, Wings[from].wave_count > 0, Wings[to].wave_count == 0.
+// No caller may hold a wing* to either slot across this call.
+// Fields in cfg whose pointers are nullptr are skipped.
+void reassign_wing_slot(int from, int to, const FredWingSlotConfig& cfg, bool update_wing_indexes = true);
+
+// Swap the contents of two slots.  Both must be valid (Wings[a].wave_count > 0
+// and Wings[b].wave_count > 0).  Implemented as three calls to
+// reassign_wing_slot via a temporary empty slot.
+void swap_wing_slots(int a, int b, const FredWingSlotConfig& cfg);
+
+// Move the item at position from_pos in slots to position to_pos, shifting the
+// items in between by one position.
+void rotate_wing_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredWingSlotConfig& cfg);
+
+// Restore the obj_used_list invariant for the OBJ_SHIP/OBJ_START subset:
+// among ship-type entries, list order matches Ships[] index order.
+void resort_ships_in_obj_used_list();

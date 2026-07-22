@@ -19,6 +19,7 @@
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
+#include <cmdline/cmdline.h>
 #include <debris/debris.h>
 #include <freespace.h>
 #include <globalincs/systemvars.h>

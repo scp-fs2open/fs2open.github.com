@@ -886,6 +886,11 @@ void MissionEventsDialog::on_btnNewMsg_clicked()
 
 	rebuildMessageList();
 	updateMessageUi();
+
+	// Let the user name the new message right away: focus the name field and
+	// select its placeholder text so typing immediately replaces it.
+	ui->messageName->setFocus();
+	ui->messageName->selectAll();
 }
 
 void MissionEventsDialog::on_btnInsertMsg_clicked()
@@ -903,6 +908,11 @@ void MissionEventsDialog::on_btnInsertMsg_clicked()
 			w->scrollToItem(it);
 	}
 	updateMessageUi();
+
+	// Let the user name the new message right away: focus the name field and
+	// select its placeholder text so typing immediately replaces it.
+	ui->messageName->setFocus();
+	ui->messageName->selectAll();
 }
 
 void MissionEventsDialog::on_btnDeleteMsg_clicked()

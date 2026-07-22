@@ -1,0 +1,855 @@
+#include "VulkanBuffer.h"
+#include "VulkanDeletionQueue.h"
+#include "VulkanDraw.h"
+
+#include "globalincs/pstypes.h"
+
+
+namespace graphics::vulkan {
+
+namespace {
+VulkanBufferManager* g_bufferManager = nullptr;
+}
+
+VulkanBufferManager* getBufferManager()
+{
+	Assertion(g_bufferManager != nullptr, "Vulkan BufferManager not initialized!");
+	return g_bufferManager;
+}
+
+void setBufferManager(VulkanBufferManager* manager)
+{
+	g_bufferManager = manager;
+}
+
+VulkanBufferManager::VulkanBufferManager() = default;
+
+VulkanBufferManager::~VulkanBufferManager()
+{
+	if (m_initialized) {
+		shutdown();
+	}
+}
+
+bool VulkanBufferManager::createOneShotBuffer(vk::Flags<vk::BufferUsageFlagBits> usage, const void* data, size_t size, vk::Buffer& buf, VulkanAllocation& alloc) const
+{
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	try {
+		buf = m_device.createBuffer(bufferInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "Failed to create buffer: %s\n", e.what()));
+		return false;
+	}
+
+	if (!m_memoryManager->allocateBufferMemory(buf, MemoryUsage::CpuToGpu, alloc)) {
+		m_device.destroyBuffer(buf);
+		buf = nullptr;
+		nprintf(("vulkan", "Failed to allocate buffer memory!\n"));
+		return false;
+	}
+
+	void* mapped = m_memoryManager->mapMemory(alloc);
+	if (mapped) {
+		memcpy(mapped, data, size);
+		m_memoryManager->flushMemory(alloc, 0, size);
+		m_memoryManager->unmapMemory(alloc);
+	} else {
+		m_memoryManager->freeAllocation(alloc);
+		m_device.destroyBuffer(buf);
+		buf = nullptr;
+
+		nprintf(("vulkan", "Failed to map buffer memory!\n"));
+		return false;
+	}
+	return true;
+}
+
+// ========== Frame bump allocator ==========
+
+bool VulkanBufferManager::createFrameAllocBuffer(FrameBumpAllocator& alloc, size_t size)
+{
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = vk::BufferUsageFlagBits::eVertexBuffer
+	                 | vk::BufferUsageFlagBits::eIndexBuffer
+	                 | vk::BufferUsageFlagBits::eUniformBuffer
+	                 | vk::BufferUsageFlagBits::eStorageBuffer
+	                 | vk::BufferUsageFlagBits::eTransferDst;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	try {
+		alloc.buffer = m_device.createBuffer(bufferInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "Failed to create frame allocator buffer: %s\n", e.what()));
+		return false;
+	}
+
+	if (!m_memoryManager->allocateBufferMemory(alloc.buffer, MemoryUsage::CpuToGpu, alloc.allocation)) {
+		m_device.destroyBuffer(alloc.buffer);
+		alloc.buffer = nullptr;
+		nprintf(("vulkan", "Failed to allocate frame allocator buffer memory!\n"));
+		return false;
+	}
+
+	alloc.mappedPtr = m_memoryManager->mapMemory(alloc.allocation);
+	if (!alloc.mappedPtr) {
+		m_memoryManager->freeAllocation(alloc.allocation);
+		m_device.destroyBuffer(alloc.buffer);
+		alloc.buffer = nullptr;
+		alloc.allocation = {};
+		nprintf(("vulkan", "Failed to map frame allocator buffer!\n"));
+		return false;
+	}
+
+	alloc.capacity = size;
+	alloc.cursor = 0;
+	return true;
+}
+
+void VulkanBufferManager::initFrameAllocators()
+{
+	for (auto & m_frameAlloc : m_frameAllocs) {
+		Verification(createFrameAllocBuffer(m_frameAlloc, FRAME_ALLOC_INITIAL_SIZE),
+			"Failed to create Vulkan frame-allocator buffer during initialization");
+	}
+	nprintf(("vulkan", "Frame bump allocators initialized: %u x %zuKB\n",
+		MAX_FRAMES_IN_FLIGHT, FRAME_ALLOC_INITIAL_SIZE / 1024));
+}
+
+void VulkanBufferManager::shutdownFrameAllocators()
+{
+	for (auto & alloc : m_frameAllocs) {
+			if (alloc.mappedPtr) {
+			m_memoryManager->unmapMemory(alloc.allocation);
+			alloc.mappedPtr = nullptr;
+		}
+		if (alloc.buffer) {
+			m_device.destroyBuffer(alloc.buffer);
+			alloc.buffer = nullptr;
+		}
+		if (alloc.allocation.isValid()) {
+			m_memoryManager->freeAllocation(alloc.allocation);
+			alloc.allocation = {};
+		}
+		alloc.capacity = 0;
+		alloc.cursor = 0;
+	}
+}
+
+size_t VulkanBufferManager::bumpAllocate(size_t size)
+{
+	auto& alloc = m_frameAllocs[m_currentFrame];
+
+	// Align cursor up to UBO alignment (satisfies UBO/SSBO/vertex alignment)
+	size_t alignedOffset = (alloc.cursor + m_uboAlignment - 1) & ~(static_cast<size_t>(m_uboAlignment) - 1);
+
+	if (alignedOffset + size > alloc.capacity) {
+		growFrameAllocator();
+		// After growth, cursor is 0 so alignedOffset is 0
+		alignedOffset = 0;
+		Assertion(size <= alloc.capacity, "Frame allocator growth failed to provide enough capacity");
+	}
+
+	alloc.cursor = alignedOffset + size;
+	return alignedOffset;
+}
+
+void VulkanBufferManager::growFrameAllocator()
+{
+	auto& alloc = m_frameAllocs[m_currentFrame];
+
+	// Double capacity until sufficient
+	size_t newCapacity = alloc.capacity > 0 ? alloc.capacity * 2 : FRAME_ALLOC_INITIAL_SIZE;
+	// Ensure at least the current cursor position can fit (handles pathological single-alloc case)
+	while (newCapacity < alloc.cursor) {
+		newCapacity *= 2;
+	}
+
+	nprintf(("vulkan", "Growing frame allocator %u: %zuKB -> %zuKB\n",
+		m_currentFrame, alloc.capacity / 1024, newCapacity / 1024));
+
+	// Queue old buffer for deferred destruction - the deletion queue's FRAMES_TO_WAIT=2
+	// ensures the old buffer survives through current frame's GPU execution.
+	// Existing handles with frameAllocBuffer pointing to the old buffer remain valid.
+	auto* deletionQueue = getDeletionQueue();
+	if (alloc.mappedPtr) {
+		m_memoryManager->unmapMemory(alloc.allocation);
+	}
+	deletionQueue->queueBuffer(alloc.buffer, alloc.allocation);
+
+	// Create new buffer
+	alloc = {};
+	Verification(createFrameAllocBuffer(alloc, newCapacity), "Failed to grow Vulkan frame-allocator buffer");
+}
+
+// ========== Init / Shutdown ==========
+
+bool VulkanBufferManager::init(vk::Device device,
+                               VulkanMemoryManager* memoryManager,
+                               uint32_t graphicsQueueFamily,
+                               uint32_t minUboAlignment)
+{
+	if (m_initialized) {
+		nprintf(("vulkan", "VulkanBufferManager::init called when already initialized!\n"));
+		return false;
+	}
+
+	if (!device || !memoryManager) {
+		nprintf(("vulkan", "VulkanBufferManager::init called with null device or memory manager!\n"));
+		return false;
+	}
+
+	m_device = device;
+	m_memoryManager = memoryManager;
+	m_graphicsQueueFamily = graphicsQueueFamily;
+	m_currentFrame = 0;
+	m_uboAlignment = minUboAlignment > 0 ? minUboAlignment : 256;
+
+	// Create fallback color buffer with white (1,1,1,1) for shaders expecting vertColor
+	std::array<float, 4> whiteColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, whiteColor.data(), sizeof(whiteColor), m_fallbackColorBuffer, m_fallbackColorAllocation)) {
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback color buffer\n"));
+		return false;
+	}
+
+	std::array<float, 4> zeroTexCoord = { 0.0f, 0.0f, 0.0f, 0.0f };
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst, zeroTexCoord.data(), sizeof(zeroTexCoord), m_fallbackTexCoordBuffer, m_fallbackTexCoordAllocation)) {
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback texcoord buffer\n"));
+		return false;
+	}
+
+	// Create fallback uniform buffer (zeros) for uninitialized descriptor set bindings
+	// Without this, descriptor set UBO bindings left unwritten after pool reset
+	// contain undefined data, causing intermittent rendering failures
+	std::array<float, FALLBACK_UNIFORM_BUFFER_SIZE> dummy_ubo = {};
+	if (!createOneShotBuffer(vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eStorageBuffer, dummy_ubo.data(), sizeof(dummy_ubo), m_fallbackUniformBuffer, m_fallbackUniformAllocation)) {
+		nprintf(("vulkan", "VulkanBufferManager::init could not create fallback uniform buffer\n"));
+		return false;
+	}
+
+	initFrameAllocators();
+
+	m_initialized = true;
+	nprintf(("vulkan", "Vulkan Buffer Manager initialized (frame bump allocator, UBO alignment=%u, %u frames)\n",
+		m_uboAlignment, MAX_FRAMES_IN_FLIGHT));
+	return true;
+}
+
+void VulkanBufferManager::shutdown()
+{
+	if (!m_initialized) {
+		return;
+	}
+
+	// Destroy fallback color buffer
+	if (m_fallbackColorBuffer) {
+		m_device.destroyBuffer(m_fallbackColorBuffer);
+		m_fallbackColorBuffer = nullptr;
+	}
+	if (m_fallbackColorAllocation.isValid()) {
+		m_memoryManager->freeAllocation(m_fallbackColorAllocation);
+		m_fallbackColorAllocation = {};
+	}
+
+	// Destroy fallback texcoord buffer
+	if (m_fallbackTexCoordBuffer) {
+		m_device.destroyBuffer(m_fallbackTexCoordBuffer);
+		m_fallbackTexCoordBuffer = nullptr;
+	}
+	if (m_fallbackTexCoordAllocation.isValid()) {
+		m_memoryManager->freeAllocation(m_fallbackTexCoordAllocation);
+		m_fallbackTexCoordAllocation = {};
+	}
+
+	// Destroy fallback uniform buffer
+	if (m_fallbackUniformBuffer) {
+		m_device.destroyBuffer(m_fallbackUniformBuffer);
+		m_fallbackUniformBuffer = nullptr;
+	}
+	if (m_fallbackUniformAllocation.isValid()) {
+		m_memoryManager->freeAllocation(m_fallbackUniformAllocation);
+		m_fallbackUniformAllocation = {};
+	}
+
+	// Free all remaining static buffers
+	for (auto& bufferObj : m_buffers) {
+		if (bufferObj.valid) {
+			if (!bufferObj.isStreaming() && bufferObj.buffer) {
+				m_device.destroyBuffer(bufferObj.buffer);
+			}
+			if (!bufferObj.isStreaming() && bufferObj.allocation.isValid()) {
+				m_memoryManager->freeAllocation(bufferObj.allocation);
+			}
+			bufferObj.valid = false;
+		}
+	}
+
+	shutdownFrameAllocators();
+
+	m_buffers.clear();
+	m_freeIndices.clear();
+	m_activeBufferCount = 0;
+	m_totalBufferMemory = 0;
+	m_initialized = false;
+
+	nprintf(("vulkan", "Vulkan Buffer Manager shutdown\n"));
+}
+
+void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex, uint64_t frameNumber)
+{
+	m_currentFrame = frameIndex % MAX_FRAMES_IN_FLIGHT;
+	m_currentFrameNumber = frameNumber;
+	// Reset bump cursor — safe because the GPU fence for this frame-in-flight
+	// was already waited on before setCurrentFrame is called.
+	m_frameAllocs[m_currentFrame].cursor = 0;
+}
+
+// ========== Buffer usage / memory helpers ==========
+
+vk::BufferUsageFlags VulkanBufferManager::getVkUsageFlags(BufferType type, bool rtCapable)
+{
+	vk::BufferUsageFlags flags = vk::BufferUsageFlagBits::eTransferDst;
+
+	switch (type) {
+	case BufferType::Vertex:
+		flags |= vk::BufferUsageFlagBits::eVertexBuffer;
+		break;
+	case BufferType::Index:
+		flags |= vk::BufferUsageFlagBits::eIndexBuffer;
+		break;
+	case BufferType::Uniform:
+		flags |= vk::BufferUsageFlagBits::eUniformBuffer;
+		break;
+	}
+
+	if (rtCapable) {
+		// Required to use this buffer as acceleration structure geometry input
+		// and to query its device address. Only valid if the VMA allocator was
+		// created with VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT (see
+		// VulkanMemoryManager::init), which is only true when
+		// CAPABILITY_RAYTRACED_SHADOWS was negotiated as supported.
+		flags |= vk::BufferUsageFlagBits::eShaderDeviceAddress |
+			vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+	}
+
+	return flags;
+}
+
+MemoryUsage VulkanBufferManager::getMemoryUsage(BufferUsageHint hint) 
+{
+	switch (hint) {
+	case BufferUsageHint::Static:
+		// Static data goes to device-local memory for best GPU performance
+		// For simplicity, we use CpuToGpu which allows host writes
+		// A more optimized path would use staging buffers for truly static data
+		return MemoryUsage::CpuToGpu;
+
+	case BufferUsageHint::Dynamic:
+	case BufferUsageHint::Streaming:
+		// Frequently updated data needs to be host visible
+		return MemoryUsage::CpuToGpu;
+
+	case BufferUsageHint::PersistentMapping:
+		// Persistent mapping requires host visible memory
+		return MemoryUsage::CpuOnly;
+
+	default:
+		return MemoryUsage::CpuToGpu;
+	}
+}
+
+// ========== Buffer create / delete ==========
+
+gr_buffer_handle VulkanBufferManager::createBuffer(BufferType type, BufferUsageHint usage, bool rtCapable)
+{
+	Assert(m_initialized);
+
+	VulkanBufferObject bufferObj;
+	bufferObj.type = type;
+	bufferObj.usage = usage;
+	bufferObj.rtCapable = rtCapable;
+	bufferObj.valid = true;
+	// Note: actual buffer creation is deferred until data is uploaded
+
+	int index;
+	if (!m_freeIndices.empty()) {
+		// Reuse a freed slot
+		index = m_freeIndices.back();
+		m_freeIndices.pop_back();
+		m_buffers[index] = bufferObj;
+	} else {
+		// Add new slot
+		index = static_cast<int>(m_buffers.size());
+		m_buffers.push_back(bufferObj);
+	}
+
+	++m_activeBufferCount;
+	return gr_buffer_handle(index);
+}
+
+void VulkanBufferManager::deleteBuffer(gr_buffer_handle handle)
+{
+	Assert(m_initialized && isValidHandle(handle));
+
+	VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	Assert(bufferObj.valid);
+
+	if (!bufferObj.isStreaming()) {
+		// Queue static buffer for deferred destruction
+		auto* deletionQueue = getDeletionQueue();
+		if (bufferObj.buffer) {
+			deletionQueue->queueBuffer(bufferObj.buffer, bufferObj.allocation);
+			m_totalBufferMemory -= bufferObj.dataSize;
+		}
+		bufferObj.buffer = nullptr;
+		bufferObj.allocation = {};
+		bufferObj.dataSize = 0;
+	} else {
+		// Streaming buffers have no per-buffer resources — just mark invalid
+	}
+
+	--m_activeBufferCount;
+	bufferObj.valid = false;
+
+	// Add to free list for reuse
+	m_freeIndices.push_back(handle.value());
+}
+
+// ========== createOrResizeBuffer (static only) ==========
+
+bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, size_t size)
+{
+	Assertion(!bufferObj.isStreaming(), "createOrResizeBuffer called on streaming buffer!");
+
+	// If buffer exists and is large enough, no-op
+	if (bufferObj.buffer && bufferObj.dataSize >= size) {
+		return true;
+	}
+
+	// Save old buffer info for data copy
+	vk::Buffer oldBuffer = bufferObj.buffer;
+	VulkanAllocation oldAllocation = bufferObj.allocation;
+	size_t oldDataSize = bufferObj.dataSize;
+
+	// Create new buffer
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = getVkUsageFlags(bufferObj.type, bufferObj.rtCapable);
+
+	// Exclusive sharing: all buffer access happens on the graphics queue (there
+	// is no separate transfer queue). Reintroducing async transfer would require
+	// eConcurrent here (or explicit queue-family ownership transfers).
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	try {
+		bufferObj.buffer = m_device.createBuffer(bufferInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "Failed to create Vulkan buffer: %s\n", e.what()));
+		bufferObj.buffer = oldBuffer;
+		return false;
+	}
+
+	// Allocate memory
+	MemoryUsage memUsage = getMemoryUsage(bufferObj.usage);
+	if (!m_memoryManager->allocateBufferMemory(bufferObj.buffer, memUsage, bufferObj.allocation)) {
+		m_device.destroyBuffer(bufferObj.buffer);
+		bufferObj.buffer = oldBuffer;
+		bufferObj.allocation = oldAllocation;
+		return false;
+	}
+
+	// Preserve existing contents across the grow.
+	//
+	// This is intentionally a CPU-side copy across two host mappings, not a
+	// GPU-side vkCmdCopyBuffer. It is correct here because everything reaching
+	// createOrResizeBuffer is a static buffer, and getMemoryUsage() maps static
+	// usage to CpuToGpu (host-visible) memory — so both allocations are always
+	// mappable (the Asserts below cannot trip on this path) and their contents
+	// are CPU-authored, meaning the CPU already holds the authoritative bytes.
+	// Resize is grow-only (see the size check above), so this one-time copy is
+	// amortized. A device-local-only (GpuOnly) buffer could not be mapped and
+	// would require a vkCmdCopyBuffer with command-buffer synchronization; if
+	// such a usage is ever routed here, the Assert(oldMapped) will fire loudly
+	// rather than silently corrupting.
+	if (oldBuffer && oldDataSize > 0) {
+		void* oldMapped = m_memoryManager->mapMemory(oldAllocation);
+		void* newMapped = m_memoryManager->mapMemory(bufferObj.allocation);
+		Assert(oldMapped);
+		Assert(newMapped);
+
+		size_t copySize = std::min(oldDataSize, size);
+		// Mirror the post-write flush below: on non-coherent memory the source
+		// must be invalidated before the CPU reads it. This is a no-op on the
+		// coherent, CPU-authored buffers this path handles today, kept for
+		// correctness-by-construction if a non-coherent usage is ever added.
+		m_memoryManager->invalidateMemory(oldAllocation, 0, copySize);
+		memcpy(newMapped, oldMapped, copySize);
+		m_memoryManager->flushMemory(bufferObj.allocation, 0, copySize);
+
+		m_memoryManager->unmapMemory(oldAllocation);
+		m_memoryManager->unmapMemory(bufferObj.allocation);
+	}
+
+	// Queue old buffer for deferred destruction
+	if (oldBuffer) {
+		auto* deletionQueue = getDeletionQueue();
+		deletionQueue->queueBuffer(oldBuffer, oldAllocation);
+		m_totalBufferMemory -= oldDataSize;
+	}
+
+	bufferObj.dataSize = size;
+	m_totalBufferMemory += size;
+
+	// A new VkBuffer was created above (and thus a new device address, if
+	// rtCapable) -- bump the generation so cached-address consumers can
+	// detect staleness.
+	++bufferObj.generation;
+
+	return true;
+}
+
+// ========== Buffer data updates ==========
+
+void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size, const void* data)
+{
+	Assert(m_initialized && isValidHandle(handle));
+
+	if (size == 0) {
+		nprintf(("vulkan", "WARNING: updateBufferData called with size 0\n"));
+		return;
+	}
+
+	VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	Assert(bufferObj.valid);
+
+	if (bufferObj.isStreaming()) {
+		auto& alloc = m_frameAllocs[m_currentFrame];
+
+		if (data) {
+			// Pattern A: full replacement — allocate and copy
+			size_t offset = bumpAllocate(size);
+			memcpy(static_cast<uint8_t*>(alloc.mappedPtr) + offset, data, size);
+			m_memoryManager->flushMemory(alloc.allocation, offset, size);
+
+			bufferObj.frameAllocBuffer = alloc.buffer;
+			bufferObj.frameAllocOffset = offset;
+			bufferObj.dataSize = size;
+			bufferObj.frameAllocFrame = m_currentFrame;
+		} else {
+			// Pattern B: pre-alloc for offset writes (null data)
+			if (bufferObj.frameAllocFrame != m_currentFrame || size > bufferObj.dataSize) {
+				// First allocation this frame, or need more space
+				size_t offset = bumpAllocate(size);
+				bufferObj.frameAllocBuffer = alloc.buffer;
+				bufferObj.frameAllocOffset = offset;
+				bufferObj.dataSize = size;
+				bufferObj.frameAllocFrame = m_currentFrame;
+			}
+			// Otherwise: same frame and size fits — keep current allocation
+		}
+	} else {
+		// Static / PersistentMapping path.
+		//
+		// A full-content rewrite of a buffer the GPU may still be reading from an
+		// in-flight frame must not write the host-visible memory in place -- host
+		// writes are not synchronized against already-queued GPU reads. Orphan
+		// instead: defer the old VkBuffer to the deletion queue and write into a
+		// fresh one. Draws recorded afterwards pick up the new handle via
+		// getVkBuffer(); frames already using the old handle keep reading intact
+		// data until the deletion queue retires it.
+		//
+		// Offset writes (updateBufferDataOffset) intentionally do NOT orphan:
+		// their dominant caller is the GPU heap appending freshly-allocated,
+		// never-yet-drawn regions at model page-in, which is safe in place.
+		//
+		// PersistentMapping buffers are also exempt: the engine holds their
+		// mapped pointer long-term (mapBuffer) and synchronizes reuse itself
+		// via gr_sync fences, so swapping the VkBuffer underneath would leave
+		// the caller writing into the orphaned allocation.
+		if (data != nullptr && bufferObj.buffer && bufferObj.usage == BufferUsageHint::Static &&
+			m_currentFrameNumber < bufferObj.lastUsedFrameNumber + MAX_FRAMES_IN_FLIGHT) {
+			auto* deletionQueue = getDeletionQueue();
+			deletionQueue->queueBuffer(bufferObj.buffer, bufferObj.allocation);
+			m_totalBufferMemory -= bufferObj.dataSize;
+			bufferObj.buffer = nullptr;
+			bufferObj.allocation = {};
+			bufferObj.dataSize = 0;
+		}
+
+		Verification(createOrResizeBuffer(bufferObj, size), "Failed to create or resize Vulkan buffer");
+
+		// A null data pointer just allocates/resizes the buffer without writing
+		if (data) {
+			void* mapped = m_memoryManager->mapMemory(bufferObj.allocation);
+			Assert(mapped);
+			memcpy(mapped, data, size);
+			m_memoryManager->flushMemory(bufferObj.allocation, 0, size);
+			m_memoryManager->unmapMemory(bufferObj.allocation);
+		}
+	}
+}
+
+void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
+{
+	Assert(m_initialized && isValidHandle(handle));
+
+	VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	Assert(bufferObj.valid);
+
+	if (bufferObj.isStreaming()) {
+		// Auto-allocate if not yet allocated this frame.  This happens when
+		// the caller skips updateBufferData (e.g. gr_add_to_immediate_buffer
+		// when the data fits the existing buffer size).
+		if (bufferObj.frameAllocFrame != m_currentFrame) {
+			size_t allocSize = std::max(bufferObj.dataSize, offset + size);
+			Assert(allocSize > 0);
+			auto& fa = m_frameAllocs[m_currentFrame];
+			size_t allocOffset = bumpAllocate(allocSize);
+			bufferObj.frameAllocBuffer = fa.buffer;
+			bufferObj.frameAllocOffset = allocOffset;
+			bufferObj.dataSize = allocSize;
+			bufferObj.frameAllocFrame = m_currentFrame;
+		}
+
+		Assert(offset + size <= bufferObj.dataSize);
+
+		auto& alloc = m_frameAllocs[m_currentFrame];
+		size_t totalOffset = bufferObj.frameAllocOffset + offset;
+		memcpy(static_cast<uint8_t*>(alloc.mappedPtr) + totalOffset, data, size);
+		m_memoryManager->flushMemory(alloc.allocation, totalOffset, size);
+	} else {
+		// Static path
+		Assert(bufferObj.buffer);
+		Assert(offset + size <= bufferObj.dataSize);
+
+		// Map, update region, and unmap
+		void* mapped = m_memoryManager->mapMemory(bufferObj.allocation);
+		Assert(mapped);
+		memcpy(static_cast<uint8_t*>(mapped) + offset, data, size);
+		m_memoryManager->flushMemory(bufferObj.allocation, offset, size);
+		m_memoryManager->unmapMemory(bufferObj.allocation);
+	}
+}
+
+// ========== Map / Flush ==========
+
+void* VulkanBufferManager::mapBuffer(gr_buffer_handle handle)
+{
+	if (!m_initialized || !isValidHandle(handle)) {
+		return nullptr;
+	}
+
+	VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return nullptr;
+	}
+
+	if (bufferObj.isStreaming()) {
+		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		auto& alloc = m_frameAllocs[m_currentFrame];
+		return static_cast<uint8_t*>(alloc.mappedPtr) + bufferObj.frameAllocOffset;
+	}
+
+	// Static / PersistentMapping
+	if (!bufferObj.buffer) {
+		return nullptr;
+	}
+
+	// Only persistent mapping buffers should stay mapped
+	if (bufferObj.usage != BufferUsageHint::PersistentMapping) {
+		nprintf(("vulkan", "WARNING: mapBuffer called on non-persistent buffer\n"));
+	}
+
+	// Map the entire buffer
+	void* mapped = m_memoryManager->mapMemory(bufferObj.allocation);
+	return mapped;
+}
+
+void VulkanBufferManager::flushMappedBuffer(gr_buffer_handle handle, size_t offset, size_t size)
+{
+	Assert(m_initialized && isValidHandle(handle));
+
+	VulkanBufferObject const& bufferObj = m_buffers[handle.value()];
+	Assert(bufferObj.valid);
+
+	if (bufferObj.isStreaming()) {
+		// Adjust offset for current frame's allocation
+		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		auto& alloc = m_frameAllocs[m_currentFrame];
+		m_memoryManager->flushMemory(alloc.allocation, bufferObj.frameAllocOffset + offset, size);
+	} else {
+		m_memoryManager->flushMemory(bufferObj.allocation, offset, size);
+	}
+}
+
+// ========== Uniform buffer binding ==========
+
+void VulkanBufferManager::bindUniformBuffer(uniform_block_type blockType, size_t offset, size_t size, gr_buffer_handle buffer) const
+{
+	// Resolve the full offset NOW (frame base + caller offset) so the binding
+	// captures the correct allocation. The vk::Buffer is still looked up at
+	// draw time (via handle) to survive buffer recreation.
+	size_t resolvedOffset = getFrameBaseOffset(buffer) + offset;
+
+	auto* drawManager = getDrawManager();
+	drawManager->setPendingUniformBinding(blockType, buffer,
+	                                       static_cast<vk::DeviceSize>(resolvedOffset),
+	                                       static_cast<vk::DeviceSize>(size));
+}
+
+// ========== Buffer queries ==========
+
+vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return nullptr;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return nullptr;
+	}
+
+	if (bufferObj.isStreaming()) {
+		// Streaming buffers return the frame allocator buffer they were uploaded to
+		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		return bufferObj.frameAllocBuffer;
+	} else {
+		// Record that this frame (potentially) references the buffer -- consulted
+		// by updateBufferData() to decide whether a rewrite must orphan.
+		bufferObj.lastUsedFrameNumber = m_currentFrameNumber;
+		return bufferObj.buffer;
+	}
+}
+
+size_t VulkanBufferManager::getBufferSize(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return 0;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return 0;
+	}
+
+	return bufferObj.dataSize;
+}
+
+uint64_t VulkanBufferManager::getBufferGeneration(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return 0;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return 0;
+	}
+
+	return bufferObj.generation;
+}
+
+size_t VulkanBufferManager::getFrameBaseOffset(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return 0;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return 0;
+	}
+
+	if (bufferObj.isStreaming()) {
+		// Return the bump allocator offset for the most recent upload this frame.
+		// Stale handle detection: if frameAllocFrame != m_currentFrame, this buffer
+		// was not uploaded this frame and the offset would be meaningless (the bump
+		// allocator has been reset). This indicates a buffer marked Streaming/Dynamic
+		// is being bound for rendering without being uploaded first.
+		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		return bufferObj.frameAllocOffset;
+	} else {
+		return 0;
+	}
+}
+
+bool VulkanBufferManager::isValidHandle(gr_buffer_handle handle) const
+{
+	if (!handle.isValid()) {
+		return false;
+	}
+	if (static_cast<size_t>(handle.value()) >= m_buffers.size()) {
+		return false;
+	}
+	return m_buffers[handle.value()].valid;
+}
+
+VulkanBufferObject* VulkanBufferManager::getBufferObject(gr_buffer_handle handle)
+{
+	if (!isValidHandle(handle)) {
+		return nullptr;
+	}
+	return &m_buffers[handle.value()];
+}
+
+const VulkanBufferObject* VulkanBufferManager::getBufferObject(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return nullptr;
+	}
+	return &m_buffers[handle.value()];
+}
+
+// ========== gr_screen function pointer implementations ==========
+
+gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable)
+{
+	auto* bufferManager = getBufferManager();
+	return bufferManager->createBuffer(type, usage, rt_capable);
+}
+
+void vulkan_delete_buffer(gr_buffer_handle handle)
+{
+	auto* bufferManager = getBufferManager();
+	bufferManager->deleteBuffer(handle);
+}
+
+void vulkan_update_buffer_data(gr_buffer_handle handle, size_t size, const void* data)
+{
+	auto* bufferManager = getBufferManager();
+	bufferManager->updateBufferData(handle, size, data);
+}
+
+void vulkan_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
+{
+	auto* bufferManager = getBufferManager();
+	bufferManager->updateBufferDataOffset(handle, offset, size, data);
+}
+
+void* vulkan_map_buffer(gr_buffer_handle handle)
+{
+	auto* bufferManager = getBufferManager();
+	void* result = bufferManager->mapBuffer(handle);
+	Assert(result);
+	return result;
+}
+
+void vulkan_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size)
+{
+	auto* bufferManager = getBufferManager();
+	bufferManager->flushMappedBuffer(handle, offset, size);
+}
+
+void vulkan_bind_uniform_buffer(uniform_block_type blockType, size_t offset, size_t size, gr_buffer_handle buffer)
+{
+	auto* bufferManager = getBufferManager();
+	bufferManager->bindUniformBuffer(blockType, offset, size, buffer);
+}
+
+} // namespace graphics::vulkan
+
