@@ -181,11 +181,11 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 				header += temp;
 			}
 		}
-	} else if (sdrType == SDR_TYPE_POST_PROCESS_FXAA) {
+	} else if (gr_is_fxaa_mode(Gr_aa_mode) && sdrType == SDR_TYPE_POST_PROCESS_FXAA) {
 		// GLSL 450 always has textureGather
 		header += shader_get_fxaa_defines(Gr_aa_mode, true);
-	} else if (sdrType == SDR_TYPE_POST_PROCESS_SMAA_EDGE || sdrType == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
-	           sdrType == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING) {
+	} else if (gr_is_smaa_mode(Gr_aa_mode) && (sdrType == SDR_TYPE_POST_PROCESS_SMAA_EDGE || sdrType == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
+	           sdrType == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING)) {
 		// GLSL 450 always has textureGather
 		header += shader_get_smaa_defines(Gr_aa_mode, true);
 	} else {

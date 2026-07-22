@@ -362,14 +362,38 @@ void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 			nullptr, 0);
 	}
 
-	// FXAA main pass: Scene_luminance → Scene_ldr
+	// The FXAA main pass discards non-edge fragments (FXAA_DISCARD), so those
+	// pixels must keep the tonemapped image already sitting in Scene_ldr. That
+	// requires a load-preserving render pass (loadOp=eLoad) — with the default
+	// eDontCare/eUndefined pass the discarded pixels are left undefined, which
+	// on IMR GPUs (NVIDIA) happens to preserve the old contents but on tiled /
+	// AMD Vega / MoltenVK gets scrambled, leaving only the FXAA-written edge
+	// pixels visible. Transition Scene_ldr to a color attachment first (mirrors
+	// executeLightshafts). This also orders the main pass's color writes after
+	// the prepass's sampled read of Scene_ldr (WAR hazard).
+	{
+		ImageBarrier2 barrier;
+		barrier.image = m_sceneLdr.image;
+		barrier.levelCount = 1;
+		barrier.layerCount = 1;
+		barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		barrier.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		barrier.srcStage = vk::PipelineStageFlagBits2::eFragmentShader;
+		barrier.srcAccess = vk::AccessFlagBits2::eShaderSampledRead;
+		barrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+		barrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
+
+		cmdImageBarrier(cmd, barrier);
+	}
+
+	// FXAA main pass: Scene_luminance → Scene_ldr (loadOp=eLoad preserves non-edge pixels)
 	graphics::generic_data::fxaa_data fxaaData;
 	fxaaData.rt_w = static_cast<float>(m_ctx->sceneExtent.width);
 	fxaaData.rt_h = static_cast<float>(m_ctx->sceneExtent.height);
 	fxaaData.pad[0] = 0.0f;
 	fxaaData.pad[1] = 0.0f;
 
-	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
+	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
 		m_sceneLdrFB, m_ctx->sceneExtent,
 		SDR_TYPE_POST_PROCESS_FXAA,
 		m_sceneLuminance.view, m_ctx->linearSampler,
