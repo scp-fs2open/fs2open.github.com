@@ -360,7 +360,7 @@ static void rotate_slots(const SCP_vector<int>& slots, int from_pos, int to_pos,
 	if (from_pos == to_pos)
 		return;
 
-	int count = (int)slots.size();
+	int count = static_cast<int>(slots.size());
 	Assertion(from_pos >= 0 && from_pos < count, "%s: 'from' position %d out of range", caller, from_pos);
 	Assertion(to_pos >= 0 && to_pos < count, "%s: 'to' position %d out of range", caller, to_pos);
 
@@ -503,7 +503,7 @@ void rotate_prop_slots(const SCP_vector<int>& slots, int from_pos, int to_pos)
 	if (from_pos == to_pos)
 		return;
 
-	int count = (int)slots.size();
+	int count = static_cast<int>(slots.size());
 	Assertion(from_pos >= 0 && from_pos < count, "rotate_prop_slots: 'from' position %d out of range", from_pos);
 	Assertion(to_pos >= 0 && to_pos < count, "rotate_prop_slots: 'to' position %d out of range", to_pos);
 
@@ -537,7 +537,7 @@ void rotate_waypoint_lists(int from_pos, int to_pos)
 	if (from_pos == to_pos)
 		return;
 
-	int count = (int)Waypoint_lists.size();
+	int count = static_cast<int>(Waypoint_lists.size());
 	Assertion(from_pos >= 0 && from_pos < count, "rotate_waypoint_lists: 'from' position %d out of range", from_pos);
 	Assertion(to_pos >= 0 && to_pos < count, "rotate_waypoint_lists: 'to' position %d out of range", to_pos);
 
@@ -550,15 +550,18 @@ void rotate_waypoint_lists(int from_pos, int to_pos)
 	// A waypoint object encodes its list index, point index in its instance, so
 	// every waypoint in the shifted lists now sits at a new list index.  Rebuild
 	// all instances from the lists' current positions.
-	for (int li = 0; li < (int)Waypoint_lists.size(); ++li)
+	int li = 0;
+	for (auto& list : Waypoint_lists)
 	{
-		auto& waypoints = Waypoint_lists[li].get_waypoints();
-		for (int wi = 0; wi < (int)waypoints.size(); ++wi)
+		int wi = 0;
+		for (auto& wpt : list.get_waypoints())
 		{
-			int objnum = waypoints[wi].get_objnum();
+			int objnum = wpt.get_objnum();
 			if (objnum >= 0)
 				Objects[objnum].instance = calc_waypoint_instance(li, wi);
+			++wi;
 		}
+		++li;
 	}
 }
 
@@ -568,7 +571,7 @@ void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos)
 	if (from_pos == to_pos)
 		return;
 
-	int count = (int)slots.size();
+	int count = static_cast<int>(slots.size());
 	Assertion(from_pos >= 0 && from_pos < count, "rotate_jump_nodes: 'from' position %d out of range", from_pos);
 	Assertion(to_pos >= 0 && to_pos < count, "rotate_jump_nodes: 'to' position %d out of range", to_pos);
 
