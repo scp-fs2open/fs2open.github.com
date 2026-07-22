@@ -3,7 +3,11 @@
 #include "ui_PropEditorDialog.h"
 
 #include <globalincs/globals.h>
+#include <globalincs/linklist.h>
+#include <object/object.h>
+#include <prop/prop.h>
 #include <ui/util/SignalBlockers.h>
+#include <ui/util/menu.h>
 #include <ui/widgets/FlagList.h>
 
 #include <QMetaObject>
@@ -39,6 +43,26 @@ PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 			// which could invalidate the underlying item/model pointers.
 			QMetaObject::invokeMethod(this, [this]() { _viewport->editor->missionChanged(); }, Qt::QueuedConnection);
 		});
+
+	// "Select Prop" menu: jump the editor to any prop in the mission.
+	Editor* editor = viewport->editor;
+	util::installSelectMenu(
+		this,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+				if (ptr->type == OBJ_PROP && Props[ptr->instance].has_value()) {
+					entries.push_back({QString::fromUtf8(Props[ptr->instance]->prop_name), OBJ_INDEX(ptr)});
+				}
+			}
+			return entries;
+		},
+		[this, editor]() { return _model->hasMultipleSelection() ? -1 : editor->currentObject; },
+		[editor](int objnum) {
+			editor->unmark_all();
+			editor->selectObject(objnum);
+		},
+		tr("&Select Prop"));
 
 	resize(QDialog::sizeHint());
 }

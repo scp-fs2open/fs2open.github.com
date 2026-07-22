@@ -3,6 +3,13 @@
 
 #include "menu.h"
 
+#include <QAction>
+#include <QFont>
+#include <QLayout>
+#include <QMenuBar>
+#include <QWidget>
+
+#include <utility>
 
 namespace fso {
 namespace fred {
@@ -26,6 +33,52 @@ int propagate_disabled_status(QMenu* top) {
 	}
 
 	return count;
+}
+
+void installSelectMenu(QWidget* dialog,
+	std::function<std::vector<SelectMenuEntry>()> gather,
+	std::function<int()> currentId,
+	std::function<void(int)> onChosen,
+	const QString& menuTitle)
+{
+	auto* layout = dialog->layout();
+	if (layout == nullptr) {
+		return; // needs a top-level layout to host a menu bar
+	}
+
+	// Reuse an existing menu bar if one is already installed, otherwise add a
+	// slim one above the dialog's content.
+	auto* menuBar = qobject_cast<QMenuBar*>(layout->menuBar());
+	if (menuBar == nullptr) {
+		menuBar = new QMenuBar(dialog);
+		layout->setMenuBar(menuBar);
+	}
+
+	QMenu* menu = menuBar->addMenu(menuTitle);
+
+	// Rebuild the list from the live scene every time the menu opens.
+	QObject::connect(menu, &QMenu::aboutToShow, menu,
+		[menu, gather = std::move(gather), currentId = std::move(currentId), onChosen = std::move(onChosen)]() {
+			menu->clear();
+			const int current = currentId ? currentId() : -1;
+			QAction* currentAct = nullptr;
+			for (const auto& entry : gather()) {
+				QAction* act = menu->addAction(entry.name);
+				if (entry.id == current) {
+					// Highlight the current object with a bold font
+					QFont font = act->font();
+					font.setBold(true);
+					act->setFont(font);
+					currentAct = act;
+				}
+				const int id = entry.id;
+				QObject::connect(act, &QAction::triggered, menu, [onChosen, id]() { onChosen(id); });
+			}
+			// Open with the current item pre-highlighted.
+			if (currentAct != nullptr) {
+				menu->setActiveAction(currentAct);
+			}
+		});
 }
 
 }

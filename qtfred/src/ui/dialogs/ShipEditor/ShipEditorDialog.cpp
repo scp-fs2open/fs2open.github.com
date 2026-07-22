@@ -10,6 +10,7 @@
 #include <globalincs/linklist.h>
 #include <ship/ship.h>
 #include <ui/util/SignalBlockers.h>
+#include <ui/util/menu.h>
 
 #include <QCloseEvent>
 #include <ui/dialogs/General/CheckBoxListDialog.h>
@@ -52,6 +53,26 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::callsignChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
+
+	// "Select Ship" menu: jump the editor to any ship (or player) in the mission.
+	Editor* editor = viewport->editor;
+	util::installSelectMenu(
+		this,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
+					entries.push_back({QString::fromUtf8(Ships[ptr->instance].ship_name), OBJ_INDEX(ptr)});
+				}
+			}
+			return entries;
+		},
+		[this, editor]() { return _model->getIfMultipleShips() ? -1 : editor->currentObject; },
+		[editor](int objnum) {
+			editor->unmark_all();
+			editor->selectObject(objnum);
+		},
+		tr("&Select Ship"));
 
 	updateUi(true);
 

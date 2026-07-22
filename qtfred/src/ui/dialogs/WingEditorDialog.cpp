@@ -8,8 +8,10 @@
 #include "ui_WingEditorDialog.h"
 
 #include <globalincs/globals.h>
+#include <ship/ship.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/ImageRenderer.h>
+#include <ui/util/menu.h>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -42,6 +44,23 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->departureTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_departureTree_modified);
 	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
 	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
+
+	// "Select Wing" menu: jump the editor to any wing in the mission.
+	Editor* editor = viewport->editor;
+	util::installSelectMenu(
+		this,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (int i = 0; i < MAX_WINGS; i++) {
+				if (Wings[i].wave_count) {
+					entries.push_back({QString::fromUtf8(Wings[i].name), i});
+				}
+			}
+			return entries;
+		},
+		[editor]() { return editor->cur_wing; },
+		[editor](int wing) { editor->mark_wing(wing); },
+		tr("&Select Wing"));
 
 	refreshAllDynamicCombos();
 	updateUi();
