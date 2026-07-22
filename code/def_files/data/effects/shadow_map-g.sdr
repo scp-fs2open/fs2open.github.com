@@ -1,15 +1,30 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+#else
 #extension GL_ARB_gpu_shader5: enable
+#endif
+
+#if defined(VULKAN)
+//define USE_HW_CLIP_DISTANCE from engine side
+#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+	#define USE_HW_CLIP_DISTANCE
+#endif
 
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
-#ifdef GL_ARB_gpu_shader5
+#if defined(GL_ARB_gpu_shader5) || defined(GL_EXT_gpu_shader5)
 layout(invocations = NUM_SHADOW_CASCADES) in;
 #endif
 
 layout (std140) uniform shadowCascadeParams {
     int cascade_offset;
     int cascade_count;
+    float rtShadowBiasMin;
+    float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
@@ -18,16 +33,25 @@ layout (std140) uniform shadowCascadeParams {
 };
 
 in VertexOutput {
-#if !defined(GL_ARB_gpu_shader5)
+#if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5)
     float instance;
 #endif
 	float clipModel;
 	vec3 normal;
+#ifndef USE_HW_CLIP_DISTANCE
+	float vClipDist;
+#endif
 } vertIn[];
+
+#ifndef USE_HW_CLIP_DISTANCE
+out VertexOutput {
+	float vClipDist;
+} vertOut;
+#endif
 
 void main(void)
 {
-#ifdef GL_ARB_gpu_shader5
+#if defined(GL_ARB_gpu_shader5) || defined(GL_EXT_gpu_shader5)
     if (gl_InvocationID >= cascade_count) return;
     int cascade_id = cascade_offset + gl_InvocationID;
 #else
@@ -43,7 +67,12 @@ void main(void)
 		}
 
 		gl_Layer = cascade_id;
-		gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+		
+		#ifndef USE_HW_CLIP_DISTANCE
+			vertOut.vClipDist = vertIn[vert].vClipDist;
+		#else
+			gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+		#endif
 
 		EmitVertex();
 	}

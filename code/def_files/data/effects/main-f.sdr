@@ -1,4 +1,20 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+precision highp sampler2DArrayShadow;
+#endif
+
+#if defined(VULKAN)
+//define USE_HW_CLIP_DISTANCE from engine side
+#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+	#define USE_HW_CLIP_DISTANCE
+#endif
+
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
@@ -108,6 +124,13 @@ uniform shadowCascadeParams {
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
+
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
+
 #ifdef VULKAN
 layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sBasemap materialTextures[0]
@@ -135,13 +158,12 @@ layout(location = 0) in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertIn;
 
-layout(location = 0) out vec4 fragOut0;
-layout(location = 1) out vec4 fragOut1;
-layout(location = 2) out vec4 fragOut2;
-layout(location = 3) out vec4 fragOut3;
-layout(location = 4) out vec4 fragOut4;
 #else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
 uniform sampler2DArray sBasemap;
@@ -182,12 +204,6 @@ in VertexOutput {
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertIn;
-
-out vec4 fragOut0;
-out vec4 fragOut1;
-out vec4 fragOut2;
-out vec4 fragOut3;
-out vec4 fragOut4;
 #endif
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
@@ -272,6 +288,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
+	#ifndef USE_HW_CLIP_DISTANCE
+		if (vertIn.vClipDist < 0.0) discard;
+	#endif
+
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
 
@@ -448,7 +468,7 @@ void main()
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DIFFUSE
 		// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
 		// color.
-		float fogDensityFinal = clamp(1 - pow(fogDensity, vertIn.fogDist) , 0.0, 1.0);
+		float fogDensityFinal = clamp(1.0 - pow(fogDensity, vertIn.fogDist) , 0.0, 1.0);
 		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, fogDensityFinal);
 		emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
 		specColor.rgb *= fogDensityFinal;
@@ -493,11 +513,11 @@ void main()
 		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-				glossData = 0;
+				glossData = 0.0f;
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
 			// If there is no lighting then we copy the color data so far into the emissive.
 			emissiveColor.rgb += baseColor.rgb;
-			aoFactors.x = 0;
+			aoFactors.x = 0.0f;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 

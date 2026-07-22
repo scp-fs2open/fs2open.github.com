@@ -1,3 +1,11 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
+
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 

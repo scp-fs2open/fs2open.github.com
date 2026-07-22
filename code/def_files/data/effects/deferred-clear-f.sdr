@@ -1,9 +1,17 @@
-out vec4 fragOut0;
-out vec4 fragOut1;
-out vec4 fragOut2;
-out vec4 fragOut3;
-out vec4 fragOut4;
-out vec4 fragOut5;
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
+
+layout (location=0) out vec4 fragOut0;
+layout (location=1) out vec4 fragOut1;
+layout (location=2) out vec4 fragOut2;
+layout (location=3) out vec4 fragOut3;
+layout (location=4) out vec4 fragOut4;
+layout (location=5) out vec4 fragOut5;
+
 void main()
 {
 	fragOut0 = vec4(0.0, 0.0, 0.0, 1.0); // color

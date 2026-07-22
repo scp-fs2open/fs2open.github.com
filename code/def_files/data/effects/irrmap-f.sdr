@@ -1,15 +1,23 @@
 //!#version 150
-#include "gamma.sdr" //! #include "gamma.sdr"
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
+
+#include "gamma.sdr"
 #define PI 3.1415926535897932384626433832795
+
+layout(location = 0) out vec4 fragOut0;
 
 #ifdef VULKAN
 layout(location = 0) in vec2 fragTexCoord;
-layout(location = 0) out vec4 fragOut0;
 layout(set = 1, binding = 1) uniform samplerCube envmap;
 #else
 uniform samplerCube envmap;
 in vec4 fragTexCoord;
-out vec4 fragOut0;
 #endif
 
 #ifdef VULKAN
@@ -154,8 +162,8 @@ vec3( 0.7305,  0.6698,  0.1333)
 );
 
 void main() {
-	float xpos = 2 * gl_FragCoord.x/16 - 1; // remap to (-1, 1)
-	float ypos = 2 * gl_FragCoord.y/16 - 1;
+	float xpos = 2.0 * gl_FragCoord.x/16.0 - 1.0; // remap to (-1, 1)
+	float ypos = 2.0 * gl_FragCoord.y/16.0 - 1.0;
 	vec3 fragDir;
 	vec4 fragCol = vec4(0.0);
 
@@ -191,5 +199,5 @@ void main() {
 		vec3 sampDir = points[i] + (aPdotD - PdotD) * fragDir;
 		fragCol += aPdotD * vec4(srgb_to_linear(texture(envmap, sampDir)).rgb, 1.0);
 	}
-	fragOut0 = linear_to_srgb(PI * fragCol * (1.0/128));
+	fragOut0 = linear_to_srgb(PI * fragCol * (1.0/128.0));
 }

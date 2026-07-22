@@ -106,8 +106,9 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 VulkanShaderCompiler::VulkanShaderCompiler() = default;
 VulkanShaderCompiler::~VulkanShaderCompiler() = default;
 
-bool VulkanShaderCompiler::init()
+bool VulkanShaderCompiler::init(bool hwClipDistance)
 {
+	m_hwClipDistance = hwClipDistance;
 	if (m_initialized) {
 		return true;
 	}
@@ -151,6 +152,13 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 
 	// shaderc automatically predefines VULKAN=100 when targeting Vulkan,
 	// so we do NOT define it here — doing so causes a "Macro redefined" error.
+
+	// gl_ClipDistance[] requires the shaderClipDistance device feature. When the
+	// device supports it, use the hardware clip path, otherwise
+	// the shaders fall back to the vClipDist varying (software clipping).
+	if (m_hwClipDistance) {
+		header += "#define USE_HW_CLIP_DISTANCE\n";
+	}
 
 	// Blinn-Phong lighting model (matches OpenGL's opengl_shader_get_header)
 	if (Detail.lighting < 3) {

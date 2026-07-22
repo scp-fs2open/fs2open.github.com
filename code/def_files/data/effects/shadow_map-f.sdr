@@ -1,5 +1,24 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+#endif
+
+#if defined(VULKAN)
+//define USE_HW_CLIP_DISTANCE from engine side
+#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+	#define USE_HW_CLIP_DISTANCE
+#endif
+
+#ifndef USE_HW_CLIP_DISTANCE
+in VertexOutput {
+	float vClipDist;
+} vertIn;
+#endif
 
 void main()
 {
+#ifndef USE_HW_CLIP_DISTANCE
+	if (vertIn.vClipDist < 0.0) discard;
+#endif
 }
