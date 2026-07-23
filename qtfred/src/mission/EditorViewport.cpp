@@ -946,6 +946,56 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 	return true;
 }
 
+bool EditorViewport::renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* errorMessage) {
+	if (newName.empty()) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer name cannot be empty.";
+		}
+		return false;
+	}
+
+	const auto layerIndex = getLayerIndex(oldName);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+	if (layerIndex == 0) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "The default layer cannot be renamed.";
+		}
+		return false;
+	}
+
+	// Reject collisions with a different layer; a case-only rename resolves to the same index and is allowed.
+	const auto existingIndex = getLayerIndex(newName);
+	if (existingIndex != static_cast<size_t>(-1) && existingIndex != layerIndex) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer names must be unique.";
+		}
+		return false;
+	}
+
+	_layerNames[layerIndex] = newName;
+
+	// Rewrite the per-object fred_layer string on every object assigned to this layer.
+	std::vector<int> toResync;
+	for (const auto& objectLayer : _objectLayers) {
+		if (objectLayer.second == layerIndex) {
+			toResync.push_back(objectLayer.first);
+		}
+	}
+	for (int objIdx : toResync) {
+		setObjectLayerByIndex(objIdx, layerIndex);
+	}
+
+	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
+	return true;
+}
+
 bool EditorViewport::setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage) {
 	const auto layerIndex = getLayerIndex(name);
 	if (layerIndex == static_cast<size_t>(-1)) {

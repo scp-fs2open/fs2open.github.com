@@ -50,6 +50,8 @@ public:
 	QVector<QString> getLayerNames() const;
 
 	void toggleLayerVisibility(const QString& layerName);
+	bool renameLayer(const QString& oldName, const QString& newName, SCP_string* error);
+	static bool isDefaultLayer(const QString& name);
 	void moveObjectToLayer(int objNum, const QString& layerName);
 	void moveWingToLayer(int wingIndex, const QString& layerName);
 	void moveWaypointPathToLayer(int waypointListIndex, const QString& layerName);

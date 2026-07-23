@@ -195,6 +195,18 @@ void SceneBrowserModel::toggleLayerVisibility(const QString& layerName)
 	// setLayerVisibility calls editor->notifyLayerVisibilityChanged() → onLayerVisibilityChanged()
 }
 
+bool SceneBrowserModel::renameLayer(const QString& oldName, const QString& newName, SCP_string* error)
+{
+	// renameLayer fires editor->notifyLayerStructureChanged() → onLayerStructureChanged(),
+	// which rebuilds the tree, so there is nothing extra to do on success here.
+	return _viewport->renameLayer(oldName.toUtf8().constData(), newName.toUtf8().constData(), error);
+}
+
+bool SceneBrowserModel::isDefaultLayer(const QString& name)
+{
+	return name.toUtf8().constData() == SCP_string(EditorViewport::DefaultLayerName);
+}
+
 void SceneBrowserModel::moveObjectToLayer(int objNum, const QString& layerName)
 {
 	// Single inline call: temporary QByteArray lives until end of full expression — safe.

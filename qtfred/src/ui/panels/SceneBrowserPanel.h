@@ -49,6 +49,7 @@ private slots:
 
 private: // NOLINT(readability-redundant-access-specifiers)
 	void rebuildTree();
+	void renameLayer(const QString& layerName);
 	void updateFloatingMargins(bool floating);
 	void rememberExpansionState();
 	bool expandedStateOrDefault(const QString& key, bool defaultExpanded) const;
