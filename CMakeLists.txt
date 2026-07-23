@@ -54,6 +54,7 @@ if (ANDROID)
 	set(USING_PREBUILT_LIBS ON FORCE)
 	set(SDL2_USE_PRECOMPILED ON FORCE)
 	set(OPENAL_USE_PRECOMPILED ON FORCE)
+	set(USING_PREBUILT_VULKAN ON FORCE)
 endif()
 
 # Check if the external modules exists
