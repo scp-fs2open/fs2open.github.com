@@ -145,6 +145,12 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
 	// Handles its own group, since main.cpp reads it before the viewport exists.
 	Theme_mode                         = readThemeModeSetting();
+	{
+		const int rawStyle = settings.value("sexp_data_menu_style", static_cast<int>(Sexp_data_menu_style)).toInt();
+		if (rawStyle >= 0 && rawStyle <= static_cast<int>(SexpDataMenuStyle::Searchable)) {
+			Sexp_data_menu_style = static_cast<SexpDataMenuStyle>(rawStyle);
+		}
+	}
 
 	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
 	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
@@ -192,6 +198,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	writeThemeModeSetting(Theme_mode);
+	settings.setValue("sexp_data_menu_style",                static_cast<int>(Sexp_data_menu_style));
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);
