@@ -86,11 +86,13 @@ signals:
 
 private:
 	void buildTree();
+	void scheduleSelectionSync();
 
 	QVector<BrowserLayer> _tree;
 	QString _nameFilter;
 	QVector<bool> _filterIff;
 	bool _updatingFromBrowser = false;
+	bool _syncPending = false;
 	QTimer* _rebuildTimer = nullptr;
 
 	Q_SLOT void onCurrentObjectChanged(int newObj);

@@ -4,6 +4,8 @@
 #include <mission/object.h>
 #include <prop/prop.h>
 
+#include <QTimer>
+
 #include <unordered_set>
 
 namespace fso::fred::dialogs {
@@ -312,16 +314,29 @@ void PropEditorDialogModel::selectPreviousProp() {
 	selectPropFromObjectList(GET_PREV(&Objects[_selectedPropObjects.front()]), false);
 }
 
+void PropEditorDialogModel::scheduleInitializeData() {
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_initPending) {
+		return;
+	}
+	_initPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_initPending = false;
+		initializeData();
+	});
+}
+
 void PropEditorDialogModel::onSelectedObjectChanged(int) {
-	initializeData();
+	scheduleInitializeData();
 }
 
 void PropEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
-	initializeData();
+	scheduleInitializeData();
 }
 
 void PropEditorDialogModel::onMissionChanged() {
-	initializeData();
+	scheduleInitializeData();
 }
 
 SCP_vector<std::pair<SCP_string, SCP_string>> PropEditorDialogModel::getPropFlagDescriptions()
