@@ -913,6 +913,46 @@
    <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>prevWingButton</tabstop>
+  <tabstop>nextWingButton</tabstop>
+  <tabstop>wingNameEdit</tabstop>
+  <tabstop>wingDisplayNameEdit</tabstop>
+  <tabstop>wingLeaderCombo</tabstop>
+  <tabstop>numWavesSpinBox</tabstop>
+  <tabstop>waveThresholdSpinBox</tabstop>
+  <tabstop>hotkeyCombo</tabstop>
+  <tabstop>formationCombo</tabstop>
+  <tabstop>formationScaleSpinBox</tabstop>
+  <tabstop>alignFormationButton</tabstop>
+  <tabstop>setSquadLogoButton</tabstop>
+  <tabstop>deleteWingButton</tabstop>
+  <tabstop>disbandWingButton</tabstop>
+  <tabstop>initialOrdersButton</tabstop>
+  <tabstop>wingFlagsButton</tabstop>
+  <tabstop>hideCuesButton</tabstop>
+  <tabstop>arrivalLocationCombo</tabstop>
+  <tabstop>arrivalTargetCombo</tabstop>
+  <tabstop>arrivalDistanceSpinBox</tabstop>
+  <tabstop>arrivalDelaySpinBox</tabstop>
+  <tabstop>minDelaySpinBox</tabstop>
+  <tabstop>maxDelaySpinBox</tabstop>
+  <tabstop>restrictArrivalPathsButton</tabstop>
+  <tabstop>customWarpinButton</tabstop>
+  <tabstop>arrivalTree</tabstop>
+  <tabstop>noArrivalWarpCheckBox</tabstop>
+  <tabstop>noArrivalWarpAdjustCheckbox</tabstop>
+  <tabstop>departureLocationCombo</tabstop>
+  <tabstop>departureTargetCombo</tabstop>
+  <tabstop>departureDelaySpinBox</tabstop>
+  <tabstop>restrictDeparturePathsButton</tabstop>
+  <tabstop>customWarpoutButton</tabstop>
+  <tabstop>departureTree</tabstop>
+  <tabstop>noDepartureWarpCheckBox</tabstop>
+  <tabstop>noDepartureWarpAdjustCheckbox</tabstop>
+  <tabstop>HelpTitle</tabstop>
+  <tabstop>helpText</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

@@ -115,3 +115,35 @@ void rotate_wing_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, c
 // Restore the obj_used_list invariant for the OBJ_SHIP/OBJ_START subset:
 // among ship-type entries, list order matches Ships[] index order.
 void resort_ships_in_obj_used_list();
+
+// Same, for the OBJ_PROP subset: among prop entries, obj_used_list order matches
+// Props[] index order.  UI lists that walk obj_used_list, like the Scene Browser,
+// depend on this to show props in their reordered Props[] order.
+void resort_props_in_obj_used_list();
+
+// Props and waypoint paths live in SCP_vectors rather than the fixed
+// Ships[]/Wings[] arrays, and their only index-based back-reference is the
+// owning object's instance (everything else refers to them by name).  So unlike
+// the ship/wing slot helpers above, these reorder the elements directly and just
+// re-point the OBJ_PROP / OBJ_WAYPOINT object instances.
+
+// Move the prop at display position from_pos to to_pos within `slots` (the
+// occupied Props[] indices, in display order), shifting the props in between by
+// one and preserving their relative order.  Props[] may contain empty nullopt
+// holes; those stay put while the occupants are permuted among their slots.
+// Also resorts obj_used_list so Scene Browser matches.
+void rotate_prop_slots(const SCP_vector<int>& slots, int from_pos, int to_pos);
+
+// Move the waypoint list at index from_pos to to_pos within Waypoint_lists,
+// shifting the lists in between by one and preserving their relative order.
+// Waypoint_lists is kept compact, so positions are plain indices.
+void rotate_waypoint_lists(int from_pos, int to_pos);
+
+// Move the jump node at display position from_pos to to_pos within `slots` (the
+// live Jump_nodes[] indices, in display order), shifting the nodes in between by
+// one and preserving their relative order.  Unlike ships/props there is no
+// object-instance back-reference to re-point: a jump node links to its object via
+// CJumpNode::m_objnum, which travels with the node, and is looked up by
+// objnum/name, and the Scene Browser and mission save both iterate Jump_nodes
+// directly so permuting the occupants among their slots is all that is needed.
+void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos);

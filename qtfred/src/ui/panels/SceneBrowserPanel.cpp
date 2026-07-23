@@ -6,8 +6,10 @@
 #include <mission/dialogs/SceneBrowserModel.h>
 #include <ui/FredView.h>
 
+#include <QInputDialog>
 #include <QLayout>
 #include <QMenu>
+#include <QMessageBox>
 
 namespace fso::fred {
 
@@ -410,12 +412,24 @@ void SceneBrowserPanel::onCustomContextMenuRequested(const QPoint& pos)
 	auto* item = _tree->itemAt(pos);
 	if (!item) return;
 
-	// Don't show a context menu for layer header items or category items
-	auto varLayer = item->data(0, IsLayerItemRole);
-	if (!varLayer.isNull()) return;
-	if (item->flags() == Qt::ItemIsEnabled) return;  // category item
-
 	const auto globalPos = _tree->viewport()->mapToGlobal(pos);
+
+	// Layer header item: offer a small menu to rename the layer
+	auto varLayer = item->data(0, IsLayerItemRole);
+	if (!varLayer.isNull()) {
+		const auto layerName = item->data(0, LayerNameRole).toString();
+
+		QMenu menu;
+		auto* renameAction = menu.addAction(tr("Rename Layer"));
+		renameAction->setEnabled(!dialogs::SceneBrowserModel::isDefaultLayer(layerName));
+		if (menu.exec(globalPos) == renameAction) {
+			renameLayer(layerName);
+		}
+		return;
+	}
+
+	// Category items are not actionable
+	if (item->flags() == Qt::ItemIsEnabled) return;  // category item
 
 	auto varObjNum = item->data(0, ObjNumRole);
 	auto varWing = item->data(0, WingIndexRole);
@@ -428,6 +442,24 @@ void SceneBrowserPanel::onCustomContextMenuRequested(const QPoint& pos)
 	} else if (!varObjNum.isNull()) {
 		// Regular object: delegate to FredView's context menu (handles Edit + Move to Layer)
 		_fredView->showContextMenu(varObjNum.toInt(), globalPos);
+	}
+}
+
+void SceneBrowserPanel::renameLayer(const QString& layerName)
+{
+	bool ok = false;
+	const auto newName = QInputDialog::getText(this, tr("Rename Layer"), tr("Layer name:"),
+		QLineEdit::Normal, layerName, &ok).trimmed();
+	if (!ok || newName == layerName) {
+		if (ok && newName.isEmpty()) {
+			QMessageBox::warning(this, tr("Layer Error"), tr("Layer name cannot be empty."));
+		}
+		return;
+	}
+
+	SCP_string error;
+	if (!_model->renameLayer(layerName, newName, &error)) {
+		QMessageBox::warning(this, tr("Layer Error"), QString::fromStdString(error));
 	}
 }
 

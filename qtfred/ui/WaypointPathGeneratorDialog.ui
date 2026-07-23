@@ -356,6 +356,23 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>pathNameLineEdit</tabstop>
+  <tabstop>manualCenterRadio</tabstop>
+  <tabstop>centerXSpinBox</tabstop>
+  <tabstop>centerYSpinBox</tabstop>
+  <tabstop>centerZSpinBox</tabstop>
+  <tabstop>objectCenterRadio</tabstop>
+  <tabstop>centerObjectCombo</tabstop>
+  <tabstop>axisComboBox</tabstop>
+  <tabstop>numPointsSpinBox</tabstop>
+  <tabstop>loopsSpinBox</tabstop>
+  <tabstop>radiusSpinBox</tabstop>
+  <tabstop>driftSpinBox</tabstop>
+  <tabstop>varianceXSpinBox</tabstop>
+  <tabstop>varianceYSpinBox</tabstop>
+  <tabstop>varianceZSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

@@ -120,6 +120,7 @@ void PreferencesDialog::updateUi() {
 	ui->checkPotentialIssues->setChecked(_model->getCheckPotentialIssues());
 	ui->applyAutoCorrections->setChecked(_model->getApplyAutoCorrections());
 	ui->themeCombo->setCurrentIndex(themeModeToIndex(_model->getThemeMode()));
+	ui->sexpDataMenuStyleCombo->setCurrentIndex(static_cast<int>(_model->getSexpDataMenuStyle()));
 
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
@@ -199,6 +200,10 @@ void PreferencesDialog::on_outlineLodCombo_currentIndexChanged(int index) {
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
 	_model->setThemeMode(themeModeFromIndex(index));
+}
+
+void PreferencesDialog::on_sexpDataMenuStyleCombo_currentIndexChanged(int index) {
+	_model->setSexpDataMenuStyle(static_cast<SexpDataMenuStyle>(index));
 }
 
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {

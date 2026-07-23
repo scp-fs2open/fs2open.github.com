@@ -798,6 +798,55 @@ in Milliseconds</string>
    <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>eventTree</tabstop>
+  <tabstop>btnNewEvent</tabstop>
+  <tabstop>btnInsertEvent</tabstop>
+  <tabstop>btnDeleteEvent</tabstop>
+  <tabstop>eventMoveTopBtn</tabstop>
+  <tabstop>eventUpBtn</tabstop>
+  <tabstop>eventDownBtn</tabstop>
+  <tabstop>eventMoveBottomBtn</tabstop>
+  <tabstop>repeatCountBox</tabstop>
+  <tabstop>triggerCountBox</tabstop>
+  <tabstop>intervalTimeBox</tabstop>
+  <tabstop>chainedCheckBox</tabstop>
+  <tabstop>chainDelayBox</tabstop>
+  <tabstop>useMsecsCheckBox</tabstop>
+  <tabstop>scoreBox</tabstop>
+  <tabstop>teamCombo</tabstop>
+  <tabstop>editDirectiveText</tabstop>
+  <tabstop>editDirectiveKeypressText</tabstop>
+  <tabstop>checkLogTrue</tabstop>
+  <tabstop>checkLogPrevious</tabstop>
+  <tabstop>checkLogFirstRepeat</tabstop>
+  <tabstop>checkLogFirstTrigger</tabstop>
+  <tabstop>checkLogFalse</tabstop>
+  <tabstop>checkLogAlwaysFalse</tabstop>
+  <tabstop>checkLogLastRepeat</tabstop>
+  <tabstop>checkLogLastTrigger</tabstop>
+  <tabstop>messageList</tabstop>
+  <tabstop>msgMoveTopBtn</tabstop>
+  <tabstop>msgUpBtn</tabstop>
+  <tabstop>msgDownBtn</tabstop>
+  <tabstop>msgMoveBottomBtn</tabstop>
+  <tabstop>messageName</tabstop>
+  <tabstop>messageContent</tabstop>
+  <tabstop>btnNewMsg</tabstop>
+  <tabstop>btnInsertMsg</tabstop>
+  <tabstop>btnDeleteMsg</tabstop>
+  <tabstop>btnMsgNote</tabstop>
+  <tabstop>aniCombo</tabstop>
+  <tabstop>btnAniBrowse</tabstop>
+  <tabstop>waveCombo</tabstop>
+  <tabstop>btnBrowseWave</tabstop>
+  <tabstop>btnWavePlay</tabstop>
+  <tabstop>personaCombo</tabstop>
+  <tabstop>btnUpdateStuff</tabstop>
+  <tabstop>messageTeamCombo</tabstop>
+  <tabstop>miniHelpBox</tabstop>
+  <tabstop>helpBox</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

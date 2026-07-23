@@ -145,6 +145,12 @@ void EditorViewport::loadSettings() {
 	Show_sexp_help_wing_editor         = settings.value("show_sexp_help_wing_editor",         Show_sexp_help_wing_editor).toBool();
 	// Handles its own group, since main.cpp reads it before the viewport exists.
 	Theme_mode                         = readThemeModeSetting();
+	{
+		const int rawStyle = settings.value("sexp_data_menu_style", static_cast<int>(Sexp_data_menu_style)).toInt();
+		if (rawStyle >= 0 && rawStyle <= static_cast<int>(SexpDataMenuStyle::Searchable)) {
+			Sexp_data_menu_style = static_cast<SexpDataMenuStyle>(rawStyle);
+		}
+	}
 
 	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
 	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
@@ -192,6 +198,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	writeThemeModeSetting(Theme_mode);
+	settings.setValue("sexp_data_menu_style",                static_cast<int>(Sexp_data_menu_style));
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);
@@ -940,6 +947,56 @@ bool EditorViewport::deleteLayer(const SCP_string& name, SCP_string* errorMessag
 	for (int objIdx : toReassign) {
 		setObjectLayerByIndex(objIdx, 0);
 	}
+	syncMissionLayerNames();
+	editor->notifyLayerStructureChanged();
+	editor->notifyLayerListChanged();
+	return true;
+}
+
+bool EditorViewport::renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* errorMessage) {
+	if (newName.empty()) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer name cannot be empty.";
+		}
+		return false;
+	}
+
+	const auto layerIndex = getLayerIndex(oldName);
+	if (layerIndex == static_cast<size_t>(-1)) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer does not exist.";
+		}
+		return false;
+	}
+	if (layerIndex == 0) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "The default layer cannot be renamed.";
+		}
+		return false;
+	}
+
+	// Reject collisions with a different layer; a case-only rename resolves to the same index and is allowed.
+	const auto existingIndex = getLayerIndex(newName);
+	if (existingIndex != static_cast<size_t>(-1) && existingIndex != layerIndex) {
+		if (errorMessage != nullptr) {
+			*errorMessage = "Layer names must be unique.";
+		}
+		return false;
+	}
+
+	_layerNames[layerIndex] = newName;
+
+	// Rewrite the per-object fred_layer string on every object assigned to this layer.
+	std::vector<int> toResync;
+	for (const auto& objectLayer : _objectLayers) {
+		if (objectLayer.second == layerIndex) {
+			toResync.push_back(objectLayer.first);
+		}
+	}
+	for (int objIdx : toResync) {
+		setObjectLayerByIndex(objIdx, layerIndex);
+	}
+
 	syncMissionLayerNames();
 	editor->notifyLayerStructureChanged();
 	editor->notifyLayerListChanged();

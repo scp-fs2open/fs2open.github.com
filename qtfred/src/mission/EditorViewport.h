@@ -29,6 +29,12 @@ enum class OtherKind {
 	JumpNode,
 };
 
+enum class SexpDataMenuStyle {
+	Auto = 0,
+	Columns = 1,
+	Searchable = 2,
+};
+
 struct ViewSettings {
 	bool Universal_heading = false;
 	bool Show_stars = true;
@@ -127,6 +133,7 @@ class EditorViewport {
 	SCP_vector<SCP_string> getLayerNames() const;
 	bool addLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
 	bool deleteLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
+	bool renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* errorMessage = nullptr);
 	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage = nullptr);
 	bool getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage = nullptr) const;
 	void showAllLayers();
@@ -231,6 +238,8 @@ class EditorViewport {
 	bool Show_sexp_help_wing_editor = false;
 
 	ThemeMode Theme_mode = ThemeMode::System;
+
+	SexpDataMenuStyle Sexp_data_menu_style = SexpDataMenuStyle::Auto;
 
 	void saveSettings() const;
 

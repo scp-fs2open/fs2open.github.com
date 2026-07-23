@@ -87,6 +87,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>musicList</tabstop>
+  <tabstop>prevButton</tabstop>
+  <tabstop>playButton</tabstop>
+  <tabstop>nextButton</tabstop>
+  <tabstop>stopButton</tabstop>
+  <tabstop>autoplayCheck</tabstop>
+  <tabstop>musicTblButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

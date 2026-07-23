@@ -277,12 +277,18 @@
  </customwidgets>
  <tabstops>
   <tabstop>actionAddStage</tabstop>
-  <tabstop>actionPrevStage</tabstop>
-  <tabstop>actionNextStage</tabstop>
   <tabstop>actionInsertStage</tabstop>
   <tabstop>actionDeleteStage</tabstop>
-  <tabstop>actionCopyToOtherTeams</tabstop>
+  <tabstop>actionPrevStage</tabstop>
+  <tabstop>actionNextStage</tabstop>
+  <tabstop>formulaTreeView</tabstop>
   <tabstop>debriefingTextEdit</tabstop>
+  <tabstop>voiceFileLineEdit</tabstop>
+  <tabstop>voiceFileBrowseButton</tabstop>
+  <tabstop>voiceFilePlayButton</tabstop>
+  <tabstop>recommendationTextEdit</tabstop>
+  <tabstop>actionChangeTeams</tabstop>
+  <tabstop>actionCopyToOtherTeams</tabstop>
  </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>

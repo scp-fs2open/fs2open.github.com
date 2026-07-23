@@ -410,6 +410,33 @@ with that persona</string>
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>abbrevCampaignLineEdit</tabstop>
+  <tabstop>abbrevMissionLineEdit</tabstop>
+  <tabstop>abbrevCommandBriefingLineEdit</tabstop>
+  <tabstop>abbrevBriefingLineEdit</tabstop>
+  <tabstop>abbrevDebriefingLineEdit</tabstop>
+  <tabstop>abbrevMessageLineEdit</tabstop>
+  <tabstop>suffixComboBox</tabstop>
+  <tabstop>exampleFilenameLabel</tabstop>
+  <tabstop>includeSenderCheckBox</tabstop>
+  <tabstop>noReplaceCheckBox</tabstop>
+  <tabstop>generateFilenamesButton</tabstop>
+  <tabstop>scriptEntryFormatPlainTextEdit</tabstop>
+  <tabstop>personaSyncComboBox</tabstop>
+  <tabstop>copyMsgToShipsButton</tabstop>
+  <tabstop>copyShipsToMsgsButton</tabstop>
+  <tabstop>clearNonSendersButton</tabstop>
+  <tabstop>setHeadAnisButton</tabstop>
+  <tabstop>checkAnyWingmanButton</tabstop>
+  <tabstop>exportAllRadio</tabstop>
+  <tabstop>exportCmdBriefingRadio</tabstop>
+  <tabstop>exportBriefingRadio</tabstop>
+  <tabstop>exportDebriefingRadio</tabstop>
+  <tabstop>exportMessageRadio</tabstop>
+  <tabstop>groupMessagesCheckBox</tabstop>
+  <tabstop>generateScriptButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
  <buttongroups>
