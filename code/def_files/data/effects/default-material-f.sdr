@@ -12,10 +12,6 @@ precision highp sampler2DArray;
 	#define USE_HW_CLIP_DISTANCE
 #endif
 
-#if !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-#define USE_HW_CLIP_DISTANCE
-#endif
-
 #ifdef VULKAN
 layout(set = 2, binding = 0, std140)
 #else
@@ -65,7 +61,7 @@ in vec4 fragColor;
 void main()
 {
 #ifndef USE_HW_CLIP_DISTANCE
-	if (clipEnabled != 0 && vClipDist < 0.0) {
+	if (clipEnabled != 0u && vClipDist < 0.0) {
 		discard;
 	}
 #endif

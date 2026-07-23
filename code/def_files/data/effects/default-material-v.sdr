@@ -55,9 +55,7 @@ layout(location = 1) out vec4 fragColor;
 
 #else
 
-#ifdef USE_HW_CLIP_DISTANCE
-out float gl_ClipDistance[1];
-#else
+#ifndef USE_HW_CLIP_DISTANCE
 out float vClipDist;
 #endif
 
