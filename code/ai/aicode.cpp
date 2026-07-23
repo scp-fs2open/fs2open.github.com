@@ -13537,7 +13537,7 @@ void ai_maybe_evade_locked_missile(object *objp, ai_info *aip)
 		return;
 	}
 
-	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) { //	If not allowed to pursue dynamic objectives, don't evade.  Dumb? Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) { //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?  Maybe change. -- MK, 3/15/98
 		return;
 	}
 
@@ -16503,7 +16503,7 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal)
 
 	aip->last_hit_time = Missiontime;
 
-	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) //	If not allowed to pursue dynamic objectives, don't evade.  Dumb? Maybe change. -- MK, 3/15/98
+	if (aip->ai_flags.any_of(AI::AI_Flags::No_dynamic,AI::AI_Flags::Kamikaze)) //	If not allowed to pursue dynamic objectives, don't evade.  Dumb?  Maybe change. -- MK, 3/15/98
 		return;
 
 	//	If this ship is awaiting repair, abort!

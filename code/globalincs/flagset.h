@@ -217,11 +217,4 @@ struct hash<::flagset<T, N>> {
 
 #define FLAG_LIST(Type) enum class Type : size_t
 
-
-template<typename TEnum>
-struct flag_enum_checker
-{
-	static const bool value = std::is_enum<TEnum>::value;
-};
-
 #endif
