@@ -128,16 +128,16 @@
            </widget>
           </item>
           <item row="3" column="0">
-           <widget class="QLabel" name="sexpDataMenuStyleLabel">
+           <widget class="QLabel" name="dataMenuStyleLabel">
             <property name="text">
-             <string>SEXP data menu style:</string>
+             <string>Long list menu style:</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QComboBox" name="sexpDataMenuStyleCombo">
+           <widget class="QComboBox" name="dataMenuStyleCombo">
             <property name="toolTip">
-             <string>Controls how the &quot;Add Data&quot; / &quot;Replace Data&quot; submenus present long lists like ships and wings. Auto uses Columns for short lists and Searchable once a list would fill more than half the screen.</string>
+             <string>Controls how menus with long lists are presented: SEXP &quot;Add Data&quot; / &quot;Replace Data&quot; submenus, object Select menus, and the Create Ship/Prop submenus. Auto uses Columns for short lists and Searchable once a list would fill more than half the screen.</string>
             </property>
             <item>
              <property name="text">
