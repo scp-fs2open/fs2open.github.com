@@ -1049,7 +1049,13 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 	}
 
-	createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	auto supported = deviceValues.surfaceCapabilities.supportedTransforms;
+	if (supported & vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+		createInfo.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+	}
+	else {
+		createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	}
 	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	createInfo.presentMode = choosePresentMode(deviceValues);
 	createInfo.clipped = true;
