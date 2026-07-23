@@ -184,6 +184,17 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 	material_set_unlit(mat_info, base_tex, alpha, true, true);
 
 	mat_info->set_color_scale(color_scale);
+
+	// When an additive batched bitmap (e.g. a model glowpoint) is drawn into a render target, its
+	// texture typically has no alpha channel, so the sampled alpha is 1 everywhere. Additive alpha
+	// blending then inflates the target's alpha to opaque across the whole sprite quad, even where
+	// the RGB is ~black. Because these render targets are later straight-alpha composited (e.g. the
+	// SCPUI 3D ship/weapon select preview), those dark regions show up as opaque black squares. Skip
+	// alpha writes in that case so the target's coverage (the opaque model silhouette) is preserved.
+	// Normal screen rendering (rendering_to_texture == -1) is unaffected.
+	if (gr_screen.rendering_to_texture != -1 && mat_info->get_blend_mode() == ALPHA_BLEND_ADDITIVE) {
+		mat_info->set_color_mask(true, true, true, false);
+	}
 }
 
 void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale) {
