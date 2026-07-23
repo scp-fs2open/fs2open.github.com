@@ -2751,7 +2751,8 @@ namespace {
 // nullptr if an existing instance was reused (so callers can do extra one-time
 // setup only on first open).
 template <typename DialogT>
-DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
+DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport)
+{
 	if (auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly)) {
 		existing->raise();
 		existing->activateWindow();
@@ -2761,6 +2762,7 @@ DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 	return dialog;
+}
 // The editors are modeless; a second instance of the same editor would let two
 // apply-undo commands interleave on the main stack (whichever OKs last silently
 // clobbers the other). Reuse the already-open instance instead.
@@ -2779,14 +2781,6 @@ bool raiseExistingEditor(const QWidget* parent)
 
 void FredView::on_actionMission_Events_triggered(bool) {
 	showSingleInstanceDialog<dialogs::MissionEventsDialog>(this, _viewport);
-}
-void FredView::on_actionMission_Cutscenes_triggered(bool)
-{
-	showSingleInstanceDialog<dialogs::MissionCutscenesDialog>(this, _viewport);
-	if (raiseExistingEditor<dialogs::MissionEventsDialog>(this)) return;
-	auto eventEditor = new dialogs::MissionEventsDialog(this, _viewport);
-	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
-	eventEditor->show();
 }
 void FredView::on_actionMission_Cutscenes_triggered(bool)
 {
@@ -2823,29 +2817,6 @@ void FredView::onOtherKindSelected(int other_kind) {
 	_viewport->cur_other_kind = static_cast<OtherKind>(other_kind);
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
-	if (auto* asteroidFieldEditor = showSingleInstanceDialog<dialogs::AsteroidEditorDialog>(this, _viewport)) {
-		connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
-	}
-}
-void FredView::on_actionVolumetric_Nebula_triggered(bool)
-{
-	showSingleInstanceDialog<dialogs::VolumetricNebulaDialog>(this, _viewport);
-}
-void FredView::on_actionBriefing_triggered(bool) {
-	showSingleInstanceDialog<dialogs::BriefingEditorDialog>(this, _viewport);
-}
-void FredView::on_actionMission_Specs_triggered(bool) {
-	showSingleInstanceDialog<dialogs::MissionSpecDialog>(this, _viewport);
-}
-void FredView::on_actionWaypoint_Paths_triggered(bool) {
-	showSingleInstanceDialog<dialogs::WaypointEditorDialog>(this, _viewport);
-}
-void FredView::on_actionReorder_Objects_triggered(bool) {
-	showSingleInstanceDialog<dialogs::ReorderDialog>(this, _viewport);
-}
-void FredView::on_actionJump_Nodes_triggered(bool)
-{
-	showSingleInstanceDialog<dialogs::JumpNodeEditorDialog>(this, _viewport);
 	if (raiseExistingEditor<dialogs::AsteroidEditorDialog>(this)) return;
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
 	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
@@ -2927,7 +2898,6 @@ void FredView::on_actionProps_triggered(bool)
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
-	showSingleInstanceDialog<dialogs::CampaignEditorDialog>(this, _viewport);
 	if (raiseExistingEditor<dialogs::CampaignEditorDialog>(this)) return;
 	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
 	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
@@ -2937,20 +2907,6 @@ void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
-	showSingleInstanceDialog<dialogs::CommandBriefingDialog>(this, _viewport);
-}
-void FredView::on_actionDebriefing_triggered(bool)
-{
-	showSingleInstanceDialog<dialogs::DebriefingDialog>(this, _viewport);
-}
-void FredView::on_actionReinforcements_triggered(bool) {
-	showSingleInstanceDialog<dialogs::ReinforcementsDialog>(this, _viewport);
-}
-void FredView::on_actionLoadout_triggered(bool) {
-	showSingleInstanceDialog<dialogs::TeamLoadoutDialog>(this, _viewport);
-}
-void FredView::on_actionVariables_triggered(bool) {
-	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport);
 	if (raiseExistingEditor<dialogs::CommandBriefingDialog>(this)) return;
 	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -3544,22 +3500,6 @@ void FredView::on_actionMission_Statistics_triggered(bool) {
 }
 
 void FredView::on_actionBackground_triggered(bool) {
-	showSingleInstanceDialog<dialogs::BackgroundEditorDialog>(this, _viewport);
-}
-
-void FredView::on_actionShield_System_triggered(bool) {
-	showSingleInstanceDialog<dialogs::ShieldSystemDialog>(this, _viewport);
-}
-
-void FredView::on_actionSet_Global_Ship_Flags_triggered(bool) {
-	showSingleInstanceDialog<dialogs::GlobalShipFlagsDialog>(this, _viewport);
-}
-
-void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
-	showSingleInstanceDialog<dialogs::VoiceActingManager>(this, _viewport);
-}
-void FredView::on_actionMission_Goals_triggered(bool) {
-	showSingleInstanceDialog<dialogs::MissionGoalsDialog>(this, _viewport);
 	if (raiseExistingEditor<dialogs::BackgroundEditorDialog>(this)) return;
 	auto dialog = new dialogs::BackgroundEditorDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
@@ -3607,16 +3547,15 @@ void FredView::on_actionFiction_Viewer_triggered(bool) {
 }
 
 void FredView::on_actionWaypointPathGenerator_triggered(bool) {
-	showSingleInstanceDialog<dialogs::WaypointPathGeneratorDialog>(this, _viewport);
-	if (raiseExistingEditor<dialogs::FictionViewerDialog>(this)) return;
-	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
+	if (raiseExistingEditor<dialogs::WaypointPathGeneratorDialog>(this)) return;
+	auto dialog = new dialogs::WaypointPathGeneratorDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-
-void FredView::on_actionWaypointPathGenerator_triggered(bool) {
-	if (raiseExistingEditor<dialogs::WaypointPathGeneratorDialog>(this)) return;
-	auto dialog = new dialogs::WaypointPathGeneratorDialog(this, _viewport);
+void FredView::on_actionReorder_Objects_triggered(bool) {
+	if (raiseExistingEditor<dialogs::ReorderDialog>(this))
+		return;
+	auto dialog = new dialogs::ReorderDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }

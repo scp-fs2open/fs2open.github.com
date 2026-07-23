@@ -1213,15 +1213,12 @@ void MissionEventsDialog::on_btnNewMsg_clicked()
 
 	rebuildMessageList();
 	updateMessageUi();
-<<<<<<< HEAD
 
 	// Let the user name the new message right away: focus the name field and
 	// select its placeholder text so typing immediately replaces it.
 	ui->messageName->setFocus();
 	ui->messageName->selectAll();
-=======
 	pushMessageStateSnapshot(before, tr("Add Message"));
->>>>>>> f691debbd (Qtfred full undo system. (#18))
 }
 
 void MissionEventsDialog::on_btnInsertMsg_clicked()

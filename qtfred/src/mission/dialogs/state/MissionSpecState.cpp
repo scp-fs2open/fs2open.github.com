@@ -11,7 +11,7 @@
 #include <mission/Editor.h>
 #include <mission/missionparse.h>
 #include <weapon/weapon.h>
-
+#include "missioneditor/common.h"
 #include <QByteArray>
 #include <QDataStream>
 #include <QIODevice>
@@ -232,7 +232,7 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 		strcpy_s(wingName, str.toUtf8().constData());
 	}
 
-	Editor::update_custom_wing_indexes();
+	update_custom_wing_indexes();
 }
 
 } // namespace fso::fred::dialogs

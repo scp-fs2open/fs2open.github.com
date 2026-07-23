@@ -14,7 +14,7 @@
 #include <mission/missionmessage.h>
 #include <mission/missionbriefcommon.h>
 #include <missionui/missioncmdbrief.h>
-
+#include "missioneditor/common.h"
 #include "mission/Editor.h"
 #include "mission/EditorViewport.h"
 #include "mission/object.h"
@@ -715,7 +715,7 @@ void DeleteObjectsCommand::undo()
 			}
 			restoreWingReinforcement(wd, w);
 			Num_wings++;
-			Editor::update_custom_wing_indexes();
+			update_custom_wing_indexes();
 		} else {
 			// Partial delete: surviving members are still in the wing but may have been
 			// renamed by delete_ship_from_wing. Rebuild the wing member arrays and
@@ -1217,7 +1217,7 @@ void FormWingCommand::redo()
 
 	Num_wings++;
 	_editor->mark_wing(slot);
-	Editor::update_custom_wing_indexes();
+	update_custom_wing_indexes();
 	_editor->missionChanged();
 	_viewport->needsUpdate();
 }
@@ -1250,7 +1250,7 @@ void DisbandWingCommand::undo()
 
 	restoreWingIntoSlot(_savedWing, slot, _editor);
 	_editor->mark_wing(slot);
-	Editor::update_custom_wing_indexes();
+	update_custom_wing_indexes();
 	_editor->missionChanged();
 	_viewport->needsUpdate();
 }
@@ -1358,7 +1358,7 @@ void DeleteWingCommand::undo()
 	_editor->ai_update_goal_references(sexp_ref_type::WING, invalidatedName, _savedWing.name);
 
 	restoreWingIntoSlot(_savedWing, slot, _editor);
-	Editor::update_custom_wing_indexes();
+	update_custom_wing_indexes();
 
 	// Select the restored wing (mark_wing calls unmark_all first, so markObject calls are redundant).
 	_editor->mark_wing(slot);

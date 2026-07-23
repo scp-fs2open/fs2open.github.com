@@ -24,9 +24,8 @@ _viewport(viewport), _fredView(parent)
 	_dialogStack = new QUndoStack(this);
 	_fredView->undoGroup()->addStack(_dialogStack);
 	util::setupDialogUndo(this, _fredView->undoGroup(), _dialogStack, tr("Command Briefing"));
-
-	ui->speechFileName->setMaxLength(NAME_LENGTH - 1);
-	ui->animationFileName->setMaxLength(NAME_LENGTH - 1);
+	ui->speechFilename->setMaxLength(NAME_LENGTH - 1);
+	ui->animationFilename->setMaxLength(NAME_LENGTH - 1);
 	ui->actionHighResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->actionLowResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 

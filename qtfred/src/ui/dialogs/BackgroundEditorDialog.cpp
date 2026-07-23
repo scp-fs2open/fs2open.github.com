@@ -305,8 +305,8 @@ void BackgroundEditorDialog::refreshSunList()
 	const auto names = _model->getMissionSunNames();
 
 	const int targetRow = _model->getSelectedSunIndex();
-	ui->sunsListWidget->setUpdatesEnabled(false);
-	ui->sunsListWidget->clear();
+	ui->sunListWidget->setUpdatesEnabled(false);
+	ui->sunListWidget->clear();
 
 	QStringList items;
 	items.reserve(static_cast<int>(names.size()));
@@ -315,8 +315,8 @@ void BackgroundEditorDialog::refreshSunList()
 	ui->sunListWidget->addItems(items);
 
 	if (!items.isEmpty()) {
-		const int clamped = qBound(0, targetRow, ui->sunsListWidget->count() - 1);
-		ui->sunsListWidget->setCurrentRow(clamped);
+		const int clamped = qBound(0, targetRow, ui->sunListWidget->count() - 1);
+		ui->sunListWidget->setCurrentRow(clamped);
 	}
 
 	ui->sunListWidget->setUpdatesEnabled(true);
