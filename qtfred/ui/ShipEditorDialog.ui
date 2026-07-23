@@ -956,6 +956,60 @@
    <header>ui/widgets/PersonaColorComboBox.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>prevButton</tabstop>
+  <tabstop>nextButton</tabstop>
+  <tabstop>shipNameEdit</tabstop>
+  <tabstop>shipDisplayNameEdit</tabstop>
+  <tabstop>shipClassCombo</tabstop>
+  <tabstop>callsignCombo</tabstop>
+  <tabstop>altNameCombo</tabstop>
+  <tabstop>AIClassCombo</tabstop>
+  <tabstop>teamCombo</tabstop>
+  <tabstop>cargoCombo</tabstop>
+  <tabstop>cargoTitleEdit</tabstop>
+  <tabstop>hotkeyCombo</tabstop>
+  <tabstop>personaCombo</tabstop>
+  <tabstop>killScoreEdit</tabstop>
+  <tabstop>assistEdit</tabstop>
+  <tabstop>respawnSpinBox</tabstop>
+  <tabstop>playerShipCheckBox</tabstop>
+  <tabstop>playerShipButton</tabstop>
+  <tabstop>altShipClassButton</tabstop>
+  <tabstop>textureReplacementButton</tabstop>
+  <tabstop>layerCombo</tabstop>
+  <tabstop>deleteButton</tabstop>
+  <tabstop>resetButton</tabstop>
+  <tabstop>weaponsButton</tabstop>
+  <tabstop>playerOrdersButton</tabstop>
+  <tabstop>specialStatsButton</tabstop>
+  <tabstop>miscButton</tabstop>
+  <tabstop>initialStatusButton</tabstop>
+  <tabstop>initialOrdersButton</tabstop>
+  <tabstop>tblInfoButton</tabstop>
+  <tabstop>hideCuesButton</tabstop>
+  <tabstop>arrivalLocationCombo</tabstop>
+  <tabstop>arrivalTargetCombo</tabstop>
+  <tabstop>arrivalDistanceEdit</tabstop>
+  <tabstop>arrivalDelaySpinBox</tabstop>
+  <tabstop>restrictArrivalPathsButton</tabstop>
+  <tabstop>customWarpinButton</tabstop>
+  <tabstop>updateArrivalCueCheckBox</tabstop>
+  <tabstop>arrivalTree</tabstop>
+  <tabstop>noArrivalWarpCheckBox</tabstop>
+  <tabstop>dockWarpinCheckBox</tabstop>
+  <tabstop>departureLocationCombo</tabstop>
+  <tabstop>departureTargetCombo</tabstop>
+  <tabstop>departureDelaySpinBox</tabstop>
+  <tabstop>restrictDeparturePathsButton</tabstop>
+  <tabstop>customWarpoutButton</tabstop>
+  <tabstop>updateDepartureCueCheckBox</tabstop>
+  <tabstop>departureTree</tabstop>
+  <tabstop>noDepartureWarpCheckBox</tabstop>
+  <tabstop>dockWarpoutCheckBox</tabstop>
+  <tabstop>HelpTitle</tabstop>
+  <tabstop>helpText</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

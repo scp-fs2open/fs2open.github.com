@@ -778,6 +778,48 @@
    <header>ui/widgets/MusicComboWidget.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>prevStageButton</tabstop>
+  <tabstop>nextStageButton</tabstop>
+  <tabstop>addStageButton</tabstop>
+  <tabstop>deleteStageButton</tabstop>
+  <tabstop>insertStageButton</tabstop>
+  <tabstop>resetCameraButton</tabstop>
+  <tabstop>copyCameraButton</tabstop>
+  <tabstop>pasteCameraButton</tabstop>
+  <tabstop>cameraCoordinatesButton</tabstop>
+  <tabstop>cameraTransitionTimeSpinBox</tabstop>
+  <tabstop>cutToNextStageCheckBox</tabstop>
+  <tabstop>cutToPrevStageCheckBox</tabstop>
+  <tabstop>disableGridCheckBox</tabstop>
+  <tabstop>movementSpeedComboBox</tabstop>
+  <tabstop>rotationSpeedComboBox</tabstop>
+  <tabstop>makeIconButton</tabstop>
+  <tabstop>makeIconFromShipButton</tabstop>
+  <tabstop>iconIdSpinBox</tabstop>
+  <tabstop>iconLabelLineEdit</tabstop>
+  <tabstop>iconCloseupLabelLineEdit</tabstop>
+  <tabstop>iconImageComboBox</tabstop>
+  <tabstop>iconShipTypeComboBox</tabstop>
+  <tabstop>iconTeamComboBox</tabstop>
+  <tabstop>scaleDoubleSpinBox</tabstop>
+  <tabstop>drawLinesCheckBox</tabstop>
+  <tabstop>changeLocallyCheckBox</tabstop>
+  <tabstop>flipIconCheckBox</tabstop>
+  <tabstop>highlightCheckBox</tabstop>
+  <tabstop>useCargoIconCheckBox</tabstop>
+  <tabstop>useWingIconCheckBox</tabstop>
+  <tabstop>iconCoordinatesButton</tabstop>
+  <tabstop>deleteIconButton</tabstop>
+  <tabstop>propagateIconButton</tabstop>
+  <tabstop>formulaTreeView</tabstop>
+  <tabstop>voiceFileLineEdit</tabstop>
+  <tabstop>voiceFileBrowseButton</tabstop>
+  <tabstop>voiceFilePlayButton</tabstop>
+  <tabstop>stageTextPlainTextEdit</tabstop>
+  <tabstop>teamComboBox</tabstop>
+  <tabstop>copyToOtherTeamsButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

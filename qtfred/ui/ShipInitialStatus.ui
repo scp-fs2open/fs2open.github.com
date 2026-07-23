@@ -458,6 +458,31 @@
    <header>ui/widgets/ShipFlagCheckbox.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>velocitySpinBox</tabstop>
+  <tabstop>hullSpinBox</tabstop>
+  <tabstop>guardianSpinBox</tabstop>
+  <tabstop>hasShieldCheckBox</tabstop>
+  <tabstop>forceShieldsCheckBox</tabstop>
+  <tabstop>shieldHullSpinBox</tabstop>
+  <tabstop>shipLockCheckBox</tabstop>
+  <tabstop>weaponLockCheckBox</tabstop>
+  <tabstop>primaryLockCheckBox</tabstop>
+  <tabstop>secondaryLockCheckBox</tabstop>
+  <tabstop>turretLockCheckBox</tabstop>
+  <tabstop>afterburnerLockCheckBox</tabstop>
+  <tabstop>dockpointList</tabstop>
+  <tabstop>dockeeComboBox</tabstop>
+  <tabstop>dockeePointComboBox</tabstop>
+  <tabstop>moveShipsCheckBox</tabstop>
+  <tabstop>subsystemList</tabstop>
+  <tabstop>subIntegritySpinBox</tabstop>
+  <tabstop>cargoEdit</tabstop>
+  <tabstop>cargoTitleEdit</tabstop>
+  <tabstop>colourComboBox</tabstop>
+  <tabstop>okPushButton</tabstop>
+  <tabstop>cancelPushButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

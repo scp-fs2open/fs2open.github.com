@@ -315,6 +315,21 @@
    <header>ui/widgets/bankTree.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>tabWidget</tabstop>
+  <tabstop>primaryListWeapons</tabstop>
+  <tabstop>primarySetAllButton</tabstop>
+  <tabstop>primaryTreeBanks</tabstop>
+  <tabstop>primaryAiCombo</tabstop>
+  <tabstop>primaryAiButton</tabstop>
+  <tabstop>primaryTblButton</tabstop>
+  <tabstop>secondaryListWeapons</tabstop>
+  <tabstop>secondarySetAllButton</tabstop>
+  <tabstop>secondaryTreeBanks</tabstop>
+  <tabstop>secondaryAiCombo</tabstop>
+  <tabstop>secondaryAiButton</tabstop>
+  <tabstop>secondaryTblButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
