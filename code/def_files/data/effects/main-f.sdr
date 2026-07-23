@@ -203,6 +203,9 @@ in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertIn;
 #endif
 
