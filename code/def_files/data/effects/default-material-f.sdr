@@ -34,10 +34,6 @@ uniform genericData {
 	uint clipEnabled;
 };
 
-#ifndef USE_HW_CLIP_DISTANCE
-in float vClipDist;
-#endif
-
 layout(location = 0) out vec4 fragOut0;
 
 #ifdef VULKAN
@@ -46,8 +42,15 @@ layout(set = 1, binding = 1) uniform sampler2DArray baseMap;
 
 layout(location = 0) in vec4 fragTexCoord;
 layout(location = 1) in vec4 fragColor;
+#ifndef USE_HW_CLIP_DISTANCE
+layout(location = 2) in float vClipDist;
+#endif
 
 #else
+
+#ifndef USE_HW_CLIP_DISTANCE
+in float vClipDist;
+#endif
 
 uniform sampler2DArray baseMap;
 

@@ -52,6 +52,9 @@ layout(location = 2) in vec4 vertTexCoord;
 
 layout(location = 0) out vec4 fragTexCoord;
 layout(location = 1) out vec4 fragColor;
+#ifndef USE_HW_CLIP_DISTANCE
+layout(location = 2) out float vClipDist;
+#endif
 
 #else
 
