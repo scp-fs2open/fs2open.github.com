@@ -29,7 +29,7 @@ void VulkanRenderer::initImGui()
 
 	// Load Vulkan function pointers for imgui (required with VK_NO_PROTOTYPES)
 	auto vkInstance = static_cast<VkInstance>(*m_vkInstance);
-	ImGui_ImplVulkan_LoadFunctions([](const char* function_name, void* user_data) -> PFN_vkVoidFunction {
+	ImGui_ImplVulkan_LoadFunctions(0, [](const char* function_name, void* user_data) -> PFN_vkVoidFunction {
 		return VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(
 			static_cast<VkInstance>(user_data), function_name);
 	}, vkInstance);
@@ -42,42 +42,15 @@ void VulkanRenderer::initImGui()
 	initInfo.Queue = static_cast<VkQueue>(m_graphicsQueue);
 	initInfo.PipelineCache = VK_NULL_HANDLE;
 	initInfo.DescriptorPool = static_cast<VkDescriptorPool>(*m_imguiDescriptorPool);
-	initInfo.Subpass = 0;
 	initInfo.MinImageCount = 2;
 	initInfo.ImageCount = static_cast<uint32_t>(m_swapChainImages.size());
-	initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	initInfo.Allocator = nullptr;
 	initInfo.CheckVkResultFn = nullptr;
+	initInfo.PipelineInfoMain.Subpass = 0;
+	initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	initInfo.PipelineInfoMain.RenderPass = static_cast<VkRenderPass>(*m_renderPass);
 
-	ImGui_ImplVulkan_Init(&initInfo, static_cast<VkRenderPass>(*m_renderPass));
-
-	// Upload font textures via one-time command buffer
-	{
-		vk::CommandBufferAllocateInfo allocInfo;
-		allocInfo.commandPool = m_graphicsCommandPool.get();
-		allocInfo.level = vk::CommandBufferLevel::ePrimary;
-		allocInfo.commandBufferCount = 1;
-
-		auto cmdBuffers = m_device->allocateCommandBuffers(allocInfo);
-		auto cmd = cmdBuffers.front();
-
-		vk::CommandBufferBeginInfo beginInfo;
-		beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-		cmd.begin(beginInfo);
-
-		ImGui_ImplVulkan_CreateFontsTexture(static_cast<VkCommandBuffer>(cmd));
-
-		cmd.end();
-
-		vk::SubmitInfo submitInfo;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &cmd;
-		m_graphicsQueue.submit(submitInfo, nullptr);
-		m_graphicsQueue.waitIdle();
-
-		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), cmdBuffers);
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
-	}
+	ImGui_ImplVulkan_Init(&initInfo);
 
 	nprintf(("vulkan", "Vulkan: ImGui backend initialized successfully\n"));
 }
