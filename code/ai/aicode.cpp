@@ -12320,8 +12320,7 @@ void ai_process_subobjects(int objnum)
 				// (previously in ship_evaluate_ai (previously in ship_process_post))
 				// Cyborg -- Unfortunately Ai info is not reliable and should just not be accessed here.
 				// It will have no real effect on gameplay, since the server decides when turrets fire
-				if (!MULTIPLAYER_CLIENT && 
-					(aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)))
+				if (!MULTIPLAYER_CLIENT && (aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair))) // NOLINT(readability-simplify-boolean-expr)
 				{
 					if (aip->support_ship_objnum >= 0)
 					{
