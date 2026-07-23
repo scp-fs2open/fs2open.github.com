@@ -613,6 +613,157 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	return success;
 }
 
+bool VulkanRenderer::readbackRenderTarget(tcache_slot_vulkan* ts, ubyte** outPixels, uint32_t* outWidth,
+	uint32_t* outHeight)
+{
+	*outPixels = nullptr;
+	*outWidth = 0;
+	*outHeight = 0;
+
+	if (!ts || !ts->image || !ts->renderPassLoad || !ts->framebuffer) {
+		nprintf(("vulkan", "readbackRenderTarget - render target has no readable/resumable resources\n"));
+		return false;
+	}
+
+	if (!m_frameInProgress || !m_currentCommandBuffer) {
+		nprintf(("vulkan", "readbackRenderTarget - no frame in progress\n"));
+		return false;
+	}
+
+	const uint32_t w = ts->width;
+	const uint32_t h = ts->height;
+	if (w == 0 || h == 0) {
+		return false;
+	}
+
+	// The target's draws are in the current (not-yet-submitted) frame command buffer, so
+	// we can't read them via a side command buffer like readbackFramebuffer does. Instead
+	// we flush the frame command buffer mid-frame: end the active render-target pass,
+	// record the color image -> staging copy into the SAME buffer, submit it (segment 1)
+	// with a temporary fence, and host-wait so the pixels are ready. Rendering then
+	// resumes on a fresh command buffer (segment 2) that flip() ultimately submits.
+
+	const vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * 4u; // R8G8B8A8
+
+	// Allocate the staging buffer BEFORE touching the render pass or image layout. If it
+	// fails we return with the render-target pass still active and the image untouched, so
+	// the frame carries on exactly as if the capture never happened.
+	vk::BufferCreateInfo bufferCreateInfo;
+	bufferCreateInfo.size = bufferSize;
+	bufferCreateInfo.usage = vk::BufferUsageFlagBits::eTransferDst;
+	bufferCreateInfo.sharingMode = vk::SharingMode::eExclusive;
+	auto stagingBuffer = m_device->createBuffer(bufferCreateInfo);
+
+	VulkanAllocation stagingAlloc{};
+	if (!m_memoryManager->allocateBufferMemory(stagingBuffer, MemoryUsage::GpuToCpu, stagingAlloc)) {
+		nprintf(("vulkan", "readbackRenderTarget - failed to allocate staging buffer\n"));
+		m_device->destroyBuffer(stagingBuffer);
+		return false;
+	}
+
+	// End the active render-target pass; its finalLayout leaves the color image in
+	// eShaderReadOnlyOptimal.
+	m_currentCommandBuffer.endRenderPass();
+
+	// Transition color image eShaderReadOnlyOptimal -> eTransferSrcOptimal for the copy.
+	ImageBarrier2 preBarrier;
+	preBarrier.image = ts->image;
+	preBarrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	preBarrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+	preBarrier.srcStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+	preBarrier.srcAccess = vk::AccessFlagBits2::eColorAttachmentWrite;
+	preBarrier.dstStage = vk::PipelineStageFlagBits2::eCopy;
+	preBarrier.dstAccess = vk::AccessFlagBits2::eTransferRead;
+	cmdImageBarrier(m_currentCommandBuffer, preBarrier);
+
+	vk::BufferImageCopy region;
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;   // tightly packed
+	region.bufferImageHeight = 0; // tightly packed
+	region.imageSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+	region.imageOffset = vk::Offset3D(0, 0, 0);
+	region.imageExtent = vk::Extent3D(w, h, 1);
+	m_currentCommandBuffer.copyImageToBuffer(ts->image, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer, region);
+
+	// Transition color image back to eShaderReadOnlyOptimal (the load-variant resume pass
+	// expects this initial layout). The dst scope covers the loadOp=eLoad color read/write
+	// when rendering resumes.
+	ImageBarrier2 postBarrier;
+	postBarrier.image = ts->image;
+	postBarrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+	postBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	postBarrier.srcStage = vk::PipelineStageFlagBits2::eCopy;
+	postBarrier.srcAccess = vk::AccessFlagBits2::eTransferRead;
+	postBarrier.dstStage = vk::PipelineStageFlagBits2::eColorAttachmentOutput | vk::PipelineStageFlagBits2::eFragmentShader;
+	postBarrier.dstAccess = vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite |
+	                        vk::AccessFlagBits2::eShaderSampledRead;
+	cmdImageBarrier(m_currentCommandBuffer, postBarrier);
+
+	// --- Submit segment 1 (RT draws + copy) and wait. No swap-chain image is touched here,
+	// so this submission carries no acquire/present semaphores -- just a throwaway fence. ---
+	m_currentCommandBuffer.end();
+
+	auto fence = m_device->createFence({});
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = static_cast<uint32_t>(m_currentCommandBuffers.size());
+	submitInfo.pCommandBuffers = m_currentCommandBuffers.data();
+	m_graphicsQueue.submit(submitInfo, fence);
+
+	auto waitResult = m_device->waitForFences(fence, VK_TRUE, UINT64_MAX);
+	if (waitResult != vk::Result::eSuccess) {
+		nprintf(("vulkan", "readbackRenderTarget - fence wait failed\n"));
+	}
+	m_device->destroyFence(fence);
+
+	// Segment 1's command buffers are done executing (fence signaled), so free them now.
+	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), m_currentCommandBuffers);
+	m_currentCommandBuffers.clear();
+	m_currentCommandBuffer = nullptr;
+
+	// Copy pixels out: R8G8B8A8_UNORM is already tightly-packed RGBA with real alpha, so no
+	// swizzle and no forced opacity (the icons rely on the transparent background).
+	bool success = false;
+	auto* mappedPtr = static_cast<ubyte*>(m_memoryManager->mapMemory(stagingAlloc));
+	if (mappedPtr) {
+		auto* pixels = static_cast<ubyte*>(vm_malloc(static_cast<int>(bufferSize)));
+		if (pixels) {
+			memcpy(pixels, mappedPtr, static_cast<size_t>(bufferSize));
+			*outPixels = pixels;
+			*outWidth = w;
+			*outHeight = h;
+			success = true;
+		}
+		m_memoryManager->unmapMemory(stagingAlloc);
+	}
+	m_device->destroyBuffer(stagingBuffer);
+	m_memoryManager->freeAllocation(stagingAlloc);
+
+	// --- Begin segment 2: a fresh frame command buffer that flip() will submit+present. ---
+	vk::CommandBufferAllocateInfo cmdAlloc;
+	cmdAlloc.commandPool = m_graphicsCommandPool.get();
+	cmdAlloc.level = vk::CommandBufferLevel::ePrimary;
+	cmdAlloc.commandBufferCount = 1;
+	auto cmdBufs = m_device->allocateCommandBuffers(cmdAlloc);
+	m_currentCommandBuffers.assign(cmdBufs.begin(), cmdBufs.end());
+	m_currentCommandBuffer = m_currentCommandBuffers.front();
+
+	vk::CommandBufferBeginInfo beginInfo;
+	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+	m_currentCommandBuffer.begin(beginInfo);
+
+	// A fresh command buffer starts with no Vulkan state, so re-point the state tracker at
+	// it and invalidate every cached binding/dynamic-state value. beginFrame() does exactly
+	// this (and touches nothing else), so the next tracked draw re-binds pipeline,
+	// descriptors, viewport, scissor, etc. Deliberately NOT resetting the descriptor pool
+	// mid-frame (segment 2 keeps allocating past segment 1's sets).
+	m_stateTracker->beginFrame(m_currentCommandBuffer);
+
+	// Resume drawing into the target (loadOp=eLoad) so content survives the flush.
+	resumeRenderTargetPass(ts);
+
+	return success;
+}
+
 uint32_t VulkanRenderer::getMinUniformBufferOffsetAlignment() const
 {
 	if (!m_physicalDevice) {

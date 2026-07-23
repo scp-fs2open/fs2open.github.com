@@ -121,7 +121,11 @@ void tcache_slot_vulkan::reset()
 	framebuffer = nullptr;
 	framebufferView = nullptr;
 	renderPass = nullptr;
+	renderPassLoad = nullptr;
 	isRenderTarget = false;
+	depthImage = nullptr;
+	depthImageView = nullptr;
+	depthAllocation = VulkanAllocation();
 	is3D = false;
 	depth = 1;
 	isCubemap = false;
@@ -465,6 +469,11 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 		ts->renderPass = nullptr;
 	}
 
+	if (ts->renderPassLoad) {
+		deletionQueue->queueRenderPass(ts->renderPassLoad);
+		ts->renderPassLoad = nullptr;
+	}
+
 	if (ts->imageView) {
 		deletionQueue->queueImageView(ts->imageView);
 		ts->imageView = nullptr;
@@ -473,6 +482,17 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 	if (ts->framebufferView) {
 		deletionQueue->queueImageView(ts->framebufferView);
 		ts->framebufferView = nullptr;
+	}
+
+	if (ts->depthImageView) {
+		deletionQueue->queueImageView(ts->depthImageView);
+		ts->depthImageView = nullptr;
+	}
+
+	if (ts->depthImage) {
+		deletionQueue->queueImage(ts->depthImage, ts->depthAllocation);
+		ts->depthImage = nullptr;
+		ts->depthAllocation = VulkanAllocation{};  // Clear to prevent double-free
 	}
 
 	if (ts->image) {
@@ -1329,6 +1349,38 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		}
 	}
 
+	// Optional depth/stencil attachment. Without it, models rendered into the target
+	// get no z-testing at all: the Vulkan spec ignores the pipeline's depth/stencil
+	// state when the subpass has no depth attachment, so depth-tested geometry draws
+	// in submission order. This mirrors the OpenGL FBO's depth renderbuffer. Cubemap
+	// render targets (env/irradiance maps) never request this.
+	const bool wantDepth = ((flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) != 0) && !isCubemapRT;
+	vk::Format depthFormat = vk::Format::eUndefined;
+	if (wantDepth) {
+		depthFormat = getRendererInstance()->getDepthFormat();
+		if (depthFormat == vk::Format::eUndefined) {
+			Warning(LOCATION, "Vulkan render target requested a depth attachment before the depth format "
+			                  "was initialized; z-buffering will be unavailable for this target.");
+		} else if (!createImage(w, h, 1, depthFormat, vk::ImageTiling::eOptimal,
+		                        vk::ImageUsageFlagBits::eDepthStencilAttachment, MemoryUsage::GpuOnly,
+		                        ts->depthImage, ts->depthAllocation, 1, false)) {
+			nprintf(("vulkan", "Failed to create render target depth image!\n"));
+			depthFormat = vk::Format::eUndefined;
+		} else {
+			// Array2D view with a single layer matches the color framebuffer attachment.
+			ts->depthImageView = createImageView(ts->depthImage, depthFormat,
+			                                     imageAspectFromFormat(depthFormat), 1, ImageViewType::Array2D);
+			if (!ts->depthImageView) {
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+				depthFormat = vk::Format::eUndefined;
+			}
+		}
+	}
+	const bool hasDepth = (depthFormat != vk::Format::eUndefined) && static_cast<bool>(ts->depthImage);
+
 	// Create render pass for this target
 	vk::AttachmentDescription colorAttachment;
 	colorAttachment.format = format;
@@ -1344,14 +1396,37 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
+	// Depth attachment: cleared at every pass begin (loadOp=eClear) so the target
+	// starts with a clean depth buffer regardless of what the caller does; contents
+	// are never sampled afterward (storeOp=eDontCare). Layout stays in
+	// eDepthStencilAttachmentOptimal across frames to avoid per-pass transitions.
+	vk::AttachmentDescription depthAttachment;
+	depthAttachment.format = depthFormat;
+	depthAttachment.samples = vk::SampleCountFlagBits::e1;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::AttachmentReference depthAttachmentRef;
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
+	if (hasDepth) {
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+	}
 
 	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = hasDepth ? 2u : 1u;
+	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 
@@ -1359,12 +1434,57 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		ts->renderPass = m_device.createRenderPass(renderPassInfo);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "Failed to create render pass: %s\n", e.what()));
+		if (hasDepth) {
+			m_device.destroyImageView(ts->depthImageView);
+			m_device.destroyImage(ts->depthImage);
+			ts->depthImageView = nullptr;
+			ts->depthImage = nullptr;
+			m_memoryManager->freeAllocation(ts->depthAllocation);
+			ts->depthAllocation = VulkanAllocation{};
+		}
 		m_device.destroyImageView(ts->imageView);
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
 		ts->imageView = nullptr;
 		m_memoryManager->freeAllocation(ts->allocation);
 		return 0;
+	}
+
+	// Load-variant of the render pass (color loadOp=eLoad) so a mid-frame readback can
+	// resume rendering into this target without clearing what was already drawn. Only
+	// flat targets are read back via gr.screenToBlob, so skip it for cubemaps.
+	if (!isCubemapRT) {
+		vk::AttachmentDescription loadColorAttachment = colorAttachment;
+		loadColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+		std::array<vk::AttachmentDescription, 2> loadAttachments = {loadColorAttachment, depthAttachment};
+
+		vk::RenderPassCreateInfo loadPassInfo;
+		loadPassInfo.attachmentCount = hasDepth ? 2u : 1u;
+		loadPassInfo.pAttachments = loadAttachments.data();
+		loadPassInfo.subpassCount = 1;
+		loadPassInfo.pSubpasses = &subpass;
+
+		try {
+			ts->renderPassLoad = m_device.createRenderPass(loadPassInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "Failed to create load-variant render pass: %s\n", e.what()));
+			m_device.destroyRenderPass(ts->renderPass);
+			ts->renderPass = nullptr;
+			if (hasDepth) {
+				m_device.destroyImageView(ts->depthImageView);
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImageView = nullptr;
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+			}
+			m_device.destroyImageView(ts->imageView);
+			m_device.destroyImage(ts->image);
+			ts->image = nullptr;
+			ts->imageView = nullptr;
+			m_memoryManager->freeAllocation(ts->allocation);
+			return 0;
+		}
 	}
 
 	if (isCubemapRT) {
@@ -1389,12 +1509,15 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		ts->framebuffer = ts->cubeFaceFramebuffers[0];
 	} else {
 		// Create framebuffer
-		// Use framebufferView (single-mip) if available, otherwise imageView
-		vk::ImageView fbAttachment = ts->framebufferView ? ts->framebufferView : ts->imageView;
+		// Use framebufferView (single-mip) if available, otherwise imageView.
+		// The depth view (when present) is attachment 1, matching the render pass.
+		std::array<vk::ImageView, 2> fbAttachments = {
+			ts->framebufferView ? ts->framebufferView : ts->imageView,
+			ts->depthImageView};
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = ts->renderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = &fbAttachment;
+		framebufferInfo.attachmentCount = hasDepth ? 2u : 1u;
+		framebufferInfo.pAttachments = fbAttachments.data();
 		framebufferInfo.width = w;
 		framebufferInfo.height = h;
 		framebufferInfo.layers = 1;
@@ -1403,7 +1526,19 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			ts->framebuffer = m_device.createFramebuffer(framebufferInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "Failed to create framebuffer: %s\n", e.what()));
+			if (hasDepth) {
+				m_device.destroyImageView(ts->depthImageView);
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImageView = nullptr;
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+			}
 			m_device.destroyRenderPass(ts->renderPass);
+			if (ts->renderPassLoad) {
+				m_device.destroyRenderPass(ts->renderPassLoad);
+				ts->renderPassLoad = nullptr;
+			}
 			m_device.destroyImageView(ts->imageView);
 			m_device.destroyImage(ts->image);
 			ts->image = nullptr;
@@ -1418,6 +1553,13 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 	// if sampled before being rendered into (render pass expects this initial layout)
 	transitionImageLayout(ts->image, format, vk::ImageLayout::eUndefined,
 	                      vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels, arrayLayers);
+
+	// Put the depth image in the layout the render pass expects as its initial layout.
+	// It stays there across frames (finalLayout matches), so no per-pass transition.
+	if (hasDepth) {
+		transitionImageLayout(ts->depthImage, depthFormat, vk::ImageLayout::eUndefined,
+		                      vk::ImageLayout::eDepthStencilAttachmentOptimal, 1, 1);
+	}
 
 	// Update slot info
 	ts->width = w;
