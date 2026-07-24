@@ -21,18 +21,18 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static int64_t get_tid() {
+static int64_t query_tid() {
     return (int64_t) GetCurrentThreadId();
 }
 #elif __LINUX__
 #include <sys/syscall.h>
-static int64_t get_tid() {
+static int64_t query_tid() {
 	return (int64_t) syscall(SYS_gettid);
 }
 #else
 #include <pthread.h>
 
-static int64_t get_tid() {
+static int64_t query_tid() {
 // This is not a reliable way of getting the tid but it's better than nothing
     return (int64_t) pthread_self();
 }
@@ -40,16 +40,29 @@ static int64_t get_tid() {
 
 // A function for getting the id of the current process
 #ifdef WIN32
-static int64_t get_pid() {
+static int64_t query_pid() {
     return (int64_t)GetCurrentProcessId();
 }
 #else
 #include <unistd.h>
 
-static int64_t get_pid() {
+static int64_t query_pid() {
 	return (int64_t) getpid();
 }
 #endif
+
+// Cached accessors: the thread/process id never changes for the lifetime of a thread, but the
+// underlying queries are real syscalls on Linux (SYS_gettid) and glibc (getpid, uncached since
+// 2.25). A trace event is emitted for every TRACE_SCOPE, so querying these per event dominated the
+// tracing overhead -- cache them in thread-local storage so each thread pays the syscall only once.
+static int64_t get_tid() {
+	thread_local const int64_t tid = query_tid();
+	return tid;
+}
+static int64_t get_pid() {
+	thread_local const int64_t pid = query_pid();
+	return pid;
+}
 
 namespace {
 
