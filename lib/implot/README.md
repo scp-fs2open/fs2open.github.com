@@ -67,13 +67,13 @@ ImGui::End();
 ![Usage](https://raw.githubusercontent.com/wiki/epezent/implot/screenshots3/example.PNG)
 
 
-Of course, there's much more you can do with ImPlot... 
+Of course, there's much more you can do with ImPlot...
 
 ## Demos
 
 A comprehensive example of ImPlot's features can be found in `implot_demo.cpp`. Add this file to your sources and call `ImPlot::ShowDemoWindow()` somewhere in your update loop. You are encouraged to use this file as a reference when needing to implement various plot types. The demo is always updated to show new plot types and features as they are added, so check back with each release!
 
-An online version of the demo is hosted [here](https://traineq.org/implot_demo/src/implot_demo.html). You can view the plots and the source code that generated them. Note that this demo may not always be up to date and is not as performant as a desktop implementation, but it should give you a general taste of what's possible with ImPlot. Special thanks to [pthom](https://github.com/pthom) for creating and hosting this!
+An online version of the demo is hosted [here](https://pthom.github.io/imgui_explorer/?lib=implot). You can view the plots and the source code that generated them. Note that this demo may not always be up to date and is not as performant as a desktop implementation, but it should give you a general taste of what's possible with ImPlot. Special thanks to [pthom](https://github.com/pthom) for creating and hosting this!
 
 More sophisticated demos requiring lengthier code and/or third-party libraries can be found in a separate repository: [implot_demos](https://github.com/epezent/implot_demos). Here, you will find advanced signal processing and ImPlot usage in action. Please read the `Contributing` section of that repository if you have an idea for a new demo!
 
@@ -92,8 +92,6 @@ ImGui::DestroyContext();
 ```
 
 You should be good to go!
-
-If you want to test ImPlot quickly, consider trying [mahi-gui](https://github.com/mahilab/mahi-gui), which bundles ImGui, ImPlot, and several other packages for you.
 
 ## Installing ImPlot using vcpkg
 
@@ -141,11 +139,11 @@ A: ImPlot plotting functions accept most scalar types:
 
 **Q: Can plot styles be modified?**
 
-A: Yes. Data colormaps and various styling colors and variables can be pushed/popped or modified permanently on startup. Three default styles are available, as well as an automatic style that attempts to match you ImGui style.
+A: Yes. Three default styles are available, as well as an automatic style that attempts to match you ImGui style. You can define any custom style as well. Plot items are generally styled for you based on the current colormap, but can be customized on an individual basis.
 
-**Q: Does ImPlot support logarithmic scaling or time formatting?**
+**Q: Does ImPlot support non-linear axis scaling? Time formatting?**
 
-A: Yep! Both logscale and timescale are supported.
+A: Yes. Logscale and symmetric logscale are provided out of the box, and you can define custom axis scales as well. Time scale with microsecond precision is also available out of the box.
 
 **Q: Does ImPlot support multiple y-axes? x-axes?**
 
@@ -153,15 +151,11 @@ A: Yes. Up to three x-axes and three y-axes can be enabled.
 
 **Q: Does ImPlot support [insert plot type]?**
 
-A: Maybe. Check the demo, gallery, or Announcements ([2020](https://github.com/epezent/implot/issues/48)/[2021](https://github.com/epezent/implot/issues/168))to see if your desired plot type is shown. If not, consider submitting an issue or better yet, a PR!
+A: Maybe. Check the demo, gallery, or Announcements ([2020](https://github.com/epezent/implot/issues/48)/[2021](https://github.com/epezent/implot/issues/168)/[2022](https://github.com/epezent/implot/discussions/370)) to see if your desired plot type is shown. If not, consider submitting an issue or better yet, a PR!
 
 **Q: Does ImPlot support 3D plots?**
 
-A: No, and likely never will since ImGui only deals in 2D rendering.
-
-**Q: My plot lines look like crap!**
-
-A: By default, no anti-aliasing is done on line plots for performance gains. If you use at least 4x MSAA, then you likely won't even notice. However, you can enable software AA per-plot with the `ImPlotFlags_AntiAliased` flag, or globally with `ImPlot::GetStyle().AntiAliasedLines = true;`.
+A: An experimental extension to ImPlot, [ImPlot3D](https://github.com/brenocq/implot3d), provides a similar API for plotting and interacting with 3D data. 
 
 **Q: Does ImPlot provide analytic tools?**
 
@@ -171,10 +165,14 @@ A: Not exactly, but it does give you the ability to query plot sub-ranges, with 
 
 A: Not currently. Use your OS's screen capturing mechanisms if you need to capture a plot. ImPlot is not suitable for rendering publication quality plots; it is only intended to be used as a visualization tool. Post-process your data with MATLAB or matplotlib for these purposes.
 
+**Q: Why are my plot lines showing aliasing?**
+
+A: You probably need to enable `ImGuiStyle::AntiAliasedLinesUseTex` (or possibly `ImGuiStyle:AntiAliasedLines`). If those settings are already enabled, then you must ensure your backend supports texture based anti-aliasing (i.e. uses bilinear sampling). Most of the default ImGui backends support this feature out of the box. Learn more [here](https://github.com/ocornut/imgui/issues/3245). Alternatively, you can enable MSAA at the application level if your hardware supports it (4x should do).
+
 **Q: Can I compile ImPlot as a dynamic library?**
 
 A: Like ImGui, it is recommended that you compile and link ImPlot as a *static* library or directly as a part of your sources. However, if you must and are compiling ImPlot and ImGui as separate DLLs, make sure you set the current *ImGui* context with `ImPlot::SetImGuiContext(ImGuiContext* ctx)`. This ensures that global ImGui variables are correctly shared across the DLL boundary.
 
 **Q: Can ImPlot be used with other languages/bindings?**
 
-A: Yes, you can use the generated C binding, [cimplot](https://github.com/cimgui/cimplot) with most high level languages. [DearPyGui](https://github.com/hoffstadt/DearPyGui) provides a Python wrapper, among other things. [imgui-java](https://github.com/SpaiR/imgui-java) provides bindings for Java. A Rust binding, [implot-rs](https://github.com/4bb4/implot-rs), is currently in the works. An example using Emscripten can be found [here](https://github.com/pthom/implot_demo).
+A: Yes, you can use the generated C binding, [cimplot](https://github.com/cimgui/cimplot) with most high level languages. [DearPyGui](https://github.com/hoffstadt/DearPyGui) provides a Python wrapper, among other things. [DearImGui/DearImPlot](https://github.com/aybe/DearImGui) provides bindings for .NET. [imgui-java](https://github.com/SpaiR/imgui-java) provides bindings for Java. [ImPlot.jl](https://github.com/wsphillips/ImPlot.jl) provides bindings for Julia. A Rust binding, [implot-rs](https://github.com/4bb4/implot-rs), is currently in the works. An example using Emscripten can be found [here](https://github.com/pthom/implot_demo).
