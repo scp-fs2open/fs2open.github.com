@@ -426,7 +426,7 @@ bool VulkanRenderer::initialize()
 
 	// Initialize shader manager
 	m_shaderManager = std::make_unique<VulkanShaderManager>();
-	if (!m_shaderManager->init(m_device.get())) {
+	if (!m_shaderManager->init(m_device.get(), m_deviceFeatures.shaderClipDistance == VK_TRUE)) {
 		nprintf(("vulkan", "Failed to initialize Vulkan shader manager!\n"));
 		return false;
 	}

@@ -1,3 +1,9 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
 
 #ifdef VULKAN
 layout(std140, set = 2, binding = 0) uniform genericData {

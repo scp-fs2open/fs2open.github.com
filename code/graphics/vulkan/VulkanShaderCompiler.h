@@ -23,6 +23,7 @@ public:
 	VulkanShaderCompiler();
 	~VulkanShaderCompiler();
 
+	bool init(bool hwClipDistance);
 	bool init();
 	void shutdown();
 
@@ -69,6 +70,7 @@ private:
 
 	std::unique_ptr<VulkanShadercLibrary> m_shaderc;
 	bool m_initialized = false;
+	bool m_hwClipDistance = false;
 };
 
 } // namespace graphics::vulkan

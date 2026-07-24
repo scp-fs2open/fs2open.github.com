@@ -1,8 +1,27 @@
 
 #ifndef VULKAN
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+precision highp samplerBuffer;
+precision highp sampler2DArrayShadow;
+#else
 #extension GL_ARB_gpu_shader5: enable
 #endif
+#endif
+
+#if defined(VULKAN)
+//define USE_HW_CLIP_DISTANCE from engine side
+#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
+	#define USE_HW_CLIP_DISTANCE
+#endif
+
 #include "shadows.sdr"
 
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
@@ -135,8 +154,15 @@ layout(location = 0) out VertexOutput {
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertOut;
 #else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
@@ -158,6 +184,10 @@ out VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifndef USE_HW_CLIP_DISTANCE
+    float vClipDist;
+#endif
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
@@ -239,12 +269,20 @@ void main()
 		}
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TRANSFORM
 
-	// Clip plane
-	if(use_clip_plane != 0) {
-		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
-	} else {
-		gl_ClipDistance[0] = 1.0;
-	}
+	#ifdef USE_HW_CLIP_DISTANCE
+		if (use_clip_plane != 0) {
+			gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+		} else {
+			gl_ClipDistance[0] = 1.0;
+		}
+	#else
+		if (use_clip_plane != 0) {
+			vertOut.vClipDist = dot(clip_equation, modelMatrix * orient * vertex);
+		} else {
+			vertOut.vClipDist = 1.0;
+		}
+	#endif
+
 
 	vertOut.position = position;
 	vertOut.normal = normal;

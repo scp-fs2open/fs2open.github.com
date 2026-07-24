@@ -1,9 +1,16 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+#endif
+
+layout(location = 0) out vec4 fragOut0;
+
 #ifdef VULKAN
 layout(location = 0) in vec4 fragTexCoord;
 layout(location = 1) in vec4 fragColor;
 layout(location = 2) in float fragOffset;
-
-layout(location = 0) out vec4 fragOut0;
 
 layout(set = 1, binding = 1) uniform sampler2DArray baseMap;
 layout(set = 1, binding = 4) uniform sampler2D depthMap;
@@ -13,8 +20,6 @@ layout(set = 1, binding = 6) uniform sampler2D distMap;
 in vec4 fragTexCoord;
 in vec4 fragColor;
 in float fragOffset;
-
-out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
 uniform sampler2D depthMap;

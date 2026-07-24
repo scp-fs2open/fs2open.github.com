@@ -1,3 +1,10 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp samplerCube;
+#endif
 
 #ifdef VULKAN
 layout(location = 0) in vec4 vertPosition;
