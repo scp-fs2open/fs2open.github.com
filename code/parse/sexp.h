@@ -1494,7 +1494,7 @@ extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, con
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern bool sexp_query_type_match(int opf, int opr);
-extern int sexp_match_closest_operator(const SCP_string &str, int opf);
+extern int sexp_match_closest_operator(const SCP_string &str, int opf, size_t min = SCP_string::npos);
 extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();

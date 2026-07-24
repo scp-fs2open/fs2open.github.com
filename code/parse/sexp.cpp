@@ -35315,12 +35315,15 @@ bool sexp_query_type_match(int opf, int opr)
  * Finds the operator that is the best textual match for the input string, given the required OPF type.  For equal matches,
  * the alphabetically earliest operator is returned.
  * 
+ * min defaults to SCP_string::npos, when specified to another value, this function will not always return a match  
+ *
  * Note: Returns the operator index, not the operator value.
  */
-int sexp_match_closest_operator(const SCP_string &str, int opf)
+int sexp_match_closest_operator(const SCP_string &str, int opf, size_t min)
 {
+	// Cyborg - This bool setup helps with readability
+	bool return_any = (min == SCP_string::npos);
 	int best = -1;
-	size_t min = SCP_string::npos;
 
 	for (int op_index : Sorted_operator_indexes)
 	{
@@ -35330,7 +35333,7 @@ int sexp_match_closest_operator(const SCP_string &str, int opf)
 		if (sexp_query_type_match(opf, opr))
 		{
 			size_t cost = stringcost(op_text, str, Max_operator_length, stringcost_tolower_equal);
-			if (best < 0 || cost < min)
+			if (cost < min || (return_any && best == -1) )
 			{
 				min = cost;
 				best = op_index;
