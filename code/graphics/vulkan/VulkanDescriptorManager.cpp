@@ -28,23 +28,45 @@ static constexpr DescriptorBindingTemplate s_globalTlasBinding{
 // (see VulkanDescriptorManager.h), rather than compiled in as a fixed constexpr array.
 
 static constexpr DescriptorBindingTemplate s_materialBindings[] = {
-	{MaterialBinding::ModelData,     vk::DescriptorType::eUniformBuffer,        1,  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::TextureArray,  vk::DescriptorType::eCombinedImageSampler, 16, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray},
-	{MaterialBinding::DecalGlobals,  vk::DescriptorType::eUniformBuffer,        1,  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer,        1,  vk::ShaderStageFlagBits::eVertex},
-	{MaterialBinding::DepthMap,      vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::SceneColor,    vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1,  vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::ShadowMapData, vk::DescriptorType::eUniformBuffer,        1,  vk::ShaderStageFlagBits::eVertex},
+	{MaterialBinding::ModelData,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::TextureArray,
+		vk::DescriptorType::eCombinedImageSampler,
+		16,
+		vk::ShaderStageFlagBits::eFragment,
+		vk::ImageViewType::e2DArray},
+	{MaterialBinding::DecalGlobals,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex},
+	{MaterialBinding::DepthMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::SceneColor, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::ShadowMapData, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex},
 };
 static constexpr DescriptorSetTemplate s_materialTemplate(s_materialBindings);
 
 static constexpr DescriptorBindingTemplate s_perDrawBindings[] = {
-	{PerDrawBinding::GenericData, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::Matrices,    vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::NanoVGData,  vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::DecalInfo,   vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::MovieData,   vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::GenericData,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::Matrices,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::NanoVGData,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::DecalInfo,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::MovieData, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment},
 };
 static constexpr DescriptorSetTemplate s_perDrawTemplate(s_perDrawBindings);
 
@@ -92,12 +114,20 @@ const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t
 
 // ========== DescriptorWriter template-based methods ==========
 
-void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl)
+void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet set)
 {
 	Assert(m_fallbacks);
 
+	const DescriptorSetTemplate& tmpl = VulkanDescriptorManager::getSetTemplate(setIndex);
+
 	// Clear binding slots for this set
 	m_bindingSlots = {};
+	m_currentSet = setIndex;
+
+	// Dynamic offsets are consumed in binding order, so assign slots as the
+	// template is walked (templates list bindings in ascending binding number).
+	uint32_t nextDynIndex = 0;
+	m_dynOffsets[static_cast<size_t>(setIndex)] = {};
 
 	for (const auto& b : tmpl) {
 		Assert(m_writeCount < MAX_WRITES);
@@ -116,6 +146,10 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
 		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
+		if (b.type == vk::DescriptorType::eUniformBufferDynamic) {
+			Assert(nextDynIndex < MAX_DYNAMIC_OFFSETS_PER_SET);
+			slot.dynIndex = static_cast<int>(nextDynIndex++);
+		}
 		if (isImage) {
 			Assert(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
 			auto* dst = &m_imageInfos[m_imageInfoCount];
@@ -144,10 +178,30 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 		} else {
 			Assert(m_bufferInfoCount < MAX_BUFFER_INFOS);
 			m_bufferInfos[m_bufferInfoCount] = m_fallbacks->buffer;
+			// The fallback buffer info starts at offset 0, which is also the base a
+			// dynamic descriptor needs (its offset lives in the dynamic-offset array,
+			// left at 0 here until setBuffer supplies a real one).
 			w.pBufferInfo = &m_bufferInfos[m_bufferInfoCount];
 			slot.bufferInfo = &m_bufferInfos[m_bufferInfoCount++];
 		}
 	}
+}
+
+ArrayView<uint32_t> DescriptorWriter::dynamicOffsets(DescriptorSetIndex firstSet, uint32_t setCount)
+{
+	size_t out = 0;
+	for (uint32_t i = 0; i < setCount; ++i) {
+		const auto set = static_cast<DescriptorSetIndex>(static_cast<uint32_t>(firstSet) + i);
+		Assert(static_cast<uint32_t>(set) < static_cast<uint32_t>(DescriptorSetIndex::Count));
+
+		const uint32_t dynCount = VulkanDescriptorManager::getDynamicOffsetCount(set);
+		Assert(dynCount <= MAX_DYNAMIC_OFFSETS_PER_SET);
+		for (uint32_t j = 0; j < dynCount; ++j) {
+			Assert(out < m_dynOffsetScratch.size());
+			m_dynOffsetScratch[out++] = m_dynOffsets[static_cast<size_t>(set)][j];
+		}
+	}
+	return {m_dynOffsetScratch.data(), out};
 }
 
 void DescriptorWriter::flush()
@@ -167,6 +221,25 @@ void DescriptorWriter::setBuffer(uint32_t binding, const vk::DescriptorBufferInf
 	Assert(binding < MAX_BINDINGS_PER_SET);
 	auto& slot = m_bindingSlots[binding];
 	Assert(slot.bufferInfo);
+
+	if (slot.dynIndex >= 0) {
+		// Dynamic binding: the descriptor holds only {buffer, 0, range}; the caller's
+		// offset becomes the dynamic offset applied at bind time. Keeping it out of
+		// the descriptor is what lets the set survive an offset-only change.
+		auto& dyn = m_dynOffsets[static_cast<size_t>(m_currentSet)][static_cast<size_t>(slot.dynIndex)];
+		if (info.buffer) {
+			Assertion(info.offset <= static_cast<vk::DeviceSize>(UINT32_MAX),
+				"Dynamic uniform buffer offset " SIZE_T_ARG " does not fit in a uint32 dynamic offset!",
+				static_cast<size_t>(info.offset));
+			*slot.bufferInfo = vk::DescriptorBufferInfo(info.buffer, 0, info.range);
+			dyn = static_cast<uint32_t>(info.offset);
+		} else {
+			*slot.bufferInfo = m_fallbacks->buffer;
+			dyn = 0;
+		}
+		return;
+	}
+
 	if (info.buffer) {
 		*slot.bufferInfo = info;
 	} else {
@@ -279,6 +352,17 @@ const DescriptorSetTemplate& VulkanDescriptorManager::getSetTemplate(DescriptorS
 	}
 }
 
+uint32_t VulkanDescriptorManager::getDynamicOffsetCount(DescriptorSetIndex setIndex)
+{
+	uint32_t count = 0;
+	for (const auto& b : getSetTemplate(setIndex)) {
+		if (b.type == vk::DescriptorType::eUniformBufferDynamic) {
+			count += b.count;
+		}
+	}
+	return count;
+}
+
 vk::DescriptorSetLayout VulkanDescriptorManager::getSetLayout(DescriptorSetIndex setIndex) const
 {
 	return m_setLayouts[static_cast<size_t>(setIndex)].get();
@@ -294,22 +378,31 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 	auto& pools = m_framePools[m_currentFrame];
 	++m_setsAllocatedThisFrame;
 
+	// Allocate through the non-throwing, non-allocating vulkan.hpp overload: this is
+	// one of the hottest calls in the backend (thousands per frame), and the
+	// vector-returning overload heap-allocates on every single one.
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &layout;
+
 	// Try allocating from the last pool in the list
 	if (!pools.empty()) {
-		vk::DescriptorSetAllocateInfo allocInfo;
 		allocInfo.descriptorPool = pools.back().get();
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.pSetLayouts = &layout;
 
-		try {
-			auto sets = m_device.allocateDescriptorSets(allocInfo);
-			return sets[0];
-		} catch (const vk::OutOfPoolMemoryError&) {
-			// Pool exhausted, fall through to create a new one
+		vk::DescriptorSet set;
+		vk::Result result = m_device.allocateDescriptorSets(&allocInfo, &set);
+		if (result == vk::Result::eSuccess) {
+			return set;
+		}
+		if (result == vk::Result::eErrorOutOfPoolMemory) {
 			nprintf(("vulkan", "VulkanDescriptorManager: frame pool exhausted, allocating an additional pool chunk\n"));
-		} catch (const vk::FragmentedPoolError&) {
-			// Pool fragmented, fall through to create a new one
+		} else if (result == vk::Result::eErrorFragmentedPool) {
 			nprintf(("vulkan", "VulkanDescriptorManager: frame pool fragmented, allocating an additional pool chunk\n"));
+		} else {
+			nprintf(("vulkan",
+				"VulkanDescriptorManager: descriptor set allocation failed (%s)\n",
+				vk::to_string(result).c_str()));
+			return {};
 		}
 	}
 
@@ -318,18 +411,17 @@ vk::DescriptorSet VulkanDescriptorManager::allocateFrameSet(DescriptorSetIndex s
 	nprintf(("vulkandescriptor", "VulkanDescriptorManager: Grew frame %u pool count to %zu\n",
 		m_currentFrame, pools.size()));
 
-	vk::DescriptorSetAllocateInfo allocInfo;
 	allocInfo.descriptorPool = pools.back().get();
-	allocInfo.descriptorSetCount = 1;
-	allocInfo.pSetLayouts = &layout;
 
-	try {
-		auto sets = m_device.allocateDescriptorSets(allocInfo);
-		return sets[0];
-	} catch (const vk::SystemError& e) {
-		nprintf(("vulkan", "VulkanDescriptorManager: Failed to allocate frame descriptor set after pool growth: %s\n", e.what()));
+	vk::DescriptorSet set;
+	vk::Result result = m_device.allocateDescriptorSets(&allocInfo, &set);
+	if (result != vk::Result::eSuccess) {
+		nprintf(("vulkan",
+			"VulkanDescriptorManager: Failed to allocate frame descriptor set after pool growth: %s\n",
+			vk::to_string(result).c_str()));
 		return {};
 	}
+	return set;
 }
 
 void VulkanDescriptorManager::beginFrame()
@@ -403,9 +495,10 @@ vk::UniqueDescriptorPool VulkanDescriptorManager::createFramePool()
 	// constants in VulkanDescriptorManager.h. Additional pool chunks are created
 	// automatically when one is exhausted.
 	SCP_vector<vk::DescriptorPoolSize> poolSizes = {
-		{ vk::DescriptorType::eUniformBuffer, MAX_UNIFORM_BUFFERS_PER_POOL },
-		{ vk::DescriptorType::eCombinedImageSampler, MAX_SAMPLERS_PER_POOL },
-		{ vk::DescriptorType::eStorageBuffer, MAX_SETS_PER_POOL },
+		{vk::DescriptorType::eUniformBuffer, MAX_UNIFORM_BUFFERS_PER_POOL},
+		{vk::DescriptorType::eUniformBufferDynamic, MAX_DYNAMIC_UNIFORM_BUFFERS_PER_POOL},
+		{vk::DescriptorType::eCombinedImageSampler, MAX_SAMPLERS_PER_POOL},
+		{vk::DescriptorType::eStorageBuffer, MAX_SETS_PER_POOL},
 	};
 	if (m_raytracingEnabled) {
 		poolSizes.emplace_back(vk::DescriptorType::eAccelerationStructureKHR, MAX_SETS_PER_POOL);

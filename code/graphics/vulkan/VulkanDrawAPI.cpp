@@ -748,12 +748,12 @@ void vulkan_calculate_irrmap()
 		// Set 0: Global (all fallback)
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 		Assert(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 		// Set 1: Material (envmap cubemap at element 0 of texture array)
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 		Assert(materialSet);
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
 			texImages.fill(descManager->getFallbacks().texture2D);
@@ -764,14 +764,18 @@ void vulkan_calculate_irrmap()
 		// Set 2: PerDraw (face UBO at binding 0)
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Assert(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::GenericData, {faceUBO,
 			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE});
 		writer.flush();
 
 		// Bind all descriptor sets
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-			0, {globalSet, materialSet, perDrawSet}, {});
+		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+			pipelineLayout,
+			0,
+			{globalSet, materialSet, perDrawSet},
+			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 
 		// Draw fullscreen triangle
 		cmd.draw(3, 1, 0, 0);

@@ -304,7 +304,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -316,7 +316,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	// Set 2: PerDraw — fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	{
 		vk::DeviceSize slotOffset =
 			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &fogData, sizeof(fogData));
@@ -326,9 +326,12 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
 		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+		{materialSet, perDrawSet},
+		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
@@ -614,7 +617,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -638,7 +641,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Set 2: PerDraw — volumetric fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	{
 		vk::DeviceSize slotOffset =
 			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &volData, sizeof(volData));
@@ -648,9 +651,12 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
 		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+		{materialSet, perDrawSet},
+		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
