@@ -1976,7 +1976,8 @@ commit_pressed_status commit_pressed(bool API_Access)
 	// Any incomplete loadouts that make it through the loadout screen will be condensed so that gaps are moved to the bottom.  This check adds that responsibility to the player.
 	// Note: don't check for training, scramble, or red-alert missions
 	// Note2: don't check missions without briefings either
-	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
+	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) &&
+		The_mission.flags.none_of(Mission::Mission_Flags::Scramble,Mission::Mission_Flags::Red_alert,Mission::Mission_Flags::No_briefing))
 	{
 		popup(PF_USE_AFFIRMATIVE_ICON,
 			1,

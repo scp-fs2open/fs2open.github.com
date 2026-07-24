@@ -8731,7 +8731,7 @@ void wing_maybe_cleanup( wing *wingp, int team )
 		// waves so we can mark the wing as gone and no other ships arrive
 		// Goober5000 - also if it's departing... this is sort of, but not exactly, what :V: did;
 		// but it seems to be consistent with how it should behave
-		if (wingp->flags[Ship::Wing_Flags::Departing, Ship::Wing_Flags::Departure_ordered])
+		if (wingp->flags.any_of(Ship::Wing_Flags::Departing,Ship::Wing_Flags::Departure_ordered))
 			wingp->current_wave = wingp->num_waves;
 
 		// Goober5000 - some changes for clarity and closing holes
@@ -13032,7 +13032,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
 			{
-				if ((it == bank_to_fire) || !(Weapon_info[swp->primary_bank_weapons[it]].wi_flags[Weapon::Info_Flags::Nolink, Weapon::Info_Flags::No_linked_penalty]))
+				if ((it == bank_to_fire) ||
+					Weapon_info[swp->primary_bank_weapons[it]]
+							.wi_flags.none_of(Weapon::Info_Flags::Nolink, Weapon::Info_Flags::No_linked_penalty))
 					effective_primary_banks++;
 			}
 			Assert(effective_primary_banks >= 1);
@@ -16491,7 +16493,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
 
-			if (aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Awaiting_repair, AI::AI_Flags::Being_repaired])
+			if (aip->ai_flags.any_of(AI::AI_Flags::Repairing,AI::AI_Flags::Awaiting_repair,AI::AI_Flags::Being_repaired))
 			{
 				// support ship is already busy, track the one that will be
 				// done soonest by estimating how many seconds it will take for the support ship
@@ -21978,15 +21980,15 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 {
 	if (stage == ship::warpstage::BOTH) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_1_dock_follower,Ship::Ship_Flags::Arriving_stage_2,Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 		}
 		else {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_2);
 		}
 	}
 	else if (stage == ship::warpstage::STAGE1) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_1_dock_follower);
 		}
 		else {
 			return flags[Ship::Ship_Flags::Arriving_stage_1];
@@ -21994,7 +21996,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 	}
 	if (stage == ship::warpstage::STAGE2) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_2,Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 		}
 		else {
 			return flags[Ship::Ship_Flags::Arriving_stage_2];

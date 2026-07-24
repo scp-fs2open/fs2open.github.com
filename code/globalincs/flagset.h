@@ -8,9 +8,6 @@
 
 constexpr size_t UBYTE_SIZE = 8;
 
-template<typename TEnum, size_t SIZE>
-struct flag_combinator;
-
 template<class T, size_t SIZE = static_cast < size_t >(T::NUM_VALUES)>
 class flagset {
  protected:
@@ -23,13 +20,23 @@ class flagset {
 			set(val);
 		}
 	}
+	// Returns true if any of the given flags are set.
+	template <typename... Ts>
+	bool any_of(T first, Ts... rest) const
+	{
+		static_assert((std::is_same<Ts, T>::value && ...),
+			"All arguments to any_of() must be flags of the same enum type");
+		return (*this)[first] || ((*this)[rest] || ...);
+	}
 
+	// Returns true if none of the given flags are set.
+	template <typename... Ts>
+	bool none_of(T first, Ts... rest) const
+	{
+		return !any_of(first, rest...);
+	}
 	bool operator[](const T idx) const { return values[(static_cast < size_t >(idx))]; };
 
-	template<size_t COMB_SIZE>
-	bool operator[](const flag_combinator<T, COMB_SIZE>& combinator) const {
-		return combinator.check_flagset(*this);
-	};
 
 	flagset<T> operator&(const flagset<T>& other) const {
 		flagset<T> result;
@@ -209,57 +216,5 @@ struct hash<::flagset<T, N>> {
 } // namespace std
 
 #define FLAG_LIST(Type) enum class Type : size_t
-
-template<typename TEnum, size_t SIZE>
-struct flag_combinator {
-	static_assert(SIZE > 2, "SIZE must be greater than 2!");
-
-	// This check makes sure that TEnum is actually a flag type
-	static_assert(SIZE <= static_cast<size_t>(TEnum::NUM_VALUES), "Size must be less than NUM_VALUES");
-
-	flag_combinator(const flag_combinator<TEnum, SIZE - 1>& left, TEnum right) : _otherValues(left) {
-		_value = right;
-	}
-
-	bool check_flagset(const flagset<TEnum>& flagset) const {
-		return flagset[_value] || _otherValues.check_flagset(flagset);
-	}
- protected:
-	flag_combinator<TEnum, SIZE - 1> _otherValues;
-	TEnum _value;
-};
-
-template<typename TEnum>
-struct flag_combinator<TEnum, 2> {
-	TEnum left;
-	TEnum right;
-
-	flag_combinator(TEnum in_left, TEnum in_right) {
-		left = in_left;
-		right = in_right;
-	}
-
-	bool check_flagset(const flagset <TEnum>& flagset) const {
-		return flagset[left] || flagset[right];
-	}
-};
-
-template<typename TEnum>
-struct flag_enum_checker
-{
-	static const bool value = std::is_enum<TEnum>::value;
-};
-
-template<typename TEnum>
-typename std::enable_if<flag_enum_checker<TEnum>::value, flag_combinator<TEnum, 2>>::type
-operator,(TEnum left, TEnum right) {
-	return flag_combinator<TEnum, 2>(left, right);
-};
-
-template<typename TEnum, size_t SIZE>
-typename std::enable_if<flag_enum_checker<TEnum>::value, flag_combinator<TEnum, SIZE + 1>>::type
-operator,(const flag_combinator<TEnum, SIZE>& left, TEnum right) {
-	return flag_combinator<TEnum, SIZE + 1>(left, right);
-};
 
 #endif

@@ -394,7 +394,7 @@ bool hud_squadmsg_wing_valid(wing *wingp)
 
 	// a couple of special cases to account for before adding to count (or to menu).  Don't count
 	// wings that are leaving or left.
-	if ( wingp->flags[Ship::Wing_Flags::Gone, Ship::Wing_Flags::Departing] )
+	if ( wingp->flags.any_of(Ship::Wing_Flags::Gone,Ship::Wing_Flags::Departing) )
 		return false;
 
 	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
@@ -1842,7 +1842,7 @@ void hud_squadmsg_type_select( )
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
 	// check to see if the player is scheduled to be repaired by incoming ship
-	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair] ) {
+	if (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}

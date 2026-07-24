@@ -4147,7 +4147,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
-	} else if (first_time && (wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable, Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Mine])) {
+	} else if (first_time && (wip->wi_flags.any_of(Weapon::Info_Flags::Turret_Interceptable,Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Mine))) {
 		wip->weapon_hitpoints = wip->is_mine() ? 50 : 25; // mines are tankier by default, like bombs
 	}
 
@@ -5518,7 +5518,7 @@ void find_homing_object(object *weapon_objp, int num)
                 else if (objp->type == OBJ_WEAPON)
 				{
                     //don't attempt to home on weapons if the weapon is a huge weapon or is a javelin homing weapon.
-                    if (wip->wi_flags[Weapon::Info_Flags::Huge, Weapon::Info_Flags::Homing_javelin])
+					if (wip->wi_flags.any_of(Weapon::Info_Flags::Huge,Weapon::Info_Flags::Homing_javelin))
                         continue;
                     
                     //don't look for local ssms that are gone for the time being

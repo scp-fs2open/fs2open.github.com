@@ -7612,7 +7612,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	if ( homing_object->type == OBJ_WEAPON ) {
 		auto flags_check = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
-		if ( !((flags_check[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
+		if (flags_check.none_of(Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure)) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}

@@ -299,7 +299,7 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
+		if (ptr->flags.any_of(Object::Object_Flags::Hidden,Object::Object_Flags::Locked_from_editing)) {
 			valid = 0;
 		}
 		if (!isObjectVisibleInLayer(ptr)) {
@@ -722,7 +722,7 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		return 0;
 	}
 
-	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
+	if (objp->flags.any_of(Object::Object_Flags::Hidden,Object::Object_Flags::Locked_from_editing)) {
 		return 0;
 	}
 	if (!isObjectVisibleInLayer(objp)) {
