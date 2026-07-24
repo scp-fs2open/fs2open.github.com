@@ -16,7 +16,6 @@
 #undef memcpy
 #include "imgui.h"
 #include "implot.h"
-#include "implot_internal.h"
 #pragma pop_macro("memcpy")
 #include "backends/imgui_impl_sdl3.h"
 
@@ -86,73 +85,97 @@ void draw_frametime_graph() {
 }
 
 /**
- * Draws the pie chart (left) and a text legend with matching swatch colors (right). Slice colors
- * come from ImPlot's own per-item color assignment (keyed by category name), which stays stable
- * across frames as long as the same names keep appearing -- no manual palette bookkeeping needed.
+ * Maps a category name to a stable color, so a given category keeps the same color across frames
+ * regardless of how its rank shifts in the breakdown. Uses an FNV-1a hash of the name to pick a
+ * hue; "Other" gets a fixed neutral grey (see draw_frame_budget_bar).
  */
-void draw_pie_chart(const frame_overlay_snapshot& snapshot) {
+ImU32 color_for_name(const char* name) {
+	uint32_t hash = 2166136261u; // FNV-1a
+	for (const char* p = name; *p != '\0'; ++p) {
+		hash ^= static_cast<uint8_t>(*p);
+		hash *= 16777619u;
+	}
+	const float hue = static_cast<float>(hash % 360) / 360.0f;
+	return ImGui::ColorConvertFloat4ToU32(static_cast<ImVec4>(ImColor::HSV(hue, 0.55f, 0.95f)));
+}
+
+/**
+ * Draws a single 100%-stacked horizontal "frame budget" bar: one row whose width is split into
+ * segments proportional to each category's share of the frame's traced time (top 5 contributors +
+ * "Other"), followed by a legend with matching swatches, absolute ms and percentage. Cheaper than a
+ * pie chart -- it's a handful of ImDrawList rectangles with no ImPlot plot setup.
+ */
+void draw_frame_budget_bar(const frame_overlay_snapshot& snapshot) {
 	if (snapshot.total_nanosec == 0) {
 		return;
 	}
 
-	constexpr int MAX_SLICES = 6; // top 5 contributors + "Other"
+	constexpr int MAX_SEGMENTS = 6; // top 5 contributors + "Other"
+	constexpr ImU32 OTHER_COLOR = IM_COL32(130, 130, 130, 255);
 
-	static SCP_string label_storage[MAX_SLICES];
-	static const char* labels[MAX_SLICES];
-	double pct_values[MAX_SLICES];
+	struct segment {
+		const char* name;
+		double pct;
+		float ms;
+		ImU32 color;
+	};
+
+	segment segments[MAX_SEGMENTS];
 	int count = 0;
 
-	auto add_slice = [&](const SCP_string& name, uint64_t self_nanosec) {
-		label_storage[count] = name;
-		labels[count] = label_storage[count].c_str();
-		pct_values[count] = 100.0 * static_cast<double>(self_nanosec) / static_cast<double>(snapshot.total_nanosec);
+	const double total = static_cast<double>(snapshot.total_nanosec);
+
+	auto add_segment = [&](const char* name, uint64_t self_nanosec, ImU32 color) {
+		segments[count].name = name;
+		segments[count].pct = 100.0 * static_cast<double>(self_nanosec) / total;
+		segments[count].ms = static_cast<float>(static_cast<double>(self_nanosec) / NANOSEC_PER_MS);
+		segments[count].color = color;
 		count++;
 	};
 
-	for (auto& contributor : snapshot.top_contributors) {
-		if (count >= MAX_SLICES) {
+	for (const auto& contributor : snapshot.top_contributors) {
+		if (count >= MAX_SEGMENTS) {
 			break;
 		}
-		add_slice(contributor.name, contributor.self_nanosec);
+		add_segment(contributor.name.c_str(), contributor.self_nanosec, color_for_name(contributor.name.c_str()));
 	}
-	if (snapshot.other_nanosec > 0 && count < MAX_SLICES) {
-		add_slice("Other", snapshot.other_nanosec);
+	if (snapshot.other_nanosec > 0 && count < MAX_SEGMENTS) {
+		add_segment("Other", snapshot.other_nanosec, OTHER_COLOR);
 	}
 
 	if (count == 0) {
 		return;
 	}
 
-	ImVec4 slice_colors[MAX_SLICES];
+	// The stacked bar.
+	ImDrawList* draw_list = ImGui::GetWindowDrawList();
+	const ImVec2 origin = ImGui::GetCursorScreenPos();
+	const float width = ImGui::GetContentRegionAvail().x;
+	constexpr float height = 22.0f;
 
-	ImGui::Columns(2, nullptr, false);
-	ImGui::SetColumnWidth(0, 190);
+	draw_list->AddRectFilled(origin, ImVec2(origin.x + width, origin.y + height), IM_COL32(35, 35, 35, 255), 3.0f);
 
-	if (ImPlot::BeginPlot("##frametime_pie",
-			ImVec2(180, 180),
-			ImPlotFlags_Equal | ImPlotFlags_NoMouseText | ImPlotFlags_NoLegend)) {
-		ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_NoDecorations);
-		ImPlot::SetupAxesLimits(0, 1, 0, 1, ImPlotCond_Always);
-
-		ImPlot::PlotPieChart(labels, pct_values, count, 0.5, 0.5, 0.4, "%.1f%%");
-
-		for (int i = 0; i < count; i++) {
-			ImPlotItem* item = ImPlot::GetItem(labels[i]);
-			slice_colors[i] = item ? ImGui::ColorConvertU32ToFloat4(item->Color) : ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
-		}
-
-		ImPlot::EndPlot();
-	}
-
-	ImGui::NextColumn();
-
+	float x = origin.x;
 	for (int i = 0; i < count; i++) {
-		ImGui::ColorButton(labels[i], slice_colors[i], ImGuiColorEditFlags_NoTooltip, ImVec2(12, 12));
-		ImGui::SameLine();
-		ImGui::Text("%s: %.1f%%", labels[i], pct_values[i]);
+		float seg_w = width * static_cast<float>(segments[i].pct / 100.0);
+		// Make sure the final segment reaches the right edge despite float rounding.
+		const float x_end = (i == count - 1) ? (origin.x + width) : (x + seg_w);
+		draw_list->AddRectFilled(ImVec2(x, origin.y), ImVec2(x_end, origin.y + height), segments[i].color);
+		x = x_end;
 	}
+	draw_list->AddRect(origin, ImVec2(origin.x + width, origin.y + height), IM_COL32(80, 80, 80, 255), 3.0f);
 
-	ImGui::Columns(1);
+	ImGui::Dummy(ImVec2(width, height));
+
+	// The legend.
+	for (int i = 0; i < count; i++) {
+		ImGui::ColorButton(segments[i].name,
+			ImGui::ColorConvertU32ToFloat4(segments[i].color),
+			ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoBorder,
+			ImVec2(12, 12));
+		ImGui::SameLine();
+		ImGui::Text("%s: %.2f ms (%.1f%%)", segments[i].name, segments[i].ms, segments[i].pct);
+	}
 }
 
 /**
@@ -228,7 +251,7 @@ void profiler_overlay_draw() {
 
 		ImGui::Separator();
 
-		draw_pie_chart(get_frame_profiler_overlay_snapshot());
+		draw_frame_budget_bar(get_frame_profiler_overlay_snapshot());
 	}
 
 	draw_graphics_debug_stats();
