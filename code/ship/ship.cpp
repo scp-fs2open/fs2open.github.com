@@ -6860,7 +6860,7 @@ void ship::clear()
 	ship_max_hull_strength = 0.0f;
 
 	ship_guardian_threshold = 0;
-	max_guard_radius = -1.0f;
+	max_guard_ranges.clear();
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -21378,7 +21378,33 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 
 	return inside;
 }
-
+void set_guard_range_ship(float range, const ship_registry_entry* ship_entry, ship* shipp)
+{
+	bool done = false;
+	if (range >= 0) {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == ship_registry_get_index(ship_entry->shipp()->ship_name)) {
+				if (range > 0) {
+					exist.range = range;
+				} else {
+					exist.range = -1.0f;
+				}
+				done = true;
+				break;
+			}
+		}
+		if (!done) {
+			auto item = guard_range_entry(range, ship_registry_get_index(ship_entry->shipp()->ship_name));
+			shipp->max_guard_ranges.push_back(item);
+		}
+	} else {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == ship_registry_get_index(ship_entry->shipp()->ship_name)) {
+				exist.range = -1.0f;
+			}
+		}
+	}
+}
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
 	mst->length = obj->phys_info.linear_thrust;

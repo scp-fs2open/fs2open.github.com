@@ -323,12 +323,17 @@ void ai_cleanup_dock_mode_objective(object *objp);
 // the "autopilot"
 object *Autopilot_flight_leader = NULL;
 
-static inline float ai_guard_threshold(const object* guarded_objp, float threshold)
+static inline float ai_guard_threshold(const object* guarded_objp, float threshold, const ship* guarder_ship)
 {
 	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
-		const float configured = Ships[guarded_objp->instance].max_guard_radius;
-		if (configured > 0.0f) {
-			return configured;
+		for (const auto& range_entry : guarder_ship->max_guard_ranges) {
+			const int regester = ship_registry_get_index(Ships[guarded_objp->instance].ship_name);
+			if (regester == range_entry.shipnum) {
+				const float configured = range_entry.range;
+				if (configured > 0.0f) {
+					return configured;
+				}
+			}
 		}
 	}
 
@@ -5161,10 +5166,13 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 
 			//	If guarding ship is far away from guardee and enemy is far away from guardee,
 			//	then stop chasing and resume guarding.
-			if (dist > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6))
+			if (dist > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6, &Ships[aip->shipnum]))
 				{
 				if ((En_objp != NULL) && (En_objp->type == OBJ_SHIP)) {
-					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) > ai_guard_threshold(guard_objp, (MAX_GUARD_DIST + guard_objp->radius) * 6)) {
+					if (vm_vec_dist_quick(&guard_objp->pos, &En_objp->pos) >
+						ai_guard_threshold(guard_objp,
+							(MAX_GUARD_DIST + guard_objp->radius) * 6,
+							&Ships[aip->shipnum])) {
 						Assert(aip->previous_mode == AIM_GUARD);
 						aip->mode = aip->previous_mode;
 						aip->submode = AIS_GUARD_PATROL;
@@ -10628,7 +10636,7 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 
 		dist = vm_vec_dist_quick(&bomb_objp->pos, &guarded_objp->pos);
 
-		if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3)) {
+		if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3, &Ships[guarding_objp->instance])) {
 			dist_to_guarding_obj = vm_vec_dist_quick(&bomb_objp->pos, &guarding_objp->pos);
 			if ( dist_to_guarding_obj < closest_dist_to_guarding_obj ) {
 				closest_dist_to_guarding_obj = dist_to_guarding_obj;
@@ -10679,10 +10687,11 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 			if (Ship_info[eshipp->ship_info_index].class_type >= 0 && (Ship_types[Ship_info[eshipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_guards_attack]))
 			{
 				dist = vm_vec_dist_quick(&enemy_objp->pos, &guarded_objp->pos);
-				if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3))
+				if (dist <
+					ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 3, guarding_shipp))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
-				} else if ((dist < ai_guard_threshold(guarded_objp, 3000.0f)) &&
+				} else if ((dist < ai_guard_threshold(guarded_objp, 3000.0f, guarding_shipp)) &&
 						   (Ai_info[eshipp->ai_index].target_objnum == guarding_aip->guard_objnum))
 				{
 					guard_object_was_hit(guarding_objp, enemy_objp);
@@ -10710,7 +10719,7 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 		if ( asteroid_objp->type == OBJ_ASTEROID ) {
 			// Attack asteroid if near guarded ship
 			dist = vm_vec_dist_quick(&asteroid_objp->pos, &guarded_objp->pos);
-			if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 2)) {
+			if (dist < ai_guard_threshold(guarded_objp, (MAX_GUARD_DIST + guarded_objp->radius) * 2, &Ships[guarding_objp->instance])) {
 				dist_to_self = vm_vec_dist_quick(&asteroid_objp->pos, &guarding_objp->pos);
 				if ( OBJ_INDEX(guarded_objp) == asteroid_collide_objnum(asteroid_objp) ) {
 					if( dist_to_self < closest_danger_asteroid_dist ) {
