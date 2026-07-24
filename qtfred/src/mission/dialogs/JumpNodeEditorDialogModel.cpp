@@ -8,6 +8,8 @@
 #include <model/model.h>
 #include <ship/ship.h>
 
+#include <QTimer>
+
 namespace fso::fred::dialogs {
 
 JumpNodeEditorDialogModel::JumpNodeEditorDialogModel(QObject* parent, EditorViewport* viewport)
@@ -445,16 +447,29 @@ void JumpNodeEditorDialogModel::selectPreviousNode() {
 	selectNodeFromObjectList(GET_PREV(&Objects[_selectedJumpNodes.front()]), false);
 }
 
+void JumpNodeEditorDialogModel::scheduleInitializeData() {
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_initPending) {
+		return;
+	}
+	_initPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_initPending = false;
+		initializeData();
+	});
+}
+
 void JumpNodeEditorDialogModel::onSelectedObjectChanged(int) {
-	initializeData();
+	scheduleInitializeData();
 }
 
 void JumpNodeEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
-	initializeData();
+	scheduleInitializeData();
 }
 
 void JumpNodeEditorDialogModel::onMissionChanged() {
-	initializeData();
+	scheduleInitializeData();
 }
 
 } // namespace fso::fred::dialogs

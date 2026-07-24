@@ -27,7 +27,37 @@ namespace fso::fred::dialogs {
 ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
+	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialogModel::onSelectedObjectChanged);
+	connect(viewport->editor,
+		&Editor::objectMarkingChanged,
+		this,
+		&ShipEditorDialogModel::onSelectedObjectMarkingChanged);
+
 	initializeData();
+}
+
+void ShipEditorDialogModel::scheduleInitializeData()
+{
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_initPending) {
+		return;
+	}
+	_initPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_initPending = false;
+		initializeData();
+	});
+}
+
+void ShipEditorDialogModel::onSelectedObjectChanged(int)
+{
+	scheduleInitializeData();
+}
+
+void ShipEditorDialogModel::onSelectedObjectMarkingChanged(int, bool)
+{
+	scheduleInitializeData();
 }
 
 
@@ -546,7 +576,7 @@ void ShipEditorDialogModel::initializeData()
 		}
 	}
 
-	modelChanged();
+	Q_EMIT shipMarkingChanged();
 	_modified = false;
 }
 

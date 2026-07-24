@@ -1,5 +1,4 @@
 #include "WingEditorDialog.h"
-#include <QCloseEvent>
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
@@ -34,7 +33,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	// Whenever the model reports changes, refresh the UI
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &WingEditorDialog::updateUi);
 	connect(_model.get(), &WingEditorDialogModel::wingChanged, this, [this] {
-		refreshAllDynamicCombos();
+		initializeUi();
 		updateUi();
 	});
 
@@ -62,7 +61,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		[editor](int wing) { editor->mark_wing(wing); },
 		tr("&Select Wing"));
 
-	refreshAllDynamicCombos();
+	initializeUi();
 	updateUi();
 
 	// Resize the dialog to the minimum size
@@ -70,11 +69,6 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 }
 
 WingEditorDialog::~WingEditorDialog() = default;
-
-void WingEditorDialog::closeEvent(QCloseEvent* e)
-{
-	QDialog::closeEvent(e);
-}
 
 void WingEditorDialog::updateUi()
 {
@@ -358,7 +352,7 @@ void WingEditorDialog::refreshDepartureTargetCombo()
 	}
 }
 
-void WingEditorDialog::refreshAllDynamicCombos()
+void WingEditorDialog::initializeUi()
 {
 	refreshLeaderCombo();
 	refreshHotkeyCombo();
