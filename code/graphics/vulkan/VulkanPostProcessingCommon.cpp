@@ -176,13 +176,13 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	if (bindGlobalSet) {
 		globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 		Assert(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 	}
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -194,7 +194,7 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
 		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
 		writer.setBuffer(PerDrawBinding::GenericData, {scratchRing.buffer(), slotOffset, scratchRing.slotSize()});
@@ -205,13 +205,19 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	// contiguous (0,1,2), so when Global is (re)bound here it and Material/PerDraw
 	// go in one call; otherwise Set 0 is left as whatever frame setup bound.
 	if (bindGlobalSet) {
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+			pipelineLayout,
 			static_cast<uint32_t>(DescriptorSetIndex::Global),
-			{globalSet, materialSet, perDrawSet}, {});
+			{globalSet, materialSet, perDrawSet},
+			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 	} else {
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+			pipelineLayout,
 			static_cast<uint32_t>(DescriptorSetIndex::Material),
-			{materialSet, perDrawSet}, {});
+			{materialSet, perDrawSet},
+			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 	}
 
 	cmd.draw(3, 1, 0, 0);
@@ -281,7 +287,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -293,16 +299,19 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	if (uboData != nullptr && uboSize > 0 && scratchRing.isValid()) {
 		vk::DeviceSize slotOffset = scratchRing.alloc(descriptorMgr->getCurrentFrame(), uboData, uboSize);
 		writer.setBuffer(PerDrawBinding::GenericData, {scratchRing.buffer(), slotOffset, scratchRing.slotSize()});
 	}
 	writer.flush();
 
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
+	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+		pipelineLayout,
 		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+		{materialSet, perDrawSet},
+		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();

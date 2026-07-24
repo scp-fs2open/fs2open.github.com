@@ -212,7 +212,7 @@ class VulkanDrawManager {
 		size_t ubo_size,
 		vertex_buffer* buffer,
 		indexed_vertex_source* vert_src,
-		size_t texi) const;
+		size_t texi);
 
 	/**
 	 * @brief Draw a unit sphere with the given material
@@ -303,6 +303,7 @@ class VulkanDrawManager {
 		m_globalSetDirty = true;
 		m_cachedMaterialValid = false;
 		m_cachedPerDrawValid = false;
+		m_cachedShadowValid = false;
 	}
 
 	/**
@@ -566,6 +567,41 @@ class VulkanDrawManager {
 	vk::DescriptorSet m_cachedPerDrawSet = nullptr;
 	PerDrawSetInputs m_cachedPerDrawInputs;
 	bool m_cachedPerDrawValid = false;
+
+	// ---- Shadow-pass descriptor memoization (renderShadowDraw) ----
+	// The shadow pass doesn't go through applyMaterial, so it gets its own cache.
+	// All three of its sets are constant across the whole pass: the only per-draw
+	// input, the ShadowMapData UBO offset, is a dynamic binding and therefore not
+	// part of the set contents. Reset per frame with the rest (resetFrameStats).
+	struct ShadowSetInputs {
+		int cascadeHandle = -1;
+		vk::DeviceSize cascadeOffset = 0;
+		vk::DeviceSize cascadeSize = 0;
+		bool cascadeValid = false;
+		int shadowDataHandle = -1;
+		size_t shadowDataSize = 0;
+		vk::Buffer transformBuffer = nullptr;
+		size_t transformOffset = 0;
+		size_t transformSize = 0;
+
+		bool operator==(const ShadowSetInputs& o) const
+		{
+			return cascadeHandle == o.cascadeHandle && cascadeOffset == o.cascadeOffset &&
+				   cascadeSize == o.cascadeSize && cascadeValid == o.cascadeValid &&
+				   shadowDataHandle == o.shadowDataHandle && shadowDataSize == o.shadowDataSize &&
+				   transformBuffer == o.transformBuffer && transformOffset == o.transformOffset &&
+				   transformSize == o.transformSize;
+		}
+		bool operator!=(const ShadowSetInputs& o) const
+		{
+			return !(*this == o);
+		}
+	};
+	vk::DescriptorSet m_cachedShadowGlobalSet = nullptr;
+	vk::DescriptorSet m_cachedShadowMaterialSet = nullptr;
+	vk::DescriptorSet m_cachedShadowPerDrawSet = nullptr;
+	ShadowSetInputs m_cachedShadowInputs;
+	bool m_cachedShadowValid = false;
 
 	// Texture overrides for material bindings 4-6.
 	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles
