@@ -3,6 +3,7 @@
 
 #include "FrameProfiler.h"
 
+#include "cmdline/cmdline.h"
 #include "globalincs/systemvars.h"
 
 using namespace tracing;
@@ -119,6 +120,46 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 }
 
 namespace tracing {
+
+void accumulate_self_times(const SCP_vector<trace_event>& events,
+	SCP_vector<uint64_t>& self_time_by_id,
+	SCP_vector<const Category*>& category_by_id,
+	uint64_t& total) {
+	total = 0;
+	if (events.empty()) {
+		return;
+	}
+
+	SCP_vector<int> open_stack; // category ids of currently-open scopes
+	open_stack.reserve(32);
+	uint64_t last_ts = events.front().timestamp;
+
+	for (const auto& evt : events) {
+		if (!open_stack.empty()) {
+			const uint64_t delta = evt.timestamp - last_ts;
+			self_time_by_id[open_stack.back()] += delta;
+			total += delta;
+		}
+		last_ts = evt.timestamp;
+
+		if (evt.category == nullptr) {
+			// Can't happen today (processEvent filters these out), but keep last_ts advanced above
+			// so a stray null-category event could never cause the next delta to span it.
+			continue;
+		}
+
+		const int id = evt.category->getId();
+		category_by_id[id] = evt.category;
+
+		if (evt.type == EventType::Begin) {
+			open_stack.push_back(id);
+		} else if (evt.type == EventType::End) {
+			if (!open_stack.empty()) {
+				open_stack.pop_back();
+			}
+		}
+	}
+}
 
 FrameProfiler::FrameProfiler() {
 
@@ -280,27 +321,19 @@ SCP_string FrameProfiler::getContent() {
 	return content;
 }
 
-void FrameProfiler::build_overlay_snapshot(SCP_vector<profile_sample>& samples) {
-	SCP_unordered_map<SCP_string, uint64_t> self_time_by_name;
-	uint64_t total = 0;
-
-	for (auto& sample : samples) {
-		Assert(sample.open_profiles == 0);
-
-		uint64_t self_time = sample.accumulator - sample.children_sample_time;
-		self_time_by_name[sample.name] += self_time;
-
-		if (sample.parent < 0) {
-			// Top-level samples' accumulators are inclusive of all their children, so summing
-			// them gives the total traced time for the frame (MainFrame itself isn't in `samples`).
-			total += sample.accumulator;
+void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id,
+	const SCP_vector<const Category*>& category_by_id,
+	uint64_t total) {
+	SCP_vector<std::pair<const Category*, uint64_t>> sorted;
+	for (size_t id = 0; id < self_time_by_id.size(); id++) {
+		if (self_time_by_id[id] > 0 && category_by_id[id] != nullptr) {
+			sorted.emplace_back(category_by_id[id], self_time_by_id[id]);
 		}
 	}
-
-	SCP_vector<std::pair<SCP_string, uint64_t>> sorted(self_time_by_name.begin(), self_time_by_name.end());
-	std::sort(sorted.begin(), sorted.end(), [](const std::pair<SCP_string, uint64_t>& a, const std::pair<SCP_string, uint64_t>& b) {
-		return a.second > b.second;
-	});
+	std::sort(sorted.begin(), sorted.end(),
+		[](const std::pair<const Category*, uint64_t>& a, const std::pair<const Category*, uint64_t>& b) {
+			return a.second > b.second;
+		});
 
 	overlaySnapshot.valid = true;
 	overlaySnapshot.total_nanosec = total;
@@ -311,7 +344,7 @@ void FrameProfiler::build_overlay_snapshot(SCP_vector<profile_sample>& samples) 
 
 	for (size_t i = 0; i < sorted.size(); i++) {
 		if (i < MAX_CONTRIBUTORS) {
-			overlaySnapshot.top_contributors.push_back({sorted[i].first, sorted[i].second});
+			overlaySnapshot.top_contributors.push_back({sorted[i].first->getName(), sorted[i].second});
 		} else {
 			overlaySnapshot.other_nanosec += sorted[i].second;
 		}
@@ -323,42 +356,40 @@ void FrameProfiler::processFrame() {
 
 	std::sort(_bufferedEvents.begin(), _bufferedEvents.end(), event_sorter);
 
-	SCP_stringstream stream;
+	// Overlay fast path: per-category self-time via a single stack walk (see accumulate_self_times).
+	const size_t category_count = static_cast<size_t>(Category::getCount());
+	SCP_vector<uint64_t> self_time_by_id(category_count, 0);
+	SCP_vector<const Category*> category_by_id(category_count, nullptr);
+	uint64_t total = 0;
 
-	SCP_vector<profile_sample> samples;
+	accumulate_self_times(_bufferedEvents, self_time_by_id, category_by_id, total);
+	build_overlay_snapshot(self_time_by_id, category_by_id, total);
 
-	bool start_found = false;
-	bool end_found = false;
-	uint64_t start_profile_time = 0;
-	uint64_t end_profile_time = 0;
+	// Legacy on-screen text dump (-profile_frame_time). This still builds the full parent/child
+	// sample tree (process_begin/process_end) and the min/avg/max history, both O(n^2); only pay for
+	// it when that output is actually consumed, not for the overlay.
+	if (Cmdline_frame_profile) {
+		SCP_stringstream stream;
+		SCP_vector<profile_sample> samples;
 
-	for (auto& event : _bufferedEvents) {
-		if (!start_found) {
-			start_profile_time = event.timestamp;
-			start_found = true;
+		for (auto& event : _bufferedEvents) {
+			switch (event.type) {
+				case EventType::Begin:
+					process_begin(samples, event);
+					break;
+				case EventType::End:
+					process_end(samples, event);
+					break;
+				default:
+					break;
+			}
 		}
-		if (!end_found) {
-			end_profile_time = event.timestamp;
-			end_found = true;
-		}
 
-		switch (event.type) {
-			case EventType::Begin:
-				process_begin(samples, event);
-				break;
-			case EventType::End:
-				process_end(samples, event);
-				break;
-			default:
-				break;
-		}
+		dump_output(stream, 0, 0, samples);
+		content = stream.str();
 	}
+
 	_bufferedEvents.clear();
-
-	dump_output(stream, start_profile_time, end_profile_time, samples);
-	build_overlay_snapshot(samples);
-
-	content = stream.str();
 }
 
 }
