@@ -11,9 +11,15 @@ precision highp float;
 #endif
 
 #ifndef USE_HW_CLIP_DISTANCE
+#ifdef VULKAN
+layout(location = 0) in VertexOutput {
+	float vClipDist;
+} vertIn;
+#else
 in VertexOutput {
 	float vClipDist;
 } vertIn;
+#endif
 #endif
 
 void main()
