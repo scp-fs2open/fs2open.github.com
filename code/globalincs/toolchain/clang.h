@@ -104,6 +104,7 @@
 #define PUSH_SUPPRESS_WARNINGS \
 _Pragma("clang diagnostic push") \
 _Pragma("clang diagnostic ignored \"-Wattributes\"") \
+_Pragma("clang diagnostic ignored \"-Wshadow\"") \
 
 /**
  * @brief Restored previous warning settings

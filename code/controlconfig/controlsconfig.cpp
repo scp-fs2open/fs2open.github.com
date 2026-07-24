@@ -1531,6 +1531,11 @@ const char *control_config_tooltip_handler(const char *str)
 	return NULL;
 }
 
+bool control_config_special_mode()
+{
+	return (Binding_mode || Search_mode);
+}
+
 void control_config_init(bool API_Access)
 {
 	int i;
