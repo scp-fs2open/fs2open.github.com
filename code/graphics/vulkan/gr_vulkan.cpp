@@ -363,7 +363,13 @@ SCP_string vulkan_blob_screen()
 		}
 		auto* ts = texManager->getTextureSlot(rtHandle);
 		if (ts && renderer_instance->readbackRenderTarget(ts, &pixels, &w, &h)) {
-			SCP_string result = png_b64_bitmap(w, h, false, pixels);
+			// Flip vertically to match OpenGL's gr_opengl_blob_screen (which also passes y_flip=true).
+			// OpenGL render targets are stored bottom-up, so its readback flips to produce an upright
+			// PNG; Vulkan stores top-down but reads row 0 first, so the same flip is required to yield
+			// the SAME orientation OpenGL produces. Mods drive screenToBlob assuming OpenGL behavior
+			// (e.g. SCPUI deliberately draws its source icons V-flipped into the target to cancel this
+			// flip), so matching OpenGL here keeps that content correct instead of upside-down.
+			SCP_string result = png_b64_bitmap(w, h, true, pixels);
 			vm_free(pixels);
 			return "data:image/png;base64," + result;
 		}
