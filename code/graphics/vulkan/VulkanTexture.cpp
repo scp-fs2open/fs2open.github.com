@@ -1499,11 +1499,40 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		subpass.pDepthStencilAttachment = &depthAttachmentRef;
 	}
 
+	// These targets are sampled as textures between passes, and some are re-rendered
+	// every frame while simultaneously being displayed (e.g. the SCPUI load bar, redrawn
+	// each frame and shown by the UI). With no explicit dependencies the render pass only
+	// gets the implicit TOP_OF_PIPE->BOTTOM_OF_PIPE dependency, which orders the layout
+	// transitions but creates no memory dependency between the color writes here and the
+	// fragment-shader sample in a later pass. That leaves a read-after-write (and, on
+	// re-render, write-after-read) hazard that manifests as flickering/garbage. Add
+	// both-direction external dependencies against the shader-read use to close it.
+	std::array<vk::SubpassDependency, 2> dependencies{};
+	// Pass start: a prior fragment-shader sample of this target must complete before we
+	// overwrite the color attachment (write-after-read; also covers loadOp=eLoad reads).
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[0].srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	dependencies[0].dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[0].dstAccessMask =
+		vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead;
+	// Pass end: the color writes must be available and visible before the next
+	// fragment-shader sample of this target (read-after-write).
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[1].srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	dependencies[1].dstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[1].dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
 	vk::RenderPassCreateInfo renderPassInfo;
 	renderPassInfo.attachmentCount = hasDepth ? 2u : 1u;
 	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	renderPassInfo.pDependencies = dependencies.data();
 
 	try {
 		ts->renderPass = m_device.createRenderPass(renderPassInfo);
@@ -1538,6 +1567,8 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		loadPassInfo.pAttachments = loadAttachments.data();
 		loadPassInfo.subpassCount = 1;
 		loadPassInfo.pSubpasses = &subpass;
+		loadPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		loadPassInfo.pDependencies = dependencies.data();
 
 		try {
 			ts->renderPassLoad = m_device.createRenderPass(loadPassInfo);

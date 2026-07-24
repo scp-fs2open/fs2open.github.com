@@ -636,6 +636,10 @@ namespace graphics::vulkan {
 namespace {
 bool Glowpoint_override_save = false;
 bool Restore_swapchain_after_shadow_pass = false;
+// Non-null when the shadow pass was started while rendering into an off-screen render target
+// (e.g. SCPUI's 3D ship/weapon select preview). In that case the shadow pass must resume the
+// render target's pass afterwards, not the swapchain, or subsequent draws leak onto the screen.
+tcache_slot_vulkan* Restore_render_target_after_shadow_pass = nullptr;
 bool Shadow_pass_active = false;
 } // anonymous namespace
 
@@ -668,6 +672,18 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 	if (first_pass) {
 		// End the current render pass but keep track if we need to resume the swapchain render pass or the scene render pass afterwards.
 		Restore_swapchain_after_shadow_pass = !getRendererInstance()->isSceneRendering();
+
+		// If shadows are being rendered while an off-screen render target is bound (SCPUI 3D
+		// ship/weapon select preview renders a rotating model via draw_model_rotating into an RTT),
+		// remember that target so vulkan_shadow_map_end() resumes ITS pass instead of the swapchain.
+		Restore_render_target_after_shadow_pass = nullptr;
+		if (getRendererInstance()->isRenderTargetActive()) {
+			auto* texMgr = getTextureManager();
+			const int rtHandle = texMgr ? texMgr->getCurrentRenderTarget() : -1;
+			if (texMgr && rtHandle >= 0) {
+				Restore_render_target_after_shadow_pass = texMgr->getTextureSlot(rtHandle);
+			}
+		}
 
 		// vulkan_build_shadow_tlas() (called just before this, every frame shadows
 		// are enabled) already ends whatever render pass was active -- TLAS builds
@@ -743,7 +759,13 @@ void vulkan_shadow_map_end()
 	// End shadow render pass (color transitions to eShaderReadOnlyOptimal via finalLayout)
 	cmd.endRenderPass();
 
-	if ( Restore_swapchain_after_shadow_pass ) {
+	if ( Restore_render_target_after_shadow_pass ) {
+		// Shadows were rendered inside an off-screen render target; resume its pass (loadOp=eLoad
+		// so the pre-shadow contents are preserved) rather than the swapchain, otherwise the
+		// following model draws would land on the screen at the RTT's viewport (top-left corner).
+		renderer->resumeRenderTargetPass(Restore_render_target_after_shadow_pass);
+		Restore_render_target_after_shadow_pass = nullptr;
+	} else if ( Restore_swapchain_after_shadow_pass ) {
 		renderer->resumeSwapChainPass();
 	} else if ( renderer->isUsingGbufRenderPass() ) {
 		const bool msaaActive = (Cmdline_msaa_enabled > 0 && pp->deferred().isMsaaInitialized());

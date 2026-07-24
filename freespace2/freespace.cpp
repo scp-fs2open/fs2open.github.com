@@ -6868,8 +6868,7 @@ void game_spew_pof_info()
 	if(out == nullptr){
 		BAIL();
 	}	
-	int counted = 0;
-	for(int idx=0; idx<num_files; idx++, counted++){
+	for(int idx=0; idx<num_files; idx++){
 		sprintf(str, "%s.pof", pof_list[idx]);
 		int model_num = model_load(str);
 		if(model_num >= 0){

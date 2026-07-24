@@ -2409,17 +2409,24 @@ ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and fre
 ADE_FUNC(createColor,
 	l_Graphics,
 	"number Red, number Green, number Blue, [number Alpha]",
-	"Creates a color object. Values are capped 0-255. Alpha defaults to 255.",
+	"Creates a color object. Values are capped 0-255. Alpha may be given either as 0-255 or as a "
+	"0-1 fraction (a value strictly between 0 and 1 is treated as a fraction and scaled up); it defaults to 255.",
 	"color",
 	"The color")
 {
 	int r;
 	int g;
 	int b;
-	int a = 255;
-	if (!ade_get_args(L, "iii|i", &r, &g, &b, &a)) {
+	// Read alpha as a float so callers can pass either the historical 0-255 value or a 0-1 fraction.
+	float a_in = 255.0f;
+	if (!ade_get_args(L, "iii|f", &r, &g, &b, &a_in)) {
 		return ADE_RETURN_NIL;
 	}
+
+	// A value strictly between 0 and 1 can only be a fraction: as an integer it would previously have
+	// been truncated to 0 (never rendering), so scaling it to 0-255 only fixes that broken case and
+	// leaves every existing 0-255 integer usage untouched.
+	int a = (a_in > 0.0f && a_in < 1.0f) ? static_cast<int>(a_in * 255.0f + 0.5f) : static_cast<int>(a_in);
 
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);
