@@ -18,7 +18,7 @@
 #include "implot.h"
 #include "implot_internal.h"
 #pragma pop_macro("memcpy")
-#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl3.h"
 
 #include <algorithm>
 #include <numeric>
@@ -206,7 +206,7 @@ void profiler_overlay_record_frame() {
 
 void profiler_overlay_draw() {
 	gr_imgui_new_frame();
-	ImGui_ImplSDL2_NewFrame(gr_screen.max_w, gr_screen.max_h);
+	ImGui_ImplSDL3_NewFrame();
 	ImGui::NewFrame();
 
 	ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
