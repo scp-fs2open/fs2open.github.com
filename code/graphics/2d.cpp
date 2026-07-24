@@ -458,9 +458,26 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 	return true;
 }
 
-// Video display cannot support default settings because graphics have not been
-// initialized so we can't validate the setting. But also, this should probably
-// only ever be a user setting
+static SDL_DisplayID videodisplay_default()
+{
+	// gr_get_preferred_display() calls SDL_GetPrimaryDisplay()/SDL_GetDisplays(), which require the video
+	// subsystem. As with resolution_default(), this default can be evaluated during startup before
+	// gr_init_sub() brings video up, so temporarily initialize it if needed.
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("videodisplay_default: could not initialize SDL video to query preferred display: %s\n", SDL_GetError()));
+		return 0;
+	}
+
+	SDL_DisplayID display = gr_get_preferred_display();
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+
+	return display;
+}
+
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
@@ -472,7 +489,7 @@ static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics
                      .enumerator(videodisplay_enumerator)
                      .display(videodisplay_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_val(1)
+                     .default_func(videodisplay_default)
                      .change_listener(videodisplay_change)
                      .importance(99)
                      .finish();
@@ -508,6 +525,11 @@ static json_t* resolution_serializer(const ResolutionInfo& value)
 static SCP_vector<ResolutionInfo> resolution_enumerator()
 {
 	SCP_vector<ResolutionInfo> out;
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("resolution_default: could not initialize SDL video to query desktop mode: %s\n", SDL_GetError()));
+		return {};
+	}
 
 	auto modes = SDL_GetFullscreenDisplayModes(VideoDisplayOption->getValue(), nullptr);
 
@@ -522,6 +544,10 @@ static SCP_vector<ResolutionInfo> resolution_enumerator()
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
 			out.emplace_back(res);
 		}
+	}
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	}
 
 	SDL_free(modes);
@@ -546,13 +572,30 @@ static SCP_string resolution_display(const ResolutionInfo& info)
 }
 static ResolutionInfo resolution_default()
 {
-	auto mode = SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue());
-
-	if ( !mode ) {
+	// SDL_GetDesktopDisplayMode() requires the video subsystem to be initialized, but this default is
+	// evaluated during startup (via OptionsManager::loadInitialValues() and gr_init()) before gr_init_sub()
+	// brings video up. If we don't init it here we'd query a dead subsystem and silently default to 0x0.
+	// So temporarily bring video up if needed, mirroring the legacy config path in gr_init().
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("resolution_default: could not initialize SDL video to query desktop mode: %s\n", SDL_GetError()));
 		return {};
 	}
 
-	return {(uint32_t)mode->w, (uint32_t)mode->h};
+	// Use gr_get_preferred_display() rather than the raw VideoDisplayOption default, which is an unvalidated
+	// display id; this matches the sibling query in gr_init() and always resolves to a valid display.
+	auto mode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+
+	ResolutionInfo result;
+	if ( mode ) {
+		result = {(uint32_t)mode->w, (uint32_t)mode->h};
+	}
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+
+	return result;
 }
 static ResolutionInfo resolution_vr_default()
 {
