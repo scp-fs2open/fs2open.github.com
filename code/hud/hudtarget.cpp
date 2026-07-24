@@ -6775,10 +6775,9 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 			renderPrintfWithGauge(x + fl2i(Weapon_sunlinked_offset_x * scale), name_y, EG_NULL, scale, config, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			// don't draw the link indicator if the fire can't be fired link.
-			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
-			if (!config && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
-					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
+			// don't draw the link indicator if this bank can't actually fire linked.
+			// the link flag is ignored rather than cleared so the player can cycle past an incapable bank or weapon without the setting being cleared
+			if (!config && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, i)) {
 				renderPrintfWithGauge(x + fl2i(Weapon_slinked_offset_x * scale), name_y, EG_NULL, scale, config, "%c", Weapon_link_icon);
 			}
 
@@ -7732,10 +7731,9 @@ void HudGaugeSecondaryWeapons::render(float /*frametime*/, bool config)
 			renderPrintfWithGauge(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, config, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			// don't draw the link indicator if the fire can't be fired link.
-			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
-					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
+			// don't draw the link indicator if this bank can't actually fire linked.
+			// the link flag is ignored rather than cleared so the player can cycle past an incapable bank or weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, i) ) {
 				renderPrintfWithGauge(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, config, "%c", Weapon_link_icon);
 			}
 
@@ -7949,7 +7947,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 
 					model_render_params weapon_render_info;
 
-					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] ) ) ) {
+					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(sp, i) ) ) ) {
 						weapon_render_info.set_color(Color_bright_blue);
 					} else {
 						weapon_render_info.set_color(Color_bright_white);
