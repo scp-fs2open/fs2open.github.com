@@ -777,7 +777,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		// Set 0: Global
 		vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 		if (!globalSet) return false;
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
 			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
 		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
@@ -790,19 +790,24 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 		if (!materialSet) return false;
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray);
 
 		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		if (!perDrawSet) return false;
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::Matrices, {m_deferredUBO,
 			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
 		writer.flush();
 
 		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, sets, {});
+		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
+		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+			pipelineLayout,
+			0,
+			sets,
+			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
 
 		return true;
 	};
