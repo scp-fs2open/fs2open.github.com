@@ -123,7 +123,7 @@ void draw_frame_budget_bar(const frame_overlay_snapshot& snapshot) {
 	segment segments[MAX_SEGMENTS];
 	int count = 0;
 
-	const double total = static_cast<double>(snapshot.total_nanosec);
+	const auto total = static_cast<double>(snapshot.total_nanosec);
 
 	auto add_segment = [&](const char* name, uint64_t self_nanosec, ImU32 color) {
 		segments[count].name = name;
