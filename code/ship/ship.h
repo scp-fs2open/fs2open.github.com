@@ -93,6 +93,18 @@ struct reinforcements {
 	reinforcements(const char *reinforcement_name = nullptr);
 };
 
+// Per-bank state for a weapon's external model - the model rendered at the bank's firing
+// points when the ship enables $Show Primary Models: / $Show Secondary Models:.
+struct external_weapon_state
+{
+	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
+	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
+	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
+	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
+	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
+	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
+};
+
 class ship_weapon {
 public:
 	int num_primary_banks;					// Number of primary banks (same as model)
@@ -102,8 +114,8 @@ public:
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
 
-	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
-	int primary_bank_model_instance_weapon[MAX_SHIP_PRIMARY_BANKS];	// the weapon the model instance was created for, or -1 if not yet checked
+	external_weapon_state primary_bank_external_weapon[MAX_SHIP_PRIMARY_BANKS];
+	external_weapon_state secondary_bank_external_weapon[MAX_SHIP_SECONDARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -162,7 +174,6 @@ public:
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
-	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
 	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
@@ -863,8 +874,6 @@ public:
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
-	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
 	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
 																//Sound index for thrusters
@@ -1813,9 +1822,9 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
-extern vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot = 0);
+extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
-extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank);
+extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);

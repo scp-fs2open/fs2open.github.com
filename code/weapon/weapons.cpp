@@ -8844,9 +8844,14 @@ static void weapon_page_in_one(weapon_info *wip, bool load_graphics)
 	if (VALID_FNAME(wip->external_model_name))
 		wip->external_model_num = model_load(wip->external_model_name);
 
-	if (wip->external_model_num == -1)
-		wip->external_model_num = wip->model_num;
+	if (wip->external_model_num >= 0)
+	{
+		polymodel *external_pm = model_get(wip->external_model_num);
 
+		// only the first gun bank of an external model supplies firing points
+		if (external_pm->n_guns > 1)
+			Warning(LOCATION, "External model %s of weapon %s has %d gun banks; only the firing points of the first bank are used.", wip->external_model_name, wip->name, external_pm->n_guns);
+	}
 
 	//Load shockwaves
 	shockwave_create_info_load(&wip->shockwave);

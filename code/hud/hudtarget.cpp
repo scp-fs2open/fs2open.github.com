@@ -7905,11 +7905,13 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 		auto ship_pm = model_get(sip->model_num);
 
 		for (i = 0; i < swp->num_secondary_banks; i++) {
-			if (swp->secondary_bank_weapons[i] < 0)
+			if (swp->secondary_bank_weapons[i] < 0 || !sip->draw_secondary_models[i])
 				continue;
 			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-			if (wip->external_model_num < 0 || !sip->draw_secondary_models[i])
+			// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+			int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+			if (display_model_num < 0)
 				continue;
 
 			auto bank = &ship_pm->missile_banks[i];
@@ -7932,10 +7934,10 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 					matrix model_orient;
 					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, display_model_num, &model_orient, &world_position);
 				}
 			} else {
-				auto weapon_pm = model_get(wip->external_model_num);
+				auto weapon_pm = model_get(display_model_num);
 				num_secondaries_rendered = 0;
 
 				for(k = 0; k < bank->num_slots; k++)
@@ -7971,7 +7973,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 					matrix model_orient;
 					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, display_model_num, &model_orient, &world_position);
 				}
 			}
 		}
@@ -7989,7 +7991,12 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 			auto bank = &ship_pm->gun_banks[i];
 			auto wip = (swp->primary_bank_weapons[i] >= 0) ? &Weapon_info[swp->primary_bank_weapons[i]] : nullptr;
 
-			if ( wip == nullptr || wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
+			// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+			int display_model_num = -1;
+			if ( wip != nullptr && sip->draw_primary_models[i] )
+				display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+
+			if ( display_model_num < 0 ) {
 				// no model to draw, so just mark each firing point with a circle
 				for ( k = 0; k < bank->num_slots; k++ ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
@@ -8001,7 +8008,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 						renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
 				}
 			} else {
-				int external_model_instance = ship_get_external_weapon_model_instance(swp, i);
+				int external_model_instance = ship_get_external_weapon_model_instance(swp, i, display_model_num);
 
 				for ( k = 0; k < bank->num_slots; k++ ) {
 					model_render_params weapon_render_info;
@@ -8020,7 +8027,7 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 					matrix model_orient;
 					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, external_model_instance, &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, display_model_num, external_model_instance, &model_orient, &world_position);
 				}
 			}
 		}
