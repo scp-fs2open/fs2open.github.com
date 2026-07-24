@@ -13,6 +13,23 @@
 
 namespace tracing {
 
+/**
+ * Computes per-category exclusive (self) time for a frame's trace events in a single pass.
+ *
+ * @c events must already be sorted into transition order (by @c event_id, i.e. call order), as a
+ * stream of Begin/End events. A stack of currently-open scopes is maintained; the time between two
+ * consecutive transitions is attributed to the innermost open scope. Results are keyed by
+ * @c Category::getId(): @c self_time_by_id and @c category_by_id must both be sized to at least
+ * @c Category::getCount() (the former zero-initialized). @c total receives the sum of all self-times
+ * (the total traced frame time). This is O(events) with no tree building or string comparisons.
+ *
+ * Declared here (rather than kept file-local) so it can be unit-tested directly.
+ */
+void accumulate_self_times(const SCP_vector<trace_event>& events,
+	SCP_vector<uint64_t>& self_time_by_id,
+	SCP_vector<const Category*>& category_by_id,
+	uint64_t& total);
+
 struct profile_sample_history {
 	bool valid;
 	//char name[256];
@@ -73,9 +90,13 @@ class FrameProfiler {
 
 	/**
 	 * Builds the structured overlay snapshot (see frame_overlay_snapshot) from this frame's
-	 * processed sample tree. Called once per processFrame(), alongside dump_output().
+	 * per-category self-time. self_time_by_id and category_by_id are indexed by Category::getId();
+	 * total is the sum of all self-times (i.e. total traced frame time). Called once per
+	 * processFrame().
 	 */
-	void build_overlay_snapshot(SCP_vector<profile_sample>& samples);
+	void build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id,
+								const SCP_vector<const Category*>& category_by_id,
+								uint64_t total);
 
  public:
 	FrameProfiler();
