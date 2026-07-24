@@ -19,7 +19,18 @@ IF(MSVC60)
 	link_directories(${STLPORT_INCLUDE_LIB_DIRS})
 ENDIF(MSVC60)
 
-ADD_EXECUTABLE(Freespace2 ${EXE_GUI_TYPE} ${FREESPACE_SRC})
+# For android, build a library not a executable
+if (ANDROID)
+    add_library(Freespace2 SHARED ${FREESPACE_SRC})
+    target_compile_definitions(Freespace2 PRIVATE PLATFORM_ANDROID)
+    
+    # NDK base libs
+    find_library(log-lib log)
+    find_library(android-lib android)
+    target_link_libraries(Freespace2 PRIVATE ${log-lib} ${android-lib})
+else()
+    add_executable(Freespace2 ${EXE_GUI_TYPE} ${FREESPACE_SRC})
+endif()
 
 target_compile_features(Freespace2 PUBLIC cxx_std_17)
 
@@ -27,9 +38,20 @@ include(resources.cmake)
 
 SET_TARGET_PROPERTIES(Freespace2 PROPERTIES OUTPUT_NAME "fs2_open_${FSO_BINARY_SUFFIX}")
 
-TARGET_LINK_LIBRARIES(Freespace2 code)
-TARGET_LINK_LIBRARIES(Freespace2 platform)
-TARGET_LINK_LIBRARIES(Freespace2 compiler)
+if (ANDROID)
+	# one call
+	target_link_libraries(Freespace2
+		PRIVATE
+		code
+		platform
+		compiler
+		${ANDROID_LIBS}
+	)
+else()
+	TARGET_LINK_LIBRARIES(Freespace2 code)
+	TARGET_LINK_LIBRARIES(Freespace2 platform)
+	TARGET_LINK_LIBRARIES(Freespace2 compiler)
+endif()
 
 if(FSO_BUILD_WITH_OPENGL_DEBUG)
 	add_definitions(-DFS_OPENGL_DEBUG)
@@ -46,6 +68,8 @@ IF(USE_STLPORT)
 	INCLUDE_DIRECTORIES(BEFORE SYSTEM ${STLPORT_INCLUDE_DIRS})
 ENDIF(USE_STLPORT)
 
+# Do not install when building android
+if (NOT ANDROID)
 # Add install script to copy the executable to the FreeSpace path if possible and wanted
 INSTALL(
 	TARGETS Freespace2
@@ -59,6 +83,7 @@ if (FSO_INSTALL_DEBUG_FILES)
 				OPTIONAL)
 	endif()
 endif()
+endif(NOT ANDROID)
 
 if(FSO_BUILD_APPIMAGE)
 	configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
@@ -84,6 +109,8 @@ enable_clang_tidy(Freespace2)
 INCLUDE(util)
 COPY_FILES_TO_TARGET(Freespace2)
 
+# Do not launch when building android
+if (NOT ANDROID)
 include(CreateLaunchers)
 create_target_launcher(Freespace2
 	WORKING_DIRECTORY ${FSO_FREESPACE_PATH}
@@ -96,6 +123,7 @@ add_custom_target(launch_fso
 		WORKING_DIRECTORY "${FSO_FREESPACE_PATH}"
 		COMMENT "Launching FreeSpace"
 		VERBATIM)
+endif()
 
 # Ensure that Xcode generates debug symbols on macOS for Debug builds
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Debug] "YES")

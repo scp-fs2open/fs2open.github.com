@@ -47,6 +47,16 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
+if (ANDROID)
+    message(STATUS "Building for Android (NDK)")
+    add_definitions(-DPLATFORM_ANDROID)
+	set(FSO_BUILD_INCLUDED_LIBS ON FORCE)
+	set(USING_PREBUILT_LIBS ON FORCE)
+	set(SDL2_USE_PRECOMPILED ON FORCE)
+	set(OPENAL_USE_PRECOMPILED ON FORCE)
+	set(USING_PREBUILT_VULKAN ON FORCE)
+endif()
+
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
@@ -101,8 +111,8 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-IF(WIN32 OR APPLE)
-	# On windows and mac the default should be to always build the included libraries
+IF(WIN32 OR APPLE OR ANDROID)
+	# On windows, mac and android the default should be to always build the included libraries
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT ON)
 ELSE()
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT OFF)

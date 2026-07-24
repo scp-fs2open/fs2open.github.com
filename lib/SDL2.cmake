@@ -70,12 +70,12 @@ else()
         message(STATUS "Using pre-built SDL2 library.")
 
         unset(SDL2_LOCATION CACHE)
-        find_library(SDL2_LOCATION NAMES SDL2 SDL2-2.0 PATHS "${SDL2_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+        find_library(SDL2_LOCATION NAMES SDL2 SDL2-2.0 PATHS "${SDL2_ROOT_DIR}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 
         get_filename_component(FULL_LIB_PATH "${SDL2_LOCATION}" REALPATH)
         ADD_IMPORTED_LIB(sdl2 "${SDL2_ROOT_DIR}/include" "${FULL_LIB_PATH}")
 
-        file(GLOB SDL2_LIBS "${SDL2_ROOT_DIR}/lib/libSDL2-2*")
+        file(GLOB SDL2_LIBS "${SDL2_ROOT_DIR}/lib/libSDL2*")
         add_target_copy_files("${SDL2_LIBS}")
     endif()
 endif()

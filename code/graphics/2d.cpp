@@ -218,7 +218,11 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .parser(parse_lighting_func)
                      .finish();
 
+#ifndef __ANDROID__
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
+#else
+os::ViewportState Gr_configured_window_state = os::ViewportState::Borderless;
+#endif
 
 static bool mode_change_func(os::ViewportState state, bool initial)
 {
