@@ -53,10 +53,32 @@ struct DescriptorFallbacks {
 };
 
 /**
+ * @brief Descriptor set indices for the 3-tier layout
+ *
+ * Set 0: Global - per-frame data (lights, deferred globals, shadow maps)
+ * Set 1: Material - per-material data (model data, textures)
+ * Set 2: Per-Draw - per-draw-call data (generic data, matrices, etc.)
+ */
+enum class DescriptorSetIndex : uint32_t {
+	Global = 0,
+	Material = 1,
+	PerDraw = 2,
+
+	Count = 3
+};
+
+/**
  * @brief Stack-allocated batch writer for descriptor set updates.
  *
  * Usage: reset() + writeSet() (pre-fills all bindings with fallbacks)
  * + setBuffer/setImage overrides for real data + flush().
+ *
+ * Bindings declared as eUniformBufferDynamic get their offset split out of the
+ * descriptor and into the dynamic-offset array (see dynamicOffsets()): setBuffer
+ * writes {buffer, 0, range} into the descriptor and stashes the caller's offset.
+ * That is what lets a set whose only per-draw change is a UBO offset be written
+ * once and rebound many times. Callers must hand dynamicOffsets()/
+ * dynamicOffsetCount() for a set to vkCmdBindDescriptorSets when binding it.
  */
 class DescriptorWriter {
 public:
@@ -74,6 +96,9 @@ public:
 	static constexpr uint32_t MAX_IMAGE_INFOS = 24;      // image/sampler descriptors staged per batch
 	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2; // TLAS descriptors staged per batch (RT)
 	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16; // highest binding number addressable in a set
+	// Most dynamic (eUniformBufferDynamic) bindings any one set layout declares.
+	// Material has 2 (ModelData, ShadowMapData), PerDraw has 2 (GenericData, Matrices).
+	static constexpr uint32_t MAX_DYNAMIC_OFFSETS_PER_SET = 2;
 
 	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
 		m_device = device;
@@ -82,13 +107,39 @@ public:
 		m_bufferInfoCount = 0;
 		m_imageInfoCount = 0;
 		m_accelStructInfoCount = 0;
+		m_dynOffsets = {};
 	}
 
-	void writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl);
+	void writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet set);
 
 	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
 	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
 	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
+
+	/**
+	 * @brief Dynamic offsets accumulated for a set, ordered by binding number.
+	 *
+	 * Only meaningful for a set this writer actually wrote; a set reused from a
+	 * memoization cache was not written here, so its caller owns the offsets.
+	 * Always sized to the set layout's dynamic descriptor count (offsets for
+	 * bindings left at their fallback stay 0).
+	 */
+	const uint32_t* dynamicOffsets(DescriptorSetIndex setIndex) const
+	{
+		return m_dynOffsets[static_cast<size_t>(setIndex)].data();
+	}
+
+	/**
+	 * @brief Dynamic offsets for a contiguous run of sets, concatenated in set order
+	 *
+	 * This is the layout vkCmdBindDescriptorSets expects when several sets are bound
+	 * in one call: each set contributes exactly its layout's dynamic descriptor count
+	 * (so a set declaring none contributes nothing, rather than padding). Returns a
+	 * view into writer-owned scratch, valid until the next call — never hold two of
+	 * these at once; for one-set-per-call binds use the per-set overload above,
+	 * whose storage is stable.
+	 */
+	ArrayView<uint32_t> dynamicOffsets(DescriptorSetIndex firstSet, uint32_t setCount);
 
 	void flush(); // defined in VulkanDescriptorManager.cpp (reports write stats to the manager)
 
@@ -100,6 +151,7 @@ private:
 		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
 		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
 		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+		int dynIndex = -1;                                    // slot in m_dynOffsets, or -1 if not dynamic
 	};
 
 	vk::Device m_device;
@@ -111,25 +163,16 @@ private:
 	std::array<vk::AccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_accelStructInfos;
 	std::array<vk::WriteDescriptorSetAccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_asWriteInfos;
 	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
+	std::array<std::array<uint32_t, MAX_DYNAMIC_OFFSETS_PER_SET>, static_cast<size_t>(DescriptorSetIndex::Count)>
+		m_dynOffsets{};
+	// Scratch for the multi-set dynamicOffsets() overload.
+	std::array<uint32_t, static_cast<size_t>(DescriptorSetIndex::Count) * MAX_DYNAMIC_OFFSETS_PER_SET>
+		m_dynOffsetScratch{};
+	DescriptorSetIndex m_currentSet = DescriptorSetIndex::Global;
 	uint32_t m_writeCount = 0;
 	uint32_t m_bufferInfoCount = 0;
 	uint32_t m_imageInfoCount = 0;
 	uint32_t m_accelStructInfoCount = 0;
-};
-
-/**
- * @brief Descriptor set indices for the 3-tier layout
- *
- * Set 0: Global - per-frame data (lights, deferred globals, shadow maps)
- * Set 1: Material - per-material data (model data, textures)
- * Set 2: Per-Draw - per-draw-call data (generic data, matrices, etc.)
- */
-enum class DescriptorSetIndex : uint32_t {
-	Global = 0,
-	Material = 1,
-	PerDraw = 2,
-
-	Count = 3
 };
 
 // ========== Descriptor Binding Constants ==========
@@ -146,15 +189,18 @@ namespace GlobalBinding {
 }
 
 // Material Set (Set 1) bindings — per-material data
+// ModelData and ShadowMapData are *dynamic* UBOs: their offset moves every draw
+// while the rest of the set is unchanged, so keeping the offset out of the
+// descriptor is what makes the set cacheable across draws.
 namespace MaterialBinding {
-	static constexpr uint32_t ModelData    = 0; // UBO: model/material data
-	static constexpr uint32_t TextureArray = 1; // sampler2D[16]: material textures
-	static constexpr uint32_t DecalGlobals = 2; // UBO: decal globals
-	static constexpr uint32_t TransformSSBO = 3; // SSBO: batched transforms
-	static constexpr uint32_t DepthMap     = 4; // sampler2D: depth (soft particles)
-	static constexpr uint32_t SceneColor   = 5; // sampler2D: scene color (distortion)
-	static constexpr uint32_t DistortionMap = 6; // sampler2D: distortion texture
-	static constexpr uint32_t ShadowMapData = 7; // UBO: shadow map generation per-draw data (shadow_render_list)
+static constexpr uint32_t ModelData = 0;     // dynamic UBO: model/material data
+static constexpr uint32_t TextureArray = 1;  // sampler2D[16]: material textures
+static constexpr uint32_t DecalGlobals = 2;  // UBO: decal globals
+static constexpr uint32_t TransformSSBO = 3; // SSBO: batched transforms
+static constexpr uint32_t DepthMap = 4;      // sampler2D: depth (soft particles)
+static constexpr uint32_t SceneColor = 5;    // sampler2D: scene color (distortion)
+static constexpr uint32_t DistortionMap = 6; // sampler2D: distortion texture
+static constexpr uint32_t ShadowMapData = 7; // dynamic UBO: shadow map generation per-draw data (shadow_render_list)
 }
 
 // Texture array slot indices (elements within MaterialBinding::TextureArray)
@@ -169,12 +215,14 @@ namespace TextureSlot {
 }
 
 // PerDraw Set (Set 2) bindings — per-draw-call data
+// GenericData and Matrices are *dynamic* UBOs, for the same reason as the
+// Material set's ModelData.
 namespace PerDrawBinding {
-	static constexpr uint32_t GenericData  = 0; // UBO: generic shader data
-	static constexpr uint32_t Matrices     = 1; // UBO: transform matrices
-	static constexpr uint32_t NanoVGData   = 2; // UBO: NanoVG data
-	static constexpr uint32_t DecalInfo    = 3; // UBO: per-decal info
-	static constexpr uint32_t MovieData    = 4; // UBO: movie playback data
+static constexpr uint32_t GenericData = 0; // dynamic UBO: generic shader data
+static constexpr uint32_t Matrices = 1;    // dynamic UBO: transform matrices
+static constexpr uint32_t NanoVGData = 2;  // UBO: NanoVG data
+static constexpr uint32_t DecalInfo = 3;   // UBO: per-decal info
+static constexpr uint32_t MovieData = 4;   // UBO: movie playback data
 }
 
 
@@ -195,8 +243,19 @@ public:
 	// larger chunks waste memory, smaller chunks allocate pools more often.
 	// MAX_SETS_PER_POOL supports ~330 draw calls (3 sets each) per chunk; the per-
 	// type multipliers cover the worst-case bindings a single set can request.
+	// One chunk now covers a dense scene outright: with the dynamic-UBO descriptor
+	// memoization in applyMaterial/renderShadowDraw, a big asteroid field at ~1350
+	// model draws settles at ~250 sets/frame, so growth is back to being the rare
+	// case it was meant to be. (The same scene needed ~2500 sets/frame before that.)
+	// Deliberately left at the original size rather than raised: the per-frame
+	// growth this used to log was a symptom of the churn, not of undersizing, and
+	// FSO targets low-end GPUs where a larger pool is real wasted memory.
 	static constexpr uint32_t MAX_SETS_PER_POOL = 1024;
-	static constexpr uint32_t MAX_UNIFORM_BUFFERS_PER_POOL = MAX_SETS_PER_POOL * 9;   // up to 9 UBOs per draw
+	// Worst case per set is 3 static UBOs (Global, PerDraw) and 2 dynamic (Material:
+	// ModelData + ShadowMapData; PerDraw: GenericData + Matrices). Total UBO
+	// capacity per chunk is slightly below what this was before the dynamic split.
+	static constexpr uint32_t MAX_UNIFORM_BUFFERS_PER_POOL = MAX_SETS_PER_POOL * 5;         // static UBOs
+	static constexpr uint32_t MAX_DYNAMIC_UNIFORM_BUFFERS_PER_POOL = MAX_SETS_PER_POOL * 2; // dynamic UBOs
 	static constexpr uint32_t MAX_SAMPLERS_PER_POOL = MAX_SETS_PER_POOL * 16;         // up to 16 samplers per material set
 
 	VulkanDescriptorManager() = default;
@@ -253,6 +312,15 @@ public:
 	 * @brief Get the set template for a given set index
 	 */
 	static const DescriptorSetTemplate& getSetTemplate(DescriptorSetIndex setIndex);
+
+	/**
+	 * @brief Number of dynamic (eUniformBufferDynamic) descriptors in a set layout
+	 *
+	 * vkCmdBindDescriptorSets requires exactly this many entries in pDynamicOffsets,
+	 * so every bind site must agree with the layout. VulkanStateTracker asserts on
+	 * it; raw cmd.bindDescriptorSets() callers should pass the matching count.
+	 */
+	static uint32_t getDynamicOffsetCount(DescriptorSetIndex setIndex);
 
 	/**
 	 * @brief Get descriptor set layout for a given set index

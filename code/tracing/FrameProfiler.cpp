@@ -357,7 +357,7 @@ void FrameProfiler::processFrame() {
 	std::sort(_bufferedEvents.begin(), _bufferedEvents.end(), event_sorter);
 
 	// Overlay fast path: per-category self-time via a single stack walk (see accumulate_self_times).
-	const size_t category_count = static_cast<size_t>(Category::getCount());
+	const auto category_count = static_cast<size_t>(Category::getCount());
 	SCP_vector<uint64_t> self_time_by_id(category_count, 0);
 	SCP_vector<const Category*> category_by_id(category_count, nullptr);
 	uint64_t total = 0;
