@@ -3,10 +3,24 @@
 
 namespace tracing {
 
-Category::Category(const char* name, bool is_graphics) : _name(name), _graphics_category(is_graphics) {
+namespace {
+// Function-local static (Meyers singleton) to avoid any static-init-order dependency: categories
+// are themselves global statics, so this counter must be alive before the first one is constructed.
+int& category_id_counter()
+{
+	static int counter = 0;
+	return counter;
+}
+} // namespace
+
+Category::Category(const char* name, bool is_graphics)
+	: _name(name), _graphics_category(is_graphics), _id(category_id_counter()++) {
 }
 const char* Category::getName() const {
 	return _name.c_str();
+}
+int Category::getCount() {
+	return category_id_counter();
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;
