@@ -250,6 +250,28 @@ ADE_FUNC(getValidValues,
 
 	return ade_set_args(L, "t", &table);
 }
+ADE_VIRTVAR(OverrideReason,
+	l_Option,
+	nullptr,
+	"If this option's value is currently forced by something outside the options system (e.g. a command line "
+	"flag), this is a human-readable description of the source. nil if the option is not currently overridden.",
+	"string",
+	"The override reason, or nil if not overridden or on error")
+{
+	option_h* opt;
+	if (!ade_get_args(L, "o", l_Option.GetPtr(&opt))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!opt->isValid()) {
+		return ADE_RETURN_NIL;
+	}
+
+	auto reason = options::OptionsManager::instance()->getOverrideReason(opt->get()->getConfigKey());
+	if (!reason.has_value()) {
+		return ADE_RETURN_NIL;
+	}
+	return ade_set_args(L, "s", reason->c_str());
+}
 ADE_FUNC(persistChanges, l_Option, nullptr,
          "Immediately persists any changes made to this specific option.", "boolean",
          "true if the change was applied successfully, false otherwise. nil on error.")

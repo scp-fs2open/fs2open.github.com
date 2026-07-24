@@ -218,6 +218,71 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .parser(parse_lighting_func)
                      .finish();
 
+// The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
+// In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
+// with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.
+#ifdef WITH_VULKAN
+
+static GraphicsAPI Gr_configured_render_api = GraphicsAPI::OpenGL;
+
+static void parse_render_api_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "opengl")) {
+		Gr_configured_render_api = GraphicsAPI::OpenGL;
+	} else if (lcase_equal(value, "vulkan")) {
+		Gr_configured_render_api = GraphicsAPI::Vulkan;
+	} else {
+		error_display(0, "%s is an invalid render API", value.c_str());
+	}
+}
+
+static SCP_vector<GraphicsAPI> render_api_enumerator() { return {GraphicsAPI::OpenGL, GraphicsAPI::Vulkan}; }
+
+static SCP_string render_api_display(const GraphicsAPI& api)
+{
+	switch (api) {
+	case GraphicsAPI::Vulkan:
+		return "Vulkan";
+	case GraphicsAPI::OpenGL:
+	default:
+		return "OpenGL";
+	}
+}
+
+// Read directly via getValue() at the one call site that needs it (freespace.cpp, right before gr_init()),
+// rather than bound to a global via a change listener -- like Resolution/Anisotropy, this can't take effect
+// without a restart, so there is no "live" value to keep in sync.
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RenderAPIOption __UNUSED = options::OptionBuilder<GraphicsAPI>("Graphics.RenderAPI",
+                     SCP_string("Render API"),
+                     SCP_string("Selects the rendering backend used by the engine. Requires a restart to take effect."))
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(render_api_enumerator)
+                     .display(render_api_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_func([]() { return Gr_configured_render_api; })
+                     .importance(99)
+                     .parser(parse_render_api_func)
+                     .finish();
+
+GraphicsAPI gr_get_configured_render_api()
+{
+	return RenderAPIOption->getValue();
+}
+
+#else
+
+GraphicsAPI gr_get_configured_render_api()
+{
+	// No backend choice in an OpenGL-only build; Default resolves to OpenGL in gr_init().
+	return GraphicsAPI::Default;
+}
+
+#endif
+
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
@@ -267,11 +332,6 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .change_listener(mode_change_func)
                      .parser(parse_window_mode_func)
                      .finish();
-
-void removeWindowModeOption()
-{
-	options::OptionsManager::instance()->removeOption(WindowModeOption);
-}
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; Hook::Factory() uses Meyers singleton
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
@@ -1942,7 +2002,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 			height = res.height;
 			removeResolutionVROption();
 		}
-		//TODO set d_mode from Ingame Options if available here
+
+		// Pick the rendering backend from the in-game Graphics.RenderAPI option (or the mod's default
+		// settings table). A -vulkan/-opengl command line flag still wins below via Cmdline_graphics_api.
+		d_mode = gr_get_configured_render_api();
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
