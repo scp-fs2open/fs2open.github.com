@@ -408,13 +408,16 @@ void traitor_init()
 }
 
 // initialize a nice blank scoring element
-void scoring_struct::init()
+void scoring_struct::init(bool reset_score_and_rank)
 {
 	flags = 0;
-	score = 0;
-	rank = 0;
 
-	medal_counts.assign((int)Medals.size(), 0);
+	if (reset_score_and_rank) {
+		score = 0;
+		rank = 0;
+	}
+
+	medal_counts.assign(Medals.size(), 0);
 
 	memset(kills, 0, sizeof(kills));
 	assists = 0;

@@ -142,7 +142,7 @@ public:
 	scoring_struct(const scoring_struct &s) { assign(s); }
 	scoring_struct& operator=(const scoring_struct &s) { assign(s); return *this; }
 
-	void init();
+	void init(bool reset_score_and_rank = true);
 	void assign(const scoring_struct &s);
 
 	bool operator==(const scoring_struct& rhs) const;

@@ -221,7 +221,7 @@ void campaign_editor::load_campaign(const char *filename, const char *full_path)
 	else
 		m_current_campaign_path = _T("");
 
-	auto result = mission_campaign_load(filename, full_path, nullptr, 0);
+	auto result = mission_campaign_load(filename, full_path, nullptr, false);
 	if (result != 0) {
 		if (result == CAMPAIGN_ERROR_CORRUPT)
 			MessageBox("Requested campaign file is corrupt.", "Could not load campaign file");
