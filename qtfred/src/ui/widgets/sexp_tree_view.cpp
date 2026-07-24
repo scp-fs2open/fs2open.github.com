@@ -8,7 +8,7 @@
 #include <ui/util/SignalBlockers.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/Theme.h>
-#include <ui/widgets/sexp_data_menu.h>
+#include <ui/widgets/data_list_menu.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -1327,10 +1327,10 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	replace_number_act->setEnabled(state.can_replace_number);
 	replace_string_act->setEnabled(state.can_replace_string);
 
-	const SexpDataMenuStyle dataMenuStyle = _viewport ? _viewport->Sexp_data_menu_style : SexpDataMenuStyle::Columns;
+	const DataMenuStyle dataMenuStyle = _viewport ? _viewport->Data_menu_style : DataMenuStyle::Columns;
 
 	auto collectDataItems = [](sexp_list_item* head) {
-		std::vector<SexpDataMenuItem> out;
+		std::vector<util::SelectMenuEntry> out;
 		sexp_list_item* ptr = head;
 		int data_idx = 0;
 		while (ptr) {
@@ -1343,14 +1343,17 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 		return out;
 	};
 
+	// The data menus already hold the Number / String / separator rows.
+	constexpr int dataMenuFixedRows = 3;
+
 	if (state.add_data_list) {
-		populateSexpDataSubmenu(add_data_menu, collectDataItems(state.add_data_list), dataMenuStyle,
-			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, false); });
+		populateDataListMenu(add_data_menu, collectDataItems(state.add_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, false); }, dataMenuFixedRows);
 	}
 
 	if (state.replace_data_list) {
-		populateSexpDataSubmenu(replace_data_menu, collectDataItems(state.replace_data_list), dataMenuStyle,
-			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, true); });
+		populateDataListMenu(replace_data_menu, collectDataItems(state.replace_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, true); }, dataMenuFixedRows);
 	}
 
 	// Clipboard and copy operations

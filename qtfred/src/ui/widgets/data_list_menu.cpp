@@ -1,4 +1,4 @@
-#include "sexp_data_menu.h"
+#include "data_list_menu.h"
 
 #include <QApplication>
 #include <QFontMetrics>
@@ -8,6 +8,7 @@
 #include <QListView>
 #include <QMenu>
 #include <QScreen>
+#include <QShowEvent>
 #include <QSortFilterProxyModel>
 #include <QStandardItemModel>
 #include <QTimer>
@@ -17,21 +18,22 @@
 namespace fso::fred {
 namespace {
 
-constexpr int kDataIdxRole = Qt::UserRole + 1;
+constexpr int kIdRole = Qt::UserRole + 1;
 
-void dismissAndActivate(int dataIdx, const std::function<void(int)>& onActivate) {
+void dismissAndActivate(int id, const std::function<void(int)>& onActivate) {
 	while (auto* p = QApplication::activePopupWidget()) {
 		p->close();
 	}
 	// Defer the actual edit so it runs after the menu close cascade has finished
 	// processing — avoids reentrancy issues if the edit triggers more UI changes.
-	QTimer::singleShot(0, [onActivate, dataIdx]() { onActivate(dataIdx); });
+	QTimer::singleShot(0, [onActivate, id]() { onActivate(id); });
 }
 
 class SearchableMenuWidget : public QWidget {
 public:
-	SearchableMenuWidget(const std::vector<SexpDataMenuItem>& items,
-		std::function<void(int)> onActivate)
+	SearchableMenuWidget(const std::vector<util::SelectMenuEntry>& items,
+		std::function<void(int)> onActivate,
+		int currentId)
 		: QWidget(nullptr)
 		, _onActivate(std::move(onActivate))
 	{
@@ -46,9 +48,16 @@ public:
 
 		_model = new QStandardItemModel(0, 1, this);
 		for (const auto& it : items) {
-			auto* row = new QStandardItem(it.text);
-			row->setData(it.dataIdx, kDataIdxRole);
+			auto* row = new QStandardItem(it.name);
+			row->setData(it.id, kIdRole);
 			row->setEditable(false);
+			if (currentId >= 0 && it.id == currentId) {
+				// Highlight the current object with a bold font
+				QFont font = row->font();
+				font.setBold(true);
+				row->setFont(font);
+				_currentSourceRow = _model->rowCount();
+			}
 			_model->appendRow(row);
 		}
 
@@ -67,7 +76,7 @@ public:
 		const int rowHeight = fm.height() + 6;
 		int maxTextWidth = 0;
 		for (const auto& it : items) {
-			maxTextWidth = std::max(maxTextWidth, fm.horizontalAdvance(it.text));
+			maxTextWidth = std::max(maxTextWidth, fm.horizontalAdvance(it.name));
 		}
 		_list->setFixedWidth(std::clamp(maxTextWidth + 32, 220, 480));
 		_list->setMinimumHeight(rowHeight * 13);
@@ -83,14 +92,21 @@ public:
 		QObject::connect(_list, &QListView::activated, this, [this](const QModelIndex&) { activateCurrent(); });
 		QObject::connect(_list, &QListView::clicked, this, [this](const QModelIndex&) { activateCurrent(); });
 
-		if (_proxy->rowCount() > 0) {
-			_list->setCurrentIndex(_proxy->index(0, 0));
-		}
+		selectDefaultRow();
 	}
 
 	QLineEdit* filterEdit() { return _filter; }
 
 protected:
+	void showEvent(QShowEvent* event) override {
+		QWidget::showEvent(event);
+		// Reset from any previous opening, land on the current item, and make
+		// sure the filter has keyboard focus rather than the menu itself.
+		_filter->clear();
+		selectDefaultRow();
+		_filter->setFocus();
+	}
+
 	void keyPressEvent(QKeyEvent* event) override {
 		switch (event->key()) {
 		case Qt::Key_Down:
@@ -111,12 +127,26 @@ protected:
 	}
 
 private:
+	void selectDefaultRow() {
+		if (_currentSourceRow >= 0) {
+			const QModelIndex idx = _proxy->mapFromSource(_model->index(_currentSourceRow, 0));
+			if (idx.isValid()) {
+				_list->setCurrentIndex(idx);
+				_list->scrollTo(idx);
+				return;
+			}
+		}
+		if (_proxy->rowCount() > 0) {
+			_list->setCurrentIndex(_proxy->index(0, 0));
+		}
+	}
+
 	void activateCurrent() {
 		const QModelIndex idx = _list->currentIndex();
 		if (!idx.isValid()) {
 			return;
 		}
-		dismissAndActivate(idx.data(kDataIdxRole).toInt(), _onActivate);
+		dismissAndActivate(idx.data(kIdRole).toInt(), _onActivate);
 	}
 
 	std::function<void(int)> _onActivate;
@@ -124,24 +154,36 @@ private:
 	QListView* _list = nullptr;
 	QStandardItemModel* _model = nullptr;
 	QSortFilterProxyModel* _proxy = nullptr;
+	int _currentSourceRow = -1;
 };
 
 void appendActions(QMenu* menu,
-	const std::vector<SexpDataMenuItem>& items,
-	const std::function<void(int)>& onActivate)
+	const std::vector<util::SelectMenuEntry>& items,
+	const std::function<void(int)>& onActivate,
+	int currentId)
 {
+	QAction* currentAct = nullptr;
 	for (const auto& item : items) {
-		const int idx = item.dataIdx;
-		menu->addAction(item.text, menu, [onActivate, idx]() { onActivate(idx); });
+		const int id = item.id;
+		QAction* act = menu->addAction(item.name, menu, [onActivate, id]() { onActivate(id); });
+		if (currentId >= 0 && id == currentId) {
+			// Highlight the current object with a bold font
+			QFont font = act->font();
+			font.setBold(true);
+			act->setFont(font);
+			currentAct = act;
+		}
+	}
+	// Open with the current item pre-highlighted.
+	if (currentAct != nullptr) {
+		menu->setActiveAction(currentAct);
 	}
 }
 
 // Resolves Auto to a concrete style: the native column menu while the list fits
 // comfortably, then the searchable popup once it would grow past half the screen.
 // The menu is not shown yet, so height is estimated from the item count.
-SexpDataMenuStyle resolveAutoStyle(const QMenu* menu, int itemCount) {
-	// Extra rows for the Number / String / separator entries already in the menu.
-	constexpr int fixedRows = 3;
+DataMenuStyle resolveAutoStyle(const QMenu* menu, int itemCount, int fixedRows) {
 	const QFontMetrics fm(menu->font());
 	const int rowHeight = fm.height() + 6;
 	const int estimatedHeight = (itemCount + fixedRows) * rowHeight;
@@ -151,41 +193,46 @@ SexpDataMenuStyle resolveAutoStyle(const QMenu* menu, int itemCount) {
 		screen = QGuiApplication::primaryScreen();
 	}
 	if (screen == nullptr) {
-		return SexpDataMenuStyle::Columns;
+		return DataMenuStyle::Columns;
 	}
 
 	const int available = screen->availableGeometry().height();
-	return estimatedHeight > available / 2 ? SexpDataMenuStyle::Searchable
-										   : SexpDataMenuStyle::Columns;
+	return estimatedHeight > available / 2 ? DataMenuStyle::Searchable
+										   : DataMenuStyle::Columns;
 }
 
 } // namespace
 
-void populateSexpDataSubmenu(QMenu* menu,
-	const std::vector<SexpDataMenuItem>& items,
-	SexpDataMenuStyle style,
-	std::function<void(int)> onActivate)
+void populateDataListMenu(QMenu* menu,
+	const std::vector<util::SelectMenuEntry>& items,
+	DataMenuStyle style,
+	std::function<void(int)> onActivate,
+	int fixedRows,
+	int currentId)
 {
 	if (!menu || items.empty()) {
 		return;
 	}
 
-	if (style == SexpDataMenuStyle::Auto) {
-		style = resolveAutoStyle(menu, static_cast<int>(items.size()));
+	if (style == DataMenuStyle::Auto) {
+		style = resolveAutoStyle(menu, static_cast<int>(items.size()), fixedRows);
 	}
 
 	switch (style) {
-	case SexpDataMenuStyle::Auto:
-	case SexpDataMenuStyle::Columns:
+	case DataMenuStyle::Auto:
+	case DataMenuStyle::Columns:
 		// Native menu: the platform tiles a too-tall list into columns.
-		appendActions(menu, items, onActivate);
+		appendActions(menu, items, onActivate, currentId);
 		break;
-	case SexpDataMenuStyle::Searchable: {
-		auto* widget = new SearchableMenuWidget(items, std::move(onActivate));
+	case DataMenuStyle::Searchable: {
+		auto* widget = new SearchableMenuWidget(items, std::move(onActivate), currentId);
 		auto* action = new QWidgetAction(menu);
 		action->setDefaultWidget(widget);
 		menu->addAction(action);
-		// Focus the filter once the menu is fully shown.
+		// Focus the filter once the menu is fully shown. When we're already
+		// inside aboutToShow (the Select menus rebuild there), this connect
+		// fires too late for the current opening; the widget's showEvent
+		// covers that path.
 		QObject::connect(menu, &QMenu::aboutToShow, widget, [widget]() {
 			widget->filterEdit()->setFocus();
 		});

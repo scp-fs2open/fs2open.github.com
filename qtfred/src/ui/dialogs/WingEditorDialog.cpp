@@ -49,6 +49,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	Editor* editor = viewport->editor;
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 			for (int i = 0; i < MAX_WINGS; i++) {

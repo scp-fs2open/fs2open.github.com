@@ -48,6 +48,7 @@ PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 	Editor* editor = viewport->editor;
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 			for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {

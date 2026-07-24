@@ -76,6 +76,7 @@
 #include "missioneditor/missionsave.h"
 
 #include "widgets/ObjectComboBox.h"
+#include "widgets/data_list_menu.h"
 
 #include "util.h"
 #include "mission/object.h"
@@ -1971,21 +1972,20 @@ void FredView::initializePopupMenus() {
 
 	_createSubmenu = new QMenu(tr("Create"), _viewPopup);
 
+	// Rebuilt on every open so a changed menu style preference takes effect.
 	_createShipSubmenu = new QMenu(tr("Ship"), _createSubmenu);
 	_createShipSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
 	connect(_createShipSubmenu, &QMenu::aboutToShow, this, [this]() {
-		if (_createShipSubmenu->actions().isEmpty()) {
-			populateCreateShipSubmenu();
-		}
+		_createShipSubmenu->clear();
+		populateCreateShipSubmenu();
 	});
 	_createSubmenu->addMenu(_createShipSubmenu);
 
 	_createPropSubmenu = new QMenu(tr("Prop"), _createSubmenu);
 	_createPropSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
 	connect(_createPropSubmenu, &QMenu::aboutToShow, this, [this]() {
-		if (_createPropSubmenu->actions().isEmpty()) {
-			populateCreatePropSubmenu();
-		}
+		_createPropSubmenu->clear();
+		populateCreatePropSubmenu();
 	});
 	_createSubmenu->addMenu(_createPropSubmenu);
 
@@ -2080,32 +2080,32 @@ void FredView::initializePopupMenus() {
 }
 
 void FredView::populateCreateShipSubmenu() {
+	std::vector<util::SelectMenuEntry> entries;
 	for (int i = 0; i < (int)Ship_info.size(); ++i) {
 		if (Ship_info[i].flags[Ship::Info_Flags::No_fred]) {
 			continue;
 		}
-		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
-		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
-				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
-		});
-		_createShipSubmenu->addAction(action);
+		entries.push_back({QString::fromUtf8(Ship_info[i].name), i});
 	}
+	populateDataListMenu(_createShipSubmenu, entries, _viewport->Data_menu_style, [this](int shipClass) {
+		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(), shipClass);
+	});
 }
 
 void FredView::populateCreatePropSubmenu() {
+	std::vector<util::SelectMenuEntry> entries;
 	for (int i = 0; i < prop_info_size(); ++i) {
 		if (Prop_info[i].flags[Prop::Info_Flags::No_fred]) {
 			continue;
 		}
-		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
-		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
-				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
-				i);
-		});
-		_createPropSubmenu->addAction(action);
+		entries.push_back({QString::fromStdString(Prop_info[i].name), i});
 	}
+	populateDataListMenu(_createPropSubmenu, entries, _viewport->Data_menu_style, [this](int propClass) {
+		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+			propClass);
+	});
 }
 
 void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
