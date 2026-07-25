@@ -906,8 +906,8 @@ static jmethodID android_get_static_method(JNIEnv* e, jclass cls, const char* na
 void os_set_flags_string(const char* json)
 {
 	//Get the JNI Environment pointer and current Activity instance via SDL
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 
 	if (env && activity) {
 		// Locate the Java class (FlagsActivity / GameActivity on KnossosNET)
@@ -939,8 +939,8 @@ SCP_string os_get_working_folder_path()
 	SCP_string wfp{};
 	 
 	//Get the JNI Environment pointer and current Activity instance via SDL
-    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-    jobject activity = (jobject)SDL_AndroidGetActivity();
+    JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    jobject activity = (jobject)SDL_GetAndroidActivity();
     
     if (env && activity) {
     	// Locate the Java class (GameActivity on KnossosNET)
@@ -991,8 +991,8 @@ SCP_string os_get_working_folder_path()
 void os_touch_overlay_toggle(bool status)
 {
 	//Get the JNI Environment pointer and current Activity instance via SDL
-    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-    jobject activity = (jobject)SDL_AndroidGetActivity();
+    JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+    jobject activity = (jobject)SDL_GetAndroidActivity();
     
     if (env && activity) {
     	// Locate the Java class (GameActivity on KnossosNET)

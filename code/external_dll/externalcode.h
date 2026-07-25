@@ -31,7 +31,7 @@ protected:
 		
 #ifdef __ANDROID__
 		if (m_library == NULL) {
-			auto android_path = SDL_AndroidGetInternalStoragePath();
+			auto android_path = SDL_GetAndroidInternalStoragePath();
 			if (android_path != nullptr) {
 				SCP_string android_full_path = android_path;
 				if (android_full_path.back() != DIR_SEPARATOR_CHAR) {
