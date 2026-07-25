@@ -4,8 +4,8 @@
 #include "utils/unicode.h"
 #include "speech.h"
 #include <jni.h>
-#include "SDL.h"
-#include "SDL_system.h"
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL.h>
 
 bool Speech_init = false;
 static jclass j_game_class = nullptr;
