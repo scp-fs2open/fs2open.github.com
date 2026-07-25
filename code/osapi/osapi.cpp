@@ -29,8 +29,8 @@
 #endif
 
 #ifdef __ANDROID__
-#include <SDL_system.h>
-#include <SDL.h>
+#include "SDL_system.h"
+#include "SDL.h"
 #include <jni.h>
 #include "options/Option.h"
 #endif
