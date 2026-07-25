@@ -72,9 +72,6 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTree_helpChanged(const QString& help);
 	void on_departureTree_miniHelpChanged(const QString& help);
 
-  protected:
-	void closeEvent(QCloseEvent* e) override;
-
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::WingEditorDialog> ui;
 	std::unique_ptr<WingEditorDialogModel> _model;
@@ -82,6 +79,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	bool _cues_hidden = false;
 
+	void initializeUi();
 	void updateUi();
 	void enableOrDisableControls();
 
@@ -96,7 +94,6 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void refreshDepartureLocationCombo();
 	void refreshArrivalTargetCombo();
 	void refreshDepartureTargetCombo();
-	void refreshAllDynamicCombos();
 
 	void updateLogoPreview();
 };

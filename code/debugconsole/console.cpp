@@ -489,13 +489,15 @@ void dc_putc(char c)
 }
 
 bool handle_textInputEvent(const SDL_Event& event) {
-	if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
-		for (char c : event.text.text) {
-			if (c < 32)
+	const char *p = event.text.text;
+
+	if (*p != '\0' && *p != '\1') {
+		for (; *p; ++p) {
+			if (*p < 32)
 				break;
 
 			if (dc_command_buf.size() < MAX_CLI_LEN) {
-				dc_command_buf.push_back(c);
+				dc_command_buf.push_back(*p);
 			}
 		}
 	}
@@ -515,8 +517,8 @@ void debug_console(void (*_func)(void))
 		dc_init();
 	}
 
-	auto textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, &handle_textInputEvent);
-	SDL_StartTextInput();
+	auto textListener = os::events::addEventListener(SDL_EVENT_TEXT_INPUT, 10000, &handle_textInputEvent);
+	SDL_StartTextInput(os::getSDLMainWindow());
 
 	dc_draw(TRUE);
 
@@ -618,7 +620,7 @@ void debug_console(void (*_func)(void))
 		dc_draw(TRUE);
 	}
 
-	SDL_StopTextInput();
+	SDL_StopTextInput(os::getSDLMainWindow());
 	os::events::removeEventListener(textListener);
 
 	while( key_inkey() ) {

@@ -227,6 +227,25 @@ bool shadows_raytracing_supported()
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
 }
 
+void shadows_remove_unsupported_options()
+{
+	if (shadows_raytracing_supported()) {
+		return;
+	}
+
+	// No raytracing support (e.g. the OpenGL renderer): the render-method selector
+	// degenerates to a single value and every raytraced-shadow tuning option is inert, so
+	// drop them all. The bound globals keep their defaults, so shadow-map rendering is
+	// unaffected. Graphics.Shadows (base shadow quality) is deliberately kept.
+	auto* mgr = options::OptionsManager::instance();
+	mgr->removeOption(ShadowRenderMethodOption);
+	mgr->removeOption(MaxRtShadowLightsOption);
+	mgr->removeOption(RTShadowQualityOption);
+	mgr->removeOption(MaxRtShadowLocalLightsOption);
+	mgr->removeOption(RtShadowBiasMinOption);
+	mgr->removeOption(RtShadowBiasMaxOption);
+}
+
 bool shadows_use_raytracing()
 {
 	return Shadow_render_method == ShadowRenderMethod::Raytraced && shadows_raytracing_supported();

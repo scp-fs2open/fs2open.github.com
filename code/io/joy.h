@@ -14,7 +14,6 @@
 #include "globalincs/pstypes.h"
 
 #include "libs/jansson.h"
-#include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
 const int JOY_NUM_BUTTONS = 128;	// Max number of buttons FSO can handle.  OS max may differ.
@@ -60,12 +59,12 @@ namespace io
 			 * This object will take ownership of the passed SDL handle and it will be freed when this
 			 * object is deleted.
 			 *
-			 * @param device_id The SDL device index
-			 * 
+			 * @param id The SDL joystick id
+			 *
 			 * @throws a std::runtime_error if SDL_JoystickOpen() could not open the joystick. Clients creating a Joystick
 			 *   instance should call SDL_GetError() afterwards to get details from SDL.
 			 */
-			explicit Joystick(int device_id);
+			explicit Joystick(int id);
 
 			/**
 			 * @brief Moves the resources of the other object into @c this
@@ -226,12 +225,6 @@ namespace io
 			SDL_JoystickID getID() const;
 
 			/**
-			 * @brief Gets the device index of this joystick
-			 * @return The device index
-			 */
-			int getDeviceId() const;
-
-			/**
 			 * @brief The SDL joystick handle
 			 * @return The handle
 			 */
@@ -269,12 +262,11 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
-			int _device_id; //!< The OS device index
+			SDL_JoystickID _id;     //!< The instance ID
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 
 			SCP_string _guidStr;    //!< The GUID string
 			SCP_string _name;       //!< The joystick name
-			SDL_JoystickID _id;     //!< The instance ID
 			bool _isHaptic = false; //!< If this joystick supports haptic feedback
 			bool _isGamepad = false; //!< If this joystick is considered a gamepad
 

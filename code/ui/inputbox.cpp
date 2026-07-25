@@ -16,6 +16,7 @@
 #include "io/timer.h"
 #include "ui/ui.h"
 #include "ui/uidefs.h"
+#include "gamesnd/gamesnd.h"
 
 
 
@@ -80,8 +81,8 @@ void UI_INPUTBOX::init_cursor()
 
 void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, const char *_text, int _flags, int pixel_lim, color *clr)
 {
-	textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, std::bind(&UI_INPUTBOX::handle_textInputEvent, this, std::placeholders::_1));
-	SDL_StartTextInput();
+	textListener = os::events::addEventListener(SDL_EVENT_TEXT_INPUT, 10000, [this](auto && PH1)
+												{ return handle_textInputEvent(std::forward<decltype(PH1)>(PH1)); });
 
 	int tw, th;
 
@@ -158,8 +159,6 @@ void UI_INPUTBOX::set_invalid_chars(const char *ichars)
 
 void UI_INPUTBOX::destroy()
 {
-
-	SDL_StopTextInput();
 	os::events::removeEventListener(textListener);
 
 	if (text) {
@@ -425,13 +424,15 @@ bool UI_INPUTBOX::handle_textInputEvent(const SDL_Event& event) {
 	if (!focus || disabled_flag)
 		return false;
 
-	if (event.text.text[0] != '\0' && event.text.text[0] != '\1') {
+	const char *p = event.text.text;
+
+	if (*p != '\0' && *p != '\1') {
 		int key_used = 0;
-		for (char c : event.text.text) {
-			if (c < 32)
+		for (; *p; ++p) {
+			if (*p < 32)
 				break;
 
-			add_input(c, &key_used);
+			add_input(*p, &key_used);
 		}
 
 		if (key_used && (flags & UI_INPUTBOX_FLAG_EAT_USED))
@@ -540,10 +541,20 @@ void UI_INPUTBOX::append_text(const char *in)
 		return;
 	}
 
+	// check the incoming string to make sure it's valid for the control
+	for (const char *p = in; *p; ++p) {
+		if ( !validate_input(*p) ) {
+			// invalid character, bail!
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			return;
+		}
+	}
+
 	// current size
 	size_t textlen = strlen(text);
 
 	if (textlen == static_cast<size_t>(length)) {
+		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		return;
 	}
 

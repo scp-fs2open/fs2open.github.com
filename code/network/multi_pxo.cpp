@@ -1546,59 +1546,6 @@ void multi_pxo_strip_space(char *string1,char *string2)
 	}
 }
 
-static int open_url(const char *url)
-{
-#if defined(_WIN32) || defined(__APPLE__)
-	const char *open_cmd = "open";
-#else
-	const char *open_cmd = "xdg-open";
-#endif
-
-	char s_url[256];
-
-	// make sure it's a valid web uri
-	if ( !SDL_strncasecmp(url, "http://", 7) || !SDL_strncasecmp(url, "https://", 8) ) {
-		SDL_strlcpy(s_url, url, SDL_arraysize(s_url));
-	} else {
-		SDL_snprintf(s_url, SDL_arraysize(s_url), "http://%s", url);
-	}
-
-#ifdef _WIN32
-	intptr_t rval = (intptr_t) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
-
-	if (rval <= 32) {
-		return -1;
-	}
-
-	return 0;
-#else
-	int statval = 0;
-	pid_t mpid = fork();
-
-	if (mpid < 0) {
-		// nothing, will return error
-	} else if (mpid == 0) {
-		int rv = 0;
-
-		rv = execlp(open_cmd, open_cmd, s_url, nullptr);
-
-		exit(rv);
-	} else {
-		waitpid(mpid, &statval, 0);
-
-		if ( WIFEXITED(statval) ) {
-			if (WEXITSTATUS(statval) == 0) {
-				return 0;
-			} else {
-				return -1;
-			}
-		}
-	}
-
-	return -1;
-#endif
-}
-
 // fire up the given URL
 void multi_pxo_url(const char *url)
 {
@@ -1612,7 +1559,12 @@ void multi_pxo_url(const char *url)
 		return;
 	}
 
-	if ( open_url(url) ) {
+	// if it's not a web uri then bail (security measure)
+	if (SDL_strncasecmp(url, "http://", 7) && SDL_strncasecmp(url, "https://", 8)) {
+		return;
+	}
+
+	if ( !SDL_OpenURL(url) ) {
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_RED | PF_TITLE_BIG,1,POPUP_OK,XSTR("Warning\nCould not locate/launch default Internet Browser",943));
 	} else {
 		// short delay before allowing another click

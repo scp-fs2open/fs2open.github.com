@@ -307,16 +307,30 @@ void SceneBrowserModel::setNameFilter(const QString& filter)
 // Signal handlers
 // ---------------------------------------------------------------------------
 
+void SceneBrowserModel::scheduleSelectionSync()
+{
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_syncPending) {
+		return;
+	}
+	_syncPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_syncPending = false;
+		modelChanged();
+	});
+}
+
 void SceneBrowserModel::onCurrentObjectChanged(int /*newObj*/)
 {
 	if (_updatingFromBrowser) return;
-	modelChanged();
+	scheduleSelectionSync();
 }
 
 void SceneBrowserModel::onObjectMarkingChanged(int /*obj*/, bool /*marked*/)
 {
 	if (_updatingFromBrowser) return;
-	modelChanged();
+	scheduleSelectionSync();
 }
 
 void SceneBrowserModel::onLayerVisibilityChanged()

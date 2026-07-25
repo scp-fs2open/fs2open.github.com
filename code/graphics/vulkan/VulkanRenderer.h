@@ -18,12 +18,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#define SDL_SUPPORTS_VULKAN 1
-#else
-#define SDL_SUPPORTS_VULKAN 0
-#endif
-
 namespace graphics::vulkan {
 
 struct QueueIndex {
@@ -122,6 +116,27 @@ class VulkanRenderer {
 	 * @return true on success, false on failure
 	 */
 	bool readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight);
+
+	/**
+	 * @brief Read back the currently-bound off-screen render target's color image.
+	 *
+	 * Unlike readbackFramebuffer (which reads the previous frame's on-screen image),
+	 * this captures the render target that is active right now via bm_set_render_target
+	 * — the path gr.screenToBlob uses to grab SCPUI-generated icons. Because the target's
+	 * draws live in the not-yet-submitted frame command buffer, this flushes that buffer
+	 * mid-frame (submit + host wait), copies the target's color image, then resumes
+	 * rendering into it with a loadOp=eLoad pass so already-drawn content survives.
+	 *
+	 * The target is R8G8B8A8_UNORM, so pixels come back as tightly-packed RGBA8 with
+	 * alpha preserved (no swizzle, no forced opacity). Caller must vm_free the buffer.
+	 *
+	 * @param ts         The active render target slot (must be non-cubemap, have a framebuffer)
+	 * @param[out] outPixels Receives the vm_malloc'd RGBA8 pixel buffer
+	 * @param[out] outWidth  Receives the target width
+	 * @param[out] outHeight Receives the target height
+	 * @return true on success, false on failure
+	 */
+	bool readbackRenderTarget(tcache_slot_vulkan* ts, ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight);
 
 	/**
 	 * @brief Get the minimum uniform buffer offset alignment requirement
@@ -271,6 +286,14 @@ class VulkanRenderer {
 	void resumeSwapChainPass();
 
 	/**
+	 * @brief Resume rendering into a render target with loadOp=eLoad (preserving content)
+	 *
+	 * Used after a mid-frame render-target readback (readbackRenderTarget) to continue
+	 * drawing into the same target without clearing what was already rendered.
+	 */
+	void resumeRenderTargetPass(tcache_slot_vulkan* ts);
+
+	/**
 	 * @brief Check if we're currently rendering to an off-screen render target
 	 */
 	bool isRenderTargetActive() const { return m_renderTargetActive; }
@@ -288,6 +311,15 @@ class VulkanRenderer {
 	 * @brief Get the validated MSAA sample count for deferred lighting
 	 */
 	vk::SampleCountFlagBits getMsaaSampleCount() const { return m_msaaSampleCount; }
+
+	/**
+	 * @brief Get the depth/stencil format chosen at device init
+	 *
+	 * Used by render targets created with BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT so
+	 * their depth buffer matches the swap-chain depth format. Returns eUndefined if
+	 * depth resources have not been created yet.
+	 */
+	vk::Format getDepthFormat() const { return m_depthFormat; }
 
   private:
 	/**
@@ -448,10 +480,8 @@ class VulkanRenderer {
 	vk::SampleCountFlagBits m_msaaSampleCount = vk::SampleCountFlagBits::e1;  // Validated MSAA sample count
 	bool m_renderTargetActive = false;  // True when rendering to off-screen RT (bm_set_render_target)
 
-#if SDL_SUPPORTS_VULKAN
 	bool m_debugReportEnabled = false;
 	bool m_debugUtilsEnabled = false;
-#endif
 
 };
 

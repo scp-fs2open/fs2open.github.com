@@ -5,6 +5,8 @@
 #include <unordered_set>
 #include "mission/dialogs/WaypointEditorDialogModel.h"
 
+#include <QTimer>
+
 namespace fso::fred::dialogs {
 
 namespace {
@@ -425,19 +427,32 @@ void WaypointEditorDialogModel::selectPreviousPath() {
 	selectWaypointPathByIndex(prev);
 }
 
+void WaypointEditorDialogModel::scheduleInitializeData() {
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.tles.
+	if (_initPending) {
+		return;
+	}
+	_initPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_initPending = false;
+		initializeData();
+	});
+}
+
 void WaypointEditorDialogModel::onSelectedObjectChanged(int) {
 	if (_suppressRefresh) return;
-	initializeData();
+	scheduleInitializeData();
 }
 
 void WaypointEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
 	if (_suppressRefresh) return;
-	initializeData();
+	scheduleInitializeData();
 }
 
 void WaypointEditorDialogModel::onMissionChanged() {
 	if (_suppressRefresh) return;
-	initializeData();
+	scheduleInitializeData();
 }
 
 } // namespace fso::fred::dialogs

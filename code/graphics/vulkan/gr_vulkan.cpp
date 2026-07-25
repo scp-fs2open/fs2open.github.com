@@ -12,7 +12,7 @@
 #include "VulkanDeferred.h"
 #include "VulkanPostProcessing.h"
 
-#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "osapi/osapi.h"
 
@@ -346,6 +346,36 @@ SCP_string vulkan_blob_screen()
 {
 	ubyte* pixels = nullptr;
 	uint32_t w, h;
+
+	// If an off-screen render target is bound (e.g. SCPUI generating ship/weapon icons via
+	// gr.setTarget + gr.screenToBlob), capture that target rather than the on-screen frame.
+	// Its color image is R8G8B8A8_UNORM, already in RGBA order with real alpha, so it needs
+	// no BGRA swizzle. Reading the framebuffer here instead would grab whatever is currently
+	// on screen (and force it opaque), which is exactly the icon corruption bug.
+	auto* texManager = getTextureManager();
+	const int rtHandle = texManager ? texManager->getCurrentRenderTarget() : -1;
+	if (rtHandle >= 0) {
+		static bool logged_rt_capture = false;
+		if (!logged_rt_capture) {
+			logged_rt_capture = true;
+			mprintf(("Vulkan: gr.screenToBlob capturing active render target (handle %i) instead of the "
+			         "framebuffer (logged once).\n", rtHandle));
+		}
+		auto* ts = texManager->getTextureSlot(rtHandle);
+		if (ts && renderer_instance->readbackRenderTarget(ts, &pixels, &w, &h)) {
+			// Flip vertically to match OpenGL's gr_opengl_blob_screen (which also passes y_flip=true).
+			// OpenGL render targets are stored bottom-up, so its readback flips to produce an upright
+			// PNG; Vulkan stores top-down but reads row 0 first, so the same flip is required to yield
+			// the SAME orientation OpenGL produces. Mods drive screenToBlob assuming OpenGL behavior
+			// (e.g. SCPUI deliberately draws its source icons V-flipped into the target to cancel this
+			// flip), so matching OpenGL here keeps that content correct instead of upside-down.
+			SCP_string result = png_b64_bitmap(w, h, true, pixels);
+			vm_free(pixels);
+			return "data:image/png;base64," + result;
+		}
+		return "";
+	}
+
 	if (!renderer_instance->readbackFramebuffer(&pixels, &w, &h)) {
 		return "";
 	}
@@ -552,12 +582,12 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		shadow_cascade_params_init();
 	}
 
-	// Initialize ImGui SDL2 backend for input handling.
+	// Initialize ImGui SDL3 backend for input handling.
 	// The Vulkan rendering backend (ImGui_ImplVulkan) is initialized
 	// inside VulkanRenderer::initImGui() after all Vulkan objects are ready.
 	SDL_Window* window = os::getSDLMainWindow();
 	if (window) {
-		ImGui_ImplSDL2_InitForVulkan(window);
+		ImGui_ImplSDL3_InitForVulkan(window);
 	}
 
 	gr_screen.gf_flip = vulkan_flip;

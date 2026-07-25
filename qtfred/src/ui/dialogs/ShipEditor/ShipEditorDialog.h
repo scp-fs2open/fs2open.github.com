@@ -32,10 +32,6 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	int getSingleShip() const;
 	bool getIfMultipleShips() const;
 
-  protected:
-	void closeEvent(QCloseEvent*) override;
-	void hideEvent(QHideEvent*) override;
-	void showEvent(QShowEvent*) override;
   private slots:
 
 	void on_textureReplacementButton_clicked();
@@ -103,13 +99,8 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	bool _cues_hidden = false;
 
-	void update();
-
-	void updateUi(bool overwrite = false);
-	void updateColumnOne(bool overwrite = false);
-	void updateColumnTwo(bool ovewrite = false);
-	void updateArrival(bool overwrite = false);
-	void updateDeparture(bool overwrite = false);
+	void initializeUi();
+	void updateUi();
 	void enableDisable();
 
 	// column one

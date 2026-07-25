@@ -61,10 +61,6 @@ VulkanShadercLibrary::VulkanShadercLibrary()
 		}
 	}
 
-	if (base_path) {
-		SDL_free(base_path);
-	}
-
 	if (!loaded) {
 		nprintf(("vulkan", "VulkanShadercLibrary: Could not load shaderc shared library\n"));
 		return;

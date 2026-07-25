@@ -15,7 +15,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_subdirectory(opengl)
 endif()
 
-include(SDL2.cmake)
+include(SDL3.cmake)
 
 ADD_SUBDIRECTORY(jansson)
 # These are only required for the web-ui which is non-Windows

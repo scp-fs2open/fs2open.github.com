@@ -8,6 +8,7 @@
 #include "missioneditor/common.h"
 #include <QObject>
 #include <QMessageBox>
+#include <QTimer>
 
 namespace fso::fred::dialogs {
 WingEditorDialogModel::WingEditorDialogModel(QObject* parent, EditorViewport* viewport)
@@ -25,14 +26,28 @@ void WingEditorDialogModel::initializeData()
 	_modified = false;
 }
 
+void WingEditorDialogModel::scheduleReloadFromCurWing()
+{
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_reloadPending) {
+		return;
+	}
+	_reloadPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_reloadPending = false;
+		reloadFromCurWing();
+	});
+}
+
 void WingEditorDialogModel::onEditorSelectionChanged(int)
 {
-	reloadFromCurWing();
+	scheduleReloadFromCurWing();
 }
 
 void WingEditorDialogModel::onEditorMissionChanged()
 {
-	reloadFromCurWing();
+	scheduleReloadFromCurWing();
 }
 
 void WingEditorDialogModel::reloadFromCurWing()

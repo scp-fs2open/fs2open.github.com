@@ -41,6 +41,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 
  private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
+	void scheduleInitializeData();
 	void showErrorDialogNoCancel(const SCP_string& message);
 	void selectPropFromObjectList(object* start, bool forward);
 	void selectFirstPropInMission();
@@ -53,6 +54,7 @@ class PropEditorDialogModel : public AbstractDialogModel {
 	SCP_vector<int> _flagState;
 	SCP_vector<int> _selectedPropObjects;
 	bool _bypass_errors = false;
+	bool _initPending = false;
 };
 
 }

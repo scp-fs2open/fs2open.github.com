@@ -39,8 +39,20 @@ public:
 	// For render targets
 	vk::Framebuffer framebuffer;
 	vk::ImageView framebufferView;  // Single-mip view for framebuffer (when mipLevels > 1)
-	vk::RenderPass renderPass;  // Render pass compatible with this target
+	vk::RenderPass renderPass;  // Render pass compatible with this target (color loadOp=eClear)
+	// Load-variant render pass (color loadOp=eLoad) used to RESUME rendering into this
+	// target after a mid-frame readback (gr.screenToBlob) without wiping already-drawn
+	// content. Only meaningful for non-cubemap targets.
+	vk::RenderPass renderPassLoad;
 	bool isRenderTarget = false;
+
+	// Optional depth/stencil attachment (BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT).
+	// Without this, models drawn into the target get no z-testing: the Vulkan spec
+	// ignores the pipeline's depth/stencil state when the subpass has no depth
+	// attachment, so depth-tested geometry renders in submission order.
+	vk::Image depthImage;
+	vk::ImageView depthImageView;
+	VulkanAllocation depthAllocation;
 
 	// 3D texture support
 	bool is3D = false;
@@ -181,6 +193,13 @@ public:
 	 * @brief Get texture slot data
 	 */
 	tcache_slot_vulkan* getTextureSlot(int handle);
+
+	/**
+	 * @brief Bitmap handle of the render target currently bound via bm_set_render_target,
+	 *        or -1 when rendering to the default framebuffer. Used by gr.screenToBlob so a
+	 *        capture reads the active render target instead of the on-screen framebuffer.
+	 */
+	int getCurrentRenderTarget() const { return m_currentRenderTarget; }
 
 	/**
 	 * @brief Create a static, single-mip, single-layer 2D texture from CPU pixel data

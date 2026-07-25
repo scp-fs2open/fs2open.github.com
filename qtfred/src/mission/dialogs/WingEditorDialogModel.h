@@ -134,12 +134,14 @@ class WingEditorDialogModel : public AbstractDialogModel {
   private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
 	void reloadFromCurWing();
+	void scheduleReloadFromCurWing();
 	wing* getCurrentWing() const;
 	static SCP_vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);
 	void prepareSquadLogoList();
 
 	int _currentWingIndex = -1;
 	SCP_string _currentWingName;
+	bool _reloadPending = false;
 
 	SCP_vector<SCP_string> _squadLogoList;
 };

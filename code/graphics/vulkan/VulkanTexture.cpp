@@ -12,7 +12,7 @@
 #include "ddsutils/ddsutils.h"
 #include "ddsutils/bcdec.h"
 #include "globalincs/systemvars.h"
-
+#include "ktxutils/ktxutils.h"
 
 namespace graphics::vulkan {
 
@@ -36,10 +36,38 @@ struct TextureUploadLayout {
 size_t mipLevelSize(const TextureUploadLayout& l, uint32_t mipW, uint32_t mipH)
 {
 	if (l.isCompressed) {
+		// Works for DDS and KTX
 		return dds_compressed_mip_size(static_cast<int>(mipW), static_cast<int>(mipH),
 			static_cast<int>(l.blockSize));
 	}
 	return static_cast<size_t>(mipW) * mipH * l.dstBytesPerPixel;
+}
+
+// Get compressed block size for DDS and KTX textures
+size_t get_compressed_block_size(int compType)
+{
+	switch (compType) {
+	// DDS
+	case DDS_DXT1:
+	case DDS_CUBEMAP_DXT1:
+	case DDS_DXT3:
+	case DDS_CUBEMAP_DXT3:
+	case DDS_DXT5:
+	case DDS_CUBEMAP_DXT5:
+	case DDS_BC7:
+		return dds_block_size(compType);
+	// KTX
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_SRGB:
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_ETC2_SRGBA_EAC:
+		return ktx_etc_block_size(ktx_map_ktx_format_to_gl_internal(compType));
+
+	default:
+		return 0;
+	}
 }
 
 // Total bytes occupied by one layer (all mip levels). Matches the staging
@@ -121,7 +149,11 @@ void tcache_slot_vulkan::reset()
 	framebuffer = nullptr;
 	framebufferView = nullptr;
 	renderPass = nullptr;
+	renderPassLoad = nullptr;
 	isRenderTarget = false;
+	depthImage = nullptr;
+	depthImageView = nullptr;
+	depthAllocation = VulkanAllocation();
 	is3D = false;
 	depth = 1;
 	isCubemap = false;
@@ -213,6 +245,48 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	                           m_fallback3DView, ImageViewType::Volume3D, 1, false, vk::ImageType::e3D)) {
 		return false;
 	}
+
+	// Check BCx and ETC2 Support
+	auto features = m_physicalDevice.getFeatures();
+	bool supportsETC2 = features.textureCompressionETC2;
+	bool supportsBC = features.textureCompressionBC;
+
+	if (!supportsETC2) {
+		std::array<vk::Format, 6> etcFormats = {vk::Format::eEtc2R8G8B8UnormBlock,
+			vk::Format::eEtc2R8G8B8SrgbBlock,
+			vk::Format::eEtc2R8G8B8A1UnormBlock,
+			vk::Format::eEtc2R8G8B8A1SrgbBlock,
+			vk::Format::eEtc2R8G8B8A8UnormBlock,
+			vk::Format::eEtc2R8G8B8A8SrgbBlock};
+
+		for (auto fmt : etcFormats) {
+			auto props = m_physicalDevice.getFormatProperties(fmt);
+			if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage) {
+				supportsETC2 = true;
+				break;
+			}
+		}
+	}
+
+	if (!supportsBC) {
+		std::array<vk::Format, 4> bcFormats = {
+			vk::Format::eBc1RgbaUnormBlock, // DXT1
+			vk::Format::eBc2UnormBlock,     // DXT3
+			vk::Format::eBc3UnormBlock,     // DXT5
+			vk::Format::eBc7UnormBlock      // BC7
+		};
+
+		for (auto fmt : bcFormats) {
+			auto props = m_physicalDevice.getFormatProperties(fmt);
+			if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage) {
+				supportsBC = true;
+				break;
+			}
+		}
+	}
+
+	mprintf(("VulkanTextureManager: ETC2 Texture Support = %s\n", supportsETC2 ? "YES" : "NO"));
+	mprintf(("VulkanTextureManager: BCn Texture Support = %s\n", supportsBC ? "YES" : "NO"));
 
 	m_initialized = true;
 	return true;
@@ -465,6 +539,11 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 		ts->renderPass = nullptr;
 	}
 
+	if (ts->renderPassLoad) {
+		deletionQueue->queueRenderPass(ts->renderPassLoad);
+		ts->renderPassLoad = nullptr;
+	}
+
 	if (ts->imageView) {
 		deletionQueue->queueImageView(ts->imageView);
 		ts->imageView = nullptr;
@@ -473,6 +552,17 @@ void VulkanTextureManager::bm_free_data(bitmap_slot* slot, bool release) const
 	if (ts->framebufferView) {
 		deletionQueue->queueImageView(ts->framebufferView);
 		ts->framebufferView = nullptr;
+	}
+
+	if (ts->depthImageView) {
+		deletionQueue->queueImageView(ts->depthImageView);
+		ts->depthImageView = nullptr;
+	}
+
+	if (ts->depthImage) {
+		deletionQueue->queueImage(ts->depthImage, ts->depthAllocation);
+		ts->depthImage = nullptr;
+		ts->depthAllocation = VulkanAllocation{};  // Clear to prevent double-free
 	}
 
 	if (ts->image) {
@@ -500,8 +590,9 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	auto height = static_cast<uint32_t>(bm->h);
 	auto arrayLayerCount = static_cast<uint32_t>(numFrames);
 
-	bool isCompressed = (compType == DDS_DXT1 || compType == DDS_DXT3 ||
-	                     compType == DDS_DXT5 || compType == DDS_BC7);
+	bool isCompressed = (compType == DDS_DXT1 || compType == DDS_DXT3 || compType == DDS_DXT5 || compType == DDS_BC7 ||
+						 compType == KTX_ETC2_RGB || compType == KTX_ETC2_SRGB || compType == KTX_ETC2_RGBA_EAC ||
+						 compType == KTX_ETC2_SRGBA_EAC || compType == KTX_ETC2_RGB_A1 || compType == KTX_ETC2_SRGB_A1);
 
 	// Determine format
 	vk::Format format;
@@ -528,7 +619,7 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	layout.height = height;
 	layout.mipLevels = mipLevels;
 	layout.isCompressed = isCompressed;
-	layout.blockSize = isCompressed ? dds_block_size(compType) : 0;
+	layout.blockSize = isCompressed ? get_compressed_block_size(compType) : 0;
 	layout.dstBytesPerPixel = (bm->bpp == 24) ? 4 : (bm->bpp / 8);
 
 	size_t layerDataSize = layerByteSize(layout);
@@ -713,7 +804,10 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	else if (compType == DDS_CUBEMAP_DXT5) baseCompType = DDS_DXT5;
 
 	bool isCompressed = (baseCompType == DDS_DXT1 || baseCompType == DDS_DXT3 ||
-	                     baseCompType == DDS_DXT5 || baseCompType == DDS_BC7);
+	                     baseCompType == DDS_DXT5 || baseCompType == DDS_BC7 ||
+	                     baseCompType == KTX_ETC2_RGB || baseCompType == KTX_ETC2_SRGB ||
+	                     baseCompType == KTX_ETC2_RGBA_EAC || baseCompType == KTX_ETC2_SRGBA_EAC ||
+	                     baseCompType == KTX_ETC2_RGB_A1 || baseCompType == KTX_ETC2_SRGB_A1);
 
 	vk::Format format;
 	if (isCompressed) {
@@ -730,7 +824,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	size_t blockSize = 0;
 
 	if (isCompressed) {
-		blockSize = dds_block_size(baseCompType);
+		blockSize = get_compressed_block_size(baseCompType);
 		mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
 		mipLevels = std::max<uint32_t>(mipLevels, 1);
 	}
@@ -1043,8 +1137,9 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 	auto height = static_cast<uint32_t>(bm->h);
 	uint32_t mipLevels = 1;
 	bool autoGenerateMips = false;
-	bool isCompressed = (compType == DDS_DXT1 || compType == DDS_DXT3 ||
-	                     compType == DDS_DXT5 || compType == DDS_BC7);
+	bool isCompressed = (compType == DDS_DXT1 || compType == DDS_DXT3 || compType == DDS_DXT5 || compType == DDS_BC7 ||
+	                     compType == KTX_ETC2_RGB || compType == KTX_ETC2_SRGB || compType == KTX_ETC2_RGBA_EAC ||
+	                     compType == KTX_ETC2_SRGBA_EAC || compType == KTX_ETC2_RGB_A1 || compType == KTX_ETC2_SRGB_A1);
 
 	if (m_uploadFmtLogCount < 30) {
 		nprintf(("vulkan", "VulkanTextureManager::bm_data: handle=%d w=%d h=%d bpp=%d true_bpp=%d flags=0x%x compType=%d\n",
@@ -1065,7 +1160,7 @@ bool VulkanTextureManager::uploadTexture2D(int handle, bitmap* bm, int compType)
 			return false;
 		}
 
-		blockSize = dds_block_size(compType);
+		blockSize = get_compressed_block_size(compType);
 
 		// Get pre-baked mipmap count from DDS file
 		mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
@@ -1329,6 +1424,38 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		}
 	}
 
+	// Optional depth/stencil attachment. Without it, models rendered into the target
+	// get no z-testing at all: the Vulkan spec ignores the pipeline's depth/stencil
+	// state when the subpass has no depth attachment, so depth-tested geometry draws
+	// in submission order. This mirrors the OpenGL FBO's depth renderbuffer. Cubemap
+	// render targets (env/irradiance maps) never request this.
+	const bool wantDepth = ((flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) != 0) && !isCubemapRT;
+	vk::Format depthFormat = vk::Format::eUndefined;
+	if (wantDepth) {
+		depthFormat = getRendererInstance()->getDepthFormat();
+		if (depthFormat == vk::Format::eUndefined) {
+			Warning(LOCATION, "Vulkan render target requested a depth attachment before the depth format "
+			                  "was initialized; z-buffering will be unavailable for this target.");
+		} else if (!createImage(w, h, 1, depthFormat, vk::ImageTiling::eOptimal,
+		                        vk::ImageUsageFlagBits::eDepthStencilAttachment, MemoryUsage::GpuOnly,
+		                        ts->depthImage, ts->depthAllocation, 1, false)) {
+			nprintf(("vulkan", "Failed to create render target depth image!\n"));
+			depthFormat = vk::Format::eUndefined;
+		} else {
+			// Array2D view with a single layer matches the color framebuffer attachment.
+			ts->depthImageView = createImageView(ts->depthImage, depthFormat,
+			                                     imageAspectFromFormat(depthFormat), 1, ImageViewType::Array2D);
+			if (!ts->depthImageView) {
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+				depthFormat = vk::Format::eUndefined;
+			}
+		}
+	}
+	const bool hasDepth = (depthFormat != vk::Format::eUndefined) && static_cast<bool>(ts->depthImage);
+
 	// Create render pass for this target
 	vk::AttachmentDescription colorAttachment;
 	colorAttachment.format = format;
@@ -1344,27 +1471,126 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 	colorAttachmentRef.attachment = 0;
 	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
+	// Depth attachment: cleared at every pass begin (loadOp=eClear) so the target
+	// starts with a clean depth buffer regardless of what the caller does; contents
+	// are never sampled afterward (storeOp=eDontCare). Layout stays in
+	// eDepthStencilAttachmentOptimal across frames to avoid per-pass transitions.
+	vk::AttachmentDescription depthAttachment;
+	depthAttachment.format = depthFormat;
+	depthAttachment.samples = vk::SampleCountFlagBits::e1;
+	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	depthAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	depthAttachment.initialLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	depthAttachment.finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	vk::AttachmentReference depthAttachmentRef;
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+	std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
 	subpass.colorAttachmentCount = 1;
 	subpass.pColorAttachments = &colorAttachmentRef;
+	if (hasDepth) {
+		subpass.pDepthStencilAttachment = &depthAttachmentRef;
+	}
+
+	// These targets are sampled as textures between passes, and some are re-rendered
+	// every frame while simultaneously being displayed (e.g. the SCPUI load bar, redrawn
+	// each frame and shown by the UI). With no explicit dependencies the render pass only
+	// gets the implicit TOP_OF_PIPE->BOTTOM_OF_PIPE dependency, which orders the layout
+	// transitions but creates no memory dependency between the color writes here and the
+	// fragment-shader sample in a later pass. That leaves a read-after-write (and, on
+	// re-render, write-after-read) hazard that manifests as flickering/garbage. Add
+	// both-direction external dependencies against the shader-read use to close it.
+	std::array<vk::SubpassDependency, 2> dependencies{};
+	// Pass start: a prior fragment-shader sample of this target must complete before we
+	// overwrite the color attachment (write-after-read; also covers loadOp=eLoad reads).
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[0].srcAccessMask = vk::AccessFlagBits::eShaderRead;
+	dependencies[0].dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[0].dstAccessMask =
+		vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eColorAttachmentRead;
+	// Pass end: the color writes must be available and visible before the next
+	// fragment-shader sample of this target (read-after-write).
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependencies[1].srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+	dependencies[1].dstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+	dependencies[1].dstAccessMask = vk::AccessFlagBits::eShaderRead;
 
 	vk::RenderPassCreateInfo renderPassInfo;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.attachmentCount = hasDepth ? 2u : 1u;
+	renderPassInfo.pAttachments = attachments.data();
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+	renderPassInfo.pDependencies = dependencies.data();
 
 	try {
 		ts->renderPass = m_device.createRenderPass(renderPassInfo);
 	} catch (const vk::SystemError& e) {
 		nprintf(("vulkan", "Failed to create render pass: %s\n", e.what()));
+		if (hasDepth) {
+			m_device.destroyImageView(ts->depthImageView);
+			m_device.destroyImage(ts->depthImage);
+			ts->depthImageView = nullptr;
+			ts->depthImage = nullptr;
+			m_memoryManager->freeAllocation(ts->depthAllocation);
+			ts->depthAllocation = VulkanAllocation{};
+		}
 		m_device.destroyImageView(ts->imageView);
 		m_device.destroyImage(ts->image);
 		ts->image = nullptr;
 		ts->imageView = nullptr;
 		m_memoryManager->freeAllocation(ts->allocation);
 		return 0;
+	}
+
+	// Load-variant of the render pass (color loadOp=eLoad) so a mid-frame readback can
+	// resume rendering into this target without clearing what was already drawn. Only
+	// flat targets are read back via gr.screenToBlob, so skip it for cubemaps.
+	if (!isCubemapRT) {
+		vk::AttachmentDescription loadColorAttachment = colorAttachment;
+		loadColorAttachment.loadOp = vk::AttachmentLoadOp::eLoad;
+		std::array<vk::AttachmentDescription, 2> loadAttachments = {loadColorAttachment, depthAttachment};
+
+		vk::RenderPassCreateInfo loadPassInfo;
+		loadPassInfo.attachmentCount = hasDepth ? 2u : 1u;
+		loadPassInfo.pAttachments = loadAttachments.data();
+		loadPassInfo.subpassCount = 1;
+		loadPassInfo.pSubpasses = &subpass;
+		loadPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		loadPassInfo.pDependencies = dependencies.data();
+
+		try {
+			ts->renderPassLoad = m_device.createRenderPass(loadPassInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "Failed to create load-variant render pass: %s\n", e.what()));
+			m_device.destroyRenderPass(ts->renderPass);
+			ts->renderPass = nullptr;
+			if (hasDepth) {
+				m_device.destroyImageView(ts->depthImageView);
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImageView = nullptr;
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+			}
+			m_device.destroyImageView(ts->imageView);
+			m_device.destroyImage(ts->image);
+			ts->image = nullptr;
+			ts->imageView = nullptr;
+			m_memoryManager->freeAllocation(ts->allocation);
+			return 0;
+		}
 	}
 
 	if (isCubemapRT) {
@@ -1389,12 +1615,15 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 		ts->framebuffer = ts->cubeFaceFramebuffers[0];
 	} else {
 		// Create framebuffer
-		// Use framebufferView (single-mip) if available, otherwise imageView
-		vk::ImageView fbAttachment = ts->framebufferView ? ts->framebufferView : ts->imageView;
+		// Use framebufferView (single-mip) if available, otherwise imageView.
+		// The depth view (when present) is attachment 1, matching the render pass.
+		std::array<vk::ImageView, 2> fbAttachments = {
+			ts->framebufferView ? ts->framebufferView : ts->imageView,
+			ts->depthImageView};
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = ts->renderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = &fbAttachment;
+		framebufferInfo.attachmentCount = hasDepth ? 2u : 1u;
+		framebufferInfo.pAttachments = fbAttachments.data();
 		framebufferInfo.width = w;
 		framebufferInfo.height = h;
 		framebufferInfo.layers = 1;
@@ -1403,7 +1632,19 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 			ts->framebuffer = m_device.createFramebuffer(framebufferInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "Failed to create framebuffer: %s\n", e.what()));
+			if (hasDepth) {
+				m_device.destroyImageView(ts->depthImageView);
+				m_device.destroyImage(ts->depthImage);
+				ts->depthImageView = nullptr;
+				ts->depthImage = nullptr;
+				m_memoryManager->freeAllocation(ts->depthAllocation);
+				ts->depthAllocation = VulkanAllocation{};
+			}
 			m_device.destroyRenderPass(ts->renderPass);
+			if (ts->renderPassLoad) {
+				m_device.destroyRenderPass(ts->renderPassLoad);
+				ts->renderPassLoad = nullptr;
+			}
 			m_device.destroyImageView(ts->imageView);
 			m_device.destroyImage(ts->image);
 			ts->image = nullptr;
@@ -1418,6 +1659,13 @@ int VulkanTextureManager::bm_make_render_target(int handle, int* width, int* hei
 	// if sampled before being rendered into (render pass expects this initial layout)
 	transitionImageLayout(ts->image, format, vk::ImageLayout::eUndefined,
 	                      vk::ImageLayout::eShaderReadOnlyOptimal, mipLevels, arrayLayers);
+
+	// Put the depth image in the layout the render pass expects as its initial layout.
+	// It stays there across frames (finalLayout matches), so no per-pass transition.
+	if (hasDepth) {
+		transitionImageLayout(ts->depthImage, depthFormat, vk::ImageLayout::eUndefined,
+		                      vk::ImageLayout::eDepthStencilAttachmentOptimal, 1, 1);
+	}
 
 	// Update slot info
 	ts->width = w;
@@ -1939,6 +2187,20 @@ vk::Format VulkanTextureManager::bppToVkFormat(int bpp, bool compressed, int com
 			return vk::Format::eBc3UnormBlock;
 		case DDS_BC7:
 			return vk::Format::eBc7UnormBlock;
+		// KTX compression types
+		case KTX_ETC2_RGB:
+			return vk::Format::eEtc2R8G8B8UnormBlock;
+		case KTX_ETC2_SRGB:
+			return vk::Format::eEtc2R8G8B8SrgbBlock;
+		case KTX_ETC2_RGB_A1:
+			return vk::Format::eEtc2R8G8B8A1UnormBlock;
+		case KTX_ETC2_SRGB_A1:
+			return vk::Format::eEtc2R8G8B8A1SrgbBlock;
+		case KTX_ETC2_RGBA_EAC:
+			return vk::Format::eEtc2R8G8B8A8UnormBlock;
+		case KTX_ETC2_SRGBA_EAC:
+			return vk::Format::eEtc2R8G8B8A8SrgbBlock;
+
 		default:
 			return vk::Format::eUndefined;
 		}
