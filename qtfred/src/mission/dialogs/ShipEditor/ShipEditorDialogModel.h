@@ -149,8 +149,18 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void initializeData();
 
+  signals:
+	// Emitted after the model has re-synced from the current selection; the view
+	// should do a full (overwrite) refresh in response.
+	void shipMarkingChanged();
+
+  private slots:
+	void onSelectedObjectChanged(int);
+	void onSelectedObjectMarkingChanged(int, bool);
+
   private: // NOLINT(readability-redundant-access-specifiers)
 	void setModified();
+	void scheduleInitializeData();
 	void shipAltNameClose(int baseShip);
 	void shipCallsignClose(int baseShip);
 	static int makeShipList(int* arr);
@@ -203,6 +213,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _respawnPriority;
 	SCP_vector<std::pair<SCP_string, bool>> _arrivalPaths;
 	SCP_vector<std::pair<SCP_string, bool>> _departurePaths;
+	bool _initPending = false;
 };
 
 } // namespace fso::fred::dialogs
