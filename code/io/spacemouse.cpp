@@ -112,7 +112,6 @@ SpaceMouse::SpaceMouse(const SpaceMouseDefinition& definition, SDL_hid_device* d
 
 SpaceMouse::~SpaceMouse() {
 	SDL_hid_close(m_deviceHandle);
-	SDL_hid_exit();
 }
 
 const SpaceMouseMovement& SpaceMouse::getMovement() {
