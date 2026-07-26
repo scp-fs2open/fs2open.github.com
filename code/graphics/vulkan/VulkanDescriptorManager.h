@@ -186,12 +186,20 @@ constexpr uint32_t dynamic_offset_count(const DescriptorBindingTemplate (&bindin
 	return count;
 }
 
+// Returned by dynamic_offset_slot() when the binding is not a dynamic descriptor of the set.
+constexpr uint32_t DYNAMIC_SLOT_INVALID = ~0u;
+
 /**
  * @brief Position of a dynamic binding within its set's dynamic-offset array
  *
- * If @c binding is not a dynamic binding of the given set, the throw is reached; a throw is not
- * a constant expression, so every use below (all of which initialize @c constexpr values) turns
- * a mistyped or non-dynamic binding constant into a compile error rather than a silent 0.
+ * If @c binding is not a dynamic binding of the given set, @c DYNAMIC_SLOT_INVALID is returned.
+ * Every use below pairs its constant with a static_assert against that sentinel, so a mistyped or
+ * non-dynamic binding constant is a compile error rather than a silent 0 — these constants index
+ * fixed-size dynamic-offset arrays at the bind call sites, so a leaked sentinel would be an
+ * out-of-bounds write.
+ *
+ * Do not "clean this up" back into a `throw` on the not-found path: MSVC rejects a constexpr
+ * function whose flow analysis can reach a throw (C3615), even when no evaluation takes that path.
  */
 template <size_t N>
 constexpr uint32_t dynamic_offset_slot(const DescriptorBindingTemplate (&bindings)[N], uint32_t binding)
@@ -206,7 +214,7 @@ constexpr uint32_t dynamic_offset_slot(const DescriptorBindingTemplate (&binding
 		}
 		slot += bindings[i].count;
 	}
-	throw "binding is not a dynamic descriptor of this set";
+	return DYNAMIC_SLOT_INVALID;
 }
 
 // The Global set declares no dynamic bindings; it contributes nothing to a bind call.
@@ -217,11 +225,19 @@ constexpr uint32_t PERDRAW_DYNAMIC_OFFSET_COUNT = dynamic_offset_count(PerDrawSe
 namespace MaterialDynamicSlot {
 constexpr uint32_t ModelData = dynamic_offset_slot(MaterialSetBindings, MaterialBinding::ModelData);
 constexpr uint32_t ShadowMapData = dynamic_offset_slot(MaterialSetBindings, MaterialBinding::ShadowMapData);
+static_assert(ModelData != DYNAMIC_SLOT_INVALID,
+	"MaterialBinding::ModelData is not a dynamic descriptor of the Material set.");
+static_assert(ShadowMapData != DYNAMIC_SLOT_INVALID,
+	"MaterialBinding::ShadowMapData is not a dynamic descriptor of the Material set.");
 }
 
 namespace PerDrawDynamicSlot {
 constexpr uint32_t GenericData = dynamic_offset_slot(PerDrawSetBindings, PerDrawBinding::GenericData);
 constexpr uint32_t Matrices = dynamic_offset_slot(PerDrawSetBindings, PerDrawBinding::Matrices);
+static_assert(GenericData != DYNAMIC_SLOT_INVALID,
+	"PerDrawBinding::GenericData is not a dynamic descriptor of the PerDraw set.");
+static_assert(Matrices != DYNAMIC_SLOT_INVALID,
+	"PerDrawBinding::Matrices is not a dynamic descriptor of the PerDraw set.");
 }
 
 /**
