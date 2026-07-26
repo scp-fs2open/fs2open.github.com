@@ -47,6 +47,15 @@ vk::StencilOp convertStencilOp(StencilOperation op);
 vk::PrimitiveTopology convertPrimitiveType(primitive_type type);
 
 /**
+ * @brief Whether a topology may declare primitiveRestartEnable
+ *
+ * True for the strip/fan topologies. For list topologies the Vulkan spec requires
+ * primitiveRestartEnable to be VK_FALSE unless VK_EXT_primitive_topology_list_restart is
+ * enabled, which FSO does not request.
+ */
+bool topologySupportsPrimitiveRestart(vk::PrimitiveTopology topology);
+
+/**
  * @brief Convert FSO cull mode to Vulkan cull mode
  * @param cullEnabled Whether culling is enabled
  * @return Vulkan cull mode flags
