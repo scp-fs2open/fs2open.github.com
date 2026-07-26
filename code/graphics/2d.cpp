@@ -42,6 +42,7 @@
 #include "render/3d.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "tracing/ProfilerOverlay.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 #include "utils/string_utils.h"
@@ -3189,8 +3190,19 @@ gr_debug_stats gr_get_debug_stats()
 	return stats;
 }
 
+static bool Imgui_frame_active = false;
+
 void gr_imgui_begin_frame()
 {
+	if (Imgui_frame_active) {
+		return;
+	}
+
+	// The stub renderer (standalone server) never assigns the ImGui entry points.
+	if (!gr_screen.gf_imgui_new_frame || !ImGui::GetCurrentContext()) {
+		return;
+	}
+
 	gr_imgui_new_frame();      // renderer backend (OpenGL/Vulkan)
 	ImGui_ImplSDL3_NewFrame(); // platform backend, derives the display size from the SDL window
 
@@ -3208,6 +3220,23 @@ void gr_imgui_begin_frame()
 	}
 
 	ImGui::NewFrame();
+	Imgui_frame_active = true;
+}
+
+void gr_imgui_end_frame()
+{
+	if (!Imgui_frame_active) {
+		return;
+	}
+
+	ImGui::Render();
+	gr_imgui_render_draw_data();
+	Imgui_frame_active = false;
+}
+
+bool gr_imgui_frame_active()
+{
+	return Imgui_frame_active;
 }
 
 void gr_flip(bool execute_scripting)
@@ -3227,6 +3256,14 @@ void gr_flip(bool execute_scripting)
 	}
 
 	model_process_cached_ui_render_instances();
+
+	// Every presented frame drains the frame profiler and contributes the overlay window to
+	// this frame's ImGui pass. Doing it here rather than per game state is what keeps the
+	// profiler's event buffer bounded: collection is global, so the drain has to be too.
+	tracing::profiler_overlay_frame();
+
+	// Closes whatever ImGui frame the overlay (or the lab, or the options screen) opened.
+	gr_imgui_end_frame();
 
 	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
 	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
