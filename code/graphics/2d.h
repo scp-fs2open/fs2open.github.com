@@ -1348,6 +1348,16 @@ inline void gr_post_process_restore_zbuffer()
  */
 void gr_imgui_begin_frame();
 
+/**
+ * @brief Renders and submits the open ImGui frame, if any. Called by gr_flip().
+ */
+void gr_imgui_end_frame();
+
+/**
+ * @brief Whether an ImGui frame is currently open for contributions
+ */
+bool gr_imgui_frame_active();
+
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,

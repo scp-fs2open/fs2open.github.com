@@ -326,12 +326,8 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet},
-		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
@@ -651,12 +647,8 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet},
-		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();

@@ -411,25 +411,8 @@ void vulkan_deferred_lighting_msaa()
 				ring.alloc(descriptorMgr->getCurrentFrame(), &resolveData, sizeof(resolveData));
 			writer.setBuffer(PerDrawBinding::GenericData, {ring.buffer(), slotOffset, ring.slotSize()});
 			writer.flush();
-			// Per-set accessors (not the concatenating overload) — those return views
-			// into one shared scratch buffer, so two live at once would alias.
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Material),
-				materialSet,
-				vk::ArrayProxy<const uint32_t>(
-					VulkanDescriptorManager::getDynamicOffsetCount(DescriptorSetIndex::Material),
-					writer.dynamicOffsets(DescriptorSetIndex::Material)));
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::PerDraw),
-				perDrawSet,
-				vk::ArrayProxy<const uint32_t>(
-					VulkanDescriptorManager::getDynamicOffsetCount(DescriptorSetIndex::PerDraw),
-					writer.dynamicOffsets(DescriptorSetIndex::PerDraw)));
+			const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+			writer.bindSets(cmd, pipelineMgr->getPipelineLayout(), DescriptorSetIndex::Global, sets);
 
 			cmd.draw(3, 1, 0, 0);
 		}

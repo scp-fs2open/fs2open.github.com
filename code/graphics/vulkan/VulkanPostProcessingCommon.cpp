@@ -204,19 +204,11 @@ void PostProcessContext::drawFullscreenTriangle(vk::CommandBuffer cmd, vk::Rende
 	// contiguous (0,1,2), so when Global is (re)bound here it and Material/PerDraw
 	// go in one call; otherwise Set 0 is left as whatever frame setup bound.
 	if (bindGlobalSet) {
-		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-			pipelineLayout,
-			static_cast<uint32_t>(DescriptorSetIndex::Global),
-			{globalSet, materialSet, perDrawSet},
-			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 	} else {
-		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-			pipelineLayout,
-			static_cast<uint32_t>(DescriptorSetIndex::Material),
-			{materialSet, perDrawSet},
-			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+		const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 	}
 
 	cmd.draw(3, 1, 0, 0);
@@ -305,12 +297,8 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	}
 	writer.flush();
 
-	const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Material, 2);
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-		pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet},
-		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
