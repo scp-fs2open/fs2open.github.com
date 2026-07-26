@@ -39,6 +39,15 @@ class Category {
 	 * array indexed by getId().
 	 */
 	static int getCount();
+
+	/**
+	 * @brief The category with the given id, which must be in [0, getCount()).
+	 *
+	 * Lets code that accumulates per-category data keyed by getId() recover the category from an
+	 * id alone, rather than carrying a parallel id -> Category* array alongside its results.
+	 * Categories are global statics, so the reference is valid for the life of the program.
+	 */
+	static const Category& getById(int id);
 };
 
 extern Category LuaOnFrame;

@@ -196,7 +196,6 @@
 #include "stats/stats.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
-#include "tracing/ProfilerOverlay.h"
 #include "utils/Random.h"
 #include "utils/threading.h"
 #include "weapon/beam.h"
@@ -2356,10 +2355,6 @@ void game_show_framerate()
 	}
 #endif
 
-	if (tracing::Profiler_overlay_enabled) {
-		tracing::profiler_overlay_draw();
-	}
-
 	if ((Show_framerate && HUD_draw) || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
@@ -4435,11 +4430,6 @@ void game_frame(bool paused)
 
 	// process lightning (nebula only)
 	nebl_process();
-
-	if (tracing::Profiler_overlay_enabled) {
-		tracing::frame_profile_process_frame();
-		tracing::profiler_overlay_record_frame();
-	}
 
 	DEBUG_GET_TIME( total_time2 )
 

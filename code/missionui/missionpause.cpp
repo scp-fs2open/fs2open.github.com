@@ -25,8 +25,6 @@
 #include "object/object.h"
 #include "popup/popup.h"
 #include "sound/audiostr.h"
-#include "tracing/ProfilerOverlay.h"
-#include "tracing/tracing.h"
 #include "ui/ui.h"
 #include "weapon/weapon.h"
 
@@ -236,14 +234,6 @@ void pause_do()
 	// a very unique case where we shouldn't be doing the page flip because we're inside of popup code
 	if(!popup_active()){
 		if(Pause_type == PAUSE_TYPE_NORMAL) {
-			// PAUSE_TYPE_NORMAL freezes the sim entirely and never runs game_frame(), so unlike
-			// PAUSE_TYPE_VIEWER (rendered via game_show_framerate() in game_do_full_frame()) the
-			// overlay needs its own draw call here -- otherwise ImGui never gets a NewFrame()/Render()
-			// cycle while paused this way, so it can't compute hover state for the SDL input-forwarding
-			// check in handle_sdl_event(), and drags/resizes fall through to whatever's listening below it.
-			if (tracing::Profiler_overlay_enabled) {
-				tracing::profiler_overlay_draw();
-			}
 			gr_flip();
 		}
 	} else {
