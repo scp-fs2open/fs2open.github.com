@@ -7,18 +7,18 @@
 namespace tracing {
 
 /**
- * Records the current frame's total traced time (see get_frame_profiler_overlay_snapshot()) into
- * the rolling history buffer used by profiler_overlay_draw()'s graph/avg/median. Call once per
- * frame, right after frame_profile_process_frame(), while profiling is active.
+ * Per-frame entry point for the ImGui frame profiler overlay, called once from gr_flip().
+ *
+ * Drains the frame profiler (see frame_profile_process_frame()), folds the frame's total traced
+ * time into the rolling history behind the graph/avg/median, and contributes the overlay window
+ * -- avg/median frametime, a scrolling frametime graph, a stacked frame-budget bar of the top
+ * traced categories by self-time, and the -gr_debug graphics stats -- to this frame's ImGui pass,
+ * opening one via gr_imgui_begin_frame() if no other consumer already has.
+ *
+ * No-op when frame profiling is disabled. Being the single per-frame driver is what keeps the
+ * profiler's event buffer bounded in every game state, so it must stay on the common flip path
+ * rather than being called per game state.
  */
-void profiler_overlay_record_frame();
-
-/**
- * Draws the ImGui/ImPlot frame profiler overlay window: avg/median frametime, a scrolling
- * frametime graph, and a pie chart of the top-5 traced categories by self-time. Self-contained --
- * does its own ImGui::NewFrame()/Render() and submits the draw data, since mission gameplay
- * doesn't otherwise touch ImGui. Must be called before the current frame is flipped.
- */
-void profiler_overlay_draw();
+void profiler_overlay_frame();
 
 }

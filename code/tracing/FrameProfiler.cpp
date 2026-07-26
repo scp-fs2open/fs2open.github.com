@@ -121,15 +121,14 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 
 namespace tracing {
 
-void accumulate_self_times(const SCP_vector<trace_event>& events,
-	SCP_vector<uint64_t>& self_time_by_id,
-	SCP_vector<const Category*>& category_by_id,
-	uint64_t& total) {
-	total = 0;
+uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id) {
+	self_time_by_id.assign(static_cast<size_t>(Category::getCount()), 0);
+
 	if (events.empty()) {
-		return;
+		return 0;
 	}
 
+	uint64_t total = 0;
 	SCP_vector<int> open_stack; // category ids of currently-open scopes
 	open_stack.reserve(32);
 	uint64_t last_ts = events.front().timestamp;
@@ -137,7 +136,7 @@ void accumulate_self_times(const SCP_vector<trace_event>& events,
 	for (const auto& evt : events) {
 		if (!open_stack.empty()) {
 			const uint64_t delta = evt.timestamp - last_ts;
-			self_time_by_id[open_stack.back()] += delta;
+			self_time_by_id[static_cast<size_t>(open_stack.back())] += delta;
 			total += delta;
 		}
 		last_ts = evt.timestamp;
@@ -148,17 +147,16 @@ void accumulate_self_times(const SCP_vector<trace_event>& events,
 			continue;
 		}
 
-		const int id = evt.category->getId();
-		category_by_id[id] = evt.category;
-
 		if (evt.type == EventType::Begin) {
-			open_stack.push_back(id);
+			open_stack.push_back(evt.category->getId());
 		} else if (evt.type == EventType::End) {
 			if (!open_stack.empty()) {
 				open_stack.pop_back();
 			}
 		}
 	}
+
+	return total;
 }
 
 FrameProfiler::FrameProfiler() {
@@ -321,13 +319,11 @@ SCP_string FrameProfiler::getContent() {
 	return content;
 }
 
-void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id,
-	const SCP_vector<const Category*>& category_by_id,
-	uint64_t total) {
+void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total) {
 	SCP_vector<std::pair<const Category*, uint64_t>> sorted;
 	for (size_t id = 0; id < self_time_by_id.size(); id++) {
-		if (self_time_by_id[id] > 0 && category_by_id[id] != nullptr) {
-			sorted.emplace_back(category_by_id[id], self_time_by_id[id]);
+		if (self_time_by_id[id] > 0) {
+			sorted.emplace_back(&Category::getById(static_cast<int>(id)), self_time_by_id[id]);
 		}
 	}
 	std::sort(sorted.begin(), sorted.end(),
@@ -357,13 +353,9 @@ void FrameProfiler::processFrame() {
 	std::sort(_bufferedEvents.begin(), _bufferedEvents.end(), event_sorter);
 
 	// Overlay fast path: per-category self-time via a single stack walk (see accumulate_self_times).
-	const auto category_count = static_cast<size_t>(Category::getCount());
-	SCP_vector<uint64_t> self_time_by_id(category_count, 0);
-	SCP_vector<const Category*> category_by_id(category_count, nullptr);
-	uint64_t total = 0;
-
-	accumulate_self_times(_bufferedEvents, self_time_by_id, category_by_id, total);
-	build_overlay_snapshot(self_time_by_id, category_by_id, total);
+	// _selfTimeScratch is a member so the per-frame run reuses its allocation.
+	const uint64_t total = accumulate_self_times(_bufferedEvents, _selfTimeScratch);
+	build_overlay_snapshot(_selfTimeScratch, total);
 
 	// Legacy on-screen text dump (-profile_frame_time). This still builds the full parent/child
 	// sample tree (process_begin/process_end) and the min/avg/max history, both O(n^2); only pay for
