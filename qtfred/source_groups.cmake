@@ -331,8 +331,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/PersonaColorComboBox.h
 	src/ui/widgets/renderwidget.cpp
 	src/ui/widgets/renderwidget.h
-	src/ui/widgets/sexp_data_menu.cpp
-	src/ui/widgets/sexp_data_menu.h
+	src/ui/widgets/data_list_menu.cpp
+	src/ui/widgets/data_list_menu.h
 	src/ui/widgets/sexp_tree_view.cpp
 	src/ui/widgets/sexp_tree_view.h
 	src/ui/widgets/ShipFlagCheckbox.h

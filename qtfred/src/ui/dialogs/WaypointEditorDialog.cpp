@@ -40,6 +40,7 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 	auto* model = _model.get();
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 				entries.reserve(Waypoint_lists.size());

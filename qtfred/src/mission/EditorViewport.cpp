@@ -146,9 +146,11 @@ void EditorViewport::loadSettings() {
 	// Handles its own group, since main.cpp reads it before the viewport exists.
 	Theme_mode                         = readThemeModeSetting();
 	{
-		const int rawStyle = settings.value("sexp_data_menu_style", static_cast<int>(Sexp_data_menu_style)).toInt();
-		if (rawStyle >= 0 && rawStyle <= static_cast<int>(SexpDataMenuStyle::Searchable)) {
-			Sexp_data_menu_style = static_cast<SexpDataMenuStyle>(rawStyle);
+		// Fall back to the pre-rename key so an existing choice carries over.
+		const int legacyStyle = settings.value("sexp_data_menu_style", static_cast<int>(Data_menu_style)).toInt();
+		const int rawStyle    = settings.value("data_menu_style", legacyStyle).toInt();
+		if (rawStyle >= 0 && rawStyle <= static_cast<int>(DataMenuStyle::Searchable)) {
+			Data_menu_style = static_cast<DataMenuStyle>(rawStyle);
 		}
 	}
 
@@ -198,7 +200,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	writeThemeModeSetting(Theme_mode);
-	settings.setValue("sexp_data_menu_style",                static_cast<int>(Sexp_data_menu_style));
+	settings.setValue("data_menu_style",                     static_cast<int>(Data_menu_style));
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);

@@ -38,6 +38,7 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 	Editor* editor = viewport->editor;
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 			for (const auto& jn : Jump_nodes) {
