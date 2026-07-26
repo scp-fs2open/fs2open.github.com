@@ -832,11 +832,12 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle,
 		// is what separates this from the ImGui case invalidateDrawStateCaches()
 		// exists for: ImGui binds on the command buffer behind the tracker's back.)
 
-		const uint32_t materialDynOffsets[2] = {
-			0,                                 // MaterialBinding::ModelData (unused here)
-			static_cast<uint32_t>(ubo_offset), // MaterialBinding::ShadowMapData
-		};
-		static constexpr uint32_t perDrawDynOffsets[2] = {0, 0};
+		// ShadowMapData is the one thing that moves per shadow draw; every other dynamic binding
+		// on this path holds the fallback buffer and so must stay at offset 0.
+		uint32_t materialDynOffsets[MATERIAL_DYNAMIC_OFFSET_COUNT] = {};
+		materialDynOffsets[MaterialDynamicSlot::ShadowMapData] = static_cast<uint32_t>(ubo_offset);
+
+		static constexpr uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
 
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, m_cachedShadowGlobalSet);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, m_cachedShadowMaterialSet, materialDynOffsets);
@@ -1402,18 +1403,16 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			}
 			return static_cast<uint32_t>(pending.offset);
 		};
-		// ShadowMapData is never bound on this path, so its descriptor still holds the
-		// fallback buffer and its dynamic offset must stay 0: the fallback is bound as
-		// {buffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE}, i.e. spanning the whole buffer, so
-		// any non-zero dynamic offset would push offset+range past the end of it.
-		const uint32_t materialDynOffsets[2] = {
-			dynOffsetOf(uniform_block_type::ModelData), // MaterialBinding::ModelData
-			0,                                          // MaterialBinding::ShadowMapData (shadow pass only)
-		};
-		const uint32_t perDrawDynOffsets[2] = {
-			dynOffsetOf(uniform_block_type::GenericData), // PerDrawBinding::GenericData
-			dynOffsetOf(uniform_block_type::Matrices),    // PerDrawBinding::Matrices
-		};
+		// Zero-initialized, then filled by name: MaterialDynamicSlot::ShadowMapData is left at 0
+		// because ShadowMapData is never bound on this path, so its descriptor still holds the
+		// fallback buffer -- bound as {buffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE}, i.e. spanning the
+		// whole buffer, so any non-zero dynamic offset would push offset+range past the end of it.
+		uint32_t materialDynOffsets[MATERIAL_DYNAMIC_OFFSET_COUNT] = {};
+		materialDynOffsets[MaterialDynamicSlot::ModelData] = dynOffsetOf(uniform_block_type::ModelData);
+
+		uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
+		perDrawDynOffsets[PerDrawDynamicSlot::GenericData] = dynOffsetOf(uniform_block_type::GenericData);
+		perDrawDynOffsets[PerDrawDynamicSlot::Matrices] = dynOffsetOf(uniform_block_type::Matrices);
 
 		// Set 0: Global (memoized per frame — see m_cachedGlobalSet). Rebuilt only
 		// when a Global input changed: a pending Global UBO (m_globalSetDirty set in

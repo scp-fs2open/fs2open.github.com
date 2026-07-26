@@ -18,16 +18,13 @@ trace_event make_event(const Category& category, EventType type, uint64_t timest
 	return evt;
 }
 
-// Small helper to size the output buffers and run the function under test.
+// Small helper to run the function under test and look results up by category.
 struct self_time_result {
 	SCP_vector<uint64_t> by_id;
-	SCP_vector<const Category*> category_by_id;
 	uint64_t total = 0;
 
-	explicit self_time_result(const SCP_vector<trace_event>& events)
-		: by_id(static_cast<size_t>(Category::getCount()), 0),
-		  category_by_id(static_cast<size_t>(Category::getCount()), nullptr) {
-		accumulate_self_times(events, by_id, category_by_id, total);
+	explicit self_time_result(const SCP_vector<trace_event>& events) {
+		total = accumulate_self_times(events, by_id);
 	}
 
 	uint64_t self(const Category& c) const { return by_id[static_cast<size_t>(c.getId())]; }
@@ -122,4 +119,44 @@ TEST(FrameProfilerSelfTime, empty_input)
 	SCP_vector<trace_event> events;
 	self_time_result r(events);
 	EXPECT_EQ(r.total, 0u);
+}
+
+// The output buffer is meant to be reused across frames, so a run must not see the previous run's
+// totals. (processFrame() keeps one buffer alive for the life of the profiler.)
+TEST(FrameProfilerSelfTime, reused_buffer_is_cleared)
+{
+	SCP_vector<uint64_t> by_id;
+
+	SCP_vector<trace_event> first{
+		make_event(Physics, EventType::Begin, 0),
+		make_event(Physics, EventType::End, 10),
+	};
+	EXPECT_EQ(accumulate_self_times(first, by_id), 10u);
+	EXPECT_EQ(by_id[static_cast<size_t>(Physics.getId())], 10u);
+
+	SCP_vector<trace_event> second{
+		make_event(Physics, EventType::Begin, 0),
+		make_event(Physics, EventType::End, 3),
+	};
+	EXPECT_EQ(accumulate_self_times(second, by_id), 3u);
+	EXPECT_EQ(by_id[static_cast<size_t>(Physics.getId())], 3u);
+
+	// An empty frame must zero it rather than leave the previous frame's numbers behind.
+	SCP_vector<trace_event> empty;
+	EXPECT_EQ(accumulate_self_times(empty, by_id), 0u);
+	EXPECT_EQ(by_id[static_cast<size_t>(Physics.getId())], 0u);
+}
+
+// Ids are dense and the registry round-trips them, which is what lets the overlay snapshot drop
+// the parallel id -> Category* array.
+TEST(TracingCategory, id_round_trips_through_registry)
+{
+	ASSERT_GT(Category::getCount(), 0);
+
+	for (int id = 0; id < Category::getCount(); id++) {
+		EXPECT_EQ(Category::getById(id).getId(), id);
+	}
+
+	EXPECT_EQ(&Category::getById(Physics.getId()), &Physics);
+	EXPECT_EQ(&Category::getById(PostMove.getId()), &PostMove);
 }

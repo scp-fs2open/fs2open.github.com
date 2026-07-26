@@ -770,12 +770,8 @@ void vulkan_calculate_irrmap()
 		writer.flush();
 
 		// Bind all descriptor sets
-		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-			pipelineLayout,
-			0,
-			{globalSet, materialSet, perDrawSet},
-			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		// Draw fullscreen triangle
 		cmd.draw(3, 1, 0, 0);
