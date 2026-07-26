@@ -412,12 +412,11 @@ void LabManager::onFrame(float frametime) {
 	
 	if (Cmdline_show_imgui_debug)
 		ImGui::ShowDemoWindow();
-	ImGui::Render();
-	gr_imgui_render_draw_data();
 
 	if (CloseThis)
 		close();
 
+	// gr_flip() renders and submits the ImGui frame opened above.
 	gr_flip();
 }
 
