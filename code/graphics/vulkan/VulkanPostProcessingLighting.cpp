@@ -814,13 +814,8 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
 		writer.flush();
 
-		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
-		const auto dynOffsets = writer.dynamicOffsets(DescriptorSetIndex::Global, 3);
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-			pipelineLayout,
-			0,
-			sets,
-			vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(dynOffsets.size), dynOffsets.data));
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		return true;
 	};

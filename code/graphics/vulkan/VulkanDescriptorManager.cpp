@@ -19,6 +19,12 @@ static constexpr DescriptorBindingTemplate s_globalBindings[] = {
 static constexpr DescriptorBindingTemplate s_globalTlasBinding{
 	GlobalBinding::Tlas, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eFragment};
 
+// GLOBAL_DYNAMIC_OFFSET_COUNT is stated rather than derived because this set's template is
+// assembled at runtime (see below); keep the two in agreement. The optional TLAS binding is not
+// a dynamic UBO, so it cannot change the count either.
+static_assert(dynamic_offset_count(s_globalBindings) == GLOBAL_DYNAMIC_OFFSET_COUNT,
+	"The Global set gained a dynamic binding; GLOBAL_DYNAMIC_OFFSET_COUNT must follow.");
+
 // The Global set's layout must omit the TLAS binding entirely on devices without
 // VK_KHR_acceleration_structure enabled -- a descriptor type the device didn't
 // enable the extension for is invalid in vkCreateDescriptorSetLayout. So, unlike
@@ -27,48 +33,10 @@ static constexpr DescriptorBindingTemplate s_globalTlasBinding{
 // the per-instance m_globalBindingsRuntime/m_globalTemplateRuntime members
 // (see VulkanDescriptorManager.h), rather than compiled in as a fixed constexpr array.
 
-static constexpr DescriptorBindingTemplate s_materialBindings[] = {
-	{MaterialBinding::ModelData,
-		vk::DescriptorType::eUniformBufferDynamic,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::TextureArray,
-		vk::DescriptorType::eCombinedImageSampler,
-		16,
-		vk::ShaderStageFlagBits::eFragment,
-		vk::ImageViewType::e2DArray},
-	{MaterialBinding::DecalGlobals,
-		vk::DescriptorType::eUniformBuffer,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex},
-	{MaterialBinding::DepthMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::SceneColor, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
-	{MaterialBinding::ShadowMapData, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex},
-};
-static constexpr DescriptorSetTemplate s_materialTemplate(s_materialBindings);
-
-static constexpr DescriptorBindingTemplate s_perDrawBindings[] = {
-	{PerDrawBinding::GenericData,
-		vk::DescriptorType::eUniformBufferDynamic,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::Matrices,
-		vk::DescriptorType::eUniformBufferDynamic,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::NanoVGData,
-		vk::DescriptorType::eUniformBuffer,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::DecalInfo,
-		vk::DescriptorType::eUniformBuffer,
-		1,
-		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{PerDrawBinding::MovieData, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment},
-};
-static constexpr DescriptorSetTemplate s_perDrawTemplate(s_perDrawBindings);
+// The binding declarations themselves live in the header (MaterialSetBindings /
+// PerDrawSetBindings) because the dynamic-offset layout is derived from them there.
+static constexpr DescriptorSetTemplate s_materialTemplate(MaterialSetBindings);
+static constexpr DescriptorSetTemplate s_perDrawTemplate(PerDrawSetBindings);
 
 // ========== Static uniform binding mappings ==========
 
@@ -124,8 +92,9 @@ void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet s
 	m_bindingSlots = {};
 	m_currentSet = setIndex;
 
-	// Dynamic offsets are consumed in binding order, so assign slots as the
-	// template is walked (templates list bindings in ascending binding number).
+	// Dynamic offsets are consumed in binding order, so assign slots as the template is walked
+	// (templates list bindings in ascending binding number). This must stay the same rule
+	// dynamic_offset_slot() applies — hence advancing by b.count, not by one binding.
 	uint32_t nextDynIndex = 0;
 	m_dynOffsets[static_cast<size_t>(setIndex)] = {};
 
@@ -147,8 +116,9 @@ void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet s
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
 		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
 		if (b.type == vk::DescriptorType::eUniformBufferDynamic) {
-			Assert(nextDynIndex < MAX_DYNAMIC_OFFSETS_PER_SET);
-			slot.dynIndex = static_cast<int>(nextDynIndex++);
+			Assert(nextDynIndex + b.count <= MAX_DYNAMIC_OFFSETS_PER_SET);
+			slot.dynIndex = static_cast<int>(nextDynIndex);
+			nextDynIndex += b.count;
 		}
 		if (isImage) {
 			Assert(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
@@ -187,10 +157,13 @@ void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet s
 	}
 }
 
-ArrayView<uint32_t> DescriptorWriter::dynamicOffsets(DescriptorSetIndex firstSet, uint32_t setCount)
+void DescriptorWriter::bindSets(vk::CommandBuffer cmd,
+	vk::PipelineLayout layout,
+	DescriptorSetIndex firstSet,
+	ArrayView<vk::DescriptorSet> sets)
 {
 	size_t out = 0;
-	for (uint32_t i = 0; i < setCount; ++i) {
+	for (size_t i = 0; i < sets.size; ++i) {
 		const auto set = static_cast<DescriptorSetIndex>(static_cast<uint32_t>(firstSet) + i);
 		Assert(static_cast<uint32_t>(set) < static_cast<uint32_t>(DescriptorSetIndex::Count));
 
@@ -201,7 +174,12 @@ ArrayView<uint32_t> DescriptorWriter::dynamicOffsets(DescriptorSetIndex firstSet
 			m_dynOffsetScratch[out++] = m_dynOffsets[static_cast<size_t>(set)][j];
 		}
 	}
-	return {m_dynOffsetScratch.data(), out};
+
+	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
+		layout,
+		static_cast<uint32_t>(firstSet),
+		vk::ArrayProxy<const vk::DescriptorSet>(static_cast<uint32_t>(sets.size), sets.data),
+		vk::ArrayProxy<const uint32_t>(static_cast<uint32_t>(out), m_dynOffsetScratch.data()));
 }
 
 void DescriptorWriter::flush()
@@ -354,13 +332,19 @@ const DescriptorSetTemplate& VulkanDescriptorManager::getSetTemplate(DescriptorS
 
 uint32_t VulkanDescriptorManager::getDynamicOffsetCount(DescriptorSetIndex setIndex)
 {
-	uint32_t count = 0;
-	for (const auto& b : getSetTemplate(setIndex)) {
-		if (b.type == vk::DescriptorType::eUniformBufferDynamic) {
-			count += b.count;
-		}
+	// Constant per set (see the derived *_DYNAMIC_OFFSET_COUNT values), not a scan of the
+	// template — this runs on every descriptor set bind.
+	switch (setIndex) {
+	case DescriptorSetIndex::Global:
+		return GLOBAL_DYNAMIC_OFFSET_COUNT;
+	case DescriptorSetIndex::Material:
+		return MATERIAL_DYNAMIC_OFFSET_COUNT;
+	case DescriptorSetIndex::PerDraw:
+		return PERDRAW_DYNAMIC_OFFSET_COUNT;
+	default:
+		UNREACHABLE("Invalid descriptor set index %u!", static_cast<uint32_t>(setIndex));
+		return 0;
 	}
-	return count;
 }
 
 vk::DescriptorSetLayout VulkanDescriptorManager::getSetLayout(DescriptorSetIndex setIndex) const

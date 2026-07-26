@@ -17,7 +17,6 @@
 #include "imgui.h"
 #include "implot.h"
 #pragma pop_macro("memcpy")
-#include "backends/imgui_impl_sdl3.h"
 
 #include <algorithm>
 #include <numeric>
@@ -218,25 +217,30 @@ void draw_graphics_debug_stats() {
 
 } // namespace
 
-void profiler_overlay_record_frame() {
-	const frame_overlay_snapshot& snapshot = get_frame_profiler_overlay_snapshot();
-	if (!snapshot.valid) {
+void profiler_overlay_frame() {
+	if (!frame_profiling_active()) {
+		History_ms.clear();
 		return;
 	}
 
-	push_history(static_cast<float>(static_cast<double>(snapshot.total_nanosec) / NANOSEC_PER_MS));
-}
+	frame_profile_process_frame();
 
-void profiler_overlay_draw() {
-	gr_imgui_new_frame();
-	ImGui_ImplSDL3_NewFrame();
-	ImGui::NewFrame();
+	const frame_overlay_snapshot& snapshot = get_frame_profiler_overlay_snapshot();
+	if (snapshot.valid) {
+		push_history(static_cast<float>(static_cast<double>(snapshot.total_nanosec) / NANOSEC_PER_MS));
+	}
+
+	gr_imgui_begin_frame();
+	if (!gr_imgui_frame_active()) {
+		// No ImGui backend on this renderer (standalone server) — nothing to draw into.
+		return;
+	}
 
 	ImGui::SetNextWindowPos(ImVec2(20, 20), ImGuiCond_FirstUseEver);
 	ImGui::SetNextWindowSize(ImVec2(380, 480), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
-	if (!frame_profiling_active() || History_ms.empty()) {
+	if (History_ms.empty()) {
 		ImGui::TextUnformatted("Collecting data...");
 	} else {
 		float avg_ms = history_average();
@@ -251,15 +255,12 @@ void profiler_overlay_draw() {
 
 		ImGui::Separator();
 
-		draw_frame_budget_bar(get_frame_profiler_overlay_snapshot());
+		draw_frame_budget_bar(snapshot);
 	}
 
 	draw_graphics_debug_stats();
 
 	ImGui::End();
-
-	ImGui::Render();
-	gr_imgui_render_draw_data();
 }
 
 } // namespace tracing

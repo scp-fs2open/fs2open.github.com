@@ -5,22 +5,28 @@ namespace tracing {
 
 namespace {
 // Function-local static (Meyers singleton) to avoid any static-init-order dependency: categories
-// are themselves global statics, so this counter must be alive before the first one is constructed.
-int& category_id_counter()
+// are themselves global statics, so this registry must be alive before the first one is constructed.
+// Each Category registers itself here at construction; its index is its id.
+SCP_vector<const Category*>& category_registry()
 {
-	static int counter = 0;
-	return counter;
+	static SCP_vector<const Category*> registry;
+	return registry;
 }
 } // namespace
 
 Category::Category(const char* name, bool is_graphics)
-	: _name(name), _graphics_category(is_graphics), _id(category_id_counter()++) {
+	: _name(name), _graphics_category(is_graphics), _id(static_cast<int>(category_registry().size())) {
+	category_registry().push_back(this);
 }
 const char* Category::getName() const {
 	return _name.c_str();
 }
 int Category::getCount() {
-	return category_id_counter();
+	return static_cast<int>(category_registry().size());
+}
+const Category& Category::getById(int id) {
+	Assertion(id >= 0 && id < getCount(), "Category id %d is out of range!", id);
+	return *category_registry()[static_cast<size_t>(id)];
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;
