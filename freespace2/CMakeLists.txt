@@ -22,7 +22,6 @@ ENDIF(MSVC60)
 # For android, build a library not a executable
 if (ANDROID)
     add_library(Freespace2 SHARED ${FREESPACE_SRC})
-    target_compile_definitions(Freespace2 PRIVATE PLATFORM_ANDROID)
     
     # NDK base libs
     find_library(log-lib log)
