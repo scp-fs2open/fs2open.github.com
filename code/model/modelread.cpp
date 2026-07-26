@@ -2095,7 +2095,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 				// Genghis: if we have a thruster and none of the collision 
 				// properties were provided, then set "nocollide_this_only".
-				if (sm->flags[Model::Submodel_flags::Is_thruster] && !(sm->flags[Model::Submodel_flags::No_collisions, Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::Collide_invisible]) )
+				if (sm->flags[Model::Submodel_flags::Is_thruster] &&
+					sm->flags.none_of(Model::Submodel_flags::No_collisions,Model::Submodel_flags::Nocollide_this_only,Model::Submodel_flags::Collide_invisible))
 				{
 					sm->flags.set(Model::Submodel_flags::Nocollide_this_only);
 				}
@@ -3447,7 +3448,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				dl2 = SCP_tolower(sm2->name[first_diff]) - 'a';
 
 				// Handle LODs named "detail0/1/2/etc" too (as opposed to "detaila/b/c/etc")
-				if (sm1->parent == -1 && sm2->parent == -1 && !sm1->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris] && !sm2->flags[Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris]) {
+				if (sm1->parent == -1 && sm2->parent == -1 &&
+					sm1->flags.none_of(Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris) &&
+					sm2->flags.none_of(Model::Submodel_flags::Is_damaged, Model::Submodel_flags::Is_live_debris)) {
 					dl2 = dl2 - dl1;
 					dl1 = 0;
 				}
