@@ -131,14 +131,6 @@ bool do_async_events = false;
 bool do_counter_events = false;
 std::int64_t main_thread_id = -1;
 
-}
-
-namespace tracing {
-bool Profiler_overlay_enabled = false;
-}
-
-namespace {
-
 int gpu_start_query = -1;
 std::uint64_t gpu_start_time = 0;
 std::uint64_t cpu_start_time = 0;
@@ -262,15 +254,12 @@ void init() {
 		mainFrameTimer.reset(new ThreadedMainFrameTimer());
 		do_async_events = true;
 	}
-	// Seed the runtime profiler-overlay toggle from -profile_frame_time (kept for backward
-	// compatibility); this also lazily constructs the FrameProfiler and folds
-	// Cmdline_json_profiling/Cmdline_frame_profile into do_trace_events.
-	// OR in Profiler_overlay_enabled rather than overwriting it outright: the "Game.ProfilerOverlay"
-	// option's loadInitialValues() call (see OptionsManager) runs before tracing::init(), so by the
-	// time we get here Profiler_overlay_enabled may already reflect a persisted "on" setting that
-	// -profile_frame_time knows nothing about. Overwriting would silently disable the overlay on
-	// startup until the option was re-toggled at runtime.
-	set_frame_profiling_enabled(Cmdline_frame_profile || Profiler_overlay_enabled);
+	// -profile_frame_time turns the profiler on for the whole session (kept for backward
+	// compatibility). OR in the current state rather than overwriting it: the
+	// "Game.ProfilerOverlay" option's loadInitialValues() call (see OptionsManager) runs before
+	// tracing::init(), so a persisted "on" setting may already have enabled the profiler by the
+	// time we get here, and -profile_frame_time knows nothing about it.
+	set_frame_profiling_enabled(Cmdline_frame_profile || frame_profiling_active());
 
 	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
 	queries_reusable = gr_is_capable(gr_capability::CAPABILITY_QUERIES_REUSABLE);
@@ -292,9 +281,11 @@ void process_events() {
 	}
 }
 void frame_profile_process_frame() {
-	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+	if (!frameProfiler) {
+		return;
+	}
 
-	return frameProfiler->processFrame();
+	frameProfiler->processFrame();
 }
 
 SCP_string get_frame_profile_output() {
@@ -310,17 +301,27 @@ const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot() {
 }
 
 bool frame_profiling_active() {
-	return Profiler_overlay_enabled;
+	return frameProfiler != nullptr;
 }
 
 void set_frame_profiling_enabled(bool enable) {
-	Profiler_overlay_enabled = enable;
-
-	if (enable && !frameProfiler) {
-		frameProfiler.reset(new FrameProfiler());
+	// The profiler's existence is the single source of truth for "is the frame profiler
+	// collecting". submit_event() feeds it whenever it exists, and frame_profile_process_frame()
+	// (the only thing that drains its event buffer) is driven from gr_flip(), so collection and
+	// draining are gated on the same condition and cannot drift apart. Destroying it on disable
+	// is what stops collection -- leaving a live profiler behind while nothing drained it is how
+	// its buffer used to grow without bound.
+	if (enable != frame_profiling_active()) {
+		if (enable) {
+			frameProfiler.reset(new FrameProfiler());
+		} else {
+			frameProfiler = nullptr;
+		}
 	}
 
-	do_trace_events = Cmdline_json_profiling || Cmdline_frame_profile || Profiler_overlay_enabled;
+	// Recomputed unconditionally, not just on a transition: init() clears do_trace_events before
+	// calling us, and the option's change listener may already have enabled the profiler by then.
+	do_trace_events = Cmdline_json_profiling || enable;
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -329,7 +330,7 @@ static auto ProfilerOverlayOption = options::OptionBuilder<bool>("Game.ProfilerO
 	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1933})
 	.category(std::make_pair("Graphics", 1825))
 	.level(options::ExpertLevel::Advanced)
-	.default_func([]() { return Profiler_overlay_enabled; })
+	.default_val(false)
 	.change_listener([](const bool& val, bool) {
 		set_frame_profiling_enabled(val);
 		return true;

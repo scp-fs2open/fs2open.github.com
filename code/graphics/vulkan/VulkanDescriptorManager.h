@@ -67,114 +67,6 @@ enum class DescriptorSetIndex : uint32_t {
 	Count = 3
 };
 
-/**
- * @brief Stack-allocated batch writer for descriptor set updates.
- *
- * Usage: reset() + writeSet() (pre-fills all bindings with fallbacks)
- * + setBuffer/setImage overrides for real data + flush().
- *
- * Bindings declared as eUniformBufferDynamic get their offset split out of the
- * descriptor and into the dynamic-offset array (see dynamicOffsets()): setBuffer
- * writes {buffer, 0, range} into the descriptor and stashes the caller's offset.
- * That is what lets a set whose only per-draw change is a UBO offset be written
- * once and rebound many times. Callers must hand dynamicOffsets()/
- * dynamicOffsetCount() for a set to vkCmdBindDescriptorSets when binding it.
- */
-class DescriptorWriter {
-public:
-	// Fixed capacities for the stack-allocated staging arrays below — NOT Vulkan
-	// hardware limits. They bound a single vkUpdateDescriptorSets batch (one
-	// writeSet), sized to comfortably cover the largest descriptor set layout the
-	// engine builds. Because the backing arrays live on the stack (see m_writes
-	// etc.), the numbers carry no runtime cost beyond that fixed footprint; the
-	// only failure mode is under-sizing, which is Assert-guarded at fill time in
-	// DescriptorWriter::writeSet (e.g. `Assert(m_writeCount < MAX_WRITES)`) so an
-	// oversized layout trips loudly in debug rather than silently overflowing.
-	// Raise these if a future set layout legitimately needs more bindings/infos.
-	static constexpr uint32_t MAX_WRITES = 32;           // distinct bindings written per batch
-	static constexpr uint32_t MAX_BUFFER_INFOS = 20;     // buffer descriptors staged per batch
-	static constexpr uint32_t MAX_IMAGE_INFOS = 24;      // image/sampler descriptors staged per batch
-	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2; // TLAS descriptors staged per batch (RT)
-	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16; // highest binding number addressable in a set
-	// Most dynamic (eUniformBufferDynamic) bindings any one set layout declares.
-	// Material has 2 (ModelData, ShadowMapData), PerDraw has 2 (GenericData, Matrices).
-	static constexpr uint32_t MAX_DYNAMIC_OFFSETS_PER_SET = 2;
-
-	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
-		m_device = device;
-		m_fallbacks = &fallbacks;
-		m_writeCount = 0;
-		m_bufferInfoCount = 0;
-		m_imageInfoCount = 0;
-		m_accelStructInfoCount = 0;
-		m_dynOffsets = {};
-	}
-
-	void writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet set);
-
-	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
-	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
-	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
-
-	/**
-	 * @brief Dynamic offsets accumulated for a set, ordered by binding number.
-	 *
-	 * Only meaningful for a set this writer actually wrote; a set reused from a
-	 * memoization cache was not written here, so its caller owns the offsets.
-	 * Always sized to the set layout's dynamic descriptor count (offsets for
-	 * bindings left at their fallback stay 0).
-	 */
-	const uint32_t* dynamicOffsets(DescriptorSetIndex setIndex) const
-	{
-		return m_dynOffsets[static_cast<size_t>(setIndex)].data();
-	}
-
-	/**
-	 * @brief Dynamic offsets for a contiguous run of sets, concatenated in set order
-	 *
-	 * This is the layout vkCmdBindDescriptorSets expects when several sets are bound
-	 * in one call: each set contributes exactly its layout's dynamic descriptor count
-	 * (so a set declaring none contributes nothing, rather than padding). Returns a
-	 * view into writer-owned scratch, valid until the next call — never hold two of
-	 * these at once; for one-set-per-call binds use the per-set overload above,
-	 * whose storage is stable.
-	 */
-	ArrayView<uint32_t> dynamicOffsets(DescriptorSetIndex firstSet, uint32_t setCount);
-
-	void flush(); // defined in VulkanDescriptorManager.cpp (reports write stats to the manager)
-
-private:
-	// Per-binding lookup for the current writeSet, indexed by binding number.
-	// Populated by writeSet, used by setBuffer/setImage/setImageArray for O(1) access.
-	struct BindingSlot {
-		vk::DescriptorBufferInfo* bufferInfo = nullptr;  // non-null for buffer bindings
-		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
-		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
-		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
-		int dynIndex = -1;                                    // slot in m_dynOffsets, or -1 if not dynamic
-	};
-
-	vk::Device m_device;
-	const DescriptorFallbacks* m_fallbacks = nullptr;
-
-	std::array<vk::WriteDescriptorSet, MAX_WRITES> m_writes;
-	std::array<vk::DescriptorBufferInfo, MAX_BUFFER_INFOS> m_bufferInfos;
-	std::array<vk::DescriptorImageInfo, MAX_IMAGE_INFOS> m_imageInfos;
-	std::array<vk::AccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_accelStructInfos;
-	std::array<vk::WriteDescriptorSetAccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_asWriteInfos;
-	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
-	std::array<std::array<uint32_t, MAX_DYNAMIC_OFFSETS_PER_SET>, static_cast<size_t>(DescriptorSetIndex::Count)>
-		m_dynOffsets{};
-	// Scratch for the multi-set dynamicOffsets() overload.
-	std::array<uint32_t, static_cast<size_t>(DescriptorSetIndex::Count) * MAX_DYNAMIC_OFFSETS_PER_SET>
-		m_dynOffsetScratch{};
-	DescriptorSetIndex m_currentSet = DescriptorSetIndex::Global;
-	uint32_t m_writeCount = 0;
-	uint32_t m_bufferInfoCount = 0;
-	uint32_t m_imageInfoCount = 0;
-	uint32_t m_accelStructInfoCount = 0;
-};
-
 // ========== Descriptor Binding Constants ==========
 
 // Global Set (Set 0) bindings — per-frame data
@@ -225,6 +117,230 @@ static constexpr uint32_t DecalInfo = 3;   // UBO: per-decal info
 static constexpr uint32_t MovieData = 4;   // UBO: movie playback data
 }
 
+// ========== Set layout templates ==========
+//
+// These describe the fixed set layouts. Everything downstream that needs to know
+// which bindings are dynamic, how many there are, or which dynamic-offset slot a
+// given binding occupies is derived from them below rather than restated, so the
+// declarations here are the only place that ordering exists.
+
+inline constexpr DescriptorBindingTemplate MaterialSetBindings[] = {
+	{MaterialBinding::ModelData,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::TextureArray,
+		vk::DescriptorType::eCombinedImageSampler,
+		16,
+		vk::ShaderStageFlagBits::eFragment,
+		vk::ImageViewType::e2DArray},
+	{MaterialBinding::DecalGlobals,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::TransformSSBO, vk::DescriptorType::eStorageBuffer, 1, vk::ShaderStageFlagBits::eVertex},
+	{MaterialBinding::DepthMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::SceneColor, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::DistortionMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment},
+	{MaterialBinding::ShadowMapData, vk::DescriptorType::eUniformBufferDynamic, 1, vk::ShaderStageFlagBits::eVertex},
+};
+
+inline constexpr DescriptorBindingTemplate PerDrawSetBindings[] = {
+	{PerDrawBinding::GenericData,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::Matrices,
+		vk::DescriptorType::eUniformBufferDynamic,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::NanoVGData,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::DecalInfo,
+		vk::DescriptorType::eUniformBuffer,
+		1,
+		vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{PerDrawBinding::MovieData, vk::DescriptorType::eUniformBuffer, 1, vk::ShaderStageFlagBits::eFragment},
+};
+
+// ========== Dynamic-offset layout, derived from the templates above ==========
+//
+// vkCmdBindDescriptorSets consumes a set's dynamic offsets in ascending binding
+// order, one entry per eUniformBufferDynamic descriptor. Both the count and the
+// slot each binding occupies are computed from the set templates so a call site
+// can never disagree with the layout it is binding against — reordering a template
+// moves the derived slots with it instead of silently feeding a shader the wrong
+// uniforms.
+
+template <size_t N>
+constexpr uint32_t dynamic_offset_count(const DescriptorBindingTemplate (&bindings)[N])
+{
+	uint32_t count = 0;
+	for (size_t i = 0; i < N; ++i) {
+		if (bindings[i].type == vk::DescriptorType::eUniformBufferDynamic) {
+			count += bindings[i].count;
+		}
+	}
+	return count;
+}
+
+/**
+ * @brief Position of a dynamic binding within its set's dynamic-offset array
+ *
+ * If @c binding is not a dynamic binding of the given set, the throw is reached; a throw is not
+ * a constant expression, so every use below (all of which initialize @c constexpr values) turns
+ * a mistyped or non-dynamic binding constant into a compile error rather than a silent 0.
+ */
+template <size_t N>
+constexpr uint32_t dynamic_offset_slot(const DescriptorBindingTemplate (&bindings)[N], uint32_t binding)
+{
+	uint32_t slot = 0;
+	for (size_t i = 0; i < N; ++i) {
+		if (bindings[i].type != vk::DescriptorType::eUniformBufferDynamic) {
+			continue;
+		}
+		if (bindings[i].binding == binding) {
+			return slot;
+		}
+		slot += bindings[i].count;
+	}
+	throw "binding is not a dynamic descriptor of this set";
+}
+
+// The Global set declares no dynamic bindings; it contributes nothing to a bind call.
+constexpr uint32_t GLOBAL_DYNAMIC_OFFSET_COUNT = 0;
+constexpr uint32_t MATERIAL_DYNAMIC_OFFSET_COUNT = dynamic_offset_count(MaterialSetBindings);
+constexpr uint32_t PERDRAW_DYNAMIC_OFFSET_COUNT = dynamic_offset_count(PerDrawSetBindings);
+
+namespace MaterialDynamicSlot {
+constexpr uint32_t ModelData = dynamic_offset_slot(MaterialSetBindings, MaterialBinding::ModelData);
+constexpr uint32_t ShadowMapData = dynamic_offset_slot(MaterialSetBindings, MaterialBinding::ShadowMapData);
+}
+
+namespace PerDrawDynamicSlot {
+constexpr uint32_t GenericData = dynamic_offset_slot(PerDrawSetBindings, PerDrawBinding::GenericData);
+constexpr uint32_t Matrices = dynamic_offset_slot(PerDrawSetBindings, PerDrawBinding::Matrices);
+}
+
+/**
+ * @brief Stack-allocated batch writer for descriptor set updates.
+ *
+ * Usage: reset() + writeSet() (pre-fills all bindings with fallbacks)
+ * + setBuffer/setImage overrides for real data + flush().
+ *
+ * Bindings declared as eUniformBufferDynamic get their offset split out of the
+ * descriptor and into the dynamic-offset array (see dynamicOffsets()): setBuffer
+ * writes {buffer, 0, range} into the descriptor and stashes the caller's offset.
+ * That is what lets a set whose only per-draw change is a UBO offset be written
+ * once and rebound many times. Callers must hand dynamicOffsets()/
+ * VulkanDescriptorManager::getDynamicOffsetCount() for a set to
+ * vkCmdBindDescriptorSets when binding it.
+ */
+class DescriptorWriter {
+public:
+	// Fixed capacities for the stack-allocated staging arrays below — NOT Vulkan
+	// hardware limits. They bound a single vkUpdateDescriptorSets batch (one
+	// writeSet), sized to comfortably cover the largest descriptor set layout the
+	// engine builds. Because the backing arrays live on the stack (see m_writes
+	// etc.), the numbers carry no runtime cost beyond that fixed footprint; the
+	// only failure mode is under-sizing, which is Assert-guarded at fill time in
+	// DescriptorWriter::writeSet (e.g. `Assert(m_writeCount < MAX_WRITES)`) so an
+	// oversized layout trips loudly in debug rather than silently overflowing.
+	// Raise these if a future set layout legitimately needs more bindings/infos.
+	static constexpr uint32_t MAX_WRITES = 32;           // distinct bindings written per batch
+	static constexpr uint32_t MAX_BUFFER_INFOS = 20;     // buffer descriptors staged per batch
+	static constexpr uint32_t MAX_IMAGE_INFOS = 24;      // image/sampler descriptors staged per batch
+	static constexpr uint32_t MAX_ACCEL_STRUCT_INFOS = 2; // TLAS descriptors staged per batch (RT)
+	static constexpr uint32_t MAX_BINDINGS_PER_SET = 16; // highest binding number addressable in a set
+	// Most dynamic (eUniformBufferDynamic) bindings any one set layout declares. Derived from
+	// the templates rather than counted by hand, so adding a dynamic binding resizes the
+	// storage that holds its offset automatically.
+	static constexpr uint32_t MAX_DYNAMIC_OFFSETS_PER_SET =
+		MATERIAL_DYNAMIC_OFFSET_COUNT > PERDRAW_DYNAMIC_OFFSET_COUNT ? MATERIAL_DYNAMIC_OFFSET_COUNT
+																	 : PERDRAW_DYNAMIC_OFFSET_COUNT;
+
+	void reset(vk::Device device, const DescriptorFallbacks& fallbacks) {
+		m_device = device;
+		m_fallbacks = &fallbacks;
+		m_writeCount = 0;
+		m_bufferInfoCount = 0;
+		m_imageInfoCount = 0;
+		m_accelStructInfoCount = 0;
+		m_dynOffsets = {};
+	}
+
+	void writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet set);
+
+	void setBuffer(uint32_t binding, const vk::DescriptorBufferInfo& info);
+	void setImage(uint32_t binding, const vk::DescriptorImageInfo& info);
+	void setImageArray(uint32_t binding, ArrayView<vk::DescriptorImageInfo> infos);
+
+	/**
+	 * @brief Dynamic offsets accumulated for a single set, ordered by binding number.
+	 *
+	 * Only meaningful for a set this writer actually wrote; a set reused from a
+	 * memoization cache was not written here, so its caller owns the offsets.
+	 * Always sized to the set layout's dynamic descriptor count (offsets for
+	 * bindings left at their fallback stay 0). Points at stable per-set storage —
+	 * valid until the next writeSet() of that set.
+	 */
+	const uint32_t* dynamicOffsets(DescriptorSetIndex setIndex) const
+	{
+		return m_dynOffsets[static_cast<size_t>(setIndex)].data();
+	}
+
+	/**
+	 * @brief Binds a contiguous run of sets in one vkCmdBindDescriptorSets call
+	 *
+	 * Concatenates the run's dynamic offsets in set order, which is the layout
+	 * vkCmdBindDescriptorSets expects: each set contributes exactly its layout's
+	 * dynamic descriptor count (a set declaring none contributes nothing, rather
+	 * than padding). @c sets must list the sets for @c firstSet onwards, in order.
+	 *
+	 * Binding here rather than handing the offsets back to the caller keeps the
+	 * concatenation buffer's lifetime contained: it is writer-owned scratch, reused
+	 * by the next call, and never outlives the command it was built for.
+	 */
+	void bindSets(vk::CommandBuffer cmd,
+		vk::PipelineLayout layout,
+		DescriptorSetIndex firstSet,
+		ArrayView<vk::DescriptorSet> sets);
+
+	void flush(); // defined in VulkanDescriptorManager.cpp (reports write stats to the manager)
+
+private:
+	// Per-binding lookup for the current writeSet, indexed by binding number.
+	// Populated by writeSet, used by setBuffer/setImage/setImageArray for O(1) access.
+	struct BindingSlot {
+		vk::DescriptorBufferInfo* bufferInfo = nullptr;  // non-null for buffer bindings
+		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
+		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
+		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+		int dynIndex = -1;                                    // slot in m_dynOffsets, or -1 if not dynamic
+	};
+
+	vk::Device m_device;
+	const DescriptorFallbacks* m_fallbacks = nullptr;
+
+	std::array<vk::WriteDescriptorSet, MAX_WRITES> m_writes;
+	std::array<vk::DescriptorBufferInfo, MAX_BUFFER_INFOS> m_bufferInfos;
+	std::array<vk::DescriptorImageInfo, MAX_IMAGE_INFOS> m_imageInfos;
+	std::array<vk::AccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_accelStructInfos;
+	std::array<vk::WriteDescriptorSetAccelerationStructureKHR, MAX_ACCEL_STRUCT_INFOS> m_asWriteInfos;
+	std::array<BindingSlot, MAX_BINDINGS_PER_SET> m_bindingSlots;
+	std::array<std::array<uint32_t, MAX_DYNAMIC_OFFSETS_PER_SET>, static_cast<size_t>(DescriptorSetIndex::Count)>
+		m_dynOffsets{};
+	// Scratch used by bindSets() to concatenate a run of sets' offsets.
+	std::array<uint32_t, static_cast<size_t>(DescriptorSetIndex::Count) * MAX_DYNAMIC_OFFSETS_PER_SET>
+		m_dynOffsetScratch{};
+	DescriptorSetIndex m_currentSet = DescriptorSetIndex::Global;
+	uint32_t m_writeCount = 0;
+	uint32_t m_bufferInfoCount = 0;
+	uint32_t m_imageInfoCount = 0;
+	uint32_t m_accelStructInfoCount = 0;
+};
 
 /**
  * @brief Manages Vulkan descriptor sets, pools, and layouts

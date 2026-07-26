@@ -80,14 +80,6 @@ struct frame_overlay_snapshot {
 };
 
 /**
- * @brief Whether frame profiling data collection is currently enabled. Driven by the "Frame
- * Profiler Overlay" option (and seeded from -profile_frame_time at startup); toggling it is the
- * single thing that gates the profiler's runtime cost, so prefer set_frame_profiling_enabled()
- * over writing this directly.
- */
-extern bool Profiler_overlay_enabled;
-
-/**
  * @brief Initializes the tracing subsystem
  */
 void init();
@@ -97,6 +89,13 @@ void init();
  */
 void process_events();
 
+/**
+ * @brief Folds this frame's buffered trace events into the overlay snapshot and clears the buffer
+ *
+ * This is the only thing that drains the profiler's event buffer, so it must run once per
+ * presented frame for as long as collection is enabled — gr_flip() drives it (via
+ * profiler_overlay_frame()) for exactly that reason. No-op when profiling is off.
+ */
 void frame_profile_process_frame();
 
 /**
@@ -112,13 +111,20 @@ SCP_string get_frame_profile_output();
 const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot();
 
 /**
- * @brief True if frame profiling data is currently being collected (see set_frame_profiling_enabled()).
+ * @brief True if frame profiling data is currently being collected
+ *
+ * This is the single source of truth for "is the frame profiler on" — every consumer (the
+ * overlay, the lab's text dump, osapi's ImGui input forwarding) asks here rather than
+ * re-deriving it from the command line or the options system.
  */
 bool frame_profiling_active();
 
 /**
- * @brief Enables or disables frame profiling collection at runtime (lazily constructs the profiler
- * on first enable). This is the single toggle the ImGui overlay's options-menu checkbox drives.
+ * @brief Enables or disables frame profiling collection at runtime
+ *
+ * Constructs the profiler on enable and destroys it on disable; that lifetime *is*
+ * frame_profiling_active(). Driven by the "Frame Profiler Overlay" option and seeded from
+ * -profile_frame_time at startup.
  */
 void set_frame_profiling_enabled(bool enable);
 
