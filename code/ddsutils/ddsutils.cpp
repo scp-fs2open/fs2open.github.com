@@ -68,12 +68,13 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 	return false;
 }
 
-#ifdef __ANDROID__
+
 // Auto-determine max texture size based on avail device ram for software decompression
-// 128 for <4GB, 256 for < 8GB, 512 for < 12GB and finally 1024
+// Desktop OS: 1024
+// Android OS: 128 for <4GB, 256 for < 8GB, 512 for < 12GB and finally 1024
 static size_t calculate_resize_max_size()
 {
-	size_t size = 1024;
+#ifdef __ANDROID__
 	size_t ram_mib = SDL_GetSystemRAM();
 
 	if (ram_mib > 0)
@@ -85,10 +86,9 @@ static size_t calculate_resize_max_size()
 		if (ram_mib < 12 * 1024) // < 12GB
 			return 512;
 	}
-
-	return size;
-}
 #endif
+	return 1024;
+}
 
 // Memory usage for uncompressed textures is quite high. Some MVP assets can
 // require well over a GB of VRAM for a single ship after conversion. To help
@@ -101,11 +101,8 @@ static size_t calculate_resize_max_size()
 // returns: number of mipmap levels to skip
 static uint conversion_resize(DDS_HEADER &dds_header)
 {
-#ifdef __ANDROID__
 	const size_t MAX_SIZE = calculate_resize_max_size();
-#else
-	const size_t MAX_SIZE = 1024;
-#endif
+
 	uint width, height, depth, offset = 0;
 
 	if (dds_header.dwMipMapCount <= 1) {
