@@ -1054,6 +1054,15 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 	}
 
+	// On desktop the surface always reports eIdentity here.
+	// On Android the presentation engine can report a non-identity currentTransform
+	// (the compositor pre-rotation for the physical panel orientation). Passing that
+	// value back as preTransform tells the engine that we already rendered our content
+	// in that orientation, so it applies the rotation/flip a second time on top of the
+	// fixed orientation FSO actually renders in - the result is the image being transformed twice.
+	//
+	// So we request an identity preTransform whenever the surface supports it,
+	// and only fall back to currentTransform when it does not.
 	auto supported = deviceValues.surfaceCapabilities.supportedTransforms;
 	if (supported & vk::SurfaceTransformFlagBitsKHR::eIdentity) {
 		createInfo.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
@@ -1061,6 +1070,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	else {
 		createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
 	}
+	
 	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	createInfo.presentMode = choosePresentMode(deviceValues);
 	createInfo.clipped = true;
