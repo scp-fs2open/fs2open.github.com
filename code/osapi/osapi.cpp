@@ -903,7 +903,7 @@ static jmethodID android_get_static_method(JNIEnv* e, jclass cls, const char* na
 	return m;
 }
 
-void os_set_flags_string(const char* json)
+void os_android_set_flags_string(const char* json)
 {
 	//Get the JNI Environment pointer and current Activity instance via SDL
 	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
@@ -921,20 +921,20 @@ void os_set_flags_string(const char* json)
 				env->DeleteLocalRef(jstr);
 			}
 			else {
-				mprintf(("os_set_flags_string: Couldn't get the methodID.\n"));
+				mprintf(("os_android_set_flags_string: Couldn't get the methodID.\n"));
 			}
 			env->DeleteLocalRef(ga);
 		}
 		else {
-			mprintf(("os_set_flags_string: Couldn't get java class.\n"));
+			mprintf(("os_android_set_flags_string: Couldn't get java class.\n"));
 		}
 	}
 	else {
-		mprintf(("os_set_flags_string: Couldn't get JNI enviroment or activity.\n"));
+		mprintf(("os_android_set_flags_string: Couldn't get JNI enviroment or activity.\n"));
 	}
 }
 
-SCP_string os_get_working_folder_path()
+SCP_string os_android_get_working_folder_path()
 {
 	SCP_string wfp{};
 	 
@@ -957,17 +957,17 @@ SCP_string os_get_working_folder_path()
 					env->ReleaseStringUTFChars(jString, workingFolder);
 					env->DeleteLocalRef(jString);
 				} else {
-					mprintf(("os_get_working_folder_path: Couldn't get the jString.\n"));
+					mprintf(("os_android_get_working_folder_path: Couldn't get the jString.\n"));
 				}
 			} else {
-				mprintf(("os_get_working_folder_path: Couldn't get the methodID.\n"));
+				mprintf(("os_android_get_working_folder_path: Couldn't get the methodID.\n"));
 			}
 			env->DeleteLocalRef(ga);
     	} else {
-    		mprintf(("os_get_working_folder_path: Couldn't get java class.\n"));
+    		mprintf(("os_android_get_working_folder_path: Couldn't get java class.\n"));
     	}
     } else {
-    	mprintf(("os_get_working_folder_path: Couldn't get JNI enviroment or activity.\n"));
+    	mprintf(("os_android_get_working_folder_path: Couldn't get JNI enviroment or activity.\n"));
     }
     
 	if (wfp.empty()) {
@@ -988,7 +988,7 @@ SCP_string os_get_working_folder_path()
 	return wfp;
 }
 
-void os_touch_overlay_toggle(bool status)
+void os_android_touch_overlay_toggle(bool status)
 {
 	//Get the JNI Environment pointer and current Activity instance via SDL
     JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
@@ -1002,14 +1002,14 @@ void os_touch_overlay_toggle(bool status)
 			if (methodId) {
 				env->CallStaticVoidMethod(ga, methodId); 
 			} else {
-				mprintf(("os_touch_overlay_toggle: Couldn't get the methodID.\n"));
+				mprintf(("os_android_touch_overlay_toggle: Couldn't get the methodID.\n"));
 			}
 			env->DeleteLocalRef(ga);
     	} else {
-    		mprintf(("os_touch_overlay_toggle: Couldn't get java class.\n"));
+    		mprintf(("os_android_touch_overlay_toggle: Couldn't get java class.\n"));
     	}
     } else {
-    	mprintf(("os_touch_overlay_toggle: Couldn't get JNI enviroment or activity.\n"));
+    	mprintf(("os_android_touch_overlay_toggle: Couldn't get JNI enviroment or activity.\n"));
     }
 }
 
@@ -1018,7 +1018,7 @@ static bool touch_ui_change(bool new_val, bool initial)
 	if (initial) {
 		return false;
 	}
-	os_touch_overlay_toggle(new_val);
+	os_android_touch_overlay_toggle(new_val);
 	return true;
 }
 
@@ -1032,9 +1032,9 @@ static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverla
 	.importance(0)
 	.finish();
 	
-void os_touch_overlay_init()
+void os_android_touch_overlay_init()
 {
-	os_touch_overlay_toggle(TouchOverlayOption->getValue());
+	os_android_touch_overlay_toggle(TouchOverlayOption->getValue());
 }
 
 #endif

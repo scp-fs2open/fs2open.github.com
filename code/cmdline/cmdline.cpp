@@ -1611,7 +1611,7 @@ static void write_flags() {
 
 #ifdef __ANDROID__
 	char* dumped = json_dumps(root, JSON_INDENT(4));
-	os_set_flags_string(dumped ? dumped : "");
+	os_android_set_flags_string(dumped ? dumped : "");
 	free(dumped);
 #else
 	json_dumpf(root, stdout, JSON_INDENT(4));

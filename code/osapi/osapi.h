@@ -95,16 +95,16 @@ SCP_string os_get_config_path(const SCP_string& subpath = "");
 */
 #ifdef __ANDROID__
 // Get working folder absolute path from Android Java Class
-SCP_string os_get_working_folder_path();
+SCP_string os_android_get_working_folder_path();
 
 // Calls to display the touch overlay depending on its last state
-void os_touch_overlay_init();
+void os_android_touch_overlay_init();
 
 // Enable or disable the touch UI overlay
-void os_touch_overlay_toggle(bool status);
+void os_android_touch_overlay_toggle(bool status);
 
 // Send the JSON flags string to the Android Java layer
-void os_set_flags_string(const char* json);
+void os_android_set_flags_string(const char* json);
 #endif
 
 namespace os

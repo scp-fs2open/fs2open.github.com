@@ -189,7 +189,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 	#else
 		(void)exe_dir;
-		strncpy(buf, os_get_working_folder_path().c_str(), CFILE_ROOT_DIRECTORY_LEN - 1);
+		strncpy(buf, os_android_get_working_folder_path().c_str(), CFILE_ROOT_DIRECTORY_LEN - 1);
 	#endif
 
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';

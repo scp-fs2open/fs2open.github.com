@@ -234,7 +234,7 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 
 	#ifdef __ANDROID__
 	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
-	os_touch_overlay_init();
+	os_android_touch_overlay_init();
 	#endif
 
 	SDL_Rect bounds;
