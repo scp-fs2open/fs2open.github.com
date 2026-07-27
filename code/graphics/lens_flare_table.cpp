@@ -52,8 +52,33 @@ void parse_lens_table_core()
 	}
 
 	while (optional_string("$Name:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+
+		// "+override" edits the lens of this name that an earlier table defined,
+		// leaving everything the entry does not mention exactly as it was --
+		// which is how a mod restyles one shipped lens without transcribing its
+		// whole prescription. Without it the entry is a complete definition, and
+		// a name already in the table is replaced outright.
+		const bool overriding = optional_string("+override") != 0;
+
+		const int existing = find_system(systems, name.c_str());
+
 		lens_system ls;
-		stuff_string(ls.name, F_NAME);
+		if (overriding) {
+			if (existing >= 0) {
+				ls = systems[existing];
+				// The copy carries the original's generated textures, which belong
+				// to the aperture this entry is about to edit
+				ls.textures.reset();
+			} else {
+				error_display(0,
+					"Lens system '%s': +override names a lens no earlier table defines; reading this entry as a "
+					"new lens system instead",
+					name.c_str());
+			}
+		}
+		ls.name = name;
 
 		if (optional_string("$Entrance Pupil Radius:")) {
 			stuff_float(&ls.entrance_radius);
@@ -162,37 +187,66 @@ void parse_lens_table_core()
 			stuff_int(&ls.max_ghosts);
 		}
 
-		while (true) {
-			if (optional_string("$Surface:")) {
-				float vals[3] = {0.0f, 0.0f, 1.0f};
-				size_t count = stuff_float_list(vals, 3);
-				if (count != 3) {
-					error_display(0, "Lens system '%s': $Surface: needs ( radius, thickness, index )", ls.name.c_str());
+		// The prescription, wrapped in a start/end pair so that a stack of twenty
+		// surfaces reads as one block rather than as twenty loose options.
+		//
+		// An entry that opens a stack replaces the whole of it. A prescription is
+		// an ordered run of surfaces whose every property (focal length, ghost
+		// enumeration, where the iris falls) comes from the run as a whole, so
+		// there is nothing a partial edit could mean -- which is why the clear()
+		// below is unconditional rather than something "+override" opts out of.
+		if (optional_string("$Lens Stack Start:")) {
+			ls.surfaces.clear();
+
+			while (true) {
+				if (optional_string("$Surface:")) {
+					float vals[3] = {0.0f, 0.0f, 1.0f};
+					size_t count = stuff_float_list(vals, 3);
+					if (count != 3) {
+						error_display(0, "Lens system '%s': $Surface: needs ( radius, thickness, index )",
+							ls.name.c_str());
+					}
+					lens_surface s;
+					s.radius = vals[0];
+					s.thickness = vals[1];
+					s.n = vals[2];
+					if (optional_string("+Abbe:")) {
+						stuff_float(&s.abbe);
+					}
+					if (optional_string("+Coating Wavelength:")) {
+						stuff_float(&s.coating_wavelength);
+					}
+					ls.surfaces.push_back(s);
+				} else if (optional_string("$Stop:")) {
+					float d = 0.0f;
+					size_t count = stuff_float_list(&d, 1);
+					if (count != 1) {
+						error_display(0, "Lens system '%s': $Stop: needs ( thickness )", ls.name.c_str());
+					}
+					lens_surface s;
+					s.thickness = d;
+					s.is_stop = true;
+					ls.surfaces.push_back(s);
+				} else {
+					break;
 				}
-				lens_surface s;
-				s.radius = vals[0];
-				s.thickness = vals[1];
-				s.n = vals[2];
-				if (optional_string("+Abbe:")) {
-					stuff_float(&s.abbe);
-				}
-				if (optional_string("+Coating Wavelength:")) {
-					stuff_float(&s.coating_wavelength);
-				}
-				ls.surfaces.push_back(s);
-			} else if (optional_string("$Stop:")) {
-				float d = 0.0f;
-				size_t count = stuff_float_list(&d, 1);
-				if (count != 1) {
-					error_display(0, "Lens system '%s': $Stop: needs ( thickness )", ls.name.c_str());
-				}
-				lens_surface s;
-				s.thickness = d;
-				s.is_stop = true;
-				ls.surfaces.push_back(s);
-			} else {
-				break;
 			}
+
+			// The closing token has no colon, but optional_string matches on a
+			// prefix, so a table that writes one anyway would otherwise leave it in
+			// the stream and abort the parse several lines later with an error
+			// naming the wrong thing. Checked longest-first for the same reason.
+			if (!optional_string("$Lens Stack End:") && !optional_string("$Lens Stack End")) {
+				error_display(1, "Lens system '%s': $Lens Stack Start: is never closed by $Lens Stack End",
+					ls.name.c_str());
+			}
+		} else if (check_for_string("$Surface:") || check_for_string("$Stop:")) {
+			// Diagnosed rather than accepted: left to the loop above, a bare
+			// surface list ends the entry and then fails against "$Name:"/"#End"
+			// with a message that says nothing about surfaces
+			error_display(1,
+				"Lens system '%s': surfaces must be wrapped in $Lens Stack Start: ... $Lens Stack End",
+				ls.name.c_str());
 		}
 
 		if (!lens_flare_precompute(ls)) {
@@ -203,8 +257,9 @@ void parse_lens_table_core()
 		// what a mission's sexps (or the lab) will be reset back to
 		ls.tabled_aperture = ls.aperture;
 
-		// a later table may redefine a lens the engine (or an earlier tbm) shipped
-		int existing = find_system(systems, ls.name.c_str());
+		// a later table may redefine (or, with "+override", edit) a lens the
+		// engine or an earlier tbm shipped. Committed only now, so an entry whose
+		// prescription turned out to be unusable leaves the earlier one standing.
 		if (existing >= 0) {
 			systems[existing] = std::move(ls);
 		} else {

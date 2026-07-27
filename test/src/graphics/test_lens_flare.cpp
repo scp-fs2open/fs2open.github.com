@@ -908,3 +908,97 @@ TEST_F(ThrusterFlareTbmTest, NocreateForAnUnknownSpeciesCreatesNothing)
 	EXPECT_LT(species_info_lookup("NoSuchSpecies"), 0);
 	EXPECT_EQ(Species_info.size(), 2u);
 }
+
+// ---- +override in a *-lens.tbm ----
+
+class LensFlareOverrideTbmTest : public test::FSTestFixture {
+  public:
+	LensFlareOverrideTbmTest() : test::FSTestFixture(INIT_CFILE)
+	{
+		pushModDir("graphics");
+		pushModDir("lens_flare");
+		pushModDir("override");
+	}
+
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+		lens_flare_init();
+	}
+
+	void TearDown() override
+	{
+		lens_flare_close();
+		test::FSTestFixture::TearDown();
+	}
+};
+
+// The point of +override: restyle a shipped lens without transcribing its
+// prescription. Everything the entry does not mention has to survive, which is
+// the part a hand-written copy of lens_system would quietly get wrong every time
+// a field was added.
+TEST_F(LensFlareOverrideTbmTest, OverrideKeepsEverythingItDoesNotMention)
+{
+	const int idx = lens_flare_lookup("angenieux_100mm");
+	ASSERT_GE(idx, 0);
+	const lens_system* ls = lens_flare_get_system(idx);
+	ASSERT_NE(ls, nullptr);
+
+	// what the tbm set
+	EXPECT_FLOAT_EQ(ls->anamorphic_squeeze, 2.0f);
+	EXPECT_FLOAT_EQ(ls->intensity, 0.75f);
+
+	// what it did not: these are the shipped table's values, and the twelve-surface
+	// prescription in particular must be intact
+	EXPECT_FLOAT_EQ(ls->entrance_radius, 22.0f);
+	EXPECT_FLOAT_EQ(ls->aperture_radius, 16.0f);
+	EXPECT_FLOAT_EQ(ls->sensor_width, 36.0f);
+	EXPECT_EQ(ls->aperture.blades, 6);
+	EXPECT_GT(ls->surfaces.size(), 8u) << "the override dropped the prescription it never touched";
+	EXPECT_FALSE(ls->ghosts.empty());
+
+	// an override is still a tabled value, so it is what a mission's sexps and the
+	// lab get reset back to
+	EXPECT_TRUE(ls->tabled_aperture == ls->aperture);
+}
+
+// Opening a stack replaces the whole of it. A prescription is an ordered run
+// whose focal length, ghost set and iris position all follow from the run as a
+// whole, so a merged stack would be neither lens.
+TEST_F(LensFlareOverrideTbmTest, OverridingTheStackReplacesItEntirely)
+{
+	const int idx = lens_flare_lookup("tessar_50mm");
+	ASSERT_GE(idx, 0);
+	const lens_system* ls = lens_flare_get_system(idx);
+	ASSERT_NE(ls, nullptr);
+
+	ASSERT_EQ(ls->surfaces.size(), 3u) << "the tbm's stack was merged into the shipped one instead of replacing it";
+	EXPECT_FLOAT_EQ(ls->surfaces[0].radius, 60.0f);
+	EXPECT_FLOAT_EQ(ls->surfaces[0].abbe, 55.0f);
+	EXPECT_TRUE(ls->surfaces[1].is_stop);
+	EXPECT_FLOAT_EQ(ls->surfaces[2].radius, -60.0f);
+
+	// the entry named no other option, so everything else is still the shipped
+	// lens -- and the new prescription was re-solved rather than left stale
+	EXPECT_FLOAT_EQ(ls->entrance_radius, 7.0f);
+	EXPECT_GT(ls->efl, 0.0f);
+	EXPECT_FALSE(ls->ghosts.empty());
+}
+
+// Without +override an entry is a complete definition, and replaces a lens of
+// the same name outright -- the behaviour that predates +override, and the
+// reason +override had to be opt-in rather than the default for a tbm.
+TEST_F(LensFlareOverrideTbmTest, WithoutOverrideTheLensIsReplacedOutright)
+{
+	const int idx = lens_flare_lookup("kodak_100mm");
+	ASSERT_GE(idx, 0);
+	const lens_system* ls = lens_flare_get_system(idx);
+	ASSERT_NE(ls, nullptr);
+
+	EXPECT_EQ(ls->surfaces.size(), 3u);
+	EXPECT_FLOAT_EQ(ls->entrance_radius, 11.0f);
+	// the shipped kodak_100mm sets these; a replacement must be back on the
+	// struct's defaults rather than inheriting them
+	EXPECT_FLOAT_EQ(ls->sensor_width, 36.0f);
+	EXPECT_EQ(ls->aperture.blades, 6);
+}

@@ -41,6 +41,7 @@ $Starburst: NO
 +Starburst Scale: 0.9
 $Intensity: 0.25
 $Max Ghosts: 7
+$Lens Stack Start:
 $Surface: ( 100.0, 5.0, 1.6 )
 +Abbe: 55.0
 $Surface: ( -200.0, 3.0, 1.0 )
@@ -48,5 +49,6 @@ $Stop: ( 4.0 )
 $Surface: ( 150.0, 4.0, 1.62 )
 +Abbe: 45.0
 $Surface: ( -120.0, 40.0, 1.0 )
+$Lens Stack End
 
 #End
