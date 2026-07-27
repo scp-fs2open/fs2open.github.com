@@ -229,10 +229,13 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 	vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
 
 #ifdef MODEL_SDR_FLAG_RT_SHADOWS
-	// Whenever this compile-time flag is present we're always in Vulkan/large-shader
-	// mode, so `flags`/MODEL_SDR_FLAG_SHADOWS (the runtime shadow-receiving gate that
-	// IF_FLAG expands to elsewhere in this file) are guaranteed to exist here too.
-	bool rtShadowsActive = (flags & MODEL_SDR_FLAG_SHADOWS) != 0;
+	// Whether this material actually receives shadows. This has to go through IF_FLAG
+	// rather than testing `flags` directly: in small-shader mode MODEL_SDR_FLAG_SHADOWS
+	// is only a (valueless) preprocessor define, so it can't be used in an expression.
+	bool rtShadowsActive = false;
+	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
+		rtShadowsActive = true;
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 	mat4 invView = inverse(viewMatrix);
 	vec3 worldPos = (invView * vertIn.position).xyz;
 	vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);

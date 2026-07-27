@@ -128,15 +128,19 @@ layout(set = 1, binding = 3, std430) readonly buffer TransformBuffer {
 	mat4 transforms[];
 } transformBuf;
 
-// Outputs to fragment shader
+// Outputs to fragment shader. The shadow members are gated exactly like the matching
+// block in main-f.sdr so the stage interfaces stay identical in small-shader mode.
 layout(location = 0) out VertexOutput {
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+
+#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
+#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 } vertOut;
 #else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
