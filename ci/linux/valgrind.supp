@@ -173,3 +173,10 @@
    fun:_Z7os_initPKcS0_S0_
    fun:_ZN4test13FSTestFixture5SetUpEv
 }
+{
+   SDL3 X11 video backend internal allocations, not freed by SDL_VideoQuit
+   Memcheck:Leak
+   match-leak-kinds: definite
+   ...
+   fun:X11_CreateDevice
+}
