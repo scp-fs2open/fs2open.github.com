@@ -134,8 +134,10 @@ endif()
 set(CXX_FLAGS_RELEASE "${CXX_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
 set(C_FLAGS_RELEASE "${C_OPT_FLAG_RELEASE} -Wno-unused-variable -Wno-unused-parameter")
 
-set(CXX_FLAGS_DEBUG "${CXX_OPT_FLAG_DEBUG} -g -Wshadow")
-set(C_FLAGS_DEBUG "${C_OPT_FLAG_DEBUG} -g -Wshadow")
+# Valgrind (as used by CI) does not understand the DWARF5 debug info that clang
+# emits by default, so force DWARF4 to keep memcheck able to symbolize the binary.
+set(CXX_FLAGS_DEBUG "${CXX_OPT_FLAG_DEBUG} -g -gdwarf-4 -Wshadow")
+set(C_FLAGS_DEBUG "${C_OPT_FLAG_DEBUG} -g -gdwarf-4 -Wshadow")
 
 # Always use the base flags and add our compiler flags at the back
 set(CMAKE_CXX_FLAGS "${CXX_BASE_FLAGS} ${COMPILER_FLAGS}")

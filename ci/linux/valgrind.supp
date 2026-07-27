@@ -161,3 +161,15 @@
    fun:_dlerror_run
    fun:dlopen@@GLIBC_2.2.5
 }
+{
+   SDL_Init one-time internal allocation via os_init
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_Z7os_initPKcS0_S0_
+   fun:_ZN4test13FSTestFixture5SetUpEv
+}
