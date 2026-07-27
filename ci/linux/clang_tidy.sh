@@ -18,8 +18,16 @@ fi
 # branch
 BASE_COMMIT=$(git merge-base $1 $2)
 
+# Allow the caller to override the clang-tidy binary and job count, since neither
+# /usr/bin/clang-tidy-16 nor nproc are available outside the Linux CI container
+# (e.g. macOS runners install clang-tidy via pip and use sysctl for core count).
+CLANG_TIDY_BINARY="${CLANG_TIDY_BINARY:-/usr/bin/clang-tidy-16}"
+NUM_JOBS="${NUM_JOBS:-$( (command -v nproc >/dev/null 2>&1 && nproc) || sysctl -n hw.ncpu )}"
+
+# Note: Manually passing in the Vulkan flags that are normally provided by cmake (but are not so, here), to ensure
+# that the source files are checked with the actual configuration used.
 echo "Running clang-tidy on changed files"
 git diff -U0 --no-color "$BASE_COMMIT..$2" | \
     $HERE/clang-tidy-diff.py -path "$(pwd)/build" -p1 \
     -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)|(\/def_files\/data)))|freespace2|qtfred|test\/src|build|tools)\/.*\.(cpp|h)' \
-    -clang-tidy-binary /usr/bin/clang-tidy-16 -j$(nproc) -export-fixes "$(pwd)/clang-fixes.yaml"
+    -clang-tidy-binary "$CLANG_TIDY_BINARY" -j"$NUM_JOBS" -export-fixes "$(pwd)/clang-fixes.yaml"
