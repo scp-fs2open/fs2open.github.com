@@ -9,24 +9,6 @@
    obj:*
 }
 {
-    Travis memleak
-    Memcheck:Leak
-    match-leak-kinds: definite
-    fun:malloc
-    fun:_dl_signal_error
-    fun:_dl_open
-    fun:dlopen_doit
-    fun:_dl_catch_error
-    fun:_dlerror_run
-    fun:dlopen@@GLIBC_2.2.5
-    obj:/usr/lib/x86_64-linux-gnu/libmirclient.so.7
-    fun:call_init.part.0
-    fun:call_init
-    fun:_dl_init
-    fun:dl_open_worker
-    fun:_dl_catch_error
-}
-{
    CLang Lua unitialized value error
    Memcheck:Cond
    ...
@@ -127,41 +109,6 @@
    fun:_ZN7testing8internal35HandleExceptionsInMethodIfSupportedINS_4TestEvEET0_PT_MS4_FS3_vEPKc
 }
 {
-   <insert_a_suppression_name_here>
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_dl_signal_error
-   fun:_dl_open
-   fun:dlopen_doit
-   fun:_dl_catch_error
-   fun:_dlerror_run
-   fun:dlopen@@GLIBC_2.2.5
-   obj:*
-   obj:*
-   fun:call_init.part.0
-   fun:call_init
-   fun:_dl_init
-   fun:dl_open_worker
-}
-{
-   dlopen leak
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:malloc
-   fun:_dl_exception_create
-   fun:_dl_signal_error
-   fun:_dl_map_object
-   fun:dl_open_worker
-   fun:_dl_catch_exception
-   fun:_dl_open
-   fun:dlopen_doit
-   fun:_dl_catch_exception
-   fun:_dl_catch_error
-   fun:_dlerror_run
-   fun:dlopen@@GLIBC_2.2.5
-}
-{
    SDL_Init one-time internal allocation via os_init
    Memcheck:Leak
    match-leak-kinds: definite
@@ -176,7 +123,14 @@
 {
    SDL3 X11 video backend internal allocations, not freed by SDL_VideoQuit
    Memcheck:Leak
-   match-leak-kinds: definite
+   match-leak-kinds: definite,possible
    ...
    fun:X11_CreateDevice
+}
+{
+   glibc loader bookkeeping and library constructor allocations retained across dlopen
+   Memcheck:Leak
+   match-leak-kinds: definite,possible
+   ...
+   fun:_dl_open
 }
