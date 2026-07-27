@@ -5683,6 +5683,14 @@ void ai_set_or_clear_preferred_primary_weapon(bool set_it, const object_ship_win
 	}
 }
 
+// find the first primary bank that actually contains a weapon, since banks might be empty for various reasons
+static int ai_first_loaded_primary_bank(const ship_weapon *swp)
+{
+	for (int i = 0; i < swp->num_primary_banks; i++)
+		if (swp->primary_bank_weapons[i] >= 0)
+			return i;
+	return -1;
+}
 
 //old version of this fuction, this will be useful for playing old missions and not having the new primary
 //selection code throw off the balance of the mission.
@@ -5700,7 +5708,7 @@ static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags f
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size());
 
 	if (flags == Weapon::Info_Flags::Puncture) {
-		if (swp->current_primary_bank >= 0) {
+		if (swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0) {
 			int	bank_index;
 
 			bank_index = swp->current_primary_bank;
@@ -5724,13 +5732,11 @@ static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags f
 		
 		// AL 26-3-98: If we couldn't find a puncture weapon, pick first available weapon if one isn't active
 		if ( swp->current_primary_bank < 0 ) {
-			if ( swp->num_primary_banks > 0 ) {
-				swp->current_primary_bank = 0;
-			}
+			swp->current_primary_bank = ai_first_loaded_primary_bank(swp);
 		}
 
 	} else {		//	Don't need to be using a puncture weapon.
-		if (swp->current_primary_bank >= 0) {
+		if (swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0) {
 			if (!(Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].wi_flags[Weapon::Info_Flags::Puncture])){
 				return swp->current_primary_bank;
 			}
@@ -5747,8 +5753,7 @@ static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags f
 		//	Wasn't able to find a non-puncture weapon.  Stick with what we have.
 	}
 
-	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
-
+	// this can legitimately be -1 if no bank contains a weapon
 	return swp->current_primary_bank;
 }
 
@@ -5780,6 +5785,11 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon()\n"));
 		return -1;
 	}
+
+	// if the ship has no primary banks, there is nothing to select
+	// (this can happen when e.g. a turreted gunship is ordered to disable another ship)
+	if (swp->num_primary_banks <= 0)
+		return -1;
 
 	bool other_is_ship = (other_objp->type == OBJ_SHIP);
 
@@ -5832,7 +5842,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
 	if ((flags == Weapon::Info_Flags::Puncture) && ai_goal_is_disable_or_disarm(Ai_info[shipp->ai_index].goals[0].ai_mode))
 	{
-		if (swp->current_primary_bank >= 0) 
+		if (swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0)
 		{
 			int	bank_index = swp->current_primary_bank;
 
@@ -5911,7 +5921,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 		if (i_hullfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_hullfactor_prev_bank = 0;		// Just switch to the first one
+			i_hullfactor_prev_bank = ai_first_loaded_primary_bank(swp);		// Just switch to the first one with a weapon in it
+			if (i_hullfactor_prev_bank == -1)	// no bank contains a weapon
+				return -1;
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
 		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_is_ship ? other_shipp->ship_name : "non-ship") ));
@@ -5921,7 +5933,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	//if the shields are above lets say 10% definitely use a pierceing weapon if there are any-Bobboau
 	if (enemy_remaining_shield >= 0.10f)
 	{
-		if (swp->current_primary_bank >= 0) 
+		if (swp->current_primary_bank >= 0 && swp->primary_bank_weapons[swp->current_primary_bank] >= 0)
 		{
 			auto wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
 
@@ -5971,7 +5983,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 		if (i_balancedfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_balancedfactor_prev_bank = 0;		// Just switch to the first one
+			i_balancedfactor_prev_bank = ai_first_loaded_primary_bank(swp);		// Just switch to the first one with a weapon in it
+			if (i_balancedfactor_prev_bank == -1)	// no bank contains a weapon
+				return -1;
 		}
 		swp->current_primary_bank = i_balancedfactor_prev_bank;		// Select the best weapon
 		nprintf(("AI", "%i: Ship %s selecting weapon %s (<50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_balancedfactor_prev_bank]].name));
@@ -6001,7 +6015,9 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		}
 		if (i_shieldfactor_prev_bank == -1)		// In the unlikely instance we don't find at least 1 candidate weapon
 		{
-			i_shieldfactor_prev_bank = 0;		// Just switch to the first one
+			i_shieldfactor_prev_bank = ai_first_loaded_primary_bank(swp);		// Just switch to the first one with a weapon in it
+			if (i_shieldfactor_prev_bank == -1)	// no bank contains a weapon
+				return -1;
 		}
 		swp->current_primary_bank = i_shieldfactor_prev_bank;		// Select the best weapon
 		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_shieldfactor_prev_bank]].name));
@@ -6330,6 +6346,10 @@ int ai_fire_primary_weapon(object *objp)
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
 		aip->primary_select_timestamp = timestamp(5 * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon five seconds from now.
 	}
+
+	// if the ship has no primary weapon selected, whether because it has no primary banks or because no bank contains a weapon, then there is nothing to fire
+	if (swp->current_primary_bank < 0 || swp->primary_bank_weapons[swp->current_primary_bank] < 0)
+		return 0;
 
 	//We can only check LoS if we have a target defined
 	weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]];
