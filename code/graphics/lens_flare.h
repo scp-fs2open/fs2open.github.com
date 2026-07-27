@@ -208,9 +208,15 @@ struct lens_system {
 	// Iris/starburst textures of this lens, generated on demand by
 	// lens_flare_get_textures() and dropped by lens_flare_invalidate_textures().
 	// Owning them here rather than in a vector alongside Lens_systems is what
-	// keeps them from ever going out of step with the lens they belong to; it
-	// makes lens_system move-only, which is all the engine ever needs.
-	std::unique_ptr<lens_flare_textures> textures;
+	// keeps them from ever going out of step with the lens they belong to.
+	//
+	// Shared rather than unique so that a lens_system stays copyable: a
+	// *-lens.tbm "+override" entry starts from a copy of the lens it edits, and
+	// the alternative -- a hand-written copy that lists every field -- would
+	// silently stop carrying any field added later. A copy made to be edited
+	// must reset() this, since the cache belongs to the aperture it was
+	// generated from; the parser is the only place that copies one.
+	std::shared_ptr<lens_flare_textures> textures;
 };
 
 // Parse lens_flares.tbl + *-lens.tbm (embedded default as fallback) and

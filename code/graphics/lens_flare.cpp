@@ -387,7 +387,7 @@ const lens_flare_textures* lens_flare_get_textures(int lens_idx)
 	}
 	lens_system& lens = Lens_systems[lens_idx];
 	if (!lens.textures) {
-		auto tex = std::make_unique<lens_flare_textures>();
+		auto tex = std::make_shared<lens_flare_textures>();
 		lens_flare_generate_textures(lens.aperture, tex.get());
 		lens.textures = std::move(tex);
 	}
