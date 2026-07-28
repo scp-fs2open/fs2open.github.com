@@ -667,7 +667,9 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 						(static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitRect.height()));
 
 	auto& stage = briefPtr->stages[_currentStage];
-	int hitIndex = -1;
+
+	// Collect every icon under the cursor, top-most first (higher index = drawn later = on top).
+	SCP_vector<int> hits;
 	for (int i = stage.num_icons - 1; i >= 0; --i) {
 		auto& icon = stage.icons[i];
 
@@ -679,24 +681,39 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		const auto top = static_cast<float>(icon.y);
 
 		if (mouseX >= left && mouseX <= left + scaledW && mouseY >= top && mouseY <= top + scaledH) {
-			hitIndex = i;
-			break;
+			hits.push_back(i);
 		}
 	}
 
-	if (hitIndex >= 0) {
-		_draggingIcon = true;
-		_dragIconIndex = hitIndex;
-		_dragStartIconPos = stage.icons[hitIndex].pos;
-		brief_move_icon_reset();
-		Q_EMIT iconSelected(hitIndex, (event->modifiers() & Qt::ShiftModifier) != 0);
-	} else {
+	const bool shiftHeld = (event->modifiers() & Qt::ShiftModifier) != 0;
+
+	if (hits.empty()) {
 		_draggingIcon = false;
 		_dragIconIndex = -1;
-		if ((event->modifiers() & Qt::ShiftModifier) == 0) {
+		if (!shiftHeld) {
 			Q_EMIT iconSelected(-1, false);
 		}
+		return;
 	}
+
+	int pickedIndex = hits.front(); // default: the top-most icon under the cursor
+	if (!shiftHeld) {
+		// Rolling select: if the currently-selected icon is one of the stacked hits, advance to the
+		// next one underneath (wrapping bottom -> top) so repeated clicks cycle the whole stack.
+		const int current = _model->getCurrentIconIndex();
+		for (size_t k = 0; k < hits.size(); ++k) {
+			if (hits[k] == current) {
+				pickedIndex = hits[(k + 1) % hits.size()];
+				break;
+			}
+		}
+	}
+
+	_draggingIcon = true;
+	_dragIconIndex = pickedIndex;
+	_dragStartIconPos = stage.icons[pickedIndex].pos;
+	brief_move_icon_reset();
+	Q_EMIT iconSelected(pickedIndex, shiftHeld);
 }
 
 void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
