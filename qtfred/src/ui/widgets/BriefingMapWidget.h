@@ -113,7 +113,19 @@ private:
 	bool _loggedNoContext = false;
 	bool _loggedSurfaceMismatch = false;
 	bool _loggedMakeCurrentFailure = false;
+	bool _loggedNoRenderTarget = false;
 	uint32_t _debugFrameCounter = 0;
+
+	// Offscreen render target: the briefing is rendered at the reference resolution and then blitted
+	// (scaled + letterboxed) into the widget, so the view is a faithful copy of the canonical briefing.
+	int _renderTarget = -1;
+	int _renderTargetW = 0;
+	int _renderTargetH = 0;
+	// Destination rectangle of that blit, in device pixels (also used to map mouse input back).
+	int _blitX = 0;
+	int _blitY = 0;
+	int _blitW = 0;
+	int _blitH = 0;
 
 	// Mouse drag state
 	bool _draggingIcon = false;
@@ -121,6 +133,7 @@ private:
 	QPoint _lastMousePos;
 	QPointF _dragStartMousePos;
 	vec3d _dragStartIconPos = ZERO_VECTOR;
+	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;
 

@@ -15,6 +15,10 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "mission/missionbriefcommon.h"
+#include "mod_table/mod_table.h"
+
+#include <algorithm>
+#include <cmath>
 
 namespace fso::fred {
 
@@ -141,6 +145,10 @@ BriefingMapWidget::BriefingMapWidget(QWidget* parent,
 
 BriefingMapWidget::~BriefingMapWidget() {
 	_renderTimer->stop();
+	if (_renderTarget >= 0) {
+		bm_release(_renderTarget);
+		_renderTarget = -1;
+	}
 }
 
 void BriefingMapWidget::initBriefingMap() {
@@ -327,15 +335,26 @@ void BriefingMapWidget::updateEditorHighlightPlayback() const {
 }
 
 void BriefingMapWidget::drawSelectedIconOutline() {
-	if (Briefing == nullptr || _currentStage < 0 || _currentStage >= Briefing->num_stages) {
+	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
+	if (briefPtr == nullptr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
+		return;
+	}
+	if (_blitW <= 0 || _blitH <= 0 || _lastRenderWidth <= 0 || _lastRenderHeight <= 0) {
 		return;
 	}
 
 	const auto selectedIcons = _model->getLineSelection();
-	auto& stage = Briefing->stages[_currentStage];
+	auto& stage = briefPtr->stages[_currentStage];
 	if (selectedIcons.empty()) {
 		return;
 	}
+
+	// This is an editor overlay drawn in the widget's device-pixel space (after the briefing image
+	// has been blitted), so the brackets stay crisp. Icon coordinates are in reference-resolution
+	// space, so map them through the letterbox blit rectangle to land on the on-screen icons.
+	const float scale = static_cast<float>(_blitW) / static_cast<float>(_lastRenderWidth);
+	const auto mapX = [&](float refX) { return _blitX + static_cast<int>(std::lround(refX * scale)); };
+	const auto mapY = [&](float refY) { return _blitY + static_cast<int>(std::lround(refY * scale)); };
 
 	gr_set_color(255, 255, 255);
 	for (const auto selected : selectedIcons) {
@@ -344,26 +363,26 @@ void BriefingMapWidget::drawSelectedIconOutline() {
 		}
 
 		auto& icon = stage.icons[selected];
-		const auto left = (icon.x - 2);
-		const auto top = icon.y - 2;
-		const auto right = left + icon.w + 4;
-		const auto bottom = top + icon.h + 4;
-		const auto width = right - left;
-		const auto height = bottom - top;
-		const auto cornerLen = std::max(3, std::min(width, height) / 4);
+		const int left = mapX(static_cast<float>(icon.x - 2));
+		const int top = mapY(static_cast<float>(icon.y - 2));
+		const int right = mapX(static_cast<float>(icon.x + icon.w + 2));
+		const int bottom = mapY(static_cast<float>(icon.y + icon.h + 2));
+		const int width = right - left;
+		const int height = bottom - top;
+		const int cornerLen = std::max(3, std::min(width, height) / 4);
 
 		// Top-left
-		gr_line(left, top, left + cornerLen, top);
-		gr_line(left, top, left, top + cornerLen);
+		gr_line(left, top, left + cornerLen, top, GR_RESIZE_NONE);
+		gr_line(left, top, left, top + cornerLen, GR_RESIZE_NONE);
 		// Top-right
-		gr_line(right - cornerLen, top, right, top);
-		gr_line(right, top, right, top + cornerLen);
+		gr_line(right - cornerLen, top, right, top, GR_RESIZE_NONE);
+		gr_line(right, top, right, top + cornerLen, GR_RESIZE_NONE);
 		// Bottom-left
-		gr_line(left, bottom, left + cornerLen, bottom);
-		gr_line(left, bottom - cornerLen, left, bottom);
+		gr_line(left, bottom, left + cornerLen, bottom, GR_RESIZE_NONE);
+		gr_line(left, bottom - cornerLen, left, bottom, GR_RESIZE_NONE);
 		// Bottom-right
-		gr_line(right - cornerLen, bottom, right, bottom);
-		gr_line(right, bottom - cornerLen, right, bottom);
+		gr_line(right - cornerLen, bottom, right, bottom, GR_RESIZE_NONE);
+		gr_line(right, bottom - cornerLen, right, bottom, GR_RESIZE_NONE);
 	}
 }
 
@@ -548,68 +567,122 @@ void BriefingMapWidget::renderFrame() {
 	auto viewSize = _briefingViewport->getSize();
 	const int w = static_cast<int>(viewSize.first);
 	const int h = static_cast<int>(viewSize.second);
-	_lastRenderWidth = w;
-	_lastRenderHeight = h;
+	const int deviceW = static_cast<int>(w * devicePixelRatio());
+	const int deviceH = static_cast<int>(h * devicePixelRatio());
 
-	gr_screen_resize(w * devicePixelRatio(), h * devicePixelRatio());
+	// Reference resolution the briefing is authored/rendered at (mod-configurable, retail default).
+	const int resW = (Briefing_window_resolution[0] > 0) ? Briefing_window_resolution[0] : 888;
+	const int resH = (Briefing_window_resolution[1] > 0) ? Briefing_window_resolution[1] : 371;
 
-	brief_screen savedBscreen = bscreen;
-	bscreen.map_x1 = 0;
-	bscreen.map_y1 = 0;
-	bscreen.map_x2 = w;
-	bscreen.map_y2 = h;
-	bscreen.resize = GR_RESIZE_NONE;
+	// Lazily (re)create the offscreen render target at the reference resolution. Rendering the
+	// briefing at a fixed canonical size and scaling the finished image to fit the widget is what
+	// makes this a faithful WYSIWYG view: icon sizes, grid, line thickness and text all scale together.
+	if (_renderTarget < 0 || _renderTargetW != resW || _renderTargetH != resH) {
+		if (_renderTarget >= 0) {
+			bm_release(_renderTarget);
+		}
+		_renderTarget = bm_make_render_target(resW, resH,
+			BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
+		_renderTargetW = resW;
+		_renderTargetH = resH;
+	}
 
-	briefing* savedBriefing = Briefing;
-	Briefing = _model->getWipBriefingPtr(_model->getCurrentTeam());
+	if (_renderTarget < 0) {
+		if (!_loggedNoRenderTarget) {
+			mprintf(("BriefingMapWidget: failed to create %dx%d render target.\n", resW, resH));
+			_loggedNoRenderTarget = true;
+		}
+		if (mainFrameWasActive) {
+			auto* mainView = _viewport->renderer->getTargetViewport();
+			auto mainSize = mainView->getSize();
+			gr_use_viewport(mainView);
+			gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
+				static_cast<int>(mainSize.second) * devicePixelRatio());
+			g3_start_frame(0);
+			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
+		}
+		_rendering = false;
+		return;
+	}
 
-	gr_reset_clip();
-	gr_clear();
+	// Icon coordinates come out of brief_render_map() in reference-resolution space.
+	_lastRenderWidth = resW;
+	_lastRenderHeight = resH;
 
-	if (Briefing != nullptr) {
-		const bool stage_valid = (_currentStage >= 0 && _currentStage < Briefing->num_stages);
-		if (!stage_valid) {
-			mprintf(("BriefingMapWidget: invalid stage index %d (num_stages=%d)\n", _currentStage, Briefing->num_stages));
+	// Establish the window-surface dimensions; bm_set_render_target(-1) restores back to these.
+	gr_screen_resize(deviceW, deviceH);
+
+	// ---- Render the briefing into the offscreen target at the reference resolution ----
+	// bm_set_render_target() switches gr_screen to the target's own dimensions for us.
+	if (bm_set_render_target(_renderTarget)) {
+		brief_screen savedBscreen = bscreen;
+		bscreen.map_x1 = 0;
+		bscreen.map_y1 = 0;
+		bscreen.map_x2 = resW;
+		bscreen.map_y2 = resH;
+		bscreen.resize = GR_RESIZE_NONE;
+
+		briefing* savedBriefing = Briefing;
+		Briefing = _model->getWipBriefingPtr(_model->getCurrentTeam());
+
+		gr_reset_clip();
+		gr_clear();
+
+		if (Briefing != nullptr) {
+			const bool stage_valid = (_currentStage >= 0 && _currentStage < Briefing->num_stages);
+			if (!stage_valid) {
+				mprintf(("BriefingMapWidget: invalid stage index %d (num_stages=%d)\n", _currentStage, Briefing->num_stages));
+			}
+
+			if (stage_valid) {
+				const float frametime = 0.033f;
+				applyBoundCameraControls(frametime);
+				Brief_text_wipe_time_elapsed += frametime;
+				brief_camera_move(frametime, _currentStage);
+				updateEditorHighlightPlayback();
+				brief_render_map(_currentStage, frametime);
+				updateEditorHighlightPlayback();
+				maybeRenderCutTransition(frametime, resW, resH);
+				cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
+			}
 		}
 
-		if ((_debugFrameCounter % 120) == 0 && stage_valid) {
-			const auto& stage = Briefing->stages[_currentStage];
-			mprintf(("BriefingMapWidget: stage=%d/%d draw_grid=%d num_icons=%d num_lines=%d cam_time=%d\n",
-				_currentStage,
-				Briefing->num_stages,
-				stage.draw_grid ? 1 : 0,
-				stage.num_icons,
-				stage.num_lines,
-				stage.camera_time));
-		}
+		Briefing = savedBriefing;
+		bscreen = savedBscreen;
 
-		if (stage_valid) {
-			const float frametime = 0.033f;
-			applyBoundCameraControls(frametime);
-			Brief_text_wipe_time_elapsed += frametime;
-			brief_camera_move(frametime, _currentStage);
-			updateEditorHighlightPlayback();
-			brief_render_map(_currentStage, frametime);
-			updateEditorHighlightPlayback();
-			drawSelectedIconOutline();
-			maybeRenderCutTransition(frametime, w, h);
-			cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
+		bm_set_render_target(-1); // back to the window's back buffer (restores gr_screen dims)
+	}
+
+	// ---- Letterbox the reference-resolution image into the widget (device pixels) ----
+	{
+		const double targetAspect = static_cast<double>(resW) / static_cast<double>(resH);
+		if (deviceW > 0 && deviceH > 0 && static_cast<double>(deviceW) / deviceH > targetAspect) {
+			// Wider than the briefing: pillarbox (bars left/right).
+			_blitH = deviceH;
+			_blitW = std::max(1, static_cast<int>(std::lround(deviceH * targetAspect)));
+			_blitX = (deviceW - _blitW) / 2;
+			_blitY = 0;
+		} else {
+			// Taller than the briefing: letterbox (bars top/bottom).
+			_blitW = deviceW;
+			_blitH = std::max(1, static_cast<int>(std::lround(deviceW / targetAspect)));
+			_blitX = 0;
+			_blitY = (deviceH - _blitH) / 2;
 		}
 	}
 
-	Briefing = savedBriefing;
-	bscreen = savedBscreen;
+	gr_reset_clip();
+	gr_clear(); // black letterbox bars
+	if (_blitW > 0 && _blitH > 0) {
+		gr_set_bitmap(_renderTarget);
+		gr_bitmap(_blitX, _blitY, GR_RESIZE_NONE, false, static_cast<float>(_blitW) / static_cast<float>(resW));
+	}
+
+	// Selection brackets are an editor overlay: draw them in window space on top of the blitted image.
+	drawSelectedIconOutline();
 
 	gr_flip();
 	_debugFrameCounter++;
-
-	if ((_debugFrameCounter % 120) == 0) {
-		mprintf(("BriefingMapWidget: rendered briefing frame=%u size=%dx%d current_surface=%p\n",
-			_debugFrameCounter,
-			w,
-			h,
-			static_cast<void*>(context->surface())));
-	}
 
 	// Restore the main viewport's persistent frame so that mouse-interaction
 	// helpers (select_object → g3_point_to_vec) continue to work between the
@@ -692,15 +765,19 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _lastRenderWidth <= 0 || _lastRenderHeight <= 0 ||
-		width() <= 0 || height() <= 0) {
+		_blitW <= 0 || _blitH <= 0) {
 		_draggingIcon = false;
 		_dragIconIndex = -1;
 		return;
 	}
 
-	const auto mouseX = static_cast<float>(event->position().x() * devicePixelRatio()) * (static_cast<float>(_lastRenderWidth) / static_cast<float>(width()));
-	const auto mouseY = static_cast<float>(event->position().y() * devicePixelRatio()) *
-						(static_cast<float>(_lastRenderHeight) / static_cast<float>(height()));
+	// Map the logical mouse position into reference-resolution space: convert to device pixels,
+	// shift by the letterbox origin, then scale from the blit rectangle to the render-target size.
+	const auto dpr = static_cast<float>(devicePixelRatio());
+	const auto mouseX = (static_cast<float>(event->position().x()) * dpr - static_cast<float>(_blitX)) *
+						(static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitW));
+	const auto mouseY = (static_cast<float>(event->position().y()) * dpr - static_cast<float>(_blitY)) *
+						(static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitH));
 
 	auto& stage = briefPtr->stages[_currentStage];
 	int hitIndex = -1;
@@ -741,17 +818,17 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _dragIconIndex >= briefPtr->stages[_currentStage].num_icons ||
-		_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || width() <= 0 || height() <= 0) {
+		_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || _blitW <= 0 || _blitH <= 0) {
 		return;
 	}
 
-	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(width());
-	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(height());
-	const auto deltaX =
-		static_cast<float>((event->position().x() * devicePixelRatio()) - (_dragStartMousePos.x() * devicePixelRatio())) * scaleX;
-	const auto deltaY = static_cast<float>((event->position().y() * devicePixelRatio()) -
-										   (_dragStartMousePos.y() * devicePixelRatio())) *
-		scaleY;
+	// Convert the logical mouse delta into reference-resolution pixels (device pixels scaled from the
+	// letterbox blit rectangle to the render-target size). The letterbox offset cancels in a delta.
+	const auto dpr = static_cast<float>(devicePixelRatio());
+	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitW);
+	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitH);
+	const auto deltaX = static_cast<float>(event->position().x() - _dragStartMousePos.x()) * dpr * scaleX;
+	const auto deltaY = static_cast<float>(event->position().y() - _dragStartMousePos.y()) * dpr * scaleY;
 
 	const auto camPos = brief_get_current_cam_pos();
 	const auto camOrient = brief_get_current_cam_orient();
