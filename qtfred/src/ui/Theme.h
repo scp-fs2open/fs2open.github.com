@@ -22,6 +22,9 @@ void applyEditorTheme(ThemeMode mode);
 ThemeMode readThemeModeSetting();
 void writeThemeModeSetting(ThemeMode mode);
 
+// Whether the currently-applied editor theme is dark (System resolved against the OS scheme).
+bool currentThemeIsDark();
+
 // Draw a palette-aware icon for a standard Qt pixmap using QPainter.
 // Falls back to the style's own icon for unhandled StandardPixmap values.
 QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int size = 16);

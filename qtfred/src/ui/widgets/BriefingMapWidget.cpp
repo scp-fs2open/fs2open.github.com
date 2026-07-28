@@ -14,6 +14,7 @@
 #include "mission/dialogs/BriefingEditorDialogModel.h"
 #include "mission/EditorViewport.h"
 #include "ui/ControlBindings.h"
+#include "ui/Theme.h"
 
 #include "graphics/2d.h"
 #include "render/3d.h"
@@ -284,9 +285,36 @@ void BriefingMapWidget::updateEditorHighlightPlayback() const {
 	}
 }
 
+QPixmap BriefingMapWidget::checkerboardTile() {
+	// A subtle, theme-appropriate checkerboard so the letterbox/pillarbox bars read as matte rather
+	// than part of the (pure-black) render. Two close grey shades keep it quiet; the real signal is the
+	// contrast between the black map and the grey bars. Rebuilt only when the editor theme flips.
+	const bool dark = currentThemeIsDark();
+	if (!_checkerTile.isNull() && dark == _checkerTileDark) {
+		return _checkerTile;
+	}
+	_checkerTileDark = dark;
+
+	constexpr int square = 8;
+	const QColor light = dark ? QColor(0x36, 0x36, 0x36) : QColor(0xDC, 0xDC, 0xDC);
+	const QColor darkc = dark ? QColor(0x2A, 0x2A, 0x2A) : QColor(0xC8, 0xC8, 0xC8);
+
+	QPixmap tile(square * 2, square * 2);
+	{
+		QPainter p(&tile);
+		p.fillRect(tile.rect(), darkc);
+		p.fillRect(0, 0, square, square, light);
+		p.fillRect(square, square, square, square, light);
+	}
+	_checkerTile = tile;
+	return _checkerTile;
+}
+
 void BriefingMapWidget::paintEvent(QPaintEvent* /*event*/) {
 	QPainter painter(this);
-	painter.fillRect(rect(), Qt::black); // letterbox / pillarbox bars
+	// Matte bars: the briefing image drawn over _blitRect below is opaque, so the checkerboard only
+	// shows through in the letterbox/pillarbox area around it.
+	painter.fillRect(rect(), QBrush(checkerboardTile()));
 
 	if (_frameImage.isNull()) {
 		return;

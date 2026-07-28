@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QImage>
+#include <QPixmap>
 #include <QRect>
 #include <QTimer>
 
@@ -81,6 +82,7 @@ private:
 	static bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr);
 	void updateEditorHighlightPlayback() const;
 	void drawSelectionBrackets(QPainter& painter);
+	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
 
@@ -89,6 +91,8 @@ private:
 	QOffscreenSurface* _surface = nullptr; // offscreen GL surface the briefing renders through
 	QImage _frameImage;                    // last rendered briefing frame (reference resolution)
 	QRect _blitRect;                       // where _frameImage is drawn in the widget (logical px)
+	QPixmap _checkerTile;                  // cached matte tile
+	bool _checkerTileDark = false;         // theme the cached tile was built for
 	QTimer* _renderTimer = nullptr;
 	std::unique_ptr<BriefingViewport> _briefingViewport; // our os::Viewport for gr_use_viewport
 
