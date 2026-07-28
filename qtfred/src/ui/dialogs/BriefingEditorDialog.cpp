@@ -150,8 +150,11 @@ void BriefingEditorDialog::setupMapWidget()
 {
 	// Replace the mapView placeholder with the BriefingMapWidget
 	_mapWidget = new fso::fred::BriefingMapWidget(this, _model.get(), _viewport);
-	_mapWidget->setMinimumSize(ui->mapView->minimumSize());
-	_mapWidget->setSizePolicy(ui->mapView->sizePolicy());
+	// The map paints an aspect-correct, letterboxed image and can scale to any size, so it needs no
+	// minimum. A minimum here would set the floor the whole left pane can't shrink below, which is
+	// what stops the dialog narrowing. Keep it at (0,0) and let it expand to fill available space.
+	_mapWidget->setMinimumSize(0, 0);
+	_mapWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	// Insert the map widget in place of the placeholder in the left pane layout
 	int idx = ui->leftPaneLayout->indexOf(ui->mapView);
@@ -183,46 +186,6 @@ void BriefingEditorDialog::setupMapWidget()
 	if (_model->getTotalStages() > 0) {
 		_mapWidget->setStage(_model->getCurrentStage());
 		captureResetCameraForCurrentStage();
-	}
-
-	applyMapWidgetAspectRatio();
-}
-
-void BriefingEditorDialog::applyMapWidgetAspectRatio()
-{
-	if (_mapWidget == nullptr) {
-		return;
-	}
-
-	if (Briefing_window_resolution[0] <= 0 || Briefing_window_resolution[1] <= 0) {
-		return;
-	}
-
-	auto mapWidth = _mapWidget->width();
-	if (mapWidth <= 0) {
-		mapWidth = _mapWidget->minimumWidth();
-	}
-	if (mapWidth <= 0) {
-		return;
-	}
-
-	const auto targetHeight = std::max(1,
-		static_cast<int>(std::lround(static_cast<double>(mapWidth) *
-									 static_cast<double>(Briefing_window_resolution[1]) /
-									 static_cast<double>(Briefing_window_resolution[0]))));
-
-	_mapWidget->setMinimumHeight(targetHeight);
-	_mapWidget->setMaximumHeight(targetHeight);
-	_mapWidget->resize(mapWidth, targetHeight);
-
-	const auto oldDialogHeight = height();
-	if (auto* dialogLayout = layout(); dialogLayout != nullptr) {
-		dialogLayout->activate();
-	}
-
-	const auto requiredSize = sizeHint();
-	if (requiredSize.height() > oldDialogHeight) {
-		resize(width(), requiredSize.height());
 	}
 }
 

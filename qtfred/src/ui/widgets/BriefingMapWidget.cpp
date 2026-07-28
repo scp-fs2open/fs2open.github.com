@@ -2,8 +2,11 @@
 
 #include <QKeyEvent>
 #include <QMouseEvent>
+#include <QPainter>
+#include <QPaintEvent>
+#include <QOffscreenSurface>
 #include <QtGui/QOpenGLContext>
-#include <QtWidgets/QHBoxLayout>
+#include <QtGui/QOpenGLFunctions>
 
 #include "FredApplication.h"
 #include "anim/animplay.h"
@@ -48,46 +51,9 @@ void ensure_highlight_anim_loaded(brief_icon& icon) {
 }
 }
 
-// ---- BriefingMapWindow ----
-
-BriefingMapWindow::BriefingMapWindow(QWidget* parentWidget)
-	: QWindow(static_cast<QWindow*>(nullptr)), _parentWidget(parentWidget)
-{
-	setSurfaceType(QWindow::OpenGLSurface);
-}
-
-void BriefingMapWindow::initializeGL(const QSurfaceFormat& fmt) {
-	setFormat(fmt);
-	create();
-}
-
-bool BriefingMapWindow::event(QEvent* evt) {
-	switch (evt->type()) {
-	case QEvent::KeyPress:
-	case QEvent::KeyRelease:
-	case QEvent::MouseButtonPress:
-	case QEvent::MouseButtonRelease:
-	case QEvent::MouseMove:
-		// Forward input events to the parent widget
-		qGuiApp->sendEvent(_parentWidget, evt);
-		return true;
-	default:
-		return QWindow::event(evt);
-	}
-}
-
-void BriefingMapWindow::exposeEvent(QExposeEvent* event) {
-	if (isExposed()) {
-		requestUpdate();
-		event->accept();
-	} else {
-		QWindow::exposeEvent(event);
-	}
-}
-
 // ---- BriefingViewport ----
 
-BriefingViewport::BriefingViewport(BriefingMapWindow* window) : _window(window) {
+BriefingViewport::BriefingViewport(QOffscreenSurface* surface) : _surface(surface) {
 }
 
 SDL_Window* BriefingViewport::toSDLWindow() {
@@ -95,14 +61,16 @@ SDL_Window* BriefingViewport::toSDLWindow() {
 }
 
 std::pair<uint32_t, uint32_t> BriefingViewport::getSize() {
-	return std::make_pair(static_cast<uint32_t>(_window->width()),
-		static_cast<uint32_t>(_window->height()));
+	// The briefing always renders into an off-screen render target sized to the reference resolution
+	// (bm_set_render_target drives gr_screen), so this is only a nominal size. Report the reference
+	// resolution rather than the offscreen surface's placeholder 1x1.
+	const uint32_t w = (Briefing_window_resolution[0] > 0) ? static_cast<uint32_t>(Briefing_window_resolution[0]) : 888u;
+	const uint32_t h = (Briefing_window_resolution[1] > 0) ? static_cast<uint32_t>(Briefing_window_resolution[1]) : 371u;
+	return std::make_pair(w, h);
 }
 
 void BriefingViewport::swapBuffers() {
-	if (_window->isExposed()) {
-		QOpenGLContext::currentContext()->swapBuffers(_window);
-	}
+	// Nothing to present: the briefing is read back from the render target, not swapped to a window.
 }
 
 void BriefingViewport::setState(os::ViewportState /*state*/) {
@@ -115,7 +83,7 @@ void BriefingViewport::restore() {
 }
 
 QSurface* BriefingViewport::getRenderSurface() {
-	return _window;
+	return _surface;
 }
 
 // ---- BriefingMapWidget ----
@@ -127,14 +95,8 @@ BriefingMapWidget::BriefingMapWidget(QWidget* parent,
 {
 	setFocusPolicy(Qt::StrongFocus);
 	setMouseTracking(true);
-
-	_window = new BriefingMapWindow(this);
-
-	auto layout = new QHBoxLayout(this);
-	layout->setSpacing(0);
-	layout->addWidget(QWidget::createWindowContainer(_window, this));
-	layout->setContentsMargins(0, 0, 0, 0);
-	setLayout(layout);
+	// Opaque: we always fill the whole widget (image + black letterbox bars) in paintEvent.
+	setAttribute(Qt::WA_OpaquePaintEvent, true);
 
 	_renderTimer = new QTimer(this);
 	_renderTimer->setInterval(33); // ~30 fps
@@ -152,32 +114,21 @@ BriefingMapWidget::~BriefingMapWidget() {
 }
 
 void BriefingMapWidget::initBriefingMap() {
-	// Get the surface format from the current GL context and initialize our window
+	// The briefing renders through an off-screen surface (no visible window): the engine's GL context
+	// is made current on it so we can render into a render target, which we then read back and paint.
 	auto* currentCtx = QOpenGLContext::currentContext();
+	_surface = new QOffscreenSurface(nullptr, this);
 	if (currentCtx) {
-		_window->initializeGL(currentCtx->format());
+		_surface->setFormat(currentCtx->format());
 	}
+	_surface->create();
 
 	// brief_render_map() calls anim_render_all(), which requires anim_init()
 	// to have initialized the render/free lists.
 	anim_init();
 
-	_diagnosticContext.reset(new QOpenGLContext());
-	if (currentCtx) {
-		_diagnosticContext->setShareContext(currentCtx);
-		_diagnosticContext->setFormat(currentCtx->format());
-	} else {
-		_diagnosticContext->setFormat(_window->requestedFormat());
-	}
-	if (!_diagnosticContext->create()) {
-		mprintf(("BriefingMapWidget: failed to create dedicated diagnostic GL context.\n"));
-		_diagnosticContext.reset();
-	} else {
-		mprintf(("BriefingMapWidget: dedicated diagnostic GL context created.\n"));
-	}
-
-	// Create our os::Viewport wrapper so we can use gr_use_viewport() / gr_flip()
-	_briefingViewport = std::unique_ptr<BriefingViewport>(new BriefingViewport(_window));
+	// Create our os::Viewport wrapper so we can use gr_use_viewport().
+	_briefingViewport = std::unique_ptr<BriefingViewport>(new BriefingViewport(_surface));
 
 	// Initialize the briefing rendering subsystem.
 	// This mirrors what brief_init(true) does in the Lua API path:
@@ -206,7 +157,6 @@ void BriefingMapWidget::initBriefingMap() {
 
 	_initialized = true;
 	_renderTimer->start();
-	mprintf(("BriefingMapWidget: init complete, timer started for render diagnostics.\n"));
 }
 
 void BriefingMapWidget::setStage(int stageNum) {
@@ -334,12 +284,30 @@ void BriefingMapWidget::updateEditorHighlightPlayback() const {
 	}
 }
 
-void BriefingMapWidget::drawSelectedIconOutline() {
+void BriefingMapWidget::paintEvent(QPaintEvent* /*event*/) {
+	QPainter painter(this);
+	painter.fillRect(rect(), Qt::black); // letterbox / pillarbox bars
+
+	if (_frameImage.isNull()) {
+		return;
+	}
+
+	// Aspect-fit the reference-resolution briefing image into the widget, centered (letterboxed).
+	const QSize scaled = _frameImage.size().scaled(size(), Qt::KeepAspectRatio);
+	_blitRect = QRect(QPoint((width() - scaled.width()) / 2, (height() - scaled.height()) / 2), scaled);
+
+	painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+	painter.drawImage(_blitRect, _frameImage);
+
+	drawSelectionBrackets(painter);
+}
+
+void BriefingMapWidget::drawSelectionBrackets(QPainter& painter) {
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (briefPtr == nullptr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
 		return;
 	}
-	if (_blitW <= 0 || _blitH <= 0 || _lastRenderWidth <= 0 || _lastRenderHeight <= 0) {
+	if (_blitRect.width() <= 0 || _blitRect.height() <= 0 || _lastRenderWidth <= 0 || _lastRenderHeight <= 0) {
 		return;
 	}
 
@@ -349,40 +317,37 @@ void BriefingMapWidget::drawSelectedIconOutline() {
 		return;
 	}
 
-	// This is an editor overlay drawn in the widget's device-pixel space (after the briefing image
-	// has been blitted), so the brackets stay crisp. Icon coordinates are in reference-resolution
-	// space, so map them through the letterbox blit rectangle to land on the on-screen icons.
-	const float scale = static_cast<float>(_blitW) / static_cast<float>(_lastRenderWidth);
-	const auto mapX = [&](float refX) { return _blitX + static_cast<int>(std::lround(refX * scale)); };
-	const auto mapY = [&](float refY) { return _blitY + static_cast<int>(std::lround(refY * scale)); };
+	// Icon coordinates are in reference-resolution space; map them through the letterbox rectangle so
+	// the (crisp, overlaid) brackets land on the on-screen icons.
+	const double scale = static_cast<double>(_blitRect.width()) / static_cast<double>(_lastRenderWidth);
+	const auto mapX = [&](double refX) { return _blitRect.x() + static_cast<int>(std::lround(refX * scale)); };
+	const auto mapY = [&](double refY) { return _blitRect.y() + static_cast<int>(std::lround(refY * scale)); };
 
-	gr_set_color(255, 255, 255);
+	painter.setPen(QPen(Qt::white, 1));
 	for (const auto selected : selectedIcons) {
 		if (selected < 0 || selected >= stage.num_icons) {
 			continue;
 		}
 
 		auto& icon = stage.icons[selected];
-		const int left = mapX(static_cast<float>(icon.x - 2));
-		const int top = mapY(static_cast<float>(icon.y - 2));
-		const int right = mapX(static_cast<float>(icon.x + icon.w + 2));
-		const int bottom = mapY(static_cast<float>(icon.y + icon.h + 2));
-		const int width = right - left;
-		const int height = bottom - top;
-		const int cornerLen = std::max(3, std::min(width, height) / 4);
+		const int left = mapX(icon.x - 2);
+		const int top = mapY(icon.y - 2);
+		const int right = mapX(icon.x + icon.w + 2);
+		const int bottom = mapY(icon.y + icon.h + 2);
+		const int cornerLen = std::max(3, std::min(right - left, bottom - top) / 4);
 
 		// Top-left
-		gr_line(left, top, left + cornerLen, top, GR_RESIZE_NONE);
-		gr_line(left, top, left, top + cornerLen, GR_RESIZE_NONE);
+		painter.drawLine(left, top, left + cornerLen, top);
+		painter.drawLine(left, top, left, top + cornerLen);
 		// Top-right
-		gr_line(right - cornerLen, top, right, top, GR_RESIZE_NONE);
-		gr_line(right, top, right, top + cornerLen, GR_RESIZE_NONE);
+		painter.drawLine(right - cornerLen, top, right, top);
+		painter.drawLine(right, top, right, top + cornerLen);
 		// Bottom-left
-		gr_line(left, bottom, left + cornerLen, bottom, GR_RESIZE_NONE);
-		gr_line(left, bottom - cornerLen, left, bottom, GR_RESIZE_NONE);
+		painter.drawLine(left, bottom, left + cornerLen, bottom);
+		painter.drawLine(left, bottom - cornerLen, left, bottom);
 		// Bottom-right
-		gr_line(right - cornerLen, bottom, right, bottom, GR_RESIZE_NONE);
-		gr_line(right, bottom - cornerLen, right, bottom, GR_RESIZE_NONE);
+		painter.drawLine(right - cornerLen, bottom, right, bottom);
+		painter.drawLine(right, bottom - cornerLen, right, bottom);
 	}
 }
 
@@ -485,37 +450,12 @@ void BriefingMapWidget::applyCameraPoseLikeKeyboardControls(const vec3d& camPos,
 	cameraChanged(camPos, camOrient);
 }
 
-QWindow* BriefingMapWidget::getRenderWindow() const {
-	return _window;
-}
-
 void BriefingMapWidget::renderFrame() {
-	if (!_initialized) {
-		if (!_loggedNotInitialized) {
-			mprintf(("BriefingMapWidget: render skipped because widget is not initialized.\n"));
-			_loggedNotInitialized = true;
-		}
+	if (!_initialized || !_briefingViewport || _surface == nullptr) {
 		return;
 	}
 
-	if (!_window->isExposed()) {
-		if (!_loggedNotExposed) {
-			mprintf(("BriefingMapWidget: render skipped because window is not exposed.\n"));
-			_loggedNotExposed = true;
-		}
-		return;
-	}
-
-	if (!_briefingViewport) {
-		if (!_loggedNoViewport) {
-			mprintf(("BriefingMapWidget: render skipped because briefing viewport is null.\n"));
-			_loggedNoViewport = true;
-		}
-		return;
-	}
-
-	// Guard against re-entrancy: swapBuffers() can pump the Qt event loop on Windows,
-	// which may fire our timer again while we're still mid-render.
+	// Guard against re-entrancy.
 	if (_rendering)
 		return;
 
@@ -531,8 +471,7 @@ void BriefingMapWidget::renderFrame() {
 
 	_rendering = true;
 
-	// Render briefing content through the normal graphics pipeline so gr_flip()
-	// performs any required FBO resolve/blit before presenting.
+	// Make the engine's GL context current on our off-screen surface so we can render the briefing.
 	gr_use_viewport(_briefingViewport.get());
 	auto* context = QOpenGLContext::currentContext();
 
@@ -541,34 +480,10 @@ void BriefingMapWidget::renderFrame() {
 			mprintf(("BriefingMapWidget: no current OpenGL context after gr_use_viewport().\n"));
 			_loggedNoContext = true;
 		}
-		// Restore main viewport frame before bailing out
-		if (mainFrameWasActive) {
-			auto* mainView = _viewport->renderer->getTargetViewport();
-			auto mainSize = mainView->getSize();
-			gr_use_viewport(mainView);
-			gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
-				static_cast<int>(mainSize.second) * devicePixelRatio());
-			g3_start_frame(0);
-			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
-		}
+		restoreMainViewportFrame(mainFrameWasActive);
 		_rendering = false;
 		return;
 	}
-
-	if (context->surface() != _window) {
-		if (!_loggedSurfaceMismatch) {
-			mprintf(("BriefingMapWidget: surface mismatch before clear (current=%p target=%p).\n",
-				static_cast<void*>(context->surface()),
-				static_cast<void*>(_window)));
-			_loggedSurfaceMismatch = true;
-		}
-	}
-
-	auto viewSize = _briefingViewport->getSize();
-	const int w = static_cast<int>(viewSize.first);
-	const int h = static_cast<int>(viewSize.second);
-	const int deviceW = static_cast<int>(w * devicePixelRatio());
-	const int deviceH = static_cast<int>(h * devicePixelRatio());
 
 	// Reference resolution the briefing is authored/rendered at (mod-configurable, retail default).
 	const int resW = (Briefing_window_resolution[0] > 0) ? Briefing_window_resolution[0] : 888;
@@ -592,15 +507,7 @@ void BriefingMapWidget::renderFrame() {
 			mprintf(("BriefingMapWidget: failed to create %dx%d render target.\n", resW, resH));
 			_loggedNoRenderTarget = true;
 		}
-		if (mainFrameWasActive) {
-			auto* mainView = _viewport->renderer->getTargetViewport();
-			auto mainSize = mainView->getSize();
-			gr_use_viewport(mainView);
-			gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
-				static_cast<int>(mainSize.second) * devicePixelRatio());
-			g3_start_frame(0);
-			g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
-		}
+		restoreMainViewportFrame(mainFrameWasActive);
 		_rendering = false;
 		return;
 	}
@@ -609,10 +516,7 @@ void BriefingMapWidget::renderFrame() {
 	_lastRenderWidth = resW;
 	_lastRenderHeight = resH;
 
-	// Establish the window-surface dimensions; bm_set_render_target(-1) restores back to these.
-	gr_screen_resize(deviceW, deviceH);
-
-	// ---- Render the briefing into the offscreen target at the reference resolution ----
+	// ---- Render the briefing into the off-screen target and read it back into a QImage ----
 	// bm_set_render_target() switches gr_screen to the target's own dimensions for us.
 	if (bm_set_render_target(_renderTarget)) {
 		brief_screen savedBscreen = bscreen;
@@ -647,56 +551,39 @@ void BriefingMapWidget::renderFrame() {
 			}
 		}
 
+		// Read the finished frame back while the render target is still bound. The briefing is an
+		// opaque scene, so use RGBX (ignore the alpha byte) to avoid the background reading as
+		// transparent. FSO already renders the target top-down, so no vertical flip is needed.
+		QImage frame(resW, resH, QImage::Format_RGBX8888);
+		context->functions()->glReadPixels(0, 0, resW, resH, GL_RGBA, GL_UNSIGNED_BYTE, frame.bits());
+		_frameImage = frame.copy();
+
 		Briefing = savedBriefing;
 		bscreen = savedBscreen;
 
-		bm_set_render_target(-1); // back to the window's back buffer (restores gr_screen dims)
+		bm_set_render_target(-1);
 	}
 
-	// ---- Letterbox the reference-resolution image into the widget (device pixels) ----
-	{
-		const double targetAspect = static_cast<double>(resW) / static_cast<double>(resH);
-		if (deviceW > 0 && deviceH > 0 && static_cast<double>(deviceW) / deviceH > targetAspect) {
-			// Wider than the briefing: pillarbox (bars left/right).
-			_blitH = deviceH;
-			_blitW = std::max(1, static_cast<int>(std::lround(deviceH * targetAspect)));
-			_blitX = (deviceW - _blitW) / 2;
-			_blitY = 0;
-		} else {
-			// Taller than the briefing: letterbox (bars top/bottom).
-			_blitW = deviceW;
-			_blitH = std::max(1, static_cast<int>(std::lround(deviceW / targetAspect)));
-			_blitX = 0;
-			_blitY = (deviceH - _blitH) / 2;
-		}
-	}
-
-	gr_reset_clip();
-	gr_clear(); // black letterbox bars
-	if (_blitW > 0 && _blitH > 0) {
-		gr_set_bitmap(_renderTarget);
-		gr_bitmap(_blitX, _blitY, GR_RESIZE_NONE, false, static_cast<float>(_blitW) / static_cast<float>(resW));
-	}
-
-	// Selection brackets are an editor overlay: draw them in window space on top of the blitted image.
-	drawSelectedIconOutline();
-
-	gr_flip();
-	_debugFrameCounter++;
-
-	// Restore the main viewport's persistent frame so that mouse-interaction
-	// helpers (select_object → g3_point_to_vec) continue to work between the
-	// main viewport's own render calls.
-	if (mainFrameWasActive) {
-		auto* mainView = _viewport->renderer->getTargetViewport();
-		auto mainSize = mainView->getSize();
-		gr_use_viewport(mainView);
-		gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(), static_cast<int>(mainSize.second) * devicePixelRatio());
-		g3_start_frame(0);
-		g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
-	}
+	// Restore the main viewport's persistent frame so its mouse-interaction helpers keep working.
+	restoreMainViewportFrame(mainFrameWasActive);
 
 	_rendering = false;
+
+	// Repaint the widget with the freshly read-back frame (selection brackets are drawn there).
+	update();
+}
+
+void BriefingMapWidget::restoreMainViewportFrame(bool wasActive) {
+	if (!wasActive) {
+		return;
+	}
+	auto* mainView = _viewport->renderer->getTargetViewport();
+	auto mainSize = mainView->getSize();
+	gr_use_viewport(mainView);
+	gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
+		static_cast<int>(mainSize.second) * devicePixelRatio());
+	g3_start_frame(0);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 }
 
 bool BriefingMapWidget::event(QEvent* evt) {
@@ -760,24 +647,23 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 	if (!_initialized || event->button() != Qt::LeftButton)
 		return;
 
-	_lastMousePos = event->pos();
 	_dragStartMousePos = event->position();
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _lastRenderWidth <= 0 || _lastRenderHeight <= 0 ||
-		_blitW <= 0 || _blitH <= 0) {
+		_blitRect.width() <= 0 || _blitRect.height() <= 0) {
 		_draggingIcon = false;
 		_dragIconIndex = -1;
 		return;
 	}
 
-	// Map the logical mouse position into reference-resolution space: convert to device pixels,
-	// shift by the letterbox origin, then scale from the blit rectangle to the render-target size.
-	const auto dpr = static_cast<float>(devicePixelRatio());
-	const auto mouseX = (static_cast<float>(event->position().x()) * dpr - static_cast<float>(_blitX)) *
-						(static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitW));
-	const auto mouseY = (static_cast<float>(event->position().y()) * dpr - static_cast<float>(_blitY)) *
-						(static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitH));
+	// Map the logical mouse position into reference-resolution space: shift by the letterbox origin,
+	// then scale from the (logical) blit rectangle to the render-target size. QWidget coordinates and
+	// _blitRect are both logical, so no device-pixel-ratio factor is needed here.
+	const auto mouseX = (static_cast<float>(event->position().x()) - static_cast<float>(_blitRect.x())) *
+						(static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitRect.width()));
+	const auto mouseY = (static_cast<float>(event->position().y()) - static_cast<float>(_blitRect.y())) *
+						(static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitRect.height()));
 
 	auto& stage = briefPtr->stages[_currentStage];
 	int hitIndex = -1;
@@ -818,17 +704,16 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _dragIconIndex >= briefPtr->stages[_currentStage].num_icons ||
-		_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || _blitW <= 0 || _blitH <= 0) {
+		_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || _blitRect.width() <= 0 || _blitRect.height() <= 0) {
 		return;
 	}
 
-	// Convert the logical mouse delta into reference-resolution pixels (device pixels scaled from the
-	// letterbox blit rectangle to the render-target size). The letterbox offset cancels in a delta.
-	const auto dpr = static_cast<float>(devicePixelRatio());
-	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitW);
-	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitH);
-	const auto deltaX = static_cast<float>(event->position().x() - _dragStartMousePos.x()) * dpr * scaleX;
-	const auto deltaY = static_cast<float>(event->position().y() - _dragStartMousePos.y()) * dpr * scaleY;
+	// Convert the logical mouse delta into reference-resolution pixels (scaled from the logical
+	// letterbox rectangle to the render-target size). The letterbox offset cancels in a delta.
+	const auto scaleX = static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitRect.width());
+	const auto scaleY = static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitRect.height());
+	const auto deltaX = static_cast<float>(event->position().x() - _dragStartMousePos.x()) * scaleX;
+	const auto deltaY = static_cast<float>(event->position().y() - _dragStartMousePos.y()) * scaleY;
 
 	const auto camPos = brief_get_current_cam_pos();
 	const auto camOrient = brief_get_current_cam_orient();
@@ -850,8 +735,6 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 	vm_vec_scale_add2(&newPos, &camOrient.vec.rvec, deltaX * worldPerPixelX * DragResponseScale);
 	vm_vec_scale_add2(&newPos, &camOrient.vec.uvec, -deltaY * worldPerPixelY * DragResponseScale);
 	_model->setIconPosition(newPos);
-
-	_lastMousePos = event->pos();
 }
 
 void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {

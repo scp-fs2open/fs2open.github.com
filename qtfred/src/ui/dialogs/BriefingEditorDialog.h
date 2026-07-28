@@ -97,7 +97,6 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void initializeUi();
 	void setupMapWidget();
-	void applyMapWidgetAspectRatio();
 	void updateUi();
 	void enableDisableControls();
 	void captureResetCameraForCurrentStage();
