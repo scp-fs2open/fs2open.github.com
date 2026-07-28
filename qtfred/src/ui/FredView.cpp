@@ -1297,7 +1297,9 @@ void FredView::initializeTransformBar() {
 	_transformLocalBtn->setCheckable(true);
 	_transformLocalBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	_transformLocalBtn->setFixedSize(28, 24);
-	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value."));
+	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value. (X)"));
+	// FRED2 bound "Rotate Locally" to the X key; route it through the button so the per-mode local memory stays in sync.
+	_transformLocalBtn->setShortcut(QKeySequence(Qt::Key_X));
 	bindThemeIcon(_transformLocalBtn, QStringLiteral("rotlocal"));
 	_transformToolBar->addWidget(_transformLocalBtn);
 	connect(_transformLocalBtn, &QToolButton::toggled, this, [this](bool checked) {
@@ -2427,6 +2429,16 @@ void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 
 		_viewport->needsUpdate();
 	}
+}
+void FredView::on_actionToggle_Viewpoint_triggered(bool) {
+	// Flip between the camera viewpoint (0) and the current ship's viewpoint (1).
+	if (_viewport->camera.getViewpoint() != 0 || !query_valid_object(fred->currentObject)) {
+		_viewport->camera.setViewpoint(0);
+	} else {
+		_viewport->camera.setViewpoint(1);
+		_viewport->camera.setViewObj(fred->currentObject);
+	}
+	_viewport->needsUpdate();
 }
 void FredView::on_actionControlModeCamera_triggered(bool enabled) {
 	if (enabled) {

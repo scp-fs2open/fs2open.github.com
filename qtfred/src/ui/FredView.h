@@ -114,6 +114,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionCamera_triggered(bool enabled);
 	void on_actionCurrent_Ship_triggered(bool enabled);
+	void on_actionToggle_Viewpoint_triggered(bool);
 
 	void on_actionMission_Events_triggered(bool);
 	void on_actionMission_Cutscenes_triggered(bool);

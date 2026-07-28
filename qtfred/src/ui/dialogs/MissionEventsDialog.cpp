@@ -1,5 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
+
+#include <QShortcut>
 #include "ui/Theme.h"
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
@@ -205,6 +207,14 @@ void MissionEventsDialog::initEventWidgets() {
 
 	ui->miniHelpBox->setVisible(_viewport->Show_sexp_help_mission_events);
 	ui->helpBox->setVisible(_viewport->Show_sexp_help_mission_events);
+
+	// Shift+F1 toggles the sexp help panes for this session without changing the saved preference.
+	auto* helpToggle = new QShortcut(QKeySequence(QStringLiteral("Shift+F1")), this);
+	connect(helpToggle, &QShortcut::activated, this, [this] {
+		const bool show = !ui->helpBox->isVisible();
+		ui->miniHelpBox->setVisible(show);
+		ui->helpBox->setVisible(show);
+	});
 
 	// connect the sexp tree stuff
 	connect(ui->eventTree, &sexp_tree_view::modified, this, [this]() { _model->setModified(); });

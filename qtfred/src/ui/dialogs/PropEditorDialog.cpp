@@ -11,12 +11,19 @@
 #include <ui/widgets/FlagList.h>
 
 #include <QMetaObject>
+#include <QShortcut>
 
 namespace fso::fred::dialogs {
 
 PropEditorDialog::PropEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new ::Ui::PropEditorDialog()), _model(new PropEditorDialogModel(this, viewport)), _viewport(viewport) {
 	ui->setupUi(this);
+
+	// F6 / Shift+F6 cycle to the next / previous prop, mirroring the Next/Prev buttons.
+	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);
+	connect(nextShortcut, &QShortcut::activated, this, [this] { ui->nextButton->click(); });
+	auto* prevShortcut = new QShortcut(QKeySequence(QStringLiteral("Shift+F6")), this);
+	connect(prevShortcut, &QShortcut::activated, this, [this] { ui->prevButton->click(); });
 
 	ui->propNameLineEdit->setMaxLength(NAME_LENGTH - 1);
 
