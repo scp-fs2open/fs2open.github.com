@@ -18,7 +18,6 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "mission/missionbriefcommon.h"
-#include "mod_table/mod_table.h"
 
 #include <algorithm>
 #include <cmath>
@@ -61,12 +60,13 @@ SDL_Window* BriefingViewport::toSDLWindow() {
 }
 
 std::pair<uint32_t, uint32_t> BriefingViewport::getSize() {
-	// The briefing always renders into an off-screen render target sized to the reference resolution
-	// (bm_set_render_target drives gr_screen), so this is only a nominal size. Report the reference
-	// resolution rather than the offscreen surface's placeholder 1x1.
-	const uint32_t w = (Briefing_window_resolution[0] > 0) ? static_cast<uint32_t>(Briefing_window_resolution[0]) : 888u;
-	const uint32_t h = (Briefing_window_resolution[1] > 0) ? static_cast<uint32_t>(Briefing_window_resolution[1]) : 371u;
-	return std::make_pair(w, h);
+	// The reference resolution the briefing is composed at (also the off-screen render target size).
+	// Pinned to the retail GR_1024 briefing map size, what the game and Lua's ui.drawBriefingMap()
+	// default to, rather than the FRED-only "$FRED Briefing window resolution" table setting: the game
+	// ignores that setting, so honoring it here would only make the editor preview diverge from the
+	// shipped briefing. This is the single source of truth for the render size (see renderFrame()).
+	return std::make_pair(static_cast<uint32_t>(Brief_grid_coords[GR_1024][2]),
+		static_cast<uint32_t>(Brief_grid_coords[GR_1024][3]));
 }
 
 void BriefingViewport::swapBuffers() {
@@ -485,9 +485,10 @@ void BriefingMapWidget::renderFrame() {
 		return;
 	}
 
-	// Reference resolution the briefing is authored/rendered at (mod-configurable, retail default).
-	const int resW = (Briefing_window_resolution[0] > 0) ? Briefing_window_resolution[0] : 888;
-	const int resH = (Briefing_window_resolution[1] > 0) ? Briefing_window_resolution[1] : 371;
+	// Reference resolution the briefing is composed at (see BriefingViewport::getSize).
+	const auto refSize = _briefingViewport->getSize();
+	const int resW = static_cast<int>(refSize.first);
+	const int resH = static_cast<int>(refSize.second);
 
 	// Lazily (re)create the offscreen render target at the reference resolution. Rendering the
 	// briefing at a fixed canonical size and scaling the finished image to fit the widget is what
