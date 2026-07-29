@@ -805,6 +805,54 @@ void BriefingEditorDialogModel::nudgeSelectedIcons(const vec3d& worldDelta)
 	});
 }
 
+void BriefingEditorDialogModel::beginIconDrag()
+{
+	_iconDragBaseline.clear();
+
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return;
+
+	auto& stage = briefing.stages[_currentStage];
+	for (int idx : getEffectiveSelection(stage)) {
+		if (valid_icon_index(stage, idx)) {
+			_iconDragBaseline.push_back({idx, stage.icons[idx].id, stage.icons[idx].pos});
+		}
+	}
+}
+
+void BriefingEditorDialogModel::dragSelectedIconsBy(const vec3d& worldDelta)
+{
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return;
+
+	auto& stage = briefing.stages[_currentStage];
+	for (const auto& base : _iconDragBaseline) {
+		if (!valid_icon_index(stage, base.index))
+			continue;
+
+		vec3d target = base.pos;
+		vm_vec_add2(&target, &worldDelta);
+		modify(stage.icons[base.index].pos, target);
+
+		// Match setIconPosition()'s forward propagation: unless editing locally, place same-id icons in
+		// later stages at the same position so the icon stays put across the briefing.
+		if (!_changeLocally) {
+			for (int st = _currentStage + 1; st < briefing.num_stages; ++st) {
+				auto& stg = briefing.stages[st];
+				for (int i = 0; i < stg.num_icons; ++i) {
+					if (stg.icons[i].id == base.id) {
+						modify(stg.icons[i].pos, target);
+					}
+				}
+			}
+		}
+	}
+
+	set_modified();
+}
+
 int BriefingEditorDialogModel::getIconId() const
 {
 	const auto& b = _wipBriefings[_currentTeam];

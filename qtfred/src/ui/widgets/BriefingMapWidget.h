@@ -66,6 +66,8 @@ signals:
 	void iconCreateRequested(vec3d worldPos);   // Ctrl+click: make a new icon at this world position
 	void deleteSelectedIconsRequested();        // Delete key: remove the selected icon(s)
 	void nudgeIconsRequested(vec3d worldDelta); // arrow keys: move the selected icon(s) by this offset
+	// drag-box selection: the icons enclosed by the rubber band (additive = add to the current selection)
+	void iconsSelectedInBox(SCP_vector<int> indices, bool additive);
 
 protected:
 	bool event(QEvent* evt) override;
@@ -85,6 +87,9 @@ private:
 	static bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr);
 	void updateEditorHighlightPlayback() const;
 	void drawSelectionBrackets(QPainter& painter);
+	void drawSelectionMarquee(QPainter& painter);
+	// Emit iconsSelectedInBox() for every icon whose center falls inside the rubber band (widget coords).
+	void selectIconsInBox(const QPointF& startLogical, const QPointF& endLogical, bool additive);
 	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
@@ -122,7 +127,17 @@ private:
 	bool _draggingIcon = false;
 	int _dragIconIndex = -1;
 	QPointF _dragStartMousePos;
-	vec3d _dragStartIconPos = ZERO_VECTOR;
+	// When a plain click lands on a member of a multi-selection we keep the selection (so a drag moves the
+	// whole group); if the click turns out not to be a drag, this collapses the selection to that icon.
+	int _pendingCollapseIndex = -1;
+
+	// Drag-box (rubber band) selection, started by pressing on empty space. Positions are logical widget
+	// coordinates. _boxSelectActive turns on once the drag passes the click threshold.
+	bool _boxSelectPending = false;
+	bool _boxSelectActive = false;
+	bool _boxSelectAdditive = false;
+	QPointF _boxStartPos;
+	QPointF _boxCurrentPos;
 	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;

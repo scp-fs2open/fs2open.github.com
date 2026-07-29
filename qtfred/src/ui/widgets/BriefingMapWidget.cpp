@@ -331,6 +331,7 @@ void BriefingMapWidget::paintEvent(QPaintEvent* /*event*/) {
 	painter.drawImage(_blitRect, _frameImage);
 
 	drawSelectionBrackets(painter);
+	drawSelectionMarquee(painter);
 }
 
 void BriefingMapWidget::drawSelectionBrackets(QPainter& painter) {
@@ -380,6 +381,56 @@ void BriefingMapWidget::drawSelectionBrackets(QPainter& painter) {
 		painter.drawLine(right - cornerLen, bottom, right, bottom);
 		painter.drawLine(right, bottom - cornerLen, right, bottom);
 	}
+}
+
+void BriefingMapWidget::drawSelectionMarquee(QPainter& painter) {
+	if (!_boxSelectActive) {
+		return;
+	}
+
+	const QRectF box = QRectF(_boxStartPos, _boxCurrentPos).normalized();
+	painter.setPen(QPen(QColor(120, 200, 255), 1, Qt::DashLine));
+	painter.setBrush(QColor(120, 200, 255, 40));
+	painter.drawRect(box);
+}
+
+void BriefingMapWidget::selectIconsInBox(const QPointF& startLogical, const QPointF& endLogical, bool additive) {
+	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
+	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _blitRect.width() <= 0 ||
+		_blitRect.height() <= 0 || _lastRenderWidth <= 0 || _lastRenderHeight <= 0) {
+		return;
+	}
+
+	// Convert the logical box corners into reference-resolution space (icon coords live there).
+	const double scaleX = static_cast<double>(_lastRenderWidth) / static_cast<double>(_blitRect.width());
+	const double scaleY = static_cast<double>(_lastRenderHeight) / static_cast<double>(_blitRect.height());
+	const auto toRefX = [&](double lx) { return (lx - _blitRect.x()) * scaleX; };
+	const auto toRefY = [&](double ly) { return (ly - _blitRect.y()) * scaleY; };
+
+	const double x1 = std::min(toRefX(startLogical.x()), toRefX(endLogical.x()));
+	const double x2 = std::max(toRefX(startLogical.x()), toRefX(endLogical.x()));
+	const double y1 = std::min(toRefY(startLogical.y()), toRefY(endLogical.y()));
+	const double y2 = std::max(toRefY(startLogical.y()), toRefY(endLogical.y()));
+
+	auto& stage = briefPtr->stages[_currentStage];
+
+	SCP_vector<int> inBox;
+	for (int i = 0; i < stage.num_icons; ++i) {
+		auto& icon = stage.icons[i];
+
+		int iconW = 0, iconH = 0;
+		brief_common_get_icon_dimensions(&iconW, &iconH, &icon);
+		const double scaledW = (icon.w > 0) ? icon.w : static_cast<double>(iconW) * icon.scale_factor;
+		const double scaledH = (icon.h > 0) ? icon.h : static_cast<double>(iconH) * icon.scale_factor;
+		const double cx = static_cast<double>(icon.x) + scaledW / 2.0;
+		const double cy = static_cast<double>(icon.y) + scaledH / 2.0;
+
+		if (cx >= x1 && cx <= x2 && cy >= y1 && cy <= y2) {
+			inBox.push_back(i);
+		}
+	}
+
+	Q_EMIT iconsSelectedInBox(inBox, additive);
 }
 
 void BriefingMapWidget::maybeRenderCutTransition(float frametime, int width, int height) {
@@ -753,6 +804,7 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		return;
 
 	_dragStartMousePos = event->position();
+	_boxSelectPending = false; // cleared here; only an empty-space press (below) starts a drag-box
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
 	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages || _lastRenderWidth <= 0 || _lastRenderHeight <= 0 ||
@@ -802,34 +854,82 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 	if (hits.empty()) {
 		_draggingIcon = false;
 		_dragIconIndex = -1;
-		if (!shiftHeld) {
-			Q_EMIT iconSelected(-1, false);
-		}
+		// Begin a possible drag-box selection from empty space. A plain click (no drag) clears the
+		// selection on release unless Shift is held; a drag selects the enclosed icons.
+		_boxSelectPending = true;
+		_boxSelectActive = false;
+		_boxSelectAdditive = shiftHeld;
+		_boxStartPos = event->position();
+		_boxCurrentPos = event->position();
 		return;
 	}
 
-	int pickedIndex = hits.front(); // default: the top-most icon under the cursor
+	// If the click lands on a member of an existing multi-selection (and no modifier), keep the whole
+	// selection and drag them together rather than collapsing to the single clicked icon.
+	int memberHit = -1;
 	if (!shiftHeld) {
-		// Rolling select: if the currently-selected icon is one of the stacked hits, advance to the
-		// next one underneath (wrapping bottom -> top) so repeated clicks cycle the whole stack.
-		const int current = _model->getCurrentIconIndex();
-		for (size_t k = 0; k < hits.size(); ++k) {
-			if (hits[k] == current) {
-				pickedIndex = hits[(k + 1) % hits.size()];
-				break;
+		const auto& selection = _model->getLineSelection();
+		if (selection.size() > 1) {
+			for (int h : hits) {
+				if (std::find(selection.begin(), selection.end(), h) != selection.end()) {
+					memberHit = h;
+					break;
+				}
 			}
 		}
 	}
 
+	int anchorIndex;
+	_pendingCollapseIndex = -1;
+	if (memberHit >= 0) {
+		// Leave the selection as-is; this icon is just the drag anchor for depth/scaling. If this turns
+		// out to be a click rather than a drag, mouseReleaseEvent collapses the selection to this icon.
+		anchorIndex = memberHit;
+		_pendingCollapseIndex = memberHit;
+	} else {
+		int pickedIndex = hits.front(); // default: the top-most icon under the cursor
+		if (!shiftHeld) {
+			// Rolling select: if the currently-selected icon is one of the stacked hits, advance to the
+			// next one underneath (wrapping bottom -> top) so repeated clicks cycle the whole stack.
+			const int current = _model->getCurrentIconIndex();
+			for (size_t k = 0; k < hits.size(); ++k) {
+				if (hits[k] == current) {
+					pickedIndex = hits[(k + 1) % hits.size()];
+					break;
+				}
+			}
+		}
+		anchorIndex = pickedIndex;
+		Q_EMIT iconSelected(pickedIndex, shiftHeld);
+	}
+
 	_draggingIcon = true;
-	_dragIconIndex = pickedIndex;
-	_dragStartIconPos = stage.icons[pickedIndex].pos;
+	_dragIconIndex = anchorIndex;
 	brief_move_icon_reset();
-	Q_EMIT iconSelected(pickedIndex, shiftHeld);
+	_model->beginIconDrag(); // snapshot positions after the selection is finalized
 }
 
 void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
-	if (!_initialized || !_draggingIcon || _dragIconIndex < 0 || !(event->buttons() & Qt::LeftButton))
+	if (!_initialized)
+		return;
+
+	// Drag-box selection: grow the rubber band from the empty-space press point.
+	if (_boxSelectPending && (event->buttons() & Qt::LeftButton)) {
+		_boxCurrentPos = event->position();
+		if (!_boxSelectActive) {
+			const double dx = _boxCurrentPos.x() - _boxStartPos.x();
+			const double dy = _boxCurrentPos.y() - _boxStartPos.y();
+			if (dx * dx + dy * dy >= 9.0) { // > 3 logical px: a drag, not a click
+				_boxSelectActive = true;
+			}
+		}
+		if (_boxSelectActive) {
+			update();
+		}
+		return;
+	}
+
+	if (!_draggingIcon || _dragIconIndex < 0 || !(event->buttons() & Qt::LeftButton))
 		return;
 
 	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
@@ -837,6 +937,15 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 		_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || _blitRect.width() <= 0 || _blitRect.height() <= 0) {
 		return;
 	}
+
+	// Ignore sub-threshold movement so a click with a little jitter doesn't micro-nudge icons (and, on a
+	// multi-selection member, still counts as a click that collapses the selection on release).
+	const double jitterX = event->position().x() - _dragStartMousePos.x();
+	const double jitterY = event->position().y() - _dragStartMousePos.y();
+	if (jitterX * jitterX + jitterY * jitterY < 9.0) { // < 3 logical px
+		return;
+	}
+	_pendingCollapseIndex = -1; // a real drag is underway; keep the (possibly multi-) selection
 
 	// Convert the logical mouse delta into reference-resolution pixels (scaled from the logical
 	// letterbox rectangle to the render-target size). The letterbox offset cancels in a delta.
@@ -847,30 +956,50 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 
 	const auto camPos = brief_get_current_cam_pos();
 	const auto camOrient = brief_get_current_cam_orient();
-	const auto& currentIcon = briefPtr->stages[_currentStage].icons[_dragIconIndex];
+	// Use the drag anchor's depth to size the world-per-pixel step; every selected icon moves by the same
+	// world delta so a multi-selection keeps its relative layout.
+	const auto& anchorIcon = briefPtr->stages[_currentStage].icons[_dragIconIndex];
 
 	vec3d toIcon;
-	vm_vec_sub(&toIcon, &currentIcon.pos, &camPos);
+	vm_vec_sub(&toIcon, &anchorIcon.pos, &camPos);
 	const auto depth = vm_vec_dot(&toIcon, &camOrient.vec.fvec);
 	if (depth <= 1.0f) {
 		return;
 	}
 
 	const auto horizontalFov = g3_get_hfov(Proj_fov);
-	const auto worldPerPixelX = (2.0f * depth * std::tan(horizontalFov / 2.0f)) / static_cast<float>(_lastRenderWidth);
-	const auto worldPerPixelY = worldPerPixelX;
+	const auto worldPerPixel = (2.0f * depth * std::tan(horizontalFov / 2.0f)) / static_cast<float>(_lastRenderWidth);
 	constexpr float DragResponseScale = 1.5f; // This is kind hacky but it makes the drag feel more responsive without having to move the mouse as far, which is nice given the precision required to drag small icons.
 
-	vec3d newPos = _dragStartIconPos;
-	vm_vec_scale_add2(&newPos, &camOrient.vec.rvec, deltaX * worldPerPixelX * DragResponseScale);
-	vm_vec_scale_add2(&newPos, &camOrient.vec.uvec, -deltaY * worldPerPixelY * DragResponseScale);
-	_model->setIconPosition(newPos);
+	vec3d worldDelta = ZERO_VECTOR;
+	vm_vec_scale_add2(&worldDelta, &camOrient.vec.rvec, deltaX * worldPerPixel * DragResponseScale);
+	vm_vec_scale_add2(&worldDelta, &camOrient.vec.uvec, -deltaY * worldPerPixel * DragResponseScale);
+	_model->dragSelectedIconsBy(worldDelta);
 }
 
 void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {
 	if (!_initialized || event->button() != Qt::LeftButton)
 		return;
 
+	// Resolve a drag-box selection (or a plain click on empty space).
+	if (_boxSelectPending) {
+		if (_boxSelectActive) {
+			selectIconsInBox(_boxStartPos, event->position(), _boxSelectAdditive);
+		} else if (!_boxSelectAdditive) {
+			Q_EMIT iconSelected(-1, false); // click on empty space clears the selection
+		}
+		_boxSelectPending = false;
+		_boxSelectActive = false;
+		update();
+		return;
+	}
+
+	// A click (no drag) on a member of a multi-selection collapses the selection to just that icon.
+	if (_pendingCollapseIndex >= 0) {
+		Q_EMIT iconSelected(_pendingCollapseIndex, false);
+	}
+
+	_pendingCollapseIndex = -1;
 	_draggingIcon = false;
 	_dragIconIndex = -1;
 }
