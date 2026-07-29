@@ -15,6 +15,7 @@ class QOffscreenSurface;
 class QPainter;
 class QPaintEvent;
 class QContextMenuEvent;
+class QWheelEvent;
 class briefing;
 
 namespace fso::fred::dialogs {
@@ -81,6 +82,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
 	void contextMenuEvent(QContextMenuEvent* event) override;
+	void wheelEvent(QWheelEvent* event) override;
 	void paintEvent(QPaintEvent* event) override;
 
 private:
@@ -98,6 +100,11 @@ private:
 	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
+	// Orbit/pan/zoom camera controls, mirroring the main viewport (right/middle drag = orbit, Shift = pan,
+	// wheel = zoom), sharing the main viewport's orbit-inversion preferences.
+	vec3d orbitPivot() const;
+	void beginOrbit(const QPoint& pos);
+	void handleOrbitDrag(const QPoint& pos, Qt::KeyboardModifiers modifiers);
 	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
 	// plane, giving the world position under the cursor for placing a new icon.
 	vec3d worldPosAtMouse(float mouseRefX, float mouseRefY) const;
@@ -147,6 +154,14 @@ private:
 	bool _boxSelectAdditive = false;
 	QPointF _boxStartPos;
 	QPointF _boxCurrentPos;
+
+	// Orbit camera drag state. Middle button orbits immediately; right button orbits only once it moves
+	// past a small threshold (so a right-click still opens the context menu).
+	bool _orbitDragging = false;
+	bool _rbuttonDown = false;
+	bool _rbuttonMoved = false;
+	QPoint _rbuttonDownPoint;
+	QPoint _orbitLastMouse;
 	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;

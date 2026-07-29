@@ -3,6 +3,7 @@
 #include <QKeyEvent>
 #include <QContextMenuEvent>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QOffscreenSurface>
@@ -763,6 +764,70 @@ void BriefingMapWidget::applyBoundCameraControls(float frametime) {
 	}
 }
 
+vec3d BriefingMapWidget::orbitPivot() const {
+	// Intersect the camera's forward ray with the grid plane; fall back to the grid center / origin.
+	const vec3d camPos = brief_get_current_cam_pos();
+	const matrix camOrient = brief_get_current_cam_orient();
+	if (The_grid != nullptr) {
+		vec3d hit;
+		const float d = fvi_ray_plane(&hit, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camPos, &camOrient.vec.fvec, 0.0f);
+		if (d > 0.0f) {
+			return hit;
+		}
+		return The_grid->center;
+	}
+	return vmd_zero_vector;
+}
+
+void BriefingMapWidget::beginOrbit(const QPoint& pos) {
+	// Share the main editor viewport's orbit-inversion preferences.
+	_cameraController.setInvertOrbitX(_viewport->camera.getInvertOrbitX());
+	_cameraController.setInvertOrbitY(_viewport->camera.getInvertOrbitY());
+
+	_cameraController.view_pos = brief_get_current_cam_pos();
+	_cameraController.view_orient = brief_get_current_cam_orient();
+
+	const vec3d pivot = orbitPivot();
+	const matrix gridOrient = (The_grid != nullptr) ? The_grid->gmatrix : vmd_identity_matrix;
+	_cameraController.orbitCameraInitFromCurrentView(&pivot, &gridOrient);
+
+	_orbitLastMouse = pos;
+}
+
+void BriefingMapWidget::handleOrbitDrag(const QPoint& pos, Qt::KeyboardModifiers modifiers) {
+	const int dx = pos.x() - _orbitLastMouse.x();
+	const int dy = pos.y() - _orbitLastMouse.y();
+	_orbitLastMouse = pos;
+
+	if (modifiers & Qt::ShiftModifier) {
+		_cameraController.orbitCameraPan(dx, dy);
+	} else {
+		_cameraController.orbitCameraRotate(dx, dy);
+	}
+	applyCameraPoseLikeKeyboardControls(_cameraController.view_pos, _cameraController.view_orient, true);
+}
+
+void BriefingMapWidget::wheelEvent(QWheelEvent* event) {
+	if (!_initialized) {
+		QWidget::wheelEvent(event);
+		return;
+	}
+
+	// Zoom = orbit distance. Initialize the orbit from the current view if a keyboard move (or nothing)
+	// left it inactive, matching the main viewport's wheel behavior.
+	if (!_cameraController.isOrbitActive()) {
+		_cameraController.view_pos = brief_get_current_cam_pos();
+		_cameraController.view_orient = brief_get_current_cam_orient();
+		const vec3d pivot = orbitPivot();
+		const matrix gridOrient = (The_grid != nullptr) ? The_grid->gmatrix : vmd_identity_matrix;
+		_cameraController.orbitCameraInitFromCurrentView(&pivot, &gridOrient);
+	}
+
+	_cameraController.orbitCameraZoom(event->angleDelta().y() / -200.0f);
+	applyCameraPoseLikeKeyboardControls(_cameraController.view_pos, _cameraController.view_orient, true);
+	event->accept();
+}
+
 vec3d BriefingMapWidget::worldPosAtMouse(float mouseRefX, float mouseRefY) const {
 	const vec3d camPos = brief_get_current_cam_pos();
 	const matrix camOrient = brief_get_current_cam_orient();
@@ -801,7 +866,25 @@ vec3d BriefingMapWidget::worldPosAtMouse(float mouseRefX, float mouseRefY) const
 }
 
 void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
-	if (!_initialized || event->button() != Qt::LeftButton)
+	if (!_initialized)
+		return;
+
+	// Orbit camera: middle button orbits at once; right button sets up the orbit but defers to a drag
+	// threshold (a right-click without a drag falls through to the context menu on release).
+	if (event->button() == Qt::MiddleButton) {
+		beginOrbit(event->pos());
+		_orbitDragging = true;
+		return;
+	}
+	if (event->button() == Qt::RightButton) {
+		_rbuttonDown = true;
+		_rbuttonMoved = false;
+		_rbuttonDownPoint = event->pos();
+		beginOrbit(event->pos());
+		return;
+	}
+
+	if (event->button() != Qt::LeftButton)
 		return;
 
 	_dragStartMousePos = event->position();
@@ -903,6 +986,22 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 	if (!_initialized)
 		return;
 
+	// Orbit camera drag: middle button, or right button once it passes the click threshold.
+	if (_orbitDragging && (event->buttons() & Qt::MiddleButton)) {
+		handleOrbitDrag(event->pos(), event->modifiers());
+		return;
+	}
+	if (_rbuttonDown && (event->buttons() & Qt::RightButton)) {
+		if (!_rbuttonMoved && (std::abs(event->pos().x() - _rbuttonDownPoint.x()) > 2 ||
+								  std::abs(event->pos().y() - _rbuttonDownPoint.y()) > 2)) {
+			_rbuttonMoved = true;
+		}
+		if (_rbuttonMoved) {
+			handleOrbitDrag(event->pos(), event->modifiers());
+		}
+		return;
+	}
+
 	// Drag-box selection: grow the rubber band from the empty-space press point.
 	if (_boxSelectPending && (event->buttons() & Qt::LeftButton)) {
 		_boxCurrentPos = event->position();
@@ -968,7 +1067,21 @@ void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
 }
 
 void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {
-	if (!_initialized || event->button() != Qt::LeftButton)
+	if (!_initialized)
+		return;
+
+	if (event->button() == Qt::MiddleButton) {
+		_orbitDragging = false;
+		return;
+	}
+	if (event->button() == Qt::RightButton) {
+		_rbuttonDown = false;
+		// _rbuttonMoved stays set so contextMenuEvent can tell an orbit drag (suppress the menu) from a
+		// plain right-click (show it); it is reset there and on the next right-press.
+		return;
+	}
+
+	if (event->button() != Qt::LeftButton)
 		return;
 
 	// Resolve a drag-box selection (or a plain click on empty space).
@@ -1033,6 +1146,13 @@ SCP_vector<int> BriefingMapWidget::iconsUnderReference(float refX, float refY) c
 }
 
 void BriefingMapWidget::contextMenuEvent(QContextMenuEvent* event) {
+	// A right-drag that orbited the camera should not also pop the menu.
+	if (_rbuttonMoved) {
+		_rbuttonMoved = false;
+		event->accept();
+		return;
+	}
+
 	float refX = 0.0f;
 	float refY = 0.0f;
 	if (!_initialized || !mouseToReference(event->pos(), refX, refY)) {
