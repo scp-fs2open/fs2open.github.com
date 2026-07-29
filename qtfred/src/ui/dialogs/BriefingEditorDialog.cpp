@@ -191,6 +191,11 @@ void BriefingEditorDialog::setupMapWidget()
 		updateUi();
 	});
 
+	// Shift+Ctrl+click opens Make Icon From Ship and places the resulting icon at the cursor.
+	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconFromShipCreateRequested, this, [this](vec3d worldPos) {
+		createIconFromShipDialog(worldPos);
+	});
+
 	// Delete key removes the selected icon(s), after a confirmation prompt.
 	connect(_mapWidget, &fso::fred::BriefingMapWidget::deleteSelectedIconsRequested, this,
 		&BriefingEditorDialog::deleteSelectedIconsWithConfirm);
@@ -708,6 +713,11 @@ void BriefingEditorDialog::on_makeIconButton_clicked()
 
 void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 {
+	createIconFromShipDialog(getNewIconPlacement());
+}
+
+void BriefingEditorDialog::createIconFromShipDialog(const vec3d& placement)
+{
 	IconFromShipDialog dlg(this, _model.get());
 	if (dlg.exec() == QDialog::Accepted) {
 		if (dlg.selectedKind() == IconFromShipDialog::SelectionKind::Ship && dlg.selectedShipIndex() >= 0) {
@@ -718,7 +728,7 @@ void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
 			return;
 		}
 		_model->setLineSelection({_model->getCurrentIconIndex()});
-		_model->setIconPosition(getNewIconPlacement());
+		_model->setIconPosition(placement);
 		updateUi();
 	}
 }

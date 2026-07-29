@@ -103,6 +103,9 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void enableDisableControls();
 	void captureResetCameraForCurrentStage();
 	void deleteSelectedIconsWithConfirm(); // shared by the Delete button and the Delete key
+	// Opens the Make Icon From Ship dialog and, if accepted, creates the icon at the given placement.
+	// Shared by the "From Ship..." button and Shift+Ctrl+click on the map.
+	void createIconFromShipDialog(const vec3d& placement);
 
 	vec3d _resetCameraPos {};
 	matrix _resetCameraOrient {};

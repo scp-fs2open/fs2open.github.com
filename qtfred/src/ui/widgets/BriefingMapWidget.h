@@ -63,7 +63,8 @@ public:
 signals:
 	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
-	void iconCreateRequested(vec3d worldPos);   // Ctrl+click: make a new icon at this world position
+	void iconCreateRequested(vec3d worldPos);          // Ctrl+click: make a new icon at this world position
+	void iconFromShipCreateRequested(vec3d worldPos);  // Shift+Ctrl+click: Make Icon From Ship at this position
 	void deleteSelectedIconsRequested();        // Delete key: remove the selected icon(s)
 	void nudgeIconsRequested(vec3d worldDelta); // arrow keys: move the selected icon(s) by this offset
 	// drag-box selection: the icons enclosed by the rubber band (additive = add to the current selection)
