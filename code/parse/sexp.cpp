@@ -13966,8 +13966,9 @@ void sexp_set_player_target(int node)
 			new_subsys = ship_get_subsys(shipp, subsys_name);
 		}
 	}
-    set_target_objnum(Player_ai, objnum);
-    set_targeted_subsys(Player_ai, new_subsys, objnum);
+	set_target_objnum(Player_ai, objnum);
+	set_targeted_subsys(Player_ai, new_subsys, new_subsys ? objnum : -1);
+	shipp->last_targeted_subobject[Player_num] = new_subsys;
 }
 
 // Luytenky
