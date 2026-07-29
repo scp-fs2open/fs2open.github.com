@@ -63,6 +63,9 @@ public:
 signals:
 	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
+	void iconCreateRequested(vec3d worldPos);   // Ctrl+click: make a new icon at this world position
+	void deleteSelectedIconsRequested();        // Delete key: remove the selected icon(s)
+	void nudgeIconsRequested(vec3d worldDelta); // arrow keys: move the selected icon(s) by this offset
 
 protected:
 	bool event(QEvent* evt) override;
@@ -85,6 +88,9 @@ private:
 	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
+	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
+	// plane, giving the world position under the cursor for placing a new icon.
+	vec3d worldPosAtMouse(float mouseRefX, float mouseRefY) const;
 
 	CameraController _cameraController;
 
@@ -120,6 +126,9 @@ private:
 	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;
+	// Projection scale (Matrix_scale) the briefing last rendered with, captured so we can unproject
+	// clicks accurately even though the live g3 state belongs to the main editor viewport by then.
+	vec3d _lastMatrixScale = ZERO_VECTOR;
 
 	// Briefing cut transition state (forward/backward cut + jump cuts)
 	bool _cutFadeIn = false;

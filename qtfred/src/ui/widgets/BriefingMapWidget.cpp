@@ -18,7 +18,10 @@
 
 #include "graphics/2d.h"
 #include "render/3d.h"
+#include "render/3dinternal.h" // Matrix_scale, used to unproject clicks with the briefing's projection
+#include "math/fvi.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missiongrid.h"
 
 #include <algorithm>
 #include <cmath>
@@ -424,18 +427,19 @@ void BriefingMapWidget::notifyIconVisualsChanged() {
 	brief_set_new_stage(&stage.camera_pos, &stage.camera_orient, 0, _currentStage);
 	brief_reset_icons(_currentStage);
 
-	const auto selected = _model->getCurrentIconIndex();
-	if (selected >= 0 && selected < stage.num_icons) {
-		auto& icon = stage.icons[selected];
+	// Mirror each icon's BI_HIGHLIGHT into BI_SHOWHIGHLIGHT so the editor renders the highlight anim for
+	// every highlighted icon, not just the current one (a multi-selection can highlight several at once).
+	for (int i = 0; i < stage.num_icons; ++i) {
+		auto& icon = stage.icons[i];
 		if (icon.flags & BI_HIGHLIGHT) {
 			ensure_highlight_anim_loaded(icon);
 			icon.highlight_anim.time_elapsed = 0.0f;
 			icon.flags |= BI_SHOWHIGHLIGHT;
-			brief_cancel_pending_highlight_anims();
 		} else {
 			icon.flags &= ~BI_SHOWHIGHLIGHT;
 		}
 	}
+	brief_cancel_pending_highlight_anims();
 
 	Briefing = savedBriefing;
 }
@@ -574,6 +578,10 @@ void BriefingMapWidget::renderFrame() {
 				brief_camera_move(frametime, _currentStage);
 				updateEditorHighlightPlayback();
 				brief_render_map(_currentStage, frametime);
+				// Capture the projection scale while the briefing's g3 frame is still current (it reverts
+				// to the main editor viewport once we restore that frame). worldPosAtMouse() uses it to
+				// unproject clicks accurately.
+				_lastMatrixScale = Matrix_scale;
 				updateEditorHighlightPlayback();
 				maybeRenderCutTransition(frametime, resW, resH);
 				cameraChanged(brief_get_current_cam_pos(), brief_get_current_cam_orient());
@@ -633,6 +641,37 @@ void BriefingMapWidget::keyPressEvent(QKeyEvent* event) {
 		return;
 	}
 
+	if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+		Q_EMIT deleteSelectedIconsRequested();
+		event->accept();
+		return;
+	}
+
+	const int key = event->key();
+	if (key == Qt::Key_Left || key == Qt::Key_Right || key == Qt::Key_Up || key == Qt::Key_Down) {
+		// Nudge the selected icon(s) in screen space. Unproject a small pixel step at the grid center
+		// (Shift for a coarser step) into a world offset, so the nudge follows the cursor's mapping and
+		// stays consistent across zoom levels.
+		const float px = (event->modifiers() & Qt::ShiftModifier) ? 16.0f : 4.0f;
+		const float cx = _lastRenderWidth * 0.5f;
+		const float cy = _lastRenderHeight * 0.5f;
+		const vec3d center = worldPosAtMouse(cx, cy);
+
+		vec3d stepped = center;
+		switch (key) {
+		case Qt::Key_Left:  stepped = worldPosAtMouse(cx - px, cy); break;
+		case Qt::Key_Right: stepped = worldPosAtMouse(cx + px, cy); break;
+		case Qt::Key_Up:    stepped = worldPosAtMouse(cx, cy - px); break;
+		case Qt::Key_Down:  stepped = worldPosAtMouse(cx, cy + px); break;
+		default: break;
+		}
+		vec3d delta;
+		vm_vec_sub(&delta, &stepped, &center);
+		Q_EMIT nudgeIconsRequested(delta);
+		event->accept();
+		return;
+	}
+
 	if (!ControlBindings::instance().handleKeyPress(event)) {
 		QWidget::keyPressEvent(event);
 		return;
@@ -672,6 +711,43 @@ void BriefingMapWidget::applyBoundCameraControls(float frametime) {
 	}
 }
 
+vec3d BriefingMapWidget::worldPosAtMouse(float mouseRefX, float mouseRefY) const {
+	const vec3d camPos = brief_get_current_cam_pos();
+	const matrix camOrient = brief_get_current_cam_orient();
+
+	// Reproduce g3_point_to_vec_delayed(): turn the cursor position into a world-space ray using the
+	// projection scale captured during the briefing's render. (We can't call g3_point_to_vec_delayed()
+	// directly here because the live g3 state belongs to the main editor viewport by click time.) The
+	// briefing's Unscaled_matrix is its camera orientation, so we unrotate by camOrient.
+	const float canvW2 = _lastRenderWidth * 0.5f;
+	const float canvH2 = _lastRenderHeight * 0.5f;
+
+	vec3d dir;
+	if (canvW2 > 0.0f && canvH2 > 0.0f && _lastMatrixScale.xyz.x != 0.0f && _lastMatrixScale.xyz.y != 0.0f) {
+		vec3d tempv;
+		tempv.xyz.x = ((mouseRefX - canvW2) / canvW2) * _lastMatrixScale.xyz.z / _lastMatrixScale.xyz.x;
+		tempv.xyz.y = -((mouseRefY - canvH2) / canvH2) * _lastMatrixScale.xyz.z / _lastMatrixScale.xyz.y;
+		tempv.xyz.z = 1.0f;
+		vm_vec_normalize(&tempv);
+		vm_vec_unrotate(&dir, &tempv, &camOrient);
+	} else {
+		dir = camOrient.vec.fvec;
+	}
+
+	if (The_grid != nullptr) {
+		vec3d hit;
+		const float d = fvi_ray_plane(&hit, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camPos, &dir, 0.0f);
+		if (d >= 0.0f) {
+			return hit;
+		}
+	}
+
+	// Fallback: a fixed distance along the ray if it never crosses the grid plane.
+	vec3d placement;
+	vm_vec_scale_add(&placement, &camPos, &dir, 500.0f);
+	return placement;
+}
+
 void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 	if (!_initialized || event->button() != Qt::LeftButton)
 		return;
@@ -693,6 +769,14 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 						(static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitRect.width()));
 	const auto mouseY = (static_cast<float>(event->position().y()) - static_cast<float>(_blitRect.y())) *
 						(static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitRect.height()));
+
+	// Ctrl+click: create a new icon at the cursor instead of selecting or dragging.
+	if (event->modifiers() & Qt::ControlModifier) {
+		Q_EMIT iconCreateRequested(worldPosAtMouse(mouseX, mouseY));
+		_draggingIcon = false;
+		_dragIconIndex = -1;
+		return;
+	}
 
 	auto& stage = briefPtr->stages[_currentStage];
 

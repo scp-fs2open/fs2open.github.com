@@ -9,6 +9,9 @@
 #include "object/object.h"
 #include "mission/missiongrid.h"
 
+#include <algorithm>
+#include <functional>
+
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -50,6 +53,27 @@ void copyBriefingData(briefing& dst, const briefing& src)
 	for (int i = 0; i < MAX_BRIEF_STAGES; ++i) {
 		copyStageData(dst.stages[i], src.stages[i]);
 	}
+}
+
+// Returns the value that `get` yields for every icon in `sel`, or `sentinel` if they diverge (or the
+// selection is empty). Used to blank a field in the UI when a multi-icon selection disagrees on it.
+template <typename T, typename Fn>
+T common_icon_value(const brief_stage& s, const SCP_vector<int>& sel, Fn get, T sentinel)
+{
+	bool first = true;
+	T common = sentinel;
+	for (int idx : sel) {
+		if (idx < 0 || idx >= s.num_icons)
+			continue;
+		T v = get(s.icons[idx]);
+		if (first) {
+			common = v;
+			first = false;
+		} else if (!(v == common)) {
+			return sentinel;
+		}
+	}
+	return common;
 }
 } // namespace
 
@@ -772,6 +796,15 @@ void BriefingEditorDialogModel::setIconPosition(const vec3d& pos)
 	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) { modify(ic.pos, pos); });
 }
 
+void BriefingEditorDialogModel::nudgeSelectedIcons(const vec3d& worldDelta)
+{
+	applyToSelectedIconsCurrentAndForward([&](brief_icon& ic) {
+		vec3d p = ic.pos;
+		vm_vec_add2(&p, &worldDelta);
+		modify(ic.pos, p);
+	});
+}
+
 int BriefingEditorDialogModel::getIconId() const
 {
 	const auto& b = _wipBriefings[_currentTeam];
@@ -856,10 +889,9 @@ SCP_string BriefingEditorDialogModel::getIconLabel() const
 		return {};
 
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return {};
-
-	return s.icons[_currentIcon].label;
+	// Blank when the selection diverges on the label.
+	return common_icon_value<SCP_string>(
+		s, getEffectiveSelection(s), [](const brief_icon& ic) { return SCP_string(ic.label); }, {});
 }
 
 void BriefingEditorDialogModel::setIconLabel(const SCP_string& text)
@@ -878,10 +910,9 @@ SCP_string BriefingEditorDialogModel::getIconCloseupLabel() const
 		return {};
 
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return {};
-
-	return s.icons[_currentIcon].closeup_label;
+	// Blank when the selection diverges on the closeup label.
+	return common_icon_value<SCP_string>(
+		s, getEffectiveSelection(s), [](const brief_icon& ic) { return SCP_string(ic.closeup_label); }, {});
 }
 
 void BriefingEditorDialogModel::setIconCloseupLabel(const SCP_string& text)
@@ -899,9 +930,8 @@ int BriefingEditorDialogModel::getIconTypeIndex() const
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return -1;
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return -1;
-	return s.icons[_currentIcon].type; // 0..MIN_BRIEF_ICONS-1
+	// -1 (blank combo) when the selection diverges. type is 0..MIN_BRIEF_ICONS-1, so -1 is unambiguous.
+	return common_icon_value<int>(s, getEffectiveSelection(s), [](const brief_icon& ic) { return ic.type; }, -1);
 }
 
 void BriefingEditorDialogModel::setIconTypeIndex(int idx)
@@ -915,9 +945,9 @@ int BriefingEditorDialogModel::getIconShipTypeIndex() const
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return -1;
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return -1;
-	return s.icons[_currentIcon].ship_class; // may be -1 for unset depending on icon type
+	// -1 (blank combo) when the selection diverges; ship_class is also -1 when a single icon is unset,
+	// which likewise blanks the combo, so both cases collapse to the same display.
+	return common_icon_value<int>(s, getEffectiveSelection(s), [](const brief_icon& ic) { return ic.ship_class; }, -1);
 }
 
 void BriefingEditorDialogModel::setIconShipTypeIndex(int idx)
@@ -931,9 +961,8 @@ int BriefingEditorDialogModel::getIconTeamIndex() const
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return -1;
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
-		return -1;
-	return s.icons[_currentIcon].team;
+	// -1 (blank combo) when the selection diverges on the IFF team.
+	return common_icon_value<int>(s, getEffectiveSelection(s), [](const brief_icon& ic) { return ic.team; }, -1);
 }
 
 void BriefingEditorDialogModel::setIconTeamIndex(int idx)
@@ -947,10 +976,11 @@ float BriefingEditorDialogModel::getIconScaleFactor() const
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return 1.0f;
 	const auto& s = b.stages[_currentStage];
-	if (_currentIcon < 0 || _currentIcon >= s.num_icons)
+	const auto sel = getEffectiveSelection(s);
+	if (sel.empty())
 		return 1.0f;
-
-	return s.icons[_currentIcon].scale_factor;
+	// Negative sentinel (scale is always positive) tells the UI to blank the field on divergence.
+	return common_icon_value<float>(s, sel, [](const brief_icon& ic) { return ic.scale_factor; }, -1.0f);
 }
 
 void BriefingEditorDialogModel::setIconScaleFactor(float factor)
@@ -1295,22 +1325,17 @@ void BriefingEditorDialogModel::makeIcon(const SCP_string& label, int typeIndex,
 	set_modified();
 }
 
-void BriefingEditorDialogModel::deleteCurrentIcon()
+namespace {
+// Remove one icon from a stage: drop any lines referencing it, reindex the remaining line endpoints,
+// and shift the icons down to fill the gap.
+void remove_briefing_icon(brief_stage& s, int del)
 {
-	auto& briefing = _wipBriefings[_currentTeam];
-	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
-		return;
-
-	auto& s = briefing.stages[_currentStage];
-	const int del = _currentIcon;
 	if (del < 0 || del >= s.num_icons)
 		return;
 
 	// Remove any lines that reference the icon being deleted
 	for (int i = s.num_lines - 1; i >= 0; --i) {
-		const int a = s.lines[i].start_icon;
-		const int b = s.lines[i].end_icon;
-		if (a == del || b == del) {
+		if (s.lines[i].start_icon == del || s.lines[i].end_icon == del) {
 			for (int k = i; k + 1 < s.num_lines; ++k) {
 				s.lines[k] = s.lines[k + 1];
 			}
@@ -1331,12 +1356,35 @@ void BriefingEditorDialogModel::deleteCurrentIcon()
 		s.icons[i] = s.icons[i + 1];
 	}
 	--s.num_icons;
+}
+} // namespace
 
-	// Update selection
+void BriefingEditorDialogModel::deleteSelectedIcons()
+{
+	auto& briefing = _wipBriefings[_currentTeam];
+	if (briefing.num_stages <= 0 || _currentStage < 0 || _currentStage >= briefing.num_stages)
+		return;
+
+	auto& s = briefing.stages[_currentStage];
+
+	// Delete in descending index order so each removal doesn't shift the indices still to be deleted.
+	SCP_vector<int> indices(_lineSelection.begin(), _lineSelection.end());
+	std::sort(indices.begin(), indices.end(), std::greater<int>());
+	indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
+
+	bool removedAny = false;
+	for (int idx : indices) {
+		if (idx >= 0 && idx < s.num_icons) {
+			remove_briefing_icon(s, idx);
+			removedAny = true;
+		}
+	}
+
 	_lineSelection.clear();
 	_currentIcon = -1;
-
-	set_modified();
+	if (removedAny) {
+		set_modified();
+	}
 }
 
 void BriefingEditorDialogModel::propagateCurrentIconForward()

@@ -73,6 +73,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	void setCurrentIconIndex(int idx);
 	vec3d getIconPosition() const;
 	void setIconPosition(const vec3d& pos);
+	void nudgeSelectedIcons(const vec3d& worldDelta); // moves the selected icon(s) by a world offset
 	int getIconId() const;
 	// returns false if the requested id was rejected (e.g. it collides with another icon)
 	bool setIconId(int id);
@@ -109,7 +110,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	void setIconUseCargo(bool enabled);
 
 	void makeIcon(const SCP_string& label, int typeIndex, int teamIndex, int shipClassIndex);
-	void deleteCurrentIcon();
+	void deleteSelectedIcons(); // deletes every icon in the line selection on the current stage
 	void propagateCurrentIconForward();
 
 	int getBriefingMusicIndex() const;
