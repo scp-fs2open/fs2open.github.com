@@ -14,6 +14,7 @@
 class QOffscreenSurface;
 class QPainter;
 class QPaintEvent;
+class QContextMenuEvent;
 class briefing;
 
 namespace fso::fred::dialogs {
@@ -69,6 +70,8 @@ signals:
 	void nudgeIconsRequested(vec3d worldDelta); // arrow keys: move the selected icon(s) by this offset
 	// drag-box selection: the icons enclosed by the rubber band (additive = add to the current selection)
 	void iconsSelectedInBox(SCP_vector<int> indices, bool additive);
+	void mapContextMenuRequested(QPoint globalPos, vec3d worldPos); // right-click on empty map
+	void iconContextMenuRequested(QPoint globalPos);                // right-click on an icon (selection updated)
 
 protected:
 	bool event(QEvent* evt) override;
@@ -77,6 +80,7 @@ protected:
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
+	void contextMenuEvent(QContextMenuEvent* event) override;
 	void paintEvent(QPaintEvent* event) override;
 
 private:
@@ -97,6 +101,10 @@ private:
 	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
 	// plane, giving the world position under the cursor for placing a new icon.
 	vec3d worldPosAtMouse(float mouseRefX, float mouseRefY) const;
+	// Map a logical widget position to reference-resolution coords; false if the map geometry isn't ready.
+	bool mouseToReference(const QPointF& logical, float& refX, float& refY) const;
+	// Icons under the given reference-resolution point, top-most (drawn last) first.
+	SCP_vector<int> iconsUnderReference(float refX, float refY) const;
 
 	CameraController _cameraController;
 

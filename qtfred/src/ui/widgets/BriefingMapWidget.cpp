@@ -1,6 +1,7 @@
 #include "BriefingMapWidget.h"
 
 #include <QKeyEvent>
+#include <QContextMenuEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -836,24 +837,7 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		return;
 	}
 
-	auto& stage = briefPtr->stages[_currentStage];
-
-	// Collect every icon under the cursor, top-most first (higher index = drawn later = on top).
-	SCP_vector<int> hits;
-	for (int i = stage.num_icons - 1; i >= 0; --i) {
-		auto& icon = stage.icons[i];
-
-		int iconW = 0, iconH = 0;
-		brief_common_get_icon_dimensions(&iconW, &iconH, &icon);
-		const auto scaledW = static_cast<float>((icon.w > 0) ? icon.w : fl2i(static_cast<float>(iconW) * icon.scale_factor));
-		const auto scaledH = static_cast<float>((icon.h > 0) ? icon.h : fl2i(static_cast<float>(iconH) * icon.scale_factor));
-		const auto left = static_cast<float>(icon.x);
-		const auto top = static_cast<float>(icon.y);
-
-		if (mouseX >= left && mouseX <= left + scaledW && mouseY >= top && mouseY <= top + scaledH) {
-			hits.push_back(i);
-		}
-	}
+	const auto hits = iconsUnderReference(mouseX, mouseY);
 
 	const bool shiftHeld = (event->modifiers() & Qt::ShiftModifier) != 0;
 
@@ -1008,6 +992,67 @@ void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {
 	_pendingCollapseIndex = -1;
 	_draggingIcon = false;
 	_dragIconIndex = -1;
+}
+
+bool BriefingMapWidget::mouseToReference(const QPointF& logical, float& refX, float& refY) const {
+	if (_lastRenderWidth <= 0 || _lastRenderHeight <= 0 || _blitRect.width() <= 0 || _blitRect.height() <= 0) {
+		return false;
+	}
+	refX = (static_cast<float>(logical.x()) - static_cast<float>(_blitRect.x())) *
+		   (static_cast<float>(_lastRenderWidth) / static_cast<float>(_blitRect.width()));
+	refY = (static_cast<float>(logical.y()) - static_cast<float>(_blitRect.y())) *
+		   (static_cast<float>(_lastRenderHeight) / static_cast<float>(_blitRect.height()));
+	return true;
+}
+
+SCP_vector<int> BriefingMapWidget::iconsUnderReference(float refX, float refY) const {
+	SCP_vector<int> hits;
+
+	auto* briefPtr = _model->getWipBriefingPtr(_model->getCurrentTeam());
+	if (!briefPtr || _currentStage < 0 || _currentStage >= briefPtr->num_stages) {
+		return hits;
+	}
+
+	auto& stage = briefPtr->stages[_currentStage];
+	// Top-most first (higher index = drawn later = on top).
+	for (int i = stage.num_icons - 1; i >= 0; --i) {
+		auto& icon = stage.icons[i];
+
+		int iconW = 0, iconH = 0;
+		brief_common_get_icon_dimensions(&iconW, &iconH, &icon);
+		const auto scaledW = static_cast<float>((icon.w > 0) ? icon.w : fl2i(static_cast<float>(iconW) * icon.scale_factor));
+		const auto scaledH = static_cast<float>((icon.h > 0) ? icon.h : fl2i(static_cast<float>(iconH) * icon.scale_factor));
+		const auto left = static_cast<float>(icon.x);
+		const auto top = static_cast<float>(icon.y);
+
+		if (refX >= left && refX <= left + scaledW && refY >= top && refY <= top + scaledH) {
+			hits.push_back(i);
+		}
+	}
+	return hits;
+}
+
+void BriefingMapWidget::contextMenuEvent(QContextMenuEvent* event) {
+	float refX = 0.0f;
+	float refY = 0.0f;
+	if (!_initialized || !mouseToReference(event->pos(), refX, refY)) {
+		return;
+	}
+
+	const auto hits = iconsUnderReference(refX, refY);
+	if (!hits.empty()) {
+		const int top = hits.front();
+		// Right-clicking an icon that isn't in the current selection selects just it; a member of a
+		// multi-selection keeps the whole selection so the menu acts on the group.
+		const auto& selection = _model->getLineSelection();
+		if (std::find(selection.begin(), selection.end(), top) == selection.end()) {
+			Q_EMIT iconSelected(top, false);
+		}
+		Q_EMIT iconContextMenuRequested(event->globalPos());
+	} else {
+		Q_EMIT mapContextMenuRequested(event->globalPos(), worldPosAtMouse(refX, refY));
+	}
+	event->accept();
 }
 
 } // namespace fso::fred

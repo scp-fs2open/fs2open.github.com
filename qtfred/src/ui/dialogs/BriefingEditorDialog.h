@@ -104,8 +104,13 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void captureResetCameraForCurrentStage();
 	void deleteSelectedIconsWithConfirm(); // shared by the Delete button and the Delete key
 	// Opens the Make Icon From Ship dialog and, if accepted, creates the icon at the given placement.
-	// Shared by the "From Ship..." button and Shift+Ctrl+click on the map.
+	// Shared by the "Make Icon From Ship..." button, Shift+Ctrl+click, and the map context menu.
 	void createIconFromShipDialog(const vec3d& placement);
+	void createIconAt(const vec3d& worldPos); // makeIcon at a world position (Ctrl+click / context menu)
+
+	// Right-click context menus on the briefing map.
+	void showMapContextMenu(const QPoint& globalPos, const vec3d& worldPos);
+	void showIconContextMenu(const QPoint& globalPos);
 
 	vec3d _resetCameraPos {};
 	matrix _resetCameraOrient {};

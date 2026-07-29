@@ -5,6 +5,7 @@
 #include "ui/Theme.h"
 #include <gamesnd/eventmusic.h>
 #include "ui/widgets/BriefingMapWidget.h"
+#include "ui/widgets/data_list_menu.h"
 #include "BriefingEditor/CameraCoordinatesDialog.h"
 #include "BriefingEditor/IconFromShipDialog.h"
 #include "BriefingEditor/IconCoordinatesDialog.h"
@@ -18,9 +19,11 @@
 #include <ui/util/default_dir.h>
 #include <ui/util/SignalBlockers.h>
 
+#include <QAction>
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QFileDialog>
+#include <QMenu>
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QFileInfo>
@@ -185,15 +188,20 @@ void BriefingEditorDialog::setupMapWidget()
 
 	// Ctrl+click on the map creates a new icon at the cursor.
 	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconCreateRequested, this, [this](vec3d worldPos) {
-		_model->makeIcon("New Icon", 0, 0, 0);
-		_model->setLineSelection({_model->getCurrentIconIndex()});
-		_model->setIconPosition(worldPos);
-		updateUi();
+		createIconAt(worldPos);
 	});
 
 	// Shift+Ctrl+click opens Make Icon From Ship and places the resulting icon at the cursor.
 	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconFromShipCreateRequested, this, [this](vec3d worldPos) {
 		createIconFromShipDialog(worldPos);
+	});
+
+	// Right-click context menus: on empty map vs. on an icon.
+	connect(_mapWidget, &fso::fred::BriefingMapWidget::mapContextMenuRequested, this, [this](QPoint globalPos, vec3d worldPos) {
+		showMapContextMenu(globalPos, worldPos);
+	});
+	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconContextMenuRequested, this, [this](QPoint globalPos) {
+		showIconContextMenu(globalPos);
 	});
 
 	// Delete key removes the selected icon(s), after a confirmation prompt.
@@ -705,10 +713,106 @@ void BriefingEditorDialog::on_useCargoIconCheckBox_stateChanged(int state)
 
 void BriefingEditorDialog::on_makeIconButton_clicked()
 {
+	createIconAt(getNewIconPlacement());
+}
+
+void BriefingEditorDialog::createIconAt(const vec3d& worldPos)
+{
 	_model->makeIcon("New Icon", 0, 0, 0);
 	_model->setLineSelection({_model->getCurrentIconIndex()});
-	_model->setIconPosition(getNewIconPlacement());
+	_model->setIconPosition(worldPos);
 	updateUi();
+}
+
+void BriefingEditorDialog::showMapContextMenu(const QPoint& globalPos, const vec3d& worldPos)
+{
+	if (_model->getTotalStages() <= 0 || _model->getCurrentStage() < 0) {
+		return;
+	}
+
+	QMenu menu(this);
+
+	QAction* gridAction = menu.addAction(tr("Disable Grid Rendering"));
+	gridAction->setCheckable(true);
+	gridAction->setChecked(_model->getDisableGrid());
+	connect(gridAction, &QAction::toggled, this, [this](bool checked) {
+		_model->setDisableGrid(checked);
+		updateUi();
+	});
+
+	menu.addSeparator();
+
+	connect(menu.addAction(tr("Make Icon")), &QAction::triggered, this, [this, worldPos] { createIconAt(worldPos); });
+	connect(menu.addAction(tr("Make Icon From Ship...")), &QAction::triggered, this, [this, worldPos] {
+		createIconFromShipDialog(worldPos);
+	});
+
+	menu.exec(globalPos);
+}
+
+void BriefingEditorDialog::showIconContextMenu(const QPoint& globalPos)
+{
+	const auto& selection = _model->getLineSelection();
+	if (selection.empty()) {
+		return;
+	}
+	const bool single = selection.size() == 1;
+
+	QMenu menu(this);
+
+	connect(menu.addAction(single ? tr("Delete Icon") : tr("Delete Icons")), &QAction::triggered, this,
+		[this] { deleteSelectedIconsWithConfirm(); });
+
+	QAction* coords = menu.addAction(tr("Icon Coordinates..."));
+	coords->setEnabled(single); // coordinates edit a single icon
+	connect(coords, &QAction::triggered, this, [this] { on_iconCoordinatesButton_clicked(); });
+
+	menu.addSeparator();
+
+	// Checkable flags: checked when the whole selection shares the flag; a click applies the new state to
+	// every selected icon.
+	const auto addFlag = [&](const QString& label, TriStateBool state, const std::function<void(bool)>& setter) {
+		QAction* action = menu.addAction(label);
+		action->setCheckable(true);
+		action->setChecked(state == TriStateBool::TRUE_);
+		connect(action, &QAction::toggled, this, [this, setter](bool checked) {
+			setter(checked);
+			_mapWidget->notifyIconVisualsChanged();
+			updateUi();
+		});
+	};
+	addFlag(tr("Flip Icon"), _model->getIconFlippedState(), [this](bool c) { _model->setIconFlipped(c); });
+	addFlag(tr("Highlight"), _model->getIconHighlightedState(), [this](bool c) { _model->setIconHighlighted(c); });
+	addFlag(tr("Use Cargo Icon"), _model->getIconUseCargoState(), [this](bool c) { _model->setIconUseCargo(c); });
+	addFlag(tr("Use Wing Icon"), _model->getIconUseWingState(), [this](bool c) { _model->setIconUseWing(c); });
+
+	menu.addSeparator();
+
+	// Attribute submenus, styled like the viewport's create-ship menu. currentId bolds the shared value
+	// (or nothing, when a multi-selection diverges).
+	const auto addAttributeMenu = [&](const QString& label,
+									   const SCP_vector<std::pair<int, SCP_string>>& items,
+									   int currentId,
+									   const std::function<void(int)>& setter) {
+		QMenu* sub = menu.addMenu(label);
+		std::vector<util::SelectMenuEntry> entries;
+		entries.reserve(items.size());
+		for (const auto& item : items) {
+			entries.push_back({QString::fromStdString(item.second), item.first});
+		}
+		fso::fred::populateDataListMenu(sub, entries, _viewport->Data_menu_style, [this, setter](int id) {
+			setter(id);
+			updateUi();
+		}, 0, currentId);
+	};
+	addAttributeMenu(tr("Icon Image"), _model->getIconList(), _model->getIconTypeIndex(),
+		[this](int id) { _model->setIconTypeIndex(id); });
+	addAttributeMenu(tr("Ship Type"), _model->getShipList(), _model->getIconShipTypeIndex(),
+		[this](int id) { _model->setIconShipTypeIndex(id); });
+	addAttributeMenu(tr("Team"), _model->getIffList(), _model->getIconTeamIndex(),
+		[this](int id) { _model->setIconTeamIndex(id); });
+
+	menu.exec(globalPos);
 }
 
 void BriefingEditorDialog::on_makeIconFromShipButton_clicked()
