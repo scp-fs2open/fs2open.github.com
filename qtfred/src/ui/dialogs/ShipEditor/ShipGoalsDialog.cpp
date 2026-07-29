@@ -301,6 +301,12 @@ void ShipGoalsDialog::updateUi()
 			default:
 				break;
 			}
+
+			// Commit the shown default target for new orders so they validate instead of erroring out.
+			if (_model->getObject(i) == -1 && objects[i]->count() > 0) {
+				_model->setObject(i, objects[i]->itemData(objects[i]->currentIndex()).value<int>());
+			}
+
 			if (mode == AI_GOAL_DESTROY_SUBSYSTEM) {
 				subsys[i]->setEnabled(true);
 				docks[i]->setEnabled(false);
