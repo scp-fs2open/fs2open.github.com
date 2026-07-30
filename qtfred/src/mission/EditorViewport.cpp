@@ -16,6 +16,7 @@
 #include <mission/missionparse.h>
 #include <prop/prop.h>
 #include <FredApplication.h>
+#include <graphics/2d.h>
 
 namespace {
 
@@ -122,6 +123,7 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	syncMissionLayerNames();
 
 	loadSettings();
+	applyGraphicsSettings();
 
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
@@ -177,6 +179,21 @@ void EditorViewport::loadSettings() {
 	view.Show_compass                      = settings.value("view_show_compass",                      view.Show_compass).toBool();
 	view.Highlight_selectable_subsys       = settings.value("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys).toBool();
 	view.Outline_lod                       = settings.value("view_outline_lod",                       view.Outline_lod).toInt();
+	view.EnablePostProcessing              = settings.value("view_enable_post_processing",            view.EnablePostProcessing).toBool();
+	view.Graphics_shadow_quality           = settings.value("view_graphics_shadow_quality",            view.Graphics_shadow_quality).toInt();
+	view.Graphics_aa_mode                  = settings.value("view_graphics_aa_mode",                   view.Graphics_aa_mode).toInt();
+	view.Graphics_msaa_samples             = settings.value("view_graphics_msaa_samples",              view.Graphics_msaa_samples).toInt();
+	view.Graphics_texture_filter           = settings.value("view_graphics_texture_filter",            view.Graphics_texture_filter).toInt();
+	{
+		// Default to the hardware's max anisotropy the first time qtFRED runs, so the
+		// viewport looks the same as it always has until the user turns this control down.
+		float maxAnisotropy = 1.0f;
+		if (gr_get_property(gr_property::MAX_ANISOTROPY, &maxAnisotropy)) {
+			view.Graphics_anisotropy = maxAnisotropy;
+		}
+		view.Graphics_anisotropy = settings.value("view_graphics_anisotropy", view.Graphics_anisotropy).toFloat();
+	}
+	view.Graphics_gamma                    = settings.value("view_graphics_gamma",                    view.Graphics_gamma).toFloat();
 	camera.setInvertOrbitX(settings.value("camera_invert_orbit_x", camera.getInvertOrbitX()).toBool());
 	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
 	settings.endGroup();
@@ -225,10 +242,30 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_show_compass",                      view.Show_compass);
 	settings.setValue("view_highlight_selectable_subsys",       view.Highlight_selectable_subsys);
 	settings.setValue("view_outline_lod",                       view.Outline_lod);
+	settings.setValue("view_enable_post_processing",             view.EnablePostProcessing);
+	settings.setValue("view_graphics_shadow_quality",            view.Graphics_shadow_quality);
+	settings.setValue("view_graphics_aa_mode",                   view.Graphics_aa_mode);
+	settings.setValue("view_graphics_msaa_samples",               view.Graphics_msaa_samples);
+	settings.setValue("view_graphics_texture_filter",             view.Graphics_texture_filter);
+	settings.setValue("view_graphics_anisotropy",                 view.Graphics_anisotropy);
+	settings.setValue("view_graphics_gamma",                      view.Graphics_gamma);
 	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
 	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
 	settings.endGroup();
 }
+
+void EditorViewport::applyGraphicsSettings() const {
+	// Shadow_quality is deliberately not set here. Turning shadows on requires allocating the
+	// shadow framebuffer and sizing the cascade-parameter buffers (shadow_cascade_params_init(),
+	// gropengltnl.cpp/gr_vulkan.cpp), which only happens once at gr_init() and only if
+	// Shadow_quality is already non-Disabled at that point -- flipping the global afterwards
+	// leaves those buffers empty/unsized and segfaults the next time a frame tries to render
+	// shadows. Applied before gr_init() instead (see management.cpp), same as MSAA samples,
+	// texture filter, and anisotropy; the Preferences UI notes it needs a restart.
+	Gr_aa_mode = static_cast<AntiAliasMode>(view.Graphics_aa_mode);
+	gr_set_gamma(view.Graphics_gamma);
+}
+
 void EditorViewport::needsUpdate() {
 	_renderer->scheduleUpdate();
 }
