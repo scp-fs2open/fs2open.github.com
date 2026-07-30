@@ -1,0 +1,541 @@
+; Default physically-based lens systems for the "$Camera Lens:" option in a
+; mission's info section (and the set-camera-lens sexp).
+;
+; A mission mounts ONE of these as its camera lens, and every sun in its
+; background flares through it -- one camera, one lens, so the flares of two
+; suns can never disagree about the glass they came through. Missions that name
+; no lens fall back to "$Default Lens:" below, which the shipped table leaves
+; unset, so retail content is unaffected until a mod opts in.
+;
+; Format: each $Surface: is ( curvature radius mm, thickness to the next surface
+; mm, refractive index of the glass BEHIND the surface, 1.0 = air ), listed
+; front-to-back; $Stop: ( thickness mm ) marks the iris plane. See
+; graphics/lens_flare.cpp for the full syntax and the precompute math.
+;
+; Where these numbers come from and how to derive your own:
+;
+; - The radius/thickness/index triples are "lens prescriptions" as published in
+;   lens patents and optical-design references. Any such prescription can be
+;   transcribed directly into $Surface: rows; scale all radii/thicknesses
+;   uniformly to change the focal length. The engine derives everything else
+;   (effective focal length, sensor distance, ghost enumeration, per-ghost
+;   matrices) from the surface stack at table load.
+; - +Abbe: dispersion (V-number) values are not usually part of patent claims;
+;   the ones below are typical catalog values for optical glasses of the given
+;   index (crown glasses ~55-60, dense flints ~30-40). They only drive the
+;   chromatic fringing, so approximate values are fine.
+; - $Entrance Pupil Radius: is focal length / (2 * f-number) of the design;
+;   $Aperture Radius: is the iris half-opening (smaller = darker, crisper
+;   ghosts). Both may be fudged for looks, but $Aperture Radius: is the setting
+;   that decides whether a ghost is lit at all, so derive it before fudging:
+;   each ghost slides across the iris as the sun moves off-axis, by an amount
+;   that grows with the field angle and shrinks with $Aperture Radius:, and a
+;   ghost that slides off the iris goes black. Too small a value therefore
+;   confines the whole flare to a sun near the frame center, and too large a one
+;   shrinks the ghosts within the iris until the blades stop shaping them. The
+;   physical value is the paraxial marginal-ray height where it crosses the stop
+;   (trace height = entrance pupil radius, angle = 0 through the surfaces ahead
+;   of the $Stop:); 1.25x that is what angenieux_100mm uses (marginal height
+;   12.79mm, tabled 16.0) and what the lenses below are derived from.
+; - $Coating Wavelength: is the quarter-wave anti-reflection tuning; 500-570nm
+;   (green-centered, like real broadband coatings) gives the classic
+;   magenta/cyan ghost tints. 0 disables coatings (uncoated vintage look:
+;   brighter, neutral-grey ghosts).
+; - $Intensity:, blade counts/rotation/curvature and the starburst settings are
+;   artistic; the shipped values were calibrated visually in the F3 lab
+;   (Render options -> Lens flare options) against retail suns.
+; - $Anamorphic Squeeze: stretches every ghost and the starburst horizontally,
+;   for the oval-ghost anamorphic look; 1.0 (the default, and what every lens
+;   below uses) is a spherical lens and costs nothing. 2.0 matches a classic 2x
+;   anamorphic; below 1.0 compresses rather than stretches, which is not what
+;   the option is for. A front anamorphot is an afocal cylindrical telescope, so to
+;   first order it only magnifies one meridian -- which is why this is one
+;   number rather than a second set of surfaces, and why the iris behind it is
+;   unaffected. Note that FSO composes the frame directly, with no desqueeze
+;   stage, so this stretches footprints only: ghosts stay on the sun where they
+;   always were, exactly as a desqueezed anamorphic frame shows them.
+; - $Anamorphic Streak: is the other half of that look: the long horizontal
+;   flare a cylindrical element throws across the frame. It is a separate quad
+;   rather than a stretched starburst because it is a separate artifact -- the
+;   starburst is the iris seen end-on and swings around with the sun, while the
+;   streak lies along the element and stays horizontal wherever the sun is. It
+;   is also what actually reads as "anamorphic": squeezing the starburst alone
+;   only ever gives a wider sun, since a real streak runs 20-50x longer than it
+;   is thick. Off by default, like the aperture imperfection layers.
+;
+;   $Anamorphic Streak: <strength>  0 turns it off.
+;     +Length:     half-length as a fraction of the sensor width; 1.0 spans the
+;                  frame.
+;     +Thickness:  as a fraction of the length, so 0.02 is a 50:1 bar.
+;     +Tint:       ( r, g, b ), multiplied onto the sun's own colour rather than
+;                  replacing it, so a red sun keeps a reddish streak. The
+;                  default leans blue, which is where the classic look comes
+;                  from -- real streaks take their colour from the coating on
+;                  the cylindrical element.
+
+
+;
+; The iris
+; --------
+;
+; A lens has exactly ONE aperture definition, and it drives both the ghosts and
+; the starburst: every ghost is an image of this mask, and the starburst is its
+; Fraunhofer transform. Changing a blade count therefore restyles both at once,
+; and they can never disagree about what the iris looks like.
+;
+; $Aperture Blades:   number of iris blades; fewer than 3 means a round iris.
+; +Blade Rotation:    degrees.
+; +Blade Curvature:   0 leaves the blades straight, 1 bows their midpoints out
+;                     to the corner radius (a circular iris), and negative
+;                     values bow them inward into a star.
+; +Edge Softness:     iris edge feather, as a fraction of the iris radius. The
+;                     default, 0.0039, is also the floor it is clamped to (a
+;                     ~2px ramp, so the mask never aliases) and matches the edge
+;                     the iris has always had; asking for less has no effect.
+;                     Softening the edge visibly weakens the starburst spikes,
+;                     because they come from that edge's sharpness.
+;
+; Fields are parsed in sequence, so they must appear in the order listed here
+; (as everywhere else in an entry) -- a $Aperture Dust: placed after $Intensity:
+; is not just ignored, it breaks the whole table. There is a worked example
+; covering every field in test/test_data/graphics/lens_flare/.
+;
+; Three optional imperfection layers darken the mask on top of the shape. All
+; are off (strength 0) by default, which is what every lens below uses -- turn
+; them on for a dirty or damaged lens. Each takes its strength on the $-line and
+; then optional +sub-options:
+;
+; $Aperture Grating:  <strength>   radial ridges around the iris rim, which
+;                     throw extra spikes into the starburst.
+;   +Density:         fraction of the 360 possible ridges.
+;   +Length:          how far in the ridges reach, as a fraction of the iris.
+;   +Width:           ridge width as a duty cycle of the spacing between
+;                     ridges, so raising the density thins the ridges rather
+;                     than merging them into a solid ring.
+;   +Softness:
+; $Aperture Scratches: <strength>  randomly placed slivers.
+;   +Density:         fraction of the 1000 possible scratches.
+;   +Length:  +Width:
+;   +Rotation:        degrees.
+;   +Rotation Variation:  0 leaves every scratch parallel, 1 fully random.
+;   +Softness:
+; $Aperture Dust:     <strength>   randomly placed specks.
+;   +Density:         fraction of the 1000 possible specks.
+;   +Radius:  +Softness:
+;
+; Be aware that the starburst is normalized against its own brightest value, so
+; adding grating/scratches/dust dims the core spikes as it adds speckle around
+; them, rather than only adding to what was there.
+;
+; The layers are ported from realflare's aperture kernels (see below), minus its
+; texture-mask layer, and minus its split between a ghost aperture and a
+; separate starburst aperture.
+;
+; The lenses below the first two were adapted from the lens models bundled with
+; realflare (https://github.com/beatreichenbach/realflare, MIT), an offline
+; renderer built on the same Hullin/Lee research; the prescriptions themselves
+; are the published patent data cited per entry, transcribed one lens element
+; per $Surface: row. Their $Intensity: values are not independent guesses: the
+; total lit ghost energy (per-ghost Fresnel reflectance and footprint, times the
+; fraction of the pupil image still inside the iris) was computed for each with
+; the sun at 10%, 50% and 90% of the frame half-width, and kept inside the range
+; the two hand-calibrated entries already span. Only color_heliar_105mm needed a
+; non-default value, because uncoated glass reflects far more than a coated
+; surface (~75x the total ghost energy, for that lens).
+;
+; Note that $Name: is the nominal focal length of the design, not the paraxial
+; focal length the engine computes from the surfaces - the two differ for every
+; shipped lens (angenieux_100mm solves to 63mm), and for the zooms the
+; transcription freezes one configuration of a variable air gap. What the flare
+; looks like follows the surfaces, not the name.
+
+#Lens Systems
+
+; The lens missions get when they don't name one themselves. Left unset here;
+; a mod that wants its whole campaign shot on the same glass sets it in a
+; *-lens.tbm, e.g.
+;
+; $Default Lens: tessar_50mm
+
+; Double-Gauss cine prime, f/2.2, f=100mm. Surface data follows the Angenieux
+; double-Gauss prescription published with Hullin, Eisemann, Seidel, Lee,
+; "Physically-Based Real-Time Lens Flare Rendering" (SIGGRAPH 2011) and reused
+; by Lee & Eisemann 2013 (the paper this renderer implements); it traces back
+; to P. Angenieux's 1950s double-Gauss patents. Abbe numbers estimated from
+; glass catalogs as described above. Rich ghost set with strongly tinted
+; coatings.
+$Name: angenieux_100mm
+$Entrance Pupil Radius: 22.0
+$Aperture Radius: 16.0
+$Sensor Width: 36.0
+$Coating Wavelength: 540
+$Aperture Blades: 6
++Blade Rotation: 15.0
++Blade Curvature: 0.15
+$Starburst: YES
++Starburst Scale: 1.0
+$Intensity: 0.2
+$Max Ghosts: 48
+$Surface: ( 164.13, 10.99, 1.6751 )
++Abbe: 47.0
+$Surface: ( 559.20, 0.23, 1.0 )
+$Surface: ( 100.12, 11.45, 1.6689 )
++Abbe: 44.0
+$Surface: ( 213.54, 0.23, 1.0 )
+$Surface: ( 58.04, 22.95, 1.6913 )
++Abbe: 42.0
+$Surface: ( 2551.10, 2.58, 1.6751 )
++Abbe: 33.0
+$Surface: ( 32.39, 15.66, 1.0 )
+$Stop: ( 15.00 )
+$Surface: ( -40.42, 2.74, 1.6992 )
++Abbe: 30.0
+$Surface: ( 192.98, 27.92, 1.6204 )
++Abbe: 57.0
+$Surface: ( -55.53, 0.23, 1.0 )
+$Surface: ( 192.98, 7.98, 1.6204 )
++Abbe: 57.0
+$Surface: ( -92.62, 0.23, 1.0 )
+$Surface: ( 355.02, 8.86, 1.6751 )
++Abbe: 47.0
+$Surface: ( -52.78, 60.0, 1.0 )
+
+; Classic Tessar, f/3.5, f=50mm. Surface data transcribed from the textbook
+; Zeiss Tessar prescription (Paul Rudolph's 1902 design, as reproduced in
+; optical-design literature), uniformly scaled to a 50mm focal length; Abbe
+; numbers are catalog values for the usual Tessar crown/flint glass pairing.
+; Fewer elements, so a sparser and subtler ghost set.
+$Name: tessar_50mm
+$Entrance Pupil Radius: 7.0
+$Aperture Radius: 5.0
+$Sensor Width: 36.0
+$Coating Wavelength: 520
+$Aperture Blades: 8
++Blade Rotation: 0.0
++Blade Curvature: 0.3
+$Starburst: YES
++Starburst Scale: 0.8
+$Intensity: 0.2
+$Max Ghosts: 24
+$Surface: ( 16.25, 2.90, 1.6116 )
++Abbe: 56.9
+$Surface: ( -285.90, 0.29, 1.0 )
+$Surface: ( -30.05, 1.20, 1.6053 )
++Abbe: 43.6
+$Surface: ( 17.47, 1.38, 1.0 )
+$Stop: ( 1.15 )
+$Surface: ( 31.55, 1.20, 1.5123 )
++Abbe: 51.0
+$Surface: ( 21.30, 3.50, 1.6116 )
++Abbe: 56.9
+$Surface: ( -23.70, 40.0, 1.0 )
+
+; Modern multicoated telephoto zoom, f/2.8, nominally 70-200mm; the transcribed
+; configuration solves to f=72mm. Prescription is the sixth embodiment of Canon
+; patent US5537259 (1995), the design behind the EF 70-200mm f/2.8L USM. 33
+; refractive surfaces enumerate ~460 usable ghost pairs, so this is the busiest
+; shipped lens: a dense, tightly clustered, strongly coated ghost train.
+$Name: canon_70_200mm
+$Entrance Pupil Radius: 12.32
+$Aperture Radius: 21.33
+$Sensor Width: 36.0
+$Coating Wavelength: 540
+$Aperture Blades: 8
++Blade Rotation: 22.5
++Blade Curvature: 0.35
+$Starburst: YES
++Starburst Scale: 0.9
+$Intensity: 0.2
+$Max Ghosts: 56
+$Surface: ( 355.855, 2.8, 1.75 )
++Abbe: 35.0
+$Surface: ( 121.211, 0.42, 1.0 )
+$Surface: ( 131.256, 8.62, 1.497 )
++Abbe: 81.6
+$Surface: ( -259.209, 0.1, 1.0 )
+$Surface: ( 80.584, 6.01, 1.497 )
++Abbe: 81.6
+$Surface: ( 234.8, 8.69, 1.0 )
+$Surface: ( 51.45, 2.2, 1.847 )
++Abbe: 23.8
+$Surface: ( 43.769, 1.28, 1.0 )
+$Surface: ( 49.946, 8.87, 1.487 )
++Abbe: 70.2
+$Surface: ( 12148.909, 1.57, 1.0 )
+$Surface: ( -600.368, 1.4, 1.804 )
++Abbe: 46.6
+$Surface: ( 34.801, 5.98, 1.0 )
+$Surface: ( -75.966, 1.4, 1.487 )
++Abbe: 70.2
+$Surface: ( 37.777, 4.97, 1.847 )
++Abbe: 23.9
+$Surface: ( 413.301, 2.64, 1.0 )
+$Surface: ( -66.4, 1.4, 1.729 )
++Abbe: 54.7
+$Surface: ( 3021.469, 30.32, 1.0 )
+$Surface: ( 230.258, 3.51, 1.698 )
++Abbe: 55.5
+$Surface: ( -98.917, 0.15, 1.0 )
+$Surface: ( -172.378, 4.66, 1.497 )
++Abbe: 81.6
+$Surface: ( -40.226, 1.45, 1.834 )
++Abbe: 37.2
+$Surface: ( -76.185, 13.86, 1.0 )
+$Surface: ( 57.653, 3.73, 1.804 )
++Abbe: 46.6
+$Surface: ( 128.671, 3.05, 1.0 )
+$Stop: ( 0.34 )
+$Surface: ( 33.882, 6.26, 1.497 )
++Abbe: 81.6
+$Surface: ( 1455.342, 3.99, 1.62 )
++Abbe: 36.3
+$Surface: ( 31.129, 26.85, 1.0 )
+$Surface: ( 117.922, 5.91, 1.517 )
++Abbe: 52.4
+$Surface: ( -81.244, 14.02, 1.0 )
+$Surface: ( -38.692, 1.8, 1.834 )
++Abbe: 37.2
+$Surface: ( -102.301, 0.15, 1.0 )
+$Surface: ( 183.092, 3.91, 1.743 )
++Abbe: 49.3
+$Surface: ( -129.948, 10.0, 1.0 )
+
+; Symmetric double Gauss, f/3.8, f=100mm, from Kodak patent US2823583 (1958).
+; Single-coated era: $Coating Wavelength: 550 models one MgF2 quarter-wave layer,
+; which is exactly what lenses of this vintage carried. Few elements and a
+; symmetric layout give a sparse, orderly ghost set strung along the sun axis, and
+; the long focal length keeps it stable as the sun moves off-axis.
+$Name: kodak_100mm
+$Entrance Pupil Radius: 13.16
+$Aperture Radius: 8.88
+$Sensor Width: 36.0
+$Coating Wavelength: 550
+$Aperture Blades: 10
++Blade Rotation: 0.0
++Blade Curvature: 0.50
+$Starburst: YES
++Starburst Scale: 1.0
+$Intensity: 0.2
+$Max Ghosts: 28
+$Surface: ( 36.02, 3.1, 1.517 )
++Abbe: 64.5
+$Surface: ( 418.3, 0.7, 1.0 )
+$Surface: ( 24.59, 7.4, 1.611 )
++Abbe: 58.8
+$Surface: ( -45.33, 3.5, 1.523 )
++Abbe: 58.6
+$Surface: ( -44.52, 4.3, 1.617 )
++Abbe: 36.6
+$Surface: ( 13.42, 6.9, 1.0 )
+$Stop: ( 6.9 )
+$Surface: ( -13.42, 4.3, 1.617 )
++Abbe: 36.6
+$Surface: ( 44.52, 3.5, 1.523 )
++Abbe: 58.6
+$Surface: ( 45.33, 7.4, 1.611 )
++Abbe: 58.8
+$Surface: ( -24.59, 0.7, 1.0 )
+$Surface: ( -74.42, 3.1, 1.72 )
++Abbe: 29.3
+$Surface: ( -32.2, 50.0, 1.0 )
+
+; Fast aspherical wide-angle prime, f/1.4, f=35mm, from Leica patent US5161060
+; (1992), fig. 1 - the Summilux-M 35mm f/1.4 ASPH design. The shortest focal
+; length shipped (~54 degrees across the frame), so its ghosts sweep the furthest
+; as the sun moves off-axis; the fast aperture keeps them large and soft.
+$Name: leica_35mm
+$Entrance Pupil Radius: 12.50
+$Aperture Radius: 12.05
+$Sensor Width: 36.0
+$Coating Wavelength: 530
+$Aperture Blades: 9
++Blade Rotation: 10.0
++Blade Curvature: 0.40
+$Starburst: YES
++Starburst Scale: 1.0
+$Intensity: 0.2
+$Max Ghosts: 40
+$Surface: ( -110.114, 2.01, 1.503 )
++Abbe: 56.1
+$Surface: ( 24.92, 7.4, 1.82 )
++Abbe: 45.1
+$Surface: ( -305.0, 0.1, 1.0 )
+$Surface: ( 28.346, 6.07, 1.82 )
++Abbe: 45.1
+$Surface: ( -57.56, 1.61, 1.694 )
++Abbe: 31.0
+$Surface: ( 16.624, 4.34, 1.0 )
+$Stop: ( 1.66 )
+$Surface: ( -197.204, 6.07, 1.792 )
++Abbe: 47.2
+$Surface: ( -38.628, 1.5, 1.0 )
+$Surface: ( -21.142, 1.72, 1.652 )
++Abbe: 33.6
+$Surface: ( 101.985, 5.86, 1.82 )
++Abbe: 45.1
+$Surface: ( -21.905, 0.11, 1.0 )
+$Surface: ( 60.026, 5.94, 1.82 )
++Abbe: 45.1
+$Surface: ( -31.325, 2.05, 1.624 )
++Abbe: 36.1
+$Surface: ( 31.325, 19.595, 1.0 )
+
+; Multicoated telephoto zoom, f/3.5, nominally 50-135mm, from Nikon patent
+; US4497547A (1981) - the AI Zoom-Nikkor 50-135mm f/3.5. The two variable zoom
+; spacings are frozen at the transcribed values, which paraxially solve to f=36mm
+; rather than any point in the marked 50-135mm range; the engine derives the focal
+; length from the surfaces, so the flare matches the transcription, not the label
+; (the shipped angenieux_100mm and tessar_50mm are named the same way).
+$Name: nikon_50_135mm
+$Entrance Pupil Radius: 12.86
+$Aperture Radius: 27.37
+$Sensor Width: 36.0
+$Coating Wavelength: 520
+$Aperture Blades: 7
++Blade Rotation: 0.0
++Blade Curvature: 0.25
+$Starburst: YES
++Starburst Scale: 0.9
+$Intensity: 0.2
+$Max Ghosts: 48
+$Surface: ( 95.858, 1.7, 1.805 )
++Abbe: 25.4
+$Surface: ( 49.02, 8.0, 1.678 )
++Abbe: 55.6
+$Surface: ( 214.552, 0.1, 1.0 )
+$Surface: ( 75.769, 5.0, 1.667 )
++Abbe: 48.4
+$Surface: ( 691.304, 2.959, 1.0 )
+$Surface: ( -708.168, 1.25, 1.697 )
++Abbe: 55.6
+$Surface: ( 22.809, 5.0, 1.0 )
+$Surface: ( -175.109, 1.15, 1.788 )
++Abbe: 47.5
+$Surface: ( 87.266, 0.5, 1.0 )
+$Surface: ( 35.758, 3.1, 1.805 )
++Abbe: 25.4
+$Surface: ( 165.776, 27.727, 1.0 )
+$Surface: ( -51.423, 1.15, 1.67 )
++Abbe: 57.6
+$Surface: ( 81.327, 2.95, 1.672 )
++Abbe: 38.9
+$Surface: ( -169.527, 8.846, 1.0 )
+$Stop: ( 1.0 )
+$Surface: ( 174.041, 3.25, 1.713 )
++Abbe: 54.0
+$Surface: ( -63.18, 0.1, 1.0 )
+$Surface: ( 50.356, 5.0, 1.564 )
++Abbe: 60.8
+$Surface: ( -70.071, 1.1, 1.796 )
++Abbe: 41.0
+$Surface: ( 229.755, 0.1, 1.0 )
+$Surface: ( 25.187, 5.6, 1.518 )
++Abbe: 59.0
+$Surface: ( -745.542, 1.0, 1.0 )
+$Surface: ( 262.417, 2.0, 1.795 )
++Abbe: 28.6
+$Surface: ( 37.552, 10.15, 1.0 )
+$Surface: ( 111.689, 3.0, 1.517 )
++Abbe: 64.1
+$Surface: ( -97.52, 20.85, 1.0 )
+$Surface: ( -18.386, 2.0, 1.67 )
++Abbe: 47.1
+$Surface: ( -31.592, 0.1, 1.0 )
+$Surface: ( 941.473, 4.55, 1.702 )
++Abbe: 41.0
+$Surface: ( -72.586, 14.0, 1.0 )
+
+; Uncoated vintage prime, f/3.5, f=105mm, from A. W. Tronnier's patent US2645156
+; (1950) for the Voigtlander Color-Heliar. This is the table's uncoated reference:
+; $Coating Wavelength: 0 gives bare-glass Fresnel reflections, ~75x stronger in
+; total than the same prescription coated, and neutral grey rather than
+; magenta/cyan. $Intensity: is scaled down by that factor so the lens lands at the
+; bright end of the shipped calibration band instead of blowing out - the
+; character (few, large, colourless, obvious ghosts, barely fading off-axis) is
+; what the uncoated model buys, not raw brightness. The flat sixth surface is in
+; the source prescription.
+$Name: color_heliar_105mm
+$Entrance Pupil Radius: 15.00
+$Aperture Radius: 15.08
+$Sensor Width: 36.0
+$Coating Wavelength: 0
+$Aperture Blades: 12
++Blade Rotation: 0.0
++Blade Curvature: 0.60
+$Starburst: YES
++Starburst Scale: 0.7
+$Intensity: 0.015
+$Max Ghosts: 16
+$Surface: ( 30.809, 7.702, 1.651 )
++Abbe: 58.6
+$Surface: ( -89.35, 1.855, 1.603 )
++Abbe: 38.4
+$Surface: ( 580.0, 3.521, 1.0 )
+$Surface: ( -80.063, 1.849, 1.643 )
++Abbe: 47.9
+$Surface: ( 28.34, 4.625, 1.0 )
+$Stop: ( 2.554 )
+$Surface: ( 0.0, 1.849, 1.582 )
++Abbe: 40.6
+$Surface: ( 32.19, 7.271, 1.693 )
++Abbe: 53.5
+$Surface: ( -52.99, 92.03, 1.0 )
+
+; Modern multicoated cine prime, T1.3, nominally 50mm (solves to f=65mm), from
+; Zeiss patent US7446944B2 (2008) - the Master Prime 50mm. Large entrance pupil
+; and 24 refractive surfaces: many ghosts, large and bright, with the heavy
+; broadband coating pushing them well into magenta/cyan. The closest match to a
+; contemporary cinema look.
+$Name: zeiss_master_prime_50mm
+$Entrance Pupil Radius: 19.23
+$Aperture Radius: 15.23
+$Sensor Width: 36.0
+$Coating Wavelength: 550
+$Aperture Blades: 9
++Blade Rotation: 20.0
++Blade Curvature: 0.45
+$Starburst: YES
++Starburst Scale: 1.1
+$Intensity: 0.2
+$Max Ghosts: 56
+$Surface: ( 554.31, 4.31, 1.699 )
++Abbe: 30.13
+$Surface: ( 82.937, 7.67, 1.0 )
+$Surface: ( 2539.9, 8.05, 1.805 )
++Abbe: 25.42
+$Surface: ( -185.67, 4.67, 1.816 )
++Abbe: 46.62
+$Surface: ( -188.36, 7.281, 1.0 )
+$Surface: ( 52.33, 16.11, 1.618 )
++Abbe: 63.33
+$Surface: ( 12548.0, 0.11, 1.0 )
+$Surface: ( 70.795, 4.2, 1.717 )
++Abbe: 29.62
+$Surface: ( 55.033, 2.534, 1.0 )
+$Surface: ( 42.474, 4.27, 1.805 )
++Abbe: 25.42
+$Surface: ( 35.481, 7.82, 1.816 )
++Abbe: 46.62
+$Surface: ( 46.639, 4.79, 1.0 )
+$Surface: ( 183.02, 4.2, 1.558 )
++Abbe: 54.01
+$Surface: ( 25.119, 9.8, 1.0 )
+$Stop: ( 9.71 )
+$Surface: ( -23.041, 4.2, 1.654 )
++Abbe: 39.63
+$Surface: ( 39.525, 16.23, 1.618 )
++Abbe: 63.33
+$Surface: ( -44.668, 0.35, 1.0 )
+$Surface: ( 66.473, 10.02, 1.603 )
++Abbe: 65.44
+$Surface: ( -240.57, 0.21, 1.0 )
+$Surface: ( 466.39, 7.51, 1.603 )
++Abbe: 65.44
+$Surface: ( -88.453, 0.1, 1.0 )
+$Surface: ( 91.728, 4.2, 1.816 )
++Abbe: 46.62
+$Surface: ( 27.982, 16.46, 1.618 )
++Abbe: 63.33
+$Surface: ( -128.64, 39.014, 1.0 )
+
+#End

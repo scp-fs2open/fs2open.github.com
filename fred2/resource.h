@@ -570,6 +570,7 @@
 #define IDC_YES_MESSAGE_LIST            1208
 #define IDC_ALT_CLASS_LIST              1208
 #define IDC_LIGHT_PROFILE               1208
+#define IDC_CAMERA_LENS                 1747
 #define IDC_OPEN_CUSTOM_STRINGS         1208
 #define IDC_COMMAND_SENDER              1209
 #define IDC_COMMAND_PERSONA             1210
@@ -1626,7 +1627,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
-#define _APS_NEXT_CONTROL_VALUE         1747
+#define _APS_NEXT_CONTROL_VALUE         1748
 #define _APS_NEXT_COMMAND_VALUE         33113
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

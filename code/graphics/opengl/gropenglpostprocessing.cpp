@@ -9,12 +9,15 @@
 #include "gropengldraw.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
+#include "gropengltnl.h"
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/lens_flare.h"
 #include "graphics/shader_types.h"
 #include "graphics/grinternal.h"
 #include "graphics/openxr.h"
+#include "graphics/render.h"
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -65,6 +68,14 @@ static GLuint Smaa_output_tex               = 0;
 
 static GLuint Smaa_search_tex = 0;
 static GLuint Smaa_area_tex   = 0;
+
+// physically-based lens flare resources (created lazily on first use). There is
+// one camera lens, so one iris mask and one starburst serve every sun.
+static GLuint Lens_flare_framebuffer   = 0;
+static GLuint Lens_flare_aperture_tex  = 0;
+static GLuint Lens_flare_starburst_tex = 0;
+static int Lens_flare_tex_lens_idx     = -1;
+static unsigned int Lens_flare_tex_generation = 0;
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -506,6 +517,137 @@ void opengl_post_lightshafts()
 	}
 }
 
+// drop the uploaded aperture/starburst textures (regenerated lazily on demand)
+static void opengl_lens_flare_release_textures()
+{
+	if (Lens_flare_aperture_tex) {
+		glDeleteTextures(1, &Lens_flare_aperture_tex);
+		Lens_flare_aperture_tex = 0;
+	}
+	if (Lens_flare_starburst_tex) {
+		glDeleteTextures(1, &Lens_flare_starburst_tex);
+		Lens_flare_starburst_tex = 0;
+	}
+	Lens_flare_tex_lens_idx = -1;
+}
+
+// Upload the CPU-generated aperture/starburst textures of the mounted lens, or
+// keep the ones already uploaded for it
+static bool opengl_lens_flare_ensure_textures(int lens_idx)
+{
+	const unsigned int generation = graphics::lens_flare_get_texture_generation();
+	if (lens_idx == Lens_flare_tex_lens_idx && generation == Lens_flare_tex_generation &&
+		Lens_flare_aperture_tex != 0) {
+		return true;
+	}
+
+	const auto* tex = graphics::lens_flare_get_textures(lens_idx);
+	if (tex == nullptr || tex->aperture.empty() || tex->starburst.empty()) {
+		return false;
+	}
+
+	opengl_lens_flare_release_textures();
+
+	auto create_tex = [](GLsizei size, GLenum internal_format, GLenum format, GLenum type, const void* pixels,
+						  const char* name) {
+		GLuint handle;
+		glGenTextures(1, &handle);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(handle);
+
+		opengl_set_object_label(GL_TEXTURE, handle, name);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size, size, 0, format, type, pixels);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		return handle;
+	};
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	Lens_flare_aperture_tex = create_tex(tex->aperture_size, GL_R8, GL_RED, GL_UNSIGNED_BYTE, tex->aperture.data(),
+		"Lens flare aperture");
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	Lens_flare_starburst_tex = create_tex(tex->starburst_size, GL_RGBA32F, GL_RGBA, GL_FLOAT, tex->starburst.data(),
+		"Lens flare starburst");
+
+	Lens_flare_tex_lens_idx = lens_idx;
+	Lens_flare_tex_generation = generation;
+	return true;
+}
+
+// physically-based lens flares: additive instanced ghost quads on the HDR
+// scene color, immediately before bloom (so bloom/tonemap treat the flare
+// energy like any other scene light). One draw per visible sun: they share the
+// camera lens (hence its textures), but each has its own flare axis and tint.
+static void opengl_post_pass_lens_flare()
+{
+	// Whether there is anything to draw was decided by lens_flare_frame_update()
+	// during the scene render; this pass only draws what it published. In
+	// particular it must not second-guess the decision -- the sprite suns have
+	// already stepped aside for whatever is in here, so a backend that skipped a
+	// published draw would just delete the sun.
+	const auto& flare_draws = graphics::lens_flare_get_frame_draws();
+	if (flare_draws.empty()) {
+		return;
+	}
+
+	if (!opengl_lens_flare_ensure_textures(graphics::lens_flare_active_lens())) {
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Lens flare");
+	TRACE_SCOPE(tracing::LensFlare);
+
+	if (Lens_flare_framebuffer == 0) {
+		glGenFramebuffers(1, &Lens_flare_framebuffer);
+	}
+	GL_state.BindFrameBuffer(Lens_flare_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_LENS_FLARE, 0));
+
+	Current_shader->program->Uniforms.setTextureUniform("apertureMap", 0);
+	Current_shader->program->Uniforms.setTextureUniform("starburstMap", 1);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Lens_flare_aperture_tex);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Lens_flare_starburst_tex);
+
+	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
+	GL_state.Blend(GL_TRUE);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+
+	// one 4-vertex triangle-strip quad, instanced per ghost/starburst
+	GLfloat corners[4][2] = {{-1.0f, -1.0f}, {1.0f, -1.0f}, {-1.0f, 1.0f}, {1.0f, 1.0f}};
+
+	vertex_layout layout;
+	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 2, 0);
+
+	size_t offset = gr_add_to_immediate_buffer(sizeof(corners), corners);
+	opengl_bind_vertex_layout(layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, gr_immediate_buffer_handle), 0, offset);
+
+	for (const auto& draw : flare_draws) {
+		opengl_set_generic_uniform_data<graphics::generic_data::lens_flare_data>(
+			[&](graphics::generic_data::lens_flare_data* data) { *data = *draw.data; });
+
+		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, draw.instances);
+	}
+
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	GL_state.Blend(GL_FALSE);
+	GL_state.ScissorTest(scissor_test);
+}
+
 void gr_opengl_post_process_end()
 {
 	GR_DEBUG_SCOPE("Draw scene texture");
@@ -520,6 +662,9 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
 	GL_state.PushFramebufferState();
+
+	// physically-based lens flares composite into the HDR scene before bloom
+	opengl_post_pass_lens_flare();
 
 	// do bloom, hopefully ;)
 	opengl_post_pass_bloom();
@@ -1173,6 +1318,12 @@ void opengl_post_process_shutdown()
 
 	opengl_delete_render_texture(Smaa_area_tex);
 	opengl_delete_render_texture(Smaa_search_tex);
+
+	if (Lens_flare_framebuffer) {
+		glDeleteFramebuffers(1, &Lens_flare_framebuffer);
+		Lens_flare_framebuffer = 0;
+	}
+	opengl_lens_flare_release_textures();
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

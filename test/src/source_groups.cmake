@@ -25,6 +25,7 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_lens_flare.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
@@ -52,6 +53,7 @@ add_file_folder("model"
 add_file_folder("Parse"
     parse/test_parselo.cpp
     parse/test_replace.cpp
+    parse/test_sexp_lens.cpp
 )
 
 add_file_folder("Pilotfile"

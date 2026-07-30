@@ -1,0 +1,139 @@
+// Physically-based lens flare (Lee & Eisemann 2013 matrix method).
+// Each ghost is the image of the iris (aperture texture) clipped by the image
+// of the circular entrance pupil, evaluated per color channel for chromatic
+// fringing. The starburst instance samples the precomputed FFT texture instead.
+
+struct lens_flare_instance {
+	vec4 center;
+	vec4 halfext;
+	vec4 apscale;
+	vec4 apoff;
+	vec4 color;
+};
+
+// Which artifact this quad draws. Mirrored from LENS_QUAD_* in
+// graphics/util/uniform_structs.h, which also tabulates what each kind reads out
+// of the fields above.
+#define LENS_QUAD_GHOST     0.0
+#define LENS_QUAD_STARBURST 1.0
+#define LENS_QUAD_STREAK    2.0
+
+// The tag travels as a float, so match it with a half-step tolerance rather than
+// by equality.
+bool quad_is(float tag, float kind) { return abs(tag - kind) < 0.5; }
+
+#ifdef VULKAN
+layout(location = 0) in vec2 sensorPos;
+layout(location = 1) flat in vec4 g_center;
+layout(location = 2) flat in vec4 g_halfext;
+layout(location = 3) flat in vec4 g_apscale;
+layout(location = 4) flat in vec4 g_apoff;
+layout(location = 5) flat in vec4 g_color;
+layout(location = 6) flat in float g_origin;
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(set = 1, binding = 1) uniform sampler2D textures[16];
+#define apertureMap textures[0]
+#define starburstMap textures[1]
+#else
+in vec2 sensorPos;
+flat in vec4 g_center;
+flat in vec4 g_halfext;
+flat in vec4 g_apscale;
+flat in vec4 g_apoff;
+flat in vec4 g_color;
+flat in float g_origin;
+
+out vec4 fragOut0;
+
+uniform sampler2D apertureMap;
+uniform sampler2D starburstMap;
+#endif
+
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
+	vec2 axis;
+	vec2 ndc_scale;
+	vec4 tint;
+	int n_instances;
+	float squeeze;   // anamorphic horizontal stretch, 1.0 = spherical
+	// keep the array size in sync with MAX_LENS_FLARE_INSTANCES (uniform_structs.h)
+	lens_flare_instance instances[64];
+};
+
+// Undo the anamorphic stretch the vertex shader applied to this quad, so
+// everything below stays in the rotationally-symmetric frame the optics were
+// solved in. Both shaders stretch about the instance's axial centre, which the
+// vertex shader hands over in g_origin -- they have to agree on that origin, or
+// off-axis ghosts shear instead of stretching. At squeeze == 1.0 this is exactly
+// the identity, so a spherical lens renders bit-for-bit as it did before.
+vec2 unsqueeze(vec2 p)
+{
+	vec2 d = p - axis * g_origin;
+	d.x /= squeeze;
+	return axis * g_origin + d;
+}
+
+// The anamorphic streak, generated rather than sampled: it is a smooth 1D
+// profile, so a texture would cost an upload and a sampler binding to store a
+// curve that two lines of arithmetic describe exactly.
+//
+// `d` is the offset from the sun's image, `halfext` the half-length (x) and
+// half-thickness (y) of the bar. The bar tapers toward the tips instead of
+// keeping a constant width, because a streak of even thickness reads as a drawn
+// line rather than a lens artifact; the taper is floored so the tip never
+// narrows past the point where it would alias.
+float streak_profile(vec2 d, vec2 halfext)
+{
+	float u = abs(d.x) / halfext.x; // 0 at the sun, 1 at the tip
+	if (u >= 1.0) {
+		return 0.0;
+	}
+
+	float taper = 1.0 - u;
+	float v = d.y / (halfext.y * max(taper, 0.15));
+	float across = exp(-v * v * 4.0);
+	// an even falloff down the length, plus a hot core so the streak visibly
+	// has a source rather than floating over the sun
+	float along = taper * taper + exp(-u * 12.0);
+	return across * along;
+}
+
+float ghost_channel(vec2 sp, float center, float halfext, float apscale, float apoff, float intensity)
+{
+	vec2 q = (sp - axis * center) / halfext;
+	// image of the circular entrance pupil clips the bundle
+	float pupil = clamp((1.0 - length(q)) * 8.0, 0.0, 1.0);
+	vec2 uv = q * apscale + axis * apoff;
+	return texture(apertureMap, uv * 0.5 + 0.5).r * pupil * intensity;
+}
+
+void main()
+{
+	vec3 result;
+
+	if (quad_is(g_center.w, LENS_QUAD_STREAK)) {
+		// The streak is laid out in sensor space by the vertex shader, so unlike
+		// the ghosts it must not be un-squeezed on the way back. halfext.xy is a
+		// half-length and a half-thickness here, not a chromatic triple.
+		result = streak_profile(sensorPos - axis * g_center.x, g_halfext.xy) * g_color.rgb;
+	} else {
+		vec2 sp = unsqueeze(sensorPos);
+		if (quad_is(g_center.w, LENS_QUAD_STARBURST)) {
+			// starburst billboard centered on the sun
+			vec2 q = (sp - axis * g_center.x) / g_halfext.x;
+			result = texture(starburstMap, q * 0.5 + 0.5).rgb * g_color.rgb;
+		} else {
+			result.r = ghost_channel(sp, g_center.x, g_halfext.x, g_apscale.x, g_apoff.x, g_color.x);
+			result.g = ghost_channel(sp, g_center.y, g_halfext.y, g_apscale.y, g_apoff.y, g_color.y);
+			result.b = ghost_channel(sp, g_center.z, g_halfext.z, g_apscale.z, g_apoff.z, g_color.z);
+		}
+	}
+
+	fragOut0 = vec4(result * tint.rgb, 1.0);
+}
