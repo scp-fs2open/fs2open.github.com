@@ -98,6 +98,11 @@ namespace os
 	 * @ingroup osapi
 	 */
 
+	// Declared in osapi/vulkan_surface.h, which is only included by the few files that actually
+	// deal with Vulkan -- osapi.h is included nearly everywhere and has no business pulling in the
+	// Vulkan headers.
+	class VulkanSurfaceProvider;
+
 	/**
 	 * @brief Flags for OpenGL context creation
 	 * @ingroup os_graphics_api
@@ -331,6 +336,19 @@ namespace os
 		 * @return The created viewport, may be @c nullptr if the viewport can't be created
 		 */
 		virtual std::unique_ptr<Viewport> createViewport(const ViewPortProperties& props) = 0;
+
+		/**
+		 * @brief Gets the Vulkan support of this implementation
+		 *
+		 * Vulkan needs more from the windowing system than an OpenGL context does (loader, instance
+		 * extensions, surface creation), so it gets its own interface. Implementations that can't
+		 * present through Vulkan return @c nullptr here, which makes @ref gr_init fall back to
+		 * OpenGL instead of failing.
+		 *
+		 * @return The Vulkan support interface, or @c nullptr if this implementation has none. The
+		 * returned pointer is owned by the graphics operations and stays valid for their lifetime.
+		 */
+		virtual VulkanSurfaceProvider* getVulkanSupport() { return nullptr; }
 	};
 
 	/**
