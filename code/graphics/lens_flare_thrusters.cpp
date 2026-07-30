@@ -239,6 +239,16 @@ void lens_flare_gather_thruster_sources(SCP_vector<flare_source>& out, int budge
 		candidates.resize(budget);
 	}
 
+	// Visibility is tested last, against only the already-budgeted survivors: it
+	// costs a scene-wide raycast per source, so doing it before the rank/cut
+	// above would make the cost scale with every candidate nozzle in the
+	// mission instead of with the budget. A nozzle the raycast drops does not
+	// free its slot for the next-brightest candidate -- one dropped flare is
+	// cheaper than a second pass over the candidate list to refill it.
+	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+						 [](const flare_source& src) { return !lens_flare_point_visible(src.pos); }),
+		candidates.end());
+
 	out.insert(out.end(), candidates.begin(), candidates.end());
 }
 

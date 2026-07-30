@@ -4,6 +4,7 @@
 
 #include "globalincs/systemvars.h"
 
+#include "ai/ai.h"
 #include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "graphics/util/uniform_structs.h"
@@ -609,6 +610,34 @@ void lens_flare_clear_frame()
 {
 	Frame_draws.clear();
 	Sun_starburst_drawn.clear();
+}
+
+bool lens_flare_point_visible(const vec3d& world_pos)
+{
+	vec3d to_eye;
+	vm_vec_sub(&to_eye, &Eye_position, &world_pos);
+	const float dist = vm_vec_normalize_safe(&to_eye, true);
+	if (dist <= 0.2f) {
+		// point-blank range: nothing can fit between the eye and the source
+		return true;
+	}
+
+	// The point sits exactly on the emitting ship's own hull, and a segment
+	// ending precisely on a surface is the one case a poly test can register as
+	// a spurious self-hit. Pulling the far end back toward the eye by a flat,
+	// small offset dodges that without excluding the emitting ship, which is
+	// deliberate: a nozzle or muzzle on the far side of its own hull should
+	// occlude exactly like it would behind anything else. The dist <= 0.2f bail
+	// above guarantees this offset never reaches back past the eye.
+	vec3d test_point;
+	vm_vec_scale_add(&test_point, &world_pos, &to_eye, 0.1f);
+
+	// A zero threshold is deliberate: test_line_of_sight()'s default (10.0f)
+	// exists to let AI weapon fire ignore stray debris, but it would just as
+	// happily skip a fighter-sized ship as an occluder -- including the
+	// emitting ship itself, which is the self-occlusion case this test exists
+	// for in the first place.
+	return test_line_of_sight(&Eye_position, &test_point, {}, 0.0f);
 }
 
 namespace {

@@ -5,6 +5,7 @@
 #include <graphics/lens_flare.h>
 #include <graphics/lens_flare_internal.h>
 #include <model/model.h>
+#include <render/3d.h>
 #include <species_defs/species_defs.h>
 #include <starfield/starfield.h>
 
@@ -788,6 +789,24 @@ TEST(LensFlareThrusters, FacingFalloffMatchesTheGlow)
 TEST(LensFlareThrusters, NullNormalShinesEveryWay)
 {
 	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, vmd_zero_vector, 1.0f)), PI / 10000.0f, 1e-9f);
+}
+
+// lens_flare_point_visible() is the occlusion gate both the thruster and beam
+// gathers run against a source's position before ever queuing it for a draw.
+// A real occluding hit needs a scene with real ship geometry in it, which this
+// test suite has no scaffolding for (the AI line-of-sight test it is built on,
+// test_line_of_sight(), has none either) -- but the degenerate "eye sitting
+// exactly on the source" case is pure vector math and worth pinning: a source
+// coincident with the eye has no direction to test along, and must not be
+// mistaken for occluded.
+TEST(LensFlareVisibility, EyeExactlyOnSourceIsVisible)
+{
+	const vec3d saved_eye = Eye_position;
+	Eye_position = vmd_zero_vector;
+
+	EXPECT_TRUE(graphics::lens_flare_point_visible(vmd_zero_vector));
+
+	Eye_position = saved_eye;
 }
 
 // The lab overrides every species at once and leaves the tabled values alone, so

@@ -79,6 +79,18 @@ bool lens_flare_nozzle_apparent(const glow_point& gpt, const matrix& orient, con
 // ramps that light.
 void lens_flare_gather_beam_sources(SCP_vector<flare_source>& out, int budget);
 
+// Whether the eye has an unobstructed line of sight to a finite world point --
+// the same segment/model test AI targeting uses to decide whether a shot has a
+// clear path to its target (test_line_of_sight(), ai/aicode.cpp). A nozzle or
+// beam muzzle is bright and squarely faced just as often tucked behind its own
+// ship's hull, a wing, or another ship entirely, so both gathers call this on
+// the sources that survive their budget cut -- after the cut, not before, since
+// this costs a scene-wide raycast and the budget is what bounds how many of
+// those a frame can afford. Deliberately does not exclude the emitting ship:
+// a nozzle or muzzle on the far side of its own hull should occlude exactly
+// like it would behind anything else.
+bool lens_flare_point_visible(const vec3d& world_pos);
+
 // Fraunhofer C / d / F lines (red / green / blue), in micrometers. The three
 // wavelengths everything chromatic in the flare is evaluated at: dispersion and
 // coating reflectance in the optics, diffraction scaling in the starburst.
