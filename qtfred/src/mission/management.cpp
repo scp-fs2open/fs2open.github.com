@@ -3,14 +3,14 @@
 
 #include "object.h"
 
+#include "mission/GraphicsSettings.h"
+
 #include "cmdline/cmdline.h"
 
 #include <asteroid/asteroid.h>
 #include <cutscene/cutscenes.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>
-#include <graphics/2d.h>
-#include <graphics/shadows.h>
 #include <hud/hudsquadmsg.h>
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
@@ -27,7 +27,6 @@
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <nebula/neblightning.h>
-#include <options/OptionsManager.h>
 #include <parse/sexp.h>
 #include <parse/sexp/sexp_lookup.h>
 #include <project.h>
@@ -42,7 +41,6 @@
 #include <utils/Random.h>
 #include <weapon/weapon.h>
 
-#include <QSettings>
 #include <clocale>
 
 extern bool Xstr_inited;
@@ -129,38 +127,16 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	// 	Cmdline_noglow = 1;
 	Cmdline_window = 1;
 
-
-	// MSAA sample count, shadow quality, and the texture filter/anisotropy defaults are baked
-	// into GPU resources during gr_init() and can't be changed afterwards without recreating
-	// them, so qtFRED has to apply its saved Preferences > Graphics values here, before gr_init()
-	// runs, rather than from EditorViewport (which doesn't exist yet -- it's created after the
-	// first viewport widget is up). Shadow quality specifically: shadow_cascade_params_init()
-	// (gropengltnl.cpp/gr_vulkan.cpp) only runs during gr_init(), and only if Shadow_quality is
-	// already non-Disabled at that point -- setting it afterwards leaves the cascade buffers
-	// unsized and segfaults the next time a frame renders shadows. Read directly out of QSettings
-	// under the same "Preferences" group EditorViewport uses, using an in-memory-only
-	// OptionsManager override for the two settings the engine reads through an Option
-	// (Graphics.TextureFilter, Graphics.Anisotropy) so this never rewrites the registry/config
-	// file the actual game reads its own graphics settings from.
-	{
-		QSettings settings;
-		settings.beginGroup("Preferences");
-		Cmdline_msaa_enabled = settings.value("view_graphics_msaa_samples", Cmdline_msaa_enabled).toInt();
-		Shadow_quality = static_cast<ShadowQuality>(settings.value("view_graphics_shadow_quality", 0).toInt());
-
-		const int textureFilter = settings.value("view_graphics_texture_filter", 1).toInt();
-		options::OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::to_string(textureFilter));
-
-		if (settings.contains("view_graphics_anisotropy")) {
-			const float anisotropy = settings.value("view_graphics_anisotropy").toFloat();
-			options::OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::to_string(anisotropy));
-		}
-		settings.endGroup();
-	}
+	// These have to be in place before gr_init() bakes them into GPU resources, which is well
+	// before EditorViewport (and its copy of the settings) exists.
+	const GraphicsSettings graphicsSettings = GraphicsSettings::applyBeforeGrInit();
 
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 	gr_init(std::move(graphicsOps));
-	gr_set_gamma(3.0f);
+
+	// The rest needs a live renderer. EditorViewport re-applies these once it exists, but the
+	// startup screens render before that.
+	graphicsSettings.applyLive();
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
