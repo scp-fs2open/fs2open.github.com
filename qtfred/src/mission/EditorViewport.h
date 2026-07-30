@@ -69,6 +69,19 @@ struct ViewSettings {
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;
 
+	// Graphics (Preferences > Graphics tab). All quality/effect settings below are only
+	// visible in the viewport while EnablePostProcessing is on, since they're consumed by
+	// the same HDR scene-texture + post-processing pipeline that flag gates.
+	int Graphics_shadow_quality = 0;   // ShadowQuality: 0=Disabled, 1=Low, 2=Medium, 3=High, 4=Ultra
+	int Graphics_aa_mode = 0;          // AntiAliasMode: 0=None .. 7=SMAA Ultra
+	// The following three are baked into GPU resources at gr_init() time and can only be
+	// changed by restarting qtFRED; qtFRED applies the saved value before gr_init() runs
+	// (see management.cpp), and the Preferences UI notes this in each control's tooltip.
+	int Graphics_msaa_samples = 0;     // 0, 4, or 8
+	int Graphics_texture_filter = 1;   // 0=Bilinear, 1=Trilinear
+	float Graphics_anisotropy = 1.0f;  // populated from the hardware max the first time qtFRED runs
+	float Graphics_gamma = 3.0f;       // matches the brightness qtFRED has always launched with
+
 	ViewSettings();
 };
 
@@ -248,6 +261,14 @@ class EditorViewport {
 	DataMenuStyle Data_menu_style = DataMenuStyle::Auto;
 
 	void saveSettings() const;
+
+	// Pushes the live-appliable subset of view.Graphics_* (shadow quality, AA mode, gamma)
+	// into the engine globals that actually drive rendering. Called once at startup, after
+	// loadSettings(), and again from PreferencesDialogModel::apply() whenever the user
+	// changes one of those controls. Graphics_msaa_samples/Graphics_texture_filter/
+	// Graphics_anisotropy are deliberately not included here -- those can only be applied
+	// before gr_init() (see management.cpp) and need a restart to change.
+	void applyGraphicsSettings() const;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;

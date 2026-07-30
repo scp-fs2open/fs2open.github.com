@@ -94,6 +94,12 @@ void PreferencesDialog::applyChanges() {
 }
 
 void PreferencesDialog::initializeUi() {
+	// Populate the anisotropy combo with the levels the current hardware actually supports
+	// (1x/2x/4x/.../max), since that max varies by GPU.
+	for (float level : _model->getAvailableAnisotropyLevels()) {
+		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(level, 0, 'g', 0));
+	}
+
 	// Build the controls key-binding form dynamically from the registered bindings
 	auto* form = new QFormLayout(ui->controlsFormWidget);
 	auto& bindings = ControlBindings::instance();
@@ -125,6 +131,37 @@ void PreferencesDialog::updateUi() {
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
 	ui->outlineLodCombo->setCurrentIndex(_model->getOutlineLod());
+
+	// Graphics
+	ui->enablePostProcessing->setChecked(_model->getEnablePostProcessing());
+	ui->shadowQualityCombo->setCurrentIndex(_model->getShadowQuality());
+	ui->aaModeCombo->setCurrentIndex(_model->getAAMode());
+	{
+		static constexpr int msaaSamples[] = { 0, 4, 8 };
+		const int samples = _model->getMSAASamples();
+		int index = 0;
+		for (int i = 0; i < 3; ++i) {
+			if (msaaSamples[i] == samples) {
+				index = i;
+				break;
+			}
+		}
+		ui->msaaCombo->setCurrentIndex(index);
+	}
+	ui->textureFilterCombo->setCurrentIndex(_model->getTextureFilter());
+	{
+		const auto levels = _model->getAvailableAnisotropyLevels();
+		const float anisotropy = _model->getAnisotropy();
+		int index = 0;
+		for (size_t i = 0; i < levels.size(); ++i) {
+			if (levels[i] <= anisotropy) {
+				index = static_cast<int>(i);
+			}
+		}
+		ui->anisotropyCombo->setCurrentIndex(index);
+	}
+	ui->gammaSpin->setValue(_model->getGamma());
+
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -200,6 +237,38 @@ void PreferencesDialog::on_outlineLodCombo_currentIndexChanged(int index) {
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
 	_model->setThemeMode(themeModeFromIndex(index));
+}
+
+void PreferencesDialog::on_enablePostProcessing_toggled(bool checked) {
+	_model->setEnablePostProcessing(checked);
+}
+
+void PreferencesDialog::on_shadowQualityCombo_currentIndexChanged(int index) {
+	_model->setShadowQuality(index);
+}
+
+void PreferencesDialog::on_aaModeCombo_currentIndexChanged(int index) {
+	_model->setAAMode(index);
+}
+
+void PreferencesDialog::on_msaaCombo_currentIndexChanged(int index) {
+	static constexpr int msaaSamples[] = { 0, 4, 8 };
+	_model->setMSAASamples(msaaSamples[index]);
+}
+
+void PreferencesDialog::on_textureFilterCombo_currentIndexChanged(int index) {
+	_model->setTextureFilter(index);
+}
+
+void PreferencesDialog::on_anisotropyCombo_currentIndexChanged(int index) {
+	const auto levels = _model->getAvailableAnisotropyLevels();
+	if (index >= 0 && static_cast<size_t>(index) < levels.size()) {
+		_model->setAnisotropy(levels[index]);
+	}
+}
+
+void PreferencesDialog::on_gammaSpin_valueChanged(double value) {
+	_model->setGamma(static_cast<float>(value));
 }
 
 void PreferencesDialog::on_dataMenuStyleCombo_currentIndexChanged(int index) {

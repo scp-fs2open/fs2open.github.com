@@ -189,7 +189,14 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
-	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
+	// Route through the option when in-game options are active, same as the anisotropy setting
+	// below, so that overriding "Graphics.TextureFilter" (e.g. via OptionsManager::setOverride())
+	// actually has an effect instead of being silently bypassed by this direct config read.
+	if (Using_in_game_options) {
+		GL_mipmap_filter = TextureFilteringOption->getValue();
+	} else {
+		GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
+	}
 
 	if (GL_mipmap_filter > 1) {
 		GL_mipmap_filter = 1;
