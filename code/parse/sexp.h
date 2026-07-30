@@ -1205,7 +1205,8 @@ enum sexp_error_check
 	SEXP_CHECK_OP_EXPECTED,             // operator expected, but found data instead
 	SEXP_CHECK_UNKNOWN_OP,              // unrecognized operator
 	SEXP_CHECK_TYPE_MISMATCH,           // return type or data type mismatch
-	SEXP_CHECK_BAD_ARG_COUNT,           // argument count in incorrect
+	SEXP_CHECK_BAD_ARG_COUNT,           // argument count is incorrect
+	SEXP_CHECK_BAD_ARG_COUNT_BENIGN,    // ditto, but don't prevent the mission from loading
 	SEXP_CHECK_UNKNOWN_TYPE,            // unrecognized return type of data type
 
 	SEXP_CHECK_INVALID_NUM = 101,       // number is not valid
