@@ -99,7 +99,7 @@ void opengl_post_pass_tonemap()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 }
 
 void opengl_post_pass_bloom()
@@ -134,7 +134,16 @@ void opengl_post_pass_bloom()
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		// Unlike every other pass below, this reads directly from the scene
+		// texture rather than from an already-cropped intermediate (Bloom_textures
+		// is filled by this very call), so it has to confine itself to the
+		// sub-rectangle that was actually rendered into -- see the scale
+		// variables' own comment in gr_opengl_scene_texture_begin(). Hardcoding
+		// 1.0/1.0 here (as this used to) is only correct when the scene texture
+		// exactly matches the screen, which is not true of qtFred's dynamically
+		// resized viewport: it would smear/misplace the bloom halo relative to
+		// the scene it's supposed to be blooming.
+		opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 	}
 	// ------ end bright pass ------
 
@@ -293,7 +302,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 
 	// set and configure post shader ..
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0));
@@ -310,7 +319,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 
 	opengl_shader_set_current();
 }
@@ -333,7 +342,7 @@ static void smaa_detect_edges()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 }
 
 static void smaa_calculate_blending_weights()
@@ -358,7 +367,7 @@ static void smaa_calculate_blending_weights()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_area_tex);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Smaa_search_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 }
 
 static void smaa_neighborhood_blending()
@@ -381,7 +390,7 @@ static void smaa_neighborhood_blending()
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_blend_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 }
 
 void smaa_resolve()
@@ -491,7 +500,7 @@ void opengl_post_lightshafts()
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 
 				GL_state.Blend(GL_FALSE);
 				break;
@@ -625,7 +634,7 @@ void gr_opengl_post_process_end()
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 
 	//Shadow Map debug window
 //#define SHADOW_DEBUG
@@ -1042,10 +1051,12 @@ static bool opengl_post_init_framebuffer()
 {
 	bool rval = false;
 
-	// clamp size, if needed
-	Post_texture_width = gr_screen.max_w;
-	Post_texture_height = gr_screen.max_h;
+	// Sized once and never resized, like the scene textures they consume, so they get the same
+	// floor -- see Gr_min_render_target_w/h (2d.h).
+	Post_texture_width = MAX(gr_screen.max_w, Gr_min_render_target_w);
+	Post_texture_height = MAX(gr_screen.max_h, Gr_min_render_target_h);
 
+	// clamp size, if needed
 	if (Post_texture_width > GL_max_renderbuffer_size) {
 		Post_texture_width = GL_max_renderbuffer_size;
 	}
