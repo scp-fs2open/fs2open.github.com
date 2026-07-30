@@ -16,7 +16,6 @@
 #include <mission/missionparse.h>
 #include <prop/prop.h>
 #include <FredApplication.h>
-#include <graphics/2d.h>
 
 namespace {
 
@@ -123,7 +122,7 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	syncMissionLayerNames();
 
 	loadSettings();
-	applyGraphicsSettings();
+	view.Graphics.applyLive();
 
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
@@ -198,6 +197,8 @@ void EditorViewport::loadSettings() {
 	camera.setInvertOrbitX(settings.value("camera_invert_orbit_x", camera.getInvertOrbitX()).toBool());
 	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
 	settings.endGroup();
+
+	view.Graphics = GraphicsSettings::load();
 }
 
 void EditorViewport::saveSettings() const {
@@ -254,18 +255,8 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
 	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
 	settings.endGroup();
-}
 
-void EditorViewport::applyGraphicsSettings() const {
-	// Shadow_quality is deliberately not set here. Turning shadows on requires allocating the
-	// shadow framebuffer and sizing the cascade-parameter buffers (shadow_cascade_params_init(),
-	// gropengltnl.cpp/gr_vulkan.cpp), which only happens once at gr_init() and only if
-	// Shadow_quality is already non-Disabled at that point -- flipping the global afterwards
-	// leaves those buffers empty/unsized and segfaults the next time a frame tries to render
-	// shadows. Applied before gr_init() instead (see management.cpp), same as MSAA samples,
-	// texture filter, and anisotropy; the Preferences UI notes it needs a restart.
-	Gr_aa_mode = static_cast<AntiAliasMode>(view.Graphics_aa_mode);
-	gr_set_gamma(view.Graphics_gamma);
+	view.Graphics.save();
 }
 
 void EditorViewport::needsUpdate() {

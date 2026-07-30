@@ -72,6 +72,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	std::unique_ptr<Ui::PreferencesDialog> ui;
 	std::unique_ptr<PreferencesDialogModel> _model;
+	//! Anisotropy levels backing the combo, in combo order. Queried once; hardware-dependent.
+	SCP_vector<float> _anisotropyLevels;
 	std::map<ControlAction, QKeySequenceEdit*> _controlEditors;
 	FredView* _fredView = nullptr;
 	EditorViewport* _viewport = nullptr;

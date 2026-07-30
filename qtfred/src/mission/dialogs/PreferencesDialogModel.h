@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mission/GraphicsSettings.h"
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/ControlBindings.h"
 #include "ui/ThemeMode.h"
@@ -70,30 +71,10 @@ public:
 	double getLabelFontScale() const;
 	void setLabelFontScale(double value);
 
-	// Graphics
-	bool getEnablePostProcessing() const;
-	void setEnablePostProcessing(bool value);
-
-	int  getShadowQuality() const;
-	void setShadowQuality(int value);
-
-	int  getAAMode() const;
-	void setAAMode(int value);
-
-	int  getMSAASamples() const;
-	void setMSAASamples(int value);
-
-	int  getTextureFilter() const;
-	void setTextureFilter(int value);
-
-	float getAnisotropy() const;
-	void setAnisotropy(float value);
-	// Anisotropy levels the current hardware actually supports (1.0 = off), for populating the
-	// combo box: 1x, 2x, 4x, ... up to the hardware max.
-	SCP_vector<float> getAvailableAnisotropyLevels() const;
-
-	float getGamma() const;
-	void setGamma(float value);
+	// Graphics. The dialog edits a whole GraphicsSettings rather than a field at a time; the
+	// setter exists so edits still route through modify() and mark the model dirty.
+	const GraphicsSettings& getGraphics() const;
+	void setGraphics(const GraphicsSettings& value);
 
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
@@ -138,14 +119,7 @@ private:
 	int  _outlineLod;
 	float _labelFontScale;
 
-	// Graphics
-	bool  _enablePostProcessing;
-	int   _shadowQuality;
-	int   _aaMode;
-	int   _msaaSamples;
-	int   _textureFilter;
-	float _anisotropy;
-	float _gamma;
+	GraphicsSettings _graphics;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;
