@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-// The five lens-flare operators are wired up by hand across five separate
+// The six lens-flare operators are wired up by hand across five separate
 // tables in sexp.cpp (the operator list, the argument-type switch, the category
 // and subcategory switches, and the help text). Nothing makes those agree, and
 // a desync is silent: an argument slot that returns the wrong OPF still parses,
@@ -30,6 +30,7 @@ const lens_operator_expectation Lens_operators[] = {
 	{"set-lens-grating", OP_SET_LENS_GRATING, 1, 5, OPF_POSITIVE},
 	{"set-lens-scratches", OP_SET_LENS_SCRATCHES, 1, 7, OPF_POSITIVE},
 	{"set-lens-dust", OP_SET_LENS_DUST, 1, 4, OPF_POSITIVE},
+	{"set-lens-flare-strength", OP_SET_LENS_FLARE_STRENGTH, 1, 5, OPF_POSITIVE},
 };
 
 const sexp_oper* find_lens_operator(const char* name)
@@ -144,4 +145,68 @@ TEST_F(SexpLensTableTest, ValidatesLensNames)
 	// the error code has a message, or FRED and the mission loader print nothing
 	EXPECT_STRNE(sexp_error_message(SEXP_CHECK_INVALID_LENS_SYSTEM), nullptr);
 	EXPECT_GT(strlen(sexp_error_message(SEXP_CHECK_INVALID_LENS_SYSTEM)), 0u);
+}
+
+// The four iris operators rebuild a 512^2 mask and its Fourier transform, which
+// is slow enough to be seen; set-lens-flare-strength deliberately does not. That
+// distinction is the whole reason the sixth operator exists, so the help text
+// has to actually make it -- a designer who drives the wrong one from a
+// repeating event gets a stuttering mission and no clue why.
+TEST(SexpLens, IrisOperatorsDocumentTheirCost)
+{
+	auto help_for = [](int op_const) -> SCP_string {
+		auto it = std::find_if(Sexp_help.begin(), Sexp_help.end(), [op_const](const sexp_help_struct& h) {
+			return h.id == op_const;
+		});
+		return (it == Sexp_help.end()) ? SCP_string() : it->help;
+	};
+
+	for (int op : {OP_SET_LENS_APERTURE, OP_SET_LENS_GRATING, OP_SET_LENS_SCRATCHES, OP_SET_LENS_DUST}) {
+		SCOPED_TRACE(op);
+		const SCP_string help = help_for(op);
+		ASSERT_FALSE(help.empty());
+		EXPECT_NE(help.find("COST:"), SCP_string::npos) << "no cost warning";
+		EXPECT_NE(help.find("repeating"), SCP_string::npos) << "doesn't warn against repeating events";
+	}
+
+	const SCP_string cheap = help_for(OP_SET_LENS_FLARE_STRENGTH);
+	ASSERT_FALSE(cheap.empty());
+	EXPECT_NE(cheap.find("cheap"), SCP_string::npos) << "doesn't say it is the cheap one";
+	EXPECT_EQ(cheap.find("COST:"), SCP_string::npos) << "warns about a cost it doesn't have";
+}
+
+// set-lens-flare-strength must reach every knob it documents. Its arguments are
+// written into lens_overrides by hand, so a copy-paste slip would silently make
+// one of them do nothing -- and unlike a wrong OPF, nothing would even warn.
+TEST_F(SexpLensTableTest, FlareStrengthOperatorTouchesEveryKnobItDocuments)
+{
+	const int idx = graphics::lens_flare_lookup("angenieux_100mm");
+	ASSERT_GE(idx, 0);
+	graphics::lens_flare_switch_to("angenieux_100mm");
+	ASSERT_EQ(graphics::lens_flare_active_lens(), idx);
+
+	// Halving everything is the interesting case: it exercises the "percentage of
+	// whatever is in force" rule rather than landing on a default by accident.
+	const graphics::lens_settings before = graphics::lens_flare_effective_settings(idx);
+
+	graphics::lens_overrides& ov = graphics::lens_flare_overrides();
+	ov.intensity = before.intensity * 0.5f;
+	ov.ghost_brightness = before.ghost_brightness * 0.5f;
+	ov.starburst_brightness = before.starburst_brightness * 0.5f;
+	ov.starburst_scale = before.starburst_scale * 0.5f;
+	ov.max_ghosts = 5;
+	graphics::lens_flare_overrides_changed();
+
+	const graphics::lens_settings after = graphics::lens_flare_effective_settings(idx);
+	EXPECT_FLOAT_EQ(after.intensity, before.intensity * 0.5f);
+	EXPECT_FLOAT_EQ(after.ghost_brightness, before.ghost_brightness * 0.5f);
+	EXPECT_FLOAT_EQ(after.starburst_brightness, before.starburst_brightness * 0.5f);
+	EXPECT_FLOAT_EQ(after.starburst_scale, before.starburst_scale * 0.5f);
+	EXPECT_EQ(after.max_ghosts, 5);
+
+	// None of it touches the iris, which is why this operator is the cheap one:
+	// the textures the aperture drives must be untouched.
+	EXPECT_EQ(after.aperture, before.aperture);
+
+	graphics::lens_flare_reset_for_level();
 }

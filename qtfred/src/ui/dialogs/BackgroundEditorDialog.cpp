@@ -3,6 +3,7 @@
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/General/ImagePickerDialog.h"
+#include "ui/dialogs/LensApertureDialog.h"
 #include "ui_BackgroundEditor.h"
 
 #include <globalincs/globals.h>
@@ -1011,6 +1012,12 @@ void BackgroundEditorDialog::on_cameraLensCombo_currentIndexChanged(int index)
 
 	const QString text = ui->cameraLensCombo->itemText(index);
 	_model->setCameraLensName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_lensApertureButton_clicked()
+{
+	LensApertureDialog dlg(this, _model.get());
+	dlg.exec();
 }
 
 } // namespace fso::fred::dialogs

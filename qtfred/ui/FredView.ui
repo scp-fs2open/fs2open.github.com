@@ -868,7 +868,7 @@
     <string>Enable Post Processing</string>
    </property>
    <property name="toolTip">
-    <string>Render the 3D viewport through the game's HDR post-processing pipeline (bloom, tonemapping, lightshafts)</string>
+    <string>Render the 3D viewport through the game's HDR post-processing pipeline (bloom, tonemapping, lens flares)</string>
    </property>
   </action>
   <action name="actionCamera">

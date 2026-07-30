@@ -393,6 +393,57 @@ int Fred_mission_save::fout_version(const char* format, ...)
 	return 0;
 }
 
+void Fred_mission_save::fout_lens_field(const char* token, float val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %f", val);
+	} else {
+		fout_version("\n%s %f", token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, int val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %d", val);
+	} else {
+		fout_version("\n%s %d", token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, bool val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %s", val ? "YES" : "NO");
+	} else {
+		fout_version("\n%s %s", token, val ? "YES" : "NO");
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, float val, float def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, int val, int def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, bool val, bool def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
 void Fred_mission_save::fout_raw_comment(const char* comment_start)
 {
 	Assertion(comment_start <= raw_ptr, "This function assumes the beginning of the comment precedes the current raw pointer!");
@@ -3152,6 +3203,122 @@ int Fred_mission_save::save_mission_info()
 		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 26.1.0;; $Camera Lens:");
+	}
+
+	// the-e's per-mission camera-lens overrides -- the iris, the anamorphic look
+	// and the flare's strength, the same things the set-lens-* sexps control but
+	// applied at mission load instead of by an event (see the field comment in
+	// missionparse.h). Each block is written only when the mission actually
+	// overrides that part, and within it each field only when it differs from its
+	// own default, so leaving (say) grating alone doesn't bloat every mission file
+	// with zeroes.
+	const graphics::lens_overrides& lens = The_mission.camera_lens_overrides;
+
+	if (lens.aperture) {
+		const graphics::lens_aperture& ap = *lens.aperture;
+		const graphics::lens_aperture def;
+
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Aperture:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Aperture:");
+		}
+
+		fout_lens_field("+Blades:", ap.blades, def.blades);
+		fout_lens_field("+Rotation:", ap.rotation, def.rotation);
+		fout_lens_field("+Curvature:", ap.curvature, def.curvature);
+		fout_lens_field("+Softness:", ap.softness, def.softness);
+
+		fout_lens_field("+Grating Strength:", ap.grating.strength, def.grating.strength);
+		fout_lens_field("+Grating Density:", ap.grating.density, def.grating.density);
+		fout_lens_field("+Grating Length:", ap.grating.length, def.grating.length);
+		fout_lens_field("+Grating Width:", ap.grating.width, def.grating.width);
+		fout_lens_field("+Grating Softness:", ap.grating.softness, def.grating.softness);
+
+		fout_lens_field("+Scratches Strength:", ap.scratches.strength, def.scratches.strength);
+		fout_lens_field("+Scratches Density:", ap.scratches.density, def.scratches.density);
+		fout_lens_field("+Scratches Length:", ap.scratches.length, def.scratches.length);
+		fout_lens_field("+Scratches Width:", ap.scratches.width, def.scratches.width);
+		fout_lens_field("+Scratches Rotation:", ap.scratches.rotation, def.scratches.rotation);
+		fout_lens_field("+Scratches Rotation Variation:", ap.scratches.rotation_variation,
+			def.scratches.rotation_variation);
+		fout_lens_field("+Scratches Softness:", ap.scratches.softness, def.scratches.softness);
+
+		fout_lens_field("+Dust Strength:", ap.dust.strength, def.dust.strength);
+		fout_lens_field("+Dust Density:", ap.dust.density, def.dust.density);
+		fout_lens_field("+Dust Radius:", ap.dust.radius, def.dust.radius);
+		fout_lens_field("+Dust Softness:", ap.dust.softness, def.dust.softness);
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Aperture:");
+	}
+
+	if (lens.anamorphic) {
+		const graphics::lens_anamorphic& an = *lens.anamorphic;
+		const graphics::lens_anamorphic def;
+
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Anamorphic:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Anamorphic:");
+		}
+
+		fout_lens_field("+Squeeze:", an.squeeze, def.squeeze);
+		fout_lens_field("+Streak Strength:", an.streak.strength, def.streak.strength);
+		fout_lens_field("+Streak Length:", an.streak.length, def.streak.length);
+		fout_lens_field("+Streak Thickness:", an.streak.thickness, def.streak.thickness);
+
+		// The one field that isn't a single number, so it can't go through the
+		// helper: a tint is only meaningful as a whole triple.
+		if (an.streak.tint[0] != def.streak.tint[0] || an.streak.tint[1] != def.streak.tint[1] ||
+			an.streak.tint[2] != def.streak.tint[2]) {
+			if (optional_string_fred("+Streak Tint:")) {
+				parse_comments(1);
+				fout(" ( %f, %f, %f )", an.streak.tint[0], an.streak.tint[1], an.streak.tint[2]);
+			} else {
+				fout_version("\n+Streak Tint: ( %f, %f, %f )", an.streak.tint[0], an.streak.tint[1],
+					an.streak.tint[2]);
+			}
+		}
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Anamorphic:");
+	}
+
+	// Unlike the two blocks above -- an iris and an anamorphic look are each one
+	// artifact, overridden whole -- these knobs are independent of each other, so
+	// each is written only if this mission overrode that one.
+	if (lens.intensity || lens.ghost_brightness || lens.starburst_brightness || lens.starburst ||
+		lens.starburst_scale || lens.max_ghosts) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Flare Strength:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Flare Strength:");
+		}
+
+		// Written whenever the mission set it, default value or not: here the fact
+		// that it was overridden at all is the content.
+		if (lens.intensity)
+			fout_lens_field("+Intensity:", *lens.intensity);
+		if (lens.ghost_brightness)
+			fout_lens_field("+Ghost Brightness:", *lens.ghost_brightness);
+		if (lens.starburst_brightness)
+			fout_lens_field("+Starburst Brightness:", *lens.starburst_brightness);
+		if (lens.starburst)
+			fout_lens_field("+Starburst:", *lens.starburst);
+		if (lens.starburst_scale)
+			fout_lens_field("+Starburst Scale:", *lens.starburst_scale);
+		if (lens.max_ghosts)
+			fout_lens_field("+Max Ghosts:", *lens.max_ghosts);
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Flare Strength:");
 	}
 
 	// sound environment (EFX/EAX) - taylor

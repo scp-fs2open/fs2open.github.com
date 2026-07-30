@@ -68,9 +68,6 @@ void parse_lens_table_core()
 		if (overriding) {
 			if (existing >= 0) {
 				ls = systems[existing];
-				// The copy carries the original's generated textures, which belong
-				// to the aperture this entry is about to edit
-				ls.textures.reset();
 			} else {
 				error_display(0,
 					"Lens system '%s': +override names a lens no earlier table defines; reading this entry as a "
@@ -90,15 +87,15 @@ void parse_lens_table_core()
 			stuff_float(&ls.sensor_width);
 		}
 		if (optional_string("$Anamorphic Squeeze:")) {
-			stuff_float(&ls.anamorphic_squeeze);
+			stuff_float(&ls.anamorphic.squeeze);
 		}
 		if (optional_string("$Anamorphic Streak:")) {
-			stuff_float(&ls.streak.strength);
+			stuff_float(&ls.anamorphic.streak.strength);
 			if (optional_string("+Length:")) {
-				stuff_float(&ls.streak.length);
+				stuff_float(&ls.anamorphic.streak.length);
 			}
 			if (optional_string("+Thickness:")) {
-				stuff_float(&ls.streak.thickness);
+				stuff_float(&ls.anamorphic.streak.thickness);
 			}
 			if (optional_string("+Tint:")) {
 				float rgb[3] = {1.0f, 1.0f, 1.0f};
@@ -106,9 +103,9 @@ void parse_lens_table_core()
 				if (count != 3) {
 					error_display(0, "Lens system '%s': +Tint: needs ( r, g, b )", ls.name.c_str());
 				}
-				ls.streak.tint[0] = rgb[0];
-				ls.streak.tint[1] = rgb[1];
-				ls.streak.tint[2] = rgb[2];
+				ls.anamorphic.streak.tint[0] = rgb[0];
+				ls.anamorphic.streak.tint[1] = rgb[1];
+				ls.anamorphic.streak.tint[2] = rgb[2];
 			}
 		}
 		if (optional_string("$Coating Wavelength:")) {
@@ -253,9 +250,6 @@ void parse_lens_table_core()
 			error_display(0, "Lens system '%s' has an unusable prescription and will be ignored", ls.name.c_str());
 			continue;
 		}
-
-		// what a mission's sexps (or the lab) will be reset back to
-		ls.tabled_aperture = ls.aperture;
 
 		// a later table may redefine (or, with "+override", edit) a lens the
 		// engine or an earlier tbm shipped. Committed only now, so an entry whose

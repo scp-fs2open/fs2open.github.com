@@ -24,10 +24,15 @@ extern int Game_subspace_effect;
 namespace graphics {
 namespace {
 
-// Overall brightness calibration of the ghost/starburst energy model relative to
-// the HDR scene, plus the HDR headroom below. Runtime-tunable from the lab (and
-// scaled per lens via $Intensity:); the field defaults are in lens_flare.h.
+// How the flare is fitted to HDR output, and whether nozzles draw ghosts.
+// Runtime-tunable from the lab; the field defaults are in lens_flare.h. The
+// brightness calibration that used to live here is per-camera and therefore
+// overridable, so it moved into lens_overrides.
 lens_flare_tuning Tuning;
+
+// What a mission, the lab, the set-lens-* sexps or an editor has restyled about
+// the camera. One set, because there is one camera.
+lens_overrides Overrides;
 
 // SDR/HDR consistency (see lens_flare_output_scale()). The flare composites
 // additively into the pre-tonemap HDR scene buffer, so the tonemapper is the
@@ -49,17 +54,37 @@ constexpr float LENS_FLARE_SDR_REFERENCE_WHITE = 11.2f;
 // focused ghosts can't blow out to infinity
 constexpr float GHOST_ENERGY_CAP = 400.0f;
 
+// The ceiling lens_flare.h publishes has to be the one the uniform block can
+// actually hold, less the starburst and streak slots pack_source_instances()
+// reserves.
+static_assert(MAX_LENS_FLARE_GHOSTS == generic_data::MAX_LENS_FLARE_INSTANCES - 2,
+	"MAX_LENS_FLARE_GHOSTS no longer matches the uniform block's instance budget");
+
 SCP_vector<lens_system> Lens_systems;
 
-// Bumped whenever a lens's cached textures are dropped, so the render backends
-// can tell a re-generated aperture from the one they already uploaded
+// The iris/starburst textures currently generated, and the exact (lens, iris)
+// pair they were generated from. One cache, because there is one camera: no
+// other pair is ever drawn with, so keying on the pair rather than owning a set
+// per lens is both smaller and impossible to get out of step.
+//
+// Keying on the aperture *value* is also what makes a no-op edit free: a slider
+// dragged out and back lands on an equal aperture, matches here, and neither
+// rebuilds nor bumps the generation the backends watch.
+struct texture_cache {
+	int lens_idx = -1;
+	lens_aperture aperture;
+	std::unique_ptr<lens_flare_textures> textures;
+};
+texture_cache Tex_cache;
+
+// Bumped whenever those textures are rebuilt, so the render backends can tell a
+// re-generated iris from the one they already uploaded
 unsigned int Texture_generation = 1;
 
-// Live aperture editing in the lab: coalesce a slider drag into one
-// regeneration every APERTURE_REGEN_INTERVAL ms
+// Live iris editing: coalesce a slider drag into one regeneration every
+// APERTURE_REGEN_INTERVAL ms
 constexpr int APERTURE_REGEN_INTERVAL = 100;
 bool Aperture_dirty = false;
-int Aperture_dirty_lens = -1;
 UI_TIMESTAMP Aperture_dirty_stamp;
 
 // Per-sun occlusion visibility, smoothed over frames. Touched only by
@@ -108,9 +133,10 @@ bool pass_globally_possible()
 	// precisely when post-processing is on and drop it again at
 	// scene_texture_end(), which makes it the one authoritative signal -- rather
 	// than a second copy of the backends' own conditions. It is also what keeps
-	// FRED and qtFRED, which draw the background without ever opening a scene
-	// texture, from having their sun sprites step aside for a pass that will
-	// never run.
+	// plain FRED, and qtFred unless its View menu's "Enable Post Processing"
+	// toggle is on, from having their sun sprites step aside for a pass that
+	// will never run -- neither draws the background through a scene texture
+	// otherwise.
 	if (!High_dynamic_range) {
 		return false;
 	}
@@ -216,10 +242,77 @@ bool project_source(const flare_source& src, const film_gate& gate, float efl, f
 	return true;
 }
 
-// Apply a pending live aperture edit, at most once per APERTURE_REGEN_INTERVAL.
+} // namespace
+
+lens_overrides& lens_flare_overrides() { return Overrides; }
+
+lens_settings lens_flare_effective_settings(int lens_idx)
+{
+	lens_settings s;
+	if (const lens_system* lens = lens_flare_get_system(lens_idx)) {
+		s.aperture = lens->aperture;
+		s.anamorphic = lens->anamorphic;
+		s.intensity = lens->intensity;
+		s.starburst = lens->starburst;
+		s.starburst_scale = lens->starburst_scale;
+		s.max_ghosts = lens->max_ghosts;
+	}
+
+	// Whatever the camera has been restyled with wins over what the glass tables.
+	// The two brightness figures have no per-lens baseline to fall back to -- they
+	// calibrate the energy model itself -- so lens_settings' own defaults stand in.
+	if (Overrides.aperture)
+		s.aperture = *Overrides.aperture;
+	if (Overrides.anamorphic)
+		s.anamorphic = *Overrides.anamorphic;
+	if (Overrides.intensity)
+		s.intensity = *Overrides.intensity;
+	if (Overrides.starburst)
+		s.starburst = *Overrides.starburst;
+	if (Overrides.starburst_scale)
+		s.starburst_scale = *Overrides.starburst_scale;
+	if (Overrides.max_ghosts)
+		s.max_ghosts = *Overrides.max_ghosts;
+	if (Overrides.ghost_brightness)
+		s.ghost_brightness = *Overrides.ghost_brightness;
+	if (Overrides.starburst_brightness)
+		s.starburst_brightness = *Overrides.starburst_brightness;
+
+	return s;
+}
+
+namespace {
+
+// The iris the camera is actually looking through, which is what the textures
+// have to be generated from.
+const lens_aperture& effective_aperture(int lens_idx)
+{
+	if (Overrides.aperture) {
+		return *Overrides.aperture;
+	}
+	static const lens_aperture Fallback;
+	const lens_system* lens = lens_flare_get_system(lens_idx);
+	return (lens != nullptr) ? lens->aperture : Fallback;
+}
+
+// Drop the cache so the next lens_flare_get_textures() rebuilds it, and tell the
+// render backends their uploaded copy is stale.
+void drop_texture_cache()
+{
+	Tex_cache.textures.reset();
+	Tex_cache.lens_idx = -1;
+	Texture_generation++;
+}
+
+// Act on a scheduled iris edit, at most once per APERTURE_REGEN_INTERVAL.
 // Regenerating means a 512^2 mask plus its starburst FFT (a good fraction of a
-// second in a debug build), while ImGui sliders fire every frame a drag is
-// held, so a drag has to be coalesced into a few rebuilds rather than sixty.
+// second in a debug build), while sliders fire every frame a drag is held, so a
+// drag has to be coalesced into a few rebuilds rather than sixty.
+//
+// This is the *only* place a changed iris invalidates the cache. The lazy
+// generate in lens_flare_get_textures() deliberately does not, or a drag would
+// pull the FFT into the render path once a frame -- it fills an empty cache,
+// never replaces a merely outdated one.
 void flush_pending_aperture_edit()
 {
 	if (!Aperture_dirty) {
@@ -228,12 +321,30 @@ void flush_pending_aperture_edit()
 	if (Aperture_dirty_stamp.isValid() && !ui_timestamp_elapsed(Aperture_dirty_stamp)) {
 		return;
 	}
-	lens_flare_invalidate_textures(Aperture_dirty_lens);
 	Aperture_dirty = false;
 	Aperture_dirty_stamp = ui_timestamp(APERTURE_REGEN_INTERVAL);
+
+	// Only a genuinely different iris is worth the rebuild. An edit that landed
+	// back where it started, or one that touched a field the textures don't
+	// depend on, stops here.
+	if (Tex_cache.textures != nullptr && Tex_cache.aperture == effective_aperture(Tex_cache.lens_idx)) {
+		return;
+	}
+	drop_texture_cache();
 }
 
 } // namespace
+
+void lens_flare_overrides_changed()
+{
+	Aperture_dirty = true;
+
+	// Act straight away if the interval has already elapsed; if it hasn't, this is
+	// a no-op and the per-frame flush picks the edit up when it does. (The interval
+	// check lives in flush_pending_aperture_edit() alone -- repeating it here would
+	// just be the same condition written twice.)
+	flush_pending_aperture_edit();
+}
 
 void lens_flare_init()
 {
@@ -262,6 +373,8 @@ void lens_flare_close()
 	Default_lens_name.clear();
 	Default_lens = -1;
 	Mission_lens = -1;
+	Overrides.clear();
+	drop_texture_cache();
 	lens_flare_clear_lab_lens();
 	lens_flare_lab_thruster_flare().reset();
 	Frame_data.clear();
@@ -286,14 +399,6 @@ int lens_flare_num_systems()
 }
 
 const lens_system* lens_flare_get_system(int lens_idx)
-{
-	if (!SCP_vector_inbounds(Lens_systems, lens_idx)) {
-		return nullptr;
-	}
-	return &Lens_systems[lens_idx];
-}
-
-lens_system* lens_flare_get_system_mutable(int lens_idx)
 {
 	if (!SCP_vector_inbounds(Lens_systems, lens_idx)) {
 		return nullptr;
@@ -386,13 +491,39 @@ const lens_flare_textures* lens_flare_get_textures(int lens_idx)
 	if (!SCP_vector_inbounds(Lens_systems, lens_idx)) {
 		return nullptr;
 	}
-	lens_system& lens = Lens_systems[lens_idx];
-	if (!lens.textures) {
-		auto tex = std::make_shared<lens_flare_textures>();
-		lens_flare_generate_textures(lens.aperture, tex.get());
-		lens.textures = std::move(tex);
+
+	// Fill an empty cache, or one holding a different lens -- but never merely a
+	// different iris. Rebuilding for a changed iris is flush_pending_aperture_edit()'s
+	// job precisely so that it stays throttled; doing it here would put the FFT in
+	// whatever called us, which mid-frame is a render backend.
+	if (Tex_cache.textures == nullptr || Tex_cache.lens_idx != lens_idx) {
+		Tex_cache.aperture = effective_aperture(lens_idx);
+		auto tex = std::make_unique<lens_flare_textures>();
+		lens_flare_generate_textures(Tex_cache.aperture, tex.get());
+		Tex_cache.textures = std::move(tex);
+		Tex_cache.lens_idx = lens_idx;
+		Texture_generation++;
 	}
-	return lens.textures.get();
+	return Tex_cache.textures.get();
+}
+
+const lens_flare_textures* lens_flare_textures_if_changed(int lens_idx, int& cached_lens,
+	unsigned int& cached_generation)
+{
+	const unsigned int generation = Texture_generation;
+	if (lens_idx == cached_lens && generation == cached_generation) {
+		return nullptr;
+	}
+
+	const lens_flare_textures* tex = lens_flare_get_textures(lens_idx);
+	if (tex == nullptr || tex->aperture.empty() || tex->starburst.empty()) {
+		return nullptr;
+	}
+
+	// Read back rather than reused: generating above may have bumped it.
+	cached_lens = lens_idx;
+	cached_generation = Texture_generation;
+	return tex;
 }
 
 void lens_flare_prime_textures()
@@ -415,56 +546,26 @@ void lens_flare_reset_for_level()
 	lens_flare_lab_thruster_flare().reset();
 	Logged_lens = -2;
 
+	// Every lens is left exactly as its table declared it, so this one line is the
+	// whole of "one mission's camera cannot carry into the next" -- there is
+	// nothing stamped into a lens to put back.
+	Overrides.clear();
+	drop_texture_cache();
+
 	// The next mission's suns are not this one's; drop the published frame so
 	// nothing consumes it across the level change
 	lens_flare_clear_frame();
 
-	// Drop any pending live edit first; it belongs to the mission being left. The
-	// throttle stamp goes too, so the next mission's first edit applies at once
-	// instead of waiting out an interval started by the previous one.
+	// Any scheduled rebuild belongs to the mission being left. The throttle stamp
+	// goes too, so the next mission's first edit applies at once instead of waiting
+	// out an interval started by the previous one.
 	Aperture_dirty = false;
-	Aperture_dirty_lens = -1;
 	Aperture_dirty_stamp = UI_TIMESTAMP::invalid();
-
-	for (int i = 0; i < static_cast<int>(Lens_systems.size()); i++) {
-		if (Lens_systems[i].aperture != Lens_systems[i].tabled_aperture) {
-			Lens_systems[i].aperture = Lens_systems[i].tabled_aperture;
-			lens_flare_invalidate_textures(i);
-		}
-	}
-}
-
-void lens_flare_invalidate_textures(int lens_idx)
-{
-	if (!SCP_vector_inbounds(Lens_systems, lens_idx)) {
-		return;
-	}
-	Lens_systems[lens_idx].textures.reset();
-	Texture_generation++;
 }
 
 unsigned int lens_flare_get_texture_generation() { return Texture_generation; }
 
 bool lens_flare_aperture_edit_pending() { return Aperture_dirty; }
-
-void lens_flare_aperture_changed(int lens_idx)
-{
-	if (!SCP_vector_inbounds(Lens_systems, lens_idx)) {
-		return;
-	}
-	if (Aperture_dirty && Aperture_dirty_lens != lens_idx) {
-		// switching lenses mid-edit: flush the pending one first
-		lens_flare_invalidate_textures(Aperture_dirty_lens);
-	}
-	Aperture_dirty = true;
-	Aperture_dirty_lens = lens_idx;
-
-	// Apply straight away if the interval has already elapsed; if it hasn't, this
-	// is a no-op and the per-frame flush picks the edit up when it does. (The
-	// interval check lives in flush_pending_aperture_edit() alone -- repeating it
-	// here as a guard would just be the same condition written twice.)
-	flush_pending_aperture_edit();
-}
 
 namespace {
 
@@ -473,6 +574,11 @@ namespace {
 // per-kind table). Each emit_* below is the sole writer of its kind, so the
 // convention lives in exactly one place per artifact instead of being spread
 // across one long packing function.
+//
+// All three take the lens for its prescription -- pupil, iris radius, sensor
+// width, none of which is overridable -- and lens_settings for everything about
+// the look. Anything a mission can restyle must be read from the settings; the
+// split in the signature is what keeps that hard to get wrong.
 
 // Blank a slot and tag its kind, so each emitter only writes the fields it
 // actually means and never has to remember to zero the rest.
@@ -491,7 +597,7 @@ float ghost_min_halfext(const lens_system& lens)
 
 // A ghost: the aperture as imaged by one two-reflection path, evaluated at each
 // of the three design wavelengths, so every xyz triple here is per-channel.
-void emit_ghost(generic_data::lens_flare_instance_data& inst, const lens_system& lens,
+void emit_ghost(generic_data::lens_flare_instance_data& inst, const lens_system& lens, const lens_settings& set,
 	const lens_flare_ghost& ghost, float theta)
 {
 	instance_init(inst, generic_data::LENS_QUAD_GHOST);
@@ -511,59 +617,62 @@ void emit_ghost(generic_data::lens_flare_instance_data& inst, const lens_system&
 		inst.halfext.a1d[k] = halfext;
 		inst.apscale.a1d[k] = ghost.ma[k][0] * pupil / lens.aperture_radius;
 		inst.apoff.a1d[k] = ghost.ma[k][1] * theta / lens.aperture_radius;
-		// clamped here rather than at the setter: the lab hands out the tuning
-		// struct for direct editing, so this is the boundary that has to hold
-		inst.color.a1d[k] = ghost.reflectance[k] * energy * MAX(Tuning.ghost_brightness, 0.0f);
+		// clamped here rather than at the setter: the lab and the sexps write the
+		// overrides directly, so this is the boundary that has to hold
+		inst.color.a1d[k] = ghost.reflectance[k] * energy * MAX(set.ghost_brightness, 0.0f);
 	}
 }
 
 // The starburst: the Fraunhofer transform of the iris, sitting exactly on the
 // sun's image. Achromatic here, because the texture carries its own per-channel
 // diffraction scaling. `sdist` is the image's distance from the sensor centre.
-void emit_starburst(generic_data::lens_flare_instance_data& inst, const lens_system& lens, float sdist)
+void emit_starburst(generic_data::lens_flare_instance_data& inst, const lens_system& lens, const lens_settings& set,
+	float sdist)
 {
 	instance_init(inst, generic_data::LENS_QUAD_STARBURST);
 
-	const float halfext = lens.starburst_scale * lens.sensor_width * 0.12f;
+	const float halfext = MAX(set.starburst_scale, 0.0f) * lens.sensor_width * 0.12f;
 	for (int k = 0; k < 3; k++) {
 		inst.center.a1d[k] = sdist;
 		inst.halfext.a1d[k] = halfext;
-		inst.color.a1d[k] = MAX(Tuning.starburst_brightness, 0.0f); // see emit_ghost
+		inst.color.a1d[k] = MAX(set.starburst_brightness, 0.0f); // see emit_ghost
 	}
 }
 
 // The anamorphic streak: screen-horizontal, so unlike the other two kinds it
 // reads halfext as a half-length and a half-thickness rather than as three
 // chromatic half-widths.
-void emit_streak(generic_data::lens_flare_instance_data& inst, const lens_system& lens, float sdist)
+void emit_streak(generic_data::lens_flare_instance_data& inst, const lens_system& lens, const lens_settings& set,
+	float sdist)
 {
 	instance_init(inst, generic_data::LENS_QUAD_STREAK);
 
+	const lens_streak& streak = set.anamorphic.streak;
 	const float min_halfext = ghost_min_halfext(lens);
-	const float half_len = MAX(lens.streak.length * lens.sensor_width * 0.5f, min_halfext);
+	const float half_len = MAX(streak.length * lens.sensor_width * 0.5f, min_halfext);
 
 	inst.center.xyzw.x = sdist; // the sun's image, same as the starburst
 	inst.halfext.xyzw.x = half_len;
-	inst.halfext.xyzw.y = MAX(half_len * lens.streak.thickness, min_halfext * 0.25f);
+	inst.halfext.xyzw.y = MAX(half_len * streak.thickness, min_halfext * 0.25f);
 
 	// The lens tint is a colour cast on top of the sun's own colour, which the
 	// shared `tint` already applies -- so a red sun keeps a reddish streak
 	// instead of the table's blue overriding it
 	for (int k = 0; k < 3; k++) {
-		inst.color.a1d[k] = lens.streak.tint[k] * lens.streak.strength;
+		inst.color.a1d[k] = streak.tint[k] * streak.strength;
 	}
 }
 
 } // namespace
 
 // Pack one source's quads into a uniform block and return how many instance
-// slots were written. Depends only on the lens and where the source's image
+// slots were written. Depends only on the camera and where the source's image
 // lands on the sensor -- `sdist` is that image's distance from the sensor centre
 // in mm, `theta` its paraxial field angle -- so a sun and an engine that happen
 // to land in the same place get the same quads, which is what "one camera, one
 // lens" means.
-static int pack_source_instances(const lens_system& lens, float theta, float sdist, bool with_ghosts,
-	generic_data::lens_flare_data* out)
+static int pack_source_instances(const lens_system& lens, const lens_settings& set, float theta, float sdist,
+	bool with_ghosts, generic_data::lens_flare_data* out)
 {
 	// Each non-ghost artifact reserves its slot out of the budget up front, so the
 	// ghosts can never crowd it out and the emits below need no second bounds
@@ -572,11 +681,16 @@ static int pack_source_instances(const lens_system& lens, float theta, float sdi
 	// which is what lets lens_flare_frame_update() conclude that a
 	// starburst-enabled lens has certainly drawn its starburst, and hence what the
 	// sprite sun steps aside for.
-	const bool wants_starburst = lens.starburst;
-	const bool wants_streak = lens.streak.strength > 0.0f;
+	const bool wants_starburst = set.starburst;
+	const bool wants_streak = set.anamorphic.streak.strength > 0.0f;
 
 	const int reserved = (wants_starburst ? 1 : 0) + (wants_streak ? 1 : 0);
-	const int ghost_budget = generic_data::MAX_LENS_FLARE_INSTANCES - reserved;
+	// lens.ghosts is enumerated brightest first, so taking a prefix of it is
+	// exactly what asking for fewer ghosts means. Applying it here rather than at
+	// enumeration is what lets $Max Ghosts: be overridden at all: the alternative
+	// would be re-running the whole paraxial precompute on every edit.
+	const int ghost_budget =
+		MIN(generic_data::MAX_LENS_FLARE_INSTANCES - reserved, MAX(set.max_ghosts, 0));
 
 	int count = 0;
 	if (with_ghosts) {
@@ -584,14 +698,14 @@ static int pack_source_instances(const lens_system& lens, float theta, float sdi
 			if (count >= ghost_budget) {
 				break;
 			}
-			emit_ghost(out->instances[count++], lens, ghost, theta);
+			emit_ghost(out->instances[count++], lens, set, ghost, theta);
 		}
 	}
 	if (wants_starburst) {
-		emit_starburst(out->instances[count++], lens, sdist);
+		emit_starburst(out->instances[count++], lens, set, sdist);
 	}
 	if (wants_streak) {
-		emit_streak(out->instances[count++], lens, sdist);
+		emit_streak(out->instances[count++], lens, set, sdist);
 	}
 	Assertion(count <= generic_data::MAX_LENS_FLARE_INSTANCES,
 		"Lens flare packed %d instances into %d slots -- the ghost budget no longer reserves the "
@@ -599,9 +713,9 @@ static int pack_source_instances(const lens_system& lens, float theta, float sdi
 		count, generic_data::MAX_LENS_FLARE_INSTANCES);
 
 	out->n_instances = count;
-	// Single choke point for the squeeze, so a table typo, a lab slider and any
-	// future sexp all get the same guard against a divide by zero in the shader
-	out->squeeze = MAX(lens.anamorphic_squeeze, 0.01f);
+	// Single choke point for the squeeze, so a table typo, a lab slider and a
+	// mission override all get the same guard against a divide by zero in the shader
+	out->squeeze = MAX(set.anamorphic.squeeze, 0.01f);
 	out->pad[0] = out->pad[1] = 0.0f;
 	return count;
 }
@@ -726,7 +840,7 @@ void lens_flare_frame_update()
 {
 	lens_flare_clear_frame();
 
-	// live aperture edits from the lab land here, throttled
+	// scheduled iris rebuilds land here, throttled
 	flush_pending_aperture_edit();
 
 	const int lens_idx = lens_flare_active_lens();
@@ -734,6 +848,10 @@ void lens_flare_frame_update()
 		return;
 	}
 	const lens_system& lens = Lens_systems[lens_idx];
+
+	// Resolved once: the camera is the camera for every source in the frame, and
+	// re-resolving it per source would copy an aperture forty times over.
+	const lens_settings settings = lens_flare_effective_settings(lens_idx);
 
 	film_gate gate;
 	gate.clip_w = i2fl(gr_screen.clip_width);
@@ -790,13 +908,13 @@ void lens_flare_frame_update()
 		// Master multiplier for every ghost and the starburst (lensflare-f.sdr
 		// applies tint.rgb to both paths). The output scale keeps SDR and HDR
 		// visually consistent without per-lens re-tuning.
-		const float tint_scale = src.intensity * lens.intensity * out_scale;
+		const float tint_scale = src.intensity * settings.intensity * out_scale;
 		out->tint.xyzw.x = src.color.xyz.x * tint_scale;
 		out->tint.xyzw.y = src.color.xyz.y * tint_scale;
 		out->tint.xyzw.z = src.color.xyz.z * tint_scale;
 		out->tint.xyzw.w = 0.0f;
 
-		int count = pack_source_instances(lens, image.theta, image.dist_mm, src.draw_ghosts, out);
+		int count = pack_source_instances(lens, settings, image.theta, image.dist_mm, src.draw_ghosts, out);
 		if (count == 0) {
 			continue;
 		}
@@ -817,14 +935,15 @@ void lens_flare_frame_update()
 		// bookkeeping on purpose: an engine's glow is the light the flare is *of*,
 		// not a second drawing of the same artifact, so it keeps rendering.
 		if (src.kind == flare_source_kind::sun) {
-			Sun_starburst_drawn[src.index] = lens.starburst;
+			Sun_starburst_drawn[src.index] = settings.starburst;
 		}
 	}
 
 	if (!Frame_draws.empty() && lens_idx != Logged_lens) {
 		Logged_lens = lens_idx;
 		mprintf(("Lens flare: rendering through lens '%s' (%d ghosts + %s)\n", lens.name.c_str(),
-			static_cast<int>(lens.ghosts.size()), lens.starburst ? "starburst" : "no starburst"));
+			MIN(static_cast<int>(lens.ghosts.size()), MAX(settings.max_ghosts, 0)),
+			settings.starburst ? "starburst" : "no starburst"));
 	}
 }
 

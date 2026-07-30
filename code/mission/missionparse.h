@@ -17,6 +17,7 @@
 #include "ai/ai_profiles.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
+#include "graphics/lens_flare.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
@@ -244,6 +245,18 @@ typedef struct mission {
 	// flares at all. Keeping those two apart is what lets the field round-trip
 	// through FRED unchanged.
 	SCP_string camera_lens_name;
+
+	// How this mission restyles the camera: iris shape, anamorphic look, and the
+	// flare's strength. Settable in FRED via the Background Editor's
+	// "Lens Aperture..." dialog, and the same thing the set-lens-* sexps write --
+	// except applied at mission load rather than by an event.
+	//
+	// Every field is independently optional, so "this mission says nothing about
+	// the iris" stays distinct from "this mission wants the default iris".
+	// Independent of which lens is mounted, since there is only ever one camera
+	// (graphics/lens_flare.h) -- if $Camera Lens: changes, these still apply to
+	// whichever lens ends up mounted.
+	graphics::lens_overrides camera_lens_overrides;
 
 	SCP_vector<mission_cutscene> cutscenes;
 

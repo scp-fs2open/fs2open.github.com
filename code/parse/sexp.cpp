@@ -788,6 +788,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-lens-grating",				OP_SET_LENS_GRATING,					1,	5,			SEXP_ACTION_OPERATOR,	},	// the-e
 	{ "set-lens-scratches",				OP_SET_LENS_SCRATCHES,					1,	7,			SEXP_ACTION_OPERATOR,	},	// the-e
 	{ "set-lens-dust",					OP_SET_LENS_DUST,						1,	4,			SEXP_ACTION_OPERATOR,	},	// the-e
+	{ "set-lens-flare-strength",		OP_SET_LENS_FLARE_STRENGTH,				1,	5,			SEXP_ACTION_OPERATOR,	},	// the-e
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
 	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
@@ -16835,12 +16836,15 @@ void sexp_set_camera_lens(int n)
 	graphics::lens_flare_switch_to(CTEXT(n));
 }
 
-// Shared front end of the four aperture operators: hand the mounted lens's
-// (mutable) aperture to the caller, then rebuild its textures only if something
-// actually changed. A mission event without a guard re-evaluates constantly, and
-// a rebuild is a 512^2 mask plus an FFT.
+// Shared front end of the lens operators: check that there is a camera to
+// restyle, hand the caller the settings currently in force so it can edit from
+// there rather than from the tabled values, and publish the result.
+//
+// The edit starts from lens_flare_effective_settings() so that these operators
+// compose: set-lens-grating after set-lens-dust keeps the dust, and either after
+// a mission's own "$Lens Aperture:" keeps the rest of that block.
 template <typename EditFunc>
-void sexp_edit_lens_aperture(const char* op_name, EditFunc&& edit)
+void sexp_edit_lens(const char* op_name, EditFunc&& edit)
 {
 	int lens_idx = graphics::lens_flare_active_lens();
 	if (lens_idx < 0) {
@@ -16853,17 +16857,23 @@ void sexp_edit_lens_aperture(const char* op_name, EditFunc&& edit)
 		return;
 	}
 
-	auto* lens = graphics::lens_flare_get_system_mutable(lens_idx);
-	if (lens == nullptr)
-		return;
+	graphics::lens_settings settings = graphics::lens_flare_effective_settings(lens_idx);
+	edit(settings, graphics::lens_flare_overrides());
 
-	graphics::lens_aperture edited = lens->aperture;
-	edit(edited);
+	// Cheap to call even when nothing moved: only a genuinely changed iris costs
+	// anything, and the module works that out for itself.
+	graphics::lens_flare_overrides_changed();
+}
 
-	if (edited != lens->aperture) {
-		lens->aperture = edited;
-		graphics::lens_flare_aperture_changed(lens_idx);
-	}
+// The four iris operators all edit the aperture and nothing else, so they share
+// this wrapper on top of the above.
+template <typename EditFunc>
+void sexp_edit_lens_aperture(const char* op_name, EditFunc&& edit)
+{
+	sexp_edit_lens(op_name, [&edit](graphics::lens_settings& settings, graphics::lens_overrides& overrides) {
+		edit(settings.aperture);
+		overrides.aperture = settings.aperture;
+	});
 }
 
 // Read an optional percentage argument into `dest` as a 0..1 fraction, leaving
@@ -16955,6 +16965,50 @@ void sexp_set_lens_dust(int node)
 		sexp_lens_next_pct(n, ap.dust.radius, 0.0f, 1.0f);
 		sexp_lens_next_pct(n, ap.dust.softness, 0.0f, 1.0f);
 	});
+}
+
+// Same as sexp_lens_next_pct(), but scaling a percentage against a reference
+// value rather than into 0..1 -- so 100 means "the engine's calibrated default"
+// and a designer states these as a proportion of it instead of having to know
+// that a ghost brightness of 64 is normal.
+void sexp_lens_next_scaled_pct(int& n, float& dest, float reference, float max_val)
+{
+	if (n < 0)
+		return;
+
+	bool is_nan, is_nan_forever;
+	int pct = eval_num(n, is_nan, is_nan_forever);
+	if (!is_nan && !is_nan_forever)
+		dest = std::clamp(pct / 100.0f * reference, 0.0f, max_val);
+
+	n = CDR(n);
+}
+
+// The cheap counterpart to the four iris operators: nothing here touches the
+// aperture, so nothing here rebuilds a texture. Safe to drive from a repeating
+// event, which is exactly what makes it the right operator for a flare that
+// brightens or fades over time.
+void sexp_set_lens_flare_strength(int node)
+{
+	sexp_edit_lens("set-lens-flare-strength",
+		[node](graphics::lens_settings& set, graphics::lens_overrides& overrides) {
+			int n = node;
+
+			// Stated against the value in force rather than a fixed constant, so
+			// "50" halves whatever the mounted lens tables instead of jumping to
+			// half of some other lens's number.
+			sexp_lens_next_scaled_pct(n, set.intensity, set.intensity, 100.0f);
+			sexp_lens_next_scaled_pct(n, set.ghost_brightness, set.ghost_brightness, 10000.0f);
+			sexp_lens_next_scaled_pct(n, set.starburst_brightness, set.starburst_brightness, 1000.0f);
+			sexp_lens_next_scaled_pct(n, set.starburst_scale, set.starburst_scale, 100.0f);
+			sexp_lens_next_int(n, set.max_ghosts, 0, graphics::MAX_LENS_FLARE_GHOSTS);
+
+			overrides.intensity = set.intensity;
+			overrides.ghost_brightness = set.ghost_brightness;
+			overrides.starburst_brightness = set.starburst_brightness;
+			overrides.starburst_scale = set.starburst_scale;
+			overrides.max_ghosts = set.max_ghosts;
+		});
 }
 
 void sexp_nebula_change_storm(int n)
@@ -30529,6 +30583,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_LENS_FLARE_STRENGTH:
+				sexp_set_lens_flare_strength(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SET_POST_EFFECT:
 				sexp_set_post_effect(node);
 				sexp_val = SEXP_TRUE;
@@ -32232,6 +32291,7 @@ int query_operator_return_type(int op)
 		case OP_SET_LENS_GRATING:
 		case OP_SET_LENS_SCRATCHES:
 		case OP_SET_LENS_DUST:
+		case OP_SET_LENS_FLARE_STRENGTH:
 		case OP_SET_POST_EFFECT:
 		case OP_RESET_POST_EFFECTS:
 		case OP_CHANGE_IFF_COLOR:
@@ -34559,6 +34619,7 @@ int query_operator_argument_type(int op_index, int argnum)
 		case OP_SET_LENS_GRATING:
 		case OP_SET_LENS_SCRATCHES:
 		case OP_SET_LENS_DUST:
+		case OP_SET_LENS_FLARE_STRENGTH:
 			return OPF_POSITIVE;
 
 		case OP_SET_POST_EFFECT:
@@ -37390,6 +37451,7 @@ int get_category(int op_id)
 		case OP_SET_LENS_GRATING:
 		case OP_SET_LENS_SCRATCHES:
 		case OP_SET_LENS_DUST:
+		case OP_SET_LENS_FLARE_STRENGTH:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -38010,6 +38072,7 @@ int get_subcategory(int op_id)
 		case OP_SET_LENS_GRATING:
 		case OP_SET_LENS_SCRATCHES:
 		case OP_SET_LENS_DUST:
+		case OP_SET_LENS_FLARE_STRENGTH:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -42171,6 +42234,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tat once, for every sun.\r\n\r\n"
 		"\tDoes nothing (with a warning) if no lens is mounted. The iris goes back to its\r\n"
 		"\ttabled values when the mission ends. Not sent over the network.\r\n\r\n"
+		"\tCOST: changing the iris is expensive. The engine has to re-render the iris\r\n"
+		"\tmask and then take a 512x512 Fourier transform of it to get the new starburst,\r\n"
+		"\twhich takes long enough to be seen as a stutter. Use these operators for\r\n"
+		"\toccasional, deliberate changes -- a lens getting dirty over the course of a\r\n"
+		"\tmission, say. Do NOT drive them from a repeating event or an every-frame\r\n"
+		"\tcondition: the rebuild is coalesced so it cannot happen more than a few times\r\n"
+		"\ta second, but a value that keeps changing will keep paying for it. To vary the\r\n"
+		"\tflare continuously, use set-lens-flare-strength, which costs nothing.\r\n\r\n"
 		"\tTakes 1 to 4 arguments...\r\n"
 		"\t1:\tNumber of iris blades; fewer than 3 gives a round iris.\r\n"
 		"\t2:\t(optional) Blade rotation in degrees.\r\n"
@@ -42185,6 +42256,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the diffraction grating of the mounted lens's iris: radial ridges around\r\n"
 		"\tthe rim that throw extra spikes into the starburst. See set-lens-aperture for\r\n"
 		"\thow iris edits behave.\r\n\r\n"
+		"\tCOST: like set-lens-aperture, this rebuilds the iris mask and its Fourier\r\n"
+		"\ttransform, which can stutter -- see the warning there. Not for repeating\r\n"
+		"\tevents.\r\n\r\n"
 		"\tNote that the starburst is normalized against its own brightest value, so\r\n"
 		"\tadding grating dims the core spikes as it adds new ones.\r\n\r\n"
 		"\tTakes 1 to 5 arguments...\r\n"
@@ -42199,6 +42273,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the scratches on the mounted lens's iris: randomly placed slivers, for a\r\n"
 		"\tworn or damaged lens. See set-lens-aperture for how iris edits behave, and\r\n"
 		"\tset-lens-grating for the note about starburst normalization.\r\n\r\n"
+		"\tCOST: like set-lens-aperture, this rebuilds the iris mask and its Fourier\r\n"
+		"\ttransform, which can stutter -- see the warning there. Not for repeating\r\n"
+		"\tevents.\r\n\r\n"
 		"\tTakes 1 to 7 arguments...\r\n"
 		"\t1:\tStrength as a percentage; 0 turns the scratches off.\r\n"
 		"\t2:\t(optional) Density as a percentage of the 1000 possible scratches.\r\n"
@@ -42214,11 +42291,37 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the dust on the mounted lens's iris: randomly placed specks, for a dirty\r\n"
 		"\tlens. See set-lens-aperture for how iris edits behave, and set-lens-grating\r\n"
 		"\tfor the note about starburst normalization.\r\n\r\n"
+		"\tCOST: like set-lens-aperture, this rebuilds the iris mask and its Fourier\r\n"
+		"\ttransform, which can stutter -- see the warning there. Not for repeating\r\n"
+		"\tevents.\r\n\r\n"
 		"\tTakes 1 to 4 arguments...\r\n"
 		"\t1:\tStrength as a percentage; 0 turns the dust off.\r\n"
 		"\t2:\t(optional) Density as a percentage of the 1000 possible specks.\r\n"
 		"\t3:\t(optional) Speck radius as a percentage.\r\n"
 		"\t4:\t(optional) Softness as a percentage."
+	},
+
+	{ OP_SET_LENS_FLARE_STRENGTH, "set-lens-flare-strength\r\n"
+		"\tChanges how strongly the mounted camera lens flares, without changing the\r\n"
+		"\tshape of anything. Every value is a percentage of what is currently in force,\r\n"
+		"\tso 50 halves whatever the mounted lens tables and 100 leaves it alone --\r\n"
+		"\twhich means the same event does the same thing whichever lens is mounted.\r\n\r\n"
+		"\tUnlike set-lens-aperture and its relatives, this is cheap: it changes no\r\n"
+		"\ttexture, so there is nothing to rebuild and nothing to stutter. This is the\r\n"
+		"\toperator to use when the flare should brighten or fade over time -- drive it\r\n"
+		"\tfrom a repeating event as often as you like.\r\n\r\n"
+		"\tDoes nothing (with a warning) if no lens is mounted. Everything goes back to\r\n"
+		"\tits tabled values when the mission ends. Not sent over the network.\r\n\r\n"
+		"\tTakes 1 to 5 arguments...\r\n"
+		"\t1:\tOverall flare intensity, as a percentage of the current value.\r\n"
+		"\t2:\t(optional) Ghost brightness, as a percentage. Scales the ghost train --\r\n"
+		"\t\tthe row of iris images strung along the flare axis -- on its own.\r\n"
+		"\t3:\t(optional) Starburst brightness, as a percentage. Scales the spikes on\r\n"
+		"\t\tthe sun itself on its own.\r\n"
+		"\t4:\t(optional) Starburst size, as a percentage.\r\n"
+		"\t5:\t(optional) How many ghosts to draw at most. They are drawn brightest\r\n"
+		"\t\tfirst, so lowering this drops the faintest ones; 0 leaves only the\r\n"
+		"\t\tstarburst. Cheap either way -- fewer ghosts is also less to draw."
 	},
 
 	{ OP_SET_GRAVITY_ACCEL, "set-gravity-accel\r\n"
