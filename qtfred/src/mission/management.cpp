@@ -10,6 +10,7 @@
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>
 #include <graphics/2d.h>
+#include <graphics/shadows.h>
 #include <hud/hudsquadmsg.h>
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
@@ -26,6 +27,7 @@
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <nebula/neblightning.h>
+#include <options/OptionsManager.h>
 #include <parse/sexp.h>
 #include <parse/sexp/sexp_lookup.h>
 #include <project.h>
@@ -42,6 +44,7 @@
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QScreen>
+#include <QSettings>
 #include <clocale>
 
 extern bool Xstr_inited;
@@ -141,6 +144,34 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 		Gr_min_render_target_w = MAX(Gr_min_render_target_w, qRound(screen->size().width() * ratio));
 		Gr_min_render_target_h = MAX(Gr_min_render_target_h, qRound(screen->size().height() * ratio));
+	}
+
+	// MSAA sample count, shadow quality, and the texture filter/anisotropy defaults are baked
+	// into GPU resources during gr_init() and can't be changed afterwards without recreating
+	// them, so qtFRED has to apply its saved Preferences > Graphics values here, before gr_init()
+	// runs, rather than from EditorViewport (which doesn't exist yet -- it's created after the
+	// first viewport widget is up). Shadow quality specifically: shadow_cascade_params_init()
+	// (gropengltnl.cpp/gr_vulkan.cpp) only runs during gr_init(), and only if Shadow_quality is
+	// already non-Disabled at that point -- setting it afterwards leaves the cascade buffers
+	// unsized and segfaults the next time a frame renders shadows. Read directly out of QSettings
+	// under the same "Preferences" group EditorViewport uses, using an in-memory-only
+	// OptionsManager override for the two settings the engine reads through an Option
+	// (Graphics.TextureFilter, Graphics.Anisotropy) so this never rewrites the registry/config
+	// file the actual game reads its own graphics settings from.
+	{
+		QSettings settings;
+		settings.beginGroup("Preferences");
+		Cmdline_msaa_enabled = settings.value("view_graphics_msaa_samples", Cmdline_msaa_enabled).toInt();
+		Shadow_quality = static_cast<ShadowQuality>(settings.value("view_graphics_shadow_quality", 0).toInt());
+
+		const int textureFilter = settings.value("view_graphics_texture_filter", 1).toInt();
+		options::OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::to_string(textureFilter));
+
+		if (settings.contains("view_graphics_anisotropy")) {
+			const float anisotropy = settings.value("view_graphics_anisotropy").toFloat();
+			options::OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::to_string(anisotropy));
+		}
+		settings.endGroup();
 	}
 
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
