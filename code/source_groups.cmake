@@ -470,6 +470,7 @@ add_file_folder("Graphics"
 	graphics/lens_flare_internal.h
 	graphics/lens_flare_optics.cpp
 	graphics/lens_flare_table.cpp
+	graphics/lens_flare_thrusters.cpp
 	graphics/light.cpp
 	graphics/light.h
 	graphics/line_draw_list.cpp

@@ -3,9 +3,25 @@
 #include "graphics/2d.h"
 #include "graphics/lens_flare.h"
 #include "lab/labv2_internal.h"
+#include "object/object.h"
+#include "ship/ship.h"
 #include "starfield/starfield.h"
 
 using namespace ImGui;
+
+namespace {
+
+// A thruster draw names the ship by objnum, and the pass that produced it ran a
+// frame ago -- so the object may already be gone by the time the panel reads it.
+const char* flare_source_ship_name(int objnum)
+{
+	if (objnum < 0 || objnum >= MAX_OBJECTS || Objects[objnum].type != OBJ_SHIP) {
+		return "<gone>";
+	}
+	return Ships[Objects[objnum].instance].ship_name;
+}
+
+} // namespace
 
 // The lab's "Lens flare options" panel: the camera lens the scene is shot
 // through, live iris editing, the global brightness calibration, and what the
@@ -151,22 +167,103 @@ void LabUi::build_lens_flare_options()
 		TextDisabled("No lens mounted: this background renders no physically-based flares");
 	}
 
-	// live pass state, refreshed every frame by lens_flare_frame_update():
-	// one entry per sun that got a draw
 	Separator();
+	build_thruster_flare_options();
+
+	// live pass state, refreshed every frame by lens_flare_frame_update():
+	// one entry per light source that got a draw
+	Separator();
+	build_lens_flare_pass_report();
+}
+
+// What the last pass drew. Suns are listed one by one -- there are never many and
+// each is worth naming -- while nozzles are summarised, because at full budget
+// there are dozens of them and a line each would bury everything else in this
+// window.
+void LabUi::build_lens_flare_pass_report()
+{
 	const auto& draws = graphics::lens_flare_get_frame_draws();
 	if (draws.empty()) {
-		TextUnformatted("Last pass: inactive (no visible sun, or no lens mounted)");
-	} else {
-		Text("Last pass: %d sun(s) drawn", static_cast<int>(draws.size()));
-		for (const auto& draw : draws) {
-			Text("  Sun %d (%s): %d instances, visibility %.2f, %.1f deg off-axis, output scale %.3f",
-				draw.sun_index,
-				stars_get_sun_name(draw.sun_index),
+		TextUnformatted("Last pass: inactive (no visible source, or no lens mounted)");
+		return;
+	}
+
+	int thruster_draws = 0;
+	int thruster_instances = 0;
+	float max_off_axis = -1.0f;
+	int max_off_axis_obj = -1;
+
+	Text("Last pass: %d source(s) drawn", static_cast<int>(draws.size()));
+	for (const auto& draw : draws) {
+		if (draw.kind == graphics::flare_source_kind::sun) {
+			Text("  Sun (%s): %d instances, visibility %.2f, %.1f deg off-axis, output scale %.3f",
+				stars_get_sun_name(draw.source_index),
 				draw.instances,
 				draw.visibility,
 				draw.off_axis_deg,
 				draw.output_scale);
+			continue;
+		}
+
+		thruster_draws++;
+		thruster_instances += draw.instances;
+		if (draw.off_axis_deg > max_off_axis) {
+			max_off_axis = draw.off_axis_deg;
+			max_off_axis_obj = draw.source_index;
 		}
 	}
+
+	if (thruster_draws > 0) {
+		Text("  Thrusters: %d nozzle(s), %d instances total, furthest off-axis %.1f deg on %s",
+			thruster_draws,
+			thruster_instances,
+			max_off_axis,
+			flare_source_ship_name(max_off_axis_obj));
+	}
+}
+
+// Thruster flares are tabled per species, but the lab overrides all species at
+// once -- it shows one ship at a time, and a single override leaves every tabled
+// value untouched, so nothing has to be restored on the way out (see
+// lens_flare.h).
+void LabUi::build_thruster_flare_options()
+{
+	auto& lab_override = graphics::lens_flare_lab_thruster_flare();
+
+	bool overriding = lab_override.has_value();
+	if (Checkbox("Override thruster flares", &overriding)) {
+		if (overriding) {
+			// Start from what the displayed ship's own species tables, so switching
+			// the override on changes nothing until a slider is touched
+			const int species_idx =
+				getLabManager()->isSafeForShips() ? Ship_info[getLabManager()->CurrentClass].species : -1;
+			auto tabled = graphics::lens_flare_thruster_settings(species_idx);
+			tabled.enabled = true;
+			lab_override = tabled;
+		} else {
+			lab_override.reset();
+		}
+	}
+
+	// Not part of the override: this is a render policy, not content, so it
+	// applies whether or not the tabled values are being overridden
+	auto& tuning = graphics::lens_flare_get_tuning();
+	Checkbox("Draw ghosts for thruster flares", &tuning.thruster_ghosts);
+	TextDisabled("Off by default: every lit nozzle is its own source, so a ghost");
+	TextDisabled("train each is both the cost of the pass and, at that count,");
+	TextDisabled("noise. Turn it on to see what it buys and what it costs.");
+
+	if (!lab_override) {
+		TextDisabled("Using each species' own species_defs.tbl settings");
+		return;
+	}
+
+	Checkbox("Thruster flares enabled", &lab_override->enabled);
+	SliderFloat("Thruster intensity", &lab_override->intensity, 0.0f, 50.0f);
+	SliderFloat("Afterburner intensity", &lab_override->afterburner_intensity, 0.0f, 50.0f);
+	ColorEdit3("Thruster flare tint", lab_override->color.a1d);
+	TextDisabled("1.0 = one nozzle of radius r seen from 32r away. At combat");
+	TextDisabled("range a nozzle is a small fraction of that, which is why the");
+	TextDisabled("useful values are large. Brightness also follows throttle,");
+	TextDisabled("nozzle facing and distance, so it is never constant per ship.");
 }

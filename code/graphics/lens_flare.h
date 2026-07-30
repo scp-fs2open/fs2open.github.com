@@ -288,6 +288,14 @@ struct lens_flare_tuning {
 	// the calibration reference and is unaffected; this only rescales the HDR path
 	// so an SDR-tuned flare doesn't blow out. The default keeps a little HDR "pop".
 	float hdr_headroom = 2.5f;
+
+	// Whether a thruster flare draws the ghost train as well as its starburst.
+	// Off, because unlike a sun an engine is one of dozens of small sources in
+	// frame: a ghost train each is both the expensive part of the pass and, at
+	// that count, visual noise rather than an optical effect you can read.
+	// Exposed so the lab can turn them on and show what they cost and look like.
+	// Suns are unaffected and always draw theirs.
+	bool thruster_ghosts = false;
 };
 
 lens_flare_tuning& lens_flare_get_tuning();
@@ -346,22 +354,39 @@ std::optional<int> lens_flare_get_lab_lens();
 // This reports what the flare pass *is drawing*, read back out of the frame data
 // below -- it does not re-derive it. Predicting it independently is how the
 // sprite and the flare came to disagree about occluded and off-screen suns.
+//
+// Suns only: an engine's glow is the light source the flare is *of*, not a
+// competing sprite of the same artifact, so a thruster flare never makes the
+// thruster glow step aside.
 bool lens_flare_sun_starburst_drawn(int sun_n);
 
-// One sun's worth of flare quads. All suns share the mounted lens (hence one
-// aperture/starburst texture for the whole pass), but each has its own flare axis
-// and tint, so each gets its own uniform block and instanced draw.
+// What a draw images. Diagnostics for the lab -- the pass draws every kind the
+// same way, through the same lens.
+enum class flare_source_kind {
+	sun,
+	thruster,
+};
+
+// One light source's worth of flare quads. Every source shares the mounted lens
+// (hence one aperture/starburst texture for the whole pass), but each has its own
+// flare axis and tint, so each gets its own uniform block and instanced draw.
 //
 // The trailing fields are diagnostics for the lab; the renderer ignores them.
 struct lens_flare_draw {
-	int sun_index = -1;
+	flare_source_kind kind = flare_source_kind::sun;
+	// Which sun (a stars.tbl instance index) or which ship (an objnum) this draw
+	// images.
+	int source_index = -1;
 	int instances = 0; // quads to draw (ghosts + optional starburst)
 	// Uniform block for this draw, owned by lens_flare.cpp; valid until the
 	// next lens_flare_frame_update() call.
 	const generic_data::lens_flare_data* data = nullptr;
 
-	float visibility = 0.0f;   // smoothed occlusion * off-axis fade
-	float off_axis_deg = 0.0f; // paraxial field angle of the sun
+	// The 0..1 fade already folded into this draw's tint that isn't the source's
+	// own tabled brightness: for a sun, smoothed occlusion times the off-axis
+	// fade; for a thruster, the throttle.
+	float visibility = 0.0f;
+	float off_axis_deg = 0.0f; // paraxial field angle of the source
 	float output_scale = 1.0f; // SDR/HDR consistency multiplier applied this frame
 };
 
@@ -385,14 +410,76 @@ void lens_flare_frame_update();
 // isn't going to draw them.
 void lens_flare_clear_frame();
 
-// What the last lens_flare_frame_update() published: one entry per sun that has
-// something to draw, in sun order (empty = skip the pass entirely). Every entry
-// is drawn with the textures of lens_flare_active_lens().
+// What the last lens_flare_frame_update() published: one entry per light source
+// that has something to draw -- suns first, in sun order, then thrusters
+// (empty = skip the pass entirely). Every entry is drawn with the textures of
+// lens_flare_active_lens().
 //
 // The single source of truth for the pass -- the render backends draw exactly
 // these, the sun renderer asks lens_flare_sun_starburst_drawn() about them, and
 // the lab reports on them.
 const SCP_vector<lens_flare_draw>& lens_flare_get_frame_draws();
+
+// ---- thruster flares ----
+//
+// Engines are the other intensely bright thing in a FreeSpace scene, so they
+// flare through the same camera lens the suns do. What differs is the source: a
+// sun is a point at infinity with a tabled colour and a shadow test, while a
+// nozzle is a finite source whose brightness follows the throttle, the
+// afterburner, how squarely it faces the camera, and how far away it is.
+//
+// Every lit nozzle is its own source. Averaging a ship's engines into one was
+// tried first and is wrong for the ships it matters on: a capital ship's engines
+// are set far enough apart to be separate points in frame, so a single flare at
+// their centroid sits where no engine is.
+//
+// Declared per species in species_defs.tbl ("$Thruster Flare:"), and off unless
+// a species asks for it -- so no existing mod gains flares it never tabled, and
+// a mission with no camera lens mounted still gets none either way.
+
+struct thruster_flare_info {
+	// False until a species_defs.tbl entry declares "$Thruster Flare:". Tables
+	// written before this existed have no such block, so their engines keep
+	// flaring exactly as much as they used to: not at all.
+	bool enabled = false;
+
+	// Brightness at the reference apparent size -- one nozzle of radius r seen
+	// from 32r away (see lens_flare_thrusters.cpp) -- scaling linearly from there.
+	//
+	// The defaults are starting points for tuning in the lab, not derived values.
+	// They are this large because at any real combat range a nozzle subtends a
+	// small fraction of the reference, so a value near 1.0 puts the whole effect
+	// below the level a pixel can show -- which is what made engines look like
+	// they only flared under afterburner.
+	//
+	// The afterburner figure *replaces* the normal one while the burner or a
+	// booster is lit rather than multiplying it, so a species can make the two
+	// states independently bright without doing division in the table.
+	float intensity = 6.0f;
+	float afterburner_intensity = 15.0f;
+
+	// Linear rgb the flare is tinted with, multiplying the lens's own tint the
+	// same way a sun's colour does.
+	vec3d color = {{{1.0f, 1.0f, 1.0f}}};
+};
+
+// The lab's live override of every species' thruster-flare settings: unset means
+// each species' own table entry stands.
+//
+// One override for all species rather than one per species, because the lab
+// shows one ship at a time -- and, more usefully, because it leaves the tabled
+// values untouched, so nothing has to be backed up and restored between missions
+// the way a lens's edited aperture does.
+//
+// Handed out mutably, like lens_flare_get_tuning(). Cleared by
+// lens_flare_reset_for_level().
+std::optional<thruster_flare_info>& lens_flare_lab_thruster_flare();
+
+// The settings that actually apply to a species this frame: its own, unless the
+// lab is overriding. The single resolver, so no caller re-implements the
+// precedence (compare lens_flare_active_lens()). An unknown species gets the
+// defaults, which are "off".
+thruster_flare_info lens_flare_thruster_settings(int species_idx);
 
 // ---- internals exposed for unit testing ----
 

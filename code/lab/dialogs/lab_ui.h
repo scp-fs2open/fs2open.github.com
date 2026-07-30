@@ -50,6 +50,8 @@ class LabUi {
 	void build_tone_mapper_combobox();
 	static void build_lens_flare_options();
 	static void build_lens_aperture_options(int lens_idx, graphics::lens_aperture& ap);
+	static void build_thruster_flare_options();
+	static void build_lens_flare_pass_report();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
 	void build_subsystem_list_entry(SCP_string& subsys_name,

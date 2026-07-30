@@ -151,6 +151,41 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		generic_anim_init(&species->thruster_info.glow.afterburn, NULL);
 }
 
+// How this species' engines flare through the camera lens (graphics/lens_flare.h).
+// Wholly optional -- a table without the block leaves thruster_flare disabled, so
+// nothing that predates this feature gains a flare -- which is also why there is
+// no "!no_create" branch here: there are no defaults to warn about, only the
+// struct's own. (Hence no `no_create` parameter, unlike its two neighbours.)
+void parse_thrust_flare(species_info *species)
+{
+	if (!optional_string("$Thruster Flare:"))
+		return;
+
+	auto &flare = species->thruster_flare;
+	flare.enabled = true;
+
+	if (optional_string("+Intensity:"))
+		stuff_float(&flare.intensity);
+
+	if (optional_string("+Afterburner Intensity:"))
+		stuff_float(&flare.afterburner_intensity);
+
+	if (optional_string("+Color:") || optional_string("+Colour:"))
+	{
+		int rgb[3];
+		stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
+		for (int i = 0; i < 3; i++)
+			flare.color.a1d[i] = i2fl(rgb[i]) / 255.0f;
+	}
+
+	// A negative brightness would invert the flare rather than dim it, and a
+	// negative tint would subtract light from the frame
+	flare.intensity = MAX(flare.intensity, 0.0f);
+	flare.afterburner_intensity = MAX(flare.afterburner_intensity, 0.0f);
+	for (int i = 0; i < 3; i++)
+		flare.color.a1d[i] = MAX(flare.color.a1d[i], 0.0f);
+}
+
 void parse_species_tbl(const char *filename)
 {
 	char species_name[NAME_LENGTH];
@@ -304,6 +339,9 @@ void parse_species_tbl(const char *filename)
 
 			// Thruster Glow Anims
 			parse_thrust_glows(species, no_create);
+
+			// Thruster lens flares
+			parse_thrust_flare(species);
 
 
 			// Goober5000 - AWACS multiplier

@@ -18,10 +18,13 @@ namespace graphics::vulkan {
 // ===== Physically-based lens flare pass =====
 
 namespace {
-// One UBO slot per visible sun per scene render. Backgrounds have single-digit
-// sun counts and each slot is only ~5 KB, so this is deliberately generous; the
-// draw loop bails out rather than overflowing the ring if one ever exceeds it.
-constexpr uint32_t LENS_FLARE_UBO_SLOTS = 32;
+// One UBO slot per flare source per scene render. Sun counts are single-digit,
+// but every lit nozzle is also a source, capped at MAX_THRUSTER_SOURCES (32) in
+// lens_flare.cpp -- so this has to hold that plus the suns, several times over
+// for a frame that renders the scene more than once. At ~5 KB a slot that is
+// still under a megabyte per frame in flight. The draw loop bails out rather
+// than overflowing the ring if a frame ever exceeds it anyway.
+constexpr uint32_t LENS_FLARE_UBO_SLOTS = 128;
 } // namespace
 
 bool VulkanLensFlare::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
