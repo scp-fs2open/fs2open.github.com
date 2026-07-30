@@ -9,6 +9,7 @@
 #include <cutscene/cutscenes.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>
+#include <graphics/2d.h>
 #include <hud/hudsquadmsg.h>
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
@@ -39,6 +40,8 @@
 #include <utils/Random.h>
 #include <weapon/weapon.h>
 
+#include <QtGui/QGuiApplication>
+#include <QtGui/QScreen>
 #include <clocale>
 
 extern bool Xstr_inited;
@@ -124,6 +127,21 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	//	Cmdline_nospec = 1;
 	// 	Cmdline_noglow = 1;
 	Cmdline_window = 1;
+
+	// Unlike the game, whose window size is fixed after gr_init(), qtFred resizes its 3D viewport at
+	// runtime: FredRenderer::render_frame() calls gr_screen_resize() every frame to match a dockable,
+	// resizable widget. The offscreen render targets that back post-processing are allocated once,
+	// from gr_screen as it is right now, and cannot grow afterwards -- so give them a floor big
+	// enough for any size that widget can reach, which is the largest screen the window could be
+	// maximized or fullscreened onto, in device pixels. Without this, growing the viewport past the
+	// startup size clips the render to the old, smaller texture and then stretches it back over the
+	// new, larger viewport, visibly misaligning sun sprites and bloom.
+	for (const QScreen* screen : QGuiApplication::screens()) {
+		const auto ratio = screen->devicePixelRatio();
+
+		Gr_min_render_target_w = MAX(Gr_min_render_target_w, qRound(screen->size().width() * ratio));
+		Gr_min_render_target_h = MAX(Gr_min_render_target_h, qRound(screen->size().height() * ratio));
+	}
 
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 	gr_init(std::move(graphicsOps));

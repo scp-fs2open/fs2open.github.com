@@ -866,6 +866,9 @@ static void parse_post_processing_func()
 
 bool Gr_post_processing_enabled = true;
 
+int Gr_min_render_target_w = 0;
+int Gr_min_render_target_h = 0;
+
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
                      std::pair<const char*, int>{"Post processing", 1726},

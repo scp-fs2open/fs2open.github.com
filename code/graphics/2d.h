@@ -73,6 +73,18 @@ bool gr_is_smaa_mode(AntiAliasMode mode);
 
 extern bool Gr_post_processing_enabled;
 
+// Floor, in pixels, for the offscreen render targets that back post-processing (the scene textures
+// and the post-processing surfaces). Those are sized once, from gr_screen.max_w/max_h at renderer
+// init, and never revisited; anything drawn while gr_screen is *larger* than them is silently
+// clipped to their edge and then stretched back over the full viewport. The game never hits that
+// -- its window size is fixed after gr_init() -- but qtFred resizes its 3D viewport at runtime, so
+// it sets this to the largest size that viewport can ever reach before calling gr_init(). Leave at
+// 0 (the default) to size the targets purely from gr_screen, which is what the game does. The
+// targets are still clamped to the hardware's maximum renderbuffer size, so this is a request, not
+// a guarantee.
+extern int Gr_min_render_target_w;
+extern int Gr_min_render_target_h;
+
 extern bool Gr_enable_vsync;
 
 // HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
