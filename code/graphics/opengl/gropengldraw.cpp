@@ -113,10 +113,14 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
-	// clamp size, if needed
-	Scene_texture_width = gr_screen.max_w;
-	Scene_texture_height = gr_screen.max_h;
+	// These textures are allocated once and never resized, so they have to be big enough for the
+	// largest gr_screen this session will ever see, not just the current one -- see
+	// Gr_min_render_target_w/h (2d.h) for why anything drawn outside them is stretched. In the game
+	// the floor is 0 and this is just gr_screen.
+	Scene_texture_width = MAX(gr_screen.max_w, Gr_min_render_target_w);
+	Scene_texture_height = MAX(gr_screen.max_h, Gr_min_render_target_h);
 
+	// clamp size, if needed
 	if ( Scene_texture_width > GL_max_renderbuffer_size ) {
 		Scene_texture_width = GL_max_renderbuffer_size;
 	}
@@ -124,6 +128,15 @@ void opengl_setup_scene_textures()
 	if ( Scene_texture_height > GL_max_renderbuffer_size) {
 		Scene_texture_height = GL_max_renderbuffer_size;
 	}
+
+	mprintf(("  Scene textures: %dx%d (screen %dx%d, floor %dx%d, max renderbuffer %d)\n",
+		Scene_texture_width,
+		Scene_texture_height,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		Gr_min_render_target_w,
+		Gr_min_render_target_h,
+		GL_max_renderbuffer_size));
 
 	// create framebuffer
 	glGenFramebuffers(1, &Scene_framebuffer);
@@ -776,19 +789,43 @@ void gr_opengl_scene_texture_begin()
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Scene_framebuffer);
 
-	if (GL_rendering_to_texture)
-	{
-		Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
-		Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
+	// In the game Scene_texture_width/height always equals gr_screen.max_w/h (the
+	// scene texture is sized once from the same resolution at gr_init() and the
+	// game never resizes around it), so this ratio is always exactly 1.0 there.
+	// qtFred is the exception: its viewport is resized every frame
+	// (gr_screen_resize() in FredRenderer::render_frame()) to match a dockable
+	// widget that is smaller than the scene texture's fixed allocation (which
+	// Gr_min_render_target_w/h floors at the largest size that widget can reach),
+	// so the ratio keeps the render (and this end-of-frame blit) confined to the
+	// sub-rectangle of the texture that was actually drawn into, instead of
+	// stretching the whole texture -- most of it never touched this frame --
+	// over the viewport-sized quad.
+	Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
+	Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
 
-		CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
-		CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
+	// A ratio above 1.0 means the viewport outgrew the allocation after the fact -- the scene
+	// texture can't be resized, so all we can do is render the part that fits and let the blit
+	// stretch it back out, which misaligns everything by a different amount on each axis. The
+	// floor above is meant to make this unreachable; if it does happen (a display hotplug or
+	// resolution change after gr_init(), or an allocation clamped by GL_max_renderbuffer_size on
+	// low-end hardware) say so once rather than every frame.
+	if (Scene_texture_u_scale > 1.0f || Scene_texture_v_scale > 1.0f) {
+		static bool reported_undersized_scene_texture = false;
+
+		if (!reported_undersized_scene_texture) {
+			reported_undersized_scene_texture = true;
+			nprintf(("OpenGL",
+				"Viewport (%dx%d) is larger than the scene texture backing it (%dx%d); "
+				"the post-processed image will be stretched to fit.\n",
+				gr_screen.max_w,
+				gr_screen.max_h,
+				Scene_texture_width,
+				Scene_texture_height));
+		}
 	}
-	else
-	{
-		Scene_texture_u_scale = 1.0f;
-		Scene_texture_v_scale = 1.0f;
-	}
+
+	CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
+	CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
 
 	if (!light_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
