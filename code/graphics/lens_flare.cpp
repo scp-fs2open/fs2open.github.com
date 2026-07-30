@@ -754,6 +754,21 @@ bool lens_flare_point_visible(const vec3d& world_pos)
 	return test_line_of_sight(&Eye_position, &test_point, {}, 0.0f);
 }
 
+void lens_flare_commit_candidates(SCP_vector<flare_source>& out, SCP_vector<flare_source>& candidates, int budget)
+{
+	if (static_cast<int>(candidates.size()) > budget) {
+		std::partial_sort(candidates.begin(), candidates.begin() + budget, candidates.end(),
+			[](const flare_source& a, const flare_source& b) { return a.intensity > b.intensity; });
+		candidates.resize(budget);
+	}
+
+	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
+						 [](const flare_source& src) { return !lens_flare_point_visible(src.pos); }),
+		candidates.end());
+
+	out.insert(out.end(), candidates.begin(), candidates.end());
+}
+
 namespace {
 
 // Every sun the content asked to flare, with its occlusion and off-axis fades

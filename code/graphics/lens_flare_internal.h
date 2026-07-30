@@ -79,6 +79,21 @@ bool lens_flare_nozzle_apparent(const glow_point& gpt, const matrix& orient, con
 // ramps that light.
 void lens_flare_gather_beam_sources(SCP_vector<flare_source>& out, int budget);
 
+// The tail every finite-source gather shares: rank `candidates` by brightness,
+// cut to `budget`, drop whatever the eye cannot see, and append the rest to
+// `out`. `candidates` is left in an unspecified state.
+//
+// The order matters and is the reason this is one function rather than a
+// convention each gather follows. Ranking, not any brightness threshold, is what
+// bounds the pass -- a flare that would have been drawn faintly is the one worth
+// losing, and ranking by the same number the tint is built from means the pass
+// degrades by dropping what was least visible anyway. Visibility comes last
+// because it costs a scene-wide raycast per source, so testing before the cut
+// would scale the cost with every candidate in the mission instead of with the
+// budget. A source the raycast drops does not free its slot for the next
+// brightest: one lost flare is cheaper than a second pass to refill it.
+void lens_flare_commit_candidates(SCP_vector<flare_source>& out, SCP_vector<flare_source>& candidates, int budget);
+
 // Whether the eye has an unobstructed line of sight to a finite world point --
 // the same segment/model test AI targeting uses to decide whether a shot has a
 // clear path to its target (test_line_of_sight(), ai/aicode.cpp). A nozzle or
