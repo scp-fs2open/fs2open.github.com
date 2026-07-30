@@ -494,8 +494,12 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	{
 		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped);
 		memset(header, 0, sizeof(graphics::deferred_global_data));
-		header->invScreenWidth = 1.0f / gr_screen.max_w;
-		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		// Same as the OpenGL backend: deferred-f.sdr normalizes gl_FragCoord against these to
+		// sample the G-buffer, so they must describe the G-buffer, not gr_screen. resize() keeps
+		// sceneExtent equal to gr_screen today, which is why deriving it from the extent is a
+		// no-op here -- but it states the actual requirement instead of relying on that.
+		header->invScreenWidth = 1.0f / static_cast<float>(m_ctx->sceneExtent.width);
+		header->invScreenHeight = 1.0f / static_cast<float>(m_ctx->sceneExtent.height);
 		header->nearPlane = gr_near_plane;
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
