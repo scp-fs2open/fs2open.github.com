@@ -8,6 +8,7 @@ void main() {
 }
 #else
 in vec4 vertPosition;
+in vec4 vertTexCoord;
 
 out vec2 v_rcpFrame;
 noperspective out vec2 v_pos;
@@ -20,6 +21,16 @@ layout (std140) uniform genericData {
 void main() {
 	gl_Position = vertPosition;
 	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
-	v_pos = vertPosition.xy*0.5 + 0.5;
+	// Deriving this from vertPosition (clip-space -1..1 mapped to 0..1) instead of the actual
+	// texcoord attribute only samples the full [0,1] UV range, ignoring whatever sub-rectangle
+	// (u1,v1,u2,v2) the draw call actually asked for -- correct only when the source texture is
+	// the exact size of the destination viewport. qtFRED's post-processing targets are padded
+	// larger than its resizable viewport (see gr_opengl_scene_texture_begin()), so
+	// opengl_draw_full_screen_textured() is called with Scene_texture_u_scale/v_scale < 1 there;
+	// with the old formula FXAA re-samples that whole padded texture (valid content plus
+	// whatever's beyond it) squashed into the viewport, showing a shrunk duplicate of the scene
+	// in the corner matching the u/v scale. vertTexCoord already carries the correct (u1,v1)..
+	// (u2,v2) range, same as every other post-process pass's vertex shader (see post-v.sdr).
+	v_pos = vertTexCoord.xy;
 }
 #endif

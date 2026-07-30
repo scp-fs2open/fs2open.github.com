@@ -15,6 +15,7 @@
 #include <graphics/font.h>
 #include <graphics/matrix.h>
 #include <graphics/light.h>
+#include <graphics/shadows.h>
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>
@@ -1011,6 +1012,26 @@ void FredRenderer::render_frame(int cur_object_index,
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
 	Detail.num_stars = saved_detail_stars;
+
+	// Shadows piggyback on the same HDR scene-texture pipeline as post-processing above -- the
+	// shadow pass writes into deferred G-buffer surfaces that only exist while that's bound, so
+	// it can only run under EnablePostProcessing. Mirrors freespace.cpp's game_render_frame(),
+	// which calls this right after its own gr_scene_texture_begin()+stars_draw(). Eye_position/
+	// Eye_matrix/Proj_fov were already set to FRED's camera by the g3_set_view_matrix() call
+	// above, but shadows_render_all() operates on the separate HTL proj/view matrix stack (the
+	// same one enable_htl()/disable_htl() push and pop for the starfield): it starts by ending
+	// whatever's currently active (Assert(modelview_matrix_depth == 2) in gr_end_view_matrix()),
+	// then restores it via gr_set_proj_matrix()/gr_set_view_matrix() when done. disable_htl()
+	// just popped that stack, so it has to be pushed again here first -- and popped again
+	// afterward, since FRED's grid/model rendering below never touches the HTL stack and the
+	// *next* frame's enable_htl() would itself assert if it were left open.
+	if (view().EnablePostProcessing) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr);
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+	}
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
