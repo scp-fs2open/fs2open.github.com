@@ -49,8 +49,8 @@ never change them.</p>
 <h3>Post-processing</h3>
 <p><strong>Enable post-processing in the viewport</strong> routes the viewport
 through the same HDR rendering pipeline the game uses, adding bloom,
-tonemapping, lightshafts, and shadows. It is off by default, so missions look
-the way they always have until you opt in. The same switch is available as
+tonemapping, and lightshafts. It is off by default, so missions look the way
+they always have until you opt in. The same switch is available as
 <strong>View &rsaquo; Enable Post Processing</strong>.</p>
 <p>Every other setting in this section only changes what you see while
 post-processing is on, because they are all consumed by that pipeline.</p>
@@ -79,9 +79,9 @@ post-processing is on, because they are all consumed by that pipeline.</p>
         filtering. Left alone, QtFRED uses the same default the game does.
         <em>Requires a restart.</em></li>
     <li><strong>Anisotropic filtering</strong> - sharpens textures viewed at a
-        steep angle. The list is limited to the levels your GPU reports, and is
-        disabled entirely if it does not support the feature. Left alone, QtFRED
-        uses your hardware's maximum. <em>Requires a restart.</em></li>
+        steep angle. The list is limited to the levels your GPU reports, and the
+        control is greyed out if it reports nothing worth offering. Left alone,
+        QtFRED uses your hardware's maximum. <em>Requires a restart.</em></li>
 </ul>
 
 <h3>Gamma</h3>
