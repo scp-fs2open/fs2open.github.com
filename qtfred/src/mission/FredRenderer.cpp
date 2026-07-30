@@ -994,6 +994,15 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Optionally run the 3D scene through the game's HDR post-processing pipeline
+	// (bloom, tonemapping, lightshafts) instead of drawing straight to the
+	// default framebuffer. Brackets only the 3D world content,
+	// the same way freespace.cpp's game_render_frame() brackets its own scene --
+	// the 2D overlays below (distances, ship info, tooltips) stay outside it.
+	if (view().EnablePostProcessing) {
+		gr_scene_texture_begin();
+	}
+
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
 	int saved_detail_stars = Detail.num_stars;
@@ -1018,6 +1027,10 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index);
 	render_volumetric_overlay();
+
+	if (view().EnablePostProcessing) {
+		gr_scene_texture_end();
+	}
 
 	if (view().Show_distances) {
 		display_distances();
