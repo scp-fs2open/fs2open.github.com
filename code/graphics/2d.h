@@ -1506,6 +1506,12 @@ inline bool gr_get_property(gr_property property, void* destination)
 	return gr_screen.gf_get_property(property, destination);
 }
 
+// Anisotropic filtering levels the current hardware supports: 1.0 (off), then powers of two up to
+// the reported maximum. Empty if anisotropy is unavailable or the hardware caps out below 4x, in
+// which case there is nothing meaningful to offer. Backs both the in-game option's enumerator and
+// qtFRED's Preferences combo, so the two can't drift.
+SCP_vector<float> gr_get_supported_anisotropy_levels();
+
 inline void gr_push_debug_group(const char* name)
 {
 	gr_screen.gf_push_debug_group(name);
