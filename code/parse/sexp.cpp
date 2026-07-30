@@ -42,6 +42,7 @@
 #include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
+#include "graphics/lens_flare.h"
 #include "graphics/light.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
@@ -782,6 +783,11 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-skybox-alpha",				OP_SET_SKYBOX_ALPHA,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "set-camera-lens",				OP_SET_CAMERA_LENS,						1,	1,			SEXP_ACTION_OPERATOR,	},	// the-e
+	{ "set-lens-aperture",				OP_SET_LENS_APERTURE,					1,	4,			SEXP_ACTION_OPERATOR,	},	// the-e
+	{ "set-lens-grating",				OP_SET_LENS_GRATING,					1,	5,			SEXP_ACTION_OPERATOR,	},	// the-e
+	{ "set-lens-scratches",				OP_SET_LENS_SCRATCHES,					1,	7,			SEXP_ACTION_OPERATOR,	},	// the-e
+	{ "set-lens-dust",					OP_SET_LENS_DUST,						1,	4,			SEXP_ACTION_OPERATOR,	},	// the-e
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
 	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael - Deprecated
@@ -1150,6 +1156,33 @@ int check_dynamic_value_node_type(int node, bool is_string, bool is_number);
 
 // hud-display-gauge magic values
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
+
+// Magic values accepted by set-camera-lens in place of a lens name. Checked
+// before the table is searched, so a lens that somehow carried one of these
+// names could not shadow them.
+#define SEXP_LENS_NONE		"<none>"
+#define SEXP_LENS_DEFAULT	"<default>"
+
+// Whether an OPF_LENS_SYSTEM argument names something the engine can resolve.
+//
+// This is checked at mission load, where a failure aborts the load, so it is
+// only safe because lens_flares.tbl is an engine default: the built-in lenses
+// always resolve no matter what is installed, stars_init() parses the table
+// before any mission is loaded (in the game, the standalone server, FRED and
+// qtFRED alike), and a mod adding lenses via *-lens.tbm ships that table
+// alongside the missions that name them.
+bool sexp_lens_name_is_valid(const char* lens_name)
+{
+	if (lens_name == nullptr) {
+		return false;
+	}
+	// set-camera-lens is the only operator taking a lens name, so the sentinels
+	// are always meaningful here
+	if (!stricmp(lens_name, SEXP_LENS_NONE) || !stricmp(lens_name, SEXP_LENS_DEFAULT)) {
+		return true;
+	}
+	return graphics::lens_flare_lookup(lens_name) >= 0;
+}
 
 // event log stuff
 SCP_vector<SCP_string> *Current_event_log_buffer;
@@ -3948,6 +3981,14 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			case OPF_POST_EFFECT:
 				if (node_subtype != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				break;
+
+			case OPF_LENS_SYSTEM:
+				if (node_subtype != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				} else if (!sexp_lens_name_is_valid(CTEXT(node))) {
+					return SEXP_CHECK_INVALID_LENS_SYSTEM;
 				}
 				break;
 
@@ -16773,11 +16814,152 @@ void sexp_remove_background_bitmap(int n, bool is_sun)
 	}
 }
 
+// --- physically-based lens flares (see graphics/lens_flare.h) ---------------
+//
+// There is one camera lens for the whole mission, so these operators need no sun
+// or lens argument: set-camera-lens swaps the mounted lens, and the four aperture
+// operators restyle the iris of whatever is mounted. Both kinds of change are
+// undone by lens_flare_reset_for_level() from stars_pre_level_init(), so a
+// mission cannot leak its camera into the next one. Like the other
+// background/visual operators (set-post-effect, the nebula ones) they are not
+// packed for multiplayer, so in a networked game they only affect the host.
+
+void sexp_set_camera_lens(int n)
+{
+	const char* lens_name = CTEXT(n);
+
+	if (!stricmp(lens_name, SEXP_LENS_NONE)) {
+		graphics::lens_flare_switch_to("");
+	} else if (!stricmp(lens_name, SEXP_LENS_DEFAULT)) {
+		graphics::lens_flare_switch_to(graphics::lens_flare_default_name());
+	} else {
+		// unknown names warn and fall back to the default there
+		graphics::lens_flare_switch_to(lens_name);
+	}
+}
+
+// Shared front end of the four aperture operators: hand the mounted lens's
+// (mutable) aperture to the caller, then rebuild its textures only if something
+// actually changed. A mission event without a guard re-evaluates constantly, and
+// a rebuild is a 512^2 mask plus an FFT.
+template <typename EditFunc>
+void sexp_edit_lens_aperture(const char* op_name, EditFunc&& edit)
+{
+	int lens_idx = graphics::lens_flare_active_lens();
+	if (lens_idx < 0) {
+		Warning(LOCATION, "%s: this mission has no camera lens mounted; use set-camera-lens first.", op_name);
+		return;
+	}
+
+	auto* lens = graphics::lens_flare_get_system_mutable(lens_idx);
+	if (lens == nullptr)
+		return;
+
+	graphics::lens_aperture edited = lens->aperture;
+	edit(edited);
+
+	if (edited != lens->aperture) {
+		lens->aperture = edited;
+		graphics::lens_flare_aperture_changed(lens_idx);
+	}
+}
+
+// Read an optional percentage argument into `dest` as a 0..1 fraction, leaving
+// it alone when the argument was omitted or is nan. Advances the node.
+void sexp_lens_next_pct(int& n, float& dest, float min_val, float max_val)
+{
+	if (n < 0)
+		return;
+
+	bool is_nan, is_nan_forever;
+	int pct = eval_num(n, is_nan, is_nan_forever);
+	if (!is_nan && !is_nan_forever)
+		dest = std::clamp(pct / 100.0f, min_val, max_val);
+
+	n = CDR(n);
+}
+
+// Same, for a plain integer argument.
+void sexp_lens_next_int(int& n, int& dest, int min_val, int max_val)
+{
+	if (n < 0)
+		return;
+
+	bool is_nan, is_nan_forever;
+	int val = eval_num(n, is_nan, is_nan_forever);
+	if (!is_nan && !is_nan_forever)
+		dest = std::clamp(val, min_val, max_val);
+
+	n = CDR(n);
+}
+
+void sexp_lens_next_degrees(int& n, float& dest)
+{
+	if (n < 0)
+		return;
+
+	bool is_nan, is_nan_forever;
+	int deg = eval_num(n, is_nan, is_nan_forever);
+	if (!is_nan && !is_nan_forever)
+		dest = i2fl(deg);
+
+	n = CDR(n);
+}
+
+void sexp_set_lens_aperture(int node)
+{
+	sexp_edit_lens_aperture("set-lens-aperture", [node](graphics::lens_aperture& ap) {
+		int n = node;
+
+		sexp_lens_next_int(n, ap.blades, 0, 64);
+		sexp_lens_next_degrees(n, ap.rotation);
+		sexp_lens_next_pct(n, ap.curvature, -1.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.softness, 0.0f, 1.0f);
+	});
+}
+
+void sexp_set_lens_grating(int node)
+{
+	sexp_edit_lens_aperture("set-lens-grating", [node](graphics::lens_aperture& ap) {
+		int n = node;
+		sexp_lens_next_pct(n, ap.grating.strength, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.grating.density, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.grating.length, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.grating.width, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.grating.softness, 0.0f, 1.0f);
+	});
+}
+
+void sexp_set_lens_scratches(int node)
+{
+	sexp_edit_lens_aperture("set-lens-scratches", [node](graphics::lens_aperture& ap) {
+		int n = node;
+		sexp_lens_next_pct(n, ap.scratches.strength, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.scratches.density, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.scratches.length, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.scratches.width, 0.0f, 1.0f);
+		sexp_lens_next_degrees(n, ap.scratches.rotation);
+		sexp_lens_next_pct(n, ap.scratches.rotation_variation, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.scratches.softness, 0.0f, 1.0f);
+	});
+}
+
+void sexp_set_lens_dust(int node)
+{
+	sexp_edit_lens_aperture("set-lens-dust", [node](graphics::lens_aperture& ap) {
+		int n = node;
+		sexp_lens_next_pct(n, ap.dust.strength, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.dust.density, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.dust.radius, 0.0f, 1.0f);
+		sexp_lens_next_pct(n, ap.dust.softness, 0.0f, 1.0f);
+	});
+}
+
 void sexp_nebula_change_storm(int n)
 {
 	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
 		return;
-	
+
 	nebl_set_storm(CTEXT(n));
 }
 
@@ -30315,8 +30497,33 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_SET_AMBIENT_LIGHT: 
-				sexp_set_ambient_light(node); 
+			case OP_SET_AMBIENT_LIGHT:
+				sexp_set_ambient_light(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_CAMERA_LENS:
+				sexp_set_camera_lens(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_LENS_APERTURE:
+				sexp_set_lens_aperture(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_LENS_GRATING:
+				sexp_set_lens_grating(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_LENS_SCRATCHES:
+				sexp_set_lens_scratches(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_LENS_DUST:
+				sexp_set_lens_dust(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -32018,6 +32225,11 @@ int query_operator_return_type(int op)
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_SET_CAMERA_LENS:
+		case OP_SET_LENS_APERTURE:
+		case OP_SET_LENS_GRATING:
+		case OP_SET_LENS_SCRATCHES:
+		case OP_SET_LENS_DUST:
 		case OP_SET_POST_EFFECT:
 		case OP_RESET_POST_EFFECTS:
 		case OP_CHANGE_IFF_COLOR:
@@ -34330,7 +34542,23 @@ int query_operator_argument_type(int op_index, int argnum)
 
 		case OP_SET_AMBIENT_LIGHT:
 			return OPF_POSITIVE;
-			
+
+		case OP_SET_CAMERA_LENS:
+			return OPF_LENS_SYSTEM;
+
+		case OP_SET_LENS_APERTURE:
+			// blade count and rotation (both non-negative), then curvature,
+			// which may bow the blades inward
+			if (argnum == 2)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
+		case OP_SET_LENS_GRATING:
+		case OP_SET_LENS_SCRATCHES:
+		case OP_SET_LENS_DUST:
+			return OPF_POSITIVE;
+
 		case OP_SET_POST_EFFECT:
 			if (argnum == 0)
 				return OPF_POST_EFFECT;
@@ -35616,6 +35844,9 @@ const char *sexp_error_message(int num)
 			
 		case SEXP_CHECK_INVALID_ANIMATION_TYPE:
 			return "Invalid animation type";
+
+		case SEXP_CHECK_INVALID_LENS_SYSTEM:
+			return "Invalid lens system";
 
 		case SEXP_CHECK_INVALID_MISSION_MOOD:
 			return "Invalid mission mood";
@@ -37152,6 +37383,11 @@ int get_category(int op_id)
 		case OP_SET_WEAPON_ENERGY:
 		case OP_SET_SHIELD_ENERGY:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_SET_CAMERA_LENS:
+		case OP_SET_LENS_APERTURE:
+		case OP_SET_LENS_GRATING:
+		case OP_SET_LENS_SCRATCHES:
+		case OP_SET_LENS_DUST:
 		case OP_CHANGE_IFF_COLOR:
 		case OP_TURRET_SUBSYS_TARGET_DISABLE:
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
@@ -37767,6 +38003,11 @@ int get_subcategory(int op_id)
 		case OP_NEBULA_SET_RANGE:
 		case OP_VOLUMETRICS_TOGGLE:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_SET_CAMERA_LENS:
+		case OP_SET_LENS_APERTURE:
+		case OP_SET_LENS_GRATING:
+		case OP_SET_LENS_SCRATCHES:
+		case OP_SET_LENS_DUST:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -41908,6 +42149,74 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Red (0 - 255).\r\n"
 		"\t2: Green (0 - 255).\r\n"
 		"\t3: Blue (0 - 255)."
+	},
+
+	{ OP_SET_CAMERA_LENS, "set-camera-lens\r\n"
+		"\tMounts a physically-based camera lens, replacing the mission's $Camera Lens:.\r\n"
+		"\tThere is one lens for the whole mission, because there is one camera: every sun\r\n"
+		"\tin the background flares through the same glass, which is what keeps their\r\n"
+		"\tflares consistent with each other.\r\n\r\n"
+		"\tThe lens goes back to the mission's own when the mission ends. Not sent over\r\n"
+		"\tthe network, so in multiplayer this only affects the host.\r\n\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\t1:\tLens system from lens_flares.tbl, or <none> for no flares at all, or\r\n"
+		"\t\t<default> for the one lens_flares.tbl declares as $Default Lens:."
+	},
+
+	{ OP_SET_LENS_APERTURE, "set-lens-aperture\r\n"
+		"\tChanges the iris shape of the mounted camera lens. A lens has exactly one\r\n"
+		"\taperture and it drives both the ghosts and the starburst, so this restyles both\r\n"
+		"\tat once, for every sun.\r\n\r\n"
+		"\tDoes nothing (with a warning) if no lens is mounted. The iris goes back to its\r\n"
+		"\ttabled values when the mission ends. Not sent over the network.\r\n\r\n"
+		"\tTakes 1 to 4 arguments...\r\n"
+		"\t1:\tNumber of iris blades; fewer than 3 gives a round iris.\r\n"
+		"\t2:\t(optional) Blade rotation in degrees.\r\n"
+		"\t3:\t(optional) Blade curvature as a percentage: 0 leaves the blades straight,\r\n"
+		"\t\t100 bows them out into a circle, and negative values bow them inward.\r\n"
+		"\t4:\t(optional) Edge softness as a percentage of the iris radius. 0 keeps the\r\n"
+		"\t\tsharp default; even a few percent visibly weakens the starburst spikes,\r\n"
+		"\t\tsince those come from the sharpness of that edge."
+	},
+
+	{ OP_SET_LENS_GRATING, "set-lens-grating\r\n"
+		"\tSets the diffraction grating of the mounted lens's iris: radial ridges around\r\n"
+		"\tthe rim that throw extra spikes into the starburst. See set-lens-aperture for\r\n"
+		"\thow iris edits behave.\r\n\r\n"
+		"\tNote that the starburst is normalized against its own brightest value, so\r\n"
+		"\tadding grating dims the core spikes as it adds new ones.\r\n\r\n"
+		"\tTakes 1 to 5 arguments...\r\n"
+		"\t1:\tStrength as a percentage; 0 turns the grating off.\r\n"
+		"\t2:\t(optional) Density as a percentage of the 360 possible ridges.\r\n"
+		"\t3:\t(optional) Length as a percentage: how far in from the rim they reach.\r\n"
+		"\t4:\t(optional) Width as a percentage of the spacing between ridges.\r\n"
+		"\t5:\t(optional) Softness as a percentage."
+	},
+
+	{ OP_SET_LENS_SCRATCHES, "set-lens-scratches\r\n"
+		"\tSets the scratches on the mounted lens's iris: randomly placed slivers, for a\r\n"
+		"\tworn or damaged lens. See set-lens-aperture for how iris edits behave, and\r\n"
+		"\tset-lens-grating for the note about starburst normalization.\r\n\r\n"
+		"\tTakes 1 to 7 arguments...\r\n"
+		"\t1:\tStrength as a percentage; 0 turns the scratches off.\r\n"
+		"\t2:\t(optional) Density as a percentage of the 1000 possible scratches.\r\n"
+		"\t3:\t(optional) Length as a percentage.\r\n"
+		"\t4:\t(optional) Width as a percentage.\r\n"
+		"\t5:\t(optional) Rotation in degrees.\r\n"
+		"\t6:\t(optional) Rotation variation as a percentage; 0 leaves every scratch\r\n"
+		"\t\tparallel, 100 scatters them completely.\r\n"
+		"\t7:\t(optional) Softness as a percentage."
+	},
+
+	{ OP_SET_LENS_DUST, "set-lens-dust\r\n"
+		"\tSets the dust on the mounted lens's iris: randomly placed specks, for a dirty\r\n"
+		"\tlens. See set-lens-aperture for how iris edits behave, and set-lens-grating\r\n"
+		"\tfor the note about starburst normalization.\r\n\r\n"
+		"\tTakes 1 to 4 arguments...\r\n"
+		"\t1:\tStrength as a percentage; 0 turns the dust off.\r\n"
+		"\t2:\t(optional) Density as a percentage of the 1000 possible specks.\r\n"
+		"\t3:\t(optional) Speck radius as a percentage.\r\n"
+		"\t4:\t(optional) Softness as a percentage."
 	},
 
 	{ OP_SET_GRAVITY_ACCEL, "set-gravity-accel\r\n"

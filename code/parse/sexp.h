@@ -150,6 +150,7 @@ enum sexp_opf_t : int {
 	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
 	OPF_MISSION_CUSTOM_STRING,      // MjnMixael - The custom strings as defined in FRED
 	OPF_MESSAGE_TYPE,      // naomimyselfandi - A message type (Attack Target et al.)
+	OPF_LENS_SYSTEM,       // the-e - a lens system from lens_flares.tbl, or <none>/<default>
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -941,7 +942,12 @@ enum : int {
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
 	OP_NEBULA_SET_RANGE,	// Goober5000
 	OP_SET_SQUADRON_WINGS,	// Goober5000
-	
+	OP_SET_CAMERA_LENS,		// the-e
+	OP_SET_LENS_APERTURE,	// the-e
+	OP_SET_LENS_GRATING,	// the-e
+	OP_SET_LENS_SCRATCHES,	// the-e
+	OP_SET_LENS_DUST,		// the-e
+
 	// OP_CATEGORY_AI
 	// defined for AI goals
 	
@@ -1305,6 +1311,7 @@ enum sexp_error_check
 	SEXP_CHECK_MUST_BE_INTEGER,
 	SEXP_CHECK_INVALID_CUSTOM_STRING,
 	SEXP_CHECK_INVALID_MESSAGE_TYPE,
+	SEXP_CHECK_INVALID_LENS_SYSTEM,
 	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
@@ -1489,6 +1496,10 @@ extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
 const char *opr_type_name(sexp_opr_t opr_type);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
+
+// True if the string names a lens system from lens_flares.tbl, or one of the
+// <none>/<default> values set-camera-lens accepts in place of one.
+extern bool sexp_lens_name_is_valid(const char* lens_name);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, const char *name, int &node);

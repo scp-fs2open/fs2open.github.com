@@ -579,6 +579,7 @@ void VulkanRenderer::endSceneRendering()
 	}
 
 	// Execute post-processing passes (all between HDR scene pass and swap chain pass)
+	m_postProcessor->executeLensFlare(m_currentCommandBuffer);
 	m_postProcessor->executeBloom(m_currentCommandBuffer);
 	m_postProcessor->executeTonemap(m_currentCommandBuffer);
 	m_postProcessor->executeFXAA(m_currentCommandBuffer);

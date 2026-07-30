@@ -303,6 +303,62 @@ struct fxaa_data {
 	float pad[2];
 };
 
+// Keep in sync with the literal array size in lensflare-v.sdr / lensflare-f.sdr!
+constexpr int MAX_LENS_FLARE_INSTANCES = 64;
+
+// Which of the three artifacts an instance slot draws, tagged in center.w.
+// Mirrored by the LENS_QUAD_* defines in lensflare-v.sdr / lensflare-f.sdr; the
+// emit_* helpers in graphics/lens_flare.cpp are the only writers.
+constexpr float LENS_QUAD_GHOST = 0.0f;
+constexpr float LENS_QUAD_STARBURST = 1.0f;
+constexpr float LENS_QUAD_STREAK = 2.0f;
+
+// One quad of the physically-based lens flare pass. The three kinds share this
+// one slot layout but read it differently, so the field meanings are per-kind:
+//
+//                center            halfext          apscale/apoff     color
+//   GHOST      xyz per-channel   xyz per-channel   xyz per-channel   rgb per-channel
+//              centre along        half-extent       aperture-plane    intensity
+//              the flare axis                        parametrization
+//   STARBURST  x = the sun's     x = half-extent   unused            rgb intensity
+//              image
+//   STREAK     x = the sun's     x = half-length   unused            rgb tint
+//              image             y = half-thickness
+//
+// Per-channel means red/green/blue in x/y/z. All positions and extents are in
+// sensor-plane millimeters, along and around the flare axis -- except the
+// streak, which is screen-horizontal and so carries a length and a thickness
+// instead of three chromatic values.
+struct lens_flare_instance_data {
+	vec4 center;   // w = LENS_QUAD_*, the kind tag; see the table above for xyz
+	vec4 halfext;
+	vec4 apscale;
+	vec4 apoff;
+	vec4 color;
+};
+
+struct lens_flare_data {
+	vec2d axis;      // unit flare axis in sensor space (sun -> screen center line)
+	vec2d ndc_scale; // sensor units -> NDC (x, y incl. aspect)
+
+	vec4 tint;       // rgb = sun color * visibility * lens intensity
+
+	int n_instances;
+	float squeeze; // anamorphic horizontal stretch of every footprint, 1.0 = spherical
+	float pad[2];
+
+	lens_flare_instance_data instances[MAX_LENS_FLARE_INSTANCES];
+};
+
+// This block is mirrored by hand in lensflare-v.sdr / lensflare-f.sdr, and the
+// two must agree byte for byte. Nothing else can check that -- the GLSL side is
+// only compiled at runtime -- so at least make a field added here (or a scalar
+// silently promoted past its std140 slot) stop the build instead of quietly
+// misaligning `instances` and corrupting every quad the pass draws.
+static_assert(sizeof(lens_flare_data) == 48 + 80 * MAX_LENS_FLARE_INSTANCES,
+	"lens_flare_data no longer matches its std140 layout -- update the genericData block in "
+	"lensflare-v.sdr and lensflare-f.sdr to match, then fix this size");
+
 struct fog_data {
 	vec3d fog_color;
 	float fog_start;

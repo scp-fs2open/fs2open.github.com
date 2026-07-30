@@ -19,6 +19,7 @@
 #include "listitemchooser.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
 #include "mission/missionparse.h"
@@ -84,6 +85,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
 	m_light_profile_index = 0;
+	m_camera_lens_index = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -155,6 +157,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NEB2_FOG_SKYBOX_CLIP, m_neb_fog_skybox_clip);
 	DDX_Text(pDX, IDC_NEB2_FOG_CLIP, m_neb_fog_clip);
 	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
+	DDX_CBIndex(pDX, IDC_CAMERA_LENS, m_camera_lens_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
 	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
@@ -432,6 +435,18 @@ void bg_bitmap_dlg::create()
 	}
 	box->SetCurSel(m_light_profile_index);
 
+	// The camera lens all sun flares are imaged through; entry 0 means none
+	box = (CComboBox *) GetDlgItem(IDC_CAMERA_LENS);
+	m_camera_lens_index = 0;
+	box->AddString("None");
+	for (int idx = 0; idx < graphics::lens_flare_num_systems(); idx++) {
+		const SCP_string &lens_name = graphics::lens_flare_get_system(idx)->name;
+		box->AddString(lens_name.c_str());
+		if (The_mission.camera_lens_name == lens_name)
+			m_camera_lens_index = idx + 1;
+	}
+	box->SetCurSel(m_camera_lens_index);
+
 	background_flags_init();
 
 	UpdateData(FALSE);
@@ -574,6 +589,13 @@ void bg_bitmap_dlg::OnClose()
 		Neb2_fog_clip_distance = Default_max_draw_distance;
 
 	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
+
+	if (m_camera_lens_index <= 0) {
+		The_mission.camera_lens_name.clear();
+	} else {
+		The_mission.camera_lens_name = graphics::lens_flare_get_system(m_camera_lens_index - 1)->name;
+	}
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
 	// close sun data
 	sun_data_close();
 

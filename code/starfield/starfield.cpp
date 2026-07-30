@@ -16,6 +16,7 @@
 #include "freespace.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
+#include "graphics/lens_flare.h"
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "hud/hud.h"
@@ -821,6 +822,9 @@ void stars_clear_instances()
 // call on game startup
 void stars_init()
 {
+	// lens systems must be known before a mission's $Camera Lens: names one
+	graphics::lens_flare_init();
+
 	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
@@ -843,7 +847,7 @@ void stars_close()
 {
 	stars_clear_instances();
 
-	// any other code goes here
+	graphics::lens_flare_close();
 }
 
 // called before mission parse so we can clear out all of the old stuff
@@ -856,6 +860,11 @@ void stars_pre_level_init(bool clear_backgrounds)
 		Backgrounds.clear();
 
 	stars_clear_instances();
+
+	// The camera lens and any aperture edits belong to the mission being left:
+	// unmount and restore the tabled irises so nothing carries into the next one.
+	// The mission's own $Camera Lens: is parsed after this (parse_mission_info).
+	graphics::lens_flare_reset_for_level();
 
 	stars_set_background_model(nullptr, nullptr);
 	stars_set_background_orientation();
@@ -1392,6 +1401,37 @@ static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, flo
 	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
 }
 
+// True when the post-processing flare pass is drawing this sun's starburst this
+// frame, so the sprite sun and its glow must not stack a second one on top of it.
+//
+// Never true while rendering an environment map. That path goes straight to a
+// render target without ever reaching the post-processing chain, so no flare pass
+// runs there and the sprite is all there is -- and since the env faces are
+// rendered *before* this frame's stars_draw() publishes, what is published at
+// that moment is still the previous frame's. Both reasons say the same thing:
+// only the scene render that published may act on the result.
+static bool sun_starburst_replaces_sprite(int sun_n)
+{
+	return !Rendering_to_env && graphics::lens_flare_sun_starburst_drawn(sun_n);
+}
+
+// The sun's tabled light, or nothing if the sun instance itself is invalid.
+std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n)
+{
+	if (!SCP_vector_inbounds(Suns, sun_n) || Suns[sun_n].star_bitmap_index < 0) {
+		return std::nullopt;
+	}
+
+	const starfield_bitmap* bm = &Sun_bitmaps[Suns[sun_n].star_bitmap_index];
+
+	sun_rgbi rgbi;
+	rgbi.color.xyz.x = bm->r;
+	rgbi.color.xyz.y = bm->g;
+	rgbi.color.xyz.z = bm->b;
+	rgbi.intensity = bm->i;
+	return rgbi;
+}
+
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
@@ -1476,9 +1516,15 @@ void stars_draw_sun(int show_sun)
 			continue;
 		}
 
-		material mat_params;
-		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
-		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
+		// When the flare pass is drawing this sun's starburst, skip the sprite so
+		// the two don't stack (the remaining suns are unaffected). Sun_drew is
+		// still counted: it means "a sun was on screen this frame", which drives
+		// the sunspot glare downstream and stays true either way.
+		if (!sun_starburst_replaces_sprite(idx)) {
+			material mat_params;
+			material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
+			g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
+		}
 		Sun_drew++;
 
 // 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
@@ -1569,6 +1615,12 @@ void stars_draw_sun_glow(int sun_n)
 	if (bm->glow_bitmap < 0)
 		return;
 
+	// when the flare pass is drawing this sun's starburst, skip the bitmap glow so
+	// the two don't stack
+	if (sun_starburst_replaces_sprite(sun_n)) {
+		return;
+	}
+
 	memset( &sun_vex, 0, sizeof(vertex) );
 
 	// get sun pos
@@ -1601,7 +1653,9 @@ void stars_draw_sun_glow(int sun_n)
 	material_set_unlit(&mat_params, bitmap_id, 0.5f, true, false);
 	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, true);
 
-	if (bm->flare) {
+	// legacy sprite flares; suppressed while a physically-based camera lens is
+	// mounted, since that models the same artifact properly
+	if (bm->flare && graphics::lens_flare_active_lens() < 0) {
 		vec3d light_dir;
 		vec3d local_light_dir;
 		light_get_global_dir(&light_dir, sun_n);
@@ -2076,6 +2130,15 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	Rendering_to_env = env;
+
+	// Decide what the camera lens will flare this frame, before anything consults
+	// the answer: the sun sprites below step aside for a starburst the flare pass
+	// is drawing, and the post-processing pass draws exactly what is published
+	// here. Skipped for environment maps, which never reach that pass -- see
+	// sun_starburst_replaces_sprite().
+	if (!env) {
+		graphics::lens_flare_frame_update();
+	}
 
 	if (show_subspace)
 		subspace_render();

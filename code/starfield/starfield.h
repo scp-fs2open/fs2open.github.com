@@ -18,6 +18,8 @@
 #include "model/model.h"
 #include "starfield/starfield_flags.h"
 
+#include <optional>
+
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
@@ -193,6 +195,15 @@ int stars_find_sun(const char *name);
 
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
+
+// A sun's tabled light, as $SunRGBI: declares it in stars.tbl.
+struct sun_rgbi {
+	vec3d color = vmd_zero_vector; // 0..1 per channel
+	float intensity = 0.0f;
+};
+
+// The sun's tabled light, or nothing if the sun instance itself is invalid.
+std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n);
 
 // for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
 // or not there is an instance for it yet

@@ -2,6 +2,7 @@
 #include "asteroid/asteroid.h"
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
+#include "graphics/lens_flare.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
@@ -402,7 +403,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
-		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "$Lighting Profile:", "$Camera Lens:", "#Background bitmaps" });
 		if (optional_string("+Volumetric Nebula:")) {
 			//Rendering usually happens in post-mission-init, just do it now in the lab
 			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
@@ -414,7 +415,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		// Are we using a skybox?
 		//skip will skip to the end of the file (or to the 'end' string) if any string is absent,
 		//so be sure to include any section that might be found
-		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Skybox Model:", "$Lighting Profile:", "$Camera Lens:", "#Background bitmaps" });
 		strcpy_s(skybox_model, "");
 		if (optional_string("$Skybox Model:")) {
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
@@ -435,7 +436,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			stars_set_background_orientation(&skybox_orientation);
 		}
 
-		skip_to_start_of_string_either("$Lighting Profile:", "#Background bitmaps");
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Lighting Profile:", "$Camera Lens:", "#Background bitmaps" });
 		ltp_name = ltp::default_name();
 		if(optional_string("$Lighting Profile:")){
 			stuff_string(ltp_name,F_NAME);
@@ -445,6 +446,17 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (ltp_name != ltp::current()->name) {
 				ltp::switch_to(ltp_name);
 		}
+
+		// the camera lens all sun flares are imaged through, same fall-back to
+		// the tabled default as parse_mission_info()
+		skip_to_start_of_string_either("$Camera Lens:", "#Background bitmaps");
+		SCP_string lens_name = graphics::lens_flare_default_name();
+		if (optional_string("$Camera Lens:")) {
+			stuff_string(lens_name, F_NAME);
+			if (lens_name.empty())
+				lens_name = graphics::lens_flare_default_name();
+		}
+		graphics::lens_flare_switch_to(lens_name.c_str());
 
 		// Mission headers include additional fields between lighting profile and the
 		// background section. If we stopped at the lighting profile, we need to seek again.

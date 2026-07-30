@@ -70,6 +70,7 @@ extern Category SMAACalculateBlendingWeights;
 extern Category SMAANeighborhoodBlending;
 extern Category SMAAResolve;
 extern Category Lightshafts;
+extern Category LensFlare;
 extern Category DrawPostEffects;
 
 extern Category RenderBatchItem;

@@ -7,6 +7,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "starfield/nebula.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "missioneditor/common.h"
 
@@ -1430,6 +1431,35 @@ SCP_string BackgroundEditorDialogModel::getLightingProfileName()
 void BackgroundEditorDialogModel::setLightingProfileName(const SCP_string& name)
 {
 	modify(The_mission.lighting_profile_name, name);
+}
+
+// The camera lens every sun's flare is imaged through. "None" is a real choice
+// rather than a missing value, so it heads the list.
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getCameraLensOptions()
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back(CAMERA_LENS_NONE);
+	for (int i = 0; i < graphics::lens_flare_num_systems(); i++)
+		out.emplace_back(graphics::lens_flare_get_system(i)->name);
+	return out;
+}
+
+SCP_string BackgroundEditorDialogModel::getCameraLensName()
+{
+	return The_mission.camera_lens_name.empty() ? SCP_string(CAMERA_LENS_NONE) : The_mission.camera_lens_name;
+}
+
+void BackgroundEditorDialogModel::setCameraLensName(const SCP_string& name)
+{
+	SCP_string lens_name = (name == CAMERA_LENS_NONE) ? SCP_string() : name;
+	if (lens_name == The_mission.camera_lens_name)
+		return;
+
+	modify(The_mission.camera_lens_name, lens_name);
+
+	// mount it right away so the editor's viewport shows what the mission will
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
+	refreshBackgroundPreview();
 }
 
 } // namespace fso::fred::dialogs

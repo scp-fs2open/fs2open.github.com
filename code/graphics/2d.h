@@ -232,6 +232,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_LENS_FLARE,
+
 	NUM_SHADER_TYPES
 };
 

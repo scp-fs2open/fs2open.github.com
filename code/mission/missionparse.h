@@ -237,6 +237,10 @@ typedef struct mission {
 
 	SCP_string lighting_profile_name;
 
+	// the camera lens all sun flares are imaged through (graphics/lens_flare.h);
+	// empty = no physically-based flares
+	SCP_string camera_lens_name;
+
 	SCP_vector<mission_cutscene> cutscenes;
 
 	SCP_map<SCP_string, SCP_string> custom_data;

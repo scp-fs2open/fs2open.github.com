@@ -34,6 +34,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/bitarray.h"
@@ -1115,6 +1116,19 @@ void parse_mission_info(mission *pm, bool basic = false)
 	else
 		The_mission.lighting_profile_name = lighting_profiles::default_name();
 	lighting_profiles::switch_to(The_mission.lighting_profile_name);
+
+	// The camera lens every sun's flare is imaged through (graphics/lens_flare.h).
+	// Empty means no physically-based flares, which is what the shipped table
+	// defaults to, so existing missions are unaffected.
+	if (optional_string("$Camera Lens:"))
+	{
+		stuff_string(The_mission.camera_lens_name, F_NAME);
+		if (The_mission.camera_lens_name.empty())
+			The_mission.camera_lens_name = graphics::lens_flare_default_name();
+	}
+	else
+		The_mission.camera_lens_name = graphics::lens_flare_default_name();
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -7396,6 +7410,7 @@ void mission::Reset()
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
 	lighting_profile_name = lighting_profiles::default_name();
+	camera_lens_name = graphics::lens_flare_default_name();
 
 	cutscenes.clear( );
 

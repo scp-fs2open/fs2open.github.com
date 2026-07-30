@@ -101,6 +101,7 @@ public:
 	CString m_neb_fog_skybox_clip;
 	CString m_neb_fog_clip;
 	int m_light_profile_index;
+	int m_camera_lens_index;
 	//}}AFX_DATA
 
 // Overrides
