@@ -863,11 +863,11 @@ SCP_vector<float> gr_get_supported_anisotropy_levels()
 {
 	float max;
 	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
+		return {};
 	}
 
 	if (max <= 2.0f) {
-		return SCP_vector<float>();
+		return {};
 	}
 
 	SCP_vector<float> out;
