@@ -4,6 +4,7 @@
 #include "ui/Theme.h"
 #include "mission/missiongrid.h"
 #include "math/vecmat.h"
+#include "graphics/2d.h"
 
 namespace fso::fred::dialogs {
 
@@ -27,6 +28,13 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _outlineLod(viewport->view.Outline_lod)
 	, _labelFontScale(viewport->view.Label_font_scale)
+	, _enablePostProcessing(viewport->view.EnablePostProcessing)
+	, _shadowQuality(viewport->view.Graphics_shadow_quality)
+	, _aaMode(viewport->view.Graphics_aa_mode)
+	, _msaaSamples(viewport->view.Graphics_msaa_samples)
+	, _textureFilter(viewport->view.Graphics_texture_filter)
+	, _anisotropy(viewport->view.Graphics_anisotropy)
+	, _gamma(viewport->view.Graphics_gamma)
 	, _invertOrbitX(viewport->camera.getInvertOrbitX())
 	, _invertOrbitY(viewport->camera.getInvertOrbitY())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
@@ -70,6 +78,16 @@ bool PreferencesDialogModel::apply() {
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 	_viewport->view.Outline_lod                 = _outlineLod;
 	_viewport->view.Label_font_scale            = _labelFontScale;
+	_viewport->view.EnablePostProcessing        = _enablePostProcessing;
+	_viewport->view.Graphics_shadow_quality     = _shadowQuality;
+	_viewport->view.Graphics_aa_mode            = _aaMode;
+	_viewport->view.Graphics_msaa_samples       = _msaaSamples;
+	_viewport->view.Graphics_texture_filter     = _textureFilter;
+	_viewport->view.Graphics_anisotropy         = _anisotropy;
+	_viewport->view.Graphics_gamma              = _gamma;
+	// AA mode and gamma take effect immediately; shadow quality, MSAA samples, texture filter,
+	// and anisotropy are only applied at startup (see management.cpp) and need a restart.
+	_viewport->applyGraphicsSettings();
 	_viewport->camera.setInvertOrbitX(_invertOrbitX);
 	_viewport->camera.setInvertOrbitY(_invertOrbitY);
 
@@ -184,6 +202,42 @@ void PreferencesDialogModel::setOutlineLod(int value) { modify(_outlineLod, valu
 
 double PreferencesDialogModel::getLabelFontScale() const { return _labelFontScale; }
 void PreferencesDialogModel::setLabelFontScale(double value) { modify(_labelFontScale, static_cast<float>(value)); }
+
+bool PreferencesDialogModel::getEnablePostProcessing() const { return _enablePostProcessing; }
+void PreferencesDialogModel::setEnablePostProcessing(bool value) { modify(_enablePostProcessing, value); }
+
+int  PreferencesDialogModel::getShadowQuality() const { return _shadowQuality; }
+void PreferencesDialogModel::setShadowQuality(int value) { modify(_shadowQuality, value); }
+
+int  PreferencesDialogModel::getAAMode() const { return _aaMode; }
+void PreferencesDialogModel::setAAMode(int value) { modify(_aaMode, value); }
+
+int  PreferencesDialogModel::getMSAASamples() const { return _msaaSamples; }
+void PreferencesDialogModel::setMSAASamples(int value) { modify(_msaaSamples, value); }
+
+int  PreferencesDialogModel::getTextureFilter() const { return _textureFilter; }
+void PreferencesDialogModel::setTextureFilter(int value) { modify(_textureFilter, value); }
+
+float PreferencesDialogModel::getAnisotropy() const { return _anisotropy; }
+void PreferencesDialogModel::setAnisotropy(float value) { modify(_anisotropy, value); }
+
+SCP_vector<float> PreferencesDialogModel::getAvailableAnisotropyLevels() const {
+	SCP_vector<float> levels;
+
+	float max = 1.0f;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max) || max <= 1.0f) {
+		levels.push_back(1.0f);
+		return levels;
+	}
+
+	for (float level = 1.0f; level <= max; level *= 2.0f) {
+		levels.push_back(level);
+	}
+	return levels;
+}
+
+float PreferencesDialogModel::getGamma() const { return _gamma; }
+void PreferencesDialogModel::setGamma(float value) { modify(_gamma, value); }
 
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);
