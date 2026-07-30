@@ -29,6 +29,8 @@
 #include <mod_table/mod_table.h>
 #include <cfile/cfile.h>
 
+#include <optional>
+
 #include "mission/object.h"
 #include "prop/prop.h"
 #include "weapon/weapon.h"
@@ -53,6 +55,38 @@ void enable_htl() {
 }
 
 void disable_htl() {
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+}
+
+//! Scoped gr_scene_texture_begin()/end(), so the two can't drift apart as render_frame() grows.
+struct ScenePostProcessing {
+	ScenePostProcessing() { gr_scene_texture_begin(); }
+	~ScenePostProcessing() { gr_scene_texture_end(); }
+
+	ScenePostProcessing(const ScenePostProcessing&) = delete;
+	ScenePostProcessing& operator=(const ScenePostProcessing&) = delete;
+};
+
+/**
+ * @brief Render the shadow pass for the current camera.
+ *
+ * Only meaningful inside a ScenePostProcessing scope: the shadow pass writes into deferred
+ * G-buffer surfaces that only exist while the scene texture is bound. Mirrors game_render_frame(),
+ * which calls this right after its own gr_scene_texture_begin() + stars_draw().
+ *
+ * shadows_render_all() works on the HTL proj/view matrix stack -- the same one enable_htl() and
+ * disable_htl() push and pop for the starfield -- and expects it to be open: it ends whatever is
+ * active (gr_end_view_matrix() asserts on modelview_matrix_depth) and restores it when done. The
+ * starfield's disable_htl() just popped that stack, hence the push here, and the matching pop
+ * afterwards so the next frame's enable_htl() doesn't assert on a stack left open.
+ */
+void render_shadows() {
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr);
+
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 }
@@ -995,13 +1029,13 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
-	// Optionally run the 3D scene through the game's HDR post-processing pipeline
-	// (bloom, tonemapping, lightshafts) instead of drawing straight to the
-	// default framebuffer. Brackets only the 3D world content,
-	// the same way freespace.cpp's game_render_frame() brackets its own scene --
-	// the 2D overlays below (distances, ship info, tooltips) stay outside it.
-	if (view().EnablePostProcessing) {
-		gr_scene_texture_begin();
+	// Optionally run the 3D world through the game's HDR post-processing pipeline (bloom,
+	// tonemapping, lightshafts, shadows) instead of drawing straight to the default framebuffer.
+	// Brackets only the 3D content, the same way game_render_frame() does; the 2D overlays further
+	// down (distances, ship info, tooltips) stay outside it.
+	std::optional<ScenePostProcessing> postProcessing;
+	if (view().Graphics.enablePostProcessing) {
+		postProcessing.emplace();
 	}
 
 	// Force max star detail so the editor always shows the full Num_stars count
@@ -1013,24 +1047,8 @@ void FredRenderer::render_frame(int cur_object_index,
 	disable_htl();
 	Detail.num_stars = saved_detail_stars;
 
-	// Shadows piggyback on the same HDR scene-texture pipeline as post-processing above -- the
-	// shadow pass writes into deferred G-buffer surfaces that only exist while that's bound, so
-	// it can only run under EnablePostProcessing. Mirrors freespace.cpp's game_render_frame(),
-	// which calls this right after its own gr_scene_texture_begin()+stars_draw(). Eye_position/
-	// Eye_matrix/Proj_fov were already set to FRED's camera by the g3_set_view_matrix() call
-	// above, but shadows_render_all() operates on the separate HTL proj/view matrix stack (the
-	// same one enable_htl()/disable_htl() push and pop for the starfield): it starts by ending
-	// whatever's currently active (Assert(modelview_matrix_depth == 2) in gr_end_view_matrix()),
-	// then restores it via gr_set_proj_matrix()/gr_set_view_matrix() when done. disable_htl()
-	// just popped that stack, so it has to be pushed again here first -- and popped again
-	// afterward, since FRED's grid/model rendering below never touches the HTL stack and the
-	// *next* frame's enable_htl() would itself assert if it were left open.
-	if (view().EnablePostProcessing) {
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-		shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr);
-		gr_end_proj_matrix();
-		gr_end_view_matrix();
+	if (postProcessing) {
+		render_shadows();
 	}
 
 	if (view().Show_horizon) {
@@ -1049,9 +1067,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	render_models(cur_object_index);
 	render_volumetric_overlay();
 
-	if (view().EnablePostProcessing) {
-		gr_scene_texture_end();
-	}
+	postProcessing.reset();
 
 	if (view().Show_distances) {
 		display_distances();

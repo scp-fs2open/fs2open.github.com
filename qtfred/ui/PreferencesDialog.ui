@@ -422,31 +422,6 @@
             <property name="toolTip">
              <string>Quality of the shadows cast by the mission's sun in the viewport. Requires post-processing to be enabled. Restarting qtFRED is required for a change to take effect.</string>
             </property>
-            <item>
-             <property name="text">
-              <string>Disabled</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Low (restart required)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Medium (restart required)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>High (restart required)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Ultra (restart required)</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="1" column="0">
@@ -461,46 +436,6 @@
             <property name="toolTip">
              <string>Post-process anti-aliasing mode used in the viewport. Requires post-processing to be enabled.</string>
             </property>
-            <item>
-             <property name="text">
-              <string>None</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>FXAA Low</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>FXAA Medium</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>FXAA High</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SMAA Low</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SMAA Medium</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SMAA High</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SMAA Ultra</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="2" column="0">
@@ -515,21 +450,6 @@
             <property name="toolTip">
              <string>Multisample anti-aliasing used for the viewport's 3D scene. Requires post-processing to be enabled. Restarting qtFRED is required for a change to take effect.</string>
             </property>
-            <item>
-             <property name="text">
-              <string>Off</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>4x (restart required)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>8x (restart required)</string>
-             </property>
-            </item>
            </widget>
           </item>
          </layout>
@@ -553,16 +473,6 @@
             <property name="toolTip">
              <string>Mipmap filtering used for textures. Restarting qtFRED is required for a change to take effect.</string>
             </property>
-            <item>
-             <property name="text">
-              <string>Bilinear (restart required)</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Trilinear (restart required)</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="1" column="0">
