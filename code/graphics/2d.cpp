@@ -856,6 +856,29 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
+SCP_vector<float> gr_get_supported_anisotropy_levels()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return SCP_vector<float>();
+	}
+
+	if (max <= 2.0f) {
+		return SCP_vector<float>();
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+
 static void parse_post_processing_func()
 {
 	bool value;
