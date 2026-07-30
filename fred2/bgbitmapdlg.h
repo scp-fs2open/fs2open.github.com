@@ -104,6 +104,15 @@ public:
 	int m_camera_lens_index;
 	//}}AFX_DATA
 
+	// Fixed head of the camera-lens combo: "Default" leaves the mission silent so
+	// it follows lens_flares.tbl, "None" is the explicit <none>, and the tabled
+	// lenses follow. See create()/OnClose() in bgbitmapdlg.cpp.
+	enum {
+		CAMERA_LENS_IDX_DEFAULT = 0,
+		CAMERA_LENS_IDX_NONE = 1,
+		CAMERA_LENS_IDX_FIRST_LENS = 2,
+	};
+
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(bg_bitmap_dlg)

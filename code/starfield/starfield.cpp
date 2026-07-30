@@ -81,6 +81,15 @@ typedef struct flare_bitmap {
 } flare_bitmap;
 
 
+// Values of starfield_bitmap::camera_lens_flare, i.e. of "+Camera Lens Flare:".
+// The unset default deliberately defers to $Flare:, which was the only way to say
+// "this sun flares" before this option existed.
+enum {
+	SUN_LENS_FLARE_FROM_FLARE = -1, // no "+Camera Lens Flare:"; follow $Flare:
+	SUN_LENS_FLARE_OFF = 0,
+	SUN_LENS_FLARE_ON = 1,
+};
+
 // global info (not individual instances)
 typedef struct starfield_bitmap {
 	char filename[MAX_FILENAME_LEN];				// bitmap filename
@@ -100,6 +109,10 @@ typedef struct starfield_bitmap {
 	int disc_measured_for;							// only for suns -- bitmap_id disc_fraction was measured from
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
+	// Does this sun flare through the physically-based camera lens (graphics/lens_flare.h)?
+	// Tristate, from "+Camera Lens Flare:": SUN_LENS_FLARE_FROM_FLARE follows $Flare:,
+	// so a table written before this option existed behaves exactly as it did.
+	int camera_lens_flare;
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
 	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];		// bitmaps for different lens flares (can be re-used)
 	int n_flares;									// number of flares actually used
@@ -414,6 +427,8 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	sbm->angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
 	sbm->disc_fraction = -1.0f;
 	sbm->disc_measured_for = -1;
+	// the memset above would otherwise read as SUN_LENS_FLARE_OFF
+	sbm->camera_lens_flare = SUN_LENS_FLARE_FROM_FLARE;
 
 	for (i = 0; i < MAX_FLARE_BMP; i++) {
 		sbm->flare_bitmaps[i].bitmap_id = -1;
@@ -580,6 +595,18 @@ void parse_startbl(const char *filename)
 						}
 						//	else break; //don't allow "flare 1" and then "flare 3"
 					}
+				}
+
+				// Opt this sun into (or out of) the physically-based camera-lens
+				// flare independently of the legacy sprite $Flare: block above,
+				// which otherwise doubles as the opt-in. Lets a sun flare through
+				// the camera lens without having to carry a full set of sprite
+				// flare fields it will never draw, and lets one that does carry
+				// them keep the sprites while sitting out the lens.
+				if (optional_string("+Camera Lens Flare:")) {
+					bool enabled = false;
+					stuff_boolean(&enabled);
+					sbm.camera_lens_flare = enabled ? SUN_LENS_FLARE_ON : SUN_LENS_FLARE_OFF;
 				}
 
 				sbm.glare = !optional_string("$NoGlare:");
@@ -1017,6 +1044,10 @@ void stars_post_level_init()
 			stars_preload_background(idx);
 	}
 
+	// The mission's $Camera Lens: is mounted by now, so build its iris mask and
+	// starburst here rather than letting the first flaring frame pay for them
+	graphics::lens_flare_prime_textures();
+
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 	stars_set_background_orientation(&The_mission.skybox_orientation);
 
@@ -1432,6 +1463,29 @@ std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n)
 	return rgbi;
 }
 
+bool stars_sun_bitmap_has_camera_lens_flare(int bitmap_idx)
+{
+	if (!SCP_vector_inbounds(Sun_bitmaps, bitmap_idx)) {
+		return false;
+	}
+	const starfield_bitmap* bm = &Sun_bitmaps[bitmap_idx];
+
+	// "+Camera Lens Flare:" wins where it is given; otherwise $Flare: stands in for
+	// it, since that was the only way to say "this sun flares" before it existed
+	if (bm->camera_lens_flare != SUN_LENS_FLARE_FROM_FLARE) {
+		return bm->camera_lens_flare == SUN_LENS_FLARE_ON;
+	}
+	return bm->flare != 0;
+}
+
+bool stars_sun_has_camera_lens_flare(int sun_n)
+{
+	if (!SCP_vector_inbounds(Suns, sun_n)) {
+		return false;
+	}
+	return stars_sun_bitmap_has_camera_lens_flare(Suns[sun_n].star_bitmap_index);
+}
+
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
@@ -1520,7 +1574,7 @@ void stars_draw_sun(int show_sun)
 		// the two don't stack (the remaining suns are unaffected). Sun_drew is
 		// still counted: it means "a sun was on screen this frame", which drives
 		// the sunspot glare downstream and stays true either way.
-		if (!sun_starburst_replaces_sprite(idx)) {
+		if (!graphics::lens_flare_sun_starburst_drawn(idx)) {
 			material mat_params;
 			material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
 			g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
@@ -1617,7 +1671,7 @@ void stars_draw_sun_glow(int sun_n)
 
 	// when the flare pass is drawing this sun's starburst, skip the bitmap glow so
 	// the two don't stack
-	if (sun_starburst_replaces_sprite(sun_n)) {
+	if (graphics::lens_flare_sun_starburst_drawn(sun_n)) {
 		return;
 	}
 
@@ -2131,12 +2185,18 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 
 	Rendering_to_env = env;
 
-	// Decide what the camera lens will flare this frame, before anything consults
-	// the answer: the sun sprites below step aside for a starburst the flare pass
-	// is drawing, and the post-processing pass draws exactly what is published
-	// here. Skipped for environment maps, which never reach that pass -- see
-	// sun_starburst_replaces_sprite().
-	if (!env) {
+	// Decide what the camera lens will flare for *this* render, before anything
+	// consults the answer: the sun sprites below step aside for a starburst the
+	// flare pass is drawing, and the post-processing pass draws exactly what is
+	// published here.
+	//
+	// Environment maps publish nothing, because they go straight to a render target
+	// without ever reaching that pass. Saying so here -- rather than having each
+	// consumer check where it is -- is what keeps "does this sun flare" a single
+	// answer that everything below can just read.
+	if (env) {
+		graphics::lens_flare_clear_frame();
+	} else {
 		graphics::lens_flare_frame_update();
 	}
 

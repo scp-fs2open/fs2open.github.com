@@ -447,16 +447,22 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				ltp::switch_to(ltp_name);
 		}
 
-		// the camera lens all sun flares are imaged through, same fall-back to
-		// the tabled default as parse_mission_info()
+		// The camera lens all sun flares are imaged through. Same as
+		// parse_mission_info(): hand the token over as written and let
+		// lens_flare_switch_to() resolve it, empty (no "$Camera Lens:" at all)
+		// included.
 		skip_to_start_of_string_either("$Camera Lens:", "#Background bitmaps");
-		SCP_string lens_name = graphics::lens_flare_default_name();
-		if (optional_string("$Camera Lens:")) {
+		SCP_string lens_name;
+		if (optional_string("$Camera Lens:"))
 			stuff_string(lens_name, F_NAME);
-			if (lens_name.empty())
-				lens_name = graphics::lens_flare_default_name();
-		}
 		graphics::lens_flare_switch_to(lens_name.c_str());
+
+		// Loading a background is the lab's level load, and stars_pre_level_init()
+		// above has just dropped the cached textures -- so build them here, as
+		// stars_post_level_init() does in the game. The lab is where the aperture
+		// sliders live, which makes it the worst place to leave the rebuild to the
+		// first flaring frame.
+		graphics::lens_flare_prime_textures();
 
 		// Mission headers include additional fields between lighting profile and the
 		// background section. If we stopped at the lighting profile, we need to seek again.

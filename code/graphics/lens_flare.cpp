@@ -23,11 +23,10 @@ extern int Game_subspace_effect;
 namespace graphics {
 namespace {
 
-// Overall brightness calibration of the ghost/starburst energy model relative
-// to the HDR scene (defaults; runtime-tunable from the lab, and scaled per
-// lens via $Intensity:)
-float Ghost_brightness = 64.0f;
-float Starburst_brightness = 1.6f;
+// Overall brightness calibration of the ghost/starburst energy model relative to
+// the HDR scene, plus the HDR headroom below. Runtime-tunable from the lab (and
+// scaled per lens via $Intensity:); the field defaults are in lens_flare.h.
+lens_flare_tuning Tuning;
 
 // SDR/HDR consistency (see lens_flare_output_scale()). The flare composites
 // additively into the pre-tonemap HDR scene buffer, so the tonemapper is the
@@ -44,7 +43,6 @@ float Starburst_brightness = 1.6f;
 // W constant. HDR forces its own tonemapper, so this is a fixed calibration
 // reference, not the live SDR curve.
 constexpr float LENS_FLARE_SDR_REFERENCE_WHITE = 11.2f;
-float Hdr_flare_headroom = 2.5f; // flare may reach ~this multiple of paper white in HDR
 
 // Cap on the (entrance pupil / ghost size)^2 energy concentration so nearly
 // focused ghosts can't blow out to infinity
@@ -288,12 +286,7 @@ lens_system* lens_flare_get_system_mutable(int lens_idx)
 	return &Lens_systems[lens_idx];
 }
 
-float lens_flare_get_ghost_brightness() { return Ghost_brightness; }
-void lens_flare_set_ghost_brightness(float value) { Ghost_brightness = MAX(value, 0.0f); }
-float lens_flare_get_starburst_brightness() { return Starburst_brightness; }
-void lens_flare_set_starburst_brightness(float value) { Starburst_brightness = MAX(value, 0.0f); }
-float lens_flare_get_hdr_headroom() { return Hdr_flare_headroom; }
-void lens_flare_set_hdr_headroom(float value) { Hdr_flare_headroom = MAX(value, 0.0f); }
+lens_flare_tuning& lens_flare_get_tuning() { return Tuning; }
 
 // Extra multiplier applied to the whole flare so its brightness reads
 // consistently in SDR and HDR output without per-lens re-tuning. SDR is the
@@ -302,7 +295,7 @@ void lens_flare_set_hdr_headroom(float value) { Hdr_flare_headroom = MAX(value, 
 static float lens_flare_output_scale()
 {
 	if (Gr_hdr_output_active) {
-		return Hdr_flare_headroom / LENS_FLARE_SDR_REFERENCE_WHITE;
+		return MAX(Tuning.hdr_headroom, 0.0f) / LENS_FLARE_SDR_REFERENCE_WHITE;
 	}
 	return 1.0f;
 }
@@ -314,7 +307,15 @@ const char* lens_flare_default_name()
 
 void lens_flare_switch_to(const char* lens_name)
 {
-	if (lens_name == nullptr || *lens_name == '\0') {
+	// No opinion (a mission with no "$Camera Lens:" at all), or the default asked
+	// for by name -- see the vocabulary in lens_flare.h
+	if (lens_name == nullptr || *lens_name == '\0' || !stricmp(lens_name, LENS_NAME_DEFAULT)) {
+		Mission_lens = Default_lens;
+		return;
+	}
+
+	// The one way to say "no flares even though a default exists"
+	if (!stricmp(lens_name, LENS_NAME_NONE)) {
 		Mission_lens = -1;
 		return;
 	}
@@ -322,7 +323,7 @@ void lens_flare_switch_to(const char* lens_name)
 	Mission_lens = lens_flare_lookup(lens_name);
 	if (Mission_lens < 0) {
 		// An unknown lens falls back to the table default rather than to no
-		// flares: a typo shouldn't silently look like "the mod wanted none"
+		// flares: a typo shouldn't silently look like LENS_NAME_NONE
 		Warning(LOCATION, "No lens system named '%s' is defined in lens_flares.tbl; using the default lens.",
 			lens_name);
 		Mission_lens = Default_lens;
@@ -379,6 +380,17 @@ const lens_flare_textures* lens_flare_get_textures(int lens_idx)
 	return lens.textures.get();
 }
 
+void lens_flare_prime_textures()
+{
+	// The editors draw the background without ever opening a scene texture, so the
+	// flare pass never runs there and generating the pair would be pure waste on
+	// every mission load
+	if (Fred_running) {
+		return;
+	}
+	lens_flare_get_textures(lens_flare_active_lens());
+}
+
 void lens_flare_reset_for_level()
 {
 	// Unmount: the mission being loaded sets its own $Camera Lens: right after
@@ -389,12 +401,14 @@ void lens_flare_reset_for_level()
 
 	// The next mission's suns are not this one's; drop the published frame so
 	// nothing consumes it across the level change
-	Frame_draws.clear();
-	Sun_starburst_drawn.clear();
+	lens_flare_clear_frame();
 
-	// drop any pending live edit first; it belongs to the mission being left
+	// Drop any pending live edit first; it belongs to the mission being left. The
+	// throttle stamp goes too, so the next mission's first edit applies at once
+	// instead of waiting out an interval started by the previous one.
 	Aperture_dirty = false;
 	Aperture_dirty_lens = -1;
+	Aperture_dirty_stamp = UI_TIMESTAMP::invalid();
 
 	for (int i = 0; i < static_cast<int>(Lens_systems.size()); i++) {
 		if (Lens_systems[i].aperture != Lens_systems[i].tabled_aperture) {
@@ -429,10 +443,11 @@ void lens_flare_aperture_changed(int lens_idx)
 	Aperture_dirty = true;
 	Aperture_dirty_lens = lens_idx;
 
-	// Apply straight away unless we just did; the flush below picks up the rest
-	if (!Aperture_dirty_stamp.isValid() || ui_timestamp_elapsed(Aperture_dirty_stamp)) {
-		flush_pending_aperture_edit();
-	}
+	// Apply straight away if the interval has already elapsed; if it hasn't, this
+	// is a no-op and the per-frame flush picks the edit up when it does. (The
+	// interval check lives in flush_pending_aperture_edit() alone -- repeating it
+	// here as a guard would just be the same condition written twice.)
+	flush_pending_aperture_edit();
 }
 
 namespace {
@@ -480,7 +495,9 @@ void emit_ghost(generic_data::lens_flare_instance_data& inst, const lens_system&
 		inst.halfext.a1d[k] = halfext;
 		inst.apscale.a1d[k] = ghost.ma[k][0] * pupil / lens.aperture_radius;
 		inst.apoff.a1d[k] = ghost.ma[k][1] * theta / lens.aperture_radius;
-		inst.color.a1d[k] = ghost.reflectance[k] * energy * Ghost_brightness;
+		// clamped here rather than at the setter: the lab hands out the tuning
+		// struct for direct editing, so this is the boundary that has to hold
+		inst.color.a1d[k] = ghost.reflectance[k] * energy * MAX(Tuning.ghost_brightness, 0.0f);
 	}
 }
 
@@ -495,7 +512,7 @@ void emit_starburst(generic_data::lens_flare_instance_data& inst, const lens_sys
 	for (int k = 0; k < 3; k++) {
 		inst.center.a1d[k] = sdist;
 		inst.halfext.a1d[k] = halfext;
-		inst.color.a1d[k] = Starburst_brightness;
+		inst.color.a1d[k] = MAX(Tuning.starburst_brightness, 0.0f); // see emit_ghost
 	}
 }
 
@@ -569,10 +586,15 @@ static int pack_sun_instances(const lens_system& lens, float theta, float sdist,
 	return count;
 }
 
-void lens_flare_frame_update()
+void lens_flare_clear_frame()
 {
 	Frame_draws.clear();
 	Sun_starburst_drawn.clear();
+}
+
+void lens_flare_frame_update()
+{
+	lens_flare_clear_frame();
 
 	// live aperture edits from the lab land here, throttled
 	flush_pending_aperture_edit();
@@ -614,6 +636,15 @@ void lens_flare_frame_update()
 	for (int sun_n = 0; sun_n < num_suns; sun_n++) {
 		const auto sun_light = stars_get_sun_rgbi(sun_n);
 		if (!sun_light) {
+			continue;
+		}
+
+		// A sun the content never asked to flare gets nothing from the camera lens.
+		// stars.tbl decides whether a sun flares ("+Camera Lens Flare:", or a legacy
+		// $Flare: block for tables predating it); the mounted lens only decides how
+		// that flare is drawn. Mounting a lens must not invent flares on suns
+		// deliberately tabled without one.
+		if (!stars_sun_has_camera_lens_flare(sun_n)) {
 			continue;
 		}
 

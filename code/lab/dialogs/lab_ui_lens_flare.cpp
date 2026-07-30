@@ -76,23 +76,14 @@ void LabUi::build_lens_aperture_options(int lens_idx, graphics::lens_aperture& a
 
 void LabUi::build_lens_flare_options()
 {
-	// global calibration multipliers (see graphics/lens_flare.cpp)
-	float ghost_brightness = graphics::lens_flare_get_ghost_brightness();
-	if (SliderFloat("Ghost brightness", &ghost_brightness, 0.0f, 500.0f, "%.1f", ImGuiSliderFlags_Logarithmic)) {
-		graphics::lens_flare_set_ghost_brightness(ghost_brightness);
-	}
-
-	float starburst_brightness = graphics::lens_flare_get_starburst_brightness();
-	if (SliderFloat("Starburst brightness", &starburst_brightness, 0.0f, 10.0f)) {
-		graphics::lens_flare_set_starburst_brightness(starburst_brightness);
-	}
-
-	float hdr_headroom = graphics::lens_flare_get_hdr_headroom();
-	if (SliderFloat("HDR headroom (x paper white)", &hdr_headroom, 0.0f, 8.0f)) {
-		graphics::lens_flare_set_hdr_headroom(hdr_headroom);
-	}
+	// Global calibration, edited in place -- same as the per-lens sliders below
+	// (see graphics/lens_flare.h). The sliders' own bounds keep the values sane.
+	auto& tuning = graphics::lens_flare_get_tuning();
+	SliderFloat("Ghost brightness", &tuning.ghost_brightness, 0.0f, 500.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
+	SliderFloat("Starburst brightness", &tuning.starburst_brightness, 0.0f, 10.0f);
+	SliderFloat("HDR headroom (x paper white)", &tuning.hdr_headroom, 0.0f, 8.0f);
 	if (Gr_hdr_output_active) {
-		TextDisabled("HDR output active: flare auto-scaled to ~%.1fx paper white", hdr_headroom);
+		TextDisabled("HDR output active: flare auto-scaled to ~%.1fx paper white", tuning.hdr_headroom);
 	} else {
 		TextDisabled("SDR output active: HDR headroom has no effect right now");
 	}

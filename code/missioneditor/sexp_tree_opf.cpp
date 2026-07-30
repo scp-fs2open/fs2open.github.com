@@ -1159,9 +1159,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_lens_system()
 {
 	sexp_list_item head;
 
-	// the two magic values set-sun-lens accepts in place of a real lens
-	head.add_data("<none>");
-	head.add_data("<default>");
+	// the two magic values set-camera-lens accepts in place of a real lens
+	head.add_data(LENS_NAME_NONE);
+	head.add_data(LENS_NAME_DEFAULT);
 
 	for (int i = 0; i < graphics::lens_flare_num_systems(); i++) {
 		head.add_data(graphics::lens_flare_get_system(i)->name.c_str());
@@ -3231,7 +3231,7 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i) const
 			break;
 
 		case OPF_LENS_SYSTEM:
-			str = "<default>";
+			str = LENS_NAME_DEFAULT;
 			break;
 
 		case OPF_CUSTOM_HUD_GAUGE:

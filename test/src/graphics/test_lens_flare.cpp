@@ -3,6 +3,7 @@
 #include <util/FSTestFixture.h>
 
 #include <graphics/lens_flare.h>
+#include <starfield/starfield.h>
 
 #include <cmath>
 #include <functional>
@@ -375,6 +376,122 @@ TEST_F(LensFlareTableTest, TextureInvalidationBumpsGeneration)
 // path rather than by setting the struct directly. Every aperture field is
 // wired up by hand, so only running a table through it proves each one lands in
 // the member it names.
+// Uses a table that declares a $Default Lens:, so that "take the default" and
+// "no flares" are distinguishable -- see the tbm's own comment.
+class LensFlareDefaultLensTest : public test::FSTestFixture {
+  public:
+	LensFlareDefaultLensTest() : test::FSTestFixture(INIT_CFILE)
+	{
+		pushModDir("graphics");
+		pushModDir("lens_flare");
+		pushModDir("default_lens");
+	}
+
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+		lens_flare_init();
+	}
+
+	void TearDown() override
+	{
+		lens_flare_close();
+		test::FSTestFixture::TearDown();
+	}
+};
+
+// lens_flare_switch_to() is the one place that resolves a camera-lens name, for
+// the mission field, the set-camera-lens sexp and both editors alike. The two
+// cases that matter are the ones a declared default separates: an empty name is
+// "this mission says nothing" and must take the default, while LENS_NAME_NONE is
+// "no flares" and must not. Collapsing those two is what silently overrode a
+// mission that had deliberately asked for no flares.
+TEST_F(LensFlareDefaultLensTest, NameVocabularyDistinguishesDefaultFromNone)
+{
+	const int declared = lens_flare_lookup("default_test_lens");
+	ASSERT_GE(declared, 0) << "the modular *-lens.tbm was not picked up at all";
+	ASSERT_STREQ(lens_flare_default_name(), "default_test_lens");
+
+	// no opinion -> the declared default
+	lens_flare_switch_to("");
+	EXPECT_EQ(lens_flare_active_lens(), declared);
+	lens_flare_switch_to(nullptr);
+	EXPECT_EQ(lens_flare_active_lens(), declared);
+
+	// ...and the default asked for by name is the same thing
+	lens_flare_switch_to(LENS_NAME_DEFAULT);
+	EXPECT_EQ(lens_flare_active_lens(), declared);
+
+	// <none> is the one answer that survives a declared default
+	lens_flare_switch_to(LENS_NAME_NONE);
+	EXPECT_EQ(lens_flare_active_lens(), -1) << "<none> must not fall back to $Default Lens:";
+
+	// the sentinels are case-insensitive, like every other name here
+	lens_flare_switch_to("<NONE>");
+	EXPECT_EQ(lens_flare_active_lens(), -1);
+	lens_flare_switch_to("<Default>");
+	EXPECT_EQ(lens_flare_active_lens(), declared);
+
+	// (An unknown name also falls back to the default, but it warns on the way and
+	// the test harness turns Warning() into a thrown exception, so that path can't
+	// be exercised from here.)
+
+	// leaving the mission re-arms the default, not "no lens"
+	lens_flare_switch_to(LENS_NAME_NONE);
+	ASSERT_EQ(lens_flare_active_lens(), -1);
+	lens_flare_reset_for_level();
+	EXPECT_EQ(lens_flare_active_lens(), declared);
+}
+
+// stars.tbl decides *whether* a sun flares; the camera lens only decides *how*.
+// Parses a table covering both ways a sun can say so, and the case where they
+// disagree. Only parses -- stars_init() would also load bitmaps this test has
+// none of.
+class SunCameraLensFlareTest : public test::FSTestFixture {
+  public:
+	SunCameraLensFlareTest() : test::FSTestFixture(INIT_CFILE)
+	{
+		pushModDir("graphics");
+		pushModDir("lens_flare");
+		pushModDir("sun_flare_opt_in");
+	}
+
+	// The tabled answer, by sun name. stars_find_sun() gives the bitmap index the
+	// option was parsed into, which is knowable without placing an instance.
+	static bool sun_flares(const char* name)
+	{
+		const int idx = stars_find_sun(name);
+		EXPECT_GE(idx, 0) << "sun '" << name << "' did not parse out of the test stars.tbl";
+		return stars_sun_bitmap_has_camera_lens_flare(idx);
+	}
+};
+
+TEST_F(SunCameraLensFlareTest, CameraLensFlareOptInOverridesTheFlareFallback)
+{
+	parse_startbl("stars.tbl");
+
+	// A sun that never asked to flare gets nothing from the camera lens. This is
+	// the whole point: mounting a lens must not invent flares on existing content.
+	EXPECT_FALSE(sun_flares("SunNeither"));
+
+	// A legacy sprite $Flare: block still stands in for the opt-in, so tables
+	// written before "+Camera Lens Flare:" existed keep working unchanged
+	EXPECT_TRUE(sun_flares("SunLegacyFlareOnly"));
+
+	// ...and the new option opts in on its own, with no sprite flare fields, which
+	// is the reason it exists
+	EXPECT_TRUE(sun_flares("SunLensOnly"));
+
+	// Where the two disagree the explicit option wins -- otherwise a sun could not
+	// keep its sprite flare while sitting out the physically-based one
+	EXPECT_FALSE(sun_flares("SunFlareButNoLens"));
+
+	// The option is parsed between the $Flare: block and $NoGlare:; if that
+	// ordering were wrong the option would silently never match, so check a sun
+	// that uses it alongside the option that follows it
+	EXPECT_TRUE(sun_flares("SunLensAndNoGlare"));
+}
+
 class LensFlareApertureTbmTest : public test::FSTestFixture {
   public:
 	LensFlareApertureTbmTest() : test::FSTestFixture(INIT_CFILE)
@@ -535,10 +652,13 @@ TEST_F(LensFlareTableTest, MountingAndOverridingTheCameraLens)
 	ASSERT_GE(tessar, 0);
 	ASSERT_GE(angenieux, 0);
 
-	// the shipped table declares no default, so a mission that asks for nothing
-	// renders no flares at all
+	// The shipped table declares no default, so here "take the default" and "no
+	// flares" happen to coincide -- LensFlareDefaultLensTest pulls them apart with
+	// a table that does declare one.
 	EXPECT_STREQ(lens_flare_default_name(), "");
 	lens_flare_switch_to("");
+	EXPECT_EQ(lens_flare_active_lens(), -1);
+	lens_flare_switch_to(LENS_NAME_NONE);
 	EXPECT_EQ(lens_flare_active_lens(), -1);
 
 	lens_flare_switch_to("tessar_50mm");

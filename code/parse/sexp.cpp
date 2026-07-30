@@ -1157,11 +1157,12 @@ int check_dynamic_value_node_type(int node, bool is_string, bool is_number);
 // hud-display-gauge magic values
 #define SEXP_HUD_GAUGE_WARPOUT "warpout"
 
-// Magic values accepted by set-camera-lens in place of a lens name. Checked
-// before the table is searched, so a lens that somehow carried one of these
-// names could not shadow them.
-#define SEXP_LENS_NONE		"<none>"
-#define SEXP_LENS_DEFAULT	"<default>"
+// The set-lens-* operators warn when no lens is mounted, but a mission event
+// without a guard re-evaluates every frame and Warning() is modal in debug
+// builds. Shared by all four operators rather than one flag each: the cause is
+// the same in every case, so one complaint per mission is enough even though the
+// message names whichever operator hit it first. Reset by init_sexp().
+static bool Sexp_lens_aperture_warned = false;
 
 // Whether an OPF_LENS_SYSTEM argument names something the engine can resolve.
 //
@@ -1177,8 +1178,9 @@ bool sexp_lens_name_is_valid(const char* lens_name)
 		return false;
 	}
 	// set-camera-lens is the only operator taking a lens name, so the sentinels
+	// (shared with the mission field and the editors, see graphics/lens_flare.h)
 	// are always meaningful here
-	if (!stricmp(lens_name, SEXP_LENS_NONE) || !stricmp(lens_name, SEXP_LENS_DEFAULT)) {
+	if (!stricmp(lens_name, LENS_NAME_NONE) || !stricmp(lens_name, LENS_NAME_DEFAULT)) {
 		return true;
 	}
 	return graphics::lens_flare_lookup(lens_name) >= 0;
@@ -1412,6 +1414,7 @@ void init_sexp()
 	// init data structures used by certain operators
 	// (note, Sexp_music_handles are not cleared here because sexp_music_close() handled that at the end of the previous mission)
 	Sexp_is_true_for_duration_times.clear();
+	Sexp_lens_aperture_warned = false;
 }
 
 // done at the beginning of the game
@@ -16826,16 +16829,10 @@ void sexp_remove_background_bitmap(int n, bool is_sun)
 
 void sexp_set_camera_lens(int n)
 {
-	const char* lens_name = CTEXT(n);
-
-	if (!stricmp(lens_name, SEXP_LENS_NONE)) {
-		graphics::lens_flare_switch_to("");
-	} else if (!stricmp(lens_name, SEXP_LENS_DEFAULT)) {
-		graphics::lens_flare_switch_to(graphics::lens_flare_default_name());
-	} else {
-		// unknown names warn and fall back to the default there
-		graphics::lens_flare_switch_to(lens_name);
-	}
+	// <none>, <default>, and the unknown-name warning are all resolved by
+	// lens_flare_switch_to() -- the same vocabulary the mission's "$Camera Lens:"
+	// and both editors use, so there is nothing to translate here
+	graphics::lens_flare_switch_to(CTEXT(n));
 }
 
 // Shared front end of the four aperture operators: hand the mounted lens's
@@ -16847,7 +16844,12 @@ void sexp_edit_lens_aperture(const char* op_name, EditFunc&& edit)
 {
 	int lens_idx = graphics::lens_flare_active_lens();
 	if (lens_idx < 0) {
-		Warning(LOCATION, "%s: this mission has no camera lens mounted; use set-camera-lens first.", op_name);
+		// Once per mission: an unguarded event lands here every frame, and this
+		// warning is modal in debug builds (see Sexp_lens_aperture_warned)
+		if (!Sexp_lens_aperture_warned) {
+			Sexp_lens_aperture_warned = true;
+			Warning(LOCATION, "%s: this mission has no camera lens mounted; use set-camera-lens first.", op_name);
+		}
 		return;
 	}
 

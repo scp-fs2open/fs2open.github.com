@@ -237,8 +237,12 @@ typedef struct mission {
 
 	SCP_string lighting_profile_name;
 
-	// the camera lens all sun flares are imaged through (graphics/lens_flare.h);
-	// empty = no physically-based flares
+	// The camera lens all sun flares are imaged through: the literal
+	// "$Camera Lens:" token, resolved by lens_flare_switch_to() (see the
+	// vocabulary in graphics/lens_flare.h). Empty means the mission names no lens
+	// and so takes the tabled default; LENS_NAME_NONE is how it asks for no
+	// flares at all. Keeping those two apart is what lets the field round-trip
+	// through FRED unchanged.
 	SCP_string camera_lens_name;
 
 	SCP_vector<mission_cutscene> cutscenes;

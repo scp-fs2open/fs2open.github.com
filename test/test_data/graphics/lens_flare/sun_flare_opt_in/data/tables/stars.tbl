@@ -1,0 +1,58 @@
+; Sun entries covering every combination of the two things that can declare a sun
+; flares: the legacy sprite "$Flare:" block and the explicit
+; "+Camera Lens Flare:" option.
+;
+; The option is parsed after the $Flare: block and before $NoGlare:, and a
+; mis-ordered optional_string() is silent -- it would simply never match, and the
+; sun would quietly keep the $Flare: fallback. That is what the accompanying test
+; is really guarding.
+;
+; No bitmaps here are ever loaded: the test only parses.
+
+#Background Bitmaps
+
+$Sun: SunNeither
+$Sunglow: nonexistent_glow
+$SunRGBI: 1.0 1.0 1.0 1.0
+
+; the pre-existing way to opt in: a legacy sprite flare block, no explicit option
+$Sun: SunLegacyFlareOnly
+$Sunglow: nonexistent_glow
+$SunRGBI: 1.0 1.0 1.0 1.0
+$Flare:
++FlareCount: 1
+$FlareTexture1: nonexistent_flare
+$FlareGlow1:
++FlareTexture: 0
++FlarePos: 0.5
++FlareScale: 0.5
+
+; the new lightweight opt-in: camera lens flare with no sprite flare fields at all
+$Sun: SunLensOnly
+$Sunglow: nonexistent_glow
+$SunRGBI: 1.0 1.0 1.0 1.0
++Camera Lens Flare: YES
+
+; explicitly opted out while still carrying a sprite flare block -- the option has
+; to win over the $Flare: fallback, or there is no way to keep sprites without the
+; physically-based flare
+$Sun: SunFlareButNoLens
+$Sunglow: nonexistent_glow
+$SunRGBI: 1.0 1.0 1.0 1.0
+$Flare:
++FlareCount: 1
+$FlareTexture1: nonexistent_flare
+$FlareGlow1:
++FlareTexture: 0
++FlarePos: 0.5
++FlareScale: 0.5
++Camera Lens Flare: NO
+
+; and the option must not swallow the $NoGlare: that follows it
+$Sun: SunLensAndNoGlare
+$Sunglow: nonexistent_glow
+$SunRGBI: 1.0 1.0 1.0 1.0
++Camera Lens Flare: YES
+$NoGlare:
+
+#End

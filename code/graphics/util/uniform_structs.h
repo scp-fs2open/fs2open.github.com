@@ -343,10 +343,19 @@ struct lens_flare_data {
 
 	vec4 tint;       // rgb = sun color * visibility * lens intensity
 
+	// Neither shader reads this -- the instance count comes from the draw call's
+	// instance parameter. Kept because it occupies a std140 slot the rest of the
+	// block is laid out around, and because it makes a captured frame readable.
 	int n_instances;
 	float squeeze; // anamorphic horizontal stretch of every footprint, 1.0 = spherical
 	float pad[2];
 
+	// The fragment shader declares this array too, and reads none of it: the
+	// per-instance values reach it as flat varyings. It is declared there purely so
+	// both stages agree on the block layout byte for byte. Splitting the per-draw
+	// constants above into their own block would let the fragment stage stop
+	// carrying ~5 KB it never touches, but it needs a second descriptor binding in
+	// the Vulkan set template, so it is not the free change it looks like.
 	lens_flare_instance_data instances[MAX_LENS_FLARE_INSTANCES];
 };
 
