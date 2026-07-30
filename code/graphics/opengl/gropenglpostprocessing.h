@@ -8,6 +8,10 @@
 void opengl_post_process_init();
 void opengl_post_process_shutdown();
 
+// Rebuild the resolution-dependent subset of the above for the current scene texture size, without
+// re-parsing post_processing.tbl or recompiling shaders. No-op if post-processing isn't active.
+void opengl_post_resize_render_targets();
+
 void gr_opengl_post_process_set_effect(const char *name, int x, const vec3d *rgb);
 void gr_opengl_post_process_set_defaults();
 void gr_opengl_post_process_save_zbuffer();
