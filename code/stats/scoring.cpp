@@ -408,6 +408,9 @@ void traitor_init()
 }
 
 // initialize a nice blank scoring element
+// Note: must be called after ship_init()/weapon_init() so ship_info_size() is final.
+// scoring_struct instances default-constructed before tables parse start with empty
+// kills vectors and must be re-initialized via init() (or replaced via assign()) before use.
 void scoring_struct::init()
 {
 	flags = 0;
@@ -416,7 +419,7 @@ void scoring_struct::init()
 
 	medal_counts.assign((int)Medals.size(), 0);
 
-	memset(kills, 0, sizeof(kills));
+	kills.assign(ship_info_size(), 0);
 	assists = 0;
 	kill_count = 0;
 	kill_count_ok = 0;
@@ -440,8 +443,8 @@ void scoring_struct::init()
 	m_badge_earned.clear();
 
 	m_score = 0;
-	memset(m_kills, 0, sizeof(m_kills));
-	memset(m_okKills, 0, sizeof(m_okKills));
+	m_kills.assign(ship_info_size(), 0);
+	m_okKills.assign(ship_info_size(), 0);
 	m_kill_count = 0;
 	m_kill_count_ok = 0;
 	m_assists = 0;
@@ -466,7 +469,7 @@ void scoring_struct::assign(const scoring_struct &s)
 
 	medal_counts.assign(s.medal_counts.begin(), s.medal_counts.end());
 
-	memcpy(kills, s.kills, MAX_SHIP_CLASSES * sizeof(int));
+	kills = s.kills;
 	assists = s.assists;
 	kill_count = s.kill_count;
 	kill_count_ok = s.kill_count_ok;
@@ -490,8 +493,8 @@ void scoring_struct::assign(const scoring_struct &s)
 	m_badge_earned = s.m_badge_earned;
 
 	m_score = s.m_score;
-	memcpy(m_kills, s.m_kills, MAX_SHIP_CLASSES * sizeof(int));
-	memcpy(m_okKills, s.m_okKills, MAX_SHIP_CLASSES * sizeof(int));
+	m_kills = s.m_kills;
+	m_okKills = s.m_okKills;
 	m_kill_count = s.m_kill_count;
 	m_kill_count_ok = s.m_kill_count_ok;
 	m_assists = s.m_assists;
@@ -524,7 +527,7 @@ bool array_compare(const T (&left)[N], const T (&right)[N]) {
 }
 bool scoring_struct::operator==(const scoring_struct& rhs) const {
 	return flags == rhs.flags && score == rhs.score && rank == rhs.rank && medal_counts == rhs.medal_counts
-		&& array_compare(kills, rhs.kills) && assists == rhs.assists && kill_count == rhs.kill_count
+		&& kills == rhs.kills && assists == rhs.assists && kill_count == rhs.kill_count
 		&& kill_count_ok == rhs.kill_count_ok && p_shots_fired == rhs.p_shots_fired
 		&& s_shots_fired == rhs.s_shots_fired && p_shots_hit == rhs.p_shots_hit && s_shots_hit == rhs.s_shots_hit
 		&& p_bonehead_hits == rhs.p_bonehead_hits && s_bonehead_hits == rhs.s_bonehead_hits
@@ -532,8 +535,8 @@ bool scoring_struct::operator==(const scoring_struct& rhs) const {
 		&& flight_time == rhs.flight_time && last_flown == rhs.last_flown && last_backup == rhs.last_backup
 		&& m_medal_earned == rhs.m_medal_earned && m_badge_earned == rhs.m_badge_earned
 		&& m_promotion_earned == rhs.m_promotion_earned && m_score == rhs.m_score
-		&& array_compare(m_kills, rhs.m_kills)
-		&& array_compare(m_okKills, rhs.m_okKills) && m_kill_count == rhs.m_kill_count
+		&& m_kills == rhs.m_kills
+		&& m_okKills == rhs.m_okKills && m_kill_count == rhs.m_kill_count
 		&& m_kill_count_ok == rhs.m_kill_count_ok && m_assists == rhs.m_assists && mp_shots_fired == rhs.mp_shots_fired
 		&& ms_shots_fired == rhs.ms_shots_fired && mp_shots_hit == rhs.mp_shots_hit && ms_shots_hit == rhs.ms_shots_hit
 		&& mp_bonehead_hits == rhs.mp_bonehead_hits && ms_bonehead_hits == rhs.ms_bonehead_hits
@@ -561,8 +564,8 @@ void scoring_level_init( scoring_struct *scp )
 	scp->ms_bonehead_hits=0;
 	scp->m_bonehead_kills=0;
 
-	memset(scp->m_kills, 0, MAX_SHIP_CLASSES * sizeof(int));
-	memset(scp->m_okKills, 0, MAX_SHIP_CLASSES * sizeof(int));
+	scp->m_kills.assign(ship_info_size(), 0);
+	scp->m_okKills.assign(ship_info_size(), 0);
 
 	scp->m_kill_count = 0;
 	scp->m_kill_count_ok = 0;
@@ -690,7 +693,7 @@ void scoring_do_accept(scoring_struct *score)
 	score->s_bonehead_hits += score->ms_bonehead_hits;
 	score->bonehead_kills += score->m_bonehead_kills;
 
-	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
+	for(idx=0;idx<sz2i(score->kills.size());idx++){
 		score->kills[idx] = (int)(score->kills[idx] + score->m_okKills[idx]);
 	}
 
@@ -735,7 +738,7 @@ void scoring_backout_accept( scoring_struct *score )
 	score->s_bonehead_hits -= score->ms_bonehead_hits;
 	score->bonehead_kills -= score->m_bonehead_kills;
 
-	for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
+	for(idx=0;idx<sz2i(score->kills.size());idx++){
 		score->kills[idx] = (unsigned short)(score->kills[idx] - score->m_okKills[idx]);
 	}
 

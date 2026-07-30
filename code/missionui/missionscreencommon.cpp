@@ -1100,13 +1100,13 @@ void wss_save_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// save the ship pool
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Player_loadout.ship_pool[i] = Ss_pool[i]; 
+	for ( i = 0; i < ship_info_size(); i++ ) {
+		Player_loadout.ship_pool[i] = Ss_pool[i];
 	}
 
 	// save the weapons pool
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Player_loadout.weapon_pool[i] = Wl_pool[i]; 
+	for ( i = 0; i < weapon_info_size(); i++ ) {
+		Player_loadout.weapon_pool[i] = Wl_pool[i];
 	}
 
 	// save the ship class / weapons for each slot
@@ -1137,23 +1137,13 @@ void wss_maybe_restore_loadout()
 		return;
 	}
 
-	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is 
+	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is
 	// available in this mission.
-	int	last_loadout_ships[MAX_SHIP_CLASSES];
-	int	this_loadout_ships[MAX_SHIP_CLASSES];
+	SCP_vector<int> last_loadout_ships(ship_info_size(), 0);
+	SCP_vector<int> this_loadout_ships(ship_info_size(), 0);
 
-	int	last_loadout_weapons[MAX_WEAPON_TYPES];
-	int	this_loadout_weapons[MAX_WEAPON_TYPES];
-
-	// zero all pools
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
-		last_loadout_ships[i] = 0; 
-		this_loadout_ships[i] = 0; 
-	}
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		last_loadout_weapons[i] = 0; 
-		this_loadout_weapons[i] = 0; 
-	}
+	SCP_vector<int> last_loadout_weapons(weapon_info_size(), 0);
+	SCP_vector<int> this_loadout_weapons(weapon_info_size(), 0);
 
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {

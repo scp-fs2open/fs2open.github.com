@@ -151,8 +151,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		}
 
 		// Copy ship and weapon permissions from the global Campaign struct
-		m_ships_allowed.assign(Campaign.ships_allowed, Campaign.ships_allowed + MAX_SHIP_CLASSES);
-		m_weapons_allowed.assign(Campaign.weapons_allowed, Campaign.weapons_allowed + MAX_WEAPON_TYPES);
+		m_ships_allowed.assign(Campaign.ships_allowed.begin(), Campaign.ships_allowed.end());
+		m_weapons_allowed.assign(Campaign.weapons_allowed.begin(), Campaign.weapons_allowed.end());
 
 	} else {
 		// CREATING A NEW CAMPAIGN
@@ -165,8 +165,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		m_num_players = 0;
 		m_flags = CF_DEFAULT_VALUE;
 
-		m_ships_allowed.assign(MAX_SHIP_CLASSES, false);
-		m_weapons_allowed.assign(MAX_WEAPON_TYPES, false);
+		m_ships_allowed.assign(ship_info_size(), false);
+		m_weapons_allowed.assign(weapon_info_size(), false);
 	}
 
 	// Load the list of available mission files from the directory.
@@ -319,12 +319,8 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.custom_data = m_custom_data;
 
 	// Copy ship and weapon permissions
-	for (int i = 0; i < MAX_SHIP_CLASSES; ++i) {
-		Campaign.ships_allowed[i] = m_ships_allowed[i];
-	}
-	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
-		Campaign.weapons_allowed[i] = m_weapons_allowed[i];
-	}
+	Campaign.ships_allowed.assign(m_ships_allowed.begin(), m_ships_allowed.end());
+	Campaign.weapons_allowed.assign(m_weapons_allowed.begin(), m_weapons_allowed.end());
 
 	// Copy mission data
 	for (int i = 0; i < Campaign.num_missions; ++i) {

@@ -279,29 +279,29 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 			}
 		} else {
 			// clear the ships and weapons allowed arrays
-			memset(Campaign.ships_allowed,0,MAX_SHIP_CLASSES);
-			memset(Campaign.weapons_allowed,0,MAX_WEAPON_TYPES);
+			Campaign.ships_allowed.assign(ship_info_size(), 0);
+			Campaign.weapons_allowed.assign(weapon_info_size(), 0);
 
 			// get all ship classes
 			GET_USHORT(spool_size);
 			for(idx=0;idx<spool_size;idx++){
 				GET_USHORT(s_val);
 
-				if (s_val < MAX_SHIP_CLASSES) {
+				if (Campaign.ships_allowed.in_bounds(s_val)) {
 					Campaign.ships_allowed[s_val] = 1;
 				}
-			} 
-	
+			}
+
 			// get all weapon classes
 			GET_USHORT(wpool_size);
 			for(idx=0;idx<wpool_size;idx++){
 				GET_USHORT(s_val);
 
-				if (s_val < MAX_WEAPON_TYPES) {
+				if (Campaign.weapons_allowed.in_bounds(s_val)) {
 					Campaign.weapons_allowed[s_val] = 1;
 				}
 			}
-		}	
+		}
 
 		// ack the server
 		Net_player->state = NETPLAYER_STATE_CPOOL_ACK;

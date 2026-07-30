@@ -1610,8 +1610,8 @@ void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 
 	// zero out allowed ships/weapons
 	if (reset_ships_and_weapons) {
-		memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-		memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+		Campaign.ships_allowed.assign(ship_info_size(), 0);
+		Campaign.weapons_allowed.assign(weapon_info_size(), 0);
 	}
 
 	// reset campaign status
