@@ -517,8 +517,9 @@ void opengl_post_lightshafts()
 	}
 }
 
-// drop the uploaded aperture/starburst textures (regenerated lazily on demand)
-static void opengl_lens_flare_release_textures()
+// Delete the uploaded aperture/starburst handles, leaving the cache keys alone --
+// the re-upload path below has already set them to what it is about to upload.
+static void opengl_lens_flare_delete_textures()
 {
 	if (Lens_flare_aperture_tex) {
 		glDeleteTextures(1, &Lens_flare_aperture_tex);
@@ -528,25 +529,30 @@ static void opengl_lens_flare_release_textures()
 		glDeleteTextures(1, &Lens_flare_starburst_tex);
 		Lens_flare_starburst_tex = 0;
 	}
+}
+
+// drop them and forget what was uploaded, so the next frame uploads afresh
+static void opengl_lens_flare_release_textures()
+{
+	opengl_lens_flare_delete_textures();
 	Lens_flare_tex_lens_idx = -1;
+	Lens_flare_tex_generation = 0;
 }
 
 // Upload the CPU-generated aperture/starburst textures of the mounted lens, or
-// keep the ones already uploaded for it
+// keep the ones already uploaded for it. When the pair is still current
+// lens_flare_textures_if_changed() says so and there is nothing to do -- deciding
+// *that* is a rule about the lens module, so it lives there rather than being
+// re-derived identically in each backend.
 static bool opengl_lens_flare_ensure_textures(int lens_idx)
 {
-	const unsigned int generation = graphics::lens_flare_get_texture_generation();
-	if (lens_idx == Lens_flare_tex_lens_idx && generation == Lens_flare_tex_generation &&
-		Lens_flare_aperture_tex != 0) {
-		return true;
+	const auto* tex =
+		graphics::lens_flare_textures_if_changed(lens_idx, Lens_flare_tex_lens_idx, Lens_flare_tex_generation);
+	if (tex == nullptr) {
+		return Lens_flare_aperture_tex != 0;
 	}
 
-	const auto* tex = graphics::lens_flare_get_textures(lens_idx);
-	if (tex == nullptr || tex->aperture.empty() || tex->starburst.empty()) {
-		return false;
-	}
-
-	opengl_lens_flare_release_textures();
+	opengl_lens_flare_delete_textures();
 
 	auto create_tex = [](GLsizei size, GLenum internal_format, GLenum format, GLenum type, const void* pixels,
 						  const char* name) {
@@ -578,8 +584,6 @@ static bool opengl_lens_flare_ensure_textures(int lens_idx)
 	Lens_flare_starburst_tex = create_tex(tex->starburst_size, GL_RGBA32F, GL_RGBA, GL_FLOAT, tex->starburst.data(),
 		"Lens flare starburst");
 
-	Lens_flare_tex_lens_idx = lens_idx;
-	Lens_flare_tex_generation = generation;
 	return true;
 }
 

@@ -1433,7 +1433,94 @@ void BackgroundEditorDialogModel::setCameraLensName(const SCP_string& name)
 
 	// mount it right away so the editor's viewport shows what the mission will
 	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
+	// Build this lens's textures now rather than paying for a 512^2 mask + FFT
+	// mid-frame the moment a sun next flares through it (see lens_flare.h).
+	graphics::lens_flare_prime_textures();
 	refreshBackgroundPreview();
+}
+
+graphics::lens_settings BackgroundEditorDialogModel::getLensSettings() const
+{
+	// The neutral baseline, with whatever this mission overrides laid over it --
+	// the same resolution the engine does, against defaults rather than against a
+	// lens (see the header for why).
+	const graphics::lens_overrides& ov = The_mission.camera_lens_overrides;
+	graphics::lens_settings settings;
+
+	if (ov.aperture)
+		settings.aperture = *ov.aperture;
+	if (ov.anamorphic)
+		settings.anamorphic = *ov.anamorphic;
+	if (ov.intensity)
+		settings.intensity = *ov.intensity;
+	if (ov.starburst)
+		settings.starburst = *ov.starburst;
+	if (ov.starburst_scale)
+		settings.starburst_scale = *ov.starburst_scale;
+	if (ov.max_ghosts)
+		settings.max_ghosts = *ov.max_ghosts;
+	if (ov.ghost_brightness)
+		settings.ghost_brightness = *ov.ghost_brightness;
+	if (ov.starburst_brightness)
+		settings.starburst_brightness = *ov.starburst_brightness;
+
+	return settings;
+}
+
+void BackgroundEditorDialogModel::setLensSettings(const graphics::lens_settings& settings)
+{
+	// A value that landed back on the neutral baseline -- every slider dragged
+	// down again without using Reset -- is indistinguishable from no override at
+	// all, and must be treated as one, or the mission keeps saving an empty block
+	// forever.
+	const graphics::lens_settings neutral;
+	graphics::lens_overrides ov;
+
+	if (settings.aperture != neutral.aperture)
+		ov.aperture = settings.aperture;
+	if (settings.anamorphic != neutral.anamorphic)
+		ov.anamorphic = settings.anamorphic;
+	if (settings.intensity != neutral.intensity)
+		ov.intensity = settings.intensity;
+	if (settings.starburst != neutral.starburst)
+		ov.starburst = settings.starburst;
+	if (settings.starburst_scale != neutral.starburst_scale)
+		ov.starburst_scale = settings.starburst_scale;
+	if (settings.max_ghosts != neutral.max_ghosts)
+		ov.max_ghosts = settings.max_ghosts;
+	if (settings.ghost_brightness != neutral.ghost_brightness)
+		ov.ghost_brightness = settings.ghost_brightness;
+	if (settings.starburst_brightness != neutral.starburst_brightness)
+		ov.starburst_brightness = settings.starburst_brightness;
+
+	modify(The_mission.camera_lens_overrides, ov);
+	applyLensOverridesToViewport();
+}
+
+void BackgroundEditorDialogModel::resetLensSettings()
+{
+	modify(The_mission.camera_lens_overrides, graphics::lens_overrides());
+	applyLensOverridesToViewport();
+}
+
+bool BackgroundEditorDialogModel::getLensMounted()
+{
+	return graphics::lens_flare_active_lens() >= 0;
+}
+
+// Push the mission's overrides at the running engine so the viewport shows what
+// the mission will. Cheap to call on every slider tick: only a changed iris costs
+// anything, and lens_flare_overrides_changed() coalesces that rebuild.
+void BackgroundEditorDialogModel::applyLensOverridesToViewport()
+{
+	graphics::lens_flare_overrides() = The_mission.camera_lens_overrides;
+	graphics::lens_flare_overrides_changed();
+
+	// qtFred's viewport repaints on demand, not continuously (unlike the lab) --
+	// without this, the edit above is real but invisible until some unrelated
+	// event (mouse move, resize) happens to trigger the next repaint.
+	if (_viewport)
+		_viewport->needsUpdate();
 }
 
 } // namespace fso::fred::dialogs

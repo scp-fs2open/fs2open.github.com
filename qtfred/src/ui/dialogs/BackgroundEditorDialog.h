@@ -102,6 +102,7 @@ private slots:
 	void on_envMapEdit_textChanged(const QString& arg1);
 	void on_lightingProfileCombo_currentIndexChanged(int index);
 	void on_cameraLensCombo_currentIndexChanged(int index);
+	void on_lensApertureButton_clicked();
 
 protected:
 	void closeEvent(QCloseEvent* e) override;

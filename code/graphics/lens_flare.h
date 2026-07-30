@@ -41,13 +41,13 @@ struct lens_surface {
 //
 // Every layer below the shape defaults to strength 0 (off), which reproduces
 // the plain-iris look of tables written before they existed.
-// Every imperfection layer below is a named type with its own operator==, rather
-// than an anonymous struct compared field by field from the aperture. The
-// comparison is load-bearing -- lens_flare_reset_for_level() uses it to decide
-// whether a lens needs restoring, which is what keeps one mission's iris out of
-// the next -- and a field added without extending it would break that silently.
-// Keeping each layer's comparison next to its own fields is what makes that hard
-// to get wrong. (C++20 would make all four `= default`.)
+//
+// Each layer carries its own operator== because the iris is the one part of the
+// camera whose textures cost real time to build (a 512^2 mask plus a 2D FFT), so
+// the texture cache keys on it to tell a genuine edit from a slider that landed
+// back where it started. Keeping each layer's comparison next to its own fields
+// is what stops a newly added field from being silently left out of that check.
+// (C++20 would make all four `= default`.)
 
 // Diffraction grating around the rim: fine radial ridges that throw extra spikes
 // into the starburst.
@@ -115,10 +115,8 @@ struct lens_aperture {
 	lens_aperture_scratches scratches;
 	lens_aperture_dust dust;
 
-	// Lets a caller that reassigns the whole aperture tell whether anything
-	// actually moved -- regenerating costs a 512^2 mask plus an FFT, which a
-	// repeating mission event must not pay every frame. Each layer compares
-	// itself, so this only has to cover the iris fields and the three layers.
+	// Each layer compares itself, so this only has to cover the iris fields and
+	// the three layers.
 	bool operator==(const lens_aperture& o) const
 	{
 		return blades == o.blades && rotation == o.rotation && curvature == o.curvature &&
@@ -147,76 +145,133 @@ struct lens_flare_textures {
 	SCP_vector<float> starburst;     // RGBA32F Fraunhofer starburst
 };
 
+// The anamorphic streak: the long horizontal flare a cylindrical element
+// throws across the frame, and the half of the look the squeeze alone does
+// not buy -- stretching the starburst only ever reads as a wider sun, since
+// a real streak runs 20-50 times longer than it is thick.
+//
+// It is its own quad rather than a reshaped starburst because it is a
+// different artifact: the starburst is the iris seen end-on and rotates with
+// the sun, while the streak lies along the cylindrical element and so stays
+// horizontal wherever the sun is. Off by default, which keeps every lens
+// written before it existed untouched.
+struct lens_streak {
+	float strength = 0.0f;                // 0 = off
+	float length = 1.0f;                  // half-length as a fraction of the sensor width
+	float thickness = 0.02f;              // as a fraction of the length, so 0.02 = 50:1
+	float tint[3] = {0.35f, 0.55f, 1.0f}; // multiplies the sun's own colour
+
+	bool operator==(const lens_streak& o) const
+	{
+		return strength == o.strength && length == o.length && thickness == o.thickness &&
+			   tint[0] == o.tint[0] && tint[1] == o.tint[1] && tint[2] == o.tint[2];
+	}
+	bool operator!=(const lens_streak& o) const { return !(*this == o); }
+};
+
+// The anamorphic look -- squeeze plus streak -- bundled the same way
+// lens_aperture bundles the iris and its layers, so that it can be tabled,
+// overridden and compared against its own neutral defaults as one thing.
+//
+// Anamorphic squeeze is how much wider than tall the flare footprints are,
+// 1.0 = spherical. A front anamorphot is an afocal cylindrical telescope, so to
+// first order all it does is magnify one meridian -- which is why this is a
+// single number and not a second set of ray-transfer matrices. The lens behind
+// it stays rotationally symmetric, so the iris (and hence the mask and its
+// transform) is unaffected; only the imaging of it is stretched.
+//
+// Note that FSO draws the flare into an already-composed frame with no desqueeze
+// stage, so this is a look control rather than a 2x-squeeze capture pipeline:
+// ghost positions follow the sun as always, and only their footprints are
+// stretched, which is what a desqueezed anamorphic frame shows.
+struct lens_anamorphic {
+	float squeeze = 1.0f;
+	lens_streak streak;
+
+	bool operator==(const lens_anamorphic& o) const { return squeeze == o.squeeze && streak == o.streak; }
+	bool operator!=(const lens_anamorphic& o) const { return !(*this == o); }
+};
+
+// A lens as the tables declare it. Everything here is either the lens's
+// prescription -- the part that makes it *this* lens, and that nothing may
+// override -- or the tabled baseline of a knob that lens_overrides can restyle.
 struct lens_system {
 	SCP_string name;
+
+	// ---- the prescription: a lens's identity, never overridden ----
 	SCP_vector<lens_surface> surfaces;
-
-	float entrance_radius = 10.0f;   // entrance pupil (front element) radius, mm
-	float aperture_radius = 5.0f;    // iris half-opening, mm
-	float sensor_width = 36.0f;      // film-gate width, mm
-
-	// Anamorphic squeeze: how much wider than tall the flare footprints are,
-	// 1.0 = spherical. A front anamorphot is an afocal cylindrical telescope, so
-	// to first order all it does is magnify one meridian -- which is why this is
-	// a single number and not a second set of ray-transfer matrices. The lens
-	// behind it stays rotationally symmetric, so the iris (and hence the mask and
-	// its transform) is unaffected; only the imaging of it is stretched.
-	//
-	// Note that FSO draws the flare into an already-composed frame with no
-	// desqueeze stage, so this is a look control rather than a 2x-squeeze
-	// capture pipeline: ghost positions follow the sun as always, and only their
-	// footprints are stretched, which is what a desqueezed anamorphic frame
-	// shows.
-	float anamorphic_squeeze = 1.0f;
-
-	// The anamorphic streak: the long horizontal flare a cylindrical element
-	// throws across the frame, and the half of the look the squeeze alone does
-	// not buy -- stretching the starburst only ever reads as a wider sun, since
-	// a real streak runs 20-50 times longer than it is thick.
-	//
-	// It is its own quad rather than a reshaped starburst because it is a
-	// different artifact: the starburst is the iris seen end-on and rotates with
-	// the sun, while the streak lies along the cylindrical element and so stays
-	// horizontal wherever the sun is. Off by default, which keeps every lens
-	// written before it existed untouched.
-	struct {
-		float strength = 0.0f;                // 0 = off
-		float length = 1.0f;                  // half-length as a fraction of the sensor width
-		float thickness = 0.02f;              // as a fraction of the length, so 0.02 = 50:1
-		float tint[3] = {0.35f, 0.55f, 1.0f}; // multiplies the sun's own colour
-	} streak;
-
+	float entrance_radius = 10.0f;     // entrance pupil (front element) radius, mm
+	float aperture_radius = 5.0f;      // iris half-opening, mm
+	float sensor_width = 36.0f;        // film-gate width, mm
 	float coating_wavelength = 540.0f; // default AR coating tuning, nm (0 = uncoated)
 
-	lens_aperture aperture;          // iris shape + imperfections, shared by ghosts and starburst
-
+	// ---- the tabled look: the baseline lens_overrides lays over ----
+	lens_aperture aperture;     // iris shape + imperfections, shared by ghosts and starburst
+	lens_anamorphic anamorphic; // squeeze + streak
+	float intensity = 0.2f;
 	bool starburst = true;
 	float starburst_scale = 1.0f;
-	float intensity = 0.2f;
 	int max_ghosts = 40;
 
-	// The aperture exactly as the table declared it. Missions and the lab edit
-	// `aperture` in place, so this is what lens_flare_reset_for_level() restores
-	// between missions -- one mission's lens must never carry into the next.
-	lens_aperture tabled_aperture;
-
 	// --- filled by lens_flare_precompute() ---
+	// Brightest first, so max_ghosts can be applied at draw time by simply
+	// taking a prefix of this.
 	SCP_vector<lens_flare_ghost> ghosts;
 	float efl = 50.0f;               // effective focal length (green), mm
 	float bfd = 40.0f;               // back focal distance last surface -> sensor (green), mm
+};
 
-	// Iris/starburst textures of this lens, generated on demand by
-	// lens_flare_get_textures() and dropped by lens_flare_invalidate_textures().
-	// Owning them here rather than in a vector alongside Lens_systems is what
-	// keeps them from ever going out of step with the lens they belong to.
-	//
-	// Shared rather than unique so that a lens_system stays copyable: a
-	// *-lens.tbm "+override" entry starts from a copy of the lens it edits, and
-	// the alternative -- a hand-written copy that lists every field -- would
-	// silently stop carrying any field added later. A copy made to be edited
-	// must reset() this, since the cache belongs to the aperture it was
-	// generated from; the parser is the only place that copies one.
-	std::shared_ptr<lens_flare_textures> textures;
+// ---- restyling the camera ----
+//
+// A mission, the lab, the set-lens-* sexps and both editors all restyle the same
+// one camera, so they all write to the same one set of overrides: an unset field
+// means "whatever the mounted lens tables", exactly the way an unset Lab_lens
+// means "whatever lens the mission mounted" (see lens_flare_active_lens()).
+//
+// Overriding rather than stamping the values into the lens is what keeps one
+// mission's camera out of the next: lens_flare_reset_for_level() clears these
+// and every lens is untouched, with nothing to restore and no backup copy that
+// could go stale when a field is added.
+// The most ghosts a single source's uniform block can ever hold, once the
+// starburst and streak have taken their slots. Restated here rather than reached
+// through graphics/util/uniform_structs.h so that the editors and the sexps can
+// bound "$Max Ghosts:" without pulling the whole uniform layout in; lens_flare.cpp
+// static_asserts the two against each other.
+constexpr int MAX_LENS_FLARE_GHOSTS = 62;
+
+struct lens_overrides {
+	std::optional<lens_aperture> aperture;
+	std::optional<lens_anamorphic> anamorphic;
+	std::optional<float> intensity;
+	std::optional<bool> starburst;
+	std::optional<float> starburst_scale;
+	std::optional<int> max_ghosts;
+	// The energy-model calibration. Per-camera rather than per-lens, since it
+	// scales the model itself rather than describing any particular glass.
+	std::optional<float> ghost_brightness;
+	std::optional<float> starburst_brightness;
+
+	bool any() const
+	{
+		return aperture || anamorphic || intensity || starburst || starburst_scale || max_ghosts ||
+			   ghost_brightness || starburst_brightness;
+	}
+	void clear() { *this = lens_overrides(); }
+};
+
+// The camera as it actually is: a lens's tabled look with the overrides above
+// laid over it. Resolved in one place by lens_flare_effective_settings(), so no
+// caller re-implements the precedence, and passed down by value so that a
+// consumer physically cannot read the un-overridden value off the lens instead.
+struct lens_settings {
+	lens_aperture aperture;
+	lens_anamorphic anamorphic;
+	float intensity = 0.2f;
+	bool starburst = true;
+	float starburst_scale = 1.0f;
+	int max_ghosts = 40;
+	float ghost_brightness = 64.0f;
+	float starburst_brightness = 1.6f;
 };
 
 // Parse lens_flares.tbl + *-lens.tbm (embedded default as fallback) and
@@ -231,8 +286,34 @@ int lens_flare_lookup(const char* name);
 int lens_flare_num_systems();
 const lens_system* lens_flare_get_system(int lens_idx);
 
-// Lazily generate (and cache) the aperture/starburst textures of a lens.
-// Returns nullptr for an invalid index.
+// The overrides in force, for reading and for editing in place. One set, because
+// there is one camera: mission load, the set-lens-* sexps, the lab and both
+// editors are all restyling the same glass.
+//
+// Anything that edits these must follow up with lens_flare_overrides_changed().
+lens_overrides& lens_flare_overrides();
+
+// Note that the overrides were edited. Only the iris costs anything to change --
+// a 512^2 mask plus its 2D FFT -- so this schedules a texture rebuild, which the
+// per-frame flush then performs at most once every few frames and only if the
+// effective aperture really did move. Everything else takes effect next frame at
+// no cost, so calling this after any edit is always correct and never wasteful.
+void lens_flare_overrides_changed();
+
+// Whether a scheduled iris rebuild is still outstanding. For the lab, which
+// shows it while a slider drag is being coalesced. Call once per frame.
+bool lens_flare_aperture_edit_pending();
+
+// The mounted lens's tabled look with the overrides above laid over it -- the
+// single resolver, so no caller re-implements the precedence. Returns the plain
+// defaults for an invalid index.
+lens_settings lens_flare_effective_settings(int lens_idx);
+
+// Lazily generate (and cache) the iris/starburst textures of the effective
+// aperture of a lens. Returns nullptr for an invalid index.
+//
+// There is one cache, because there is one camera: whichever lens is mounted,
+// with whatever iris is in force, is the only pair anything ever draws with.
 const lens_flare_textures* lens_flare_get_textures(int lens_idx);
 
 // Generate the mounted lens's textures now, so the render backends find them
@@ -241,58 +322,46 @@ const lens_flare_textures* lens_flare_get_textures(int lens_idx);
 // Building them is a 512^2 iris mask plus a 2D FFT of it -- a visible hitch if it
 // lands on the first frame a sun flares. Call it from wherever a lens has just
 // been mounted for a scene that is about to be rendered and a moment's work is
-// already expected: stars_post_level_init() for a mission, and the lab's
-// useBackground(). Not from lens_flare_switch_to() itself, which also runs during
-// mission-info scans (FRED's file dialog) that mount lenses they never render.
+// already expected: stars_post_level_init() for a mission, the lab's
+// useBackground(), and qtFred's Background Editor when it switches the mission's
+// lens interactively.
 //
-// No-op in FRED/qtFRED, which draw the background without a scene texture and so
-// never reach the flare pass.
+// A no-op everywhere the flare pass never runs regardless: plain FRED, and
+// qtFred unless its View menu's "Enable Post Processing" toggle is on (qtFred
+// otherwise draws the background without a scene texture, so High_dynamic_range
+// never goes true -- see lens_flare.cpp's pass_globally_possible()).
 void lens_flare_prime_textures();
 
-// Drop a lens's cached textures so the next lens_flare_get_textures() rebuilds
-// them (after its lens_aperture was edited).
-void lens_flare_invalidate_textures(int lens_idx);
-
-// Bumped on every invalidation. Render backends cache the uploaded textures of
-// the mounted lens, so they must key that cache on this as well to notice a
-// rebuild.
+// Bumped whenever the cached textures are rebuilt. Render backends cache the
+// uploaded copy, so they must key that cache on this to notice a rebuild --
+// which lens_flare_textures_if_changed() below does for them.
 unsigned int lens_flare_get_texture_generation();
 
-// Live aperture editing (lab): note that a lens's aperture changed, and poll
-// whether a regeneration is still pending. Regenerating a 512^2 mask and its
-// starburst FFT is far too slow to do on every frame of a slider drag, so edits
-// are coalesced and applied a few times a second. Call the poll once per frame.
-void lens_flare_aperture_changed(int lens_idx);
-bool lens_flare_aperture_edit_pending();
+// The whole staleness protocol a render backend needs, in one call: returns the
+// textures to upload, or nullptr when the ones the caller already holds are
+// still current. `cached_lens` / `cached_generation` are the backend's own record
+// of what it last uploaded, and are updated on a non-null return.
+//
+// Backends own their GPU handles; they do not each need to re-derive when those
+// handles went stale, which is a rule about this module and belongs here.
+const lens_flare_textures* lens_flare_textures_if_changed(int lens_idx, int& cached_lens,
+	unsigned int& cached_generation);
 
-// Undo everything a mission or the lab did to the lens state: unmount whatever
-// lens was mounted (back to $Default Lens:) and restore every lens's aperture to
-// what its table declared, so one mission's camera can't carry into the next.
-// Called from stars_pre_level_init(), which runs before the mission's
-// $Camera Lens: is parsed.
+// Undo everything a mission or the lab did to the camera: unmount whatever lens
+// was mounted (back to $Default Lens:) and drop every override, so one mission's
+// camera can't carry into the next. Called from stars_pre_level_init(), which
+// runs before the mission's $Camera Lens: is parsed.
 void lens_flare_reset_for_level();
 
-// Mutable access for live tuning in the lab (e.g. a lens's $Intensity:).
-// Changes take effect the next frame; they are lost on table reload.
-lens_system* lens_flare_get_system_mutable(int lens_idx);
-
-// The calibration that isn't per-lens: overall brightness of the energy model
-// against the HDR scene, plus the SDR/HDR consistency headroom. Defaults match
-// the shipped calibration.
-//
-// Handed out mutably, the same way lens_flare_get_system_mutable() hands out a
-// lens for the lab to edit in place -- one idiom for live tuning rather than
-// clamping accessors for the globals and direct access for everything else.
-// Values are sanitized where they are consumed, so a caller cannot break the
-// renderer by writing a silly number here.
+// The calibration that is neither per-lens nor per-mission: how the flare is fitted
+// to HDR output, and whether nozzles draw ghosts. Handed out mutably for the lab
+// to edit in place; values are sanitized where they are consumed, so a caller
+// cannot break the renderer by writing a silly number here.
 struct lens_flare_tuning {
-	// multiplies every ghost / the starburst respectively
-	float ghost_brightness = 64.0f;
-	float starburst_brightness = 1.6f;
-
 	// How many multiples of paper white the flare may reach in HDR output. SDR is
 	// the calibration reference and is unaffected; this only rescales the HDR path
 	// so an SDR-tuned flare doesn't blow out. The default keeps a little HDR "pop".
+	// Not overridable per mission: it describes the display, not the camera.
 	float hdr_headroom = 2.5f;
 
 	// Whether a thruster flare draws the ghost train as well as its starburst.

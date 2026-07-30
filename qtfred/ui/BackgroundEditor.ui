@@ -1113,6 +1113,13 @@
             <item row="2" column="1">
              <widget class="QComboBox" name="cameraLensCombo"/>
             </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QPushButton" name="lensApertureButton">
+              <property name="text">
+               <string>Lens Aperture...</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
          </layout>
@@ -1199,6 +1206,7 @@
   <tabstop>envMapEdit</tabstop>
   <tabstop>lightingProfileCombo</tabstop>
   <tabstop>cameraLensCombo</tabstop>
+  <tabstop>lensApertureButton</tabstop>
   <tabstop>oldNebulaPatternCombo</tabstop>
   <tabstop>oldNebulaColorCombo</tabstop>
   <tabstop>oldNebulaPitchSpinBox</tabstop>

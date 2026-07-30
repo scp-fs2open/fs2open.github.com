@@ -4,6 +4,7 @@
 
 #include "AbstractDialogModel.h"
 
+#include "graphics/lens_flare.h"
 #include "starfield/starfield.h"
 #include <globalincs/linklist.h>
 
@@ -184,7 +185,30 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static SCP_string getCameraLensName();
 	void setCameraLensName(const SCP_string& name);
 
+	// How this mission restyles the camera lens -- iris, anamorphic look and flare
+	// strength -- as one value, which is what lets LensApertureDialog stay a plain
+	// form instead of tracking which parts the mission had already overridden.
+	// See The_mission.camera_lens_overrides in missionparse.h.
+	//
+	// A field the mission does not override reads back as its neutral default, and
+	// a field set back to that default stops being an override. Deliberately *not*
+	// the mounted lens's own tabled values: a mission-level override replaces the
+	// whole group it belongs to, so starting the sliders at (say) this lens's blade
+	// curvature would mean the first field a user touches quietly saves that too,
+	// frozen at one lens's numbers.
+	graphics::lens_settings getLensSettings() const;
+	void setLensSettings(const graphics::lens_settings& settings);
+	void resetLensSettings();
+
+	// Whether a lens is currently mounted at all ("Default" with no
+	// $Default Lens: in the tables, or "None", both leave nothing mounted).
+	// Edits still update the mission's stored override either way, but there is
+	// nothing for them to visibly change without a mounted lens -- the dialog
+	// uses this to warn instead of leaving the user wondering why nothing moved.
+	static bool getLensMounted();
+
   private:
+	void applyLensOverridesToViewport();
 	void initializeData();
 	void refreshBackgroundPreview();
 	static background_t& getActiveBackground();

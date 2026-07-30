@@ -947,6 +947,7 @@ enum : int {
 	OP_SET_LENS_GRATING,	// the-e
 	OP_SET_LENS_SCRATCHES,	// the-e
 	OP_SET_LENS_DUST,		// the-e
+	OP_SET_LENS_FLARE_STRENGTH,	// the-e
 
 	// OP_CATEGORY_AI
 	// defined for AI goals

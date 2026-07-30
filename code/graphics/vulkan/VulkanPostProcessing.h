@@ -331,6 +331,7 @@ private:
 	 */
 	bool ensureTextures(int lensIdx);
 	void releaseTextures(bool deferred);
+	void forgetTextures();
 
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;

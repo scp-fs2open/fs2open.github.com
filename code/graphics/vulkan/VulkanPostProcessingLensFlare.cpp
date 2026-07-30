@@ -160,24 +160,31 @@ void VulkanLensFlare::releaseTextures(bool deferred)
 
 	release(m_apertureImage, m_apertureView, m_apertureAlloc);
 	release(m_starburstImage, m_starburstView, m_starburstAlloc);
+}
 
+// Drop them and forget what was uploaded, so the next frame uploads afresh.
+// Distinct from releaseTextures(), which the re-upload path uses to retire the
+// outgoing pair *after* the cache keys have been set to the incoming one.
+void VulkanLensFlare::forgetTextures()
+{
+	releaseTextures(true);
 	m_texLensIdx = -1;
+	m_texGeneration = 0;
 }
 
 bool VulkanLensFlare::ensureTextures(int lensIdx)
 {
-	const unsigned int generation = graphics::lens_flare_get_texture_generation();
-	if (lensIdx == m_texLensIdx && generation == m_texGeneration && m_apertureView) {
-		return true;
-	}
-
-	const auto* tex = graphics::lens_flare_get_textures(lensIdx);
-	if (tex == nullptr || tex->aperture.empty() || tex->starburst.empty()) {
-		return false;
+	// Whether the pair we already hold is still current is a rule about the lens
+	// module, so it answers it -- rather than each backend re-deriving the same
+	// (lens, generation) comparison. A null return means nothing changed.
+	const auto* tex = graphics::lens_flare_textures_if_changed(lensIdx, m_texLensIdx, m_texGeneration);
+	if (tex == nullptr) {
+		return m_apertureView.operator bool();
 	}
 
 	auto* texMgr = getTextureManager();
 	if (texMgr == nullptr) {
+		forgetTextures();
 		return false;
 	}
 
@@ -187,18 +194,17 @@ bool VulkanLensFlare::ensureTextures(int lensIdx)
 	if (!texMgr->createStaticTexture2D(tex->aperture_size, tex->aperture_size, vk::Format::eR8Unorm,
 			tex->aperture.data(), tex->aperture.size(), "Lens flare aperture",
 			m_apertureImage, m_apertureView, m_apertureAlloc)) {
+		forgetTextures();
 		return false;
 	}
 
 	if (!texMgr->createStaticTexture2D(tex->starburst_size, tex->starburst_size, vk::Format::eR32G32B32A32Sfloat,
 			tex->starburst.data(), tex->starburst.size() * sizeof(float), "Lens flare starburst",
 			m_starburstImage, m_starburstView, m_starburstAlloc)) {
-		releaseTextures(false);
+		forgetTextures();
 		return false;
 	}
 
-	m_texLensIdx = lensIdx;
-	m_texGeneration = generation;
 	return true;
 }
 
@@ -359,8 +365,12 @@ void VulkanLensFlare::shutdown()
 		return;
 	}
 
-	// Called with the device idle (VulkanPostProcessor::shutdown waits)
+	// Called with the device idle (VulkanPostProcessor::shutdown waits), so this
+	// destroys immediately rather than queueing, and forgets what was uploaded so
+	// a re-init starts from nothing.
 	releaseTextures(false);
+	m_texLensIdx = -1;
+	m_texGeneration = 0;
 
 	m_ubo.shutdown();
 

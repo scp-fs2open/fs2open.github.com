@@ -775,6 +775,127 @@ void parse_custom_bitmap(const char *expected_string_640, const char *expected_s
 	}
 }
 
+// Read a mission-file option into an override slot, leaving it unset when the
+// mission doesn't mention it. Unset is what makes the mounted lens's own tabled
+// value stand, so it has to stay distinct from a value that happens to equal it.
+static void stuff_lens_override(const char *token, std::optional<float> &dest)
+{
+	if (optional_string(token))
+		stuff_float(&dest.emplace());
+}
+
+static void stuff_lens_override(const char *token, std::optional<int> &dest)
+{
+	if (optional_string(token))
+		stuff_int(&dest.emplace());
+}
+
+static void stuff_lens_override(const char *token, std::optional<bool> &dest)
+{
+	if (optional_string(token))
+		stuff_boolean(&dest.emplace());
+}
+
+// How this mission restyles the camera lens (see graphics/lens_flare.h). Three
+// blocks, each independently optional:
+//
+//   "$Lens Aperture:"        the iris, replaced as a whole
+//   "$Lens Anamorphic:"      the squeeze and streak, replaced as a whole
+//   "$Lens Flare Strength:"  the brightness knobs, each on its own
+//
+// The first two are whole-struct replacements because they are single artifacts
+// -- one iris drives both the ghosts and the starburst, and one squeeze governs
+// the streak that goes with it -- so a partial "$Lens Aperture:" that only names
+// "+Dust Strength:" also takes the *default* blades and curvature rather than the
+// mounted lens's. FRED writes every field it doesn't leave at default, so this
+// only bites a hand-edited mission file. The strength knobs have no such coupling
+// and so are overridden one at a time.
+static void parse_camera_lens_overrides(graphics::lens_overrides &overrides)
+{
+	if (optional_string("$Lens Aperture:")) {
+		graphics::lens_aperture &ap = overrides.aperture.emplace();
+
+		if (optional_string("+Blades:"))
+			stuff_int(&ap.blades);
+		if (optional_string("+Rotation:"))
+			stuff_float(&ap.rotation);
+		if (optional_string("+Curvature:"))
+			stuff_float(&ap.curvature);
+		if (optional_string("+Softness:"))
+			stuff_float(&ap.softness);
+
+		if (optional_string("+Grating Strength:"))
+			stuff_float(&ap.grating.strength);
+		if (optional_string("+Grating Density:"))
+			stuff_float(&ap.grating.density);
+		if (optional_string("+Grating Length:"))
+			stuff_float(&ap.grating.length);
+		if (optional_string("+Grating Width:"))
+			stuff_float(&ap.grating.width);
+		if (optional_string("+Grating Softness:"))
+			stuff_float(&ap.grating.softness);
+
+		if (optional_string("+Scratches Strength:"))
+			stuff_float(&ap.scratches.strength);
+		if (optional_string("+Scratches Density:"))
+			stuff_float(&ap.scratches.density);
+		if (optional_string("+Scratches Length:"))
+			stuff_float(&ap.scratches.length);
+		if (optional_string("+Scratches Width:"))
+			stuff_float(&ap.scratches.width);
+		if (optional_string("+Scratches Rotation:"))
+			stuff_float(&ap.scratches.rotation);
+		if (optional_string("+Scratches Rotation Variation:"))
+			stuff_float(&ap.scratches.rotation_variation);
+		if (optional_string("+Scratches Softness:"))
+			stuff_float(&ap.scratches.softness);
+
+		if (optional_string("+Dust Strength:"))
+			stuff_float(&ap.dust.strength);
+		if (optional_string("+Dust Density:"))
+			stuff_float(&ap.dust.density);
+		if (optional_string("+Dust Radius:"))
+			stuff_float(&ap.dust.radius);
+		if (optional_string("+Dust Softness:"))
+			stuff_float(&ap.dust.softness);
+	}
+
+	if (optional_string("$Lens Anamorphic:")) {
+		graphics::lens_anamorphic &an = overrides.anamorphic.emplace();
+
+		if (optional_string("+Squeeze:"))
+			stuff_float(&an.squeeze);
+
+		if (optional_string("+Streak Strength:"))
+			stuff_float(&an.streak.strength);
+		if (optional_string("+Streak Length:"))
+			stuff_float(&an.streak.length);
+		if (optional_string("+Streak Thickness:"))
+			stuff_float(&an.streak.thickness);
+		if (optional_string("+Streak Tint:")) {
+			float rgb[3] = {an.streak.tint[0], an.streak.tint[1], an.streak.tint[2]};
+			size_t count = stuff_float_list(rgb, 3);
+			if (count != 3) {
+				error_display(0, "Mission '%s': $Lens Anamorphic:'s +Streak Tint: needs ( r, g, b )",
+					The_mission.name.c_str());
+			} else {
+				an.streak.tint[0] = rgb[0];
+				an.streak.tint[1] = rgb[1];
+				an.streak.tint[2] = rgb[2];
+			}
+		}
+	}
+
+	if (optional_string("$Lens Flare Strength:")) {
+		stuff_lens_override("+Intensity:", overrides.intensity);
+		stuff_lens_override("+Ghost Brightness:", overrides.ghost_brightness);
+		stuff_lens_override("+Starburst Brightness:", overrides.starburst_brightness);
+		stuff_lens_override("+Starburst:", overrides.starburst);
+		stuff_lens_override("+Starburst Scale:", overrides.starburst_scale);
+		stuff_lens_override("+Max Ghosts:", overrides.max_ghosts);
+	}
+}
+
 void parse_mission_info(mission *pm, bool basic = false)
 {
 	char game_string[NAME_LENGTH];
@@ -1129,6 +1250,15 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("$Camera Lens:"))
 		stuff_string(The_mission.camera_lens_name, F_NAME);
 	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
+
+	parse_camera_lens_overrides(The_mission.camera_lens_overrides);
+
+	// One camera, so the mission's overrides simply *are* the camera's until
+	// something else (a set-lens-* sexp, the lab) restyles it again. Nothing is
+	// stamped into the mounted lens, which is why nothing has to be restored when
+	// this mission ends -- lens_flare_reset_for_level() just drops these.
+	graphics::lens_flare_overrides() = The_mission.camera_lens_overrides;
+	graphics::lens_flare_overrides_changed();
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -7409,6 +7539,8 @@ void mission::Reset()
 	lighting_profile_name = lighting_profiles::default_name();
 	// empty = this mission names no lens, so the tabled default applies
 	camera_lens_name.clear();
+	// all unset = this mission restyles nothing, so the mounted lens stands as tabled
+	camera_lens_overrides.clear();
 
 	cutscenes.clear( );
 
