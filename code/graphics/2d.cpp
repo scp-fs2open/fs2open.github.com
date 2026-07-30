@@ -892,9 +892,6 @@ static void parse_post_processing_func()
 
 bool Gr_post_processing_enabled = true;
 
-int Gr_min_render_target_w = 0;
-int Gr_min_render_target_h = 0;
-
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
                      std::pair<const char*, int>{"Post processing", 1726},
@@ -1673,6 +1670,13 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	gr_setup_viewport();
+
+	// The offscreen targets that back the scene/post-processing pipeline were sized for the old
+	// gr_screen; give the backend a chance to grow them before anything renders at the new size.
+	// Backends that already handle this elsewhere (Vulkan, via recreateSwapChain()) leave it unset.
+	if (gr_screen.gf_resize_render_targets) {
+		gr_screen.gf_resize_render_targets();
+	}
 }
 
 void gr_window_to_render_pos(float& x, float& y)
