@@ -257,6 +257,19 @@ struct lens_overrides {
 			   ghost_brightness || starburst_brightness;
 	}
 	void clear() { *this = lens_overrides(); }
+
+	// Compared as a whole because that is how it is edited: FRED stores one of
+	// these per mission and needs to know whether a dialog actually changed
+	// anything. std::optional compares both the "is it set" and the value, which
+	// is exactly the distinction that matters here -- unset is not the same
+	// answer as set-to-the-default.
+	bool operator==(const lens_overrides& o) const
+	{
+		return aperture == o.aperture && anamorphic == o.anamorphic && intensity == o.intensity &&
+			   starburst == o.starburst && starburst_scale == o.starburst_scale && max_ghosts == o.max_ghosts &&
+			   ghost_brightness == o.ghost_brightness && starburst_brightness == o.starburst_brightness;
+	}
+	bool operator!=(const lens_overrides& o) const { return !(*this == o); }
 };
 
 // The camera as it actually is: a lens's tabled look with the overrides above
@@ -324,7 +337,8 @@ const lens_flare_textures* lens_flare_get_textures(int lens_idx);
 // been mounted for a scene that is about to be rendered and a moment's work is
 // already expected: stars_post_level_init() for a mission, the lab's
 // useBackground(), and qtFred's Background Editor when it switches the mission's
-// lens interactively.
+// lens interactively. Not from lens_flare_switch_to() itself, which is also
+// reached from the editors while nothing is being rendered.
 //
 // A no-op everywhere the flare pass never runs regardless: plain FRED, and
 // qtFred unless its View menu's "Enable Post Processing" toggle is on (qtFred
@@ -427,8 +441,8 @@ std::optional<int> lens_flare_get_lab_lens();
 // so the two starbursts don't stack.
 //
 // This reports what the flare pass *is drawing*, read back out of the frame data
-// below -- it does not re-derive it. Predicting it independently is how the
-// sprite and the flare came to disagree about occluded and off-screen suns.
+// below rather than re-derived, which is what keeps the sprite and the flare
+// from disagreeing about occluded and off-screen suns.
 //
 // Suns only: an engine's glow is the light source the flare is *of*, not a
 // competing sprite of the same artifact, so a thruster flare never makes the
@@ -504,10 +518,9 @@ const SCP_vector<lens_flare_draw>& lens_flare_get_frame_draws();
 // nozzle is a finite source whose brightness follows the throttle, the
 // afterburner, how squarely it faces the camera, and how far away it is.
 //
-// Every lit nozzle is its own source. Averaging a ship's engines into one was
-// tried first and is wrong for the ships it matters on: a capital ship's engines
-// are set far enough apart to be separate points in frame, so a single flare at
-// their centroid sits where no engine is.
+// Every lit nozzle is its own source, because a capital ship's engines are set
+// far enough apart to read as separate points in frame -- one flare at their
+// centroid would sit where no engine is.
 //
 // Declared per species in species_defs.tbl ("$Thruster Flare:"), and off unless
 // a species asks for it -- so no existing mod gains flares it never tabled, and
@@ -525,8 +538,7 @@ struct thruster_flare_info {
 	// The defaults are starting points for tuning in the lab, not derived values.
 	// They are this large because at any real combat range a nozzle subtends a
 	// small fraction of the reference, so a value near 1.0 puts the whole effect
-	// below the level a pixel can show -- which is what made engines look like
-	// they only flared under afterburner.
+	// below the level a pixel can show.
 	//
 	// The afterburner figure *replaces* the normal one while the burner or a
 	// booster is lit rather than multiplying it, so a species can make the two

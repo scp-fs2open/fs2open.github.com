@@ -18,12 +18,11 @@
 // bright -- and hands the answer to lens_flare.cpp as plain flare_sources. It
 // knows nothing about lenses, ghosts or quads.
 //
-// Every lit nozzle is its own source. Averaging a ship's engines into a single
-// facing-weighted centroid was tried first and is wrong exactly where it matters:
-// a capital ship's engine banks are set far enough apart to read as separate
-// points in frame, so one flare at their centroid sits where no engine is. The
-// cost of being right is a uniform block and a draw call per nozzle, which is
-// what the budget in lens_flare_gather_thruster_sources() bounds, and what
+// Every lit nozzle is its own source: a capital ship's engine banks are set far
+// enough apart to read as separate points in frame, so one flare at their
+// centroid would sit where no engine is. The cost of that is a uniform block and
+// a draw call per nozzle, which is what the budget in
+// lens_flare_gather_thruster_sources() bounds, and what
 // lens_flare_tuning::thruster_ghosts keeps affordable by drawing only the
 // starburst of each.
 //
@@ -38,20 +37,11 @@ namespace {
 // The lab's override of every species' settings; see lens_flare.h
 std::optional<thruster_flare_info> Lab_thruster_flare;
 
-// The apparent size that "+Intensity: 1.0" is calibrated against: a one-unit
-// radius nozzle seen from thirty-two of its own radii away. A species' tabled
-// numbers are multiples of this, so re-tuning the calibration means moving this
-// constant and nothing else.
-constexpr float REFERENCE_NOZZLE_RADIUS = 1.0f;
-constexpr float REFERENCE_NOZZLE_DISTANCE = 32.0f;
-constexpr float REFERENCE_APPARENT = PI * REFERENCE_NOZZLE_RADIUS * REFERENCE_NOZZLE_RADIUS /
-									 (REFERENCE_NOZZLE_DISTANCE * REFERENCE_NOZZLE_DISTANCE);
-
-// Ceiling on how far past that reference a nozzle may be driven. Flying down a
-// destroyer's exhaust would otherwise put an unbounded number into the tint and
-// white out the frame; a flare that has already saturated cannot usefully get
-// brighter anyway.
-constexpr float MAX_APPARENT_RATIO = 3.0f;
+// The apparent-size calibration a nozzle is stated against, and the ceiling on
+// how far past it one may be driven, are shared with beam muzzles --
+// lens_flare_apparent_ratio() in lens_flare_internal.h. Keeping one copy is what
+// makes an intensity of 1.0 mean the same brightness whichever kind of source it
+// was tabled on.
 
 // Floor below which a source cannot change a pixel: by the time it reaches the
 // frame it has also been multiplied by the lens's own intensity, so this is
@@ -139,10 +129,10 @@ void gather_ship_nozzles(const object* objp, SCP_vector<flare_source>& out)
 			}
 
 			// Irradiance at the entrance pupil, as a multiple of the reference
-			// nozzle. This is the term "brightness follows the throttle and the
+			// source. This is the term "brightness follows the throttle and the
 			// afterburner" leaves out, and the one that keeps a battle's worth of
 			// distant fighters from each throwing a full-strength flare.
-			const float ratio = MIN(apparent / REFERENCE_APPARENT, MAX_APPARENT_RATIO);
+			const float ratio = lens_flare_apparent_ratio(apparent);
 
 			flare_source src;
 			src.pos = world_pnt;
@@ -229,27 +219,7 @@ void lens_flare_gather_thruster_sources(SCP_vector<flare_source>& out, int budge
 		gather_ship_nozzles(objp, candidates);
 	}
 
-	// Over budget, the brightest win: a flare that would have been drawn faintly
-	// is the one worth losing, and ranking by the same number the tint is built
-	// from means the pass degrades by dropping what was least visible anyway.
-	// This ranking, rather than any brightness threshold, is what bounds the pass.
-	if (static_cast<int>(candidates.size()) > budget) {
-		std::partial_sort(candidates.begin(), candidates.begin() + budget, candidates.end(),
-			[](const flare_source& a, const flare_source& b) { return a.intensity > b.intensity; });
-		candidates.resize(budget);
-	}
-
-	// Visibility is tested last, against only the already-budgeted survivors: it
-	// costs a scene-wide raycast per source, so doing it before the rank/cut
-	// above would make the cost scale with every candidate nozzle in the
-	// mission instead of with the budget. A nozzle the raycast drops does not
-	// free its slot for the next-brightest candidate -- one dropped flare is
-	// cheaper than a second pass over the candidate list to refill it.
-	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-						 [](const flare_source& src) { return !lens_flare_point_visible(src.pos); }),
-		candidates.end());
-
-	out.insert(out.end(), candidates.begin(), candidates.end());
+	lens_flare_commit_candidates(out, candidates, budget);
 }
 
 } // namespace graphics

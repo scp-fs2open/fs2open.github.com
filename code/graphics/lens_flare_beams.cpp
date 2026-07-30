@@ -72,21 +72,7 @@ void lens_flare_gather_beam_sources(SCP_vector<flare_source>& out, int budget)
 		candidates.push_back(src);
 	}
 
-	if (static_cast<int>(candidates.size()) > budget) {
-		std::partial_sort(candidates.begin(), candidates.begin() + budget, candidates.end(),
-			[](const flare_source& a, const flare_source& b) { return a.intensity > b.intensity; });
-		candidates.resize(budget);
-	}
-
-	// As with thrusters, visibility is tested last, against only the
-	// already-budgeted survivors -- it costs a scene-wide raycast per source,
-	// so testing every firing beam before the rank/cut above would scale with
-	// however many are firing rather than with the (much smaller) beam budget.
-	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-						 [](const flare_source& src) { return !lens_flare_point_visible(src.pos); }),
-		candidates.end());
-
-	out.insert(out.end(), candidates.begin(), candidates.end());
+	lens_flare_commit_candidates(out, candidates, budget);
 }
 
 } // namespace graphics
