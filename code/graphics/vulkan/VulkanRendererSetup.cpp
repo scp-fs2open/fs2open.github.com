@@ -87,18 +87,27 @@ bool checkDeviceExtensionSupport(PhysicalDeviceValues& values)
 	return requiredExtensions.empty();
 }
 
-bool checkSwapChainSupport(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR& surface)
+/**
+ * @brief Fill in the parts of @p values that depend on a particular surface
+ *
+ * Every one of these can differ per surface, so this has to be re-run for each one rather than
+ * carried over from the surface the device was picked against -- see createTargetResources().
+ *
+ * @return false if the surface reports no usable formats or present modes, i.e. cannot be presented
+ *         to at all
+ */
+bool checkSwapChainSupport(PhysicalDeviceValues& values, vk::SurfaceKHR surface)
 {
-	values.surfaceCapabilities = values.device.getSurfaceCapabilitiesKHR(surface.get());
-	auto fmts = values.device.getSurfaceFormatsKHR(surface.get());
+	values.surfaceCapabilities = values.device.getSurfaceCapabilitiesKHR(surface);
+	auto fmts = values.device.getSurfaceFormatsKHR(surface);
 	values.surfaceFormats.assign(fmts.begin(), fmts.end());
-	auto modes = values.device.getSurfacePresentModesKHR(surface.get());
+	auto modes = values.device.getSurfacePresentModesKHR(surface);
 	values.presentModes.assign(modes.begin(), modes.end());
 
 	return !values.surfaceFormats.empty() && !values.presentModes.empty();
 }
 
-bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR& surface)
+bool isDeviceUnsuitable(PhysicalDeviceValues& values, vk::SurfaceKHR surface)
 {
 	// We need a GPU. Reject CPU or "other" types.
 	if (values.properties.deviceType != vk::PhysicalDeviceType::eDiscreteGpu &&
@@ -122,7 +131,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 		// queue (which implicitly supports transfer). Async transfer on a separate
 		// queue is future work and must be reintroduced end-to-end, including
 		// queue-family ownership transfers -- not half-wired.
-		if (!values.presentQueueIndex.initialized && values.device.getSurfaceSupportKHR(i, surface.get())) {
+		if (!values.presentQueueIndex.initialized && values.device.getSurfaceSupportKHR(i, surface)) {
 			values.presentQueueIndex.initialized = true;
 			values.presentQueueIndex.index = i;
 		}
@@ -226,7 +235,12 @@ vk::SurfaceFormatKHR chooseSurfaceFormat(const PhysicalDeviceValues& values)
 	// When HDR output is requested, prefer a 10-bit HDR10 (PQ / ST.2084) surface
 	// using BT.2020 primaries. The final output-encode pass writes PQ-encoded
 	// BT.2020 values into this surface.
-	if (Gr_enable_hdr) {
+	//
+	// Never in the editor: its surface is a window embedded in a desktop-composited
+	// application, so what an HDR10 swap chain would actually look like there is not
+	// something we can verify. It would also drag in the format-change limitation
+	// recreateSwapChain() documents.
+	if (Gr_enable_hdr && !Fred_running) {
 		for (const auto& availableFormat : values.surfaceFormats) {
 			if ((availableFormat.format == vk::Format::eA2B10G10R10UnormPack32 ||
 			     availableFormat.format == vk::Format::eA2R10G10B10UnormPack32) &&
@@ -330,6 +344,15 @@ bool VulkanRenderer::initialize()
 		return false;
 	}
 
+	// Everything from the surface down hangs off a target, so the main one has to exist before
+	// createTargetSurface() has anywhere to put its handle. The game only ever has this one; qtFRED
+	// adds a second when the briefing map first asks to be rendered into.
+	auto mainTarget = std::make_unique<VulkanPresentTarget>();
+	mainTarget->viewport = os::getMainViewport();
+	m_mainTarget = mainTarget.get();
+	m_current = m_mainTarget;
+	m_targets.emplace(mainTarget->viewport, std::move(mainTarget));
+
 	try {
 		if (!initializeInstance()) {
 			mprintf(("Failed to create Vulkan instance!\n"));
@@ -340,7 +363,7 @@ bool VulkanRenderer::initialize()
 		return false;
 	}
 
-	if (!initializeSurface()) {
+	if (!createTargetSurface(*m_mainTarget)) {
 		nprintf(("vulkan", "Failed to create Vulkan surface!\n"));
 		return false;
 	}
@@ -402,18 +425,20 @@ bool VulkanRenderer::initialize()
 
 	createCommandPool(deviceValues);
 
-	if (!createSwapChain(deviceValues)) {
+	if (!createSwapChain(*m_mainTarget, deviceValues)) {
 		nprintf(("vulkan", "Failed to create swap chain.\n"));
 		return false;
 	}
 
-	createDepthResources();
-	createCompositionResources();
-	createEncodeRenderPass();
+	createDepthResources(*m_mainTarget);
+	createCompositionResources(*m_mainTarget);
+	// Shared by every target, and built here from the main target's negotiated format. Any later
+	// target has to match it -- see createTargetResources().
+	createEncodeRenderPass(m_mainTarget->imageFormat);
 	createRenderPass();
-	createFrameBuffers();
+	createFrameBuffers(*m_mainTarget);
 
-	createPresentSyncObjects();
+	createPresentSyncObjects(*m_mainTarget);
 
 	// Initialize texture manager (needs command pool for uploads)
 	m_textureManager = std::make_unique<VulkanTextureManager>();
@@ -495,7 +520,7 @@ bool VulkanRenderer::initialize()
 	// Initialize post-processing
 	m_postProcessor = std::make_unique<VulkanPostProcessor>();
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
-	                           m_swapChainExtent, m_depthFormat, m_hdrActive)) {
+	                           m_mainTarget->extent, m_depthFormat, m_mainTarget->hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
 	} else {
@@ -584,29 +609,40 @@ bool VulkanRenderer::initDisplayDevice() const
 }
 bool VulkanRenderer::initializeInstance()
 {
+	auto* vulkanSupport = m_graphicsOps->getVulkanSupport();
+	if (vulkanSupport == nullptr) {
+		mprintf(("Vulkan: The windowing implementation in use cannot present through Vulkan!\n"));
+		return false;
+	}
+
 	const auto vkGetInstanceProcAddr =
-		reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+		reinterpret_cast<PFN_vkGetInstanceProcAddr>(vulkanSupport->getVulkanProcAddr());
+	if (vkGetInstanceProcAddr == nullptr) {
+		mprintf(("Vulkan: Could not get vkGetInstanceProcAddr from the windowing system!\n"));
+		return false;
+	}
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
 	VkInstanceCreateFlags createFlags = 0;
-	uint32_t count = 0;
 
-	auto extPtr = SDL_Vulkan_GetInstanceExtensions(&count);
-
-	if ( !extPtr ) {
-		mprintf(("Error in SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
+	// The windowing system only knows about the extensions its own surfaces need; everything else
+	// (debug utils, swap chain color space, portability) is decided below against what the driver
+	// actually supports. This must outlive `extensions`, which only holds views into it.
+	SCP_vector<SCP_string> windowExtensions;
+	if (!vulkanSupport->getVulkanInstanceExtensions(windowExtensions)) {
+		mprintf(("Vulkan: Could not determine the instance extensions required by the window system!\n"));
 		return false;
 	}
 
 	SCP_vector<const char*> extensions;
-	extensions.reserve(count);
+	extensions.reserve(windowExtensions.size());
 
-	for (uint32_t i = 0; i < count; ++i) {
+	for (const auto& windowExtension : windowExtensions) {
 		// SDL 3.2 will include portability enueration extension even if it's not
 		// supported, so make sure not to add it blindly, and check for it later
-		if (SDL_strcmp(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME, extPtr[i])) {
-			extensions.push_back(extPtr[i]);
+		if (stricmp(windowExtension.c_str(), VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) != 0) {
+			extensions.push_back(windowExtension.c_str());
 		}
 	}
 
@@ -762,20 +798,65 @@ bool VulkanRenderer::initializeInstance()
 	return true;
 }
 
-bool VulkanRenderer::initializeSurface()
+VulkanSurfaceHandle::VulkanSurfaceHandle(os::VulkanSurfaceProvider* provider,
+	vk::Instance instance,
+	vk::SurfaceKHR surface)
+	: m_provider(provider), m_instance(instance), m_surface(surface)
 {
-	const auto window = os::getSDLMainWindow();
+}
+VulkanSurfaceHandle::~VulkanSurfaceHandle()
+{
+	reset();
+}
+VulkanSurfaceHandle::VulkanSurfaceHandle(VulkanSurfaceHandle&& other) noexcept
+	: m_provider(other.m_provider), m_instance(other.m_instance), m_surface(other.m_surface)
+{
+	other.m_provider = nullptr;
+	other.m_instance = vk::Instance();
+	other.m_surface = vk::SurfaceKHR();
+}
+VulkanSurfaceHandle& VulkanSurfaceHandle::operator=(VulkanSurfaceHandle&& other) noexcept
+{
+	if (this != &other) {
+		reset();
 
-	VkSurfaceKHR surface;
-	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), nullptr, &surface)) {
-		nprintf(("vulkan", "Failed to create vulkan surface: %s\n", SDL_GetError()));
+		m_provider = other.m_provider;
+		m_instance = other.m_instance;
+		m_surface = other.m_surface;
+
+		other.m_provider = nullptr;
+		other.m_instance = vk::Instance();
+		other.m_surface = vk::SurfaceKHR();
+	}
+	return *this;
+}
+void VulkanSurfaceHandle::reset()
+{
+	if (m_provider != nullptr && m_surface) {
+		m_provider->destroyVulkanSurface(static_cast<VkInstance>(m_instance),
+			os::vulkan_handle_value(static_cast<VkSurfaceKHR>(m_surface)));
+	}
+
+	m_provider = nullptr;
+	m_instance = vk::Instance();
+	m_surface = vk::SurfaceKHR();
+}
+
+bool VulkanRenderer::createTargetSurface(VulkanPresentTarget& target)
+{
+	auto* vulkanSupport = m_graphicsOps->getVulkanSupport();
+	Assertion(vulkanSupport != nullptr, "initializeInstance() should have rejected this already!");
+
+	const auto surface =
+		vulkanSupport->createVulkanSurface(target.viewport, static_cast<VkInstance>(*m_vkInstance));
+	if (surface == 0) {
+		nprintf(("vulkan", "Vulkan: failed to create a surface for this viewport.\n"));
 		return false;
 	}
 
-	const vk::detail::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
-		nullptr,
-		VULKAN_HPP_DEFAULT_DISPATCHER);
-	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
+	target.surface = VulkanSurfaceHandle(vulkanSupport,
+		*m_vkInstance,
+		vk::SurfaceKHR(os::vulkan_handle_cast<VkSurfaceKHR>(surface)));
 	return true;
 }
 
@@ -823,7 +904,7 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	// Remove devices that do not have the features we need
 	values.erase(std::remove_if(values.begin(),
 					 values.end(),
-					 [this](PhysicalDeviceValues& value) { return isDeviceUnsuitable(value, m_vkSurface); }),
+					 [this](PhysicalDeviceValues& value) { return isDeviceUnsuitable(value, m_mainTarget->surface.get()); }),
 		values.end());
 	if (values.empty()) {
 		return false;
@@ -1032,7 +1113,107 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	return true;
 }
-bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, vk::SwapchainKHR oldSwapchain)
+bool VulkanRenderer::createTargetResources(VulkanPresentTarget& target)
+{
+	if (!createTargetSurface(target)) {
+		return false;
+	}
+
+	// The device was already chosen against the main surface, so only the parts that are per-surface
+	// get re-queried here. The present queue is checked rather than assumed: a device is allowed to
+	// support presentation to one surface and not another.
+	PhysicalDeviceValues values;
+	values.device = m_physicalDevice;
+	values.graphicsQueueIndex = {true, m_graphicsQueueFamilyIndex};
+	values.presentQueueIndex = {true, m_presentQueueFamilyIndex};
+
+	if (!m_physicalDevice.getSurfaceSupportKHR(m_presentQueueFamilyIndex, target.surface.get())) {
+		mprintf(("Vulkan: the present queue cannot present to this viewport's surface.\n"));
+		return false;
+	}
+
+	if (!checkSwapChainSupport(values, target.surface.get())) {
+		mprintf(("Vulkan: this viewport's surface reports no usable formats or present modes.\n"));
+		return false;
+	}
+
+	if (!createSwapChain(target, values)) {
+		mprintf(("Vulkan: failed to create a swap chain for this viewport.\n"));
+		return false;
+	}
+
+	// m_encodeRenderPass is shared and bakes in the swap chain format it was built for, so a target
+	// that negotiates a different one cannot present through it. In practice every surface here is
+	// the same device, driver and window system and they agree -- which is exactly why this is
+	// checked rather than assumed, since a mismatch would otherwise be silent and only appear on
+	// somebody else's hardware. Fail the target instead; the caller falls back.
+	if (target.imageFormat != m_mainTarget->imageFormat) {
+		mprintf(("Vulkan: this viewport's surface negotiated format %d but the output-encode pass was "
+		         "built for %d; cannot present to it.\n",
+			static_cast<int>(target.imageFormat), static_cast<int>(m_mainTarget->imageFormat)));
+		return false;
+	}
+
+	createDepthResources(target);
+	createCompositionResources(target);
+	createFrameBuffers(target);
+	createPresentSyncObjects(target);
+
+	nprintf(("vulkan", "Vulkan: created a present target for a second viewport (%ux%u, %zu images)\n",
+		target.extent.width, target.extent.height, target.images.size()));
+
+	return true;
+}
+
+void VulkanRenderer::destroyDepthResources(VulkanPresentTarget& target)
+{
+	target.depthImageView.reset();
+	target.depthImage.reset();
+	if (m_memoryManager && target.depthImageMemory.isValid()) {
+		m_memoryManager->freeAllocation(target.depthImageMemory);
+		target.depthImageMemory = {};
+	}
+}
+
+void VulkanRenderer::destroyTargetSwapChain(VulkanPresentTarget& target)
+{
+	// Framebuffers and views reference the swap chain images, and the frames hold the swap chain
+	// handle for their acquires and presents, so all of them go first.
+	target.framebuffers.clear();
+	target.encodeFramebuffers.clear();
+	target.imageViews.clear();
+	target.images.clear();
+	target.imageRenderFrame.clear();
+
+	for (auto& frame : target.frames) {
+		frame.reset();
+	}
+	target.acquireSemaphores.clear();
+	target.renderFinishedSemaphores.clear();
+	target.hasRetainedAcquire = false;
+
+	target.swapChain.reset();
+}
+
+void VulkanRenderer::releaseTargetMemory(VulkanPresentTarget& target)
+{
+	destroyDepthResources(target);
+
+	target.compositionImageViews.clear();
+	target.compositionImages.clear();
+	if (m_memoryManager) {
+		for (auto& alloc : target.compositionAllocations) {
+			if (alloc.isValid()) {
+				m_memoryManager->freeAllocation(alloc);
+			}
+		}
+	}
+	target.compositionAllocations.clear();
+}
+
+bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
+	const PhysicalDeviceValues& deviceValues,
+	vk::SwapchainKHR oldSwapchain)
 {
 	// Choose one more than the minimum to avoid driver synchronization if it is not done with a thread yet
 	uint32_t imageCount = deviceValues.surfaceCapabilities.minImageCount + 1;
@@ -1044,7 +1225,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	const auto surfaceFormat = chooseSurfaceFormat(deviceValues);
 
 	vk::SwapchainCreateInfoKHR createInfo;
-	createInfo.surface = m_vkSurface.get();
+	createInfo.surface = target.surface.get();
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -1072,26 +1253,26 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	auto newSwapChain = m_device->createSwapchainKHRUnique(createInfo);
 
 	// Clear old resources before replacing the swap chain
-	m_swapChainFramebuffers.clear();
-	m_swapChainImageViews.clear();
+	target.framebuffers.clear();
+	target.imageViews.clear();
 
-	m_swapChain = std::move(newSwapChain);
+	target.swapChain = std::move(newSwapChain);
 
-	auto swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
-	m_swapChainImages.assign(swapChainImages.begin(), swapChainImages.end());
-	m_swapChainImageFormat = surfaceFormat.format;
-	m_swapChainColorSpace = surfaceFormat.colorSpace;
-	m_hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
-	Gr_hdr_output_active = m_hdrActive;
-	m_swapChainExtent = createInfo.imageExtent;
-	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
+	auto swapChainImages = m_device->getSwapchainImagesKHR(target.swapChain.get());
+	target.images.assign(swapChainImages.begin(), swapChainImages.end());
+	target.imageFormat = surfaceFormat.format;
+	target.colorSpace = surfaceFormat.colorSpace;
+	target.hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
+	Gr_hdr_output_active = target.hdrActive;
+	target.extent = createInfo.imageExtent;
+	mprintf(("Vulkan: Swap chain output mode: %s\n", target.hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 
-	m_swapChainImageViews.reserve(m_swapChainImages.size());
-	for (const auto& image : m_swapChainImages) {
+	target.imageViews.reserve(target.images.size());
+	for (const auto& image : target.images) {
 		vk::ImageViewCreateInfo viewCreateInfo;
 		viewCreateInfo.image = image;
 		viewCreateInfo.viewType = vk::ImageViewType::e2D;
-		viewCreateInfo.format = m_swapChainImageFormat;
+		viewCreateInfo.format = target.imageFormat;
 
 		viewCreateInfo.components.r = vk::ComponentSwizzle::eIdentity;
 		viewCreateInfo.components.g = vk::ComponentSwizzle::eIdentity;
@@ -1104,7 +1285,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		viewCreateInfo.subresourceRange.baseArrayLayer = 0;
 		viewCreateInfo.subresourceRange.layerCount = 1;
 
-		m_swapChainImageViews.push_back(m_device->createImageViewUnique(viewCreateInfo));
+		target.imageViews.push_back(m_device->createImageViewUnique(viewCreateInfo));
 	}
 
 	// No layout transition needed for the new images: the only pass that writes
@@ -1112,7 +1293,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	// loadOp=eDontCare, so their first use never reads prior contents.
 
 	// Advertise HDR10 mastering/content metadata to the compositor when active.
-	if (m_hdrActive && m_hdrMetadataSupported) {
+	if (target.hdrActive && m_hdrMetadataSupported) {
 		vk::HdrMetadataEXT metadata;
 		// BT.2020 display primaries and D65 white point
 		metadata.displayPrimaryRed   = vk::XYColorEXT{0.708f, 0.292f};
@@ -1123,7 +1304,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		metadata.minLuminance        = 0.0f;
 		metadata.maxContentLightLevel        = Gr_hdr_peak_nits;
 		metadata.maxFrameAverageLightLevel   = Gr_hdr_paperwhite_nits;
-		m_device->setHdrMetadataEXT(m_swapChain.get(), metadata);
+		m_device->setHdrMetadataEXT(target.swapChain.get(), metadata);
 		mprintf(("Vulkan: HDR10 metadata set (peak %.0f nits, paper white %.0f nits)\n",
 			Gr_hdr_peak_nits, Gr_hdr_paperwhite_nits));
 	}
@@ -1131,26 +1312,27 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	return true;
 }
 
-bool VulkanRenderer::recreateSwapChain()
+bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 {
 	nprintf(("vulkan", "Vulkan: Recreating swap chain...\n"));
 
 	// Wait for all frames to finish so no resources are in use
 	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		m_frames[i]->waitForFinish();
+		target.frames[i]->waitForFinish();
 	}
 	m_device->waitIdle();
 
 	// Re-query surface state (may have changed due to resize/compositor)
 	PhysicalDeviceValues freshValues;
 	freshValues.device = m_physicalDevice;
-	freshValues.surfaceCapabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface.get());
-	auto fmts = m_physicalDevice.getSurfaceFormatsKHR(m_vkSurface.get());
-	freshValues.surfaceFormats.assign(fmts.begin(), fmts.end());
-	auto modes = m_physicalDevice.getSurfacePresentModesKHR(m_vkSurface.get());
-	freshValues.presentModes.assign(modes.begin(), modes.end());
 	freshValues.graphicsQueueIndex = {true, m_graphicsQueueFamilyIndex};
 	freshValues.presentQueueIndex = {true, m_presentQueueFamilyIndex};
+
+	if (!checkSwapChainSupport(freshValues, target.surface.get())) {
+		nprintf(("vulkan", "Vulkan: surface no longer reports usable formats or present modes, "
+		                   "deferring swap chain recreation\n"));
+		return false;
+	}
 
 	// Check for 0x0 extent (minimized window) — caller should retry later
 	auto extent = chooseSwapChainExtent(freshValues, gr_screen.max_w, gr_screen.max_h);
@@ -1162,32 +1344,32 @@ bool VulkanRenderer::recreateSwapChain()
 	// Recreate all size-dependent resources. The render passes (including
 	// m_encodeRenderPass) are intentionally NOT recreated so cached pipelines
 	// remain valid; only images, views, and framebuffers are rebuilt.
-	const vk::Format oldSwapChainFormat = m_swapChainImageFormat;
-	createSwapChain(freshValues, m_swapChain.get());
+	const vk::Format oldSwapChainFormat = target.imageFormat;
+	createSwapChain(target, freshValues, target.swapChain.get());
 
 	// Known limitation: if the surface format changes across recreation (e.g.
 	// the window moves to a display that flips HDR10 availability),
 	// m_encodeRenderPass and the post-processor's LDR format would need a full
 	// rebuild, which we don't support yet. Log it loudly.
-	if (m_swapChainImageFormat != oldSwapChainFormat) {
+	if (target.imageFormat != oldSwapChainFormat) {
 		mprintf(("Vulkan: WARNING - swap chain surface format changed across recreation (%d -> %d); "
 		         "rendering may be broken until restart\n",
-			static_cast<int>(oldSwapChainFormat), static_cast<int>(m_swapChainImageFormat)));
+			static_cast<int>(oldSwapChainFormat), static_cast<int>(target.imageFormat)));
 	}
 
 	// The depth buffer is extent-sized; recreate it before the framebuffers
 	// that attach its view. createDepthResources() verifies the format is stable
 	// (the kept render passes bake it in).
-	destroyDepthResources();
-	createDepthResources();
+	destroyDepthResources(target);
+	createDepthResources(target);
 
-	createCompositionResources();
-	createFrameBuffers();
+	createCompositionResources(target);
+	createFrameBuffers(target);
 
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(m_swapChainExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(target.extent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();
@@ -1200,25 +1382,37 @@ bool VulkanRenderer::recreateSwapChain()
 	}
 	m_sceneDepthCopiedThisFrame = false;
 
-	// Update VulkanRenderFrame handles to point to the new swap chain, and
-	// recreate their semaphores: an acquire that succeeded against the old swap
-	// chain but was never consumed by a submit leaves the image-available
-	// semaphore signaled. All frames are idle here (waited above), so
-	// recreating is safe and unambiguous.
-	for (auto& frame : m_frames) {
-		frame->updateSwapChain(m_swapChain.get());
-		frame->recreateSyncObjects();
+	// Update VulkanRenderFrame handles to point to the new swap chain.
+	for (auto& frame : target.frames) {
+		frame->updateSwapChain(target.swapChain.get());
 	}
 
-	// Reset swap chain image tracking
-	m_swapChainImageRenderImage.clear();
-	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
-	m_previousSwapChainImage = UINT32_MAX;
+	// The render-finished semaphores are keyed on swap chain image, and the image count can change
+	// across recreation, so they go with the images they belonged to. Any of them still held by the
+	// presentation engine belonged to the old swap chain, which is retired here. All frames are
+	// idle (waited above), so nothing is still signalling one.
+	createRenderFinishedSemaphores(target);
 
-	m_swapChainNeedsRecreation = false;
+	// The acquire semaphores were signalled against the swap chain that just went away, and any
+	// image a viewport switch was holding on to belonged to it too. Start both over.
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	for (auto& acquire : target.acquireSemaphores) {
+		acquire.semaphore = m_device->createSemaphoreUnique(semaphoreCreateInfo);
+		acquire.consumer = nullptr;
+	}
+	target.nextAcquire = 0;
+	target.currentAcquire = 0;
+	target.hasRetainedAcquire = false;
+
+	// Reset swap chain image tracking
+	target.imageRenderFrame.clear();
+	target.imageRenderFrame.resize(target.images.size(), nullptr);
+	target.previousImage = UINT32_MAX;
+
+	target.needsRecreation = false;
 
 	nprintf(("vulkan", "Vulkan: Swap chain recreated successfully (%ux%u, %zu images)\n",
-		m_swapChainExtent.width, m_swapChainExtent.height, m_swapChainImages.size()));
+		target.extent.width, target.extent.height, target.images.size()));
 
 	return true;
 }
