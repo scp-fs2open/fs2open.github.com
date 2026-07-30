@@ -100,5 +100,6 @@ add_file_folder("Utils"
 )
 
 add_file_folder("Weapon"
+    weapon/test_beam.cpp
     weapon/weapons.cpp
 )

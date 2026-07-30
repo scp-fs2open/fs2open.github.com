@@ -681,6 +681,16 @@ void gather_sun_sources(SCP_vector<flare_source>& out, float dt, bool snap)
 // LENS_FLARE_UBO_SLOTS in VulkanPostProcessingLensFlare.cpp.
 constexpr int MAX_THRUSTER_SOURCES = 32;
 
+// Beams are scarce even in a capital-ship engagement, so this is a backstop
+// rather than something a normal frame is expected to reach -- which is also
+// why they keep their ghost train where nozzles drop theirs: a handful of
+// ghost trains reads as an optical effect rather than noise, and ghosts cost
+// nothing extra once a source's uniform block is uploaded.
+//
+// The two budgets plus the suns are what LENS_FLARE_UBO_SLOTS in the Vulkan
+// backend has to stay above.
+constexpr int MAX_BEAM_SOURCES = 8;
+
 } // namespace
 
 void lens_flare_frame_update()
@@ -719,6 +729,7 @@ void lens_flare_frame_update()
 	SCP_vector<flare_source> sources;
 	gather_sun_sources(sources, dt, snap);
 	lens_flare_gather_thruster_sources(sources, MAX_THRUSTER_SOURCES);
+	lens_flare_gather_beam_sources(sources, MAX_BEAM_SOURCES);
 	if (sources.empty()) {
 		return;
 	}
