@@ -24,33 +24,36 @@ extern float flFrametime;
 
 namespace graphics::vulkan {
 
+// VulkanSurfaceHandle's implementation lives in VulkanRendererSetup.cpp, next to
+// createTargetSurface()/createTargetResources() -- the rest of a target's surface/swap-chain
+// lifecycle.
 
 VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsOps)
 	: m_graphicsOps(std::move(graphicsOps))
 {
 }
-void VulkanRenderer::createCompositionResources()
+void VulkanRenderer::createCompositionResources(VulkanPresentTarget& target)
 {
 	// Free any previous composition resources (swap chain recreation path)
-	m_compositionImageViews.clear();
-	m_compositionImages.clear();
-	for (auto& alloc : m_compositionAllocations) {
+	target.compositionImageViews.clear();
+	target.compositionImages.clear();
+	for (auto& alloc : target.compositionAllocations) {
 		if (alloc.isValid()) {
 			m_memoryManager->freeAllocation(alloc);
 		}
 	}
-	m_compositionAllocations.clear();
+	target.compositionAllocations.clear();
 
-	const size_t count = m_swapChainImageViews.size();
-	m_compositionImages.reserve(count);
-	m_compositionImageViews.reserve(count);
-	m_compositionAllocations.reserve(count);
+	const size_t count = target.imageViews.size();
+	target.compositionImages.reserve(count);
+	target.compositionImageViews.reserve(count);
+	target.compositionAllocations.reserve(count);
 
 	for (size_t i = 0; i < count; ++i) {
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
 		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent = vk::Extent3D(m_swapChainExtent.width, m_swapChainExtent.height, 1);
+		imageInfo.extent = vk::Extent3D(target.extent.width, target.extent.height, 1);
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = vk::SampleCountFlagBits::e1;
@@ -72,9 +75,9 @@ void VulkanRenderer::createCompositionResources()
 		viewInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 		auto view = m_device->createImageViewUnique(viewInfo);
 
-		m_compositionImages.push_back(std::move(image));
-		m_compositionAllocations.push_back(alloc);
-		m_compositionImageViews.push_back(std::move(view));
+		target.compositionImages.push_back(std::move(image));
+		target.compositionAllocations.push_back(alloc);
+		target.compositionImageViews.push_back(std::move(view));
 	}
 
 	// Sampler used by the output-encode pass to read the composition image.
@@ -90,12 +93,12 @@ void VulkanRenderer::createCompositionResources()
 	}
 }
 
-void VulkanRenderer::createEncodeRenderPass()
+void VulkanRenderer::createEncodeRenderPass(vk::Format swapChainFormat)
 {
 	// Color-only pass that writes the actual swap chain image. The fullscreen
 	// encode draw overwrites the whole image, so the prior contents are discarded.
 	vk::AttachmentDescription colorAttachment;
-	colorAttachment.format = m_swapChainImageFormat;
+	colorAttachment.format = swapChainFormat;
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eDontCare;
 	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
@@ -137,54 +140,54 @@ void VulkanRenderer::createEncodeRenderPass()
 	m_encodeRenderPass = m_device->createRenderPassUnique(rpInfo);
 }
 
-void VulkanRenderer::createFrameBuffers()
+void VulkanRenderer::createFrameBuffers(VulkanPresentTarget& target)
 {
-	m_swapChainFramebuffers.clear();
-	m_encodeFramebuffers.clear();
+	target.framebuffers.clear();
+	target.encodeFramebuffers.clear();
 
 	// Composition framebuffers: color = fp16 composition image, depth shared.
 	// Indexed by swap chain image so each in-flight frame uses its own image.
-	m_swapChainFramebuffers.reserve(m_compositionImageViews.size());
-	for (const auto& compView : m_compositionImageViews) {
+	target.framebuffers.reserve(target.compositionImageViews.size());
+	for (const auto& compView : target.compositionImageViews) {
 		const vk::ImageView attachments[] = {
 			compView.get(),
-			m_depthImageView.get(),
+			target.depthImageView.get(),
 		};
 
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = m_renderPass.get();
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = m_swapChainExtent.width;
-		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.width = target.extent.width;
+		framebufferInfo.height = target.extent.height;
 		framebufferInfo.layers = 1;
 
-		m_swapChainFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+		target.framebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
 	}
 
 	// Encode framebuffers: color = actual swap chain image.
-	m_encodeFramebuffers.reserve(m_swapChainImageViews.size());
-	for (const auto& scView : m_swapChainImageViews) {
+	target.encodeFramebuffers.reserve(target.imageViews.size());
+	for (const auto& scView : target.imageViews) {
 		const vk::ImageView attachments[] = { scView.get() };
 
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = m_encodeRenderPass.get();
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = m_swapChainExtent.width;
-		framebufferInfo.height = m_swapChainExtent.height;
+		framebufferInfo.width = target.extent.width;
+		framebufferInfo.height = target.extent.height;
 		framebufferInfo.layers = 1;
 
-		m_encodeFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
+		target.encodeFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
 	}
 }
 
 void VulkanRenderer::encodeToSwapChain()
 {
-	if (!m_postProcessor || m_currentSwapChainImage >= m_swapChainImages.size()) {
+	if (!m_postProcessor || m_current->currentImage >= m_current->images.size()) {
 		return;
 	}
-	if (m_currentSwapChainImage >= m_encodeFramebuffers.size()) {
+	if (m_current->currentImage >= m_current->encodeFramebuffers.size()) {
 		return;
 	}
 
@@ -192,13 +195,13 @@ void VulkanRenderer::encodeToSwapChain()
 
 	// HDR10: PQ/BT.2020 encode plus the user gamma slider, must run as a
 	// shader (encodeOutput()).
-	if (m_hdrActive) {
+	if (m_current->hdrActive) {
 		m_postProcessor->encodeOutput(
 			m_currentCommandBuffer,
 			m_encodeRenderPass.get(),
-			m_encodeFramebuffers[m_currentSwapChainImage].get(),
-			m_swapChainExtent,
-			m_compositionImageViews[m_currentSwapChainImage].get(),
+			m_current->encodeFramebuffers[m_current->currentImage].get(),
+			m_current->extent,
+			m_current->compositionImageViews[m_current->currentImage].get(),
 			m_compositionSampler.get(),
 			Gr_hdr_paperwhite_nits,
 			Gr_hdr_peak_nits,
@@ -214,9 +217,9 @@ void VulkanRenderer::encodeToSwapChain()
 	m_postProcessor->encodeOutputSdr(
 		m_currentCommandBuffer,
 		m_encodeRenderPass.get(),
-		m_encodeFramebuffers[m_currentSwapChainImage].get(),
-		m_swapChainExtent,
-		m_compositionImageViews[m_currentSwapChainImage].get(),
+		m_current->encodeFramebuffers[m_current->currentImage].get(),
+		m_current->extent,
+		m_current->compositionImageViews[m_current->currentImage].get(),
 		m_compositionSampler.get(),
 		gamma);
 }
@@ -240,7 +243,7 @@ vk::Format VulkanRenderer::findDepthFormat()
 	Error(LOCATION, "Failed to find supported depth format!");
 	return vk::Format::eD32Sfloat;
 }
-void VulkanRenderer::createDepthResources()
+void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
 {
 	const vk::Format depthFormat = findDepthFormat();
 	// The render passes (m_renderPass, scene/G-buffer passes, ...) bake in the
@@ -257,8 +260,8 @@ void VulkanRenderer::createDepthResources()
 	vk::ImageCreateInfo imageInfo;
 	imageInfo.imageType = vk::ImageType::e2D;
 	imageInfo.format = m_depthFormat;
-	imageInfo.extent.width = m_swapChainExtent.width;
-	imageInfo.extent.height = m_swapChainExtent.height;
+	imageInfo.extent.width = target.extent.width;
+	imageInfo.extent.height = target.extent.height;
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
@@ -268,15 +271,15 @@ void VulkanRenderer::createDepthResources()
 	imageInfo.sharingMode = vk::SharingMode::eExclusive;
 	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
 
-	m_depthImage = m_device->createImageUnique(imageInfo);
+	target.depthImage = m_device->createImageUnique(imageInfo);
 
 	// Allocate GPU memory for the depth image
 	m_memoryManager->allocateImageMemory(
-		m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory, MemoryPurpose::RenderTarget);
+		target.depthImage.get(), MemoryUsage::GpuOnly, target.depthImageMemory, MemoryPurpose::RenderTarget);
 
 	// Create depth image view
 	vk::ImageViewCreateInfo viewInfo;
-	viewInfo.image = m_depthImage.get();
+	viewInfo.image = target.depthImage.get();
 	viewInfo.viewType = vk::ImageViewType::e2D;
 	viewInfo.format = m_depthFormat;
 	viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
@@ -285,20 +288,13 @@ void VulkanRenderer::createDepthResources()
 	viewInfo.subresourceRange.baseArrayLayer = 0;
 	viewInfo.subresourceRange.layerCount = 1;
 
-	m_depthImageView = m_device->createImageViewUnique(viewInfo);
+	target.depthImageView = m_device->createImageViewUnique(viewInfo);
 
 	nprintf(("vulkan", "Vulkan: Created depth buffer (%dx%d, format %d)\n",
-		m_swapChainExtent.width, m_swapChainExtent.height, static_cast<int>(m_depthFormat)));
+		target.extent.width, target.extent.height, static_cast<int>(m_depthFormat)));
 }
-void VulkanRenderer::destroyDepthResources()
-{
-	m_depthImageView.reset();
-	m_depthImage.reset();
-	if (m_memoryManager && m_depthImageMemory.isValid()) {
-		m_memoryManager->freeAllocation(m_depthImageMemory);
-		m_depthImageMemory = {};
-	}
-}
+
+
 void VulkanRenderer::createRenderPass()
 {
 	// Attachment 0: Color - clear each frame
@@ -344,7 +340,7 @@ void VulkanRenderer::createRenderPass()
 
 	// External dependency must make the PREVIOUS frame's accesses to these
 	// attachments available/ordered before this frame writes them again. The
-	// depth buffer is a single shared image (one m_depthImage for every
+	// depth buffer is a single shared image (one m_current->depthImage for every
 	// swap-chain framebuffer), so frame N+1's loadOp=eClear collides with frame
 	// N's depth writes (WRITE_AFTER_WRITE) unless srcAccessMask lists the prior
 	// depth write; likewise the composition color's store when a swap image
@@ -387,7 +383,7 @@ void VulkanRenderer::createRenderPass()
 	// Create a second render pass with loadOp=eLoad for resuming the composition
 	// pass after post-processing. Render-pass compatibility (which is what lets a
 	// pipeline built against m_renderPass bind under m_renderPassLoad, and lets
-	// both share m_swapChainFramebuffers) is defined ONLY by matching attachment
+	// both share m_current->framebuffers) is defined ONLY by matching attachment
 	// formats/sample counts and subpass structure -- it deliberately ignores
 	// load/store ops, layouts, AND subpass dependencies. So this variant reuses
 	// the same renderPassInfo/dependency but only overrides the ops/layouts below.
@@ -416,13 +412,38 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 
 	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
 }
-void VulkanRenderer::createPresentSyncObjects()
+void VulkanRenderer::createPresentSyncObjects(VulkanPresentTarget& target)
 {
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		m_frames[i] = std::make_unique<VulkanRenderFrame>(m_device.get(), m_swapChain.get(), m_graphicsQueue, m_presentQueue);
+		target.frames[i] = std::make_unique<VulkanRenderFrame>(m_device.get(), target.swapChain.get(), m_graphicsQueue, m_presentQueue);
 	}
 
-	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+	target.imageRenderFrame.resize(target.images.size(), nullptr);
+
+	// One more than the frames in flight: at any moment the in-flight frames can each be holding
+	// one, and a viewport switch can have retained one on top of that.
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	target.acquireSemaphores.clear();
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT + 1; ++i) {
+		VulkanPresentTarget::AcquireSemaphore entry;
+		entry.semaphore = m_device->createSemaphoreUnique(semaphoreCreateInfo);
+		target.acquireSemaphores.push_back(std::move(entry));
+	}
+	target.nextAcquire = 0;
+	target.currentAcquire = 0;
+	target.hasRetainedAcquire = false;
+
+	createRenderFinishedSemaphores(target);
+}
+void VulkanRenderer::createRenderFinishedSemaphores(VulkanPresentTarget& target)
+{
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+
+	target.renderFinishedSemaphores.clear();
+	target.renderFinishedSemaphores.reserve(target.images.size());
+	for (size_t i = 0; i < target.images.size(); ++i) {
+		target.renderFinishedSemaphores.push_back(m_device->createSemaphoreUnique(semaphoreCreateInfo));
+	}
 }
 
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
@@ -431,7 +452,7 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	*outWidth = 0;
 	*outHeight = 0;
 
-	if (m_previousSwapChainImage == UINT32_MAX) {
+	if (m_current->previousImage == UINT32_MAX) {
 		nprintf(("vulkan", "VulkanRenderer::readbackFramebuffer - no previous frame available\n"));
 		return false;
 	}
@@ -450,13 +471,13 @@ bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, 
 	// (1.0 == paper white) before the user gamma slider is applied -- the same
 	// fidelity class as OpenGL's back-buffer read. Converted to BGRA8 on the
 	// CPU below.
-	const vk::Image srcImage = m_compositionImages[m_previousSwapChainImage].get();
+	const vk::Image srcImage = m_current->compositionImages[m_current->previousImage].get();
 	const vk::ImageLayout srcInitialLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 	const vk::PipelineStageFlags2 srcStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
 	const vk::AccessFlags2 srcAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
 	const uint32_t bytesPerSrcPixel = 8; // fp16 RGBA = 4 x 2 bytes
-	uint32_t w = m_swapChainExtent.width;
-	uint32_t h = m_swapChainExtent.height;
+	uint32_t w = m_current->extent.width;
+	uint32_t h = m_current->extent.height;
 	vk::DeviceSize bufferSize = static_cast<vk::DeviceSize>(w) * h * bytesPerSrcPixel;
 
 	// End the current render pass so we can record transfer commands
@@ -754,8 +775,12 @@ bool VulkanRenderer::readbackRenderTarget(tcache_slot_vulkan* ts, ubyte** outPix
 	// A fresh command buffer starts with no Vulkan state, so re-point the state tracker at
 	// it and invalidate every cached binding/dynamic-state value. beginFrame() does exactly
 	// this (and touches nothing else), so the next tracked draw re-binds pipeline,
-	// descriptors, viewport, scissor, etc. Deliberately NOT resetting the descriptor pool
-	// mid-frame (segment 2 keeps allocating past segment 1's sets).
+	// descriptors, viewport, scissor, etc.
+	// NOTE: the fence wait above leaves the device provably idle here, which makes this the only
+	// point in an off-screen capture where frame-scoped pools could be recycled. That is
+	// deliberately NOT done unconditionally -- this path is shared with gr.screenToBlob(), which
+	// mods call mid-frame with plenty of live allocations still to come. Callers that have
+	// genuinely finished a frame's worth of work opt in via gr_end_offscreen_frame() instead.
 	m_stateTracker->beginFrame(m_currentCommandBuffer);
 
 	// Resume drawing into the target (loadOp=eLoad) so content survives the flush.
@@ -817,27 +842,59 @@ void VulkanRenderer::waitIdle()
 	}
 }
 
-bool VulkanRenderer::waitForFrame(uint64_t frameNumber, uint64_t timeoutNs)
+void VulkanRenderer::endOffscreenFrame()
 {
-	// Fast path: if enough frames have elapsed, the work is definitely done --
-	// the frame's fence was waited before its slot was reused (see
-	// acquireNextSwapChainImage).
-	if (m_frameNumber >= frameNumber + MAX_FRAMES_IN_FLIGHT) {
-		return true;
-	}
+	++m_frameNumber;
 
-	// Not submitted yet: flip() advances m_frameNumber only after submission,
-	// so frameNumber >= m_frameNumber means the fence was taken during the
-	// frame currently being recorded. Its work cannot be complete, and blocking
-	// here would deadlock (submission happens on this thread).
-	if (frameNumber >= m_frameNumber) {
+	// Same call flip() makes, with the frame-in-flight index deliberately unchanged -- it rewinds
+	// the bump cursor and bumps its generation so sub-allocations from the frame just finished are
+	// invalidated rather than silently overlapped.
+	if (m_bufferManager) {
+		m_bufferManager->setCurrentFrame(m_currentFrame, m_frameNumber);
+	}
+}
+
+FrameSyncPoint VulkanRenderer::captureSyncPoint() const
+{
+	FrameSyncPoint point;
+	point.viewport = m_current != nullptr ? m_current->viewport : nullptr;
+	point.slot = m_currentFrame;
+	point.frameNumber = m_frameNumber;
+	return point;
+}
+
+bool VulkanRenderer::waitForSyncPoint(const FrameSyncPoint& point, uint64_t timeoutNs)
+{
+	// Taken during the frame still being recorded: both flip() and endOffscreenFrame() advance
+	// m_frameNumber only once the frame is closed out, so this means nothing has been submitted for
+	// it yet. Its work cannot be complete, and blocking here would deadlock -- submission happens on
+	// this thread.
+	if (point.frameNumber >= m_frameNumber) {
 		return false;
 	}
 
-	// Remaining case: frameNumber < m_frameNumber < frameNumber + MAX_FRAMES_IN_FLIGHT,
-	// so the slot still belongs to exactly that frame -- wait on its fence.
-	auto frameIndex = static_cast<uint32_t>(frameNumber % MAX_FRAMES_IN_FLIGHT);
-	return m_frames[frameIndex]->waitForFinish(timeoutNs);
+	// The target went away with its viewport. releaseViewport() drains every frame it owned before
+	// letting it go, so all of its work has retired.
+	const auto entry = m_targets.find(point.viewport);
+	if (entry == m_targets.end()) {
+		return true;
+	}
+
+	const auto& frame = entry->second->frames[point.slot];
+
+	// The frame has been closed out (checked above) but this slot's fence is not the one guarding
+	// it. Three ways to get here, all of them meaning the work has retired:
+	//  - the slot was recycled by a later frame, which waitForFrameSlot() only allows once this
+	//    fence has been waited on;
+	//  - the frame never went through a submit at all, which is the off-screen path -- and
+	//    gr_end_offscreen_frame()'s precondition is that its GPU work had already completed;
+	//  - the swap chain was rebuilt, which waits for every frame before replacing them.
+	// Waiting on the fence now would be waiting for whatever holds the slot today, not for this.
+	if (!frame || frame->getSubmittedFrameNumber() != point.frameNumber) {
+		return true;
+	}
+
+	return frame->waitForFinish(timeoutNs);
 }
 
 VkCommandBuffer VulkanRenderer::getVkCurrentCommandBuffer() const
@@ -847,9 +904,16 @@ VkCommandBuffer VulkanRenderer::getVkCurrentCommandBuffer() const
 
 void VulkanRenderer::shutdown()
 {
-	// Wait for all frames to complete to ensure no drawing is in progress when we destroy the device
-	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		m_frames[i]->waitForFinish();
+	// Wait for all frames to complete to ensure no drawing is in progress when we destroy the
+	// device. Every target has its own sync objects, and a target that has not been presented to
+	// for a while can still have work in flight, so all of them have to be drained -- not just the
+	// one that happens to be current.
+	for (auto& entry : m_targets) {
+		for (auto& frame : entry.second->frames) {
+			if (frame) {
+				frame->waitForFinish();
+			}
+		}
 	}
 	// For good measure, also wait until the device is idle
 	m_device->waitIdle();
@@ -925,20 +989,14 @@ void VulkanRenderer::shutdown()
 		m_bufferManager.reset();
 	}
 
-	// Destroy depth resources before memory manager
-	destroyDepthResources();
-
-	// Destroy composition resources before memory manager
-	m_compositionImageViews.clear();
-	m_compositionImages.clear();
-	if (m_memoryManager) {
-		for (auto& alloc : m_compositionAllocations) {
-			if (alloc.isValid()) {
-				m_memoryManager->freeAllocation(alloc);
-			}
-		}
+	// Depth and composition images are backed by the memory manager, so every target has to give
+	// them up before it shuts down. The rest of a target (swap chain, views, framebuffers) is
+	// vk::Unique* and goes when m_targets does.
+	for (auto& entry : m_targets) {
+		releaseTargetMemory(*entry.second);
+		destroyTargetSwapChain(*entry.second);
+		entry.second->surface.reset();
 	}
-	m_compositionAllocations.clear();
 
 	// Deletion queue must be flushed before memory manager shutdown
 	if (m_deletionQueue) {

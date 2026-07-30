@@ -3,6 +3,8 @@
 #include "Editor.h"
 #include "EditorViewport.h"
 
+#include <cmath>
+
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
 #include <globalincs/systemvars.h>
@@ -1002,10 +1004,17 @@ void FredRenderer::render_frame(int cur_object_index,
 	qreal scale)
 {
 
-	// Make sure our OpenGL context is used for rendering
+	// Make sure our render target is the one being drawn into
 	gr_use_viewport(_targetView);
-	uint32_t width = _targetView->getSize().first * scale;
-	uint32_t height = _targetView->getSize().second * scale;
+
+	// Round rather than truncate: getSize() is in logical pixels, and Qt rounds when it sizes the
+	// native surface from them. Truncating lands a pixel short of the real surface on fractional
+	// display scaling, which leaves gr_screen (and so the viewport gr_setup_viewport derives from
+	// it) disagreeing with the size the renderer is actually presenting at.
+	const auto logicalSize = _targetView->getSize();
+	const auto width = static_cast<uint32_t>(std::lround(logicalSize.first * scale));
+	const auto height = static_cast<uint32_t>(std::lround(logicalSize.second * scale));
+
 	// Resize the rendering window in case the previous size was different
 	gr_screen_resize(width, height);
 

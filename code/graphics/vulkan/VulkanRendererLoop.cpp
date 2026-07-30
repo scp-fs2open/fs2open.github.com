@@ -48,13 +48,67 @@ void VulkanRenderer::beginTrackedRenderPass(const PassBeginDesc& desc)
 	}
 }
 
+void VulkanRenderer::waitForFrameSlot(uint32_t slot)
+{
+	// Every target has its own sync objects, but the command pool and the descriptor manager's
+	// pools are shared and keyed on this slot alone. So recycling the slot is only safe once the
+	// work *every* target put in it has completed -- waiting on the target that happens to be
+	// current is not enough. Getting this wrong let a viewport switch reset a descriptor pool and
+	// free command buffers that the other target's still-pending submit was using
+	// (VUID-vkResetDescriptorPool-descriptorPool-00313,
+	// VUID-vkFreeCommandBuffers-pCommandBuffers-00047), which wedged the queue.
+	for (auto& entry : m_targets) {
+		auto& frame = entry.second->frames[slot];
+		if (!frame) {
+			continue;
+		}
+
+		SCP_string what;
+		sprintf(what, "frame slot %u of the %s target (slot wait)", slot,
+			entry.second.get() == m_mainTarget ? "main" : "secondary");
+		waitOrReport(*frame, what.c_str());
+	}
+}
+
+void VulkanRenderer::waitOrReport(VulkanRenderFrame& frame, const char* what)
+{
+	constexpr uint64_t PROBE_NS = 200000000ULL;    // 0.2s -- far longer than any real frame
+	constexpr uint64_t GIVE_UP_NS = 2000000000ULL; // 2s more before calling it wedged
+
+	if (frame.waitForFinish(PROBE_NS)) {
+		return;
+	}
+
+	mprintf(("Vulkan: still waiting on %s after 0.2s; the queue looks wedged.\n", what));
+
+	if (!frame.waitForFinish(GIVE_UP_NS)) {
+		Error(LOCATION, "Vulkan: %s never completed. This is a renderer synchronisation bug, not bad data.",
+			what);
+	}
+}
+
 void VulkanRenderer::acquireNextSwapChainImage()
 {
-	m_frames[m_currentFrame]->waitForFinish();
+	waitForFrameSlot(m_currentFrame);
 
 	// Acquire an image, recreating the swap chain as often as needed (bounded).
 	// The frame must never proceed without an acquired image: its image-available
 	// semaphore would never be signaled and the submit would deadlock/corrupt.
+	// A viewport switch retains this target's acquired image rather than abandoning it, since only a
+	// present hands one back. Reuse it instead of acquiring a second one.
+	if (m_current->hasRetainedAcquire && !m_current->needsRecreation) {
+		m_current->currentAcquire = m_current->retainedAcquire;
+		m_current->currentImage = m_current->retainedImage;
+		m_current->hasRetainedAcquire = false;
+
+		if (m_current->imageRenderFrame[m_current->currentImage]) {
+			waitOrReport(*m_current->imageRenderFrame[m_current->currentImage],
+				"the frame still rendering into a retained image");
+		}
+		m_current->imageRenderFrame[m_current->currentImage] = m_current->frames[m_currentFrame].get();
+		return;
+	}
+
 	constexpr int MAX_ACQUIRE_ATTEMPTS = 5;
 	uint32_t imageIndex = 0;
 	SwapChainStatus status = SwapChainStatus::eOutOfDate;
@@ -62,18 +116,30 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	for (int attempt = 0; attempt < MAX_ACQUIRE_ATTEMPTS; ++attempt) {
 		// Recreate if flagged (from a previous frame, a failed acquire below, or
 		// a suboptimal present). Waits out a minimized window (0x0 extent).
-		if (m_swapChainNeedsRecreation) {
-			while (!recreateSwapChain()) {
+		if (m_current->needsRecreation) {
+			while (!recreateSwapChain(*m_current)) {
 				os_sleep(100);
 				SDL_PumpEvents();
 			}
 		}
 
-		status = m_frames[m_currentFrame]->acquireSwapchainImage(imageIndex);
+		// Take the next acquire semaphore round-robin, making sure whatever last presented with it
+		// has finished before it is signalled again.
+		auto& acquire = m_current->acquireSemaphores[m_current->nextAcquire];
+		if (acquire.consumer != nullptr) {
+			waitOrReport(*acquire.consumer, "the frame that last presented with this acquire semaphore");
+			acquire.consumer = nullptr;
+		}
+		m_current->currentAcquire = m_current->nextAcquire;
+		m_current->nextAcquire = (m_current->nextAcquire + 1) %
+		                         static_cast<uint32_t>(m_current->acquireSemaphores.size());
+
+		status = m_current->frames[m_currentFrame]->acquireSwapchainImage(imageIndex,
+			acquire.semaphore.get());
 		if (status != SwapChainStatus::eOutOfDate) {
 			break;
 		}
-		m_swapChainNeedsRecreation = true;
+		m_current->needsRecreation = true;
 	}
 
 	if (status == SwapChainStatus::eOutOfDate) {
@@ -82,17 +148,18 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	}
 
 	if (status == SwapChainStatus::eSuboptimal) {
-		m_swapChainNeedsRecreation = true;
+		m_current->needsRecreation = true;
 	}
 
-	m_currentSwapChainImage = imageIndex;
+	m_current->currentImage = imageIndex;
 
 	// Ensure that this image is no longer in use
-	if (m_swapChainImageRenderImage[m_currentSwapChainImage]) {
-		m_swapChainImageRenderImage[m_currentSwapChainImage]->waitForFinish();
+	if (m_current->imageRenderFrame[m_current->currentImage]) {
+		waitOrReport(*m_current->imageRenderFrame[m_current->currentImage],
+			"the frame still rendering into the newly acquired image");
 	}
 	// Reserve the image as in use
-	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
+	m_current->imageRenderFrame[m_current->currentImage] = m_current->frames[m_currentFrame].get();
 }
 void VulkanRenderer::setupFrame()
 {
@@ -100,10 +167,6 @@ void VulkanRenderer::setupFrame()
 		Warning(LOCATION, "VulkanRenderer::setupFrame called while frame already in progress!");
 		return;
 	}
-
-	// Free completed texture upload command buffers
-	Assertion(m_textureManager, "Vulkan TextureManager not initialized in setupFrame!");
-	m_textureManager->frameStart();
 
 	// Allocate command buffer for this frame
 	vk::CommandBufferAllocateInfo cmdBufferAlloc;
@@ -151,12 +214,182 @@ void VulkanRenderer::setupFrame()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->extent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
 	m_frameInProgress = true;
+}
+
+void VulkanRenderer::discardFrame()
+{
+	if (!m_frameInProgress) {
+		return;
+	}
+
+	// Whatever pass is open (composition, or a post-processing/shadow pass if this is ever called
+	// from somewhere less tidy) has to be closed before the command buffer can be ended.
+	if (m_stateTracker->getCurrentRenderPass()) {
+		m_currentCommandBuffer.endRenderPass();
+		m_stateTracker->setRenderPass(vk::RenderPass());
+	}
+
+	m_currentCommandBuffer.end();
+	m_device->freeCommandBuffers(m_graphicsCommandPool.get(), m_currentCommandBuffers);
+
+	m_currentCommandBuffer = nullptr;
+	m_currentCommandBuffers.clear();
+	m_frameInProgress = false;
+
+	// This frame never submitted, so it does not own the image any more.
+	if (m_current->currentImage < m_current->imageRenderFrame.size()) {
+		m_current->imageRenderFrame[m_current->currentImage] = nullptr;
+	}
+
+	// Keep the acquire rather than dropping it. vkAcquireNextImageKHR hands out an image that only
+	// vkQueuePresentKHR gives back, so abandoning one here would leak an image on this target every
+	// time a viewport switch passed through -- and with a handful of images per swap chain, that
+	// wedges the next acquire within a few frames. The semaphore it signalled is owned by the
+	// target, so it survives the frame slot moving on.
+	m_current->hasRetainedAcquire = true;
+	m_current->retainedAcquire = m_current->currentAcquire;
+	m_current->retainedImage = m_current->currentImage;
+}
+
+bool VulkanRenderer::useViewport(os::Viewport* viewport)
+{
+	if (viewport == nullptr) {
+		return false;
+	}
+
+	if (m_current != nullptr && m_current->viewport == viewport) {
+		return true;
+	}
+
+	// Resolve the target -- building it on first use -- before disturbing anything. Creating one
+	// touches only its own resources, so a failure here leaves the renderer exactly as it was: the
+	// frame in progress is still the outgoing target's, and the caller keeps drawing where it was.
+	auto entry = m_targets.find(viewport);
+	if (entry == m_targets.end()) {
+		auto created = std::make_unique<VulkanPresentTarget>();
+		created->viewport = viewport;
+
+		if (!createTargetResources(*created)) {
+			mprintf(("Vulkan: could not present to this viewport; staying on the previous one.\n"));
+			releaseTargetMemory(*created);
+			return false;
+		}
+
+		entry = m_targets.emplace(viewport, std::move(created)).first;
+	}
+
+	// A frame is always open here: gr_flip() ends with gr_setup_frame(), so the outgoing target has
+	// both an open command buffer and an already-acquired image. Neither survives the switch.
+	const bool restartFrame = m_frameInProgress;
+	discardFrame();
+
+	m_current = entry->second.get();
+
+	if (restartFrame) {
+		acquireNextSwapChainImage();
+		setupFrame();
+	}
+
+	return true;
+}
+
+void VulkanRenderer::releaseViewport(os::Viewport* viewport)
+{
+	auto entry = m_targets.find(viewport);
+	if (entry == m_targets.end()) {
+		return;
+	}
+
+	if (entry->second.get() == m_mainTarget) {
+		// The main target lives as long as the renderer does; letting it go here would leave
+		// nothing to fall back to.
+		return;
+	}
+
+	// Anything still reading this target's images has to be done before they are destroyed. The
+	// frames are per-target, so this waits only on that target's work -- but the surface is about to
+	// go with the window, so be blunt about it and drain the device too.
+	for (auto& frame : entry->second->frames) {
+		if (frame) {
+			frame->waitForFinish();
+		}
+	}
+	m_device->waitIdle();
+
+	if (m_current == entry->second.get()) {
+		// Whatever was set up against this target cannot be presented now.
+		discardFrame();
+		m_current = m_mainTarget;
+		acquireNextSwapChainImage();
+		setupFrame();
+	}
+
+	// Order matters and is not left to member destruction: the swap chain has to go before the
+	// surface, and the surface goes as soon as the handle releases it back to the window system.
+	releaseTargetMemory(*entry->second);
+	destroyTargetSwapChain(*entry->second);
+	entry->second->surface.reset();
+
+	m_targets.erase(entry);
+}
+
+bool VulkanRenderer::syncToSurfaceExtent()
+{
+	if (!m_current->surface || !m_current->swapChain) {
+		return false;
+	}
+
+	const auto capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_current->surface.get());
+
+	// 0xFFFFFFFF means "the surface takes its size from the swap chain", so there is nothing to
+	// follow. A 0x0 extent is a minimized window; leave the swap chain alone and let the regular
+	// acquire path wait it out rather than recreating into an unusable size here.
+	if (capabilities.currentExtent.width == UINT32_MAX ||
+		capabilities.currentExtent.width == 0 || capabilities.currentExtent.height == 0) {
+		return false;
+	}
+
+	if (capabilities.currentExtent == m_current->extent) {
+		return false;
+	}
+
+	// Rebuilding means discarding the frame in progress, which is only free while nothing has been
+	// drawn into it -- the top of a frame, where every gr_screen_resize() caller sits today.
+	//
+	// This catches only the narrowest case of getting that wrong: a resize from inside an open
+	// scene-texture scope, which would throw away a composed scene. It is deliberately not the
+	// equivalent of OpenGL's Scene_framebuffer_in_frame check, which is broader --
+	// beginSceneRendering() never runs at all when post-processing is off, and off is qtFRED's
+	// default, so this is false for the whole frame in the common case. Widening it would mean
+	// tracking "has anything been recorded into this command buffer", which nothing needs yet.
+	if (m_sceneRendering) {
+		Assertion(false, "Tried to resize the Vulkan swap chain to %ux%u while a scene was being "
+			"rendered into it! The resize has been deferred to the next frame.",
+			capabilities.currentExtent.width, capabilities.currentExtent.height);
+		return false;
+	}
+
+	nprintf(("vulkan", "Vulkan: window is %ux%u but the swap chain is %ux%u, rebuilding\n",
+		capabilities.currentExtent.width, capabilities.currentExtent.height,
+		m_current->extent.width, m_current->extent.height));
+
+	const bool restartFrame = m_frameInProgress;
+	discardFrame();
+
+	m_current->needsRecreation = true;
+	acquireNextSwapChainImage();
+
+	if (restartFrame) {
+		setupFrame();
+	}
+
+	return true;
 }
 
 void VulkanRenderer::flip()
@@ -186,9 +419,9 @@ void VulkanRenderer::flip()
 	// unreliable (tearing/garbage in the composition image once the encode pass
 	// samples it). RE-TEST on macOS hardware; if MoltenVK now honors the subpass
 	// dependency, this explicit barrier can be removed.
-	if (m_currentSwapChainImage < m_compositionImages.size()) {
+	if (m_current->currentImage < m_current->compositionImages.size()) {
 		ImageBarrier2 compositionBarrier;
-		compositionBarrier.image = m_compositionImages[m_currentSwapChainImage].get();
+		compositionBarrier.image = m_current->compositionImages[m_current->currentImage].get();
 		compositionBarrier.levelCount = 1;
 		compositionBarrier.layerCount = 1;
 		compositionBarrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -210,15 +443,21 @@ void VulkanRenderer::flip()
 
 	// Set up cleanup callback for command buffers
 	auto buffersToFree = m_currentCommandBuffers;
-	m_frames[m_currentFrame]->onFrameFinished([this, buffersToFree]() mutable {
+	m_current->frames[m_currentFrame]->onFrameFinished([this, buffersToFree]() mutable {
 		m_device->freeCommandBuffers(m_graphicsCommandPool.get(), buffersToFree);
 	});
 
 	// Submit and present
-	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers);
+	auto& acquire = m_current->acquireSemaphores[m_current->currentAcquire];
+	acquire.consumer = m_current->frames[m_currentFrame].get();
+	auto presentStatus = m_current->frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers,
+		acquire.semaphore.get(),
+		m_current->renderFinishedSemaphores[m_current->currentImage].get(),
+		m_current->currentImage,
+		m_frameNumber);
 
 	if (presentStatus == SwapChainStatus::eSuboptimal || presentStatus == SwapChainStatus::eOutOfDate) {
-		m_swapChainNeedsRecreation = true;
+		m_current->needsRecreation = true;
 	}
 
 	// Notify query manager that this frame's command buffer was submitted
@@ -227,7 +466,7 @@ void VulkanRenderer::flip()
 	}
 
 	// Track which swap chain image was just presented so saveScreen() can read it
-	m_previousSwapChainImage = m_currentSwapChainImage;
+	m_current->previousImage = m_current->currentImage;
 
 	// Clear current command buffer reference
 	m_currentCommandBuffer = nullptr;
@@ -250,6 +489,18 @@ void VulkanRenderer::flip()
 	// acquireNextSwapChainImage, so we know the previous frame's commands
 	// (including async upload CBs) have completed before destroying resources.
 	m_deletionQueue->processDestructions();
+
+	// Retire finished texture upload command buffers. This belongs here rather than in
+	// setupFrame(): the texture manager frees them on a countdown of FRAMES_TO_WAIT calls, which
+	// only means "the GPU has moved on" if each call corresponds to a frame that actually
+	// completed. setupFrame() stopped being that the moment viewports could be switched --
+	// useViewport() sets a frame up on the incoming target without ever flipping it, so with
+	// qtFRED's briefing map running there are about three setupFrame() calls per completed frame.
+	// The countdown then ran out while uploads were still executing and freed command buffers in
+	// the pending state (VUID-vkFreeCommandBuffers-pCommandBuffers-00047). Ticking it here, next
+	// to the deletion queue and after the fence wait above, ties it back to real frame completion.
+	Assertion(m_textureManager, "Vulkan TextureManager not initialized in flip!");
+	m_textureManager->frameStart();
 }
 
 void VulkanRenderer::beginSceneRendering()
@@ -344,8 +595,8 @@ void VulkanRenderer::endSceneRendering()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->extent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -355,9 +606,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_swapChainExtent.height),
-		static_cast<float>(m_swapChainExtent.width),
-		-static_cast<float>(m_swapChainExtent.height));
+		static_cast<float>(m_current->extent.height),
+		static_cast<float>(m_current->extent.width),
+		-static_cast<float>(m_current->extent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -538,8 +789,8 @@ void VulkanRenderer::resumeSwapChainPass()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->extent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 }
