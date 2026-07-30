@@ -1168,6 +1168,7 @@ add_file_folder("OsApi"
 	osapi/osregistry.cpp
 	osapi/outwnd.h
 	osapi/outwnd.cpp
+	osapi/vulkan_surface.h
 )
 
 # Parse files

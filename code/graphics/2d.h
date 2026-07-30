@@ -817,6 +817,14 @@ typedef struct screen {
 	// dumps the current screen to a html blob string
 	std::function<SCP_string()> gf_blob_screen;
 
+	// reads the currently bound render target back into a caller-provided RGBA8 buffer.
+	// Optional: backends that can't read a render target back leave this unset.
+	std::function<bool(ubyte* out_rgba, int width, int height)> gf_read_render_target;
+
+	// recycles per-frame backend state after an off-screen render that never reaches gr_flip().
+	// Optional: backends that keep no per-frame pools leave this unset.
+	std::function<void()> gf_end_offscreen_frame;
+
 	// transforms and dumps the current environment map to a file
 	std::function<void(const char* filename)> gf_dump_envmap;
 
@@ -917,11 +925,15 @@ typedef struct screen {
 	std::function<void()> gf_scene_texture_end;
 	std::function<void()> gf_copy_effect_texture;
 
-	// Grow the offscreen render targets that back the scene/post-processing pipeline to cover the
-	// current gr_screen, if they don't already. Called from gr_screen_resize(). Optional: the
-	// Vulkan backend leaves this unset because VulkanRenderer::recreateSwapChain() already owns
-	// resizing its extent-sized targets.
-	std::function<void()> gf_resize_render_targets;
+	// The viewport is now gr_screen.max_w x max_h; bring whatever the backend sized to the old one
+	// into line. Called from gr_screen_resize(); see the precondition documented there, which is
+	// stricter than it looks -- what a backend does here can include throwing away the frame in
+	// progress. Optional: a backend with nothing sized to the viewport leaves it unset.
+	//
+	// OpenGL grows the scene/post-processing render targets. Vulkan rebuilds the swap chain and
+	// everything sized to it, and restarts the frame; that is the only point at which it can notice
+	// the window and the swap chain have diverged (see VulkanRenderer::syncToSurfaceExtent()).
+	std::function<void()> gf_viewport_size_changed;
 
 	std::function<void(int zbias)> gf_zbias;
 
@@ -1042,6 +1054,12 @@ typedef struct screen {
 	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
 	std::function<void(os::Viewport* view)> gf_use_viewport;
 
+	//! Optional. Backends that keep per-viewport GPU resources (Vulkan holds a surface, swap chain
+	//! and everything sized to it) get told here that a viewport is about to be destroyed, while
+	//! the device and the viewport's window are both still alive. Left unset by backends with
+	//! nothing to release.
+	std::function<void(os::Viewport* view)> gf_release_viewport;
+
 	std::function<void(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)>
 		gf_bind_uniform_buffer;
 
@@ -1124,6 +1142,16 @@ extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
+/**
+ * @brief Tell the engine the viewport is now @p width x @p height.
+ *
+ * @warning Call this between frames, never once drawing has started. It runs
+ * gf_viewport_size_changed, and what a backend does there is not limited to reallocating: the
+ * Vulkan backend discards the frame in progress and restarts it at the new size, so anything
+ * already recorded into it is lost. OpenGL asserts rather than tear down a framebuffer it is
+ * rendering into. Both are fine at the top of a frame, which is where every caller sits today --
+ * an SDL resize event, or qtFRED's per-frame viewport sync.
+ */
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
@@ -1239,6 +1267,36 @@ gr_debug_stats gr_get_debug_stats();
  * of backend or build configuration; groups a backend/build doesn't support stay invalid/zero.
  */
 gr_memory_stats gr_get_memory_stats();
+
+/**
+ * @brief Read the currently bound render target back into @p out_rgba.
+ *
+ * For callers that composed into a render target (bm_set_render_target()) and want the pixels
+ * rather than a file or a data URL -- qtFRED's briefing map. gr_blob_screen() reads the same source
+ * but PNG-encodes and base64-wraps it, which is pure overhead when the destination is a bitmap
+ * again.
+ *
+ * @param out_rgba Receives @p width * @p height * 4 bytes, RGBA order, rows top-down. Must be at
+ *                 least that large.
+ * @param width    Expected width of the bound target, in pixels
+ * @param height   Expected height of the bound target, in pixels
+ * @return false if no target is bound, if it isn't the size the caller expected, or if the backend
+ *         can't read one back at all. @p out_rgba is untouched in that case.
+ */
+bool gr_read_render_target(ubyte* out_rgba, int width, int height);
+
+/**
+ * @brief End a frame's worth of rendering that never reaches gr_flip().
+ *
+ * For off-screen renderers that compose into a render target and read the result back rather than
+ * presenting -- qtFRED's briefing map. gr_flip() is what retires the engine's per-frame uniform
+ * segments and what makes the backend recycle its per-frame pools; a renderer that never calls it
+ * accumulates both for as long as it runs.
+ *
+ * Only call this once the frame's GPU work has actually completed -- after a readback that
+ * host-waits, which is the case for gr_blob_screen() on a bound render target.
+ */
+void gr_end_offscreen_frame();
 
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
@@ -1548,6 +1606,12 @@ inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProper
 inline void gr_use_viewport(os::Viewport* view)
 {
 	gr_screen.gf_use_viewport(view);
+}
+inline void gr_release_viewport(os::Viewport* view)
+{
+	if (gr_screen.gf_release_viewport) {
+		gr_screen.gf_release_viewport(view);
+	}
 }
 inline void gr_set_viewport(int x, int y, int width, int height)
 {
