@@ -371,6 +371,7 @@ bool lens_flare_sun_starburst_drawn(int sun_n);
 enum class flare_source_kind {
 	sun,
 	thruster,
+	beam,
 };
 
 // One light source's worth of flare quads. Every source shares the mounted lens
@@ -380,8 +381,8 @@ enum class flare_source_kind {
 // The trailing fields are diagnostics for the lab; the renderer ignores them.
 struct lens_flare_draw {
 	flare_source_kind kind = flare_source_kind::sun;
-	// Which sun (a stars.tbl instance index) or which ship (an objnum) this draw
-	// images.
+	// Which sun (a stars.tbl instance index), which ship (an objnum, for a
+	// thruster) or which beam (an objnum, for a beam) this draw images.
 	int source_index = -1;
 	int instances = 0; // quads to draw (ghosts + optional starburst)
 	// Uniform block for this draw, owned by lens_flare.cpp; valid until the
@@ -390,7 +391,7 @@ struct lens_flare_draw {
 
 	// The 0..1 fade already folded into this draw's tint that isn't the source's
 	// own tabled brightness: for a sun, smoothed occlusion times the off-axis
-	// fade; for a thruster, the throttle.
+	// fade; for a thruster, the throttle; for a beam, its warmup/warmdown ramp.
 	float visibility = 0.0f;
 	float off_axis_deg = 0.0f; // paraxial field angle of the source
 	float output_scale = 1.0f; // SDR/HDR consistency multiplier applied this frame

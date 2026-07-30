@@ -467,6 +467,7 @@ add_file_folder("Graphics"
 	graphics/lens_flare.cpp
 	graphics/lens_flare.h
 	graphics/lens_flare_aperture.cpp
+	graphics/lens_flare_beams.cpp
 	graphics/lens_flare_internal.h
 	graphics/lens_flare_optics.cpp
 	graphics/lens_flare_table.cpp

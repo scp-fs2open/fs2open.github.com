@@ -2,7 +2,7 @@
 
 #include "graphics/lens_flare.h"
 
-// Private interface between the four lens-flare translation units. Nothing here
+// Private interface between the six lens-flare translation units. Nothing here
 // is part of the module's API -- see graphics/lens_flare.h for that.
 //
 //   lens_flare.cpp            module state, the camera lens, texture cache, and
@@ -12,8 +12,9 @@
 //   lens_flare_aperture.cpp   image synthesis: the iris mask and the starburst
 //                             that is its Fraunhofer transform
 //   lens_flare_table.cpp      lens_flares.tbl / *-lens.tbm parsing
-//   lens_flare_thrusters.cpp  finding and ranking the engine clusters that are
-//                             bright enough to flare
+//   lens_flare_thrusters.cpp  finding and ranking the nozzles bright enough to
+//                             flare
+//   lens_flare_beams.cpp      the same for firing beam weapons
 //
 // The optics and image-synthesis halves touch no engine state at all; they are
 // pure functions of a lens_system / lens_aperture.
@@ -24,8 +25,8 @@ namespace graphics {
 
 // One light the camera images this frame, already reduced to a world position, a
 // colour and a brightness. The frame build in lens_flare.cpp projects and packs
-// these without caring where they came from, which is what lets a sun and a
-// capital ship's engine block share every step below the gather.
+// these without caring where they came from, which is what lets a sun, an engine
+// nozzle and a firing beam share every step below the gather.
 struct flare_source {
 	// World position -- or, when at_infinity, a direction from the eye. Suns are
 	// at infinity and engines are not, and it changes which g3 projection applies,
@@ -37,8 +38,9 @@ struct flare_source {
 	float intensity = 0.0f;               // multiplies the colour; every fade is already folded in
 
 	// Whether this source draws the lens's ghost train as well as its starburst.
-	// Decided by the gather -- suns always do, thrusters follow the lab's
-	// lens_flare_tuning::thruster_ghosts -- so the packing below stays a plain
+	// Decided by the gather -- suns and beams always do, thrusters follow the
+	// lab's lens_flare_tuning::thruster_ghosts, since there are dozens of them
+	// and a ghost train each is noise -- so the packing below stays a plain
 	// function of the lens, the geometry and this flag.
 	bool draw_ghosts = true;
 
@@ -47,7 +49,7 @@ struct flare_source {
 	// separately only so the lab can show it.
 	float visibility = 0.0f;
 	flare_source_kind kind = flare_source_kind::sun;
-	int index = -1; // sun index, or objnum for a thruster source
+	int index = -1; // sun index, or objnum for a thruster or beam source
 };
 
 // Append the nozzles bright enough to be worth a flare, brightest first and at
@@ -71,10 +73,40 @@ void lens_flare_gather_thruster_sources(SCP_vector<flare_source>& out, int budge
 bool lens_flare_nozzle_apparent(const glow_point& gpt, const matrix& orient, const vec3d& pos, const vec3d& eye,
 	vec3d* world_pnt, float* apparent);
 
+// Append the muzzles of every firing beam, brightest first and at most `budget`
+// of them. Their brightness follows the beam's own muzzle light, so a beam ramps
+// its flare up over its warmup and back down over its warmdown exactly as it
+// ramps that light.
+void lens_flare_gather_beam_sources(SCP_vector<flare_source>& out, int budget);
+
 // Fraunhofer C / d / F lines (red / green / blue), in micrometers. The three
 // wavelengths everything chromatic in the flare is evaluated at: dispersion and
 // coating reflectance in the optics, diffraction scaling in the starburst.
 constexpr float Wavelengths_um[3] = {0.65627f, 0.58756f, 0.48613f};
+
+// Every finite source -- an engine nozzle, a beam muzzle -- is calibrated
+// against one reference: a disc of radius r seen from thirty-two of its own
+// radii away. Keeping it here rather than per source kind is what makes an
+// intensity of 1.0 mean the same brightness whatever it was stated on, and means
+// re-tuning the calibration moves one constant.
+constexpr float Reference_radius = 1.0f;
+constexpr float Reference_distance = 32.0f;
+constexpr float Reference_apparent = PI * Reference_radius * Reference_radius /
+									 (Reference_distance * Reference_distance);
+
+// Ceiling on how far past that reference a source may be driven. Flying down a
+// destroyer's exhaust, or standing next to a firing beam, would otherwise put an
+// unbounded number into the tint and white out the frame; a flare that has
+// already saturated cannot usefully get brighter anyway.
+constexpr float Max_apparent_ratio = 3.0f;
+
+// The solid angle a finite source subtends (pi*r^2 over the square of its
+// distance), as the multiple of the reference above that an intensity of 1.0 is
+// stated against.
+inline float lens_flare_apparent_ratio(float solid_angle)
+{
+	return MIN(solid_angle / Reference_apparent, Max_apparent_ratio);
+}
 
 // Render the iris mask of an aperture and the starburst that follows from it,
 // filling both halves of `out`. This is the expensive one: a 512^2 mask plus a

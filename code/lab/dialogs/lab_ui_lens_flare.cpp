@@ -6,6 +6,7 @@
 #include "object/object.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
+#include "weapon/beam.h"
 
 using namespace ImGui;
 
@@ -19,6 +20,24 @@ const char* flare_source_ship_name(int objnum)
 		return "<gone>";
 	}
 	return Ships[Objects[objnum].instance].ship_name;
+}
+
+// A beam draw names the beam object itself, which isn't a ship -- what the
+// panel actually wants to show is who is firing it.
+const char* flare_source_beam_shooter_name(int beam_objnum)
+{
+	if (beam_objnum < 0 || beam_objnum >= MAX_OBJECTS || Objects[beam_objnum].type != OBJ_BEAM) {
+		return "<gone>";
+	}
+	const int bm_idx = Objects[beam_objnum].instance;
+	if (bm_idx < 0 || bm_idx >= MAX_BEAMS) {
+		return "<gone>";
+	}
+	const beam& bm = Beams[bm_idx];
+	if (bm.objp == nullptr || bm.objp->type != OBJ_SHIP) {
+		return "<gone>";
+	}
+	return Ships[bm.objp->instance].ship_name;
 }
 
 } // namespace
@@ -176,10 +195,10 @@ void LabUi::build_lens_flare_options()
 	build_lens_flare_pass_report();
 }
 
-// What the last pass drew. Suns are listed one by one -- there are never many and
-// each is worth naming -- while nozzles are summarised, because at full budget
-// there are dozens of them and a line each would bury everything else in this
-// window.
+// What the last pass drew. Suns and beams are listed one by one -- neither is
+// ever more than a handful -- while nozzles are summarised, because at full
+// budget there are dozens of them and a line each would bury everything else
+// in this window.
 void LabUi::build_lens_flare_pass_report()
 {
 	const auto& draws = graphics::lens_flare_get_frame_draws();
@@ -198,6 +217,16 @@ void LabUi::build_lens_flare_pass_report()
 		if (draw.kind == graphics::flare_source_kind::sun) {
 			Text("  Sun (%s): %d instances, visibility %.2f, %.1f deg off-axis, output scale %.3f",
 				stars_get_sun_name(draw.source_index),
+				draw.instances,
+				draw.visibility,
+				draw.off_axis_deg,
+				draw.output_scale);
+			continue;
+		}
+
+		if (draw.kind == graphics::flare_source_kind::beam) {
+			Text("  Beam (%s): %d instances, visibility %.2f, %.1f deg off-axis, output scale %.3f",
+				flare_source_beam_shooter_name(draw.source_index),
 				draw.instances,
 				draw.visibility,
 				draw.off_axis_deg,
