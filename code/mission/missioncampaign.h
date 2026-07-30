@@ -175,7 +175,7 @@ void player_loadout_init();
 void mission_campaign_init( void );
 
 // load up and initialize a new campaign
-int mission_campaign_load(const char* filename, const char* full_path = nullptr, player* pl = nullptr, int load_savefile = 1);
+int mission_campaign_load(const char* filename, const char* full_path = nullptr, player* pl = nullptr, bool load_savefile = true, bool reset_accumulated_stats = true);
 
 bool campaign_is_ignored(const char *filename);
 

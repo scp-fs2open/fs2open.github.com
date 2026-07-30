@@ -1575,10 +1575,22 @@ void campaign_room_scroll_info_down()
 
 void campaign_reset(const SCP_string& campaign_file)
 {
-	// note: we do not toss all-time stats from player's performance in campaign up till now
-	mission_campaign_savefile_delete(campaign_file.c_str());
+	Assert(Player != nullptr);
 
-	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, 1);
+	// if the caller is resetting a campaign other than the active one (only reachable via the Lua resetCampaign API),
+	// we can't go through mission_campaign_load(): that would swap the global Campaign struct over to the target
+	// campaign and overwrite Player->stats with the wrong running totals.  Just delete the CSG; the next time the
+	// player activates this campaign, mission_campaign_load() will recreate a fresh one.
+	if (stricmp(campaign_file.c_str(), Campaign.filename) != 0) {
+		mission_campaign_savefile_delete(campaign_file.c_str());
+		return;
+	}
+
+	// note: just as in retail, we do not toss all-time stats from player's performance in campaign up till now;
+	// reset_accumulated_stats=false tells mission_campaign_load() (and through it, csg_reset_data())
+	// to leave Player->stats alone when it recreates the CSG, so accumulated score/rank/kills/medals carry over
+	mission_campaign_savefile_delete(campaign_file.c_str());
+	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, true, false);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
