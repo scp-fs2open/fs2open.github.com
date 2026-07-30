@@ -942,7 +942,7 @@ void FredView::syncViewOptions() {
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
 	connectActionToViewSetting(ui->actionRender_Full_Detail, &_viewport->view.FullDetail);
-	connectActionToViewSetting(ui->actionEnable_Post_Processing, &_viewport->view.EnablePostProcessing);
+	connectActionToViewSetting(ui->actionEnable_Post_Processing, &_viewport->view.Graphics.enablePostProcessing);
 
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);
 
