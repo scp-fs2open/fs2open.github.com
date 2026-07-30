@@ -161,32 +161,45 @@ struct film_gate {
 	float half_w = 0.0f, half_h = 0.0f; // mm
 };
 
-// Where a sun's image lands on the film.
-struct sun_image {
+// Where a light source's image lands on the film.
+struct film_image {
 	float dist_mm = 0.0f;               // distance from the sensor centre
 	float theta = 0.0f;                 // matching paraxial field angle
 	float axis_x = 1.0f, axis_y = 0.0f; // unit direction the flare is strung along
 };
 
-// Project a sun onto the film gate, the same way stars_draw_sun() projects its
-// sprite. False when the sun isn't imaged onto the sensor at all.
-bool project_sun(const vec3d& sun_pos, const film_gate& gate, float efl, sun_image* out)
+// Project a flare source onto the film gate, each kind the same way the thing it
+// stands for is drawn: a sun through the faraway path stars_draw_sun() uses for
+// its sprite, an engine as the ordinary finite point its glow is drawn at. False
+// when the source isn't imaged onto the sensor at all.
+//
+// The field angle below is derived from where the image lands, which treats the
+// source as collimated -- true for a sun, an approximation for an engine a few
+// hundred metres away. Getting it exactly right would mean re-tracing the ghost
+// matrices per source and per frame for an object whose flare is a few pixels
+// wide, so the ghosts of a near source are placed a little as if it were far.
+bool project_source(const flare_source& src, const film_gate& gate, float efl, film_image* out)
 {
-	vertex sun_vex;
-	memset(&sun_vex, 0, sizeof(vertex));
-	g3_rotate_faraway_vertex(&sun_vex, &sun_pos);
-	if (sun_vex.codes & CC_BEHIND) {
+	vertex vex;
+	memset(&vex, 0, sizeof(vertex));
+	if (src.at_infinity) {
+		g3_rotate_faraway_vertex(&vex, &src.pos);
+	} else {
+		g3_rotate_vertex(&vex, &src.pos);
+	}
+
+	if (vex.codes & CC_BEHIND) {
 		return false;
 	}
-	if (!(sun_vex.flags & PF_PROJECTED)) {
-		g3_project_vertex(&sun_vex);
+	if (!(vex.flags & PF_PROJECTED)) {
+		g3_project_vertex(&vex);
 	}
-	if (sun_vex.flags & PF_OVERFLOW) {
+	if (vex.flags & PF_OVERFLOW) {
 		return false;
 	}
 
-	float sx = sun_vex.screen.xyw.x / gate.clip_w * 2.0f - 1.0f;
-	float sy = 1.0f - sun_vex.screen.xyw.y / gate.clip_h * 2.0f;
+	float sx = vex.screen.xyw.x / gate.clip_w * 2.0f - 1.0f;
+	float sy = 1.0f - vex.screen.xyw.y / gate.clip_h * 2.0f;
 
 	float smx = sx * gate.half_w;
 	float smy = sy * gate.half_h;
@@ -249,6 +262,7 @@ void lens_flare_close()
 	Default_lens = -1;
 	Mission_lens = -1;
 	lens_flare_clear_lab_lens();
+	lens_flare_lab_thruster_flare().reset();
 	Frame_data.clear();
 	Frame_draws.clear();
 	Sun_starburst_drawn.clear();
@@ -397,6 +411,7 @@ void lens_flare_reset_for_level()
 	// this (see parse_mission_info), and the lab sets its override on demand
 	Mission_lens = Default_lens;
 	lens_flare_clear_lab_lens();
+	lens_flare_lab_thruster_flare().reset();
 	Logged_lens = -2;
 
 	// The next mission's suns are not this one's; drop the published frame so
@@ -540,11 +555,13 @@ void emit_streak(generic_data::lens_flare_instance_data& inst, const lens_system
 
 } // namespace
 
-// Pack one sun's quads into a uniform block and return how many instance slots
-// were written. Depends only on the lens and where the sun's image lands on the
-// sensor -- `sdist` is that image's distance from the sensor centre in mm,
-// `theta` its paraxial field angle.
-static int pack_sun_instances(const lens_system& lens, float theta, float sdist,
+// Pack one source's quads into a uniform block and return how many instance
+// slots were written. Depends only on the lens and where the source's image
+// lands on the sensor -- `sdist` is that image's distance from the sensor centre
+// in mm, `theta` its paraxial field angle -- so a sun and an engine that happen
+// to land in the same place get the same quads, which is what "one camera, one
+// lens" means.
+static int pack_source_instances(const lens_system& lens, float theta, float sdist, bool with_ghosts,
 	generic_data::lens_flare_data* out)
 {
 	// Each non-ghost artifact reserves its slot out of the budget up front, so the
@@ -561,11 +578,13 @@ static int pack_sun_instances(const lens_system& lens, float theta, float sdist,
 	const int ghost_budget = generic_data::MAX_LENS_FLARE_INSTANCES - reserved;
 
 	int count = 0;
-	for (const auto& ghost : lens.ghosts) {
-		if (count >= ghost_budget) {
-			break;
+	if (with_ghosts) {
+		for (const auto& ghost : lens.ghosts) {
+			if (count >= ghost_budget) {
+				break;
+			}
+			emit_ghost(out->instances[count++], lens, ghost, theta);
 		}
-		emit_ghost(out->instances[count++], lens, ghost, theta);
 	}
 	if (wants_starburst) {
 		emit_starburst(out->instances[count++], lens, sdist);
@@ -592,46 +611,13 @@ void lens_flare_clear_frame()
 	Sun_starburst_drawn.clear();
 }
 
-void lens_flare_frame_update()
+namespace {
+
+// Every sun the content asked to flare, with its occlusion and off-axis fades
+// already folded into the source's brightness.
+void gather_sun_sources(SCP_vector<flare_source>& out, float dt, bool snap)
 {
-	lens_flare_clear_frame();
-
-	// live aperture edits from the lab land here, throttled
-	flush_pending_aperture_edit();
-
-	const int lens_idx = lens_flare_active_lens();
-	if (lens_idx < 0 || !pass_globally_possible()) {
-		return;
-	}
-	const lens_system& lens = Lens_systems[lens_idx];
-
-	// Frame time for visibility smoothing (snap if we haven't run for a while)
-	float dt = 0.25f;
-	if (Sun_visibility_stamp.isValid()) {
-		dt = ui_timestamp_since(Sun_visibility_stamp) * 0.001f;
-	}
-	Sun_visibility_stamp = ui_timestamp();
-	bool snap = (dt > 1.0f) || (dt < 0.0f);
-
-	int num_suns = stars_get_num_suns();
-	// Sized up front so the pointers handed out below stay valid: the loop only
-	// writes into slots, it never grows this
-	if (static_cast<int>(Frame_data.size()) < num_suns) {
-		Frame_data.resize(num_suns);
-	}
-	Sun_starburst_drawn.resize(num_suns, false);
-
-	film_gate gate;
-	gate.clip_w = i2fl(gr_screen.clip_width);
-	gate.clip_h = i2fl(gr_screen.clip_height);
-	if (gate.clip_w <= 0.0f || gate.clip_h <= 0.0f) {
-		return;
-	}
-	gate.half_w = lens.sensor_width * 0.5f;
-	gate.half_h = gate.half_w * gate.clip_h / gate.clip_w;
-
-	// Also the camera's, not any sun's, so it is a frame constant too
-	const float out_scale = lens_flare_output_scale();
+	const int num_suns = stars_get_num_suns();
 
 	for (int sun_n = 0; sun_n < num_suns; sun_n++) {
 		const auto sun_light = stars_get_sun_rgbi(sun_n);
@@ -667,12 +653,93 @@ void lens_flare_frame_update()
 			continue;
 		}
 
-		sun_image image;
-		if (!project_sun(sun_pos, gate, lens.efl, &image)) {
+		flare_source src;
+		src.pos = sun_pos;
+		src.at_infinity = true;
+		src.color = sun_light->color;
+		src.intensity = sun_light->intensity * total_vis;
+		src.visibility = total_vis;
+		src.kind = flare_source_kind::sun;
+		src.index = sun_n;
+		out.push_back(src);
+	}
+}
+
+// How many nozzles the pass will image at most, brightest first. Every lit
+// nozzle is its own source (a capital ship's engines are too far apart to
+// average), so this is what stands between a fleet engagement and several
+// hundred draws: each source costs a multi-kilobyte uniform block and its own
+// instanced draw.
+//
+// It is generous rather than small because the thruster flares that motivate it
+// are the ones on a big ship, where a dozen nozzles are visible at once. What
+// makes that affordable is lens_flare_tuning::thruster_ghosts being off, which
+// leaves each of them a single starburst quad instead of a full ghost train.
+//
+// Must stay within what the Vulkan backend's per-frame UBO ring can hold across
+// however many times the scene is rendered in a frame -- see
+// LENS_FLARE_UBO_SLOTS in VulkanPostProcessingLensFlare.cpp.
+constexpr int MAX_THRUSTER_SOURCES = 32;
+
+} // namespace
+
+void lens_flare_frame_update()
+{
+	lens_flare_clear_frame();
+
+	// live aperture edits from the lab land here, throttled
+	flush_pending_aperture_edit();
+
+	const int lens_idx = lens_flare_active_lens();
+	if (lens_idx < 0 || !pass_globally_possible()) {
+		return;
+	}
+	const lens_system& lens = Lens_systems[lens_idx];
+
+	film_gate gate;
+	gate.clip_w = i2fl(gr_screen.clip_width);
+	gate.clip_h = i2fl(gr_screen.clip_height);
+	if (gate.clip_w <= 0.0f || gate.clip_h <= 0.0f) {
+		return;
+	}
+	gate.half_w = lens.sensor_width * 0.5f;
+	gate.half_h = gate.half_w * gate.clip_h / gate.clip_w;
+
+	// Frame time for visibility smoothing (snap if we haven't run for a while)
+	float dt = 0.25f;
+	if (Sun_visibility_stamp.isValid()) {
+		dt = ui_timestamp_since(Sun_visibility_stamp) * 0.001f;
+	}
+	Sun_visibility_stamp = ui_timestamp();
+	bool snap = (dt > 1.0f) || (dt < 0.0f);
+
+	// Everything the camera images this frame, gathered before anything is packed
+	// so that the two kinds of light -- one lens, one film gate -- go through the
+	// identical projection and packing below
+	SCP_vector<flare_source> sources;
+	gather_sun_sources(sources, dt, snap);
+	lens_flare_gather_thruster_sources(sources, MAX_THRUSTER_SOURCES);
+	if (sources.empty()) {
+		return;
+	}
+
+	// Sized once, now that the source list is final: the loop hands out pointers
+	// into this and must never grow it afterwards
+	if (Frame_data.size() < sources.size()) {
+		Frame_data.resize(sources.size());
+	}
+	Sun_starburst_drawn.resize(stars_get_num_suns(), false);
+
+	// The camera's, not any source's, so it is a frame constant too
+	const float out_scale = lens_flare_output_scale();
+
+	for (const auto& src : sources) {
+		film_image image;
+		if (!project_source(src, gate, lens.efl, &image)) {
 			continue;
 		}
 
-		// The slot is only committed by the push_back below, so a sun that packs
+		// The slot is only committed by the push_back below, so a source that packs
 		// nothing leaves it to the next one
 		generic_data::lens_flare_data* out = &Frame_data[Frame_draws.size()];
 
@@ -683,30 +750,35 @@ void lens_flare_frame_update()
 		// Master multiplier for every ghost and the starburst (lensflare-f.sdr
 		// applies tint.rgb to both paths). The output scale keeps SDR and HDR
 		// visually consistent without per-lens re-tuning.
-		const float tint_scale = sun_light->intensity * total_vis * lens.intensity * out_scale;
-		out->tint.xyzw.x = sun_light->color.xyz.x * tint_scale;
-		out->tint.xyzw.y = sun_light->color.xyz.y * tint_scale;
-		out->tint.xyzw.z = sun_light->color.xyz.z * tint_scale;
+		const float tint_scale = src.intensity * lens.intensity * out_scale;
+		out->tint.xyzw.x = src.color.xyz.x * tint_scale;
+		out->tint.xyzw.y = src.color.xyz.y * tint_scale;
+		out->tint.xyzw.z = src.color.xyz.z * tint_scale;
 		out->tint.xyzw.w = 0.0f;
 
-		int count = pack_sun_instances(lens, image.theta, image.dist_mm, out);
+		int count = pack_source_instances(lens, image.theta, image.dist_mm, src.draw_ghosts, out);
 		if (count == 0) {
 			continue;
 		}
 
 		lens_flare_draw draw;
-		draw.sun_index = sun_n;
+		draw.kind = src.kind;
+		draw.source_index = src.index;
 		draw.instances = count;
 		draw.data = out;
-		draw.visibility = total_vis;
+		draw.visibility = src.visibility;
 		draw.off_axis_deg = image.theta * (180.0f / PI);
 		draw.output_scale = out_scale;
 		Frame_draws.push_back(draw);
 
-		// This sun is committed, and pack_sun_instances() reserves the starburst a
-		// slot up front, so a starburst-enabled lens has certainly drawn one. The
-		// sprite sun can now safely step aside for it.
-		Sun_starburst_drawn[sun_n] = lens.starburst;
+		// This sun is committed, and pack_source_instances() reserves the starburst
+		// a slot up front, so a starburst-enabled lens has certainly drawn one. The
+		// sprite sun can now safely step aside for it. Thrusters are not in this
+		// bookkeeping on purpose: an engine's glow is the light the flare is *of*,
+		// not a second drawing of the same artifact, so it keeps rendering.
+		if (src.kind == flare_source_kind::sun) {
+			Sun_starburst_drawn[src.index] = lens.starburst;
+		}
 	}
 
 	if (!Frame_draws.empty() && lens_idx != Logged_lens) {

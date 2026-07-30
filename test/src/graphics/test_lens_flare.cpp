@@ -3,6 +3,9 @@
 #include <util/FSTestFixture.h>
 
 #include <graphics/lens_flare.h>
+#include <graphics/lens_flare_internal.h>
+#include <model/model.h>
+#include <species_defs/species_defs.h>
 #include <starfield/starfield.h>
 
 #include <cmath>
@@ -680,4 +683,228 @@ TEST_F(LensFlareTableTest, MountingAndOverridingTheCameraLens)
 	lens_flare_reset_for_level();
 	EXPECT_EQ(lens_flare_active_lens(), -1);
 	EXPECT_STREQ(lens_flare_mission_lens_name(), "");
+}
+
+// ---- thruster flares ----
+
+namespace {
+
+// One nozzle, in model space. `norm` is the direction it fires (and so shines)
+// in; a zero normal is legal and means "every way".
+glow_point make_nozzle(vec3d pnt, vec3d norm, float radius)
+{
+	glow_point gpt;
+	gpt.pnt = pnt;
+	gpt.norm = norm;
+	gpt.radius = radius;
+	return gpt;
+}
+
+// The scene every test below shares: a ship at the origin, unrotated, seen from
+// far down -z -- so the eye looks along +z at the back of the ship, and a nozzle
+// whose normal is (0, 0, -1) faces the camera squarely.
+const matrix Unrotated = vmd_identity_matrix;
+const vec3d Ship_pos = vmd_zero_vector;
+const vec3d Eye = {{{0.0f, 0.0f, -100.0f}}};
+
+// The apparent size of one nozzle in the shared scene, or -1 when it produces no
+// source at all.
+float nozzle_apparent(const glow_point& gpt, vec3d* world_pnt = nullptr)
+{
+	vec3d scratch;
+	float apparent = 0.0f;
+	if (!lens_flare_nozzle_apparent(gpt, Unrotated, Ship_pos, Eye, world_pnt ? world_pnt : &scratch, &apparent)) {
+		return -1.0f;
+	}
+	return apparent;
+}
+
+const vec3d Toward_eye = {{{0.0f, 0.0f, -1.0f}}};
+const vec3d Away = {{{0.0f, 0.0f, 1.0f}}};
+
+} // namespace
+
+// A nozzle pointed away from the camera produces no source, which is what keeps
+// the far side of every ship out of the pass.
+TEST(LensFlareThrusters, FacingAwayProducesNoSource)
+{
+	EXPECT_LT(nozzle_apparent(make_nozzle(vmd_zero_vector, Away, 1.0f)), 0.0f);
+	EXPECT_GT(nozzle_apparent(make_nozzle(vmd_zero_vector, Toward_eye, 1.0f)), 0.0f);
+}
+
+// Apparent size is the solid angle the nozzle subtends: it grows with the square
+// of its radius and falls with the square of its distance. The distance term is
+// what keeps a battle's worth of distant engines from each drawing at full
+// strength, so it is worth pinning exactly.
+TEST(LensFlareThrusters, ApparentSizeIsSolidAngle)
+{
+	// squarely facing, 100 units away, radius 1 -> pi * 1^2 / 100^2
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, Toward_eye, 1.0f)), PI / 10000.0f, 1e-9f);
+
+	// twice the radius is four times the apparent size
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, Toward_eye, 2.0f)), 4.0f * PI / 10000.0f, 1e-9f);
+
+	// half the distance is four times the apparent size
+	const vec3d halfway = {{{0.0f, 0.0f, -50.0f}}};
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(halfway, Toward_eye, 1.0f)), PI / 2500.0f, 1e-9f);
+}
+
+// Each nozzle images where it actually is. A ship's engines are set far enough
+// apart to read as separate points, which is the whole reason they are no longer
+// averaged into one source at their centroid.
+TEST(LensFlareThrusters, EachNozzleImagesAtItsOwnPosition)
+{
+	const vec3d port = {{{-40.0f, 0.0f, 0.0f}}};
+	const vec3d starboard = {{{40.0f, 0.0f, 0.0f}}};
+
+	vec3d where;
+	nozzle_apparent(make_nozzle(port, Toward_eye, 1.0f), &where);
+	EXPECT_NEAR(where.xyz.x, -40.0f, 1e-3f);
+	nozzle_apparent(make_nozzle(starboard, Toward_eye, 1.0f), &where);
+	EXPECT_NEAR(where.xyz.x, 40.0f, 1e-3f);
+}
+
+// The flare fades in over the same first third of the hemisphere the thruster
+// glow itself does (modelrender.cpp's `d *= 3`), so a flare can never appear on
+// an engine whose glow is still invisible.
+TEST(LensFlareThrusters, FacingFalloffMatchesTheGlow)
+{
+	const float square = nozzle_apparent(make_nozzle(vmd_zero_vector, Toward_eye, 1.0f));
+
+	// a normal tipped so that its cosine against the view is exactly 0.2
+	const float cos_view = 0.2f;
+	const vec3d tipped = {{{sqrtf(1.0f - (cos_view * cos_view)), 0.0f, -cos_view}}};
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, tipped, 1.0f)), 0.6f * square, 1e-6f);
+
+	// and anything past a third of the hemisphere is simply full brightness
+	const float past_third = 0.5f;
+	const vec3d wide = {{{sqrtf(1.0f - (past_third * past_third)), 0.0f, -past_third}}};
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, wide, 1.0f)), square, 1e-6f);
+}
+
+// Glowpoints are allowed to carry a zero normal, and the thruster renderer reads
+// that as "shines every way". The flare has to agree, or such a nozzle would
+// silently never flare.
+TEST(LensFlareThrusters, NullNormalShinesEveryWay)
+{
+	EXPECT_NEAR(nozzle_apparent(make_nozzle(vmd_zero_vector, vmd_zero_vector, 1.0f)), PI / 10000.0f, 1e-9f);
+}
+
+// The lab overrides every species at once and leaves the tabled values alone, so
+// switching it off restores them without anything having to be backed up -- and
+// leaving a mission drops it, the same way a lab lens is dropped.
+TEST(LensFlareThrusters, LabOverrideBeatsTheSpeciesTableAndIsDroppedOnLevelReset)
+{
+	const auto saved_species = Species_info;
+	Species_info.clear();
+
+	species_info tabled;
+	strcpy_s(tabled.species_name, "TestSpecies");
+	tabled.thruster_flare.enabled = true;
+	tabled.thruster_flare.intensity = 3.0f;
+	Species_info.push_back(tabled);
+
+	EXPECT_TRUE(lens_flare_thruster_settings(0).enabled);
+	EXPECT_FLOAT_EQ(lens_flare_thruster_settings(0).intensity, 3.0f);
+	EXPECT_FALSE(lens_flare_thruster_settings(-1).enabled) << "an unknown species must not flare";
+
+	thruster_flare_info override_settings;
+	override_settings.enabled = true;
+	override_settings.intensity = 7.0f;
+	lens_flare_lab_thruster_flare() = override_settings;
+
+	EXPECT_FLOAT_EQ(lens_flare_thruster_settings(0).intensity, 7.0f);
+	EXPECT_FLOAT_EQ(Species_info[0].thruster_flare.intensity, 3.0f) << "the override must not write to the table";
+	// it applies to every species, including ones with no table entry of their own
+	EXPECT_TRUE(lens_flare_thruster_settings(-1).enabled);
+
+	lens_flare_reset_for_level();
+	EXPECT_FLOAT_EQ(lens_flare_thruster_settings(0).intensity, 3.0f);
+
+	Species_info = saved_species;
+}
+
+// The species-table half of the feature. Parsed here rather than through
+// species_init(), which would drag in iff_defs for the shipped table's
+// "$Default IFF:"; every entry a mod actually writes is a +nocreate that needs
+// none of that.
+extern void parse_species_tbl(const char* filename);
+
+class ThrusterFlareTbmTest : public test::FSTestFixture {
+  public:
+	ThrusterFlareTbmTest() : test::FSTestFixture(INIT_CFILE)
+	{
+		pushModDir("graphics");
+		pushModDir("lens_flare");
+		pushModDir("thruster_flare");
+	}
+
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+
+		// Stand in for whatever table the mod underneath us defined
+		saved_species = Species_info;
+		Species_info.clear();
+
+		species_info existing;
+		strcpy_s(existing.species_name, "ThrusterFlareTestSpecies");
+		Species_info.push_back(existing);
+
+		species_info bare;
+		strcpy_s(bare.species_name, "ThrusterFlareDefaultsSpecies");
+		Species_info.push_back(bare);
+
+		parse_species_tbl("test-sdf.tbm");
+	}
+
+	void TearDown() override
+	{
+		Species_info = saved_species;
+		test::FSTestFixture::TearDown();
+	}
+
+  private:
+	SCP_vector<species_info> saved_species;
+};
+
+// Guards the exact syntax a mod writes, "$Thruster Flare:" in a +nocreate entry
+// with nothing else in it -- which only parses because every option ahead of it
+// is optional under +nocreate. Reordering the parse would break real tables
+// silently, since an option read out of order is skipped rather than diagnosed.
+TEST_F(ThrusterFlareTbmTest, NocreateEntryAddsAFlareToAnExistingSpecies)
+{
+	const int idx = species_info_lookup("ThrusterFlareTestSpecies");
+	ASSERT_GE(idx, 0);
+
+	const auto& flare = Species_info[idx].thruster_flare;
+	EXPECT_TRUE(flare.enabled) << "the block was skipped entirely";
+	EXPECT_FLOAT_EQ(flare.intensity, 6.0f);
+	EXPECT_FLOAT_EQ(flare.afterburner_intensity, 15.0f);
+	EXPECT_NEAR(flare.color.xyz.x, 170.0f / 255.0f, 1e-4f);
+	EXPECT_NEAR(flare.color.xyz.y, 205.0f / 255.0f, 1e-4f);
+	EXPECT_NEAR(flare.color.xyz.z, 255.0f / 255.0f, 1e-4f);
+}
+
+// The block on its own is the opt-in; its fields are all optional and must fall
+// back to the struct's defaults, not to zero.
+TEST_F(ThrusterFlareTbmTest, EmptyBlockIsTheOptInAndKeepsTheDefaults)
+{
+	const int idx = species_info_lookup("ThrusterFlareDefaultsSpecies");
+	ASSERT_GE(idx, 0);
+
+	const auto& flare = Species_info[idx].thruster_flare;
+	const thruster_flare_info defaults;
+	EXPECT_TRUE(flare.enabled);
+	EXPECT_FLOAT_EQ(flare.intensity, defaults.intensity);
+	EXPECT_FLOAT_EQ(flare.afterburner_intensity, defaults.afterburner_intensity);
+}
+
+// A table written for one mod has to be harmless in another: a +nocreate naming
+// a species nothing defined is discarded rather than creating a stub. This is
+// what lets one -sdf.tbm carry entries for several mods' species at once.
+TEST_F(ThrusterFlareTbmTest, NocreateForAnUnknownSpeciesCreatesNothing)
+{
+	EXPECT_LT(species_info_lookup("NoSuchSpecies"), 0);
+	EXPECT_EQ(Species_info.size(), 2u);
 }
