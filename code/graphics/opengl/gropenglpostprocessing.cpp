@@ -28,6 +28,9 @@
 #include "es_compatibility.h"
 #endif
 
+static void opengl_post_setup_render_targets();
+static void opengl_post_shutdown_render_targets();
+
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
 // Needed to track where the FXAA shaders are
@@ -99,7 +102,7 @@ void opengl_post_pass_tonemap()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 void opengl_post_pass_bloom()
@@ -134,16 +137,10 @@ void opengl_post_pass_bloom()
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-		// Unlike every other pass below, this reads directly from the scene
-		// texture rather than from an already-cropped intermediate (Bloom_textures
-		// is filled by this very call), so it has to confine itself to the
-		// sub-rectangle that was actually rendered into -- see the scale
-		// variables' own comment in gr_opengl_scene_texture_begin(). Hardcoding
-		// 1.0/1.0 here (as this used to) is only correct when the scene texture
-		// exactly matches the screen, which is not true of qtFred's dynamically
-		// resized viewport: it would smear/misplace the bloom halo relative to
-		// the scene it's supposed to be blooming.
-		opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+		// Reads the scene texture directly rather than an already-cropped intermediate, so it is
+		// the scaled variant. The blur/composite passes below read Bloom_textures, which this pass
+		// fills edge to edge, so those stay unscaled.
+		opengl_draw_full_screen_scene_texture();
 	}
 	// ------ end bright pass ------
 
@@ -302,7 +299,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	// set and configure post shader ..
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0));
@@ -319,7 +316,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	opengl_shader_set_current();
 }
@@ -342,7 +339,7 @@ static void smaa_detect_edges()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 static void smaa_calculate_blending_weights()
@@ -367,7 +364,7 @@ static void smaa_calculate_blending_weights()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_area_tex);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Smaa_search_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 static void smaa_neighborhood_blending()
@@ -390,7 +387,7 @@ static void smaa_neighborhood_blending()
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_blend_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 void smaa_resolve()
@@ -500,7 +497,7 @@ void opengl_post_lightshafts()
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+				opengl_draw_full_screen_scene_texture();
 
 				GL_state.Blend(GL_FALSE);
 				break;
@@ -634,7 +631,7 @@ void gr_opengl_post_process_end()
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	//Shadow Map debug window
 //#define SHADOW_DEBUG
@@ -1029,79 +1026,93 @@ static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, co
 	return tex;
 }
 
-static void setup_smaa_resources()
+// The SMAA area and search textures are fixed-size lookup tables baked into the binary, so unlike
+// everything else here they survive a resolution change untouched.
+static void setup_smaa_lookup_textures()
 {
-	GL_state.PushFramebufferState();
-
 	Smaa_area_tex = load_smaa_texture(AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG8, areaTexBytes, "SMAA Area Texture");
 	Smaa_search_tex =
 	    load_smaa_texture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, searchTexBytes, "SMAA Search Texture");
+}
 
+static void setup_smaa_render_targets()
+{
 	setup_smaa_edges_resources();
 
 	setup_smaa_blending_weight_resources();
 
 	setup_smaa_neighborhood_blending_resources();
-
-	GL_state.PopFramebufferState();
 }
 
-// generate and test the framebuffer and textures that we are going to use
-static bool opengl_post_init_framebuffer()
+static void shutdown_smaa_render_targets()
 {
-	bool rval = false;
+	opengl_delete_render_texture(Smaa_edges_tex);
+	opengl_delete_render_framebuffer(Smaa_edge_detection_fb);
 
-	// Sized once and never resized, like the scene textures they consume, so they get the same
-	// floor -- see Gr_min_render_target_w/h (2d.h).
-	Post_texture_width = MAX(gr_screen.max_w, Gr_min_render_target_w);
-	Post_texture_height = MAX(gr_screen.max_h, Gr_min_render_target_h);
+	opengl_delete_render_texture(Smaa_blend_tex);
+	opengl_delete_render_framebuffer(Smaa_blending_weight_fb);
 
-	// clamp size, if needed
-	if (Post_texture_width > GL_max_renderbuffer_size) {
-		Post_texture_width = GL_max_renderbuffer_size;
-	}
+	opengl_delete_render_texture(Smaa_output_tex);
+	opengl_delete_render_framebuffer(Smaa_neighborhood_blending_fb);
+}
 
-	if (Post_texture_height > GL_max_renderbuffer_size) {
-		Post_texture_height = GL_max_renderbuffer_size;
-	}
+// Allocate every post-processing resource whose size follows the scene textures. Split out from
+// opengl_post_process_init() so gr_opengl_resize_render_targets() can rebuild just these without
+// re-parsing post_processing.tbl or recompiling shaders.
+static void opengl_post_setup_render_targets()
+{
+	// These consume the scene textures pass by pass, so they have to match them exactly rather
+	// than being sized from gr_screen independently -- see gr_opengl_scene_texture_begin() for
+	// what the two sizes diverging would mean.
+	Post_texture_width = Scene_texture_width;
+	Post_texture_height = Scene_texture_height;
+
+	GL_state.PushFramebufferState();
 
 	opengl_setup_bloom_textures();
 
 	// Always set up SMAA resources so the user can switch to an SMAA preset
 	// at runtime even when starting with a non-SMAA AA mode, such as None.
-	//if (Gr_aa_mode != AntiAliasMode::None) {
-		setup_smaa_resources();
-	//}
+	setup_smaa_render_targets();
+
+	GL_state.PopFramebufferState();
 
 	GL_state.BindFrameBuffer(0);
-
-	rval = true;
-
-	if ( opengl_check_for_errors("post_init_framebuffer()") ) {
-		rval = false;
-	}
-
-	return rval;
 }
-
-
 
 void opengl_post_process_shutdown_bloom()
 {
-	if ( Bloom_textures[0] ) {
-		glDeleteTextures(1, &Bloom_textures[0]);
-		Bloom_textures[0] = 0;
+	opengl_delete_render_texture(Bloom_textures[0]);
+	opengl_delete_render_texture(Bloom_textures[1]);
+	opengl_delete_render_framebuffer(Bloom_framebuffer);
+}
+
+static void opengl_post_shutdown_render_targets()
+{
+	opengl_post_process_shutdown_bloom();
+	shutdown_smaa_render_targets();
+}
+
+void opengl_post_resize_render_targets()
+{
+	// Post-processing may have been disabled outright (no FBOs, missing shaders, or turned off in
+	// the table), in which case none of these resources exist and none should start existing now.
+	if ( !Post_initialized ) {
+		return;
 	}
 
-	if ( Bloom_textures[1] ) {
-		glDeleteTextures(1, &Bloom_textures[1]);
-		Bloom_textures[1] = 0;
-	}
+	opengl_post_shutdown_render_targets();
+	opengl_post_setup_render_targets();
+}
 
-	if ( Bloom_framebuffer > 0 ) {
-		glDeleteFramebuffers(1, &Bloom_framebuffer);
-		Bloom_framebuffer = 0;
-	}
+// generate and test the framebuffer and textures that we are going to use
+static bool opengl_post_init_framebuffer()
+{
+	setup_smaa_lookup_textures();
+
+	opengl_post_setup_render_targets();
+
+	return !opengl_check_for_errors("post_init_framebuffer()");
 }
 
 size_t opengl_get_postprocessing_render_target_bytes()
@@ -1199,20 +1210,16 @@ void opengl_post_process_shutdown()
 		return;
 	}
 
-	if (Post_framebuffer_id[0]) {
-		glDeleteFramebuffers(1, &Post_framebuffer_id[0]);
-		Post_framebuffer_id[0] = 0;
-
-		if (Post_framebuffer_id[1]) {
-			glDeleteFramebuffers(1, &Post_framebuffer_id[1]);
-			Post_framebuffer_id[1] = 0;
-		}
-	}
+	opengl_delete_render_framebuffer(Post_framebuffer_id[0]);
+	opengl_delete_render_framebuffer(Post_framebuffer_id[1]);
 
 	graphics::Post_processing_manager->clear();
 	graphics::Post_processing_manager = nullptr;
 
-	opengl_post_process_shutdown_bloom();
+	opengl_post_shutdown_render_targets();
+
+	opengl_delete_render_texture(Smaa_area_tex);
+	opengl_delete_render_texture(Smaa_search_tex);
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

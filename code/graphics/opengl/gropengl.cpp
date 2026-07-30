@@ -1126,6 +1126,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
+	gr_screen.gf_resize_render_targets = gr_opengl_resize_render_targets;
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;
@@ -1514,7 +1515,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	opengl_shader_init();
 
 	// post processing effects, after shaders are initialized
-	opengl_setup_scene_textures();
+	opengl_setup_scene_textures(gr_screen.max_w, gr_screen.max_h);
 	opengl_post_process_init();
 
 	// must be called after extensions are setup
