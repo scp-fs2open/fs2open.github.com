@@ -164,6 +164,12 @@ int stars_find_bitmap(const char *name);
 // lookup a sun by bitmap filename, return index or -1 on fail
 int stars_find_sun(const char *name);
 
+// Parse a stars.tbl (or a *-str.tbm) into the bitmap/sun tables. Normally reached
+// only through stars_init(), which also loads the bitmaps; declared here because
+// parsing alone is meaningful on its own -- a sun's tabled properties are readable
+// straight afterwards, before any bitmap exists.
+void parse_startbl(const char *filename);
+
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
 
@@ -175,6 +181,23 @@ struct sun_rgbi {
 
 // The sun's tabled light, or nothing if the sun instance itself is invalid.
 std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n);
+
+// True when this sun's stars.tbl entry asks to flare through the physically-based
+// camera lens (graphics/lens_flare.h), when one is mounted.
+//
+// The content decides *whether* a sun flares; the mounted lens only decides *how*
+// it is drawn, so mounting a lens never invents flares on suns tabled without one.
+// A sun says so either with "+Camera Lens Flare:" or, for tables written before
+// that existed, by carrying a legacy sprite "$Flare:" block -- the explicit option
+// wins where both are present, and is the only way to have one without the other.
+bool stars_sun_has_camera_lens_flare(int sun_n);
+
+// The same question keyed on a sun *bitmap* index (what stars_find_sun() returns)
+// rather than on a placed sun instance. This is where the rule above actually
+// lives; the instance form just looks up the bitmap. Separate because a sun's
+// tabled answer is knowable straight after parsing, before any instance -- and so
+// before any bitmap has to load, which is what lets it be tested.
+bool stars_sun_bitmap_has_camera_lens_flare(int bitmap_idx);
 
 // for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
 // or not there is an instance for it yet

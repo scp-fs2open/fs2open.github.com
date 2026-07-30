@@ -22,7 +22,6 @@
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
-#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
@@ -3129,9 +3128,11 @@ int Fred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 23.1.0;; $Lighting Profile:");
 	}
 
-	// the-e's camera lens for physically-based flares
-	if (!The_mission.camera_lens_name.empty() &&
-		The_mission.camera_lens_name != graphics::lens_flare_default_name()) {
+	// the-e's camera lens for physically-based flares. The token is written back
+	// verbatim: an empty one means the mission named no lens, and anything else --
+	// a lens name or <none> -- is a deliberate choice that has to survive the
+	// round trip even if it happens to match the current $Default Lens:.
+	if (!The_mission.camera_lens_name.empty()) {
 		fso_comment_push(";;FSO 26.1.0;;");
 		if (optional_string_fred("$Camera Lens:")) {
 			parse_comments(2);

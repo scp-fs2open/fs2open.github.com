@@ -41,6 +41,63 @@ struct lens_surface {
 //
 // Every layer below the shape defaults to strength 0 (off), which reproduces
 // the plain-iris look of tables written before they existed.
+// Every imperfection layer below is a named type with its own operator==, rather
+// than an anonymous struct compared field by field from the aperture. The
+// comparison is load-bearing -- lens_flare_reset_for_level() uses it to decide
+// whether a lens needs restoring, which is what keeps one mission's iris out of
+// the next -- and a field added without extending it would break that silently.
+// Keeping each layer's comparison next to its own fields is what makes that hard
+// to get wrong. (C++20 would make all four `= default`.)
+
+// Diffraction grating around the rim: fine radial ridges that throw extra spikes
+// into the starburst.
+struct lens_aperture_grating {
+	float strength = 0.0f; // 0 = off
+	float density = 0.5f;  // fraction of the 360 possible ridges
+	float length = 0.5f;   // how far in the ridges reach, as a fraction of the iris radius
+	float width = 0.25f;   // ridge width as a duty cycle of the spacing between ridges
+	float softness = 0.0f;
+
+	bool operator==(const lens_aperture_grating& o) const
+	{
+		return strength == o.strength && density == o.density && length == o.length && width == o.width &&
+			   softness == o.softness;
+	}
+	bool operator!=(const lens_aperture_grating& o) const { return !(*this == o); }
+};
+
+// Scratches on the glass: randomly placed and oriented slivers.
+struct lens_aperture_scratches {
+	float strength = 0.0f; // 0 = off
+	float density = 0.5f;  // fraction of the 1000 possible scratches
+	float length = 0.5f;
+	float width = 0.25f;
+	float rotation = 0.0f;           // degrees
+	float rotation_variation = 0.0f; // 0 = all parallel, 1 = fully random
+	float softness = 0.0f;
+
+	bool operator==(const lens_aperture_scratches& o) const
+	{
+		return strength == o.strength && density == o.density && length == o.length && width == o.width &&
+			   rotation == o.rotation && rotation_variation == o.rotation_variation && softness == o.softness;
+	}
+	bool operator!=(const lens_aperture_scratches& o) const { return !(*this == o); }
+};
+
+// Dust on the glass: randomly placed specks.
+struct lens_aperture_dust {
+	float strength = 0.0f; // 0 = off
+	float density = 0.5f;  // fraction of the 1000 possible specks
+	float radius = 0.5f;
+	float softness = 0.0f;
+
+	bool operator==(const lens_aperture_dust& o) const
+	{
+		return strength == o.strength && density == o.density && radius == o.radius && softness == o.softness;
+	}
+	bool operator!=(const lens_aperture_dust& o) const { return !(*this == o); }
+};
+
 struct lens_aperture {
 	// Iris opening. Blade count/rotation/curvature are the original fields;
 	// curvature 0 = straight blades, 1 = circular, and negative values bow the
@@ -54,50 +111,18 @@ struct lens_aperture {
 	// visibly weakens the starburst spikes, so it is not a free parameter.
 	float softness = 0.0039f;
 
-	// Diffraction grating around the rim: fine radial ridges that throw extra
-	// spikes into the starburst.
-	struct {
-		float strength = 0.0f; // 0 = off
-		float density = 0.5f;  // fraction of the 360 possible ridges
-		float length = 0.5f;   // how far in the ridges reach, as a fraction of the iris radius
-		float width = 0.25f;   // ridge width as a duty cycle of the spacing between ridges
-		float softness = 0.0f;
-	} grating;
+	lens_aperture_grating grating;
+	lens_aperture_scratches scratches;
+	lens_aperture_dust dust;
 
-	// Scratches on the glass: randomly placed and oriented slivers.
-	struct {
-		float strength = 0.0f; // 0 = off
-		float density = 0.5f;  // fraction of the 1000 possible scratches
-		float length = 0.5f;
-		float width = 0.25f;
-		float rotation = 0.0f;           // degrees
-		float rotation_variation = 0.0f; // 0 = all parallel, 1 = fully random
-		float softness = 0.0f;
-	} scratches;
-
-	// Dust on the glass: randomly placed specks.
-	struct {
-		float strength = 0.0f; // 0 = off
-		float density = 0.5f;  // fraction of the 1000 possible specks
-		float radius = 0.5f;
-		float softness = 0.0f;
-	} dust;
-
-	// Compared field by field so a caller that reassigns the whole aperture can
-	// tell whether anything actually moved -- regenerating costs a 512^2 mask
-	// plus an FFT, which a repeating mission event must not pay every frame.
+	// Lets a caller that reassigns the whole aperture tell whether anything
+	// actually moved -- regenerating costs a 512^2 mask plus an FFT, which a
+	// repeating mission event must not pay every frame. Each layer compares
+	// itself, so this only has to cover the iris fields and the three layers.
 	bool operator==(const lens_aperture& o) const
 	{
 		return blades == o.blades && rotation == o.rotation && curvature == o.curvature &&
-			   softness == o.softness && grating.strength == o.grating.strength &&
-			   grating.density == o.grating.density && grating.length == o.grating.length &&
-			   grating.width == o.grating.width && grating.softness == o.grating.softness &&
-			   scratches.strength == o.scratches.strength && scratches.density == o.scratches.density &&
-			   scratches.length == o.scratches.length && scratches.width == o.scratches.width &&
-			   scratches.rotation == o.scratches.rotation &&
-			   scratches.rotation_variation == o.scratches.rotation_variation &&
-			   scratches.softness == o.scratches.softness && dust.strength == o.dust.strength &&
-			   dust.density == o.dust.density && dust.radius == o.dust.radius && dust.softness == o.dust.softness;
+			   softness == o.softness && grating == o.grating && scratches == o.scratches && dust == o.dust;
 	}
 	bool operator!=(const lens_aperture& o) const { return !(*this == o); }
 };
@@ -204,6 +229,20 @@ const lens_system* lens_flare_get_system(int lens_idx);
 // Returns nullptr for an invalid index.
 const lens_flare_textures* lens_flare_get_textures(int lens_idx);
 
+// Generate the mounted lens's textures now, so the render backends find them
+// already cached instead of paying for them mid-frame.
+//
+// Building them is a 512^2 iris mask plus a 2D FFT of it -- a visible hitch if it
+// lands on the first frame a sun flares. Call it from wherever a lens has just
+// been mounted for a scene that is about to be rendered and a moment's work is
+// already expected: stars_post_level_init() for a mission, and the lab's
+// useBackground(). Not from lens_flare_switch_to() itself, which also runs during
+// mission-info scans (FRED's file dialog) that mount lenses they never render.
+//
+// No-op in FRED/qtFRED, which draw the background without a scene texture and so
+// never reach the flare pass.
+void lens_flare_prime_textures();
+
 // Drop a lens's cached textures so the next lens_flare_get_textures() rebuilds
 // them (after its lens_aperture was edited).
 void lens_flare_invalidate_textures(int lens_idx);
@@ -231,19 +270,27 @@ void lens_flare_reset_for_level();
 // Changes take effect the next frame; they are lost on table reload.
 lens_system* lens_flare_get_system_mutable(int lens_idx);
 
-// Global brightness calibration multipliers applied to every ghost/starburst
-// (defaults match the shipped calibration; tunable live from the lab)
-float lens_flare_get_ghost_brightness();
-void lens_flare_set_ghost_brightness(float value);
-float lens_flare_get_starburst_brightness();
-void lens_flare_set_starburst_brightness(float value);
+// The calibration that isn't per-lens: overall brightness of the energy model
+// against the HDR scene, plus the SDR/HDR consistency headroom. Defaults match
+// the shipped calibration.
+//
+// Handed out mutably, the same way lens_flare_get_system_mutable() hands out a
+// lens for the lab to edit in place -- one idiom for live tuning rather than
+// clamping accessors for the globals and direct access for everything else.
+// Values are sanitized where they are consumed, so a caller cannot break the
+// renderer by writing a silly number here.
+struct lens_flare_tuning {
+	// multiplies every ghost / the starburst respectively
+	float ghost_brightness = 64.0f;
+	float starburst_brightness = 1.6f;
 
-// HDR consistency headroom: how many multiples of paper white the flare is
-// allowed to reach in HDR output. SDR is the calibration reference and is
-// unaffected; this only rescales the HDR path so an SDR-tuned flare doesn't
-// blow out. Defaults to a value that keeps a little HDR "pop".
-float lens_flare_get_hdr_headroom();
-void lens_flare_set_hdr_headroom(float value);
+	// How many multiples of paper white the flare may reach in HDR output. SDR is
+	// the calibration reference and is unaffected; this only rescales the HDR path
+	// so an SDR-tuned flare doesn't blow out. The default keeps a little HDR "pop".
+	float hdr_headroom = 2.5f;
+};
+
+lens_flare_tuning& lens_flare_get_tuning();
 
 // ---- the camera lens ----
 //
@@ -256,13 +303,26 @@ void lens_flare_set_hdr_headroom(float value);
 // "$Default Lens:" in lens_flares.tbl), can be changed at runtime by the
 // set-camera-lens sexp, and can be overridden live in the lab.
 
-// The name in "$Default Lens:", or "" when the table declares no default (in
-// which case missions without a "$Camera Lens:" render no flares at all).
-const char* lens_flare_default_name();
+// The two names that stand in for a lens instead of naming one. The mission's
+// "$Camera Lens:", the set-camera-lens sexp and both editors all speak this same
+// vocabulary, so it lives here with the code that resolves it rather than being
+// re-spelled at each of those.
+#define LENS_NAME_NONE    "<none>"
+#define LENS_NAME_DEFAULT "<default>"
 
-// Mount a lens by name: "" / <none> for no flares, <default> or an unknown name
-// for the table default (unknown names warn). Called from mission parse and by
-// the set-camera-lens sexp.
+// Mount a lens, resolving the whole vocabulary above in one place:
+//
+//   ""/nullptr      the caller has no opinion -> the table default. This is what
+//                   a mission without a "$Camera Lens:" gets, which is why it
+//                   means "default" and not "none".
+//   <none>          no lens, hence no flares, even when a default exists. The
+//                   only way to say that, and the reason it is a token rather
+//                   than an empty string.
+//   <default>       the table default, said explicitly.
+//   a lens name     that lens; an unknown name warns and falls back to the
+//                   default, since a typo shouldn't silently look like <none>.
+//
+// Called from mission parse, the set-camera-lens sexp, the lab and both editors.
 void lens_flare_switch_to(const char* lens_name);
 
 // The lens actually in use (a lab override beats the mission's), -1 = none.
@@ -312,11 +372,18 @@ struct lens_flare_draw {
 //
 // Called from stars_draw(), which is the one place that both runs after the view
 // and projection matrices are live and runs before the sun sprites and the
-// post-processing pass consume the result. Deliberately *not* called while
-// rendering an environment map: that path never reaches the flare pass, so
-// publishing there would tell the sun renderer to step aside for a starburst
-// that never gets drawn.
+// post-processing pass consume the result.
 void lens_flare_frame_update();
+
+// Publish an empty frame: nothing flares, so every consumer reads "no".
+//
+// For a scene render that cannot reach the flare pass at all -- an environment map
+// goes straight to a render target, outside the post-processing chain. Publishing
+// nothing rather than skipping the publish is deliberate: it keeps the answer in
+// one place, so no consumer has to know where it is being called from, and it
+// stops the previous frame's published draws from being read by a render that
+// isn't going to draw them.
+void lens_flare_clear_frame();
 
 // What the last lens_flare_frame_update() published: one entry per sun that has
 // something to draw, in sun order (empty = skip the pass entirely). Every entry
@@ -328,6 +395,14 @@ void lens_flare_frame_update();
 const SCP_vector<lens_flare_draw>& lens_flare_get_frame_draws();
 
 // ---- internals exposed for unit testing ----
+
+// The name in "$Default Lens:", or "" when the table declares no default.
+//
+// Diagnostic only: nothing needs it to *resolve* a default any more, because
+// lens_flare_switch_to() does that for every caller (an empty or <default> name
+// lands on it). Kept for the load-time log line and so a test can assert what a
+// table declared.
+const char* lens_flare_default_name();
 
 // Run the ghost/matrix precompute on a hand-built lens_system.
 // Returns false (with ghosts cleared) if the prescription is unusable.

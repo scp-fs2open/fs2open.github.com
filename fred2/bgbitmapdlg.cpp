@@ -428,15 +428,24 @@ void bg_bitmap_dlg::create()
 	}
 	box->SetCurSel(m_light_profile_index);
 
-	// The camera lens all sun flares are imaged through; entry 0 means none
+	// The camera lens all sun flares are imaged through. "Default" and "None" are
+	// genuinely different answers -- the first leaves the mission silent so it
+	// follows lens_flares.tbl's $Default Lens:, the second says no flares even if
+	// one is declared -- so both get an entry ahead of the lenses themselves.
 	box = (CComboBox *) GetDlgItem(IDC_CAMERA_LENS);
-	m_camera_lens_index = 0;
+	box->AddString("Default");
 	box->AddString("None");
+
+	// An unset (or explicitly <default>) mission lands on "Default"
+	m_camera_lens_index = CAMERA_LENS_IDX_DEFAULT;
+	if (!stricmp(The_mission.camera_lens_name.c_str(), LENS_NAME_NONE))
+		m_camera_lens_index = CAMERA_LENS_IDX_NONE;
+
 	for (int idx = 0; idx < graphics::lens_flare_num_systems(); idx++) {
 		const SCP_string &lens_name = graphics::lens_flare_get_system(idx)->name;
 		box->AddString(lens_name.c_str());
 		if (The_mission.camera_lens_name == lens_name)
-			m_camera_lens_index = idx + 1;
+			m_camera_lens_index = idx + CAMERA_LENS_IDX_FIRST_LENS;
 	}
 	box->SetCurSel(m_camera_lens_index);
 
@@ -583,10 +592,15 @@ void bg_bitmap_dlg::OnClose()
 
 	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 
-	if (m_camera_lens_index <= 0) {
-		The_mission.camera_lens_name.clear();
+	// Mirrors the combo built in create(): empty for "Default" so the mission stays
+	// silent, the <none> token for "None" so the choice survives being saved
+	if (m_camera_lens_index == CAMERA_LENS_IDX_NONE) {
+		The_mission.camera_lens_name = LENS_NAME_NONE;
+	} else if (m_camera_lens_index >= CAMERA_LENS_IDX_FIRST_LENS) {
+		The_mission.camera_lens_name =
+			graphics::lens_flare_get_system(m_camera_lens_index - CAMERA_LENS_IDX_FIRST_LENS)->name;
 	} else {
-		The_mission.camera_lens_name = graphics::lens_flare_get_system(m_camera_lens_index - 1)->name;
+		The_mission.camera_lens_name.clear();
 	}
 	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
 	// close sun data

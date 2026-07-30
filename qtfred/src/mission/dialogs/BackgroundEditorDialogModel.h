@@ -175,7 +175,10 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static SCP_string getLightingProfileName();
 	void setLightingProfileName(const SCP_string& name);
 
-	// combo entry standing in for "this mission has no camera lens"
+	// Combo entries standing in for the two answers that aren't a lens name:
+	// "Default" leaves the mission silent so it follows lens_flares.tbl,
+	// "None" is the explicit <none> token (see graphics/lens_flare.h).
+	static constexpr const char* CAMERA_LENS_DEFAULT = "Default";
 	static constexpr const char* CAMERA_LENS_NONE = "None";
 	static SCP_vector<SCP_string> getCameraLensOptions();
 	static SCP_string getCameraLensName();
