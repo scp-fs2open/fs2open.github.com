@@ -1989,17 +1989,18 @@ int query_sexp_args_count(int node, bool only_valid_args = false)
 	return count;
 }
 
+enum class ArgCountCheck { CORRECT, INCORRECT_BENIGN, INCORRECT_FATAL };
 /**
  * Needed to fix bug with sexps like send-message list which have arguments that need to be supplied as a block
  * 
  * @return whether the number of arguments for the supplied operation is correct
  */
-static bool check_operator_argument_count(int count, int op_index)
+static ArgCountCheck check_operator_argument_count(int count, int op_index)
 {
 	Assertion(op_index >= 0 && op_index < sz2i(Operators.size()), "op_index is out of range!");
 
 	if (count < Operators[op_index].min || count > Operators[op_index].max)
-		return false;
+		return ArgCountCheck::INCORRECT_FATAL;
 
 	int op_const = Operators[op_index].value;
 
@@ -2011,9 +2012,9 @@ static bool check_operator_argument_count(int count, int op_index)
 
 	if (op_const == OP_SEND_MESSAGE_LIST || op_const == OP_SEND_MESSAGE_CHAIN)
 		if (count % 4 != 0)
-			return false;
+			return ArgCountCheck::INCORRECT_BENIGN;		// historically, this check didn't work at all, and sexps gracefully recovered at runtime
 
-	return true;
+	return ArgCountCheck::CORRECT;
 }
 
 // helper functions for check_container_value_data_type()
@@ -2159,6 +2160,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 	int var_index = -1;
 	size_t st;
 	const sexp_container *p_container = nullptr; // for SEXPs that take container name as arg
+	int deferred_error = SEXP_CHECK_NO_ERROR, deferred_bad_node = -1;	// for recoverable errors, so that the rest of the tree is still checked
 
 	Assertion(node >= 0 && node < Num_sexp_nodes, "Node %d must be a valid SEXP node!", node);
 	Assertion(Sexp_nodes[node].type != SEXP_NOT_USED, "Node %d must be in use!", node);
@@ -2207,8 +2209,15 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 	count = query_sexp_args_count(op_node);
 
-	if (!check_operator_argument_count(sz2i(count), op_index))
-		return SEXP_CHECK_BAD_ARG_COUNT;  // incorrect number of arguments
+	auto arg_count_result = check_operator_argument_count(sz2i(count), op_index);
+	if (arg_count_result == ArgCountCheck::INCORRECT_FATAL)
+		return SEXP_CHECK_BAD_ARG_COUNT;	// incorrect number of arguments
+	else if (arg_count_result == ArgCountCheck::INCORRECT_BENIGN)
+	{
+		// incorrect, but defer it and continue checking
+		deferred_error = SEXP_CHECK_BAD_ARG_COUNT_BENIGN;
+		deferred_bad_node = op_node;
+	}
 
 	node = Sexp_nodes[op_node].rest;
 	while (node != -1) {
@@ -2227,7 +2236,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			// thing.  (i.e. in the case of a cond statement, the conditional will fall into this if
 			// statement.  MORE TO DO HERE!!!!
 			if (Sexp_nodes[i].subtype == SEXP_ATOM_LIST)
-				return 0;
+				break;
 
 			int op2_index = get_operator_index(i);
 			int op2_const = SCP_vector_inbounds(Operators, op2_index) ? Operators[op2_index].value : OP_NOT_AN_OP;
@@ -2242,7 +2251,13 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				}
 
 				if ((z = check_sexp_syntax(i, (int)opr, recursive, bad_node)) != 0) {
-					return z;
+					if (!sexp_recoverable_error(z))
+						return z;
+					// defer recoverable errors so that the rest of the tree is still checked
+					if (deferred_error == SEXP_CHECK_NO_ERROR) {
+						deferred_error = z;
+						deferred_bad_node = bad_node ? *bad_node : -1;
+					}
 				}
 			}
 
@@ -3153,7 +3168,13 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				// we should check the syntax of the actual goal!!!!
 				z = Sexp_nodes[node].first;
 				if ((z = check_sexp_syntax(z, OPR_AI_GOAL, recursive, bad_node)) != 0){
-					return z;
+					if (!sexp_recoverable_error(z))
+						return z;
+					// defer recoverable errors so that the rest of the tree is still checked
+					if (deferred_error == SEXP_CHECK_NO_ERROR) {
+						deferred_error = z;
+						deferred_bad_node = bad_node ? *bad_node : -1;
+					}
 				}
 
 				if (Fred_running) {
@@ -4209,6 +4230,14 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 		node = Sexp_nodes[node].rest;
 		argnum++;
+	}
+
+	// now that the rest of the tree has been checked, report any recoverable error that was noted along the way
+	if (deferred_error != SEXP_CHECK_NO_ERROR)
+	{
+		if (bad_node)
+			*bad_node = deferred_bad_node;
+		return deferred_error;
 	}
 
 	return 0;
@@ -35350,16 +35379,22 @@ bool sexp_recoverable_error(int num)
 		// but the mission will run without crashing.
 		case SEXP_CHECK_AMBIGUOUS_EVENT_NAME:
 		case SEXP_CHECK_AMBIGUOUS_GOAL_NAME:
+			return true;
 
 		// Having an invalid gauge in FSO won't hurt,
 		// as all places which call hud_get_gauge() or hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
 		case SEXP_CHECK_INVALID_ANY_HUD_GAUGE:
+			return true;
 
 		// Trying to set an invalid sound environment has no effect, and all sound enviroments are invalid if EFX is disabled.
 		// Invalid sound environment options are simiarly harmless.
 		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
 		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
+			return true;
+
+		// Certain argument counts historically weren't checked properly, but the runtime code could still recover
+		case SEXP_CHECK_BAD_ARG_COUNT_BENIGN:
 			return true;
 
 		// most errors will halt mission loading
@@ -35384,6 +35419,7 @@ const char *sexp_error_message(int num)
 			return "Argument type mismatch";
 
 		case SEXP_CHECK_BAD_ARG_COUNT:
+		case SEXP_CHECK_BAD_ARG_COUNT_BENIGN:
 			return "Argument count is illegal";
 
 		case SEXP_CHECK_UNKNOWN_TYPE:

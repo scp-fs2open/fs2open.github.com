@@ -3598,6 +3598,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 			return 1;
 	}
 
+	z = 0;
 	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
 		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
