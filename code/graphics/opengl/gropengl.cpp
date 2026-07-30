@@ -461,6 +461,42 @@ SCP_string gr_opengl_blob_screen()
 	return "data:image/png;base64," + result;
 }
 
+bool gr_opengl_read_render_target(ubyte* out_rgba, int width, int height)
+{
+	const GLuint render_target = opengl_get_rtt_framebuffer();
+	if (render_target == 0) {
+		return false;
+	}
+
+	// The caller sized its buffer from the bitmap it bound, so a disagreement means it is reading
+	// something other than what it thinks. Refuse rather than overrun or return a wrong-shaped image.
+	if (width != gr_screen.max_w || height != gr_screen.max_h) {
+		nprintf(("OpenGL", "gr_opengl_read_render_target: caller expected %dx%d but the bound target "
+		                   "is %dx%d\n", width, height, gr_screen.max_w, gr_screen.max_h));
+		return false;
+	}
+
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(render_target, GL_FRAMEBUFFER);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+
+	// Row 0 first, which for a render target FSO composed into is the top row -- matching the
+	// top-down order gr_read_render_target() promises. Deliberately not the flip gr_blob_screen()
+	// applies: that one exists to make the PNG come out upright, and there is no PNG here.
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, out_rgba);
+	glFlush();
+
+	GL_state.PopFramebufferState();
+
+	// Reported, not returned. glGetError drains one global queue, so an entry left by anything
+	// earlier in the frame is not evidence about this readback -- and callers use the return value
+	// to decide whether the frame's work has completed (gr_end_offscreen_frame()). Failing on
+	// somebody else's error would silently skip that.
+	opengl_check_for_errors("gr_opengl_read_render_target");
+
+	return true;
+}
+
 void gr_opengl_dump_envmap(const char* filename)
 {
 	char tmp[MAX_PATH_LEN];
@@ -1066,6 +1102,7 @@ void gr_opengl_init_function_pointers()
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 	gr_screen.gf_blob_screen		= gr_opengl_blob_screen;
+	gr_screen.gf_read_render_target	= gr_opengl_read_render_target;
 	gr_screen.gf_dump_envmap		= gr_opengl_dump_envmap;
 	gr_screen.gf_calculate_irrmap	= gr_opengl_calculate_irrmap;
 
@@ -1126,7 +1163,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
-	gr_screen.gf_resize_render_targets = gr_opengl_resize_render_targets;
+	gr_screen.gf_viewport_size_changed = gr_opengl_resize_render_targets;
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;

@@ -23,6 +23,10 @@ struct FrameBumpAllocator {
 	void* mappedPtr = nullptr;
 	size_t capacity = 0;
 	size_t cursor = 0;
+	// Bumped every time the cursor is rewound, so sub-allocations handed out before the rewind can
+	// be told apart from ones handed out after it. Growth deliberately does NOT bump this: it
+	// preserves offsets and repoints handles, so those allocations stay valid.
+	uint32_t generation = 0;
 };
 
 /**
@@ -64,6 +68,7 @@ struct VulkanBufferObject {
 	vk::Buffer frameAllocBuffer;       // VkBuffer at upload time (may be old allocator buffer after growth)
 	size_t frameAllocOffset = 0;       // Byte offset within the frame allocator buffer
 	uint32_t frameAllocFrame = UINT32_MAX; // Frame index when last allocated
+	uint32_t frameAllocGeneration = UINT32_MAX; // Allocator generation when last allocated
 
 	bool isStreaming() const {
 		return usage == BufferUsageHint::Streaming || usage == BufferUsageHint::Dynamic;
@@ -110,6 +115,14 @@ public:
 	 * @param frameIndex The current frame index (0 to MAX_FRAMES_IN_FLIGHT-1)
 	 * @param frameNumber The monotonic total frame number (for in-use tracking
 	 *        of static buffers; see VulkanBufferObject::lastUsedFrameNumber)
+	 */
+	/**
+	 * @brief Point the manager at a frame-in-flight slot and rewind that slot's bump allocator.
+	 *
+	 * Passing the *current* index is legal and is what an off-screen frame end does: the cursor
+	 * rewinds and the generation bumps, so sub-allocations from the frame just finished are
+	 * invalidated rather than silently overlapped, while the swap-chain-tied index stays put.
+	 * Only safe once the work referencing those sub-allocations has retired.
 	 */
 	void setCurrentFrame(uint32_t frameIndex, uint64_t frameNumber);
 
@@ -299,7 +312,7 @@ private:
 	void initFrameAllocators();
 	void shutdownFrameAllocators();
 	size_t bumpAllocate(size_t size);
-	void growFrameAllocator();
+	void growFrameAllocator(size_t requiredEnd);
 
 	std::array<FrameBumpAllocator, MAX_FRAMES_IN_FLIGHT> m_frameAllocs;
 	uint32_t m_uboAlignment = 256;

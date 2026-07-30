@@ -6,11 +6,8 @@ namespace graphics::vulkan {
 VulkanRenderFrame::VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue)
 	: m_device(device), m_swapChain(swapChain), m_graphicsQueue(graphicsQueue), m_presentQueue(presentQueue)
 {
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
 	constexpr vk::FenceCreateInfo fenceCreateInfo;
 
-	m_imageAvailableSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
-	m_renderingFinishedSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
 	m_frameInFlightFence = device.createFenceUnique(fenceCreateInfo);
 }
 bool VulkanRenderFrame::waitForFinish(uint64_t timeoutNs)
@@ -40,7 +37,7 @@ void VulkanRenderFrame::onFrameFinished(std::function<void()> finishFunc)
 {
 	m_frameFinishedCallbacks.push_back(std::move(finishFunc));
 }
-SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex)
+SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex, vk::Semaphore imageAvailable)
 {
 	Assertion(!m_inFlight, "Cannot acquire swapchain image when frame is still in flight.");
 
@@ -51,7 +48,7 @@ SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex
 	try {
 		res = m_device.acquireNextImageKHR(m_swapChain,
 			std::numeric_limits<uint64_t>::max(),
-			m_imageAvailableSemaphore.get(),
+			imageAvailable,
 			nullptr,
 			&imageIndex);
 	} catch (const vk::OutOfDateKHRError&) {
@@ -74,7 +71,6 @@ SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex
 		return SwapChainStatus::eOutOfDate;
 	}
 
-	m_swapChainIdx = imageIndex;
 	outImageIndex = imageIndex;
 
 	if (res == vk::Result::eSuboptimalKHR) {
@@ -82,14 +78,19 @@ SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex
 	}
 	return SwapChainStatus::eSuccess;
 }
-SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers)
+SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers,
+	vk::Semaphore imageAvailable, vk::Semaphore renderFinished, uint32_t imageIndex, uint64_t frameNumber)
 {
 	Assertion(!m_inFlight, "Cannot submit a frame for presentation when it is still in flight.");
+
+	// Record before the submit rather than after: from the moment the queue takes the work, the
+	// fence guards this frame number, and a sync point resolved in between must see that.
+	m_submittedFrameNumber = frameNumber;
 
 	// Wait at color attachment output stage — the first use of the swap chain image
 	// is loadOp=eClear at the start of the render pass, which is a color attachment write.
 	const std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-	const std::array<vk::Semaphore, 1> waitSemaphores = {m_imageAvailableSemaphore.get()};
+	const std::array<vk::Semaphore, 1> waitSemaphores = {imageAvailable};
 
 	vk::SubmitInfo submitInfo;
 	submitInfo.waitSemaphoreCount = 1;
@@ -99,7 +100,7 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 	submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
 	submitInfo.pCommandBuffers = cmdBuffers.data();
 
-	const std::array<vk::Semaphore, 1> signalSemaphores = {m_renderingFinishedSemaphore.get()};
+	const std::array<vk::Semaphore, 1> signalSemaphores = {renderFinished};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
@@ -115,7 +116,7 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 	const std::array<vk::SwapchainKHR, 1> swapChains = {m_swapChain};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains.data();
-	presentInfo.pImageIndices = &m_swapChainIdx;
+	presentInfo.pImageIndices = &imageIndex;
 	presentInfo.pResults = nullptr;
 
 	vk::Result res;
@@ -140,14 +141,6 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 void VulkanRenderFrame::updateSwapChain(vk::SwapchainKHR swapChain)
 {
 	m_swapChain = swapChain;
-}
-void VulkanRenderFrame::recreateSyncObjects()
-{
-	Assertion(!m_inFlight, "Cannot recreate sync objects while the frame is in flight.");
-
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
-	m_imageAvailableSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
-	m_renderingFinishedSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
 }
 
 } // namespace graphics::vulkan
