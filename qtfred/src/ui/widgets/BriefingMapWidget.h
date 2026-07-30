@@ -53,6 +53,21 @@ public:
 		EditorViewport* viewport);
 	~BriefingMapWidget() override;
 
+	/**
+	 * @brief Stop rendering and release the offscreen render target. Idempotent.
+	 *
+	 * Called explicitly from BriefingEditorDialog::accept()/reject(), right before the dialog
+	 * closes, so the render timer and the render-target bitmap are let go promptly rather than
+	 * waiting for ~BriefingMapWidget() -- WA_DeleteOnClose only posts the actual C++ destruction via
+	 * deleteLater(), on a later event-loop turn. The destructor also calls this, as a fallback for
+	 * teardown paths that don't go through accept()/reject().
+	 *
+	 * Also releases a Vulkan present target for this viewport, if it somehow has one -- renderFrame()
+	 * bails out under Vulkan before ever calling gr_use_viewport() on it (see there), so in practice
+	 * it never does, but gr_release_viewport() is a safe no-op either way.
+	 */
+	void releaseRenderTarget();
+
 	void setStage(int stageNum);
 	int getCurrentStage() const;
 	void notifyIconVisualsChanged();
