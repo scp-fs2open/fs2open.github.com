@@ -381,6 +381,14 @@ void lens_flare_close()
 	Frame_draws.clear();
 	Sun_starburst_drawn.clear();
 	Logged_lens = -2;
+
+	// As in lens_flare_reset_for_level(), and for the same reason: a scheduled
+	// rebuild belongs to the table being torn down, and the throttle stamp has
+	// to go with it, since a deadline that outlives the clock it was taken
+	// against sits in that clock's future and swallows every edit until it
+	// passes.
+	Aperture_dirty = false;
+	Aperture_dirty_stamp = UI_TIMESTAMP::invalid();
 }
 
 int lens_flare_lookup(const char* name)
