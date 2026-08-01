@@ -24,6 +24,40 @@ TEST(HeapAllocatorTests, simpleAllocate) {
 	ASSERT_EQ((size_t)0, allocator.numAllocations());
 }
 
+TEST(HeapAllocatorTests, usedBytesAndHeapSize) {
+	HeapAllocator allocator(dummyResizer);
+
+	ASSERT_EQ((size_t)0, allocator.usedBytes());
+	ASSERT_GT(allocator.heapSize(), (size_t)0);
+
+	auto initialHeapSize = allocator.heapSize();
+
+	auto offsetA = allocator.allocate(200);
+	ASSERT_EQ((size_t)200, allocator.usedBytes());
+
+	auto offsetB = allocator.allocate(300);
+	ASSERT_EQ((size_t)500, allocator.usedBytes());
+
+	// Allocations within the initial heap size shouldn't have triggered a resize
+	ASSERT_EQ(initialHeapSize, allocator.heapSize());
+
+	allocator.free(offsetA);
+	ASSERT_EQ((size_t)300, allocator.usedBytes());
+
+	allocator.free(offsetB);
+	ASSERT_EQ((size_t)0, allocator.usedBytes());
+
+	// Force at least one resize and make sure usedBytes tracks the live allocation, not the
+	// (now larger) heap size
+	auto offsetC = allocator.allocate(30 * 1024 * 1024);
+	ASSERT_EQ((size_t)30 * 1024 * 1024, allocator.usedBytes());
+	ASSERT_GT(allocator.heapSize(), initialHeapSize);
+	ASSERT_GE(allocator.heapSize(), allocator.usedBytes());
+
+	allocator.free(offsetC);
+	ASSERT_EQ((size_t)0, allocator.usedBytes());
+}
+
 TEST(HeapAllocatorTests, manySmallAllocations) {
 	HeapAllocator allocator(dummyResizer);
 

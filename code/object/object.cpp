@@ -535,6 +535,19 @@ int obj_allocate(bool essential)
 	return objnum;
 }
 
+object_memory_stats obj_get_memory_stats()
+{
+	object_memory_stats stats;
+
+	stats.objects_used = Num_objects;
+	stats.objects_peak = num_objects_hwm;
+
+	stats.ships_used = ship_get_num_ships();
+	stats.weapons_used = Num_weapons;
+
+	return stats;
+}
+
 /**
  * Frees up an object  
  *

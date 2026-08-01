@@ -81,6 +81,8 @@ void opengl_set_additive_tex_env();
 void opengl_set_modulate_tex_env();
 void opengl_preload_init();
 void opengl_kill_render_target(bitmap_slot* slot);
+struct gr_memory_stats;
+void gr_opengl_get_memory_stats(gr_memory_stats& stats);
 int opengl_make_render_target(int handle, int *w, int *h, int *bpp, int *mm_lvl, int flags);
 int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
 ubyte* gr_opengl_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out);

@@ -333,7 +333,7 @@ bool PostProcessContext::createImage(uint32_t width, uint32_t height, vk::Format
 	}
 
 	// Allocate memory
-	if (!memoryManager->allocateImageMemory(outImage, MemoryUsage::GpuOnly, outAllocation)) {
+	if (!memoryManager->allocateImageMemory(outImage, MemoryUsage::GpuOnly, outAllocation, MemoryPurpose::RenderTarget)) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate image memory!\n"));
 		device.destroyImage(outImage);
 		outImage = nullptr;
