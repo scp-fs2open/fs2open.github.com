@@ -191,13 +191,22 @@ void PreferencesDialog::initializeUi() {
 	// there is no separate Vulkan-mode check here: this option already only exists when Vulkan (and
 	// the hardware) can actually honour it.
 	populateFromEngineOption(ui->shadowMethodCombo, "Graphics.ShadowRenderMethod");
+	// Raytraced shadows need Vulkan ray-query hardware support; shadows_remove_unsupported_options()
+	// responds by dropping Graphics.ShadowRenderMethod from the options list entirely rather than
+	// just filtering its Raytraced value, so populateFromEngineOption() above leaves the combo with
+	// no items at all (e.g. whenever qtFRED is running under OpenGL). An empty, greyed-out combo
+	// reads as broken; show the one method that's actually in effect instead, locked in place.
+	if (ui->shadowMethodCombo->count() == 0) {
+		ui->shadowMethodCombo->addItem(tr("Shadow Maps"), static_cast<int>(ShadowRenderMethod::ShadowMap));
+		ui->shadowMethodCombo->setEnabled(false);
+	}
 	populateFromEngineOption(ui->aaModeCombo, "Graphics.AAMode");
 	populateFromEngineOption(ui->textureFilterCombo, "Graphics.TextureFilter");
 
 	// Anisotropy levels are hardware-dependent, so ask the engine for the same list its own
 	// options screen offers. Empty means the hardware can't do it; leave the combo disabled.
 	for (float level : gr_get_supported_anisotropy_levels()) {
-		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(level, 0, 'g', 0), level);
+		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(level, 0, 'f', 0), level);
 	}
 	ui->anisotropyCombo->setEnabled(ui->anisotropyCombo->count() > 0);
 
