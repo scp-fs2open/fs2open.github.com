@@ -82,7 +82,7 @@ QVariant HelpBrowser::loadResource(int type, const QUrl& name) {
 }
 
 bool HelpBrowser::isDarkMode() const {
-	return palette().color(QPalette::Window).lightness() < 128;
+	return currentThemeIsDark();
 }
 
 QByteArray HelpBrowser::darkModeStyleBlock() {

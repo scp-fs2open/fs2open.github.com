@@ -44,10 +44,9 @@ VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab in
 VariableDialog::~VariableDialog() = default;
 
 // Returns a subtle, theme-aware tint: blue for blue_type=true, orange for blue_type=false.
-// Detects dark/light mode via the application window-background lightness.
 QColor VariableDialog::rowTypeColor(bool blue_type)
 {
-	const bool dark_mode = QApplication::palette().color(QPalette::Window).lightness() < 128;
+	const bool dark_mode = currentThemeIsDark();
 	if (blue_type) {
 		return dark_mode ? QColor(50, 60, 80) : QColor(225, 235, 252);
 	} else {

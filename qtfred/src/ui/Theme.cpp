@@ -288,6 +288,11 @@ void applyEditorTheme(ThemeMode mode)
 	applyPalette(resolveDark(mode));
 }
 
+bool currentThemeIsDark()
+{
+	return resolveDark(Current_mode);
+}
+
 ThemeMode readThemeModeSetting()
 {
 	QSettings settings;
