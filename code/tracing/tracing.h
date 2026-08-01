@@ -66,11 +66,20 @@ struct frame_overlay_contributor {
 };
 
 /**
+ * Cap on frame_overlay_snapshot::top_contributors. The single place this is defined, so the
+ * producer (FrameProfiler::build_overlay_snapshot) and every consumer (currently the overlay's
+ * stacked frame-budget bar) can't drift apart on how many contributors get their own slot before
+ * folding into "Other".
+ */
+constexpr size_t FRAME_OVERLAY_MAX_CONTRIBUTORS = 5;
+
+/**
  * A structured, per-frame snapshot of profiling data meant for the ImGui overlay (as opposed to
- * get_frame_profile_output()'s preformatted text dump). top_contributors holds the top 5 categories
- * by self-time, sorted descending; everything else is folded into other_nanosec. total_nanosec
- * is the sum of every sample's self-time (top_contributors + other_nanosec). All times are in
- * nanoseconds, matching trace_event::timestamp/duration (timer_get_nanoseconds()).
+ * get_frame_profile_output()'s preformatted text dump). top_contributors holds up to
+ * FRAME_OVERLAY_MAX_CONTRIBUTORS categories by self-time, sorted descending; everything else is
+ * folded into other_nanosec. total_nanosec is the sum of every sample's self-time
+ * (top_contributors + other_nanosec). All times are in nanoseconds, matching
+ * trace_event::timestamp/duration (timer_get_nanoseconds()).
  */
 struct frame_overlay_snapshot {
 	bool valid = false;

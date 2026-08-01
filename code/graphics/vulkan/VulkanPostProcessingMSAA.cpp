@@ -206,7 +206,8 @@ bool VulkanDeferredGBuffer::createMsaaTargets()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateImageMemory(m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc)) {
+		if (!m_ctx->memoryManager->allocateImageMemory(
+				m_msaaDepthImage, MemoryUsage::GpuOnly, m_msaaDepthAlloc, MemoryPurpose::RenderTarget)) {
 			nprintf(("vulkan", "VulkanPostProcessor: Failed to allocate MSAA depth memory!\n"));
 			m_ctx->device.destroyImage(m_msaaDepthImage);
 			m_msaaDepthImage = nullptr;

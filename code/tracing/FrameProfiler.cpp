@@ -336,10 +336,8 @@ void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time
 	overlaySnapshot.top_contributors.clear();
 	overlaySnapshot.other_nanosec = 0;
 
-	constexpr size_t MAX_CONTRIBUTORS = 5;
-
 	for (size_t i = 0; i < sorted.size(); i++) {
-		if (i < MAX_CONTRIBUTORS) {
+		if (i < FRAME_OVERLAY_MAX_CONTRIBUTORS) {
 			overlaySnapshot.top_contributors.push_back({sorted[i].first->getName(), sorted[i].second});
 		} else {
 			overlaySnapshot.other_nanosec += sorted[i].second;

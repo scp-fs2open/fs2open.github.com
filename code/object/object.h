@@ -432,5 +432,23 @@ void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source
  */
 int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos);
 
+/**
+ * @brief Occupancy snapshot of the object/ship/weapon pools, for the profiler overlay's memory panel
+ *
+ * @details These pools are fixed-size static arrays, so their footprint is a compile-time
+ * constant; what's actually useful to report is how full they are.
+ */
+struct object_memory_stats {
+	int objects_used = 0;
+	int objects_max = MAX_OBJECTS;
+	int objects_peak = 0;
+
+	int ships_used = 0;
+	int ships_max = MAX_SHIPS;
+
+	int weapons_used = 0;
+	int weapons_max = MAX_WEAPONS;
+};
+object_memory_stats obj_get_memory_stats();
 
 #endif
