@@ -22,6 +22,7 @@
 #include "material.h"
 #include "matrix.h"
 
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
@@ -3530,6 +3531,30 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	auto gpuHeap = get_gpu_heap(heap_type);
 
 	gpuHeap->freeGpuData(data_offset);
+}
+
+gr_memory_stats gr_get_memory_stats()
+{
+	gr_memory_stats stats;
+
+	// gpu_heaps[] entries stay null when gpu_heap_init() early-returned (GraphicsAPI::Stub, e.g.
+	// a build with both graphics backends disabled), so this must not assume a live heap.
+	auto vertex_heap = get_gpu_heap(GpuHeap::ModelVertex);
+	auto index_heap = get_gpu_heap(GpuHeap::ModelIndex);
+	if (vertex_heap != nullptr && index_heap != nullptr) {
+		stats.model_heap_valid = true;
+		stats.model_vertex_heap_used = vertex_heap->usedBytes();
+		stats.model_vertex_heap_size = vertex_heap->bufferSize();
+		stats.model_index_heap_used = index_heap->usedBytes();
+		stats.model_index_heap_size = index_heap->bufferSize();
+	}
+
+	stats.locked_bitmap_ram_valid = true;
+	stats.locked_bitmap_ram_bytes = bm_texture_ram;
+
+	gr_screen.gf_get_memory_stats(stats);
+
+	return stats;
 }
 
 void gr_set_gamma(float gamma)

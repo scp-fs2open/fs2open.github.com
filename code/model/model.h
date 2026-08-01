@@ -1057,6 +1057,19 @@ SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
 
+/**
+ * @brief Memory usage summary across all currently loaded polygon models, for the profiler
+ * overlay's memory panel
+ */
+struct model_memory_stats {
+	bool valid = false;
+	int model_count = 0;
+	size_t vertex_bytes = 0;   // sum of vert_source.Vertex_list_size across loaded models
+	size_t index_bytes = 0;    // sum of vert_source.Index_list_size across loaded models
+	size_t bsp_data_bytes = 0; // sum of submodel[].bsp_data_size (collision/interp tree data)
+};
+model_memory_stats model_get_memory_stats();
+
 int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
 

@@ -200,6 +200,19 @@ void vulkan_get_debug_stats(gr_debug_stats& stats)
 	stats.pipeline_count = getPipelineManager()->getPipelineCount();
 }
 
+void vulkan_get_memory_stats(gr_memory_stats& stats)
+{
+	auto* memoryManager = getMemoryManager();
+	if (memoryManager == nullptr) {
+		return;
+	}
+
+	stats.gpu_purpose_valid = true;
+	stats.gpu_texture_bytes = memoryManager->getTextureBytes();
+	stats.gpu_geometry_bytes = memoryManager->getGeometryBytes();
+	stats.gpu_render_target_bytes = memoryManager->getRenderTargetBytes();
+}
+
 void vulkan_push_debug_group(const char* name)
 {
 	auto* renderer = getRendererInstance();
@@ -558,6 +571,7 @@ void init_function_pointers()
 	gr_screen.gf_is_capable = vulkan_is_capable;
 	gr_screen.gf_get_property = vulkan_get_property;
 	gr_screen.gf_get_debug_stats = vulkan_get_debug_stats;
+	gr_screen.gf_get_memory_stats = vulkan_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = vulkan_push_debug_group;
 	gr_screen.gf_pop_debug_group = vulkan_pop_debug_group;
