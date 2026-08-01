@@ -140,9 +140,7 @@ void OptConfigurator::offer_save_options_popup()
 
 // The main Imgui rendering happens here as well as any i/o checking
 void OptConfigurator::onFrame() {
-	gr_imgui_new_frame();
-	ImGui_ImplSDL3_NewFrame();
-	ImGui::NewFrame();
+	gr_imgui_begin_frame();
 
 	gr_reset_clip();
 	gr_clear();

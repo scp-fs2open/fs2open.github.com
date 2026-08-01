@@ -13,6 +13,7 @@
 #include "scpui/rocket_ui.h"
 
 #include "cfile/cfile.h"
+#include "io/mouse.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
@@ -57,6 +58,26 @@ Context* input_context = nullptr;
 vec2d render_offset    = {0.f, 0.f};
 
 bool debugger_initialized = false;
+
+/**
+ * @brief Retrieves the current cursor position in render-target pixels
+ *
+ * @details SDL reports event coordinates in window pixels, but a libRocket context is sized from
+ * gr_screen.max_w/max_h and renders through gr_set_2d_matrix, which is also render space. Rather
+ * than duplicating the conversion here we let mouse_get_real_pos do it.
+ *
+ * Note that this is the cursor position as of right now rather than the one carried by the event,
+ * so if several motion events are queued in a single os_poll libRocket sees the latest position
+ * for all of them. That is what it wants for hover state anyway.
+ */
+vec2d get_render_space_mouse_pos()
+{
+	int x = 0;
+	int y = 0;
+	mouse_get_real_pos(&x, &y);
+
+	return {i2fl(x), i2fl(y)};
+}
 
 bool transform_to_rocket(vec2d& in)
 {
@@ -144,7 +165,7 @@ bool mouse_motion_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	vec2d evt_pos = {(float)evt.motion.x, (float)evt.motion.y};
+	vec2d evt_pos = get_render_space_mouse_pos();
 	if (!transform_to_rocket(evt_pos)) {
 		// Out of bounds
 		return false;
@@ -167,7 +188,7 @@ bool mouse_button_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	vec2d evt_pos = {(float)evt.button.x, (float)evt.button.y};
+	vec2d evt_pos = get_render_space_mouse_pos();
 	if (!transform_to_rocket(evt_pos)) {
 		// Out of bounds
 		return false;
