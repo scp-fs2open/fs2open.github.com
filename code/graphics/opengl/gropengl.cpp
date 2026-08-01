@@ -1164,6 +1164,7 @@ void gr_opengl_init_function_pointers()
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 	gr_screen.gf_get_property = gr_opengl_get_property;
+	gr_screen.gf_get_memory_stats = gr_opengl_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;

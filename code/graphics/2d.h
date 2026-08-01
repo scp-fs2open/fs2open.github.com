@@ -716,6 +716,30 @@ struct gr_debug_stats {
 	int on_demand_texture_uploads = 0;
 };
 
+/**
+ * @brief Cross-backend memory usage snapshot for the profiler overlay's memory panel
+ *
+ * Unlike gr_debug_stats, this is always populated when queried (no -gr_debug gate) -- memory
+ * usage is meant to be visible to anyone with the profiler overlay open. Each group still carries
+ * its own "valid" flag since not every backend/build collects every group (e.g. both graphics
+ * backends disabled at build time). See gr_get_memory_stats().
+ */
+struct gr_memory_stats {
+	bool model_heap_valid = false;
+	size_t model_vertex_heap_used = 0;
+	size_t model_vertex_heap_size = 0;
+	size_t model_index_heap_used = 0;
+	size_t model_index_heap_size = 0;
+
+	bool locked_bitmap_ram_valid = false;
+	size_t locked_bitmap_ram_bytes = 0;
+
+	bool gpu_purpose_valid = false;
+	size_t gpu_texture_bytes = 0;
+	size_t gpu_geometry_bytes = 0;
+	size_t gpu_render_target_bytes = 0;
+};
+
 typedef struct screen {
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
@@ -993,6 +1017,10 @@ typedef struct screen {
 	// so backends without per-draw-call counters (OpenGL, stub) don't have to assign it.
 	std::function<void(gr_debug_stats& stats)> gf_get_debug_stats = [](gr_debug_stats&) {};
 
+	// Fills in whichever memory_stats groups this backend collects (GPU-purpose byte totals).
+	// Defaults to a no-op so backends without per-purpose tagging don't have to assign it.
+	std::function<void(gr_memory_stats& stats)> gf_get_memory_stats = [](gr_memory_stats&) {};
+
 	std::function<int()> gf_create_query_object;
 	std::function<void(int obj, QueryType type)> gf_query_value;
 	std::function<bool(int obj)> gf_query_value_available;
@@ -1190,6 +1218,15 @@ void gr_flip(bool execute_scripting = true);
  * to call every frame regardless of backend or debug flag.
  */
 gr_debug_stats gr_get_debug_stats();
+
+/**
+ * @brief Collects whichever cross-backend memory usage stats are available
+ *
+ * Unlike gr_get_debug_stats(), this is always populated (no -gr_debug gate) -- memory usage is
+ * meant to be visible whenever the profiler overlay is open. Safe to call every frame regardless
+ * of backend or build configuration; groups a backend/build doesn't support stay invalid/zero.
+ */
+gr_memory_stats gr_get_memory_stats();
 
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
