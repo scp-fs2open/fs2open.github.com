@@ -47,6 +47,9 @@
 #include "utils/string_utils.h"
 #include "gamesequence/gamesequence.h"
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl3.h"
+
 #ifdef WITH_OPENGL
 #include "graphics/opengl/gropengl.h"
 #endif
@@ -1643,6 +1646,27 @@ void gr_screen_resize(int width, int height)
 	gr_setup_viewport();
 }
 
+void gr_window_to_render_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		// Rendering goes straight to the window, so the two spaces are the same
+		return;
+	}
+
+	x *= i2fl(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first);
+	y *= i2fl(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second);
+}
+
+void gr_render_to_window_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		return;
+	}
+
+	x *= static_cast<float>(Cmdline_window_res->first) / i2fl(gr_screen.max_w);
+	y *= static_cast<float>(Cmdline_window_res->second) / i2fl(gr_screen.max_h);
+}
+
 int gr_get_resolution_class(int width, int height)
 {
 	if ((width >= GR_1024_THRESHOLD_WIDTH) && (height >= GR_1024_THRESHOLD_HEIGHT)) {
@@ -3160,6 +3184,27 @@ static void output_uniform_debug_data()
 	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
 	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
 	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
+}
+
+void gr_imgui_begin_frame()
+{
+	gr_imgui_new_frame();      // renderer backend (OpenGL/Vulkan)
+	ImGui_ImplSDL3_NewFrame(); // platform backend, derives the display size from the SDL window
+
+	if (Cmdline_window_res) {
+		// The platform backend just sized ImGui to the window, but with -window_res active the
+		// frame is rendered into an offscreen buffer at gr_screen.max_w/max_h and only stretched
+		// to the window when we flip. Left alone, the ImGui renderer backend would set a
+		// window-sized viewport and projection on a render-sized target, so the UI would be drawn
+		// into a corner of the frame at the wrong scale before being stretched a second time.
+		//
+		// The framebuffer scale is the target's pixel ratio, which is 1:1 by definition here.
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2(i2fl(gr_screen.max_w), i2fl(gr_screen.max_h));
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	}
+
+	ImGui::NewFrame();
 }
 
 void gr_flip(bool execute_scripting)

@@ -12,6 +12,7 @@
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "io/joy_ff.h"
 
@@ -786,13 +787,42 @@ void os_defer_events_on_load_screen() {
 	}
 }
 
+// ImGui lays out at the render resolution (see gr_imgui_begin_frame), but SDL reports mouse
+// coordinates in window pixels, so positional events have to be converted before they reach it.
+//
+// Note that ImGui_ImplSDL3_NewFrame has a SDL_GetGlobalMouseState fallback that queues an
+// unconverted position. It only fires when no window is hovered and no buttons are held, i.e. the
+// cursor is outside the window entirely, so it cannot affect hit testing.
+static SDL_Event scale_imgui_mouse_event(const SDL_Event& event)
+{
+	SDL_Event scaled = event;
+
+	switch (event.type) {
+	case SDL_EVENT_MOUSE_MOTION:
+		gr_window_to_render_pos(scaled.motion.x, scaled.motion.y);
+		gr_window_to_render_pos(scaled.motion.xrel, scaled.motion.yrel);
+		break;
+
+	case SDL_EVENT_MOUSE_BUTTON_DOWN:
+	case SDL_EVENT_MOUSE_BUTTON_UP:
+		gr_window_to_render_pos(scaled.button.x, scaled.button.y);
+		break;
+
+	default:
+		break;
+	}
+
+	return scaled;
+}
+
 static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
 	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
-		ImGui_ImplSDL3_ProcessEvent(&event);
+		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
+		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
 
 		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
 									(event.type == SDL_EventType::SDL_EVENT_KEY_UP ||
