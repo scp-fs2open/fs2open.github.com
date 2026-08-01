@@ -6,6 +6,9 @@
 #include "tracing.h"
 
 #include "graphics/2d.h"
+#include "io/timer.h"
+#include "model/model.h"
+#include "object/object.h"
 
 // ImPlot's Plot*() functions are templates that get instantiated here (unlike ImGui's ordinary
 // function API), and their header-inline ImPool<ImPlotItem>::Add() uses memcpy on the
@@ -100,16 +103,19 @@ ImU32 color_for_name(const char* name) {
 
 /**
  * Draws a single 100%-stacked horizontal "frame budget" bar: one row whose width is split into
- * segments proportional to each category's share of the frame's traced time (top 5 contributors +
- * "Other"), followed by a legend with matching swatches, absolute ms and percentage. Cheaper than a
- * pie chart -- it's a handful of ImDrawList rectangles with no ImPlot plot setup.
+ * segments proportional to each category's share of the frame's traced time (the snapshot's
+ * top contributors, see FRAME_OVERLAY_MAX_CONTRIBUTORS, + "Other"), followed by a legend with
+ * matching swatches, absolute ms and percentage. Cheaper than a pie chart -- it's a handful of
+ * ImDrawList rectangles with no ImPlot plot setup.
  */
 void draw_frame_budget_bar(const frame_overlay_snapshot& snapshot) {
 	if (snapshot.total_nanosec == 0) {
 		return;
 	}
 
-	constexpr int MAX_SEGMENTS = 6; // top 5 contributors + "Other"
+	// +1 for "Other": snapshot.top_contributors holds at most FRAME_OVERLAY_MAX_CONTRIBUTORS
+	// entries (see tracing.h), so that's the real bound on how many segments can ever exist here.
+	constexpr int MAX_SEGMENTS = static_cast<int>(FRAME_OVERLAY_MAX_CONTRIBUTORS) + 1;
 	constexpr ImU32 OTHER_COLOR = IM_COL32(130, 130, 130, 255);
 
 	struct segment {
@@ -124,7 +130,12 @@ void draw_frame_budget_bar(const frame_overlay_snapshot& snapshot) {
 
 	const auto total = static_cast<double>(snapshot.total_nanosec);
 
+	// Self-defending against MAX_SEGMENTS regardless of caller bookkeeping, since this writes into
+	// a fixed-size array: silently drops anything past capacity rather than overflowing it.
 	auto add_segment = [&](const char* name, uint64_t self_nanosec, ImU32 color) {
+		if (count >= MAX_SEGMENTS) {
+			return;
+		}
 		segments[count].name = name;
 		segments[count].pct = 100.0 * static_cast<double>(self_nanosec) / total;
 		segments[count].ms = static_cast<float>(static_cast<double>(self_nanosec) / NANOSEC_PER_MS);
@@ -133,12 +144,9 @@ void draw_frame_budget_bar(const frame_overlay_snapshot& snapshot) {
 	};
 
 	for (const auto& contributor : snapshot.top_contributors) {
-		if (count >= MAX_SEGMENTS) {
-			break;
-		}
 		add_segment(contributor.name.c_str(), contributor.self_nanosec, color_for_name(contributor.name.c_str()));
 	}
-	if (snapshot.other_nanosec > 0 && count < MAX_SEGMENTS) {
+	if (snapshot.other_nanosec > 0) {
 		add_segment("Other", snapshot.other_nanosec, OTHER_COLOR);
 	}
 
@@ -215,6 +223,117 @@ void draw_graphics_debug_stats() {
 	}
 }
 
+// Memory stats describe level-scope state (loaded models, live object pools, GPU heaps), not
+// per-frame state, so they're refreshed on an interval rather than walked every frame like the
+// timing data above -- that avoids perturbing the very frame cost this overlay measures.
+constexpr int MEMORY_STATS_REFRESH_INTERVAL_MS = 1000;
+
+bool Memory_stats_initialized = false;
+int Last_memory_stats_refresh_ms = 0;
+object_memory_stats Cached_object_memory_stats;
+model_memory_stats Cached_model_memory_stats;
+gr_memory_stats Cached_gr_memory_stats;
+
+void refresh_memory_stats_if_needed() {
+	int now_ms = timer_get_milliseconds();
+	if (Memory_stats_initialized && (now_ms - Last_memory_stats_refresh_ms) < MEMORY_STATS_REFRESH_INTERVAL_MS) {
+		return;
+	}
+
+	Cached_object_memory_stats = obj_get_memory_stats();
+	Cached_model_memory_stats = model_get_memory_stats();
+	Cached_gr_memory_stats = gr_get_memory_stats();
+
+	Last_memory_stats_refresh_ms = now_ms;
+	Memory_stats_initialized = true;
+}
+
+/**
+ * Formats a byte count as a human-readable string using the largest unit that keeps at least one
+ * digit before the decimal point (e.g. "12.3 MB"). Returned by value: several call sites below pass
+ * multiple format_bytes() results as arguments to the same ImGui::Text() call, and every temporary
+ * in a function call's argument list lives until the end of that call, so this needs no buffer
+ * management to stay safe -- unlike returning a pointer into any kind of shared/reused storage.
+ */
+SCP_string format_bytes(size_t bytes) {
+	constexpr double KB = 1024.0;
+	constexpr double MB = KB * 1024.0;
+	constexpr double GB = MB * 1024.0;
+
+	char buf[32];
+	if (auto b = static_cast<double>(bytes); b >= GB) {
+		snprintf(buf, sizeof(buf), "%.2f GB", b / GB);
+	} else if (b >= MB) {
+		snprintf(buf, sizeof(buf), "%.2f MB", b / MB);
+	} else if (b >= KB) {
+		snprintf(buf, sizeof(buf), "%.2f KB", b / KB);
+	} else {
+		snprintf(buf, sizeof(buf), SIZE_T_ARG " B", bytes);
+	}
+
+	return SCP_string(buf);
+}
+
+/**
+ * Draws pool occupancy (used / max) for the object, ship, and weapon pools. These are fixed-size
+ * static arrays, so their byte footprint is a compile-time constant -- occupancy is the only
+ * signal worth showing.
+ */
+void draw_object_memory_stats() {
+	const object_memory_stats& stats = Cached_object_memory_stats;
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Object Management");
+	ImGui::Text("Objects: %d / %d (peak %d)", stats.objects_used, stats.objects_max, stats.objects_peak);
+	ImGui::Text("Ships:   %d / %d", stats.ships_used, stats.ships_max);
+	ImGui::Text("Weapons: %d / %d", stats.weapons_used, stats.weapons_max);
+}
+
+/**
+ * Draws model and texture memory usage. The GPU-heap numbers (live, reflects frees as models
+ * unload) and the per-model summed numbers (from currently loaded models) are two different views
+ * of related-but-not-identical data and are deliberately not added together into a single total.
+ */
+void draw_asset_memory_stats() {
+	const model_memory_stats& model_stats = Cached_model_memory_stats;
+	const gr_memory_stats& gr_stats = Cached_gr_memory_stats;
+
+	if (!model_stats.valid && !gr_stats.model_heap_valid && !gr_stats.locked_bitmap_ram_valid) {
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Assets");
+
+	if (model_stats.valid) {
+		ImGui::Text("Models loaded: %d", model_stats.model_count);
+		ImGui::Text("  Vertex data: %s   Index data: %s   BSP/collision: %s",
+			format_bytes(model_stats.vertex_bytes).c_str(),
+			format_bytes(model_stats.index_bytes).c_str(),
+			format_bytes(model_stats.bsp_data_bytes).c_str());
+	}
+
+	if (gr_stats.locked_bitmap_ram_valid) {
+		ImGui::Text("Bitmaps (locked): %s", format_bytes(gr_stats.locked_bitmap_ram_bytes).c_str());
+	}
+
+	if (gr_stats.model_heap_valid) {
+		ImGui::Text("GPU model vertex heap: %s / %s",
+			format_bytes(gr_stats.model_vertex_heap_used).c_str(),
+			format_bytes(gr_stats.model_vertex_heap_size).c_str());
+		ImGui::Text("GPU model index heap:  %s / %s",
+			format_bytes(gr_stats.model_index_heap_used).c_str(),
+			format_bytes(gr_stats.model_index_heap_size).c_str());
+	}
+
+	if (gr_stats.gpu_purpose_valid) {
+		ImGui::Text("GPU textures: %s   geometry: %s   render targets: %s",
+			format_bytes(gr_stats.gpu_texture_bytes).c_str(),
+			format_bytes(gr_stats.gpu_geometry_bytes).c_str(),
+			format_bytes(gr_stats.gpu_render_target_bytes).c_str());
+	}
+}
+
 } // namespace
 
 void profiler_overlay_frame() {
@@ -259,6 +378,12 @@ void profiler_overlay_frame() {
 	}
 
 	draw_graphics_debug_stats();
+
+	refresh_memory_stats_if_needed();
+	if (ImGui::CollapsingHeader("Memory", ImGuiTreeNodeFlags_DefaultOpen)) {
+		draw_object_memory_stats();
+		draw_asset_memory_stats();
+	}
 
 	ImGui::End();
 }

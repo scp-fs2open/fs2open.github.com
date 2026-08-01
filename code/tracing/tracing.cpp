@@ -71,6 +71,12 @@ using namespace tracing;
 std::unique_ptr<ThreadedTraceEventWriter> traceEventWriter;
 std::unique_ptr<ThreadedMainFrameTimer> mainFrameTimer;
 std::unique_ptr<FrameProfiler> frameProfiler;
+// Guards frameProfiler's lifetime. submit_event() reads it from whichever thread emits a trace
+// event -- not just the main thread; e.g. the cutscene decode/audio threads (TRACE_SCOPE in
+// cutscene/player.cpp) -- while set_frame_profiling_enabled() constructs/destroys it from the main
+// thread whenever the "Frame Profiler Overlay" option is toggled at runtime. Without this, a toggle
+// mid-cutscene can free the object out from under a concurrent processEvent() call.
+std::mutex frameProfilerMutex;
 
 SCP_vector<int> query_objects;
 // Free list for backends where queries are immediately reusable (OpenGL).
@@ -153,8 +159,11 @@ void submit_event(trace_event* evt) {
 		mainFrameTimer->processEvent(evt);
 	}
 
-	if (frameProfiler) {
-		frameProfiler->processEvent(evt);
+	{
+		std::lock_guard<std::mutex> lock(frameProfilerMutex);
+		if (frameProfiler) {
+			frameProfiler->processEvent(evt);
+		}
 	}
 }
 
@@ -281,6 +290,7 @@ void process_events() {
 	}
 }
 void frame_profile_process_frame() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
 	if (!frameProfiler) {
 		return;
 	}
@@ -289,29 +299,34 @@ void frame_profile_process_frame() {
 }
 
 SCP_string get_frame_profile_output() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
 	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
 
 	return frameProfiler->getContent();
 }
 
 const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
 	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
 
 	return frameProfiler->getOverlaySnapshot();
 }
 
 bool frame_profiling_active() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
 	return frameProfiler != nullptr;
 }
 
 void set_frame_profiling_enabled(bool enable) {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
+
 	// The profiler's existence is the single source of truth for "is the frame profiler
 	// collecting". submit_event() feeds it whenever it exists, and frame_profile_process_frame()
 	// (the only thing that drains its event buffer) is driven from gr_flip(), so collection and
 	// draining are gated on the same condition and cannot drift apart. Destroying it on disable
 	// is what stops collection -- leaving a live profiler behind while nothing drained it is how
 	// its buffer used to grow without bound.
-	if (enable != frame_profiling_active()) {
+	if (enable != (frameProfiler != nullptr)) {
 		if (enable) {
 			frameProfiler.reset(new FrameProfiler());
 		} else {
