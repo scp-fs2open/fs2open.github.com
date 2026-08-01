@@ -339,7 +339,22 @@ vk::BufferUsageFlags VulkanBufferManager::getVkUsageFlags(BufferType type, bool 
 	return flags;
 }
 
-MemoryUsage VulkanBufferManager::getMemoryUsage(BufferUsageHint hint) 
+namespace {
+MemoryPurpose bufferTypeToPurpose(BufferType type)
+{
+	switch (type) {
+	case BufferType::Vertex:
+	case BufferType::Index:
+		return MemoryPurpose::Geometry;
+	case BufferType::Uniform:
+	default:
+		// Uniform buffers are already tracked separately via UniformBufferManager/gr_debug_stats.
+		return MemoryPurpose::Unknown;
+	}
+}
+}
+
+MemoryUsage VulkanBufferManager::getMemoryUsage(BufferUsageHint hint)
 {
 	switch (hint) {
 	case BufferUsageHint::Static:
@@ -455,7 +470,8 @@ bool VulkanBufferManager::createOrResizeBuffer(VulkanBufferObject& bufferObj, si
 
 	// Allocate memory
 	MemoryUsage memUsage = getMemoryUsage(bufferObj.usage);
-	if (!m_memoryManager->allocateBufferMemory(bufferObj.buffer, memUsage, bufferObj.allocation)) {
+	if (!m_memoryManager->allocateBufferMemory(
+			bufferObj.buffer, memUsage, bufferObj.allocation, bufferTypeToPurpose(bufferObj.type))) {
 		m_device.destroyBuffer(bufferObj.buffer);
 		bufferObj.buffer = oldBuffer;
 		bufferObj.allocation = oldAllocation;
