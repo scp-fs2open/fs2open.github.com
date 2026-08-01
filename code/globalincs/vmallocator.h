@@ -15,6 +15,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 template <typename T>
@@ -119,10 +120,54 @@ extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
 
 
 template <typename T, typename U, typename Less = std::less<T>>
-using SCP_map = std::map<T, U, Less, std::allocator<std::pair<const T, U>>>;
+class SCP_map : public std::map<T, U, Less, std::allocator<std::pair<const T, U>>>
+{
+public:
+	using std::map<T, U, Less, std::allocator<std::pair<const T, U>>>::map;	// inherit all constructors
+
+	bool contains(const T& key) const
+	{
+		return this->find(key) != this->end();
+	}
+
+	// returns a copy of the value at the key, or a copy of default_value if the key is not present;
+	// mirrors std::optional::value_or, and accepts any default that is convertible to the mapped type
+	template <typename V = U>
+	U value_or(const T& key, V&& default_value) const
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : static_cast<U>(std::forward<V>(default_value));
+	}
+
+	// returns a reference to the value at the key, or to default_value if the key is not present;
+	// the map and default_value must both outlive the returned reference (use value_or otherwise)
+	const U& at_or(const T& key, const U& default_value) const&
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : default_value;
+	}
+
+	// deleted to prevent returning a reference to a temporary default, which would dangle
+	const U& at_or(const T& key, const U&& default_value) const& = delete;
+
+	// deleted to prevent returning a reference into a temporary map, which would dangle
+	const U& at_or(const T& key, const U& default_value) && = delete;
+	const U& at_or(const T& key, const U& default_value) const&& = delete;
+};
+template<typename T, typename U> SCP_map(std::initializer_list<std::pair<T, U>>) -> SCP_map<T, U>;
 
 template <typename T, typename U, typename Less = std::less<T>>
-using SCP_multimap = std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>;
+class SCP_multimap : public std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>
+{
+public:
+	using std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>::multimap;	// inherit all constructors
+
+	bool contains(const T& key) const
+	{
+		return this->find(key) != this->end();
+	}
+};
+template<typename T, typename U> SCP_multimap(std::initializer_list<std::pair<T, U>>) -> SCP_multimap<T, U>;
 
 template <typename T>
 using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
@@ -184,7 +229,41 @@ struct SCP_string_lcase_less_than {
 };
 
 template <typename Key, typename T, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
-using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>;
+class SCP_unordered_map : public std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>
+{
+public:
+	using std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>::unordered_map;	// inherit all constructors
+
+	bool contains(const Key& key) const
+	{
+		return this->find(key) != this->end();
+	}
+
+	// returns a copy of the value at the key, or a copy of default_value if the key is not present;
+	// mirrors std::optional::value_or, and accepts any default that is convertible to the mapped type
+	template <typename V = T>
+	T value_or(const Key& key, V&& default_value) const
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : static_cast<T>(std::forward<V>(default_value));
+	}
+
+	// returns a reference to the value at the key, or to default_value if the key is not present;
+	// the map and default_value must both outlive the returned reference (use value_or otherwise)
+	const T& at_or(const Key& key, const T& default_value) const&
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : default_value;
+	}
+
+	// deleted to prevent returning a reference to a temporary default, which would dangle
+	const T& at_or(const Key& key, const T&& default_value) const& = delete;
+
+	// deleted to prevent returning a reference into a temporary map, which would dangle
+	const T& at_or(const Key& key, const T& default_value) && = delete;
+	const T& at_or(const Key& key, const T& default_value) const&& = delete;
+};
+template<typename Key, typename T> SCP_unordered_map(std::initializer_list<std::pair<Key, T>>) -> SCP_unordered_map<Key, T>;
 
 template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 class SCP_unordered_set : public std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>
