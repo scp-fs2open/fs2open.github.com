@@ -3,8 +3,9 @@
 
 #include "menu.h"
 
+#include <ui/widgets/data_list_menu.h>
+
 #include <QAction>
-#include <QFont>
 #include <QLayout>
 #include <QMenuBar>
 #include <QWidget>
@@ -36,6 +37,7 @@ int propagate_disabled_status(QMenu* top) {
 }
 
 void installSelectMenu(QWidget* dialog,
+	EditorViewport* viewport,
 	std::function<std::vector<SelectMenuEntry>()> gather,
 	std::function<int()> currentId,
 	std::function<void(int)> onChosen,
@@ -58,26 +60,11 @@ void installSelectMenu(QWidget* dialog,
 
 	// Rebuild the list from the live scene every time the menu opens.
 	QObject::connect(menu, &QMenu::aboutToShow, menu,
-		[menu, gather = std::move(gather), currentId = std::move(currentId), onChosen = std::move(onChosen)]() {
+		[menu, viewport, gather = std::move(gather), currentId = std::move(currentId), onChosen = std::move(onChosen)]() {
 			menu->clear();
 			const int current = currentId ? currentId() : -1;
-			QAction* currentAct = nullptr;
-			for (const auto& entry : gather()) {
-				QAction* act = menu->addAction(entry.name);
-				if (entry.id == current) {
-					// Highlight the current object with a bold font
-					QFont font = act->font();
-					font.setBold(true);
-					act->setFont(font);
-					currentAct = act;
-				}
-				const int id = entry.id;
-				QObject::connect(act, &QAction::triggered, menu, [onChosen, id]() { onChosen(id); });
-			}
-			// Open with the current item pre-highlighted.
-			if (currentAct != nullptr) {
-				menu->setActiveAction(currentAct);
-			}
+			const DataMenuStyle style = viewport ? viewport->Data_menu_style : DataMenuStyle::Columns;
+			populateDataListMenu(menu, gather(), style, onChosen, 0, current);
 		});
 }
 

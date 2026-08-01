@@ -146,9 +146,11 @@ void EditorViewport::loadSettings() {
 	// Handles its own group, since main.cpp reads it before the viewport exists.
 	Theme_mode                         = readThemeModeSetting();
 	{
-		const int rawStyle = settings.value("sexp_data_menu_style", static_cast<int>(Sexp_data_menu_style)).toInt();
-		if (rawStyle >= 0 && rawStyle <= static_cast<int>(SexpDataMenuStyle::Searchable)) {
-			Sexp_data_menu_style = static_cast<SexpDataMenuStyle>(rawStyle);
+		// Fall back to the pre-rename key so an existing choice carries over.
+		const int legacyStyle = settings.value("sexp_data_menu_style", static_cast<int>(Data_menu_style)).toInt();
+		const int rawStyle    = settings.value("data_menu_style", legacyStyle).toInt();
+		if (rawStyle >= 0 && rawStyle <= static_cast<int>(DataMenuStyle::Searchable)) {
+			Data_menu_style = static_cast<DataMenuStyle>(rawStyle);
 		}
 	}
 
@@ -198,7 +200,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_ship_editor",          Show_sexp_help_ship_editor);
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	writeThemeModeSetting(Theme_mode);
-	settings.setValue("sexp_data_menu_style",                static_cast<int>(Sexp_data_menu_style));
+	settings.setValue("data_menu_style",                     static_cast<int>(Data_menu_style));
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);
@@ -299,7 +301,7 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
+		if (ptr->flags.any_of(Object::Object_Flags::Hidden,Object::Object_Flags::Locked_from_editing)) {
 			valid = 0;
 		}
 		if (!isObjectVisibleInLayer(ptr)) {
@@ -722,7 +724,7 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		return 0;
 	}
 
-	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
+	if (objp->flags.any_of(Object::Object_Flags::Hidden,Object::Object_Flags::Locked_from_editing)) {
 		return 0;
 	}
 	if (!isObjectVisibleInLayer(objp)) {

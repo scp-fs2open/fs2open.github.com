@@ -8731,7 +8731,7 @@ void wing_maybe_cleanup( wing *wingp, int team )
 		// waves so we can mark the wing as gone and no other ships arrive
 		// Goober5000 - also if it's departing... this is sort of, but not exactly, what :V: did;
 		// but it seems to be consistent with how it should behave
-		if (wingp->flags[Ship::Wing_Flags::Departing, Ship::Wing_Flags::Departure_ordered])
+		if (wingp->flags.any_of(Ship::Wing_Flags::Departing,Ship::Wing_Flags::Departure_ordered))
 			wingp->current_wave = wingp->num_waves;
 
 		// Goober5000 - some changes for clarity and closing holes
@@ -13032,7 +13032,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			int effective_primary_banks = 0;
 			for (int it = 0; it < num_primary_banks; it++)
 			{
-				if ((it == bank_to_fire) || !(Weapon_info[swp->primary_bank_weapons[it]].wi_flags[Weapon::Info_Flags::Nolink, Weapon::Info_Flags::No_linked_penalty]))
+				if ((it == bank_to_fire) ||
+					Weapon_info[swp->primary_bank_weapons[it]]
+							.wi_flags.none_of(Weapon::Info_Flags::Nolink, Weapon::Info_Flags::No_linked_penalty))
 					effective_primary_banks++;
 			}
 			Assert(effective_primary_banks >= 1);
@@ -13896,6 +13898,37 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 
 extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index);
 
+// Determines whether this secondary bank is currently capable of dual fire.  Note that the
+// Secondary_dual_fire flag can legitimately be set even when this returns false: the flag is
+// ignored rather than cleared so that the player's dual fire preference isn't lost when
+// cycling through banks or weapons.  All code that acts on the flag should check this too.
+bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank)
+{
+	if (bank < 0 || bank >= shipp->weapons.num_secondary_banks)
+		return false;
+
+	int weapon_class = shipp->weapons.secondary_bank_weapons[bank];
+	if (weapon_class < 0)
+		return false;
+
+	if (Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::No_doublefire])
+		return false;
+
+	if (shipp->objnum == OBJ_INDEX(Player_obj))
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire])
+			return false;
+	}
+	else
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire])
+			return false;
+	}
+
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+	return pm->missile_banks[bank].num_slots > 1;
+}
+
 //	Object *obj fires its secondary weapon, if it can.
 //	If its most recently fired weapon is a remotely detonatable weapon, detonate it.
 //	Returns number of weapons fired.  Note, for swarmers, returns 1 if it is allowed
@@ -14258,25 +14291,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			goto done_secondary;
 		}
 
-		// Handle the optional disabling of dual fire
-		// dual fire/doublefire can be disabled for individual weapons, for players, or for AIs
-		// if any of these apply to the current weapon, unset the dual fire flag on the ship 
-		// then proceed as normal.
-		// This is only handled at firing time so dualfire isn't lost when cycling through weapons
-		if (shipp->flags[Ship_Flags::Secondary_dual_fire] &&
-			( wip->wi_flags[Weapon::Info_Flags::No_doublefire] || 
-			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_secondary_doublefire] && 
-				shipp->objnum != OBJ_INDEX(Player_obj) ) ||
-			( The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] &&
-				shipp->objnum == OBJ_INDEX(Player_obj) ))
-			) {
-			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
-		}
-
 		int start_slot, end_slot;
 		no_energy = shipp->weapon_energy < 2 * wip->energy_consumed; // whether there's enough energy for at least 1 shot was checked above
 
-		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && num_slots > 1) {
+		// Dual fire can be unavailable for this bank because it has only one firepoint, because
+		// the weapon disallows it, or because of an ai_profiles restriction.  In any of these
+		// cases the flag is ignored rather than cleared so the dual fire preference isn't lost
+		// when cycling through banks or weapons.
+		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(shipp, bank) ) {
 			start_slot = swp->secondary_next_slot[bank];
 			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
 			if ( check_ammo && ((swp->secondary_bank_ammo[bank] < 2 && !no_ammo_needed) || no_energy) ) {
@@ -14285,9 +14307,6 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				end_slot = start_slot+1;
 			}
 		} else {
-			// de-set the flag just in case dual-fire was set but couldn't be used
-			// because there's less than two firepoints
-			shipp->flags.remove(Ship_Flags::Secondary_dual_fire);
 			start_slot = swp->secondary_next_slot[bank];
 			end_slot = start_slot;
 		}
@@ -14407,7 +14426,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		swp = &Player_ship->weapons;
 		if (bank >= 0) {
 			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
+			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, bank)){
 				joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
 			} else {
 				joy_ff_play_secondary_shoot((int) wip->cargo_size);
@@ -16491,7 +16510,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 
 			dist = vm_vec_dist_quick(&objp->pos, &requester_obj->pos);
 
-			if (aip->ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Awaiting_repair, AI::AI_Flags::Being_repaired])
+			if (aip->ai_flags.any_of(AI::AI_Flags::Repairing,AI::AI_Flags::Awaiting_repair,AI::AI_Flags::Being_repaired))
 			{
 				// support ship is already busy, track the one that will be
 				// done soonest by estimating how many seconds it will take for the support ship
@@ -21978,15 +21997,15 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 {
 	if (stage == ship::warpstage::BOTH) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower, Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_1_dock_follower,Ship::Ship_Flags::Arriving_stage_2,Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 		}
 		else {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_2];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_2);
 		}
 	}
 	else if (stage == ship::warpstage::STAGE1) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_1, Ship::Ship_Flags::Arriving_stage_1_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_1,Ship::Ship_Flags::Arriving_stage_1_dock_follower);
 		}
 		else {
 			return flags[Ship::Ship_Flags::Arriving_stage_1];
@@ -21994,7 +22013,7 @@ bool ship::is_arriving(ship::warpstage stage, bool dock_leader_or_single) const
 	}
 	if (stage == ship::warpstage::STAGE2) {
 		if (!dock_leader_or_single) {
-			return flags[Ship::Ship_Flags::Arriving_stage_2, Ship::Ship_Flags::Arriving_stage_2_dock_follower];
+			return flags.any_of(Ship::Ship_Flags::Arriving_stage_2,Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 		}
 		else {
 			return flags[Ship::Ship_Flags::Arriving_stage_2];

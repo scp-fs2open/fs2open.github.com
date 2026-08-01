@@ -1429,7 +1429,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 			return 0;
 	}
 
-	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
+	if (objp->flags.any_of(Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing))
 		return 0;
 
 	mc.model_instance_num = -1;

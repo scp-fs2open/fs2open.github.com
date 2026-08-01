@@ -418,6 +418,14 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 		SDL_SetLogOutputFunction(&logHandler, nullptr);
 	}
 
+	// Initialize SDL's HIDAPI up front. SDL_hid_enumerate() nominally auto-inits, but FRED's space
+	// mouse support only reliably finds an already-connected device when HIDAPI is initialized here
+	// rather than lazily on first enumeration. Paired with SDL_hid_exit() in os_deinit().
+	if ( SDL_hid_init() != 0 )
+	{
+		mprintf(("Couldn't init SDL HIDAPI (space mouse may be unavailable): %s\n", SDL_GetError()));
+	}
+
 	if ( !SDL_Init(SDL_INIT_EVENTS) )
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
@@ -629,10 +637,13 @@ bool os_is_legacy_mode()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
-	// Free the view ports 
+	// Free the view ports
 	os::closeAllViewports();
 
 	SDL_Quit();
+
+	// Balance the SDL_hid_init() from os_init().
+	SDL_hid_exit();
 }
 
 void debug_int3(const char *file, int line)

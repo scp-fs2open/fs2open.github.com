@@ -8,7 +8,7 @@
 #include <ui/util/SignalBlockers.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/Theme.h>
-#include <ui/widgets/sexp_data_menu.h>
+#include <ui/widgets/data_list_menu.h>
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
@@ -262,6 +262,12 @@ sexp_tree_view::sexp_tree_view(QWidget* parent) : QTreeWidget(parent), _actions(
 	installShortcut(QKeySequence::Delete,
 		[](const SexpContextMenuState& s) { return s.can_delete; },
 		[this]() { deleteActionHandler(); });
+
+	// This keyboard shortcut does not need as much state checking because the helper 
+	// handles security checks and what to call, and any node should work here.
+	auto* shortcut = new QShortcut(QKeySequence(Qt::CTRL | Qt::Key_S), this);
+	shortcut->setContext(Qt::WidgetShortcut);
+	connect(shortcut, &QShortcut::activated, this, &sexp_tree_view::editActionHandlerHelper);
 }
 
 
@@ -1145,8 +1151,9 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSeparator();
 
 	auto replace_op_menu = popup_menu->addMenu(tr("Replace Operator"));
-
+	
 	auto replace_data_menu = popup_menu->addMenu(tr("Replace Data"));
+
 	auto replace_number_act =
 		replace_data_menu->addAction(tr("Number"), this, [this]() { replaceNumberDataHandler(); });
 	replace_number_act->setEnabled(false);
@@ -1155,6 +1162,7 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	replace_string_act->setEnabled(false);
 	replace_data_menu->addSeparator();
 
+	popup_menu->addAction(tr("Search for Replacement"), QKeySequence(Qt::CTRL | Qt::Key_S), this, [this]() { editActionHandlerHelper(); });
 	popup_menu->addSection("Variables");
 
 	auto modify_variable_act = popup_menu->addAction(tr("Add/Modify Variable"), this, [this]() {
@@ -1327,10 +1335,10 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 	replace_number_act->setEnabled(state.can_replace_number);
 	replace_string_act->setEnabled(state.can_replace_string);
 
-	const SexpDataMenuStyle dataMenuStyle = _viewport ? _viewport->Sexp_data_menu_style : SexpDataMenuStyle::Columns;
+	const DataMenuStyle dataMenuStyle = _viewport ? _viewport->Data_menu_style : DataMenuStyle::Columns;
 
 	auto collectDataItems = [](sexp_list_item* head) {
-		std::vector<SexpDataMenuItem> out;
+		std::vector<util::SelectMenuEntry> out;
 		sexp_list_item* ptr = head;
 		int data_idx = 0;
 		while (ptr) {
@@ -1343,14 +1351,17 @@ std::unique_ptr<QMenu> sexp_tree_view::buildContextMenu(QTreeWidgetItem* h) {
 		return out;
 	};
 
+	// The data menus already hold the Number / String / separator rows.
+	constexpr int dataMenuFixedRows = 3;
+
 	if (state.add_data_list) {
-		populateSexpDataSubmenu(add_data_menu, collectDataItems(state.add_data_list), dataMenuStyle,
-			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, false); });
+		populateDataListMenu(add_data_menu, collectDataItems(state.add_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, false); }, dataMenuFixedRows);
 	}
 
 	if (state.replace_data_list) {
-		populateSexpDataSubmenu(replace_data_menu, collectDataItems(state.replace_data_list), dataMenuStyle,
-			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, true); });
+		populateDataListMenu(replace_data_menu, collectDataItems(state.replace_data_list), dataMenuStyle,
+			[this](int data_idx) { addReplaceTypedDataHandler(data_idx, true); }, dataMenuFixedRows);
 	}
 
 	// Clipboard and copy operations
@@ -1608,11 +1619,20 @@ void sexp_tree_view::startOperatorQuickSearch(QTreeWidgetItem* item, const QStri
 void sexp_tree_view::filterOperatorPopup(const QString& text)
 {
 	_opList->clear();
+	SCP_set<QString> found_list;
+
 	if (text.isEmpty()) {
 		_opList->addItems(_opAll);
 	} else {
 		for (const auto& s : _opAll) {
-			if (s.contains(text, Qt::CaseInsensitive))
+			if (s.startsWith(text, Qt::CaseInsensitive)){
+				_opList->addItem(s);
+				found_list.insert(s);
+			}
+		}
+
+		for (const auto& s : _opAll) {
+			if (found_list.insert(s).second && s.contains(text, Qt::CaseInsensitive))
 				_opList->addItem(s);
 		}
 	}
@@ -1987,13 +2007,16 @@ void sexp_tree_view::handleDoubleClick() {
 
 // Helper function for making sure that search and edit are initiated consistently 
 void sexp_tree_view::editActionHandlerHelper(){
-	item_index = get_node(currentItem());
-
-	if (_model.compute_context_menu_state().can_edit_text) {
-		editDataActionHandler();
-	} else {
-		openNodeEditor(currentItem());
+	auto item = currentItem();
+	
+	// Just to be extra safe, early exit when an item is not selected
+	if (_currently_editing || _opPopupActive || item == nullptr || !_interface) {
+		return;
 	}
+
+	item_index = get_node(item);
+	// No longer gated to just certain types.
+	openNodeEditor(item);
 }
 
 // Public entry point for deleting the currently selected item. Simply delegates to deleteActionHandler().

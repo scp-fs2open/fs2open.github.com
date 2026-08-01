@@ -4147,7 +4147,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
-	} else if (first_time && (wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable, Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Mine])) {
+	} else if (first_time && (wip->wi_flags.any_of(Weapon::Info_Flags::Turret_Interceptable,Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Mine))) {
 		wip->weapon_hitpoints = wip->is_mine() ? 50 : 25; // mines are tankier by default, like bombs
 	}
 
@@ -5518,7 +5518,7 @@ void find_homing_object(object *weapon_objp, int num)
                 else if (objp->type == OBJ_WEAPON)
 				{
                     //don't attempt to home on weapons if the weapon is a huge weapon or is a javelin homing weapon.
-                    if (wip->wi_flags[Weapon::Info_Flags::Huge, Weapon::Info_Flags::Homing_javelin])
+					if (wip->wi_flags.any_of(Weapon::Info_Flags::Huge,Weapon::Info_Flags::Homing_javelin))
                         continue;
                     
                     //don't look for local ssms that are gone for the time being
@@ -7148,9 +7148,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
 
 		size_t curr_pos = *position;
-		if (((Weapon_info[weapon_type].subtype == WP_LASER && parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) ||
-			 (Weapon_info[weapon_type].subtype == WP_MISSILE && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire])) &&
-			 (curr_pos > 0)) {
+		// only advance the pattern once per linked/paired shot rather than once per projectile
+		bool paired_shot = false;
+		if (Weapon_info[weapon_type].subtype == WP_LASER) {
+			paired_shot = parent_shipp->flags[Ship::Ship_Flags::Primary_linked];
+		} else if (Weapon_info[weapon_type].subtype == WP_MISSILE && !src_turret && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]) {
+			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
+			paired_shot = ship_secondary_bank_can_dual_fire(parent_shipp, parent_shipp->weapons.current_secondary_bank);
+		}
+		if (paired_shot && (curr_pos > 0)) {
 			curr_pos--;
 		}
 		++(*position);

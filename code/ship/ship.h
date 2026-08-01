@@ -936,8 +936,8 @@ public:
 
     //Helper functions
 	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false) const;
-	inline bool is_departing() const { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp_flags() const { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
+	inline bool is_departing() const { return flags.any_of(Ship::Ship_Flags::Depart_warp,Ship::Ship_Flags::Depart_dockbay); }
+	inline bool cannot_warp_flags() const { return flags.any_of(Ship::Ship_Flags::Warp_broken,Ship::Ship_Flags::Warp_never,Ship::Ship_Flags::Disabled,Ship::Ship_Flags::No_subspace_drive); }
 	inline bool is_dying_or_departing() const { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	const char* get_display_name() const;
@@ -1607,13 +1607,13 @@ public:
 
     //Helper functions
     
-    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber, Ship::Info_Flags::Support, Ship::Info_Flags::Escapepod]; }
-    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser, Ship::Info_Flags::Freighter, Ship::Info_Flags::Transport, Ship::Info_Flags::Corvette, Ship::Info_Flags::Gas_miner, Ship::Info_Flags::Awacs]; }
-    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital, Ship::Info_Flags::Supercap, Ship::Info_Flags::Drydock, Ship::Info_Flags::Knossos_device]; }
-    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Sentrygun]); }	// AL 11-24-97: this useful to know for targeting reasons
-// note: code that previously used is_harmless() / SIF_HARMLESS now uses several flags defined in objecttypes.tbl
+    inline bool is_small_ship() const { return flags.any_of(Ship::Info_Flags::Fighter,Ship::Info_Flags::Bomber,Ship::Info_Flags::Support,Ship::Info_Flags::Escapepod); }
+	inline bool is_big_ship() const { return flags.any_of(Ship::Info_Flags::Cruiser,Ship::Info_Flags::Freighter,Ship::Info_Flags::Transport,Ship::Info_Flags::Corvette,Ship::Info_Flags::Gas_miner,Ship::Info_Flags::Awacs); }
+	inline bool is_huge_ship() const { return flags.any_of(Ship::Info_Flags::Capital,Ship::Info_Flags::Supercap,Ship::Info_Flags::Drydock,Ship::Info_Flags::Knossos_device); }
+	inline bool is_flyable() const { return flags.none_of(Ship::Info_Flags::Cargo,Ship::Info_Flags::Navbuoy,Ship::Info_Flags::Sentrygun); } // AL 11-24-97: this useful to know for targeting reasons
+	  // note: code that previously used is_harmless() / SIF_HARMLESS now uses several flags defined in objecttypes.tbl
 //	inline bool is_harmless() const { return flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Escapepod]; }		// AL 12-3-97: ships that are not a threat
-    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber]; }
+	inline bool is_fighter_bomber() const { return flags.any_of(Ship::Info_Flags::Fighter,Ship::Info_Flags::Bomber); }
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
 
@@ -1817,6 +1817,7 @@ extern vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_in
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
 extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
+extern bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank);
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);

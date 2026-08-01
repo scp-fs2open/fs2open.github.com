@@ -88,9 +88,8 @@ BOOL InitialShips::OnInitDialog()
 	} else if ( m_initial_items == INITIAL_WEAPONS ) {
 		// get the list of initial weapons available by looking at all possible player ships, getting
 		// the weapon information for those ships, then putting those weapons onto the list
-		int allowed_weapons[MAX_WEAPON_TYPES];
+		SCP_vector<int> allowed_weapons(weapon_info_size(), 0);
 
-		memset( allowed_weapons, 0, sizeof(allowed_weapons) );
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
                 for (int i = 0; i < weapon_info_size(); ++i) {
@@ -145,12 +144,9 @@ void InitialShips::OnOK()
 
 	// zero out whichever array we are setting
 	if ( m_initial_items == INITIAL_SHIPS ) {
-		for ( i = 0; i < MAX_SHIP_CLASSES; i++ ){
-			Campaign.ships_allowed[i] = 0;
-		}
+		Campaign.ships_allowed.assign(ship_info_size(), 0);
 	} else if ( m_initial_items == INITIAL_WEAPONS ) {
-		for (i = 0; i < MAX_WEAPON_TYPES; i++ )
-			Campaign.weapons_allowed[i] = 0;
+		Campaign.weapons_allowed.assign(weapon_info_size(), 0);
 	}
 
 	for ( i = 0; i < m_list_count; i++ ) {

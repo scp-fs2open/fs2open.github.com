@@ -76,6 +76,7 @@
 #include "missioneditor/missionsave.h"
 
 #include "widgets/ObjectComboBox.h"
+#include "widgets/data_list_menu.h"
 
 #include "util.h"
 #include "mission/object.h"
@@ -1296,7 +1297,9 @@ void FredView::initializeTransformBar() {
 	_transformLocalBtn->setCheckable(true);
 	_transformLocalBtn->setToolButtonStyle(Qt::ToolButtonIconOnly);
 	_transformLocalBtn->setFixedSize(28, 24);
-	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value."));
+	_transformLocalBtn->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value. (X)"));
+	// FRED2 bound "Rotate Locally" to the X key; route it through the button so the per-mode local memory stays in sync.
+	_transformLocalBtn->setShortcut(QKeySequence(Qt::Key_X));
 	bindThemeIcon(_transformLocalBtn, QStringLiteral("rotlocal"));
 	_transformToolBar->addWidget(_transformLocalBtn);
 	connect(_transformLocalBtn, &QToolButton::toggled, this, [this](bool checked) {
@@ -1971,21 +1974,20 @@ void FredView::initializePopupMenus() {
 
 	_createSubmenu = new QMenu(tr("Create"), _viewPopup);
 
+	// Rebuilt on every open so a changed menu style preference takes effect.
 	_createShipSubmenu = new QMenu(tr("Ship"), _createSubmenu);
 	_createShipSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
 	connect(_createShipSubmenu, &QMenu::aboutToShow, this, [this]() {
-		if (_createShipSubmenu->actions().isEmpty()) {
-			populateCreateShipSubmenu();
-		}
+		_createShipSubmenu->clear();
+		populateCreateShipSubmenu();
 	});
 	_createSubmenu->addMenu(_createShipSubmenu);
 
 	_createPropSubmenu = new QMenu(tr("Prop"), _createSubmenu);
 	_createPropSubmenu->setStyleSheet("QMenu { menu-scrollable: 1; }");
 	connect(_createPropSubmenu, &QMenu::aboutToShow, this, [this]() {
-		if (_createPropSubmenu->actions().isEmpty()) {
-			populateCreatePropSubmenu();
-		}
+		_createPropSubmenu->clear();
+		populateCreatePropSubmenu();
 	});
 	_createSubmenu->addMenu(_createPropSubmenu);
 
@@ -2080,32 +2082,32 @@ void FredView::initializePopupMenus() {
 }
 
 void FredView::populateCreateShipSubmenu() {
+	std::vector<util::SelectMenuEntry> entries;
 	for (int i = 0; i < (int)Ship_info.size(); ++i) {
 		if (Ship_info[i].flags[Ship::Info_Flags::No_fred]) {
 			continue;
 		}
-		auto* action = new QAction(QString::fromUtf8(Ship_info[i].name), _createShipSubmenu);
-		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
-				_lastContextMenuLocalPos.y() * this->devicePixelRatio(), i);
-		});
-		_createShipSubmenu->addAction(action);
+		entries.push_back({QString::fromUtf8(Ship_info[i].name), i});
 	}
+	populateDataListMenu(_createShipSubmenu, entries, _viewport->Data_menu_style, [this](int shipClass) {
+		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(), shipClass);
+	});
 }
 
 void FredView::populateCreatePropSubmenu() {
+	std::vector<util::SelectMenuEntry> entries;
 	for (int i = 0; i < prop_info_size(); ++i) {
 		if (Prop_info[i].flags[Prop::Info_Flags::No_fred]) {
 			continue;
 		}
-		auto* action = new QAction(QString::fromStdString(Prop_info[i].name), _createPropSubmenu);
-		connect(action, &QAction::triggered, this, [this, i]() {
-			_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
-				_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
-				i);
-		});
-		_createPropSubmenu->addAction(action);
+		entries.push_back({QString::fromStdString(Prop_info[i].name), i});
 	}
+	populateDataListMenu(_createPropSubmenu, entries, _viewport->Data_menu_style, [this](int propClass) {
+		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
+			propClass);
+	});
 }
 
 void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
@@ -2427,6 +2429,16 @@ void FredView::on_actionCurrent_Ship_triggered(bool enabled) {
 
 		_viewport->needsUpdate();
 	}
+}
+void FredView::on_actionToggle_Viewpoint_triggered(bool) {
+	// Flip between the camera viewpoint (0) and the current ship's viewpoint (1).
+	if (_viewport->camera.getViewpoint() != 0 || !query_valid_object(fred->currentObject)) {
+		_viewport->camera.setViewpoint(0);
+	} else {
+		_viewport->camera.setViewpoint(1);
+		_viewport->camera.setViewObj(fred->currentObject);
+	}
+	_viewport->needsUpdate();
 }
 void FredView::on_actionControlModeCamera_triggered(bool enabled) {
 	if (enabled) {

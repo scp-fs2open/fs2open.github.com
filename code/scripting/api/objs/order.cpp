@@ -445,7 +445,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(ss_objp));
 			}
 			if (aip == Player_ai) {
-				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
+				ss_shipp->last_targeted_subobject[Player_num] = newh->ss;
 			}
 		}
 	}

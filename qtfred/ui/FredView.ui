@@ -89,6 +89,8 @@
      </property>
      <addaction name="actionCamera"/>
      <addaction name="actionCurrent_Ship"/>
+     <addaction name="separator"/>
+     <addaction name="actionToggle_Viewpoint"/>
     </widget>
     <addaction name="actionSceneBrowser"/>
     <addaction name="separator"/>
@@ -488,9 +490,6 @@
    <property name="toolTip">
     <string>Prevent selection from changing (Spacebar)</string>
    </property>
-   <property name="shortcut">
-    <string>Space</string>
-   </property>
   </action>
   <action name="actionWingForm">
    <property name="text">
@@ -545,9 +544,6 @@
    </property>
    <property name="toolTip">
     <string>Show Distances (D)</string>
-   </property>
-   <property name="shortcut">
-    <string>D</string>
    </property>
   </action>
   <action name="actionOrbitSelected">
@@ -878,6 +874,17 @@
     <string>Current &amp;Ship</string>
    </property>
   </action>
+  <action name="actionToggle_Viewpoint">
+   <property name="text">
+    <string>&amp;Toggle Viewpoint</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle between the camera and the current ship's viewpoint (Ctrl+Shift+V)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+V</string>
+   </property>
+  </action>
   <action name="actionx1">
    <property name="checkable">
     <bool>true</bool>
@@ -1049,6 +1056,9 @@
    <property name="text">
     <string>Props</string>
    </property>
+   <property name="shortcut">
+    <string>Shift+P</string>
+   </property>
   </action>
   <action name="actionWaypoint_Paths">
    <property name="text">
@@ -1076,7 +1086,7 @@
     <string>&amp;Team Loadout</string>
    </property>
    <property name="shortcut">
-    <string>Shift+P</string>
+    <string>Shift+L</string>
    </property>
   </action>
   <action name="actionBackground">
@@ -1146,6 +1156,9 @@
   <action name="actionShield_System">
    <property name="text">
     <string>Shie&amp;ld System</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+M</string>
    </property>
   </action>
   <action name="actionSet_Global_Ship_Flags">
@@ -1458,6 +1471,9 @@
   <action name="actionVolumetric_Nebula">
    <property name="text">
     <string>Volumetric Nebula</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+U</string>
    </property>
   </action>
   <action name="actionCalculate_Relative_Coordinates">

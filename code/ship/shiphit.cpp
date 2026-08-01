@@ -179,7 +179,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 	}
 
 	// create fireballs when subsys destroy for large ships.
-	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished, Ship::Subsystem_Flags::No_disappear]) && !no_explosion) {
+	if (subsys->flags.none_of(Ship::Subsystem_Flags::Vanished,Ship::Subsystem_Flags::No_disappear) &&
+		!no_explosion) {
 		vec3d center_to_subsys;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &ship_objp->pos);
 

@@ -1,4 +1,5 @@
 #include <QtWidgets/QTextEdit>
+#include <QShortcut>
 #include "ui/dialogs/WaypointEditorDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_WaypointEditorDialog.h"
@@ -20,6 +21,12 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 	this->setFocus();
 	ui->setupUi(this);
 
+	// F6 / Shift+F6 cycle to the next / previous waypoint path, mirroring the Next/Prev buttons.
+	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);
+	connect(nextShortcut, &QShortcut::activated, this, [this] { ui->nextPathButton->click(); });
+	auto* prevShortcut = new QShortcut(QKeySequence(QStringLiteral("Shift+F6")), this);
+	connect(prevShortcut, &QShortcut::activated, this, [this] { ui->prevPathButton->click(); });
+
 	ui->nameEdit->setMaxLength(NAME_LENGTH - 1);
 
 	// -1 is the "mixed selection" sentinel; shown as blank via specialValueText.
@@ -40,6 +47,7 @@ WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* vie
 	auto* model = _model.get();
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 				entries.reserve(Waypoint_lists.size());

@@ -1,5 +1,7 @@
 #include "ui/dialogs/JumpNodeEditorDialog.h"
 #include "ui/util/SignalBlockers.h"
+
+#include <QShortcut>
 #include "ui_JumpNodeEditorDialog.h"
 
 #include <globalincs/globals.h>
@@ -15,6 +17,12 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	// F6 / Shift+F6 cycle to the next / previous jump node, mirroring the Next/Prev buttons.
+	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);
+	connect(nextShortcut, &QShortcut::activated, this, [this] { ui->nextNodeButton->click(); });
+	auto* prevShortcut = new QShortcut(QKeySequence(QStringLiteral("Shift+F6")), this);
+	connect(prevShortcut, &QShortcut::activated, this, [this] { ui->prevNodeButton->click(); });
 
 	ui->nameLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->displayNameLineEdit->setMaxLength(NAME_LENGTH - 1);
@@ -38,6 +46,7 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 	Editor* editor = viewport->editor;
 	util::installSelectMenu(
 		this,
+		viewport,
 		[]() {
 			std::vector<util::SelectMenuEntry> entries;
 			for (const auto& jn : Jump_nodes) {

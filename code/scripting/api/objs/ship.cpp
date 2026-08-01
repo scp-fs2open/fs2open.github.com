@@ -784,20 +784,21 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
-		// we have a different target, or are clearng the target
+		// we have a different target, or are clearing the target
 		if(newh && newh->isValid())	{
-			aip->target_objnum = newh->objnum;
-			aip->target_signature = newh->sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objnum);
 
-			if (aip == Player_ai)
+			if (aip == Player_ai) {
+				// prevent hud_target_change_check() from restoring the wrong targeted subsystem
+				if (newh->objp()->type == OBJ_SHIP)
+					Ships[newh->objp()->instance].last_targeted_subobject[Player_num] = nullptr;
+
 				hud_shield_hit_reset(newh->objp());
+			}
 		} else if (lua_isnil(L, 2)) {
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -825,25 +826,21 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 	{
 		if(newh && newh->isValid())
 		{
-			if (aip == Player_ai) {
-				if (aip->target_signature != newh->objh.sig)
-					hud_shield_hit_reset(newh->objh.objp());
+			// this must be checked before the signature is updated in set_target_objnum
+			if (aip == Player_ai && aip->target_signature != newh->objh.sig)
+				hud_shield_hit_reset(newh->objh.objp());
 
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objh.objnum);
+			set_targeted_subsys(aip, newh->ss, newh->objh.objnum);
+
+			if (aip == Player_ai)
 				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
-			}
-
-			aip->target_objnum = newh->objh.objnum;
-			aip->target_signature = newh->objh.sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 		}
 		else
 		{
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-
-			set_targeted_subsys(aip, NULL, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -1654,7 +1651,7 @@ ADE_FUNC(callSupport,
 		return ADE_RETURN_FALSE;
 	}
 
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+	if (aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
 		return ADE_RETURN_FALSE;
 	}
 

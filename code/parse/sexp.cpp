@@ -4300,7 +4300,7 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 					for (const auto so : list_range(&Ship_obj_list))
 					{
 						const auto &obj = Objects[so->objnum];
-						if (obj.flags[Object::Object_Flags::Immobile, Object::Object_Flags::Dont_change_position, Object::Object_Flags::Dont_change_orientation])
+						if (obj.flags.any_of(Object::Object_Flags::Immobile,Object::Object_Flags::Dont_change_position,Object::Object_Flags::Dont_change_orientation))
 						{
 							issue_msg = "At least one ship (";
 							issue_msg += Ships[obj.instance].ship_name;
@@ -13968,8 +13968,9 @@ void sexp_set_player_target(int node)
 			new_subsys = ship_get_subsys(shipp, subsys_name);
 		}
 	}
-    set_target_objnum(Player_ai, objnum);
-    set_targeted_subsys(Player_ai, new_subsys, objnum);
+	set_target_objnum(Player_ai, objnum);
+	set_targeted_subsys(Player_ai, new_subsys, new_subsys ? objnum : -1);
+	shipp->last_targeted_subobject[Player_num] = new_subsys;
 }
 
 // Luytenky
@@ -35315,12 +35316,15 @@ bool sexp_query_type_match(int opf, int opr)
  * Finds the operator that is the best textual match for the input string, given the required OPF type.  For equal matches,
  * the alphabetically earliest operator is returned.
  * 
+ * min defaults to SCP_string::npos, when specified to another value, this function will not always return a match  
+ *
  * Note: Returns the operator index, not the operator value.
  */
-int sexp_match_closest_operator(const SCP_string &str, int opf)
+int sexp_match_closest_operator(const SCP_string &str, int opf, size_t min)
 {
+	// Cyborg - This bool setup helps with readability
+	bool return_any = (min == SCP_string::npos);
 	int best = -1;
-	size_t min = SCP_string::npos;
 
 	for (int op_index : Sorted_operator_indexes)
 	{
@@ -35330,7 +35334,7 @@ int sexp_match_closest_operator(const SCP_string &str, int opf)
 		if (sexp_query_type_match(opf, opr))
 		{
 			size_t cost = stringcost(op_text, str, Max_operator_length, stringcost_tolower_equal);
-			if (best < 0 || cost < min)
+			if (cost < min || (return_any && best == -1) )
 			{
 				min = cost;
 				best = op_index;

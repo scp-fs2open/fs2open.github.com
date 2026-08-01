@@ -207,8 +207,8 @@ typedef struct loadout_data
 	char				filename[MAX_FILENAME_LEN];				// mission filename
 	char				last_modified[DATE_TIME_LENGTH];	// when mission was last modified
 	wss_unit			unit_data[MAX_WSS_SLOTS];			// ship and weapon data
-	int				weapon_pool[MAX_WEAPON_TYPES];	// available weapons
-	int				ship_pool[MAX_SHIP_CLASSES];			// available ships
+	SCP_vector<int>	weapon_pool;						// available weapons
+	SCP_vector<int>	ship_pool;							// available ships
 } loadout_data;
 
 extern loadout_data Player_loadout;

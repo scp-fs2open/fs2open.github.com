@@ -98,6 +98,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	EditorViewport* _viewport;
 
 	bool _cues_hidden = false;
+	bool _show_sexp_help = false; // session-local help visibility, seeded from the saved preference
 
 	void initializeUi();
 	void updateUi();
