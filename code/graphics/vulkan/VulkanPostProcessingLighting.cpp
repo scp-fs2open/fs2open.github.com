@@ -70,7 +70,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.vbo);
 			m_sphereMesh.vbo = nullptr;
 			return false;
@@ -95,7 +96,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.ibo);
 			m_sphereMesh.ibo = nullptr;
 			return false;
@@ -126,7 +128,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.vbo);
 			m_cylinderMesh.vbo = nullptr;
 			return false;
@@ -150,7 +153,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.ibo);
 			m_cylinderMesh.ibo = nullptr;
 			return false;
