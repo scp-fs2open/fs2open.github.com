@@ -217,9 +217,9 @@ void BriefingEditorDialog::setupMapWidget()
 	// Drag-box selection: replace (or, when additive, extend) the selection with the enclosed icons.
 	connect(_mapWidget, &fso::fred::BriefingMapWidget::iconsSelectedInBox, this, [this](const SCP_vector<int>& indices, bool additive) {
 		SCP_vector<int> selection = additive ? _model->getLineSelection() : SCP_vector<int>();
-		for (int idx : indices) {
-			if (std::find(selection.begin(), selection.end(), idx) == selection.end()) {
-				selection.push_back(idx);
+		for (int iconIdx : indices) {
+			if (std::find(selection.begin(), selection.end(), iconIdx) == selection.end()) {
+				selection.push_back(iconIdx);
 			}
 		}
 		_model->setLineSelection(selection);
