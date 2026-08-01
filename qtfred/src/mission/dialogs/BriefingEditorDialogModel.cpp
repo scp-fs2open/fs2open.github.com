@@ -1417,7 +1417,7 @@ void BriefingEditorDialogModel::deleteSelectedIcons()
 
 	// Delete in descending index order so each removal doesn't shift the indices still to be deleted.
 	SCP_vector<int> indices(_lineSelection.begin(), _lineSelection.end());
-	std::sort(indices.begin(), indices.end(), std::greater<int>());
+	std::sort(indices.begin(), indices.end(), std::greater<>());
 	indices.erase(std::unique(indices.begin(), indices.end()), indices.end());
 
 	bool removedAny = false;

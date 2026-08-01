@@ -764,7 +764,7 @@ void BriefingMapWidget::applyBoundCameraControls(float frametime) {
 	}
 }
 
-vec3d BriefingMapWidget::orbitPivot() const {
+vec3d BriefingMapWidget::orbitPivot() {
 	// Intersect the camera's forward ray with the grid plane; fall back to the grid center / origin.
 	const vec3d camPos = brief_get_current_cam_pos();
 	const matrix camOrient = brief_get_current_cam_orient();

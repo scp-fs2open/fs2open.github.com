@@ -102,7 +102,7 @@ private:
 	void applyBoundCameraControls(float frametime);
 	// Orbit/pan/zoom camera controls, mirroring the main viewport (right/middle drag = orbit, Shift = pan,
 	// wheel = zoom), sharing the main viewport's orbit-inversion preferences.
-	vec3d orbitPivot() const;
+	static vec3d orbitPivot();
 	void beginOrbit(const QPoint& pos);
 	void handleOrbitDrag(const QPoint& pos, Qt::KeyboardModifiers modifiers);
 	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
