@@ -163,7 +163,7 @@ void pilotfile::csg_read_info()
 
 		if (allowed) {
 			if (ship_list[idx].index >= 0) {
-				Campaign.ships_allowed[ship_list[idx].index] = 1;
+				Campaign.ships_allowed.insert(ship_list[idx].index);
 			} else {
 				mprintf(("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
 			}
@@ -177,7 +177,7 @@ void pilotfile::csg_read_info()
 
 		if (allowed) {
 			if (weapon_list[idx].index >= 0) {
-				Campaign.weapons_allowed[weapon_list[idx].index] = 1;
+				Campaign.weapons_allowed.insert(weapon_list[idx].index);
 			} else {
 				mprintf(("Found invalid weapon \"%s\" in campaign save file. Skipping...\n",
 				         weapon_list[idx].name.c_str()));
@@ -247,12 +247,12 @@ void pilotfile::csg_write_info()
 
 	// allowed ships
 	for (idx = 0; idx < ship_info_size(); idx++) {
-		cfwrite_ubyte(Campaign.ships_allowed[idx], cfp);
+		cfwrite_ubyte(Campaign.ships_allowed.contains(idx) ? 1 : 0, cfp);
 	}
 
 	// allowed weapons
 	for (idx = 0; idx < weapon_info_size(); idx++) {
-		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
+		cfwrite_ubyte(Campaign.weapons_allowed.contains(idx) ? 1 : 0, cfp);
 	}
 
 	// single/campaign squad name & image
@@ -1610,8 +1610,8 @@ void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 
 	// zero out allowed ships/weapons
 	if (reset_ships_and_weapons) {
-		Campaign.ships_allowed.assign(ship_info_size(), 0);
-		Campaign.weapons_allowed.assign(weapon_info_size(), 0);
+		Campaign.ships_allowed.clear();
+		Campaign.weapons_allowed.clear();
 	}
 
 	// reset campaign status

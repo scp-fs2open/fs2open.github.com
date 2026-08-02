@@ -1251,16 +1251,15 @@ void parse_player_info2(mission *pm)
 
 		// check ship class loadout entries
 		for (auto &sc : list) {
+			if (!Ship_info.in_bounds(sc.index))
+				continue;
+
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
-				if ( !Campaign.ships_allowed[sc.index] )
+				if ( !Campaign.ships_allowed.contains(sc.index) )
 					continue;
 			}
-			if (sc.index < 0 || sc.index >= ship_info_size())
-				continue;
-
-			ptr->ship_list[num_choices] = sc.index;
 
 			// if the list isn't set by a variable leave the variable name empty
 			if (sc.index_sexp_var == NOT_SET_BY_SEXP_VARIABLE) {
@@ -1270,6 +1269,7 @@ void parse_player_info2(mission *pm)
 				strcpy_s(ptr->ship_list_variables[num_choices], Sexp_variables[sc.index_sexp_var].variable_name);
 			}
 
+			ptr->ship_list[num_choices] = sc.index;
 			ptr->ship_count[num_choices] = sc.count;
 			ptr->loadout_total += sc.count;
 
@@ -1297,9 +1297,9 @@ void parse_player_info2(mission *pm)
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
-				if ( !(Campaign.ships_allowed[ptr->default_ship]) ) {
+				if ( !Campaign.ships_allowed.contains(ptr->default_ship) ) {
 					for (i = 0; i < ship_info_size(); i++ ) {
-						if ( Campaign.ships_allowed[i] ) {
+						if ( Campaign.ships_allowed.contains(i) ) {
 							ptr->default_ship = i;
 							break;
 						}
@@ -1327,15 +1327,16 @@ void parse_player_info2(mission *pm)
 
 		// check weapon class loadout entries
 		for (auto &wc : list2) {
+			if (!Weapon_info.in_bounds(wc.index))
+				continue;
+
 			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || (MULTIPLAYER_CLIENT)) {
-				if ( !Campaign.weapons_allowed[wc.index] ) {
+				if ( !Campaign.weapons_allowed.contains(wc.index) ) {
 					continue;
 				}
 			}
-			if (wc.index < 0 || wc.index >= weapon_info_size())
-				continue;
 
 			// always allow the pool to be added in FRED, it is a verbal warning
 			// to let the mission dev know about the problem
@@ -1346,6 +1347,7 @@ void parse_player_info2(mission *pm)
 
 			ptr->weaponry_pool[num_choices] = wc.index; 
 			ptr->weaponry_count[num_choices] = wc.count;
+
 			if (pm->support_ships.rearm_pool_from_loadout) {
 				if (Weapon_info[wc.index].disallow_rearm) {
 					pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;

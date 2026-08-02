@@ -67,9 +67,9 @@ BOOL InitialShips::OnInitDialog()
 	if ( m_initial_items == INITIAL_SHIPS ) {
         for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
             if (it->flags[Ship::Info_Flags::Player_ship]) {
-                auto i = std::distance(Ship_info.cbegin(), it);
+                int i = static_cast<int>(std::distance(Ship_info.cbegin(), it));
                 m_initial_list.AddString(it->name);
-                if (Campaign.ships_allowed[i]) {
+                if (Campaign.ships_allowed.contains(i)) {
                     m_initial_list.SetCheck(m_list_count, 1);
                 }
                 else if ((strlen(Campaign.filename) == 0) && strstr(it->name, "Myrmidon")) { //-V805
@@ -104,7 +104,7 @@ BOOL InitialShips::OnInitDialog()
 			if ( allowed_weapons[i] ) {
 				m_initial_list.AddString( Weapon_info[i].name );
 				int add_weapon = 0;
-				if ( Campaign.weapons_allowed[i] ) {
+				if ( Campaign.weapons_allowed.contains(i) ) {
 					add_weapon = 1;
 				} else if ( strlen(Campaign.filename) == 0 ) { //-V805
 					if ( strstr(Weapon_info[i].name, "Subach")) {
@@ -142,25 +142,24 @@ void InitialShips::OnOK()
 {
 	int i;
 
-	// zero out whichever array we are setting
+	// zero out whichever set we are setting
 	if ( m_initial_items == INITIAL_SHIPS ) {
-		Campaign.ships_allowed.assign(ship_info_size(), 0);
+		Campaign.ships_allowed.clear();
 	} else if ( m_initial_items == INITIAL_WEAPONS ) {
-		Campaign.weapons_allowed.assign(weapon_info_size(), 0);
+		Campaign.weapons_allowed.clear();
 	}
 
 	for ( i = 0; i < m_list_count; i++ ) {
 		if ( m_initial_list.GetCheck(i) ) {
 			// this item is checked.  Get the index into either the ship info array or the weapons
 			// array
-			auto index = m_initial_list.GetItemData(i);
+			int index = static_cast<int>(m_initial_list.GetItemData(i));
 			if ( m_initial_items == INITIAL_SHIPS ) {
-				Campaign.ships_allowed[index] = 1;
+				Campaign.ships_allowed.insert(index);
 			} else if ( m_initial_items == INITIAL_WEAPONS ) {
-				Campaign.weapons_allowed[index] = 1;
+				Campaign.weapons_allowed.insert(index);
 			} else
 				Int3();
-			
 		}
 	}
 

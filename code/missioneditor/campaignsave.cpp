@@ -88,9 +88,8 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		fout("\n\n+Starting Ships:");
 	}
 	fout(" (");
-	for (int i = 0; i < ship_info_size(); i++) {
-		if (Campaign.ships_allowed[i])
-			fout(" \"%s\"", Ship_info[i].name);
+	for (int ship_class : Campaign.ships_allowed) {
+		fout(" \"%s\"", Ship_info[ship_class].name);
 	}
 	fout(" )");
 
@@ -100,9 +99,8 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		fout("\n\n+Starting Weapons:");
 	}
 	fout(" (");
-	for (int i = 0; i < weapon_info_size(); i++) {
-		if (Campaign.weapons_allowed[i])
-			fout(" \"%s\"", Weapon_info[i].name);
+	for (int weapon_class : Campaign.weapons_allowed) {
+		fout(" \"%s\"", Weapon_info[weapon_class].name);
 	}
 	fout(" )");
 
