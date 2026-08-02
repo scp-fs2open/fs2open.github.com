@@ -1521,7 +1521,7 @@ ADE_INDEXER(l_Ship_Pool,
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx > ship_info_size()) {
+	if (idx < 1 || idx > ship_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
@@ -1533,13 +1533,14 @@ ADE_INDEXER(l_Ship_Pool,
 			return ADE_RETURN_NIL;
 		}
 		if (amount < 0) {
-			Ss_pool[idx] = 0;
+			(*Ss_pool)[idx] = 0;
 		} else {
-			Ss_pool[idx] = amount;
+			(*Ss_pool)[idx] = amount;
 		}
 	}
 
-	return ade_set_args(L, "i", Ss_pool[idx]);
+	// an absent entry means the class is not in this mission's loadout, which scripts see as -1
+	return ade_set_args(L, "i", Ss_pool->value_or(idx, -1));
 }
 
 ADE_FUNC(__len, l_Ship_Pool, nullptr, "The number of ship classes in the pool", "number", "The number of ship classes.")
@@ -1559,7 +1560,7 @@ ADE_INDEXER(l_Weapon_Pool,
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx > weapon_info_size()) {
+	if (idx < 1 || idx > weapon_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
@@ -1571,13 +1572,13 @@ ADE_INDEXER(l_Weapon_Pool,
 			return ADE_RETURN_NIL;
 		}
 		if (amount < 0) {
-			Wl_pool[idx] = 0;
+			(*Wl_pool)[idx] = 0;
 		} else {
-			Wl_pool[idx] = amount;
+			(*Wl_pool)[idx] = amount;
 		}
 	}
 
-	return ade_set_args(L, "i", Wl_pool[idx]);
+	return ade_set_args(L, "i", Wl_pool->value_or(idx, 0));
 }
 
 ADE_FUNC(__len,

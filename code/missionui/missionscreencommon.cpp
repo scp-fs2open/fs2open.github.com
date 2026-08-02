@@ -91,13 +91,13 @@ loadout_data Player_loadout;	// what the ship and weapon loadout is... used sinc
 //int		Wss_num_wings;								// number of player wings
 
 wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
-int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+SCP_map<int, int>	Wl_pool_teams[MAX_TVT_TEAMS];
+SCP_map<int, int>	Ss_pool_teams[MAX_TVT_TEAMS];
 int		Wss_num_wings_teams[MAX_TVT_TEAMS];
 
 wss_unit	*Wss_slots = NULL;
-int		*Wl_pool = NULL;
-int		*Ss_pool = NULL;
+SCP_map<int, int>	*Wl_pool = nullptr;
+SCP_map<int, int>	*Ss_pool = nullptr;
 int		Wss_num_wings;
 
 //////////////////////////////////////////////////////////////////
@@ -501,8 +501,8 @@ void common_set_team_pointers(int team)
 	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
 
 	Wss_slots = Wss_slots_teams[team];
-	Ss_pool = Ss_pool_teams[team];
-	Wl_pool = Wl_pool_teams[team];
+	Ss_pool = &Ss_pool_teams[team];
+	Wl_pool = &Wl_pool_teams[team];
 
 	ss_set_team_pointers(team);
 	wl_set_team_pointers(team);
@@ -517,8 +517,8 @@ void common_reset_team_pointers()
 	// these are done last so that we can make use of the Assert()'s in the above
 	// functions to make sure the screens are exited and this is safe
 	Wss_slots = NULL;
-	Ss_pool = NULL;
-	Wl_pool = NULL;
+	Ss_pool = nullptr;
+	Wl_pool = nullptr;
 }
 
 // common_select_init() will load in animations and bitmaps that are common to the 
@@ -1100,14 +1100,10 @@ void wss_save_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// save the ship pool
-	for ( i = 0; i < ship_info_size(); i++ ) {
-		Player_loadout.ship_pool[i] = Ss_pool[i];
-	}
+	Player_loadout.ship_pool = *Ss_pool;
 
 	// save the weapons pool
-	for ( i = 0; i < weapon_info_size(); i++ ) {
-		Player_loadout.weapon_pool[i] = Wl_pool[i];
-	}
+	Player_loadout.weapon_pool = *Wl_pool;
 
 	// save the ship class / weapons for each slot
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
@@ -1174,21 +1170,25 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] >= 1) {
-			this_loadout_ships[i] += Ss_pool[i];
-		}
-		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
-			return; 
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count >= 1) {
+			this_loadout_ships[ship_class] += count;
 		}
 	}
-	
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] >= 1) {
-			this_loadout_weapons[i] += Wl_pool[i];
+	for (i = 0; i < ship_info_size(); i++) {
+		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
+			return;
 		}
+	}
+
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count >= 1) {
+			this_loadout_weapons[weapon_class] += count;
+		}
+	}
+	for (i = 0; i < weapon_info_size(); i++) {
 		if ( this_loadout_weapons[i] < last_loadout_weapons[i]) {
-			return; 
+			return;
 		}
 	}
 
@@ -1215,14 +1215,25 @@ void wss_maybe_restore_loadout()
 		}
 	}	
 
-	// restore the ship pool
+	// restore the ship pool.  Update counts for classes already in the loadout, then add any class the
+	// previous runthrough used that isn't in it (two passes so we don't iterate over mid-loop inserts).
+	for (auto &[ship_class, count] : *Ss_pool) {
+		count = this_loadout_ships[ship_class];
+	}
 	for ( i = 0; i < ship_info_size(); i++ ) {
-		Ss_pool[i] = this_loadout_ships[i]; 
+		if (this_loadout_ships[i] > 0 && !Ss_pool->contains(i)) {
+			(*Ss_pool)[i] = this_loadout_ships[i];
+		}
 	}
 
 	// restore the weapons pool
+	for (auto &[weapon_class, count] : *Wl_pool) {
+		count = this_loadout_weapons[weapon_class];
+	}
 	for ( i = 0; i < weapon_info_size(); i++ ) {
-		Wl_pool[i] = this_loadout_weapons[i]; 
+		if (this_loadout_weapons[i] > 0 && !Wl_pool->contains(i)) {
+			(*Wl_pool)[i] = this_loadout_weapons[i];
+		}
 	}
 }
 
@@ -1381,10 +1392,10 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
 
-	// write the ship pool
+	// write the ship pool (only positive counts; the pool map can also hold exhausted 0-count entries)
 	pool_size = 0;
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] > 0) {
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count > 0) {
 			++pool_size;
 		}
 	}
@@ -1393,17 +1404,17 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 
 	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of ship pool exceeds max data size!");
 
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] > 0) {
-			ADD_SHORT(static_cast<short>(i));
-			ADD_SHORT(static_cast<short>(Ss_pool[i]));
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count > 0) {
+			ADD_SHORT(static_cast<short>(ship_class));
+			ADD_SHORT(static_cast<short>(count));
 		}
 	}
 
 	// write the weapon pool
 	pool_size = 0;
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] > 0) {
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count > 0) {
 			++pool_size;
 		}
 	}
@@ -1412,10 +1423,10 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 
 	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of weapon pool exceeds max data size!");
 
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] > 0) {
-			ADD_SHORT(static_cast<short>(i));
-			ADD_SHORT(static_cast<short>(Wl_pool[i]));
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count > 0) {
+			ADD_SHORT(static_cast<short>(weapon_class));
+			ADD_SHORT(static_cast<short>(count));
 		}
 	}
 
@@ -1470,28 +1481,28 @@ int restore_wss_data(ubyte *data)
 		return 0;
 
 	// restore ship pool
-	memset(Ss_pool, 0, MAX_SHIP_CLASSES*sizeof(int));
+	Ss_pool->clear();
 	GET_USHORT(pool_size);
 
 	for (i = 0; i < pool_size; i++) {
 		GET_SHORT(b1);
 		GET_SHORT(b2);
 
-		if (b1 < MAX_SHIP_CLASSES) {
-			Ss_pool[b1] = b2;
+		if (Ship_info.in_bounds(b1)) {
+			(*Ss_pool)[b1] = b2;
 		}
 	}
 
 	// restore weapons pool
-	memset(Wl_pool, 0, MAX_WEAPON_TYPES*sizeof(int));
+	Wl_pool->clear();
 	GET_USHORT(pool_size);
 
 	for (i = 0; i < pool_size; i++) {
 		GET_SHORT(b1);
 		GET_SHORT(b2);
 
-		if (b1 < MAX_SHIP_CLASSES) {
-			Wl_pool[b1] = b2;
+		if (Weapon_info.in_bounds(b1)) {
+			(*Wl_pool)[b1] = b2;
 		}
 	}
 

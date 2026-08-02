@@ -567,22 +567,26 @@ void pilotfile::csg_read_loadout()
 	cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, cfp);
 	cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, cfp);
 
-	// ship pool
+	// clear out any values from a previously loaded CSG
+	Player_loadout.ship_pool.clear();
+	Player_loadout.weapon_pool.clear();
+
+	// ship pool (-1 means the class is not in the loadout, which is the same as absent)
 	list_size = ship_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
-		if (ship_list[idx].index >= 0) {
+		if (ship_list[idx].index >= 0 && count != -1) {
 			Player_loadout.ship_pool[ship_list[idx].index] = count;
 		}
 	}
 
-	// weapon pool
+	// weapon pool (0 means the class is not in the loadout, which is the same as absent)
 	list_size = weapon_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
-		if (weapon_list[idx].index >= 0) {
+		if (weapon_list[idx].index >= 0 && count != 0) {
 			Player_loadout.weapon_pool[weapon_list[idx].index] = count;
 		}
 	}
@@ -677,14 +681,14 @@ void pilotfile::csg_write_loadout()
 	cfwrite_string_len(Player_loadout.filename, cfp);
 	cfwrite_string_len(Player_loadout.last_modified, cfp);
 
-	// ship pool
+	// ship pool (absent classes are not in the loadout, i.e. -1)
 	for (idx = 0; idx < ship_info_size(); idx++) {
-		cfwrite_int(Player_loadout.ship_pool[idx], cfp);
+		cfwrite_int(Player_loadout.ship_pool.value_or(idx, -1), cfp);
 	}
 
-	// weapon pool
+	// weapon pool (absent classes are not in the loadout, i.e. 0)
 	for (idx = 0; idx < weapon_info_size(); idx++) {
-		cfwrite_int(Player_loadout.weapon_pool[idx], cfp);
+		cfwrite_int(Player_loadout.weapon_pool.value_or(idx, 0), cfp);
 	}
 
 	// play ship loadout
