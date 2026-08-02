@@ -15,7 +15,7 @@ This is distinct from:
 ## Key files
 - `Option.h` — the core: `OptionBase`, `Option<T>`, and the fluent `OptionBuilder<T>`.
 - `Option.cpp` — type default (de)serializers (`internal::set_defaults`).
-- `manager/OptionsManager.{h,cpp}` — `OptionsManager` singleton: registry,
+- `OptionsManager.{h,cpp}` — `OptionsManager` singleton: registry,
   config overrides, change tracking, persistence, enforced options.
 - `Ingame_Options.{h,cpp}` + `Ingame_Options_internal.h` — the in-game Options
   state logic (`ingame_options_init/close/do_frame`, `Option_categories`).

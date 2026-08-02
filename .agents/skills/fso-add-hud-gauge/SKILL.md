@@ -15,8 +15,12 @@ from `hud_gauges.tbl` via `code/hud/hudparse.cpp`. Decide first which path you n
 ## Choose an approach
 
 - **Mod-authored custom gauge** → usually no engine change: mission/mod authors use
-  the existing `HUD_OBJECT_CUSTOM` gauge (and Lua HUD-draw hooks). Point the user to
-  the `fso-add-lua-api` skill + `hud_gauges.tbl` if that suffices.
+  the `+Scripted Gauge:` table entry (`HUD_OBJECT_SCRIPTING`, backed by
+  `HudGaugeScripting` in `code/hud/hudscripting.{h,cpp}`), whose `render()` calls
+  straight into a Lua-registered render function — the fully Lua-rendered path.
+  The older `HUD_OBJECT_CUSTOM` (`code/scripting/api/objs/hudgauge.cpp`) only
+  exposes Name/Text and general Lua HUD-draw hooks. Point the user to the
+  `fso-add-lua-api` skill + `hud_gauges.tbl` if either of these suffices.
 - **New built-in gauge type** → follow the steps below.
 
 ## Steps (new built-in gauge)
@@ -27,7 +31,10 @@ from `hud_gauges.tbl` via `code/hud/hudparse.cpp`. Decide first which path you n
    `renderBitmap` helpers from the base class.
 
 2. **Add a gauge type id.** Add `#define HUD_OBJECT_MY_GAUGE NN` in
-   `code/hud/hudparse.h` (the `HUD_OBJECT_*` list) and keep the count in sync.
+   `code/hud/hudparse.h` (the `HUD_OBJECT_*` list). If the gauge belongs in the
+   legacy default set, also add it to `Legacy_HUD_gauges[]` and bump
+   `NUM_HUD_GAUGES` (`code/hud/hudgauges.h`); newer gauges (e.g. the scripting
+   gauge) are explicitly excluded from that legacy list and don't need it.
 
 3. **Parse + load.** In `code/hud/hudparse.cpp`:
    - Add a `load_gauge_my_gauge(...)` that reads gauge settings (coords, font,

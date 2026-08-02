@@ -64,8 +64,9 @@ if (scripting::hooks::OnMyEvent->isActive()) {
 ## Verify
 
 - Build (see `fso-build-and-test`).
-- Test from a Lua script (a `scripting.tbl` `$On Game Init:` block or a hook) that
-  calls the new API / responds to the new hook.
+- Test from a Lua script (a `scripting.tbl` `$GameInit:` block — the "On Game
+  Init" hook's table tag — or another hook) that calls the new API / responds
+  to the new hook.
 
 ## Reference
 

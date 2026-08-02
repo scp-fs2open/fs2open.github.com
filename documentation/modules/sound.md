@@ -15,7 +15,9 @@ sound *entries* this module plays.
 - `voicerec.*`, `rtvoice.*` — voice recognition / real-time voice (multiplayer).
 
 ## Core data structures / globals
-- `game_snd` (defined in `code/gamesnd/gamesnd.h`) — a named, table-driven sound entry.
+- `game_snd` (defined in `code/sound/sound.h`; looked up via helpers in
+  `code/gamesnd/gamesnd.h` like `gamesnd_get_game_sound()`) — a named,
+  table-driven sound entry.
 - Sound handles returned by `snd_play*` calls.
 
 ## Major constants
