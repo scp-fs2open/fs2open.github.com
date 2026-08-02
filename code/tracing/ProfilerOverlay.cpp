@@ -271,7 +271,7 @@ SCP_string format_bytes(size_t bytes) {
 		snprintf(buf, sizeof(buf), SIZE_T_ARG " B", bytes);
 	}
 
-	return SCP_string(buf);
+	return { buf };
 }
 
 /**
