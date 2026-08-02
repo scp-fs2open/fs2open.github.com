@@ -203,7 +203,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	// whole group it belongs to, so starting the sliders at (say) this lens's blade
 	// curvature would mean the first field a user touches quietly saves that too,
 	// frozen at one lens's numbers.
-	graphics::lens_settings getLensSettings() const;
+	static graphics::lens_settings getLensSettings();
 	void setLensSettings(const graphics::lens_settings& settings);
 	void resetLensSettings();
 

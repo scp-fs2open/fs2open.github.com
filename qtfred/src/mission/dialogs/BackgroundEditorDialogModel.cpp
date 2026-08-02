@@ -1483,7 +1483,7 @@ void BackgroundEditorDialogModel::setCameraLensName(const SCP_string& name)
 	refreshBackgroundPreview();
 }
 
-graphics::lens_settings BackgroundEditorDialogModel::getLensSettings() const
+graphics::lens_settings BackgroundEditorDialogModel::getLensSettings()
 {
 	// The neutral baseline, with whatever this mission overrides laid over it --
 	// the same resolution the engine does, against defaults rather than against a

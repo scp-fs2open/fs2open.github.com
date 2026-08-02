@@ -17,7 +17,7 @@
 // light it is supposed to be tracking.
 class BeamMuzzleGlowTest : public test::FSTestFixture {
  public:
-	BeamMuzzleGlowTest() : test::FSTestFixture() { pushModDir("beam"); }
+	BeamMuzzleGlowTest() { pushModDir("beam"); }
 
  protected:
 	void SetUp() override
