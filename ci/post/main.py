@@ -18,6 +18,7 @@
 # Credentials into hard-light.net for forum post
 # HLP_API:
 # HLP_KEY:
+# FORUM_SECRET:
 
 # LINUX_RESULT: bool, if the linux builds were successfully uploaded
 # WINDOWS_RESULT: bool, if the windows builds were successfully uploaded
@@ -124,6 +125,10 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 
 
 def main():
+	if "FORUM_SECRET" not in os.environ:
+		print("  ERROR: FORUM_SECRET environment variable not set")
+		sys.exit(1)
+
 	os.chdir(os.path.dirname(__file__))	# Change working directory to this file's directory
 
 	# Aggregate configuration data in a dictionary
