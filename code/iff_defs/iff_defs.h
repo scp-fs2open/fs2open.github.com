@@ -58,6 +58,7 @@ typedef struct iff_info {
 } iff_info;
 
 extern SCP_vector<iff_info> Iff_info;
+extern SCP_vector<const char *> Iff_info_names;
 
 extern int Iff_traitor;
 

@@ -494,8 +494,8 @@ extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
 
-extern ai_class *Ai_classes;
-extern char** Ai_class_names;
+extern SCP_vector<ai_class> Ai_classes;
+extern SCP_vector<const char*> Ai_class_names;
 
 extern int Num_ai_classes;
 extern int Ai_firing_enabled;
