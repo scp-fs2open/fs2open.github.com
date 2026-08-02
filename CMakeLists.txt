@@ -47,11 +47,6 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
-# Check if the external modules exists
-IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/libRocket/Build")
-	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
-endif()
-
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 
