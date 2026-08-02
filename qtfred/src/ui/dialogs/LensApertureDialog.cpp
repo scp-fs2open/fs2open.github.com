@@ -256,7 +256,7 @@ void LensApertureDialog::updateUi()
 
 	ui->noLensWarningLabel->setVisible(!BackgroundEditorDialogModel::getLensMounted());
 
-	const graphics::lens_settings settings = _model->getLensSettings();
+	const graphics::lens_settings settings = fso::fred::dialogs::BackgroundEditorDialogModel::getLensSettings();
 
 	for (int i = 0; i < Num_lens_fields; i++) {
 		const lens_field& f = Lens_fields[i];

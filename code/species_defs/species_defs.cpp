@@ -182,8 +182,8 @@ void parse_thrust_flare(species_info *species)
 	// negative tint would subtract light from the frame
 	flare.intensity = MAX(flare.intensity, 0.0f);
 	flare.afterburner_intensity = MAX(flare.afterburner_intensity, 0.0f);
-	for (int i = 0; i < 3; i++)
-		flare.color.a1d[i] = MAX(flare.color.a1d[i], 0.0f);
+	for (float & i : flare.color.a1d)
+		i = MAX(i, 0.0f);
 }
 
 void parse_species_tbl(const char *filename)
