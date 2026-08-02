@@ -38,6 +38,9 @@ ninja -k 20 all
   caches (CLion, etc.).
 - The CI configure script is `ci/linux/configure_cmake.sh` (adds ccache, SIMD,
   AppImage flags); match its options when reproducing a CI build.
+- Build a single target instead of `all` when iterating, e.g. `ninja unittests`,
+  `ninja FRED2` (Windows MFC editor), `ninja qtfred` (needs `FSO_BUILD_QTFRED=ON`,
+  which is the default except on 32-bit Windows).
 
 ## Run unit tests
 

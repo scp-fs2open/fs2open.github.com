@@ -140,7 +140,7 @@ flowchart TD
     dispatch -->|GS_STATE_GAME_PLAY| frame["game_frame()"]
     dispatch -->|menu / briefing / debrief / ...| ui["state-specific do_frame<br/>(menuui, missionui, scpui)"]
 
-    frame --> input["read_player_controls()<br/>game_process_keys() (io/)"]
+    frame --> input["read_player_controls() (playerman/)<br/>game_process_keys() (io/)"]
     input --> sim["game_simulation_frame()"]
 
     subgraph SIM["Simulation step"]
@@ -343,7 +343,8 @@ Read these to understand idioms you'll see everywhere:
 - `linklist.h` — intrusive doubly-linked lists + `list_range()` iteration used by
   the object lists and many others.
 - `globals.h` — shared `MAX_*` sizes. `systemvars.*` — global game state vars
-  (`Game_mode`, `Missiontime`, `flFrametime`, viewer/player globals).
+  (`Game_mode`, `Missiontime`, viewer/player globals). `flFrametime` itself lives
+  in `freespace2/freespace.h`/`.cpp`, not `globalincs/`.
 - `alphacolors.*` — standard UI colors. `version.*` — build/version info.
 
 ---

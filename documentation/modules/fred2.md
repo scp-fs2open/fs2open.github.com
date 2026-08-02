@@ -16,10 +16,10 @@ It is the legacy editor; the cross-platform replacement is **qtFRED**
 
 ## Key files (representative)
 - `fred.cpp`, `freddoc.*`, `fredview.*` — MFC app/document/view skeleton.
-- `Management.*` — central editor state and engine glue.
+- `management.*` — central editor state and engine glue.
 - Editor dialogs (`*dlg` / `*EditorDlg`), e.g. `shipeditordlg.*`,
   `wing_editor.*`, `eventeditor.*`, `briefingeditordlg.*`,
-  `campaigneditordlg.*`, `sexp_tree.*` (the SEXP tree control), `bgbitmapdlg.*`.
+  `campaigneditordlg.*`, `sexp_tree_view.*` (the SEXP tree control), `bgbitmapdlg.*`.
 - `CMakeLists.txt` — target definition and MFC setup.
 
 ## Relationship to the engine

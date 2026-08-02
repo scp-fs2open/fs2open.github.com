@@ -16,7 +16,7 @@ and configurable through `hud_gauges.tbl`.
 
 ## Core data structures / globals
 - `HudGauge` (base class) and derived gauge classes.
-- Per-ship/player HUD config in `hud_config` (`hudconfig.h`).
+- Per-ship/player HUD config in `HUD_config` (type `HUD_CONFIG_TYPE`, `hudconfig.h`).
 
 ## Major constants
 - `MAX_COMPLETE_ESCORT_LIST` (20, in `code/globalincs/globals.h`).

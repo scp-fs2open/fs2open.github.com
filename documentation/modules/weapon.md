@@ -11,7 +11,7 @@ child weapons, muzzle flashes). Like ships, it uses the info-vs-instance split:
 - `weapon_flags.h` — weapon and weapon_info flagsets.
 - `beam.cpp` / `beam.h` — beam weapons (also object type `OBJ_BEAM`).
 - `swarm.cpp`, `corkscrew.cpp`, `flak.cpp`, `emp.cpp`, `trails.cpp`,
-  `muzzleflash.cpp`, `shockwave/` (see `code/shockwave` if present).
+  `muzzleflash.cpp`, `shockwave.cpp` / `shockwave.h`.
 
 ## Core data structures / globals
 - `weapon Weapons[MAX_WEAPONS]` — live projectile instances.

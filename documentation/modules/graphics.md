@@ -42,14 +42,14 @@ flowchart TD
     end
     subgraph INIT["Backend selection at init"]
         sel{"FSO_BUILD_WITH_OPENGL / _VULKAN"}
-        sel -->|OpenGL| oglinit["gr_opengl_init_function_pointers()<br/>(gropengl.cpp ~1004): gf_* = gr_opengl_*"]
+        sel -->|OpenGL| oglinit["gr_opengl_init_function_pointers()<br/>(gropengl.cpp ~1055): gf_* = gr_opengl_*"]
         sel -->|Vulkan| vkinit["vulkan backend (graphics/vulkan)"]
         sel -->|headless| stub["grstub.cpp"]
     end
     engine --> sel
 
     subgraph OGL["OpenGL render path"]
-        draw["model_draw_list / render.* build draw queue"] --> rm["gr_opengl_render_model<br/>(gropengldraw)"]
+        draw["model_draw_list / render.* build draw queue"] --> rm["gr_opengl_render_model<br/>(gropengltnl)"]
         rm --> tnl["transform & lighting<br/>(gropengltnl)"]
         tnl --> sh["shader programs<br/>(gropenglshader, ShaderProgram)"]
         sh --> st["GL state mgmt<br/>(gropenglstate)"]

@@ -16,7 +16,8 @@ By the include rules (`.clang-format`), `globalincs/*.h` always sort first.
   per-module `*_flags.h` files).
 - `linklist.h` — intrusive doubly-linked list macros + `list_range()` iteration.
 - `systemvars.h` / `systemvars.cpp` — global runtime state: `Game_mode`,
-  `Missiontime`, `flFrametime`, `flRealframetime`, detail/skill levels.
+  `Missiontime`, detail/skill levels. (`flFrametime`/`flRealframetime` are
+  defined in `freespace2/freespace.cpp`, not here.)
 - `alphacolors.*` — standard named UI colors (from `colors.tbl`).
 - `version.*`, `safe_strings.*`, `scp_defines.h`, `utility.h`, `type_traits.h`.
 

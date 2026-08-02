@@ -37,7 +37,8 @@ fallbacks.
   first everywhere; treat as the foundation.
 - `freespace2/` — The game executable (entry point `freespace.cpp`).
 - `fred2/` — Windows (MFC) mission editor.
-- `qtfred/` — Cross-platform Qt mission editor (opt-in build).
+- `qtfred/` — Cross-platform Qt mission editor (`FSO_BUILD_QTFRED`, ON by
+  default except on 32-bit Windows).
 - `wxfred2/` — Legacy wxWidgets editor.
 - `lib/` — Bundled third-party libraries (vendored; avoid editing).
 - `parsers/` — Generated/parser code.
@@ -75,7 +76,8 @@ ninja -k 20 all
 Ninja parallelizes automatically, but pass `-j<N>` (e.g. `-j8`) to cap it if
 you're running alongside other builds (IDE, other agents, etc.). Build a
 single target instead of `all` when iterating, e.g. `ninja unittests`,
-`ninja FRED2` (Windows MFC editor), `ninja qtfred` (needs `FSO_BUILD_QTFRED=ON`).
+`ninja FRED2` (Windows MFC editor), `ninja qtfred` (needs `FSO_BUILD_QTFRED=ON`,
+which is the default except on 32-bit Windows).
 
 Useful CMake options (see top-level `CMakeLists.txt` for the full list):
 

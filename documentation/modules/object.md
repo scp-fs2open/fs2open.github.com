@@ -15,7 +15,11 @@ owns object storage, lifecycle (create/move/delete), the per-frame update driver
 - `collide*.cpp` (`collideshipship`, `collideshipweapon`, …) — per-type collisions.
 - `objectsnd.cpp` — persistent per-object sounds.
 - `objectdock.cpp`, `objectshield.cpp`, `parseobjectdock.cpp`, `waypoint.cpp`.
-- `deadobjectdock.cpp`, `object_quadtree.cpp` (spatial partitioning).
+- `deadobjectdock.cpp` — dock-list bookkeeping between objects that are dying
+  together (e.g. death-roll debris still attached to a docked ship).
+- `objectsort.cpp` — `obj_render_queue_all()`/`obj_render_all()`: builds the
+  per-frame render queue, sorting objects by z-depth relative to the viewer.
+- `object_instance.h` — `obj_get_instance_maybe<OBJ_*>()` typed instance-array lookup helper.
 
 ## Core data structures / globals
 - `class object` — common entity state (see `object.h`).
