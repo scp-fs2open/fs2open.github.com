@@ -264,6 +264,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 		}
 	}
 
+	renderer->setUseGbufRenderPass(true);
+
 	Deferred_lighting = true;
 }
 
