@@ -125,7 +125,7 @@ def get_source_version(date_version: datetime, tag_name: str) -> semantic_versio
 
 
 def main():
-	if "FORUM_SECRET" not in os.environ:
+	if "FORUM_SECRET" not in os.environ or not os.environ["FORUM_SECRET"]:
 		print("  ERROR: FORUM_SECRET environment variable not set")
 		sys.exit(1)
 
