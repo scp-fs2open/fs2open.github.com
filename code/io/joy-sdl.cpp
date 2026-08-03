@@ -587,6 +587,7 @@ namespace joystick
 			_gamepad = SDL_OpenGamepad(id);
 			_joystick = SDL_GetGamepadJoystick(_gamepad);
 		} else {
+			_gamepad = nullptr;
 			_joystick = SDL_OpenJoystick(id);
 		}
 
@@ -798,7 +799,7 @@ namespace joystick
 
 	void Joystick::fillValues()
 	{
-		// To avoid some weirdness and build compatiblity issues we always use
+		// To avoid some weirdness and build compatibility issues we always use
 		// _joystick here rather than comparable _gamepad functions
 
 		_name.assign(SDL_GetJoystickName(_joystick));
