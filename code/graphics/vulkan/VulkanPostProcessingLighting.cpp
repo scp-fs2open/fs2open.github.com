@@ -163,10 +163,11 @@ bool VulkanDeferredLighting::initLightVolumes()
 		}
 	}
 
-	// Create deferred UBO for light data (per-frame, host-visible)
+	// Create deferred UBO for light data (host-visible). One full-size region per
+	// (frame-in-flight, lighting mode); see DEFERRED_UBO_REGIONS.
 	{
 		vk::BufferCreateInfo bufInfo;
-		bufInfo.size = DEFERRED_UBO_SIZE;
+		bufInfo.size = static_cast<vk::DeviceSize>(DEFERRED_UBO_REGIONS) * DEFERRED_UBO_SIZE;
 		bufInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
 		bufInfo.sharingMode = vk::SharingMode::eExclusive;
 
@@ -436,7 +437,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		return (v + uboAlign - 1) & ~(uboAlign - 1);
 	};
 
-	// Layout in UBO:
+	// Layout within this pass's region:
 	// [0]: deferred_global_data (header)
 	// [aligned offset 1..N]: deferred_light_data per light
 	// [aligned offset N+1..2N]: matrix_uniforms per light
@@ -467,6 +468,17 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		return;
 	}
 
+	// Nothing may pack over bytes another pass could still be reading. The scene and
+	// cockpit passes share one command buffer, so the second would otherwise clobber
+	// the first before either ran; and flip() waits only on the fence of the slot it
+	// reuses, so frame N+1 packs while frame N's light draws may still be executing.
+	const uint32_t regionIndex = (descriptorMgr->getCurrentFrame() * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES))
+	                           + static_cast<uint32_t>(Lighting_mode);
+	const uint32_t regionBase = regionIndex * DEFERRED_UBO_SIZE;
+
+	lightDataOffset += regionBase;
+	matrixDataOffset += regionBase;
+
 	// Pack global header
 	auto lp = ltp::current();
 	// Determine if environment maps are available
@@ -487,7 +499,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	}
 
 	{
-		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped);
+		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped + regionBase);
 		memset(header, 0, sizeof(graphics::deferred_global_data));
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
@@ -655,6 +667,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		++lightIdx;
 	}
 
+	m_ctx->memoryManager->flushMemory(m_deferredUBOAlloc, regionBase, totalUBOSize);
 	m_ctx->memoryManager->unmapMemory(m_deferredUBOAlloc);
 
 	GR_DEBUG_SCOPE("Render light geometry");
@@ -781,7 +794,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
 			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
 		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
-			0, sizeof(graphics::deferred_global_data)});
+			regionBase, sizeof(graphics::deferred_global_data)});
 		writer.setImage(GlobalBinding::ShadowMap, shadowTexInfo);
 		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
 		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);

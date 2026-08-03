@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "lighting/lighting.h"
 #include "VulkanMemory.h"
 #include "VulkanConstants.h"
 #include "VulkanPerFrameUbo.h"
@@ -495,6 +496,13 @@ private:
 	static constexpr uint32_t DEFERRED_MAX_LIGHTS = 16384;
 	static constexpr uint32_t DEFERRED_UBO_SIZE = 64 * 1024 + DEFERRED_MAX_LIGHTS * 512; // ~8.06MB
 
+	// DEFERRED_UBO_SIZE is the budget for ONE pass; the buffer holds a full-size
+	// region per (frame-in-flight, lighting mode) so that no two passes ever pack
+	// into the same bytes. Eventually sharing one region between the scene and
+	// cockpit passes is desired, but it would first require moving the cockpit intensity/
+	// radius modifiers, etc. into the shader.
+	static constexpr uint32_t DEFERRED_UBO_REGIONS = MAX_FRAMES_IN_FLIGHT * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES);
+
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;
 	const VulkanDeferredGBuffer* m_gbuffer = nullptr;
@@ -503,7 +511,8 @@ private:
 	LightVolumeMesh m_sphereMesh;
 	LightVolumeMesh m_cylinderMesh;
 
-	// Per-frame UBO for deferred light data (lights + globals + matrices)
+	// UBO for deferred light data (globals + lights + matrices), DEFERRED_UBO_REGIONS
+	// full-size regions wide.
 	vk::Buffer m_deferredUBO;
 	VulkanAllocation m_deferredUBOAlloc;
 
