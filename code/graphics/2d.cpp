@@ -957,13 +957,8 @@ static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync"
                      .default_func([]() { return Gr_enable_vsync; })
                      .bind_to_once(&Gr_enable_vsync)
                      .importance(70)
-                     .parser(parse_vsync_func)  
+                     .parser(parse_vsync_func)
                      .finish();
-
-void removeVSyncOption()
-{
-	options::OptionsManager::instance()->removeOption(VSyncOption);
-}
 
 bool Gr_enable_hdr = false;
 bool Gr_hdr_output_active = false;
