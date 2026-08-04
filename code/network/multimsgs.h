@@ -528,11 +528,11 @@ void send_weapon_detonate_packet(object *objp);
 void process_weapon_detonate_packet(ubyte *data, header *hinfo);
 
 // turret fired packet
-void send_turret_fired_packet( int objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius );
+void send_turret_fired_packet( int objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius, float target_forward_speed );
 void process_turret_fired_packet( ubyte *data, header *hinfo );
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius );
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius, float target_forward_speed );
 void process_flak_fired_packet(ubyte *data, header *hinfo);
 
 // player pain packet

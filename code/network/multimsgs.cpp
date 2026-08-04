@@ -3317,7 +3317,7 @@ void process_countermeasure_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating that a turret has been fired
-void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius )
+void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius, float target_forward_speed )
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -3376,6 +3376,8 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_FLOAT(dist_to_target);
 
 	ADD_FLOAT(target_radius);
+
+	ADD_FLOAT(target_forward_speed);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8633,7 +8635,7 @@ void process_weapon_detonate_packet(ubyte *data, header *hinfo)
 }	
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius)
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius, float target_forward_speed)
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -8683,6 +8685,8 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	ADD_FLOAT( flak_range );
 
 	ADD_FLOAT( dist_to_target );
+
+	ADD_FLOAT( target_forward_speed );
 
 	ADD_FLOAT( target_radius );
 	
