@@ -22,7 +22,9 @@
 #include "nebula/neb.h"
 #include "nebula/volumetrics.h"
 #include "mod_table/mod_table.h"
+#include "object/object.h"
 #include "render/3d.h"
+#include "ship/ship.h"
 #include "tracing/tracing.h"
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
@@ -318,7 +320,17 @@ void gr_opengl_deferred_lighting_finish()
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
 			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
-			shadow_cascade_params_bind(offset, count);
+			// See shadow_cascade_params_bind()'s declaration (shadows.h): this deferred
+			// lighting pass shades every G-buffer texel written during the cockpit block
+			// (ship.cpp) in one full-screen draw, so it can only carry one correction.
+			// That's exact for the common case (a ship with a cockpit model prerenders its
+			// hull separately, outside Lighting_mode::COCKPIT, so only cockpit fragments
+			// land in this G-buffer); it's a known gap for Cockpit_shares_coordinate_space
+			// ships or cockpit-less ships, where hull fragments also land here and would
+			// need a different correction than the cockpit's.
+			vec3d world_offset = (Lighting_mode == lighting_mode::COCKPIT && Viewer_obj != nullptr) ? Viewer_obj->pos : vmd_zero_vector;
+			bool allow_viewer_self_shadow = Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit();
+			shadow_cascade_params_bind(offset, count, world_offset, allow_viewer_self_shadow);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;

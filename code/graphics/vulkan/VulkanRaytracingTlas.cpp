@@ -306,6 +306,14 @@ void VulkanRaytracingManager::gatherCockpitShadowCasterInstance(SCP_vector<vk::A
 	// elsewhere (e.g. gun firing points, ship.cpp).
 	vec3d rotated_offset;
 	vm_vec_unrotate(&rotated_offset, &sip->cockpit_offset, &objp->orient);
+	// Matches ship.cpp's sway addition (ship_render_player_ship()) so the TLAS
+	// proxy tracks the same per-frame jitter as the rendered cockpit geometry;
+	// otherwise the two drift apart by up to cockpit_sway_val * acceleration.
+	if (!Disable_cockpit_sway) {
+		vec3d sway_offset;
+		vm_vec_copy_scale(&sway_offset, &objp->phys_info.acceleration, sip->cockpit_sway_val);
+		vm_vec_add2(&rotated_offset, &sway_offset);
+	}
 	vec3d cockpit_world_pos = objp->pos;
 	vm_vec_add2(&cockpit_world_pos, &rotated_offset);
 

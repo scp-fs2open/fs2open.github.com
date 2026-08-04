@@ -110,6 +110,11 @@ uniform shadowCascadeParams {
 
 	// Debug visualization toggle; see shadow_cascade_static_data (uniform_structs.h).
 	int rt_shadow_debug_visualize;
+
+	// World-space correction for RT shadow ray reconstruction; see
+	// shadow_cascade_static_data (uniform_structs.h) and shadow_cascade_params_bind()
+	// (shadows.cpp) for the derivation.
+	vec3 shadow_ray_world_offset;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -244,7 +249,11 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		rtShadowsActive = true;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 	mat4 invView = inverse(viewMatrix);
-	vec3 worldPos = (invView * vertIn.position).xyz;
+	// shadow_ray_world_offset corrects for the cockpit pass's view matrix/model
+	// positions being anchored at leaning_position rather than the ship's actual
+	// world position -- see shadow_cascade_static_data (uniform_structs.h). Zero
+	// everywhere else, so this is a no-op outside the cockpit.
+	vec3 worldPos = (invView * vertIn.position).xyz + shadow_ray_world_offset;
 	vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);
 	int shadowedDirectionalCount = 0;
 	// Debug: highest occlusion seen from any raytraced shadow query this fragment,

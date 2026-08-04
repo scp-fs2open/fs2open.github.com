@@ -109,7 +109,24 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 
 void shadow_cascade_params_init();
 void shadow_cascade_params_shutdown();
-void shadow_cascade_params_bind(int cascade_offset, int cascade_count);
+
+// world_offset: added to traceShadowRay()'s reconstructed (inv_view_matrix *
+// viewSpacePos) position before tracing. Zero for every pass that already
+// renders in true world space (objp->pos-anchored view + model matrices).
+// The cockpit pass is the only exception -- see ship_render_player_ship()
+// (ship.cpp) and shadow_cascade_static_data's shadow_ray_world_offset comment
+// (uniform_structs.h) for the derivation. Callers whose draws share this pass
+// but use a *different* internal frame (e.g. the eye-relative hull draw vs.
+// the cockpit-offset-relative cockpit draw) must rebind with the offset
+// appropriate to whichever draw is about to happen -- one bind cannot serve
+// both.
+// allow_viewer_self_shadow: lets the viewer ship's own hull TLAS instance
+// (tagged with a dedicated mask bit, see
+// VulkanRaytracingManager::gatherShadowCasterInstances()) participate in this
+// pass's shadow rays. False everywhere except the cockpit's own shading,
+// where the hull is meant to be able to cast onto the cockpit.
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec3d& world_offset,
+	bool allow_viewer_self_shadow = false);
 
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t cockpit_fov, float aspect, const std::optional<SCP_vector<float>>& cascade_distances_override = std::nullopt);
 void shadows_end_render();

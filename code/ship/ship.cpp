@@ -8245,13 +8245,32 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	Shadow_view_matrix_render = gr_view_matrix;
 
 	matrix4 shadow_view_light_backup = Shadow_view_matrix_light;
+	bool cockpit_shadow_rendering_active = false;
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		Shadow_override = false;
 		Shadow_view_matrix_light.a1d[12] = 0;
 		Shadow_view_matrix_light.a1d[13] = 0;
 		Shadow_view_matrix_light.a1d[14] = 0;
-		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
+		cockpit_shadow_rendering_active = true;
 	}
+
+	// This pass draws two different objects (hull, cockpit) in two different
+	// internal frames -- see the two model_render_immediate() calls below --
+	// so each needs its own RT shadow-ray world-space correction; a single
+	// shadow_cascade_params_bind() call can't serve both. Derivations:
+	//
+	// Hull draw uses &eye_offset as its position arg (eye-relative frame), so
+	// reconstructed + (objp->pos - eye_offset) lands in the same true-world
+	// space the shadow TLAS is built in.
+	//
+	// Cockpit draw uses &cockpit_offset (rotate(sip->cockpit_offset) + sway,
+	// origin-relative frame -- see below), so reconstructed + objp->pos lands
+	// there instead. See shadow_cascade_static_data::shadow_ray_world_offset
+	// (uniform_structs.h) for the full derivation.
+	vec3d hull_shadow_ray_world_offset;
+	vm_vec_sub(&hull_shadow_ray_world_offset, &objp->pos, &eye_offset);
+	const vec3d& cockpit_shadow_ray_world_offset = objp->pos;
+	const bool cockpit_shadow_allows_hull_self_shadow = ship_render_player_ship_casts_shadow_on_cockpit();
 
 	if (light_deferredcockpit_enabled()) {
 		gr_deferred_lighting_begin(true);
@@ -8282,6 +8301,9 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		if (sip->uses_team_colors)
 			ship_render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
+		if (cockpit_shadow_rendering_active) {
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, hull_shadow_ray_world_offset);
+		}
 		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
 		gr_zbuffer_clear(true);
 	}
@@ -8292,6 +8314,10 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
 		if (!Disable_cockpit_sway)
 			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+		if (cockpit_shadow_rendering_active) {
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, cockpit_shadow_ray_world_offset,
+				cockpit_shadow_allows_hull_self_shadow);
+		}
 		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_OPAQUE);
 	}
 
@@ -8320,10 +8346,17 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 
 	if (deferredRenderShipModel) {
+		if (cockpit_shadow_rendering_active) {
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, hull_shadow_ray_world_offset);
+		}
 		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
 	}
 
 	if (renderCockpitModel) {
+		if (cockpit_shadow_rendering_active) {
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, cockpit_shadow_ray_world_offset,
+				cockpit_shadow_allows_hull_self_shadow);
+		}
 		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_TRANS);
 	}
 
