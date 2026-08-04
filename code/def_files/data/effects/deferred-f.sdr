@@ -69,6 +69,9 @@ uniform shadowCascadeParams {
 	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
 	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
 	int shadow_ray_cull_mask;
+
+	// Debug visualization toggle; see shadow_cascade_static_data (uniform_structs.h).
+	int rt_shadow_debug_visualize;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -312,6 +315,15 @@ void main()
 		float lightDist;
 		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation, lightDist);
 
+		// Debug: occlusion from this pixel's raytraced shadow query, and whether a
+		// query actually ran at all -- rt_shadow_debug_visualize needs both, not
+		// just occlusion, since "no query ran" and "query ran, fully lit" would
+		// otherwise look identical (no tint either way). Both stay at their
+		// zero/false default whenever the CSM fallback runs instead (#else below)
+		// or enable_shadows is 0.
+		float rtShadowDebugOcclusion = 0.0;
+		bool rtShadowDebugQueried = false;
+
 		if (enable_shadows != 0) {
 #ifdef RT_SHADOWS
 			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
@@ -319,7 +331,10 @@ void main()
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
 			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
+			float rtShadowTerm = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
+			rtShadowDebugOcclusion = 1.0 - rtShadowTerm;
+			rtShadowDebugQueried = true;
+			attenuation *= rtShadowTerm;
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];
@@ -334,6 +349,16 @@ void main()
 		vec3 halfVec = normalize(lightDir + eyeDir);
 		float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 		fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
+
+#ifdef RT_SHADOWS
+		// Three readable states: untouched = no RT shadow query ran for this pixel
+		// (permutation/enable_shadows/m_shadow-init problem); solid green = query
+		// ran, found no occluder (TLAS/transform problem, or genuinely unoccluded);
+		// solid red = query ran, fully occluded.
+		if (rt_shadow_debug_visualize != 0 && rtShadowDebugQueried) {
+			fragmentColor.rgb = mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), rtShadowDebugOcclusion);
+		}
+#endif
 	}
 
 	fragOut0 = max(fragmentColor, vec4(0.0));

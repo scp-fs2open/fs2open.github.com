@@ -48,6 +48,9 @@ uniform shadowCascadeParams {
 	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
 	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
 	int shadow_ray_cull_mask;
+
+	// Debug visualization toggle; see shadow_cascade_static_data (uniform_structs.h).
+	int rt_shadow_debug_visualize;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];

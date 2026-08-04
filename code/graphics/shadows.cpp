@@ -27,6 +27,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "render/3d.h"
+#include "debugconsole/console.h"
 #include "tracing/tracing.h"
 #include "util/uniform_structs.h"
 
@@ -36,6 +37,21 @@ matrix4 Shadow_view_matrix_light;
 matrix4 Shadow_view_matrix_render;
 SCP_vector<matrix4> Shadow_proj_matrix;
 SCP_vector<float> Shadow_cascade_distances;
+
+bool Rt_shadow_debug_visualize = false;
+
+DCF(rt_shadow_debug, "Toggles red visualization of raytraced shadow occlusion")
+{
+	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
+		dc_printf("Raytraced shadow debug visualization is %s", Rt_shadow_debug_visualize ? "ON" : "OFF");
+		return;
+	}
+
+	Rt_shadow_debug_visualize = !Rt_shadow_debug_visualize;
+	dc_printf("Raytraced shadow debug visualization %s. Occluded fragments will be tinted red wherever "
+		"a raytraced shadow query is actually evaluated (Vulkan, RT shadows enabled, a shadow-receiving "
+		"material).\n", Rt_shadow_debug_visualize ? "enabled" : "disabled");
+}
 
 static SCP_vector<light_frustum_info> Shadow_frustums;
 
@@ -1065,6 +1081,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	// supposed to cast onto its cockpit this frame.
 	static_data.shadow_ray_cull_mask =
 		(Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit()) ? 0xFF : 0x7F;
+
+	static_data.rt_shadow_debug_visualize = Rt_shadow_debug_visualize ? 1 : 0;
 
 	Shadow_cascade_count = cascade_count;
 

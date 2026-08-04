@@ -155,13 +155,19 @@ struct shadow_cascade_static_data {
 	// matching the rasterized path's exclusion of Viewer_obj from the main
 	// shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
 	int shadow_ray_cull_mask;
-	float pad[3]; // keep shadow_proj_matrix[]'s offset 16-byte aligned (std140)
+
+	// Debug visualization toggle (see Rt_shadow_debug_visualize, shadows.h):
+	// nonzero paints raytraced-shadow-occluded fragments red. Read by
+	// traceShadowRay()'s callers in main-f.sdr/deferred-f.sdr, not by
+	// traceShadowRay() itself.
+	int rt_shadow_debug_visualize;
+	float pad[2]; // keep shadow_proj_matrix[]'s offset 16-byte aligned (std140)
 };
 // Must match the GLSL shadowCascadeParams block's implicit std140 padding
 // exactly (16 [4 leading scalars] + 64 [matrix4] + 4 [shadow_ray_cull_mask]
-// + 12 [pad[3]] = 96) -- shadow_cascade_params_bind() packs shadow_proj_matrix[]
-// immediately after this struct via sizeof(), so a mismatch here silently
-// shifts every cascade matrix in the buffer, in both backends.
+// + 4 [rt_shadow_debug_visualize] + 8 [pad[2]] = 96) -- shadow_cascade_params_bind()
+// packs shadow_proj_matrix[] immediately after this struct via sizeof(), so a
+// mismatch here silently shifts every cascade matrix in the buffer, in both backends.
 static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
