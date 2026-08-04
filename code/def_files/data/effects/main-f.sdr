@@ -104,16 +104,10 @@ uniform shadowCascadeParams {
 
 	mat4 shadow_mv_matrix;
 
-	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
-	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
+	// shadow_ray_cull_mask/shadow_ray_world_offset: see shadow_cascade_static_data
+	// (uniform_structs.h) for what these mean and shadow_cascade_params_bind()
+	// (shadows.cpp) for how they're set.
 	int shadow_ray_cull_mask;
-
-	// Debug visualization toggle; see shadow_cascade_static_data (uniform_structs.h).
-	int rt_shadow_debug_visualize;
-
-	// World-space correction for RT shadow ray reconstruction; see
-	// shadow_cascade_static_data (uniform_structs.h) and shadow_cascade_params_bind()
-	// (shadows.cpp) for the derivation.
 	vec3 shadow_ray_world_offset;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -249,21 +243,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		rtShadowsActive = true;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 	mat4 invView = inverse(viewMatrix);
-	// shadow_ray_world_offset corrects for the cockpit pass's view matrix/model
-	// positions being anchored at leaning_position rather than the ship's actual
-	// world position -- see shadow_cascade_static_data (uniform_structs.h). Zero
-	// everywhere else, so this is a no-op outside the cockpit.
+	// Zero outside the cockpit pass; see shadow_cascade_static_data (uniform_structs.h).
 	vec3 worldPos = (invView * vertIn.position).xyz + shadow_ray_world_offset;
 	vec3 worldNormal = normalize((invView * vec4(normal, 0.0)).xyz);
 	int shadowedDirectionalCount = 0;
-	// Debug: highest occlusion seen from any raytraced shadow query this fragment,
-	// and whether a query actually ran at all -- rt_shadow_debug_visualize needs
-	// both, not just occlusion, since "no query ran" and "query ran, fully lit"
-	// would otherwise look identical (no tint either way). Both stay at their
-	// zero/false default whenever RT shadows aren't actually being evaluated for
-	// this fragment (permutation not compiled in, or shadow-receiving is off).
-	float rtShadowDebugOcclusion = 0.0;
-	bool rtShadowDebugQueried = false;
 #endif
 
 	#pragma optionNV unroll all
@@ -273,8 +256,6 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
 			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
 			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias, uint(shadow_ray_cull_mask));
-			rtShadowDebugOcclusion = max(rtShadowDebugOcclusion, 1.0 - shadow);
-			rtShadowDebugQueried = true;
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;
@@ -297,19 +278,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, roughness, fresnel, NdotL) * attenuation * shadow;
 	}
 
-	vec3 litColor = diffuseMaterial * lightAmbient + lightSpecular;
-#ifdef MODEL_SDR_FLAG_RT_SHADOWS
-	// Three readable states: untouched = no RT shadow query ran for this fragment
-	// (permutation/shadow-receiving problem); solid green = query ran, found no
-	// occluder (nothing between fragment and light, or a TLAS/transform problem);
-	// solid red = query ran, fully occluded. Partial occlusion (soft/PCSS-less RT
-	// shadows are hard-edged per light, but multiple lights can blend) interpolates
-	// green->red.
-	if (rt_shadow_debug_visualize != 0 && rtShadowDebugQueried) {
-		litColor = mix(vec3(0.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), rtShadowDebugOcclusion);
-	}
-#endif
-	return litColor;
+	return diffuseMaterial * lightAmbient + lightSpecular;
 }
 
 void main()

@@ -24,8 +24,6 @@
 #include "tracing/tracing.h"
 #include "nebula/neb.h"
 #include "mission/missionparse.h"
-#include "object/object.h"
-#include "ship/ship.h"
 
 extern float Sun_spot;
 extern int Game_subspace_effect;
@@ -509,17 +507,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
-
-			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
-			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
-			// See shadow_cascade_params_bind()'s declaration (shadows.h) and the mirrored
-			// comment in gropengldeferred.cpp: this full-screen pass can only carry one
-			// world_offset for every G-buffer texel it shades, which is exact for the
-			// common case (cockpit-model ships prerender their hull outside
-			// Lighting_mode::COCKPIT) and a known gap otherwise.
-			vec3d world_offset = (Lighting_mode == lighting_mode::COCKPIT && Viewer_obj != nullptr) ? Viewer_obj->pos : vmd_zero_vector;
-			bool allow_viewer_self_shadow = Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit();
-			shadow_cascade_params_bind(offset, count, world_offset, allow_viewer_self_shadow);
+			shadow_cascade_params_bind_deferred();
 		}
 	}
 

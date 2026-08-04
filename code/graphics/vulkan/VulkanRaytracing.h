@@ -192,12 +192,8 @@ private:
 
 	// Shared by walkSubmodelTree/addSingleSubmodelInstance: appends one TLAS
 	// instance referencing blasAddress, placed at the given world orient/pos.
-	// `mask` is the instance's ray-cull mask (vk::AccelerationStructureInstanceKHR::mask);
-	// defaults to 0xFF (visible to every ray). The one caller that needs
-	// something else is the viewer ship's own hull, which is tagged with a
-	// dedicated bit so shadow rays can selectively exclude it -- see
-	// gatherShadowCasterInstances()'s OBJ_SHIP case and shadows.sdr's
-	// traceShadowRay() for how the two ends of this scheme meet.
+	// `mask` is the instance's ray-cull mask (vk::AccelerationStructureInstanceKHR::mask,
+	// see TLAS_MASK_VIEWER_HULL in shadows.h); defaults to 0xFF (visible to every ray).
 	static void pushInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		vk::DeviceAddress blasAddress,
 		const matrix& orient,
@@ -211,18 +207,12 @@ private:
 	// render_viewer_shadow()'s cockpit block uses (shadows.cpp) so the cockpit only
 	// gets a TLAS instance when it would also get a rasterized shadow-map pass.
 	void gatherCockpitShadowCasterInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances);
-	// `skipDetailBoxCheck`: the detail-box gate compares against the global
-	// `Eye_position` (see submodelPassesDetailBox()), which is correct for
-	// world-anchored objects (ships/asteroids/debris/props) but not for the
-	// cockpit model -- render_viewer_shadow()'s rasterized cockpit shadow
-	// pass evaluates its own detail-box checks against a cockpit-relative eye
-	// position instead (shadows.cpp), which Eye_position does not replicate.
-	// Rather than derive that (would need cam_offset/rot_offset threaded down
-	// from shadows_render_all(), see design doc), the cockpit call
-	// (gatherCockpitShadowCasterInstance) passes true here to skip the check
-	// entirely -- cockpit models are small and sit right against the camera,
-	// so render-box/render-sphere culling is unlikely to matter at that
-	// range. Every other caller passes false (default), unaffected.
+	// `skipDetailBoxCheck`: the detail-box gate (submodelPassesDetailBox()) compares
+	// against the global `Eye_position`, which isn't correct for the cockpit model (its
+	// rasterized detail-box checks use a cockpit-relative eye position instead -- see
+	// shadows.cpp). gatherCockpitShadowCasterInstance() passes true to skip the check
+	// rather than derive that; cockpit models are small and sit right against the camera,
+	// so detail-box culling is unlikely to matter there. Every other caller defaults false.
 	void walkSubmodelTree(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		transform_stack& stack,
 		const polymodel* pm,

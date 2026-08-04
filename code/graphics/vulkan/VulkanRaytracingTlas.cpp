@@ -16,6 +16,7 @@
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
 #include "globalincs/systemvars.h"
+#include "graphics/shadows.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
@@ -194,16 +195,11 @@ void VulkanRaytracingManager::gatherShadowCasterInstances(SCP_vector<vk::Acceler
 				continue;
 			}
 
-			// The viewer's own hull is tagged with a dedicated mask bit (0x80,
-			// nothing else set) rather than the default 0xFF: it needs to be
-			// selectively excludable by shadow rays traced from the cockpit's
-			// own shading pass (see traceShadowRay()/shadows.sdr and
-			// VulkanPostProcessingLighting.cpp), matching the rasterized
-			// path's unconditional exclusion of Viewer_obj from the main
-			// shadow cascades (shadows.cpp) while still letting every other
-			// ray (default 0xFF cull mask) see it, since it's still really
-			// there.
-			uint8_t instanceMask = (objp == Viewer_obj) ? 0x80 : 0xFF;
+			// The viewer's own hull is tagged with TLAS_MASK_VIEWER_HULL instead of the
+			// default 0xFF so shadow rays can selectively exclude it -- see that
+			// constant's declaration (shadows.h) for how the two ends of this scheme
+			// meet.
+			uint8_t instanceMask = (objp == Viewer_obj) ? TLAS_MASK_VIEWER_HULL : 0xFF;
 
 			transform_stack stack;
 			stack.push(&objp->pos, &objp->orient);
@@ -277,14 +273,8 @@ void VulkanRaytracingManager::gatherCockpitShadowCasterInstance(SCP_vector<vk::A
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	// Mirrors the renderCockpitModel computation in ship_render_player_ship()/
-	// render_viewer_shadow() (ship.cpp/shadows.cpp) -- kept as a fourth inline
-	// copy for consistency with those two, rather than factoring out a shared
-	// helper neither of them uses today.
-	const bool renderCockpitModel =
-		(Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
-	if (!renderCockpitModel || Shadow_disable_overrides.disable_cockpit) {
-		return; // matches shadows.cpp:787's gate on the rasterized cockpit shadow pass
+	if (!ship_player_cockpit_model_would_render(sip) || Shadow_disable_overrides.disable_cockpit) {
+		return; // matches render_viewer_shadow()'s gate on the rasterized cockpit shadow pass (shadows.cpp)
 	}
 
 	polymodel* cockpit_pm = model_get(sip->cockpit_model_num);

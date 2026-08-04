@@ -95,12 +95,14 @@ extern SCP_vector<matrix4> Shadow_proj_matrix;
 extern SCP_vector<float> Shadow_cascade_distances;
 extern int Shadow_cascade_count;
 
-// Debug visualization: when true, fragments occluded by a raytraced shadow
-// query (traceShadowRay()/shadows.sdr) are tinted red instead of shaded
-// normally. Toggled via the `rt_shadow_debug` debug-console command. Packed
-// into the shared shadowCascadeParams uniform (shadow_cascade_static_data)
-// alongside shadow_ray_cull_mask -- see shadow_cascade_params_bind().
-extern bool Rt_shadow_debug_visualize;
+// TLAS ray-cull mask bit reserved for the viewer ship's own hull instance
+// (VulkanRaytracingManager::gatherShadowCasterInstances()'s OBJ_SHIP case), so shadow
+// rays can selectively exclude it -- see shadow_cascade_params_bind()'s
+// shadow_ray_cull_mask and traceShadowRay() (shadows.sdr).
+constexpr uint8_t TLAS_MASK_VIEWER_HULL = 0x80;
+// Default TLAS instance mask (visible to every ray) minus TLAS_MASK_VIEWER_HULL --
+// the shadow_ray_cull_mask used everywhere the viewer's own hull must not self-shadow.
+constexpr uint8_t SHADOW_RAY_CULL_MASK_EXCLUDE_VIEWER_HULL = static_cast<uint8_t>(~TLAS_MASK_VIEWER_HULL);
 
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far);
 bool shadows_obj_in_frustum(object *objp, vec3d *min, vec3d *max, matrix *light_orient);
@@ -110,23 +112,22 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 void shadow_cascade_params_init();
 void shadow_cascade_params_shutdown();
 
-// world_offset: added to traceShadowRay()'s reconstructed (inv_view_matrix *
-// viewSpacePos) position before tracing. Zero for every pass that already
-// renders in true world space (objp->pos-anchored view + model matrices).
-// The cockpit pass is the only exception -- see ship_render_player_ship()
-// (ship.cpp) and shadow_cascade_static_data's shadow_ray_world_offset comment
-// (uniform_structs.h) for the derivation. Callers whose draws share this pass
-// but use a *different* internal frame (e.g. the eye-relative hull draw vs.
-// the cockpit-offset-relative cockpit draw) must rebind with the offset
-// appropriate to whichever draw is about to happen -- one bind cannot serve
-// both.
-// allow_viewer_self_shadow: lets the viewer ship's own hull TLAS instance
-// (tagged with a dedicated mask bit, see
-// VulkanRaytracingManager::gatherShadowCasterInstances()) participate in this
-// pass's shadow rays. False everywhere except the cockpit's own shading,
-// where the hull is meant to be able to cast onto the cockpit.
+// world_offset: added to traceShadowRay()'s reconstructed world position before tracing.
+// Zero for every pass rendering in true world space; nonzero only for the cockpit pass
+// (see shadow_cascade_static_data::shadow_ray_world_offset, uniform_structs.h, for the
+// derivation). A pass with draws in more than one internal frame -- e.g.
+// ship_render_player_ship()'s hull vs. cockpit draws -- must rebind before each one.
+// allow_viewer_self_shadow: lets the viewer ship's own hull (TLAS_MASK_VIEWER_HULL,
+// shadows.h) cast shadows in this pass. True only for the cockpit's own shading.
 void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec3d& world_offset,
 	bool allow_viewer_self_shadow = false);
+
+// Binds the cascade range/world_offset/self-shadow-mask appropriate for the current
+// Lighting_mode, for callers that (unlike ship_render_player_ship()) only ever shade
+// one frame per pass -- currently the deferred-lighting full-screen passes
+// (gropengldeferred.cpp, VulkanPostProcessingLighting.cpp). See shadow_cascade_params_bind()
+// above for what world_offset/allow_viewer_self_shadow mean and their known limitation here.
+void shadow_cascade_params_bind_deferred();
 
 matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t cockpit_fov, float aspect, const std::optional<SCP_vector<float>>& cascade_distances_override = std::nullopt);
 void shadows_end_render();

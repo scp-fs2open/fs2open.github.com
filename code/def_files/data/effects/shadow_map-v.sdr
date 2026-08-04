@@ -45,16 +45,10 @@ uniform shadowCascadeParams {
 
 	mat4 shadow_mv_matrix;
 
-	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
-	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
+	// shadow_ray_cull_mask/shadow_ray_world_offset: see shadow_cascade_static_data
+	// (uniform_structs.h) for what these mean and shadow_cascade_params_bind()
+	// (shadows.cpp) for how they're set.
 	int shadow_ray_cull_mask;
-
-	// Debug visualization toggle; see shadow_cascade_static_data (uniform_structs.h).
-	int rt_shadow_debug_visualize;
-
-	// World-space correction for RT shadow ray reconstruction; see
-	// shadow_cascade_static_data (uniform_structs.h) and shadow_cascade_params_bind()
-	// (shadows.cpp) for the derivation.
 	vec3 shadow_ray_world_offset;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];

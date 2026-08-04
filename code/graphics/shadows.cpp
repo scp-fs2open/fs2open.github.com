@@ -27,7 +27,6 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "render/3d.h"
-#include "debugconsole/console.h"
 #include "tracing/tracing.h"
 #include "util/uniform_structs.h"
 
@@ -37,21 +36,6 @@ matrix4 Shadow_view_matrix_light;
 matrix4 Shadow_view_matrix_render;
 SCP_vector<matrix4> Shadow_proj_matrix;
 SCP_vector<float> Shadow_cascade_distances;
-
-bool Rt_shadow_debug_visualize = false;
-
-DCF(rt_shadow_debug, "Toggles red visualization of raytraced shadow occlusion")
-{
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Raytraced shadow debug visualization is %s", Rt_shadow_debug_visualize ? "ON" : "OFF");
-		return;
-	}
-
-	Rt_shadow_debug_visualize = !Rt_shadow_debug_visualize;
-	dc_printf("Raytraced shadow debug visualization %s. Occluded fragments will be tinted red wherever "
-		"a raytraced shadow query is actually evaluated (Vulkan, RT shadows enabled, a shadow-receiving "
-		"material).\n", Rt_shadow_debug_visualize ? "enabled" : "disabled");
-}
 
 static SCP_vector<light_frustum_info> Shadow_frustums;
 
@@ -798,7 +782,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		viewer_list.render_all();
 	}
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
+	const bool renderCockpitModel = ship_player_cockpit_model_would_render(sip);
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
@@ -1075,23 +1059,8 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
-	// Default excludes the viewer ship's own hull from raytraced shadow rays
-	// (mirrors the rasterized path's unconditional exclusion of Viewer_obj from
-	// the main shadow cascades, shadows_render_all() below); callers opt in via
-	// allow_viewer_self_shadow only for the specific draw where it's wanted
-	// (the cockpit's own shading, so the hull can cast onto the cockpit -- NOT
-	// the hull's own shading in the same pass, which would just be self-shadow
-	// acne). See shadow_cascade_params_bind()'s declaration (shadows.h).
-	static_data.shadow_ray_cull_mask = allow_viewer_self_shadow ? 0xFF : 0x7F;
-
-	static_data.rt_shadow_debug_visualize = Rt_shadow_debug_visualize ? 1 : 0;
-
-	// See shadow_cascade_params_bind()'s declaration (shadows.h) and
-	// shadow_ray_world_offset's declaration (uniform_structs.h) for the
-	// derivation -- this is caller-supplied because a single pass can contain
-	// draws in different internal frames (e.g. ship_render_player_ship()'s
-	// eye-relative hull draw vs. its cockpit-offset-relative cockpit draw) that
-	// need different corrections; Lighting_mode alone can't distinguish them.
+	// See shadow_cascade_params_bind()'s declaration (shadows.h) for what these mean.
+	static_data.shadow_ray_cull_mask = allow_viewer_self_shadow ? 0xFF : SHADOW_RAY_CULL_MASK_EXCLUDE_VIEWER_HULL;
 	static_data.shadow_ray_world_offset = world_offset;
 
 	Shadow_cascade_count = cascade_count;
@@ -1118,24 +1087,23 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec
 	}
 	offset += sizeof(float) * padding;
 
-	// Must be the full-replacement update (not _offset): this function is called
-	// multiple times per frame with different content (main scene, viewer-ship-
-	// onto-cockpit, cockpit-self, forward cockpit, deferred cockpit -- up to 5
-	// times when the player's cockpit is rendered). On Vulkan's streaming buffer
-	// path, gr_update_buffer_data_offset() only bump-allocates a fresh GPU region
-	// on the first call of the frame; every later call this frame would silently
-	// overwrite that same region in place instead of getting its own. Since
-	// command buffers are recorded before the GPU executes any of them, every
-	// draw this frame would then read whichever bind happened to run last,
-	// regardless of which one was "current" when that draw was recorded -- e.g.
-	// the main scene's shadow-casting draws picking up the cockpit's cascade
-	// range, or the cockpit's shadow_ray_cull_mask read stale/wrong.
-	// gr_update_buffer_data() always bump-allocates fresh on Vulkan (matching the
-	// per-pass isolation deferred_global_data/deferred_light_data already use for
-	// the same reason), and is a safe, standard buffer-orphaning glBufferData()
-	// call on OpenGL.
+	// Must be the full-replacement update, not _offset: this is called several times per
+	// frame with different content, and on Vulkan's streaming buffer _offset only bump-
+	// allocates fresh GPU memory on the first call, silently overwriting the same region
+	// on later calls -- so every draw this frame (command buffers are pre-recorded) would
+	// read whichever bind ran last, not the one current when it was recorded. This always
+	// bump-allocates fresh on Vulkan (matching deferred_global_data/deferred_light_data)
+	// and is a plain buffer-orphaning glBufferData() on OpenGL.
 	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);
+}
+
+void shadow_cascade_params_bind_deferred() {
+	int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+	int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+	vec3d world_offset = (Lighting_mode == lighting_mode::COCKPIT && Viewer_obj != nullptr) ? Viewer_obj->pos : vmd_zero_vector;
+	bool allow_viewer_self_shadow = Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit();
+	shadow_cascade_params_bind(offset, count, world_offset, allow_viewer_self_shadow);
 }
 
 shadow_render_list::shadow_render_list() {
