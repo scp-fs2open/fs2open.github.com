@@ -572,7 +572,7 @@ RadarVisibility radar_is_visible( object *objp )
 		return NOT_VISIBLE;
 
 	vec3d pos, tempv;
-	float awacs_level, dist, max_radar_dist;
+	float awacs_level;
 	vec3d world_pos = objp->pos;
 
 	// get team-wide awacs level for the object if not ship
@@ -652,12 +652,11 @@ RadarVisibility radar_is_visible( object *objp )
 	vm_vec_rotate(&pos, &tempv, &Player_obj->orient);
 
 	// Apply range filter (squared-distance cull first so the sqrt only runs for blips that survive)
-	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
+	float max_radar_dist = Radar_ranges[HUD_config.rp_dist];
 	float dist_sq = vm_vec_mag_squared(&tempv);
 	if (dist_sq > max_radar_dist * max_radar_dist)
 		return NOT_VISIBLE;
-	dist = sqrtf(dist_sq);
-	
+
 	if (objp->type == OBJ_SHIP)
 	{
 		// ships specifically hidden from sensors
