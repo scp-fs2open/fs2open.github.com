@@ -2189,7 +2189,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
-			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f);
+			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f, 0.f);
 		}
 	}
 }
