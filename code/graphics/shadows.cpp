@@ -1094,24 +1094,6 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec
 	// need different corrections; Lighting_mode alone can't distinguish them.
 	static_data.shadow_ray_world_offset = world_offset;
 
-	// TEMPORARY: one-shot diagnostic for the cockpit coordinate-space fix. Every
-	// current cockpit-range bind (ship.cpp, gropengldeferred.cpp,
-	// VulkanPostProcessingLighting.cpp) passes exactly this (offset, count)
-	// pair, so this identifies "a cockpit-pass bind happened" regardless of
-	// whether world_offset came out zero or nonzero -- unlike gating on
-	// |world_offset|, this can't be silently skipped just because the ship
-	// happens to be near the origin this test run. Remove once confirmed
-	// against a live rt_shadow_debug test.
-	if (cascade_offset == 0 && cascade_count == Num_cockpit_shadow_cascades) {
-		static bool logged_once = false;
-		if (!logged_once) {
-			logged_once = true;
-			mprintf(("RT shadow space-offset check: |world_offset|=%.3f  (%.2f, %.2f, %.2f)  self_shadow=%d\n",
-				vm_vec_mag(&world_offset), world_offset.xyz.x, world_offset.xyz.y, world_offset.xyz.z,
-				allow_viewer_self_shadow ? 1 : 0));
-		}
-	}
-
 	Shadow_cascade_count = cascade_count;
 
 	offset += sizeof(graphics::shadow_cascade_static_data);
