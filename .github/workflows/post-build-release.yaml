@@ -33,6 +33,7 @@ env:
   NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
   HLP_API: ${{ secrets.HLP_API }}
   HLP_KEY: ${{ secrets.HLP_KEY }}
+  FORUM_SECRET: ${{ secrets.FORUM_SECRET }}
   RELEASE_TAG: ${{ inputs.releaseTag }}
 
 jobs:
@@ -69,6 +70,7 @@ jobs:
           HLP_API: ${{ secrets.HLP_API }}
           HLP_KEY: ${{ secrets.HLP_KEY }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
+          FORUM_SECRET: ${{ secrets.FORUM_SECRET }}
         run: python ci/post/main.py release
 
       - name: Post Builds (Manual trigger)
