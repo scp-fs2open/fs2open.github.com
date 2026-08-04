@@ -147,7 +147,22 @@ struct shadow_cascade_static_data {
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
+
+	// Ray cull mask for raytraced shadow queries (traceShadowRay()/shadows.sdr).
+	// Lets the viewer ship's own hull -- tagged with a dedicated TLAS instance
+	// mask bit, see VulkanRaytracingManager::gatherShadowCasterInstances() --
+	// be selectively excluded from shadow rays outside the cockpit pass,
+	// matching the rasterized path's exclusion of Viewer_obj from the main
+	// shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
+	int shadow_ray_cull_mask;
+	float pad[3]; // keep shadow_proj_matrix[]'s offset 16-byte aligned (std140)
 };
+// Must match the GLSL shadowCascadeParams block's implicit std140 padding
+// exactly (16 [4 leading scalars] + 64 [matrix4] + 4 [shadow_ray_cull_mask]
+// + 12 [pad[3]] = 96) -- shadow_cascade_params_bind() packs shadow_proj_matrix[]
+// immediately after this struct via sizeof(), so a mismatch here silently
+// shifts every cascade matrix in the buffer, in both backends.
+static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

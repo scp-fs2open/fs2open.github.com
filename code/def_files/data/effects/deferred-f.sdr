@@ -65,6 +65,10 @@ uniform shadowCascadeParams {
 	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
+
+	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
+	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
+	int shadow_ray_cull_mask;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -315,7 +319,7 @@ void main()
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
 			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias);
+			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];

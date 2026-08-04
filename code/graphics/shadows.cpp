@@ -1058,6 +1058,14 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
+	// Default excludes the viewer ship's own hull from raytraced shadow rays
+	// (mirrors the rasterized path's unconditional exclusion of Viewer_obj from
+	// the main shadow cascades, shadows_render_all() below); only the cockpit's
+	// own shading pass allows it through, and only when the ship is actually
+	// supposed to cast onto its cockpit this frame.
+	static_data.shadow_ray_cull_mask =
+		(Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit()) ? 0xFF : 0x7F;
+
 	Shadow_cascade_count = cascade_count;
 
 	offset += sizeof(graphics::shadow_cascade_static_data);

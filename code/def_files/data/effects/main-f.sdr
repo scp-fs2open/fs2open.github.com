@@ -103,6 +103,10 @@ uniform shadowCascadeParams {
 	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
+
+	// Ray cull mask for raytraced shadow queries; see shadow_cascade_static_data (uniform_structs.h)
+	// and shadow_cascade_params_bind() (shadows.cpp) for how this gets set.
+	int shadow_ray_cull_mask;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -248,7 +252,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
 			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
-			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias);
+			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias, uint(shadow_ray_cull_mask));
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;
