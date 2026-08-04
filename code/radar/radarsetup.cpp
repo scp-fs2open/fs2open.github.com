@@ -290,12 +290,12 @@ void radar_plot_object( object *objp )
 	vm_vec_sub(&tempv, &world_pos, &Player_obj->pos);
 	vm_vec_rotate(&pos, &tempv, &eye_orient);
 
-	// Apply range filter
-	dist = vm_vec_dist(&world_pos, &Player_obj->pos);
+	// Apply range filter (squared-distance cull first so the sqrt only runs for blips that survive)
 	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
-	if (dist > max_radar_dist) {
+	if (vm_vec_dist_squared(&world_pos, &Player_obj->pos) > max_radar_dist * max_radar_dist) {
 		return;
 	}
+	dist = vm_vec_dist(&world_pos, &Player_obj->pos);
 
 	// Mine range-based visibility: sensors_range is the outer detection envelope. The parser
 	// guarantees sensors_range >= targetable_range, so anything within targetable range is
