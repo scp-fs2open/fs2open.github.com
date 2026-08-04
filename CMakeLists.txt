@@ -48,14 +48,12 @@ endif()
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 # Check if the external modules exists
-IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
+IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/libRocket/Build")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
 endif()
 
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
 
 # this must be set before include(toolchain)
 if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
@@ -122,8 +120,6 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
-option(ENABLE_COTIRE "Enable cotire for faster compilation. Enabled by default." ON)
-
 option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
@@ -172,7 +168,6 @@ MARK_AS_ADVANCED(FORCE FSO_USE_LUAJIT)
 MARK_AS_ADVANCED(FORCE FSO_DEVELOPMENT_MODE)
 MARK_AS_ADVANCED(FORCE FSO_FATAL_WARNINGS)
 mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
-mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_DISCORD)
