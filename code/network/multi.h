@@ -78,7 +78,7 @@ class player;
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							62
+#define MULTI_FS_SERVER_VERSION							63
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 

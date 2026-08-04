@@ -8689,9 +8689,9 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 
 	ADD_FLOAT( dist_to_target );
 
-	ADD_FLOAT( target_forward_speed );
-
 	ADD_FLOAT( target_radius );
+
+	ADD_FLOAT( target_forward_speed );
 	
 	multi_io_send_to_all(data, packet_size);
 
