@@ -2137,6 +2137,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		tsi->turret->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	// create weapon and homing info

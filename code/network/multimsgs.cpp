@@ -3400,6 +3400,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	float angle1, angle2;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3417,6 +3418,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_FLOAT( angle2 );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3465,6 +3467,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object
@@ -8710,6 +8713,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	float flak_range;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
@@ -8722,6 +8726,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( flak_range );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -8769,6 +8774,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object	
