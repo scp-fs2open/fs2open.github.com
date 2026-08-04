@@ -750,7 +750,7 @@ struct weapon_info
 			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
 			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}},
 			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}},
-			std::pair {"Target Forward Speed", modular_curves_submember_input<&WeaponLaunchCurveData::target_forward_speed>{}
+			std::pair {"Target Forward Speed", modular_curves_submember_input<&WeaponLaunchCurveData::target_forward_speed>{}}
 	);
 
   public:
