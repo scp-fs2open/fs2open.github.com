@@ -292,10 +292,10 @@ void radar_plot_object( object *objp )
 
 	// Apply range filter (squared-distance cull first so the sqrt only runs for blips that survive)
 	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
-	if (vm_vec_dist_squared(&world_pos, &Player_obj->pos) > max_radar_dist * max_radar_dist) {
+	float dist_sq = vm_vec_mag_squared(&tempv);
+	if (dist_sq > max_radar_dist * max_radar_dist)
 		return;
-	}
-	dist = vm_vec_dist(&world_pos, &Player_obj->pos);
+	dist = sqrtf(dist_sq);
 
 	// Mine range-based visibility: sensors_range is the outer detection envelope. The parser
 	// guarantees sensors_range >= targetable_range, so anything within targetable range is
@@ -651,12 +651,12 @@ RadarVisibility radar_is_visible( object *objp )
 	vm_vec_sub(&tempv, &world_pos, &Player_obj->pos);
 	vm_vec_rotate(&pos, &tempv, &Player_obj->orient);
 
-	// Apply range filter
-	dist = vm_vec_dist(&world_pos, &Player_obj->pos);
+	// Apply range filter (squared-distance cull first so the sqrt only runs for blips that survive)
 	max_radar_dist = Radar_ranges[HUD_config.rp_dist];
-	if (dist > max_radar_dist) {
+	float dist_sq = vm_vec_mag_squared(&tempv);
+	if (dist_sq > max_radar_dist * max_radar_dist)
 		return NOT_VISIBLE;
-	}
+	dist = sqrtf(dist_sq);
 	
 	if (objp->type == OBJ_SHIP)
 	{
