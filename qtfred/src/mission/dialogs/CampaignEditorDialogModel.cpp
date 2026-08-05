@@ -151,8 +151,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		}
 
 		// Copy ship and weapon permissions from the global Campaign struct
-		m_ships_allowed.assign(Campaign.ships_allowed.begin(), Campaign.ships_allowed.end());
-		m_weapons_allowed.assign(Campaign.weapons_allowed.begin(), Campaign.weapons_allowed.end());
+		m_ships_allowed = Campaign.ships_allowed;
+		m_weapons_allowed = Campaign.weapons_allowed;
 
 	} else {
 		// CREATING A NEW CAMPAIGN
@@ -164,9 +164,6 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		m_campaign_type = CAMPAIGN_TYPE_SINGLE;
 		m_num_players = 0;
 		m_flags = CF_DEFAULT_VALUE;
-
-		m_ships_allowed.assign(ship_info_size(), false);
-		m_weapons_allowed.assign(weapon_info_size(), false);
 	}
 
 	// Load the list of available mission files from the directory.
@@ -319,8 +316,8 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.custom_data = m_custom_data;
 
 	// Copy ship and weapon permissions
-	Campaign.ships_allowed.assign(m_ships_allowed.begin(), m_ships_allowed.end());
-	Campaign.weapons_allowed.assign(m_weapons_allowed.begin(), m_weapons_allowed.end());
+	Campaign.ships_allowed = m_ships_allowed;
+	Campaign.weapons_allowed = m_weapons_allowed;
 
 	// Copy mission data
 	for (int i = 0; i < Campaign.num_missions; ++i) {
@@ -1581,7 +1578,7 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 	SCP_vector<std::tuple<SCP_string, int, bool>> ship_list;
 	for (int i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 		if (Ship_info[i].flags[Ship::Info_Flags::Player_ship]) {
-			ship_list.emplace_back(Ship_info[i].name, i, m_ships_allowed[i]);
+			ship_list.emplace_back(Ship_info[i].name, i, m_ships_allowed.contains(i));
 		}
 	}
 	return ship_list;
@@ -1589,9 +1586,13 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 
 void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowed)
 {
-	if (SCP_vector_inbounds(m_ships_allowed, ship_class_index)) {
-		if (m_ships_allowed[ship_class_index] != allowed) {
-			m_ships_allowed[ship_class_index] = allowed;
+	if (Ship_info.in_bounds(ship_class_index)) {
+		if (m_ships_allowed.contains(ship_class_index) != allowed) {
+			if (allowed) {
+				m_ships_allowed.insert(ship_class_index);
+			} else {
+				m_ships_allowed.erase(ship_class_index);
+			}
 			set_modified();
 		}
 	}
@@ -1602,7 +1603,7 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 	SCP_vector<std::tuple<SCP_string, int, bool>> weapon_list;
 	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			weapon_list.emplace_back(Weapon_info[i].name, i, m_weapons_allowed[i]);
+			weapon_list.emplace_back(Weapon_info[i].name, i, m_weapons_allowed.contains(i));
 		}
 	}
 	return weapon_list;
@@ -1610,9 +1611,13 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 
 void CampaignEditorDialogModel::setAllowedWeapon(int weapon_class_index, bool allowed)
 {
-	if (SCP_vector_inbounds(m_weapons_allowed, weapon_class_index)) {
-		if (m_weapons_allowed[weapon_class_index] != allowed) {
-			m_weapons_allowed[weapon_class_index] = allowed;
+	if (Weapon_info.in_bounds(weapon_class_index)) {
+		if (m_weapons_allowed.contains(weapon_class_index) != allowed) {
+			if (allowed) {
+				m_weapons_allowed.insert(weapon_class_index);
+			} else {
+				m_weapons_allowed.erase(weapon_class_index);
+			}
 			set_modified();
 		}
 	}
