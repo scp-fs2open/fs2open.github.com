@@ -92,7 +92,7 @@ public:
 	light_indexing_info bufferLights();
 };
 
-enum class lighting_mode { NORMAL, COCKPIT };
+enum class lighting_mode { NORMAL, COCKPIT, MAX_LIGHTING_MODES };
 extern lighting_mode Lighting_mode;
 
 extern void light_reset();

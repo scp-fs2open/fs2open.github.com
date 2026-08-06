@@ -962,10 +962,14 @@ ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether thi
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR) {
-		Campaign.ships_allowed[idx] = new_value;
+		if (new_value) {
+			Campaign.ships_allowed.insert(idx);
+		} else {
+			Campaign.ships_allowed.erase(idx);
+		}
 	}
 
-	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Campaign.ships_allowed.contains(idx) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")

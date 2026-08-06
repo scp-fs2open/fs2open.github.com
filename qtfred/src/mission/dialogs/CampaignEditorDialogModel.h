@@ -187,8 +187,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int m_campaign_type = CAMPAIGN_TYPE_SINGLE;
 	int m_num_players = -1;
 	int m_flags = 0;
-	SCP_vector<bool> m_ships_allowed;
-	SCP_vector<bool> m_weapons_allowed;
+	SCP_set<int> m_ships_allowed;
+	SCP_set<int> m_weapons_allowed;
 	SCP_map<SCP_string, SCP_string> m_custom_data;
 	SCP_vector<CampaignMissionData> m_missions;
 

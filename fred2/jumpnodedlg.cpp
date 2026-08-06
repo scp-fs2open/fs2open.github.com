@@ -168,132 +168,28 @@ int jumpnode_dlg::update_data(int redraw)
 {
 	const char *str;
 	char old_name[255];
-	int i, z;
-	object *ptr;
+	int z;
 
 	if (!GetSafeHwnd())
 		return 0;
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		auto jnp = jumpnode_get_by_objnum(cur_object_index);
+		Assertion(jnp != nullptr, "Jump node object not found in Jump_nodes vector?");
+		int jnp_index = static_cast<int>(jnp - Jump_nodes.data());
 
 		m_name.TrimLeft();
 		m_name.TrimRight();
-		if (m_name.IsEmpty())
-		{
+
+		SCP_string conflict = check_name_conflict("jump node", m_name, -1, -1, -1, jnp_index);
+		if (!conflict.empty()) {
 			if (bypass_errors)
 				return 1;
 
 			bypass_errors = 1;
-			z = MessageBox("A jump node name cannot be empty\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-
-		for (i=0; i<MAX_WINGS; i++)
-		{
-			if (!stricmp(Wings[i].name, m_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This jump node name is already being used by a wing\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(jnp->GetName());
-				UpdateData(FALSE);
-			}
-		}
-
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
-				if (!stricmp(m_name, Ships[ptr->instance].ship_name)) {
-					if (bypass_errors)
-						return 1;
-
-					bypass_errors = 1;
-					z = MessageBox("This jump node name is already being used by a ship\n"
-						"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-					if (z == IDCANCEL)
-						return -1;
-
-					m_name = _T(jnp->GetName());
-					UpdateData(FALSE);
-				}
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-
-		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
-
-		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
-			if (!stricmp(m_name, Ai_tp_list[i].name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This jump node name is already being used by a target priority group.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_name = _T(jnp->GetName());
-				UpdateData(FALSE);
-			}
-		}
-
-		if (find_matching_waypoint_list((LPCSTR) m_name) != NULL)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("This jump node name is already being used by a waypoint path\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-
-		if (!stricmp(m_name.Left(1), "<")) {
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("Jump node names not allowed to begin with <\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_name = _T(jnp->GetName());
-			UpdateData(FALSE);
-		}
-
-		CJumpNode* found = jumpnode_get_by_name(m_name);
-		if(found != NULL && &(*jnp) != found)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("This jump node name is already being used by another jump node\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			CString msg;
+			msg.Format("%s\nPress OK to restore old name", conflict.c_str());
+			z = MessageBox(msg, "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
 			if (z == IDCANCEL)
 				return -1;

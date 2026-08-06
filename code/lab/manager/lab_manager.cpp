@@ -114,9 +114,7 @@ void LabManager::resetGraphicsSettings() {
 }
 
 void LabManager::onFrame(float frametime) {
-	gr_imgui_new_frame();
-	ImGui_ImplSDL3_NewFrame();
-	ImGui::NewFrame();
+	gr_imgui_begin_frame();
 
 	Renderer->onFrame(frametime);
 

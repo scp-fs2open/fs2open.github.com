@@ -142,7 +142,10 @@ bool vulkan_is_capable(gr_capability capability)
 		// Vulkan always supports BC1/BC2/BC3 (S3TC equivalent) as core features
 		return true;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
-		return true;
+		// Same troubleshooting switch as OpenGL: -no_large_shaders splits the model
+		// ubershader into per-flag-combination variants for drivers that choke on the
+		// single large program (see main_large.sdr / main_small.sdr).
+		return !Cmdline_no_large_shaders;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return true;
 	case gr_capability::CAPABILITY_FAST_SHADOWS:

@@ -1,0 +1,7 @@
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='@USERFILE_CONFIGNAME@|@USERFILE_PLATFORM@'">
+    <LocalDebuggerEnvironment>@USERFILE_ENVIRONMENT@</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommand>$(TargetPath)</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>@USERFILE_COMMAND_ARGUMENTS@</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>@NATIVE_WORKING_DIRECTORY@</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
