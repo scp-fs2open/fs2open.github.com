@@ -82,7 +82,7 @@ typedef struct mmode_item {
 	mmode_item(int param_instance, int param_active, SCP_string param_text) {
 		instance = param_instance;
 		active = param_active;
-		text = param_text;
+		text = std::move(param_text);
 	};
 } mmode_item;
 
