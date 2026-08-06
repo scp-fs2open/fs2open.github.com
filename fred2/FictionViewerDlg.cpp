@@ -82,6 +82,8 @@ BOOL FictionViewerDlg::OnInitDialog()
 
 void FictionViewerDlg::OnOK() 
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	UpdateData(TRUE);
 
 	// remove whitespace
