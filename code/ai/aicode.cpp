@@ -7599,7 +7599,7 @@ static void get_behind_ship(ai_info *aip)
 
 	dot = vm_vec_dot(&vec_from_enemy, &En_objp->orient.vec.fvec);
 	
-	if (ai_willing_to_afterburn_hard(aip) && dot > 0.9f && vm_vec_dist(&Pl_objp->pos, &En_objp->pos) > 1000.0f) {
+	if (ai_willing_to_afterburn_hard(aip) && dot > 0.9f && vm_vec_dist_squared(&Pl_objp->pos, &En_objp->pos) > 1000.0f * 1000.0f) {
 		ai_afterburn_hard(Pl_objp, aip);
 	} else if (dot > 0.25f) {
 		accelerate_ship(aip, 1.0f);
@@ -12380,10 +12380,12 @@ void ai_process_subobjects(int objnum)
 
 				// handle ending animations
 				if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
+					ship_info* turret_sip = &Ship_info[shipp->ship_info_index];
+					polymodel_instance* turret_pmi = model_get_instance(shipp->model_instance_num);
 					//For legacy animations using subtype for turret number
-					bool started = (Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
+					bool started = (turret_sip->animations.getAll(turret_pmi, animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
 						//For modern animations using proper triggered-by-subsys name
-						+ Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
+						+ turret_sip->animations.get(turret_pmi, animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
 						.start(animation::ModelAnimationDirection::RWD);
 					
 					if (started) {

@@ -1100,7 +1100,7 @@ void obj_collide_pair(object *A, object *B)
                 }
 
                 // for nonplayer ships, only create collision pair if close enough
-                if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
+                if ( (B->parent >= 0) && ((Objects[B->parent].signature != B->parent_sig) || !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist_squared(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f) * (4.0f*A->radius + 200.0f)) ) {
                     collision_info->next_check_time = -1;
                     return;
                 }
