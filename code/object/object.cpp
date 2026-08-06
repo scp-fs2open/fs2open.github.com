@@ -1417,7 +1417,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
+			// team_change_time is nonzero only while a fade is in progress (see sexp_change_team_color),
+			// so use that as the initial short-circuit check before the string match
+			if (shipp->team_change_time != 0 && Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
@@ -1711,7 +1713,7 @@ void obj_move_all(float frametime)
 		obj_move_all_post(objp, frametime);
 
 		// Equipment script processing
-		if (objp->type == OBJ_SHIP) {
+		if (objp->type == OBJ_SHIP && scripting::hooks::OnWeaponEquipped->isActive()) {
 			ship* shipp = &Ships[objp->instance];
 			object* target;
 
@@ -1722,13 +1724,11 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (scripting::hooks::OnWeaponEquipped->isActive()) {
-				scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
-					scripting::hook_param_list(
-						scripting::hook_param("User", 'o', objp),
-						scripting::hook_param("Target", 'o', target)
-					));
-			}
+			scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
+				scripting::hook_param_list(
+					scripting::hook_param("User", 'o', objp),
+					scripting::hook_param("Target", 'o', target)
+				));
 		}
 	}
 

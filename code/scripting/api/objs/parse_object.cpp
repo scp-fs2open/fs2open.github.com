@@ -848,7 +848,7 @@ ADE_VIRTVAR(SecondaryBanks, l_ParseSubsystem, nullptr, "The overridden secondary
 
 	luacpp::LuaTable tbl = luacpp::LuaTable::create(L);
 	auto po              = poh->getSubsys();
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+	for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 		if (po->secondary_banks[i] == -1) {
 			break;
 		}
@@ -886,7 +886,7 @@ ADE_VIRTVAR(SecondaryAmmo, l_ParseSubsystem, nullptr, "The overridden secondary 
 
 	luacpp::LuaTable tbl = luacpp::LuaTable::create(L);
 	auto po              = poh->getSubsys();
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+	for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 		if (po->secondary_banks[i] == -1) {
 			break;
 		}
