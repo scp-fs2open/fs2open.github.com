@@ -24,6 +24,11 @@ struct interp_debug_stats {
 	int snap_events = 0;			// times the sim-mode "jump to newest packet" fired
 	int neg_sim_time_events = 0;	// times that snap computed a negative sim_time
 
+	// Object-frames for ships the server has deliberately stopped updating -- see the
+	// Dying/Exploded skip in multi_oo_build_ship_list().  These can only ever dead
+	// reckon, so counting them in the interp/sim ratio just dilutes it.
+	int stale_frames = 0;
+
 	// skew = local current_time - newest held packet's remote_missiontime, in ms.
 	// positive => the local clock has run past every packet we hold (client ahead)
 	// negative => every packet we hold is stamped in our future (client behind)
@@ -66,11 +71,11 @@ void interp_debug_report()
 	}
 
 	if (decided > 0) {
-		mprintf(("MULTI INTERP: %d obj-frames | interp %d (%.1f%%) | sim %d (%.1f%%) | warmup %d | snaps %d (negative sim_time %d)\n",
+		mprintf(("MULTI INTERP: %d live obj-frames | interp %d (%.1f%%) | sim %d (%.1f%%) | warmup %d | stale %d | snaps %d (negative sim_time %d)\n",
 			decided,
 			s.interp_frames, (100.0f * s.interp_frames) / decided,
 			s.sim_frames, (100.0f * s.sim_frames) / decided,
-			s.warmup_frames, s.snap_events, s.neg_sim_time_events));
+			s.warmup_frames, s.stale_frames, s.snap_events, s.neg_sim_time_events));
 	} else {
 		mprintf(("MULTI INTERP: no decided obj-frames, %d warmup frames (fewer than 2 packets held)\n", s.warmup_frames));
 	}
@@ -172,12 +177,26 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	reassess_packet_index(pos, ori, pip);
 
 	// --- TEMP INSTRUMENTATION: how far has our clock drifted from the newest packet we hold? ---
+	// Anything past this has not been updated by any rate in the Multi_oo_*_update_times
+	// tables (slowest is 2500ms), so the server has stopped sending it altogether -- it is
+	// dying or exploded.  Those can only dead reckon, so keep them out of the ratio.
+	constexpr int INTERP_DEBUG_STALE_MS = 3000;
+	bool interp_debug_stale = false;
+
 	if (!_packets.empty()) {
 		const int skew = Multi_Timing_Info.get_current_time() - _packets.front().remote_missiontime;
-		Interp_debug.skew_min = MIN(Interp_debug.skew_min, skew);
-		Interp_debug.skew_max = MAX(Interp_debug.skew_max, skew);
-		Interp_debug.skew_sum += skew;
-		Interp_debug.skew_count++;
+		const int age = Multi_Timing_Info.get_playback_time(_source_player_index) - _packets.front().remote_missiontime;
+
+		interp_debug_stale = (age > INTERP_DEBUG_STALE_MS);
+
+		if (interp_debug_stale) {
+			Interp_debug.stale_frames++;
+		} else {
+			Interp_debug.skew_min = MIN(Interp_debug.skew_min, skew);
+			Interp_debug.skew_max = MAX(Interp_debug.skew_max, skew);
+			Interp_debug.skew_sum += skew;
+			Interp_debug.skew_count++;
+		}
 	}
 	interp_debug_report();
 	// --- END TEMP INSTRUMENTATION ---
@@ -185,18 +204,26 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	// if we are off the beaten path
 	if(_simulation_mode) {
 
-		Interp_debug.sim_frames++;	// TEMP INSTRUMENTATION
+		if (!interp_debug_stale) { Interp_debug.sim_frames++; }	// TEMP INSTRUMENTATION
 
 		float sim_time = flFrametime;
 
 		// we need to push this ship up to the limit of where we were on the remote instance, if we haven't already.
 		// then we need to adjust our timing since some of the sim time is used up getting to that last packet.
 		if (!_packets_expended && !_packets.empty()) {
-			physics_apply_snapshot_manual(*pos, *ori, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel, _packets.front().snapshot);
+			// Timestamps descend with index, so the bracket search can only have failed two
+			// ways: our playback clock ran past the newest packet, or it is behind even the
+			// oldest one we hold.  Dead reckon from whichever end we actually fell off --
+			// always taking the newest would teleport the ship a whole buffer forward in the
+			// second case.  Both terms are on the source's clock, hence the playback clock.
+			const int playback_last = Multi_Timing_Info.get_playback_last_time(_source_player_index);
 
-			// both terms have to be on the source's clock, so use the playback clock
-			// rather than our own raw one
-			sim_time -= (static_cast<float>(_packets.front().remote_missiontime) - static_cast<float>(Multi_Timing_Info.get_playback_last_time(_source_player_index))) / TIMESTAMP_FREQUENCY;
+			const packet_info& reference = (playback_last >= _packets.back().remote_missiontime)
+				? _packets.front() : _packets.back();
+
+			physics_apply_snapshot_manual(*pos, *ori, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel, reference.snapshot);
+
+			sim_time -= (static_cast<float>(reference.remote_missiontime) - static_cast<float>(playback_last)) / TIMESTAMP_FREQUENCY;
 			_packets_expended = true;
 
 			// --- TEMP INSTRUMENTATION: this is the once-per-packet reposition ---
@@ -262,7 +289,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	// protect against bad floating point arithmetic making orientation or position look off
 	CLAMP(scale, 0.001f, 0.999f);
 
-	Interp_debug.interp_frames++;	// TEMP INSTRUMENTATION
+	if (!interp_debug_stale) { Interp_debug.interp_frames++; }	// TEMP INSTRUMENTATION
 
 	// one by one interpolate the vectors to get the desired results.
 	physics_snapshot temp_state;
