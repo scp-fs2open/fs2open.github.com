@@ -221,7 +221,7 @@ void hud_squadmsg_start()
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
 	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
-	Display_selector = false;
+	Display_selector = Always_show_selected_item_in_comms_gauge;
 
 	Squad_msg_mode = SM_MODE_TYPE_SELECT;							// start off at the base state
 	Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
@@ -495,27 +495,37 @@ void hud_squadmsg_selection_move_down() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move down
-		++Selected_menu_item;
 		Display_selector = true;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
-		//Move to next page if we went outside of current one
-		if (Selected_menu_item == MAX_MENU_DISPLAY 
-			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+		//move down, skipping over any hidden items (such as using Hide_main_rearm_items_in_comms_gauge). 
+		//bound it by the item count to ensure it does not loop forever.
+		for (int i = 0; i < Num_menu_items; i++)
 		{
-			hud_squadmsg_page_down();
-			Selected_menu_item = 0;
-		}
+			//move down
+			++Selected_menu_item;
 
-		//Select the first menu item if we went outside items range, so we can loop around
-		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
-		{
-			First_menu_item = 0;
-			Selected_menu_item = First_menu_item;
+			//Move to next page if we went outside of current one
+			if (Selected_menu_item == MAX_MENU_DISPLAY
+				&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+			{
+				hud_squadmsg_page_down();
+				Selected_menu_item = 0;
+			}
+
+			//Select the first menu item if we went outside items range, so we can loop around
+			if (First_menu_item + Selected_menu_item >= Num_menu_items)
+			{
+				First_menu_item = 0;
+				Selected_menu_item = First_menu_item;
+			}
+
+			//stop once we land on a visible item
+			if (MsgItems[First_menu_item + Selected_menu_item].active >= 0)
+				break;
 		}
 	}
 }
@@ -525,29 +535,39 @@ void hud_squadmsg_selection_move_up() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move up
-		--Selected_menu_item;
 		Display_selector = true;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
-		//Move to previous page if it exists
-		if (Selected_menu_item < 0 && First_menu_item > 0)
+		//move down, skipping over any hidden items (such as using Hide_main_rearm_items_in_comms_gauge).
+		//bound it by the item count to ensure it does not loop forever.
+		for (int i = 0; i < Num_menu_items; i++)
 		{
-			hud_squadmsg_page_up();
-			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
-		}
+			//move up
+			--Selected_menu_item;
 
-		//Select the last menu item if we went outside items range, so we can loop around
-		else if (Selected_menu_item < 0) 
-		{
-			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
-			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
-			//exactly like pageUp/pageDown does
-			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
-			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
+			//Move to previous page if it exists
+			if (Selected_menu_item < 0 && First_menu_item > 0)
+			{
+				hud_squadmsg_page_up();
+				Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
+			}
+
+			//Select the last menu item if we went outside items range, so we can loop around
+			else if (Selected_menu_item < 0)
+			{
+				//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
+				//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
+				//exactly like pageUp/pageDown does
+				First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
+				Selected_menu_item = Num_menu_items - 1 - First_menu_item;
+			}
+
+			//stop once we land on a visible item
+			if (MsgItems[First_menu_item + Selected_menu_item].active >= 0)
+				break;
 		}
 	}
 }
