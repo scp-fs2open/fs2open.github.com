@@ -1735,6 +1735,8 @@ extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 extern int ai_paused;
 
 extern SCP_vector<ship_info> Ship_info;
+extern SCP_vector<const char *> Ship_class_names;
+
 extern SCP_vector<reinforcements> Reinforcements;
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
