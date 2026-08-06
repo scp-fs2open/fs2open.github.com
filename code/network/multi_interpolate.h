@@ -6,7 +6,13 @@
 
 struct physics_info;
 
-constexpr size_t PACKET_INFO_LIMIT = 4; // we should never need more than 4 packets to do interpolation.  Overwrite the oldest ones if we do.
+// How much packet history to keep per object.  This has to span MULTI_INTERP_BUFFER_MS
+// worth of updates or the playback clock falls off the back of the history and the object
+// drops to dead reckoning -- worst for the *fastest* updating objects, since they cover
+// the least wall time per packet.  The tightest rate in the Multi_oo_*_update_times tables
+// is 20ms (LAN players and targets), and 11 intervals of that is 220ms, comfortably over
+// the 150ms buffer.
+constexpr size_t PACKET_INFO_LIMIT = 12;
 
 typedef struct packet_info {
 
@@ -165,6 +171,9 @@ public:
 };
 
 void multi_interpolate_clear_all();
+
+// TEMP INSTRUMENTATION - remove along with the debug block in multi_interpolate.cpp
+void multi_interpolate_debug_reset();
 
 void multi_interpolate_clear_helper(int objnum);
 

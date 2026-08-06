@@ -1915,7 +1915,13 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			new_phys_info.desired_rotvel = new_phys_info.rotvel;
 		}
 
-		Interp_info[objnum].add_packet(objnum, seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
+		// NOTE: this wants an *index* into Net_players, not the network-level player_id.
+		// pl always points into Net_players, on both the client (where it is the server)
+		// and the server (where it is the sending client).  Anything out of range is
+		// treated as "unknown source" downstream.
+		const int source_index = (pl != nullptr) ? NET_PLAYER_INDEX(pl) : -1;
+
+		Interp_info[objnum].add_packet(objnum, seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, source_index);
 	}
 
 	// Packet processing needs to stop here if the ship is still arriving, leaving, dead or dying to prevent bugs.
@@ -2746,6 +2752,8 @@ void multi_init_oo_and_ship_tracker()
 
 	// Finally init the new timing system.
 	Multi_Timing_Info.set_mission_start_time();
+
+	multi_interpolate_debug_reset();	// TEMP INSTRUMENTATION
 
 	// reset datarate stamp now
 	extern int OO_gran;

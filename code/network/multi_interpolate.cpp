@@ -4,13 +4,109 @@
 SCP_unordered_map<int, interpolation_manager> Interp_info;
 
 extern void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIMESTAMP upper_time_limit, int prev_packet_index, int current_packet_index);
+
+// ============================================================================
+// TEMPORARY INSTRUMENTATION - remove before merging.
+//
+// Answers one question: is interpolation actually running, or is every remote
+// ship permanently stuck dead-reckoning in _simulation_mode because the local
+// and remote clocks were never synchronized?
+//
+// Reports once per second to fs2_open.log, aggregated over all interpolated
+// objects.  Grep the log for "MULTI INTERP".
+// ============================================================================
+namespace {
+
+struct interp_debug_stats {
+	int warmup_frames = 0;			// object-frames spent waiting for a second packet
+	int interp_frames = 0;			// object-frames that actually interpolated between two packets
+	int sim_frames = 0;				// object-frames that dead-reckoned instead
+	int snap_events = 0;			// times the sim-mode "jump to newest packet" fired
+	int neg_sim_time_events = 0;	// times that snap computed a negative sim_time
+
+	// skew = local current_time - newest held packet's remote_missiontime, in ms.
+	// positive => the local clock has run past every packet we hold (client ahead)
+	// negative => every packet we hold is stamped in our future (client behind)
+	// A near-zero average with a small spread is what interpolation needs.
+	int skew_min = INT_MAX;
+	int skew_max = INT_MIN;
+	double skew_sum = 0.0;
+	int skew_count = 0;
+
+	float snap_sim_time_min = 1e9f;
+	float snap_sim_time_max = -1e9f;
+};
+
+interp_debug_stats Interp_debug;
+bool Interp_debug_report_scheduled = false;
+int Interp_debug_next_report = 0;
+
+// gated to once per second; safe to call from the per-object path
+void interp_debug_report()
+{
+	const int now = Multi_Timing_Info.get_current_time();
+
+	// first call in this mission - start the clock rather than dumping a partial second
+	if (!Interp_debug_report_scheduled) {
+		Interp_debug_report_scheduled = true;
+		Interp_debug_next_report = now + 1000;
+		return;
+	}
+
+	if (now < Interp_debug_next_report) {
+		return;
+	}
+	Interp_debug_next_report = now + 1000;
+
+	auto& s = Interp_debug;
+	const int decided = s.interp_frames + s.sim_frames;
+
+	if (decided + s.warmup_frames == 0) {
+		return;
+	}
+
+	if (decided > 0) {
+		mprintf(("MULTI INTERP: %d obj-frames | interp %d (%.1f%%) | sim %d (%.1f%%) | warmup %d | snaps %d (negative sim_time %d)\n",
+			decided,
+			s.interp_frames, (100.0f * s.interp_frames) / decided,
+			s.sim_frames, (100.0f * s.sim_frames) / decided,
+			s.warmup_frames, s.snap_events, s.neg_sim_time_events));
+	} else {
+		mprintf(("MULTI INTERP: no decided obj-frames, %d warmup frames (fewer than 2 packets held)\n", s.warmup_frames));
+	}
+
+	if (s.skew_count > 0) {
+		mprintf(("MULTI INTERP: skew (local - newest packet) avg %.1f ms | min %d | max %d | spread %d ms\n",
+			s.skew_sum / s.skew_count, s.skew_min, s.skew_max, s.skew_max - s.skew_min));
+	}
+
+	if (s.snap_events > 0) {
+		mprintf(("MULTI INTERP: snap sim_time min %.4f s | max %.4f s\n", s.snap_sim_time_min, s.snap_sim_time_max));
+	}
+
+	s = interp_debug_stats();
+}
+
+} // namespace
+
+// call this from mission start so the numbers don't carry across missions
+void multi_interpolate_debug_reset()
+{
+	Interp_debug = interp_debug_stats();
+	Interp_debug_report_scheduled = false;
+	Interp_debug_next_report = 0;
+}
+// ======================= END TEMPORARY INSTRUMENTATION =======================
+
 ///////////////////////////////////////////
 // interpolation info management functions
 
 // seeks through the packets to find the one that we need, starting from the end, notice we cannot use MULTIPLAYER_CLIENT macro here.  We cannot include multi.h
 void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physics_info* pip) 
 {
-	auto current_time = Multi_Timing_Info.get_current_time();	
+	// Must be the playback clock, not the raw local clock.  _packets hold timestamps
+	// stamped on the source machine's clock, and nothing ever synchronized the two.
+	auto current_time = Multi_Timing_Info.get_playback_time(_source_player_index);
 	int current_index = static_cast<int>(_packets.size()) - 2;
 	int prev_index = static_cast<int>(_packets.size()) - 1;
 
@@ -58,6 +154,9 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	// To optimize, we should not reassess_packet_index with a negative index.  
 	// The index will be made positive by add_packet, once a second packet has been received.
 	if (_upcoming_packet_index < 0 ) {
+		Interp_debug.warmup_frames++;	// TEMP INSTRUMENTATION
+		interp_debug_report();			// TEMP INSTRUMENTATION
+
 		*last_pos = *pos;
 		*last_orient = *ori;
 
@@ -72,9 +171,22 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 	reassess_packet_index(pos, ori, pip);
 
+	// --- TEMP INSTRUMENTATION: how far has our clock drifted from the newest packet we hold? ---
+	if (!_packets.empty()) {
+		const int skew = Multi_Timing_Info.get_current_time() - _packets.front().remote_missiontime;
+		Interp_debug.skew_min = MIN(Interp_debug.skew_min, skew);
+		Interp_debug.skew_max = MAX(Interp_debug.skew_max, skew);
+		Interp_debug.skew_sum += skew;
+		Interp_debug.skew_count++;
+	}
+	interp_debug_report();
+	// --- END TEMP INSTRUMENTATION ---
+
 	// if we are off the beaten path
 	if(_simulation_mode) {
-		
+
+		Interp_debug.sim_frames++;	// TEMP INSTRUMENTATION
+
 		float sim_time = flFrametime;
 
 		// we need to push this ship up to the limit of where we were on the remote instance, if we haven't already.
@@ -82,13 +194,36 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 		if (!_packets_expended && !_packets.empty()) {
 			physics_apply_snapshot_manual(*pos, *ori, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel, _packets.front().snapshot);
 
-			sim_time -= (static_cast<float>(_packets.front().remote_missiontime) - static_cast<float>(Multi_Timing_Info.get_last_time())) / TIMESTAMP_FREQUENCY;
+			// both terms have to be on the source's clock, so use the playback clock
+			// rather than our own raw one
+			sim_time -= (static_cast<float>(_packets.front().remote_missiontime) - static_cast<float>(Multi_Timing_Info.get_playback_last_time(_source_player_index))) / TIMESTAMP_FREQUENCY;
 			_packets_expended = true;
+
+			// --- TEMP INSTRUMENTATION: this is the once-per-packet reposition ---
+			Interp_debug.snap_events++;
+			Interp_debug.snap_sim_time_min = MIN(Interp_debug.snap_sim_time_min, sim_time);
+			Interp_debug.snap_sim_time_max = MAX(Interp_debug.snap_sim_time_max, sim_time);
+			if (sim_time < 0.0f) {
+				Interp_debug.neg_sim_time_events++;
+			}
+			// --- END TEMP INSTRUMENTATION ---
 		}
 
-		sim_time = (sim_time > 0.25f) ? 0.25f : sim_time;
+		// A negative sim_time means our playback clock has not converged on this source
+		// yet.  physics_sim will happily integrate backwards through it, which corrupts
+		// the ship's state rather than just rewinding it, so clamp both ends.
+		CLAMP(sim_time, 0.0f, 0.25f);
 
-		physics_sim(pos, ori, pip, gravity, sim_time);
+		// Catching up in one big step is not the same as taking it a frame at a time --
+		// physics_sim_rot and the velocity damping are both nonlinear in time, so a
+		// turning ship lands somewhere slightly wrong.  Sub-step it.
+		constexpr float MAX_SIM_SUBSTEP = 1.0f / 60.0f;
+
+		while (sim_time > 0.0001f) {
+			const float step = MIN(sim_time, MAX_SIM_SUBSTEP);
+			physics_sim(pos, ori, pip, gravity, step);
+			sim_time -= step;
+		}
 
 		// we can't trust what the last position was on the local instance, so figure out what it should have been
 		// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
@@ -115,8 +250,8 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 		return; // we should not try interpolating and siming on the same call, so return.
 	}
 
-	// calc what the current timing should be.
-	float numerator = static_cast<float>(Multi_Timing_Info.get_current_time()) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
+	// calc what the current timing should be.  Playback clock, for the same reason as in reassess_packet_index.
+	float numerator = static_cast<float>(Multi_Timing_Info.get_playback_time(_source_player_index)) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	
 	// work around for weird situations that might cause NAN (you just never know with multi)
@@ -126,6 +261,8 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 	// protect against bad floating point arithmetic making orientation or position look off
 	CLAMP(scale, 0.001f, 0.999f);
+
+	Interp_debug.interp_frames++;	// TEMP INSTRUMENTATION
 
 	// one by one interpolate the vectors to get the desired results.
 	physics_snapshot temp_state;
@@ -165,10 +302,12 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 // correct the ship record for player ships when an up to date packet comes in.
 void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity)
 {
-	// calc what the timing was previously.  The caller hands us an absolute timestamp, 
-	// but remote_missiontime is relative to mission start, so drop the start time before comparing.
-	float local_time = static_cast<float>(stamp.value() - Multi_Timing_Info.get_mission_start_time());
-	float numerator = local_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
+	// calc what the timing was previously.  The caller hands us an absolute local timestamp,
+	// but remote_missiontime is relative to the *source's* mission start, so drop our start
+	// time and then move the result onto the source's clock before comparing.
+	int local_time = stamp.value() - Multi_Timing_Info.get_mission_start_time();
+	float source_time = static_cast<float>(Multi_Timing_Info.local_time_to_remote(_source_player_index, local_time));
+	float numerator = source_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
 	denominator = (denominator > 0.05f) ? denominator : 0.05f;
@@ -187,10 +326,17 @@ void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_pac
 // add a packet to the vector, remove the last one if necessary.
 void interpolation_manager::add_packet(int objnum, int frame, int packet_timestamp, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index) 
 {
+	// Every timestamp in _packets is on this source's clock, and every comparison against
+	// them goes through it, so keep it current rather than only setting it on the first packet.
+	_source_player_index = player_index;
+
+	// feed the clock servo, so that get_playback_time() can put our local clock on this
+	// source's timeline
+	Multi_Timing_Info.note_packet_time(player_index, packet_timestamp);
+
 	if (_packets.empty()) {
 		_packets.push_back(packet_info(frame, packet_timestamp, position, velocity, rotational_velocity, desired_velocity, desired_rotational_velocity, angles));
 
-		_source_player_index = player_index;
 		return;
 	}
 
@@ -232,12 +378,18 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 				if (Objects[objnum].flags[Object::Object_Flags::Player_ship]){
 					int start_time = Multi_Timing_Info.get_mission_start_time();
 
-					multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_prev_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), _prev_packet_index, _upcoming_packet_index);
+					// The ship record is keyed on *local* absolute timestamps, but these are the
+					// source's clock, so pull them back onto ours before adding our mission start.
+					auto to_local_stamp = [&](int remote_time) {
+						return TIMESTAMP(start_time + Multi_Timing_Info.remote_time_to_local(_source_player_index, remote_time));
+					};
+
+					multi_ship_record_signal_update(objnum, to_local_stamp(_packets[_prev_packet_index].remote_missiontime), to_local_stamp(_packets[_upcoming_packet_index].remote_missiontime), _prev_packet_index, _upcoming_packet_index);
 
 					// if it's not the front packet, we need to update more info past the current packet, as well.
 					// Should be rare though as it is a contingency for out of order packets.
 					if (_upcoming_packet_index > 0) {
-						multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index - 1].remote_missiontime), _upcoming_packet_index, _upcoming_packet_index - 1);
+						multi_ship_record_signal_update(objnum, to_local_stamp(_packets[_upcoming_packet_index].remote_missiontime), to_local_stamp(_packets[_upcoming_packet_index - 1].remote_missiontime), _upcoming_packet_index, _upcoming_packet_index - 1);
 					}
 				}
 			}
@@ -261,7 +413,19 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	// and we lose our intended effect of interpolating the simulation error away.
 	_packets[index].frame = _packets[index - 1].frame - 1;
 
-	_packets[index].remote_missiontime = Multi_Timing_Info.get_last_time();
+	// This slot is about to be compared against real packets, which are stamped on the
+	// source's clock, so it has to be stamped on that clock too -- get_last_time() alone
+	// is our raw local clock and would drag the whole clock offset into the interpolation
+	// denominator.
+	int replacement_time = Multi_Timing_Info.get_playback_last_time(_source_player_index);
+
+	// _packets is ordered newest first, and the bracket search relies on the timestamps
+	// descending with it.  Never let the replacement stamp fall below the next older packet.
+	if ((index + 1) < static_cast<int>(_packets.size())) {
+		replacement_time = MAX(replacement_time, _packets[index + 1].remote_missiontime);
+	}
+
+	_packets[index].remote_missiontime = replacement_time;
 
 	physics_populate_snapshot_manual(_packets[index].snapshot, *pos, *orient, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel);
 }
