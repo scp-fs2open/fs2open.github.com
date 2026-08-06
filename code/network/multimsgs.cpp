@@ -2646,7 +2646,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	}
 
 	// maybe set wash_killed
-	if (extra_death_info & EXTRA_DEATH_VAPORIZED) {
+	if (extra_death_info & EXTRA_DEATH_WASHED) {
 		Ships[sobjp->instance].wash_killed = 1;
 	}
 
@@ -7630,7 +7630,8 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if (flags & HWIF_BIG_UPDATE) {
-		wp->creation_time = Missiontime + missile_lifetime;
+		// the sender packed the missile's age, so walk creation_time back from now to recover it
+		wp->creation_time = Missiontime - missile_lifetime;
 		weapon_objp->pos = missile_pos;
 		weapon_objp->orient = orient_in;
 		wp->launch_speed = launch_speed;
