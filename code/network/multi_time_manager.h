@@ -21,6 +21,12 @@ constexpr int MULTI_INTERP_BUFFER_MS = 150;
 // How long a window of packets to gather before re-aiming the servo, in milliseconds.
 constexpr int MULTI_CLOCK_WINDOW_MS = 1000;
 
+// The very first window is short and ends in a snap rather than a slew.  The single packet
+// that acquires a clock is measured while both machines are still settling out of mission
+// load, so it is a poor estimate, and correcting it at slew rate costs a couple of seconds
+// of dead reckoning at the start of every mission.
+constexpr int MULTI_CLOCK_ACQUIRE_WINDOW_MS = 250;
+
 // A correction larger than this means the source's clock genuinely jumped (mission
 // restart, in-game join, a huge stall) rather than drifted.  Snap instead of slewing;
 // slewing across a gap this size would take painfully long and look worse.
@@ -55,6 +61,7 @@ private:
 	// hears from every client, and no two of those clocks agree.
 	struct source_clock {
 		bool acquired;			// have we heard from this source at all?
+		bool converged;			// has the short acquisition window closed yet?
 		int offset;				// applied, slewed offset. playback = _current_time + offset
 		int target_offset;		// where the servo is heading
 

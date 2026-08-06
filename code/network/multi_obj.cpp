@@ -1395,11 +1395,11 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			subsystem = GET_NEXT(subsystem)) {
 			flags.push_back(0);
 			// Don't send destroyed subsystems, (another packet handles that), but check to see if the subsystem changed since the last update. 
-			if (MULTIPLAYER_MASTER && (subsystem->current_hits != 0.0f) && (subsystem->current_hits != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_health[i])) {
+			if (MULTIPLAYER_MASTER && (subsystem->current_hits != 0.0f) && (subsystem->current_hits != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_health[i])) {
 				flags[i] |= OO_SUBSYS_HEALTH;
 				subsys_data.push_back(subsystem->current_hits / subsystem->max_hits);
 				// good thing this cheap because we have to calculate this twice to avoid iterating through the whole system list twice.
-				Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_health[i] = subsystem->current_hits;
+				Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_health[i] = subsystem->current_hits;
 
 				// this should be safe because we only work with subsystems that have health.
 				// and also track the list of subsystems that we packed by index
@@ -1420,32 +1420,32 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				}
 
 				// here we're checking to see if the subsystems rotated enough to send.
-				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
+				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_1->b));
 				}
 
-				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
+				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_1->h));
 				}
 
-				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
+				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_1->p));
 				}
 
-				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
+				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_2->b));
 				}
 
-				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
+				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_2->h));
 				}
 
-				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
+				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
 					subsys_data.push_back(multi_oo_normalized_angle(angs_2->p));
 				}
@@ -1459,17 +1459,17 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Translates]) {
 				auto smi = subsystem->submodel_instance_1;
 
-				if (smi && smi->canonical_offset.xyz.x != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_x[i]) {
+				if (smi && smi->canonical_offset.xyz.x != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_x[i]) {
 					flags[i] |= OO_SUBSYS_TRANSLATION_x;
 					subsys_data.push_back(smi->canonical_offset.xyz.x);
 				}
 
-				if (smi && smi->canonical_offset.xyz.y != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_y[i]) {
+				if (smi && smi->canonical_offset.xyz.y != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_y[i]) {
 					flags[i] |= OO_SUBSYS_TRANSLATION_y;
 					subsys_data.push_back(smi->canonical_offset.xyz.y);
 				}
 
-				if (smi && smi->canonical_offset.xyz.z != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_z[i]) {
+				if (smi && smi->canonical_offset.xyz.z != Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].subsystem_z[i]) {
 					flags[i] |= OO_SUBSYS_TRANSLATION_z;
 					subsys_data.push_back(smi->canonical_offset.xyz.z);
 				}
@@ -2321,7 +2321,7 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 
 	// reset the timestamp for this object
 	if(objp->type == OBJ_SHIP){
-		Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].timestamp = _timestamp(stamp);
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[objp->net_signature].timestamp = _timestamp(stamp);
 	} 
 }
 
@@ -2348,7 +2348,7 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 
 	// determine what the timestamp is for this object
 	if(obj->type == OBJ_SHIP){
-		stamp = Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].timestamp;
+		stamp = Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].timestamp;
 	} else {
 		return 0;
 	}
@@ -2394,10 +2394,10 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	multi_oo_reset_timestamp(pl, obj, range, in_cone);
 	
 	// position should be almost constant, except for ships that aren't moving.
-	if ( (Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].position != obj->pos) && (vm_vec_mag_quick(&obj->phys_info.vel) > 0.0f ) ) {
+	if ( (Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].position != obj->pos) && (vm_vec_mag_quick(&obj->phys_info.vel) > 0.0f ) ) {
 		oo_flags |= OO_POS_AND_ORIENT_NEW;
 		// update the last position sent, will be done in each of the cases below.
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].position = obj->pos;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].position = obj->pos;
 	}   // same with orientation
 	else if (obj->phys_info.rotvel != vmd_zero_vector) {
 		oo_flags |= OO_POS_AND_ORIENT_NEW;
@@ -2431,9 +2431,9 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	}	
 		
 	// maybe update hull
-	if(Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].hull != obj->hull_strength){
+	if(Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].hull != obj->hull_strength){
 		oo_flags |= (OO_HULL_NEW);
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].hull = obj->hull_strength;		
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].hull = obj->hull_strength;		
 	}
 
 	float temp_max = shield_get_max_quad(obj);
@@ -2451,15 +2451,15 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 
 	if (all_max) {
 		// shields are currently perfect, were they perfect last time?
-		if ( !Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].perfect_shields_sent){
+		if ( !Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].perfect_shields_sent){
 			// send the newly perfected shields
 			oo_flags |= OO_SHIELDS_NEW;
 		}
 		// make sure to mark it as perfect for next time.
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].perfect_shields_sent = true;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].perfect_shields_sent = true;
 	} // if they're not perfect, make sure they're marked as not perfect.
 	else {
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].perfect_shields_sent = false;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].perfect_shields_sent = false;
 		oo_flags |= OO_SHIELDS_NEW;
 	}
 
@@ -2467,17 +2467,17 @@ int multi_oo_maybe_update(net_player *pl, object *obj, ubyte *data)
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	// check to see if the AI mode updated
-	if ((Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].ai_mode != aip->mode) 
-		|| (Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].ai_submode != aip->submode) 
-		|| (Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].target_signature != aip->target_signature)) {
+	if ((Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].ai_mode != aip->mode) 
+		|| (Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].ai_submode != aip->submode) 
+		|| (Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].target_signature != aip->target_signature)) {
 
 		// send, if so.
 		oo_flags |= OO_AI_NEW;
 
 		// set new values to check against later.
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].ai_mode = aip->mode;
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].ai_submode = aip->submode;
-		Oo_info.player_frame_info[pl->player_id].last_sent[net_sig_idx].target_signature = aip->target_signature;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].ai_mode = aip->mode;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].ai_submode = aip->submode;
+		Oo_info.player_frame_info[NET_PLAYER_INDEX(pl)].last_sent[net_sig_idx].target_signature = aip->target_signature;
 	}
 
 	// finally, pack stuff only if we have to 	

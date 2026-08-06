@@ -98,6 +98,7 @@ void multiplayer_timing_info::reset_source_clocks()
 {
     for (auto& sc : _source_clocks) {
         sc.acquired = false;
+        sc.converged = false;
         sc.offset = 0;
         sc.target_offset = 0;
         sc.window_min_skew = INT_MAX;
@@ -123,13 +124,16 @@ void multiplayer_timing_info::note_packet_time(int player_index, int remote_time
 
     if (!sc.acquired) {
         // Nothing is drawing off this clock yet, so take the estimate immediately
-        // instead of slewing in from a meaningless zero.
+        // instead of slewing in from a meaningless zero.  It is only a rough estimate
+        // though -- one packet, measured while the mission is still starting up -- so
+        // the acquisition window that follows is short and ends in another snap.
         sc.acquired = true;
+        sc.converged = false;
         sc.offset = -skew - MULTI_INTERP_BUFFER_MS;
         sc.target_offset = sc.offset;
         sc.window_min_skew = skew;
         sc.window_has_sample = true;
-        sc.window_end = _current_time + MULTI_CLOCK_WINDOW_MS;
+        sc.window_end = _current_time + MULTI_CLOCK_ACQUIRE_WINDOW_MS;
         return;
     }
 
@@ -153,6 +157,15 @@ void multiplayer_timing_info::update_source_clocks()
         if (_current_time >= sc.window_end) {
             if (sc.window_has_sample) {
                 sc.target_offset = -sc.window_min_skew - MULTI_INTERP_BUFFER_MS;
+            }
+
+            // First real estimate.  Take it outright rather than slewing, which would cost
+            // a couple of seconds of dead reckoning.  At mission start nothing is on screen
+            // to be spoiled by the jump; for a source acquired later (an in-game joiner)
+            // this is a single one-off correction on that player's ship alone.
+            if (!sc.converged) {
+                sc.converged = true;
+                sc.offset = sc.target_offset;
             }
 
             sc.window_has_sample = false;
