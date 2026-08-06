@@ -656,8 +656,9 @@ int hud_squadmsg_get_key()
 			} else if ( k == KEY_ESC ) {
 				hud_squadmsg_toggle();
 				return -1;
-			} else if ( (i < ({MsgItems ? (int)MsgItems.value().size() : -1;})) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) )		// return any key if selecting reinforcement
+			} else if ( (i < (MsgItems ? (int)MsgItems.value().size() : -1)) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) ) {		// return any key if selecting reinforcement
 				return i;
+			}
 
 			// play general fail sound if inactive item hit.
 			else if ((i + First_menu_item < (MsgItems ? (int)MsgItems.value().size() : -1)) && (MsgItems.value()[i + First_menu_item].active == 0)) {
