@@ -253,6 +253,10 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
+		if (Shadow_map_raw_sampler) {
+			GL_state.Texture.Enable(7, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
+			GL_state.Texture.BindSampler(7, Shadow_map_raw_sampler);
+		}
 	}
 
 	if (ENVMAP > 0) {

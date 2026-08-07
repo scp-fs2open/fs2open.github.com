@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstddef>
+
 using SPIRV_FLOAT_MAT_4x4 = matrix4;
 using SPIRV_FLOAT_VEC4 = vec4;
 
@@ -181,13 +183,17 @@ struct shadow_cascade_static_data {
 	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
 	int shadow_ray_cull_mask;
 };
+static_assert(offsetof(shadow_cascade_static_data, shadow_mv_matrix) == 32,
+	"shadow_cascade_static_data's scalar fields must total exactly 32 bytes to match std140's "
+	"mat4 alignment -- update the shadowCascadeParams block in every .sdr file that declares it "
+	"if this changes.");
 // Must match the GLSL shadowCascadeParams block's implicit std140 padding
-// exactly (16 [4 leading scalars] + 64 [matrix4] + 12 [shadow_ray_view_origin]
-// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 96) --
+// exactly (32 [8 leading scalars] + 64 [matrix4] + 12 [shadow_ray_view_origin]
+// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 112) --
 // shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
 // this struct via sizeof(), so a mismatch here silently shifts every cascade
 // matrix in the buffer, in both backends.
-static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
+static_assert(sizeof(shadow_cascade_static_data) == 112, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

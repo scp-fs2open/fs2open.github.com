@@ -27,6 +27,12 @@ struct opengl_texture_unit {
 
 	GLenum texture_target;
 	GLuint texture_id;
+
+	// Sampler object bound to this unit, overriding the texture object's own filter/compare
+	// state for as long as it stays bound (0 = none, texture-level state applies as usual).
+	// Tracked here for the same reason texture_id is: so BindSampler() can skip a redundant
+	// glBindSampler call, exactly like Enable() already does for glBindTexture.
+	GLuint bound_sampler;
 };
 
 class opengl_texture_state
@@ -65,7 +71,20 @@ class opengl_texture_state
 		 */
 		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id);
 		void Delete(GLuint tex_id);
-		
+
+		/**
+		 * @brief Binds a sampler object to the specified unit, or unbinds one if sampler is 0
+		 *
+		 * Sampler objects override the bound texture's own filter/compare-mode state for
+		 * that unit only, which is otherwise impossible to vary per-unit in this codebase
+		 * (texture parameters like GL_TEXTURE_COMPARE_MODE live on the texture object, not
+		 * a sampler). No-ops if the unit already has this sampler bound, mirroring Enable().
+		 *
+		 * @param unit The texture unit to bind the sampler to
+		 * @param sampler The sampler object to bind, or 0 to unbind
+		 */
+		void BindSampler(GLuint unit, GLuint sampler);
+
 		inline GLenum GetTarget();
 		inline void SetShaderMode(GLboolean mode);
 };
