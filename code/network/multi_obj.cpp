@@ -558,6 +558,54 @@ matrix multi_ship_record_lookup_orientation(object* objp, int frame)
 	return Oo_info.frame_info[objp->net_signature].orientations[frame];
 }
 
+// Look up the recorded position and orientation, interpolated to the exact moment the client
+// saw rather than snapped to a recorded frame.
+//
+// The record holds one snapshot per server frame -- 33ms apart at the default standalone
+// framecap -- and multi_ship_record_find_frame() rounds down to the frame *before* the client's
+// moment.  Rolling back to that frame alone therefore rewinds every shot up to a full frame too
+// early, always in the same direction.  Against a target crossing the view that error is
+// entirely cross-track, which is where shots stop landing.
+void multi_ship_record_lookup_interpolated(object* objp, int frame, int time_after_frame, vec3d* pos, matrix* ori)
+{
+	Assertion(objp != nullptr, "nullptr given to multi_ship_record_lookup_interpolated. \nThis should be handled earlier in the code, please report!");
+	if (objp == nullptr) {
+		*pos = vmd_zero_vector;
+		*ori = vmd_identity_matrix;
+		return;
+	}
+
+	auto& record = Oo_info.frame_info[objp->net_signature];
+
+	*pos = record.positions[frame];
+	*ori = record.orientations[frame];
+
+	if (time_after_frame <= 0) {
+		return;
+	}
+
+	const int next_frame = (frame + 1 >= MAX_FRAMES_RECORDED) ? 0 : frame + 1;
+
+	if (!Oo_info.timestamps[frame].isFinite() || !Oo_info.timestamps[next_frame].isFinite()) {
+		return;
+	}
+
+	// Stepping past cur_frame_index lands on the oldest entry in the ring rather than a later
+	// frame, which shows up as a non-positive duration.  Nothing to interpolate toward, so stay
+	// on the frame we have.
+	const int frame_duration = timestamp_get_delta(Oo_info.timestamps[frame], Oo_info.timestamps[next_frame]);
+
+	if (frame_duration <= 0) {
+		return;
+	}
+
+	float scale = static_cast<float>(time_after_frame) / static_cast<float>(frame_duration);
+	CLAMP(scale, 0.0f, 1.0f);
+
+	vm_vec_linear_interpolate(pos, &record.positions[frame], &record.positions[next_frame], scale);
+	vm_interpolate_matrices(ori, &record.orientations[frame], &record.orientations[next_frame], scale);
+}
+
 // quickly lookup how much time has passed between two frames.
 int multi_ship_record_get_time_elapsed(int original_frame, int new_frame) 
 {
@@ -576,7 +624,11 @@ int multi_ship_record_find_time_after_frame(int starting_frame, int ending_frame
 {
 	starting_frame = starting_frame % MAX_FRAMES_RECORDED;
 
-	int return_value = time_elapsed - (timestamp_get_delta(Oo_info.timestamps[ending_frame], Oo_info.timestamps[starting_frame]));
+	// timestamp_get_delta(before, after) returns after - before, so this has to be
+	// (starting, ending) to yield the elapsed time between them.  Reversed, it returns
+	// time_elapsed *plus* the gap instead of minus it -- roughly twice the frame interval
+	// too large.  Nothing caught it because the result was computed and then discarded.
+	int return_value = time_elapsed - (timestamp_get_delta(Oo_info.timestamps[starting_frame], Oo_info.timestamps[ending_frame]));
 	return return_value;
 }
 
