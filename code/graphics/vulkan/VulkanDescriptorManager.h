@@ -299,13 +299,13 @@ public:
 	 *
 	 * Only meaningful for a set this writer actually wrote; a set reused from a
 	 * memoization cache was not written here, so its caller owns the offsets.
-	 * Always sized to the set layout's dynamic descriptor count (offsets for
-	 * bindings left at their fallback stay 0). Points at stable per-set storage —
+	 * Covers the set layout's dynamic descriptor count with room to spare (offsets
+	 * for bindings left at their fallback stay 0). Views stable per-set storage —
 	 * valid until the next writeSet() of that set.
 	 */
-	const uint32_t* dynamicOffsets(DescriptorSetIndex setIndex) const
+	ArrayView<uint32_t> dynamicOffsets(DescriptorSetIndex setIndex) const
 	{
-		return m_dynOffsets[static_cast<size_t>(setIndex)].data();
+		return m_dynOffsets[static_cast<size_t>(setIndex)];
 	}
 
 	/**
