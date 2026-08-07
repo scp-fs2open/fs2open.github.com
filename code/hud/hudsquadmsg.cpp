@@ -484,7 +484,6 @@ void hud_squadmsg_selection_move_down() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-
 		//move down
 		++Selected_menu_item;
 		Display_selector = true;
@@ -517,7 +516,6 @@ void hud_squadmsg_selection_move_up() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-
 		//move up
 		--Selected_menu_item;
 		Display_selector = true;
