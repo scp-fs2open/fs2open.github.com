@@ -16,7 +16,6 @@
 #include "libs/renderdoc/renderdoc.h"
 #include "mod_table/mod_table.h"
 
-#include <SDL3/SDL_vulkan.h>
 #include <cstdint>
 
 #include "graphics/openxr.h"
@@ -88,26 +87,6 @@ bool checkDeviceExtensionSupport(PhysicalDeviceValues& values)
 	}
 
 	return requiredExtensions.empty();
-}
-
-/**
- * @brief Fill in the parts of @p values that depend on a particular surface
- *
- * Every one of these can differ per surface, so this has to be re-run for each one rather than
- * carried over from the surface the device was picked against -- see createTargetResources().
- *
- * @return false if the surface reports no usable formats or present modes, i.e. cannot be presented
- *         to at all
- */
-bool checkSwapChainSupport(PhysicalDeviceValues& values, vk::SurfaceKHR surface)
-{
-	values.surfaceCapabilities = values.device.getSurfaceCapabilitiesKHR(surface);
-	auto fmts = values.device.getSurfaceFormatsKHR(surface);
-	values.surfaceFormats.assign(fmts.begin(), fmts.end());
-	auto modes = values.device.getSurfacePresentModesKHR(surface);
-	values.presentModes.assign(modes.begin(), modes.end());
-
-	return !values.surfaceFormats.empty() && !values.presentModes.empty();
 }
 
 bool isDeviceUnsuitable(PhysicalDeviceValues& values, vk::SurfaceKHR surface)
@@ -849,68 +828,6 @@ bool VulkanRenderer::initializeInstance()
 	}
 
 	m_vkInstance = std::move(instance);
-	return true;
-}
-
-VulkanSurfaceHandle::VulkanSurfaceHandle(os::VulkanSurfaceProvider* provider,
-	vk::Instance instance,
-	vk::SurfaceKHR surface)
-	: m_provider(provider), m_instance(instance), m_surface(surface)
-{
-}
-VulkanSurfaceHandle::~VulkanSurfaceHandle()
-{
-	reset();
-}
-VulkanSurfaceHandle::VulkanSurfaceHandle(VulkanSurfaceHandle&& other) noexcept
-	: m_provider(other.m_provider), m_instance(other.m_instance), m_surface(other.m_surface)
-{
-	other.m_provider = nullptr;
-	other.m_instance = vk::Instance();
-	other.m_surface = vk::SurfaceKHR();
-}
-VulkanSurfaceHandle& VulkanSurfaceHandle::operator=(VulkanSurfaceHandle&& other) noexcept
-{
-	if (this != &other) {
-		reset();
-
-		m_provider = other.m_provider;
-		m_instance = other.m_instance;
-		m_surface = other.m_surface;
-
-		other.m_provider = nullptr;
-		other.m_instance = vk::Instance();
-		other.m_surface = vk::SurfaceKHR();
-	}
-	return *this;
-}
-void VulkanSurfaceHandle::reset()
-{
-	if (m_provider != nullptr && m_surface) {
-		m_provider->destroyVulkanSurface(static_cast<VkInstance>(m_instance),
-			os::vulkan_handle_value(static_cast<VkSurfaceKHR>(m_surface)));
-	}
-
-	m_provider = nullptr;
-	m_instance = vk::Instance();
-	m_surface = vk::SurfaceKHR();
-}
-
-bool VulkanRenderer::createTargetSurface(VulkanPresentTarget& target)
-{
-	auto* vulkanSupport = m_graphicsOps->getVulkanSupport();
-	Assertion(vulkanSupport != nullptr, "initializeInstance() should have rejected this already!");
-
-	const auto surface =
-		vulkanSupport->createVulkanSurface(target.viewport, static_cast<VkInstance>(*m_vkInstance));
-	if (surface == 0) {
-		nprintf(("vulkan", "Vulkan: failed to create a surface for this viewport.\n"));
-		return false;
-	}
-
-	target.surface = VulkanSurfaceHandle(vulkanSupport,
-		*m_vkInstance,
-		vk::SurfaceKHR(os::vulkan_handle_cast<VkSurfaceKHR>(surface)));
 	return true;
 }
 
