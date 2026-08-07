@@ -1010,6 +1010,26 @@ extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
+/**
+ * @brief Converts a position or delta from OS window pixels into internal render-target pixels
+ *
+ * @details When -window_res is in effect the frame is rendered into an offscreen buffer sized
+ * gr_screen.max_w/max_h and only stretched to the window when we flip, so everything the engine
+ * draws lives in render space while SDL reports input in window space. These are pure scale
+ * factors with no offset, so they are equally valid for absolute positions and for deltas.
+ *
+ * Note that this is unrelated to the gr_resize_screen_pos() family, which handles the retail
+ * 640/1024 menu coordinate system.
+ */
+void gr_window_to_render_pos(float& x, float& y);
+
+/**
+ * @brief Converts a position or delta from internal render-target pixels into OS window pixels
+ *
+ * @see gr_window_to_render_pos
+ */
+void gr_render_to_window_pos(float& x, float& y);
+
 // Call this when your app ends.
 extern void gr_close();
 
