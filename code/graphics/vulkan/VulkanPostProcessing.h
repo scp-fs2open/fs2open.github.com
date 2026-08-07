@@ -203,6 +203,7 @@ public:
 	vk::ImageView depthView() const { return m_depth.view; }
 	vk::Image depthImage() const { return m_depth.image; }
 	vk::Sampler compareSampler() const { return m_compareSampler; }
+	vk::Sampler rawSampler() const { return m_rawSampler; }
 	vk::RenderPass renderPass() const { return m_renderPass; }
 	vk::Framebuffer framebuffer() const { return m_framebuffer; }
 
@@ -210,6 +211,7 @@ private:
 	PostProcessContext* m_ctx = nullptr;
 	RenderTarget m_depth;   // D32F, 2D array (Num_shadow_cascades + Num_cockpit_shadow_cascades layers)
 	vk::Sampler m_compareSampler; // Depth-compare sampler for hardware PCF (sampler2DArrayShadow)
+	vk::Sampler m_rawSampler;     // Non-compare sampler on the same view, for PCSS blocker search
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
 	int m_textureSize = 0;
@@ -1075,6 +1077,16 @@ public:
 	 */
 	vk::DescriptorImageInfo getShadowTextureInfo() const {
 		return {m_shadow.compareSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+
+	/**
+	 * @brief Get a ready-to-use DescriptorImageInfo for raw (uncompared) shadow map reads
+	 *
+	 * Same image view as getShadowTextureInfo(), but with compare mode off, for the PCSS
+	 * blocker search (which needs actual depth values, not a compare result).
+	 */
+	vk::DescriptorImageInfo getShadowRawTextureInfo() const {
+		return {m_shadow.rawSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	// ========== Fog / Volumetric Nebula ==========

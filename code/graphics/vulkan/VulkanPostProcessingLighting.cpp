@@ -747,8 +747,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	// Shadow map is depth-only, sampled with a depth-compare sampler
 	// (sampler2DArrayShadow) for hardware PCF.
 	vk::DescriptorImageInfo shadowTexInfo;
+	vk::DescriptorImageInfo shadowRawTexInfo;
 	if (m_shadow->isInitialized() && m_shadow->depthView()) {
 		shadowTexInfo = {m_shadow->compareSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+		shadowRawTexInfo = {m_shadow->rawSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	// Shadow cascade params (projection matrices/distances) are bound per-frame via
@@ -794,6 +796,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
 		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
 		writer.setBuffer(GlobalBinding::ShadowCascadeParams, shadowCascadeParamsInfo);
+		writer.setImage(GlobalBinding::ShadowMapRaw, shadowRawTexInfo);
 
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
