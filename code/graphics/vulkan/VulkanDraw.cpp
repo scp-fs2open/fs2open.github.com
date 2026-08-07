@@ -1547,7 +1547,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			m_cachedPerDrawValid = true;
 		}
 		writer.flush();
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet, nullptr);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet, materialDynOffsets);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet, perDrawDynOffsets);
 	}

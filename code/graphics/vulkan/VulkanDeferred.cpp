@@ -1066,7 +1066,7 @@ void vulkan_render_decals(decal_material* material_info,
 	writer.setBuffer(PerDrawBinding::DecalInfo,
 		getPendingBufInfo(static_cast<size_t>(uniform_block_type::DecalInfo)));
 	writer.flush();
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet, nullptr);
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material,
 		materialSet,
 		writer.dynamicOffsets(DescriptorSetIndex::Material));
