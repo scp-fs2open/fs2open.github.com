@@ -32,67 +32,6 @@ VulkanRenderer::VulkanRenderer(std::unique_ptr<os::GraphicsOperations> graphicsO
 	: m_graphicsOps(std::move(graphicsOps))
 {
 }
-void VulkanRenderer::createCompositionResources(VulkanPresentTarget& target)
-{
-	// Free any previous composition resources (swap chain recreation path)
-	target.compositionImageViews.clear();
-	target.compositionImages.clear();
-	for (auto& alloc : target.compositionAllocations) {
-		if (alloc.isValid()) {
-			m_memoryManager->freeAllocation(alloc);
-		}
-	}
-	target.compositionAllocations.clear();
-
-	const size_t count = target.imageViews.size();
-	target.compositionImages.reserve(count);
-	target.compositionImageViews.reserve(count);
-	target.compositionAllocations.reserve(count);
-
-	for (size_t i = 0; i < count; ++i) {
-		vk::ImageCreateInfo imageInfo;
-		imageInfo.imageType = vk::ImageType::e2D;
-		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent = vk::Extent3D(target.extent.width, target.extent.height, 1);
-		imageInfo.mipLevels = 1;
-		imageInfo.arrayLayers = 1;
-		imageInfo.samples = vk::SampleCountFlagBits::e1;
-		imageInfo.tiling = vk::ImageTiling::eOptimal;
-		imageInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled |
-		                   vk::ImageUsageFlagBits::eTransferSrc;
-		imageInfo.sharingMode = vk::SharingMode::eExclusive;
-		imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-
-		auto image = m_device->createImageUnique(imageInfo);
-
-		VulkanAllocation alloc{};
-		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc, MemoryPurpose::RenderTarget);
-
-		vk::ImageViewCreateInfo viewInfo;
-		viewInfo.image = image.get();
-		viewInfo.viewType = vk::ImageViewType::e2D;
-		viewInfo.format = HDR_COLOR_FORMAT;
-		viewInfo.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-		auto view = m_device->createImageViewUnique(viewInfo);
-
-		target.compositionImages.push_back(std::move(image));
-		target.compositionAllocations.push_back(alloc);
-		target.compositionImageViews.push_back(std::move(view));
-	}
-
-	// Sampler used by the output-encode pass to read the composition image.
-	if (!m_compositionSampler) {
-		vk::SamplerCreateInfo sampInfo;
-		sampInfo.magFilter = vk::Filter::eNearest;
-		sampInfo.minFilter = vk::Filter::eNearest;
-		sampInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
-		sampInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
-		sampInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
-		sampInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
-		m_compositionSampler = m_device->createSamplerUnique(sampInfo);
-	}
-}
-
 void VulkanRenderer::createEncodeRenderPass(vk::Format swapChainFormat)
 {
 	// Color-only pass that writes the actual swap chain image. The fullscreen
@@ -140,48 +79,6 @@ void VulkanRenderer::createEncodeRenderPass(vk::Format swapChainFormat)
 	m_encodeRenderPass = m_device->createRenderPassUnique(rpInfo);
 }
 
-void VulkanRenderer::createFrameBuffers(VulkanPresentTarget& target)
-{
-	target.framebuffers.clear();
-	target.encodeFramebuffers.clear();
-
-	// Composition framebuffers: color = fp16 composition image, depth shared.
-	// Indexed by swap chain image so each in-flight frame uses its own image.
-	target.framebuffers.reserve(target.compositionImageViews.size());
-	for (const auto& compView : target.compositionImageViews) {
-		const vk::ImageView attachments[] = {
-			compView.get(),
-			target.depthImageView.get(),
-		};
-
-		vk::FramebufferCreateInfo framebufferInfo;
-		framebufferInfo.renderPass = m_renderPass.get();
-		framebufferInfo.attachmentCount = 2;
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = target.extent.width;
-		framebufferInfo.height = target.extent.height;
-		framebufferInfo.layers = 1;
-
-		target.framebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
-	}
-
-	// Encode framebuffers: color = actual swap chain image.
-	target.encodeFramebuffers.reserve(target.imageViews.size());
-	for (const auto& scView : target.imageViews) {
-		const vk::ImageView attachments[] = { scView.get() };
-
-		vk::FramebufferCreateInfo framebufferInfo;
-		framebufferInfo.renderPass = m_encodeRenderPass.get();
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = target.extent.width;
-		framebufferInfo.height = target.extent.height;
-		framebufferInfo.layers = 1;
-
-		target.encodeFramebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
-	}
-}
-
 void VulkanRenderer::encodeToSwapChain()
 {
 	if (!m_postProcessor || m_current->currentImage >= m_current->images.size()) {
@@ -223,78 +120,6 @@ void VulkanRenderer::encodeToSwapChain()
 		m_compositionSampler.get(),
 		gamma);
 }
-vk::Format VulkanRenderer::findDepthFormat()
-{
-	// Prefer D32_SFLOAT for best precision, fall back to D32_SFLOAT_S8 or D24_UNORM_S8
-	const vk::Format candidates[] = {
-		vk::Format::eD32Sfloat,
-		vk::Format::eD32SfloatS8Uint,
-		vk::Format::eD24UnormS8Uint,
-	};
-
-	for (auto format : candidates) {
-		auto props = m_physicalDevice.getFormatProperties(format);
-		if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-			return format;
-		}
-	}
-
-	// Should never happen on any real GPU
-	Error(LOCATION, "Failed to find supported depth format!");
-	return vk::Format::eD32Sfloat;
-}
-void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
-{
-	const vk::Format depthFormat = findDepthFormat();
-	// The render passes (m_renderPass, scene/G-buffer passes, ...) bake in the
-	// depth format, and they are deliberately kept alive across swap chain
-	// recreation. A driver changing its supported depth formats mid-session
-	// would make them all incompatible with the new attachment.
-	if (m_depthFormat != vk::Format::eUndefined && depthFormat != m_depthFormat) {
-		Error(LOCATION, "Vulkan: depth format changed across swap chain recreation (%d -> %d)!",
-			static_cast<int>(m_depthFormat), static_cast<int>(depthFormat));
-	}
-	m_depthFormat = depthFormat;
-
-	// Create depth image
-	vk::ImageCreateInfo imageInfo;
-	imageInfo.imageType = vk::ImageType::e2D;
-	imageInfo.format = m_depthFormat;
-	imageInfo.extent.width = target.extent.width;
-	imageInfo.extent.height = target.extent.height;
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.samples = vk::SampleCountFlagBits::e1;
-	imageInfo.tiling = vk::ImageTiling::eOptimal;
-	imageInfo.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-	imageInfo.sharingMode = vk::SharingMode::eExclusive;
-	imageInfo.initialLayout = vk::ImageLayout::eUndefined;
-
-	target.depthImage = m_device->createImageUnique(imageInfo);
-
-	// Allocate GPU memory for the depth image
-	m_memoryManager->allocateImageMemory(
-		target.depthImage.get(), MemoryUsage::GpuOnly, target.depthImageMemory, MemoryPurpose::RenderTarget);
-
-	// Create depth image view
-	vk::ImageViewCreateInfo viewInfo;
-	viewInfo.image = target.depthImage.get();
-	viewInfo.viewType = vk::ImageViewType::e2D;
-	viewInfo.format = m_depthFormat;
-	viewInfo.subresourceRange.aspectMask = imageAspectFromFormat(m_depthFormat);
-	viewInfo.subresourceRange.baseMipLevel = 0;
-	viewInfo.subresourceRange.levelCount = 1;
-	viewInfo.subresourceRange.baseArrayLayer = 0;
-	viewInfo.subresourceRange.layerCount = 1;
-
-	target.depthImageView = m_device->createImageViewUnique(viewInfo);
-
-	nprintf(("vulkan", "Vulkan: Created depth buffer (%dx%d, format %d)\n",
-		target.extent.width, target.extent.height, static_cast<int>(m_depthFormat)));
-}
-
-
 void VulkanRenderer::createRenderPass()
 {
 	// Attachment 0: Color - clear each frame
@@ -412,40 +237,6 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 
 	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
 }
-void VulkanRenderer::createPresentSyncObjects(VulkanPresentTarget& target)
-{
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		target.frames[i] = std::make_unique<VulkanRenderFrame>(m_device.get(), target.swapChain.get(), m_graphicsQueue, m_presentQueue);
-	}
-
-	target.imageRenderFrame.resize(target.images.size(), nullptr);
-
-	// One more than the frames in flight: at any moment the in-flight frames can each be holding
-	// one, and a viewport switch can have retained one on top of that.
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
-	target.acquireSemaphores.clear();
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT + 1; ++i) {
-		VulkanPresentTarget::AcquireSemaphore entry;
-		entry.semaphore = m_device->createSemaphoreUnique(semaphoreCreateInfo);
-		target.acquireSemaphores.push_back(std::move(entry));
-	}
-	target.nextAcquire = 0;
-	target.currentAcquire = 0;
-	target.hasRetainedAcquire = false;
-
-	createRenderFinishedSemaphores(target);
-}
-void VulkanRenderer::createRenderFinishedSemaphores(VulkanPresentTarget& target)
-{
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
-
-	target.renderFinishedSemaphores.clear();
-	target.renderFinishedSemaphores.reserve(target.images.size());
-	for (size_t i = 0; i < target.images.size(); ++i) {
-		target.renderFinishedSemaphores.push_back(m_device->createSemaphoreUnique(semaphoreCreateInfo));
-	}
-}
-
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
 {
 	*outPixels = nullptr;
