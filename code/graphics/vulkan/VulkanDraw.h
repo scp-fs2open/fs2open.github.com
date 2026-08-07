@@ -400,11 +400,6 @@ class VulkanDrawManager {
 		vk::DeviceSize size);
 
 	/**
-	 * @brief Clear all pending uniform bindings
-	 */
-	void clearPendingUniformBindings();
-
-	/**
 	 * @brief Get a pending uniform binding by block type index
 	 */
 	const PendingUniformBinding& getPendingUniformBinding(size_t index) const

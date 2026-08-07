@@ -212,10 +212,39 @@ public:
 
 	/**
 	 * @brief Get the Vulkan buffer handle for the current frame
+	 *
+	 * For a streaming buffer this asserts that the buffer was uploaded into the frame
+	 * allocator as it stands right now: a caller reaching a buffer directly is uploading and
+	 * drawing within one frame, so a stale sub-allocation is a bug, not a state to tolerate.
+	 * Consumers of a binding recorded earlier want getVkBufferForBinding() instead.
+	 *
 	 * @param handle The buffer handle
 	 * @return The VkBuffer, or VK_NULL_HANDLE if invalid
 	 */
 	vk::Buffer getVkBuffer(gr_buffer_handle handle) const;
+
+	/**
+	 * @brief Resolve a buffer for a binding that was recorded before this frame
+	 *
+	 * Same lookup as getVkBuffer(), but a streaming buffer whose sub-allocation no longer
+	 * belongs to the current frame allocator resolves to VK_NULL_HANDLE rather than tripping
+	 * that function's assert. Bindings outlive the frame they were made in -- a uniform block
+	 * bound once for a whole pass stays bound, mirroring glBindBufferRange() -- while a
+	 * streaming sub-allocation does not, so the two can legitimately disagree and the caller
+	 * has to fall back to the placeholder buffer.
+	 *
+	 * @param handle The buffer handle
+	 * @return The VkBuffer, or VK_NULL_HANDLE if the binding no longer resolves this frame
+	 */
+	vk::Buffer getVkBufferForBinding(gr_buffer_handle handle) const;
+
+	/**
+	 * @brief Whether a streaming buffer's sub-allocation belongs to the current frame allocator
+	 *
+	 * False for a streaming buffer that has not been uploaded since the allocator last rewound.
+	 * Always true for a non-streaming buffer, which owns its VkBuffer outright.
+	 */
+	bool isFrameAllocCurrent(gr_buffer_handle handle) const;
 
 	/**
 	 * @brief Get buffer size
@@ -304,6 +333,17 @@ private:
 	 */
 	VulkanBufferObject* getBufferObject(gr_buffer_handle handle);
 	const VulkanBufferObject* getBufferObject(gr_buffer_handle handle) const;
+
+	/**
+	 * @brief Whether a streaming buffer object's sub-allocation is the one live right now
+	 *
+	 * The frame index alone is not enough: setCurrentFrame() rewinds the bump cursor and bumps
+	 * the generation, and endOffscreenFrame() calls it with the frame index deliberately
+	 * unchanged. A sub-allocation from before that call therefore matches on index while
+	 * pointing at memory that has since been handed out again, so the generation has to match
+	 * too. Same pair updateBufferData() compares before reusing a pre-allocation.
+	 */
+	bool isFrameAllocCurrent(const VulkanBufferObject& bufferObj) const;
 
 	// Frame bump allocator
 	static constexpr size_t FRAME_ALLOC_INITIAL_SIZE = 4 * 1024 * 1024;
