@@ -184,6 +184,12 @@ public:
 		Rtao_samples = samples;
 	}
 
+	// Session-only override, same as setRtaoSamples -- does not touch the persisted
+	// Shadow Contact Hardening option. See Shadow_contact_hardening_enabled in shadows.h.
+	static void setShadowContactHardening(bool enabled) {
+		Shadow_contact_hardening_enabled = enabled;
+	}
+
 	static void setTonemapper(ltp::TonemapperAlgorithm mode) {
 		ltp::lab_set_tonemapper(mode);
 	}

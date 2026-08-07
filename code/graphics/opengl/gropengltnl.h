@@ -35,6 +35,11 @@ extern float shadow_fardist;
 
 extern GLuint Shadow_map_depth_texture;
 
+// Second sampler object bound to Shadow_map_depth_texture, compare mode off, for the raw
+// (uncompared) depth reads PCSS blocker search needs. Only created when
+// shadow_contact_hardening_supported() is true; 0 otherwise. See gropengltnl.cpp.
+extern GLuint Shadow_map_raw_sampler;
+
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;
 	GLint size;

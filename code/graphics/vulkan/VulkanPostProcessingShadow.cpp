@@ -181,6 +181,32 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		}
 	}
 
+	// Raw (non-compare) sampler on the same depth view, for the PCSS blocker search --
+	// it needs actual stored depth values, not a compare result. GL_NEAREST-equivalent
+	// filtering: the blocker search wants the exact per-texel depth, not a hardware-
+	// filtered blend across the compare boundary (deliberately different from the compare
+	// sampler's linear filtering above). Vulkan samplers are independent of images, so this
+	// is always available -- no capability gate needed here (contrast the OpenGL backend,
+	// which needs GL 3.3 because compare mode there is texture-object state).
+	{
+		vk::SamplerCreateInfo samplerInfo;
+		samplerInfo.magFilter = vk::Filter::eNearest;
+		samplerInfo.minFilter = vk::Filter::eNearest;
+		samplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+		samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+		samplerInfo.compareEnable = VK_FALSE;
+		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+
+		try {
+			m_rawSampler = m_ctx->device.createSampler(samplerInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create shadow raw sampler: %s\n", e.what()));
+			return false;
+		}
+	}
+
 	m_textureSize = size;
 	m_initialized = true;
 	nprintf(("vulkan", "VulkanPostProcessor: Shadow map initialized (%dx%d, %d cascades)\n", size, size, layers));
@@ -196,6 +222,10 @@ void VulkanShadowMap::shutdown()
 	if (m_compareSampler) {
 		m_ctx->device.destroySampler(m_compareSampler);
 		m_compareSampler = nullptr;
+	}
+	if (m_rawSampler) {
+		m_ctx->device.destroySampler(m_rawSampler);
+		m_rawSampler = nullptr;
 	}
 	if (m_framebuffer) {
 		m_ctx->device.destroyFramebuffer(m_framebuffer);

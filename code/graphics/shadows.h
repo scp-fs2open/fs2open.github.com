@@ -121,6 +121,38 @@ extern SCP_vector<matrix4> Shadow_proj_matrix;
 extern SCP_vector<float> Shadow_cascade_distances;
 extern int Shadow_cascade_count;
 
+// Per-cascade PCSS penumbra scale: world-space blocker/receiver depth separation, scaled
+// by the sun's tanθ and converted to UV space, gives the contact-hardened penumbra radius
+// directly (see the derivation comment above shadow_smoothness_scale() in shadows.cpp).
+// A negative value is a sentinel meaning shadow_contact_hardening_enabled() was false
+// when it was computed -- the shader falls back to the fixed smoothness_factors[cascade].
+extern SCP_vector<float> Shadow_penumbra_scale;
+
+// Whether the current renderer can do a raw (uncompared) depth read off the shadow map,
+// which PCSS blocker search needs. True on Vulkan always; on OpenGL requires
+// GL 3.3 (a second sampler object with compare mode off, bound to the
+// same shadow texture -- see shadow_map_raw in shadows.sdr). Independent of whether the
+// user currently has contact hardening turned on -- use this to decide whether to offer
+// the option at all.
+bool shadow_contact_hardening_supported();
+
+// User-facing toggle for shadow contact hardening (PCSS blocker search): sizes each
+// cascade's penumbra from actual occluder distance instead of the fixed
+// $Shadow Smoothness Factor: width. Costs an extra raw-depth search per shadowed pixel
+// (see pcssBlockerSearch() in shadows.sdr), so this is exposed as a setting rather than
+// being unconditional -- persisted via Graphics.ShadowContactHardening. See
+// shadow_contact_hardening_enabled() for the flag that actually gates the per-frame cost.
+extern bool Shadow_contact_hardening_enabled;
+
+// Whether shadow rendering should actually do the contact-hardening blocker search this
+// frame, i.e. shadow_contact_hardening_supported() is true AND the user has the option on.
+// This is the single source of truth -- gate any per-cascade penumbra-scale computation on
+// this, not on shadow_contact_hardening_supported()/Shadow_contact_hardening_enabled
+// separately. When false, Shadow_penumbra_scale gets the same negative sentinel as
+// "unsupported", so the shader takes the pre-contact-hardening fixed-width path at zero
+// extra cost (see pcssPenumbraRadius() in shadows.sdr).
+bool shadow_contact_hardening_enabled();
+
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far);
 bool shadows_obj_in_frustum(object *objp, vec3d *min, vec3d *max, matrix *light_orient);
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,

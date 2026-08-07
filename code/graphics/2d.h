@@ -371,7 +371,12 @@ enum class gr_capability {
 	CAPABILITY_INSTANCED_RENDERING,
 	CAPABILITY_FAST_SHADOWS,
 	CAPABILITY_QUERIES_REUSABLE,
-	CAPABILITY_RAYTRACED_SHADOWS
+	CAPABILITY_RAYTRACED_SHADOWS,
+	// A second, non-compare sampler bound to the shadow map for raw depth reads, needed by
+	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
+	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
+	// otherwise texture-object state shared by every sampler bound to that texture.
+	CAPABILITY_SHADOW_CONTACT_HARDENING
 };
 
 struct gr_capability_def {

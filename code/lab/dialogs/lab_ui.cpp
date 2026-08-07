@@ -611,6 +611,16 @@ void LabUi::build_shadow_penumbra_sliders()
 		}
 	}
 
+	// Contact hardening is a shadow-map-only technique (see pcssPenumbraRadius() in
+	// shadows.sdr) -- raytraced shadows size their penumbra from traceShadowRayCone()'s
+	// cone sampling instead, so this has no effect there and isn't worth showing.
+	if (shadow_contact_hardening_supported() && Shadow_render_method == ShadowRenderMethod::ShadowMap) {
+		bool contact_hardening = Shadow_contact_hardening_enabled;
+		if (Checkbox("Shadow Contact Hardening", &contact_hardening)) {
+			LabRenderer::setShadowContactHardening(contact_hardening);
+		}
+	}
+
 	// Overrides whatever size the suns would otherwise use -- their $SunAngularSize, or
 	// the size measured from their bitmaps -- so penumbras can be tried out against any
 	// background; the checkbox's default slider value is Sol's apparent diameter.
