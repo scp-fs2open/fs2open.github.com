@@ -1095,7 +1095,7 @@ int find_turret_enemy(const ship_subsys *turret_subsys, int objnum, const vec3d 
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
-			// the parent's target can be a weapon or an asteroid, so make sure it's a ship before indexing Ships[]
+			// The parent's target can be a weapon or an asteroid, so make sure it's a ship before indexing Ships[]
 			ship* target_shipp = (Objects[target_objnum].type == OBJ_SHIP) ? &Ships[Objects[target_objnum].instance] : nullptr;
 			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 				if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) { // check this flag as well
