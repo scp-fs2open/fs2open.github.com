@@ -436,9 +436,12 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	}
 
 	// the hackiest part of the hack? Setting its frame. Let FSO think that it was basically brand new.
-	// it needs to handle it this way because otherwise another packet might get placed in front of it, 
+	// it needs to handle it this way because otherwise another packet might get placed in front of it,
 	// and we lose our intended effect of interpolating the simulation error away.
 	_packets[index].frame = _packets[index - 1].frame - 1;
+
+	// ...and that invented frame number must never reach the server as a rollback reference
+	_packets[index].synthetic = true;
 
 	// This slot is about to be compared against real packets, which are stamped on the
 	// source's clock, so it has to be stamped on that clock too -- get_last_time() alone
@@ -455,6 +458,49 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	_packets[index].remote_missiontime = replacement_time;
 
 	physics_populate_snapshot_manual(_packets[index].snapshot, *pos, *orient, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel);
+}
+
+// Name the moment we last drew this object at, in the terms the server's rollback record
+// understands.  The naive answer -- newest packet received, plus time since it arrived -- is
+// what the fire packets used to send, and it is MULTI_INTERP_BUFFER_MS newer than what was
+// actually on screen, so every rolled-back shot was aimed at where the target had not got to yet.
+bool interpolation_manager::get_render_reference(int& frame, int& time_after_frame) const
+{
+	if (_packets.empty()) {
+		return false;
+	}
+
+	const int playback = Multi_Timing_Info.get_playback_time(_source_player_index);
+
+	// _packets runs newest first, so the first entry at or before the playback clock is the
+	// one the rendered position sits just after.  Synthetic entries have to be skipped --
+	// replace_packet() invents their frame numbers, and the server would rewind to whatever
+	// unrelated frame that number happens to name.
+	for (const auto& packet : _packets) {
+		if (packet.synthetic || (packet.remote_missiontime > playback)) {
+			continue;
+		}
+
+		frame = packet.frame;
+		time_after_frame = playback - packet.remote_missiontime;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool multi_interpolate_get_render_reference(int objnum, int& frame, int& time_after_frame)
+{
+	// deliberately find() rather than operator[], so a lookup for an object we never
+	// tracked does not create an empty entry for it
+	auto entry = Interp_info.find(objnum);
+
+	if (entry == Interp_info.end()) {
+		return false;
+	}
+
+	return entry->second.get_render_reference(frame, time_after_frame);
 }
 
 // the contained vectors have been cleared during object shut down.

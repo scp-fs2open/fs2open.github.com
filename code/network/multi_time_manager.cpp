@@ -98,7 +98,7 @@ void multiplayer_timing_info::reset_source_clocks()
 {
     for (auto& sc : _source_clocks) {
         sc.acquired = false;
-        sc.converged = false;
+        sc.windows_closed = 0;
         sc.offset = 0;
         sc.target_offset = 0;
         sc.window_min_skew = INT_MAX;
@@ -126,9 +126,9 @@ void multiplayer_timing_info::note_packet_time(int player_index, int remote_time
         // Nothing is drawing off this clock yet, so take the estimate immediately
         // instead of slewing in from a meaningless zero.  It is only a rough estimate
         // though -- one packet, measured while the mission is still starting up -- so
-        // the acquisition window that follows is short and ends in another snap.
+        // the short windows that follow keep snapping until it settles.
         sc.acquired = true;
-        sc.converged = false;
+        sc.windows_closed = 0;
         sc.offset = -skew - MULTI_INTERP_BUFFER_MS;
         sc.target_offset = sc.offset;
         sc.window_min_skew = skew;
@@ -159,18 +159,20 @@ void multiplayer_timing_info::update_source_clocks()
                 sc.target_offset = -sc.window_min_skew - MULTI_INTERP_BUFFER_MS;
             }
 
-            // First real estimate.  Take it outright rather than slewing, which would cost
-            // a couple of seconds of dead reckoning.  At mission start nothing is on screen
-            // to be spoiled by the jump; for a source acquired later (an in-game joiner)
-            // this is a single one-off correction on that player's ship alone.
-            if (!sc.converged) {
-                sc.converged = true;
+            // While still acquiring, take each estimate outright rather than slewing onto
+            // it.  Slewing costs seconds of dead reckoning, and the early samples are poor
+            // enough that one snap onto the first of them lands well short.
+            const bool still_acquiring = (sc.windows_closed < MULTI_CLOCK_ACQUIRE_WINDOWS);
+
+            if (still_acquiring) {
                 sc.offset = sc.target_offset;
             }
 
+            sc.windows_closed++;
+
             sc.window_has_sample = false;
             sc.window_min_skew = INT_MAX;
-            sc.window_end = _current_time + MULTI_CLOCK_WINDOW_MS;
+            sc.window_end = _current_time + (still_acquiring ? MULTI_CLOCK_ACQUIRE_WINDOW_MS : MULTI_CLOCK_WINDOW_MS);
         }
 
         const int diff = sc.target_offset - sc.offset;

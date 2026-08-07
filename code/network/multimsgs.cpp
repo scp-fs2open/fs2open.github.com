@@ -7847,9 +7847,22 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	ADD_DATA(flags);
 	ADD_USHORT(ref_objp->net_signature);
 
-	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
-	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = static_cast<ushort>(Multi_Timing_Info.get_current_time() - multi_client_lookup_frame_timestamp());
+	// The server rewinds every ship to whatever moment this pair resolves to, so it has to name
+	// the moment we actually *drew* ref_objp at.  Interpolation places that MULTI_INTERP_BUFFER_MS
+	// behind the newest packet we hold, so asking for "newest frame received, plus time since it
+	// arrived" aims the rollback at where the target had not got to yet -- which misses, worst on
+	// fast crossing targets where the error is mostly cross-track.
+	int last_received_frame, elapsed;
+
+	if (!multi_interpolate_get_render_reference(OBJ_INDEX(ref_objp), last_received_frame, elapsed)) {
+		// no usable interpolation history for the reference object, so fall back to the old
+		// approximation rather than dropping the shot
+		last_received_frame = multi_client_lookup_frame_idx();
+		elapsed = Multi_Timing_Info.get_current_time() - multi_client_lookup_frame_timestamp();
+	}
+
+	CLAMP(elapsed, 0, 65535);
+	auto time_elapsed = static_cast<ushort>(elapsed);
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);

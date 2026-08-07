@@ -16,16 +16,24 @@
 //   - it must stay under (PACKET_INFO_LIMIT - 1) * that interval, or playback falls off
 //     the back of the packet history and the object dead reckons for the opposite reason
 // See the Multi_oo_*_update_times tables in multi_obj.cpp for the intervals in play.
+// Sized against Multi_oo_target_update_times (66/50/30/20ms by update level) rather than
+// the slower tables: your target updates fastest, and it is the one ship where showing the
+// past costs you shots.  Anything slower than this -- distant or rear-arc ships -- falls
+// back to dead reckoning, which is the right answer for a ship you hear from twice a second
+// anyway.  Every millisecond here is a millisecond of lead you have to guess with no visual
+// cue, because the fire packet's reference does not account for it (see send_primary_fired_packet).
 constexpr int MULTI_INTERP_BUFFER_MS = 150;
 
 // How long a window of packets to gather before re-aiming the servo, in milliseconds.
 constexpr int MULTI_CLOCK_WINDOW_MS = 1000;
 
-// The very first window is short and ends in a snap rather than a slew.  The single packet
-// that acquires a clock is measured while both machines are still settling out of mission
-// load, so it is a poor estimate, and correcting it at slew rate costs a couple of seconds
-// of dead reckoning at the start of every mission.
+// Early windows are short and end in a snap rather than a slew.  Skew readings taken while
+// both machines are still settling out of mission load are not representative -- measured
+// ~50ms against a steady state of ~195ms -- so a single early estimate is worth little, and
+// correcting it at slew rate costs seconds of dead reckoning at the start of every mission.
+// Snapping repeatedly over the first couple of seconds rides the estimate down instead.
 constexpr int MULTI_CLOCK_ACQUIRE_WINDOW_MS = 250;
+constexpr int MULTI_CLOCK_ACQUIRE_WINDOWS = 8;
 
 // A correction larger than this means the source's clock genuinely jumped (mission
 // restart, in-game join, a huge stall) rather than drifted.  Snap instead of slewing;
@@ -61,7 +69,7 @@ private:
 	// hears from every client, and no two of those clocks agree.
 	struct source_clock {
 		bool acquired;			// have we heard from this source at all?
-		bool converged;			// has the short acquisition window closed yet?
+		int windows_closed;		// short snapping windows give way to long slewing ones
 		int offset;				// applied, slewed offset. playback = _current_time + offset
 		int target_offset;		// where the servo is heading
 
