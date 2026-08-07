@@ -1432,6 +1432,27 @@ void gr_screen_resize(int width, int height)
 	gr_setup_viewport();
 }
 
+void gr_window_to_render_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		// Rendering goes straight to the window, so the two spaces are the same
+		return;
+	}
+
+	x *= i2fl(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first);
+	y *= i2fl(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second);
+}
+
+void gr_render_to_window_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		return;
+	}
+
+	x *= static_cast<float>(Cmdline_window_res->first) / i2fl(gr_screen.max_w);
+	y *= static_cast<float>(Cmdline_window_res->second) / i2fl(gr_screen.max_h);
+}
+
 int gr_get_resolution_class(int width, int height)
 {
 	if ((width >= GR_1024_THRESHOLD_WIDTH) && (height >= GR_1024_THRESHOLD_HEIGHT)) {

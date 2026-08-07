@@ -97,10 +97,6 @@ const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::F
 		{"MouseWheelX", "number", "Positive if moved right, negative if moved left."},
 	});
 
-#define SCALE_MOUSE_TO_WINDOW(x, y, op) \
-	static_cast<decltype(x)>(Cmdline_window_res ? static_cast<float>(x) op (static_cast<float>(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first)) : x), \
-	static_cast<decltype(y)>(Cmdline_window_res ? static_cast<float>(y) op (static_cast<float>(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second)) : y)
-
 namespace
 {
 	bool mouse_key_event_handler(const SDL_Event& e)
@@ -139,7 +135,16 @@ namespace
 			return false;
 		}
 
-		mouse_event(SCALE_MOUSE_TO_WINDOW(e.motion.x, e.motion.y, *), SCALE_MOUSE_TO_WINDOW(e.motion.xrel, e.motion.yrel, *));
+		// SDL reports these in window pixels, the rest of the engine works in render pixels
+		float x = i2fl(e.motion.x);
+		float y = i2fl(e.motion.y);
+		gr_window_to_render_pos(x, y);
+
+		float dx = i2fl(e.motion.xrel);
+		float dy = i2fl(e.motion.yrel);
+		gr_window_to_render_pos(dx, dy);
+
+		mouse_event(fl2i(x), fl2i(y), fl2i(dx), fl2i(dy));
 
 		return true;
 	}
@@ -541,7 +546,11 @@ void mouse_get_wheel_delta(int* dx, int* dy)
 void mouse_force_pos(int x, int y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
-		SDL_WarpMouseInWindow(os::getSDLMainWindow(), SCALE_MOUSE_TO_WINDOW(x, y, /));
+		float fx = i2fl(x);
+		float fy = i2fl(y);
+		gr_render_to_window_pos(fx, fy);
+
+		SDL_WarpMouseInWindow(os::getSDLMainWindow(), fl2i(fx), fl2i(fy));
 	}
 }
 
@@ -628,13 +637,16 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 
 void mouse_get_real_pos(int *mx, int *my)
 {
-	SDL_GetMouseState(mx, my);
-	if (Cmdline_window_res) {
-		if (mx)
-			*mx *= gr_screen.max_w / Cmdline_window_res->first;
-		if (my)
-			*my *= gr_screen.max_h / Cmdline_window_res->second;
-	}
+	int x = 0;
+	int y = 0;
+	SDL_GetMouseState(&x, &y);
+
+	float fx = i2fl(x);
+	float fy = i2fl(y);
+	gr_window_to_render_pos(fx, fy);
+
+	if (mx) *mx = fl2i(fx);
+	if (my) *my = fl2i(fy);
 }
 
 void mouse_set_pos(int xpos, int ypos)
