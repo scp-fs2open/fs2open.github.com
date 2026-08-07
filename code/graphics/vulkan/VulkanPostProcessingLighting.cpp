@@ -779,7 +779,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		auto* drawManager = getDrawManager();
 		const auto& pending = drawManager->getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
 		if (pending.valid) {
-			vk::Buffer buf = bufferMgr->getVkBuffer(pending.bufferHandle);
+			// Resolved through getVkBufferForBinding() like applyMaterial's own pending UBOs: the
+			// block lives in a streaming buffer, so a binding made in an earlier frame no longer
+			// points at anything and has to fall back to the placeholder rather than assert.
+			vk::Buffer buf = bufferMgr->getVkBufferForBinding(pending.bufferHandle);
 			if (buf) {
 				shadowCascadeParamsInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
 			}

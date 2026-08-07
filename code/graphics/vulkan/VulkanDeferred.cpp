@@ -999,11 +999,13 @@ void vulkan_render_decals(decal_material* material_info,
 
 	stateTracker->bindPipeline(pipeline, pipelineManager->getPipelineLayout());
 
-	// Helper: get DescriptorBufferInfo from pending binding (null buffer = fallback)
+	// Helper: get DescriptorBufferInfo from pending binding (null buffer = fallback).
+	// getVkBufferForBinding() because a binding outlives the frame it was made in while a
+	// streaming sub-allocation does not -- see bindPendingUBOs in VulkanDrawManager::applyMaterial.
 	auto getPendingBufInfo = [&](size_t blockIdx) -> vk::DescriptorBufferInfo {
 		const auto& pending = drawManager->getPendingUniformBinding(blockIdx);
 		if (pending.valid) {
-			vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+			vk::Buffer buf = bufferManager->getVkBufferForBinding(pending.bufferHandle);
 			if (buf) {
 				return {buf, pending.offset, pending.size};
 			}
