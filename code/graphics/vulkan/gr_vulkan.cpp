@@ -132,6 +132,10 @@ bool vulkan_is_capable(gr_capability capability)
 		return false;
 	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
 		return getRendererInstance()->supportsRaytracedShadows();
+	case gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING:
+		// Vulkan samplers are independent of images, so a second (non-compare) sampler on
+		// the same shadow map view is always available -- no capability gap here.
+		return true;
 	}
 	return false;
 }
