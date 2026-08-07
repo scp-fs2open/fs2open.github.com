@@ -15,6 +15,7 @@ static constexpr DescriptorBindingTemplate s_globalBindings[] = {
 	{GlobalBinding::EnvMap,        vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::ShadowCascadeParams, vk::DescriptorType::eUniformBuffer,  1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
+	{GlobalBinding::ShadowMapRaw,  vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray},
 };
 static constexpr DescriptorBindingTemplate s_globalTlasBinding{
 	GlobalBinding::Tlas, vk::DescriptorType::eAccelerationStructureKHR, 1, vk::ShaderStageFlagBits::eFragment};
