@@ -42,6 +42,7 @@ matrix4 Shadow_view_matrix_light;
 matrix4 Shadow_view_matrix_render;
 SCP_vector<matrix4> Shadow_proj_matrix;
 SCP_vector<float> Shadow_cascade_distances;
+SCP_vector<float> Shadow_penumbra_scale;
 
 static SCP_vector<light_frustum_info> Shadow_frustums;
 
@@ -230,9 +231,43 @@ auto RtShadowBiasMaxOption = options::OptionBuilder<float>("Graphics.RtShadowBia
 
 int Rt_shadow_samples_override = -1;
 
+bool Shadow_contact_hardening_enabled = true;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto ShadowContactHardeningOption = options::OptionBuilder<bool>("Graphics.ShadowContactHardening",
+                     std::pair<const char*, int>{"Shadow Contact Hardening", -1},
+                     std::pair<const char*, int>{"Sizes each shadow's penumbra by how close its occluder is, instead of a fixed blur width. Costs an extra shadow-map search per shadowed pixel", -1})
+                     // Only ever offered on hardware that can do the raw-depth read the
+                     // blocker search needs -- see shadow_contact_hardening_supported().
+                     .enumerator([]() -> SCP_vector<bool> {
+                         if (shadow_contact_hardening_supported()) {
+                             return {true, false};
+                         }
+                         return {false}; // inert default when unsupported
+                     })
+                     // Live-apply: shadows_start_render() reads Shadow_contact_hardening_enabled()
+                     // fresh every frame, no restart needed.
+                     .bind_to(&Shadow_contact_hardening_enabled)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .level(options::ExpertLevel::Advanced)
+                     .category(std::make_pair("Graphics", 1825))
+                     .default_func([]() { return true; })
+                     .importance(73)
+                     .finish();
+
 bool shadows_raytracing_supported()
 {
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
+}
+
+bool shadow_contact_hardening_supported()
+{
+	return gr_is_capable(gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING);
+}
+
+bool shadow_contact_hardening_enabled()
+{
+	return shadow_contact_hardening_supported() && Shadow_contact_hardening_enabled;
 }
 
 int shadows_map_resolution()
@@ -286,17 +321,13 @@ static float shadow_smoothness_reference_tangent()
 // a sun's apparent size doubles the raytraced penumbra cone and this filter width alike, so a
 // mission author tunes one parameter and both methods follow.
 //
-// What it does *not* reproduce is contact hardening. traceShadowRayCone() gets penumbra width
-// proportional to occluder distance for free; samplePoissonPCSS() (shadows.sdr) is fixed-width
-// PCF with no blocker search, so it has no occluder distance to scale by. The tabled per-cascade
-// values stand in for that: they are effectively a blocker distance pinned to the cascade's own
-// extent. Sizing them off the sun binds the two methods' softness, not their falloff shape --
-// closing that gap needs a real blocker search.
-//
-// That standin blocker distance is also much larger than the separations a raytraced shadow
-// actually measures, which is why the two methods still needed a constant factor between them
-// to look alike -- see RT_SHADOW_SUN_SIZE_CALIBRATION in shadows.sdr, and change the two
-// together.
+// Where shadow_contact_hardening_supported() is true, the value returned here no longer *is*
+// the penumbra radius -- it's the ceiling pcssPenumbraRadius() (shadows.sdr) clamps a real,
+// per-pixel, blocker-search-driven radius to (see Shadow_penumbra_scale). Where it's false
+// (GL below 3.3), it's still used directly as the fixed radius, exactly
+// as before contact hardening existed -- this function's output means "the widest the penumbra
+// is allowed to get" either way, which is why the tabled values keep their old meaning for mods
+// that already tuned them.
 //
 // Uses Static_light.front(), the same light shadows_start_render() builds the cascades from.
 // Every directional light that reaches this point carries a source radius: suns get theirs in
@@ -347,6 +378,14 @@ static float shadow_clamp_smoothness(float smoothness)
 
 void shadows_remove_unsupported_options()
 {
+	if (!shadow_contact_hardening_supported()) {
+		// No raw-depth sampler support (pre-3.3 OpenGL): the option is inert, so drop it.
+		// The bound global keeps its default; shadow_contact_hardening_enabled() folding
+		// in shadow_contact_hardening_supported() keeps rendering on the fixed-width
+		// fallback either way.
+		options::OptionsManager::instance()->removeOption(ShadowContactHardeningOption);
+	}
+
 	if (shadows_raytracing_supported()) {
 		return;
 	}
@@ -767,6 +806,9 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 	// Only ever do cockpit cascades if there's no override
 	bool render_cockpit_cascades = !cascade_distances_override.has_value() && ship_render_player_has_closeup_visuals();
 
+	// Computed once, not per-cascade -- see shadow_contact_hardening_enabled().
+	const bool contact_hardening_active = shadow_contact_hardening_enabled();
+
 	for (int i = 0; i < num_cascades; i++) {
 		float z_near;
 		if (i == 0 || (!render_cockpit_cascades && i == Num_cockpit_shadow_cascades)) {
@@ -779,6 +821,18 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 		shadows_construct_light_frustum(&Shadow_frustums[i], &light_matrix, eye_orient, nullptr, i < Num_cockpit_shadow_cascades ? cockpit_fov : fov, aspect, z_near, z_far);
 		Shadow_cascade_distances[i] = cascade_distances_actual[i];
 		Shadow_proj_matrix[i] = Shadow_frustums[i].proj_matrix;
+
+		// PCSS penumbra scale: world-space blocker/receiver depth separation (read back from
+		// the shadow map by the blocker search) times this equals the UV-space penumbra
+		// radius directly -- see the derivation next to shadow_smoothness_scale() below.
+		// Sentinel -1 when unsupported OR the user has the option off tells the shader to
+		// fall back to the fixed smoothness_factors[cascade] (today's behavior) instead of
+		// reading a raw depth sampler -- which either doesn't exist on this hardware, or
+		// does but isn't worth the extra shadow-map search right now.
+		Shadow_penumbra_scale[i] = contact_hardening_active
+			? std::max(0.0f, (Shadow_frustums[i].max.xyz.z - Shadow_frustums[i].min.xyz.z) * lp.source_radius /
+				(Shadow_frustums[i].max.xyz.x - Shadow_frustums[i].min.xyz.x))
+			: -1.0f;
 	}
 
 	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, true);
@@ -1120,6 +1174,10 @@ void shadow_end_frame() {
 static gr_buffer_handle Shadow_cascade_params_buffer;
 static size_t Shadow_cascade_params_buffer_size = 0;
 
+// Number of padded per-cascade float arrays shadow_cascade_params_bind() writes after the
+// proj matrices: cascade distances, smoothness factors, PCSS penumbra scale.
+static constexpr size_t Num_cascade_float_arrays = 3;
+
 static std::pair<size_t, size_t> compute_cascade_params_size(int num_cascades) {
 	size_t padding_required = num_cascades % 4;
 	if (padding_required != 0)
@@ -1127,9 +1185,21 @@ static std::pair<size_t, size_t> compute_cascade_params_size(int num_cascades) {
 
 	return {sizeof(graphics::shadow_cascade_static_data)
 		+ sizeof(matrix4) * num_cascades
-		+ sizeof(float) * (num_cascades + padding_required)
-		+ sizeof(float) * (num_cascades + padding_required),
+		+ Num_cascade_float_arrays * sizeof(float) * (num_cascades + padding_required),
 		padding_required};
+}
+
+// Writes num_cascades floats (value_at(0)..value_at(num_cascades - 1)) into buffer at offset,
+// advancing offset past both the values and the std140 padding that keeps the next field
+// vec4-aligned. Shared by shadow_cascade_params_bind()'s three per-cascade float arrays so the
+// offset/padding bookkeeping can't drift between them.
+template <typename F>
+static void write_padded_floats(SCP_vector<uint8_t>& buffer, size_t& offset, int num_cascades, size_t padding, F&& value_at) {
+	for (int i = 0; i < num_cascades; i++) {
+		*reinterpret_cast<float*>(buffer.data() + offset) = value_at(i);
+		offset += sizeof(float);
+	}
+	offset += sizeof(float) * padding;
 }
 
 void shadow_cascade_params_init() {
@@ -1143,6 +1213,7 @@ void shadow_cascade_params_init() {
 	Shadow_frustums.resize(num_cascades);
 	Shadow_cascade_distances.resize(num_cascades);
 	Shadow_proj_matrix.resize(num_cascades);
+	Shadow_penumbra_scale.resize(num_cascades);
 }
 
 void shadow_cascade_params_shutdown() {
@@ -1162,7 +1233,7 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	const auto [required_size, padding] = compute_cascade_params_size(num_cascades);
 
 	Assertion(required_size <= Shadow_cascade_params_buffer_size, "The shadow cascade parameter buffer grew in size!");
-	Assertion(Shadow_proj_matrix.size() == static_cast<size_t>(num_cascades) && Shadow_cascade_distances.size() == static_cast<size_t>(num_cascades) && Shadow_smoothness_factor.size() == static_cast<size_t>(num_cascades), "Shadow cascade data buffers are of incorrect size! (Expected %d, got %d, %d, %d)", num_cascades, static_cast<int>(Shadow_proj_matrix.size()), static_cast<int>(Shadow_cascade_distances.size()), static_cast<int>(Shadow_smoothness_factor.size()));
+	Assertion(Shadow_proj_matrix.size() == static_cast<size_t>(num_cascades) && Shadow_cascade_distances.size() == static_cast<size_t>(num_cascades) && Shadow_smoothness_factor.size() == static_cast<size_t>(num_cascades) && Shadow_penumbra_scale.size() == static_cast<size_t>(num_cascades), "Shadow cascade data buffers are of incorrect size! (Expected %d, got %d, %d, %d, %d)", num_cascades, static_cast<int>(Shadow_proj_matrix.size()), static_cast<int>(Shadow_cascade_distances.size()), static_cast<int>(Shadow_smoothness_factor.size()), static_cast<int>(Shadow_penumbra_scale.size()));
 	Assertion(cascade_count + cascade_offset <= num_cascades, "Requested drawing out-of-range cascades!");
 
 	SCP_vector<uint8_t> buffer(required_size, 0);
@@ -1190,23 +1261,20 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 		offset += sizeof(matrix4);
 	}
 
-	for (int i = 0; i < num_cascades; i++) {
-		auto& cascade_distance = *reinterpret_cast<float*>(buffer.data() + offset);
-		cascade_distance = Shadow_cascade_distances[i];
-		offset += sizeof(float);
-	}
-	offset += sizeof(float) * padding;
+	write_padded_floats(buffer, offset, num_cascades, padding,
+		[](int i) { return Shadow_cascade_distances[i]; });
 
 	// Scaled by the sun's apparent size so shadow-mapped and raytraced shadows soften
 	// together -- see shadow_smoothness_scale().
 	const float smoothness_scale = shadow_smoothness_scale();
 
-	for (int i = 0; i < num_cascades; i++) {
-		auto& smoothness_factor = *reinterpret_cast<float*>(buffer.data() + offset);
-		smoothness_factor = shadow_clamp_smoothness(Shadow_smoothness_factor[i] * smoothness_scale);
-		offset += sizeof(float);
-	}
-	offset += sizeof(float) * padding;
+	write_padded_floats(buffer, offset, num_cascades, padding,
+		[smoothness_scale](int i) { return shadow_clamp_smoothness(Shadow_smoothness_factor[i] * smoothness_scale); });
+
+	// PCSS penumbra scale, appended last so every field above keeps its existing byte
+	// offset -- see Shadow_penumbra_scale's derivation comment in shadows.h.
+	write_padded_floats(buffer, offset, num_cascades, padding,
+		[](int i) { return Shadow_penumbra_scale[i]; });
 
 	gr_update_buffer_data_offset(Shadow_cascade_params_buffer, 0, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);

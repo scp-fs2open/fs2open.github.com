@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstddef>
+
 using SPIRV_FLOAT_MAT_4x4 = matrix4;
 using SPIRV_FLOAT_VEC4 = vec4;
 
@@ -156,6 +158,10 @@ struct shadow_cascade_static_data {
 	// declarations in deferred-f/main-f/main-v/shadow_map-g/shadow_map-v.sdr.
 	matrix4 shadow_mv_matrix;
 };
+static_assert(offsetof(shadow_cascade_static_data, shadow_mv_matrix) == 32,
+	"shadow_cascade_static_data's scalar fields must total exactly 32 bytes to match std140's "
+	"mat4 alignment -- update the shadowCascadeParams block in every .sdr file that declares it "
+	"if this changes.");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
