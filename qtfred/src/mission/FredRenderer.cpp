@@ -985,6 +985,16 @@ void FredRenderer::render_models(int cur_object_index) {
 	bool f = false;
 	enable_htl();
 
+	// Mirrors obj_render_queue_all()'s bind right before scene.render_all(). The model shaders
+	// read rtShadowSampleCount, the RTAO params and the per-cascade smoothness out of this block,
+	// but that bind lives in obj_render_queue_all() and we render through obj_render_all(), so
+	// nothing here binds it for the model pass. Without it the pass runs on the zero-filled
+	// fallback UBO -- a sample count of 0, which collapses traceShadowRayCone() to a single hard
+	// ray and makes shadows ignore the sun's angular size entirely.
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+	}
+
 	auto render_function = [&](object* objp) {
 		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			return;

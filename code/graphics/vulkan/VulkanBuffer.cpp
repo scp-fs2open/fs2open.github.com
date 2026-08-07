@@ -706,7 +706,7 @@ void* VulkanBufferManager::mapBuffer(gr_buffer_handle handle)
 	}
 
 	if (bufferObj.isStreaming()) {
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assert(isFrameAllocCurrent(bufferObj));
 		auto& alloc = m_frameAllocs[m_currentFrame];
 		return static_cast<uint8_t*>(alloc.mappedPtr) + bufferObj.frameAllocOffset;
 	}
@@ -735,7 +735,7 @@ void VulkanBufferManager::flushMappedBuffer(gr_buffer_handle handle, size_t offs
 
 	if (bufferObj.isStreaming()) {
 		// Adjust offset for current frame's allocation
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assert(isFrameAllocCurrent(bufferObj));
 		auto& alloc = m_frameAllocs[m_currentFrame];
 		m_memoryManager->flushMemory(alloc.allocation, bufferObj.frameAllocOffset + offset, size);
 	} else {
@@ -760,6 +760,30 @@ void VulkanBufferManager::bindUniformBuffer(uniform_block_type blockType, size_t
 
 // ========== Buffer queries ==========
 
+bool VulkanBufferManager::isFrameAllocCurrent(const VulkanBufferObject& bufferObj) const
+{
+	if (!bufferObj.isStreaming()) {
+		return true;
+	}
+
+	return bufferObj.frameAllocFrame == m_currentFrame &&
+	       bufferObj.frameAllocGeneration == m_frameAllocs[m_currentFrame].generation;
+}
+
+bool VulkanBufferManager::isFrameAllocCurrent(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return false;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return false;
+	}
+
+	return isFrameAllocCurrent(bufferObj);
+}
+
 vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 {
 	if (!isValidHandle(handle)) {
@@ -773,7 +797,12 @@ vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 
 	if (bufferObj.isStreaming()) {
 		// Streaming buffers return the frame allocator buffer they were uploaded to
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assertion(isFrameAllocCurrent(bufferObj),
+			"Streaming buffer %d was allocated in frame %u (generation %u) but fetched in frame %u "
+			"(generation %u) -- it must be uploaded again before it can be drawn with. A binding kept "
+			"from an earlier frame belongs on getVkBufferForBinding().",
+			handle.value(), bufferObj.frameAllocFrame, bufferObj.frameAllocGeneration, m_currentFrame,
+			m_frameAllocs[m_currentFrame].generation);
 		return bufferObj.frameAllocBuffer;
 	} else {
 		// Record that this frame (potentially) references the buffer -- consulted
@@ -781,6 +810,21 @@ vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 		bufferObj.lastUsedFrameNumber = m_currentFrameNumber;
 		return bufferObj.buffer;
 	}
+}
+
+vk::Buffer VulkanBufferManager::getVkBufferForBinding(gr_buffer_handle handle) const
+{
+	if (!isFrameAllocCurrent(handle)) {
+		// Either the handle no longer resolves at all, or it is a streaming buffer whose
+		// sub-allocation belongs to a frame that has since been recycled. Both mean the caller
+		// has to fall back; only getVkBuffer() treats the latter as a bug.
+		return nullptr;
+	}
+
+	// Delegated rather than inlined: getVkBuffer()'s non-streaming branch stamps
+	// lastUsedFrameNumber, which is what updateBufferData() consults to decide whether a rewrite
+	// has to orphan. Duplicating the lookup here would mean remembering to keep that stamp.
+	return getVkBuffer(handle);
 }
 
 size_t VulkanBufferManager::getBufferSize(gr_buffer_handle handle) const
@@ -824,11 +868,10 @@ size_t VulkanBufferManager::getFrameBaseOffset(gr_buffer_handle handle) const
 
 	if (bufferObj.isStreaming()) {
 		// Return the bump allocator offset for the most recent upload this frame.
-		// Stale handle detection: if frameAllocFrame != m_currentFrame, this buffer
-		// was not uploaded this frame and the offset would be meaningless (the bump
-		// allocator has been reset). This indicates a buffer marked Streaming/Dynamic
-		// is being bound for rendering without being uploaded first.
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		// Stale handle detection: a sub-allocation that is not the live one has a meaningless
+		// offset (the bump allocator has rewound since), which means a buffer marked
+		// Streaming/Dynamic is being bound for rendering without being uploaded first.
+		Assert(isFrameAllocCurrent(bufferObj));
 		return bufferObj.frameAllocOffset;
 	} else {
 		return 0;
