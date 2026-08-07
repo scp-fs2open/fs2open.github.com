@@ -628,6 +628,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessingMSAA.cpp
 		graphics/vulkan/VulkanPostProcessingSMAA.cpp
 		graphics/vulkan/VulkanPostProcessingShadow.cpp
+		graphics/vulkan/VulkanPresentTarget.cpp
+		graphics/vulkan/VulkanPresentTarget.h
 		graphics/vulkan/VulkanQuery.cpp
 		graphics/vulkan/VulkanQuery.h
 		graphics/vulkan/VulkanRaytracing.cpp
