@@ -136,13 +136,16 @@ class VulkanStateTracker {
 	 * @brief Bind descriptor set
 	 *
 	 * @param dynamicOffsets Offsets for the set layout's eUniformBufferDynamic
-	 *        bindings, ordered by binding number. Must point to at least
-	 *        VulkanDescriptorManager::getDynamicOffsetCount(setIndex) entries
-	 *        (DescriptorWriter::dynamicOffsets() produces exactly that); may be
-	 *        null only for a set that declares none.
+	 *        bindings, ordered by binding number. Must hold at least
+	 *        VulkanDescriptorManager::getDynamicOffsetCount(setIndex) entries --
+	 *        asserted here rather than trusted, which is why this is a view and not
+	 *        a bare pointer. DescriptorWriter::dynamicOffsets() and the
+	 *        *_DYNAMIC_OFFSET_COUNT-sized arrays at the call sites both convert
+	 *        implicitly. May be empty only for a set that declares none.
 	 */
-	void
-	bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set, const uint32_t* dynamicOffsets = nullptr);
+	void bindDescriptorSet(DescriptorSetIndex setIndex,
+		vk::DescriptorSet set,
+		ArrayView<uint32_t> dynamicOffsets = {});
 
 	// ========== Buffer Binding ==========
 
