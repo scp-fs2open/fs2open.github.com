@@ -356,7 +356,7 @@ ADE_FUNC(__len,
 	"number",
 	"Number of comm orders in the mission. 0 if comm menu is closed")
 {
-	return ade_set_args(L, "i", (MsgItems ? (int)MsgItems.value().size() : -1));
+	return ade_set_args(L, "i", (!Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1));
 }
 
 //****SUBLIBRARY: Mission/Debris

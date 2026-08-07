@@ -87,7 +87,8 @@ typedef struct mmode_item {
 } mmode_item;
 
 extern char Squad_msg_title[256];
-extern std::optional<SCP_vector<mmode_item>> MsgItems;
+extern SCP_vector<mmode_item> MsgItems;
+extern bool Rebuild_MsgItems;
 
 typedef struct player_order {
 private:

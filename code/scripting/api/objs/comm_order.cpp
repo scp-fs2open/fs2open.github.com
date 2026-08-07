@@ -18,8 +18,8 @@ ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "
 		LuaError(L, "This property is read only.");
 	}
 	SCP_string message = "Invalid comm item!";
-	if ((MsgItems ? (int)MsgItems.value().size() : -1) > current) {
-		message = MsgItems.value()[current].text;
+	if (!Rebuild_MsgItems && sz2i(MsgItems.size()) > current) {
+		message = MsgItems[current].text;
 	};
 	return ade_set_args(L, "s", message.c_str());
 }
@@ -35,7 +35,7 @@ ADE_VIRTVAR(Active, l_Comm_Item, nullptr, "Whether or not the item is active", "
 		LuaError(L, "This property is read only.");
 	}
 
-	if ((MsgItems ? (int)MsgItems.value().size() : -1) > current && MsgItems.value()[current].active > 0) {
+	if (!Rebuild_MsgItems && sz2i(MsgItems.size()) > current && MsgItems[current].active > 0) {
 		return ADE_RETURN_TRUE;
 	}
 
@@ -63,7 +63,7 @@ ADE_FUNC(selectItem, l_Comm_Item, nullptr, "Selects the item and either proceeds
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
 		return ADE_RETURN_FALSE;
 
-	if (current < 0 || current >= (MsgItems ? (int)MsgItems.value().size() : -1)) {
+	if (current < 0 || Rebuild_MsgItems || current >= sz2i(MsgItems.size())) {
 		LuaError(L, "Lua tried to select squad message that is not valid!");
 		return ADE_RETURN_FALSE;
 	}
@@ -80,7 +80,7 @@ ADE_FUNC(isValid, l_Comm_Item, nullptr, "Detect if the handle is valid", "boolea
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", (current >= 0) && (current < (MsgItems ? (int)MsgItems.value().size() : -1)));
+	return ade_set_args(L, "b", (current >= 0) && !Rebuild_MsgItems && (current < sz2i(MsgItems.size())));
 }
 
 } // namespace scripting::api
