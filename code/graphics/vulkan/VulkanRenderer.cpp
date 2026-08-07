@@ -420,40 +420,6 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 
 	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
 }
-void VulkanRenderer::createPresentSyncObjects(VulkanPresentTarget& target)
-{
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-		target.frames[i] = std::make_unique<VulkanRenderFrame>(m_device.get(), target.swapChain.get(), m_graphicsQueue, m_presentQueue);
-	}
-
-	target.imageRenderFrame.resize(target.images.size(), nullptr);
-
-	// One more than the frames in flight: at any moment the in-flight frames can each be holding
-	// one, and a viewport switch can have retained one on top of that.
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
-	target.acquireSemaphores.clear();
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT + 1; ++i) {
-		VulkanPresentTarget::AcquireSemaphore entry;
-		entry.semaphore = m_device->createSemaphoreUnique(semaphoreCreateInfo);
-		target.acquireSemaphores.push_back(std::move(entry));
-	}
-	target.nextAcquire = 0;
-	target.currentAcquire = 0;
-	target.hasRetainedAcquire = false;
-
-	createRenderFinishedSemaphores(target);
-}
-void VulkanRenderer::createRenderFinishedSemaphores(VulkanPresentTarget& target)
-{
-	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
-
-	target.renderFinishedSemaphores.clear();
-	target.renderFinishedSemaphores.reserve(target.images.size());
-	for (size_t i = 0; i < target.images.size(); ++i) {
-		target.renderFinishedSemaphores.push_back(m_device->createSemaphoreUnique(semaphoreCreateInfo));
-	}
-}
-
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)
 {
 	*outPixels = nullptr;
