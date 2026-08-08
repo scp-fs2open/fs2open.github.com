@@ -1671,11 +1671,11 @@ void gr_screen_resize(int width, int height)
 
 	gr_setup_viewport();
 
-	// The offscreen targets that back the scene/post-processing pipeline were sized for the old
-	// gr_screen; give the backend a chance to grow them before anything renders at the new size.
-	// Backends that already handle this elsewhere (Vulkan, via recreateSwapChain()) leave it unset.
-	if (gr_screen.gf_resize_render_targets) {
-		gr_screen.gf_resize_render_targets();
+	// Whatever the backend sized to the old gr_screen is now wrong; let it catch up before anything
+	// renders at the new size. This can discard the frame in progress -- see the warning on the
+	// declaration of this function.
+	if (gr_screen.gf_viewport_size_changed) {
+		gr_screen.gf_viewport_size_changed();
 	}
 }
 
@@ -2180,11 +2180,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		center_aspect_ratio = -1.0f;
 	}
 
-	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
-	// falls back to OpenGL regardless of what was requested. This must happen before gr_init_function_pointers()
-	// below, since that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
+	// Vulkan needs more from the windowing implementation than an OpenGL context does, and not every
+	// implementation can provide it -- the MFC editor can't, and neither can a qtFRED built against a
+	// Qt without Vulkan support or running on a platform plugin we have no surface extension for.
+	// Fall back rather than fail. This must happen before gr_init_function_pointers() below, since
+	// that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
 	// later (e.g. in gr_init_sub()) would leave the dispatch table pointing at the wrong backend.
-	if (Fred_running) {
+	if (mode == GraphicsAPI::Vulkan && (graphicsOps == nullptr || graphicsOps->getVulkanSupport() == nullptr)) {
+		mprintf(("Vulkan was requested but this windowing implementation cannot present through it; "
+		         "falling back to OpenGL.\n"));
 		mode = GraphicsAPI::OpenGL;
 	}
 
@@ -3377,6 +3381,37 @@ static void uniform_buffer_managers_retire_buffers()
 	}
 
 	UniformBufferManager->onFrameEnd();
+}
+
+bool gr_read_render_target(ubyte* out_rgba, int width, int height)
+{
+	if (out_rgba == nullptr || width <= 0 || height <= 0) {
+		return false;
+	}
+
+	if (!gr_screen.gf_read_render_target) {
+		return false;
+	}
+
+	return gr_screen.gf_read_render_target(out_rgba, width, height);
+}
+
+void gr_end_offscreen_frame()
+{
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		return;
+	}
+
+	// Same two things gr_flip() does for a presented frame, minus the presentation: retire the
+	// uniform segments so the next frame starts writing at offset 0 again, then let the backend
+	// recycle whatever per-frame pools it keeps. Order matters -- the backend rewinding its
+	// allocator while the engine still thinks it is part-way through a segment would just make
+	// the next allocation larger than the last.
+	uniform_buffer_managers_retire_buffers();
+
+	if (gr_screen.gf_end_offscreen_frame) {
+		gr_screen.gf_end_offscreen_frame();
+	}
 }
 
 graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
