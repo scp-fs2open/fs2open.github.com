@@ -721,3 +721,16 @@ short bit_distance(short x) {
 
 	return i;
 }
+
+// update mouse with position which is already scaled for max_w/max_h
+void mouse_update_pos_scaled(int x, int y, float dx, float dy)
+{
+	CAP(x, 0, gr_screen.max_w-1);
+	CAP(y, 0, gr_screen.max_h-1);
+
+	Mouse_x = x;
+	Mouse_y = y;
+
+	Mouse_dx += fl2i(dx);
+	Mouse_dy += fl2i(dy);
+}

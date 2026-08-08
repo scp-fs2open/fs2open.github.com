@@ -28,6 +28,7 @@
 #include "tracing/tracing.h"
 #include "io/timer.h"
 #include "io/key.h"
+#include "io/gamepad.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "scripting/global_hooks.h"
@@ -243,6 +244,10 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 		}
 
 		processEvents();
+
+		if (io::gamepad::action_or_cancel()) {
+			state->playing = false;
+		}
 
 		// NOTE: This does not update mission time! If movies get enabled in places
 		//       other than through cutscenes then some refactoring should be done

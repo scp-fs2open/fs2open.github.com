@@ -254,6 +254,11 @@ namespace io
 			 */
 			json_t* getJSON();
 
+			/**
+			 * @brief Clears internal button state
+			 */
+			void flush();
+
 		private:
 			Joystick(const Joystick &);
 			Joystick &operator=(const Joystick &);
@@ -390,5 +395,6 @@ short joy_get_button_axis(const short cid, short btn);
  */
 bool joy_present(short cid);
 
+void joy_flush();
 
 #endif	/* __JOY_H__ */

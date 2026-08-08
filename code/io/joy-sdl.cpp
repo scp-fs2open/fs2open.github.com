@@ -921,6 +921,14 @@ namespace joystick
 		}
 	}
 
+	void Joystick::flush()
+	{
+		for (auto &b : _button) {
+			b.DownTimestamp = UI_TIMESTAMP::invalid();
+			b.DownCount = 0;
+		}
+	}
+
 	SDL_Joystick *Joystick::getJoystick()
 	{
 		return _joystick;
@@ -1479,4 +1487,13 @@ short joy_get_button_axis(short cid, short btn)
 	}
 
 	return static_cast<short>(SDL_GAMEPAD_AXIS_LEFT_TRIGGER + axis_button);
+}
+
+void joy_flush()
+{
+	for (auto pJoy : pJoystick) {
+		if (pJoy) {
+			pJoy->flush();
+		}
+	}
 }

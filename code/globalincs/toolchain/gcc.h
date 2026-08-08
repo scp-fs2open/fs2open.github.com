@@ -96,6 +96,7 @@
 #define PUSH_SUPPRESS_WARNINGS \
 _Pragma("GCC diagnostic push") \
 _Pragma("GCC diagnostic ignored \"-Wattributes\"") \
+_Pragma("GCC diagnostic ignored \"-Wshadow\"") \
 
 /**
  * @brief Restored previous warning settings
