@@ -67,6 +67,8 @@ void BackgroundEditorDialog::initializeUi()
 	ui->sunPitchSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->sunHeadingSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->sunScaleDoubleSpinBox->setRange(_model->getSunScaleLimit().first, _model->getSunScaleLimit().second);
+	ui->sunAngularSizeDoubleSpinBox->setRange(_model->getSunAngularSizeLimit().first,
+		_model->getSunAngularSizeLimit().second);
 
 	const auto& sun_names = _model->getAvailableSunNames();
 	for (const auto& s : sun_names) {
@@ -253,6 +255,9 @@ void BackgroundEditorDialog::updateSunControls()
 	ui->sunPitchSpin->setEnabled(enabled);
 	ui->sunHeadingSpin->setEnabled(enabled);
 	ui->sunScaleDoubleSpinBox->setEnabled(enabled);
+	ui->sunAngularSizeCheckBox->setEnabled(enabled);
+	// the value only means anything when this mission is actually setting one
+	ui->sunAngularSizeDoubleSpinBox->setEnabled(enabled && _model->getSunAngularSizeEnabled());
 
 	const int index = ui->sunSelectionCombo->findText(QString::fromStdString(_model->getSunName()));
 	ui->sunSelectionCombo->setCurrentIndex(index);
@@ -260,6 +265,8 @@ void BackgroundEditorDialog::updateSunControls()
 	ui->sunPitchSpin->setValue(_model->getSunPitch());
 	ui->sunHeadingSpin->setValue(_model->getSunHeading());
 	ui->sunScaleDoubleSpinBox->setValue(_model->getSunScale());
+	ui->sunAngularSizeCheckBox->setChecked(_model->getSunAngularSizeEnabled());
+	ui->sunAngularSizeDoubleSpinBox->setValue(_model->getSunAngularSize());
 }
 
 void BackgroundEditorDialog::updateNebulaControls()
@@ -631,6 +638,24 @@ void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(double arg1)
 void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(double arg1)
 {
 	_model->setSunHeading(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_sunAngularSizeCheckBox_toggled(bool checked)
+{
+	_model->setSunAngularSizeEnabled(checked);
+
+	// take whatever the box is already showing, so ticking this can't quietly set a
+	// different size than the one on screen
+	if (checked)
+		_model->setSunAngularSize(static_cast<float>(ui->sunAngularSizeDoubleSpinBox->value()));
+
+	// toggling this enables or greys the value box next to it
+	updateSunControls();
+}
+
+void BackgroundEditorDialog::on_sunAngularSizeDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setSunAngularSize(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_sunScaleDoubleSpinBox_valueChanged(double arg1)
