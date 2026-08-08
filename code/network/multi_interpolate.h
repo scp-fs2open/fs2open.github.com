@@ -6,13 +6,21 @@
 
 struct physics_info;
 
-constexpr size_t PACKET_INFO_LIMIT = 4; // we should never need more than 4 packets to do interpolation.  Overwrite the oldest ones if we do.
+// How much packet history to keep per object.  This has to span MULTI_INTERP_BUFFER_MS
+// worth of updates or the playback clock falls off the back of the history and the object
+// drops to dead reckoning -- worst for the *fastest* updating objects, since they cover
+// the least wall time per packet.  The tightest rate in the Multi_oo_*_update_times tables
+// is 20ms (LAN players and targets), and 11 intervals of that is 220ms, comfortably over
+// the 150ms buffer.
+constexpr size_t PACKET_INFO_LIMIT = 12;
 
 typedef struct packet_info {
 
-	int frame;							// this allows us to directly compare one packet to another.  
+	int frame;							// this allows us to directly compare one packet to another.
 	int remote_missiontime;				// the remote timestamp that matches this packet.
 	physics_snapshot snapshot;			// the received physics info translated into the physics snapshot type for easy interpolation
+	bool synthetic;						// true if replace_packet() built this, in which case `frame` is a made-up number
+										// and must never be sent back to the server as a rollback reference
 
 	packet_info(int frame_in = 0, int time_in = 0, const vec3d* position_in = &vmd_zero_vector, const vec3d* velocity_in = &vmd_zero_vector, 
 		const vec3d* rotational_velocity_in = &vmd_zero_vector, const vec3d* desired_velocity_in = &vmd_zero_vector, const vec3d* desired_rotational_velocity_in = &vmd_zero_vector,
@@ -20,6 +28,7 @@ typedef struct packet_info {
 	{	
 		frame = frame_in;
 		remote_missiontime = time_in;
+		synthetic = false;
 		snapshot.position = *position_in;
 		snapshot.velocity = *velocity_in;
 		snapshot.rotational_velocity = *rotational_velocity_in;
@@ -59,6 +68,13 @@ public:
 	// adds a new packet, whilst also manually sorting the relevant entries
 	void add_packet(int objnum, int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
 	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
+
+	// Describes the moment this object was last drawn at, as the (server frame, ms after that
+	// frame) pair that multi_ship_record_find_frame() consumes on the server.  Returns false
+	// if there is no usable history.  Fire packets must use this rather than the newest packet
+	// received: interpolation deliberately draws MULTI_INTERP_BUFFER_MS behind that, and the
+	// server rewinds every ship to whatever moment the pair resolves to.
+	bool get_render_reference(int& frame, int& time_after_frame) const;
 	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity);
 
 	int get_hull_comparison_frame() const { return _hull_comparison_frame; }
@@ -166,7 +182,14 @@ public:
 
 void multi_interpolate_clear_all();
 
+// TEMP INSTRUMENTATION - remove along with the debug block in multi_interpolate.cpp
+void multi_interpolate_debug_reset();
+
 void multi_interpolate_clear_helper(int objnum);
+
+// interpolation_manager::get_render_reference for a given object, without exposing Interp_info.
+// Returns false if we hold no usable history for it.
+bool multi_interpolate_get_render_reference(int objnum, int& frame, int& time_after_frame);
 
 void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
 

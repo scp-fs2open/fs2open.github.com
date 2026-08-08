@@ -2646,7 +2646,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	}
 
 	// maybe set wash_killed
-	if (extra_death_info & EXTRA_DEATH_VAPORIZED) {
+	if (extra_death_info & EXTRA_DEATH_WASHED) {
 		Ships[sobjp->instance].wash_killed = 1;
 	}
 
@@ -7633,7 +7633,8 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if (flags & HWIF_BIG_UPDATE) {
-		wp->creation_time = Missiontime + missile_lifetime;
+		// the sender packed the missile's age, so walk creation_time back from now to recover it
+		wp->creation_time = Missiontime - missile_lifetime;
 		weapon_objp->pos = missile_pos;
 		weapon_objp->orient = orient_in;
 		wp->launch_speed = launch_speed;
@@ -7846,9 +7847,22 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	ADD_DATA(flags);
 	ADD_USHORT(ref_objp->net_signature);
 
-	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
-	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = static_cast<ushort>(Multi_Timing_Info.get_current_time() - multi_client_lookup_frame_timestamp());
+	// The server rewinds every ship to whatever moment this pair resolves to, so it has to name
+	// the moment we actually *drew* ref_objp at.  Interpolation places that MULTI_INTERP_BUFFER_MS
+	// behind the newest packet we hold, so asking for "newest frame received, plus time since it
+	// arrived" aims the rollback at where the target had not got to yet -- which misses, worst on
+	// fast crossing targets where the error is mostly cross-track.
+	int last_received_frame, elapsed;
+
+	if (!multi_interpolate_get_render_reference(OBJ_INDEX(ref_objp), last_received_frame, elapsed)) {
+		// no usable interpolation history for the reference object, so fall back to the old
+		// approximation rather than dropping the shot
+		last_received_frame = multi_client_lookup_frame_idx();
+		elapsed = Multi_Timing_Info.get_current_time() - multi_client_lookup_frame_timestamp();
+	}
+
+	CLAMP(elapsed, 0, 65535);
+	auto time_elapsed = static_cast<ushort>(elapsed);
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);
@@ -7884,6 +7898,67 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	multi_io_send(Net_player, data, packet_size);
 }
+
+// ============================================================================
+// TEMPORARY INSTRUMENTATION - remove before merging.
+//
+// Answers: is rollback actually running on this server, and what moment is it
+// rewinding to?  Reports once per second to the *server's* fs2_open.log.
+// Grep for "MULTI ROLLBACK".
+// ============================================================================
+namespace {
+
+struct rollback_debug_stats {
+	int packets = 0;			// non-homing fire packets received
+	int no_rollback_path = 0;	// option off, or the reference object was missing / not a ship
+	int frame_too_old = 0;		// find_frame rejected it -- outside the MAX_FRAMES_RECORDED window
+	int rolled_back = 0;		// actually queued a rollback shot
+
+	int elapsed_min = INT_MAX;	// ms past the reference frame that the client asked for
+	int elapsed_max = INT_MIN;
+
+	// time_after_frame: how far past the resolved frame the client's moment actually fell.
+	// The rewind snaps to whole recorded frames, so this much is thrown away on every shot.
+	int residual_min = INT_MAX;
+	int residual_max = INT_MIN;
+};
+
+rollback_debug_stats Rollback_debug;
+int Rollback_debug_next_report = 0;
+
+void rollback_debug_report()
+{
+	const int now = timestamp();
+
+	if (Rollback_debug_next_report == 0) {
+		Rollback_debug_next_report = now + 1000;
+		return;
+	}
+
+	if (now < Rollback_debug_next_report) {
+		return;
+	}
+	Rollback_debug_next_report = now + 1000;
+
+	auto& s = Rollback_debug;
+
+	if (s.packets == 0) {
+		return;
+	}
+
+	mprintf(("MULTI ROLLBACK: %d fire packets | rolled back %d | no-rollback path %d | frame too old %d\n",
+		s.packets, s.rolled_back, s.no_rollback_path, s.frame_too_old));
+
+	if (s.rolled_back > 0) {
+		mprintf(("MULTI ROLLBACK: client elapsed %d-%d ms | discarded sub-frame residual %d-%d ms\n",
+			s.elapsed_min, s.elapsed_max, s.residual_min, s.residual_max));
+	}
+
+	s = rollback_debug_stats();
+}
+
+} // namespace
+// ======================= END TEMPORARY INSTRUMENTATION =======================
 
 void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 {
@@ -7942,7 +8017,12 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	object* objp_ref = multi_get_network_object(target_ref);
 
+	Rollback_debug.packets++;			// TEMP INSTRUMENTATION
+	rollback_debug_report();			// TEMP INSTRUMENTATION
+
 	if ((Is_standalone && !Multi_options_g.std_rollback) || !objp_ref || (objp_ref->type != OBJ_SHIP)) {
+		Rollback_debug.no_rollback_path++;	// TEMP INSTRUMENTATION
+
 		// new way failed, use the old new way.
 
 		if (objp_ref != nullptr){
@@ -7968,8 +8048,18 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, static_cast<int>(time_elapsed));
 		Assertion(time_after_frame >= 0, "Primary fire packet processor found an invalid time_after_frame of %d", time_after_frame);
 
-		vec3d new_tar_pos = multi_ship_record_lookup_position(objp_ref, frame);
-		matrix new_tar_ori = multi_ship_record_lookup_orientation(objp_ref, frame);
+		// --- TEMP INSTRUMENTATION ---
+		Rollback_debug.rolled_back++;
+		Rollback_debug.elapsed_min = MIN(Rollback_debug.elapsed_min, static_cast<int>(time_elapsed));
+		Rollback_debug.elapsed_max = MAX(Rollback_debug.elapsed_max, static_cast<int>(time_elapsed));
+		Rollback_debug.residual_min = MIN(Rollback_debug.residual_min, time_after_frame);
+		Rollback_debug.residual_max = MAX(Rollback_debug.residual_max, time_after_frame);
+		// --- END TEMP INSTRUMENTATION ---
+
+		// interpolate to the moment the client actually saw, not just the frame before it
+		vec3d new_tar_pos;
+		matrix new_tar_ori;
+		multi_ship_record_lookup_interpolated(objp_ref, frame, time_after_frame, &new_tar_pos, &new_tar_ori);
 		// find out where the angle to the new primary fire should be, by
 		// rotating the vector
 
@@ -8003,6 +8093,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	}	// if the new way fails for some reason, use the old way.
 	else {
+		Rollback_debug.frame_too_old++;		// TEMP INSTRUMENTATION
 		nprintf(("Network", "Rollback was not performed because the frame sent by the client is either too old or invalid.. Using the old system.\n"));
 		if (secondary) {
 			// if this is a rollback shot from a dumbfire secondary, we have to mark this as a 
