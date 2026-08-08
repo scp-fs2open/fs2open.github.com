@@ -15,6 +15,7 @@
 #include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "io/joy_ff.h"
+#include "tracing/tracing.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -819,7 +820,10 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+	// The profiler overlay is drawn from gr_flip(), so it can be on screen in any state — it
+	// needs input forwarded wherever it is active, not in a fixed list of states.
+	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS) ||
+		tracing::frame_profiling_active()) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
 		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
 		ImGui_ImplSDL3_ProcessEvent(&imgui_event);

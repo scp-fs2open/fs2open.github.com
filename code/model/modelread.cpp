@@ -405,6 +405,28 @@ void model_page_in_stop()
 	}
 }
 
+model_memory_stats model_get_memory_stats()
+{
+	model_memory_stats stats;
+	stats.valid = true;
+
+	for (const auto pm : Polygon_models) {
+			if (pm == nullptr) {
+			continue;
+		}
+
+		stats.model_count++;
+		stats.vertex_bytes += pm->vert_source.Vertex_list_size;
+		stats.index_bytes += pm->vert_source.Index_list_size;
+
+		for (int j = 0; j < pm->n_models; j++) {
+			stats.bsp_data_bytes += pm->submodel[j].bsp_data_size;
+		}
+	}
+
+	return stats;
+}
+
 void model_init()
 {
 	int i;
