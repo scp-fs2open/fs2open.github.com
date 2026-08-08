@@ -15458,6 +15458,67 @@ int ship_find_num_turrets(object *objp)
 	return n;
 }
 
+bool turret_has_weapon(ship_subsys *ssp, int wi_index)
+{
+	ship_weapon *swp = &ssp->weapons;
+	for ( auto& i : swp->primary_bank_weapons ) {
+		if (i == wi_index) {
+			return true;
+		}
+	}
+	for ( auto& i : swp->secondary_bank_weapons ) {
+		if (i == wi_index) {
+			return true;
+		}
+	}
+	
+	ssp = GET_NEXT( ssp );
+
+	return false;
+}
+
+float ship_get_turret_type_aggregate_hits(ship *shipp, int wi_index)
+{
+	float strength = 0.0f;
+	ship_subsys *ssp;
+
+	//	For a dying ship, all subsystem strengths are zero.
+	if (shipp->flags[Ship::Ship_Flags::Dying])
+		return 0.0f;
+
+	if ( shipp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
+		return 0.0f;
+	}
+
+	ssp = GET_FIRST(&shipp->subsys_list);
+	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
+		ship_weapon *swp = &ssp->weapons;
+		bool weapon_found = false;
+		for ( auto& i : swp->primary_bank_weapons ) {
+			if (weapon_found) {
+				break;
+			}
+			if (i == wi_index) {
+				weapon_found = true;
+				strength += ssp->current_hits;
+			}
+		}
+		for ( auto& i : swp->secondary_bank_weapons ) {
+			if (weapon_found) {
+				break;
+			}
+			if (i == wi_index) {
+				weapon_found = true;
+				strength += ssp->current_hits;
+			}
+		}
+		
+		ssp = GET_NEXT( ssp );
+	}
+
+	return strength;
+}
+
 //WMC
 static void ship_set_eye( object *obj, int eye_index)
 {
@@ -15537,7 +15598,7 @@ void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool 
 //
 // returns: pointer to subsystem if one found, NULL otherwise
 #define MAX_SUBSYS_ATTACKERS 3
-ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, const vec3d *attacker_pos)
+ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, const vec3d *attacker_pos, int wip_index = -1)
 {
 	ship_subsys	*ss;
 	ship_subsys *best_in_sight_subsys, *lowest_attacker_subsys, *ss_return;
@@ -15548,7 +15609,7 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, const vec
 	ss_return = best_in_sight_subsys = lowest_attacker_subsys = NULL;
 
 	for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-		if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) ) {
+		if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) && ( wip_index < 0 || turret_has_weapon(ss, wip_index)) ) {
 
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &Objects[sp->objnum].orient);
@@ -15600,7 +15661,7 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, const vec
  *                 to select the best subsystem to attack of that type (using line-of-sight)
  *                 and based on the number of ships already attacking the subsystem
  */
-ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos)
+ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos, int wip_index)
 {
 	Assertion(subsys_type > SUBSYSTEM_NONE && subsys_type < SUBSYSTEM_MAX, "Subsys_type %d must refer to a valid subsystem type!", subsys_type);
 
@@ -15610,7 +15671,7 @@ ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *atta
 		return nullptr;
 
 	if ( attacker_pos != nullptr ) {
-		return ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos);
+		return ship_get_best_subsys_to_attack(sp, subsys_type, attacker_pos, wip_index);
 	} else {
 		// next, scan the list of subsystems and search for the first subsystem of the particular
 		// type which has > 0 hits remaining.
@@ -17433,7 +17494,7 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
  * Find a subsystem matching 'type' inside the ship, and that is not destroyed.  
  * @return If cannot find one, return NULL.
  */
-ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
+ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos, int turret_wip_index)
 {
 	ship_subsys	*ssp;
 
@@ -17444,7 +17505,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 		return NULL;
 
 	// loop through all the subsystems, if we find a match that has some strength, return it
-	ssp = ship_get_best_subsys_to_attack(shipp, type, attacker_pos);
+	ssp = ship_get_best_subsys_to_attack(shipp, type, attacker_pos, turret_wip_index);
 
 	return ssp;
 }
@@ -17729,7 +17790,8 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
-	case AI_GOAL_DESTROY_SUBSYSTEM: {
+	case AI_GOAL_DESTROY_SUBSYSTEM:
+	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP: {
 		auto ship = ship_name_lookup(name);
 		if (ship < 0) {
 			return name;
@@ -17744,6 +17806,7 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	case AI_GOAL_GUARD_WING:
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
+	case AI_GOAL_DESTROY_TURRET_TYPE:
 	default:
 		return name;
 	}
@@ -17819,6 +17882,7 @@ SCP_string ship_return_orders(ship* sp)
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
+	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 		if (aigp->target_name) {
 			outbuf += target_name;
 		} else {
@@ -17840,6 +17904,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
+	case AI_GOAL_DESTROY_TURRET_TYPE:
 	case AI_GOAL_LUA:
 		// don't do anything, all info is in order_text
 		break;

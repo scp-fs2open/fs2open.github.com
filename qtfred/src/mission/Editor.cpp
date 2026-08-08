@@ -76,30 +76,32 @@ std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const 
 // NOTE: Certain goals (Form On Wing, Rearm, Chase Weapon, Fly To Ship) aren't listed here.  This may or may not be intentional,
 // but if they are added in the future, it will be necessary to verify correct functionality in the various FRED dialog functions.
 ai_goal_list Ai_goal_list[] = {
-	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
-	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE,				0 },
-	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
-	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
-	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD,				0 },
-	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
-	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
-	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
-	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
-	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
-	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
-	{ "Dock",					AI_GOAL_DOCK,				0 },
-	{ "Undock",					AI_GOAL_UNDOCK,				0 },
-	{ "Warp",					AI_GOAL_WARP,				0 },
-	{ "Evade ship",				AI_GOAL_EVADE_SHIP,			0 },
-	{ "Ignore ship",			AI_GOAL_IGNORE,				0 },
-	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,			0 },
-	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
-	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
-	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
-	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
+	{ "Waypoints",					AI_GOAL_WAYPOINTS,			0 },
+	{ "Waypoints once",				AI_GOAL_WAYPOINTS_ONCE,		0 },
+	{ "Attack",						AI_GOAL_CHASE,				0 },
+	{ "Attack",						AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
+	{ "Attack any ship",			AI_GOAL_CHASE_ANY,			0 },
+	{ "Attack ship class",			AI_GOAL_CHASE_SHIP_CLASS,	0 },
+	{ "Guard",						AI_GOAL_GUARD,				0 },
+	{ "Guard",						AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
+	{ "Disable ship",				AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",	AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
+	{ "Disarm ship",				AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",		AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
+	{ "Destroy subsystem",			AI_GOAL_DESTROY_SUBSYSTEM,	0 },
+	{ "Dock",						AI_GOAL_DOCK,				0 },
+	{ "Undock",						AI_GOAL_UNDOCK,				0 },
+	{ "Warp",						AI_GOAL_WARP,				0 },
+	{ "Evade ship",					AI_GOAL_EVADE_SHIP,			0 },
+	{ "Ignore ship",				AI_GOAL_IGNORE,				0 },
+	{ "Ignore ship (new)",			AI_GOAL_IGNORE_NEW,			0 },
+	{ "Stay near ship",				AI_GOAL_STAY_NEAR_SHIP,		0 },
+	{ "Keep safe distance",			AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
+	{ "Stay still",					AI_GOAL_STAY_STILL,			0 },
+	{ "Play dead",					AI_GOAL_PLAY_DEAD,			0 },
+	{ "Play dead (persistent)",		AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
+	{ "Destroy turret type",    	AI_GOAL_DESTROY_TURRET_TYPE, 0 },
+	{ "Destroy turret type on ship",AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP, 0 }
 };
 
 }

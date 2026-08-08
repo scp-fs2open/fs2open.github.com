@@ -87,35 +87,37 @@ char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 // Used in objecttypes.tbl to define custom ship types
 ai_goal_list Ai_goal_names[] =
 {
-	{ "Attack ship",			AI_GOAL_CHASE,					0 },
-	{ "Dock",					AI_GOAL_DOCK,					0 },
-	{ "Waypoints",				AI_GOAL_WAYPOINTS,				0 },
-	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,			0 },
-	{ "Depart",					AI_GOAL_WARP,					0 },
-	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM,		0 },
-	{ "Form on wing",			AI_GOAL_FORM_ON_WING,			0 },
-	{ "Undock",					AI_GOAL_UNDOCK,					0 },
-	{ "Attack wing",			AI_GOAL_CHASE_WING,				0 },
-	{ "Guard ship",				AI_GOAL_GUARD,					0 },
-	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,			0 },
-	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL,	0 },
-	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,			0 },
-	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL,	0 },
-	{ "Attack any",				AI_GOAL_CHASE_ANY,				0 },
-	{ "Ignore ship",			AI_GOAL_IGNORE,					0 },
-	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,				0 },
-	{ "Guard wing",				AI_GOAL_GUARD_WING,				0 },
-	{ "Evade ship",				AI_GOAL_EVADE_SHIP,				0 },
-	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,			0 },
-	{ "Keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
-	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,			0 },
-	{ "Stay still",				AI_GOAL_STAY_STILL,				0 },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD,				0 },
-	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,	0 },
-	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,			0 },
-	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,			0 },
-	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,		0 },
-	{ "Attack ship type",		AI_GOAL_CHASE_SHIP_TYPE,		0 },
+	{ "Attack ship",			   AI_GOAL_CHASE,					   0 },
+	{ "Dock",					   AI_GOAL_DOCK,					   0 },
+	{ "Waypoints",				   AI_GOAL_WAYPOINTS,				   0 },
+	{ "Waypoints once",			   AI_GOAL_WAYPOINTS_ONCE,			   0 },
+	{ "Depart",					   AI_GOAL_WARP,					   0 },
+	{ "Attack subsys",			   AI_GOAL_DESTROY_SUBSYSTEM,		   0 },
+	{ "Form on wing",			   AI_GOAL_FORM_ON_WING,			   0 },
+	{ "Undock",					   AI_GOAL_UNDOCK,					   0 },
+	{ "Attack wing",			   AI_GOAL_CHASE_WING,				   0 },
+	{ "Guard ship",				   AI_GOAL_GUARD,					   0 },
+	{ "Disable ship",			   AI_GOAL_DISABLE_SHIP,			   0 },
+	{ "Disable ship (tactical)",   AI_GOAL_DISABLE_SHIP_TACTICAL,	   0 },
+	{ "Disarm ship",			   AI_GOAL_DISARM_SHIP,			       0 },
+	{ "Disarm ship (tactical)",	   AI_GOAL_DISARM_SHIP_TACTICAL,	   0 },
+	{ "Attack any",				   AI_GOAL_CHASE_ANY,				   0 },
+	{ "Ignore ship",			   AI_GOAL_IGNORE,					   0 },
+	{ "Ignore ship (new)",		   AI_GOAL_IGNORE_NEW,				   0 },
+	{ "Guard wing",				   AI_GOAL_GUARD_WING,				   0 },
+	{ "Evade ship",				   AI_GOAL_EVADE_SHIP,				   0 },
+	{ "Stay near ship",			   AI_GOAL_STAY_NEAR_SHIP,			   0 },
+	{ "Keep safe dist",			   AI_GOAL_KEEP_SAFE_DISTANCE,		   0 },
+	{ "Rearm ship",				   AI_GOAL_REARM_REPAIR,			   0 },
+	{ "Stay still",				   AI_GOAL_STAY_STILL,				   0 },
+	{ "Play dead",				   AI_GOAL_PLAY_DEAD,				   0 },
+	{ "Play dead (persistent)",	   AI_GOAL_PLAY_DEAD_PERSISTENT,	   0 },
+	{ "Attack weapon",			   AI_GOAL_CHASE_WEAPON,			   0 },
+	{ "Fly to ship",			   AI_GOAL_FLY_TO_SHIP,			       0 },
+	{ "Attack ship class",		   AI_GOAL_CHASE_SHIP_CLASS,		   0 },
+	{ "Attack ship type",		   AI_GOAL_CHASE_SHIP_TYPE,		       0 },
+	{ "Attack turret type",        AI_GOAL_DESTROY_TURRET_TYPE,        0 },
+	{ "Attack turret type on ship",AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP,0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
@@ -131,6 +133,8 @@ const char *Ai_goal_text(ai_goal_mode goal, int submode)
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
 	case AI_GOAL_CHASE_SHIP_TYPE:
+	case AI_GOAL_DESTROY_TURRET_TYPE:
+	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 		return XSTR( "attack ", 474);
 	case AI_GOAL_DOCK:
 		return XSTR( "dock ", 475);
@@ -1045,6 +1049,17 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		aigp->ai_submode = -SUBSYSTEM_TURRET;
 		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
+		
+	case OP_AI_DESTROY_TURRET_TYPE:
+		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE;
+		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
+		break;
+		
+	case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
+		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
+		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
+		aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
+		break;
 
 	case OP_AI_WARP_OUT:
 		aigp->ai_mode = AI_GOAL_WARP;
@@ -1313,7 +1328,8 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	if (op == OP_AI_GUARD || 
 		op == OP_AI_GUARD_WING || 
 		op == OP_AI_WAYPOINTS || 
-		op == OP_AI_WAYPOINTS_ONCE) {
+		op == OP_AI_WAYPOINTS_ONCE ||
+		op == OP_AI_DESTROY_TURRET_TYPE) {
 		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
@@ -1326,7 +1342,8 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		op == OP_AI_DISARM_SHIP || 
 		op == OP_AI_DISARM_SHIP_TACTICAL || 
 		op == OP_AI_STAY_NEAR_SHIP ||
-		op == OP_AI_FLY_TO_SHIP) {
+		op == OP_AI_FLY_TO_SHIP ||
+		op == OP_AI_DESTROY_TURRET_TYPE_ON_SHIP) {
 		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}	
@@ -1536,6 +1553,14 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 		break;
 	case OP_AI_REARM_REPAIR:
 		priority = eval_priority_et_seq(CDDR(node));
+		goalmode = AI_GOAL_REARM_REPAIR;
+		break;
+	case OP_AI_DESTROY_TURRET_TYPE:
+		priority = eval_priority_et_seq(CDDR(node));
+		goalmode = AI_GOAL_REARM_REPAIR;
+		break;
+	case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
+		priority = eval_priority_et_seq(CDDDR(node));
 		goalmode = AI_GOAL_REARM_REPAIR;
 		break;
 	default:
@@ -1836,6 +1861,19 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
+	// similarly for attacking all turrets with a certain weapon class
+	if (aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+		for (auto so : list_range(&Ship_obj_list)) {
+			auto type_objp = &Objects[so->objnum];
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead] || aigp->int_data < 0 || aigp->int_data >= sz2i(Weapon_info.size()))
+				continue;
+			ship *potential_target_shipp = &Ships[type_objp->instance];
+			if (ship_get_turret_type_aggregate_hits(potential_target_shipp, aigp->int_data) > 0.0f) {
+				return ai_achievability::ACHIEVABLE;
+			}
+		}
+		return ai_achievability::NOT_KNOWN;
+	}
 
 	return_val = ai_achievability::SATISFIED;
 
@@ -1909,6 +1947,19 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			} else {
 				// see MWA 3/20/97 comment above - instead of checking the mission log, check the current hits
 				status = (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f) ? 1 : 0;
+			}
+			break;
+		}
+		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
+		{
+			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
+			// destroyed when shipnum is valid
+
+			// can't determine the status of this goal if ship not valid
+			if (!target_ship_entry || !target_ship_entry->has_shipp() || aigp->int_data < 0 || aigp->int_data >= sz2i(Weapon_info.size())) {
+				status = 0;
+			} else {
+				status = (ship_get_turret_type_aggregate_hits(target_ship_entry->shipp(), aigp->int_data) <= 0.0f) ? 1 : 0;
 			}
 			break;
 		}
@@ -2049,7 +2100,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 
 	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
-	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL))
+	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL || aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP))
 	{
 		if (target_ship_entry && target_ship_entry->has_shipp()) {
 			// if the ship has no turrets, we can't disarm it!
@@ -2212,6 +2263,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_FLY_TO_SHIP:
+		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 		{
 			if ( status == SHIP_STATUS_ARRIVED )
 				return ai_achievability::ACHIEVABLE;
@@ -2676,6 +2728,15 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
+	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP: {
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());
+		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP must refer to a valid weapon class!");
+		other_obj = current_goal_target_ship->objp();
+		ai_attack_object( objp, other_obj);
+		ai_set_attack_subsystem( objp, 0, current_goal->int_data );
+		break;
+	}
+
 	case AI_GOAL_CHASE_WING:
 		wingnum = wing_name_lookup( current_goal->target_name );
 		Assertion( wingnum >= 0, "The target of AI_GOAL_CHASE_WING must refer to a valid wing!" );
@@ -2684,6 +2745,12 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_CHASE_ANY:
 		ai_attack_object( objp, nullptr);
+		break;
+
+	case AI_GOAL_DESTROY_TURRET_TYPE:
+		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE must refer to a valid weapon class!");
+		ai_attack_object( objp, nullptr, -1, -1, current_goal->int_data);
+		ai_set_attack_subsystem( objp, 0, current_goal->int_data );
 		break;
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
@@ -2796,6 +2863,7 @@ void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *o
 					case AI_GOAL_DISABLE_SHIP_TACTICAL:
 					case AI_GOAL_DISARM_SHIP:
 					case AI_GOAL_DISARM_SHIP_TACTICAL:
+					case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 					case AI_GOAL_IGNORE:
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
@@ -2876,6 +2944,7 @@ bool query_referenced_in_ai_goals(ai_goal *goals, sexp_ref_type type, const char
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
 					case AI_GOAL_STAY_NEAR_SHIP:
+					case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 						flag = 1;
 				}
 				break;
