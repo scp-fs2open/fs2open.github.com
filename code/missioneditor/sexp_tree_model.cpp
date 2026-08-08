@@ -1254,6 +1254,7 @@ bool SexpTreeModel::is_operator_hidden(int op_value)
 		case OP_SET_DEBRIS_FIELD:
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_NEBULA_FADE_POOF:
+		case OP_SET_GUARD_RANGE:
 			return true;
 		default:
 			return false;
