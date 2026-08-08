@@ -73,6 +73,11 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	void setCurrentIconIndex(int idx);
 	vec3d getIconPosition() const;
 	void setIconPosition(const vec3d& pos);
+	void nudgeSelectedIcons(const vec3d& worldDelta); // moves the selected icon(s) by a world offset
+	// Relative multi-drag: snapshot the selected icons' positions, then move each by a world offset from
+	// its snapshot so a multi-selection keeps its relative layout instead of collapsing onto the cursor.
+	void beginIconDrag();
+	void dragSelectedIconsBy(const vec3d& worldDelta);
 	int getIconId() const;
 	// returns false if the requested id was rejected (e.g. it collides with another icon)
 	bool setIconId(int id);
@@ -109,7 +114,7 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	void setIconUseCargo(bool enabled);
 
 	void makeIcon(const SCP_string& label, int typeIndex, int teamIndex, int shipClassIndex);
-	void deleteCurrentIcon();
+	void deleteSelectedIcons(); // deletes every icon in the line selection on the current stage
 	void propagateCurrentIconForward();
 
 	int getBriefingMusicIndex() const;
@@ -165,6 +170,14 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 
 	SCP_vector<int> _lineSelection;
 	bool _changeLocally = false;
+
+	// Snapshot taken at drag start so a relative multi-drag can offset each icon from its own origin.
+	struct IconDragEntry {
+		int index;
+		int id;
+		vec3d pos;
+	};
+	SCP_vector<IconDragEntry> _iconDragBaseline;
 };
 
 } // namespace fso::fred::dialogs
