@@ -3317,7 +3317,7 @@ void process_countermeasure_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating that a turret has been fired
-void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius )
+void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius, float target_forward_speed )
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -3376,6 +3376,8 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_FLOAT(dist_to_target);
 
 	ADD_FLOAT(target_radius);
+
+	ADD_FLOAT(target_forward_speed);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3398,6 +3400,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	float angle1, angle2;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3415,6 +3418,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_FLOAT( angle2 );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3463,6 +3467,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object
@@ -8633,7 +8638,7 @@ void process_weapon_detonate_packet(ubyte *data, header *hinfo)
 }	
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius)
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius, float target_forward_speed)
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -8685,6 +8690,8 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	ADD_FLOAT( dist_to_target );
 
 	ADD_FLOAT( target_radius );
+
+	ADD_FLOAT( target_forward_speed );
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8706,6 +8713,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	float flak_range;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
@@ -8718,6 +8726,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( flak_range );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -8765,6 +8774,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object	

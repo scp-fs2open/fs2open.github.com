@@ -2061,9 +2061,9 @@ bool turret_fire_weapon(int weapon_num,
 						subsys_index = ship_get_subsys_index(turret);
 						Assert( subsys_index != -1 );
 						if(wip->wi_flags[Weapon::Info_Flags::Flak]){			
-							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
+							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target, launch_curve_data.target_radius, launch_curve_data.target_forward_speed );
 						} else {
-							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
+							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target, launch_curve_data.target_radius, launch_curve_data.target_forward_speed );
 						}
 					}
 
@@ -2137,6 +2137,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		tsi->turret->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	// create weapon and homing info
@@ -2188,7 +2189,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
-			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f);
+			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f, 0.f);
 		}
 	}
 }
@@ -2361,9 +2362,11 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	float turret_barrel_length = -1.0f;
 
 	float target_radius = 0.f;
+	float target_forward_speed = 0.f;
 
 	if (lep != nullptr) {
 		target_radius = lep->radius;
+		target_forward_speed = lep->phys_info.fspeed;
 	}
 
 	// grab the data for the launch curve inputs
@@ -2371,6 +2374,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 			ss->system_info->turret_num_firing_points,
 			base_dist_to_enemy,
 			target_radius,
+			target_forward_speed,
 	};
 
 	//WMC - go through all valid weapons. Fire spawns if there are any.
