@@ -328,8 +328,9 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 
 	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
 
-	#ifndef USE_OPENGL_ES
 	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
+
+	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
 	#else
 	ImGui_ImplOpenGL3_Init("#version 300 es");
