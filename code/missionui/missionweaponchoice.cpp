@@ -1371,12 +1371,10 @@ void wl_init_pool(team_data *td)
 
 	Assert( Wl_pool != NULL );
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Wl_pool[i] = 0;
-	}
+	Wl_pool->clear();
 
 	for ( i = 0; i < td->num_weapon_choices; i++ ) {
-		Wl_pool[td->weaponry_pool[i]] += td->weaponry_count[i];	// read from mission
+		(*Wl_pool)[td->weaponry_pool[i]] += td->weaponry_count[i];	// read from mission
 	}
 }
 
@@ -1446,7 +1444,7 @@ void wl_load_all_icons()
 		Wl_icons[i].model_index = -1;
 		Wl_icons[i].laser_bmap = -1;
 
-		if ( Wl_pool[i] > 0 ) {
+		if ( Wl_pool->value_or(i, 0) > 0 ) {
 			wl_load_icons(i);
 		}
 	}
@@ -1889,8 +1887,9 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 	for ( bank = 0; bank < MAX_SHIP_WEAPONS; bank++ ) {
 		wi_index = wep[bank];
 		if ( wi_index >= 0 ) {
-			if ( (wep_count[bank] > 0) && ((Wl_pool[wi_index] - wep_count[bank]) >= 0) ) {
-				Wl_pool[wi_index] -= wep_count[bank];
+			int pool_count = Wl_pool->value_or(wi_index, 0);
+			if ( (wep_count[bank] > 0) && ((pool_count - wep_count[bank]) >= 0) ) {
+				(*Wl_pool)[wi_index] -= wep_count[bank];
 			} else {
 				// not enough weapons in pool
 				// TEMP HACK: FRED doesn't fill in a weapons pool if there are no starting wings... so
@@ -1899,12 +1898,12 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 					wl_add_index_to_list(wi_index);
 				} else {
 
-					if ( (Wl_pool[wi_index] <= 0) || (wep_count[bank] == 0) ) {
+					if ( (pool_count <= 0) || (wep_count[bank] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
 						for (const auto &new_index : Player_weapon_precedence) {
 							Assertion(new_index >= 0, "Somehow, a negative index (%d) got into Player_weapon_precedence; this should not happen. Get a coder!", new_index);
 
-							if ( Wl_pool[new_index] <= 0 ) {
+							if ( Wl_pool->value_or(new_index, 0) <= 0 ) {
 								continue;
 							}
 
@@ -1943,10 +1942,14 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 						new_wep_count = wl_calc_missile_fit(wi_index, si.secondary_bank_ammo_capacity[secondary_bank_index]);
 					}
 
-					wep_count[bank] = MIN(new_wep_count, Wl_pool[wi_index]);
+					// re-read the count, since the precedence loop may have picked a different weapon
+					pool_count = Wl_pool->value_or(wi_index, 0);
+					wep_count[bank] = MIN(new_wep_count, pool_count);
 					Assert(wep_count[bank] >= 0);
-					Wl_pool[wi_index] -= wep_count[bank];
-					if ( wep_count[bank] <= 0 ) {
+					if ( wep_count[bank] > 0 ) {
+						(*Wl_pool)[wi_index] -= wep_count[bank];
+					} else {
+						// nothing to take
 						wep[bank] = -1;
 					}
 				}
@@ -2004,12 +2007,12 @@ void wl_init_icon_lists()
 		Slist[i] = -1;
 	}
 
-	for ( i = 0; i < weapon_info_size(); i++ ) {
-		if ( Wl_pool[i] > 0 ) {
-			if ( Weapon_info[i].subtype == WP_MISSILE ) {
-				Slist[Slist_size++] = i;
+	for ( const auto &[weapon_class, count] : *Wl_pool ) {
+		if ( count > 0 ) {
+			if ( Weapon_info[weapon_class].subtype == WP_MISSILE ) {
+				Slist[Slist_size++] = weapon_class;
 			} else {
-				Plist[Plist_size++] = i;
+				Plist[Plist_size++] = weapon_class;
 			}
 		}
 	}
@@ -3244,7 +3247,7 @@ void draw_wl_icon_with_number(int list_count, int weapon_class)
 	}
 
 	wl_render_icon(weapon_class, Wl_weapon_icon_coords[gr_screen.res][list_count][0], Wl_weapon_icon_coords[gr_screen.res][list_count][1],
-					   Wl_pool[weapon_class], 1, list_count, -1, weapon_class);
+					   Wl_pool->value_or(weapon_class, 0), 1, list_count, -1, weapon_class);
 }
 
 /**
@@ -3305,7 +3308,7 @@ void wl_pick_icon_from_list(int index)
 	Assert( Wl_pool != NULL );
 
 	// no weapons left of that class
-	if ( Wl_pool[weapon_class] <= 0 ) {
+	if ( Wl_pool->value_or(weapon_class, 0) <= 0 ) {
 		return;
 	}
 
@@ -3653,7 +3656,7 @@ void wl_saturate_bank(int ship_slot, int bank)
 
 		slot->wep_count[bank] -= overflow;
 		// add overflow back to pool
-		Wl_pool[slot->wep[bank]] += overflow;
+		(*Wl_pool)[slot->wep[bank]] += overflow;
 	}
 }
 
@@ -3726,7 +3729,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 				// so return the "to" to the list and just move the "from"
 
 				// put to_bank back into list
-				Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
+				(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
 				slot->wep[to_bank] = -1;											// remove from slot
 				slot->wep_count[to_bank] = 0;
 				*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
@@ -3737,7 +3740,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 
 	if ( class_mismatch_flag ) {
 		// put from_bank back into list
-		Wl_pool[slot->wep[from_bank]] += slot->wep_count[from_bank];		// return to list
+		(*Wl_pool)[slot->wep[from_bank]] += slot->wep_count[from_bank];		// return to list
 		slot->wep[from_bank] = -1;														// remove from slot
 		slot->wep_count[from_bank] = 0;
 		*sound=InterfaceSounds::ICON_DROP;
@@ -3812,7 +3815,7 @@ int wl_dump_to_list(int from_bank, int to_list, int ship_slot, interface_snd_id 
 	}
 
 	// put weapon bank to the list
-	Wl_pool[to_list] += slot->wep_count[from_bank];			// return to list
+	(*Wl_pool)[to_list] += slot->wep_count[from_bank];			// return to list
 	slot->wep[from_bank] = -1;										// remove from slot
 	slot->wep_count[from_bank] = 0;
 	*sound=InterfaceSounds::ICON_DROP;
@@ -3852,7 +3855,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	Assert(slot->wep[to_bank] < 0);
 
 	// ensure that pool has weapon
-	if ( Wl_pool[from_list] <= 0 ) {
+	if ( Wl_pool->value_or(from_list, 0) <= 0 ) {
 		return 0;
 	}
 
@@ -3885,11 +3888,12 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	}
 
 	// take weapon from list
-	if ( Wl_pool[from_list] < max_fit ) {
-		max_fit = Wl_pool[from_list];
+	int pool_count = Wl_pool->value_or(from_list, 0);
+	if ( pool_count < max_fit ) {
+		max_fit = pool_count;
 		update=2;
 	}
-	Wl_pool[from_list] -= max_fit;
+	(*Wl_pool)[from_list] -= max_fit;
 
 	// put on the slot
 	slot->wep[to_bank] = from_list;
@@ -3929,7 +3933,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	Assert(slot->wep[to_bank] >= 0);
 
 	// ensure that pool has weapon
-	if ( Wl_pool[from_list] <= 0 ) {
+	if ( Wl_pool->value_or(from_list, 0) <= 0 ) {
 		return 0;
 	}
 
@@ -3952,7 +3956,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	}
 
 	// dump slot weapon back into list
-	Wl_pool[slot->wep[to_bank]] += slot->wep_count[to_bank];
+	(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];
 	slot->wep_count[to_bank] = 0;
 	slot->wep[to_bank] = -1;
 
@@ -3966,10 +3970,11 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	}
 
 	// take weapon from list
-	if ( Wl_pool[from_list] < max_fit ) {
-		max_fit = Wl_pool[from_list];
+	int pool_count = Wl_pool->value_or(from_list, 0);
+	if ( pool_count < max_fit ) {
+		max_fit = pool_count;
 	}
-	Wl_pool[from_list] -= max_fit;
+	(*Wl_pool)[from_list] -= max_fit;
 
 	// put on the slot
 	slot->wep[to_bank] = from_list;

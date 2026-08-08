@@ -784,8 +784,8 @@ void multi_ts_sync_interface()
 	
 	// item 1 - determine how many ship types are available in the ship pool
 	Multi_ts_avail_count = 0;
-	for(idx = 0; idx < ship_info_size(); idx++) {
-		if(Ss_pool[idx] > 0){
+	for(const auto &[ship_class, count] : *Ss_pool) {
+		if(count > 0){
 			Multi_ts_avail_count++;
 		}
 	}
@@ -1307,23 +1307,23 @@ void multi_ts_blit_wing_callsigns()
 // blit the ships on the avail list
 void multi_ts_blit_avail_ships()
 {
-	int display_count,ship_count,idx;
+	int display_count,ship_count;
 	char count[6];
 
 	// blit the availability of all ship counts
 	display_count = 0;
 	ship_count = 0;
-	for(idx = 0; idx < ship_info_size(); idx++) {
-		if(Ss_pool[idx] > 0){
+	for(const auto &[ship_class, pool_count] : *Ss_pool) {
+		if(pool_count > 0){
 			// if our starting display index is after this, then skip it
 			if(ship_count < Multi_ts_avail_start){
 				ship_count++;
 			} else {
-				// blit the icon 
-				ss_blit_ship_icon(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD],Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],idx,multi_ts_avail_bmap_num(display_count));
+				// blit the icon
+				ss_blit_ship_icon(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD],Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],ship_class,multi_ts_avail_bmap_num(display_count));
 
 				// blit the ship count available
-				sprintf(count,"%d",Ss_pool[idx]);
+				sprintf(count,"%d",pool_count);
 				gr_set_color_fast(&Color_normal);
 				gr_string(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD] - 20,Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],count,GR_RESIZE_MENU);
 
@@ -1820,7 +1820,7 @@ void multi_ts_handle_mouse()
 			if(ship_class == -1){
 				region_empty = 1;
 			} else {
-				region_empty = (Ss_pool[ship_class] > 0) ? 0 : 1;
+				region_empty = (Ss_pool->value_or(ship_class, -1) > 0) ? 0 : 1;
 			}
 			break;
 		case MULTI_TS_SLOT_LIST:
@@ -1984,7 +1984,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 	switch(op_type){
 	case TS_GRAB_FROM_LIST:
 		// if there are no more of this ship class, its no go
-		if(Ss_pool_teams[pl->p_info.team][ship_class] <= 0){
+		if(Ss_pool_teams[pl->p_info.team].value_or(ship_class, -1) <= 0){
 			return 0;
 		}
 
@@ -2001,7 +2001,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 
 	case TS_SWAP_LIST_SLOT:
 		// if there are no more of this ship class, its no go
-		if(Ss_pool_teams[pl->p_info.team][ship_class] <= 0){
+		if(Ss_pool_teams[pl->p_info.team].value_or(ship_class, -1) <= 0){
 			return 0;
 		}
 
@@ -2388,22 +2388,17 @@ int multi_ts_move_player(int from_index,int to_index,interface_snd_id *sound,int
 // get the ship class of the current index in the avail list or -1 if none exists
 int multi_ts_get_avail_ship_class(int index)
 {
-	int ship_count,class_index;
+	int ship_count = index + Multi_ts_avail_start;
 
-	ship_count = index + Multi_ts_avail_start;
-	class_index = 0;
-	while((ship_count >= 0) && (class_index < ship_info_size())){
-		if(Ss_pool[class_index] > 0){
+	// find the Nth class with ships still available (the map iterates in ascending class
+	// order, which is the same order the avail list is rendered in)
+	for(const auto &[ship_class, count] : *Ss_pool){
+		if(count > 0){
+			if(ship_count == 0){
+				return ship_class;
+			}
 			ship_count--;
 		}
-
-		if(ship_count >= 0){
-			class_index++;
-		}
-	}
-
-	if(ship_count < 0){
-		return class_index;
 	}
 
 	return -1;
