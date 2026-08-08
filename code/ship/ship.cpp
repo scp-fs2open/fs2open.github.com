@@ -4344,7 +4344,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		float help_hull_val;
 		stuff_float(&help_hull_val);
 		if (help_hull_val > 0.0f && help_hull_val <= 1.0f) {
-			sip->ask_help_shield_percent = help_hull_val;
+			sip->ask_help_hull_percent = help_hull_val;
 		} else {
 			error_display(0,"Ask Help Hull Percent for ship class %s is %f. This value is not within range of 0-1.0."
 			              "Assuming default value of %f.", sip->name, help_hull_val, DEFAULT_ASK_HELP_HULL_PERCENT);
