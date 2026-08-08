@@ -217,7 +217,23 @@ void lcl_init(int lang_init)
 	int lang = -1;
 	if (lang_init < 0) {
 
-		// first we start with any persisted in-game option choice
+		// Register a -lang command line flag as an override *before* consulting the in-game option below, so
+		// that lookup already returns the cmdline-selected language on the modern (Using_in_game_options) path,
+		// instead of the override only being reachable via the redundant "now try the commandline" tier further
+		// down (which only ever ran on the legacy, !Using_in_game_options path anyway, since the option lookup's
+		// always-valid default index meant `lang` was never still negative by the time execution reached it).
+		if (!Cmdline_lang.empty()) {
+			int cmdline_lang_idx = lcl_find_lang_index_by_name(Cmdline_lang);
+			if (SCP_vector_inbounds(Lcl_languages, cmdline_lang_idx)) {
+				SCP_string override_json =
+					json_dump_string_new(language_serializer(cmdline_lang_idx), JSON_COMPACT | JSON_ENSURE_ASCII);
+				options::OptionsManager::instance()->setOverride("Game.Language", override_json, "-lang");
+			} else {
+				Warning(LOCATION, "Unrecognized -lang value \"%s\"; ignoring.", Cmdline_lang.c_str());
+			}
+		}
+
+		// first we start with any persisted in-game option choice (or the -lang override registered above)
 		if (Using_in_game_options) {
 			lang = LanguageOption->getValue();
 
@@ -227,7 +243,8 @@ void lcl_init(int lang_init)
 			}
 		}
 
-		// now try the the commandline
+		// now try the the commandline (only still reachable on the legacy !Using_in_game_options path, since
+		// the override above already resolves this for the modern path)
 		if (lang < 0) {
 			if (!Cmdline_lang.empty()) {
 				lang = lcl_find_lang_index_by_name(Cmdline_lang);
