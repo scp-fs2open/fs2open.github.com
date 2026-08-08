@@ -62,7 +62,6 @@ struct reinforcements;
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
-#define MAX_MENU_ITEMS 50   // max number of items in the menu
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 
 // following are defines and character strings that are used as part of messaging mode
@@ -80,11 +79,16 @@ typedef struct mmode_item {
 	int instance;    // instance in Ships/Wings array of this menu item
 	int active;      // active items are in bold text (1) -- inactive items greyed out (0) -- hidden objects not rendered (-1)
 	SCP_string text; // text to display on the menu
+	mmode_item(int param_instance, int param_active, SCP_string param_text) {
+		instance = param_instance;
+		active = param_active;
+		text = std::move(param_text);
+	};
 } mmode_item;
 
 extern char Squad_msg_title[256];
-extern mmode_item MsgItems[MAX_MENU_ITEMS];
-extern int Num_menu_items; // number of items for a message menu
+extern SCP_vector<mmode_item> MsgItems;
+extern bool Rebuild_MsgItems;
 
 typedef struct player_order {
 private:

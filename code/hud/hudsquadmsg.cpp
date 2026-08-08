@@ -104,8 +104,8 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 // following defines/vars are used to build menus that are used in messaging mode
 
 char Squad_msg_title[256] = "";
-mmode_item MsgItems[MAX_MENU_ITEMS];
-int Num_menu_items = -1; // number of items for a message menu
+SCP_vector<mmode_item> MsgItems;
+bool Rebuild_MsgItems = true;
 
 static int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
 static int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
@@ -218,7 +218,7 @@ void hud_squadmsg_start()
 	Msg_key = -1;
 	Msg_key_set_from_scripting = false;
 
-	Num_menu_items = -1;													// reset the menu items
+	Rebuild_MsgItems = true;												// reset the menu items
 	First_menu_item = 0;
 	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
 	Display_selector = false;
@@ -376,11 +376,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		count++;
 		if (add_to_menu)
 		{
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = shipp->get_display_name();
-			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
-			MsgItems[Num_menu_items].active = 1;
-			Num_menu_items++;
+			MsgItems.emplace_back(SHIP_INDEX(shipp), 1, shipp->get_display_name());
 		}
 	}
 
@@ -431,11 +427,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[wingnum]) ) {
 			count++;
 			if ( add_to_menu ) {
-				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[wingnum].get_display_name();
-				MsgItems[Num_menu_items].instance = wingnum;
-				MsgItems[Num_menu_items].active = 1;
-				Num_menu_items++;
+				MsgItems.emplace_back(wingnum, 1, Wings[wingnum].get_display_name());
 			}
 		}
 	}
@@ -452,11 +444,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[i]) ) {
 			count++;
 			if ( add_to_menu ) {
-				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[i].get_display_name();
-				MsgItems[Num_menu_items].instance = i;
-				MsgItems[Num_menu_items].active = 1;
-				Num_menu_items++;
+				MsgItems.emplace_back(i, 1, Wings[i].get_display_name());
 			}
 		}
 	}
@@ -469,15 +457,16 @@ int hud_squadmsg_count_wings( int add_to_menu )
 void hud_squadmsg_do_mode( int mode )
 {
 	Squad_msg_mode = mode;
-	Num_menu_items = -1;
+	MsgItems.clear();
+	Rebuild_MsgItems = true;
 	First_menu_item = 0;
 }
 
 void hud_squadmsg_page_down()
 {
-	if ( (First_menu_item + MAX_MENU_DISPLAY) < Num_menu_items ) {
+	if ( !Rebuild_MsgItems && (First_menu_item + MAX_MENU_DISPLAY) < sz2i(MsgItems.size()) ) {
 		First_menu_item += MAX_MENU_DISPLAY;
-		Assert ( First_menu_item < Num_menu_items );
+		Assert ( First_menu_item < sz2i(MsgItems.size()) );
 	}
 }
 
@@ -503,16 +492,18 @@ void hud_squadmsg_selection_move_down() {
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
+		int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
+
 		//Move to next page if we went outside of current one
 		if (Selected_menu_item == MAX_MENU_DISPLAY 
-			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+			&& (First_menu_item + MAX_MENU_DISPLAY < msg_items_size))
 		{
 			hud_squadmsg_page_down();
 			Selected_menu_item = 0;
 		}
 
 		//Select the first menu item if we went outside items range, so we can loop around
-		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
+		if (First_menu_item + Selected_menu_item >= msg_items_size) 
 		{
 			First_menu_item = 0;
 			Selected_menu_item = First_menu_item;
@@ -543,11 +534,12 @@ void hud_squadmsg_selection_move_up() {
 		//Select the last menu item if we went outside items range, so we can loop around
 		else if (Selected_menu_item < 0) 
 		{
+			int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
 			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
 			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
 			//exactly like pageUp/pageDown does
-			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
-			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
+			First_menu_item = ((msg_items_size - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
+			Selected_menu_item = msg_items_size - 1 - First_menu_item;
 		}
 	}
 }
@@ -560,7 +552,7 @@ void hud_squadmsg_selection_select() {
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
 		//Check if selected option is even active
-		if ((MsgItems[Selected_menu_item + First_menu_item].active > 0))
+		if ((sz2i(MsgItems.size()) > Selected_menu_item + First_menu_item) && (MsgItems[Selected_menu_item + First_menu_item].active > 0))
 		{
 			Msg_key_used = 1;
 			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
@@ -579,7 +571,7 @@ int hud_squadmsg_get_total_keys()
 	int num_keys_used;
 
 	num_keys_used = MAX_KEYS_NO_SCROLL;
-	if ( Num_menu_items > MAX_MENU_DISPLAY )
+	if ( sz2i(MsgItems.size()) > MAX_MENU_DISPLAY )
 		num_keys_used = MAX_KEYS_USED;
 
 	return num_keys_used;
@@ -669,15 +661,16 @@ int hud_squadmsg_get_key()
 			} else if ( k == KEY_ESC ) {
 				hud_squadmsg_toggle();
 				return -1;
-			} else if ( (i < Num_menu_items) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) )		// return any key if selecting reinforcement
+			} else if ( (i < sz2i(MsgItems.size())) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) ) {		// return any key if selecting reinforcement
 				return i;
+			}
 
 			// play general fail sound if inactive item hit.
-			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active == 0)) {
+			else if ((i + First_menu_item < sz2i(MsgItems.size())) && (MsgItems[i + First_menu_item].active == 0)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
-			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active > 0)) {	// only return keys that are associated with menu items
+			else if ((i + First_menu_item < sz2i(MsgItems.size())) && (MsgItems[i + First_menu_item].active > 0)) {	// only return keys that are associated with menu items
 				return i + First_menu_item;
 			}
 
@@ -1779,24 +1772,26 @@ void hud_squadmsg_type_select( )
 
 	num_order_types += (int)lua_cat_list.size();
 
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
+
 	// Add the items
 	for (i = 0; i < num_order_types; i++)
 	{
+
 		if (i < NUM_COMM_ORDER_TYPES) {
-			MsgItems[i].text = Comm_order_types[i];
+			MsgItems.emplace_back(0, 1, Comm_order_types[i]); // assume active
 		} else {
-			MsgItems[i].text = lua_cat_list[i - NUM_COMM_ORDER_TYPES];
-		}
-		MsgItems[i].active = 1;						// assume active
+			MsgItems.emplace_back(0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]); // assume active
+		}				
 	}
-	Num_menu_items = num_order_types;
 
 
 	// check to see if the player is a traitor.  If so, then he will not
 	// be able to do anything from this menu
 	if ((Player_ship != NULL) && (Player_ship->team == Iff_traitor)) {
-		for (i = 0; i < MAX_MENU_ITEMS; i++ )
-			MsgItems[i].active = 0;
+		for (auto &item : MsgItems)
+			item.active = 0;
 		goto do_main_menu;
 	}
 
@@ -1833,8 +1828,8 @@ void hud_squadmsg_type_select( )
 	//
 	// also, only allow support ship if this player is not allowed to messaage. 
 	if ( (hud_communications_state(Player_ship) != COMM_OK) || ((Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player)) ) {
-		for ( i = 0; i < MAX_MENU_ITEMS; i++ ){
-			MsgItems[i].active = 0;
+		for (auto &item : MsgItems){
+			item.active = 0;
 		}
 
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
@@ -1877,7 +1872,7 @@ do_main_menu:
 	strcpy_s(Squad_msg_title, XSTR( "Message What", 316));
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {							// when k != -1, we have a key that associates with menu item
-		Assert ( k < Num_menu_items );
+		Assert ( k < sz2i(MsgItems.size()) );
 		if ( k == TYPE_SHIP_ITEM ){
 			hud_squadmsg_do_mode( SM_MODE_SHIP_SELECT );
 		} else if ( k == TYPE_WING_ITEM ) {
@@ -1907,8 +1902,9 @@ void hud_squadmsg_ship_select()
 {
 	int k;
 
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 		hud_squadmsg_count_ships( 1 );
 	}
 
@@ -1934,8 +1930,9 @@ void hud_squadmsg_wing_select()
 {
 	int k;
 
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 		hud_squadmsg_count_wings( 1 );
 	}
 
@@ -2045,8 +2042,9 @@ void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int  /*playe
 // function to display a list of reinforcements available to the player
 void hud_squadmsg_reinforcement_select()
 {
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 
 		int i = -1;
 		for (const auto &reinforcement: Reinforcements) {
@@ -2092,16 +2090,7 @@ void hud_squadmsg_reinforcement_select()
 				r_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
 			}
 
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = r_name;
-			MsgItems[Num_menu_items].instance = i;
-			MsgItems[Num_menu_items].active = 0;
-
-			if ( reinforcement.flags & RF_IS_AVAILABLE ) {
-				MsgItems[Num_menu_items].active = 1;
-			}
-
-			Num_menu_items++;
+			MsgItems.emplace_back(i, (reinforcement.flags & RF_IS_AVAILABLE), r_name); // set the item to active if reinforcement is available
 		}
 	}
 
@@ -2158,25 +2147,23 @@ void hud_squadmsg_ship_command()
 		default_orders.insert(default_messages.cbegin(), default_messages.cend());
 	}
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	for(size_t order_id : default_orders) {
-		Assert (Num_menu_items < MAX_MENU_ITEMS);
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-		MsgItems[Num_menu_items].instance = (int)order_id;
-		MsgItems[Num_menu_items].active = 0;
+		MsgItems.emplace_back((int)order_id, 0, Player_orders[order_id].localized_name);
 
 		// check the bit to see if the command is active
 		if (orders.find(order_id) != orders.end())
-			MsgItems[Num_menu_items].active = 1;
+			MsgItems.back().active = 1;
 
 		// if the order cannot be carried out by the ship, then item should be inactive
 		if ((Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid(Msg_instance, (int)order_id))
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
 		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// if messaging all fighters, see if we should gray out the order if no one will accept it,
 		// or modify the text if only some of the ships will accept it
@@ -2208,14 +2195,13 @@ void hud_squadmsg_ship_command()
 			if (!all_accept) {
 				// either modify the text if a partial accept, or grey it out if no one accepts
 				if (partial_accept) {
-					MsgItems[Num_menu_items].text += XSTR("(*)", 320);
+					MsgItems.back().text += XSTR("(*)", 320);
 				} else {
-					MsgItems[Num_menu_items].active = 0;
+					MsgItems.back().active = 0;
 				}
 			}
 		}
 
-		Num_menu_items++;
 	
 	}
 
@@ -2225,7 +2211,7 @@ void hud_squadmsg_ship_command()
 	// when we get a valid goal, we must add the goal to the ai ship's goal list
 
 	if ( k != -1 ) {
-		Assert ( k < Num_menu_items );
+		Assert ( k < sz2i(MsgItems.size()) );
 		// when messaging all fighters or ignoring target, call the send_to_all_fighters routine
 		// Goober5000 - ignore no longer sends to all fighters
 		if (Msg_instance == MESSAGE_ALL_FIGHTERS)
@@ -2241,9 +2227,9 @@ void hud_squadmsg_msg_general()
 {
 	int k;
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	for (size_t order_id = 0; order_id < Player_orders.size(); order_id++) {
-		Assert(Num_menu_items < MAX_MENU_ITEMS);
 
 		if (Player_orders[order_id].lua_id <= 0) {
 			continue;
@@ -2263,17 +2249,12 @@ void hud_squadmsg_msg_general()
 
 		//Only add it if it is enabled for the mission
 		if (lua_porder->cur_enabled) {
-
-			MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-			MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
-			MsgItems[Num_menu_items].active = (int)lua_porder->cur_valid;
+			MsgItems.emplace_back(Player_orders[order_id].lua_id, (int)lua_porder->cur_valid, Player_orders[order_id].localized_name);
 
 			// do some other checks to possibly gray out other items.
 			// if no target, remove any items which are associated with the players target
 			if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
-				MsgItems[Num_menu_items].active = 0;
-
-			Num_menu_items++;
+				MsgItems.back().active = 0;
 		}
 	}
 
@@ -2283,7 +2264,7 @@ void hud_squadmsg_msg_general()
 	// when we get a valid goal, we must add the goal to the ai ship's goal list
 
 	if (k != -1) {
-		Assert(k < Num_menu_items);
+		Assert( k < sz2i(MsgItems.size()) );
 		
 		ai_lua_start_general(MsgItems[k].instance, Player_ai->target_objnum);
 
@@ -2314,7 +2295,8 @@ void hud_squadmsg_wing_command()
 	
 	default_orders.erase(CAPTURE_TARGET_ITEM); // we cannot capture any target with a wing.
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	shipnum = wingp->ship_index[wingp->special_ship];
 	Assertion(shipnum >= 0, "Special ship (%d) for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->special_ship, wingp->name, shipnum);
 	orders = Ships[shipnum].orders_accepted;		// get the orders that the wing leader will accept
@@ -2322,24 +2304,21 @@ void hud_squadmsg_wing_command()
 	for ( size_t order_id : default_orders ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
-		Assert ( Num_menu_items < MAX_MENU_ITEMS );
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-		MsgItems[Num_menu_items].instance = (int)order_id;
-		MsgItems[Num_menu_items].active = 0;
+		MsgItems.emplace_back((int)order_id, 0, Player_orders[order_id].localized_name);
 
 		// possibly grey out the menu item depending on whether or not the "wing" will accept this order
 		// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
 		if ( orders.find(order_id) != orders.end() )
-			MsgItems[Num_menu_items].active = 1;
+			MsgItems.back().active = 1;
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
 		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0, true) )
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// if no ship in the wing can depart then gray out the departure order
 		if (order_id == DEPART_ITEM) {
-			if (MsgItems[Num_menu_items].active > 0) {
+			if (MsgItems.back().active > 0) {
 				int active = 0;
 				for (int i = 0; i < wingp->current_count; i++) {
 					if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
@@ -2347,12 +2326,9 @@ void hud_squadmsg_wing_command()
 						break;
 					}
 				}
-				MsgItems[Num_menu_items].active = active;
+				MsgItems.back().active = active;
 			}
-		}
-
-		Num_menu_items++;
-	
+		}	
 	}
 
 	
@@ -2904,15 +2880,17 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderString(x + Header_offsets[0], y + fl2i(Header_offsets[1] * scale), title, scale, config);
 	}
 
+	int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
+
 	int nitems;
 	if (!config) {
-		if (Num_menu_items < MAX_MENU_DISPLAY)
-			nitems = Num_menu_items;
+		if (msg_items_size < MAX_MENU_DISPLAY)
+			nitems = msg_items_size;
 		else {
 			if (First_menu_item == 0) // First_menu_item == 0 means first page of items
 				nitems = MAX_MENU_DISPLAY;
-			else if ((Num_menu_items - First_menu_item) <= MAX_MENU_DISPLAY) // check if remaining items fit on one page
-				nitems = Num_menu_items - First_menu_item;
+			else if (msg_items_size - First_menu_item <= MAX_MENU_DISPLAY) // check if remaining items fit on one page
+				nitems = msg_items_size - First_menu_item;
 			else {
 				nitems = MAX_MENU_DISPLAY;
 			}
@@ -3001,7 +2979,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	// maybe draw an extra line in to make room for [pgdn], or for the 'no active items'
 	// display
-	if (!config && (!messaging_allowed || none_valid || ((First_menu_item + nitems) < Num_menu_items) || (Msg_shortcut_command != -1))) {
+	if (!config && (!messaging_allowed || none_valid || ((First_menu_item + nitems) < msg_items_size) || (Msg_shortcut_command != -1))) {
 		// blit the background
 		setGaugeColor(HUD_C_NONE, config);
 		if ( Mbox_gauge[1].first_frame >= 0 ) {		
@@ -3026,7 +3004,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderPrintf(x + fl2i(Pgup_offsets[0] * scale), y + fl2i(Pgup_offsets[1] * scale), scale, config, "%s", XSTR( "[pgup]", 312) );
 	}
 
-	if ( (First_menu_item + nitems) < Num_menu_items ) {
+	if ( (First_menu_item + nitems) < msg_items_size ) {
 		renderPrintf(x + fl2i(Pgdn_offsets[0] * scale), y + fl2i(Pgdn_offsets[1] * scale), scale, config, "%s", XSTR( "[pgdn]", 313));
 	}
 
