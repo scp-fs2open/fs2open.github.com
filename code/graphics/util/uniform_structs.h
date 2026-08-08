@@ -147,7 +147,31 @@ struct shadow_cascade_static_data {
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
+
+	// Ray cull mask for raytraced shadow queries (traceShadowRay()/shadows.sdr). Excludes
+	// the viewer ship's own hull TLAS instance (TLAS_MASK_VIEWER_HULL, shadows.h) outside
+	// the cockpit pass, matching the rasterized path's exclusion of Viewer_obj from the
+	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
+	int shadow_ray_cull_mask;
+	float pad[3]; // pad shadow_ray_world_offset's offset to 16-byte alignment (std140 vec3 rule)
+
+	// World-space correction added to the RT shadow ray's reconstructed position before
+	// tracing. Zero everywhere except the cockpit pass: ship_render_player_ship() renders
+	// the cockpit using a view matrix anchored at `leaning_position` and model positions
+	// offset in that same un-translated frame (never combined with objp->pos), so the
+	// reconstructed position isn't true world space like the shadow TLAS is. Adding the
+	// viewer ship's world position back here closes that gap -- see
+	// shadow_cascade_params_bind() (shadows.cpp) for where this is set.
+	vec3d shadow_ray_world_offset;
+	float pad2; // keep shadow_proj_matrix[]'s offset 16-byte aligned (std140)
 };
+// Must match the GLSL shadowCascadeParams block's implicit std140 padding
+// exactly (16 [4 leading scalars] + 64 [matrix4] + 4 [shadow_ray_cull_mask]
+// + 12 [pad[3]] + 12 [shadow_ray_world_offset] + 4 [pad2] = 112) --
+// shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
+// this struct via sizeof(), so a mismatch here silently shifts every cascade
+// matrix in the buffer, in both backends.
+static_assert(sizeof(shadow_cascade_static_data) == 112, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

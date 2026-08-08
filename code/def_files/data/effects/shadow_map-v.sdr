@@ -44,6 +44,12 @@ uniform shadowCascadeParams {
     float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
+
+	// shadow_ray_cull_mask/shadow_ray_world_offset: see shadow_cascade_static_data
+	// (uniform_structs.h) for what these mean and shadow_cascade_params_bind()
+	// (shadows.cpp) for how they're set.
+	int shadow_ray_cull_mask;
+	vec3 shadow_ray_world_offset;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
