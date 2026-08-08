@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::LensApertureDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::LensApertureDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>460</width>
+    <height>640</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Camera Lens</string>
+  </property>
+  <layout class="QVBoxLayout" name="rootLayout">
+   <item>
+    <widget class="QLabel" name="noLensWarningLabel">
+     <property name="text">
+      <string>No camera lens is mounted (Camera Lens is &quot;Default&quot; with no $Default Lens: in the tables, or &quot;None&quot;), so these edits have nothing to visibly change. Pick a lens above first.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color: #cc8800;</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaContents">
+      <!-- Deliberately empty. Every control in this dialog is built at runtime
+           from the field table in LensApertureDialog.cpp: spelling the fields out
+           here as well would make the .ui a second list to keep in step with the
+           code that reads and writes them, which is exactly what that table
+           exists to prevent. -->
+      <layout class="QVBoxLayout" name="scrollAreaLayout"/>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="bottomButtonLayout">
+     <item>
+      <widget class="QPushButton" name="resetButton">
+       <property name="text">
+        <string>Reset to Lens Default</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="bottomButtonSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="closeButton">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>closeButton</sender>
+   <signal>clicked()</signal>
+   <receiver>fso::fred::dialogs::LensApertureDialog</receiver>
+   <slot>close()</slot>
+  </connection>
+ </connections>
+</ui>

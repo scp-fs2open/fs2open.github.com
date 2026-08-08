@@ -1,0 +1,38 @@
+; A xxx-lens.tbm that edits lenses the engine's own lens_flares.tbl shipped,
+; which is what +override exists for. Named "zz-" so it parses after any other
+; *-lens.tbm a test mod dir might carry.
+
+#Lens Systems
+
+; Restyle a shipped lens without restating its twelve-surface prescription.
+; Everything not mentioned here -- the surfaces, the entrance pupil, the sensor
+; width, the blade count -- has to survive untouched.
+$Name: angenieux_100mm
++override
+$Anamorphic Squeeze: 2.0
+$Intensity: 0.75
+
+; Overriding the prescription replaces it outright: this two-element lens must
+; end up with exactly the surfaces below and none of the Tessar's.
+$Name: tessar_50mm
++override
+$Lens Stack Start:
+$Surface: ( 60.0, 5.0, 1.62 )
++Abbe: 55.0
+$Stop: ( 4.0 )
+$Surface: ( -60.0, 40.0, 1.0 )
+$Lens Stack End
+
+; No +override: a complete definition that replaces the shipped lens of this
+; name outright, so its surface count must be this one's and not the shipped
+; one's
+$Name: kodak_100mm
+$Entrance Pupil Radius: 11.0
+$Aperture Radius: 6.0
+$Lens Stack Start:
+$Surface: ( 55.0, 4.0, 1.62 )
+$Stop: ( 3.0 )
+$Surface: ( -55.0, 35.0, 1.0 )
+$Lens Stack End
+
+#End

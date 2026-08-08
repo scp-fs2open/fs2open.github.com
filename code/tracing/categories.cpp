@@ -32,6 +32,7 @@ Category SMAACalculateBlendingWeights("SMAA Calculate BLending Weights", true);
 Category SMAANeighborhoodBlending("SMAA Neighborhood Blending", true);
 Category SMAAResolve("SMAA Resolve", true);
 Category Lightshafts("Lightshafts", true);
+Category LensFlare("Lens flare", true);
 Category DrawPostEffects("Draw post effects", true);
 
 Category RenderBatchItem("Render batch item", true);

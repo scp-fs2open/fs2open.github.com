@@ -89,28 +89,6 @@ static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graph
                      .parser(parse_texture_filtering_func)
                      .finish();
 
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
-	}
-
-	if (max <= 2.0f) {
-		return SCP_vector<float>();
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
 static SCP_string anisotropic_display(float val)
 {
 	if (val < 2.0f) {
@@ -134,7 +112,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
@@ -189,7 +167,14 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
+	// Seed from the legacy config key first: TextureFilteringOption's default_func returns
+	// GL_mipmap_filter, so this read is what supplies that default. Only then let the option
+	// override it, the same order the anisotropy setting below uses.
 	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
+
+	if (Using_in_game_options) {
+		GL_mipmap_filter = TextureFilteringOption->getValue();
+	}
 
 	if (GL_mipmap_filter > 1) {
 		GL_mipmap_filter = 1;

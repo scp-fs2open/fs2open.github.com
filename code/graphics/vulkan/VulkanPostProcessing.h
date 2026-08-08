@@ -275,6 +275,91 @@ private:
 };
 
 /**
+ * @brief Physically-based lens flares (ghost quads + starburst billboard)
+ *
+ * Self-contained subsystem that additively composites the precomputed lens
+ * flare instances (see graphics/lens_flare.h) onto the HDR scene color,
+ * immediately before bloom. Owns a loadOp=eLoad render pass on the scene
+ * color, a small dedicated per-frame UBO ring (the per-ghost array exceeds
+ * the shared scratch ring's slot size), and the static aperture/starburst
+ * textures uploaded from the CPU-generated pixel data of the active lens.
+ */
+class VulkanLensFlare {
+public:
+	/**
+	 * @brief Create render pass/framebuffer/UBO resources
+	 * @param sceneColor Scene HDR color target to composite into (must outlive this)
+	 */
+	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor);
+	void shutdown();
+
+	/**
+	 * @brief Recreate the scene-color framebuffer after a resize (render pass kept)
+	 *
+	 * Device must be idle. Returns false on failure (caller should shut the
+	 * subsystem down).
+	 */
+	bool resize();
+
+	/**
+	 * @brief Per-frame UBO ring cursor reset (called from VulkanPostProcessor::beginFrame)
+	 */
+	void beginFrame(uint32_t frameIndex)
+	{
+		if (m_ubo.isValid()) {
+			m_ubo.resetCursor(frameIndex);
+		}
+	}
+
+	/**
+	 * @brief Draw the flare instances of every flaring sun additively onto the scene color
+	 *
+	 * No-op when no lens-equipped sun is visible. Scene color must be in
+	 * eShaderReadOnlyOptimal (the state after the scene render pass ends) and
+	 * is returned to eShaderReadOnlyOptimal, matching what bloom expects.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void execute(vk::CommandBuffer cmd);
+
+	bool isInitialized() const { return m_initialized; }
+
+private:
+	bool createFramebuffer();
+
+	/**
+	 * @brief Upload the iris/starburst textures of the mounted lens, if not already uploaded
+	 */
+	bool ensureTextures(int lensIdx);
+	void releaseTextures(bool deferred);
+	void forgetTextures();
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+
+	vk::RenderPass m_renderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
+	vk::Framebuffer m_sceneColorFB;   // Scene color as attachment 0
+
+	// Dedicated per-frame UBO ring: lens_flare_data (~5 KB) exceeds the shared
+	// scratch ring's slot size (see PostProcessContext::SCRATCH_UBO_SLOT_SIZE).
+	// One slot per visible sun per scene render (see LENS_FLARE_UBO_SLOTS).
+	PerFrameUboRing m_ubo;
+
+	// Static iris/starburst textures of the mounted camera lens, shared by every
+	// sun's flare
+	vk::Image m_apertureImage;
+	vk::ImageView m_apertureView;
+	VulkanAllocation m_apertureAlloc;
+	vk::Image m_starburstImage;
+	vk::ImageView m_starburstView;
+	VulkanAllocation m_starburstAlloc;
+	int m_texLensIdx = -1;
+	unsigned int m_texGeneration = 0;
+
+	bool m_initialized = false;
+};
+
+/**
  * @brief Deferred geometry buffer (G-buffer) + optional MSAA G-buffer & resolve
  *
  * Cohesive subsystem owning the single-sample G-buffer targets (position, normal,
@@ -793,7 +878,11 @@ public:
 	 * fullscreen pass of the frame (mid-scene fog included), so subsystems must
 	 * not reset it themselves.
 	 */
-	void beginFrame(uint32_t frameIndex) { m_ctx.scratchRing.resetCursor(frameIndex); }
+	void beginFrame(uint32_t frameIndex)
+	{
+		m_ctx.scratchRing.resetCursor(frameIndex);
+		m_lensFlare.beginFrame(frameIndex);
+	}
 
 	/**
 	 * @brief Get the HDR scene render pass (for 3D scene rendering)
@@ -892,6 +981,17 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
 	void executeBloom(vk::CommandBuffer cmd) { m_bloom.execute(cmd); }
+
+	/**
+	 * @brief Execute the physically-based lens flare pass
+	 *
+	 * Called immediately before executeBloom() so the flare energy is bloomed
+	 * and tonemapped like any other HDR scene content. No-op when no
+	 * lens-equipped sun is visible. Must be called outside a render pass.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeLensFlare(vk::CommandBuffer cmd) { m_lensFlare.execute(cmd); }
 
 	/**
 	 * @brief Execute tonemapping pass (HDR scene → LDR)
@@ -1173,6 +1273,9 @@ private:
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;
+
+	// ---- Physically-based lens flares (self-contained subsystem) ----
+	VulkanLensFlare m_lensFlare;
 
 	// ---- LDR / FXAA / post-effects / lightshafts (self-contained subsystem) ----
 	VulkanLDR m_ldr;

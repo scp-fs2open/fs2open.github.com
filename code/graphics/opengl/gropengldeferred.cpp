@@ -86,7 +86,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
 		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
-		opengl_draw_full_screen_textured(0, 0, 1, 1);
+		opengl_draw_full_screen_scene_texture();
 	} else {
 		// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
 		// treated as emissive
@@ -159,7 +159,9 @@ void gr_opengl_deferred_lighting_msaa()
 		});
 	GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
 	GL_state.SetZbufferType(ZBUFFER_TYPE_WRITE);
-	opengl_draw_full_screen_textured(0, 0, 1, 1);
+	// msaa-f.sdr resolves via ivec2(textureSize(texColor) * fragTexCoord), so the texcoords have to
+	// stay inside the rendered sub-rectangle of the multisampled G-buffer.
+	opengl_draw_full_screen_scene_texture();
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -321,8 +323,12 @@ void gr_opengl_deferred_lighting_finish()
 			shadow_cascade_params_bind(offset, count);
 		}
 
-		header->invScreenWidth = 1.0f / gr_screen.max_w;
-		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		// deferred-f.sdr turns gl_FragCoord into a G-buffer texture coordinate with these, so they
+		// have to normalize against the G-buffer's own dimensions. Those only equal gr_screen while
+		// the viewport exactly fills the scene textures -- not after a shrink, and not when the
+		// allocation was clamped by GL_max_renderbuffer_size.
+		header->invScreenWidth = 1.0f / Scene_texture_width;
+		header->invScreenHeight = 1.0f / Scene_texture_height;
 		header->nearPlane = gr_near_plane;
 
 		{
@@ -557,7 +563,8 @@ void gr_opengl_deferred_lighting_finish()
 			data->clip_dist       = Neb2_fog_clip_distance;
 		});
 
-		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		// fog-f.sdr samples the composite and depth targets straight off fragTexCoord.
+		opengl_draw_full_screen_scene_texture();
 
 		if (bDrawNebVolumetrics) {
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
@@ -653,6 +660,12 @@ void gr_opengl_deferred_lighting_finish()
 
 		{
 			GR_DEBUG_SCOPE("Volumetric Nebulae Draw");
+			// Deliberately unscaled. volumetric-f.sdr uses fragTexCoord for two incompatible
+			// things: reconstructing an eye-space ray direction, which needs the full 0..1 range
+			// across the viewport, and sampling composite/depth/emissive, which needs the
+			// rendered sub-rectangle. Scaling here would fix the sampling and skew every ray.
+			// Separating the two needs a second varying (or a scale uniform) in the shader; until
+			// then volumetrics are only correct while the targets exactly match the viewport.
 			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 		}
 		GL_state.Texture.Enable(Scene_emissive_texture);

@@ -251,6 +251,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/gamma.sdr
 	def_files/data/effects/gamma-correct-f.sdr
 	def_files/data/effects/irrmap-f.sdr
+	def_files/data/effects/lensflare-f.sdr
+	def_files/data/effects/lensflare-v.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
 	def_files/data/effects/main-f.sdr
@@ -310,6 +312,7 @@ add_file_folder("Default files\\\\data\\\\tables"
 	def_files/data/tables/fonts.tbl
 	def_files/data/tables/game_settings.tbl
 	def_files/data/tables/iff_defs.tbl
+	def_files/data/tables/lens_flares.tbl
 	def_files/data/tables/objecttypes.tbl
 	def_files/data/tables/post_processing.tbl
 	def_files/data/tables/species_defs.tbl
@@ -461,6 +464,14 @@ add_file_folder("Graphics"
 	graphics/grbatch.h
 	graphics/grinternal.cpp
 	graphics/grinternal.h
+	graphics/lens_flare.cpp
+	graphics/lens_flare.h
+	graphics/lens_flare_aperture.cpp
+	graphics/lens_flare_beams.cpp
+	graphics/lens_flare_internal.h
+	graphics/lens_flare_optics.cpp
+	graphics/lens_flare_table.cpp
+	graphics/lens_flare_thrusters.cpp
 	graphics/light.cpp
 	graphics/light.h
 	graphics/line_draw_list.cpp
@@ -617,6 +628,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessing.cpp
 		graphics/vulkan/VulkanPostProcessing.h
 		graphics/vulkan/VulkanPostProcessingBloom.cpp
+		graphics/vulkan/VulkanPostProcessingLensFlare.cpp
 		graphics/vulkan/VulkanPostProcessingCommon.cpp
 		graphics/vulkan/VulkanPostProcessingDistortion.cpp
 		graphics/vulkan/VulkanPostProcessingFog.cpp
@@ -778,6 +790,7 @@ add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/lab_ui.cpp
 	lab/dialogs/lab_ui_helpers.h
 	lab/dialogs/lab_ui_helpers.cpp
+	lab/dialogs/lab_ui_lens_flare.cpp
 )
 
 add_file_folder("Lab\\\\Manager"

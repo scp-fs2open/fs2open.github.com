@@ -6,10 +6,12 @@
 #include "asteroid/asteroid.h"
 #include "graphics/2d.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/lens_flare.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
+#include "starfield/starfield.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 #include "mission/missionload.h"
@@ -727,6 +729,14 @@ void LabUi::show_render_options()
 				SliderFloat("Noise Intensity", &The_mission.volumetrics->noiseColorIntensity, 0.0f, 3.0f);
 				SliderFloat("Noise Scale Base", &std::get<0>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
 				SliderFloat("Noise Scale Sub", &std::get<1>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
+			}
+		}
+
+		if (getLabManager()->Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING &&
+			stars_get_num_suns() > 0) {
+			with_CollapsingHeader("Lens flare options")
+			{
+				build_lens_flare_options();
 			}
 		}
 

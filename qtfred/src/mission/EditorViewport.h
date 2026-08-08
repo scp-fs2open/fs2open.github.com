@@ -4,6 +4,7 @@
 #include "CameraController.h"
 #include "FredRenderer.h"
 #include "Editor.h"
+#include "GraphicsSettings.h"
 #include "IDialogProvider.h"
 #include "ui/ThemeMode.h"
 
@@ -62,6 +63,9 @@ struct ViewSettings {
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;
+
+	//! Preferences > Graphics. Owns its own persistence and apply rules; see GraphicsSettings.
+	GraphicsSettings Graphics;
 
 	ViewSettings();
 };

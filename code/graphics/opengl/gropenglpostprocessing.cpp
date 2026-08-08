@@ -9,12 +9,15 @@
 #include "gropengldraw.h"
 #include "gropenglshader.h"
 #include "gropenglstate.h"
+#include "gropengltnl.h"
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/lens_flare.h"
 #include "graphics/shader_types.h"
 #include "graphics/grinternal.h"
 #include "graphics/openxr.h"
+#include "graphics/render.h"
 #include "graphics/util/uniform_structs.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -27,6 +30,9 @@
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
 #endif
+
+static void opengl_post_setup_render_targets();
+static void opengl_post_shutdown_render_targets();
 
 extern bool PostProcessing_override;
 extern int opengl_check_framebuffer();
@@ -62,6 +68,14 @@ static GLuint Smaa_output_tex               = 0;
 
 static GLuint Smaa_search_tex = 0;
 static GLuint Smaa_area_tex   = 0;
+
+// physically-based lens flare resources (created lazily on first use). There is
+// one camera lens, so one iris mask and one starburst serve every sun.
+static GLuint Lens_flare_framebuffer   = 0;
+static GLuint Lens_flare_aperture_tex  = 0;
+static GLuint Lens_flare_starburst_tex = 0;
+static int Lens_flare_tex_lens_idx     = -1;
+static unsigned int Lens_flare_tex_generation = 0;
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -99,7 +113,7 @@ void opengl_post_pass_tonemap()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 void opengl_post_pass_bloom()
@@ -134,7 +148,10 @@ void opengl_post_pass_bloom()
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 
-		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		// Reads the scene texture directly rather than an already-cropped intermediate, so it is
+		// the scaled variant. The blur/composite passes below read Bloom_textures, which this pass
+		// fills edge to edge, so those stay unscaled.
+		opengl_draw_full_screen_scene_texture();
 	}
 	// ------ end bright pass ------
 
@@ -293,7 +310,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	// set and configure post shader ..
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_FXAA, 0));
@@ -310,7 +327,7 @@ void opengl_post_pass_fxaa()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_luminance_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	opengl_shader_set_current();
 }
@@ -333,7 +350,7 @@ static void smaa_detect_edges()
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 static void smaa_calculate_blending_weights()
@@ -358,7 +375,7 @@ static void smaa_calculate_blending_weights()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_area_tex);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Smaa_search_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 static void smaa_neighborhood_blending()
@@ -381,7 +398,7 @@ static void smaa_neighborhood_blending()
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_ldr_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Smaa_blend_tex);
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 }
 
 void smaa_resolve()
@@ -491,13 +508,148 @@ void opengl_post_lightshafts()
 				GL_state.Blend(GL_TRUE);
 				GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 
-				opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+				opengl_draw_full_screen_scene_texture();
 
 				GL_state.Blend(GL_FALSE);
 				break;
 			}
 		}
 	}
+}
+
+// Delete the uploaded aperture/starburst handles, leaving the cache keys alone --
+// the re-upload path below has already set them to what it is about to upload.
+static void opengl_lens_flare_delete_textures()
+{
+	if (Lens_flare_aperture_tex) {
+		glDeleteTextures(1, &Lens_flare_aperture_tex);
+		Lens_flare_aperture_tex = 0;
+	}
+	if (Lens_flare_starburst_tex) {
+		glDeleteTextures(1, &Lens_flare_starburst_tex);
+		Lens_flare_starburst_tex = 0;
+	}
+}
+
+// drop them and forget what was uploaded, so the next frame uploads afresh
+static void opengl_lens_flare_release_textures()
+{
+	opengl_lens_flare_delete_textures();
+	Lens_flare_tex_lens_idx = -1;
+	Lens_flare_tex_generation = 0;
+}
+
+// Upload the CPU-generated aperture/starburst textures of the mounted lens, or
+// keep the ones already uploaded for it. When the pair is still current
+// lens_flare_textures_if_changed() says so and there is nothing to do -- deciding
+// *that* is a rule about the lens module, so it lives there rather than being
+// re-derived identically in each backend.
+static bool opengl_lens_flare_ensure_textures(int lens_idx)
+{
+	const auto* tex =
+		graphics::lens_flare_textures_if_changed(lens_idx, Lens_flare_tex_lens_idx, Lens_flare_tex_generation);
+	if (tex == nullptr) {
+		return Lens_flare_aperture_tex != 0;
+	}
+
+	opengl_lens_flare_delete_textures();
+
+	auto create_tex = [](GLsizei size, GLenum internal_format, GLenum format, GLenum type, const void* pixels,
+						  const char* name) {
+		GLuint handle;
+		glGenTextures(1, &handle);
+
+		GL_state.Texture.SetActiveUnit(0);
+		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+		GL_state.Texture.Enable(handle);
+
+		opengl_set_object_label(GL_TEXTURE, handle, name);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size, size, 0, format, type, pixels);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		return handle;
+	};
+
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	Lens_flare_aperture_tex = create_tex(tex->aperture_size, GL_R8, GL_RED, GL_UNSIGNED_BYTE, tex->aperture.data(),
+		"Lens flare aperture");
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	Lens_flare_starburst_tex = create_tex(tex->starburst_size, GL_RGBA32F, GL_RGBA, GL_FLOAT, tex->starburst.data(),
+		"Lens flare starburst");
+
+	return true;
+}
+
+// physically-based lens flares: additive instanced ghost quads on the HDR
+// scene color, immediately before bloom (so bloom/tonemap treat the flare
+// energy like any other scene light). One draw per visible sun: they share the
+// camera lens (hence its textures), but each has its own flare axis and tint.
+static void opengl_post_pass_lens_flare()
+{
+	// Whether there is anything to draw was decided by lens_flare_frame_update()
+	// during the scene render; this pass only draws what it published. In
+	// particular it must not second-guess the decision -- the sprite suns have
+	// already stepped aside for whatever is in here, so a backend that skipped a
+	// published draw would just delete the sun.
+	const auto& flare_draws = graphics::lens_flare_get_frame_draws();
+	if (flare_draws.empty()) {
+		return;
+	}
+
+	if (!opengl_lens_flare_ensure_textures(graphics::lens_flare_active_lens())) {
+		return;
+	}
+
+	GR_DEBUG_SCOPE("Lens flare");
+	TRACE_SCOPE(tracing::LensFlare);
+
+	if (Lens_flare_framebuffer == 0) {
+		glGenFramebuffers(1, &Lens_flare_framebuffer);
+	}
+	GL_state.BindFrameBuffer(Lens_flare_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_color_texture, 0);
+	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_LENS_FLARE, 0));
+
+	Current_shader->program->Uniforms.setTextureUniform("apertureMap", 0);
+	Current_shader->program->Uniforms.setTextureUniform("starburstMap", 1);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Lens_flare_aperture_tex);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Lens_flare_starburst_tex);
+
+	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
+	GL_state.Blend(GL_TRUE);
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
+
+	// one 4-vertex triangle-strip quad, instanced per ghost/starburst
+	GLfloat corners[4][2] = {{-1.0f, -1.0f}, {1.0f, -1.0f}, {-1.0f, 1.0f}, {1.0f, 1.0f}};
+
+	vertex_layout layout;
+	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(GLfloat) * 2, 0);
+
+	size_t offset = gr_add_to_immediate_buffer(sizeof(corners), corners);
+	opengl_bind_vertex_layout(layout, opengl_buffer_get_id(GL_ARRAY_BUFFER, gr_immediate_buffer_handle), 0, offset);
+
+	for (const auto& draw : flare_draws) {
+		opengl_set_generic_uniform_data<graphics::generic_data::lens_flare_data>(
+			[&](graphics::generic_data::lens_flare_data* data) { *data = *draw.data; });
+
+		glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, draw.instances);
+	}
+
+	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+	GL_state.Blend(GL_FALSE);
+	GL_state.ScissorTest(scissor_test);
 }
 
 void gr_opengl_post_process_end()
@@ -514,6 +666,9 @@ void gr_opengl_post_process_end()
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
 	GL_state.PushFramebufferState();
+
+	// physically-based lens flares composite into the HDR scene before bloom
+	opengl_post_pass_lens_flare();
 
 	// do bloom, hopefully ;)
 	opengl_post_pass_bloom();
@@ -625,7 +780,7 @@ void gr_opengl_post_process_end()
 	// now render it to the screen ...
 	GL_state.PopFramebufferState();
 
-	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_u_scale);
+	opengl_draw_full_screen_scene_texture();
 
 	//Shadow Map debug window
 //#define SHADOW_DEBUG
@@ -1020,77 +1175,93 @@ static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, co
 	return tex;
 }
 
-static void setup_smaa_resources()
+// The SMAA area and search textures are fixed-size lookup tables baked into the binary, so unlike
+// everything else here they survive a resolution change untouched.
+static void setup_smaa_lookup_textures()
 {
-	GL_state.PushFramebufferState();
-
 	Smaa_area_tex = load_smaa_texture(AREATEX_WIDTH, AREATEX_HEIGHT, GL_RG8, areaTexBytes, "SMAA Area Texture");
 	Smaa_search_tex =
 	    load_smaa_texture(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT, GL_R8, searchTexBytes, "SMAA Search Texture");
+}
 
+static void setup_smaa_render_targets()
+{
 	setup_smaa_edges_resources();
 
 	setup_smaa_blending_weight_resources();
 
 	setup_smaa_neighborhood_blending_resources();
-
-	GL_state.PopFramebufferState();
 }
 
-// generate and test the framebuffer and textures that we are going to use
-static bool opengl_post_init_framebuffer()
+static void shutdown_smaa_render_targets()
 {
-	bool rval = false;
+	opengl_delete_render_texture(Smaa_edges_tex);
+	opengl_delete_render_framebuffer(Smaa_edge_detection_fb);
 
-	// clamp size, if needed
-	Post_texture_width = gr_screen.max_w;
-	Post_texture_height = gr_screen.max_h;
+	opengl_delete_render_texture(Smaa_blend_tex);
+	opengl_delete_render_framebuffer(Smaa_blending_weight_fb);
 
-	if (Post_texture_width > GL_max_renderbuffer_size) {
-		Post_texture_width = GL_max_renderbuffer_size;
-	}
+	opengl_delete_render_texture(Smaa_output_tex);
+	opengl_delete_render_framebuffer(Smaa_neighborhood_blending_fb);
+}
 
-	if (Post_texture_height > GL_max_renderbuffer_size) {
-		Post_texture_height = GL_max_renderbuffer_size;
-	}
+// Allocate every post-processing resource whose size follows the scene textures. Split out from
+// opengl_post_process_init() so gr_opengl_resize_render_targets() can rebuild just these without
+// re-parsing post_processing.tbl or recompiling shaders.
+static void opengl_post_setup_render_targets()
+{
+	// These consume the scene textures pass by pass, so they have to match them exactly rather
+	// than being sized from gr_screen independently -- see gr_opengl_scene_texture_begin() for
+	// what the two sizes diverging would mean.
+	Post_texture_width = Scene_texture_width;
+	Post_texture_height = Scene_texture_height;
+
+	GL_state.PushFramebufferState();
 
 	opengl_setup_bloom_textures();
 
 	// Always set up SMAA resources so the user can switch to an SMAA preset
 	// at runtime even when starting with a non-SMAA AA mode, such as None.
-	//if (Gr_aa_mode != AntiAliasMode::None) {
-		setup_smaa_resources();
-	//}
+	setup_smaa_render_targets();
+
+	GL_state.PopFramebufferState();
 
 	GL_state.BindFrameBuffer(0);
-
-	rval = true;
-
-	if ( opengl_check_for_errors("post_init_framebuffer()") ) {
-		rval = false;
-	}
-
-	return rval;
 }
-
-
 
 void opengl_post_process_shutdown_bloom()
 {
-	if ( Bloom_textures[0] ) {
-		glDeleteTextures(1, &Bloom_textures[0]);
-		Bloom_textures[0] = 0;
+	opengl_delete_render_texture(Bloom_textures[0]);
+	opengl_delete_render_texture(Bloom_textures[1]);
+	opengl_delete_render_framebuffer(Bloom_framebuffer);
+}
+
+static void opengl_post_shutdown_render_targets()
+{
+	opengl_post_process_shutdown_bloom();
+	shutdown_smaa_render_targets();
+}
+
+void opengl_post_resize_render_targets()
+{
+	// Post-processing may have been disabled outright (no FBOs, missing shaders, or turned off in
+	// the table), in which case none of these resources exist and none should start existing now.
+	if ( !Post_initialized ) {
+		return;
 	}
 
-	if ( Bloom_textures[1] ) {
-		glDeleteTextures(1, &Bloom_textures[1]);
-		Bloom_textures[1] = 0;
-	}
+	opengl_post_shutdown_render_targets();
+	opengl_post_setup_render_targets();
+}
 
-	if ( Bloom_framebuffer > 0 ) {
-		glDeleteFramebuffers(1, &Bloom_framebuffer);
-		Bloom_framebuffer = 0;
-	}
+// generate and test the framebuffer and textures that we are going to use
+static bool opengl_post_init_framebuffer()
+{
+	setup_smaa_lookup_textures();
+
+	opengl_post_setup_render_targets();
+
+	return !opengl_check_for_errors("post_init_framebuffer()");
 }
 
 void opengl_post_process_init()
@@ -1141,20 +1312,22 @@ void opengl_post_process_shutdown()
 		return;
 	}
 
-	if (Post_framebuffer_id[0]) {
-		glDeleteFramebuffers(1, &Post_framebuffer_id[0]);
-		Post_framebuffer_id[0] = 0;
-
-		if (Post_framebuffer_id[1]) {
-			glDeleteFramebuffers(1, &Post_framebuffer_id[1]);
-			Post_framebuffer_id[1] = 0;
-		}
-	}
+	opengl_delete_render_framebuffer(Post_framebuffer_id[0]);
+	opengl_delete_render_framebuffer(Post_framebuffer_id[1]);
 
 	graphics::Post_processing_manager->clear();
 	graphics::Post_processing_manager = nullptr;
 
-	opengl_post_process_shutdown_bloom();
+	opengl_post_shutdown_render_targets();
+
+	opengl_delete_render_texture(Smaa_area_tex);
+	opengl_delete_render_texture(Smaa_search_tex);
+
+	if (Lens_flare_framebuffer) {
+		glDeleteFramebuffers(1, &Lens_flare_framebuffer);
+		Lens_flare_framebuffer = 0;
+	}
+	opengl_lens_flare_release_textures();
 
 	Post_in_frame = false;
 	Post_active_shader_index = 0;

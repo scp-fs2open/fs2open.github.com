@@ -1,0 +1,25 @@
+; A table that actually declares a $Default Lens:, which the shipped
+; lens_flares.tbl deliberately does not.
+;
+; Without a declared default, "take the tabled default" and "no flares at all"
+; both come out as "no lens mounted", so the two cannot be told apart. That is
+; exactly the case where a mission's explicit <none> used to be lost: it was
+; stored as an empty string, an empty string was not written out, and on reload an
+; absent $Camera Lens: became the default. This table is what lets a test see the
+; difference.
+
+#Lens Systems
+
+$Default Lens: default_test_lens
+
+$Name: default_test_lens
+$Entrance Pupil Radius: 12.0
+$Aperture Radius: 6.0
+$Sensor Width: 36.0
+$Lens Stack Start:
+$Surface: ( 50.0, 4.0, 1.62 )
+$Stop: ( 3.0 )
+$Surface: ( -50.0, 40.0, 1.0 )
+$Lens Stack End
+
+#End
