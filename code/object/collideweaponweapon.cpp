@@ -22,84 +22,28 @@
 #include "weapon/weapon.h"
 
 
+// The only thing the narrowphase produces here is the facing dot product, which the damage
+// curves need.  Everything else the process step can re-derive from the two objects.
+struct weapon_weapon_collision_data {
+	float dot;
+};
+
 /**
- * Checks weapon-weapon collisions.  
- * @param pair obj_pair pointer to the two objects. pair->a and pair->b are weapons.
- * @return 1 if all future collisions between these can be ignored
+ * Applies a weapon-weapon collision.  Main thread only.
  */
-int collide_weapon_weapon( obj_pair * pair )
+void collide_weapon_weapon_process( obj_pair * pair, const std::any& collision_data )
 {
-	float A_radius, B_radius;
+	const auto& cd = std::any_cast<const weapon_weapon_collision_data&>(collision_data);
+	const float dot = cd.dot;
+
 	object *A = pair->a;
 	object *B = pair->b;
 
-	Assert( A->type == OBJ_WEAPON );
-	Assert( B->type == OBJ_WEAPON );
-	
-	//	Don't allow ship to shoot down its own missile.
-	if (A->parent_sig == B->parent_sig)
-		return 1;
+	weapon *wpA = &Weapons[A->instance];
+	weapon *wpB = &Weapons[B->instance];
+	weapon_info *wipA = &Weapon_info[wpA->weapon_info_index];
+	weapon_info *wipB = &Weapon_info[wpB->weapon_info_index];
 
-	float dot = vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec);
-
-	//	Only shoot down teammate's missile if not traveling in nearly same direction.
-	if (Weapons[A->instance].team == Weapons[B->instance].team)
-		if (dot > 0.7f)
-			return 1;
-
-	//	Ignore collisions involving a bomb if the bomb is not yet armed.
-	weapon	*wpA, *wpB;
-	weapon_info	*wipA, *wipB;
-
-	wpA = &Weapons[A->instance];
-	wpB = &Weapons[B->instance];
-	wipA = &Weapon_info[wpA->weapon_info_index];
-	wipB = &Weapon_info[wpB->weapon_info_index];
-
-	A_radius = A->radius;
-	B_radius = B->radius;
-
-	float A_time_alive = f2fl(Missiontime - wpA->creation_time);
-	float B_time_alive = f2fl(Missiontime - wpB->creation_time);
-
-	if (wipA->weapon_hitpoints > 0) {
-		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
-			A_radius *= 2;		// Makes bombs easier to hit
-		}
-
-		// the erroneous extra time a bomb stays invulnerable without the fix
-		float extra_buggy_time = 0.0f;
-		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipA->is_locked_homing())
-			extra_buggy_time = (wipA->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipA->lifetime;
-		
-		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
-			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
-				return 0;
-		}
-		else if (A_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
-			return 0;
-	}
-
-	if (wipB->weapon_hitpoints > 0) {
-		if (!(wipB->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
-			B_radius *= 2;		// Makes bombs easier to hit
-		}
-
-		// the erroneous extra time a bomb stays invulnerable without the fix
-		float extra_buggy_time = 0.0f;
-		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipB->is_locked_homing())
-			extra_buggy_time = (wipB->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipB->lifetime;
-
-		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
-			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
-				return 0;
-		}
-		else if (B_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
-			return 0;
-	}
-
-	//	Rats, do collision detection.
-	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
 		bool a_override = false, b_override = false;
 
@@ -277,7 +221,7 @@ int collide_weapon_weapon( obj_pair * pair )
 		}
 
 		if (!scripting::hooks::OnWeaponCollision->isActive()) {
-			return 1;
+			return;
 		}
 
 		if(!(b_override && !a_override))
@@ -299,9 +243,98 @@ int collide_weapon_weapon( obj_pair * pair )
 					scripting::hook_param("WeaponB", 'o', A),
 					scripting::hook_param("Hitpos", 'o', A->pos)));
 		}
+	}
+}
 
-		return 1;
+/**
+ * Checks weapon-weapon collisions.  Pure: safe to run on a collision worker thread.
+ * @param pair obj_pair pointer to the two objects. pair->a and pair->b are weapons.
+ */
+collision_result collide_weapon_weapon_check( obj_pair * pair )
+{
+	float A_radius, B_radius;
+	object *A = pair->a;
+	object *B = pair->b;
+
+	Assert( A->type == OBJ_WEAPON );
+	Assert( B->type == OBJ_WEAPON );
+
+	//	Don't allow ship to shoot down its own missile.
+	if (A->parent_sig == B->parent_sig)
+		return { true, std::any(), &collide_weapon_weapon_process };
+
+	float dot = vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec);
+
+	//	Only shoot down teammate's missile if not traveling in nearly same direction.
+	if (Weapons[A->instance].team == Weapons[B->instance].team)
+		if (dot > 0.7f)
+			return { true, std::any(), &collide_weapon_weapon_process };
+
+	//	Ignore collisions involving a bomb if the bomb is not yet armed.
+	weapon	*wpA, *wpB;
+	weapon_info	*wipA, *wipB;
+
+	wpA = &Weapons[A->instance];
+	wpB = &Weapons[B->instance];
+	wipA = &Weapon_info[wpA->weapon_info_index];
+	wipB = &Weapon_info[wpB->weapon_info_index];
+
+	A_radius = A->radius;
+	B_radius = B->radius;
+
+	float A_time_alive = f2fl(Missiontime - wpA->creation_time);
+	float B_time_alive = f2fl(Missiontime - wpB->creation_time);
+
+	if (wipA->weapon_hitpoints > 0) {
+		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
+			A_radius *= 2;		// Makes bombs easier to hit
+		}
+
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipA->is_locked_homing())
+			extra_buggy_time = (wipA->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipA->lifetime;
+
+		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
+			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+				return { false, std::any(), &collide_weapon_weapon_process };
+		}
+		else if (A_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			return { false, std::any(), &collide_weapon_weapon_process };
 	}
 
-	return 0;
+	if (wipB->weapon_hitpoints > 0) {
+		if (!(wipB->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
+			B_radius *= 2;		// Makes bombs easier to hit
+		}
+
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipB->is_locked_homing())
+			extra_buggy_time = (wipB->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipB->lifetime;
+
+		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
+			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+				return { false, std::any(), &collide_weapon_weapon_process };
+		}
+		else if (B_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+			return { false, std::any(), &collide_weapon_weapon_process };
+	}
+
+	//	Rats, do collision detection.
+	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
+		return { true, std::any(weapon_weapon_collision_data{dot}), &collide_weapon_weapon_process };
+
+	return { false, std::any(), &collide_weapon_weapon_process };
+}
+
+int collide_weapon_weapon( obj_pair * pair )
+{
+	const auto& [never_check_again, collision_data, process_fnc] = collide_weapon_weapon_check(pair);
+
+	if (collision_data.has_value()) {
+		process_fnc(pair, collision_data);
+	}
+
+	return never_check_again ? 1 : 0;
 }

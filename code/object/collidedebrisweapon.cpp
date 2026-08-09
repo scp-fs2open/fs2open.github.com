@@ -21,31 +21,32 @@
 
 
 
+// Everything the narrowphase produces for a debris/asteroid vs weapon hit.  The mc_info is
+// carried across rather than being written straight onto the weapon, because that write has to
+// happen on the main thread.
+struct debris_weapon_collision_data {
+	vec3d hitpos;
+	vec3d hitnormal;
+	mc_info mc;
+};
+
 /**
- * Checks debris-weapon collisions.  
- * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
- * @return 1 if all future collisions between these can be ignored
+ * Applies a debris-weapon collision.  Main thread only.
  */
-int collide_debris_weapon( obj_pair * pair )
+void collide_debris_weapon_process( obj_pair * pair, const std::any& collision_data )
 {
-	vec3d	hitpos, hitnormal;
+	const auto& cd = std::any_cast<const debris_weapon_collision_data&>(collision_data);
+
 	object *pdebris = pair->a;
 	object *weapon_obj = pair->b;
 
-	Assert( pdebris->type == OBJ_DEBRIS );
-	Assert( weapon_obj->type == OBJ_WEAPON );
+	// mutable copies: the impact/hit helpers below take non-const vec3d*
+	vec3d hitpos = cd.hitpos;
+	vec3d hitnormal = cd.hitnormal;
 
-	if (reject_due_collision_groups(pdebris, weapon_obj))
-		return 0;
+	Weapons[weapon_obj->instance].collisionInfo = new mc_info(cd.mc);	// The weapon will free this memory later
 
-	// first check the bounding spheres of the two objects.
-	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
-	if (hit) {
-		hit = debris_check_collision(pdebris, weapon_obj, &hitpos, nullptr, &hitnormal );
-
-		if ( !hit )
-			return 0;
-
+	{
 		bool weapon_override = false, debris_override = false;
 
 		if (scripting::hooks::OnDebrisCollision->isActive()) {
@@ -101,40 +102,68 @@ int collide_debris_weapon( obj_pair * pair )
 					scripting::hook_param("Debris", 'o', pdebris),
 					scripting::hook_param("Hitpos", 'o', hitpos)));
 		}
-
-		return 0;
-
-	} else {
-		return weapon_will_never_hit( weapon_obj, pdebris, pair );
 	}
-}				
+}
+
+/**
+ * Checks debris-weapon collisions.  Pure: safe to run on a collision worker thread.
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
+ */
+collision_result collide_debris_weapon_check( obj_pair * pair )
+{
+	object *pdebris = pair->a;
+	object *weapon_obj = pair->b;
+
+	Assert( pdebris->type == OBJ_DEBRIS );
+	Assert( weapon_obj->type == OBJ_WEAPON );
+
+	if (reject_due_collision_groups(pdebris, weapon_obj))
+		return { false, std::any(), &collide_debris_weapon_process };
+
+	debris_weapon_collision_data cd;
+
+	// first check the bounding spheres of the two objects.
+	int hit = fvi_segment_sphere(&cd.hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pdebris->pos, pdebris->radius);
+	if (hit) {
+		hit = debris_check_collision(pdebris, weapon_obj, &cd.hitpos, nullptr, &cd.hitnormal, &cd.mc );
+
+		if ( !hit )
+			return { false, std::any(), &collide_debris_weapon_process };
+
+		return { false, std::any(cd), &collide_debris_weapon_process };
+	} else {
+		return { weapon_will_never_hit( weapon_obj, pdebris, pair ) != 0, std::any(), &collide_debris_weapon_process };
+	}
+}
+
+int collide_debris_weapon( obj_pair * pair )
+{
+	const auto& [never_check_again, collision_data, process_fnc] = collide_debris_weapon_check(pair);
+
+	if (collision_data.has_value()) {
+		process_fnc(pair, collision_data);
+	}
+
+	return never_check_again ? 1 : 0;
+}
 
 
 
 /**
- * Checks debris-weapon collisions.  
- * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is weapon.
- * @return 1 if all future collisions between these can be ignored
+ * Applies an asteroid-weapon collision.  Main thread only.
  */
-int collide_asteroid_weapon( obj_pair * pair )
+void collide_asteroid_weapon_process( obj_pair * pair, const std::any& collision_data )
 {
-	if (!Asteroids_enabled)
-		return 0;
+	const auto& cd = std::any_cast<const debris_weapon_collision_data&>(collision_data);
 
-	vec3d	hitpos, hitnormal;
 	object	*pasteroid = pair->a;
 	object	*weapon_obj = pair->b;
 
-	Assert( pasteroid->type == OBJ_ASTEROID);
-	Assert( weapon_obj->type == OBJ_WEAPON );
+	// mutable copies: the impact/hit helpers below take non-const vec3d*
+	vec3d hitpos = cd.hitpos;
+	vec3d hitnormal = cd.hitnormal;
 
-	// first check the bounding spheres of the two objects.
-	int hit = fvi_segment_sphere(&hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
-	if (hit) {
-		hit = asteroid_check_collision(pasteroid, weapon_obj, &hitpos, nullptr, &hitnormal);
-		if ( !hit )
-			return 0;
-
+	{
 		bool weapon_override = false, asteroid_override = false;
 
 		if (scripting::hooks::OnAsteroidCollision->isActive()) {
@@ -190,10 +219,46 @@ int collide_asteroid_weapon( obj_pair * pair )
 					scripting::hook_param("Asteroid", 'o', pasteroid),
 					scripting::hook_param("Hitpos", 'o', hitpos)));
 		}
-
-		return 0;
-
-	} else {
-		return weapon_will_never_hit( weapon_obj, pasteroid, pair );
 	}
-}				
+}
+
+/**
+ * Checks asteroid-weapon collisions.  Pure: safe to run on a collision worker thread.
+ * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is weapon.
+ */
+collision_result collide_asteroid_weapon_check( obj_pair * pair )
+{
+	if (!Asteroids_enabled)
+		return { false, std::any(), &collide_asteroid_weapon_process };
+
+	object	*pasteroid = pair->a;
+	object	*weapon_obj = pair->b;
+
+	Assert( pasteroid->type == OBJ_ASTEROID);
+	Assert( weapon_obj->type == OBJ_WEAPON );
+
+	debris_weapon_collision_data cd;
+
+	// first check the bounding spheres of the two objects.
+	int hit = fvi_segment_sphere(&cd.hitpos, &weapon_obj->last_pos, &weapon_obj->pos, &pasteroid->pos, pasteroid->radius);
+	if (hit) {
+		hit = asteroid_check_collision(pasteroid, weapon_obj, &cd.hitpos, nullptr, &cd.hitnormal);
+		if ( !hit )
+			return { false, std::any(), &collide_asteroid_weapon_process };
+
+		return { false, std::any(cd), &collide_asteroid_weapon_process };
+	} else {
+		return { weapon_will_never_hit( weapon_obj, pasteroid, pair ) != 0, std::any(), &collide_asteroid_weapon_process };
+	}
+}
+
+int collide_asteroid_weapon( obj_pair * pair )
+{
+	const auto& [never_check_again, collision_data, process_fnc] = collide_asteroid_weapon_check(pair);
+
+	if (collision_data.has_value()) {
+		process_fnc(pair, collision_data);
+	}
+
+	return never_check_again ? 1 : 0;
+}

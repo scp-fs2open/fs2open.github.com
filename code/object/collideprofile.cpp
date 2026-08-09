@@ -18,6 +18,12 @@ counters& counters::operator+=(const counters& other)
 	pairs_cache_skipped += other.pairs_cache_skipped;
 	pairs_enqueued += other.pairs_enqueued;
 	pairs_checked_inline += other.pairs_checked_inline;
+	inline_beam += other.inline_beam;
+	inline_weapon_weapon += other.inline_weapon_weapon;
+	inline_debris_ship += other.inline_debris_ship;
+	inline_asteroid_ship += other.inline_asteroid_ship;
+	inline_prop += other.inline_prop;
+	inline_other += other.inline_other;
 
 	model_collide_calls += other.model_collide_calls;
 	bsp_node_visits += other.bsp_node_visits;
@@ -92,6 +98,12 @@ static void dump(const counters& c, int frames)
 	fprintf(out, "  cache skipped        : %.1f /frame\n", per_frame(c.pairs_cache_skipped));
 	fprintf(out, "  enqueued to workers  : %.1f /frame\n", per_frame(c.pairs_enqueued));
 	fprintf(out, "  checked inline       : %.1f /frame\n", per_frame(c.pairs_checked_inline));
+	fprintf(out, "    beam               : %.1f /frame\n", per_frame(c.inline_beam));
+	fprintf(out, "    weapon<->weapon    : %.1f /frame\n", per_frame(c.inline_weapon_weapon));
+	fprintf(out, "    debris<->ship      : %.1f /frame\n", per_frame(c.inline_debris_ship));
+	fprintf(out, "    asteroid<->ship    : %.1f /frame\n", per_frame(c.inline_asteroid_ship));
+	fprintf(out, "    prop               : %.1f /frame\n", per_frame(c.inline_prop));
+	fprintf(out, "    other              : %.1f /frame\n", per_frame(c.inline_other));
 	fprintf(out, "  -- narrowphase --\n");
 	fprintf(out, "  model_collide calls  : %.1f /frame\n", per_frame(c.model_collide_calls));
 	fprintf(out, "  BSP node visits      : %.1f /frame (%" PRIu64 " total)\n", per_frame(c.bsp_node_visits), c.bsp_node_visits);

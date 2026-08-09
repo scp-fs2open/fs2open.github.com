@@ -899,6 +899,10 @@ struct collision_thread_data {
 std::unique_ptr<collision_thread_data[]> collision_thread_data_buffer;
 std::atomic_bool collision_processing_done = false;
 
+// Results gathered from the workers during the drain, applied once they have all stopped.
+// Kept at file scope so the allocation is reused frame to frame.
+SCP_vector<collision_thread_data::collision_queue_result> collision_pending_results;
+
 void spin_up_mp_collision() {
 	collision_processing_done.store(false);
 	threading::spin_up_threaded_task(threading::WorkerThreadTask::COLLISION);
@@ -922,30 +926,53 @@ void spin_down_mp_collision() {
 	threading::spin_down_wait_complete();
 }
 
+// Pairs are staged on the main thread and handed to the workers in chunks.  Locking a worker
+// queue for every individual pair cost ~0.8us per pair -- about as much as the narrowphase work
+// being offloaded -- because the producer contends with seven workers that are constantly
+// parking and waking on that same mutex.
+SCP_vector<collision_thread_data::collision_queue_item> collision_stage;
+constexpr size_t collision_stage_flush_size = 256;
+
+void flush_mp_collisions() {
+	if (collision_stage.empty())
+		return;
+
+	const size_t workers = threading::get_num_workers();
+	size_t offset = 0;
+
+	for (size_t i = 0; i < workers; i++) {
+		// deal the staged pairs out as evenly as the remainder allows
+		const size_t remaining = collision_stage.size() - offset;
+		const size_t take = remaining / (workers - i);
+		if (take == 0)
+			continue;
+
+		auto& thread = collision_thread_data_buffer[i];
+		{
+			std::scoped_lock lock(thread.queue_mutex);
+			thread.queue_load->insert(thread.queue_load->end(),
+				std::make_move_iterator(collision_stage.begin() + offset),
+				std::make_move_iterator(collision_stage.begin() + offset + take));
+			thread.queue_length.fetch_add(take, std::memory_order_release);
+		}
+		thread.work_available.notify_one();
+
+		offset += take;
+	}
+
+	collision_stage.clear();
+}
+
 void queue_mp_collision(uint ctype, const obj_pair& colliding) {
-	size_t min_queue_length = std::numeric_limits<size_t>::max();
-	size_t target_thread = 0;
-	for (size_t i = 0; i < threading::get_num_workers(); i++) {
-		size_t queue_length = collision_thread_data_buffer[i].queue_length.load(std::memory_order_acquire);
-		if (queue_length == 0) {
-			target_thread = i;
-			break;
-		}
-		else if (queue_length < min_queue_length) {
-			target_thread = i;
-			min_queue_length = queue_length;
-		}
-	}
-	auto& thread = collision_thread_data_buffer[target_thread];
-	{
-		std::scoped_lock lock(thread.queue_mutex);
-		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
-		thread.queue_length.fetch_add(1, std::memory_order_release);
-	}
-	thread.work_available.notify_one();
+	collision_stage.emplace_back(collision_thread_data::collision_queue_item{colliding, ctype});
+
+	if (collision_stage.size() >= collision_stage_flush_size)
+		flush_mp_collisions();
 }
 
 void post_process_threaded_collisions() {
+	collision_pending_results.clear();
+
 	SCP_map<size_t, size_t> workerThreads;
 	for (size_t i = 0; i < threading::get_num_workers(); i++)
 		workerThreads.emplace(i, 0);
@@ -967,27 +994,13 @@ void post_process_threaded_collisions() {
 					std::scoped_lock lock(thread.result_mutex);
 					thread.queue_results.swap(thread.queue_send);
 				}
-				for (auto& collision : *thread.queue_send) {
-					if (collision.collision_data.has_value())
-						collision.process_collision(&collision.objs, collision.collision_data);
-
-					// Look the entry up only after process_collision has run -- it executes game
-					// logic that can compact the pair cache out from under us.
-					uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
-					bool existed = false;
-					collider_pair *collision_info = Collision_cached_pairs.get_or_create(key, existed);
-					if (!existed) {
-						collision_info->signature_a = collision.objs.a->signature;
-						collision_info->signature_b = collision.objs.b->signature;
-					}
-
-					if (collision.never_recheck) {
-						collision_info->next_check_time = -1;
-					} else {
-						collision_info->next_check_time = collision.objs.next_check_time;
-					}
-				}
 				processed += thread.queue_send->size();
+				// Only collect here.  Applying a collision mutates ship physics and hull state, and
+				// the other workers are still running checks that read those same objects, so the
+				// actual processing waits until after spin down.
+				for (auto& collision : *thread.queue_send) {
+					collision_pending_results.emplace_back(std::move(collision));
+				}
 				thread.queue_send->clear();
 			}
 			else if (queue_length == 0) {
@@ -1010,6 +1023,29 @@ void post_process_threaded_collisions() {
 	}
 
 	spin_down_mp_collision();
+
+	// Every worker has now stopped, so it is safe to mutate the objects the checks were reading.
+	for (auto& collision : collision_pending_results) {
+		if (collision.collision_data.has_value())
+			collision.process_collision(&collision.objs, collision.collision_data);
+
+		// Look the entry up only after process_collision has run -- it executes game logic that
+		// can compact the pair cache out from under us.
+		uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
+		bool existed = false;
+		collider_pair *collision_info = Collision_cached_pairs.get_or_create(key, existed);
+		if (!existed) {
+			collision_info->signature_a = collision.objs.a->signature;
+			collision_info->signature_b = collision.objs.b->signature;
+		}
+
+		if (collision.never_recheck) {
+			collision_info->next_check_time = -1;
+		} else {
+			collision_info->next_check_time = collision.objs.next_check_time;
+		}
+	}
+	collision_pending_results.clear();
 }
 
 void obj_collide_pair(object *A, object *B)
@@ -1053,17 +1089,21 @@ void obj_collide_pair(object *A, object *B)
             break;
         case COLLISION_OF(OBJ_DEBRIS, OBJ_WEAPON):
             check_collision = collide_debris_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_WEAPON, OBJ_DEBRIS):
             swapped = 1;
             check_collision = collide_debris_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_DEBRIS, OBJ_SHIP):
             check_collision = collide_debris_ship;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_SHIP, OBJ_DEBRIS):
             check_collision = collide_debris_ship;
             swapped = 1;
+			support_mp = true;
             break;
 		case COLLISION_OF(OBJ_DEBRIS, OBJ_PROP):
 			check_collision = collide_debris_prop;
@@ -1074,17 +1114,21 @@ void obj_collide_pair(object *A, object *B)
 			break;
         case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
             check_collision = collide_asteroid_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
             swapped = 1;
             check_collision = collide_asteroid_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
             check_collision = collide_asteroid_ship;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
             check_collision = collide_asteroid_ship;
             swapped = 1;
+			support_mp = true;
             break;
 		case COLLISION_OF(OBJ_ASTEROID, OBJ_PROP):
 			check_collision = collide_asteroid_prop;
@@ -1196,6 +1240,7 @@ void obj_collide_pair(object *A, object *B)
                 } else {
                     check_collision = collide_weapon_weapon;
                 }
+                support_mp = true;
             }
 
             break;
@@ -1314,6 +1359,31 @@ void obj_collide_pair(object *A, object *B)
 	}
 	else {
 		COLLISION_PROF_INC(pairs_checked_inline);
+#if COLLISION_PROFILING
+		switch (A->type == OBJ_BEAM || B->type == OBJ_BEAM ? OBJ_BEAM : ctype) {
+			case OBJ_BEAM:
+				COLLISION_PROF_INC(inline_beam); break;
+			case COLLISION_OF(OBJ_WEAPON, OBJ_WEAPON):
+				COLLISION_PROF_INC(inline_weapon_weapon); break;
+			case COLLISION_OF(OBJ_DEBRIS, OBJ_SHIP):
+			case COLLISION_OF(OBJ_SHIP, OBJ_DEBRIS):
+				COLLISION_PROF_INC(inline_debris_ship); break;
+			case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
+			case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
+				COLLISION_PROF_INC(inline_asteroid_ship); break;
+			case COLLISION_OF(OBJ_PROP, OBJ_SHIP):
+			case COLLISION_OF(OBJ_SHIP, OBJ_PROP):
+			case COLLISION_OF(OBJ_PROP, OBJ_WEAPON):
+			case COLLISION_OF(OBJ_WEAPON, OBJ_PROP):
+			case COLLISION_OF(OBJ_DEBRIS, OBJ_PROP):
+			case COLLISION_OF(OBJ_PROP, OBJ_DEBRIS):
+			case COLLISION_OF(OBJ_ASTEROID, OBJ_PROP):
+			case COLLISION_OF(OBJ_PROP, OBJ_ASTEROID):
+				COLLISION_PROF_INC(inline_prop); break;
+			default:
+				COLLISION_PROF_INC(inline_other); break;
+		}
+#endif
 		const std::uint64_t narrow_start_ns = timer_get_nanoseconds();
 		const int hit = check_collision(&new_pair);
 		COLLISION_PROF_ADD(narrowphase_inline_ns, timer_get_nanoseconds() - narrow_start_ns);
@@ -1403,6 +1473,25 @@ void collide_mp_worker_thread(size_t threadIdx) {
 						break;
 					case COLLISION_OF(OBJ_SHIP, OBJ_SHIP):
 						check_collision = collide_ship_ship_check;
+						break;
+					case COLLISION_OF(OBJ_DEBRIS, OBJ_WEAPON):
+					case COLLISION_OF(OBJ_WEAPON, OBJ_DEBRIS):
+						check_collision = collide_debris_weapon_check;
+						break;
+					case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
+					case COLLISION_OF(OBJ_WEAPON, OBJ_ASTEROID):
+						check_collision = collide_asteroid_weapon_check;
+						break;
+					case COLLISION_OF(OBJ_DEBRIS, OBJ_SHIP):
+					case COLLISION_OF(OBJ_SHIP, OBJ_DEBRIS):
+						check_collision = collide_debris_ship_check;
+						break;
+					case COLLISION_OF(OBJ_ASTEROID, OBJ_SHIP):
+					case COLLISION_OF(OBJ_SHIP, OBJ_ASTEROID):
+						check_collision = collide_asteroid_ship_check;
+						break;
+					case COLLISION_OF(OBJ_WEAPON, OBJ_WEAPON):
+						check_collision = collide_weapon_weapon_check;
 						break;
 					default:
 						UNREACHABLE("Got non MP-compatible collision type %d!", collision_check.ctype);
@@ -1523,8 +1612,10 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	COLLISION_PROF_FRAME_ADD(overlap_ns, timer_get_nanoseconds() - phase_ns);
 	phase_ns = timer_get_nanoseconds();
 
-	if (threading::is_threading())
+	if (threading::is_threading()) {
+		flush_mp_collisions();
 		post_process_threaded_collisions();
+	}
 
 	COLLISION_PROF_FRAME_ADD(drain_ns, timer_get_nanoseconds() - phase_ns);
 

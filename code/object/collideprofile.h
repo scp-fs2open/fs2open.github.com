@@ -37,6 +37,14 @@ struct counters {
 	std::uint64_t pairs_enqueued;		// handed to a worker thread
 	std::uint64_t pairs_checked_inline;	// narrowphased on the main thread
 
+	// breakdown of pairs_checked_inline, so it is visible which types are still costing us
+	std::uint64_t inline_beam;
+	std::uint64_t inline_weapon_weapon;
+	std::uint64_t inline_debris_ship;
+	std::uint64_t inline_asteroid_ship;
+	std::uint64_t inline_prop;
+	std::uint64_t inline_other;
+
 	// narrowphase
 	std::uint64_t model_collide_calls;
 	std::uint64_t bsp_node_visits;		// model_collide_bsp entries

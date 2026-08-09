@@ -916,7 +916,7 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
  * NOTE: debris_hit_info pointer NULL for debris:weapon collision, otherwise debris:ship collision.
  * @return true if hit, else return false.
  */
-int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal)
+int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal, mc_info* out_mc)
 {
 	mc_info	mc;
 
@@ -956,9 +956,14 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 			}
 		}
 
-		weapon *wp = &Weapons[other_obj->instance];
-		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		*wp->collisionInfo = mc;
+		if (out_mc != nullptr) {
+			// Caller wants the result to stash on the weapon itself, on the main thread.
+			*out_mc = mc;
+		} else {
+			weapon *wp = &Weapons[other_obj->instance];
+			wp->collisionInfo = new mc_info;	// The weapon will free this memory later
+			*wp->collisionInfo = mc;
+		}
 
 		return mc.num_hits;
 	}
