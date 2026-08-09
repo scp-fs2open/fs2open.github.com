@@ -5722,26 +5722,8 @@ static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags f
 	return swp->current_primary_bank;
 }
 
-//	If:
-//		flags == Weapon::Info_Flags::Puncture
-//	Then Select a Puncture weapon.
-//	Else
-//		Select Any ol' weapon.
-//	Returns primary_bank index.
-/**
- * Etc. Etc. This is like the 4th rewrite of the code here. Special thanks to Bobboau
- * for finding the get_shield_strength function.
- * 
- * The AI will now intelligently choose the best weapon to use based on the overall shield
- * status of the target.
- */
-int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags)
+std::optional<int> select_primary_setup(ship *shipp, ship *other_shipp, ship_weapon *swp, object *other_objp)
 {
-	// Pointer Set Up
-	ship	*shipp = &Ships[objp->instance];
-	ship	*other_shipp = nullptr;
-	ship_weapon *swp = &shipp->weapons;
-
 	// Debugging
 	if (other_objp==NULL)
 	{
@@ -5794,6 +5776,34 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 
 	// we're not prioritizing a specific primary weapon
 	shipp->flags.remove(Ship::Ship_Flags::Force_primary_unlinking);
+
+	return std::nullopt;
+}
+
+//	If:
+//		flags == Weapon::Info_Flags::Puncture
+//	Then Select a Puncture weapon.
+//	Else
+//		Select Any ol' weapon.
+//	Returns primary_bank index.
+/**
+ * Etc. Etc. This is like the 4th rewrite of the code here. Special thanks to Bobboau
+ * for finding the get_shield_strength function.
+ * 
+ * The AI will now intelligently choose the best weapon to use based on the overall shield
+ * status of the target.
+ */
+int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags)
+{
+	// Pointer Set Up
+	ship	*shipp = &Ships[objp->instance];
+	ship	*other_shipp = nullptr;
+	ship_weapon *swp = &shipp->weapons;
+
+	auto early_return_value = select_primary_setup(shipp, other_shipp, swp, other_objp);
+	if (early_return_value.has_value()) {
+		return early_return_value.value();
+	}
 
 
 	//not using the new AI, use the old version of this function instead.
@@ -5987,6 +5997,24 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		swp->current_primary_bank = i_shieldfactor_prev_bank;		// Select the best weapon
 		nprintf(("AI", "%i: Ship %s selecting weapon %s (>50%% shields)\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_shieldfactor_prev_bank]].name));
 		return i_shieldfactor_prev_bank;							// Return
+	}
+}
+
+// Cleaner version of primary selection, with high modder control.
+int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weapon::Info_Flags flags)
+{
+	ship	*shipp = &Ships[objp->instance];
+	ship	*other_shipp = nullptr;
+	ship_weapon *swp = &shipp->weapons;
+
+	auto early_return_value = select_primary_setup(shipp, other_shipp, swp, other_objp);
+	if (early_return_value.has_value()) {
+		return early_return_value.value();
+	}
+
+	for (auto& wip_i : swp->primary_bank_weapons) {
+		auto wip = &Weapon_info[wip_i];
+		
 	}
 }
 
