@@ -268,6 +268,7 @@ Flag exe_params[] =
 	{ "-reparse_mainhall",	"Reparse mainhall.tbl when loading halls",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reparse_mainhall", },
 	{ "-noninteractive",	"Disables interactive dialogs",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noninteractive", },
 	{ "-benchmark_mode",	"Puts the game into benchmark mode",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-benchmark_mode", },
+	{ "-collision_bench",	"Benchmark N frames of collision",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-collision_bench", },
 	{ "-profile_frame_time","Profile frame time",						true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_frame_time", },
 	{ "-profile_write_file", "Write profiling information to file",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-profile_write_file", },
 	{ "-json_profiling",	"Generate JSON profiling output",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-json_profiling", },
@@ -522,6 +523,7 @@ cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // 
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+cmdline_parm collision_bench_arg("-collision_bench", NULL, AT_INT); //Cmdline_collision_bench
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
@@ -564,6 +566,7 @@ bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
+int Cmdline_collision_bench = 0;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_profiling = false;
@@ -2306,6 +2309,11 @@ bool SetCmdlineParams()
 	if (benchmark_mode_arg.found())
 	{
 		Cmdline_benchmark_mode = true;
+	}
+
+	if (collision_bench_arg.found())
+	{
+		Cmdline_collision_bench = collision_bench_arg.get_int();
 	}
 
 	if (pilot_arg.found())

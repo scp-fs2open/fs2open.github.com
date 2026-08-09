@@ -147,6 +147,7 @@ extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
 extern bool Cmdline_retail_time_compression_range;
 extern bool Cmdline_benchmark_mode;
+extern int Cmdline_collision_bench;
 extern const char *Cmdline_pilot;
 extern bool Cmdline_noninteractive;
 extern bool Cmdline_json_profiling;

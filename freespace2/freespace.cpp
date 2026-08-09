@@ -146,6 +146,7 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/stand_gui.h"
+#include "object/collideprofile.h"
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
@@ -4677,6 +4678,8 @@ void game_do_frame(bool set_frametime)
 	last_single_step = game_single_step;
 
 	game_frame();
+
+	collision_profiling::benchmark_frame();
 }
 
 void multi_maybe_do_frame()

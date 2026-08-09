@@ -19,6 +19,7 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "model/modelsinc.h"
+#include "object/collideprofile.h"
 #include "render/3d.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
@@ -306,6 +307,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 		// check each edge to see if we hit, find the closest edge
 		// Mc->hit_dist stores the best edge time of *all* faces
 		float sphere_time;
+		COLLISION_PROF_INC(sphereline_edge_tests);
 		if ( fvi_polyedge_sphereline(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, nv, verts, &sphere_time)) {
 			Assert( sphere_time >= 0.0f );
 			/*
@@ -389,6 +391,8 @@ void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
 	vec3d *points[TMAP_MAX_VERTS];
 
 	while ( tested_leaf >= 0 ) {
+		COLLISION_PROF_INC(bsp_leaf_tests);
+
 		bsp_collision_leaf *leaf = &tree->leaf_list[tested_leaf];
 
 		bool flat_poly = false;
@@ -438,6 +442,8 @@ void model_collide_bsp(bsp_collision_tree *tree, int node_index)
 	if ( tree->node_list == NULL || tree->n_verts <= 0) {
 		return;
 	}
+
+	COLLISION_PROF_INC(bsp_node_visits);
 
 	bsp_collision_node *node = &tree->node_list[node_index];
 	vec3d hitpos;
@@ -1127,6 +1133,7 @@ int model_collide(mc_info *mc_info_obj)
 	Mc = mc_info_obj;
 
 	MONITOR_INC(NumFVI,1);
+	COLLISION_PROF_INC(model_collide_calls);
 
 	Mc->num_hits = 0;				// How many collisions were found
 	Mc->shield_hit_tri = -1;	// Assume we won't hit any shield polygons

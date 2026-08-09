@@ -11,6 +11,7 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
+#include "object/collideprofile.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
@@ -21,7 +22,9 @@
 #include "tracing/Monitor.h"
 #include "utils/threading.h"
 
+#include <condition_variable>
 #include <limits>
+#include <thread>
 
 
 // the next 2 variables are used for pair statistics
@@ -33,25 +36,154 @@ SCP_vector<int> Collision_sort_list;
 
 static_assert(1 << collision_cache_bitshift > MAX_OBJECTS, "Collision pair caching currently relies on the highest possible objnum being less than 2^collision_cache_bitshift.");
 
-class collider_pair
+constexpr uint collision_cache_key_mask = (1u << collision_cache_bitshift) - 1;
+
+// The two objects of a cached pair are implied by the key -- it is built from their objnums --
+// so the entry only has to remember which *incarnation* of those two slots it was built for.
+struct collider_pair
 {
-public:
-	object *a;
-	object *b;
 	int signature_a;
 	int signature_b;
 	int next_check_time;
-	bool initialized;
+};
 
-	// we need to define a constructor because the hash map can
-	// implicitly insert an object when we use the [] operator
-	collider_pair()
-		: a(nullptr), b(nullptr), signature_a(-1), signature_b(-1), next_check_time(-1), initialized(false)
-	{}
+static int collision_pair_objnum_a(uint key) { return static_cast<int>(key >> collision_cache_bitshift); }
+static int collision_pair_objnum_b(uint key) { return static_cast<int>(key & collision_cache_key_mask); }
+
+/**
+ * @brief Open-addressed hash table mapping a packed objnum pair to its cached collision state.
+ *
+ * This used to be an SCP_unordered_map, which is node based: every entry is its own heap
+ * allocation, so a lookup costs a miss on the bucket array and then a second miss chasing the
+ * node pointer.  A heavy mission keeps a quarter of a million pairs alive, which made this
+ * lookup alone roughly 44% of all collision detection time.  Linear probing over a flat array
+ * of 16-byte entries keeps the common case to a single cache line.
+ *
+ * Key 0 is used as the empty sentinel.  That is safe because key 0 means "objnum 0 against
+ * objnum 0", and obj_collide_pair rejects A == B before it ever builds a key.
+ */
+class collider_pair_cache
+{
+	struct slot {
+		uint key;
+		collider_pair val;
+	};
+
+	SCP_vector<slot> _slots;
+	size_t _mask = 0;
+	size_t _count = 0;
+
+	// Fibonacci hashing.  The low bits of the key are objnum b, which is far from uniform, so
+	// mix the whole key and use the high bits of the product.
+	static size_t hash_key(uint key)
+	{
+		return static_cast<size_t>((static_cast<std::uint64_t>(key) * 0x9E3779B97F4A7C15ull) >> 32);
+	}
+
+	void rehash(size_t new_capacity)
+	{
+		SCP_vector<slot> old;
+		old.swap(_slots);
+
+		_slots.assign(new_capacity, slot{0, collider_pair{}});
+		_mask = new_capacity - 1;
+		_count = 0;
+
+		for (const auto& s : old) {
+			if (s.key != 0) {
+				insert_unchecked(s.key, s.val);
+			}
+		}
+	}
+
+	void insert_unchecked(uint key, const collider_pair& val)
+	{
+		size_t i = hash_key(key) & _mask;
+		while (_slots[i].key != 0) {
+			i = (i + 1) & _mask;
+		}
+		_slots[i].key = key;
+		_slots[i].val = val;
+		++_count;
+	}
+
+public:
+	collider_pair_cache() { rehash(1024); }
+
+	size_t size() const { return _count; }
+
+	void clear()
+	{
+		_slots.assign(_slots.size(), slot{0, collider_pair{}});
+		_count = 0;
+	}
+
+	/**
+	 * @brief Find the entry for @a key, creating a default one if it is not present.
+	 * @param[out] existed set to true if the entry was already in the table
+	 *
+	 * The returned pointer is invalidated by any subsequent insertion.
+	 */
+	collider_pair* get_or_create(uint key, bool& existed)
+	{
+		size_t i = hash_key(key) & _mask;
+		while (_slots[i].key != 0) {
+			if (_slots[i].key == key) {
+				existed = true;
+				return &_slots[i].val;
+			}
+			i = (i + 1) & _mask;
+		}
+
+		// Keep the load factor at or below 1/2; linear probing degrades badly past that.
+		if ((_count + 1) * 2 > _slots.size()) {
+			rehash(_slots.size() * 2);
+			existed = false;
+			// re-probe in the grown table
+			size_t j = hash_key(key) & _mask;
+			while (_slots[j].key != 0) {
+				j = (j + 1) & _mask;
+			}
+			_slots[j].key = key;
+			_slots[j].val = collider_pair{-1, -1, -1};
+			++_count;
+			return &_slots[j].val;
+		}
+
+		existed = false;
+		_slots[i].key = key;
+		_slots[i].val = collider_pair{-1, -1, -1};
+		++_count;
+		return &_slots[i].val;
+	}
+
+	/**
+	 * @brief Visit every live entry, dropping the ones @a pred rejects.
+	 *
+	 * Implemented as a compacting rebuild rather than in-place erase: linear probing needs
+	 * either tombstones or backward shifting to erase safely, and this is only ever called
+	 * while already walking the whole table.
+	 */
+	template <typename Pred>
+	void retain(Pred pred)
+	{
+		SCP_vector<slot> old;
+		old.swap(_slots);
+
+		_slots.assign(old.size(), slot{0, collider_pair{}});
+		_mask = old.size() - 1;
+		_count = 0;
+
+		for (auto& s : old) {
+			if (s.key != 0 && pred(s.key, s.val)) {
+				insert_unchecked(s.key, s.val);
+			}
+		}
+	}
 };
 
 static SCP_set<object*> Collision_cache_stale_objects;
-static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
+static collider_pair_cache Collision_cached_pairs;
 
 class checkobject;
 extern checkobject CheckObjects[MAX_OBJECTS];
@@ -511,29 +643,31 @@ int collide_remove_weapons( )
 	}
 
 	// first pass is to see if any of the weapons don't have collision pairs.
-	for (auto& pair : Collision_cached_pairs) {
-        collider_pair* pair_obj = &pair.second;
+	// Dropping the entry here replaces the old "initialized = false" reset: either way the next
+	// lookup of this key starts from scratch.
+	Collision_cached_pairs.retain([](uint key, collider_pair& pair) {
+		object* a = &Objects[collision_pair_objnum_a(key)];
+		object* b = &Objects[collision_pair_objnum_b(key)];
+		bool keep = true;
 
-		if (!pair_obj->initialized) {
-			continue;
-		}
+		if (a->type == OBJ_WEAPON && pair.signature_a == a->signature) {
+			crw_check_weapon(a->instance, pair.next_check_time);
 
-		if (pair_obj->a->type == OBJ_WEAPON && pair_obj->signature_a == pair_obj->a->signature) {
-			crw_check_weapon(pair_obj->a->instance, pair_obj->next_check_time);
-
-			if (crw_status[pair_obj->a->instance] == CRW_CAN_DELETE) {
-				pair_obj->initialized = false;
+			if (crw_status[a->instance] == CRW_CAN_DELETE) {
+				keep = false;
 			}
 		}
 
-		if (pair_obj->b->type == OBJ_WEAPON && pair_obj->signature_b == pair_obj->b->signature) {
-			crw_check_weapon(pair_obj->b->instance, pair_obj->next_check_time);
+		if (b->type == OBJ_WEAPON && pair.signature_b == b->signature) {
+			crw_check_weapon(b->instance, pair.next_check_time);
 
-			if (crw_status[pair_obj->b->instance] == CRW_CAN_DELETE) {
-				pair_obj->initialized = false;
+			if (crw_status[b->instance] == CRW_CAN_DELETE) {
+				keep = false;
 			}
 		}
-	}
+
+		return keep;
+	});
 
 	// for each weapon which could be removed, delete the object
 	int num_deleted = 0;
@@ -617,17 +751,19 @@ void obj_collide_retime_stale_pairs()
 {
 	TRACE_SCOPE(tracing::RetimeCollisionCache);
 
-	auto it = Collision_cached_pairs.begin();
-	while (it != Collision_cached_pairs.end()) {
-		auto &pair = it->second;
-		if (pair.signature_a != pair.a->signature || pair.signature_b != pair.b->signature) {
-			it = Collision_cached_pairs.erase(it);
-		} else {
-			if (pair.a->flags[Object::Object_Flags::Collision_cache_stale] || pair.b->flags[Object::Object_Flags::Collision_cache_stale])
-				pair.next_check_time = timestamp(0);
-			it++;
-		}
-	}
+	Collision_cached_pairs.retain([](uint key, collider_pair& pair) {
+		object* a = &Objects[collision_pair_objnum_a(key)];
+		object* b = &Objects[collision_pair_objnum_b(key)];
+
+		// either slot has been recycled since this entry was made, so it is dead weight
+		if (pair.signature_a != a->signature || pair.signature_b != b->signature)
+			return false;
+
+		if (a->flags[Object::Object_Flags::Collision_cache_stale] || b->flags[Object::Object_Flags::Collision_cache_stale])
+			pair.next_check_time = timestamp(0);
+
+		return true;
+	});
 
 	for (auto objp : Collision_cache_stale_objects)
 		objp->flags.remove(Object::Object_Flags::Collision_cache_stale);
@@ -644,51 +780,58 @@ void obj_collide_obj_cache_stale(object* objp)
 namespace
 {
 
-float obj_get_collider_endpoint(int obj_num, int axis, bool min)
+// Endpoints for the axis currently being swept, indexed by objnum.  The sort and overlap passes
+// between them ask for an endpoint hundreds of thousands of times a frame, and recomputing it
+// every time meant an Objects[] indirection plus a three-way type dispatch each time.  Computing
+// both ends once per object per axis turns all of that into an array read.
+static SCP_vector<float> Collider_endpoint_min;
+static SCP_vector<float> Collider_endpoint_max;
+
+void obj_compute_collider_endpoints(int obj_num, int axis, float *min_out, float *max_out)
 {
-    if ( Objects[obj_num].type == OBJ_BEAM ) {
-        beam *b = &Beams[Objects[obj_num].instance];
+    const object *objp = &Objects[obj_num];
+
+    if ( objp->type == OBJ_BEAM ) {
+        const beam *b = &Beams[objp->instance];
 
         // use the last start and last shot as endpoints
-        float min_end, max_end;
         if ( b->last_start.a1d[axis] > b->last_shot.a1d[axis] ) {
-            min_end = b->last_shot.a1d[axis];
-            max_end = b->last_start.a1d[axis];
+            *min_out = b->last_shot.a1d[axis];
+            *max_out = b->last_start.a1d[axis];
         } else {
-            min_end = b->last_start.a1d[axis];
-            max_end = b->last_shot.a1d[axis];
+            *min_out = b->last_start.a1d[axis];
+            *max_out = b->last_shot.a1d[axis];
         }
-
-        if ( min ) {
-            return min_end;
+    } else if ( objp->type == OBJ_WEAPON ) {
+        if ( objp->pos.a1d[axis] > objp->last_pos.a1d[axis] ) {
+            *min_out = objp->last_pos.a1d[axis] - objp->radius;
+            *max_out = objp->pos.a1d[axis] + objp->radius;
         } else {
-            return max_end;
-        }
-    } else if ( Objects[obj_num].type == OBJ_WEAPON ) {
-        float min_end, max_end;
-
-        if ( Objects[obj_num].pos.a1d[axis] > Objects[obj_num].last_pos.a1d[axis] ) {
-            min_end = Objects[obj_num].last_pos.a1d[axis];
-            max_end = Objects[obj_num].pos.a1d[axis];
-        } else {
-            min_end = Objects[obj_num].pos.a1d[axis];
-            max_end = Objects[obj_num].last_pos.a1d[axis];
-        }
-
-        if ( min ) {
-            return min_end - Objects[obj_num].radius;
-        } else {
-            return max_end + Objects[obj_num].radius;
+            *min_out = objp->pos.a1d[axis] - objp->radius;
+            *max_out = objp->last_pos.a1d[axis] + objp->radius;
         }
     } else {
-        vec3d *pos = &Objects[obj_num].pos;
-
-        if ( min ) {
-            return pos->a1d[axis] - Objects[obj_num].radius;
-        } else {
-            return pos->a1d[axis] + Objects[obj_num].radius;
-        }
+        *min_out = objp->pos.a1d[axis] - objp->radius;
+        *max_out = objp->pos.a1d[axis] + objp->radius;
     }
+}
+
+//! Refresh the endpoint cache for @a axis, for exactly the objects in @a list.
+void obj_cache_collider_endpoints(const SCP_vector<int> &list, int axis)
+{
+    if ( Collider_endpoint_min.size() < static_cast<size_t>(MAX_OBJECTS) ) {
+        Collider_endpoint_min.resize(MAX_OBJECTS);
+        Collider_endpoint_max.resize(MAX_OBJECTS);
+    }
+
+    for (int obj_num : list) {
+        obj_compute_collider_endpoints(obj_num, axis, &Collider_endpoint_min[obj_num], &Collider_endpoint_max[obj_num]);
+    }
+}
+
+inline float obj_get_collider_endpoint(int obj_num, bool min)
+{
+    return min ? Collider_endpoint_min[obj_num] : Collider_endpoint_max[obj_num];
 }
 
 void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axis)
@@ -699,7 +842,7 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
     if ( right > left ) {
         int pivot_index = left + (right - left) / 2;
 
-        float pivot_value = obj_get_collider_endpoint((*list)[pivot_index], axis, true);
+        float pivot_value = obj_get_collider_endpoint((*list)[pivot_index], true);
 
         // swap!
         int temp = (*list)[pivot_index];
@@ -709,7 +852,7 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
         int store_index = left;
 
         for (int i = left; i < right; ++i ) {
-            if ( obj_get_collider_endpoint((*list)[i], axis, true) <= pivot_value ) {
+            if ( obj_get_collider_endpoint((*list)[i], true) <= pivot_value ) {
                 temp = (*list)[i];
                 (*list)[i] = (*list)[store_index];
                 (*list)[store_index] = temp;
@@ -740,6 +883,7 @@ struct collision_thread_data {
 
 	std::atomic_size_t queue_length, result_length;
 	std::mutex queue_mutex, result_mutex;
+	std::condition_variable work_available;
 	std::unique_ptr<SCP_vector<collision_queue_item>> queue_load, queue_process;
 	std::unique_ptr<SCP_vector<collision_queue_result>> queue_results, queue_send;
 
@@ -762,7 +906,19 @@ void spin_up_mp_collision() {
 
 void spin_down_mp_collision() {
 	threading::spin_down_threaded_task();
-	collision_processing_done.store(true);
+	collision_processing_done.store(true, std::memory_order_release);
+
+	// Wake every worker parked in its idle wait.  Taking the queue mutex before notifying is
+	// what makes this race free: a worker only ever parks while holding that mutex, so we
+	// cannot slip the notify into the gap between its "am I done?" check and the wait itself.
+	for (size_t i = 0; i < threading::get_num_workers(); i++) {
+		auto& thread = collision_thread_data_buffer[i];
+		{
+			std::scoped_lock lock(thread.queue_mutex);
+		}
+		thread.work_available.notify_all();
+	}
+
 	threading::spin_down_wait_complete();
 }
 
@@ -780,12 +936,13 @@ void queue_mp_collision(uint ctype, const obj_pair& colliding) {
 			min_queue_length = queue_length;
 		}
 	}
+	auto& thread = collision_thread_data_buffer[target_thread];
 	{
-		auto& thread = collision_thread_data_buffer[target_thread];
 		std::scoped_lock lock(thread.queue_mutex);
 		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
 		thread.queue_length.fetch_add(1, std::memory_order_release);
 	}
+	thread.work_available.notify_one();
 }
 
 void post_process_threaded_collisions() {
@@ -794,6 +951,10 @@ void post_process_threaded_collisions() {
 		workerThreads.emplace(i, 0);
 
 	while (!workerThreads.empty()) {
+		COLLISION_PROF_INC(drain_spins);
+
+		bool progress = false;
+
 		for(auto& [i, processed] : workerThreads) {
 			auto& thread = collision_thread_data_buffer[i];
 
@@ -801,16 +962,24 @@ void post_process_threaded_collisions() {
 			size_t result_length = thread.result_length.load(std::memory_order_acquire);
 
 			if (result_length > processed) {
+				progress = true;
 				{
 					std::scoped_lock lock(thread.result_mutex);
 					thread.queue_results.swap(thread.queue_send);
 				}
 				for (auto& collision : *thread.queue_send) {
-					uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
-					collider_pair *collision_info = &Collision_cached_pairs[key];
-
 					if (collision.collision_data.has_value())
 						collision.process_collision(&collision.objs, collision.collision_data);
+
+					// Look the entry up only after process_collision has run -- it executes game
+					// logic that can compact the pair cache out from under us.
+					uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
+					bool existed = false;
+					collider_pair *collision_info = Collision_cached_pairs.get_or_create(key, existed);
+					if (!existed) {
+						collision_info->signature_a = collision.objs.a->signature;
+						collision_info->signature_b = collision.objs.b->signature;
+					}
 
 					if (collision.never_recheck) {
 						collision_info->next_check_time = -1;
@@ -824,8 +993,19 @@ void post_process_threaded_collisions() {
 			else if (queue_length == 0) {
 				thread.queue_results->clear();
 				workerThreads.erase(i);
+				progress = true;
 				break;
 			}
+		}
+
+		if (!progress) {
+			// Every worker still has outstanding work but none of it has landed yet.  Yield
+			// rather than sleeping on a condition variable: the main thread has nothing else to
+			// do, results land in tens of microseconds, and a timed wait rounds every one of
+			// those up to its own granularity (a 50us wait_for here cost ~2.3ms/frame).  This
+			// loop was only ~700 iterations a frame even before the worker spin was fixed, so
+			// it was never the thing burning cores.
+			std::this_thread::yield();
 		}
 	}
 
@@ -839,6 +1019,8 @@ void obj_collide_pair(object *A, object *B)
     int (*check_collision)( obj_pair *pair ) = nullptr;
     int swapped = 0;
 	bool support_mp = false;
+
+    COLLISION_PROF_INC(pair_calls);
 
     if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -1025,6 +1207,8 @@ void obj_collide_pair(object *A, object *B)
 
     if ( !check_collision ) return;
 
+    COLLISION_PROF_INC(pairs_considered);
+
     // Swap them if needed
     if ( swapped ) {
         std::swap(A,B);
@@ -1033,34 +1217,29 @@ void obj_collide_pair(object *A, object *B)
     bool valid = false;
     uint key = (OBJ_INDEX(A) << collision_cache_bitshift) + OBJ_INDEX(B);
 
-    collider_pair* collision_info = &Collision_cached_pairs[key];
+    // NOTE: timing this single lookup costs ~1.5ms/frame in timer calls alone, which is more
+    // than it measures.  It was instrumented once to establish that the lookup was ~2.3ms of a
+    // 5.3ms collision budget; don't leave a timer here.
+    bool existed = false;
+    collider_pair* collision_info = Collision_cached_pairs.get_or_create(key, existed);
 
-    if ( collision_info->initialized ) {
-        // make sure we're referring to the correct objects in case the original pair was deleted
-        if ( collision_info->signature_a == collision_info->a->signature &&
-             collision_info->signature_b == collision_info->b->signature ) {
-            valid = true;
-        } else {
-            collision_info->a = A;
-            collision_info->b = B;
-            collision_info->signature_a = A->signature;
-            collision_info->signature_b = B->signature;
-            collision_info->next_check_time = timestamp(0);
-        }
+    // The key is built from both objnums, so the entry always describes these two slots. All we
+    // have to confirm is that neither slot has been recycled since the entry was made.
+    if ( existed && collision_info->signature_a == A->signature && collision_info->signature_b == B->signature ) {
+        valid = true;
     } else {
-        collision_info->a = A;
-        collision_info->b = B;
         collision_info->signature_a = A->signature;
         collision_info->signature_b = B->signature;
-        collision_info->initialized = true;
         collision_info->next_check_time = timestamp(0);
     }
 
     if ( valid ) {
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
+            COLLISION_PROF_INC(pairs_cache_skipped);
             return;
         } else if ( !timestamp_elapsed(collision_info->next_check_time) ) {
+            COLLISION_PROF_INC(pairs_cache_skipped);
 			return;
         }
     } else {
@@ -1130,19 +1309,36 @@ void obj_collide_pair(object *A, object *B)
     new_pair.next_check_time = collision_info->next_check_time;
 
 	if (threading::is_threading() && support_mp) {
+		COLLISION_PROF_INC(pairs_enqueued);
 		queue_mp_collision(ctype, new_pair);
 	}
 	else {
-		if (check_collision(&new_pair)) {
+		COLLISION_PROF_INC(pairs_checked_inline);
+		const std::uint64_t narrow_start_ns = timer_get_nanoseconds();
+		const int hit = check_collision(&new_pair);
+		COLLISION_PROF_ADD(narrowphase_inline_ns, timer_get_nanoseconds() - narrow_start_ns);
+
+		// Re-acquire rather than reusing collision_info: check_collision runs arbitrary game
+		// logic, and creating an object can reach collide_remove_weapons(), which compacts the
+		// pair cache and invalidates every pointer into it.  (The old SCP_unordered_map had
+		// stable node addresses and did not need this.)
+		bool still_present = false;
+		collider_pair *updated = Collision_cached_pairs.get_or_create(key, still_present);
+		if (!still_present) {
+			updated->signature_a = A->signature;
+			updated->signature_b = B->signature;
+		}
+
+		if (hit) {
 			// don't have to check ever again
-			collision_info->next_check_time = -1;
+			updated->next_check_time = -1;
 		} else {
-			collision_info->next_check_time = new_pair.next_check_time;
+			updated->next_check_time = new_pair.next_check_time;
 		}
 	}
 }
 
-void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<int> &list, int axis, bool collide)
+void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<int> &list, bool collide)
 {
     TRACE_SCOPE(tracing::FindOverlapColliders);
 
@@ -1152,10 +1348,10 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
     for (int in_index : list){
         bool overlapped = false;
 
-        const float min = obj_get_collider_endpoint(in_index, axis, true);
+        const float min = obj_get_collider_endpoint(in_index, true);
 
         for (size_t j = 0; j < overlappers.size(); ) {
-            const float overlap_max = obj_get_collider_endpoint(overlappers[j], axis, false);
+            const float overlap_max = obj_get_collider_endpoint(overlappers[j], false);
             if ( min <= overlap_max ) {
                 overlapped = true;
 
@@ -1231,7 +1427,22 @@ void collide_mp_worker_thread(size_t threadIdx) {
 			thread.queue_load.swap(thread.queue_process);
 			thread.queue_load->clear();
 		}
+		else {
+			// Nothing to do, and we cannot leave until the main thread says collision is done,
+			// so park instead of spinning.  Re-checking both conditions under the queue mutex is
+			// what closes the lost-wakeup window: queue_mp_collision bumps queue_length while
+			// holding this mutex, and spin_down_mp_collision takes it before notifying.
+			COLLISION_PROF_INC(worker_idle_spins);
+
+			std::unique_lock<std::mutex> lock(thread.queue_mutex);
+			if (thread.queue_length.load(std::memory_order_acquire) == 0
+				&& !collision_processing_done.load(std::memory_order_acquire)) {
+				thread.work_available.wait(lock);
+			}
+		}
 	}
+
+	collision_profiling::flush_local();
 }
 
 void collide_init() {
@@ -1251,8 +1462,7 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
 
-	if (threading::is_threading())
-		spin_up_mp_collision();
+	const std::uint64_t collide_start_ns = timer_get_nanoseconds();
 
 	if (!Collision_cache_stale_objects.empty()) {
 		obj_collide_retime_stale_pairs();
@@ -1264,29 +1474,63 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		Collision_list = &Collision_sort_list;
 	}
 
+	std::uint64_t phase_ns = timer_get_nanoseconds();
+
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
+		obj_cache_collider_endpoints(*Collision_list, 0);
 		obj_quicksort_colliders(Collision_list, 0, (int)(Collision_list->size() - 1), 0);
 	}
-	obj_find_overlap_colliders(sort_list_y, *Collision_list, 0, false);
+	COLLISION_PROF_FRAME_ADD(sort_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
+
+	obj_find_overlap_colliders(sort_list_y, *Collision_list, false);
+
+	COLLISION_PROF_FRAME_ADD(overlap_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
 
 	sort_list_z.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
+		obj_cache_collider_endpoints(sort_list_y, 1);
 		obj_quicksort_colliders(&sort_list_y, 0, (int)(sort_list_y.size() - 1), 1);
 	}
-	obj_find_overlap_colliders(sort_list_z, sort_list_y, 1, false);
+	COLLISION_PROF_FRAME_ADD(sort_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
+
+	obj_find_overlap_colliders(sort_list_z, sort_list_y, false);
+
+	COLLISION_PROF_FRAME_ADD(overlap_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
 
 	sort_list_y.clear();
 	{
 		TRACE_SCOPE(tracing::SortColliders);
+		obj_cache_collider_endpoints(sort_list_z, 2);
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
-	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+	COLLISION_PROF_FRAME_ADD(sort_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
+
+	// Only this last pass generates pairs, so the workers have nothing to do before it.  Spinning
+	// them up any earlier just parks every one of them in an idle wait for the whole broadphase.
+	if (threading::is_threading())
+		spin_up_mp_collision();
+
+	obj_find_overlap_colliders(sort_list_y, sort_list_z, true);
+
+	COLLISION_PROF_FRAME_ADD(overlap_ns, timer_get_nanoseconds() - phase_ns);
+	phase_ns = timer_get_nanoseconds();
 
 	if (threading::is_threading())
 		post_process_threaded_collisions();
+
+	COLLISION_PROF_FRAME_ADD(drain_ns, timer_get_nanoseconds() - phase_ns);
+
+	COLLISION_PROF_FRAME_ADD(collision_ns, timer_get_nanoseconds() - collide_start_ns);
+	COLLISION_PROF_FRAME_ADD(cache_size, Collision_cached_pairs.size());
+	collision_profiling::flush_local();
 }
 
 void collide_apply_gravity_flags_weapons() {
