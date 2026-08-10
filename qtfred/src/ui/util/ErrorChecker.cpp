@@ -1206,35 +1206,31 @@ int ErrorChecker::checkTeamLoadout() {
 			continue;
 
 		// Build a fresh usage list for this team's starting wings.
-		int usage[MAX_WEAPON_TYPES];
+		SCP_map<int, int> usage;
 		_viewport->editor->generate_team_weaponry_usage_list(i, usage);
 
-		// Zero out weapons that are accounted for in the loadout pool, so that
-		// only weapons missing from the pool remain non-zero.
-		for (int j = 0; j < Team_data[i].num_weapon_choices; j++) {
-			int wi = Team_data[i].weaponry_pool[j];
-			if (wi >= 0 && wi < MAX_WEAPON_TYPES)
-				usage[wi] = 0;
+		// Remove weapons that are accounted for in the loadout pool, so that
+		// only weapons missing from the pool remain.
+		for (const auto &entry : Team_data[i].weapon_choices) {
+			if (entry.class_index >= 0)
+				usage.erase(entry.class_index);
 		}
 
-		// Any non-zero entry is a weapon used in wings but absent from the loadout.
-		for (int j = 0; j < MAX_WEAPON_TYPES; j++) {
-			if (usage[j] <= 0)
+		// Any remaining entry is a weapon used in wings but absent from the loadout.
+		for (const auto &[weapon_class, count] : usage) {
+			if (count <= 0)
 				continue;
 
-			if (_viewport->Error_checker_apply_auto_corrections && Team_data[i].num_weapon_choices < MAX_WEAPON_TYPES) {
+			if (_viewport->Error_checker_apply_auto_corrections) {
 				// Add the missing weapon to the pool so the mission is structurally valid.
-				int slot = Team_data[i].num_weapon_choices;
-				Team_data[i].weaponry_pool[slot] = j;
-				Team_data[i].weaponry_count[slot] = usage[j];
-				strcpy_s(Team_data[i].weaponry_amount_variable[slot], "");
-				strcpy_s(Team_data[i].weaponry_pool_variable[slot], "");
-				Team_data[i].num_weapon_choices++;
+				auto &entry = Team_data[i].weapon_choices.emplace_back();
+				entry.class_index = weapon_class;
+				entry.count = count;
 				warning("Weapon \"%s\" is used in wings of team %d but was not in the team loadout pool — added automatically.",
-						Weapon_info[j].name, i + 1);
+						Weapon_info[weapon_class].name, i + 1);
 			} else {
 				warning("Weapon \"%s\" is used in wings of team %d but is not in the team loadout pool — can be auto-corrected by adding it.",
-						Weapon_info[j].name, i + 1);
+						Weapon_info[weapon_class].name, i + 1);
 			}
 		}
 	}

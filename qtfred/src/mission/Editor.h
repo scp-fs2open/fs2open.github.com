@@ -251,12 +251,18 @@ class Editor : public QObject {
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
-	SCP_vector<int> getStartingWingLoadoutUseCounts();
+	// per-team ship and weapon usage (class index -> count used in starting wings)
+	struct LoadoutUseCounts {
+		SCP_map<int, int> ships;
+		SCP_map<int, int> weapons;
+	};
+
+	const SCP_vector<LoadoutUseCounts> &getStartingWingLoadoutUseCounts();
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
 
-	void generate_team_weaponry_usage_list(int team, int* arr);
+	void generate_team_weaponry_usage_list(int team, SCP_map<int, int>& usage);
 
   private slots:
 	void performTimedAutosave();
@@ -282,9 +288,8 @@ class Editor : public QObject {
 
 	bool already_deleting_wing = false;
 
-	// ship and weapon usage pools
-	int _ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int _weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	// ship and weapon usage pools, one entry per team
+	SCP_vector<LoadoutUseCounts> _loadout_usage;
 
 	int common_object_delete(int obj);
 
@@ -330,9 +335,9 @@ class Editor : public QObject {
 	 */
 	static int find_free_wing();
 
-	void generate_wing_weaponry_usage_list(int* arr, int wing);
+	void generate_wing_weaponry_usage_list(SCP_map<int, int>& usage, int wing);
 
-	void generate_ship_usage_list(int* arr, int wing);
+	void generate_ship_usage_list(SCP_map<int, int>& usage, int wing);
 
 	int get_visible_sub_system_count(ship* shipp);
 

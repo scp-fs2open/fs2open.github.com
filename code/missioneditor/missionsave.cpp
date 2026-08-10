@@ -4415,42 +4415,44 @@ int Fred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
-		int num_dogfight_weapons = 0;
-		SCP_vector<SCP_string> dogfight_ships;
+		SCP_vector<SCP_string> ships_without_dogfight_weapons;
 
-		for (j = 0; j < Team_data[i].num_ship_choices; j++) {
+		for (const auto &sc : Team_data[i].ship_choices) {
 			// Check to see if a variable name should be written for the class rather than a number
-			if (strlen(Team_data[i].ship_list_variables[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].ship_list_variables[j]);
+			if (!sc.class_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(sc.class_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name);
+				fout("\t\"%s\"\t", Ship_info[sc.class_index].name);
 			}
 
 			// Now check if we should write a variable or a number for the amount of ships available
-			if (strlen(Team_data[i].ship_count_variables[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].ship_count_variables[j]);
+			if (!sc.count_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(sc.count_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("%d\n", Team_data[i].ship_count[j]);
+				fout("%d\n", sc.count);
 			}
 
 			// Check the weapons pool for at least one dogfight weapon for this ship type
-			if (IS_MISSION_MULTI_DOGFIGHT) {
-				for (int wepCount = 0; wepCount < Team_data[i].num_weapon_choices; wepCount++) {
-					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] &
-						DOGFIGHT_WEAPON) {
-						num_dogfight_weapons++;
+			// (variable-specified classes can't be resolved at save time, so skip them)
+			if (IS_MISSION_MULTI_DOGFIGHT && sc.class_index >= 0) {
+				bool found_dogfight_weapon = false;
+				for (const auto &wc : Team_data[i].weapon_choices) {
+					if (wc.class_index >= 0 &&
+						(Ship_info[sc.class_index].allowed_weapons[wc.class_index] & DOGFIGHT_WEAPON)) {
+						found_dogfight_weapon = true;
 						break;
-					} else {
-						dogfight_ships.push_back(Ship_info[Team_data[i].ship_list[j]].name);
 					}
+				}
+				if (!found_dogfight_weapon) {
+					ships_without_dogfight_weapons.emplace_back(Ship_info[sc.class_index].name);
 				}
 			}
 		}
@@ -4458,8 +4460,8 @@ int Fred_mission_save::save_players()
 		fout(")");
 
 		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
-		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
-			for (const auto& d_ship : dogfight_ships) {
+		if (IS_MISSION_MULTI_DOGFIGHT && !ships_without_dogfight_weapons.empty()) {
+			for (const auto& d_ship : ships_without_dogfight_weapons) {
 				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", d_ship.c_str()));
 			}
 			SCP_string msg =
@@ -4478,33 +4480,33 @@ int Fred_mission_save::save_players()
 		fout(" (\n");
 		generate_weaponry_usage_list_team(i, used_pool);
 
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+		for (const auto &wc : Team_data[i].weapon_choices) {
 			// first output the weapon name or a variable that sets it
-			if (strlen(Team_data[i].weaponry_pool_variable[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[j]);
+			if (!wc.class_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(wc.class_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("\t\"%s\"\t", Weapon_info[Team_data[i].weaponry_pool[j]].name);
+				fout("\t\"%s\"\t", Weapon_info[wc.class_index].name);
 			}
 
 			// now output the amount of this weapon or a variable that sets it. If this weapon is in the used pool and
 			// isn't set by a variable we should add the amount of weapons used by the wings to it and zero the entry so
 			// we know that we have dealt with it
-			if (strlen(Team_data[i].weaponry_amount_variable[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[j]);
+			if (!wc.count_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(wc.count_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
-				if (strlen(Team_data[i].weaponry_pool_variable[j])) {
-					fout("%d\n", Team_data[i].weaponry_count[j]);
+				if (!wc.class_variable.empty()) {
+					fout("%d\n", wc.count);
 				} else {
-					fout("%d\n", Team_data[i].weaponry_count[j] + used_pool[Team_data[i].weaponry_pool[j]]);
-					used_pool[Team_data[i].weaponry_pool[j]] = 0;
+					fout("%d\n", wc.count + used_pool[wc.class_index]);
+					used_pool[wc.class_index] = 0;
 				}
 			}
 		}
@@ -4568,23 +4570,15 @@ int Fred_mission_save::save_players()
 		}
 
 		// Goober5000 - mjn.mixael's required weapon feature
-		bool uses_required_weapon = false;
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (Team_data[i].weapon_required[j]) {
-				uses_required_weapon = true;
-				break;
-			}
-		}
-		if (save_config.save_format != MissionFormat::RETAIL && uses_required_weapon) {
+		if (save_config.save_format != MissionFormat::RETAIL && !Team_data[i].required_weapons.empty()) {
 			if (optional_string_fred("+Required for mission:", "$Starting Shipname:"))
 				parse_comments(2);
 			else
 				fout("\n+Required for mission:");
 
 			fout(" (");
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (Team_data[i].weapon_required[j])
-					fout(" \"%s\"", Weapon_info[j].name);
+			for (int weapon_class : Team_data[i].required_weapons) {
+				fout(" \"%s\"", Weapon_info[weapon_class].name);
 			}
 			fout(" )");
 		}

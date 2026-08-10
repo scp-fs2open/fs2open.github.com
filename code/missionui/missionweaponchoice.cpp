@@ -1367,14 +1367,12 @@ void maybe_select_new_ship_weapon(int index)
  */
 void wl_init_pool(team_data *td)
 {
-	int i;
-
 	Assert( Wl_pool != NULL );
 
 	Wl_pool->clear();
 
-	for ( i = 0; i < td->num_weapon_choices; i++ ) {
-		(*Wl_pool)[td->weaponry_pool[i]] += td->weaponry_count[i];	// read from mission
+	for ( auto &entry : td->weapon_choices ) {
+		(*Wl_pool)[entry.class_index] += entry.count;	// read from mission
 	}
 }
 
