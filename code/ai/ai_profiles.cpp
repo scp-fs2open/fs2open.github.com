@@ -382,6 +382,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
+				set_flag(profile, "$Configurable primary weapon selection:", AI::Profile_Flags::Configurable_primary_weapon_selection);
+
 				set_flag(profile, "$smart primary weapon selection:", AI::Profile_Flags::Smart_primary_weapon_selection);
 
 				set_flag(profile, "$smart secondary weapon selection:", AI::Profile_Flags::Smart_secondary_weapon_selection);

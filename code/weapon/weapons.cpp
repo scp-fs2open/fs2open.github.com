@@ -2133,22 +2133,34 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		float value;
 		while (optional_string("+")) {
 			stuff_string(type, F_NAME);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+			stuff_float(&value);
 			if (type == "ARMOR:") {
-				stuff_string(fname, F_NAME, NAME_LENGTH);
 				instance_index = armor_type_get_idx(fname);
-				stuff_float(&value);
+				if (instance_index < 0) {
+					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid armor type!\n", wip->name, fname);
+				}
 				wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].emplace(instance_index, value);
 			} else if (type == "SHIP_TYPE:") {
-				stuff_string(fname, F_NAME, NAME_LENGTH);
 				instance_index = ship_type_name_lookup(fname);
-				stuff_float(&value);
-				wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].emplace(instance_index, value);
+				if (instance_index < 0) {
+					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid ship type!\n", wip->name, fname);
+				}
+				wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE].emplace(instance_index, value);
 			} else if (type == "SHIP_CLASS:") {
-
+				instance_index = ship_info_lookup(fname);
+				if (instance_index < 0) {
+					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid ship class!\n", wip->name, fname);
+				}
+				wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS].emplace(instance_index, value);
 			} else if (type == "WEAPON_CLASS:") {
-
+				instance_index = weapon_info_lookup(fname);
+				if (instance_index < 0) {
+					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid weapon class!\n", wip->name, fname);
+				}
+				wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS].emplace(instance_index, value);
 			} else {
-
+				error_display(0, "Invalid primary selection target flag type '%s' in weapon '%s'!", type.c_str(), wip->name);
 			}
 		}
 	}
@@ -10172,6 +10184,10 @@ void weapon_info::reset()
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
+
+	for (i = 0; i < PrimarySelectionTargetType::MAX; i++) {
+		this->primary_selection_target_flags[i] = {};
+	}
 
 	this->on_create_program = actions::ProgramSet();
 }

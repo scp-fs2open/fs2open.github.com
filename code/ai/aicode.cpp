@@ -919,6 +919,8 @@ void parse_ai_class()
 		parse_float_list(aicp->ai_turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
 	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
+	
+	set_aic_flag(aicp, "$configurable primary weapon selection:", AI::Profile_Flags::Configurable_primary_weapon_selection);
 
 	set_aic_flag(aicp, "$smart primary weapon selection:", AI::Profile_Flags::Smart_primary_weapon_selection);
 
@@ -1594,6 +1596,8 @@ int set_target_objnum(ai_info *aip, int objnum)
 
 int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flags flags);
 
+int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weapon::Info_Flags flags);
+
 /**
  * Make new_subsys the targeted subsystem of ship *aip.
  */
@@ -1610,7 +1614,7 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE) {
 			if ( aip != Player_ai ) {
 				Assert( aip->shipnum >= 0 );
-				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], Weapon::Info_Flags::Puncture);
+				ai_select_primary_weapon_configurable(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], Weapon::Info_Flags::Puncture);
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
 			}
 		}
@@ -5817,7 +5821,6 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 		return early_return_value.value();
 	}
 
-
 	//not using the new AI, use the old version of this function instead.
 	if (!(Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_Flags::Smart_primary_weapon_selection]))
 	{
@@ -6020,6 +6023,12 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 	ship_weapon *swp = &shipp->weapons;
 	ship_info *sinfop = &Ship_info[shipp->ship_info_index];
 
+	//if we're not using configurable, use the previous version of this function instead.
+	if (!(Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_Flags::Configurable_primary_weapon_selection]))
+	{
+		return ai_select_primary_weapon(objp, other_objp, flags);
+	}
+
 	auto early_return_value = select_primary_setup(shipp, target_shipp, swp, other_objp);
 	if (early_return_value.has_value()) {
 		return early_return_value.value();
@@ -6031,7 +6040,11 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 	bool is_beam;
 
 	ship_subsys *target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
-	float relevant_shields_left = 100.0f;
+	float relevant_shields_left = 100.0f; //TODO: get shield quadrant stuff
+	int relevant_armor_type_idx = -1;
+	int relevant_ship_type_idx = -1;
+	int relevant_ship_class_idx = -1;
+	int relevant_weapon_class_idx = -1;
 
 	SCP_unordered_map<int, float> weapon_values = {};
 
@@ -6054,21 +6067,25 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 
 
 		if (target_shipp) {
+			relevant_ship_type_idx = Ship_info[target_shipp->ship_info_index].class_type;
+			relevant_ship_class_idx = target_shipp->ship_info_index;
 			if (relevant_shields_left > 0.0f) {
 				damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
 				dph *= damage_scale;
-				dph = Armor_types[target_shipp->shield_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				relevant_armor_type_idx = target_shipp->shield_armor_type_idx;
+				dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 				if (!is_beam || Beams_use_damage_factors) {
 					dph *= wip->shield_factor;
 				}
 			} else if (target_subsys) {
 				if (!is_beam || Beams_use_damage_factors) {
+					relevant_armor_type_idx = target_subsys->armor_type_idx;
 					if (target_subsys->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 						dph *= wip->armor_factor;
-						dph = Armor_types[target_subsys->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+						dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 					} else {
 						dph *= wip->subsystem_factor;
-						dph = Armor_types[target_subsys->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+						dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 					}
 				}
 			} else {
@@ -6076,7 +6093,8 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 					damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
 				}
 				dph *= damage_scale;
-				dph = Armor_types[target_shipp->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				relevant_armor_type_idx = target_shipp->armor_type_idx;
+				dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 				if (!is_beam || Beams_use_damage_factors) {
 					if (wip->wi_flags[Weapon::Info_Flags::Puncture]) {
 							dph /= 4;
@@ -6101,10 +6119,12 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 				}
 			}
 		} else if ( other_objp->type == OBJ_WEAPON ) {
-			ArmorType *weapon_armor = &Armor_types[Weapon_info[Weapons[other_objp->instance].weapon_info_index].armor_type_idx];
-			dph = weapon_armor->GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+			weapon *target_weapon = &Weapons[other_objp->instance];
+			relevant_armor_type_idx = Weapon_info[target_weapon->weapon_info_index].armor_type_idx;
+			relevant_weapon_class_idx = target_weapon->weapon_info_index;
+			dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 			if (has_shockwave) {
-				shockwave_damage = weapon_armor->GetDamage(dph, sci->damage_type_idx, 1.0, is_beam);
+				shockwave_damage = Armor_types[relevant_armor_type_idx].GetDamage(dph, sci->damage_type_idx, 1.0, is_beam);
 				if (sci->speed <= 0.0f) {
 					shockwave_damage *= weapon_get_damage_scale(wip, nullptr, other_objp);
 				}
@@ -6116,6 +6136,8 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 		}
 
 		dph += shockwave_damage;
+
+		//TODO: decide whether to take $Shots (/$Cycle_multishot) into account
 
 		ai_info *aip = &Ai_info[shipp->ai_index];
 		float effective_dps;
@@ -6151,13 +6173,23 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 		
 		float weapon_value = std::max(effective_dps, oneshot_value) * aip->primary_selection_random_factor;
 
+		SCP_unordered_map<int, float> armor_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR];
+		SCP_unordered_map<int, float> shiptype_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE];
+		SCP_unordered_map<int, float> shipclass_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS];
+		SCP_unordered_map<int, float> weaponclass_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS];
 
-		//TODO: handle weapon selection flags
-
-
-
-
-
+		if (relevant_armor_type_idx >= 0 && armor_flags.contains(relevant_armor_type_idx)) {
+			weapon_value *= armor_flags[relevant_armor_type_idx];
+		}
+		if (relevant_ship_type_idx >= 0 && shiptype_flags.contains(relevant_ship_type_idx)) {
+			weapon_value *= armor_flags[relevant_ship_type_idx];
+		}
+		if (relevant_ship_class_idx >= 0 && shipclass_flags.contains(relevant_ship_class_idx)) {
+			weapon_value *= armor_flags[relevant_ship_class_idx];
+		}
+		if (relevant_weapon_class_idx >= 0 && weaponclass_flags.contains(relevant_weapon_class_idx)) {
+			weapon_value *= armor_flags[relevant_weapon_class_idx];
+		}
 
 		if (wip_i == swp->current_primary_bank) {
 			weapon_value *= aip->primary_selection_status_quo_bias;
@@ -6490,7 +6522,7 @@ int ai_fire_primary_weapon(object *objp)
 		if ( aip->targeted_subsys != NULL ) {
 			flags = Weapon::Info_Flags::Puncture;
 		}
-		ai_select_primary_weapon(objp, enemy_objp, flags);
+		ai_select_primary_weapon_configurable(objp, enemy_objp, flags);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
 		aip->primary_select_timestamp = timestamp(5 * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon five seconds from now.
 	}
