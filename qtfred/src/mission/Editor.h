@@ -262,8 +262,6 @@ class Editor : public QObject {
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
 
-	void generate_team_weaponry_usage_list(int team, SCP_map<int, int>& usage);
-
   private slots:
 	void performTimedAutosave();
 
@@ -334,10 +332,6 @@ class Editor : public QObject {
 	 * @brief Finds a free wing slot (i.e. unused)
 	 */
 	static int find_free_wing();
-
-	void generate_wing_weaponry_usage_list(SCP_map<int, int>& usage, int wing);
-
-	void generate_ship_usage_list(SCP_map<int, int>& usage, int wing);
 
 	int get_visible_sub_system_count(ship* shipp);
 

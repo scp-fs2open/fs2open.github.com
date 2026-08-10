@@ -4328,7 +4328,7 @@ int Fred_mission_save::save_players()
 	bool wrote_fso_data = false;
 	int i, j;
 	int var_idx;
-	int used_pool[MAX_WEAPON_TYPES];
+	SCP_map<int, int> used_pool;
 
 	if (optional_string_fred("#Alternate Types:")) { // Make sure the parser doesn't get out of sync
 		required_string_fred("#end");
@@ -4505,17 +4505,17 @@ int Fred_mission_save::save_players()
 				if (!wc.class_variable.empty()) {
 					fout("%d\n", wc.count);
 				} else {
-					fout("%d\n", wc.count + used_pool[wc.class_index]);
-					used_pool[wc.class_index] = 0;
+					fout("%d\n", wc.count + used_pool.value_or(wc.class_index, 0));
+					used_pool.erase(wc.class_index);
 				}
 			}
 		}
 
 		// now we add anything left in the used pool as a static entry
 		if (!Team_data[i].do_not_validate) {
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (used_pool[j] > 0) {
-					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+			for (const auto &[weapon_class, count] : used_pool) {
+				if (count > 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[weapon_class].name, count);
 				}
 			}
 		}

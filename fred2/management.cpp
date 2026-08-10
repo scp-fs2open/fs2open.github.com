@@ -2421,67 +2421,6 @@ int query_whole_wing_marked(int wing)
 	return 0;
 }
 
-void generate_ship_usage_list(SCP_map<int, int> &usage, int wing)
-{
-	int i;
-
-	if (wing < 0) {
-		return;
-	}
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		usage[Ships[Wings[wing].ship_index[i]].ship_info_index]++;
-	}
-}
-
-void generate_weaponry_usage_list(SCP_map<int, int> &usage, int wing)
-{
-	int i, j;
-	ship_weapon *swp;
-
-	if (wing < 0)
-		return;
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		swp = &Ships[Wings[wing].ship_index[i]].weapons;
-		j = swp->num_primary_banks;
-		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
-				usage[swp->primary_bank_weapons[j]]++;
-			}
-		}
-
-		j = swp->num_secondary_banks;
-		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
-				usage[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
-			}
-		}
-	}
-}
-
-void generate_weaponry_usage_list(int team, SCP_map<int, int> &usage)
-{
-	int i;
-
-	usage.clear();
-
-    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		Assert (team >= 0 && team < MAX_TVT_TEAMS);
-
-		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list(usage, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
-		}
-	}
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(usage, Starting_wings[i]);
-		}
-	}
-}
-
 CJumpNode *jumpnode_get_by_name(const CString& name)
 {
 	CJumpNode *jnp = jumpnode_get_by_name((LPCTSTR) name);

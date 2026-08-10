@@ -14,6 +14,7 @@
 #include "FREDDoc.h"
 #include "PlayerStartEditor.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "Management.h"
 #include "weapon/weapon.h"
@@ -167,15 +168,15 @@ BOOL player_start_editor::OnInitDialog()
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		for (i=0; i<MAX_TVT_TEAMS; i++) {
 			for (j=0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
-				generate_ship_usage_list(ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
-				generate_weaponry_usage_list(weapon_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+				generate_ship_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], ship_usage[i]);
+				generate_weaponry_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], weapon_usage[i]);
 			}
 		}
 	}
 	else {
 		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_ship_usage_list(ship_usage[0], Starting_wings[i]);
-			generate_weaponry_usage_list(weapon_usage[0], Starting_wings[i]);
+			generate_ship_usage_list_wing(Starting_wings[i], ship_usage[0]);
+			generate_weaponry_usage_list_wing(Starting_wings[i], weapon_usage[0]);
 		}
 	}
 

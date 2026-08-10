@@ -116,9 +116,6 @@ const char* get_order_name(ai_goal_mode order);
 void object_moved(object* ptr);
 int invalidate_references(const char* name, sexp_ref_type type);
 int query_whole_wing_marked(int wing);
-void generate_weaponry_usage_list(int team, SCP_map<int, int>& usage);
-void generate_weaponry_usage_list(SCP_map<int, int>& usage, int wing);
-void generate_ship_usage_list(SCP_map<int, int>& usage, int wing);
 
 CJumpNode* jumpnode_get_by_name(const CString& name);
 

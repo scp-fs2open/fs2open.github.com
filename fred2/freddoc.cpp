@@ -38,6 +38,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "render/3d.h"
 #include "ship/ship.h"
@@ -348,7 +349,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	}
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_weaponry_usage_list(i, used_pool);
+		generate_weaponry_usage_list_team(i, used_pool);
 		for (auto &entry : Team_data[i].weapon_choices) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
 			if (entry.class_variable.empty() && entry.count_variable.empty()) {

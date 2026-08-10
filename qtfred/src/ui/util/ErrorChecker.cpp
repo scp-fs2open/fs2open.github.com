@@ -1207,7 +1207,7 @@ int ErrorChecker::checkTeamLoadout() {
 
 		// Build a fresh usage list for this team's starting wings.
 		SCP_map<int, int> usage;
-		_viewport->editor->generate_team_weaponry_usage_list(i, usage);
+		generate_weaponry_usage_list_team(i, usage);
 
 		// Remove weapons that are accounted for in the loadout pool, so that
 		// only weapons missing from the pool remain.
