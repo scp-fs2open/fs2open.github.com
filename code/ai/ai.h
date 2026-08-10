@@ -142,6 +142,10 @@ typedef struct ai_class {
 	float	ai_secondary_range_mult[NUM_SKILL_LEVELS];
 	bool	ai_class_autoscale;		//Defaults to true, but can be turned off in order to disable extra scaling of some AI behaviors
 									//based on AI class index
+	float primary_selection_random_factor;
+	float primary_selection_oneshot_modifier;
+	float primary_selection_status_quo_bias;
+
 } ai_class;
 
 //	Submode definitions.
@@ -373,6 +377,9 @@ typedef struct ai_info {
 	int		ai_chance_to_use_missiles_on_plr;
 	float	ai_max_aim_update_delay;
 	float	ai_turret_max_aim_update_delay;
+	float primary_selection_random_factor;
+	float primary_selection_oneshot_modifier;
+	float primary_selection_status_quo_bias;
 	flagset<AI::Profile_Flags> ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
 
 	ship_subsys*	targeted_subsys;			// Targeted subobject on current target.  NULL if none;

@@ -2126,6 +2126,32 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Disallow Support Rearm:")) {
 		stuff_boolean(&wip->disallow_rearm);
 	}
+	
+	if (optional_string("$Primary Selection Target Flags:")) {
+		SCP_string type;
+		int instance_index;
+		float value;
+		while (optional_string("+")) {
+			stuff_string(type, F_NAME);
+			if (type == "ARMOR:") {
+				stuff_string(fname, F_NAME, NAME_LENGTH);
+				instance_index = armor_type_get_idx(fname);
+				stuff_float(&value);
+				wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].emplace(instance_index, value);
+			} else if (type == "SHIP_TYPE:") {
+				stuff_string(fname, F_NAME, NAME_LENGTH);
+				instance_index = ship_type_name_lookup(fname);
+				stuff_float(&value);
+				wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].emplace(instance_index, value);
+			} else if (type == "SHIP_CLASS:") {
+
+			} else if (type == "WEAPON_CLASS:") {
+
+			} else {
+
+			}
+		}
+	}
 	   
 	if (optional_string("+Weapon Range:")) {
 		stuff_float(&wip->weapon_range);
@@ -9053,36 +9079,37 @@ void weapon_get_laser_color(color *c, object *objp)
  */
 float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target)
 {
-	weapon *wp;	
-	int from_player = 0;
 	float total_scale = 1.0f;
 	float hull_pct;
 	int is_big_damage_ship = 0;
-
+	
 	// Goober5000 - additional sanity (target can be NULL)
 	Assert(wip);
-	Assert(wep);
-
+	
 	// sanity
-	if((wip == NULL) || (wep == NULL) || (target == NULL)){
+	if((wip == nullptr) || (target == nullptr)){
 		return 1.0f;
 	}
-
-	// don't scale any damage if its not a weapon	
-	if((wep->type != OBJ_WEAPON) || (wep->instance < 0) || (wep->instance >= MAX_WEAPONS)){
-		return 1.0f;
-	}
-	wp = &Weapons[wep->instance];
-
-	// was the weapon fired by the player
-	from_player = 0;
-	if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags[Object::Object_Flags::Player_ship])){
-		from_player = 1;
-	}
-		
-	// if this is a lockarm weapon, and it was fired unlocked
-	if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired])){		
-		total_scale *= 0.1f;
+	
+	int from_player = 0;
+	if (wep) {
+		weapon *wp;	
+		// don't scale any damage if its not a weapon	
+		if((wep->type != OBJ_WEAPON) || (wep->instance < 0) || (wep->instance >= MAX_WEAPONS)){
+			return 1.0f;
+		}
+		wp = &Weapons[wep->instance];
+	
+		// was the weapon fired by the player
+		from_player = 0;
+		if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags[Object::Object_Flags::Player_ship])){
+			from_player = 1;
+		}
+			
+		// if this is a lockarm weapon, and it was fired unlocked
+		if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired])){		
+			total_scale *= 0.1f;
+		}
 	}
 	
 	// if the hit object was a ship and we're doing damage scaling

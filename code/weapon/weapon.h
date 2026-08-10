@@ -720,6 +720,15 @@ struct weapon_info
 
 	animation::ModelAnimationSet animations;
 
+	enum class PrimarySelectionTargetType {
+		ARMOR,
+		SHIP_TYPE,
+		SHIP_CLASS,
+		WEAPON_CLASS,
+	};
+
+	std::array<SCP_unordered_map<int, float>, 4> primary_selection_target_flags;
+
 	enum class WeaponLaunchCurveOutputs {
 		// outputs
 		FIRE_WAIT_MULT,

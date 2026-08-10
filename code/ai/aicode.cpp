@@ -691,6 +691,9 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_secondary_range_mult[i] = FLT_MIN;
 	}
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
+	aicp->primary_selection_random_factor = 1.0f;
+	aicp->primary_selection_oneshot_modifier = 2.0f;
+	aicp->primary_selection_status_quo_bias = 1.0f;
 }
 
 void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
@@ -796,6 +799,15 @@ void parse_ai_class()
 
 	if (optional_string("$Autoscale by AI Class Index:"))
 		stuff_boolean(&aicp->ai_class_autoscale);
+
+	if (optional_string("$Primary selection random factor:"))
+		stuff_float(&aicp->primary_selection_random_factor);
+
+	if (optional_string("$Primary selection oneshot modifier:"))
+		stuff_float(&aicp->primary_selection_oneshot_modifier);
+
+	if (optional_string("$Primary selection status quo bias:"))
+		stuff_float(&aicp->primary_selection_status_quo_bias);
 
 	//Parse optional values for stuff imported from ai_profiles
 	if (optional_string("$AI Countermeasure Firing Chance:"))
@@ -5843,7 +5855,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 
 	float enemy_remaining_shield = get_shield_pct(other_objp);
 
-	if ( other_is_ship )
+	if ( other_shipp )
 	{
 		ship_info* other_sip = &Ship_info[other_shipp->ship_info_index];
 
@@ -5901,7 +5913,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 				return -1;
 		}
 		swp->current_primary_bank = i_hullfactor_prev_bank;		// Select the best weapon
-		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_is_ship ? other_shipp->ship_name : "non-ship") ));
+		nprintf(("AI", "%i: Ship %s selecting weapon %s (no shields) vs target %s\n", Framecount, shipp->ship_name, Weapon_info[swp->primary_bank_weapons[i_hullfactor_prev_bank]].name, (other_shipp ? other_shipp->ship_name : "non-ship") ));
 		return i_hullfactor_prev_bank;							// Return
 	}
 
@@ -6000,22 +6012,165 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	}
 }
 
-// Cleaner version of primary selection, with high modder control.
+// More comprehensive version of primary selection, with high modder control.
 int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weapon::Info_Flags flags)
 {
 	ship	*shipp = &Ships[objp->instance];
-	ship	*other_shipp = nullptr;
+	ship	*target_shipp = nullptr;
 	ship_weapon *swp = &shipp->weapons;
+	ship_info *sinfop = &Ship_info[shipp->ship_info_index];
 
-	auto early_return_value = select_primary_setup(shipp, other_shipp, swp, other_objp);
+	auto early_return_value = select_primary_setup(shipp, target_shipp, swp, other_objp);
 	if (early_return_value.has_value()) {
 		return early_return_value.value();
 	}
 
+	weapon_info *wip;
+	shockwave_create_info *sci;
+	bool has_shockwave;
+	bool is_beam;
+
+	ship_subsys *target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+	float relevant_shields_left = 100.0f;
+
+	SCP_unordered_map<int, float> weapon_values = {};
+
+	// TODO: handle non-ship target cases
+
 	for (auto& wip_i : swp->primary_bank_weapons) {
-		auto wip = &Weapon_info[wip_i];
+		if (wip_i < 0) {
+			continue;
+		}
+		wip = &Weapon_info[wip_i];
+		sci = &wip->shockwave;
+		has_shockwave = (sci->inner_rad != 0.0f || sci->outer_rad != 0.0f);
+		is_beam = wip->wi_flags[Weapon::Info_Flags::Beam];
+		float dph = wip->damage; // damage per hit
+		float damage_scale = -1.0f;
+		float shockwave_damage = 0.0f;
+		if (has_shockwave) {
+			shockwave_damage = sci->damage;
+		}
+
+
+		if (target_shipp) {
+			if (relevant_shields_left > 0.0f) {
+				damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
+				dph *= damage_scale;
+				dph = Armor_types[target_shipp->shield_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				if (!is_beam || Beams_use_damage_factors) {
+					dph *= wip->shield_factor;
+				}
+			} else if (target_subsys) {
+				if (!is_beam || Beams_use_damage_factors) {
+					if (target_subsys->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
+						dph *= wip->armor_factor;
+						dph = Armor_types[target_subsys->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+					} else {
+						dph *= wip->subsystem_factor;
+						dph = Armor_types[target_subsys->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+					}
+				}
+			} else {
+				if (damage_scale == -1.0f) {
+					damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
+				}
+				dph *= damage_scale;
+				dph = Armor_types[target_shipp->armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				if (!is_beam || Beams_use_damage_factors) {
+					if (wip->wi_flags[Weapon::Info_Flags::Puncture]) {
+							dph /= 4;
+						}
+						dph *= wip->armor_factor;
+				}
+			}
+			if (has_shockwave) {
+				shockwave_damage = sci->damage;
+				if (Weapon_shockwaves_respect_huge || sci->speed <= 0.0f) {
+					if (damage_scale == -1.0f) {
+						damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
+					}
+					shockwave_damage *= damage_scale;
+				}
+				if (relevant_shields_left) {
+					shockwave_damage = Armor_types[target_shipp->shield_armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
+				} else if (target_subsys) {
+					shockwave_damage = Armor_types[target_subsys->armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
+				} else {
+					shockwave_damage = Armor_types[target_shipp->armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
+				}
+			}
+		} else if ( other_objp->type == OBJ_WEAPON ) {
+			ArmorType *weapon_armor = &Armor_types[Weapon_info[Weapons[other_objp->instance].weapon_info_index].armor_type_idx];
+			dph = weapon_armor->GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+			if (has_shockwave) {
+				shockwave_damage = weapon_armor->GetDamage(dph, sci->damage_type_idx, 1.0, is_beam);
+				if (sci->speed <= 0.0f) {
+					shockwave_damage *= weapon_get_damage_scale(wip, nullptr, other_objp);
+				}
+			}
+		} else {
+			if (has_shockwave && sci->speed <= 0.0f) {
+				shockwave_damage *= weapon_get_damage_scale(wip, nullptr, other_objp);
+			}
+		}
+
+		dph += shockwave_damage;
+
+		ai_info *aip = &Ai_info[shipp->ai_index];
+		float effective_dps;
+		float oneshot_value = 0.0f;
+		float relevant_hits_left;
+		if (relevant_shields_left > 0.0f) {
+			relevant_hits_left = relevant_shields_left;
+		} else if (target_subsys) {
+			relevant_hits_left = target_subsys->current_hits;
+		} else {
+			relevant_hits_left = other_objp->hull_strength;
+		}
+		int burst_shots = wip->burst_shots + 1;
+		int effective_burst_shots = std::max(burst_shots, fl2i(shipp->weapon_energy / (wip->energy_consumed * burst_shots)));
+		if (dph * effective_burst_shots >= relevant_hits_left) {
+			oneshot_value = dph * aip->primary_selection_oneshot_modifier;
+		}
+		float fire_rate;
+		if (wip->burst_shots > 1 && wip->burst_flags[Weapon::Burst_Flags::Random_length]) {
+			fire_rate = (wip->burst_shots / (wip->fire_wait + wip->burst_delay * (wip->burst_shots - 1)) + (1 / wip->fire_wait)) / 2;
+		}
+		else if (wip->burst_shots > 1) {
+			fire_rate = wip->burst_shots / (wip->fire_wait + wip->burst_delay * (wip->burst_shots - 1));
+		}
+		else {
+			fire_rate = 1 / wip->fire_wait;
+		}
+		// if fire can't be sustained indefinitely given energy consumption, take the average between max fire rate and fire rate when we're drained and have to wait for each shot
+		if (fire_rate * wip->energy_consumed > (shipp->max_weapon_regen_per_second * sinfop->max_weapon_reserve)) {
+			fire_rate = (fire_rate + ((shipp->max_weapon_regen_per_second * sinfop->max_weapon_reserve) / wip->energy_consumed)) / 2.0f;
+		}
+		effective_dps = (dph * burst_shots) * fire_rate;
 		
+		float weapon_value = std::max(effective_dps, oneshot_value) * aip->primary_selection_random_factor;
+
+
+		//TODO: handle weapon selection flags
+
+
+
+
+
+
+		if (wip_i == swp->current_primary_bank) {
+			weapon_value *= aip->primary_selection_status_quo_bias;
+		}
+		weapon_values.emplace(wip_i, weapon_value);
 	}
+	std::pair<int, float> best_pair = std::make_pair(-1, 0.0f);
+	for (auto pair : weapon_values) {
+		if (std::max(pair.second, 0.0f) >= best_pair.second) {
+			best_pair = pair;
+		}
+	}
+	return best_pair.first;
 }
 
 /**
@@ -15963,6 +16118,10 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_get_away_chance = aicp->ai_get_away_chance[Game_skill_level];	
 	aip->ai_secondary_range_mult = aicp->ai_secondary_range_mult[Game_skill_level];
 	aip->ai_class_autoscale = aicp->ai_class_autoscale;
+
+	aip->primary_selection_random_factor = aicp->primary_selection_random_factor;
+	aip->primary_selection_oneshot_modifier = aicp->primary_selection_oneshot_modifier;
+	aip->primary_selection_status_quo_bias = aicp->primary_selection_status_quo_bias;
 
 	//Apply overrides from ai class to ai profiles values
 	//Only override values which were explicitly set in the AI class
