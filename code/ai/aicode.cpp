@@ -5763,6 +5763,10 @@ std::optional<int> select_primary_setup(ship *shipp, ship *target_shipp, ship_we
 	if (swp->num_primary_banks <= 0)
 		return -1;
 
+	// if we only have one bank to choose from, just short-circuit
+	if (swp->num_primary_banks == 1 && swp->current_primary_bank == 0)
+		return swp->current_primary_bank;
+
 	if (target_shipp)
 	{
 		//if the good-primary-time sexp has been used, return that weapon immediately
@@ -6073,7 +6077,7 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 	
 	SCP_unordered_map<int, float> weapon_values = {};
 
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+	for (int i = 0; i < swp->num_primary_banks; i++) {
 		int wip_i = swp->primary_bank_weapons[i];
 		if (wip_i < 0) {
 			continue;
