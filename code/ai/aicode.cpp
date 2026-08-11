@@ -327,8 +327,7 @@ static inline float ai_guard_threshold(const object* guarded_objp, float thresho
 {
 	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
 		for (const auto& range_entry : guarder_ship->max_guard_ranges) {
-			const int regester = ship_registry_get_index(Ships[guarded_objp->instance].ship_name);
-			if (regester == range_entry.shipnum) {
+			if (guarded_objp->instance == range_entry.shipnum) {
 				const float configured = range_entry.range;
 				if (configured > 0.0f) {
 					return configured;
@@ -16745,6 +16744,12 @@ void ai_ship_destroy(int shipnum)
 
 		if (other_aip->hitter_objnum == dead_shipp->objnum)
 			other_aip->hitter_objnum = -1;
+
+		other_shipp->max_guard_ranges.erase(
+			std::remove_if(other_shipp->max_guard_ranges.begin(),
+				other_shipp->max_guard_ranges.end(),
+				[shipnum](const guard_range_entry& entry) { return entry.shipnum == shipnum; }),
+			other_shipp->max_guard_ranges.end());
 	}
 
 	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object] && dead_aip->goal_objnum >= 0)

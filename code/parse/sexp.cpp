@@ -525,7 +525,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-no-guardian",				OP_SHIP_NO_GUARDIAN,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-guardian-threshold",		OP_SHIP_GUARDIAN_THRESHOLD,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
-	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
+	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     3,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael + The Force
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
@@ -19537,7 +19537,7 @@ void sexp_ship_guardian_threshold(int node)
 		ship_entry->shipp()->ship_guardian_threshold = threshold;
 	}
 }
-// MjnMixael
+// MjnMixael + The Force
 void sexp_set_guard_range(int node)
 {
 	int range, n = node;
@@ -19546,6 +19546,7 @@ void sexp_set_guard_range(int node)
 	if (!ship_entry || !ship_entry->has_shipp()) {
 		return;
 	}
+	int shipnum = ship_entry->shipnum;
 	n = CDR(n);
 	range = eval_num(n, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
@@ -19558,11 +19559,11 @@ void sexp_set_guard_range(int node)
 		eval_object_ship_wing_point_team(&oswpt, n);
 		if (oswpt.type == OSWPT_TYPE_SHIP) {
 			auto shipp = oswpt.shipp();
-			set_guard_range_ship(true_range, ship_entry, shipp);
+			set_guard_range_ship(true_range, shipnum, shipp);
 		} else if (oswpt.type == OSWPT_TYPE_WING) {
 			for (int i = 0; i < oswpt.wingp()->current_count; ++i) {
 				auto shipp = &Ships[oswpt.wingp()->ship_index[i]];
-				set_guard_range_ship(true_range, ship_entry, shipp);
+				set_guard_range_ship(true_range, shipnum, shipp);
 			}
 		} else if (oswpt.type == OSWPT_TYPE_WHOLE_TEAM) {
 			ship_obj* so;
@@ -19572,7 +19573,7 @@ void sexp_set_guard_range(int node)
 
 				auto shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team == oswpt.team) {
-					set_guard_range_ship(true_range, ship_entry, shipp);
+					set_guard_range_ship(true_range, shipnum, shipp);
 				}
 			}
 		} else {

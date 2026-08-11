@@ -253,8 +253,9 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
-void set_guard_range_ship(float range, const ship_registry_entry* ship_entry, ship* shipp);
-	//**************************************************************
+void set_guard_range_ship(float range, const int target_ship_index, ship* shipp);
+
+//**************************************************************
 //WMC - Damage type handling code
 
 typedef struct DamageTypeStruct
@@ -629,7 +630,7 @@ public:
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
 	
 	SCP_vector<guard_range_entry>
-		max_guard_ranges; // Optional clamp for guard engagement/resume ranges; <= 0 means unused
+		max_guard_ranges; // Optional clamp for guard engagement/resume ranges;
 
 
 	char	ship_name[NAME_LENGTH];
