@@ -5747,7 +5747,7 @@ static int ai_select_primary_weapon_OLD(const object *objp, Weapon::Info_Flags f
 	return swp->current_primary_bank;
 }
 
-std::optional<int> select_primary_setup(ship *shipp, ship *other_shipp, ship_weapon *swp, object *other_objp)
+std::optional<int> select_primary_setup(ship *shipp, ship *target_shipp, ship_weapon *swp, object *other_objp)
 {
 	// Debugging
 	if (other_objp==NULL)
@@ -5763,18 +5763,14 @@ std::optional<int> select_primary_setup(ship *shipp, ship *other_shipp, ship_wea
 	if (swp->num_primary_banks <= 0)
 		return -1;
 
-	bool other_is_ship = (other_objp->type == OBJ_SHIP);
-
-	if (other_is_ship)
+	if (target_shipp)
 	{
-		other_shipp = &Ships[other_objp->instance];
-
 		//if the good-primary-time sexp has been used, return that weapon immediately
 		//if smart primary weapon selection isn't set, turning this override behavior off might not do anything
 		//however this seems acceptable
 		for (const auto &ppi : Preferred_primary_info)
 		{
-			if (ppi.subject.matches(shipp) && ppi.target.matches(other_shipp))
+			if (ppi.subject.matches(shipp) && ppi.target.matches(target_shipp))
 			{
 				int weapon_idx = ppi.weapon_index;
 
@@ -5824,6 +5820,10 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	ship	*shipp = &Ships[objp->instance];
 	ship	*other_shipp = nullptr;
 	ship_weapon *swp = &shipp->weapons;
+
+	if (other_objp->type == OBJ_SHIP) {
+		other_shipp = &Ships[other_objp->instance];
+	}
 
 	auto early_return_value = select_primary_setup(shipp, other_shipp, swp, other_objp);
 	if (early_return_value.has_value()) {
@@ -6032,6 +6032,10 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 	ship_weapon *swp = &shipp->weapons;
 	ship_info *sinfop = &Ship_info[shipp->ship_info_index];
 
+	if (other_objp->type == OBJ_SHIP) {
+		target_shipp = &Ships[other_objp->instance];
+	}
+
 	//if we're not using configurable, use the previous version of this function instead.
 	if (!(Ai_info[shipp->ai_index].ai_profile_flags[AI::Profile_Flags::Configurable_primary_weapon_selection]))
 	{
@@ -6048,7 +6052,10 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 	bool has_shockwave;
 	bool is_beam;
 
-	ship_subsys *target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+	ship_subsys *target_subsys = nullptr;
+	if (Ai_info[shipp->ai_index].targeted_subsys) {
+		target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
+	}
 	int relevant_armor_type_idx = -1;
 	int relevant_ship_type_idx = -1;
 	int relevant_ship_class_idx = -1;
@@ -6059,14 +6066,14 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 		vm_vec_sub2(&ship_local_pos, &other_objp->pos);
 		vm_vec_rotate(&ship_local_pos, &ship_local_pos, &other_objp->orient);
 		int relevant_quadrant = get_quadrant(&ship_local_pos, other_objp);
-		if (relevant_quadrant > 0 && relevant_quadrant < sz2i(other_objp->shield_quadrant.size())) {
+		if (relevant_quadrant >= 0 && relevant_quadrant < sz2i(other_objp->shield_quadrant.size())) {
 			relevant_shields_left = shield_get_quad(other_objp, relevant_quadrant) - ship_shield_hitpoint_threshold(other_objp, false);
 		}
 	}
 	
 	SCP_unordered_map<int, float> weapon_values = {};
 
-	for (int i; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		int wip_i = swp->primary_bank_weapons[i];
 		if (wip_i < 0) {
 			continue;
@@ -6082,27 +6089,30 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 			shockwave_damage = sci->damage;
 		}
 
-		if (target_shipp) {
+		if (target_shipp != nullptr) {
 			relevant_ship_type_idx = Ship_info[target_shipp->ship_info_index].class_type;
 			relevant_ship_class_idx = target_shipp->ship_info_index;
 			if (relevant_shields_left > 0.0f) {
 				damage_scale = weapon_get_damage_scale(wip, nullptr, other_objp);
 				dph *= damage_scale;
 				relevant_armor_type_idx = target_shipp->shield_armor_type_idx;
-				dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				if (relevant_armor_type_idx >= 0) {
+					dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				}
 				if (!is_beam || Beams_use_damage_factors) {
 					dph *= wip->shield_factor;
 				}
-			} else if (target_subsys) {
+			} else if (target_subsys != nullptr) {
 				if (!is_beam || Beams_use_damage_factors) {
-					relevant_armor_type_idx = target_subsys->armor_type_idx;
 					if (target_subsys->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 						dph *= wip->armor_factor;
-						dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 					} else {
 						dph *= wip->subsystem_factor;
-						dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 					}
+				}
+				relevant_armor_type_idx = target_subsys->armor_type_idx;
+				if (relevant_armor_type_idx >= 0) {
+					dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
 				}
 			} else {
 				if (damage_scale == -1.0f) {
@@ -6110,7 +6120,9 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 				}
 				dph *= damage_scale;
 				relevant_armor_type_idx = target_shipp->armor_type_idx;
-				dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				if (relevant_armor_type_idx >= 0) {
+					dph = Armor_types[relevant_armor_type_idx].GetDamage(dph, wip->damage_type_idx, 1.0, is_beam);
+				}
 				if (!is_beam || Beams_use_damage_factors) {
 					if (wip->wi_flags[Weapon::Info_Flags::Puncture]) {
 							dph /= 4;
@@ -6126,12 +6138,8 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 					}
 					shockwave_damage *= damage_scale;
 				}
-				if (relevant_shields_left) {
-					shockwave_damage = Armor_types[target_shipp->shield_armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
-				} else if (target_subsys) {
-					shockwave_damage = Armor_types[target_subsys->armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
-				} else {
-					shockwave_damage = Armor_types[target_shipp->armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
+				if (relevant_armor_type_idx >= 0) {
+					shockwave_damage = Armor_types[relevant_armor_type_idx].GetDamage(shockwave_damage, sci->damage_type_idx, 1.0, is_beam);
 				}
 			}
 		} else if ( other_objp->type == OBJ_WEAPON ) {
@@ -6223,10 +6231,10 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 			weapon_value *= armor_flags[relevant_weapon_class_idx];
 		}
 
-		if (wip_i == swp->current_primary_bank) {
+		if (i == swp->current_primary_bank) {
 			weapon_value *= aip->primary_selection_status_quo_bias;
 		}
-		weapon_values.emplace(wip_i, weapon_value);
+		weapon_values.emplace(i, weapon_value);
 	}
 	std::pair<int, float> best_pair = std::make_pair(-1, 0.0f);
 	for (auto pair : weapon_values) {
@@ -6234,6 +6242,7 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 			best_pair = pair;
 		}
 	}
+	swp->current_primary_bank = best_pair.first;
 	return best_pair.first;
 }
 
