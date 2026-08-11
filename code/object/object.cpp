@@ -142,9 +142,12 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Asteroid",
 	"Jump Node",
 	"Beam",
-	"Raw Pof"
+	"Raw Pof",
+	"Prop"
 //XSTR:ON
 };
+
+static_assert(MAX_OBJECT_TYPES == OBJ_PROP + 1, "Object_type_names needs an entry for every object type!");
 
 obj_flag_name Object_flag_names[] = {
     { Object::Object_Flags::Invulnerable,			"invulnerable",						},
