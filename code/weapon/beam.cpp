@@ -143,6 +143,7 @@ void beam_get_binfo(beam* b, float accuracy, int num_shots, int burst_seed, floa
 
 // aim the beam (setup last_start and last_shot - the endpoints). also recalculates object collision info
 void beam_aim(beam *b);
+static void beam_update_cull_info(beam *b);
 
 // direct fire type functions
 void beam_type_direct_fire_move(beam *b);
@@ -1156,10 +1157,33 @@ void beam_type_omni_move(beam* b)
 }
 
 // pre-move (before collision checking - but AFTER ALL OTHER OBJECTS HAVE BEEN MOVED)
+// Refresh the per-beam values that the broadphase cull uses.  Called once per beam per frame,
+// after the beam has been aimed, so that beam_collide_early_out() only has to read them.
+static void beam_update_cull_info(beam *b)
+{
+	vec3d rel;
+	vm_vec_sub(&rel, &b->last_shot, &b->last_start);
+
+	b->cull_len = vm_vec_mag(&rel);
+	b->cull_radius = b->beam_collide_width * b->current_width_factor * 0.5f;
+
+	// same threshold fvi_cylinder_sphere_may_collide() uses, which this cull replaces
+	const float cull_small_num = 1E-6f;
+
+	if (b->cull_len < cull_small_num) {
+		b->cull_dir = vmd_zero_vector;
+		b->cull_valid = false;
+		return;
+	}
+
+	vm_vec_copy_scale(&b->cull_dir, &rel, 1.0f / b->cull_len);
+	b->cull_valid = true;
+}
+
 void beam_move_all_pre()
-{	
-	beam *b;	
-	beam *moveup;		
+{
+	beam *b;
+	beam *moveup;
 
 	// zero lights for this frame yet
 	Beam_light_count = 0;
@@ -1233,6 +1257,10 @@ void beam_move_all_pre()
 				b->subsys->turret_next_fire_pos = temp;
 			}
 		}
+
+		// Cache the values that beam_collide_early_out() needs.  They are constant for this beam
+		// for the whole collision phase, and that function runs once per candidate pair.
+		beam_update_cull_info(b);
 
 		// next
 		moveup = GET_NEXT(moveup);
@@ -2971,6 +2999,10 @@ void beam_aim(beam *b)
 		UNREACHABLE("Impossible beam type (%d); get a coder!\n", static_cast<int>(b->type));
 	}
 
+	// Keep the broadphase cull values in step with the new aim.  beam_move_all_pre() also does
+	// this every frame, but a beam can be fired after that point, for example from a SEXP.
+	beam_update_cull_info(b);
+
 	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide]) {
 		// recalculate object pairs
 		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
@@ -3867,9 +3899,37 @@ int beam_collide_early_out(object *a, object *b)
 		return 1;
 	}
 
-	if((vm_vec_dist(&bm->last_start, &b->pos)-b->radius) > bwi->b_info.range){
-		return 1;
-	}//if the object is too far away, don't bother trying to colide with it-Bobboau
+	// Reject on the beam segment before anything else.  This used to be a distance test against
+	// last_start only, which ignores the beam direction entirely and therefore kept every object
+	// within range in any direction.  The segment test below is what actually decides the pair,
+	// so doing it first lets the great majority of candidates leave here immediately.
+	//
+	// The values come from beam_update_cull_info(), which runs once per beam per frame.
+	{
+		const float sphere_rad = b->radius * 1.2f;
+		const float sum_rad = bm->cull_radius + sphere_rad;
+
+		vec3d sphere_rel;
+		vm_vec_sub(&sphere_rel, &b->pos, &bm->last_start);
+
+		if (!bm->cull_valid) {
+			// zero length segment: fall back to a sphere test around the start point
+			if (vm_vec_mag_squared(&sphere_rel) > sum_rad * sum_rad) {
+				return 1;
+			}
+		} else {
+			const float axial = vm_vec_dot(&bm->cull_dir, &sphere_rel);
+			if (axial < -sphere_rad || axial > bm->cull_len + sphere_rad) {
+				return 1;
+			}
+
+			vec3d radial;
+			vm_vec_scale_add(&radial, &sphere_rel, &bm->cull_dir, -axial);
+			if (vm_vec_mag_squared(&radial) > sum_rad * sum_rad) {
+				return 1;
+			}
+		}
+	}
 
 	// baseline bails
 	switch(b->type){
@@ -3915,13 +3975,8 @@ int beam_collide_early_out(object *a, object *b)
 		break;
 	}
 
-	float beam_radius = bm->beam_collide_width * bm->current_width_factor * 0.5f;
-	// do a cylinder-sphere collision test
-	if (!fvi_cylinder_sphere_may_collide(&bm->last_start, &bm->last_shot,
-		beam_radius, &b->pos, b->radius * 1.2f)) {
-		return 1;
-	}
-	
+	// the segment test at the top of this function has already been done
+
 	// don't cull
 	return 0;
 }

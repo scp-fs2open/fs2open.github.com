@@ -1542,6 +1542,7 @@ void collide_init() {
 }
 
 // used only in obj_sort_and_collide()
+static SCP_vector<int> active_collision_list;
 static SCP_vector<int> sort_list_y;
 static SCP_vector<int> sort_list_z;
 
@@ -1564,6 +1565,19 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	if (Collision_list == nullptr) {
 		Collision_list = &Collision_sort_list;
 	}
+
+	// obj_add_collider() only tests Not_in_coll, so objects that cannot collide are still in the
+	// list.  They get sorted, they get swept, and they generate pairs that obj_collide_pair()
+	// then rejects on flags.  Drop them once here instead.  Filtering per frame rather than at
+	// insertion time means an object whose Collides flag changes during the mission is handled
+	// with no extra bookkeeping.
+	active_collision_list.clear();
+	active_collision_list.reserve(Collision_list->size());
+	for (int objnum : *Collision_list) {
+		if (Objects[objnum].flags[Object::Object_Flags::Collides])
+			active_collision_list.push_back(objnum);
+	}
+	Collision_list = &active_collision_list;
 
 	std::uint64_t phase_ns = timer_get_nanoseconds();
 

@@ -210,6 +210,15 @@ typedef struct beam {
 	int bank;
 
 	int firingpoint;
+
+	// Broadphase culling values, refreshed once per frame by beam_move_all_pre() after the beam
+	// has been aimed.  beam_collide_early_out() runs tens of thousands of times per frame, and
+	// deriving these per call cost a sqrt and a divide every time.
+	vec3d	cull_dir;			// normalized last_start -> last_shot
+	float	cull_len;			// length of that segment
+	float	cull_radius;		// half the collide width, scaled by the current width factor
+	bool	cull_valid;			// false while warming up or down, when last_shot is not aimed yet
+
 	float		beam_collide_width;
 	float		beam_light_width;
 
