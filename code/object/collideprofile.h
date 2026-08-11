@@ -19,12 +19,13 @@
  *    - the per-frame phase timers and the -collision_bench driver are always compiled in; they
  *      cost a handful of clock reads per frame, which is not measurable.
  *    - the per-pair and per-BSP-node counters are hot enough to perturb what they measure, so
- *      they are gated on COLLISION_PROFILING.  Measured cost on bp2-massivebattle: 4.29 vs
- *      4.07 ms/frame, i.e. about 5% of the collision phase, nearly all of it the per-pair
- *      narrowphase timer.  Set this to 0 when you want timings rather than counts.
+ *      they are gated on COLLISION_PROFILING and are off by default.  Set it to 1 to get the
+ *      counts.  Measured cost on bp2-massivebattle: 4.29 ms/frame with the counters against
+ *      4.07 without, i.e. about 5% of the collision phase, nearly all of it the per-pair
+ *      narrowphase timer.
  */
 
-#define COLLISION_PROFILING 1
+#define COLLISION_PROFILING 0
 
 namespace collision_profiling {
 
@@ -60,7 +61,6 @@ struct counters {
 	std::uint64_t sort_ns;			// the three quicksort passes
 	std::uint64_t overlap_ns;		// the three sweep passes (includes obj_collide_pair + inline narrowphase)
 	std::uint64_t narrowphase_inline_ns;	// the check_collision calls made on the main thread
-	std::uint64_t cache_lookup_ns;		// just the Collision_cached_pairs hash lookup
 	std::uint64_t drain_ns;			// post_process_threaded_collisions
 
 	counters& operator+=(const counters& other);

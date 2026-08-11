@@ -37,7 +37,6 @@ counters& counters::operator+=(const counters& other)
 	sort_ns += other.sort_ns;
 	overlap_ns += other.overlap_ns;
 	narrowphase_inline_ns += other.narrowphase_inline_ns;
-	cache_lookup_ns += other.cache_lookup_ns;
 	drain_ns += other.drain_ns;
 
 	return *this;
@@ -86,11 +85,19 @@ static void dump(const counters& c, int frames)
 		per_frame(c.collision_ns) / 1000000.0);
 	fprintf(out, "    sort passes        : %.3f ms/frame\n", per_frame(c.sort_ns) / 1000000.0);
 	fprintf(out, "    sweep passes       : %.3f ms/frame (incl. inline narrowphase)\n", per_frame(c.overlap_ns) / 1000000.0);
+#if COLLISION_PROFILING
+	// the split needs the per-pair narrowphase timer, which is part of the gated set
 	fprintf(out, "      inline narrowph. : %.3f ms/frame\n", per_frame(c.narrowphase_inline_ns) / 1000000.0);
 	fprintf(out, "      pair gen/cull    : %.3f ms/frame\n",
 		(per_frame(c.overlap_ns) - per_frame(c.narrowphase_inline_ns)) / 1000000.0);
-	fprintf(out, "        pair cache hash: %.3f ms/frame\n", per_frame(c.cache_lookup_ns) / 1000000.0);
+#endif
 	fprintf(out, "    worker drain       : %.3f ms/frame\n", per_frame(c.drain_ns) / 1000000.0);
+#if !COLLISION_PROFILING
+	fprintf(out, "  (event counters are compiled out; set COLLISION_PROFILING to 1 for them)\n");
+	fprintf(out, "=== end collision benchmark ===\n\n");
+	fflush(out);
+	return;
+#else
 	fprintf(out, "  -- broadphase --\n");
 	fprintf(out, "  obj_collide_pair call: %.1f /frame\n", per_frame(c.pair_calls));
 	fprintf(out, "  pairs considered     : %.1f /frame (%" PRIu64 " total)\n", per_frame(c.pairs_considered), c.pairs_considered);
@@ -114,6 +121,7 @@ static void dump(const counters& c, int frames)
 	fprintf(out, "  drain spins          : %.1f /frame (%" PRIu64 " total)\n", per_frame(c.drain_spins), c.drain_spins);
 	fprintf(out, "=== end collision benchmark ===\n\n");
 	fflush(out);
+#endif
 }
 
 void benchmark_frame()

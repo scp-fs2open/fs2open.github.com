@@ -1384,7 +1384,9 @@ void obj_collide_pair(object *A, object *B)
 				COLLISION_PROF_INC(inline_other); break;
 		}
 #endif
+#if COLLISION_PROFILING
 		const std::uint64_t narrow_start_ns = timer_get_nanoseconds();
+#endif
 		const int hit = check_collision(&new_pair);
 		COLLISION_PROF_ADD(narrowphase_inline_ns, timer_get_nanoseconds() - narrow_start_ns);
 

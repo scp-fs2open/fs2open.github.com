@@ -606,7 +606,7 @@ int collide_asteroid_prop(obj_pair* pair)
 			asteroid_hit_info.light = asteroid_objp;
 		}
 
-		hit = prop_check_collision(prop_objp, prop_objp, &hitpos, &asteroid_hit_info);
+		hit = prop_check_collision(prop_objp, asteroid_objp, &hitpos, &asteroid_hit_info);
 		if (hit)
 		{
 			bool ship_override = false, asteroid_override = false;
