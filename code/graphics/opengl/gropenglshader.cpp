@@ -182,6 +182,13 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	sflags << "#version " << GLSL_version << " es\n";
 #endif
 	sflags << "#define OPENGL\n";
+
+#ifdef USE_OPENGL_ES
+	if (!GLAD_GL_EXT_clip_cull_distance) {
+		sflags << "#define SDR_FLAG_SW_CLIP_FALLBACK\n";
+	}
+#endif
+
 	sflags << shader_get_shadow_cascade_defines();
 	sflags << shader_get_rt_shadow_light_limit_define();
 

@@ -8,12 +8,6 @@ precision highp sampler2DArray;
 precision highp sampler2DArrayShadow;
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
@@ -158,7 +152,7 @@ layout(location = 0) in VertexOutput {
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
     float vClipDist;
 #endif
 } vertIn;
@@ -202,7 +196,7 @@ in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
     float vClipDist;
 #endif
 } vertIn;
@@ -293,7 +287,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
-	#ifndef USE_HW_CLIP_DISTANCE
+	#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 		if (vertIn.vClipDist < 0.0) discard;
 	#endif
 

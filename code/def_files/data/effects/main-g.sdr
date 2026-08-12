@@ -7,12 +7,6 @@ precision highp int;
 #extension GL_ARB_gpu_shader5: enable
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
 #conditional_include -"LARGE_SHADER" "main_small.sdr"
 
@@ -113,7 +107,7 @@ in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
     float vClipDist;
 #endif
 } vertIn[];
@@ -134,7 +128,7 @@ out VertexOutput {
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
     float vClipDist;
 #endif
 } vertOut;
@@ -186,13 +180,13 @@ out VertexOutput {
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 				if (use_clip_plane != 0) {
-					#ifndef USE_HW_CLIP_DISTANCE
+					#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 						vertOut.vClipDist = vertIn[vert].vClipDist;
 					#else
 						gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
 					#endif
 				} else {
-					#ifndef USE_HW_CLIP_DISTANCE
+					#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 						vertOut.vClipDist = 1.0;
 					#else
 						gl_ClipDistance[0] = 1.0;

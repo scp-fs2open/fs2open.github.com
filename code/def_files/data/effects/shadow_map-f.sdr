@@ -4,13 +4,7 @@
 precision highp float;
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 #ifdef VULKAN
 layout(location = 0) in VertexOutput {
 	float vClipDist;
@@ -24,7 +18,7 @@ in VertexOutput {
 
 void main()
 {
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 	if (vertIn.vClipDist < 0.0) discard;
 #endif
 }

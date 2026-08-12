@@ -4,12 +4,6 @@ precision highp float;
 precision highp int;
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
 #ifdef VULKAN
 layout(set = 2, binding = 0, std140)
 #else
@@ -50,13 +44,13 @@ layout(location = 2) in vec4 vertTexCoord;
 
 layout(location = 0) out vec4 fragTexCoord;
 layout(location = 1) out vec4 fragColor;
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 layout(location = 2) out float vClipDist;
 #endif
 
 #else
 
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 out float vClipDist;
 #endif
 
@@ -75,13 +69,13 @@ void main()
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 
 	if (clipEnabled != 0u) {
-		#ifdef USE_HW_CLIP_DISTANCE
+		#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 		gl_ClipDistance[0] = dot(clipEquation, modelMatrix * vertPosition);
 		#else
 		vClipDist = dot(clipEquation, modelMatrix * vertPosition);
 		#endif
 	} else {
-		#ifdef USE_HW_CLIP_DISTANCE
+		#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 		gl_ClipDistance[0] = 1.0;
 		#else
 		vClipDist = 1.0;

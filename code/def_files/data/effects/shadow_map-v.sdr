@@ -12,12 +12,6 @@ precision highp samplerBuffer;
 #endif
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
 #ifdef VULKAN
 layout(location = 0) in vec4 vertPosition;
 layout(location = 2) in vec4 vertTexCoord;
@@ -80,11 +74,11 @@ out VertexOutput {
 #endif
 	float clipModel;
 	vec3 normal;
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
     float vClipDist;
 #endif
 } vertOut;
-#elif !defined(USE_HW_CLIP_DISTANCE)
+#elif defined(SDR_FLAG_SW_CLIP_FALLBACK)
 #ifdef VULKAN
 layout(location = 0) out VertexOutput {
 	float vClipDist;
@@ -155,7 +149,7 @@ void main()
         gl_Position = position;
     }
 
-#ifdef USE_HW_CLIP_DISTANCE
+#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 	if (use_clip_plane != 0) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {

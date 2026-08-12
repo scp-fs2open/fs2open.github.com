@@ -8,12 +8,6 @@ precision highp int;
 #extension GL_ARB_gpu_shader5: enable
 #endif
 
-#if defined(VULKAN)
-//define USE_HW_CLIP_DISTANCE from engine side
-#elif !defined(GL_ES) || defined(GL_EXT_clip_cull_distance)
-	#define USE_HW_CLIP_DISTANCE
-#endif
-
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 #if defined(GL_ARB_gpu_shader5) || defined(GL_EXT_gpu_shader5)
@@ -38,12 +32,12 @@ in VertexOutput {
 #endif
 	float clipModel;
 	vec3 normal;
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 	float vClipDist;
 #endif
 } vertIn[];
 
-#ifndef USE_HW_CLIP_DISTANCE
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 out VertexOutput {
 	float vClipDist;
 } vertOut;
@@ -68,7 +62,7 @@ void main(void)
 
 		gl_Layer = cascade_id;
 		
-		#ifndef USE_HW_CLIP_DISTANCE
+		#ifdef SDR_FLAG_SW_CLIP_FALLBACK
 			vertOut.vClipDist = vertIn[vert].vClipDist;
 		#else
 			gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];

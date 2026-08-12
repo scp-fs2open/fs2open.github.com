@@ -152,8 +152,8 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 	// gl_ClipDistance[] requires the shaderClipDistance device feature. When the
 	// device supports it, use the hardware clip path, otherwise
 	// the shaders fall back to the vClipDist varying (software clipping).
-	if (m_hwClipDistance) {
-		header += "#define USE_HW_CLIP_DISTANCE\n";
+	if (!m_hwClipDistance) {
+		header += "#define SDR_FLAG_SW_CLIP_FALLBACK\n";
 	}
 
 	// Blinn-Phong lighting model (matches OpenGL's opengl_shader_get_header)
