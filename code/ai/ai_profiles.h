@@ -143,6 +143,8 @@ public:
 	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
 	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
 	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
+	float strafe_retreat_collide_time;		// When anticipated collision time is less than this, begin retreat from strafe
+	float strafe_retreat_collide_distance;	// When perpendicular distance to *surface* is less than this, begin retreat from strafe
 
 	// AI guard options  --wookieejedi
 	float guard_big_orbit_above_target_radius; // Radius of guardee that triggers ai_big_guard() 
