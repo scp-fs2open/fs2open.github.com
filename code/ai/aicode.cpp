@@ -7699,8 +7699,9 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 		int	i;
 		for (i=0; i<4; i++) {
 			vec3d p = big_objp->pos;
-			float ku = big_objp->radius*s + objp->radius * (OBJ_INDEX(objp) % 4)/4;		//	This objp->radius stuff to prevent ships from glomming together at one point
-			float kr = big_objp->radius*s + objp->radius * ((OBJ_INDEX(objp) % 4) ^ 2)/4;
+			float ix = (OBJ_INDEX(objp) % 4);
+			float ku = big_objp->radius*s + objp->radius * ix/4;		//	This objp->radius stuff to prevent ships from glomming together at one point
+			float kr = big_objp->radius*s + objp->radius * (ix*ix)/4;
 			if (i&1)
 				ku = -ku;
 			if (i&2)
@@ -7726,8 +7727,8 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 				}
 			}
 
-			Assert(i != -1);
-			if (i != -1) {
+			Assert(min_index != -1);
+			if (min_index != -1) {
 				*avoid_pos = goals[min_index].pos;
 				return;
 			}
