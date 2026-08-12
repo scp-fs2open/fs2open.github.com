@@ -167,7 +167,7 @@ void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_pac
 {
 	// calc what the timing was previously.  The caller hands us an absolute timestamp, 
 	// but remote_missiontime is relative to mission start, so drop the start time before comparing.
-	float local_time = static_cast<float>(stamp.value() - Multi_Timing_Info.get_mission_start_time());
+	auto local_time = static_cast<float>(stamp.value() - Multi_Timing_Info.get_mission_start_time());
 	float numerator = local_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
