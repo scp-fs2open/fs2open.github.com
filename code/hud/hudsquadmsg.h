@@ -79,11 +79,6 @@ typedef struct mmode_item {
 	int instance;    // instance in Ships/Wings array of this menu item
 	int active;      // active items are in bold text (1) -- inactive items greyed out (0) -- hidden objects not rendered (-1)
 	SCP_string text; // text to display on the menu
-	mmode_item(int param_instance, int param_active, SCP_string param_text) {
-		instance = param_instance;
-		active = param_active;
-		text = std::move(param_text);
-	};
 } mmode_item;
 
 extern char Squad_msg_title[256];
@@ -196,8 +191,7 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 void hud_squadmsg_do_mode( int mode );
 
 // functions for menu item selection with simple up/down/select buttons
-void hud_squadmsg_selection_move_down();
-void hud_squadmsg_selection_move_up();
+void hud_squadmsg_selection_move( bool up );
 void hud_squadmsg_selection_select();
 
 // Added for checking message validity - Mjn

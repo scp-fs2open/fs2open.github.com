@@ -2908,11 +2908,11 @@ int button_function(int n)
 			break;
 			 
 		case COMMS_MENU_MOVE_DOWN:
-			hud_squadmsg_selection_move_down();
+			hud_squadmsg_selection_move(false);
 			break;
 
 		case COMMS_MENU_MOVE_UP:
-			hud_squadmsg_selection_move_up();
+			hud_squadmsg_selection_move(true);
 			break;
 
 		case COMMS_MENU_SELECT:

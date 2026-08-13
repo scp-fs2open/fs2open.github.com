@@ -219,6 +219,7 @@ void hud_squadmsg_start()
 	Msg_key_set_from_scripting = false;
 
 	Rebuild_MsgItems = true;												// reset the menu items
+	MsgItems.clear();
 	First_menu_item = 0;
 	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
 	Display_selector = false;
@@ -376,7 +377,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		count++;
 		if (add_to_menu)
 		{
-			MsgItems.emplace_back(SHIP_INDEX(shipp), 1, shipp->get_display_name());
+			MsgItems.push_back({SHIP_INDEX(shipp), 1, shipp->get_display_name()});
 		}
 	}
 
@@ -427,7 +428,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[wingnum]) ) {
 			count++;
 			if ( add_to_menu ) {
-				MsgItems.emplace_back(wingnum, 1, Wings[wingnum].get_display_name());
+				MsgItems.push_back({wingnum, 1, Wings[wingnum].get_display_name()});
 			}
 		}
 	}
@@ -444,7 +445,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[i]) ) {
 			count++;
 			if ( add_to_menu ) {
-				MsgItems.emplace_back(i, 1, Wings[i].get_display_name());
+				MsgItems.push_back({i, 1, Wings[i].get_display_name()});
 			}
 		}
 	}
@@ -479,50 +480,40 @@ void hud_squadmsg_page_up()
 }
 
 //Fuctions that allow selection of specific comms menu items with simple up/down/select buttons
-void hud_squadmsg_selection_move_down() {
+void hud_squadmsg_selection_move( bool up ) {
+	if (Rebuild_MsgItems) {
+		return;
+	}
 
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move down
-		++Selected_menu_item;
+		//move
+		if (up) {
+			--Selected_menu_item;
+		} else {
+			++Selected_menu_item;
+		}
 		Display_selector = true;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
-		int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
-
 		//Move to next page if we went outside of current one
 		if (Selected_menu_item == MAX_MENU_DISPLAY 
-			&& (First_menu_item + MAX_MENU_DISPLAY < msg_items_size))
+			&& (MsgItems.in_bounds(First_menu_item + MAX_MENU_DISPLAY)))
 		{
 			hud_squadmsg_page_down();
 			Selected_menu_item = 0;
 		}
 
 		//Select the first menu item if we went outside items range, so we can loop around
-		if (First_menu_item + Selected_menu_item >= msg_items_size) 
+		if (!MsgItems.in_bounds(First_menu_item + Selected_menu_item)) 
 		{
 			First_menu_item = 0;
 			Selected_menu_item = First_menu_item;
 		}
-	}
-}
-
-void hud_squadmsg_selection_move_up() {
-
-	//Check if comms menu is up
-	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
-	{
-		//move up
-		--Selected_menu_item;
-		Display_selector = true;
-
-		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
-		gamesnd_play_iface(InterfaceSounds::SCROLL);
-		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
 		//Move to previous page if it exists
 		if (Selected_menu_item < 0 && First_menu_item > 0)
@@ -534,7 +525,7 @@ void hud_squadmsg_selection_move_up() {
 		//Select the last menu item if we went outside items range, so we can loop around
 		else if (Selected_menu_item < 0) 
 		{
-			int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
+			int msg_items_size = sz2i(MsgItems.size());
 			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
 			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
 			//exactly like pageUp/pageDown does
@@ -547,6 +538,9 @@ void hud_squadmsg_selection_move_up() {
 //function that tricks hud_squadmsg_get_key() into thinking player selected a menu item with a num key press
 //Yes, this is a pretty much a hack, but it's simple and works with every squadmsg type.
 void hud_squadmsg_selection_select() {
+	if (Rebuild_MsgItems) {
+		return;
+	}
 	
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
@@ -1780,9 +1774,9 @@ void hud_squadmsg_type_select( )
 	{
 
 		if (i < NUM_COMM_ORDER_TYPES) {
-			MsgItems.emplace_back(0, 1, Comm_order_types[i]); // assume active
+			MsgItems.push_back({0, 1, Comm_order_types[i]}); // assume active
 		} else {
-			MsgItems.emplace_back(0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]); // assume active
+			MsgItems.push_back({0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]}); // assume active
 		}				
 	}
 
@@ -2090,7 +2084,7 @@ void hud_squadmsg_reinforcement_select()
 				r_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
 			}
 
-			MsgItems.emplace_back(i, (reinforcement.flags & RF_IS_AVAILABLE), r_name); // set the item to active if reinforcement is available
+			MsgItems.push_back({i, (reinforcement.flags & RF_IS_AVAILABLE) ? 1 : 0, r_name}); // set the item to active if reinforcement is available
 		}
 	}
 
@@ -2150,7 +2144,7 @@ void hud_squadmsg_ship_command()
 	MsgItems.clear();
 	Rebuild_MsgItems = false;
 	for(size_t order_id : default_orders) {
-		MsgItems.emplace_back((int)order_id, 0, Player_orders[order_id].localized_name);
+		MsgItems.push_back({(int)order_id, 0, Player_orders[order_id].localized_name});
 
 		// check the bit to see if the command is active
 		if (orders.find(order_id) != orders.end())
@@ -2249,7 +2243,7 @@ void hud_squadmsg_msg_general()
 
 		//Only add it if it is enabled for the mission
 		if (lua_porder->cur_enabled) {
-			MsgItems.emplace_back(Player_orders[order_id].lua_id, (int)lua_porder->cur_valid, Player_orders[order_id].localized_name);
+			MsgItems.push_back({Player_orders[order_id].lua_id, (int)lua_porder->cur_valid, Player_orders[order_id].localized_name});
 
 			// do some other checks to possibly gray out other items.
 			// if no target, remove any items which are associated with the players target
@@ -2304,7 +2298,7 @@ void hud_squadmsg_wing_command()
 	for ( size_t order_id : default_orders ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
-		MsgItems.emplace_back((int)order_id, 0, Player_orders[order_id].localized_name);
+		MsgItems.push_back({(int)order_id, 0, Player_orders[order_id].localized_name});
 
 		// possibly grey out the menu item depending on whether or not the "wing" will accept this order
 		// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
@@ -2931,9 +2925,6 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Abort Rearm", 298)
 			};
 			strcpy_s(text, temp_comm_order_types[i]);
-			if (Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
-				MsgItems[First_menu_item + i].active = -1;
-			}
 		}
 
 		// blit the background
@@ -2954,7 +2945,10 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 			setGaugeColor(HUD_C_DIM, config);
 		}
 
-		if (MsgItems[First_menu_item + i].active >= 0) {
+		bool item_visible = config
+			? !(Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM))
+			: (MsgItems[First_menu_item + i].active >= 0);
+		if (item_visible) {
 			// first print an icon to indicate selected item
 			item_num = (i + 1) % MAX_MENU_DISPLAY;
 			if (isSelectedItem && Display_selector) {
