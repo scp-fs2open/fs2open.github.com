@@ -800,6 +800,33 @@ bool VulkanRenderer::isTextureCompressionBCSupported() const
 	return m_deviceFeatures.textureCompressionBC == VK_TRUE;
 }
 
+bool VulkanRenderer::isTextureCompressionS3TCSupported() const
+{
+	if (!m_physicalDevice) {
+		return false;
+	}
+
+	if (m_deviceFeatures.textureCompressionBC == VK_TRUE)
+		return true;
+
+	constexpr std::array<vk::Format, 3> formats = {
+		vk::Format::eBc1RgbaUnormBlock, // DXT1
+		vk::Format::eBc2UnormBlock,     // DXT3
+		vk::Format::eBc3UnormBlock,     // DXT5
+	};
+
+	constexpr vk::FormatFeatureFlags required = vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eSampledImageFilterLinear;
+
+	for (auto fmt : formats) {
+		const auto props = m_physicalDevice.getFormatProperties(fmt);
+		if ((props.optimalTilingFeatures & required) != required) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool VulkanRenderer::isDepthClampSupported() const
 {
 	if (!m_physicalDevice) {
