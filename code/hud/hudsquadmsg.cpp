@@ -2946,7 +2946,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		}
 
 		bool item_visible = config
-			? (!Hide_main_rearm_items_in_comms_gauge) || !(i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)
+			? (!Hide_main_rearm_items_in_comms_gauge) || ((i != TYPE_REPAIR_REARM_ITEM) && (i != TYPE_REPAIR_REARM_ABORT_ITEM))
 			: (MsgItems[First_menu_item + i].active >= 0);
 		if (item_visible) {
 			// first print an icon to indicate selected item
