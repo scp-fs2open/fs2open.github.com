@@ -818,7 +818,7 @@ bool VulkanRenderer::isTextureCompressionS3TCSupported() const
 
 	constexpr vk::FormatFeatureFlags required = vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eSampledImageFilterLinear;
 
-	return std::all_of(formats.begin(), formats.end(), [this](vk::Format fmt) {
+	return std::all_of(formats.begin(), formats.end(), [this, required](vk::Format fmt) {
 		const auto props = m_physicalDevice.getFormatProperties(fmt);
 		return (props.optimalTilingFeatures & required) == required;
 	});
