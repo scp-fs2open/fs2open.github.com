@@ -17,6 +17,7 @@
 #include "mod_table/mod_table.h"
 
 #include <SDL3/SDL_vulkan.h>
+#include <algorithm>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
