@@ -817,14 +817,10 @@ bool VulkanRenderer::isTextureCompressionS3TCSupported() const
 
 	constexpr vk::FormatFeatureFlags required = vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eSampledImageFilterLinear;
 
-	for (auto fmt : formats) {
+	return std::all_of(formats.begin(), formats.end(), [this](vk::Format fmt) {
 		const auto props = m_physicalDevice.getFormatProperties(fmt);
-		if ((props.optimalTilingFeatures & required) != required) {
-			return false;
-		}
-	}
-
-	return true;
+		return (props.optimalTilingFeatures & required) == required;
+	});
 }
 
 bool VulkanRenderer::isDepthClampSupported() const
