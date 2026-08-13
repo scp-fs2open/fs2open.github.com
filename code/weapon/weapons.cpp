@@ -773,6 +773,8 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			hasAnim ? bm_load_either(pspew_buffer.particle_spew_anim.c_str()) : particle::Anim_bitmap_id_smoke)); //Bitmap or Anim
 }
 
+SCP_unordered_map<int, std::array<SCP_unordered_map<SCP_string, float>, PrimarySelectionTargetType::MAX>> primary_selection_target_flags_temp;
+
 /**
  * Parse the information for a specific ship type.
  * Return weapon index if successful, otherwise return -1
@@ -2128,37 +2130,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 	
 	if (optional_string("$Primary Selection Target Flags:")) {
+		const int wi_index = static_cast<int>(wip - Weapon_info.data());
 		SCP_string type;
-		int instance_index;
+		SCP_string type_name;
 		float value;
-		while (optional_string("+")) {
+		for (int i = 0; i < PrimarySelectionTargetType::MAX; i++) {
+			primary_selection_target_flags_temp[i] = {};
+		}
+		while (optional_string("+Condition Type:")) {
 			stuff_string(type, F_NAME);
-			stuff_string(fname, F_NAME, NAME_LENGTH);
+			required_string("+Target Class:");
+			stuff_string(type_name, F_NAME);
+			required_string("+Value Multiplier:");
 			stuff_float(&value);
-			if (type == "ARMOR:") {
-				instance_index = armor_type_get_idx(fname);
-				if (instance_index < 0) {
-					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid armor type!\n", wip->name, fname);
-				}
-				wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].emplace(instance_index, value);
-			} else if (type == "SHIP_TYPE:") {
-				instance_index = ship_type_name_lookup(fname);
-				if (instance_index < 0) {
-					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid ship type!\n", wip->name, fname);
-				}
-				wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE].emplace(instance_index, value);
-			} else if (type == "SHIP_CLASS:") {
-				instance_index = ship_info_lookup(fname);
-				if (instance_index < 0) {
-					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid ship class!\n", wip->name, fname);
-				}
-				wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS].emplace(instance_index, value);
-			} else if (type == "WEAPON_CLASS:") {
-				instance_index = weapon_info_lookup(fname);
-				if (instance_index < 0) {
-					error_display(0, "Weapon '%s', primary selection target flags: '%s' is not a valid weapon class!\n", wip->name, fname);
-				}
-				wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS].emplace(instance_index, value);
+			if (type == "ARMOR") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::ARMOR].emplace(type_name, value);
+			} else if (type == "SHIP TYPE") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::SHIP_TYPE].emplace(type_name, value);
+			} else if (type == "SHIP CLASS") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::SHIP_CLASS].emplace(type_name, value);
+			} else if (type == "WEAPON CLASS") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::WEAPON_CLASS].emplace(type_name, value);
 			} else {
 				error_display(0, "Invalid primary selection target flag type '%s' in weapon '%s'!", type.c_str(), wip->name);
 			}
@@ -4400,6 +4392,34 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	return w_id;
 }
 
+void populate_primary_selection_flags()
+{
+	for (int i = 0; i < sz2i(Weapon_info.size()); i++) {
+		weapon_info *wip = &Weapon_info[i];
+		for (int flavor; flavor < PrimarySelectionTargetType::MAX; flavor++) {
+			for (auto& [index_name, mult] : primary_selection_target_flags_temp[i][flavor]) {
+				int index;
+				switch (flavor) {
+					case PrimarySelectionTargetType::ARMOR:
+						index = armor_type_get_idx(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::SHIP_TYPE:
+						index = ship_type_name_lookup(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::SHIP_CLASS:
+						index = ship_info_lookup(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::WEAPON_CLASS:
+						index = weapon_info_lookup(index_name.c_str());
+						break;
+				}
+				wip->primary_selection_target_flags[flavor].emplace(index, mult);
+			}
+		}
+	}
+	primary_selection_target_flags_temp.clear();
+}
+
 /**
  * For all weapons that spawn weapons, given an index at weaponp->spawn_type,
  * convert the strings in Spawn_names to indices in the Weapon_types array.
@@ -5162,7 +5182,7 @@ void weapon_do_post_parse()
 	translate_spawn_types();
 }
 
-// Called after ship_init() to resolve proximity ship type/class names into indices.
+// Called after ship_init() to resolve proximity ship type/class names into indices, as well as doing the same for primary selection flags.
 void weapon_post_ship_init()
 {
 	const int num_weapons = static_cast<int>(Weapon_info.size());
@@ -5195,6 +5215,8 @@ void weapon_post_ship_init()
 
 	Pending_proximity_type_names.clear();
 	Pending_proximity_class_names.clear();
+
+	populate_primary_selection_flags();
 }
 
 /**

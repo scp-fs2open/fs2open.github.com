@@ -6217,22 +6217,17 @@ int ai_select_primary_weapon_configurable(object *objp, object *other_objp, Weap
 		
 		float weapon_value = std::max(effective_dps, oneshot_value) * aip->primary_selection_random_factor.next();
 
-		SCP_unordered_map<int, float> armor_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR];
-		SCP_unordered_map<int, float> shiptype_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE];
-		SCP_unordered_map<int, float> shipclass_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS];
-		SCP_unordered_map<int, float> weaponclass_flags = wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS];
-
-		if (relevant_armor_type_idx >= 0 && armor_flags.contains(relevant_armor_type_idx)) {
-			weapon_value *= armor_flags[relevant_armor_type_idx];
+		if (wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR].contains(relevant_armor_type_idx)) {
+			weapon_value *= wip->primary_selection_target_flags[PrimarySelectionTargetType::ARMOR][relevant_armor_type_idx];
 		}
-		if (relevant_ship_type_idx >= 0 && shiptype_flags.contains(relevant_ship_type_idx)) {
-			weapon_value *= armor_flags[relevant_ship_type_idx];
+		if (wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE].contains(relevant_ship_type_idx)) {
+			weapon_value *= wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_TYPE][relevant_ship_type_idx];
 		}
-		if (relevant_ship_class_idx >= 0 && shipclass_flags.contains(relevant_ship_class_idx)) {
-			weapon_value *= armor_flags[relevant_ship_class_idx];
+		if (wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS].contains(relevant_ship_class_idx)) {
+			weapon_value *= wip->primary_selection_target_flags[PrimarySelectionTargetType::SHIP_CLASS][relevant_ship_class_idx];
 		}
-		if (relevant_weapon_class_idx >= 0 && weaponclass_flags.contains(relevant_weapon_class_idx)) {
-			weapon_value *= armor_flags[relevant_weapon_class_idx];
+		if (wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS].contains(relevant_weapon_class_idx)) {
+			weapon_value *= wip->primary_selection_target_flags[PrimarySelectionTargetType::WEAPON_CLASS][relevant_weapon_class_idx];
 		}
 
 		if (i == swp->current_primary_bank) {
