@@ -691,6 +691,8 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_secondary_range_mult[i] = FLT_MIN;
 	}
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
+	aicp->primary_select_delay = ::util::UniformFloatRange(5.0f);
+	aicp->primary_select_delay_on_change = ::util::UniformFloatRange(FLT_MAX);
 	aicp->primary_selection_random_factor = ::util::UniformFloatRange(1.0f);
 	aicp->primary_selection_oneshot_modifier = 2.0f;
 	aicp->primary_selection_status_quo_bias = 1.0f;
@@ -799,6 +801,12 @@ void parse_ai_class()
 
 	if (optional_string("$Autoscale by AI Class Index:"))
 		stuff_boolean(&aicp->ai_class_autoscale);
+
+	if (optional_string("$Primary select delay:"))
+		aicp->primary_select_delay = ::util::ParsedRandomFloatRange::parseRandomRange();
+
+	if (optional_string("$Primary select delay on target change:"))
+		aicp->primary_select_delay_on_change = ::util::ParsedRandomFloatRange::parseRandomRange();
 
 	if (optional_string("$Primary selection random factor:"))
 		aicp->primary_selection_random_factor = ::util::ParsedRandomFloatRange::parseRandomRange();
@@ -1595,12 +1603,10 @@ int set_target_objnum(ai_info *aip, int objnum)
 		aip->target_signature = (objnum >= 0) ? Objects[objnum].signature : -1;
 		// clear targeted subsystem
 		set_targeted_subsys(aip, NULL, -1);
-		if (aip->ai_profile_flags[AI::Profile_Flags::Always_do_primary_select_when_target_change]) {
-			object *target_object = nullptr;
-			if (aip->target_objnum >= 0) {
-				target_object = &Objects[aip->target_objnum];
-			}
-			ai_select_primary_weapon_configurable(&Objects[Ships[aip->shipnum].objnum], target_object, Weapon::Info_Flags::Puncture, -1.0f);
+		int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+		// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
+		if (aip->primary_select_timestamp > candidate_timestamp) {
+			aip->primary_select_timestamp = candidate_timestamp;
 		}
 	}
 	
@@ -1620,11 +1626,17 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 
 	if ( new_subsys ) {
 		// Make new_subsys target
-		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE || aip->ai_profile_flags[AI::Profile_Flags::Always_do_primary_select_when_target_change]) {
+		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE) {
 			if ( aip != Player_ai ) {
 				Assert( aip->shipnum >= 0 );
 				ai_select_primary_weapon_configurable(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], Weapon::Info_Flags::Puncture, -1.0f);
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
+			}
+		} else {
+			int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+			// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
+			if (aip->primary_select_timestamp > candidate_timestamp) {
+				aip->primary_select_timestamp = candidate_timestamp;
 			}
 		}
 
@@ -6556,9 +6568,10 @@ int ai_fire_primary_weapon(object *objp)
 		enemy_sip = NULL;
 	}
 
-	bool shield_changed = false;
 	float relevant_shields_left = -1.0f;
-	if (aip->ai_profile_flags[AI::Profile_Flags::Always_do_primary_select_when_target_change] && enemy_objp) {
+	int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+	// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
+	if (enemy_objp && (aip->primary_select_timestamp > candidate_timestamp)) {
 		vec3d ship_local_pos = objp->pos;
 		vm_vec_sub2(&ship_local_pos, &enemy_objp->pos);
 		vm_vec_rotate(&ship_local_pos, &ship_local_pos, &enemy_objp->orient);
@@ -6567,21 +6580,21 @@ int ai_fire_primary_weapon(object *objp)
 			relevant_shields_left = std::max(shield_get_quad(enemy_objp, relevant_quadrant) - ship_shield_hitpoint_threshold(enemy_objp, false), 0.0f);
 			bool shield_is_down = relevant_shields_left > 0.0f;
 			if (shield_is_down != aip->enemy_shield_is_down) {
-				shield_changed = true;
 				aip->enemy_shield_is_down = shield_is_down;
+				aip->primary_select_timestamp = candidate_timestamp;
 			}
 		}
 	}
 
 	//plieblang - added check for size of Preferred_primaries to force reevaluation if good-primary-time has been used in the meantime
-	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp) || shield_changed) {
+	if ( (swp->current_primary_bank < 0) || (swp->current_primary_bank >= swp->num_primary_banks) || timestamp_elapsed(aip->primary_select_timestamp)) {
 		Weapon::Info_Flags flags = Weapon::Info_Flags::NUM_VALUES;
 		if ( aip->targeted_subsys != NULL ) {
 			flags = Weapon::Info_Flags::Puncture;
 		}
 		ai_select_primary_weapon_configurable(objp, enemy_objp, flags, relevant_shields_left);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
-		aip->primary_select_timestamp = timestamp(5 * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon five seconds from now.
+		aip->primary_select_timestamp = timestamp(aip->primary_select_delay.next() * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon in a while (five seconds by default).
 	}
 
 	// if the ship has no primary weapon selected, whether because it has no primary banks or because no bank contains a weapon, then there is nothing to fire
@@ -16208,6 +16221,9 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_get_away_chance = aicp->ai_get_away_chance[Game_skill_level];	
 	aip->ai_secondary_range_mult = aicp->ai_secondary_range_mult[Game_skill_level];
 	aip->ai_class_autoscale = aicp->ai_class_autoscale;
+
+	aip->primary_select_delay = aicp->primary_select_delay;
+	aip->primary_select_delay_on_change = aicp->primary_select_delay_on_change;
 
 	aip->primary_selection_random_factor = aicp->primary_selection_random_factor;
 	aip->primary_selection_oneshot_modifier = aicp->primary_selection_oneshot_modifier;
