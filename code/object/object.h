@@ -54,7 +54,7 @@
 #define OBJ_PROP            17  // A prop object like a landscape. Similar to ships but is entirely non-interactable with the exception of collisions
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	17
+#define MAX_OBJECT_TYPES	18
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
