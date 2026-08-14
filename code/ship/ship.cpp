@@ -21758,7 +21758,7 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 void set_guard_range_ship(float range, const int target_ship_index, ship* shipp)
 {
 	bool done = false;
-	if (range >= 0) {
+	if (range > 0) {
 		for (auto& exist : shipp->max_guard_ranges) {
 			if (exist.shipnum == target_ship_index) {
 				if (range > 0) {
