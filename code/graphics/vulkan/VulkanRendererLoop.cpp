@@ -202,6 +202,7 @@ void VulkanRenderer::setupFrame()
 
 	// Reset per-frame flags
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Reset per-frame draw statistics
 	Assertion(m_drawManager, "Vulkan DrawManager not initialized in setupFrame!");
@@ -683,9 +684,18 @@ void VulkanRenderer::copySceneDepthForParticles()
 	// Copy scene depth → samplable depth copy (handles all depth image transitions)
 	m_postProcessor->copySceneDepth(m_currentCommandBuffer);
 
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthCopiedThisFrame = true;
+}
+
+// Shared tail of every mid-scene copy that touches only depth: put the color
+// attachments back the way the resumed loadOp=eLoad pass expects them, then resume.
+void VulkanRenderer::resumeScenePassAfterDepthCopy()
+{
 	// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	// (needed for the resumed render pass with loadOp=eLoad, which expects
-	// initialLayout=eColorAttachmentOptimal; copySceneDepth only touches depth)
+	// initialLayout=eColorAttachmentOptimal; a depth copy only touches depth)
 	{
 		ImageBarrier2 barrier;
 		barrier.image = m_postProcessor->getSceneColorImage();
@@ -712,8 +722,64 @@ void VulkanRenderer::copySceneDepthForParticles()
 
 	// Resume the scene render pass with loadOp=eLoad
 	resumeScenePassAfterCopy();
+}
 
-	m_sceneDepthCopiedThisFrame = true;
+// The cockpit model is rendered around the camera, inside the ship hull that the scene
+// pass already drew, so it needs a depth buffer that does not know about that hull --
+// otherwise the hull wins the depth test and shows through the cockpit. OpenGL swaps
+// the depth attachment to Cockpit_depth_texture for the duration; Vulkan bakes the
+// attachment into the framebuffer, so the scene depth is copied aside and cleared
+// instead. Only the scene depth image is parked: with MSAA the cockpit renders against
+// the multisampled depth, which the G-buffer pass clears on its own, and
+// gr_deferred_lighting_msaa() resolves back into the scene depth before restore runs.
+void VulkanRenderer::saveSceneDepth()
+{
+	if (m_sceneDepthSaved || !m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	// resumeScenePassAfterCopy() knows the scene pass and the non-MSAA G-buffer pass only.
+	// Both callers (ship_render_player_ship) run between one deferred pass and the next, so
+	// the multisampled G-buffer pass is never the live one -- resuming the wrong pass would
+	// desync the state tracker and build pipelines against it, so catch a future move here.
+	Assertion(m_stateTracker->getCurrentSampleCount() == vk::SampleCountFlagBits::e1,
+		"Tried to park the scene depth while a multisampled render pass was active!");
+
+	// End the current scene render pass
+	// This transitions: color → eShaderReadOnlyOptimal, depth → eDepthStencilAttachmentOptimal
+	// For G-buffer: all 6 color attachments → eShaderReadOnlyOptimal
+	m_currentCommandBuffer.endRenderPass();
+
+	m_postProcessor->saveSceneDepth(m_currentCommandBuffer);
+
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthSaved = true;
+}
+
+void VulkanRenderer::restoreSceneDepth()
+{
+	if (!m_sceneDepthSaved) {
+		return;
+	}
+
+	// Cleared first: a scene that ends between the save and the restore (a failed
+	// resize dropping the post-processor, say) must not leave the flag set for the
+	// next frame's restore to act on stale content.
+	m_sceneDepthSaved = false;
+
+	if (!m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	Assertion(m_stateTracker->getCurrentSampleCount() == vk::SampleCountFlagBits::e1,
+		"Tried to put the scene depth back while a multisampled render pass was active!");
+
+	m_currentCommandBuffer.endRenderPass();
+
+	m_postProcessor->restoreSceneDepth(m_currentCommandBuffer);
+
+	resumeScenePassAfterDepthCopy();
 }
 
 void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)

@@ -431,10 +431,12 @@ bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
 	m_sceneColor.height = extent.height;
 
 	// Scene depth target
+	// eTransferDst needed for restoreSceneDepth (backup→depth copy after the cockpit render)
 	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
 	                 vk::ImageUsageFlagBits::eDepthStencilAttachment
 	                 | vk::ImageUsageFlagBits::eSampled
-	                 | vk::ImageUsageFlagBits::eTransferSrc,
+	                 | vk::ImageUsageFlagBits::eTransferSrc
+	                 | vk::ImageUsageFlagBits::eTransferDst,
 	                 vk::ImageAspectFlagBits::eDepth,  // View uses depth-only aspect
 	                 m_sceneDepth.image, m_sceneDepth.view, m_sceneDepth.allocation)) {
 		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth image!\n"));
@@ -469,6 +471,22 @@ bool VulkanPostProcessor::createSceneTargets(vk::Extent2D extent)
 	m_sceneDepthCopy.width = extent.width;
 	m_sceneDepthCopy.height = extent.height;
 
+	// Scene depth backup (holds the scene's depth while the cockpit renders)
+	// Copy target on the way out, copy source on the way back in. No shader ever reads it,
+	// but eSampled stays: createImage() always builds a view, and a view needs at least one
+	// non-transfer usage bit (VUID-VkImageViewCreateInfo-image-04441).
+	if (!createImage(extent.width, extent.height, m_ctx.depthFormat,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc
+	                 | vk::ImageUsageFlagBits::eSampled,
+	                 vk::ImageAspectFlagBits::eDepth,
+	                 m_sceneDepthBackup.image, m_sceneDepthBackup.view, m_sceneDepthBackup.allocation)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Failed to create scene depth backup image!\n"));
+		return false;
+	}
+	m_sceneDepthBackup.format = m_ctx.depthFormat;
+	m_sceneDepthBackup.width = extent.width;
+	m_sceneDepthBackup.height = extent.height;
+
 	return true;
 }
 
@@ -482,6 +500,7 @@ void VulkanPostProcessor::destroySceneTargets()
 	m_ctx.destroyTarget(m_sceneColor);
 	m_ctx.destroyTarget(m_sceneDepth);
 	m_ctx.destroyTarget(m_sceneDepthCopy);
+	m_ctx.destroyTarget(m_sceneDepthBackup);
 }
 
 bool VulkanPostProcessor::createSceneFramebuffer()
@@ -588,6 +607,29 @@ void VulkanPostProcessor::copySceneDepth(vk::CommandBuffer cmd) const
 	copyImageToImage(cmd,
 		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		m_sceneDepthCopy.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+		m_ctx.sceneExtent,
+		imageAspectFromFormat(m_ctx.depthFormat));
+}
+
+void VulkanPostProcessor::saveSceneDepth(vk::CommandBuffer cmd) const
+{
+	// Called outside a render pass, so scene depth is in eDepthStencilAttachmentOptimal
+	// (the scene/G-buffer render pass finalLayout). The backup keeps no content between
+	// frames, hence eUndefined: the copy overwrites every texel.
+	copyImageToImage(cmd,
+		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
+		m_sceneDepthBackup.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal,
+		m_ctx.sceneExtent,
+		imageAspectFromFormat(m_ctx.depthFormat));
+}
+
+void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd) const
+{
+	// The backup was left in eTransferSrcOptimal by saveSceneDepth() and stays there --
+	// the next save transitions it from eUndefined anyway.
+	copyImageToImage(cmd,
+		m_sceneDepthBackup.image, vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferSrcOptimal,
+		m_sceneDepth.image, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
 		m_ctx.sceneExtent,
 		imageAspectFromFormat(m_ctx.depthFormat));
 }
@@ -836,15 +878,34 @@ void VulkanPostProcessor::encodeOutputSdr(vk::CommandBuffer cmd, vk::RenderPass 
 void vulkan_post_process_begin() {}
 void vulkan_post_process_end() {}
 
-// No-op: In OpenGL, save/restore swap the depth attachment between
-// Scene_depth_texture and Cockpit_depth_texture to isolate cockpit
-// depth from the main scene. In Vulkan, the render pass loadOp=eClear
-// clears depth at the start of each scene pass, and separate cockpit
-// depth isolation is not yet implemented. Called from ship.cpp during
-// cockpit rendering but degrades gracefully as a no-op (cockpit just
-// shares the scene depth buffer).
-void vulkan_post_process_save_zbuffer() {}
-void vulkan_post_process_restore_zbuffer() {}
+// Isolate the cockpit's depth from the scene's, the way OpenGL does by swapping the
+// depth attachment between Scene_depth_texture and Cockpit_depth_texture. A Vulkan
+// framebuffer owns its attachments, so the scene depth is parked in a backup image and
+// the live depth buffer is cleared for the cockpit; the restore puts the scene back.
+//
+// Both halves are needed. Without the clear the ship hull the scene already drew wins
+// the depth test against the cockpit around the camera. Without the restore the
+// post-processing passes that sample scene depth (lightshafts) see cockpit depth.
+void vulkan_post_process_save_zbuffer()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->saveSceneDepth();
+	}
+
+	// Unconditional, exactly as in OpenGL: when there is nothing to park (post-processing
+	// off, or no scene render pass), clearing is still what gives the cockpit a depth
+	// buffer of its own.
+	gr_zbuffer_clear(TRUE);
+}
+
+void vulkan_post_process_restore_zbuffer()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->restoreSceneDepth();
+	}
+}
 
 void vulkan_post_process_set_effect(const char* name, int value, const vec3d* rgb)
 {

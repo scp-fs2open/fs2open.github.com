@@ -671,6 +671,7 @@ bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 		m_drawManager->onResize();
 	}
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Update VulkanRenderFrame handles to point to the new swap chain.
 	for (auto& frame : target.frames) {

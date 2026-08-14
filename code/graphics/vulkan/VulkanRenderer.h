@@ -334,6 +334,24 @@ class VulkanRenderer {
 	void copySceneDepthForParticles();
 
 	/**
+	 * @brief Park the scene depth so the cockpit can render on a cleared depth buffer
+	 *
+	 * Called by vulkan_post_process_save_zbuffer(). Ends the current scene render
+	 * pass, copies scene depth → backup image, then resumes the pass with
+	 * loadOp=eLoad. The caller clears the depth buffer afterwards. No-op when a
+	 * save is already outstanding, or outside scene rendering.
+	 */
+	void saveSceneDepth();
+
+	/**
+	 * @brief Put the parked scene depth back, discarding what the cockpit wrote
+	 *
+	 * Called by vulkan_post_process_restore_zbuffer(). No-op unless saveSceneDepth()
+	 * parked something.
+	 */
+	void restoreSceneDepth();
+
+	/**
 	 * @brief Check if scene depth copy is available for sampling this frame
 	 */
 	bool isSceneDepthCopied() const { return m_sceneDepthCopiedThisFrame; }
@@ -423,6 +441,12 @@ class VulkanRenderer {
 	 * after a mid-scene copy (copyEffectTexture / copySceneDepthForParticles)
 	 */
 	void resumeScenePassAfterCopy();
+
+	/**
+	 * @brief Restore the color attachment layouts a depth-only copy left behind,
+	 * then resume the scene (or G-buffer) render pass
+	 */
+	void resumeScenePassAfterDepthCopy();
 
 	bool initDisplayDevice() const;
 
@@ -641,6 +665,7 @@ class VulkanRenderer {
 	std::unique_ptr<VulkanPostProcessor> m_postProcessor;
 	bool m_sceneRendering = false;
 	bool m_sceneDepthCopiedThisFrame = false;
+	bool m_sceneDepthSaved = false;    // True between saveSceneDepth() and restoreSceneDepth()
 	bool m_useGbufRenderPass = false;  // True when scene uses G-buffer (deferred lighting)
 
 	bool m_supportsShaderViewportLayerOutput = false;  // VK_EXT_shader_viewport_index_layer

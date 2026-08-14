@@ -1093,6 +1093,31 @@ public:
 	void copySceneDepth(vk::CommandBuffer cmd) const;
 
 	/**
+	 * @brief Copy scene depth aside so the cockpit can render on a cleared depth buffer
+	 *
+	 * The cockpit model shares the world with the ship hull around it, so it needs a
+	 * depth buffer of its own -- OpenGL gets one by swapping the depth attachment to
+	 * Cockpit_depth_texture. Here the scene depth stays the attachment and its content
+	 * is parked in a backup image instead, which restoreSceneDepth() puts back.
+	 *
+	 * Must be called outside a render pass. Leaves scene depth in
+	 * eDepthStencilAttachmentOptimal and the backup in eTransferSrcOptimal.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void saveSceneDepth(vk::CommandBuffer cmd) const;
+
+	/**
+	 * @brief Put the depth that saveSceneDepth() parked back into the scene depth buffer
+	 *
+	 * Discards whatever the cockpit wrote, which is the point: the post-processing
+	 * passes that sample scene depth (lightshafts) must see the scene, not the cockpit.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void restoreSceneDepth(vk::CommandBuffer cmd) const;
+
+	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
 	 */
 	bool hasLDRTargets() const { return m_ldr.isInitialized(); }
@@ -1276,6 +1301,7 @@ private:
 	RenderTarget m_sceneColor;      // RGBA16F HDR scene color
 	RenderTarget m_sceneDepth;      // Depth buffer for scene
 	RenderTarget m_sceneDepthCopy;  // Samplable copy of scene depth (for soft particles)
+	RenderTarget m_sceneDepthBackup; // Scene depth parked across the cockpit render (transfer only)
 	RenderTarget m_sceneEffect;     // RGBA16F effect/composite (snapshot of scene color)
 
 	// Scene render pass and framebuffer

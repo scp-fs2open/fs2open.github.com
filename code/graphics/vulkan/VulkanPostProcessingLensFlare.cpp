@@ -314,7 +314,7 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Verify(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -338,7 +338,7 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 		// Set 2: PerDraw -- this sun's flare data from the dedicated UBO ring
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Verify(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		{
 			vk::DeviceSize slotOffset = m_ubo.alloc(frameIndex, flareDraws[i].data,
 				sizeof(generic_data::lens_flare_data));
@@ -346,9 +346,10 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 		}
 		writer.flush();
 
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-			static_cast<uint32_t>(DescriptorSetIndex::Material),
-			{materialSet, perDrawSet}, {});
+		// The PerDraw GenericData binding is a dynamic UBO, so the flare's slot
+		// offset travels in the dynamic-offset array that bindSets builds
+		const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 		cmd.draw(4, flareDraws[i].instances, 0, 0);
 	}

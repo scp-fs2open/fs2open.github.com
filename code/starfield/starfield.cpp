@@ -1432,20 +1432,6 @@ static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, flo
 	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
 }
 
-// True when the post-processing flare pass is drawing this sun's starburst this
-// frame, so the sprite sun and its glow must not stack a second one on top of it.
-//
-// Never true while rendering an environment map. That path goes straight to a
-// render target without ever reaching the post-processing chain, so no flare pass
-// runs there and the sprite is all there is -- and since the env faces are
-// rendered *before* this frame's stars_draw() publishes, what is published at
-// that moment is still the previous frame's. Both reasons say the same thing:
-// only the scene render that published may act on the result.
-static bool sun_starburst_replaces_sprite(int sun_n)
-{
-	return !Rendering_to_env && graphics::lens_flare_sun_starburst_drawn(sun_n);
-}
-
 // The sun's tabled light, or nothing if the sun instance itself is invalid.
 std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n)
 {
