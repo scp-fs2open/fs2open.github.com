@@ -7464,9 +7464,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 	{
-
-		Assert(parent_objp);		//local ssms must have a parent
-
 		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
 		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
 		wp->lssm_stage=1;
@@ -7571,7 +7568,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	Num_weapons++;
 
-	if (Weapons_inherit_parent_collision_group) {
+	if (Weapons_inherit_parent_collision_group && parent_objnum >= 0) {
 		Objects[objnum].collision_group_id = Objects[parent_objnum].collision_group_id;
 	}
 
@@ -7611,7 +7608,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	}
 
 	if (scripting::hooks::OnWeaponCreated->isActive()) {
-		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
+		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, parent_objnum < 0 ? nullptr : &Objects[parent_objnum] },
 			scripting::hook_param_list(
 				scripting::hook_param("Weapon", 'o', &Objects[objnum])
 			));
