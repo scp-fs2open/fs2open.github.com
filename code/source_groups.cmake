@@ -192,6 +192,8 @@ endif()
 add_file_folder("ddsutils"
 	ddsutils/ddsutils.cpp
 	ddsutils/ddsutils.h
+	ddsutils/ddsutils_etc_cache.cpp
+	ddsutils/ddsutils_etc_cache.h
 )
 
 # Debris files

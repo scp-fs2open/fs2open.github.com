@@ -193,6 +193,16 @@ class VulkanRenderer {
 	bool isTextureCompressionBCSupported() const;
 
 	/**
+	 * @brief Check if BC 1/2/3 texture compression is supported
+	 */
+	bool isTextureCompressionS3TCSupported() const;
+
+	/**
+	 * @brief Check if ETC2 texture compression is supported
+	 */
+	bool isTextureCompressionETC2Supported() const;
+
+	/**
 	 * @brief Check if depth clamping is supported (used by the shadow pass)
 	 */
 	bool isDepthClampSupported() const;

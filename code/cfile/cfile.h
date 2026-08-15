@@ -289,6 +289,7 @@ uint cf_add_chksum_long(uint seed, ubyte *buffer, size_t size);
 #define CF_RENAME_FAIL_ACCESS			1					// new name could not be created
 #define CF_RENAME_FAIL_EXIST			2					// old name does not exist
 int cf_rename(const char *old_name, const char *name, int type = CF_TYPE_ANY );
+int cf_rename(const char *old_name, const char *name, int type, int location_flags);
 
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.

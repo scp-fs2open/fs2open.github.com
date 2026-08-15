@@ -238,6 +238,7 @@ Flag exe_params[] =
 	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
 	{ "-no_bsp_align",		"Disable pof BSP data alignment",			true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_bsp_align", },
     { "-no_large_shaders",	"Split large shader into smaller shaders",		true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_large_shaders", },
+	{ "-no_transcode_cache","Disables the ETC2 transcode cache",		true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_transcode_cache", },
 
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
@@ -470,6 +471,7 @@ cmdline_parm no_large_shaders("-no_large_shaders", NULL, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
+cmdline_parm no_transcode_cache_arg("-no_transcode_cache", NULL, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
@@ -494,6 +496,7 @@ bool Cmdline_no_large_shaders = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
+bool Cmdline_no_transcode_cache = false;
 uint Cmdline_rng_seed = 0;
 bool Cmdline_reuse_rng_seed = false;
 
@@ -2162,6 +2165,11 @@ bool SetCmdlineParams()
     if (no_large_shaders.found()) {
         Cmdline_no_large_shaders = true;
     }
+
+	if (no_transcode_cache_arg.found())
+	{
+		Cmdline_no_transcode_cache = true;
+	}
 	
 #ifdef WIN32
 	if (fix_registry.found()) {
