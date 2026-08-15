@@ -566,12 +566,12 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 				break;
 		}
 
-		ubyte* comp_data = (ubyte*)vm_malloc(size);
+		auto comp_data = (ubyte*)vm_malloc(size);
 		cfread(comp_data, 1, (int)size, cfp);
 
 		const uint max_w = (dds_header.dwWidth + 3) & ~3u;
 		const uint max_h = (dds_header.dwHeight + 3) & ~3u;
-		ubyte* rgba = (ubyte*)vm_malloc((size_t)max_w * max_h * 4);
+		auto rgba = (ubyte*)vm_malloc((size_t)max_w * max_h * 4);
 
 		ubyte* src = comp_data;
 		size_t out_offset = 0;

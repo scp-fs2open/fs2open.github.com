@@ -471,7 +471,7 @@ cmdline_parm no_large_shaders("-no_large_shaders", NULL, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
-cmdline_parm no_transcode_cache_arg("-no_transcode_cache", NULL, AT_NONE);
+cmdline_parm no_transcode_cache_arg("-no_transcode_cache", nullptr, AT_NONE);
 
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nomovies = 0;
