@@ -677,6 +677,11 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_evasion[i] = FLT_MIN;
 		aicp->ai_courage[i] = FLT_MIN;
 		aicp->ai_patience[i] = FLT_MIN;
+		aicp->primary_select_delay[i] = ::util::UniformFloatRange(FLT_MIN);
+		aicp->primary_select_delay_on_change[i] = ::util::UniformFloatRange(FLT_MIN);
+		aicp->primary_selection_random_factor[i] = ::util::UniformFloatRange(1.0f);
+		aicp->primary_selection_oneshot_modifier[i] = 2.0f;
+		aicp->primary_selection_status_quo_bias[i] = 1.0f;
 	}
     aicp->ai_profile_flags.reset();
     aicp->ai_profile_flags_set.reset();
@@ -691,11 +696,6 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_secondary_range_mult[i] = FLT_MIN;
 	}
 	aicp->ai_class_autoscale = true;	//Retail behavior is to do the stupid autoscaling
-	aicp->primary_select_delay = ::util::UniformFloatRange(5.0f);
-	aicp->primary_select_delay_on_change = ::util::UniformFloatRange(FLT_MAX);
-	aicp->primary_selection_random_factor = ::util::UniformFloatRange(1.0f);
-	aicp->primary_selection_oneshot_modifier = 2.0f;
-	aicp->primary_selection_status_quo_bias = 1.0f;
 }
 
 void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
@@ -801,29 +801,38 @@ void parse_ai_class()
 
 	if (optional_string("$Autoscale by AI Class Index:"))
 		stuff_boolean(&aicp->ai_class_autoscale);
-
-	if (optional_string("$Primary select delay:"))
-		aicp->primary_select_delay = ::util::ParsedRandomFloatRange::parseRandomRange();
-
-	if (optional_string("$Primary select delay on target change:"))
-		aicp->primary_select_delay_on_change = ::util::ParsedRandomFloatRange::parseRandomRange();
-
-	if (optional_string("$Primary selection random factor:"))
-		aicp->primary_selection_random_factor = ::util::ParsedRandomFloatRange::parseRandomRange();
-
-	if (optional_string("$Primary selection oneshot modifier:"))
-		stuff_float(&aicp->primary_selection_oneshot_modifier);
-
-	if (optional_string("$Primary selection status quo bias:"))
-		stuff_float(&aicp->primary_selection_status_quo_bias);
-
+		
 	//Parse optional values for stuff imported from ai_profiles
 	if (optional_string("$AI Countermeasure Firing Chance:"))
-		parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
-
+	parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
+	
 	if (optional_string("$AI In Range Time:"))
-		parse_float_list(aicp->ai_in_range_time, NUM_SKILL_LEVELS);
+	parse_float_list(aicp->ai_in_range_time, NUM_SKILL_LEVELS);
+	
+	if (optional_string("$Primary select delay:")) {
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			aicp->primary_select_delay[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+	}
 
+	if (optional_string("$Primary select delay on target change:")) {
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			aicp->primary_select_delay_on_change[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+	}
+
+	if (optional_string("$Primary selection random factor:")) {
+		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+			aicp->primary_selection_random_factor[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+	}
+
+	if (optional_string("$Primary selection oneshot modifier:"))
+		parse_float_list(aicp->primary_selection_oneshot_modifier, NUM_SKILL_LEVELS);
+
+	if (optional_string("$Primary selection status quo bias:"))
+		parse_float_list(aicp->primary_selection_status_quo_bias, NUM_SKILL_LEVELS);
+		
 	if (optional_string("$AI Always Links Ammo Weapons:"))
 		parse_float_list(aicp->ai_link_ammo_levels_always, NUM_SKILL_LEVELS);
 
@@ -927,8 +936,6 @@ void parse_ai_class()
 		parse_float_list(aicp->ai_turret_max_aim_update_delay, NUM_SKILL_LEVELS);
 
 	set_aic_flag(aicp, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
-
-	set_aic_flag(aicp, "$always do primary select when target change:", AI::Profile_Flags::Always_do_primary_select_when_target_change);
 	
 	set_aic_flag(aicp, "$configurable primary weapon selection:", AI::Profile_Flags::Configurable_primary_weapon_selection);
 
@@ -1652,7 +1659,7 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 	}
 	
 	return aip->targeted_subsys;
-}											  
+}
 
 /**
  * Called to init the data for single ai object.  
@@ -16222,12 +16229,9 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 	aip->ai_secondary_range_mult = aicp->ai_secondary_range_mult[Game_skill_level];
 	aip->ai_class_autoscale = aicp->ai_class_autoscale;
 
-	aip->primary_select_delay = aicp->primary_select_delay;
-	aip->primary_select_delay_on_change = aicp->primary_select_delay_on_change;
-
-	aip->primary_selection_random_factor = aicp->primary_selection_random_factor;
-	aip->primary_selection_oneshot_modifier = aicp->primary_selection_oneshot_modifier;
-	aip->primary_selection_status_quo_bias = aicp->primary_selection_status_quo_bias;
+	aip->primary_selection_random_factor = aicp->primary_selection_random_factor[Game_skill_level];
+	aip->primary_selection_oneshot_modifier = aicp->primary_selection_oneshot_modifier[Game_skill_level];
+	aip->primary_selection_status_quo_bias = aicp->primary_selection_status_quo_bias[Game_skill_level];
 
 	//Apply overrides from ai class to ai profiles values
 	//Only override values which were explicitly set in the AI class
@@ -16277,6 +16281,10 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
 		profile->max_aim_update_delay[Game_skill_level] : aicp->ai_max_aim_update_delay[Game_skill_level];
 	aip->ai_turret_max_aim_update_delay = (aicp->ai_turret_max_aim_update_delay[Game_skill_level] == FLT_MIN) ? 
 		profile->turret_max_aim_update_delay[Game_skill_level] : aicp->ai_turret_max_aim_update_delay[Game_skill_level];
+	aip->primary_select_delay = (aicp->primary_select_delay[Game_skill_level].min() == FLT_MIN && aicp->primary_select_delay[Game_skill_level].max() == FLT_MIN) ?
+		profile->primary_select_delay[Game_skill_level] :  aicp->primary_select_delay[Game_skill_level];
+	aip->primary_select_delay_on_change = (aicp->primary_select_delay_on_change[Game_skill_level].min() == FLT_MIN && aicp->primary_select_delay_on_change[Game_skill_level].max() == FLT_MIN) ?
+		profile->primary_select_delay_on_change[Game_skill_level] :  aicp->primary_select_delay_on_change[Game_skill_level];
 
 	//Combine AI profile and AI class flags
     aip->ai_profile_flags = profile->flags | (aicp->ai_profile_flags & aicp->ai_profile_flags_set);

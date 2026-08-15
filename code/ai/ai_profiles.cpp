@@ -202,6 +202,18 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$AI In Range Time:"))
 					parse_float_list(profile->in_range_time, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Primary select delay:")) {
+					for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+						profile->primary_select_delay[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+					}
+				}
+			
+				if (optional_string("$Primary select delay on target change:")) {
+					for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
+						profile->primary_select_delay_on_change[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+					}
+				}
+
 				if (optional_string("$AI Always Links Ammo Weapons:"))
 					parse_float_list(profile->link_ammo_levels_always, NUM_SKILL_LEVELS);
 
@@ -381,8 +393,6 @@ void parse_ai_profiles_tbl(const char *filename)
 					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_VALUE + 1);
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
-
-				set_flag(profile, "$always do primary select when target change:", AI::Profile_Flags::Always_do_primary_select_when_target_change);
 
 				set_flag(profile, "$configurable primary weapon selection:", AI::Profile_Flags::Configurable_primary_weapon_selection);
 
@@ -924,6 +934,9 @@ void ai_profile_t::reset()
         delay_bomb_arm_timer[i] = 0;
         chance_to_use_missiles_on_plr[i] = 0;
         player_autoaim_fov[i] = 0;
+
+		primary_select_delay[i] = ::util::UniformFloatRange(5.0f);
+		primary_select_delay_on_change[i] = ::util::UniformFloatRange(FLT_MAX);
     }
 
     for (int i = 0; i <= MAX_DETAIL_VALUE; ++i) {

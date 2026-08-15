@@ -143,11 +143,11 @@ typedef struct ai_class {
 	float	ai_secondary_range_mult[NUM_SKILL_LEVELS];
 	bool	ai_class_autoscale;		//Defaults to true, but can be turned off in order to disable extra scaling of some AI behaviors
 									//based on AI class index
-	::util::ParsedRandomFloatRange primary_select_delay;
-	::util::ParsedRandomFloatRange primary_select_delay_on_change;
-	::util::ParsedRandomFloatRange primary_selection_random_factor;
-	float primary_selection_oneshot_modifier;
-	float primary_selection_status_quo_bias;
+	::util::ParsedRandomFloatRange primary_select_delay[NUM_SKILL_LEVELS];
+	::util::ParsedRandomFloatRange primary_select_delay_on_change[NUM_SKILL_LEVELS];
+	::util::ParsedRandomFloatRange primary_selection_random_factor[NUM_SKILL_LEVELS];
+	float primary_selection_oneshot_modifier[NUM_SKILL_LEVELS];
+	float primary_selection_status_quo_bias[NUM_SKILL_LEVELS];
 
 } ai_class;
 
