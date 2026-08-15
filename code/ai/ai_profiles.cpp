@@ -936,7 +936,7 @@ void ai_profile_t::reset()
         player_autoaim_fov[i] = 0;
 
 		primary_select_delay[i] = ::util::UniformFloatRange(5.0f);
-		primary_select_delay_on_change[i] = ::util::UniformFloatRange(FLT_MAX);
+		primary_select_delay_on_change[i] = ::util::UniformFloatRange(9999.0f);
     }
 
     for (int i = 0; i <= MAX_DETAIL_VALUE; ++i) {

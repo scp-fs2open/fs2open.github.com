@@ -1610,9 +1610,9 @@ int set_target_objnum(ai_info *aip, int objnum)
 		aip->target_signature = (objnum >= 0) ? Objects[objnum].signature : -1;
 		// clear targeted subsystem
 		set_targeted_subsys(aip, NULL, -1);
-		int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+		int candidate_timestamp = timestamp(std::max(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)), 0));
 		// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
-		if (aip->primary_select_timestamp > candidate_timestamp) {
+		if (timestamp_until(aip->primary_select_timestamp) > timestamp_until(candidate_timestamp)) {
 			aip->primary_select_timestamp = candidate_timestamp;
 		}
 	}
@@ -1640,9 +1640,9 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
 			}
 		} else {
-			int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+			int candidate_timestamp = timestamp(std::max(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)), 0));
 			// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
-			if (aip->primary_select_timestamp > candidate_timestamp) {
+			if (timestamp_until(aip->primary_select_timestamp) > timestamp_until(candidate_timestamp)) {
 				aip->primary_select_timestamp = candidate_timestamp;
 			}
 		}
@@ -6576,9 +6576,9 @@ int ai_fire_primary_weapon(object *objp)
 	}
 
 	float relevant_shields_left = -1.0f;
-	int candidate_timestamp = timestamp(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)));
+	int candidate_timestamp = timestamp(std::max(fl2i(aip->primary_select_delay_on_change.next() * i2fl(MILLISECONDS_PER_SECOND)), 0));
 	// we don't want to bother checking for an early selection if the ai's going to do it sooner anyway
-	if (enemy_objp && (aip->primary_select_timestamp > candidate_timestamp)) {
+	if (enemy_objp && (timestamp_until(aip->primary_select_timestamp) > timestamp_until(candidate_timestamp))) {
 		vec3d ship_local_pos = objp->pos;
 		vm_vec_sub2(&ship_local_pos, &enemy_objp->pos);
 		vm_vec_rotate(&ship_local_pos, &ship_local_pos, &enemy_objp->orient);
