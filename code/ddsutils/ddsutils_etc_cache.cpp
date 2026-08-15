@@ -103,7 +103,7 @@ bool etc2_cache_try_load(const SCP_string &key,
 	cfclose(fp);
 
 	if (got != (int)stored_size) {
-		cf_delete(name.c_str(), CF_TYPE_CACHE);
+		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
 	}
 
@@ -120,14 +120,14 @@ bool etc2_cache_try_load(const SCP_string &key,
 	}
 
 	if (!ok) {
-		cf_delete(name.c_str(), CF_TYPE_CACHE);
+		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
 	}
 
 	const uint crc = cf_add_chksum_long(0, out_data, payload_size);
 
 	if (crc != payload_crc) {
-		cf_delete(name.c_str(), CF_TYPE_CACHE);
+		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
 	}
 
@@ -191,7 +191,7 @@ void etc2_cache_store(const SCP_string &key,
 	cfclose(fp);
 
 	if (written != (int)out_size) {
-		cf_delete(temp_name.c_str(), CF_TYPE_CACHE);
+		cf_delete(temp_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return;
 	}
 
