@@ -465,7 +465,7 @@ void hud_squadmsg_do_mode( int mode )
 
 void hud_squadmsg_page_down()
 {
-	if ( !Rebuild_MsgItems && (First_menu_item + MAX_MENU_DISPLAY) < sz2i(MsgItems.size()) ) {
+	if ( (First_menu_item + MAX_MENU_DISPLAY) < sz2i(MsgItems.size()) ) {
 		First_menu_item += MAX_MENU_DISPLAY;
 		Assert ( First_menu_item < sz2i(MsgItems.size()) );
 	}
@@ -481,57 +481,26 @@ void hud_squadmsg_page_up()
 
 //Fuctions that allow selection of specific comms menu items with simple up/down/select buttons
 void hud_squadmsg_selection_move( bool up ) {
-	if (Rebuild_MsgItems) {
+	if (Rebuild_MsgItems || MsgItems.empty())
 		return;
-	}
 
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move
-		if (up) {
-			--Selected_menu_item;
-		} else {
-			++Selected_menu_item;
-		}
 		Display_selector = true;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
-		//Move to next page if we went outside of current one
-		if (Selected_menu_item == MAX_MENU_DISPLAY 
-			&& (MsgItems.in_bounds(First_menu_item + MAX_MENU_DISPLAY)))
-		{
-			hud_squadmsg_page_down();
-			Selected_menu_item = 0;
-		}
+		//The selection moves +/-1 through the whole menu, wrapping around at either end.
+		//First_menu_item and Selected_menu_item are just the page and the offset within the page.
+		int num_items = sz2i(MsgItems.size());
+		int selected_index = First_menu_item + Selected_menu_item;
+		selected_index = (selected_index + (up ? -1 : 1) + num_items) % num_items;
 
-		//Select the first menu item if we went outside items range, so we can loop around
-		if (!MsgItems.in_bounds(First_menu_item + Selected_menu_item)) 
-		{
-			First_menu_item = 0;
-			Selected_menu_item = First_menu_item;
-		}
-
-		//Move to previous page if it exists
-		if (Selected_menu_item < 0 && First_menu_item > 0)
-		{
-			hud_squadmsg_page_up();
-			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
-		}
-
-		//Select the last menu item if we went outside items range, so we can loop around
-		else if (Selected_menu_item < 0) 
-		{
-			int msg_items_size = sz2i(MsgItems.size());
-			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
-			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
-			//exactly like pageUp/pageDown does
-			First_menu_item = ((msg_items_size - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
-			Selected_menu_item = msg_items_size - 1 - First_menu_item;
-		}
+		Selected_menu_item = selected_index % MAX_MENU_DISPLAY;
+		First_menu_item = selected_index - Selected_menu_item;
 	}
 }
 
@@ -1777,7 +1746,7 @@ void hud_squadmsg_type_select( )
 			MsgItems.push_back({0, 1, Comm_order_types[i]}); // assume active
 		} else {
 			MsgItems.push_back({0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]}); // assume active
-		}				
+		}
 	}
 
 
@@ -2322,7 +2291,7 @@ void hud_squadmsg_wing_command()
 				}
 				MsgItems.back().active = active;
 			}
-		}	
+		}
 	}
 
 	
@@ -2874,7 +2843,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderString(x + Header_offsets[0], y + fl2i(Header_offsets[1] * scale), title, scale, config);
 	}
 
-	int msg_items_size = !Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1;
+	int msg_items_size = sz2i(MsgItems.size());
 
 	int nitems;
 	if (!config) {

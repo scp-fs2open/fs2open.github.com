@@ -343,7 +343,7 @@ ADE_INDEXER(l_Mission_Comm_Items,
 	// convert from lua index
 	idx--;
 
-	if ((idx < 0))
+	if (idx < 0)
 		return ade_set_args(L, "o", l_Comm_Item.Set(-1));
 
 	return ade_set_args(L, "o", l_Comm_Item.Set(idx));
@@ -356,7 +356,7 @@ ADE_FUNC(__len,
 	"number",
 	"Number of comm orders in the mission. 0 if comm menu is closed")
 {
-	return ade_set_args(L, "i", (!Rebuild_MsgItems ? sz2i(MsgItems.size()) : -1));
+	return ade_set_args(L, "i", sz2i(MsgItems.size()));
 }
 
 //****SUBLIBRARY: Mission/Debris
