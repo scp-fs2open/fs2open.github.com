@@ -2261,6 +2261,9 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				}
 			}
 
+		} else if (node_subtype == SEXP_ATOM_OPERATOR) {
+			return SEXP_CHECK_DATA_EXPECTED;	// operators should not be found here
+
 		} else if (node_subtype == SEXP_ATOM_NUMBER) {
 			node_return_type = OPR_POSITIVE;
 			auto ptr = CTEXT(node);
@@ -2391,9 +2394,8 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			continue;
 
 		} else {
-			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, "
-						"SEXP_ATOM_CONTAINER_NAME, or "
-						"SEXP_ATOM_CONTAINER_DATA!",
+			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_OPERATOR, SEXP_ATOM_NUMBER, "
+						"SEXP_ATOM_STRING, SEXP_ATOM_CONTAINER_NAME, or SEXP_ATOM_CONTAINER_DATA!",
 				node_subtype);
 		}
 
@@ -35414,6 +35416,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_OP_EXPECTED:
 			return "Operator expected instead of data";
+
+		case SEXP_CHECK_DATA_EXPECTED:
+			return "Data expected instead of operator";
 
 		case SEXP_CHECK_UNKNOWN_OP:
 			return "Unrecognized operator";
