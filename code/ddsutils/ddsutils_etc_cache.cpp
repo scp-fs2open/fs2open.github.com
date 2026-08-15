@@ -6,9 +6,9 @@
 #include <cstring>
 
 #define ETC2_CACHE_VERSION_TAG "etc2-v1"
-#define ETC2_CACHE_MAGIC 0x32435445u
-#define ETC2_CACHE_VERSION 1u
-#define ETC2_CACHE_CHKSUM_WINDOW 65536
+static constexpr uint ETC2_CACHE_MAGIC = 0x32435445u;
+static constexpr uint ETC2_CACHE_VERSION = 1u;
+static constexpr int ETC2_CACHE_CHKSUM_WINDOW = 65536;
 
 static const uint32_t CACHE_LOCATION_FLAGS = CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
 
