@@ -4,7 +4,6 @@
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
 #include "osapi/osregistry.h"
-#include "cmdline/cmdline.h"
 #ifdef USE_OPENGL_ES
 #include "graphics/opengl/es_compatibility.h"
 #endif
@@ -112,9 +111,10 @@ static size_t compute_etc2_rgba_size(const DDS_HEADER &dds_header)
 // of textures.
 //
 // NOTE: modifies header!!
-//
+// ETC2: For converting to ETC2 limit all to MAX_SIZE or half-size
+// 
 // returns: number of mipmap levels to skip
-static uint conversion_resize(DDS_HEADER &dds_header)
+static uint conversion_resize(DDS_HEADER& dds_header, dds_conv_target target)
 {
 	const size_t MAX_SIZE = 1024;
 	uint width, height, depth, offset = 0;
@@ -135,6 +135,15 @@ static uint conversion_resize(DDS_HEADER &dds_header)
 			break;
 		}
 
+		width >>= 1;
+		height >>= 1;
+		depth >>= 1;
+
+		++offset;
+	}
+
+	// For ETC2 conversion: if we are not limiting by MAX_SIZE, drop a level (50% size reduction)
+	if ((target == dds_conv_target::etc2) && (offset == 0) && (offset < dds_header.dwMipMapCount - 1) && (width > 4) && (height > 4)) {
 		width >>= 1;
 		height >>= 1;
 		depth >>= 1;
@@ -394,7 +403,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	convert = (conv_target != dds_conv_target::none);
 
 	if (conv_target == dds_conv_target::etc2) {
-		dds_header.dwMipMapCount -= conversion_resize(dds_header);
+		dds_header.dwMipMapCount -= conversion_resize(dds_header, dds_conv_target::etc2);
 		dds_header.dwMipMapCount = std::max(1U, dds_header.dwMipMapCount);
 
 		ct = DDS_ETC2_RGBA8;
@@ -406,7 +415,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		dds_header.ddspf.dwRGBBitCount = 32;
 
 		// NOTE: modifies header and returns offset for mipmap count
-		dds_header.dwMipMapCount -= conversion_resize(dds_header);
+		dds_header.dwMipMapCount -= conversion_resize(dds_header, dds_conv_target::bgra);
 		dds_header.dwMipMapCount = std::max(1U, dds_header.dwMipMapCount);
 
 		ct = (is_cubemap) ? DDS_CUBEMAP_UNCOMPRESSED : DDS_UNCOMPRESSED;
@@ -506,7 +515,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		// NOTE: this alters the width, height, and depth values in the header,
 		//       so we have to jump through some hoops to get the proper values
-		const uint mipmap_offset = conversion_resize(dds_header);
+		const uint mipmap_offset = conversion_resize(dds_header, dds_conv_target::etc2);
 		const uint out_mips = orig_mips - mipmap_offset;
 
 		size_t etc2_size = 0;
@@ -521,7 +530,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		if (!Cmdline_no_transcode_cache) {
 			//Build the cache MD5 hash
-			key = etc2_cache_make_key(cfp, dds_header.ddspf.dwFourCC, DDS_ETC2_RGBA8, 1024);
+			key = etc2_cache_make_key(cfp, dds_header.ddspf.dwFourCC, DDS_ETC2_RGBA8, static_cast<uint>(etc2_size));
 
 			//Try to load from a cache file
 			if (etc2_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, DDS_ETC2_RGBA8, etc2_size, data)) {
@@ -624,7 +633,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		// NOTE: this alters the width, height, and depth values in the header,
 		//       so we have to jump through some hoops to get the proper values
-		const uint mipmap_offset = conversion_resize(dds_header);
+		const uint mipmap_offset = conversion_resize(dds_header, dds_conv_target::bgra);
 
 		const int num_faces = (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP) ? 6 : 1;
 		const bool has_depth = (dds_header.dwFlags & DDSD_DEPTH) == DDSD_DEPTH;

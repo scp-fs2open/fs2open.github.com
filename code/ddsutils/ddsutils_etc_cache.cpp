@@ -22,7 +22,7 @@ static SCP_string etc2_cache_temp_filename(const SCP_string &key)
 	return SCP_string("etc2-") + key + ".cache.tmp";
 }
 
-SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint max_size)
+SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint etc2_size)
 {
 	const int saved_pos = cftell(dds);
 
@@ -47,7 +47,7 @@ SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint
 	md5.update(reinterpret_cast<const char*>(&src_len), sizeof(src_len));
 	md5.update(reinterpret_cast<const char*>(&src_fourcc), sizeof(src_fourcc));
 	md5.update(reinterpret_cast<const char*>(&dst_format), sizeof(dst_format));
-	md5.update(reinterpret_cast<const char*>(&max_size), sizeof(max_size));
+	md5.update(reinterpret_cast<const char*>(&etc2_size), sizeof(etc2_size));
 	md5.finalize();
 
 	return md5.hexdigest();

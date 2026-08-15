@@ -4,7 +4,7 @@
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
 
-SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint max_size);
+SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint etc2_size);
 
 bool etc2_cache_try_load(const SCP_string &key,
                          uint expected_width,
