@@ -1901,7 +1901,7 @@ int invalidate_references(const char *name, sexp_ref_type type)
 
 	sprintf(new_name, "<%s>", name);
 	update_sexp_references(name, new_name);
-	ai_update_goal_references(type, name, new_name);
+	ai_remove_goal_references(type, name);
 	update_texture_replacements(name, new_name);
 	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
 	if (i >= 0)
@@ -2009,19 +2009,6 @@ int get_ship_from_obj(object *objp)
 
 	Int3();
 	return 0;
-}
-
-void ai_update_goal_references(sexp_ref_type type, const char *old_name, const char *new_name)
-{
-	int i;
-
-	for (i=0; i<MAX_AI_INFO; i++)  // loop through all Ai_info entries
-		if (Ai_info[i].shipnum != -1)  // skip if unused
-			ai_update_goal_references(Ai_info[i].goals, type, old_name, new_name);
-
-	for (i=0; i<MAX_WINGS; i++)
-		if (Wings[i].wave_count)
-			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
 std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const char *name)

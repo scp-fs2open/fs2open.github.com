@@ -494,6 +494,12 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 		return;
 	}
 
+	if (vec_list.empty())
+	{
+		Warning(LOCATION, "Waypoint list '%s' has no waypoints!  Not adding the list...", name);
+		return;
+	}
+
 	Waypoint_lists.emplace_back(name);
 	auto& wp_list = Waypoint_lists.back();
 
