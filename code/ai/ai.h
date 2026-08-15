@@ -347,7 +347,7 @@ typedef struct ai_info {
 	float		prev_dot_to_goal;					//	dot of fvec to goal last frame, used to see if making progress towards goal.
 	vec3d	goal_point;							//	Used in AIM_SAFETY, AIM_STILL and in circling.
 	vec3d	prev_goal_point;					//	Previous location of goal point, used at least for evading.
-	float	enemy_shield_is_down;
+	bool	enemy_shield_is_down;
 	
 	//Values copied from the AI class
 	float	ai_accuracy, ai_evasion, ai_courage, ai_patience;

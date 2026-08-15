@@ -6601,7 +6601,7 @@ int ai_fire_primary_weapon(object *objp)
 		}
 		ai_select_primary_weapon_configurable(objp, enemy_objp, flags, relevant_shields_left);
 		ship_primary_changed(shipp);	// AL: maybe send multiplayer information when AI ship changes primaries
-		aip->primary_select_timestamp = timestamp(aip->primary_select_delay.next() * MILLISECONDS_PER_SECOND);	//	Maybe change primary weapon in a while (five seconds by default).
+		aip->primary_select_timestamp = timestamp(fl2i(aip->primary_select_delay.next() * i2fl(MILLISECONDS_PER_SECOND)));	//	Maybe change primary weapon in a while (five seconds by default).
 	}
 
 	// if the ship has no primary weapon selected, whether because it has no primary banks or because no bank contains a weapon, then there is nothing to fire
