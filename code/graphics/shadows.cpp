@@ -665,11 +665,11 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, fov_t
 
 	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos, true);
 	if (cascade_distances_override)
-		shadow_cascade_params_bind(max_skip_override, num_cascades - max_skip_override);
+		shadow_cascade_params_bind(max_skip_override, num_cascades - max_skip_override, vmd_zero_vector);
 	else if (render_cockpit_cascades)
-		shadow_cascade_params_bind(0, num_cascades);
+		shadow_cascade_params_bind(0, num_cascades, vmd_zero_vector);
 	else
-		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades, vmd_zero_vector);
 
 	return light_matrix;
 }
@@ -764,9 +764,9 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 
 		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, false);
 		if (casts_shadow_on_cockpit)
-			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades + Num_shadow_cascades);
+			shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades + Num_shadow_cascades, vmd_zero_vector);
 		else
-			shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+			shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades, vmd_zero_vector);
 
 		model_clear_instance(sip->model_num);
 		polymodel_instance* pmi = nullptr;
@@ -782,17 +782,14 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		viewer_list.render_all();
 	}
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
+	const bool renderCockpitModel = ship_player_cockpit_model_would_render(sip);
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
 		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, false);
-		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
+		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, vmd_zero_vector);
 
-		vec3d cockpit_offset = sip->cockpit_offset;
-		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
-		if (!Disable_cockpit_sway)
-			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+		vec3d cockpit_offset = ship_cockpit_render_offset(sip, objp);
 
 		model_clear_instance(sip->cockpit_model_num);
 		polymodel_instance* cockpit_pmi = nullptr;
@@ -1035,7 +1032,8 @@ void shadow_cascade_params_shutdown() {
 }
 
 int Shadow_cascade_count = 0;
-void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const vec3d& world_offset,
+	bool allow_viewer_self_shadow) {
 	if (!Shadow_cascade_params_buffer.isValid()) {
 		return;
 	}
@@ -1057,6 +1055,10 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
+
+	// See shadow_cascade_params_bind()'s declaration (shadows.h) for what these mean.
+	static_data.shadow_ray_cull_mask = allow_viewer_self_shadow ? 0xFF : SHADOW_RAY_CULL_MASK_EXCLUDE_VIEWER_HULL;
+	static_data.shadow_ray_world_offset = world_offset;
 
 	Shadow_cascade_count = cascade_count;
 
@@ -1082,8 +1084,23 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	}
 	offset += sizeof(float) * padding;
 
-	gr_update_buffer_data_offset(Shadow_cascade_params_buffer, 0, required_size, buffer.data());
+	// Must be the full-replacement update, not _offset: this is called several times per
+	// frame with different content, and on Vulkan's streaming buffer _offset only bump-
+	// allocates fresh GPU memory on the first call, silently overwriting the same region
+	// on later calls -- so every draw this frame (command buffers are pre-recorded) would
+	// read whichever bind ran last, not the one current when it was recorded. This always
+	// bump-allocates fresh on Vulkan (matching deferred_global_data/deferred_light_data)
+	// and is a plain buffer-orphaning glBufferData() on OpenGL.
+	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);
+}
+
+void shadow_cascade_params_bind_deferred() {
+	int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
+	int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+	vec3d world_offset = (Lighting_mode == lighting_mode::COCKPIT && Viewer_obj != nullptr) ? Viewer_obj->pos : vmd_zero_vector;
+	bool allow_viewer_self_shadow = Lighting_mode == lighting_mode::COCKPIT && ship_render_player_ship_casts_shadow_on_cockpit();
+	shadow_cascade_params_bind(offset, count, world_offset, allow_viewer_self_shadow);
 }
 
 shadow_render_list::shadow_render_list() {

@@ -147,7 +147,33 @@ struct shadow_cascade_static_data {
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
+
+	// World-space correction added to the RT shadow ray's reconstructed position before
+	// tracing. Zero everywhere except the cockpit pass: ship_render_player_ship() renders
+	// the cockpit using a view matrix anchored at `leaning_position` and model positions
+	// offset in that same un-translated frame (never combined with objp->pos), so the
+	// reconstructed position isn't true world space like the shadow TLAS is. Adding the
+	// viewer ship's world position back here closes that gap -- see
+	// shadow_cascade_params_bind() (shadows.cpp) for where this is set.
+	//
+	// Declared before shadow_ray_cull_mask so the trailing int packs into this vec3's
+	// std140 alignment padding instead of needing a manual pad field (std140 gives a vec3
+	// 16-byte alignment but only 12-byte size, so a following scalar fills the gap for free).
+	vec3d shadow_ray_world_offset;
+
+	// Ray cull mask for raytraced shadow queries (traceShadowRay()/shadows.sdr). Excludes
+	// the viewer ship's own hull TLAS instance (TLAS_MASK_VIEWER_HULL, shadows.h) outside
+	// the cockpit pass, matching the rasterized path's exclusion of Viewer_obj from the
+	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
+	int shadow_ray_cull_mask;
 };
+// Must match the GLSL shadowCascadeParams block's implicit std140 padding
+// exactly (16 [4 leading scalars] + 64 [matrix4] + 12 [shadow_ray_world_offset]
+// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 96) --
+// shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
+// this struct via sizeof(), so a mismatch here silently shifts every cascade
+// matrix in the buffer, in both backends.
+static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
