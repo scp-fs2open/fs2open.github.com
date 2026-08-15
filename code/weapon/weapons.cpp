@@ -4396,7 +4396,7 @@ void populate_primary_selection_flags()
 {
 	for (int i = 0; i < sz2i(Weapon_info.size()); i++) {
 		weapon_info *wip = &Weapon_info[i];
-		for (int flavor; flavor < PrimarySelectionTargetType::MAX; flavor++) {
+		for (int flavor = 0; flavor < PrimarySelectionTargetType::MAX; flavor++) {
 			for (auto& [index_name, mult] : primary_selection_target_flags_temp[i][flavor]) {
 				int index;
 				switch (flavor) {
