@@ -203,14 +203,14 @@ void parse_ai_profiles_tbl(const char *filename)
 					parse_float_list(profile->in_range_time, NUM_SKILL_LEVELS);
 
 				if (optional_string("$Primary select delay:")) {
-					for (int level = 0; level < NUM_SKILL_LEVELS; level++) {
-						profile->primary_select_delay[level] = ::util::ParsedRandomFloatRange::parseRandomRange();
+					for (auto& entry : profile->primary_select_delay) {
+						entry = ::util::ParsedRandomFloatRange::parseRandomRange();
 					}
 				}
 			
 				if (optional_string("$Primary select delay on target change:")) {
-					for (int level = 0; level < NUM_SKILL_LEVELS; level++) {
-						profile->primary_select_delay_on_change[level] = ::util::ParsedRandomFloatRange::parseRandomRange();
+					for (auto& entry : profile->primary_select_delay_on_change) {
+						entry = ::util::ParsedRandomFloatRange::parseRandomRange();
 					}
 				}
 

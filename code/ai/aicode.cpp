@@ -804,26 +804,26 @@ void parse_ai_class()
 		
 	//Parse optional values for stuff imported from ai_profiles
 	if (optional_string("$AI Countermeasure Firing Chance:"))
-	parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
+		parse_float_list(aicp->ai_cmeasure_fire_chance, NUM_SKILL_LEVELS);
 	
 	if (optional_string("$AI In Range Time:"))
-	parse_float_list(aicp->ai_in_range_time, NUM_SKILL_LEVELS);
+		parse_float_list(aicp->ai_in_range_time, NUM_SKILL_LEVELS);
 	
 	if (optional_string("$Primary select delay:")) {
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			aicp->primary_select_delay[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		for (auto& entry : aicp->primary_select_delay)  {
+			entry = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 	}
 
 	if (optional_string("$Primary select delay on target change:")) {
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			aicp->primary_select_delay_on_change[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		for (auto& entry : aicp->primary_select_delay_on_change) {
+			entry = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 	}
 
 	if (optional_string("$Primary selection random factor:")) {
-		for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-			aicp->primary_selection_random_factor[i] = ::util::ParsedRandomFloatRange::parseRandomRange();
+		for (auto& entry : aicp->primary_selection_random_factor) {
+			entry = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 	}
 
