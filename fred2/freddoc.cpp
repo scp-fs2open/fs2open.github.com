@@ -245,6 +245,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
+	// Guard against reentrant ship-editor write-back while the mission is loaded.  The guard is released once the mission has stabilized.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission(flags & MPF_FAST_RELOAD);
 
 	// message 1: required version
@@ -259,6 +262,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		}
 
 		Fred_view_wnd->MessageBox(name);
+		Ship_editor_dialog.bypass_all--;
 		create_new_mission();
 		return false;
 	}
@@ -407,6 +411,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	set_modified(0);
 	stars_post_level_init();
+
+	// mission is fully built and consistent now; allow the editors to repopulate
+	Ship_editor_dialog.bypass_all--;
 
 	recreate_dialogs();
 

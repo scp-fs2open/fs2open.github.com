@@ -858,11 +858,16 @@ void create_new_mission()
 
 void reset_mission()
 {
+	// Guard against reentrant ship-editor write-back while the mission is reset.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission();
 
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
+
+	Ship_editor_dialog.bypass_all--;
 }
 
 void clear_mission(bool fast_reload)
