@@ -4446,6 +4446,10 @@ bool model_rotate_gun(const object *objp, const polymodel *pm, const polymodel_i
 		vm_vec_sub(&dir, &planar_dst, &world_pos);
 		vm_vec_normalize(&dir);
 		desired_base_angle = vm_vec_delta_ang_norm(&rotated_vec, &dir, &world_axis);
+		// for ventral turrets without custom matrixes
+		if (vm_vec_dot(&base_sm->frame_of_reference.vec.uvec, &turret->turret_norm) < 0.0f) {
+			desired_base_angle = PI + desired_base_angle;
+		}
 
 		//------------
 		// Pretend the base is pointing directly at the target

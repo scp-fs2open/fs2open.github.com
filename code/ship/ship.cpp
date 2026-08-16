@@ -311,6 +311,8 @@ ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs, Standalone ship cannot be in this list or it will cause bugs.
 
 SCP_vector<ship_info>	Ship_info;
+SCP_vector<const char *> Ship_class_names;		// to be filled in from Ship_info
+
 SCP_vector<reinforcements>	Reinforcements;
 SCP_vector<ship_info>	Ship_templates;
 
@@ -318,6 +320,7 @@ SCP_vector<ship_type_info> Ship_types;
 bool Fighter_bomber_valid = false;
 const char *Fighter_bomber_type_name = "fighter/bomber";
 int Ship_type_fighter = -1, Ship_type_bomber = -1, Ship_type_fighter_bomber = -1;
+
 
 SCP_vector<ArmorType> Armor_types;
 SCP_vector<DamageTypeStruct>	Damage_types;
@@ -4169,7 +4172,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}
 
-	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
+	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names.data(), Num_ai_classes, "AI class names");
 
 	// Get Afterburner information
 	// Be aware that if $Afterburner is not 1, the other Afterburner fields are not read in
@@ -4336,7 +4339,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		float help_hull_val;
 		stuff_float(&help_hull_val);
 		if (help_hull_val > 0.0f && help_hull_val <= 1.0f) {
-			sip->ask_help_shield_percent = help_hull_val;
+			sip->ask_help_hull_percent = help_hull_val;
 		} else {
 			error_display(0,"Ask Help Hull Percent for ship class %s is %f. This value is not within range of 0-1.0."
 			              "Assuming default value of %f.", sip->name, help_hull_val, DEFAULT_ASK_HELP_HULL_PERCENT);
@@ -6158,8 +6161,12 @@ static void ship_parse_post_cleanup()
 	int j;
 	char name_tmp[NAME_LENGTH];
 
+	Ship_class_names.clear();
+
 	for (auto sip = Ship_info.begin(); sip != Ship_info.end(); ++sip)
 	{
+		Ship_class_names.push_back(sip->name);
+
 		// ballistic primary fixage...
 		{
 			bool pbank_capacity_specified = false;

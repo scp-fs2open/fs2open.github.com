@@ -270,8 +270,6 @@ const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
-const char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
-
 const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Fighter", "Fighter Wing", "Cargo", "Cargo Wing", "Largeship",
 	"Largeship Wing", "Capital", "Planet", "Asteroid Field", "Waypoint",
@@ -1936,11 +1934,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 
 			Assert(bs->num_icons <= MAX_STAGE_ICONS );
 
-			// static alias stuff - stupid, but it seems to be necessary
-			auto temp_team_names = std::unique_ptr<const char* []>(new const char*[Iff_info.size()]);
-			for (i = 0; i < (int)Iff_info.size(); i++)
-				temp_team_names[i] = Iff_info[i].iff_name;
-
 			while (required_string_either("$end_stage", "$start_icon"))
 			{
 				required_string("$start_icon");
@@ -1972,9 +1965,9 @@ void parse_briefing(mission * /*pm*/, int flags)
 						bi->type = ICON_TRANSPORT_WING;
 				}
 
-				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
+				find_and_stuff("$team:", &bi->team, F_NAME, Iff_info_names.data(), Iff_info_names.size(), "team name");
 
-				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names.data(), Ship_class_names.size(), "ship class");
 				bi->modelnum = -1;
 				bi->model_instance_num = -1;
 
@@ -3406,7 +3399,6 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
@@ -3429,7 +3421,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
 	}
 
-	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Ship_info.size(), "ship class");
+	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names.data(), Ship_class_names.size(), "ship class");
 	if (p_objp->ship_class < 0)
 	{
 		if (Fred_running) {
@@ -3538,11 +3530,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			mprintf(("Using callsign: %s\n", name));
 	}
 
-	auto temp_team_names = std::unique_ptr<const char*[]>(new const char*[Iff_info.size()]);
-	for (i = 0; i < (int)Iff_info.size(); i++)
-		temp_team_names[i] = Iff_info[i].iff_name;
-
-	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names.get(), Iff_info.size(), "team name");
+	find_and_stuff("$Team:", &p_objp->team, F_NAME, Iff_info_names.data(), Iff_info_names.size(), "team name");
 
 	// save current team for loadout purposes, so that in multi we always respawn
 	// from the original loadout slot even if the team changes
@@ -3580,7 +3568,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	if (optional_string("+AI Class:")) 
 	{
-		p_objp->ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+		p_objp->ai_class = match_and_stuff(F_NAME, Ai_class_names.data(), Num_ai_classes, "AI class");
 
 		if (p_objp->ai_class < 0) 
 		{
@@ -4254,7 +4242,7 @@ void parse_common_object_data(p_object *p_objp)
 
 		if (optional_string("+AI Class:"))
 		{
-			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+			Subsys_status[i].ai_class = match_and_stuff(F_NAME, Ai_class_names.data(), Num_ai_classes, "AI class");
 
 			if (Subsys_status[i].ai_class < 0)
 			{
@@ -7542,16 +7530,10 @@ void mission_init(mission *pm, bool quick_init)
 // info such as game type, number of players etc. or whether we are importing from a different format.
 bool parse_main(const char *mission_name, int flags)
 {
-	int i;
 	bool rval;
 
 	Assert(Ship_info.size() <= MAX_SHIP_CLASSES);
 
-	// fill in Ship_class_names array with the names from the ship_info struct
-	i = 0;
-	for (auto it = Ship_info.begin(); it != Ship_info.end(); i++, ++it)
-		Ship_class_names[i] = it->name;
-	
 	do {
 		// don't do this for imports
 		if (!(flags & MPF_IMPORT_FSM)) {

@@ -109,8 +109,7 @@ missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
-int	Num_spawn_types = 0;
-char** Spawn_names = nullptr;
+SCP_vector<SCP_string> Spawn_names;
 
 //WEAPON SUBTYPE STUFF
 const char *Weapon_subtype_names[] = {
@@ -142,14 +141,8 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
 		if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
-			//We need more spawning slots
-			//allocate in slots of 10
-			if ((Num_spawn_types % 10) == 0) {
-				Spawn_names = (char**)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
-			}
-
 			flags.set(Weapon::Info_Flags::Spawn);
-			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Num_spawn_types;
+			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Spawn_names.size();
 			size_t start_num = spawn.find_first_of(',');
 			if (start_num == SCP_string::npos) {
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -161,8 +154,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 
 			weaponp->maximum_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
 
-			Spawn_names[Num_spawn_types] = vm_strndup(spawn.substr(0, start_num).c_str(), start_num);
-			Num_spawn_types++;
+			Spawn_names.push_back(spawn.substr(0, start_num));
 			weaponp->num_spawn_weapons_defined++;
 		}
 		else {
@@ -4382,16 +4374,13 @@ void translate_spawn_types()
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            if ( (Weapon_info[i].spawn_info[j].spawn_wep_index > -1) && (Weapon_info[i].spawn_info[j].spawn_wep_index < Num_spawn_types) )
+            int spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
+            if ( Spawn_names.in_bounds(spawn_type) )
             {
-                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
-
-                Assert( spawn_type < Num_spawn_types );
-
 				bool found_a_match = false;
                 for (k = 0; k < weapon_info_size(); k++)
                 {
-                    if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
+                    if ( !stricmp(Spawn_names[spawn_type].c_str(), Weapon_info[k].name) )
                     {
                         Weapon_info[i].spawn_info[j].spawn_wep_index = (short)k;
 
@@ -4404,7 +4393,7 @@ void translate_spawn_types()
                 }
 
 				if (!found_a_match) {
-					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type], Weapon_info[i].name);
+					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type].c_str(), Weapon_info[i].name);
 					Weapon_info[i].spawn_info[j].spawn_wep_index = -1;
 				}
             }
@@ -5176,7 +5165,7 @@ void weapon_post_ship_init()
 void weapon_init()
 {
 	if ( !Weapons_inited ) {
-		Num_spawn_types = 0;
+		Spawn_names.clear();
 
 		// parse weapons.tbl
 		Removed_weapons.clear();
@@ -5217,17 +5206,7 @@ void weapon_close()
 		used_weapons = NULL;
 	}
 
-	if (Spawn_names != NULL) {
-		for (i=0; i<Num_spawn_types; i++) {
-			if (Spawn_names[i] != NULL) {
-				vm_free(Spawn_names[i]);
-				Spawn_names[i] = NULL;
-			}
-		}
-
-		vm_free(Spawn_names);
-		Spawn_names = NULL;
-	}
+	Spawn_names.clear();
 }
 
 /**
@@ -7485,9 +7464,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 	{
-
-		Assert(parent_objp);		//local ssms must have a parent
-
 		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
 		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
 		wp->lssm_stage=1;
@@ -7592,7 +7568,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	Num_weapons++;
 
-	if (Weapons_inherit_parent_collision_group) {
+	if (Weapons_inherit_parent_collision_group && parent_objnum >= 0) {
 		Objects[objnum].collision_group_id = Objects[parent_objnum].collision_group_id;
 	}
 
@@ -7632,7 +7608,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	}
 
 	if (scripting::hooks::OnWeaponCreated->isActive()) {
-		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
+		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, parent_objnum < 0 ? nullptr : &Objects[parent_objnum] },
 			scripting::hook_param_list(
 				scripting::hook_param("Weapon", 'o', &Objects[objnum])
 			));

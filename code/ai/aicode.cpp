@@ -203,10 +203,9 @@ object *En_objp;
 #define	STEALTH_MAX_VIEW_DIST	400		// dist at which 1) stealth no longer visible 2) firing inaccuracy is greatest
 #define	STEALTH_VIEW_CONE_DOT	0.707		// (half angle of 45 degrees)
 
-ai_class *Ai_classes = NULL;
+SCP_vector<ai_class> Ai_classes;
 int	Ai_firing_enabled = 1;
 int	Num_ai_classes;
-int Num_alloced_ai_classes;
 
 int	AI_FrameCount = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
@@ -289,7 +288,7 @@ pnode		*Ppfp;			//	Free pointer in path points.
 
 float	AI_frametime;
 
-char** Ai_class_names = NULL;
+SCP_vector<const char*> Ai_class_names;
 
 //used for good-primary-time
 typedef struct {
@@ -612,15 +611,6 @@ int create_object_hash(object *objp)
 	return hashval;
 }
 
-void free_ai_stuff()
-{
-	if(Ai_classes != NULL)
-		vm_free(Ai_classes);
-	
-	if(Ai_class_names != NULL)
-		vm_free(Ai_class_names);
-}
-
 int ai_get_autoscale_index(int absolute_index)
 {
 	int index = 0;
@@ -765,11 +755,11 @@ void parse_ai_class()
 		}
 
 		// Setup a new ai class
-		aicp = &Ai_classes[Num_ai_classes];
+		Ai_classes.emplace_back();
+		aicp = &Ai_classes.back();
 		strcpy(aicp->name, thisName);
 
 		init_ai_class(aicp);
-		Ai_class_names[Num_ai_classes] = aicp->name;
 
 		Num_ai_classes++;
 
@@ -955,18 +945,6 @@ void parse_ai_class()
 	set_aic_flag(aicp, "$AI balances shields instead of directs when attacked:", AI::Profile_Flags::AI_balances_shields_when_attacked);
 }
 
-void reset_ai_class_names()
-{
-	ai_class *aicp;
-
-	for (int i = 0; i < Num_ai_classes; i++) {
-		aicp = &Ai_classes[i];
-
-		Ai_class_names[i] = aicp->name;
-	}
-}
-
-#define AI_CLASS_INCREMENT		10
 void parse_aitbl(const char* filename)
 {
 	try {
@@ -976,20 +954,7 @@ void parse_aitbl(const char* filename)
 		required_string("#AI Classes");
 
 		while (required_string_either("#End", "$Name:")) {
-
 			parse_ai_class();
-
-			if(Num_ai_classes >= Num_alloced_ai_classes)
-			{
-				Num_alloced_ai_classes += AI_CLASS_INCREMENT;
-				Ai_classes = (ai_class*) vm_realloc(Ai_classes, Num_alloced_ai_classes * sizeof(ai_class));
-
-				// Ai_class_names doesn't realloc all that well so we have to do it the hard way.
-				// Luckily, it's contents can be easily replaced so we don't have to save anything.
-				vm_free(Ai_class_names);
-				Ai_class_names = (char **) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
-				reset_ai_class_names();
-			}
 		}
 
 	}
@@ -1010,13 +975,10 @@ LOCAL int ai_inited = 0;
 void ai_init()
 {
 	if ( !ai_inited )	{
-		// Do the first time initialization stuff here		
-		free_ai_stuff();
-
+		// Do the first time initialization stuff here
+		Ai_classes.clear();
+		Ai_class_names.clear();
 		Num_ai_classes = 0;
-		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-		Ai_classes = (ai_class*)vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-		Ai_class_names = (char**)vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
 		parse_aitbl("ai.tbl");
 
@@ -1042,7 +1004,10 @@ void ai_init()
 			Ai_classes[autoscaled_class_index].ai_class_autoscale = false;
 		}
 
-		atexit(free_ai_stuff);
+		// fill in the name alias list
+		Ai_class_names.clear();
+		for (const auto &aic : Ai_classes)
+			Ai_class_names.push_back(aic.name);
 
 		ai_inited = 1;
 	}
