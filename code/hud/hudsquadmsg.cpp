@@ -496,8 +496,18 @@ void hud_squadmsg_selection_move( bool up ) {
 		//The selection moves +/-1 through the whole menu, wrapping around at either end.
 		//First_menu_item and Selected_menu_item are just the page and the offset within the page.
 		int num_items = sz2i(MsgItems.size());
+		int step = up ? -1 : 1;
 		int selected_index = First_menu_item + Selected_menu_item;
-		selected_index = (selected_index + (up ? -1 : 1) + num_items) % num_items;
+
+		//skip over any hidden items (such as when using Hide_main_rearm_items_in_comms_gauge).
+		//bound the search by the item count so a fully hidden menu does not loop forever.
+		for (int i = 0; i < num_items; i++) {
+			selected_index = (selected_index + step + num_items) % num_items;
+
+			//stop once we land on a visible item
+			if (MsgItems[selected_index].active >= 0)
+				break;
+		}
 
 		Selected_menu_item = selected_index % MAX_MENU_DISPLAY;
 		First_menu_item = selected_index - Selected_menu_item;
