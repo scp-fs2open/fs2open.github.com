@@ -40642,7 +40642,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tShip the escorts won't leave the range of if guarding (Ship must be in mission)\r\n"
 		"\t2:\tGuard range cap in meters (<= 0 disables cap)\r\n"
-		"\t3+:\tEscort ships and wings that the limit applies too" },
+		"\t3+:\tEscort ships and wings that the limit applies to" },
 
 	// Goober5000
 	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"
