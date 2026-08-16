@@ -461,6 +461,7 @@ void hud_squadmsg_do_mode( int mode )
 	MsgItems.clear();
 	Rebuild_MsgItems = true;
 	First_menu_item = 0;
+	Selected_menu_item = 0;   // keep offset consistent with the reset page across submenu transitions
 }
 
 void hud_squadmsg_page_down()
