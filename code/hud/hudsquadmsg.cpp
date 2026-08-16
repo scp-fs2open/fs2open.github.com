@@ -105,7 +105,7 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 
 char Squad_msg_title[256] = "";
 SCP_vector<mmode_item> MsgItems;
-bool Rebuild_MsgItems = true;
+static bool Rebuild_MsgItems = true;
 
 static int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
 static int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
