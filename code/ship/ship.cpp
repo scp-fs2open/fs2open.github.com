@@ -6867,7 +6867,7 @@ void ship::clear()
 	ship_max_hull_strength = 0.0f;
 
 	ship_guardian_threshold = 0;
-	max_guard_radius = -1.0f;
+	max_guard_ranges.clear();
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -21404,7 +21404,33 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 
 	return inside;
 }
-
+void set_guard_range_ship(float range, const int target_ship_index, ship* shipp)
+{
+	bool done = false;
+	if (range > 0) {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == target_ship_index) {
+				if (range > 0) {
+					exist.range = range;
+				} else {
+					exist.range = -1.0f;
+				}
+				done = true;
+				break;
+			}
+		}
+		if (!done) {
+			auto item = guard_range_entry(range, target_ship_index);
+			shipp->max_guard_ranges.push_back(item);
+		}
+	} else {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == target_ship_index) {
+				exist.range = -1.0f;
+			}
+		}
+	}
+}
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
 	mst->length = obj->phys_info.linear_thrust;
@@ -21738,7 +21764,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
-	ship *warp_shipp = NULL;
+	ship *warp_shipp = nullptr;
 	bool is_first_stage_arrival = false;
 	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]);
 	dock_function_info dfi;
@@ -21758,7 +21784,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		// render even in stage 1, which is used for collision detection
 		// purposes -zookeeper
 		if ( Warp_params[warp_shipp->warpin_params_index].warp_type == WT_HYPERSPACE ) {
-			warp_shipp = NULL;
+			warp_shipp = nullptr;
 			is_first_stage_arrival = false;
 		}
 	}
