@@ -40,9 +40,6 @@
 
 // AI BIG MAGIC NUMBERS
 // Select strafing options are now exposed to modders  --wookieejedi
-#define	STRAFE_RETREAT_COLLIDE_TIME	2.0		// when anticipated collision time is less than this, begin retreat
-#define	STRAFE_RETREAT_COLLIDE_DIST	100		// when perpendicular distance to *surface* is less than this, begin retreat
-
 #define	EVADE_BOX_BASE_DISTANCE			300		// standard distance to end evade submode
 #define	EVADE_BOX_MIN_DISTANCE			200		// minimun distance to end evade submode, after long time
 
@@ -1452,8 +1449,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 			collide_time = false;
 			collide_distance = false;
 		} else {
-			collide_time = (dist_to_target / Pl_objp->phys_info.speed) < STRAFE_RETREAT_COLLIDE_TIME;
-			collide_distance = dist_to_target < (STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty);
+			collide_time = (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+			collide_distance = dist_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 		}
 	} else {
 		float dist_normal_to_target;
@@ -1463,8 +1460,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		} else {
 			dist_normal_to_target = 0.2f * dist_to_target;
 		}
-		collide_time = (dist_normal_to_target / Pl_objp->phys_info.speed) < STRAFE_RETREAT_COLLIDE_TIME;
-		collide_distance = dist_normal_to_target < (STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty);
+		collide_time = (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+		collide_distance = dist_normal_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 	}
 
 	//if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f))
