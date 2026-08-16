@@ -210,8 +210,8 @@ void etc2_cache_prune()
 
 	cf_get_file_list(temps, CF_TYPE_CACHE, "etc2-*.cache.tmp", CF_SORT_NONE, nullptr, CACHE_LOCATION_FLAGS);
 
-	for (size_t i = 0; i < temps.size(); ++i) {
-		const SCP_string tname = temps[i] + ".tmp";
+	for (const auto& temp : temps) {
+		const SCP_string tname = temp + ".tmp";
 		cf_delete(tname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 	}
 
