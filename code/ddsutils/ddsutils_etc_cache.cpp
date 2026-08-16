@@ -1,5 +1,6 @@
 #include "ddsutils/ddsutils_etc_cache.h"
 #include "cfile/cfile.h"
+#include "options/Option.h"
 
 #include "lz4.h"
 #include <md5.h>
@@ -56,13 +57,7 @@ SCP_string etc2_cache_make_key(CFILE *dds, uint src_fourcc, int dst_format, uint
 	return md5.hexdigest();
 }
 
-bool etc2_cache_try_load(const SCP_string &key,
-                         uint expected_width,
-                         uint expected_height,
-                         uint expected_mips,
-                         int expected_format,
-                         size_t expected_size,
-                         ubyte *out_data)
+bool etc2_cache_try_load(const SCP_string &key, uint expected_width, uint expected_height, uint expected_mips, int expected_format, size_t expected_size, ubyte *out_data)
 {
 	const SCP_string name = etc2_cache_filename(key);
 
@@ -134,13 +129,7 @@ bool etc2_cache_try_load(const SCP_string &key,
 	return true;
 }
 
-void etc2_cache_store(const SCP_string &key,
-                      uint width,
-                      uint height,
-                      uint mips,
-                      int format,
-                      const ubyte *payload,
-                      size_t payload_size)
+void etc2_cache_store(const SCP_string &key, uint width, uint height, uint mips, int format, const ubyte *payload, size_t payload_size)
 {
 	if (payload == nullptr || payload_size == 0) {
 		return;
@@ -196,4 +185,75 @@ void etc2_cache_store(const SCP_string &key,
 	}
 
 	cf_rename(temp_name.c_str(), final_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+}
+
+auto CacheSizeLimit = options::OptionBuilder<float>("Graphics.EtcCacheSize",
+	std::pair<const char*, int>{"ETC Transcode Cache", 1933},
+	std::pair<const char*, int>{"ETC2 transcode cache size in GBs. 0 for unlimited. Relevant for mobile GPUs lacking S3TC/BC7 support.", 1934})
+	.category(std::make_pair("Graphics", 1825))
+	.level(options::ExpertLevel::Advanced)
+	.range(0.0f, 20.0f)
+	.default_val(3.0f)
+	.importance(0)
+	.finish();
+
+void etc2_cache_prune()
+{
+	auto max_bytes = (size_t)(CacheSizeLimit->getValue() * 1000000000);
+
+	// unlimited cache
+	if (max_bytes <= 0)
+		return;
+
+	// Clear any incomplete .tmp file
+	SCP_vector<SCP_string> temps;
+
+	cf_get_file_list(temps, CF_TYPE_CACHE, "etc2-*.cache.tmp", CF_SORT_NONE, nullptr, CACHE_LOCATION_FLAGS);
+
+	for (size_t i = 0; i < temps.size(); ++i) {
+		const SCP_string tname = temps[i] + ".tmp";
+		cf_delete(tname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+	}
+
+	// Check and clear cache
+	SCP_vector<SCP_string> names;
+	SCP_vector<file_list_info> info;
+
+	cf_get_file_list(names, CF_TYPE_CACHE, "etc2-*.cache", CF_SORT_NONE, &info, CACHE_LOCATION_FLAGS);
+
+	const size_t count = names.size();
+
+	if (count == 0) {
+		return;
+	}
+
+	size_t total = 0;
+	for (size_t i = 0; i < count; ++i) {
+		total += info[i].size;
+	}
+
+	if (total <= max_bytes) {
+		return;
+	}
+
+	// Free a minimum of 20%, not the entire cache.
+	const size_t target = (max_bytes / 5) * 4;
+
+	SCP_vector<size_t> order(count);
+	for (size_t i = 0; i < count; ++i) {
+		order[i] = i;
+	}
+
+	std::sort(order.begin(), order.end(), [&info](size_t a, size_t b) {
+		return info[a].write_time < info[b].write_time;
+	});
+
+	for (size_t k = 0; (k < count) && (total > target); ++k) {
+		const size_t idx = order[k];
+		const SCP_string fname = names[idx] + ".cache";
+
+		if (cf_delete(fname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS)) {
+			total -= info[idx].size;
+		}
+	}
 }

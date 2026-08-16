@@ -33,6 +33,7 @@ struct CFILE;
 // extra info that can be returned when getting a file listing
 typedef struct {
 	time_t write_time;
+	size_t size;
 } file_list_info;
 
 
