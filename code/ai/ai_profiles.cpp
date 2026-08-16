@@ -693,6 +693,14 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_float(&profile->strafe_max_unhit_time);
 				}
 
+				if (optional_string("$strafe retreat collide time:")) {
+					stuff_float(&profile->strafe_retreat_collide_time);
+				}
+
+				if (optional_string("$strafe retreat collide distance:")) {
+					stuff_float(&profile->strafe_retreat_collide_distance);
+				}
+
 				if (optional_string("$guard uses big-orbit for target radius above:")) {
 					stuff_float(&profile->guard_big_orbit_above_target_radius);
 				}
@@ -858,6 +866,8 @@ void ai_profile_t::reset()
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
 	strafe_max_unhit_time = 20.0f;
+	strafe_retreat_collide_time = 2.0f;
+	strafe_retreat_collide_distance = 100.0f;
 
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;

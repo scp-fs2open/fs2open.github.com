@@ -7733,8 +7733,8 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 				}
 			}
 
-			Assert(i != -1);
-			if (i != -1) {
+			Assert(min_index != -1);
+			if (min_index != -1) {
 				*avoid_pos = goals[min_index].pos;
 				return;
 			}
@@ -7808,7 +7808,7 @@ bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_ag
 		collide_vec *= radius_contribution;
 
 		collide_vec += pl_objp->pos;
-		return (maybe_avoid_big_ship(pl_objp, ignore_objp, &Ai_info[shipp->ai_index], &collide_vec, 0.f, 0.1f));
+		return (maybe_avoid_big_ship(pl_objp, ignore_objp, &Ai_info[shipp->ai_index], &collide_vec, avoidance_aggression, 0.1f));
 	}
 	return false;
 }
