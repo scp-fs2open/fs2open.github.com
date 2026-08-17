@@ -1557,11 +1557,11 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 		break;
 	case OP_AI_DESTROY_TURRET_TYPE:
 		priority = eval_priority_et_seq(CDDR(node));
-		goalmode = AI_GOAL_REARM_REPAIR;
+		goalmode = AI_GOAL_DESTROY_TURRET_TYPE;
 		break;
 	case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
 		priority = eval_priority_et_seq(CDDDR(node));
-		goalmode = AI_GOAL_REARM_REPAIR;
+		goalmode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
 		break;
 	default:
 		const ai_mode_lua* luaAIMode = ai_lua_find_mode(op);
@@ -1865,7 +1865,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	if (aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
 		for (auto so : list_range(&Ship_obj_list)) {
 			auto type_objp = &Objects[so->objnum];
-			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead] || aigp->int_data < 0 || aigp->int_data >= sz2i(Weapon_info.size()))
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead] || !Weapon_info.in_bounds(aigp->int_data))
 				continue;
 			ship *potential_target_shipp = &Ships[type_objp->instance];
 			if (ship_get_turret_type_aggregate_hits(potential_target_shipp, aigp->int_data) > 0.0f) {
@@ -1956,7 +1956,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// destroyed when shipnum is valid
 
 			// can't determine the status of this goal if ship not valid
-			if (!target_ship_entry || !target_ship_entry->has_shipp() || aigp->int_data < 0 || aigp->int_data >= sz2i(Weapon_info.size())) {
+			if (!target_ship_entry || !target_ship_entry->has_shipp() || !Weapon_info.in_bounds(aigp->int_data)) {
 				status = 0;
 			} else {
 				status = (ship_get_turret_type_aggregate_hits(target_ship_entry->shipp(), aigp->int_data) <= 0.0f) ? 1 : 0;
@@ -2100,12 +2100,35 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 
 	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
-	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL || aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP))
+	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL))
 	{
 		if (target_ship_entry && target_ship_entry->has_shipp()) {
 			// if the ship has no turrets, we can't disarm it!
 			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count == 0)
 				return ai_achievability::NOT_ACHIEVABLE;
+		} else {
+			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
+	}
+
+	if ((status == SHIP_STATUS_ARRIVED) && aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP) {
+		if (target_ship_entry && target_ship_entry->has_shipp()) {
+			// if the ship has no turrets of the relevant type, we can't destroy them!
+			ship_subsys *ssp = GET_FIRST(&target_ship_entry->shipp()->subsys_list);
+			bool weapon_found = false;
+			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count > 0) {
+				while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
+					if (turret_has_weapon(ssp, aigp->int_data)) {
+						weapon_found = true;
+						break;
+					}
+					ssp = GET_NEXT( ssp );
+				}
+			}
+			if (!weapon_found) {
+				return ai_achievability::NOT_ACHIEVABLE;
+			}
 		} else {
 			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
@@ -2733,7 +2756,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP must refer to a valid weapon class!");
 		other_obj = current_goal_target_ship->objp();
 		ai_attack_object( objp, other_obj);
-		ai_set_attack_subsystem( objp, 0, current_goal->int_data );
+		ai_set_attack_subsystem( objp, SUBSYSTEM_TURRET, current_goal->int_data );
 		break;
 	}
 
@@ -2750,7 +2773,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_DESTROY_TURRET_TYPE:
 		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE must refer to a valid weapon class!");
 		ai_attack_object( objp, nullptr, -1, -1, current_goal->int_data);
-		ai_set_attack_subsystem( objp, 0, current_goal->int_data );
+		ai_set_attack_subsystem( objp, SUBSYSTEM_TURRET, current_goal->int_data );
 		break;
 
 	// chase-ship-class is chase-any but restricted to a subset of ships

@@ -950,7 +950,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_FLY_TO_SHIP, OP_AI_FLY_TO_SHIP },
 	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
 	{ AI_GOAL_DESTROY_TURRET_TYPE, OP_AI_DESTROY_TURRET_TYPE },
-	{ AI_GOAL_DESTROY_TURRET_TYPE, OP_AI_DESTROY_TURRET_TYPE_ON_SHIP },
+	{ AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP, OP_AI_DESTROY_TURRET_TYPE_ON_SHIP },
 };
 
 SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
@@ -39996,7 +39996,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_AI_DESTROY_TURRET_TYPE, "Ai-destroy-turret-type (Ship/wing goal)\r\n"
-		"\tThis AI goal causes a ship/wing to destroy all enemy turrets in the mission that"
+		"\tThis AI goal causes a ship/wing to destroy all enemy turrets in the mission that "
 		"are carrying a specified weapon."
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
@@ -40005,7 +40005,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_AI_DESTROY_TURRET_TYPE_ON_SHIP, "Ai-destroy-turret-type-on-ship (Ship/wing goal)\r\n"
-		"\tThis AI goal causes a ship/wing to destroy all turrets on a specified ship that"
+		"\tThis AI goal causes a ship/wing to destroy all turrets on a specified ship that "
 		"are carrying a specified weapon."
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
