@@ -1818,7 +1818,7 @@ void hud_squadmsg_type_select( )
 				item.active = hud_squadmsg_exist_fighters_bombers(SmallCraftFlavor::ALL_BOMBERS);
 				break;
 			case CommOrderType::REINFORCEMENTS:
-				item.active = (Player_ship != NULL) && !hud_squadmsg_reinforcements_available(Player_ship->team) && Msg_shortcut_command == -1;
+				item.active = (Player_ship != nullptr) && !hud_squadmsg_reinforcements_available(Player_ship->team) && Msg_shortcut_command == -1;
 				break;
 			case CommOrderType::REARM_REPAIR:
 				if (Hide_main_rearm_items_in_comms_gauge) {
