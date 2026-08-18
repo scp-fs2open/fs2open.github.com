@@ -118,6 +118,7 @@ int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
 bool Error_checker_checks_potential_issues_once = false;
+bool Classic_menu_layout = false;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;

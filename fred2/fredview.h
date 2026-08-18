@@ -250,6 +250,8 @@ protected:
 	afx_msg void OnUpdateAlwaysSaveDisplayNames(CCmdUI* pCmdUI);
 	afx_msg void OnErrorCheckerChecksPotentialIssues();
 	afx_msg void OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI);
+	afx_msg void OnClassicMenuLayout();
+	afx_msg void OnUpdateClassicMenuLayout(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
