@@ -170,6 +170,7 @@ bool is_smallcraft_flavor(ship_info *sinfop, SmallCraftFlavor flavor) {
 			break;
 	}
 	UNREACHABLE("Invalid SmallCraftFlavor of %i in 'is_smallcraft_flavor()'", flavor);
+	return false;
 }
 
 
