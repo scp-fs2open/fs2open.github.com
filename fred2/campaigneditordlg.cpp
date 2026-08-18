@@ -20,7 +20,9 @@
 #include "cfile/cfile.h"
 #include "FREDDoc.h"
 #include "parse/parselo.h"
+#include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "missioneditor/common.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -78,6 +80,54 @@ int campaign_editor::onRootDeleted(int formula_node)
 
 void campaign_editor::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
 void campaign_editor::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
+
+SCP_vector<SCP_string> campaign_editor::getMissionNames()
+{
+	SCP_vector<SCP_string> list;
+	if (Cur_campaign_mission < 0)
+		return list;
+
+	// only list missions the player could have already played: the current mission and
+	// any mission at an earlier level in the campaign tree
+	for (int i = 0; i < Campaign.num_missions; i++)
+	{
+		if ((i == Cur_campaign_mission) || (Campaign.missions[i].level < Campaign.missions[Cur_campaign_mission].level))
+			list.emplace_back(Campaign.missions[i].name);
+	}
+
+	return list;
+}
+
+bool campaign_editor::hasDefaultMissionName()
+{
+	return Cur_campaign_mission >= 0;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionGoals(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& goal : Campaign.missions[idx].goals)
+		list.emplace_back(goal.name);
+
+	return list;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionEvents(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& event : Campaign.missions[idx].events)
+		list.emplace_back(event.name);
+
+	return list;
+}
 
 campaign_editor::~campaign_editor()
 {
