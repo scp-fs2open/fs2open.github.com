@@ -91,16 +91,14 @@ static dds_conv_target dds_get_conversion_target(const DDS_HEADER &dds_header)
 	return dds_conv_target::bgra;
 }
 
-static size_t compute_etc2_rgba_size(const DDS_HEADER &dds_header)
+static size_t compute_etc2_size(const DDS_HEADER& dds_header, uint block_bytes)
 {
 	size_t total = 0;
-
 	for (uint i = 0; i < dds_header.dwMipMapCount; i++) {
 		const uint w = std::max(1U, dds_header.dwWidth >> i);
 		const uint h = std::max(1U, dds_header.dwHeight >> i);
-		total += static_cast<size_t>((w + 3) / 4) * ((h + 3) / 4) * 16;
+		total += (size_t)((w + 3) / 4) * ((h + 3) / 4) * block_bytes;
 	}
-
 	return total;
 }
 
@@ -406,7 +404,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		dds_header.dwMipMapCount -= conversion_resize(dds_header, dds_conv_target::etc2);
 		dds_header.dwMipMapCount = std::max(1U, dds_header.dwMipMapCount);
 
-		ct = DDS_ETC2_RGBA8;
+		ct = (ct == DDS_DXT1) ? DDS_ETC2_RGB : DDS_ETC2_RGBA8;
 	} else if (convert) {
 		// switch to uncompressed format and reset vars
 		dds_header.ddspf.dwFlags &= ~DDPF_FOURCC;
@@ -430,7 +428,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	// stuff important info
 	if (size) {
 		if (conv_target == dds_conv_target::etc2)
-			*size = compute_etc2_rgba_size(dds_header);
+			*size = compute_etc2_size(dds_header, (ct == DDS_ETC2_RGB) ? 8u : 16u);
 		else
 			*size = compute_dds_size(dds_header, convert);
 	}
@@ -518,11 +516,15 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 		const uint mipmap_offset = conversion_resize(dds_header, dds_conv_target::etc2);
 		const uint out_mips = orig_mips - mipmap_offset;
 
+		const bool is_dxt1 = (dds_header.ddspf.dwFourCC == FOURCC_DXT1);
+		const uint out_block_bytes = is_dxt1 ? 8u : 16u;
+		const int  cache_fmt = is_dxt1 ? DDS_ETC2_RGB : DDS_ETC2_RGBA8;
+
 		size_t etc2_size = 0;
 		for (uint m = 0; m < out_mips; ++m) {
 			const uint w = std::max(1U, dds_header.dwWidth >> m);
 			const uint h = std::max(1U, dds_header.dwHeight >> m);
-			etc2_size += (size_t)((w + 3) / 4) * ((h + 3) / 4) * 16;
+			etc2_size += (size_t)((w + 3) / 4) * ((h + 3) / 4) * out_block_bytes;
 		}
 
 		extern bool Cmdline_no_transcode_cache;
@@ -530,12 +532,12 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		if (!Cmdline_no_transcode_cache) {
 			//Build the cache MD5 hash
-			key = etc2_cache_make_key(cfp, dds_header.ddspf.dwFourCC, DDS_ETC2_RGBA8, static_cast<uint>(etc2_size));
+			key = etc2_cache_make_key(cfp, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
 
 			//Try to load from a cache file
-			if (etc2_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, DDS_ETC2_RGBA8, etc2_size, data)) {
+			if (etc2_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, etc2_size, data)) {
 				if (bpp)
-					*bpp = (ubyte)32;
+					*bpp = is_dxt1 ? (ubyte)24 : (ubyte)32;
 				cfclose(cfp);
 				return DDS_ERROR_NONE;
 			}
@@ -597,7 +599,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 				}
 			}
 
-			// R<->B
+			// etcpak wants BGRA -> swap R<->B
 			const size_t px_count = (size_t)pw * ph;
 			for (size_t p = 0; p < px_count; ++p) {
 				ubyte* px = rgba + p * 4;
@@ -607,14 +609,20 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 			}
 
 			const uint32_t blocks = (pw / 4) * (ph / 4);
-			CompressEtc2Rgba(reinterpret_cast<const uint32_t*>(rgba), reinterpret_cast<uint64_t*>(data + out_offset), blocks, pw, true);
-			// bump data offset to next layer
-			out_offset += (size_t)blocks * 16;
+
+			if (is_dxt1) {
+				CompressEtc2Rgb(reinterpret_cast<const uint32_t*>(rgba), reinterpret_cast<uint64_t*>(data + out_offset), blocks, pw, true);
+			}
+			else {
+				CompressEtc2Rgba(reinterpret_cast<const uint32_t*>(rgba), reinterpret_cast<uint64_t*>(data + out_offset), blocks, pw, true);
+			}
+
+			out_offset += (size_t)blocks * out_block_bytes;
 		}
 
 		if (!Cmdline_no_transcode_cache) {
 			//Save to cache
-			etc2_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, DDS_ETC2_RGBA8, data, etc2_size);
+			etc2_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, data, etc2_size);
 		}
 		vm_free(rgba);
 		vm_free(comp_data);
@@ -709,7 +717,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 	}
 
 	if (bpp)
-		*bpp = (tgt == dds_conv_target::etc2) ? (ubyte)32 : (ubyte)get_bit_count(dds_header);
+		*bpp = (ubyte)get_bit_count(dds_header);
 
 	// we look done here
 	cfclose(cfp);
