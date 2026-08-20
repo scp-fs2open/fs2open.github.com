@@ -15,6 +15,8 @@
 #include "gropenglstate.h"
 #include "gropengltexture.h"
 #include "gropengldraw.h"
+#include "gropenglpostprocessing.h"
+#include "gropengltnl.h"
 #include "bmpman/bm_internal.h"
 #include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
@@ -147,6 +149,27 @@ static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotrop
 int opengl_free_texture(tcache_slot_opengl *t);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL);
 
+// Running total of the bytes of texture data held by all live texture cache slots, for the
+// profiler overlay's memory panel. Kept in sync at every site that fills or drops a slot's data
+// rather than summed on demand, because the slots live in bmpman's blocks and a full walk of them
+// each frame is too expensive. Animations put all their frames in one texture array but give each
+// frame its own slot, so freeing some frames of an animation lowers this total while the array
+// itself stays alive until the last frame goes away.
+static size_t GL_texture_bytes_used = 0;
+
+/**
+ * @brief Removes a texture cache slot's bytes from GL_texture_bytes_used
+ *
+ * Call this at each site that drops the texture data of a slot, immediately before the code that
+ * clears the slot. The function sets the size of the slot to 0, thus a second call for the same
+ * slot does nothing.
+ */
+static void opengl_texture_release_bytes(tcache_slot_opengl* t)
+{
+	GL_texture_bytes_used -= static_cast<size_t>(t->size);
+	t->size = 0;
+}
+
 extern int get_num_mipmap_levels(int w, int h);
 
 void opengl_set_additive_tex_env()
@@ -237,6 +260,14 @@ void opengl_tcache_flush()
 			opengl_free_texture(static_cast<tcache_slot_opengl*>(slot.gr_info));
 		}
 	}
+
+	// A flush releases the texture of every slot, thus the total must go to 0. A value that is not
+	// 0 shows that a site which drops texture data does not call opengl_texture_release_bytes().
+	// The shutdown sequence is the one exception: bm_close() removes the blocks before it closes
+	// the graphics backend, thus the loop above then finds no slot to release.
+	Assertion(bm_blocks.empty() || (GL_texture_bytes_used == 0),
+		"OpenGL texture memory tracking lost " SIZE_T_ARG " bytes. A texture release site is missing.",
+		GL_texture_bytes_used);
 }
 
 extern void opengl_kill_all_render_targets();
@@ -335,6 +366,7 @@ int opengl_free_texture(tcache_slot_opengl *t)
 			// There are still used frames left in the animation so we can't free the texture object here
 
 			// We still need to reset this slot though since it has been "freed"
+			opengl_texture_release_bytes(t);
 			t->reset();
 
 			// Everything is fine
@@ -354,6 +386,7 @@ int opengl_free_texture(tcache_slot_opengl *t)
 	glDeleteTextures (1, &t->texture_id);
 
 	// Finally, reset the data of this slot
+	opengl_texture_release_bytes(t);
 	t->reset();
 
 	return 1;
@@ -732,10 +765,14 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	} // end switch
 
 	tSlot->bitmap_handle = bitmap_handle;
+	// Remove the previous bytes of the slot before the new size replaces them. This function also
+	// runs for a texture that is filled again (a streaming animation, for example).
+	opengl_texture_release_bytes(tSlot);
 	tSlot->size          = (dsize) ? ((doffset + dsize) - skip_size) : (tex_w * tex_h * byte_mult);
 	tSlot->w             = (ushort)tex_w;
 	tSlot->h             = (ushort)tex_h;
 
+	GL_texture_bytes_used += static_cast<size_t>(tSlot->size);
 	GL_textures_in_frame += tSlot->size;
 
 	GL_CHECK_FOR_ERRORS("end of create_texture_sub()");
@@ -965,6 +1002,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 			GL_state.Texture.Delete(start_slot->texture_id);
 			glDeleteTextures(1, &start_slot->texture_id);
 
+			opengl_texture_release_bytes(start_slot);
 			start_slot->reset();
 		}
 	}
@@ -1035,6 +1073,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	if (tslot->texture_id == 0) {
 		mprintf(("!!OpenGL DEBUG!! t->texture_id == 0\n"));
+		opengl_texture_release_bytes(tslot);
 		tslot->reset();
 		return 0;
 	}
@@ -1111,7 +1150,13 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 		auto index = frame - animation_begin;
 
 		auto frame_slot = bm_get_gr_info<tcache_slot_opengl>(frame, true);
+		// The copy below overwrites the size of the slot, thus the old bytes must go away first
+		opengl_texture_release_bytes(frame_slot);
 		*frame_slot = *tslot; // Copy the existing properties to the slot of this texture
+		// The copy also brought in the size of tslot, which belongs to a different slot and is
+		// already part of GL_texture_bytes_used. opengl_texture_set_level() below gives this slot
+		// its own size.
+		frame_slot->size = 0;
 		frame_slot->array_index = (uint32_t) index;
 
 		// set the bits per pixel
@@ -1786,10 +1831,19 @@ void opengl_kill_render_target(bitmap_slot* slot)
 void gr_opengl_get_memory_stats(gr_memory_stats& stats)
 {
 	stats.gpu_purpose_valid = true;
-	stats.gpu_render_target_bytes = GL_renderbuffer_bytes_used;
-	// gpu_texture_bytes and gpu_geometry_bytes are left at 0 -- OpenGL has no per-purpose byte
-	// tracking for those yet (geometry bytes come from the backend-agnostic GpuHeap accounting in
-	// gr_get_memory_stats() instead; see model_vertex_heap_used/model_index_heap_used).
+
+	// The textures of the bitmap cache. Render targets that the game creates through bmpman are
+	// part of this group, which matches the Vulkan backend: its bm_make_render_target() images
+	// also go into the texture group.
+	stats.gpu_texture_bytes = GL_texture_bytes_used;
+
+	stats.gpu_geometry_bytes = opengl_get_geometry_bytes();
+
+	// The render target group holds the resources of the backend itself: the depth/stencil
+	// renderbuffers of the bitmap render targets, the scene and backbuffer textures, the
+	// post-processing textures, and the shadow map.
+	stats.gpu_render_target_bytes = GL_renderbuffer_bytes_used + opengl_get_scene_render_target_bytes() +
+									opengl_get_postprocessing_render_target_bytes() + opengl_get_shadow_map_bytes();
 }
 
 void opengl_kill_all_render_targets()
@@ -1811,6 +1865,12 @@ void opengl_kill_all_render_targets()
 	}
 
 	RenderTarget.clear();
+
+	// Every renderbuffer is gone now, thus the total must go to 0. A value that is not 0 shows
+	// that a site which deletes a renderbuffer does not correct GL_renderbuffer_bytes_used.
+	Assertion(GL_renderbuffer_bytes_used == 0,
+		"OpenGL renderbuffer memory tracking lost " SIZE_T_ARG " bytes. A renderbuffer delete site is missing.",
+		GL_renderbuffer_bytes_used);
 }
 
 int opengl_set_render_target( int slot, int face, int is_static )
@@ -1967,6 +2027,26 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, ts->mipmap_levels - 1);
 
+	// Record the bytes of the color texture, which opengl_tex_array_storage() gave the format
+	// GL_RGBA8 (4 bytes for each pixel). A cube map holds 6 faces of that size.
+	size_t rt_texture_bytes = 0;
+	for (int level = 0; level < ts->mipmap_levels; ++level) {
+		auto level_w = static_cast<size_t>(std::max(1, *w >> level));
+		auto level_h = static_cast<size_t>(std::max(1, *h >> level));
+		rt_texture_bytes += level_w * level_h * 4;
+	}
+	if (flags & BMP_FLAG_CUBEMAP) {
+		rt_texture_bytes *= 6;
+	}
+	// A slot that held a render target before must lose its old bytes first.
+	opengl_texture_release_bytes(ts);
+
+	// The size field of the slot is an int, thus the value must stay inside its range. The counter
+	// takes the same (clamped) value, which keeps the add here and the subtract in
+	// opengl_texture_release_bytes() equal.
+	ts->size = static_cast<int>(std::min(rt_texture_bytes, static_cast<size_t>(INT_MAX)));
+	GL_texture_bytes_used += static_cast<size_t>(ts->size);
+
 	GL_state.Texture.Enable(0);
 
 	// render buffer (depth)
@@ -2005,6 +2085,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 		GL_state.Texture.Delete(ts->texture_id);
 		glDeleteTextures(1, &ts->texture_id);
+		opengl_texture_release_bytes(ts);
 		ts->reset();
 
 		glDeleteFramebuffers(1, &new_fbo->framebuffer_id);
