@@ -4,6 +4,7 @@
 
 #include "AbstractDialogModel.h"
 
+#include "graphics/lens_flare.h"
 #include "starfield/starfield.h"
 #include <globalincs/linklist.h>
 
@@ -26,6 +27,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static std::pair<float, float> getFloatOrientLimit() { return {0.f, DEGREE_UB}; }
 	static std::pair<float,float> getBitmapScaleLimit() { return {0.001f, 18.0f}; }
 	static std::pair<float,float> getSunScaleLimit() { return {0.1f,   50.0f}; }
+	static std::pair<float,float> getSunAngularSizeLimit() { return {0.0f, SUN_ANGULAR_SIZE_MAX}; }
 	static std::pair<int, int> getDivisionLimit() { return {1, 5}; }
 	static std::pair<int, int> getStarsLimit() { return {0, MAX_STARS}; }
 
@@ -82,6 +84,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSunHeading(float deg);
 	float getSunScale() const; // uses scale_x for both x and y
 	void setSunScale(float v);
+	// Whether this mission sets the sun's apparent diameter at all. Off means the sun keeps
+	// its stars.tbl $SunAngularSize:, or the size measured from its bitmap.
+	bool getSunAngularSizeEnabled() const;
+	void setSunAngularSizeEnabled(bool enabled);
+	float getSunAngularSize() const; // apparent diameter in degrees
+	void setSunAngularSize(float v);
 
 	// nebula group
 	static SCP_vector<SCP_string> getLightningNames();
@@ -175,7 +183,39 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static SCP_string getLightingProfileName();
 	void setLightingProfileName(const SCP_string& name);
 
+	// Combo entries standing in for the two answers that aren't a lens name:
+	// "Default" leaves the mission silent so it follows lens_flares.tbl,
+	// "None" is the explicit <none> token (see graphics/lens_flare.h).
+	static constexpr const char* CAMERA_LENS_DEFAULT = "Default";
+	static constexpr const char* CAMERA_LENS_NONE = "None";
+	static SCP_vector<SCP_string> getCameraLensOptions();
+	static SCP_string getCameraLensName();
+	void setCameraLensName(const SCP_string& name);
+
+	// How this mission restyles the camera lens -- iris, anamorphic look and flare
+	// strength -- as one value, which is what lets LensApertureDialog stay a plain
+	// form instead of tracking which parts the mission had already overridden.
+	// See The_mission.camera_lens_overrides in missionparse.h.
+	//
+	// A field the mission does not override reads back as its neutral default, and
+	// a field set back to that default stops being an override. Deliberately *not*
+	// the mounted lens's own tabled values: a mission-level override replaces the
+	// whole group it belongs to, so starting the sliders at (say) this lens's blade
+	// curvature would mean the first field a user touches quietly saves that too,
+	// frozen at one lens's numbers.
+	static graphics::lens_settings getLensSettings();
+	void setLensSettings(const graphics::lens_settings& settings);
+	void resetLensSettings();
+
+	// Whether a lens is currently mounted at all ("Default" with no
+	// $Default Lens: in the tables, or "None", both leave nothing mounted).
+	// Edits still update the mission's stored override either way, but there is
+	// nothing for them to visibly change without a mounted lens -- the dialog
+	// uses this to warn instead of leaving the user wondering why nothing moved.
+	static bool getLensMounted();
+
   private:
+	void applyLensOverridesToViewport();
 	void initializeData();
 	void refreshBackgroundPreview();
 	static background_t& getActiveBackground();

@@ -16,6 +16,7 @@
 #include "freespace.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
+#include "graphics/lens_flare.h"
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
 #include "hud/hud.h"
@@ -33,6 +34,7 @@
 #include "render/batching.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "starfield/sun_disc.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
@@ -79,6 +81,15 @@ typedef struct flare_bitmap {
 } flare_bitmap;
 
 
+// Values of starfield_bitmap::camera_lens_flare, i.e. of "+Camera Lens Flare:".
+// The unset default deliberately defers to $Flare:, which was the only way to say
+// "this sun flares" before this option existed.
+enum {
+	SUN_LENS_FLARE_FROM_FLARE = -1, // no "+Camera Lens Flare:"; follow $Flare:
+	SUN_LENS_FLARE_OFF = 0,
+	SUN_LENS_FLARE_ON = 1,
+};
+
 // global info (not individual instances)
 typedef struct starfield_bitmap {
 	char filename[MAX_FILENAME_LEN];				// bitmap filename
@@ -91,8 +102,17 @@ typedef struct starfield_bitmap {
 	int glow_fps;
 	int xparent;
 	float r, g, b, i;		// only for suns
+	float angular_size;								// only for suns -- this sun's apparent diameter from stars.tbl;
+													// see SUN_ANGULAR_SIZE_UNSPECIFIED
+	float disc_fraction;							// only for suns -- cached sun_disc_measure_bitmap() result for
+													// disc_measured_for; negative means "not measured yet"
+	int disc_measured_for;							// only for suns -- bitmap_id disc_fraction was measured from
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
+	// Does this sun flare through the physically-based camera lens (graphics/lens_flare.h)?
+	// Tristate, from "+Camera Lens Flare:": SUN_LENS_FLARE_FROM_FLARE follows $Flare:,
+	// so a table written before this option existed behaves exactly as it did.
+	int camera_lens_flare;
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
 	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];		// bitmaps for different lens flares (can be re-used)
 	int n_flares;									// number of flares actually used
@@ -106,11 +126,14 @@ typedef struct starfield_bitmap_instance {
 	float scale_x, scale_y;							// x and y scale
 	int div_x, div_y;								// # of x and y divisions
 	angles ang;										// angles from FRED
+	float angular_size;								// only for suns -- this mission's apparent diameter for the sun,
+													// in degrees; see SUN_ANGULAR_SIZE_UNSPECIFIED
 	int star_bitmap_index;							// index into starfield_bitmap array
 	int n_verts;
 	vertex *verts;
 
-	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(0), n_verts(0), verts(NULL) {
+	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1),
+		angular_size(SUN_ANGULAR_SIZE_UNSPECIFIED), star_bitmap_index(0), n_verts(0), verts(nullptr) {
 		ang.p = 0.0f;
 		ang.b = 0.0f;
 		ang.h = 0.0f;
@@ -123,6 +146,8 @@ static SCP_vector<starfield_bitmap_instance> Starfield_bitmap_instances;
 
 // sun bitmaps and sun glow bitmaps
 static SCP_vector<starfield_bitmap> Sun_bitmaps;
+
+float Sun_angular_size_override = -1.0f;
 static SCP_vector<starfield_bitmap_instance> Suns;
 
 // Goober5000
@@ -399,6 +424,11 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	sbm->bitmap_id = -1;
 	sbm->glow_bitmap = -1;
 	sbm->glow_n_frames = 1;
+	sbm->angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
+	sbm->disc_fraction = -1.0f;
+	sbm->disc_measured_for = -1;
+	// the memset above would otherwise read as SUN_LENS_FLARE_OFF
+	sbm->camera_lens_flare = SUN_LENS_FLARE_FROM_FLARE;
 
 	for (i = 0; i < MAX_FLARE_BMP; i++) {
 		sbm->flare_bitmaps[i].bitmap_id = -1;
@@ -496,6 +526,20 @@ void parse_startbl(const char *filename)
 						Warning(LOCATION, "%s", warning.c_str());		// customized case is significant
 				}
 
+				// apparent diameter of the sun's disc in degrees (Sol is ~0.53). Only affects
+				// raytraced shadows, which get a penumbra sized to match. Left out, the size is
+				// measured from the sun bitmap instead -- see sun_angular_radius_tangent() -- so
+				// use 0 to ask for hard shadows and "derived" to say "measure it" outright.
+				if (optional_string("$SunAngularSize:")) {
+					if ( !optional_string("derived") ) {
+						stuff_float(&sbm.angular_size);
+						if (sbm.angular_size < 0.0f) {
+							error_display(0, "$SunAngularSize: for sun '%s' must be >= 0 (got %f); measuring the bitmap instead.", sbm.filename, sbm.angular_size);
+							sbm.angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
+						}
+					}
+				}
+
 				// lens flare stuff
 				if (optional_string("$Flare:")) {
 					sbm.flare = 1;
@@ -551,6 +595,18 @@ void parse_startbl(const char *filename)
 						}
 						//	else break; //don't allow "flare 1" and then "flare 3"
 					}
+				}
+
+				// Opt this sun into (or out of) the physically-based camera-lens
+				// flare independently of the legacy sprite $Flare: block above,
+				// which otherwise doubles as the opt-in. Lets a sun flare through
+				// the camera lens without having to carry a full set of sprite
+				// flare fields it will never draw, and lets one that does carry
+				// them keep the sprites while sitting out the lens.
+				if (optional_string("+Camera Lens Flare:")) {
+					bool enabled = false;
+					stuff_boolean(&enabled);
+					sbm.camera_lens_flare = enabled ? SUN_LENS_FLARE_ON : SUN_LENS_FLARE_OFF;
 				}
 
 				sbm.glare = !optional_string("$NoGlare:");
@@ -793,6 +849,9 @@ void stars_clear_instances()
 // call on game startup
 void stars_init()
 {
+	// lens systems must be known before a mission's $Camera Lens: names one
+	graphics::lens_flare_init();
+
 	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
@@ -815,7 +874,7 @@ void stars_close()
 {
 	stars_clear_instances();
 
-	// any other code goes here
+	graphics::lens_flare_close();
 }
 
 // called before mission parse so we can clear out all of the old stuff
@@ -828,6 +887,11 @@ void stars_pre_level_init(bool clear_backgrounds)
 		Backgrounds.clear();
 
 	stars_clear_instances();
+
+	// The camera lens and any aperture edits belong to the mission being left:
+	// unmount and restore the tabled irises so nothing carries into the next one.
+	// The mission's own $Camera Lens: is parsed after this (parse_mission_info).
+	graphics::lens_flare_reset_for_level();
 
 	stars_set_background_model(nullptr, nullptr);
 	stars_set_background_orientation();
@@ -853,6 +917,14 @@ void stars_pre_level_init(bool clear_backgrounds)
 				bm_release(sb.bitmap_id);
 				sb.bitmap_id = -1;
 			}
+
+			// drop any derived angular size along with the bitmap it was measured from. The
+			// handle check in sun_angular_radius_tangent() can't be relied on for this: bm_load()
+			// hands back a recycled slot index, so a reloaded bitmap can come back on the handle
+			// it had before. This is what makes a size change take effect when the background
+			// changes -- which, outside of a mission, is every time the lab switches backgrounds.
+			sb.disc_fraction = -1.0f;
+			sb.disc_measured_for = -1;
 
 			if (sb.glow_bitmap > 0) {
 				bm_release(sb.glow_bitmap);
@@ -971,6 +1043,10 @@ void stars_post_level_init()
 		for (int idx : Preload_background_indexes)
 			stars_preload_background(idx);
 	}
+
+	// The mission's $Camera Lens: is mounted by now, so build its iris mask and
+	// starburst here rather than letting the first flaring frame pay for them
+	graphics::lens_flare_prime_textures();
 
 	stars_set_background_model(The_mission.skybox_model, NULL, The_mission.skybox_flags);
 	stars_set_background_orientation(&The_mission.skybox_orientation);
@@ -1261,6 +1337,141 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	vm_vec_unrotate(pos, &temp, &rot);
 }
 
+/**
+ * @brief The apparent diameter this sun should use, in degrees, or negative if nothing sets one
+ *
+ * @param mission_angular_size this sun instance's +AngularSize: from the mission file
+ */
+static float sun_explicit_angular_size(const starfield_bitmap *bm, float mission_angular_size)
+{
+	// the first layer that specifies a size wins: the LabUi session override, then the
+	// mission's value for this sun instance, then the sun's stars.tbl entry
+	for (float degrees : {Sun_angular_size_override, mission_angular_size, bm->angular_size}) {
+		if (degrees >= 0.0f) {
+			return degrees;
+		}
+	}
+
+	return SUN_ANGULAR_SIZE_UNSPECIFIED;
+}
+
+/**
+ * @brief How much of this sun's bitmap is its emitting disc, measuring it on first use
+ *
+ * @return the disc fraction, or 0 for a sun whose bitmap has no measurable disc
+ */
+static float sun_measured_disc_fraction(starfield_bitmap *bm)
+{
+	// measuring reads the bitmap's pixels, so it happens once and is cached against the
+	// handle it was measured from
+	if ( (bm->disc_fraction >= 0.0f) && (bm->disc_measured_for == bm->bitmap_id) ) {
+		return bm->disc_fraction;
+	}
+
+	const float measured = sun_disc_measure_bitmap(bm->bitmap_id);
+
+	// both a bitmap we couldn't read and one with no drawn disc at all fall back to hard
+	// shadows, but they are very different things -- keep them apart in the log, or a broken
+	// read reads as "working as intended". Neither is worth a Warning(): this runs for every
+	// sun in every mission, not just for content that asked for it, and hard shadows are a
+	// perfectly serviceable outcome
+	if (measured < 0.0f) {
+		mprintf(("Sun '%s': could not read the bitmap to measure it, using hard shadows\n", bm->filename));
+	} else if (measured == 0.0f) {
+		// mods ship blank sun bitmaps to get a light source without a visible sun
+		mprintf(("Sun '%s': no drawn disc, using hard shadows\n", bm->filename));
+	} else {
+		// logged once per sun bitmap, not per frame -- this is what a mod tunes its suns
+		// against. The size is quoted at +Scale: 1.0 since the measurement is a property of
+		// the bitmap; a mission scaling its sun scales this with it.
+		mprintf(("Sun '%s': measured disc fraction %.3f (%.2f degrees at +Scale: 1.0)\n", bm->filename, measured,
+			fl_degrees(2.0f * atanf(sun_disc_tangent_from_fraction(measured, 1.0f)))));
+	}
+
+	bm->disc_fraction = (measured > 0.0f) ? measured : 0.0f;
+	bm->disc_measured_for = bm->bitmap_id;
+
+	return bm->disc_fraction;
+}
+
+/**
+ * @brief Tangent of a sun's angular radius, which is what a directional light's source_radius is
+ *
+ * See traceShadowRayCone() in shadows.sdr: for directional lights the source radius *is* the
+ * tangent of the angular radius, so the penumbra widens with occluder distance the way a real
+ * area light's would. 0 means a point source, i.e. hard shadows.
+ *
+ * Only a size that was *asked for* can be 0. A sun whose bitmap simply has no measurable disc
+ * falls back to Sol instead -- see below.
+ *
+ * @param scale_x the mission's +Scale: for this sun instance
+ * @param mission_angular_size this sun instance's +AngularSize: from the mission file
+ */
+static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, float mission_angular_size)
+{
+	const float specified = sun_explicit_angular_size(bm, mission_angular_size);
+
+	if (specified >= 0.0f) {
+		// Explicit, including an explicit 0: a mod that asks for a sizeless source gets the
+		// hard edge it asked for.
+		return sun_disc_tangent_from_diameter(specified);
+	}
+
+	const float measured = sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);
+	if (measured > 0.0f) {
+		return measured;
+	}
+
+	// Nothing specified a size and the bitmap has no disc we could measure (a planet or
+	// nebula bitmap used as a sun, or one we failed to read). Falling back to 0 here would
+	// hand that sun a single hard ray, and in a multi-sun mission one such sun is enough to
+	// lay a razor-sharp shadow over every soft one -- with no clue in the editor as to which
+	// sun is responsible, since the control that would fix it sits on a different sun.
+	// Sol is the same default the editors and the lab start from, so an unmeasurable sun now
+	// behaves like an ordinary one; hard shadows remain available by asking for 0 outright.
+	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
+}
+
+// The sun's tabled light, or nothing if the sun instance itself is invalid.
+std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n)
+{
+	if (!SCP_vector_inbounds(Suns, sun_n) || Suns[sun_n].star_bitmap_index < 0) {
+		return std::nullopt;
+	}
+
+	const starfield_bitmap* bm = &Sun_bitmaps[Suns[sun_n].star_bitmap_index];
+
+	sun_rgbi rgbi;
+	rgbi.color.xyz.x = bm->r;
+	rgbi.color.xyz.y = bm->g;
+	rgbi.color.xyz.z = bm->b;
+	rgbi.intensity = bm->i;
+	return rgbi;
+}
+
+bool stars_sun_bitmap_has_camera_lens_flare(int bitmap_idx)
+{
+	if (!SCP_vector_inbounds(Sun_bitmaps, bitmap_idx)) {
+		return false;
+	}
+	const starfield_bitmap* bm = &Sun_bitmaps[bitmap_idx];
+
+	// "+Camera Lens Flare:" wins where it is given; otherwise $Flare: stands in for
+	// it, since that was the only way to say "this sun flares" before it existed
+	if (bm->camera_lens_flare != SUN_LENS_FLARE_FROM_FLARE) {
+		return bm->camera_lens_flare == SUN_LENS_FLARE_ON;
+	}
+	return bm->flare != 0;
+}
+
+bool stars_sun_has_camera_lens_flare(int sun_n)
+{
+	if (!SCP_vector_inbounds(Suns, sun_n)) {
+		return false;
+	}
+	return stars_sun_bitmap_has_camera_lens_flare(Suns[sun_n].star_bitmap_index);
+}
+
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
@@ -1309,9 +1520,13 @@ void stars_draw_sun(int show_sun)
 		sun_dir = sun_pos;
 		vm_vec_normalize(&sun_dir);
 
-		// add the light source corresponding to the sun, except when rendering to an envmap
-		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b);
+		// add the light source corresponding to the sun, except when rendering to an envmap.
+		// For directional lights, source_radius carries the tangent of the sun's angular
+		// radius (see traceShadowRayCone() in shadows.sdr), sizing its shadow penumbra.
+		if ( !Rendering_to_env ) {
+			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b,
+				sun_angular_radius_tangent(bm, Suns[idx].scale_x, Suns[idx].angular_size));
+		}
 
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
@@ -1341,9 +1556,15 @@ void stars_draw_sun(int show_sun)
 			continue;
 		}
 
-		material mat_params;
-		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
-		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
+		// When the flare pass is drawing this sun's starburst, skip the sprite so
+		// the two don't stack (the remaining suns are unaffected). Sun_drew is
+		// still counted: it means "a sun was on screen this frame", which drives
+		// the sunspot glare downstream and stays true either way.
+		if (!graphics::lens_flare_sun_starburst_drawn(idx)) {
+			material mat_params;
+			material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
+			g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
+		}
 		Sun_drew++;
 
 // 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
@@ -1434,6 +1655,12 @@ void stars_draw_sun_glow(int sun_n)
 	if (bm->glow_bitmap < 0)
 		return;
 
+	// when the flare pass is drawing this sun's starburst, skip the bitmap glow so
+	// the two don't stack
+	if (graphics::lens_flare_sun_starburst_drawn(sun_n)) {
+		return;
+	}
+
 	memset( &sun_vex, 0, sizeof(vertex) );
 
 	// get sun pos
@@ -1466,7 +1693,9 @@ void stars_draw_sun_glow(int sun_n)
 	material_set_unlit(&mat_params, bitmap_id, 0.5f, true, false);
 	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, true);
 
-	if (bm->flare) {
+	// legacy sprite flares; suppressed while a physically-based camera lens is
+	// mounted, since that models the same artifact properly
+	if (bm->flare && graphics::lens_flare_active_lens() < 0) {
 		vec3d light_dir;
 		vec3d local_light_dir;
 		light_get_global_dir(&light_dir, sun_n);
@@ -1941,6 +2170,21 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	Rendering_to_env = env;
+
+	// Decide what the camera lens will flare for *this* render, before anything
+	// consults the answer: the sun sprites below step aside for a starburst the
+	// flare pass is drawing, and the post-processing pass draws exactly what is
+	// published here.
+	//
+	// Environment maps publish nothing, because they go straight to a render target
+	// without ever reaching that pass. Saying so here -- rather than having each
+	// consumer check where it is -- is what keeps "does this sun flare" a single
+	// answer that everything below can just read.
+	if (env) {
+		graphics::lens_flare_clear_frame();
+	} else {
+		graphics::lens_flare_frame_update();
+	}
 
 	if (show_subspace)
 		subspace_render();
@@ -2440,6 +2684,20 @@ int stars_find_bitmap(const char *name)
 	return -1;
 }
 
+// The mission-side list entry and the in-world instance carry the same fields, so keeping the
+// copy in one place is what stops the three call sites drifting apart. angular_size is only
+// meaningful for suns, but copying it for bitmaps too is harmless and keeps every caller
+// identical -- which beats being selectively correct in a way no reader can verify.
+static void starfield_copy_entry_to_instance(const starfield_list_entry *sle, starfield_bitmap_instance &sbi)
+{
+	sbi.ang = sle->ang;
+	sbi.scale_x = sle->scale_x;
+	sbi.scale_y = sle->scale_y;
+	sbi.div_x = sle->div_x;
+	sbi.div_y = sle->div_y;
+	sbi.angular_size = sle->angular_size;
+}
+
 // lookup a sun by bitmap filename, return index or -1 on fail
 int stars_find_sun(const char *name)
 {
@@ -2472,6 +2730,7 @@ void stars_get_data(bool is_sun, int idx, starfield_list_entry& sle)
 	sle.div_y = item.div_y;
 	sle.scale_x = item.scale_x;
 	sle.scale_y = item.scale_y;
+	sle.angular_size = item.angular_size;
 }
 
 void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
@@ -2488,6 +2747,7 @@ void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
 	item.div_y = sle.div_y;
 	item.scale_x = sle.scale_x;
 	item.scale_y = sle.scale_y;
+	item.angular_size = sle.angular_size;
 
 	// this is necessary when modifying bitmaps, but not when modifying suns
 	if (!is_sun)
@@ -2503,13 +2763,7 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	Assert(sun_ptr != NULL);
 
 	// copy information
-	sbi.ang.p = sun_ptr->ang.p;
-	sbi.ang.b = sun_ptr->ang.b;
-	sbi.ang.h = sun_ptr->ang.h;
-	sbi.scale_x = sun_ptr->scale_x;
-	sbi.scale_y = sun_ptr->scale_y;
-	sbi.div_x = sun_ptr->div_x;
-	sbi.div_y = sun_ptr->div_y;
+	starfield_copy_entry_to_instance(sun_ptr, sbi);
 
 	int idx = stars_find_sun(sun_ptr->filename);
 
@@ -2599,13 +2853,7 @@ int stars_add_bitmap_entry(starfield_list_entry *sle)
 	Assert(sle != NULL);
 
 	// copy information
-	sbi.ang.p = sle->ang.p;
-	sbi.ang.b = sle->ang.b;
-	sbi.ang.h = sle->ang.h;
-	sbi.scale_x = sle->scale_x;
-	sbi.scale_y = sle->scale_y;
-	sbi.div_x = sle->div_x;
-	sbi.div_y = sle->div_y;
+	starfield_copy_entry_to_instance(sle, sbi);
 
 	idx = stars_find_bitmap(sle->filename);
 
@@ -2867,13 +3115,7 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 	Assert( sbi_new != NULL );
 
     // copy information
-    sbi.ang.p = sbi_new->ang.p;
-	sbi.ang.b = sbi_new->ang.b;
-	sbi.ang.h = sbi_new->ang.h;
-	sbi.scale_x = sbi_new->scale_x;
-	sbi.scale_y = sbi_new->scale_y;
-	sbi.div_x = sbi_new->div_x;
-	sbi.div_y = sbi_new->div_y;
+	starfield_copy_entry_to_instance(sbi_new, sbi);
 
 	if (is_a_sun) {
 		idx = stars_find_sun((char*)name);

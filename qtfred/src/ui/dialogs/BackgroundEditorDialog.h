@@ -49,6 +49,8 @@ private slots:
 	void on_sunPitchSpin_valueChanged(double arg1);
 	void on_sunHeadingSpin_valueChanged(double arg1);
 	void on_sunScaleDoubleSpinBox_valueChanged(double arg1);
+	void on_sunAngularSizeCheckBox_toggled(bool checked);
+	void on_sunAngularSizeDoubleSpinBox_valueChanged(double arg1);
 	void on_addSunButton_clicked();
 	void on_changeSunButton_clicked();
 	void on_deleteSunButton_clicked();
@@ -101,6 +103,8 @@ private slots:
 	void on_envMapButton_clicked();
 	void on_envMapEdit_textChanged(const QString& arg1);
 	void on_lightingProfileCombo_currentIndexChanged(int index);
+	void on_cameraLensCombo_currentIndexChanged(int index);
+	void on_lensApertureButton_clicked();
 
 protected:
 	void closeEvent(QCloseEvent* e) override;

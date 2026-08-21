@@ -393,6 +393,57 @@ int Fred_mission_save::fout_version(const char* format, ...)
 	return 0;
 }
 
+void Fred_mission_save::fout_lens_field(const char* token, float val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %f", val);
+	} else {
+		fout_version("\n%s %f", token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, int val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %d", val);
+	} else {
+		fout_version("\n%s %d", token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, bool val)
+{
+	if (optional_string_fred(token)) {
+		parse_comments(1);
+		fout(" %s", val ? "YES" : "NO");
+	} else {
+		fout_version("\n%s %s", token, val ? "YES" : "NO");
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, float val, float def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, int val, int def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
+void Fred_mission_save::fout_lens_field(const char* token, bool val, bool def)
+{
+	if (val != def) {
+		fout_lens_field(token, val);
+	}
+}
+
 void Fred_mission_save::fout_raw_comment(const char* comment_start)
 {
 	Assertion(comment_start <= raw_ptr, "This function assumes the beginning of the comment precedes the current raw pointer!");
@@ -1035,6 +1086,15 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Scale:");
 			parse_comments();
 			fout(" %f", sle->scale_x);
+
+			// apparent diameter, only written when this mission actually sets one; see
+			// check_for_26_1_data()
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+AngularSize:",
+				1,
+				";;FSO 26.1.0;;",
+				SUN_ANGULAR_SIZE_UNSPECIFIED,
+				" %f",
+				sle->angular_size);
 		}
 
 		// save background bitmaps by filename
@@ -3128,6 +3188,139 @@ int Fred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 23.1.0;; $Lighting Profile:");
 	}
 
+	// the-e's camera lens for physically-based flares. The token is written back
+	// verbatim: an empty one means the mission named no lens, and anything else --
+	// a lens name or <none> -- is a deliberate choice that has to survive the
+	// round trip even if it happens to match the current $Default Lens:.
+	if (!The_mission.camera_lens_name.empty()) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Camera Lens:")) {
+			parse_comments(2);
+			fout(" %s", The_mission.camera_lens_name.c_str());
+		} else {
+			fout_version("\n\n$Camera Lens: %s", The_mission.camera_lens_name.c_str());
+		}
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Camera Lens:");
+	}
+
+	// the-e's per-mission camera-lens overrides -- the iris, the anamorphic look
+	// and the flare's strength, the same things the set-lens-* sexps control but
+	// applied at mission load instead of by an event (see the field comment in
+	// missionparse.h). Each block is written only when the mission actually
+	// overrides that part, and within it each field only when it differs from its
+	// own default, so leaving (say) grating alone doesn't bloat every mission file
+	// with zeroes.
+	const graphics::lens_overrides& lens = The_mission.camera_lens_overrides;
+
+	if (lens.aperture) {
+		const graphics::lens_aperture& ap = *lens.aperture;
+		const graphics::lens_aperture def;
+
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Aperture:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Aperture:");
+		}
+
+		fout_lens_field("+Blades:", ap.blades, def.blades);
+		fout_lens_field("+Rotation:", ap.rotation, def.rotation);
+		fout_lens_field("+Curvature:", ap.curvature, def.curvature);
+		fout_lens_field("+Softness:", ap.softness, def.softness);
+
+		fout_lens_field("+Grating Strength:", ap.grating.strength, def.grating.strength);
+		fout_lens_field("+Grating Density:", ap.grating.density, def.grating.density);
+		fout_lens_field("+Grating Length:", ap.grating.length, def.grating.length);
+		fout_lens_field("+Grating Width:", ap.grating.width, def.grating.width);
+		fout_lens_field("+Grating Softness:", ap.grating.softness, def.grating.softness);
+
+		fout_lens_field("+Scratches Strength:", ap.scratches.strength, def.scratches.strength);
+		fout_lens_field("+Scratches Density:", ap.scratches.density, def.scratches.density);
+		fout_lens_field("+Scratches Length:", ap.scratches.length, def.scratches.length);
+		fout_lens_field("+Scratches Width:", ap.scratches.width, def.scratches.width);
+		fout_lens_field("+Scratches Rotation:", ap.scratches.rotation, def.scratches.rotation);
+		fout_lens_field("+Scratches Rotation Variation:", ap.scratches.rotation_variation,
+			def.scratches.rotation_variation);
+		fout_lens_field("+Scratches Softness:", ap.scratches.softness, def.scratches.softness);
+
+		fout_lens_field("+Dust Strength:", ap.dust.strength, def.dust.strength);
+		fout_lens_field("+Dust Density:", ap.dust.density, def.dust.density);
+		fout_lens_field("+Dust Radius:", ap.dust.radius, def.dust.radius);
+		fout_lens_field("+Dust Softness:", ap.dust.softness, def.dust.softness);
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Aperture:");
+	}
+
+	if (lens.anamorphic) {
+		const graphics::lens_anamorphic& an = *lens.anamorphic;
+		const graphics::lens_anamorphic def;
+
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Anamorphic:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Anamorphic:");
+		}
+
+		fout_lens_field("+Squeeze:", an.squeeze, def.squeeze);
+		fout_lens_field("+Streak Strength:", an.streak.strength, def.streak.strength);
+		fout_lens_field("+Streak Length:", an.streak.length, def.streak.length);
+		fout_lens_field("+Streak Thickness:", an.streak.thickness, def.streak.thickness);
+
+		// The one field that isn't a single number, so it can't go through the
+		// helper: a tint is only meaningful as a whole triple.
+		if (an.streak.tint[0] != def.streak.tint[0] || an.streak.tint[1] != def.streak.tint[1] ||
+			an.streak.tint[2] != def.streak.tint[2]) {
+			if (optional_string_fred("+Streak Tint:")) {
+				parse_comments(1);
+				fout(" ( %f, %f, %f )", an.streak.tint[0], an.streak.tint[1], an.streak.tint[2]);
+			} else {
+				fout_version("\n+Streak Tint: ( %f, %f, %f )", an.streak.tint[0], an.streak.tint[1],
+					an.streak.tint[2]);
+			}
+		}
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Anamorphic:");
+	}
+
+	// Unlike the two blocks above -- an iris and an anamorphic look are each one
+	// artifact, overridden whole -- these knobs are independent of each other, so
+	// each is written only if this mission overrode that one.
+	if (lens.intensity || lens.ghost_brightness || lens.starburst_brightness || lens.starburst ||
+		lens.starburst_scale || lens.max_ghosts) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Lens Flare Strength:")) {
+			parse_comments(2);
+		} else {
+			fout_version("\n\n$Lens Flare Strength:");
+		}
+
+		// Written whenever the mission set it, default value or not: here the fact
+		// that it was overridden at all is the content.
+		if (lens.intensity)
+			fout_lens_field("+Intensity:", *lens.intensity);
+		if (lens.ghost_brightness)
+			fout_lens_field("+Ghost Brightness:", *lens.ghost_brightness);
+		if (lens.starburst_brightness)
+			fout_lens_field("+Starburst Brightness:", *lens.starburst_brightness);
+		if (lens.starburst)
+			fout_lens_field("+Starburst:", *lens.starburst);
+		if (lens.starburst_scale)
+			fout_lens_field("+Starburst Scale:", *lens.starburst_scale);
+		if (lens.max_ghosts)
+			fout_lens_field("+Max Ghosts:", *lens.max_ghosts);
+
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Lens Flare Strength:");
+	}
+
 	// sound environment (EFX/EAX) - taylor
 	sound_env* m_env = &The_mission.sound_environment;
 	if ((m_env->id >= 0) && (m_env->id < static_cast<int>(EFX_presets.size()))) {
@@ -3171,7 +3364,15 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	auto version_24_1 = gameversion::version(24, 1);
 	auto version_24_3 = gameversion::version(24, 3);
 	auto version_25_1 = gameversion::version(25, 1);
-	if (MISSION_VERSION >= version_25_1) {
+	auto version_26_1 = gameversion::version(26, 1);
+	if (MISSION_VERSION >= version_26_1) {
+		Warning(LOCATION,
+			"Notify an SCP coder: now that the required mission version is at least 26.1, the check_for_26_1_data(), "
+			"check_for_25_1_data(), check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can "
+			"be removed");
+	} else if (check_for_26_1_data()) {
+		The_mission.required_fso_version = version_26_1;
+	} else if (MISSION_VERSION >= version_25_1) {
 		Warning(LOCATION,
 			"Notify an SCP coder: now that the required mission version is at least 25.1, the check_for_25_1_data(), "
 			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");

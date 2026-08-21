@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphics/lens_flare.h"
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
 #include "species_defs/species_defs.h"
@@ -44,9 +45,16 @@ class LabUi {
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
 	static void build_shadow_method_combobox();
+	static void build_rt_shadow_quality_combobox();
 	static void build_max_rt_shadow_lights_slider();
 	static void build_rt_shadow_bias_sliders();
+	static void build_shadow_penumbra_sliders();
+	static void build_rtao_sliders();
 	void build_tone_mapper_combobox();
+	static void build_lens_flare_options();
+	static void build_lens_aperture_options(graphics::lens_aperture& ap);
+	static void build_thruster_flare_options();
+	static void build_lens_flare_pass_report();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
 	void build_subsystem_list_entry(SCP_string& subsys_name,

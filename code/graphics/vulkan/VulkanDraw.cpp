@@ -686,8 +686,12 @@ void VulkanDrawManager::renderModel(model_material* material_info, indexed_verte
 	stateTracker->getCommandBuffer().drawIndexed(dp.indexCount, 1, dp.firstIndex, dp.baseVertex, 0);
 }
 
-void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
-                                          vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi) const
+void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle,
+	size_t ubo_offset,
+	size_t ubo_size,
+	vertex_buffer* buffer,
+	indexed_vertex_source* vert_src,
+	size_t texi)
 {
 	if (!buffer || !vert_src) {
 		return;
@@ -754,51 +758,99 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 	// (bound separately, per-frame, via shadow_cascade_params_bind) both live in
 	// the fixed 3-tier layout alongside the batched-submodel transform buffer;
 	// no material textures are needed for depth-only rendering.
+	//
+	// All three sets are memoized across the shadow pass (see m_cachedShadow).
+	// ShadowMapData is a dynamic binding, so the only thing that changes from one
+	// shadow draw to the next -- its UBO offset -- rides in the dynamic-offset array
+	// and leaves the set contents untouched. Without that this path allocated and
+	// fully rewrote three descriptor sets per shadow draw, times the cascade count.
 	{
-		DescriptorWriter writer;
-		writer.reset(descManager->getDevice(), descManager->getFallbacks());
-
-		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
-		Assert(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		ShadowSetInputs shadowInputs;
 		{
-			const auto& pending = getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
-			if (pending.valid) {
-				vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+			const auto& cascade =
+				getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
+			shadowInputs.cascadeHandle = cascade.bufferHandle.value();
+			shadowInputs.cascadeOffset = cascade.offset;
+			shadowInputs.cascadeSize = cascade.size;
+			// Whether the binding resolves *this frame*, not merely whether one was ever made:
+			// the block lives in a streaming buffer, so a binding from an earlier frame no longer
+			// points at anything (see bindPendingUBOs in applyMaterial). Folded into the key so a
+			// cached set written with the placeholder buffer cannot be reused once the real
+			// binding lands -- the bump offset alone can repeat from one frame to the next.
+			shadowInputs.cascadeValid =
+				cascade.valid && bufferManager->isFrameAllocCurrent(cascade.bufferHandle);
+			shadowInputs.shadowDataHandle = ubo_handle.value();
+			shadowInputs.shadowDataSize = ubo_size; // offset is dynamic, so not part of the key
+			auto& tf = g_transformBuffers[descManager->getCurrentFrame()];
+			if (tf.buffer && tf.lastUploadSize > 0) {
+				shadowInputs.transformBuffer = tf.buffer;
+				shadowInputs.transformOffset = tf.lastUploadOffset;
+				shadowInputs.transformSize = tf.lastUploadSize;
+			}
+		}
+
+		if (!m_cachedShadow.hits(shadowInputs)) {
+			DescriptorWriter writer;
+			writer.reset(descManager->getDevice(), descManager->getFallbacks());
+
+			ShadowSets sets;
+
+			sets.global = descManager->allocateFrameSet(DescriptorSetIndex::Global);
+			Assert(sets.global);
+			writer.writeSet(DescriptorSetIndex::Global, sets.global);
+			if (shadowInputs.cascadeValid) {
+				vk::Buffer buf =
+					bufferManager->getVkBufferForBinding(gr_buffer_handle(shadowInputs.cascadeHandle));
 				if (buf) {
-					writer.setBuffer(GlobalBinding::ShadowCascadeParams, {buf, pending.offset, pending.size});
+					writer.setBuffer(GlobalBinding::ShadowCascadeParams,
+						{buf, shadowInputs.cascadeOffset, shadowInputs.cascadeSize});
 				}
 			}
-		}
 
-		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
-		Assert(materialSet);
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-		{
-			vk::Buffer buf = bufferManager->getVkBuffer(ubo_handle);
-			if (buf) {
-				writer.setBuffer(MaterialBinding::ShadowMapData,
-					{buf, static_cast<vk::DeviceSize>(ubo_offset), static_cast<vk::DeviceSize>(ubo_size)});
+			sets.material = descManager->allocateFrameSet(DescriptorSetIndex::Material);
+			Assert(sets.material);
+			writer.writeSet(DescriptorSetIndex::Material, sets.material);
+			{
+				vk::Buffer buf = bufferManager->getVkBuffer(ubo_handle);
+				if (buf) {
+					// Offset 0: the real offset is supplied per draw as a dynamic offset.
+					writer.setBuffer(MaterialBinding::ShadowMapData, {buf, 0, static_cast<vk::DeviceSize>(ubo_size)});
+				}
 			}
-		}
-		{
-			uint32_t tfIdx = descManager->getCurrentFrame();
-			auto& tf = g_transformBuffers[tfIdx];
-			if (tf.buffer && tf.lastUploadSize > 0) {
-				writer.setBuffer(MaterialBinding::TransformSSBO, {tf.buffer,
-				                 static_cast<vk::DeviceSize>(tf.lastUploadOffset),
-				                 static_cast<vk::DeviceSize>(tf.lastUploadSize)});
+			if (shadowInputs.transformBuffer) {
+				writer.setBuffer(MaterialBinding::TransformSSBO,
+					{shadowInputs.transformBuffer,
+						static_cast<vk::DeviceSize>(shadowInputs.transformOffset),
+						static_cast<vk::DeviceSize>(shadowInputs.transformSize)});
 			}
+
+			sets.perDraw = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
+			Assert(sets.perDraw);
+			writer.writeSet(DescriptorSetIndex::PerDraw, sets.perDraw);
+			writer.flush();
+
+			m_cachedShadow.store(sets, shadowInputs);
 		}
 
-		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
-		Assert(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-		writer.flush();
+		// applyMaterial's caches deliberately are NOT invalidated here. They record
+		// what a descriptor set *contains*, and the shadow pass allocates its own
+		// sets rather than overwriting theirs. Which set is currently bound is
+		// tracked separately by VulkanStateTracker, and this path binds through it,
+		// so the next applyMaterial cache hit still rebinds its set correctly. (That
+		// is what separates this from the ImGui case invalidateDrawStateCaches()
+		// exists for: ImGui binds on the command buffer behind the tracker's back.)
 
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+		// ShadowMapData is the one thing that moves per shadow draw; every other dynamic binding
+		// on this path holds the fallback buffer and so must stay at offset 0.
+		uint32_t materialDynOffsets[MATERIAL_DYNAMIC_OFFSET_COUNT] = {};
+		materialDynOffsets[MaterialDynamicSlot::ShadowMapData] = static_cast<uint32_t>(ubo_offset);
+
+		static constexpr uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
+
+		const auto& sets = m_cachedShadow.payload();
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, sets.global);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, sets.material, materialDynOffsets);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, sets.perDraw, perDrawDynOffsets);
 	}
 
 	vk::Buffer vbuffer = bufferManager->getVkBuffer(vert_src->Vbuffer_handle);
@@ -906,9 +958,18 @@ void VulkanDrawManager::clearStates()
 	stateTracker->setDepthBias(0.0f, 0.0f);
 	stateTracker->setLineWidth(1.0f);
 
-	// Clear pending uniform bindings
-	clearPendingUniformBindings();
-
+	// NOTE: Do NOT clear the pending uniform bindings here. gr_opengl_clear_states() leaves
+	// glBindBufferRange() alone, so under OpenGL a uniform block stays bound across a
+	// clear_states(); dropping them here made Vulkan diverge. It matters because
+	// model_render_immediate() ends with gr_clear_states(), so anything bound once for a whole
+	// pass -- ShadowCascadeParams above all, which nothing re-binds per model -- survived only
+	// until the first model finished drawing. Every model after that fell back to the zeroed
+	// placeholder UBO, which reads as rtShadowSampleCount == 0 and collapses
+	// traceShadowRayCone() to a single hard ray. A binding that has outlived what it points at is
+	// handled where it is consumed: the descriptor writers resolve it through
+	// getVkBufferForBinding(), which hands back the zeroed placeholder buffer for a deleted buffer
+	// or for a streaming sub-allocation from an earlier frame.
+	//
 	// NOTE: Do NOT call resetClip() here. OpenGL's gr_opengl_clear_states() does
 	// not reset the clip region, and callers (e.g. model_render_immediate) rely on
 	// the clip/offset state surviving through clear_states for subsequent 2D draws.
@@ -936,16 +997,6 @@ void VulkanDrawManager::setPendingUniformBinding(uniform_block_type blockType, g
 	}
 }
 
-void VulkanDrawManager::clearPendingUniformBindings()
-{
-	for (auto& binding : m_pendingUniformBindings) {
-		binding.valid = false;
-		binding.bufferHandle = gr_buffer_handle();
-		binding.offset = 0;
-		binding.size = 0;
-	}
-}
-
 void VulkanDrawManager::resetFrameStats()
 {
 	m_frameStats = {};
@@ -956,10 +1007,9 @@ void VulkanDrawManager::resetFrameStats()
 	// the frame's first applyMaterial().
 	m_cachedGlobalSet = nullptr;
 	m_globalSetDirty = true;
-	m_cachedMaterialSet = nullptr;
-	m_cachedMaterialValid = false;
-	m_cachedPerDrawSet = nullptr;
-	m_cachedPerDrawValid = false;
+	m_cachedMaterial.invalidate();
+	m_cachedPerDraw.invalidate();
+	m_cachedShadow.invalidate();
 }
 
 void VulkanDrawManager::printFrameStats()
@@ -1330,13 +1380,20 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		DescriptorWriter writer;
 		writer.reset(descManager->getDevice(), descManager->getFallbacks());
 
-		// Bind pending UBOs for a given descriptor set
+		// Bind pending UBOs for a given descriptor set.
+		//
+		// getVkBufferForBinding() rather than getVkBuffer(): a binding survives the frame it was
+		// made in (clearStates() deliberately leaves it alone, see there), but a streaming
+		// buffer's sub-allocation does not, so a block bound once per frame -- ShadowCascadeParams
+		// -- is stale for every draw that precedes this frame's bind. Resolving to nullptr puts
+		// the zeroed placeholder buffer in the descriptor, which is what those draws would have
+		// got before anything bound the block at all.
 		auto bindPendingUBOs = [&](DescriptorSetIndex targetSet) {
 			for (const auto& entry : VulkanDescriptorManager::getUniformBindings(targetSet)) {
 				vk::DescriptorBufferInfo bufInfo;
 				const auto& pending = m_pendingUniformBindings[static_cast<size_t>(entry.blockType)];
 				if (pending.valid) {
-					vk::Buffer buf = bufferManager->getVkBuffer(pending.bufferHandle);
+					vk::Buffer buf = bufferManager->getVkBufferForBinding(pending.bufferHandle);
 					if (buf) {
 						bufInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
 					}
@@ -1344,6 +1401,28 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 				writer.setBuffer(entry.binding, bufInfo);
 			}
 		};
+
+		// Dynamic offsets for the Material/PerDraw sets, ordered by binding number.
+		// Computed here rather than read back from the writer because the whole point
+		// of the dynamic bindings is that these change on draws where the set itself
+		// is reused from cache and never written.
+		const auto dynOffsetOf = [&](uniform_block_type blockType) -> uint32_t {
+			const auto& pending = m_pendingUniformBindings[static_cast<size_t>(blockType)];
+			if (!pending.valid || !bufferManager->getVkBufferForBinding(pending.bufferHandle)) {
+				return 0; // falls back to the dummy buffer, which is bound at offset 0
+			}
+			return static_cast<uint32_t>(pending.offset);
+		};
+		// Zero-initialized, then filled by name: MaterialDynamicSlot::ShadowMapData is left at 0
+		// because ShadowMapData is never bound on this path, so its descriptor still holds the
+		// fallback buffer -- bound as {buffer, 0, FALLBACK_UNIFORM_BUFFER_SIZE}, i.e. spanning the
+		// whole buffer, so any non-zero dynamic offset would push offset+range past the end of it.
+		uint32_t materialDynOffsets[MATERIAL_DYNAMIC_OFFSET_COUNT] = {};
+		materialDynOffsets[MaterialDynamicSlot::ModelData] = dynOffsetOf(uniform_block_type::ModelData);
+
+		uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
+		perDrawDynOffsets[PerDrawDynamicSlot::GenericData] = dynOffsetOf(uniform_block_type::GenericData);
+		perDrawDynOffsets[PerDrawDynamicSlot::Matrices] = dynOffsetOf(uniform_block_type::Matrices);
 
 		// Set 0: Global (memoized per frame — see m_cachedGlobalSet). Rebuilt only
 		// when a Global input changed: a pending Global UBO (m_globalSetDirty set in
@@ -1356,17 +1435,18 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		if (m_globalSetDirty || !m_cachedGlobalSet || shadowReady != m_cachedGlobalHadShadow) {
 			m_cachedGlobalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 			Assert(m_cachedGlobalSet);
-			writer.writeSet(m_cachedGlobalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+			writer.writeSet(DescriptorSetIndex::Global, m_cachedGlobalSet);
 			bindPendingUBOs(DescriptorSetIndex::Global);
 			if (shadowReady) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
+				writer.setImage(GlobalBinding::ShadowMapRaw, pp->getShadowRawTextureInfo());
 			}
 			m_cachedGlobalHadShadow = shadowReady;
 			m_globalSetDirty = false;
 		}
 		vk::DescriptorSet globalSet = m_cachedGlobalSet;
 
-		// Set 1: Material (previous-set memoized — see m_cachedMaterialSet).
+		// Set 1: Material (previous-set memoized — see m_cachedMaterial).
 		// Snapshot every input; reuse the cached set only on an exact match.
 		MaterialSetInputs matInputs;
 		matInputs.texHandles[0] = mat->get_texture_map(TM_BASE_TYPE);
@@ -1393,23 +1473,28 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		matInputs.sceneColorInfo = m_sceneColorInfo;
 		matInputs.distMapInfo = m_distMapInfo;
 		{
+			// ModelData's offset is deliberately NOT part of the key: it is a dynamic
+			// binding, so an offset-only change is carried by materialDynOffsets and
+			// leaves the set's contents identical. Buffer and size still matter --
+			// both live in the descriptor.
 			const auto& md = m_pendingUniformBindings[static_cast<size_t>(uniform_block_type::ModelData)];
 			const auto& dg = m_pendingUniformBindings[static_cast<size_t>(uniform_block_type::DecalGlobals)];
-			matInputs.uboHandle[0] = md.bufferHandle.value(); matInputs.uboOffset[0] = md.offset;
+			matInputs.uboHandle[0] = md.bufferHandle.value();
+			matInputs.uboOffset[0] = 0;
 			matInputs.uboSize[0] = md.size; matInputs.uboValid[0] = md.valid;
 			matInputs.uboHandle[1] = dg.bufferHandle.value(); matInputs.uboOffset[1] = dg.offset;
 			matInputs.uboSize[1] = dg.size; matInputs.uboValid[1] = dg.valid;
 		}
 
 		vk::DescriptorSet materialSet;
-		if (m_cachedMaterialValid && m_cachedMaterialSet && matInputs == m_cachedMaterialInputs) {
+		if (m_cachedMaterial.hits(matInputs)) {
 			// Identical to the previous draw: reuse the set (skips allocation, the
 			// template write, texture resolution/upload, and the override/UBO writes).
-			materialSet = m_cachedMaterialSet;
+			materialSet = m_cachedMaterial.payload();
 		} else {
 			materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 			Assert(materialSet);
-			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+			writer.writeSet(DescriptorSetIndex::Material, materialSet);
 			bindPendingUBOs(DescriptorSetIndex::Material);
 			if (matInputs.transformBuffer) {
 				writer.setBuffer(MaterialBinding::TransformSSBO,
@@ -1421,12 +1506,10 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			writer.setImage(MaterialBinding::SceneColor, m_sceneColorInfo);
 			writer.setImage(MaterialBinding::DistortionMap, m_distMapInfo);
 			bindMaterialTextures(mat, &writer);
-			m_cachedMaterialSet = materialSet;
-			m_cachedMaterialInputs = matInputs;
-			m_cachedMaterialValid = true;
+			m_cachedMaterial.store(materialSet, matInputs);
 		}
 
-		// Set 2: PerDraw (previous-set memoized — see m_cachedPerDrawSet)
+		// Set 2: PerDraw (previous-set memoized — see m_cachedPerDraw)
 		PerDrawSetInputs pdInputs;
 		{
 			static constexpr uniform_block_type pdTypes[NUM_PERDRAW_UBOS] = {
@@ -1436,28 +1519,28 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			for (int i = 0; i < NUM_PERDRAW_UBOS; ++i) {
 				const auto& p = m_pendingUniformBindings[static_cast<size_t>(pdTypes[i])];
 				pdInputs.uboHandle[i] = p.bufferHandle.value();
-				pdInputs.uboOffset[i] = p.offset;
+				// GenericData (0) and Matrices (1) are dynamic bindings — their offset
+				// rides in perDrawDynOffsets and is not part of the set's contents.
+				pdInputs.uboOffset[i] = (i <= 1) ? 0 : p.offset;
 				pdInputs.uboSize[i] = p.size;
 				pdInputs.uboValid[i] = p.valid;
 			}
 		}
 
 		vk::DescriptorSet perDrawSet;
-		if (m_cachedPerDrawValid && m_cachedPerDrawSet && pdInputs == m_cachedPerDrawInputs) {
-			perDrawSet = m_cachedPerDrawSet;
+		if (m_cachedPerDraw.hits(pdInputs)) {
+			perDrawSet = m_cachedPerDraw.payload();
 		} else {
 			perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 			Assert(perDrawSet);
-			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+			writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 			bindPendingUBOs(DescriptorSetIndex::PerDraw);
-			m_cachedPerDrawSet = perDrawSet;
-			m_cachedPerDrawInputs = pdInputs;
-			m_cachedPerDrawValid = true;
+			m_cachedPerDraw.store(perDrawSet, pdInputs);
 		}
 		writer.flush();
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet, materialDynOffsets);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet, perDrawDynOffsets);
 	}
 
 	// Update tracked state for FSO compatibility

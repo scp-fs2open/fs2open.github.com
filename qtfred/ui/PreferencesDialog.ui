@@ -360,6 +360,196 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="graphicsTab">
+      <attribute name="title">
+       <string>Graphics</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="graphicsLayout">
+       <item>
+        <widget class="QGroupBox" name="rendererGroup">
+         <property name="title">
+          <string>Renderer</string>
+         </property>
+         <layout class="QFormLayout" name="rendererLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="backendLabel">
+            <property name="text">
+             <string>Backend:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="backendCombo">
+            <property name="toolTip">
+             <string>Graphics API the viewport renders with. Vulkan is only offered when this build was compiled with it and Qt's own Vulkan support. Restarting qtFRED is required for a change to take effect, and an explicit -vulkan/-opengl command-line option always overrides this.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="enablePostProcessing">
+         <property name="toolTip">
+          <string>Route the 3D viewport through the game's HDR post-processing pipeline (bloom, tonemapping, lightshafts) instead of drawing straight to the screen. The other settings on this tab only have a visible effect while this is on.</string>
+         </property>
+         <property name="text">
+          <string>Enable post-processing in the viewport</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="shadowsAAGroup">
+         <property name="title">
+          <string>Shadows &amp;&amp; Anti-Aliasing</string>
+         </property>
+         <layout class="QFormLayout" name="shadowsAALayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="shadowQualityLabel">
+            <property name="text">
+             <string>Shadow quality:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="shadowQualityCombo">
+            <property name="toolTip">
+             <string>Quality of the shadows cast by the mission's sun in the viewport. Requires post-processing to be enabled. Restarting qtFRED is required for a change to take effect.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="shadowMethodLabel">
+            <property name="text">
+             <string>Shadow method:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="shadowMethodCombo">
+            <property name="toolTip">
+             <string>Whether shadows are rendered via cascaded shadow maps or hardware raytracing. Raytraced is only offered on a Vulkan build running on hardware with raytraced-shadow support; the control is greyed out otherwise. Requires post-processing to be enabled.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="aaModeLabel">
+            <property name="text">
+             <string>Anti-aliasing:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="aaModeCombo">
+            <property name="toolTip">
+             <string>Post-process anti-aliasing mode used in the viewport. Requires post-processing to be enabled.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="msaaLabel">
+            <property name="text">
+             <string>MSAA:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="msaaCombo">
+            <property name="toolTip">
+             <string>Multisample anti-aliasing used for the viewport's 3D scene. Requires post-processing to be enabled. Restarting qtFRED is required for a change to take effect.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="texturesGroup">
+         <property name="title">
+          <string>Textures</string>
+         </property>
+         <layout class="QFormLayout" name="texturesLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="textureFilterLabel">
+            <property name="text">
+             <string>Texture filtering:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="textureFilterCombo">
+            <property name="toolTip">
+             <string>Mipmap filtering used for textures. Restarting qtFRED is required for a change to take effect.</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="anisotropyLabel">
+            <property name="text">
+             <string>Anisotropic filtering:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="anisotropyCombo">
+            <property name="toolTip">
+             <string>Anisotropic texture filtering level. Restarting qtFRED is required for a change to take effect.</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="brightnessGroup">
+         <property name="title">
+          <string>Brightness</string>
+         </property>
+         <layout class="QFormLayout" name="brightnessLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="gammaLabel">
+            <property name="text">
+             <string>Gamma:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QDoubleSpinBox" name="gammaSpin">
+            <property name="toolTip">
+             <string>Brightness of the viewport, applied as colour^(1/gamma). The default of 1.00 leaves it untouched. Currently only has an effect on the Vulkan backend; on OpenGL the editor renders without the intermediate buffer the gamma pass needs.</string>
+            </property>
+            <property name="decimals">
+             <number>2</number>
+            </property>
+            <property name="minimum">
+             <double>0.10</double>
+            </property>
+            <property name="maximum">
+             <double>5.00</double>
+            </property>
+            <property name="singleStep">
+             <double>0.05</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="graphicsSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="gridTab">
       <attribute name="title">
        <string>Grid</string>

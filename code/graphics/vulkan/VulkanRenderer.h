@@ -1,6 +1,7 @@
 #pragma once
 
 #include "osapi/osapi.h"
+#include "osapi/vulkan_surface.h"
 
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
@@ -15,6 +16,7 @@
 #include "VulkanQuery.h"
 #include "VulkanRaytracing.h"
 #include "VulkanRenderFrame.h"
+#include "VulkanPresentTarget.h"
 
 #include <vulkan/vulkan.hpp>
 
@@ -96,6 +98,73 @@ class VulkanRenderer {
 	void setupFrame();
 
 	/**
+	 * @brief Rebuild the swap chain if the window no longer matches it, restarting the frame
+	 *
+	 * The swap chain's extent is sampled at the end of the previous flip(), but gr_screen is set at
+	 * the start of the current frame's drawing, so anything that resizes the window between those
+	 * two points leaves the frame rendering into a swap chain of the wrong size: gr_setup_viewport()
+	 * sets the viewport from gr_screen while the render pass area comes from the swap chain, and the
+	 * difference shows up as a clipped image with unpainted bars around it. That gap is invisible in
+	 * the game, where a resize is a window event outside rendering, but qtFRED calls
+	 * gr_screen_resize() every single frame from its (freely resizable) viewport widget.
+	 *
+	 * Hooked up as gf_viewport_size_changed so gr_screen_resize() calls it, which is the moment both
+	 * sizes can be sampled together. If the surface really has changed size, the in-progress frame
+	 * is discarded (nothing has been drawn into it yet at that point), the swap chain and every
+	 * extent-sized resource is rebuilt, and a fresh frame is started at the new size.
+	 *
+	 * The comparison is surface-against-swap-chain rather than gr_screen-against-swap-chain, on
+	 * purpose: both of those come from the surface, so they agree exactly and this cannot thrash.
+	 * gr_screen is computed independently by the caller and can be a pixel off from rounding.
+	 *
+	 * @return true if the swap chain was rebuilt
+	 */
+	bool syncToSurfaceExtent();
+
+	/**
+	 * @brief Make a viewport's surface the one subsequent drawing presents to
+	 *
+	 * Backs gr_use_viewport(). Creating the target on first use is deliberate: qtFRED's briefing map
+	 * appears and disappears with its dialog, so there is no point in the session at which the full
+	 * set of viewports is known.
+	 *
+	 * A frame is always already open when this is called -- gr_flip() ends with gr_setup_frame() --
+	 * and it belongs to the outgoing target, which has also already acquired an image there. That
+	 * frame is discarded rather than presented; see discardFrame().
+	 *
+	 * @return false if the viewport cannot be presented to, in which case the current target is left
+	 * alone and the caller keeps drawing where it was
+	 */
+	bool useViewport(os::Viewport* viewport);
+
+	/**
+	 * @brief Drop the target belonging to a viewport that is going away
+	 *
+	 * Must be called while the renderer is still alive and before the viewport's window is
+	 * destroyed. qtFRED's briefing editor is opened with WA_DeleteOnClose, so this happens against a
+	 * live device every time the user closes the dialog.
+	 */
+	void releaseViewport(os::Viewport* viewport);
+
+	/**
+	 * @brief Whether the current target is the main one
+	 *
+	 * The post-processor is sized for and bound to the main target, so the scene-texture path stays
+	 * off anywhere else. Nothing is lost by that today: qtFRED's briefing map renders through
+	 * brief_render_map() and never opens a ScenePostProcessing scope.
+	 */
+	bool isMainTargetCurrent() const { return m_current == m_mainTarget; }
+
+	/**
+	 * @brief The extent the current target actually presents at, in device pixels
+	 *
+	 * This is what the render pass area and the framebuffers are sized to, so it is what gr_screen
+	 * has to agree with. Callers must not compute it themselves from a window's logical size and a
+	 * scale factor -- that rounds differently from the way the surface was sized.
+	 */
+	vk::Extent2D getCurrentTargetExtent() const { return m_current != nullptr ? m_current->extent : vk::Extent2D(); }
+
+	/**
 	 * @brief End frame - ends render pass, submits, and presents
 	 * Called at the END of each frame after all draw calls
 	 */
@@ -145,22 +214,41 @@ class VulkanRenderer {
 	uint32_t getMinUniformBufferOffsetAlignment() const;
 
 	/**
-	 * @brief Get the current frame number (total frames rendered)
+	 * @brief Close out a frame's worth of work that completed without going through flip().
+	 *
+	 * Advances the monotonic frame counter that sync objects are stamped with, and rewinds the
+	 * frame-scoped bump allocator. Deliberately does NOT touch m_currentFrame: that index selects
+	 * the swap-chain sync objects, and the image for this index has already been acquired for the
+	 * flip that will eventually present.
+	 *
+	 * Without this, an off-screen renderer leaves m_frameNumber frozen, and waitForSyncPoint()
+	 * reports every fence taken since as "still recording" -- which is what makes
+	 * UniformBufferManager's segment rotation give up and Error() out.
+	 *
+	 * Only valid once the work in question has actually retired; see gr_end_offscreen_frame().
 	 */
-	uint64_t getCurrentFrameNumber() const { return m_frameNumber; }
+	void endOffscreenFrame();
 
 	/**
-	 * @brief Wait for a specific frame's GPU work to complete
+	 * @brief Stamp the frame currently being recorded, so it can be waited on later
 	 *
-	 * Waits on that frame's fence rather than stalling the entire device.
+	 * Backs gr_sync_fence(). Records *which* fence, not just when: the frame number alone cannot
+	 * find it back, because the fences are per-target while the frame number is global, and because
+	 * endOffscreenFrame() advances the frame number without moving the frame-in-flight cursor.
+	 */
+	FrameSyncPoint captureSyncPoint() const;
+
+	/**
+	 * @brief Wait for the GPU work recorded during the frame @p point was taken in
+	 *
+	 * Waits on that frame's own fence rather than stalling the entire device.
 	 *
 	 * @param timeoutNs Maximum wait in nanoseconds (0 = poll)
-	 * @return true if the frame is known complete. false if the timeout expired,
-	 *         or if the frame has not been submitted yet (a fence taken during
-	 *         the currently-recording frame cannot complete until flip();
-	 *         waiting here would deadlock, so it reports "not complete").
+	 * @return true if the work is known complete. false if the timeout expired, or if the sync
+	 *         point was taken during the frame still being recorded (submission happens on this
+	 *         thread, so waiting here would deadlock -- it reports "not complete" instead).
 	 */
-	bool waitForFrame(uint64_t frameNumber, uint64_t timeoutNs = UINT64_MAX);
+	bool waitForSyncPoint(const FrameSyncPoint& point, uint64_t timeoutNs = UINT64_MAX);
 
 	/**
 	 * @brief Wait for all GPU work to complete
@@ -244,6 +332,24 @@ class VulkanRenderer {
 	 * scene render pass with loadOp=eLoad. No-op if already copied this frame.
 	 */
 	void copySceneDepthForParticles();
+
+	/**
+	 * @brief Park the scene depth so the cockpit can render on a cleared depth buffer
+	 *
+	 * Called by vulkan_post_process_save_zbuffer(). Ends the current scene render
+	 * pass, copies scene depth → backup image, then resumes the pass with
+	 * loadOp=eLoad. The caller clears the depth buffer afterwards. No-op when a
+	 * save is already outstanding, or outside scene rendering.
+	 */
+	void saveSceneDepth();
+
+	/**
+	 * @brief Put the parked scene depth back, discarding what the cockpit wrote
+	 *
+	 * Called by vulkan_post_process_restore_zbuffer(). No-op unless saveSceneDepth()
+	 * parked something.
+	 */
+	void restoreSceneDepth();
 
 	/**
 	 * @brief Check if scene depth copy is available for sampling this frame
@@ -336,39 +442,133 @@ class VulkanRenderer {
 	 */
 	void resumeScenePassAfterCopy();
 
+	/**
+	 * @brief Restore the color attachment layouts a depth-only copy left behind,
+	 * then resume the scene (or G-buffer) render pass
+	 */
+	void resumeScenePassAfterDepthCopy();
+
 	bool initDisplayDevice() const;
 
 	bool initializeInstance();
 
-	bool initializeSurface();
+	/**
+	 * @brief Ask the windowing system for @p target's viewport surface and take ownership of it
+	 */
+	bool createTargetSurface(VulkanPresentTarget& target);
 
 	bool pickPhysicalDevice(PhysicalDeviceValues& deviceValues);
 
 	bool createLogicalDevice(const PhysicalDeviceValues& deviceValues);
 
-	bool createSwapChain(const PhysicalDeviceValues& deviceValues, vk::SwapchainKHR oldSwapchain = nullptr);
+	// Everything a target owns is built by one of these. They take the target explicitly rather than
+	// working on m_current: the setup path builds targets that are not current yet (and, when
+	// creation fails part-way, never become current), so "the current target" is the wrong answer
+	// there -- and an implicit one is impossible to check at the call site.
+	bool createSwapChain(VulkanPresentTarget& target,
+		const PhysicalDeviceValues& deviceValues,
+		vk::SwapchainKHR oldSwapchain = nullptr);
 
 	void createRenderPass();
 
-	void createFrameBuffers();
+	void createFrameBuffers(VulkanPresentTarget& target);
 
 	// HDR composition + output-encode resources
-	void createCompositionResources();
-	void createEncodeRenderPass();
+	void createCompositionResources(VulkanPresentTarget& target);
+
+	/**
+	 * @brief Build the shared output-encode render pass for @p swapChainFormat
+	 *
+	 * Takes the format rather than a target because, unlike its neighbours here, it does not build
+	 * into one: m_encodeRenderPass is shared by every target. That is also the constraint
+	 * createTargetResources() has to check -- a target whose surface negotiates a different format
+	 * cannot use this pass.
+	 */
+	void createEncodeRenderPass(vk::Format swapChainFormat);
 	void encodeToSwapChain();
 
-	void createDepthResources();
-	void destroyDepthResources();
+	void createDepthResources(VulkanPresentTarget& target);
+	void destroyDepthResources(VulkanPresentTarget& target);
+
+	/**
+	 * @brief Give back everything in a target that the memory manager owns
+	 *
+	 * The depth and composition images are the only parts of a target backed by VulkanMemoryManager
+	 * allocations, so they have to be released before it shuts down; everything else is vk::Unique*
+	 * and can wait for the target's own destructor.
+	 */
+	void releaseTargetMemory(VulkanPresentTarget& target);
+
+	/**
+	 * @brief Tear down everything a target derived from its surface, in the order Vulkan requires
+	 *
+	 * A VkSurfaceKHR must outlive every swap chain made from it. Relying on member-declaration order
+	 * to get that right is too subtle to be safe here, because the surface is not destroyed by us at
+	 * all: it belongs to the windowing system, and under Qt it goes when the window does. So the
+	 * swap chain and everything holding its images are released explicitly first.
+	 */
+	static void destroyTargetSwapChain(VulkanPresentTarget& target);
 
 	vk::Format findDepthFormat();
 
 	void createCommandPool(const PhysicalDeviceValues& values);
 
-	void createPresentSyncObjects();
+	void createPresentSyncObjects(VulkanPresentTarget& target);
+
+	/**
+	 * @brief Build a target's per-image render-finished semaphores
+	 *
+	 * Sized to the swap chain's image count and indexed by image index, so it has to be rebuilt
+	 * whenever the swap chain is, alongside the images themselves.
+	 */
+	void createRenderFinishedSemaphores(VulkanPresentTarget& target);
+
+	/**
+	 * @brief Build a target's surface, swap chain and everything sized to it
+	 *
+	 * Leaves @p target untouched by the renderer's notion of "current": it is only safe to present
+	 * to once this has returned true, and useViewport() switches to it then.
+	 *
+	 * @return false if the surface could not be created, or if it negotiated a format the shared
+	 * encode render pass was not built for
+	 */
+	bool createTargetResources(VulkanPresentTarget& target);
 
 	void acquireNextSwapChainImage();
 
-	bool recreateSwapChain();
+	/**
+	 * @brief Wait until every target has finished the work it put in a frame-in-flight slot
+	 *
+	 * The slot indexes per-target sync objects but also the shared command pool and descriptor
+	 * pools, so it cannot be recycled until all targets are done with it.
+	 */
+	void waitForFrameSlot(uint32_t slot);
+
+	/**
+	 * @brief Wait for a frame, naming it in the log if the wait is not a normal one
+	 *
+	 * Every wait on a fence in the present path goes through here. A legitimate wait is one frame
+	 * time; anything beyond a fraction of a second means the queue is wedged, and blocking forever
+	 * on it just produces an editor that stops responding and gets killed before any long timeout
+	 * could say which wait it was.
+	 *
+	 * @param what description of the wait, for the log -- caller-built so the message names the
+	 *             target and slot involved
+	 */
+	static void waitOrReport(VulkanRenderFrame& frame, const char* what);
+
+	/**
+	 * @brief Throw away the in-progress frame without submitting or presenting it
+	 *
+	 * Ends the open render pass and command buffer and frees it -- safe to free immediately, since
+	 * nothing was ever submitted and so no GPU work can reference it. The swap chain image this
+	 * frame acquired is left unconsumed, which leaves its image-available semaphore signaled; the
+	 * caller must therefore recreate the swap chain (which recreates every frame's sync objects)
+	 * before the next acquire.
+	 */
+	void discardFrame();
+
+	bool recreateSwapChain(VulkanPresentTarget& target);
 
 	void createImGuiDescriptorPool();
 	void initImGui();
@@ -380,53 +580,48 @@ class VulkanRenderer {
 	vk::UniqueDebugReportCallbackEXT m_debugReport;            // legacy fallback (no VK_EXT_debug_utils)
 	vk::UniqueDebugUtilsMessengerEXT m_debugMessenger;         // preferred debug callback
 
-	vk::UniqueSurfaceKHR m_vkSurface;
-
 	vk::UniqueDevice m_device;
 
 	vk::Queue m_graphicsQueue;
 	vk::Queue m_presentQueue;
 
-	vk::UniqueSwapchainKHR m_swapChain;
-	vk::Format m_swapChainImageFormat;
-	vk::ColorSpaceKHR m_swapChainColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-	bool m_hdrActive = false;            // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
-	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
-	vk::Extent2D m_swapChainExtent;
-	SCP_vector<vk::Image> m_swapChainImages;
-	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
-	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
-	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
+	// Everything downstream of a surface lives in the target it belongs to. There is exactly one in
+	// the game; qtFRED presents through two (its main viewport and the briefing map).
+	//
+	// m_current means only "where drawing goes right now" -- the frame loop reads it, the setup path
+	// does not. Everything that builds or tears down a target takes it as a parameter, so a target
+	// can be built before it is ever current and abandoned if that fails.
+	//
+	// Keyed by os::Viewport* rather than by index into os::viewports, deliberately: qtFRED's
+	// briefing map hands its viewport straight to gr_use_viewport() and never registers it with
+	// os::addViewport(), so that list does not contain every viewport we present to.
+	SCP_unordered_map<os::Viewport*, std::unique_ptr<VulkanPresentTarget>> m_targets;
+	VulkanPresentTarget* m_mainTarget = nullptr;
+	VulkanPresentTarget* m_current = nullptr;
 
-	// HDR composition pipeline: the whole frame is rendered into these fp16
-	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
-	// into the swap chain image. encodeToSwapChain() converts composition ->
-	// swap chain: a direct blit (or encodeOutputPassthrough() as a fallback)
-	// for SDR, or encodeOutput() (m_encodeRenderPass + m_encodeFramebuffers)
-	// for the HDR10 PQ/BT.2020 transfer.
-	SCP_vector<vk::UniqueImage> m_compositionImages;
-	SCP_vector<vk::UniqueImageView> m_compositionImageViews;
-	SCP_vector<VulkanAllocation> m_compositionAllocations;
+	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
+
+	// Shared by every target, and deliberately so: the render passes bake in the composition (fp16)
+	// and depth formats, which are the same everywhere, so keeping one set keeps every cached
+	// pipeline valid across a target switch. m_encodeRenderPass is the exception -- it bakes in the
+	// *swap chain* format, so a target whose surface negotiates a different one cannot use it; see
+	// createTargetResources().
 	vk::UniqueSampler m_compositionSampler;
-	SCP_vector<vk::UniqueFramebuffer> m_encodeFramebuffers;
 	vk::UniqueRenderPass m_encodeRenderPass;
 
-	uint32_t m_currentSwapChainImage = 0;
-	uint32_t m_previousSwapChainImage = UINT32_MAX;  // For saveScreen() readback of previous frame
-
-	// Depth buffer
-	vk::UniqueImage m_depthImage;
-	vk::UniqueImageView m_depthImageView;
-	VulkanAllocation m_depthImageMemory;
 	vk::Format m_depthFormat = vk::Format::eUndefined;
 
 	vk::UniqueRenderPass m_renderPass;        // Swap chain pass with loadOp=eClear
 	vk::UniqueRenderPass m_renderPassLoad;    // Swap chain pass with loadOp=eLoad (resumed after post-processing)
 	vk::UniqueDescriptorPool m_imguiDescriptorPool;
+	bool m_imguiInitialized = false; // false in the editors, which have no ImGui context at all
 
+	// The frame-in-flight cursor stays global rather than moving into the target: the buffer and
+	// descriptor managers keep one ring keyed off it (setCurrentFrame() below), so a per-target
+	// cursor would hand them conflicting indices and corrupt descriptors a few frames later. Each
+	// target instead keeps its own sync objects and indexes them with this shared cursor.
 	uint32_t m_currentFrame = 0;
 	uint64_t m_frameNumber = 0;  // Total frames rendered (for sync tracking)
-	std::array<std::unique_ptr<VulkanRenderFrame>, MAX_FRAMES_IN_FLIGHT> m_frames;
 
 	vk::UniqueCommandPool m_graphicsCommandPool;
 
@@ -434,9 +629,6 @@ class VulkanRenderer {
 	vk::CommandBuffer m_currentCommandBuffer;
 	SCP_vector<vk::CommandBuffer> m_currentCommandBuffers;  // For cleanup
 	bool m_frameInProgress = false;
-
-	// Swap chain recreation
-	bool m_swapChainNeedsRecreation = false;
 
 	// Physical device info (needed for memory manager)
 	vk::PhysicalDevice m_physicalDevice;
@@ -473,6 +665,7 @@ class VulkanRenderer {
 	std::unique_ptr<VulkanPostProcessor> m_postProcessor;
 	bool m_sceneRendering = false;
 	bool m_sceneDepthCopiedThisFrame = false;
+	bool m_sceneDepthSaved = false;    // True between saveSceneDepth() and restoreSceneDepth()
 	bool m_useGbufRenderPass = false;  // True when scene uses G-buffer (deferred lighting)
 
 	bool m_supportsShaderViewportLayerOutput = false;  // VK_EXT_shader_viewport_index_layer

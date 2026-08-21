@@ -18,6 +18,8 @@
 #include "model/model.h"
 #include "starfield/starfield_flags.h"
 
+#include <optional>
+
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
@@ -29,11 +31,35 @@
 
 
 // starfield list
+// A sun's apparent diameter, in degrees. Every layer that can supply one -- the mission file's
+// +AngularSize:, stars.tbl's $SunAngularSize:, and the LabUi session override -- uses this same
+// encoding, so "the first one that specifies a size wins" is all the precedence logic there is
+// (see sun_angular_radius_tangent() in starfield.cpp). Negative means that layer doesn't specify
+// a size; 0 asks for hard shadows outright. Only affects raytraced shadows.
+constexpr float SUN_ANGULAR_SIZE_UNSPECIFIED = -1.0f;
+
+// Sol's apparent diameter from Earth -- the one figure anyone has an intuition for, so it's what
+// the editors and the lab start from when switching a sun's size on.
+constexpr float SUN_ANGULAR_SIZE_SOL = 0.53f;
+
+// Well past anything plausible; the cap only exists to keep the value finite and non-negative.
+constexpr float SUN_ANGULAR_SIZE_MAX = 90.0f;
+
 typedef struct starfield_list_entry {
 	char filename[MAX_FILENAME_LEN];		// bitmap filename
 	float scale_x, scale_y;					// x and y scale
 	int div_x, div_y;						// # of x and y divisions
 	angles ang;								// angles from FRED
+	float angular_size;						// only for suns; see SUN_ANGULAR_SIZE_UNSPECIFIED
+
+	starfield_list_entry() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1),
+		angular_size(SUN_ANGULAR_SIZE_UNSPECIFIED)
+	{
+		filename[0] = '\0';
+		ang.p = 0.0f;
+		ang.b = 0.0f;
+		ang.h = 0.0f;
+	}
 } starfield_list_entry;
 
 // backgrounds
@@ -63,6 +89,11 @@ extern float Nmodel_alpha;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
+
+// Session-only override (LabUi) of every sun's $SunAngularSize, in degrees of
+// apparent diameter -- sizes the penumbra of raytraced sun shadows. Negative
+// (the default) means no override: each sun uses its stars.tbl value.
+extern float Sun_angular_size_override;
 
 struct motion_debris_bitmaps {
 	int bm;
@@ -162,8 +193,40 @@ int stars_find_bitmap(const char *name);
 // lookup a sun by bitmap filename, return index or -1 on fail
 int stars_find_sun(const char *name);
 
+// Parse a stars.tbl (or a *-str.tbm) into the bitmap/sun tables. Normally reached
+// only through stars_init(), which also loads the bitmaps; declared here because
+// parsing alone is meaningful on its own -- a sun's tabled properties are readable
+// straight afterwards, before any bitmap exists.
+void parse_startbl(const char *filename);
+
 // get the world coords of the sun pos on the unit sphere.
 void stars_get_sun_pos(int sun_n, vec3d *pos);
+
+// A sun's tabled light, as $SunRGBI: declares it in stars.tbl.
+struct sun_rgbi {
+	vec3d color = vmd_zero_vector; // 0..1 per channel
+	float intensity = 0.0f;
+};
+
+// The sun's tabled light, or nothing if the sun instance itself is invalid.
+std::optional<sun_rgbi> stars_get_sun_rgbi(int sun_n);
+
+// True when this sun's stars.tbl entry asks to flare through the physically-based
+// camera lens (graphics/lens_flare.h), when one is mounted.
+//
+// The content decides *whether* a sun flares; the mounted lens only decides *how*
+// it is drawn, so mounting a lens never invents flares on suns tabled without one.
+// A sun says so either with "+Camera Lens Flare:" or, for tables written before
+// that existed, by carrying a legacy sprite "$Flare:" block -- the explicit option
+// wins where both are present, and is the only way to have one without the other.
+bool stars_sun_has_camera_lens_flare(int sun_n);
+
+// The same question keyed on a sun *bitmap* index (what stars_find_sun() returns)
+// rather than on a placed sun instance. This is where the rule above actually
+// lives; the instance form just looks up the bitmap. Separate because a sun's
+// tabled answer is knowable straight after parsing, before any instance -- and so
+// before any bitmap has to load, which is what lets it be tested.
+bool stars_sun_bitmap_has_camera_lens_flare(int bitmap_idx);
 
 // for SEXP stuff so that we can mark a bitmap as being used regardless of whether 
 // or not there is an instance for it yet

@@ -28,6 +28,8 @@ add_file_folder("Source/Mission"
     src/mission/EditorViewport.h
     src/mission/FredRenderer.cpp
     src/mission/FredRenderer.h
+    src/mission/GraphicsSettings.cpp
+    src/mission/GraphicsSettings.h
     src/mission/IDialogProvider.h
     src/mission/management.cpp
     src/mission/management.h
@@ -167,6 +169,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/AsteroidEditorDialog.h
 	src/ui/dialogs/BackgroundEditorDialog.h
 	src/ui/dialogs/BackgroundEditorDialog.cpp
+	src/ui/dialogs/LensApertureDialog.h
+	src/ui/dialogs/LensApertureDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.cpp
     src/ui/dialogs/BriefingEditorDialog.h
 	src/ui/dialogs/CampaignEditorDialog.h
@@ -347,6 +351,7 @@ add_file_folder("UI"
 	ui/AboutDialog.ui
 	ui/AsteroidEditorDialog.ui
 	ui/BackgroundEditor.ui
+	ui/LensApertureDialog.ui
 	ui/BriefingEditorDialog.ui
 	ui/CampaignEditorDialog.ui
 	ui/CheckBoxListDialog.ui

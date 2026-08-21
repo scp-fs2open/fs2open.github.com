@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstddef>
+
 using SPIRV_FLOAT_MAT_4x4 = matrix4;
 using SPIRV_FLOAT_VEC4 = vec4;
 
@@ -146,8 +148,20 @@ struct shadow_cascade_static_data {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
+	// The scalars above come to exactly 32 bytes, so std140 puts the following mat4
+	// straight after them with no padding. Adding or removing a scalar here changes
+	// that -- keep the C++ layout in lockstep with the shadowCascadeParams block
+	// declarations in deferred-f/main-f/main-v/shadow_map-g/shadow_map-v.sdr.
 	matrix4 shadow_mv_matrix;
 };
+static_assert(offsetof(shadow_cascade_static_data, shadow_mv_matrix) == 32,
+	"shadow_cascade_static_data's scalar fields must total exactly 32 bytes to match std140's "
+	"mat4 alignment -- update the shadowCascadeParams block in every .sdr file that declares it "
+	"if this changes.");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
@@ -288,6 +302,71 @@ struct fxaa_data {
 
 	float pad[2];
 };
+
+// Keep in sync with the literal array size in lensflare-v.sdr / lensflare-f.sdr!
+constexpr int MAX_LENS_FLARE_INSTANCES = 64;
+
+// Which of the three artifacts an instance slot draws, tagged in center.w.
+// Mirrored by the LENS_QUAD_* defines in lensflare-v.sdr / lensflare-f.sdr; the
+// emit_* helpers in graphics/lens_flare.cpp are the only writers.
+constexpr float LENS_QUAD_GHOST = 0.0f;
+constexpr float LENS_QUAD_STARBURST = 1.0f;
+constexpr float LENS_QUAD_STREAK = 2.0f;
+
+// One quad of the physically-based lens flare pass. The three kinds share this
+// one slot layout but read it differently, so the field meanings are per-kind:
+//
+//                center            halfext          apscale/apoff     color
+//   GHOST      xyz per-channel   xyz per-channel   xyz per-channel   rgb per-channel
+//              centre along        half-extent       aperture-plane    intensity
+//              the flare axis                        parametrization
+//   STARBURST  x = the sun's     x = half-extent   unused            rgb intensity
+//              image
+//   STREAK     x = the sun's     x = half-length   unused            rgb tint
+//              image             y = half-thickness
+//
+// Per-channel means red/green/blue in x/y/z. All positions and extents are in
+// sensor-plane millimeters, along and around the flare axis -- except the
+// streak, which is screen-horizontal and so carries a length and a thickness
+// instead of three chromatic values.
+struct lens_flare_instance_data {
+	vec4 center;   // w = LENS_QUAD_*, the kind tag; see the table above for xyz
+	vec4 halfext;
+	vec4 apscale;
+	vec4 apoff;
+	vec4 color;
+};
+
+struct lens_flare_data {
+	vec2d axis;      // unit flare axis in sensor space (sun -> screen center line)
+	vec2d ndc_scale; // sensor units -> NDC (x, y incl. aspect)
+
+	vec4 tint;       // rgb = sun color * visibility * lens intensity
+
+	// Neither shader reads this -- the instance count comes from the draw call's
+	// instance parameter. Kept because it occupies a std140 slot the rest of the
+	// block is laid out around, and because it makes a captured frame readable.
+	int n_instances;
+	float squeeze; // anamorphic horizontal stretch of every footprint, 1.0 = spherical
+	float pad[2];
+
+	// The fragment shader declares this array too, and reads none of it: the
+	// per-instance values reach it as flat varyings. It is declared there purely so
+	// both stages agree on the block layout byte for byte. Splitting the per-draw
+	// constants above into their own block would let the fragment stage stop
+	// carrying ~5 KB it never touches, but it needs a second descriptor binding in
+	// the Vulkan set template, so it is not the free change it looks like.
+	lens_flare_instance_data instances[MAX_LENS_FLARE_INSTANCES];
+};
+
+// This block is mirrored by hand in lensflare-v.sdr / lensflare-f.sdr, and the
+// two must agree byte for byte. Nothing else can check that -- the GLSL side is
+// only compiled at runtime -- so at least make a field added here (or a scalar
+// silently promoted past its std140 slot) stop the build instead of quietly
+// misaligning `instances` and corrupting every quad the pass draws.
+static_assert(sizeof(lens_flare_data) == 48 + 80 * MAX_LENS_FLARE_INSTANCES,
+	"lens_flare_data no longer matches its std140 layout -- update the genericData block in "
+	"lensflare-v.sdr and lensflare-f.sdr to match, then fix this size");
 
 struct fog_data {
 	vec3d fog_color;

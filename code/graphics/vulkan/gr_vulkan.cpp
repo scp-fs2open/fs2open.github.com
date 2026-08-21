@@ -5,6 +5,7 @@
 #include "VulkanTexture.h"
 #include "VulkanShader.h"
 #include "VulkanDescriptorManager.h"
+#include "VulkanDeletionQueue.h"
 #include "VulkanPipeline.h"
 #include "VulkanQuery.h"
 #include "VulkanState.h"
@@ -41,7 +42,7 @@ std::unique_ptr<VulkanRenderer> renderer_instance;
 
 // Sync object for tracking frame completion
 struct VulkanSyncObject {
-	uint64_t frameNumber;
+	FrameSyncPoint point;
 };
 
 // ========== Renderer-level functions ==========
@@ -50,6 +51,22 @@ void vulkan_setup_frame()
 {
 	auto* renderer = getRendererInstance();
 	renderer->setupFrame();
+}
+
+void vulkan_viewport_size_changed()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->syncToSurfaceExtent();
+	}
+}
+
+void vulkan_release_viewport(os::Viewport* view)
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr && view != nullptr) {
+		renderer->releaseViewport(view);
+	}
 }
 
 void vulkan_flip()
@@ -68,32 +85,6 @@ void vulkan_model_unloaded(int pm_id)
 {
 	if (auto* rt = getRaytracingManager()) {
 		rt->onModelUnloaded(pm_id);
-	}
-}
-
-void vulkan_build_shadow_tlas()
-{
-	if (auto* rt = getRaytracingManager()) {
-		// vkCmdBuildAccelerationStructuresKHR (and the memory barrier that follows
-		// it in buildTlas()) must be recorded outside any render pass instance.
-		// This is called once per frame, before the shadow map render pass begins,
-		// while the previous render pass (G-buffer/scene) is typically still
-		// active -- end it here. vulkan_shadow_map_start()'s first_pass branch
-		// skips its own endRenderPass() call when it finds none active.
-		auto* stateTracker = getStateTracker();
-		if (stateTracker->getCurrentRenderPass()) {
-			stateTracker->getCommandBuffer().endRenderPass();
-			stateTracker->setRenderPass(vk::RenderPass());
-		}
-
-		rt->buildTlas();
-		// Refresh the Global set's live TLAS fallback so every writeSet(Global)
-		// this frame picks up the freshly built TLAS automatically -- see
-		// DescriptorFallbacks::shadowTlas.
-		getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
-		// The memoized per-frame Global set (VulkanDrawManager) must rebuild so the
-		// new TLAS reaches subsequent draws' Set 0 instead of a cached stale one.
-		getDrawManager()->invalidateGlobalSet();
 	}
 }
 
@@ -158,6 +149,10 @@ bool vulkan_is_capable(gr_capability capability)
 		return false;
 	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
 		return getRendererInstance()->supportsRaytracedShadows();
+	case gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING:
+		// Vulkan samplers are independent of images, so a second (non-compare) sampler on
+		// the same shadow map view is always available -- no capability gap here.
+		return true;
 	}
 	return false;
 }
@@ -179,6 +174,38 @@ bool vulkan_get_property(gr_property prop, void* dest)
 	default:
 		return false;
 	}
+}
+
+void vulkan_get_debug_stats(gr_debug_stats& stats)
+{
+	const auto& frameStats = getDrawManager()->getFrameStats();
+
+	stats.draw_stats_valid = true;
+	stats.draw_calls = frameStats.drawCalls;
+	stats.draw_indexed_calls = frameStats.drawIndexedCalls;
+	stats.total_vertices = frameStats.totalVertices;
+	stats.total_indices = frameStats.totalIndices;
+	stats.apply_material_calls = frameStats.applyMaterialCalls;
+	stats.apply_material_failures = frameStats.applyMaterialFailures;
+	stats.no_pipeline_skips = frameStats.noPipelineSkips;
+	stats.on_demand_texture_uploads = frameStats.onDemandTextureUploads;
+
+	stats.descriptor_sets_allocated = static_cast<int>(getDescriptorManager()->getSetsAllocatedThisFrame());
+	stats.descriptor_writes = static_cast<int>(getDescriptorManager()->getWritesThisFrame());
+	stats.pipeline_count = getPipelineManager()->getPipelineCount();
+}
+
+void vulkan_get_memory_stats(gr_memory_stats& stats)
+{
+	auto* memoryManager = getMemoryManager();
+	if (memoryManager == nullptr) {
+		return;
+	}
+
+	stats.gpu_purpose_valid = true;
+	stats.gpu_texture_bytes = memoryManager->getTextureBytes();
+	stats.gpu_geometry_bytes = memoryManager->getGeometryBytes();
+	stats.gpu_render_target_bytes = memoryManager->getRenderTargetBytes();
 }
 
 void vulkan_push_debug_group(const char* name)
@@ -218,12 +245,16 @@ void vulkan_imgui_render_draw_data()
 	if (renderer) {
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), renderer->getVkCurrentCommandBuffer());
 
-		// ImGui recorded its own pipeline/descriptor/viewport/scissor binds
-		// directly on the command buffer, mid-pass. Anything the engine draws
-		// before the next pass boundary (e.g. gr_flip's debug overlay or cached
-		// UI model instances) would otherwise run with ImGui's pipeline still
-		// bound because the tracker believes its own pipeline is current.
+		// ImGui just bound its own pipeline/descriptor set directly on the command buffer,
+		// inside the same (already-active) render pass FSO's own draws share -- it can't begin
+		// its own pass here, unlike the other raw recorders whose staleness setRenderPass()
+		// alone recovers from. Without this, the next tracked draw (e.g. a HUD gauge rendered
+		// after the profiler overlay) can skip rebinding its own pipeline/descriptor set because
+		// the tracker's/draw-manager's cached handles still match what THEY last bound, even
+		// though ImGui has since changed what's actually bound on the command buffer -- see
+		// VulkanStateTracker::invalidateExternalBindings().
 		getStateTracker()->invalidateExternalBindings();
+		getDrawManager()->invalidateDrawStateCaches();
 	}
 }
 
@@ -231,7 +262,7 @@ gr_sync vulkan_sync_fence()
 {
 	auto* renderer = getRendererInstance();
 	auto* sync = new VulkanSyncObject();
-	sync->frameNumber = renderer->getCurrentFrameNumber();
+	sync->point = renderer->captureSyncPoint();
 	return static_cast<gr_sync>(sync);
 }
 
@@ -248,7 +279,7 @@ bool vulkan_sync_wait(gr_sync sync, uint64_t timeoutns)
 	// timeout or when the fence was taken during the still-recording frame --
 	// callers (e.g. UniformBufferManager's segment fences) depend on this to
 	// know whether the GPU is done with a resource.
-	return renderer->waitForFrame(syncObj->frameNumber, timeoutns);
+	return renderer->waitForSyncPoint(syncObj->point, timeoutns);
 }
 
 void vulkan_sync_delete(gr_sync sync)
@@ -345,6 +376,71 @@ void vulkan_print_screen(const char* filename)
 	vm_free(pixels);
 }
 
+void vulkan_end_offscreen_frame()
+{
+	// Everything frame-scoped that setupFrame()/flip() would recycle. An off-screen renderer never
+	// reaches either, so without this the descriptor pool chain grows a chunk every few frames, the
+	// deletion queue's retirement clock never ticks, and the bump allocator climbs until it doubles
+	// -- and a mid-frame doubling used to hand draws stale uniforms (the qtFRED briefing icon
+	// flicker). Minutes with the briefing editor open reached multiple GB.
+	//
+	// Safe only because gr_end_offscreen_frame()'s contract is that the frame's GPU work has
+	// already completed: the readback that produced the image host-waits on a fence, and queue
+	// submissions execute in order, so every submission up to that point has retired.
+	if (auto* renderer = getRendererInstance()) {
+		// Advances the sync frame counter and rewinds the bump allocator. The counter matters as
+		// much as the memory: sync objects are stamped with it, and UniformBufferManager's segment
+		// fences can only ever resolve if it moves.
+		renderer->endOffscreenFrame();
+	}
+
+	if (auto* descriptorManager = getDescriptorManager()) {
+		descriptorManager->beginFrame();
+	}
+
+	if (auto* deletionQueue = getDeletionQueue()) {
+		deletionQueue->processDestructions();
+	}
+}
+
+bool vulkan_read_render_target(ubyte* out_rgba, int width, int height)
+{
+	auto* texManager = getTextureManager();
+	const int rtHandle = texManager ? texManager->getCurrentRenderTarget() : -1;
+	if (rtHandle < 0) {
+		return false;
+	}
+
+	auto* ts = texManager->getTextureSlot(rtHandle);
+	if (ts == nullptr) {
+		return false;
+	}
+
+	ubyte* pixels = nullptr;
+	uint32_t w = 0;
+	uint32_t h = 0;
+	if (!renderer_instance->readbackRenderTarget(ts, &pixels, &w, &h)) {
+		return false;
+	}
+
+	// The caller sized its buffer from the bitmap it bound, so a disagreement means it is reading
+	// something other than what it thinks. Refuse rather than overrun.
+	const bool sizeMatches = w == static_cast<uint32_t>(width) && h == static_cast<uint32_t>(height);
+	if (!sizeMatches) {
+		nprintf(("vulkan", "vulkan_read_render_target: caller expected %dx%d but the bound target is "
+		                   "%ux%u\n", width, height, w, h));
+	} else {
+		// R8G8B8A8_UNORM, already RGBA order with real alpha, and row 0 is the top row -- which is
+		// the top-down order gr_read_render_target() promises. Deliberately not the flip
+		// vulkan_blob_screen() applies below: that one exists only to make its PNG match OpenGL's.
+		memcpy(out_rgba, pixels, static_cast<size_t>(w) * h * 4);
+	}
+
+	vm_free(pixels);
+
+	return sizeMatches;
+}
+
 SCP_string vulkan_blob_screen()
 {
 	ubyte* pixels = nullptr;
@@ -405,7 +501,26 @@ std::unique_ptr<os::Viewport> stub_create_viewport(const os::ViewPortProperties&
 {
 	return {};
 }
-void stub_use_viewport(os::Viewport* /*view*/) {}
+void vulkan_use_viewport(os::Viewport* view)
+{
+	auto* renderer = getRendererInstance();
+	if (renderer == nullptr || view == nullptr) {
+		return;
+	}
+
+	if (!renderer->useViewport(view)) {
+		return;
+	}
+
+	// Match gr_opengl_use_viewport(): the engine's idea of the screen follows whichever surface is
+	// being drawn to now. The swap chain extent is used rather than the viewport's own getSize(),
+	// because that reports logical pixels and the surface was sized in device pixels -- scaling one
+	// into the other by hand is what leaves gr_screen disagreeing with what is being presented.
+	const auto extent = renderer->getCurrentTargetExtent();
+	if (extent.width > 0 && extent.height > 0) {
+		gr_screen_resize(static_cast<int>(extent.width), static_cast<int>(extent.height));
+	}
+}
 SCP_vector<const char*> stub_openxr_get_extensions() { return {}; }
 bool stub_openxr_test_capabilities() { return false; }
 bool stub_openxr_create_session() { return false; }
@@ -421,6 +536,7 @@ void init_function_pointers()
 {
 	// function pointers...
 	gr_screen.gf_setup_frame = vulkan_setup_frame;
+	gr_screen.gf_viewport_size_changed = vulkan_viewport_size_changed;
 	gr_screen.gf_set_clip = vulkan_set_clip;
 	gr_screen.gf_reset_clip = vulkan_reset_clip;
 
@@ -428,6 +544,8 @@ void init_function_pointers()
 
 	gr_screen.gf_print_screen = vulkan_print_screen;
 	gr_screen.gf_blob_screen = vulkan_blob_screen;
+	gr_screen.gf_read_render_target = vulkan_read_render_target;
+	gr_screen.gf_end_offscreen_frame = vulkan_end_offscreen_frame;
 
 	gr_screen.gf_zbuffer_get = vulkan_zbuffer_get;
 	gr_screen.gf_zbuffer_set = vulkan_zbuffer_set;
@@ -534,6 +652,8 @@ void init_function_pointers()
 
 	gr_screen.gf_is_capable = vulkan_is_capable;
 	gr_screen.gf_get_property = vulkan_get_property;
+	gr_screen.gf_get_debug_stats = vulkan_get_debug_stats;
+	gr_screen.gf_get_memory_stats = vulkan_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = vulkan_push_debug_group;
 	gr_screen.gf_pop_debug_group = vulkan_pop_debug_group;
@@ -545,7 +665,8 @@ void init_function_pointers()
 	gr_screen.gf_delete_query_object = vulkan_delete_query_object;
 
 	gr_screen.gf_create_viewport = stub_create_viewport;
-	gr_screen.gf_use_viewport = stub_use_viewport;
+	gr_screen.gf_use_viewport = vulkan_use_viewport;
+	gr_screen.gf_release_viewport = vulkan_release_viewport;
 
 	gr_screen.gf_bind_uniform_buffer = vulkan_bind_uniform_buffer;
 
@@ -564,6 +685,35 @@ void init_function_pointers()
 }
 
 } // anonymous namespace
+
+// Outside the anonymous namespace: declared in gr_vulkan.h so the RTAO fallback
+// trigger in vulkan_deferred_lighting_finish() (VulkanDeferred.cpp) can call it
+// when shadow rendering didn't build this frame's TLAS.
+void vulkan_build_shadow_tlas()
+{
+	if (auto* rt = getRaytracingManager()) {
+		// vkCmdBuildAccelerationStructuresKHR (and the memory barrier that follows
+		// it in buildTlas()) must be recorded outside any render pass instance.
+		// This is called once per frame, before the shadow map render pass begins,
+		// while the previous render pass (G-buffer/scene) is typically still
+		// active -- end it here. vulkan_shadow_map_start()'s first_pass branch
+		// skips its own endRenderPass() call when it finds none active.
+		auto* stateTracker = getStateTracker();
+		if (stateTracker->getCurrentRenderPass()) {
+			stateTracker->getCommandBuffer().endRenderPass();
+			stateTracker->setRenderPass(vk::RenderPass());
+		}
+
+		rt->buildTlas();
+		// Refresh the Global set's live TLAS fallback so every writeSet(Global)
+		// this frame picks up the freshly built TLAS automatically -- see
+		// DescriptorFallbacks::shadowTlas.
+		getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
+		// The memoized per-frame Global set (VulkanDrawManager) must rebuild so the
+		// new TLAS reaches subsequent draws' Set 0 instead of a cached stale one.
+		getDrawManager()->invalidateGlobalSet();
+	}
+}
 
 void initialize_function_pointers() {
 	init_function_pointers();

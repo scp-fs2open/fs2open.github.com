@@ -19,6 +19,7 @@
 #include "listitemchooser.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
 #include "mission/missionparse.h"
@@ -63,6 +64,8 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	s_bank = 0.f;
 	s_heading = 0.f;
 	s_scale = 1.0f;	
+	s_angular_size_override = FALSE;
+	s_angular_size = SUN_ANGULAR_SIZE_SOL;
 	s_index = -1;
 	b_pitch = 0.f;
 	b_bank = 0.f;
@@ -82,6 +85,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
 	m_light_profile_index = 0;
+	m_camera_lens_index = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -116,6 +120,9 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, s_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_SCALE, s_scale);
 	DDV_MinMaxFloat(pDX, s_scale, 0.1f, 50.0f);
+	DDX_Check(pDX, IDC_SUN1_ANGULAR_SIZE_OVERRIDE, s_angular_size_override);
+	DDX_Text(pDX, IDC_SUN1_ANGULAR_SIZE, s_angular_size);
+	DDV_MinMaxFloat(pDX, s_angular_size, 0.0f, SUN_ANGULAR_SIZE_MAX);
 	DDX_Text(pDX, IDC_SBITMAP, b_name);
 	DDX_Text(pDX, IDC_SBITMAP_P, b_pitch);
 	DDV_MinMaxFloat(pDX, b_pitch, 0.f, DEGREE_UB);
@@ -150,6 +157,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NEB2_FOG_SKYBOX_CLIP, m_neb_fog_skybox_clip);
 	DDX_Text(pDX, IDC_NEB2_FOG_CLIP, m_neb_fog_clip);
 	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
+	DDX_CBIndex(pDX, IDC_CAMERA_LENS, m_camera_lens_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
 	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
@@ -169,6 +177,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_CBN_SELCHANGE(IDC_NEB2_TEXTURE, OnSelchangeNeb2Texture)
 	ON_WM_HSCROLL()
 	ON_LBN_SELCHANGE(IDC_SUN1_LIST, OnSunChange)
+	ON_BN_CLICKED(IDC_SUN1_ANGULAR_SIZE_OVERRIDE, OnSunAngularSizeOverride)
 	ON_BN_CLICKED(IDC_ADD_SUN, OnAddSun)
 	ON_BN_CLICKED(IDC_DEL_SUN, OnDelSun)
 	ON_CBN_SELCHANGE(IDC_SUN1, OnSunDropdownChange)
@@ -193,6 +202,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SUN1_H, OnKillfocusSun1H)
 	ON_EN_KILLFOCUS(IDC_SUN1_B, OnKillfocusSun1B)
 	ON_EN_KILLFOCUS(IDC_SUN1_SCALE, OnKillfocusSun1Scale)
+	ON_EN_KILLFOCUS(IDC_SUN1_ANGULAR_SIZE, OnKillfocusSun1AngularSize)
 	ON_BN_CLICKED(IDC_ADD_BACKGROUND, OnAddBackground)
 	ON_BN_CLICKED(IDC_REMOVE_BACKGROUND, OnRemoveBackground)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
@@ -425,6 +435,27 @@ void bg_bitmap_dlg::create()
 	}
 	box->SetCurSel(m_light_profile_index);
 
+	// The camera lens all sun flares are imaged through. "Default" and "None" are
+	// genuinely different answers -- the first leaves the mission silent so it
+	// follows lens_flares.tbl's $Default Lens:, the second says no flares even if
+	// one is declared -- so both get an entry ahead of the lenses themselves.
+	box = (CComboBox *) GetDlgItem(IDC_CAMERA_LENS);
+	box->AddString("Default");
+	box->AddString("None");
+
+	// An unset (or explicitly <default>) mission lands on "Default"
+	m_camera_lens_index = CAMERA_LENS_IDX_DEFAULT;
+	if (!stricmp(The_mission.camera_lens_name.c_str(), LENS_NAME_NONE))
+		m_camera_lens_index = CAMERA_LENS_IDX_NONE;
+
+	for (int idx = 0; idx < graphics::lens_flare_num_systems(); idx++) {
+		const SCP_string &lens_name = graphics::lens_flare_get_system(idx)->name;
+		box->AddString(lens_name.c_str());
+		if (The_mission.camera_lens_name == lens_name)
+			m_camera_lens_index = idx + CAMERA_LENS_IDX_FIRST_LENS;
+	}
+	box->SetCurSel(m_camera_lens_index);
+
 	background_flags_init();
 
 	UpdateData(FALSE);
@@ -567,6 +598,18 @@ void bg_bitmap_dlg::OnClose()
 		Neb2_fog_clip_distance = Default_max_draw_distance;
 
 	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
+
+	// Mirrors the combo built in create(): empty for "Default" so the mission stays
+	// silent, the <none> token for "None" so the choice survives being saved
+	if (m_camera_lens_index == CAMERA_LENS_IDX_NONE) {
+		The_mission.camera_lens_name = LENS_NAME_NONE;
+	} else if (m_camera_lens_index >= CAMERA_LENS_IDX_FIRST_LENS) {
+		The_mission.camera_lens_name =
+			graphics::lens_flare_get_system(m_camera_lens_index - CAMERA_LENS_IDX_FIRST_LENS)->name;
+	} else {
+		The_mission.camera_lens_name.clear();
+	}
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
 	// close sun data
 	sun_data_close();
 
@@ -796,6 +839,10 @@ void bg_bitmap_dlg::sun_data_init()
 		clb->SetCurSel(0);
 		OnSunChange();
 	}
+	else
+	{
+		update_sun_angular_size_enabled();
+	}
 }
 
 void bg_bitmap_dlg::sun_data_close()
@@ -824,6 +871,7 @@ void bg_bitmap_dlg::sun_data_save_current()
 		sle->scale_y = 1.0f;
 		sle->div_x = 1;
 		sle->div_y = 1;
+		sle->angular_size = s_angular_size_override ? s_angular_size : SUN_ANGULAR_SIZE_UNSPECIFIED;
 	}
 }
 
@@ -848,6 +896,11 @@ void bg_bitmap_dlg::OnSunChange()
 		s_heading = fl_degrees_100ths(sle->ang.h);
 		s_scale = sle->scale_x;
 
+		// an unset angular size leaves the edit box showing Sol's, so that ticking the
+		// checkbox starts somewhere sensible rather than at whatever was last selected
+		s_angular_size_override = (sle->angular_size >= 0.0f) ? TRUE : FALSE;
+		s_angular_size = (sle->angular_size >= 0.0f) ? sle->angular_size : SUN_ANGULAR_SIZE_SOL;
+
 		// make sure angles are in the 0-359 degree range;
 		// an angle of 6.28318310, which is less than 6.28318548,
 		// is converted to 359.999847, which (if converted to int) is rounded to 360
@@ -863,6 +916,8 @@ void bg_bitmap_dlg::OnSunChange()
 		if(drop_index != CB_ERR)
 			((CComboBox*) GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
 	}
+
+	update_sun_angular_size_enabled();
 
 	// refresh the background
 	stars_load_background(get_active_background());
@@ -1342,6 +1397,32 @@ void bg_bitmap_dlg::OnKillfocusSun1Scale()
 	if (s_index < 0) return;
 	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f, 3);
 	OnSunChange();
+}
+
+void bg_bitmap_dlg::OnKillfocusSun1AngularSize()
+{
+	if (s_index < 0) return;
+	get_data_float(IDC_SUN1_ANGULAR_SIZE, &s_angular_size, 0.0f, SUN_ANGULAR_SIZE_MAX, 3);
+	OnSunChange();
+}
+
+void bg_bitmap_dlg::OnSunAngularSizeOverride()
+{
+	UpdateData(TRUE);
+	update_sun_angular_size_enabled();
+	sun_data_save_current();
+}
+
+// the size only means anything when the mission is actually setting one
+void bg_bitmap_dlg::update_sun_angular_size_enabled()
+{
+	CWnd *size_edit = GetDlgItem(IDC_SUN1_ANGULAR_SIZE);
+	if (size_edit != nullptr)
+		size_edit->EnableWindow((s_index >= 0) && s_angular_size_override);
+
+	CWnd *size_check = GetDlgItem(IDC_SUN1_ANGULAR_SIZE_OVERRIDE);
+	if (size_check != nullptr)
+		size_check->EnableWindow(s_index >= 0);
 }
 
 void bg_bitmap_dlg::OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult) 

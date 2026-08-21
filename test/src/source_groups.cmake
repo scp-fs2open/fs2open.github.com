@@ -25,6 +25,7 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_lens_flare.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
@@ -52,6 +53,7 @@ add_file_folder("model"
 add_file_folder("Parse"
     parse/test_parselo.cpp
     parse/test_replace.cpp
+    parse/test_sexp_lens.cpp
 )
 
 add_file_folder("Pilotfile"
@@ -87,10 +89,18 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Starfield"
+    starfield/test_sun_disc.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
+)
+
+add_file_folder("Tracing"
+    tracing/test_frame_profiler.cpp
 )
 
 add_file_folder("Utils"
@@ -98,5 +108,6 @@ add_file_folder("Utils"
 )
 
 add_file_folder("Weapon"
+    weapon/test_beam.cpp
     weapon/weapons.cpp
 )

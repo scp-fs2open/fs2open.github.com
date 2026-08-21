@@ -215,9 +215,13 @@ void vulkan_scene_texture_begin()
 
 	auto* renderer = getRendererInstance();
 
-	// Switch to HDR scene render pass when post-processing is enabled
+	// Switch to HDR scene render pass when post-processing is enabled. The post-processor's targets
+	// are sized for the main viewport's swap chain, so this stays off anywhere else -- qtFRED's
+	// briefing map renders through brief_render_map() and never opens a scene-texture scope, so
+	// nothing is lost by that today.
 	auto* pp = getPostProcessor();
-	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override) {
+	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override &&
+		renderer->isMainTargetCurrent()) {
 		renderer->beginSceneRendering();
 		High_dynamic_range = true;
 	} else {
@@ -748,12 +752,12 @@ void vulkan_calculate_irrmap()
 		// Set 0: Global (all fallback)
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 		Assert(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 		// Set 1: Material (envmap cubemap at element 0 of texture array)
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 		Assert(materialSet);
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
 			texImages.fill(descManager->getFallbacks().texture2D);
@@ -764,14 +768,14 @@ void vulkan_calculate_irrmap()
 		// Set 2: PerDraw (face UBO at binding 0)
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Assert(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::GenericData, {faceUBO,
 			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE});
 		writer.flush();
 
 		// Bind all descriptor sets
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-			0, {globalSet, materialSet, perDrawSet}, {});
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		// Draw fullscreen triangle
 		cmd.draw(3, 1, 0, 0);

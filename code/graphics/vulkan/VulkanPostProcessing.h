@@ -204,6 +204,7 @@ public:
 	vk::ImageView depthView() const { return m_depth.view; }
 	vk::Image depthImage() const { return m_depth.image; }
 	vk::Sampler compareSampler() const { return m_compareSampler; }
+	vk::Sampler rawSampler() const { return m_rawSampler; }
 	vk::RenderPass renderPass() const { return m_renderPass; }
 	vk::Framebuffer framebuffer() const { return m_framebuffer; }
 
@@ -211,6 +212,7 @@ private:
 	PostProcessContext* m_ctx = nullptr;
 	RenderTarget m_depth;   // D32F, 2D array (Num_shadow_cascades + Num_cockpit_shadow_cascades layers)
 	vk::Sampler m_compareSampler; // Depth-compare sampler for hardware PCF (sampler2DArrayShadow)
+	vk::Sampler m_rawSampler;     // Non-compare sampler on the same view, for PCSS blocker search
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
 	int m_textureSize = 0;
@@ -271,6 +273,91 @@ private:
 	vk::RenderPass m_renderPass;               // Color-only RGBA16F, loadOp=eDontCare
 	vk::RenderPass m_compositeRenderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
 	vk::Framebuffer m_sceneColorFB;            // Scene color as attachment for bloom composite
+	bool m_initialized = false;
+};
+
+/**
+ * @brief Physically-based lens flares (ghost quads + starburst billboard)
+ *
+ * Self-contained subsystem that additively composites the precomputed lens
+ * flare instances (see graphics/lens_flare.h) onto the HDR scene color,
+ * immediately before bloom. Owns a loadOp=eLoad render pass on the scene
+ * color, a small dedicated per-frame UBO ring (the per-ghost array exceeds
+ * the shared scratch ring's slot size), and the static aperture/starburst
+ * textures uploaded from the CPU-generated pixel data of the active lens.
+ */
+class VulkanLensFlare {
+public:
+	/**
+	 * @brief Create render pass/framebuffer/UBO resources
+	 * @param sceneColor Scene HDR color target to composite into (must outlive this)
+	 */
+	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor);
+	void shutdown();
+
+	/**
+	 * @brief Recreate the scene-color framebuffer after a resize (render pass kept)
+	 *
+	 * Device must be idle. Returns false on failure (caller should shut the
+	 * subsystem down).
+	 */
+	bool resize();
+
+	/**
+	 * @brief Per-frame UBO ring cursor reset (called from VulkanPostProcessor::beginFrame)
+	 */
+	void beginFrame(uint32_t frameIndex)
+	{
+		if (m_ubo.isValid()) {
+			m_ubo.resetCursor(frameIndex);
+		}
+	}
+
+	/**
+	 * @brief Draw the flare instances of every flaring sun additively onto the scene color
+	 *
+	 * No-op when no lens-equipped sun is visible. Scene color must be in
+	 * eShaderReadOnlyOptimal (the state after the scene render pass ends) and
+	 * is returned to eShaderReadOnlyOptimal, matching what bloom expects.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void execute(vk::CommandBuffer cmd);
+
+	bool isInitialized() const { return m_initialized; }
+
+private:
+	bool createFramebuffer();
+
+	/**
+	 * @brief Upload the iris/starburst textures of the mounted lens, if not already uploaded
+	 */
+	bool ensureTextures(int lensIdx);
+	void releaseTextures(bool deferred);
+	void forgetTextures();
+
+	PostProcessContext* m_ctx = nullptr;
+	const RenderTarget* m_sceneColor = nullptr;
+
+	vk::RenderPass m_renderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
+	vk::Framebuffer m_sceneColorFB;   // Scene color as attachment 0
+
+	// Dedicated per-frame UBO ring: lens_flare_data (~5 KB) exceeds the shared
+	// scratch ring's slot size (see PostProcessContext::SCRATCH_UBO_SLOT_SIZE).
+	// One slot per visible sun per scene render (see LENS_FLARE_UBO_SLOTS).
+	PerFrameUboRing m_ubo;
+
+	// Static iris/starburst textures of the mounted camera lens, shared by every
+	// sun's flare
+	vk::Image m_apertureImage;
+	vk::ImageView m_apertureView;
+	VulkanAllocation m_apertureAlloc;
+	vk::Image m_starburstImage;
+	vk::ImageView m_starburstView;
+	VulkanAllocation m_starburstAlloc;
+	int m_texLensIdx = -1;
+	unsigned int m_texGeneration = 0;
+
 	bool m_initialized = false;
 };
 
@@ -793,7 +880,11 @@ public:
 	 * fullscreen pass of the frame (mid-scene fog included), so subsystems must
 	 * not reset it themselves.
 	 */
-	void beginFrame(uint32_t frameIndex) { m_ctx.scratchRing.resetCursor(frameIndex); }
+	void beginFrame(uint32_t frameIndex)
+	{
+		m_ctx.scratchRing.resetCursor(frameIndex);
+		m_lensFlare.beginFrame(frameIndex);
+	}
 
 	/**
 	 * @brief Get the HDR scene render pass (for 3D scene rendering)
@@ -894,6 +985,17 @@ public:
 	void executeBloom(vk::CommandBuffer cmd) { m_bloom.execute(cmd); }
 
 	/**
+	 * @brief Execute the physically-based lens flare pass
+	 *
+	 * Called immediately before executeBloom() so the flare energy is bloomed
+	 * and tonemapped like any other HDR scene content. No-op when no
+	 * lens-equipped sun is visible. Must be called outside a render pass.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void executeLensFlare(vk::CommandBuffer cmd) { m_lensFlare.execute(cmd); }
+
+	/**
 	 * @brief Execute tonemapping pass (HDR scene → LDR)
 	 *
 	 * Called after bloom and before FXAA. Renders to Scene_ldr (RGBA8).
@@ -991,6 +1093,31 @@ public:
 	void copySceneDepth(vk::CommandBuffer cmd) const;
 
 	/**
+	 * @brief Copy scene depth aside so the cockpit can render on a cleared depth buffer
+	 *
+	 * The cockpit model shares the world with the ship hull around it, so it needs a
+	 * depth buffer of its own -- OpenGL gets one by swapping the depth attachment to
+	 * Cockpit_depth_texture. Here the scene depth stays the attachment and its content
+	 * is parked in a backup image instead, which restoreSceneDepth() puts back.
+	 *
+	 * Must be called outside a render pass. Leaves scene depth in
+	 * eDepthStencilAttachmentOptimal and the backup in eTransferSrcOptimal.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void saveSceneDepth(vk::CommandBuffer cmd) const;
+
+	/**
+	 * @brief Put the depth that saveSceneDepth() parked back into the scene depth buffer
+	 *
+	 * Discards whatever the cockpit wrote, which is the point: the post-processing
+	 * passes that sample scene depth (lightshafts) must see the scene, not the cockpit.
+	 *
+	 * @param cmd Active command buffer (must be outside a render pass)
+	 */
+	void restoreSceneDepth(vk::CommandBuffer cmd) const;
+
+	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
 	 */
 	bool hasLDRTargets() const { return m_ldr.isInitialized(); }
@@ -1086,6 +1213,16 @@ public:
 		return {m_shadow.compareSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
+	/**
+	 * @brief Get a ready-to-use DescriptorImageInfo for raw (uncompared) shadow map reads
+	 *
+	 * Same image view as getShadowTextureInfo(), but with compare mode off, for the PCSS
+	 * blocker search (which needs actual depth values, not a compare result).
+	 */
+	vk::DescriptorImageInfo getShadowRawTextureInfo() const {
+		return {m_shadow.rawSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+
 	// ========== Fog / Volumetric Nebula ==========
 
 	/**
@@ -1164,6 +1301,7 @@ private:
 	RenderTarget m_sceneColor;      // RGBA16F HDR scene color
 	RenderTarget m_sceneDepth;      // Depth buffer for scene
 	RenderTarget m_sceneDepthCopy;  // Samplable copy of scene depth (for soft particles)
+	RenderTarget m_sceneDepthBackup; // Scene depth parked across the cockpit render (transfer only)
 	RenderTarget m_sceneEffect;     // RGBA16F effect/composite (snapshot of scene color)
 
 	// Scene render pass and framebuffer
@@ -1173,6 +1311,9 @@ private:
 
 	// ---- Bloom (self-contained subsystem) ----
 	VulkanBloom m_bloom;
+
+	// ---- Physically-based lens flares (self-contained subsystem) ----
+	VulkanLensFlare m_lensFlare;
 
 	// ---- LDR / FXAA / post-effects / lightshafts (self-contained subsystem) ----
 	VulkanLDR m_ldr;

@@ -226,6 +226,27 @@ typedef struct beam {
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
+// A beam's muzzle as a light source: where it is, the colour and strength of the
+// light it throws, and how large that glow is. Filled by beam_get_muzzle_glow().
+struct beam_muzzle_glow {
+	vec3d pos;
+	vec3d color;     // linear rgb, 0..1
+	float intensity; // the light's own intensity, scaled by the warmup/warmdown ramp
+	float radius;    // world radius of the glow
+};
+
+// What a beam's muzzle is emitting this frame, or false when it is emitting
+// nothing. The intensity ramps up over the warmup, holds while firing, and ramps
+// back down over the warmdown.
+//
+// Answered here rather than by the caller because it is the same question the
+// muzzle light already asks -- beam_add_light_small() scales by the same ramp and
+// uses the same radius -- and a second copy of it in another module would drift
+// out of step with the light it is meant to be following. Unlike that light it is
+// not gated on the lighting detail setting: a camera-lens flare is an artifact of
+// the camera, not a light in the scene.
+bool beam_get_muzzle_glow(const beam *bm, beam_muzzle_glow *out);
+
 #define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
 
 // ------------------------------------------------------------------------------------------------

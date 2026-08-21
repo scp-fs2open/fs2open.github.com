@@ -13,6 +13,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
 #include "bmpman/bmpman.h"
@@ -70,7 +71,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.vbo);
 			m_sphereMesh.vbo = nullptr;
 			return false;
@@ -95,7 +97,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.ibo);
 			m_sphereMesh.ibo = nullptr;
 			return false;
@@ -126,7 +129,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.vbo);
 			m_cylinderMesh.vbo = nullptr;
 			return false;
@@ -150,7 +154,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.ibo);
 			m_cylinderMesh.ibo = nullptr;
 			return false;
@@ -501,8 +506,12 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	{
 		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped + regionBase);
 		memset(header, 0, sizeof(graphics::deferred_global_data));
-		header->invScreenWidth = 1.0f / gr_screen.max_w;
-		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		// Same as the OpenGL backend: deferred-f.sdr normalizes gl_FragCoord against these to
+		// sample the G-buffer, so they must describe the G-buffer, not gr_screen. resize() keeps
+		// sceneExtent equal to gr_screen today, which is why deriving it from the extent is a
+		// no-op here -- but it states the actual requirement instead of relying on that.
+		header->invScreenWidth = 1.0f / static_cast<float>(m_ctx->sceneExtent.width);
+		header->invScreenHeight = 1.0f / static_cast<float>(m_ctx->sceneExtent.height);
 		header->nearPlane = gr_near_plane;
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
@@ -685,6 +694,9 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	if (rtShadowsActive) {
 		lightShaderFlags |= SDR_FLAG_DEFERRED_RT_SHADOWS;
 	}
+	if (rtao_enabled()) {
+		lightShaderFlags |= SDR_FLAG_DEFERRED_RTAO;
+	}
 	if (envMapAvailable) {
 		lightShaderFlags |= SDR_FLAG_ENV_MAP;
 	}
@@ -752,8 +764,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	// Shadow map is depth-only, sampled with a depth-compare sampler
 	// (sampler2DArrayShadow) for hardware PCF.
 	vk::DescriptorImageInfo shadowTexInfo;
+	vk::DescriptorImageInfo shadowRawTexInfo;
 	if (m_shadow->isInitialized() && m_shadow->depthView()) {
 		shadowTexInfo = {m_shadow->compareSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+		shadowRawTexInfo = {m_shadow->rawSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	// Shadow cascade params (projection matrices/distances) are bound per-frame via
@@ -765,7 +779,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		auto* drawManager = getDrawManager();
 		const auto& pending = drawManager->getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
 		if (pending.valid) {
-			vk::Buffer buf = bufferMgr->getVkBuffer(pending.bufferHandle);
+			// Resolved through getVkBufferForBinding() like applyMaterial's own pending UBOs: the
+			// block lives in a streaming buffer, so a binding made in an earlier frame no longer
+			// points at anything and has to fall back to the placeholder rather than assert.
+			vk::Buffer buf = bufferMgr->getVkBufferForBinding(pending.bufferHandle);
 			if (buf) {
 				shadowCascadeParamsInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
 			}
@@ -790,7 +807,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		// Set 0: Global
 		vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 		if (!globalSet) return false;
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
 			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
 		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
@@ -799,23 +816,24 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
 		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
 		writer.setBuffer(GlobalBinding::ShadowCascadeParams, shadowCascadeParamsInfo);
+		writer.setImage(GlobalBinding::ShadowMapRaw, shadowRawTexInfo);
 
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 		if (!materialSet) return false;
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray);
 
 		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		if (!perDrawSet) return false;
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::Matrices, {m_deferredUBO,
 			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
 		writer.flush();
 
-		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, sets, {});
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		return true;
 	};

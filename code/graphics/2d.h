@@ -232,6 +232,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_LENS_FLARE,
+
 	NUM_SHADER_TYPES
 };
 
@@ -262,6 +264,7 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -370,7 +373,12 @@ enum class gr_capability {
 	CAPABILITY_INSTANCED_RENDERING,
 	CAPABILITY_FAST_SHADOWS,
 	CAPABILITY_QUERIES_REUSABLE,
-	CAPABILITY_RAYTRACED_SHADOWS
+	CAPABILITY_RAYTRACED_SHADOWS,
+	// A second, non-compare sampler bound to the shadow map for raw depth reads, needed by
+	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
+	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
+	// otherwise texture-object state shared by every sampler bound to that texture.
+	CAPABILITY_SHADOW_CONTACT_HARDENING
 };
 
 struct gr_capability_def {
@@ -690,6 +698,56 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
  */
 typedef void* gr_sync;
 
+/**
+ * @brief Per-backend diagnostic counters, populated only when -gr_debug is active
+ *
+ * Each stat group carries its own "valid" flag since not every backend collects every
+ * group (e.g. per-draw-call counters currently only exist in the Vulkan backend). See
+ * gr_get_debug_stats().
+ */
+struct gr_debug_stats {
+	bool uniform_buffer_valid = false;
+	size_t uniform_buffer_size = 0;
+	size_t uniform_buffer_used = 0;
+
+	bool draw_stats_valid = false;
+	int draw_calls = 0;
+	int draw_indexed_calls = 0;
+	int total_vertices = 0;
+	int total_indices = 0;
+	int apply_material_calls = 0;
+	int apply_material_failures = 0;
+	int no_pipeline_skips = 0;
+	int descriptor_sets_allocated = 0;
+	int descriptor_writes = 0;
+	size_t pipeline_count = 0;
+	int on_demand_texture_uploads = 0;
+};
+
+/**
+ * @brief Cross-backend memory usage snapshot for the profiler overlay's memory panel
+ *
+ * Unlike gr_debug_stats, this is always populated when queried (no -gr_debug gate) -- memory
+ * usage is meant to be visible to anyone with the profiler overlay open. Each group still carries
+ * its own "valid" flag since not every backend/build collects every group (e.g. both graphics
+ * backends disabled at build time). See gr_get_memory_stats().
+ */
+struct gr_memory_stats {
+	bool model_heap_valid = false;
+	size_t model_vertex_heap_used = 0;
+	size_t model_vertex_heap_size = 0;
+	size_t model_index_heap_used = 0;
+	size_t model_index_heap_size = 0;
+
+	bool locked_bitmap_ram_valid = false;
+	size_t locked_bitmap_ram_bytes = 0;
+
+	bool gpu_purpose_valid = false;
+	size_t gpu_texture_bytes = 0;
+	size_t gpu_geometry_bytes = 0;
+	size_t gpu_render_target_bytes = 0;
+};
+
 typedef struct screen {
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
@@ -760,6 +818,14 @@ typedef struct screen {
 
 	// dumps the current screen to a html blob string
 	std::function<SCP_string()> gf_blob_screen;
+
+	// reads the currently bound render target back into a caller-provided RGBA8 buffer.
+	// Optional: backends that can't read a render target back leave this unset.
+	std::function<bool(ubyte* out_rgba, int width, int height)> gf_read_render_target;
+
+	// recycles per-frame backend state after an off-screen render that never reaches gr_flip().
+	// Optional: backends that keep no per-frame pools leave this unset.
+	std::function<void()> gf_end_offscreen_frame;
 
 	// transforms and dumps the current environment map to a file
 	std::function<void(const char* filename)> gf_dump_envmap;
@@ -860,6 +926,16 @@ typedef struct screen {
 	std::function<void()> gf_scene_texture_begin;
 	std::function<void()> gf_scene_texture_end;
 	std::function<void()> gf_copy_effect_texture;
+
+	// The viewport is now gr_screen.max_w x max_h; bring whatever the backend sized to the old one
+	// into line. Called from gr_screen_resize(); see the precondition documented there, which is
+	// stricter than it looks -- what a backend does here can include throwing away the frame in
+	// progress. Optional: a backend with nothing sized to the viewport leaves it unset.
+	//
+	// OpenGL grows the scene/post-processing render targets. Vulkan rebuilds the swap chain and
+	// everything sized to it, and restarts the frame; that is the only point at which it can notice
+	// the window and the swap chain have diverged (see VulkanRenderer::syncToSurfaceExtent()).
+	std::function<void()> gf_viewport_size_changed;
 
 	std::function<void(int zbias)> gf_zbias;
 
@@ -963,6 +1039,14 @@ typedef struct screen {
 	std::function<void(const char* name)> gf_push_debug_group;
 	std::function<void()> gf_pop_debug_group;
 
+	// Fills in whichever debug_stats groups this backend collects. Defaults to a no-op
+	// so backends without per-draw-call counters (OpenGL, stub) don't have to assign it.
+	std::function<void(gr_debug_stats& stats)> gf_get_debug_stats = [](gr_debug_stats&) {};
+
+	// Fills in whichever memory_stats groups this backend collects (GPU-purpose byte totals).
+	// Defaults to a no-op so backends without per-purpose tagging don't have to assign it.
+	std::function<void(gr_memory_stats& stats)> gf_get_memory_stats = [](gr_memory_stats&) {};
+
 	std::function<int()> gf_create_query_object;
 	std::function<void(int obj, QueryType type)> gf_query_value;
 	std::function<bool(int obj)> gf_query_value_available;
@@ -971,6 +1055,12 @@ typedef struct screen {
 
 	std::unique_ptr<os::Viewport> (*gf_create_viewport)(const os::ViewPortProperties& props);
 	std::function<void(os::Viewport* view)> gf_use_viewport;
+
+	//! Optional. Backends that keep per-viewport GPU resources (Vulkan holds a surface, swap chain
+	//! and everything sized to it) get told here that a viewport is about to be destroyed, while
+	//! the device and the viewport's window are both still alive. Left unset by backends with
+	//! nothing to release.
+	std::function<void(os::Viewport* view)> gf_release_viewport;
 
 	std::function<void(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)>
 		gf_bind_uniform_buffer;
@@ -1054,6 +1144,16 @@ extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
+/**
+ * @brief Tell the engine the viewport is now @p width x @p height.
+ *
+ * @warning Call this between frames, never once drawing has started. It runs
+ * gf_viewport_size_changed, and what a backend does there is not limited to reallocating: the
+ * Vulkan backend discards the frame in progress and restarts it at the new size, so anything
+ * already recorded into it is lost. OpenGL asserts rather than tear down a framebuffer it is
+ * rendering into. Both are fine at the top of a frame, which is where every caller sits today --
+ * an SDL resize event, or qtFRED's per-frame viewport sync.
+ */
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 
@@ -1152,6 +1252,53 @@ bool gr_is_screenshot_requested();
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
+
+/**
+ * @brief Collects whichever graphics-API debug stats are available for the active backend
+ *
+ * Returns a default-constructed (all-invalid) gr_debug_stats unless -gr_debug is active. Safe
+ * to call every frame regardless of backend or debug flag.
+ */
+gr_debug_stats gr_get_debug_stats();
+
+/**
+ * @brief Collects whichever cross-backend memory usage stats are available
+ *
+ * Unlike gr_get_debug_stats(), this is always populated (no -gr_debug gate) -- memory usage is
+ * meant to be visible whenever the profiler overlay is open. Safe to call every frame regardless
+ * of backend or build configuration; groups a backend/build doesn't support stay invalid/zero.
+ */
+gr_memory_stats gr_get_memory_stats();
+
+/**
+ * @brief Read the currently bound render target back into @p out_rgba.
+ *
+ * For callers that composed into a render target (bm_set_render_target()) and want the pixels
+ * rather than a file or a data URL -- qtFRED's briefing map. gr_blob_screen() reads the same source
+ * but PNG-encodes and base64-wraps it, which is pure overhead when the destination is a bitmap
+ * again.
+ *
+ * @param out_rgba Receives @p width * @p height * 4 bytes, RGBA order, rows top-down. Must be at
+ *                 least that large.
+ * @param width    Expected width of the bound target, in pixels
+ * @param height   Expected height of the bound target, in pixels
+ * @return false if no target is bound, if it isn't the size the caller expected, or if the backend
+ *         can't read one back at all. @p out_rgba is untouched in that case.
+ */
+bool gr_read_render_target(ubyte* out_rgba, int width, int height);
+
+/**
+ * @brief End a frame's worth of rendering that never reaches gr_flip().
+ *
+ * For off-screen renderers that compose into a render target and read the result back rather than
+ * presenting -- qtFRED's briefing map. gr_flip() is what retires the engine's per-frame uniform
+ * segments and what makes the backend recycle its per-frame pools; a renderer that never calls it
+ * accumulates both for as long as it runs.
+ *
+ * Only call this once the frame's GPU work has actually completed -- after a readback that
+ * host-waits, which is the case for gr_blob_screen() on a bound render target.
+ */
+void gr_end_offscreen_frame();
 
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
@@ -1310,6 +1457,16 @@ inline void gr_post_process_restore_zbuffer()
  */
 void gr_imgui_begin_frame();
 
+/**
+ * @brief Renders and submits the open ImGui frame, if any. Called by gr_flip().
+ */
+void gr_imgui_end_frame();
+
+/**
+ * @brief Whether an ImGui frame is currently open for contributions
+ */
+bool gr_imgui_frame_active();
+
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,
@@ -1403,6 +1560,12 @@ inline bool gr_get_property(gr_property property, void* destination)
 	return gr_screen.gf_get_property(property, destination);
 }
 
+// Anisotropic filtering levels the current hardware supports: 1.0 (off), then powers of two up to
+// the reported maximum. Empty if anisotropy is unavailable or the hardware caps out below 4x, in
+// which case there is nothing meaningful to offer. Backs both the in-game option's enumerator and
+// qtFRED's Preferences combo, so the two can't drift.
+SCP_vector<float> gr_get_supported_anisotropy_levels();
+
 inline void gr_push_debug_group(const char* name)
 {
 	gr_screen.gf_push_debug_group(name);
@@ -1445,6 +1608,12 @@ inline std::unique_ptr<os::Viewport> gr_create_viewport(const os::ViewPortProper
 inline void gr_use_viewport(os::Viewport* view)
 {
 	gr_screen.gf_use_viewport(view);
+}
+inline void gr_release_viewport(os::Viewport* view)
+{
+	if (gr_screen.gf_release_viewport) {
+		gr_screen.gf_release_viewport(view);
+	}
 }
 inline void gr_set_viewport(int x, int y, int width, int height)
 {

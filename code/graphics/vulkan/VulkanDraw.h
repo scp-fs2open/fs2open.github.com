@@ -29,6 +29,72 @@ struct PendingUniformBinding {
 };
 
 /**
+ * @brief A descriptor set, or a fixed group of them, remembered alongside the inputs it was built from
+ *
+ * Writing and allocating a descriptor set per draw is the cost this exists to avoid: consecutive
+ * draws very often want a set identical to the one before it. This is a *previous-only* cache --
+ * any difference in the inputs rebuilds, so a hit is never stale -- and it holds for one frame,
+ * because the sets are frame-pool allocated (see resetFrameStats()).
+ *
+ * @tparam Inputs everything the set's contents are derived from; needs operator==. Anything carried
+ *         as a dynamic offset must be left OUT of it, since an offset-only change rides in the
+ *         dynamic-offset array and leaves the set itself identical -- that is what makes the hit
+ *         rate worth having.
+ * @tparam Payload what a hit hands back. A parameter because the shadow pass memoizes all three of
+ *         its sets against a single key, while applyMaterial() memoizes one set per key.
+ */
+template <typename Inputs, typename Payload = vk::DescriptorSet>
+class MemoizedDescriptorSet {
+  public:
+	/**
+	 * @brief Whether @p inputs matches what the stored payload was built from
+	 *
+	 * A true result means payload() can be rebound as-is, with no allocation or write.
+	 */
+	bool hits(const Inputs& inputs) const { return m_valid && m_inputs == inputs; }
+
+	/**
+	 * @brief The stored sets. Only meaningful after hits() returned true.
+	 */
+	const Payload& payload() const { return m_payload; }
+
+	void store(const Payload& payload, const Inputs& inputs)
+	{
+		// Never memoize an incomplete payload. allocateFrameSet() hands back a null handle when
+		// the pool is exhausted, and the Assert() that catches it at the call site is compiled
+		// out of release builds -- caching that would turn one failed allocation into every
+		// later draw binding a null set, long after the pressure that caused it passed.
+		if (!payload) {
+			invalidate();
+			return;
+		}
+
+		m_payload = payload;
+		m_inputs = inputs;
+		m_valid = true;
+	}
+
+	/**
+	 * @brief Forget the stored sets
+	 *
+	 * Every caller has the same reason: the handles can no longer be assumed current, either
+	 * because the frame pool that owns them was reset or because something rebound descriptor
+	 * sets behind applyMaterial()'s back. Clearing the payload as well as the flag means a
+	 * missing hits() check binds a null set (which asserts) rather than a recycled one.
+	 */
+	void invalidate()
+	{
+		m_payload = Payload{};
+		m_valid = false;
+	}
+
+  private:
+	Payload m_payload{};
+	Inputs m_inputs;
+	bool m_valid = false;
+};
+
+/**
  * @brief Handles Vulkan draw command recording
  *
  * Provides functions to record draw commands to the command buffer,
@@ -212,7 +278,7 @@ class VulkanDrawManager {
 		size_t ubo_size,
 		vertex_buffer* buffer,
 		indexed_vertex_source* vert_src,
-		size_t texi) const;
+		size_t texi);
 
 	/**
 	 * @brief Draw a unit sphere with the given material
@@ -287,6 +353,26 @@ class VulkanDrawManager {
 	void invalidateGlobalSet() { m_globalSetDirty = true; }
 
 	/**
+	 * @brief Invalidate every memoized descriptor-set cache (Global + Material + PerDraw)
+	 *
+	 * These previous-set caches (see the class comments above m_cachedGlobalSet /
+	 * m_cachedMaterial / m_cachedPerDraw) assume nothing rebinds a *different*
+	 * descriptor set on the command buffer between applyMaterial() calls behind their
+	 * back. Code that renders directly on the command buffer without going through
+	 * applyMaterial (currently: ImGui's Vulkan backend, drawing into the same active
+	 * composition pass) breaks that assumption -- call this right afterward, alongside
+	 * VulkanStateTracker::invalidateExternalBindings(), so the next applyMaterial() rebuilds
+	 * and rebinds every set instead of trusting stale cached handles.
+	 */
+	void invalidateDrawStateCaches()
+	{
+		m_globalSetDirty = true;
+		m_cachedMaterial.invalidate();
+		m_cachedPerDraw.invalidate();
+		m_cachedShadow.invalidate();
+	}
+
+	/**
 	 * @brief Get current texture addressing mode
 	 */
 	int getTextureAddressing() const
@@ -312,11 +398,6 @@ class VulkanDrawManager {
 		gr_buffer_handle bufferHandle,
 		vk::DeviceSize offset,
 		vk::DeviceSize size);
-
-	/**
-	 * @brief Clear all pending uniform bindings
-	 */
-	void clearPendingUniformBindings();
 
 	/**
 	 * @brief Get a pending uniform binding by block type index
@@ -449,6 +530,14 @@ class VulkanDrawManager {
 	mutable FrameStats m_frameStats;
 	int m_frameStatsFrameNum = 0;
 
+  public:
+	/**
+	 * @brief Read-only access to this frame's diagnostic counters, e.g. for the ImGui profiler
+	 * overlay's -gr_debug section (see printFrameStats() for the nprintf equivalent)
+	 */
+	const FrameStats& getFrameStats() const { return m_frameStats; }
+
+  private:
 	// First-N debug-log counter for on-demand texture binds; a member rather
 	// than a function-local static so it resets on renderer restart. mutable because
 	// bindMaterialTextures is const. Gates nprintf spam only.
@@ -510,11 +599,8 @@ class VulkanDrawManager {
 			       imgEq(depthInfo, o.depthInfo) && imgEq(sceneColorInfo, o.sceneColorInfo) &&
 			       imgEq(distMapInfo, o.distMapInfo);
 		}
-		bool operator!=(const MaterialSetInputs& o) const { return !(*this == o); }
 	};
-	vk::DescriptorSet m_cachedMaterialSet = nullptr;
-	MaterialSetInputs m_cachedMaterialInputs;
-	bool m_cachedMaterialValid = false;
+	MemoizedDescriptorSet<MaterialSetInputs> m_cachedMaterial;
 
 	// ---- PerDraw (Set 2) previous-set memoization ----
 	// PerDraw holds only the pending PerDraw UBO bindings (GenericData, Matrices,
@@ -536,9 +622,43 @@ class VulkanDrawManager {
 			return true;
 		}
 	};
-	vk::DescriptorSet m_cachedPerDrawSet = nullptr;
-	PerDrawSetInputs m_cachedPerDrawInputs;
-	bool m_cachedPerDrawValid = false;
+	MemoizedDescriptorSet<PerDrawSetInputs> m_cachedPerDraw;
+
+	// ---- Shadow-pass descriptor memoization (renderShadowDraw) ----
+	// The shadow pass doesn't go through applyMaterial, so it gets its own cache.
+	// All three of its sets are constant across the whole pass: the only per-draw
+	// input, the ShadowMapData UBO offset, is a dynamic binding and therefore not
+	// part of the set contents. Reset per frame with the rest (resetFrameStats).
+	struct ShadowSetInputs {
+		int cascadeHandle = -1;
+		vk::DeviceSize cascadeOffset = 0;
+		vk::DeviceSize cascadeSize = 0;
+		bool cascadeValid = false;
+		int shadowDataHandle = -1;
+		size_t shadowDataSize = 0;
+		vk::Buffer transformBuffer = nullptr;
+		size_t transformOffset = 0;
+		size_t transformSize = 0;
+
+		bool operator==(const ShadowSetInputs& o) const
+		{
+			return cascadeHandle == o.cascadeHandle && cascadeOffset == o.cascadeOffset &&
+				   cascadeSize == o.cascadeSize && cascadeValid == o.cascadeValid &&
+				   shadowDataHandle == o.shadowDataHandle && shadowDataSize == o.shadowDataSize &&
+				   transformBuffer == o.transformBuffer && transformOffset == o.transformOffset &&
+				   transformSize == o.transformSize;
+		}
+	};
+	// The whole set of three, memoized together: they share one key, so they are only ever all
+	// valid or all rebuilt.
+	struct ShadowSets {
+		vk::DescriptorSet global;
+		vk::DescriptorSet material;
+		vk::DescriptorSet perDraw;
+
+		explicit operator bool() const { return global && material && perDraw; }
+	};
+	MemoizedDescriptorSet<ShadowSetInputs, ShadowSets> m_cachedShadow;
 
 	// Texture overrides for material bindings 4-6.
 	vk::DescriptorImageInfo m_depthTextureInfo; // binding 4: depth/position for soft particles

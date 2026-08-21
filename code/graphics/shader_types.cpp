@@ -116,6 +116,9 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 
 	{ SDR_TYPE_GAMMA_BLIT, "post-v.sdr", "gamma-correct-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Gamma correct blit", false },
+
+	{ SDR_TYPE_LENS_FLARE, "lensflare-v.sdr", "lensflare-f.sdr", nullptr,
+		{ VATTRIB_POSITION }, "Physically-based lens flare", false },
 };
 // clang-format on
 
@@ -132,6 +135,8 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
+
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RTAO, "RTAO", {}, "Trace raytraced ambient occlusion in the ambient light pass"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
@@ -208,7 +213,7 @@ bool shader_variant_requires_raytracing(shader_type type, unsigned int flags)
 	case SDR_TYPE_MODEL:
 		return (flags & MODEL_SDR_FLAG_RT_SHADOWS) != 0;
 	case SDR_TYPE_DEFERRED_LIGHTING:
-		return (flags & SDR_FLAG_DEFERRED_RT_SHADOWS) != 0;
+		return (flags & (SDR_FLAG_DEFERRED_RT_SHADOWS | SDR_FLAG_DEFERRED_RTAO)) != 0;
 	default:
 		return false;
 	}

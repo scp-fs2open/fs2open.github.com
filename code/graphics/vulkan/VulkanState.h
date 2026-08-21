@@ -134,10 +134,18 @@ class VulkanStateTracker {
 
 	/**
 	 * @brief Bind descriptor set
+	 *
+	 * @param dynamicOffsets Offsets for the set layout's eUniformBufferDynamic
+	 *        bindings, ordered by binding number. Must hold at least
+	 *        VulkanDescriptorManager::getDynamicOffsetCount(setIndex) entries --
+	 *        asserted here rather than trusted, which is why this is a view and not
+	 *        a bare pointer. DescriptorWriter::dynamicOffsets() and the
+	 *        *_DYNAMIC_OFFSET_COUNT-sized arrays at the call sites both convert
+	 *        implicitly. May be empty only for a set that declares none.
 	 */
 	void bindDescriptorSet(DescriptorSetIndex setIndex,
 		vk::DescriptorSet set,
-		const SCP_vector<uint32_t>& dynamicOffsets = {});
+		ArrayView<uint32_t> dynamicOffsets = {});
 
 	// ========== Buffer Binding ==========
 
@@ -312,6 +320,11 @@ class VulkanStateTracker {
 
 	// Descriptor sets
 	std::array<vk::DescriptorSet, static_cast<size_t>(DescriptorSetIndex::Count)> m_boundDescriptorSets;
+	// Dynamic offsets the currently-bound set was bound with, so an offset-only
+	// change still forces a rebind (see bindDescriptorSet).
+	std::array<std::array<uint32_t, DescriptorWriter::MAX_DYNAMIC_OFFSETS_PER_SET>,
+		static_cast<size_t>(DescriptorSetIndex::Count)>
+		m_boundDynamicOffsets{};
 
 	// Dynamic state
 	vk::Viewport m_viewport;

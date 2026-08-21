@@ -70,6 +70,33 @@ int Scene_texture_height;
 GLfloat Scene_texture_u_scale = 1.0f;
 GLfloat Scene_texture_v_scale = 1.0f;
 
+// Render targets are torn down and rebuilt mid-session by gr_opengl_resize_render_targets(), not
+// just at shutdown, so deletion has to go through the state cache: the driver is free to hand a
+// freed name straight back out, and a cache entry still holding that name would make a later
+// Enable() of the recycled texture a no-op.
+void opengl_delete_render_texture(GLuint& tex)
+{
+	if ( !tex ) {
+		return;
+	}
+
+	GL_state.Texture.Delete(tex);
+	glDeleteTextures(1, &tex);
+	tex = 0;
+}
+
+// Callers must have bound something else first (the resize path binds 0); the framebuffer cache
+// has no equivalent of Texture.Delete() to unbind through.
+void opengl_delete_render_framebuffer(GLuint& fbo)
+{
+	if ( !fbo ) {
+		return;
+	}
+
+	glDeleteFramebuffers(1, &fbo);
+	fbo = 0;
+}
+
 inline GLenum opengl_primitive_type(primitive_type prim_type)
 {
 	switch ( prim_type ) {
@@ -98,7 +125,7 @@ void gr_opengl_sphere(material* material_def, float  /*rad*/)
 }
 
 extern int opengl_check_framebuffer();
-void opengl_setup_scene_textures()
+void opengl_setup_scene_textures(int width, int height)
 {
 	Scene_texture_initialized = 0;
 
@@ -113,10 +140,10 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
-	// clamp size, if needed
-	Scene_texture_width = gr_screen.max_w;
-	Scene_texture_height = gr_screen.max_h;
+	Scene_texture_width = width;
+	Scene_texture_height = height;
 
+	// clamp size, if needed
 	if ( Scene_texture_width > GL_max_renderbuffer_size ) {
 		Scene_texture_width = GL_max_renderbuffer_size;
 	}
@@ -124,6 +151,13 @@ void opengl_setup_scene_textures()
 	if ( Scene_texture_height > GL_max_renderbuffer_size) {
 		Scene_texture_height = GL_max_renderbuffer_size;
 	}
+
+	mprintf(("  Scene textures: %dx%d (screen %dx%d, max renderbuffer %d)\n",
+		Scene_texture_width,
+		Scene_texture_height,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		GL_max_renderbuffer_size));
 
 	// create framebuffer
 	glGenFramebuffers(1, &Scene_framebuffer);
@@ -333,32 +367,15 @@ void opengl_setup_scene_textures()
 
 	if ( opengl_check_framebuffer() ) {
 		GL_state.BindFrameBuffer(0);
-		glDeleteFramebuffers(1, &Scene_framebuffer);
-		Scene_framebuffer = 0;
+		opengl_delete_render_framebuffer(Scene_framebuffer);
 
-		glDeleteTextures(1, &Scene_color_texture);
-		Scene_color_texture = 0;
-
-		glDeleteTextures(1, &Scene_position_texture);
-		Scene_position_texture = 0;
-
-		glDeleteTextures(1, &Scene_normal_texture);
-		Scene_normal_texture = 0;
-
-		glDeleteTextures(1, &Scene_specular_texture);
-		Scene_specular_texture = 0;
-
-		glDeleteTextures(1, &Scene_emissive_texture);
-		Scene_emissive_texture = 0;
-
-		glDeleteTextures(1, &Scene_depth_texture);
-		Scene_depth_texture = 0;
-
-		glDeleteTextures(1, &Scene_luminance_texture);
-		Scene_luminance_texture = 0;
-
-		//glDeleteTextures(1, &Scene_fxaa_output_texture);
-		//Scene_fxaa_output_texture = 0;
+		opengl_delete_render_texture(Scene_color_texture);
+		opengl_delete_render_texture(Scene_position_texture);
+		opengl_delete_render_texture(Scene_normal_texture);
+		opengl_delete_render_texture(Scene_specular_texture);
+		opengl_delete_render_texture(Scene_emissive_texture);
+		opengl_delete_render_texture(Scene_depth_texture);
+		opengl_delete_render_texture(Scene_luminance_texture);
 
 		Gr_post_processing_enabled = false;
 		Gr_enable_soft_particles = false;
@@ -687,77 +704,103 @@ void opengl_scene_texture_shutdown()
 		return;
 	}
 
-	if ( Scene_color_texture ) {
-		glDeleteTextures(1, &Scene_color_texture);
-		Scene_color_texture = 0;
-	}
+	// Everything opengl_setup_scene_textures() generated, in the same order. Note that
+	// GammaBlit_texture is 0 when the gamma pass is aliasing Scene_ldr_texture, so the shared
+	// texture is only released once.
+	opengl_delete_render_texture(Scene_color_texture);
+	opengl_delete_render_texture(Scene_ldr_texture);
+	opengl_delete_render_texture(Scene_position_texture);
+	opengl_delete_render_texture(Scene_normal_texture);
+	opengl_delete_render_texture(Scene_specular_texture);
+	opengl_delete_render_texture(Scene_emissive_texture);
+	opengl_delete_render_texture(Scene_composite_texture);
+	opengl_delete_render_texture(Scene_luminance_texture);
+	opengl_delete_render_texture(Cockpit_depth_texture);
+	opengl_delete_render_texture(Scene_depth_texture);
+	opengl_delete_render_framebuffer(Scene_framebuffer);
 
-	if ( Scene_position_texture ) {
-		glDeleteTextures(1, &Scene_position_texture);
-		Scene_position_texture = 0;
-	}
+	opengl_delete_render_texture(Scene_color_texture_ms);
+	opengl_delete_render_texture(Scene_position_texture_ms);
+	opengl_delete_render_texture(Scene_normal_texture_ms);
+	opengl_delete_render_texture(Scene_specular_texture_ms);
+	opengl_delete_render_texture(Scene_emissive_texture_ms);
+	opengl_delete_render_texture(Scene_depth_texture_ms);
+	opengl_delete_render_framebuffer(Scene_framebuffer_ms);
 
-	if ( Scene_normal_texture ) {
-		glDeleteTextures(1, &Scene_normal_texture);
-		Scene_normal_texture = 0;
-	}
+	opengl_delete_render_texture(Back_texture);
+	opengl_delete_render_texture(Back_depth_texture);
+	opengl_delete_render_framebuffer(Back_framebuffer);
 
-	if ( Scene_specular_texture ) {
-		glDeleteTextures(1, &Scene_specular_texture);
-		Scene_specular_texture = 0;
-	}
+	opengl_delete_render_texture(GammaBlit_texture);
+	opengl_delete_render_framebuffer(GammaBlit_framebuffer);
 
-	if (Scene_emissive_texture) {
-		glDeleteTextures(1, &Scene_emissive_texture);
-		Scene_emissive_texture = 0;
-	}
-
-	if ( Scene_depth_texture ) {
-		glDeleteTextures(1, &Scene_depth_texture);
-		Scene_depth_texture = 0;
-	}
-
-	if ( Scene_framebuffer ) {
-		glDeleteFramebuffers(1, &Scene_framebuffer);
-		Scene_framebuffer = 0;
-	}
-
-	if (Back_texture) {
-		glDeleteTextures(1, &Back_texture);
-		Back_texture = 0;
-	}
-
-	if (Back_depth_texture) {
-		glDeleteTextures(1, &Back_depth_texture);
-		Back_depth_texture = 0;
-	}
-
-	if (Back_framebuffer) {
-		glDeleteFramebuffers(1, &Back_framebuffer);
-		Back_framebuffer = 0;
-	}
-
-	if (GammaBlit_texture) {
-		glDeleteTextures(1, &GammaBlit_texture);
-		GammaBlit_texture = 0;
-	}
-
-	if (GammaBlit_framebuffer) {
-		glDeleteFramebuffers(1, &GammaBlit_framebuffer);
-		GammaBlit_framebuffer = 0;
-	}
-
-	glDeleteTextures(2, Distortion_texture);
-	Distortion_texture[0] = 0;
-	Distortion_texture[1] = 0;
-
-	if ( Distortion_framebuffer ) {
-		glDeleteFramebuffers(1, &Distortion_framebuffer);
-		Distortion_framebuffer = 0;
-	}
+	opengl_delete_render_texture(Distortion_texture[0]);
+	opengl_delete_render_texture(Distortion_texture[1]);
+	opengl_delete_render_framebuffer(Distortion_framebuffer);
 
 	Scene_texture_initialized = 0;
 	Scene_framebuffer_in_frame = false;
+}
+
+void gr_opengl_resize_render_targets()
+{
+	// Nothing allocated yet (still inside gr_init()), or FBOs are unavailable entirely.
+	if ( !Scene_texture_initialized ) {
+		return;
+	}
+
+	// Grow only. Shrinking back would mean reallocating every G-buffer again the moment the window
+	// grew back, and the shrunk state is already handled correctly: Scene_texture_u_scale and
+	// _v_scale confine rendering to the sub-rectangle actually in use. The hardware limit is
+	// applied here rather than left to opengl_setup_scene_textures(), so that a viewport larger
+	// than anything the GPU can allocate compares equal below and stops asking.
+	const int new_width = MIN(MAX(gr_screen.max_w, Scene_texture_width), GL_max_renderbuffer_size);
+	const int new_height = MIN(MAX(gr_screen.max_h, Scene_texture_height), GL_max_renderbuffer_size);
+
+	// The overwhelmingly common case: qtFred calls gr_screen_resize() every frame and the game
+	// calls it on every SDL resize event, almost always at a size the current targets already
+	// cover -- or, past the hardware limit, at one they never will.
+	if ( new_width == Scene_texture_width && new_height == Scene_texture_height ) {
+		return;
+	}
+
+	// Tearing down the framebuffer we are currently rendering into would corrupt the frame rather
+	// than fail cleanly, so refuse rather than trying to recover. Callers resize between frames.
+	// Scene_framebuffer_in_frame covers the post-processing passes too: they only ever run inside
+	// gr_scene_texture_begin()/end(), so it is set for the whole of Post_in_frame as well.
+	if ( Scene_framebuffer_in_frame ) {
+		Assertion(false, "Tried to resize the render targets to %dx%d while a scene was being "
+			"rendered into them! The resize has been skipped; the frame will be stretched.",
+			new_width, new_height);
+		return;
+	}
+
+	mprintf(("Growing render targets from %dx%d to %dx%d to cover the new %dx%d viewport.\n",
+		Scene_texture_width, Scene_texture_height, new_width, new_height,
+		gr_screen.max_w, gr_screen.max_h));
+
+	// Leave the framebuffer cache pointing at a name that cannot be deleted out from under it.
+	GL_state.BindFrameBufferBoth(0, 0);
+
+	// Only the size-dependent resources are touched. The post-processing table, the compiled
+	// shaders and the SMAA lookup textures are all resolution-independent and stay alive, which is
+	// what keeps this cheap enough to run off a window drag. The post-processing targets are
+	// rebuilt after the scene textures because they are sized to match them.
+	opengl_scene_texture_shutdown();
+	opengl_setup_scene_textures(new_width, new_height);
+
+	// Reallocating larger is exactly when running out of video memory is most likely, and
+	// opengl_setup_scene_textures() reports that by leaving the scene uninitialized (having
+	// already turned post-processing and soft particles off). Rebuilding the post-processing
+	// targets on top of scene textures that don't exist would only make it worse, so stop here;
+	// the renderer keeps drawing without the offscreen pipeline.
+	if ( !Scene_texture_initialized ) {
+		mprintf(("Failed to allocate %dx%d render targets! The offscreen rendering pipeline has "
+			"been disabled for the rest of this session.\n", new_width, new_height));
+		return;
+	}
+
+	opengl_post_resize_render_targets();
 }
 
 void gr_opengl_scene_texture_begin()
@@ -776,19 +819,34 @@ void gr_opengl_scene_texture_begin()
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Scene_framebuffer);
 
-	if (GL_rendering_to_texture)
-	{
-		Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
-		Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
+	// The fraction of the scene textures this frame actually renders into. Normally 1.0 -- the
+	// targets are grown to cover gr_screen (gr_opengl_resize_render_targets()) -- but they are
+	// never shrunk back, so a viewport that got smaller leaves the rest of the allocation stale.
+	// Every pass that samples these textures has to stay inside this sub-rectangle; use
+	// opengl_draw_full_screen_scene_texture() rather than open-coding the extents.
+	Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
+	Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
 
-		CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
-		CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
+	// Above 1.0 means the viewport outgrew the allocation and the resize could not keep up -- only
+	// reachable when GL_max_renderbuffer_size capped the targets. Render what fits and let the
+	// blit stretch it; say so once rather than every frame.
+	if (Scene_texture_u_scale > 1.0f || Scene_texture_v_scale > 1.0f) {
+		static bool reported_undersized_scene_texture = false;
+
+		if (!reported_undersized_scene_texture) {
+			reported_undersized_scene_texture = true;
+			nprintf(("OpenGL",
+				"Viewport (%dx%d) is larger than the scene texture backing it (%dx%d); "
+				"the post-processed image will be stretched to fit.\n",
+				gr_screen.max_w,
+				gr_screen.max_h,
+				Scene_texture_width,
+				Scene_texture_height));
+		}
 	}
-	else
-	{
-		Scene_texture_u_scale = 1.0f;
-		Scene_texture_v_scale = 1.0f;
-	}
+
+	CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
+	CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
 
 	if (!light_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -1234,6 +1292,11 @@ void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloa
 	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 4, sizeof(GLfloat) * 2);
 
 	opengl_render_primitives_immediate(PRIM_TYPE_TRIS, &vert_def, 3, glVertices, sizeof(glVertices));
+}
+
+void opengl_draw_full_screen_scene_texture()
+{
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
 }
 
 void gr_opengl_render_decals(decal_material* material_info,

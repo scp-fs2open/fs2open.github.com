@@ -70,6 +70,11 @@ public:
 	float s_bank;
 	float s_heading;
 	float s_scale;
+	// Apparent diameter of this sun in degrees, and whether the mission sets one at all.
+	// Unchecked leaves the sun on its stars.tbl size, or on the size measured from its
+	// bitmap; see SUN_ANGULAR_SIZE_UNSPECIFIED in starfield.h.
+	BOOL s_angular_size_override;
+	float s_angular_size;
 	int s_index;
 	CString b_name;
 	float b_pitch;
@@ -96,7 +101,17 @@ public:
 	CString m_neb_fog_skybox_clip;
 	CString m_neb_fog_clip;
 	int m_light_profile_index;
+	int m_camera_lens_index;
 	//}}AFX_DATA
+
+	// Fixed head of the camera-lens combo: "Default" leaves the mission silent so
+	// it follows lens_flares.tbl, "None" is the explicit <none>, and the tabled
+	// lenses follow. See create()/OnClose() in bgbitmapdlg.cpp.
+	enum {
+		CAMERA_LENS_IDX_DEFAULT = 0,
+		CAMERA_LENS_IDX_NONE = 1,
+		CAMERA_LENS_IDX_FIRST_LENS = 2,
+	};
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -116,6 +131,7 @@ protected:
 	int get_active_background();
 	int get_swap_background();
 	void reinitialize_lists();
+	void update_sun_angular_size_enabled();
 	void background_flags_init();
 	void background_flags_close();
 
@@ -141,6 +157,7 @@ protected:
 	afx_msg void OnKillfocusNeb2FogB();
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnSunChange();
+	afx_msg void OnSunAngularSizeOverride();
 	afx_msg void OnAddSun();
 	afx_msg void OnDelSun();
 	afx_msg void OnSunDropdownChange();
@@ -165,6 +182,7 @@ protected:
 	afx_msg void OnKillfocusSun1H();
 	afx_msg void OnKillfocusSun1B();
 	afx_msg void OnKillfocusSun1Scale();
+	afx_msg void OnKillfocusSun1AngularSize();
 	afx_msg void OnAddBackground();
 	afx_msg void OnRemoveBackground();
 	afx_msg void OnImportBackground();

@@ -55,8 +55,14 @@ void gr_opengl_render_shield_impact(shield_material* material_info,
 	gr_buffer_handle buffer_handle,
 	int n_verts);
 
-void opengl_setup_scene_textures();
+void opengl_setup_scene_textures(int width, int height);
 void opengl_scene_texture_shutdown();
+void gr_opengl_resize_render_targets();
+
+// Release a render target, keeping the GL state cache in sync. See the definitions for why the
+// cache matters now that these are rebuilt mid-session.
+void opengl_delete_render_texture(GLuint& tex);
+void opengl_delete_render_framebuffer(GLuint& fbo);
 void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 void gr_opengl_copy_effect_texture();
@@ -146,6 +152,12 @@ void opengl_draw_textured_quad(GLfloat x1,
  * @param v2 The V value of the upper right corner.
  */
 void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloat v2);
+
+// Fullscreen pass over a source that is one of the scene/post-processing textures. Those are only
+// filled out to Scene_texture_u_scale/v_scale of their allocation, so sampling them over the full
+// [0,1] range would pull in whatever is beyond the rendered region. Prefer this over passing
+// literal 1.0f extents whenever the bound texture came from that pipeline.
+void opengl_draw_full_screen_scene_texture();
 
 inline GLenum opengl_primitive_type(primitive_type prim_type);
 

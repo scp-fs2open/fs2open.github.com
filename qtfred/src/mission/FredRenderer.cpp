@@ -3,6 +3,8 @@
 #include "Editor.h"
 #include "EditorViewport.h"
 
+#include <cmath>
+
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
 #include <globalincs/systemvars.h>
@@ -15,6 +17,7 @@
 #include <graphics/font.h>
 #include <graphics/matrix.h>
 #include <graphics/light.h>
+#include <graphics/shadows.h>
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>
@@ -27,6 +30,8 @@
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
 #include <cfile/cfile.h>
+
+#include <optional>
 
 #include "mission/object.h"
 #include "prop/prop.h"
@@ -52,6 +57,38 @@ void enable_htl() {
 }
 
 void disable_htl() {
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+}
+
+//! Scoped gr_scene_texture_begin()/end(), so the two can't drift apart as render_frame() grows.
+struct ScenePostProcessing {
+	ScenePostProcessing() { gr_scene_texture_begin(); }
+	~ScenePostProcessing() { gr_scene_texture_end(); }
+
+	ScenePostProcessing(const ScenePostProcessing&) = delete;
+	ScenePostProcessing& operator=(const ScenePostProcessing&) = delete;
+};
+
+/**
+ * @brief Render the shadow pass for the current camera.
+ *
+ * Only meaningful inside a ScenePostProcessing scope: the shadow pass writes into deferred
+ * G-buffer surfaces that only exist while the scene texture is bound. Mirrors game_render_frame(),
+ * which calls this right after its own gr_scene_texture_begin() + stars_draw().
+ *
+ * shadows_render_all() works on the HTL proj/view matrix stack -- the same one enable_htl() and
+ * disable_htl() push and pop for the starfield -- and expects it to be open: it ends whatever is
+ * active (gr_end_view_matrix() asserts on modelview_matrix_depth) and restores it when done. The
+ * starfield's disable_htl() just popped that stack, hence the push here, and the matching pop
+ * afterwards so the next frame's enable_htl() doesn't assert on a stack left open.
+ */
+void render_shadows() {
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr);
+
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 }
@@ -948,6 +985,16 @@ void FredRenderer::render_models(int cur_object_index) {
 	bool f = false;
 	enable_htl();
 
+	// Mirrors obj_render_queue_all()'s bind right before scene.render_all(). The model shaders
+	// read rtShadowSampleCount, the RTAO params and the per-cascade smoothness out of this block,
+	// but that bind lives in obj_render_queue_all() and we render through obj_render_all(), so
+	// nothing here binds it for the model pass. Without it the pass runs on the zero-filled
+	// fallback UBO -- a sample count of 0, which collapses traceShadowRayCone() to a single hard
+	// ray and makes shadows ignore the sun's angular size entirely.
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+	}
+
 	auto render_function = [&](object* objp) {
 		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			return;
@@ -967,10 +1014,17 @@ void FredRenderer::render_frame(int cur_object_index,
 	qreal scale)
 {
 
-	// Make sure our OpenGL context is used for rendering
+	// Make sure our render target is the one being drawn into
 	gr_use_viewport(_targetView);
-	uint32_t width = _targetView->getSize().first * scale;
-	uint32_t height = _targetView->getSize().second * scale;
+
+	// Round rather than truncate: getSize() is in logical pixels, and Qt rounds when it sizes the
+	// native surface from them. Truncating lands a pixel short of the real surface on fractional
+	// display scaling, which leaves gr_screen (and so the viewport gr_setup_viewport derives from
+	// it) disagreeing with the size the renderer is actually presenting at.
+	const auto logicalSize = _targetView->getSize();
+	const auto width = static_cast<uint32_t>(std::lround(logicalSize.first * scale));
+	const auto height = static_cast<uint32_t>(std::lround(logicalSize.second * scale));
+
 	// Resize the rendering window in case the previous size was different
 	gr_screen_resize(width, height);
 
@@ -994,6 +1048,15 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Optionally run the 3D world through the game's HDR post-processing pipeline (bloom,
+	// tonemapping, lightshafts, shadows) instead of drawing straight to the default framebuffer.
+	// Brackets only the 3D content, the same way game_render_frame() does; the 2D overlays further
+	// down (distances, ship info, tooltips) stay outside it.
+	std::optional<ScenePostProcessing> postProcessing;
+	if (view().Graphics.enablePostProcessing) {
+		postProcessing.emplace();
+	}
+
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
 	int saved_detail_stars = Detail.num_stars;
@@ -1002,6 +1065,10 @@ void FredRenderer::render_frame(int cur_object_index,
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
 	Detail.num_stars = saved_detail_stars;
+
+	if (postProcessing) {
+		render_shadows();
+	}
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
@@ -1018,6 +1085,8 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index);
 	render_volumetric_overlay();
+
+	postProcessing.reset();
 
 	if (view().Show_distances) {
 		display_distances();

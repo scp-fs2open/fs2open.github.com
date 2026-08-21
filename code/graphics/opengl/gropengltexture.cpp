@@ -20,6 +20,7 @@
 #include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "globalincs/systemvars.h"
+#include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "math/vecmat.h"
 #include "options/Option.h"
@@ -89,28 +90,6 @@ static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graph
                      .parser(parse_texture_filtering_func)
                      .finish();
 
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
-	}
-
-	if (max <= 2.0f) {
-		return SCP_vector<float>();
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
 static SCP_string anisotropic_display(float val)
 {
 	if (val < 2.0f) {
@@ -134,7 +113,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
@@ -189,7 +168,14 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
+	// Seed from the legacy config key first: TextureFilteringOption's default_func returns
+	// GL_mipmap_filter, so this read is what supplies that default. Only then let the option
+	// override it, the same order the anisotropy setting below uses.
 	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
+
+	if (Using_in_game_options) {
+		GL_mipmap_filter = TextureFilteringOption->getValue();
+	}
 
 	if (GL_mipmap_filter > 1) {
 		GL_mipmap_filter = 1;
@@ -1641,6 +1627,7 @@ struct fbo_t {
 	// these first vars should only be modified in opengl_make_render_target()
 	GLuint renderbuffer_id = 0;
 	GLuint framebuffer_id = 0;
+	size_t renderbuffer_bytes = 0; // for the profiler overlay's memory panel; see GL_renderbuffer_bytes_used
 	int width = 0;
 	int height = 0;
 	// these next 2 should only be modifed in opengl_set_render_target()
@@ -1652,6 +1639,12 @@ struct fbo_t {
 static SCP_vector<fbo_t> RenderTarget;
 static fbo_t *render_target = NULL;
 static int next_fbo_id = 0;
+
+// Running total of bytes used by depth/stencil renderbuffers across all live FBOs, for the
+// profiler overlay's memory panel. Kept in sync with each fbo_t's renderbuffer_bytes at every
+// create/delete site below rather than summed on demand, since RenderTarget entries are reused
+// (opengl_get_free_fbo) and reset in place.
+static size_t GL_renderbuffer_bytes_used = 0;
 
 static fbo_t* opengl_get_fbo(int id) {
 	if (id < 0) {
@@ -1768,9 +1761,20 @@ void opengl_kill_render_target(bitmap_slot* slot)
 	if (fbo->renderbuffer_id) {
 		glDeleteRenderbuffers(1, &fbo->renderbuffer_id);
 		fbo->renderbuffer_id = 0;
+		GL_renderbuffer_bytes_used -= fbo->renderbuffer_bytes;
+		fbo->renderbuffer_bytes = 0;
 	}
 
 	opengl_free_fbo_slot(fbo->fbo_id);
+}
+
+void gr_opengl_get_memory_stats(gr_memory_stats& stats)
+{
+	stats.gpu_purpose_valid = true;
+	stats.gpu_render_target_bytes = GL_renderbuffer_bytes_used;
+	// gpu_texture_bytes and gpu_geometry_bytes are left at 0 -- OpenGL has no per-purpose byte
+	// tracking for those yet (geometry bytes come from the backend-agnostic GpuHeap accounting in
+	// gr_get_memory_stats() instead; see model_vertex_heap_used/model_index_heap_used).
 }
 
 void opengl_kill_all_render_targets()
@@ -1786,6 +1790,8 @@ void opengl_kill_all_render_targets()
 		if (fbo->renderbuffer_id) {
 			glDeleteRenderbuffers(1, &fbo->renderbuffer_id);
 			fbo->renderbuffer_id = 0;
+			GL_renderbuffer_bytes_used -= fbo->renderbuffer_bytes;
+			fbo->renderbuffer_bytes = 0;
 		}
 	}
 
@@ -1954,6 +1960,10 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, *w, *h);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+		// GL_DEPTH24_STENCIL8 is 4 bytes/pixel
+		new_fbo->renderbuffer_bytes = static_cast<size_t>(*w) * static_cast<size_t>(*h) * 4;
+		GL_renderbuffer_bytes_used += new_fbo->renderbuffer_bytes;
 	}
 
 	// frame buffer
@@ -1987,6 +1997,8 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		if (new_fbo->renderbuffer_id) {
 			glDeleteRenderbuffers(1, &new_fbo->renderbuffer_id);
 			new_fbo->renderbuffer_id = 0;
+			GL_renderbuffer_bytes_used -= new_fbo->renderbuffer_bytes;
+			new_fbo->renderbuffer_bytes = 0;
 		}
 
 		opengl_set_texture_target();

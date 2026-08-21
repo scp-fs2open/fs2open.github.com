@@ -1911,7 +1911,7 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 	dc_stuff_float(&blight);
 }
 namespace ltp = lighting_profiles;
-float beam_current_light_radius(beam *bm, weapon_info *wip, beam_weapon_info *bwi, float noise)
+float beam_current_light_radius(const beam *bm, weapon_info *wip, beam_weapon_info *bwi, float noise)
 {
 	auto lp = ltp::current();
 	float width = lp->beam_light_radius.handle(wip->light_radius);
@@ -1972,6 +1972,61 @@ void beam_light_color(weapon_info *wip,hdr_color *to_fill )
 	to_fill->set_vecf(colors);
 }
 
+// How strongly a beam's muzzle is emitting right now, 0..1: ramping up over the
+// warmup, full while firing, and back down over the warmdown.
+//
+// Halved during both ramps, which is what the muzzle light has always done --
+// anything that wants to follow a beam's brightness follows this rather than
+// writing a second curve that would drift out of step with it.
+static float beam_muzzle_ramp(const beam *bm)
+{
+	if (bm->warmup_stamp != -1) {
+		return BEAM_WARMUP_PCT(bm) * 0.5f;
+	}
+	if (bm->warmdown_stamp != -1) {
+		return MAX(1.0f - BEAM_WARMDOWN_PCT(bm) * 1.3f, 0.0f) * 0.5f;
+	}
+	// otherwise the beam is really firing
+	return 1.0f;
+}
+
+bool beam_get_muzzle_glow(const beam *bm, beam_muzzle_glow *out)
+{
+	if (bm == nullptr || bm->weapon_info_index < 0) {
+		return false;
+	}
+	weapon_info *wip = &Weapon_info[bm->weapon_info_index];
+	beam_weapon_info *bwi = &wip->b_info;
+
+	const float pct = beam_muzzle_ramp(bm);
+	if (pct <= 0.0f) {
+		return false;
+	}
+
+	// Deliberately without the flicker noise the muzzle light applies: this is
+	// read once per frame by the renderer rather than by the light code, and a
+	// fresh frand() per frame would make the flare jitter independently of the
+	// light it is supposed to be following.
+	const float radius = beam_current_light_radius(bm, wip, bwi, 1.0f);
+	if (radius <= 0.0f) {
+		return false;
+	}
+
+	hdr_color light_color;
+	beam_light_color(wip, &light_color);
+	if (light_color.i() <= 0.0f) {
+		return false;
+	}
+
+	out->pos = bm->last_start;
+	out->color.xyz.x = light_color.r();
+	out->color.xyz.y = light_color.g();
+	out->color.xyz.z = light_color.b();
+	out->intensity = light_color.i() * pct;
+	out->radius = radius;
+	return true;
+}
+
 // call to add a light source to a small object
 void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 {
@@ -1988,19 +2043,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 	// get the width of the beam
 	float light_rad = beam_current_light_radius(bm, wip, bwi, noise);
 
-	float pct = 0.0f;
-
-	if (bm->warmup_stamp != -1) {	// calculate muzzle light intensity
-		// get warmup pct
-		pct = BEAM_WARMUP_PCT(bm)*0.5f;
-	} else if (bm->warmdown_stamp != -1) {	// if the beam is warming down
-		// get warmup pct
-		pct = MAX(1.0f - BEAM_WARMDOWN_PCT(bm)*1.3f,0.0f)*0.5f;
-	}
-	// otherwise the beam is really firing
-	else {
-		pct = 1.0f;
-	}
+	float pct = beam_muzzle_ramp(bm);
 
 	// Color is a copy so that we can modify it the brigthness without side-effect
 	hdr_color light_color;

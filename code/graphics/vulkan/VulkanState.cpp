@@ -251,25 +251,52 @@ void VulkanStateTracker::bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout 
 	}
 }
 
-void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set,
-                                            const SCP_vector<uint32_t>& dynamicOffsets)
+void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
+	vk::DescriptorSet set,
+	ArrayView<uint32_t> dynamicOffsets)
 {
 	Assertion(m_cmdBuffer, "bindDescriptorSet called without active command buffer!");
 	Assertion(m_currentPipelineLayout, "bindDescriptorSet called without bound pipeline layout!");
 	Assertion(set, "bindDescriptorSet called with null descriptor set!");
 
 	auto index = static_cast<uint32_t>(setIndex);
+	const uint32_t dynCount = VulkanDescriptorManager::getDynamicOffsetCount(setIndex);
+	// vkCmdBindDescriptorSets reads exactly dynCount entries, so a caller that hands over
+	// fewer would have it read past the end of their array. The view carries its own length,
+	// so that is a check rather than a convention.
+	Assertion(dynamicOffsets.size >= dynCount,
+		"bindDescriptorSet: set %u declares %u dynamic descriptors but only " SIZE_T_ARG
+		" offsets were supplied!",
+		index,
+		dynCount,
+		dynamicOffsets.size);
 
-	if (m_boundDescriptorSets[index] != set) {
-		m_cmdBuffer.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+	// The redundancy check has to cover the dynamic offsets too, not just the set
+	// handle: with dynamic UBOs the common case is the *same* set rebound with a new
+	// offset every draw, and skipping that bind would silently feed every draw the
+	// previous draw's uniforms.
+	auto& boundDyn = m_boundDynamicOffsets[index];
+	bool offsetsChanged = false;
+	for (uint32_t i = 0; i < dynCount; ++i) {
+		if (boundDyn[i] != dynamicOffsets.data[i]) {
+			offsetsChanged = true;
+			break;
+		}
+	}
+
+	if (m_boundDescriptorSets[index] != set || offsetsChanged) {
+		m_cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 			m_currentPipelineLayout,
 			index,
-			1, &set,
-			static_cast<uint32_t>(dynamicOffsets.size()),
-			dynamicOffsets.empty() ? nullptr : dynamicOffsets.data());
+			1,
+			&set,
+			dynCount,
+			dynCount > 0 ? dynamicOffsets.data : nullptr);
 
 		m_boundDescriptorSets[index] = set;
+		for (uint32_t i = 0; i < dynCount; ++i) {
+			boundDyn[i] = dynamicOffsets.data[i];
+		}
 	}
 }
 

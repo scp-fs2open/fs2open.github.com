@@ -3,6 +3,7 @@
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui/dialogs/General/ImagePickerDialog.h"
+#include "ui/dialogs/LensApertureDialog.h"
 #include "ui_BackgroundEditor.h"
 
 #include <globalincs/globals.h>
@@ -67,6 +68,8 @@ void BackgroundEditorDialog::initializeUi()
 	ui->sunPitchSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->sunHeadingSpin->setRange(_model->getFloatOrientLimit().first, _model->getFloatOrientLimit().second);
 	ui->sunScaleDoubleSpinBox->setRange(_model->getSunScaleLimit().first, _model->getSunScaleLimit().second);
+	ui->sunAngularSizeDoubleSpinBox->setRange(_model->getSunAngularSizeLimit().first,
+		_model->getSunAngularSizeLimit().second);
 
 	const auto& sun_names = _model->getAvailableSunNames();
 	for (const auto& s : sun_names) {
@@ -123,6 +126,10 @@ void BackgroundEditorDialog::initializeUi()
 
 	for (const auto& s : profiles) {
 		ui->lightingProfileCombo->addItem(QString::fromStdString(s));
+	}
+
+	for (const auto& s : _model->getCameraLensOptions()) {
+		ui->cameraLensCombo->addItem(QString::fromStdString(s));
 	}
 
 	updateMiscControls();
@@ -253,6 +260,9 @@ void BackgroundEditorDialog::updateSunControls()
 	ui->sunPitchSpin->setEnabled(enabled);
 	ui->sunHeadingSpin->setEnabled(enabled);
 	ui->sunScaleDoubleSpinBox->setEnabled(enabled);
+	ui->sunAngularSizeCheckBox->setEnabled(enabled);
+	// the value only means anything when this mission is actually setting one
+	ui->sunAngularSizeDoubleSpinBox->setEnabled(enabled && _model->getSunAngularSizeEnabled());
 
 	const int index = ui->sunSelectionCombo->findText(QString::fromStdString(_model->getSunName()));
 	ui->sunSelectionCombo->setCurrentIndex(index);
@@ -260,6 +270,8 @@ void BackgroundEditorDialog::updateSunControls()
 	ui->sunPitchSpin->setValue(_model->getSunPitch());
 	ui->sunHeadingSpin->setValue(_model->getSunHeading());
 	ui->sunScaleDoubleSpinBox->setValue(_model->getSunScale());
+	ui->sunAngularSizeCheckBox->setChecked(_model->getSunAngularSizeEnabled());
+	ui->sunAngularSizeDoubleSpinBox->setValue(_model->getSunAngularSize());
 }
 
 void BackgroundEditorDialog::updateNebulaControls()
@@ -406,6 +418,7 @@ void BackgroundEditorDialog::updateMiscControls()
 	ui->subspaceCheckBox->setChecked(_model->getTakesPlaceInSubspace());
 	ui->envMapEdit->setText(QString::fromStdString(_model->getEnvironmentMapName()));
 	ui->lightingProfileCombo->setCurrentIndex(ui->lightingProfileCombo->findText(QString::fromStdString(_model->getLightingProfileName())));
+	ui->cameraLensCombo->setCurrentIndex(ui->cameraLensCombo->findText(QString::fromStdString(_model->getCameraLensName())));
 }
 
 int BackgroundEditorDialog::pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex)
@@ -631,6 +644,24 @@ void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(double arg1)
 void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(double arg1)
 {
 	_model->setSunHeading(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_sunAngularSizeCheckBox_toggled(bool checked)
+{
+	_model->setSunAngularSizeEnabled(checked);
+
+	// take whatever the box is already showing, so ticking this can't quietly set a
+	// different size than the one on screen
+	if (checked)
+		_model->setSunAngularSize(static_cast<float>(ui->sunAngularSizeDoubleSpinBox->value()));
+
+	// toggling this enables or greys the value box next to it
+	updateSunControls();
+}
+
+void BackgroundEditorDialog::on_sunAngularSizeDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setSunAngularSize(static_cast<float>(arg1));
 }
 
 void BackgroundEditorDialog::on_sunScaleDoubleSpinBox_valueChanged(double arg1)
@@ -972,6 +1003,21 @@ void BackgroundEditorDialog::on_lightingProfileCombo_currentIndexChanged(int ind
 
 	const QString text = ui->lightingProfileCombo->itemText(index);
 	_model->setLightingProfileName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_cameraLensCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->cameraLensCombo->itemText(index);
+	_model->setCameraLensName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_lensApertureButton_clicked()
+{
+	LensApertureDialog dlg(this, _model.get());
+	dlg.exec();
 }
 
 } // namespace fso::fred::dialogs
