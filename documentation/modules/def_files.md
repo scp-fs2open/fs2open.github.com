@@ -10,12 +10,16 @@ This is why the engine can boot with no `iff_defs.tbl` present, and why a mod
 only has to ship the tables it actually changes.
 
 ## Key files
-- `def_files.cpp` / `def_files.h` — the lookup API. The `.cpp` is **generated
-  at build time** from the contents of `data/`; do not edit it by hand.
-- `data/tables/` — the default tables: `ai_profiles.tbl`, `autopilot.tbl`,
-  `cheats.tbl`, `controlconfigdefaults.tbl`, `fonts.tbl`, `game_settings.tbl`,
+- `def_files.cpp` / `def_files.h` — the lookup API. Both are ordinary
+  hand-written sources. `def_files.cpp` pulls in **`embedded_files.inc`**, which
+  *is* generated at build time by `target_embed_files()`
+  (`cmake/embed_file.cmake`, invoked from `code/CMakeLists.txt`) and defines the
+  `Default_files` array.
+- `data/tables/` — the default tables: `autopilot.tbl`, `cheats.tbl`,
+  `controlconfigdefaults.tbl`, `fonts.tbl`, `game_settings.tbl`,
   `iff_defs.tbl`, `objecttypes.tbl`, `post_processing.tbl`,
   `species_defs.tbl`, and others.
+- `ai_profiles.tbl` sits at the **module root**, not under `data/tables/`.
 - `data/effects/` — the built-in shaders (`.sdr`).
 - `data/scripts/`, `data/maps/` — default scripts and images.
 
@@ -26,11 +30,11 @@ only has to ship the tables it actually changes.
 - `defaults_get_all()` — enumerate them.
 
 ## Working with it
-- To change a default, edit the file under `data/`, not `def_files.cpp`.
+- To change a default, edit the data file itself — never
+  `embedded_files.inc`, which is regenerated on every build.
 - A new default file must be registered with the build (see
-  `code/source_groups.cmake` and `cmake/embed_file.cmake`, whose
-  `target_embed_files()` does the embedding) or it silently will not be
-  embedded.
+  `code/source_groups.cmake` and the `target_embed_files()` call in
+  `code/CMakeLists.txt`) or it silently will not be embedded.
 - Note that the shader sources under `data/effects/` are excluded from
   clang-tidy in `ci/linux/clang_tidy.sh`.
 
