@@ -8,7 +8,8 @@ translated into game *actions* by the separate `code/controlconfig/` module.
 ## Key files
 - `key.cpp` / `key.h` — keyboard state, scancodes, key queue.
 - `mouse.cpp` / `mouse.h` — mouse position/buttons.
-- `joy-sdl.cpp` / `joy.h`, `joy_ff-sdl.cpp` / `joy_ff.h` — joystick + force feedback.
+- `joy-sdl.cpp` / `joy.h`, `joy_ff.cpp` / `joy_ff.h` — joystick + force feedback.
+- `joy_haptic.*`, `joy_rumble.*` — SDL haptic and rumble device handling.
 - `timer.cpp` / `timer.h` — `timer_get_milliseconds()`, timestamps.
 - `keycontrol.cpp` — in-mission key handling (`game_process_keys`).
 - `cursor.*`, `spacemouse.*`.

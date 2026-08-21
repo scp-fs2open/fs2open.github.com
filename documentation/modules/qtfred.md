@@ -8,8 +8,11 @@ the same `.fs2` missions/campaigns (ships, wings, events/goals, briefings,
 backgrounds, etc.).
 
 ## Build
-- Built when `FSO_BUILD_QTFRED=ON` (off by default; see top-level `CMakeLists.txt`).
-- Requires Qt5 (`Qt5_DIR`). Target: `qtfred`.
+- Built when `FSO_BUILD_QTFRED=ON`, which is the default everywhere except
+  32-bit Windows (see top-level `CMakeLists.txt`).
+- Requires Qt6 (`find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)`); set
+  `QT6_INSTALL_ROOT` if the standard lookup fails, or use the prebuilt Qt with
+  `QT_USE_PRECOMPILED=ON`. Target: `qtfred`.
 
 ## Layout
 - `src/main.cpp`, `qmain.cpp`, `FredApplication.*` — application entry/bootstrap.

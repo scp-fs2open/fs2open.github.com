@@ -55,7 +55,7 @@ flowchart TD
         sh --> st["GL state mgmt<br/>(gropenglstate)"]
         st --> def["deferred lighting<br/>(gropengldeferred)"]
         def --> post["post-processing<br/>(gropenglpostprocessing)"]
-        post --> flip["gr_opengl_flip() present<br/>(gropengl.cpp ~116)"]
+        post --> flip["gr_opengl_flip() present<br/>(gropengl.cpp ~118)"]
     end
     oglinit -.binds.-> OGL
     engine --> draw

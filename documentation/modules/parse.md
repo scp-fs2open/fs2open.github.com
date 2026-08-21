@@ -39,7 +39,7 @@ Two related responsibilities:
 ```mermaid
 flowchart TD
     fs2[".fs2 mission file<br/>(events, goals, triggers)"] -->|parselo parse| tree["Sexp_nodes tree<br/>(operators + arguments)"]
-    eval_src["mission_eval_goals() / event triggers<br/>(code/mission)"] --> eval["eval_sexp(node)<br/>(sexp.cpp ~28166)"]
+    eval_src["mission_eval_goals() / event triggers<br/>(code/mission)"] --> eval["eval_sexp(node)<br/>(sexp.cpp ~28221)"]
     tree --> eval
     eval --> ident["identify OP_* via Operators table<br/>(sexp.cpp ~146)"]
     ident --> sw["switch(op) dispatch"]
@@ -49,7 +49,7 @@ flowchart TD
     ret -->|"SEXP_KNOWN_TRUE/FALSE"| cache["cache & short-circuit<br/>(never re-evaluated)"]
     ret -->|number / string| state
     handler -.->|server-authoritative effects| multi["multi_sexp pack/send<br/>(code/network)"]
-    state --> help["FRED shows operator from<br/>Sexp_help (sexp.cpp ~37998)"]
+    state --> help["FRED shows operator from<br/>Sexp_help (sexp.cpp ~38067)"]
 ```
 
 ## See also

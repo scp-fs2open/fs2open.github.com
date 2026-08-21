@@ -18,10 +18,10 @@ existing similar operator name across both files to find every spot to edit.
 ```
 - [ ] 1. Declare OP_* identifier (sexp.h)
 - [ ] 2. Register in the Operators table (sexp.cpp ~line 146)
-- [ ] 3. Add argument type-checking in query_operator_argument_type() (sexp.cpp ~line 32126)
-- [ ] 4. Implement the handler + dispatch in eval_sexp() (sexp.cpp ~line 28169)
-- [ ] 5. Add help text to Sexp_help (sexp.cpp ~line 38004)
-- [ ] 6. Add the FRED submenu category in get_category()/get_subcategory() (sexp.cpp ~line 36656)
+- [ ] 3. Add argument type-checking in query_operator_argument_type() (sexp.cpp ~line 32177)
+- [ ] 4. Implement the handler + dispatch in eval_sexp() (sexp.cpp ~line 28221)
+- [ ] 5. Add help text to Sexp_help (sexp.cpp ~line 38067)
+- [ ] 6. Add the FRED submenu category in get_category()/get_subcategory() (sexp.cpp ~line 36718)
 - [ ] 7. (If multiplayer-relevant) handle packing in network/multi_sexp.cpp
 ```
 
@@ -42,15 +42,15 @@ existing similar operator name across both files to find every spot to edit.
    submenu; that's step 6.
 
 3. **Argument typing** — add a `case OP_MY_OPERATOR:` to the big switch in
-   `query_operator_argument_type()` (`sexp.cpp`, ~line 32126), declaring what
+   `query_operator_argument_type()` (`sexp.cpp`, ~line 32177), declaring what
    each argument slot expects using the `OPF_*` enums (`OPF_NUMBER`, `OPF_SHIP`, …).
 
 4. **Implement + dispatch** — write a handler function, then add a `case OP_MY_OPERATOR:`
-   in `eval_sexp()` (`sexp.cpp`, ~line 28169) that calls it and returns a SEXP
+   in `eval_sexp()` (`sexp.cpp`, ~line 28221) that calls it and returns a SEXP
    result (`SEXP_TRUE`/`SEXP_FALSE`/`SEXP_KNOWN_*`, or a number for arithmetic ops).
    Read arguments via the `CDR`/`CADR` node walk like neighbouring cases.
 
-5. **Help text** — add an entry to the `Sexp_help` vector (`sexp.cpp`, ~line 38004):
+5. **Help text** — add an entry to the `Sexp_help` vector (`sexp.cpp`, ~line 38067):
 
 ```cpp
 { OP_MY_OPERATOR, "my-operator\r\n"
@@ -61,8 +61,8 @@ existing similar operator name across both files to find every spot to edit.
 ```
 
 6. **FRED submenu category** — add a `case OP_MY_OPERATOR:` to `get_category()`
-   (`sexp.cpp`, ~line 36656) so the operator appears under the right FRED
-   category; add it to `get_subcategory()` (~line 37380) too if the category
+   (`sexp.cpp`, ~line 36718) so the operator appears under the right FRED
+   category; add it to `get_subcategory()` (~line 37443) too if the category
    has subcategories.
 
 7. **Multiplayer** — if the operator changes game state on the server, ensure it

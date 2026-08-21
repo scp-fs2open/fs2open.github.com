@@ -52,6 +52,6 @@ flowchart LR
 ```
 
 ## See also
-- `code/physics/physics_state.*` (interpolation snapshots), `code/object/multi_obj` flow,
+- `code/physics/physics_state.*` (interpolation snapshots), `multi_obj.*` object-update flow,
   `code/parse/sexp.*` (`multi_sexp`).
 - Table option reference: https://wiki.hard-light.net/index.php/Tables

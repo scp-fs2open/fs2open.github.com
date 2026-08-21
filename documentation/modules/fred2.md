@@ -12,7 +12,7 @@ It is the legacy editor; the cross-platform replacement is **qtFRED**
 
 ## Build
 - Built only on Windows when `FSO_BUILD_FRED2=ON` (see top-level `CMakeLists.txt`).
-- Target: `Fred2`. Uses MFC; not available on Linux/macOS.
+- Target: `FRED2`. Uses MFC; not available on Linux/macOS.
 
 ## Key files (representative)
 - `fred.cpp`, `freddoc.*`, `fredview.*` — MFC app/document/view skeleton.

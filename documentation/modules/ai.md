@@ -27,8 +27,8 @@ tunables ("AI profiles"). Per-ship runtime AI state lives in `ai_info`.
 | File | Parsed in | Purpose |
 | --- | --- | --- |
 | `ai.tbl` | `parse_aitbl()` (`aicode.cpp`) | Base AI class behaviour |
-| `ai_profiles.tbl` | `ai_profiles.cpp` | Difficulty-scaling profiles (default `Default`) |
-| `mission_profiles.tbl` | `ai_profiles.cpp` | Per-mission profile overrides |
+| `ai_profiles.tbl` (+ `*-aip.tbm`) | `parse_ai_profiles_tbl()` (`ai_profiles.cpp`) | Difficulty-scaling profiles |
+| `mission_profiles.tbl` (+ `*-msp.tbm`) | `parse_ai_profiles_tbl()` (`ai_profiles.cpp`) | Alias of `ai_profiles.tbl`; the engine loads one file or the other, and prefers `mission_profiles.tbl` if both are present |
 
 Table option reference: https://wiki.hard-light.net/index.php/Tables (see *AI.tbl*, *AI_profiles.tbl*).
 
@@ -36,9 +36,9 @@ Table option reference: https://wiki.hard-light.net/index.php/Tables (see *AI.tb
 
 ```mermaid
 flowchart TD
-    move["obj_move_all() (code/object)"] --> frame["ai_frame(objnum)<br/>(aicode.cpp ~15324)"]
+    move["obj_move_all() (code/object)"] --> frame["ai_frame(objnum)<br/>(aicode.cpp ~15335)"]
     frame --> goals["process AI goals/orders<br/>(aigoals.cpp) → sets aip->mode"]
-    goals --> exec["ai_execute_behavior(aip)<br/>(aicode.cpp ~14262)"]
+    goals --> exec["ai_execute_behavior(aip)<br/>(aicode.cpp ~14272)"]
     exec --> mode{"switch on aip->mode<br/>(AIM_*)"}
     mode -->|AIM_CHASE| chase["pursue & attack target"]
     mode -->|AIM_EVADE| evade["evasive maneuvers"]
