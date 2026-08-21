@@ -859,6 +859,29 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
+SCP_vector<float> gr_get_supported_anisotropy_levels()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+
 static void parse_post_processing_func()
 {
 	bool value;
@@ -1647,6 +1670,13 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	gr_setup_viewport();
+
+	// The offscreen targets that back the scene/post-processing pipeline were sized for the old
+	// gr_screen; give the backend a chance to grow them before anything renders at the new size.
+	// Backends that already handle this elsewhere (Vulkan, via recreateSwapChain()) leave it unset.
+	if (gr_screen.gf_resize_render_targets) {
+		gr_screen.gf_resize_render_targets();
+	}
 }
 
 void gr_window_to_render_pos(float& x, float& y)
