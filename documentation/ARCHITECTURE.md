@@ -66,6 +66,20 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 | Surface decals (scorch marks, impacts) | `code/decals/` |
 | Props (static scenery objects) | `code/prop/` |
 | Asteroids / debris fields | `code/asteroid/`, `code/debris/` |
+| Loading a texture / image (any format) | `code/bmpman/` |
+| Image format decoders | `code/ddsutils/`, `code/ktxutils/`, `code/pngutils/`, `code/tgautils/`, `code/pcxutils/`, `code/jpgutils/` |
+| Legacy `.ani` animation playback | `code/anim/` |
+| Jump nodes | `code/jumpnode/` |
+| Countermeasures | `code/cmeasure/` |
+| Legacy `g3_*` pipeline & sprite batching | `code/render/` |
+| Teams / IFF, species | `code/iff_defs/`, `code/species_defs/` |
+| Scoring, ranks, medals | `code/stats/` |
+| Nav points / autopilot | `code/autopilot/` |
+| Developer console, performance tracing | `code/debugconsole/`, `code/tracing/` |
+| Modal dialogs, in-game help | `code/popup/`, `code/gamehelp/` |
+| Type-safe ids, random ranges, Unicode helpers | `code/utils/` |
+| Deferred work queue | `code/executor/` |
+| Shared FRED2/qtFRED editor code | `code/missioneditor/` |
 | Global engine tunables ("game settings" table) | `code/mod_table/` |
 | Command-line options | `code/cmdline/` |
 | Player options / in-game Options menu | `code/options/` |
@@ -80,9 +94,9 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 Each major module has its own entry-point guide under `documentation/modules/`
 (purpose, key files, core data structures, major constants, and the config tables
 it parses). Several also include a **subsystem architecture diagram**: ai,
-controlconfig, cutscene, graphics (+ OpenGL backend), lab, menuui, missionui,
-model, network, object, options, osapi, parse/SEXP, particle, physics,
-scripting. When you start working inside a module, open its guide first:
+controlconfig, cutscene, graphics, lab, menuui, missionui, model, network,
+object, options, osapi, parse, particle, physics, scripting.
+When you start working inside a module, open its guide first:
 
 | Module | Code path | Guide |
 | --- | --- | --- |
@@ -125,6 +139,46 @@ scripting. When you start working inside a module, open its guide first:
 | Pilot save files (`.plr`/`.csg`) | `code/pilotfile/` | `modules/pilotfile.md` |
 | Pre/post-mission screens (briefing, loadout, debrief) | `code/missionui/` | `modules/missionui.md` |
 | Script-driven libRocket front end | `code/scpui/` | `modules/scpui.md` |
+| Bitmap/texture manager | `code/bmpman/` | `modules/bmpman.md` |
+| DDS images (DXT/BC7, cubemaps) | `code/ddsutils/` | `modules/ddsutils.md` |
+| KTX1 images (ETC2) | `code/ktxutils/` | `modules/ktxutils.md` |
+| PNG images | `code/pngutils/` | `modules/pngutils.md` |
+| TGA images | `code/tgautils/` | `modules/tgautils.md` |
+| PCX images (retail) | `code/pcxutils/` | `modules/pcxutils.md` |
+| JPEG images | `code/jpgutils/` | `modules/jpgutils.md` |
+| Legacy `.ani` animation player | `code/anim/` | `modules/anim.md` |
+| In-mission nebula (fog, poofs, lightning) | `code/nebula/` | `modules/nebula.md` |
+| Background (stars, suns, skybox, supernova) | `code/starfield/` | `modules/starfield.md` |
+| Asteroid & debris fields | `code/asteroid/` | `modules/asteroid.md` |
+| Ship debris | `code/debris/` | `modules/debris.md` |
+| Explosions & warp effects | `code/fireball/` | `modules/fireball.md` |
+| Jump nodes | `code/jumpnode/` | `modules/jumpnode.md` |
+| Countermeasures | `code/cmeasure/` | `modules/cmeasure.md` |
+| Legacy 3D pipeline & sprite batcher | `code/render/` | `modules/render.md` |
+| General-purpose C++ utilities | `code/utils/` | `modules/utils.md` |
+| Performance tracing & profiler | `code/tracing/` | `modules/tracing.md` |
+| Deferred work queue | `code/executor/` | `modules/executor.md` |
+| Scoring, ranks, medals, traitor | `code/stats/` | `modules/stats.md` |
+| Teams / IFF relationships | `code/iff_defs/` | `modules/iff_defs.md` |
+| Species definitions | `code/species_defs/` | `modules/species_defs.md` |
+| Nav points & autopilot | `code/autopilot/` | `modules/autopilot.md` |
+| In-game help overlays | `code/gamehelp/` | `modules/gamehelp.md` |
+| Modal dialogs (popups) | `code/popup/` | `modules/popup.md` |
+| Developer console | `code/debugconsole/` | `modules/debugconsole.md` |
+| HTTP/FTP file download | `code/inetfile/` | `modules/inetfile.md` |
+| Head-tracking devices | `code/headtracking/` | `modules/headtracking.md` |
+| Table-driven effect programs | `code/actions/` | `modules/actions.md` |
+| Cheat codes | `code/cheats_table/` | `modules/cheats_table.md` |
+| Multiplayer observer | `code/observer/` | `modules/observer.md` |
+| Embedded default data files | `code/def_files/` | `modules/def_files.md` |
+| Engine lifecycle events | `code/events/` | `modules/events.md` |
+| Third-party library glue | `code/libs/` | `modules/libs.md` |
+| Windows crash reporting | `code/exceptionhandler/` | `modules/exceptionhandler.md` |
+| Platform compatibility shims | `code/windows_stub/` | `modules/windows_stub.md` |
+| VP archive builder (tool) | `code/cfilearchiver/` | `modules/cfilearchiver.md` |
+| VP archive extractor (tool) | `code/cfileextractor/` | `modules/cfileextractor.md` |
+| Runtime shared-library loading | `code/external_dll/` | `modules/external_dll.md` |
+| Shared FRED2/qtFRED editor code | `code/missioneditor/` | `modules/missioneditor.md` |
 | FRED2 mission editor (MFC, Windows) | `fred2/` | `modules/fred2.md` |
 | qtFRED mission editor (Qt, cross-platform) | `qtfred/` | `modules/qtfred.md` |
 

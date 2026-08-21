@@ -19,8 +19,17 @@ It is the legacy editor; the cross-platform replacement is **qtFRED**
 - `management.*` — central editor state and engine glue.
 - Editor dialogs (`*dlg` / `*EditorDlg`), e.g. `shipeditordlg.*`,
   `wing_editor.*`, `eventeditor.*`, `briefingeditordlg.*`,
-  `campaigneditordlg.*`, `sexp_tree_view.*` (the SEXP tree control), `bgbitmapdlg.*`.
+  `campaigneditordlg.*`, `sexp_tree_view.*` (the MFC `CTreeCtrl` *view* over the
+  shared `SexpTreeModel`), `bgbitmapdlg.*`.
 - `CMakeLists.txt` — target definition and MFC setup.
+
+## Shared editor code
+Mission and campaign saving, the SEXP tree model, object duplication, and the
+editor-side helpers that keep the engine globals consistent are **not** in this
+directory. They live in **`code/missioneditor/`**
+(`modules/missioneditor.md`), shared with qtFRED, so the two editors do not
+drift apart. Put new non-UI editor logic there, and keep only the MFC widget
+code here.
 
 ## Relationship to the engine
 - FRED edits the same structures the game parses: ships → `ship_info`/`Ships`,

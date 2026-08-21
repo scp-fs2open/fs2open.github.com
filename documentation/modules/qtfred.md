@@ -26,6 +26,11 @@ backgrounds, etc.).
 - Shares the engine's data model: `ship_info`/`Ships`, `p_object`/`Parse_objects`
   (`code/mission/missionparse.*`), SEXPs (`code/parse/sexp.*`).
 - Editor logic in `src/mission/` separates engine state from the Qt UI layer.
+- **Non-UI editor code is shared with FRED2** in `code/missioneditor/`
+  (`modules/missioneditor.md`): mission and campaign saving, `SexpTreeModel`,
+  object duplication, and the slot-management helpers. qtFRED supplies the
+  `ISexpTreeUI` implementation over `QTreeWidget`; FRED2 supplies an MFC one.
+  Put new non-UI editor logic there rather than in `src/mission/`.
 - Author-facing engine additions (new table fields, new SEXPs) generally need
   matching qtFRED UI changes (and FRED2).
 
