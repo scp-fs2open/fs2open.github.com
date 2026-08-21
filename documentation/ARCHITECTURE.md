@@ -59,6 +59,12 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 | Camera | `code/camera/` |
 | Particles / fireballs / explosions | `code/particle/`, `code/fireball/` |
 | Nebula / starfield / background | `code/nebula/`, `code/starfield/` |
+| Radar / sensor display | `code/radar/` |
+| Dynamic lights, tone mapping / exposure | `code/lighting/` |
+| Named sound entries & event music tables | `code/gamesnd/` |
+| Movie playback (FFmpeg) & cutscene list | `code/cutscene/` |
+| Surface decals (scorch marks, impacts) | `code/decals/` |
+| Props (static scenery objects) | `code/prop/` |
 | Asteroids / debris fields | `code/asteroid/`, `code/debris/` |
 | Global engine tunables ("game settings" table) | `code/mod_table/` |
 | Command-line options | `code/cmdline/` |
@@ -73,9 +79,10 @@ runtime via **SEXPs** (mission scripting) and **Lua** (engine scripting).
 
 Each major module has its own entry-point guide under `documentation/modules/`
 (purpose, key files, core data structures, major constants, and the config tables
-it parses). Several also include a **subsystem architecture diagram** (object,
-parse/SEXP, ai, physics, model, graphics + OpenGL backend, scripting, network).
-When you start working inside a module, open its guide first:
+it parses). Several also include a **subsystem architecture diagram**: ai,
+controlconfig, cutscene, graphics (+ OpenGL backend), lab, menuui, missionui,
+model, network, object, options, osapi, parse/SEXP, particle, physics,
+scripting. When you start working inside a module, open its guide first:
 
 | Module | Code path | Guide |
 | --- | --- | --- |
@@ -102,6 +109,22 @@ When you start working inside a module, open its guide first:
 | Localization / translations | `code/localization/` | `modules/localization.md` |
 | Engine-wide settings table | `code/mod_table/` | `modules/mod_table.md` |
 | Foundation types & limits | `code/globalincs/` | `modules/globalincs.md` |
+| Game state machine | `code/gamesequence/` | `modules/gamesequence.md` |
+| Math (vectors, matrices, intersection) | `code/math/` | `modules/math.md` |
+| OS abstraction, window, logging | `code/osapi/` | `modules/osapi.md` |
+| Camera, subtitles, photo mode | `code/camera/` | `modules/camera.md` |
+| Dynamic lights & lighting profiles | `code/lighting/` | `modules/lighting.md` |
+| Particle effects | `code/particle/` | `modules/particle.md` |
+| Surface decals | `code/decals/` | `modules/decals.md` |
+| Radar / sensor display | `code/radar/` | `modules/radar.md` |
+| Sound & music content tables | `code/gamesnd/` | `modules/gamesnd.md` |
+| Movie playback & cutscene list | `code/cutscene/` | `modules/cutscene.md` |
+| Props (static scenery objects) | `code/prop/` | `modules/prop.md` |
+| Input-to-action bindings | `code/controlconfig/` | `modules/controlconfig.md` |
+| The player & pilot records | `code/playerman/` | `modules/playerman.md` |
+| Pilot save files (`.plr`/`.csg`) | `code/pilotfile/` | `modules/pilotfile.md` |
+| Pre/post-mission screens (briefing, loadout, debrief) | `code/missionui/` | `modules/missionui.md` |
+| Script-driven libRocket front end | `code/scpui/` | `modules/scpui.md` |
 | FRED2 mission editor (MFC, Windows) | `fred2/` | `modules/fred2.md` |
 | qtFRED mission editor (Qt, cross-platform) | `qtfred/` | `modules/qtfred.md` |
 
@@ -323,8 +346,8 @@ and usually a hook firing site in the relevant subsystem.
   `code/windows_stub/`.
 - **HUD — `code/hud/`**: per-gauge files (`hudtarget.*`, `hudreticle.*`,
   `hudshield.*`, `hudescort.*`, …). Gauges are configurable via tables.
-- **UI — `code/ui/`** (low-level widgets), **`code/scpui/`** (RocketUI/libRocket
-  based modern UI), **`code/menuui/`** / **`code/missionui/`** (specific screens
+- **UI — `code/ui/`** (low-level widgets), **`code/scpui/`** (libRocket-based
+  modern UI), **`code/menuui/`** / **`code/missionui/`** (specific screens
   like main hall, briefing, ship/weapon select).
 - **Player — `code/playerman/`** (player struct, controls) and
   **`code/pilotfile/`** (pilot save/load).
@@ -334,8 +357,9 @@ and usually a hook firing site in the relevant subsystem.
 ## 10. Foundational / cross-cutting code — `code/globalincs/`
 
 Read these to understand idioms you'll see everywhere:
-- `pstypes.h` — base types, `vec3d`/`matrix` forward decls, `MAX_*` limits,
-  `Int3()`/`Assert()` debug macros, fixed-point `fix`.
+- `pstypes.h` — base types, the `vec3d`/`matrix`/`matrix4`/`angles`
+  definitions (the *operations* on them live in `code/math/vecmat.*`),
+  `MAX_*` limits, `Int3()`/`Assert()` debug macros, fixed-point `fix`.
 - `vmallocator.h` — the `SCP_vector`, `SCP_string`, `SCP_map`, etc. aliases
   (thin wrappers over `std::`). Use these, not raw `std::` types, for consistency.
 - `flagset.h` — type-safe bitflag sets (`flagset<Some::Flags>`). Flags are defined
