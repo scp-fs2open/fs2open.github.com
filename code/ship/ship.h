@@ -1907,13 +1907,15 @@ extern int ship_find_num_turrets(object *objp);
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
-extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
+extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr, int wip_index = -1);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
 extern int ship_find_subsys(const ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
 extern int ship_get_subsys_index(const ship_subsys *subsys);
 
 extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_check = false);
 extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
+extern bool turret_has_weapon(ship_subsys *ssp, int wi_index);
+extern float ship_get_turret_type_aggregate_hits(ship *shipp, int wi_index);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(const ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos);
@@ -1964,7 +1966,7 @@ bool ship_can_bay_depart(ship *sp);			// checks to see if a ship has a departure
 
 int ship_return_subsys_path_normal(const ship *sp, const ship_subsys *ss, const vec3d *gsubpos, vec3d *norm);
 bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, const vec3d *eye_pos, const vec3d *subsys_pos, bool do_facing_check = true, float *dot_out = nullptr, vec3d *vec_out = nullptr);
-ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos);
+ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos, int turret_wip_index = -1);
 
 // defines and definition for function to get a random ship of a particular team (any ship,
 // any ship but player ships, or only players)
