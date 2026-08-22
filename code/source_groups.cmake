@@ -752,6 +752,8 @@ add_file_folder("Io"
 	io/joy_rumble.cpp
 	io/spacemouse.cpp
 	io/spacemouse.h
+	io/gamepad.cpp
+	io/gamepad.h
 )
 
 # jpgutils files

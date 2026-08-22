@@ -15,6 +15,7 @@
 #include "mission/missionload.h"
 #include "prop/prop.h"
 #include "controlconfig/controlsconfig.h"
+#include "io/gamepad.h"
 
 using namespace ImGui;
 
@@ -84,7 +85,7 @@ void LabUi::build_species_entry(const species_info &species_def, int species_idx
 				TreeNodeEx(node_label.c_str(),
 					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 					"%s", class_def.name);
-				if (IsItemClicked() && !IsItemToggledOpen()) {
+				if (IsItemActivated() && !IsItemToggledOpen()) {
 					getLabManager()->changeDisplayedObject(LabMode::Ship, ship_info_idx);
 				}
 			}
@@ -121,7 +122,7 @@ void LabUi::build_weapon_subtype_list() const
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 						"%s", class_def.name);
 
-					if (IsItemClicked() && !IsItemToggledOpen()) {
+					if (IsItemActivated() && !IsItemToggledOpen()) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, weapon_idx);
 					}
 				}
@@ -147,7 +148,7 @@ void LabUi::build_prop_subtype_list()
 						"%s",
 						class_def.name.c_str());
 
-					if (IsItemClicked() && !IsItemToggledOpen()) {
+					if (IsItemActivated() && !IsItemToggledOpen()) {
 						getLabManager()->changeDisplayedObject(LabMode::Prop, prop_idx);
 					}
 				}
@@ -179,7 +180,7 @@ void LabUi::build_asteroid_list()
 					info.name,
 					subtype.type_name.c_str());
 
-				if (IsItemClicked() && !IsItemToggledOpen()) {
+				if (IsItemActivated() && !IsItemToggledOpen()) {
 					getLabManager()->changeDisplayedObject(LabMode::Asteroid, asteroid_idx, subtype_idx);
 				}
 
@@ -210,7 +211,7 @@ void LabUi::build_debris_list()
 				"%s",
 				info.name);
 
-			if (IsItemClicked() && !IsItemToggledOpen()) {
+			if (IsItemActivated() && !IsItemToggledOpen()) {
 				getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, 0); // Debris subtype is always 0
 			}
 
@@ -275,7 +276,7 @@ void LabUi::build_background_list()
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 	TreeNodeEx(LAB_MISSION_NONE_STRING, node_flags, LAB_MISSION_NONE_STRING);
-	if (IsItemClicked() && !IsItemToggledOpen()) {
+	if (IsItemActivated() && !IsItemToggledOpen()) {
 		getLabManager()->Renderer->useBackground(LAB_MISSION_NONE_STRING);
 	}
 
@@ -291,7 +292,7 @@ void LabUi::build_background_list()
 			for (const auto& mission_name : directory.second) {
 				TreeNodeEx(mission_name.c_str(), node_flags, "%s", mission_name.c_str());
 
-				if (IsItemClicked() && !IsItemToggledOpen()) {
+				if (IsItemActivated() && !IsItemToggledOpen()) {
 					getLabManager()->Renderer->useBackground(mission_name);
 				}
 			}
@@ -396,6 +397,15 @@ void LabUi::show_controls_reference()
 		controls_reference_entry("Mouse wheel", "Zoom the camera in or out.");
 		TextWrapped("Rotation axis limits and rotation speed apply only to object orientation (LMB), not "
 					"camera controls (RMB).");
+
+		if (io::gamepad::navActive()) {
+			Separator();
+			TextWrapped("Gamepad controls");
+			controls_reference_entry("RStick", "Orient the displayed object.");
+			controls_reference_entry("RStick + LTrigger", "Rotate the camera.");
+			controls_reference_entry("RStick + LTrigger + RTrigger", "Pan the camera on the X/Y plane.");
+			controls_reference_entry("RStick + RTrigger", "Zoom the camera in or out.");
+		}
 
 		Separator();
 		TextWrapped("Keyboard shortcuts");
