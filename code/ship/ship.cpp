@@ -871,11 +871,16 @@ ship_obj *get_ship_obj_ptr_from_index(int index)
  */
 int ship_get_num_ships()
 {
-	int count;
-	ship_obj *so;
+	int count = 0;
 
-	count = 0;
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	// Ship_obj_list is only list_init()'d by ship_obj_list_init(), which runs on entering gameplay;
+	// this can be called before that (e.g. by the profiler overlay's memory stats from the main
+	// menu), in which case GET_FIRST() returns the list head's zero-initialized null next pointer.
+	if (GET_FIRST(&Ship_obj_list) == nullptr) {
+		return count;
+	}
+
+	for ( ship_obj const* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
 		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;

@@ -17,12 +17,37 @@ namespace tracing {
 class Category {
 	const SCP_string _name;
 	bool _graphics_category;
+	int _id;
  public:
 	Category(const char* name, bool is_graphics);
 
 	const char* getName() const;
 
 	bool usesGPUCounter() const;
+
+	/**
+	 * @brief A stable, dense id in the range [0, getCount()) assigned at construction.
+	 *
+	 * Categories are global statics, so ids are handed out in construction order and can be used
+	 * to index a fixed-size array (see the frame profiler's per-category self-time accumulation).
+	 */
+	int getId() const { return _id; }
+
+	/**
+	 * @brief The number of Category instances constructed so far. At runtime (after static
+	 * initialization) this equals the total number of categories, so it is a safe size for an
+	 * array indexed by getId().
+	 */
+	static int getCount();
+
+	/**
+	 * @brief The category with the given id, which must be in [0, getCount()).
+	 *
+	 * Lets code that accumulates per-category data keyed by getId() recover the category from an
+	 * id alone, rather than carrying a parallel id -> Category* array alongside its results.
+	 * Categories are global statics, so the reference is valid for the life of the program.
+	 */
+	static const Category& getById(int id);
 };
 
 extern Category LuaOnFrame;

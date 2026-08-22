@@ -181,6 +181,38 @@ bool vulkan_get_property(gr_property prop, void* dest)
 	}
 }
 
+void vulkan_get_debug_stats(gr_debug_stats& stats)
+{
+	const auto& frameStats = getDrawManager()->getFrameStats();
+
+	stats.draw_stats_valid = true;
+	stats.draw_calls = frameStats.drawCalls;
+	stats.draw_indexed_calls = frameStats.drawIndexedCalls;
+	stats.total_vertices = frameStats.totalVertices;
+	stats.total_indices = frameStats.totalIndices;
+	stats.apply_material_calls = frameStats.applyMaterialCalls;
+	stats.apply_material_failures = frameStats.applyMaterialFailures;
+	stats.no_pipeline_skips = frameStats.noPipelineSkips;
+	stats.on_demand_texture_uploads = frameStats.onDemandTextureUploads;
+
+	stats.descriptor_sets_allocated = static_cast<int>(getDescriptorManager()->getSetsAllocatedThisFrame());
+	stats.descriptor_writes = static_cast<int>(getDescriptorManager()->getWritesThisFrame());
+	stats.pipeline_count = getPipelineManager()->getPipelineCount();
+}
+
+void vulkan_get_memory_stats(gr_memory_stats& stats)
+{
+	auto* memoryManager = getMemoryManager();
+	if (memoryManager == nullptr) {
+		return;
+	}
+
+	stats.gpu_purpose_valid = true;
+	stats.gpu_texture_bytes = memoryManager->getTextureBytes();
+	stats.gpu_geometry_bytes = memoryManager->getGeometryBytes();
+	stats.gpu_render_target_bytes = memoryManager->getRenderTargetBytes();
+}
+
 void vulkan_push_debug_group(const char* name)
 {
 	auto* renderer = getRendererInstance();
@@ -218,12 +250,16 @@ void vulkan_imgui_render_draw_data()
 	if (renderer) {
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), renderer->getVkCurrentCommandBuffer());
 
-		// ImGui recorded its own pipeline/descriptor/viewport/scissor binds
-		// directly on the command buffer, mid-pass. Anything the engine draws
-		// before the next pass boundary (e.g. gr_flip's debug overlay or cached
-		// UI model instances) would otherwise run with ImGui's pipeline still
-		// bound because the tracker believes its own pipeline is current.
+		// ImGui just bound its own pipeline/descriptor set directly on the command buffer,
+		// inside the same (already-active) render pass FSO's own draws share -- it can't begin
+		// its own pass here, unlike the other raw recorders whose staleness setRenderPass()
+		// alone recovers from. Without this, the next tracked draw (e.g. a HUD gauge rendered
+		// after the profiler overlay) can skip rebinding its own pipeline/descriptor set because
+		// the tracker's/draw-manager's cached handles still match what THEY last bound, even
+		// though ImGui has since changed what's actually bound on the command buffer -- see
+		// VulkanStateTracker::invalidateExternalBindings().
 		getStateTracker()->invalidateExternalBindings();
+		getDrawManager()->invalidateDrawStateCaches();
 	}
 }
 
@@ -534,6 +570,8 @@ void init_function_pointers()
 
 	gr_screen.gf_is_capable = vulkan_is_capable;
 	gr_screen.gf_get_property = vulkan_get_property;
+	gr_screen.gf_get_debug_stats = vulkan_get_debug_stats;
+	gr_screen.gf_get_memory_stats = vulkan_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = vulkan_push_debug_group;
 	gr_screen.gf_pop_debug_group = vulkan_pop_debug_group;

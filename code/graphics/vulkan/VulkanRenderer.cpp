@@ -63,7 +63,7 @@ void VulkanRenderer::createCompositionResources()
 		auto image = m_device->createImageUnique(imageInfo);
 
 		VulkanAllocation alloc{};
-		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc);
+		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc, MemoryPurpose::RenderTarget);
 
 		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = image.get();
@@ -271,7 +271,8 @@ void VulkanRenderer::createDepthResources()
 	m_depthImage = m_device->createImageUnique(imageInfo);
 
 	// Allocate GPU memory for the depth image
-	m_memoryManager->allocateImageMemory(m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory);
+	m_memoryManager->allocateImageMemory(
+		m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory, MemoryPurpose::RenderTarget);
 
 	// Create depth image view
 	vk::ImageViewCreateInfo viewInfo;
