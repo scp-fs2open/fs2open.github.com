@@ -1105,6 +1105,8 @@ add_file_folder("Object"
 	object/collideshipship.cpp
 	object/collideshipweapon.cpp
 	object/collideweaponweapon.cpp
+	object/collideprofile.cpp
+	object/collideprofile.h
 	object/deadobjectdock.cpp
 	object/deadobjectdock.h
 	object/objcollide.cpp

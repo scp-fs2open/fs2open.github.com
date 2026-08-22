@@ -101,6 +101,7 @@ void collide_init();
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideWeaponWeapon.cpp
 int collide_weapon_weapon( obj_pair * pair );
+collision_result collide_weapon_weapon_check( obj_pair * pair );
 
 // Checks ship-weapon collisions.  pair->a is ship and pair->b is weapon.
 // Returns 1 if all future collisions between these can be ignored
@@ -114,11 +115,13 @@ collision_result collide_ship_weapon_check( obj_pair * pair );
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideDebrisWeapon.cpp
 int collide_debris_weapon( obj_pair * pair );
+collision_result collide_debris_weapon_check( obj_pair * pair );
 
 // Checks debris-ship collisions.  pair->a is debris and pair->b is ship.
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideDebrisShip.cpp
 int collide_debris_ship( obj_pair * pair );
+collision_result collide_debris_ship_check( obj_pair * pair );
 
 // Checks debris-prop collisions.  pair->a is debris and pair->b is prop.
 // Returns 1 if all future collisions between these can be ignored
@@ -127,7 +130,9 @@ int collide_debris_prop(obj_pair* pair);
 
 int collide_asteroid_prop(obj_pair* pair);
 int collide_asteroid_ship(obj_pair *pair);
+collision_result collide_asteroid_ship_check( obj_pair * pair );
 int collide_asteroid_weapon(obj_pair *pair);
+collision_result collide_asteroid_weapon_check( obj_pair * pair );
 
 // Checks ship-ship collisions.  pair->a and pair->b are ships.
 // Returns 1 if all future collisions between these can be ignored

@@ -70,6 +70,7 @@ typedef struct debris {
 extern	SCP_vector<debris> Debris;
 
 struct collision_info_struct;
+struct mc_info;
 
 void debris_init();
 void debris_render(object * obj, model_draw_list *scene);
@@ -88,7 +89,10 @@ void debris_create_set_velocity(const debris *db, const ship *source_shipp, cons
 // Fire scripting hook after debris creation
 void debris_create_fire_hook(object *obj, object *source_obj);
 
-int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
+// out_mc, when given, receives the raw model collision result instead of it being stashed
+// directly on the weapon.  The threaded collision path needs that write deferred to the main
+// thread, so the caller does it during post-processing.
+int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL, mc_info* out_mc = nullptr );
 void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force );
 
 void debris_add_to_hull_list(debris *db);

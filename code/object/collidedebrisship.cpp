@@ -27,52 +27,28 @@
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 
+// Narrowphase output for a debris/asteroid vs ship hit, carried from the worker thread to the
+// main thread.
+struct rock_ship_collision_data {
+	collision_info_struct hit_info;
+	vec3d hitpos;
+};
+
 /**
- * Checks debris-ship collisions.  
- * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is ship.
- * @return 1 if all future collisions between these can be ignored
+ * Applies a debris-ship collision.  Main thread only: this mutates the physics and hull state of
+ * both objects.
  */
-int collide_debris_ship( obj_pair * pair )
+void collide_debris_ship_process( obj_pair * pair, const std::any& collision_data )
 {
-	float dist;
+	auto cd = std::any_cast<rock_ship_collision_data>(collision_data);
+	collision_info_struct& debris_hit_info = cd.hit_info;
+	vec3d& hitpos = cd.hitpos;
+
 	object *debris_objp = pair->a;
 	object *ship_objp = pair->b;
-
-	// Don't check collisions for warping out player
-	if ( Player->control_mode != PCM_NORMAL )	{
-		if ( ship_objp == Player_obj )
-			return 0;
-	}
-
-	Assert( debris_objp->type == OBJ_DEBRIS );
-	Assert( ship_objp->type == OBJ_SHIP );
-
-	if (reject_due_collision_groups(debris_objp, ship_objp))
-		return 0;
-
 	ship* shipp = &Ships[ship_objp->instance];
-	// don't check collision if it's our own debris and we are dying
-	if ( (debris_objp->parent == OBJ_INDEX(ship_objp)) && (shipp->flags[Ship::Ship_Flags::Dying]) )
-		return 0;
 
-	dist = vm_vec_dist( &debris_objp->pos, &ship_objp->pos );
-	if ( dist < debris_objp->radius + ship_objp->radius )	{
-		int hit;
-		vec3d	hitpos;
-		// create and initialize ship_ship_hit_info struct
-		collision_info_struct debris_hit_info;
-		init_collision_info_struct(&debris_hit_info);
-
-		if ( debris_objp->phys_info.mass > ship_objp->phys_info.mass ) {
-			debris_hit_info.heavy = debris_objp;
-			debris_hit_info.light = ship_objp;
-		} else {
-			debris_hit_info.heavy = ship_objp;
-			debris_hit_info.light = debris_objp;
-		}
-
-		hit = debris_check_collision(debris_objp, ship_objp, &hitpos, &debris_hit_info );
-		if ( hit )
+	{
 		{
 			bool ship_override = false, debris_override = false;
 
@@ -108,7 +84,7 @@ int collide_debris_ship( obj_pair * pair )
 				calculate_ship_ship_collision_physics( &debris_hit_info );
 
 				if ( debris_hit_info.impulse < 0.5f )
-					return 0;
+					return;
 
 				// calculate ship damage
 				ship_damage = 0.005f * debris_hit_info.impulse;	//	Cut collision-based damage in half.
@@ -193,9 +169,52 @@ int collide_debris_ship( obj_pair * pair )
 						scripting::hook_param("Hitpos", 'o', hitpos),
 						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (debris_hit_info.heavy == ship_objp))));
 			}
-
-			return 0;
 		}
+	}
+}
+
+/**
+ * Checks debris-ship collisions.  Pure: safe to run on a collision worker thread.
+ * @param pair obj_pair pointer to the two objects. pair->a is debris and pair->b is ship.
+ */
+collision_result collide_debris_ship_check( obj_pair * pair )
+{
+	float dist;
+	object *debris_objp = pair->a;
+	object *ship_objp = pair->b;
+
+	// Don't check collisions for warping out player
+	if ( Player->control_mode != PCM_NORMAL )	{
+		if ( ship_objp == Player_obj )
+			return { false, std::any(), &collide_debris_ship_process };
+	}
+
+	Assert( debris_objp->type == OBJ_DEBRIS );
+	Assert( ship_objp->type == OBJ_SHIP );
+
+	if (reject_due_collision_groups(debris_objp, ship_objp))
+		return { false, std::any(), &collide_debris_ship_process };
+
+	ship* shipp = &Ships[ship_objp->instance];
+	// don't check collision if it's our own debris and we are dying
+	if ( (debris_objp->parent == OBJ_INDEX(ship_objp)) && (shipp->flags[Ship::Ship_Flags::Dying]) )
+		return { false, std::any(), &collide_debris_ship_process };
+
+	dist = vm_vec_dist( &debris_objp->pos, &ship_objp->pos );
+	if ( dist < debris_objp->radius + ship_objp->radius )	{
+		rock_ship_collision_data cd;
+		init_collision_info_struct(&cd.hit_info);
+
+		if ( debris_objp->phys_info.mass > ship_objp->phys_info.mass ) {
+			cd.hit_info.heavy = debris_objp;
+			cd.hit_info.light = ship_objp;
+		} else {
+			cd.hit_info.heavy = ship_objp;
+			cd.hit_info.light = debris_objp;
+		}
+
+		if ( debris_check_collision(debris_objp, ship_objp, &cd.hitpos, &cd.hit_info ) )
+			return { false, std::any(cd), &collide_debris_ship_process };
 	} else {	//	Bounding spheres don't intersect, set timestamp for next collision check.
 		float	ship_max_speed, debris_speed;
 		float	time;
@@ -220,55 +239,35 @@ int collide_debris_ship( obj_pair * pair )
 		}
 	}
 
-	return 0;
+	return { false, std::any(), &collide_debris_ship_process };
+}
+
+int collide_debris_ship( obj_pair * pair )
+{
+	const auto& [never_check_again, collision_data, process_fnc] = collide_debris_ship_check(pair);
+
+	if (collision_data.has_value()) {
+		process_fnc(pair, collision_data);
+	}
+
+	return never_check_again ? 1 : 0;
 }
 
 /**
- * Checks asteroid-ship collisions.  
- * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is ship.
- * @return 1 if all future collisions between these can be ignored
+ * Applies an asteroid-ship collision.  Main thread only: this mutates the physics and hull state
+ * of both objects.
  */
-int collide_asteroid_ship( obj_pair * pair )
+void collide_asteroid_ship_process( obj_pair * pair, const std::any& collision_data )
 {
-	if (!Asteroids_enabled)
-		return 0;
+	auto cd = std::any_cast<rock_ship_collision_data>(collision_data);
+	collision_info_struct& asteroid_hit_info = cd.hit_info;
+	vec3d& hitpos = cd.hitpos;
 
-	float		dist;
 	object	*asteroid_objp = pair->a;
 	object	*ship_objp = pair->b;
-
-	// Don't check collisions for warping out player
-	if ( Player->control_mode != PCM_NORMAL )	{
-		if ( ship_objp == Player_obj ) return 0;
-	}
-
-	if (asteroid_objp->hull_strength < 0.0f)
-		return 0;
-
-	Assert( asteroid_objp->type == OBJ_ASTEROID );
-	Assert( ship_objp->type == OBJ_SHIP );
-
-	dist = vm_vec_dist( &asteroid_objp->pos, &ship_objp->pos );
-
 	ship* shipp = &Ships[ship_objp->instance];
 
-	if ( dist < asteroid_objp->radius + ship_objp->radius )	{
-		int hit;
-		vec3d	hitpos;
-		// create and initialize ship_ship_hit_info struct
-		collision_info_struct asteroid_hit_info;
-		init_collision_info_struct(&asteroid_hit_info);
-
-		if ( asteroid_objp->phys_info.mass > ship_objp->phys_info.mass ) {
-			asteroid_hit_info.heavy = asteroid_objp;
-			asteroid_hit_info.light = ship_objp;
-		} else {
-			asteroid_hit_info.heavy = ship_objp;
-			asteroid_hit_info.light = asteroid_objp;
-		}
-
-		hit = asteroid_check_collision(asteroid_objp, ship_objp, &hitpos, &asteroid_hit_info );
-		if ( hit )
+	{
 		{
 			bool ship_override = false, asteroid_override = false;
 
@@ -306,7 +305,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				calculate_ship_ship_collision_physics( &asteroid_hit_info );
 
 				if ( asteroid_hit_info.impulse < 0.5f )
-					return 0;
+					return;
 
 				// limit damage from impulse by making max impulse (for damage) 2*m*v_max_relative
 				float max_ship_impulse = (2.0f*ship_objp->phys_info.max_vel.xyz.z+vm_vec_mag_quick(&asteroid_vel)) * 
@@ -380,11 +379,53 @@ int collide_asteroid_ship( obj_pair * pair )
 						scripting::hook_param("Hitpos", 'o', hitpos),
 						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (asteroid_hit_info.heavy == ship_objp))));
 			}
+		}
+	}
+}
 
-			return 0;
+/**
+ * Checks asteroid-ship collisions.  Pure: safe to run on a collision worker thread.
+ * @param pair obj_pair pointer to the two objects. pair->a is asteroid and pair->b is ship.
+ */
+collision_result collide_asteroid_ship_check( obj_pair * pair )
+{
+	if (!Asteroids_enabled)
+		return { false, std::any(), &collide_asteroid_ship_process };
+
+	float		dist;
+	object	*asteroid_objp = pair->a;
+	object	*ship_objp = pair->b;
+
+	// Don't check collisions for warping out player
+	if ( Player->control_mode != PCM_NORMAL )	{
+		if ( ship_objp == Player_obj )
+			return { false, std::any(), &collide_asteroid_ship_process };
+	}
+
+	if (asteroid_objp->hull_strength < 0.0f)
+		return { false, std::any(), &collide_asteroid_ship_process };
+
+	Assert( asteroid_objp->type == OBJ_ASTEROID );
+	Assert( ship_objp->type == OBJ_SHIP );
+
+	dist = vm_vec_dist( &asteroid_objp->pos, &ship_objp->pos );
+
+	ship* shipp = &Ships[ship_objp->instance];
+
+	if ( dist < asteroid_objp->radius + ship_objp->radius )	{
+		rock_ship_collision_data cd;
+		init_collision_info_struct(&cd.hit_info);
+
+		if ( asteroid_objp->phys_info.mass > ship_objp->phys_info.mass ) {
+			cd.hit_info.heavy = asteroid_objp;
+			cd.hit_info.light = ship_objp;
+		} else {
+			cd.hit_info.heavy = ship_objp;
+			cd.hit_info.light = asteroid_objp;
 		}
 
-		return 0;
+		if ( asteroid_check_collision(asteroid_objp, ship_objp, &cd.hitpos, &cd.hit_info ) )
+			return { false, std::any(cd), &collide_asteroid_ship_process };
 	} else {
 		// estimate earliest time at which pair can hit
 		float asteroid_max_speed, ship_max_speed, time;
@@ -409,8 +450,20 @@ int collide_asteroid_ship( obj_pair * pair )
 		} else {
 			pair->next_check_time = timestamp(0);	// check next time
 		}
-		return 0;
 	}
+
+	return { false, std::any(), &collide_asteroid_ship_process };
+}
+
+int collide_asteroid_ship( obj_pair * pair )
+{
+	const auto& [never_check_again, collision_data, process_fnc] = collide_asteroid_ship_check(pair);
+
+	if (collision_data.has_value()) {
+		process_fnc(pair, collision_data);
+	}
+
+	return never_check_again ? 1 : 0;
 }
 
 /**
@@ -553,7 +606,7 @@ int collide_asteroid_prop(obj_pair* pair)
 			asteroid_hit_info.light = asteroid_objp;
 		}
 
-		hit = prop_check_collision(prop_objp, prop_objp, &hitpos, &asteroid_hit_info);
+		hit = prop_check_collision(prop_objp, asteroid_objp, &hitpos, &asteroid_hit_info);
 		if (hit)
 		{
 			bool ship_override = false, asteroid_override = false;
