@@ -221,7 +221,7 @@ class Editor : public QObject {
 	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
 	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, const char* name);
+	int rename_ship(int ship, const char* name, bool update_display_name = true);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.

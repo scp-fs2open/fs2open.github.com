@@ -1185,6 +1185,10 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
+						char new_name[NAME_LENGTH];
+						wing_bash_ship_name(new_name, Wings[Duped_wing].name, Wings[Duped_wing].wave_count + 1);
+						rename_ship(ship, new_name);
+						// bash it again for the display name
 						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;

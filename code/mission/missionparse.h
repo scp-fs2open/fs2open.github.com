@@ -588,6 +588,9 @@ extern SCP_vector<SCP_string> Parse_names;
 // silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
 extern SCP_vector<SCP_string> Mission_parse_warnings;
 
+// true while a mission is being parsed and post-processed
+extern bool Parsing_mission;
+
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
 extern p_object	*Player_start_pobject;
