@@ -238,6 +238,15 @@ int ship_registry_get_index(const char *name)
 	if (ship_it != Ship_registry_map.end())
 		return ship_it->second;
 
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+	{
+		ship_it = Ship_registry_map.find(legacy_hashed);
+		if (ship_it != Ship_registry_map.end())
+			return ship_it->second;
+	}
+
 	return -1;
 }
 
@@ -246,6 +255,15 @@ int ship_registry_get_index(const SCP_string &name)
 	auto ship_it = Ship_registry_map.find(name);
 	if (ship_it != Ship_registry_map.end())
 		return ship_it->second;
+
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name.c_str()))
+	{
+		ship_it = Ship_registry_map.find(legacy_hashed);
+		if (ship_it != Ship_registry_map.end())
+			return ship_it->second;
+	}
 
 	return -1;
 }
@@ -267,18 +285,18 @@ bool ship_registry_exists(int index)
 
 const ship_registry_entry *ship_registry_get(const char *name)
 {
-	auto ship_it = Ship_registry_map.find(name);
-	if (ship_it != Ship_registry_map.end())
-		return &Ship_registry[ship_it->second];
+	auto idx = ship_registry_get_index(name);
+	if (idx >= 0)
+		return &Ship_registry[idx];
 
 	return nullptr;
 }
 
 const ship_registry_entry *ship_registry_get(const SCP_string &name)
 {
-	auto ship_it = Ship_registry_map.find(name);
-	if (ship_it != Ship_registry_map.end())
-		return &Ship_registry[ship_it->second];
+	auto idx = ship_registry_get_index(name);
+	if (idx >= 0)
+		return &Ship_registry[idx];
 
 	return nullptr;
 }
@@ -295,6 +313,27 @@ const ship_registry_entry *ship_registry_get(anchor_t anchor)
 {
 	// anchors are just ship registry indexes (if in bounds) under the hood
 	return ship_registry_get(anchor.value());
+}
+
+void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_key)
+{
+	Assertion(Ship_registry.in_bounds(entry_index), "Invalid ship registry index %d passed to ship_registry_rename!", entry_index);
+	if (!Ship_registry.in_bounds(entry_index))
+		return;
+
+	auto entry = &Ship_registry[entry_index];
+
+	// the old key is sometimes useful for looking up the ship under its previous name;
+	// if not, remove it (provided it actually refers to this entry)
+	if (erase_old_key)
+	{
+		auto ship_it = Ship_registry_map.find(entry->name);
+		if (ship_it != Ship_registry_map.end() && ship_it->second == entry_index)
+			Ship_registry_map.erase(ship_it);
+	}
+
+	strcpy_s(entry->name, new_name);
+	Ship_registry_map[entry->name] = entry_index;
 }
 
 
@@ -15028,6 +15067,34 @@ void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset
 	}
 }
 
+bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src)
+{
+	// missions might have ships within wings that were saved using the legacy hash format, with the hash suffix at the end
+	auto hash = get_pointer_to_first_hash_symbol(src);
+	if (hash && *(hash + 1) != '\0')
+	{
+		// find the run of digits immediately preceding the hash
+		auto digits = hash;
+		while (digits > src && isdigit(static_cast<unsigned char>(*(digits - 1))))
+			digits--;
+
+		// the ordinal must be at least one digit, preceded by a space, preceded by the wing name
+		if (digits < hash && digits > (src + 1) && *(digits - 1) == ' ')
+		{
+			// move the ordinal from before the hash to the end of the name
+			dest.assign(src, digits - 1);
+			dest += hash;
+			dest += ' ';
+			dest.append(digits, hash);
+
+			// we changed it
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Return the object index of the ship with name *name.
  */
@@ -15251,10 +15318,7 @@ int ship_info_lookup(const char *token)
 	return ship_info_lookup_sub(name);
 }
 
-/**
- * Return the ship index of the ship with name *name.
- */
-int ship_name_lookup(const char *name, int inc_players)
+static int ship_name_lookup_sub(const char *name, int inc_players)
 {
 	Assertion(name != nullptr, "NULL name passed to ship_name_lookup");
 
@@ -15272,7 +15336,26 @@ int ship_name_lookup(const char *name, int inc_players)
 	return -1;
 }
 
-int ship_type_name_lookup_sub(const char *name)
+/**
+ * Return the ship index of the ship with name *name.
+ */
+int ship_name_lookup(const char *name, int inc_players)
+{
+	// try the normal lookup
+	auto idx = ship_name_lookup_sub(name, inc_players);
+	if (idx >= 0)
+		return idx;
+
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+		return ship_name_lookup_sub(legacy_hashed.c_str(), inc_players);
+
+	// couldn't find it
+	return -1;
+}
+
+static int ship_type_name_lookup_sub(const char *name)
 {
 	Assertion(name != nullptr, "NULL name passed to ship_type_name_lookup");
 
