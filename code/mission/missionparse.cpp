@@ -7015,7 +7015,11 @@ bool post_process_mission(mission *pm)
 		return false;
 	}
 	Player_start_shipnum = player_start_entry->shipnum;
-	Assert( Player_start_shipnum != -1 );
+	if (Player_start_shipnum < 0) {
+		// the ship exists in the mission file but its first wave was never created
+		Warning(LOCATION, "Player start ship '%s' was not created at mission start!  If the wing containing the player has a custom arrival cue, the cue must evaluate to true at the beginning of the mission.  Similarly, if the wing arrives from a hangar bay, the mothership must be present at the beginning of the mission.", Player_start_shipname);
+		return false;
+	}
 	Player_start_pobject = player_start_entry->p_objp();
 	Assert( Player_start_pobject != NULL );
 

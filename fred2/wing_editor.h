@@ -117,6 +117,7 @@ protected:
 	afx_msg void OnBnClickedCustomWarpoutParams();
 	afx_msg void OnWingFormationAlign();
 	afx_msg void OnChangeWingName();
+	afx_msg void OnChangeWingWaves();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
