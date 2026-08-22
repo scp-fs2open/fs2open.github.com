@@ -116,9 +116,24 @@ void OptUi::build_options_list(const char* category) const
 				}
 			}
 
+			// Capture hover state now, since the last ImGui item is still the control itself -- adding the
+			// override marker below would otherwise become the "last item" and break IsItemHovered() for the tooltip.
+			bool isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay);
+
+			auto overrideReason = options::OptionsManager::instance()->getOverrideReason(thisOpt->getConfigKey());
+			if (overrideReason.has_value()) {
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "(cmdline)");
+			}
+
 			// Add a tooltip with the option description on mouseover
-			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay))
-				ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
+			if (isHovered) {
+				if (overrideReason.has_value()) {
+					ImGui::SetTooltip("%s\n\nSet via command line: %s", thisOpt->getDescription().c_str(), overrideReason->c_str());
+				} else {
+					ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
+				}
+			}
 		}
 	}
 }

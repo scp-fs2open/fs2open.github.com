@@ -13,7 +13,14 @@ class OptionBase;
 class OptionsManager {
 	OptionsManager();
 
-	SCP_unordered_map<SCP_string, std::unique_ptr<json_t>> _config_overrides;
+	// A value forced by something outside of the options system itself (currently only the command line).
+	// This takes priority over the persisted config value, but not over an in-session edit the player hasn't
+	// saved or discarded yet (see getValueFromConfig()).
+	struct OverrideEntry {
+		std::unique_ptr<json_t> value;
+		SCP_string reason; // human-readable source, e.g. "-no_vsync", shown in the options UI
+	};
+	SCP_unordered_map<SCP_string, OverrideEntry> _config_overrides;
 
 	SCP_unordered_map<SCP_string, std::unique_ptr<json_t>> _changed_values;
 
@@ -34,7 +41,10 @@ class OptionsManager {
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
-	void setOverride(const SCP_string& key, const SCP_string& json);
+	void setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason);
+
+	// Returns the reason string passed to setOverride() for this key, if it is currently overridden.
+	std::optional<SCP_string> getOverrideReason(const SCP_string& key) const;
 
 	const OptionBase* addOption(std::shared_ptr<const OptionBase>&& option);
 
