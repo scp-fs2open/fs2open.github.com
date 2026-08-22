@@ -1,3 +1,6 @@
+#ifdef GL_ES
+precision highp float;
+#endif
 
 const float SRGB_GAMMA = 2.2;
 const float SRGB_GAMMA_INVERSE = 1.0 / SRGB_GAMMA;
