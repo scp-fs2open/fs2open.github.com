@@ -929,6 +929,8 @@ add_file_folder("MissionEditor"
 	missioneditor/sexp_tree_opf.h
 	missioneditor/sexp_tree_actions.cpp
 	missioneditor/sexp_tree_actions.h
+	missioneditor/slot_operations.cpp
+	missioneditor/slot_operations.h
 )
 
 # MissionUI files
@@ -1818,6 +1820,7 @@ add_file_folder("Ui"
 )
 
 add_file_folder("Utils"
+	utils/array_utils.h
 	utils/base64.cpp
 	utils/base64.h
 	utils/encoding.cpp

@@ -105,7 +105,6 @@ void correct_marking();
 int get_ship_from_obj(int obj);
 int get_ship_from_obj(object* objp);
 void set_valid_dock_points(int ship, int type, CComboBox* box);
-void ai_update_goal_references(sexp_ref_type type, const char* old_name, const char* new_name);
 std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const char* name);
 int advanced_stricmp(char* one, char* two);
 int reference_handler(const char* name, sexp_ref_type type, int obj);
