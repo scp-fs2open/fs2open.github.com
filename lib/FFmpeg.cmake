@@ -48,7 +48,7 @@ IF(PLATFORM_WINDOWS)
     target_link_libraries(ffmpeg INTERFACE swscale)
     target_link_libraries(ffmpeg INTERFACE swresample)
 ELSE(WIN32)
-    if (PLATFORM_MAC)
+    if (PLATFORM_MAC OR ANDROID)
         option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." ON)
     else()
         option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." OFF)
@@ -97,8 +97,8 @@ ELSE(WIN32)
             # Use our libraries
             find_library(${name}_LOCATION ${name}
                 PATHS "${FFMPEG_PATH}/lib"
-                NO_DEFAULT_PATH)
-
+                NO_DEFAULT_PATH
+                NO_CMAKE_FIND_ROOT_PATH)
             file(GLOB ${name}_LIBS "${FFMPEG_PATH}/lib/lib${name}*")
 
             get_filename_component(FULL_LIB_PATH "${${name}_LOCATION}" REALPATH)
