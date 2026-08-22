@@ -178,6 +178,9 @@ SCP_vector<SCP_string> Parse_names;
 
 SCP_vector<SCP_string> Mission_parse_warnings;
 
+// true while a mission is being parsed and post-processed
+bool Parsing_mission = false;
+
 // Routes a parse-time auto-correction notice to the right surface for the app:
 // outside QtFRED, the existing Warning(LOCATION, ...) popup; inside QtFRED, the
 // Mission_parse_warnings queue so the ErrorChecker can present it without a popup.
@@ -7534,6 +7537,8 @@ bool parse_main(const char *mission_name, int flags)
 
 	Assert(Ship_info.size() <= MAX_SHIP_CLASSES);
 
+	Parsing_mission = true;
+
 	do {
 		// don't do this for imports
 		if (!(flags & MPF_IMPORT_FSM)) {
@@ -7584,6 +7589,8 @@ bool parse_main(const char *mission_name, int flags)
 			break;
 		}
 	} while (0);
+
+	Parsing_mission = false;
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);

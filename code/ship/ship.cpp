@@ -229,6 +229,19 @@ ship_info* ship_registry_entry::sip() const
 	}
 }
 
+int ship_registry_entry::ship_class_index() const
+{
+	if (shipnum >= 0)
+		return Ships[shipnum].ship_info_index;
+	else if (pobj_num >= 0)
+		return Parse_objects[pobj_num].ship_class;
+	else
+	{
+		Assertion(false, "A ship registry entry must have either a parse object or a ship!");
+		return -1;
+	}
+}
+
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
@@ -268,6 +281,15 @@ bool ship_registry_exists(int index)
 const ship_registry_entry *ship_registry_get(const char *name)
 {
 	auto ship_it = Ship_registry_map.find(name);
+
+	// during parse time, also search for legacy ship names
+	if (Parsing_mission && ship_it == Ship_registry_map.end())
+	{
+		SCP_string legacy_hashed;
+		if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+			ship_it = Ship_registry_map.find(legacy_hashed);
+	}
+
 	if (ship_it != Ship_registry_map.end())
 		return &Ship_registry[ship_it->second];
 
@@ -277,6 +299,15 @@ const ship_registry_entry *ship_registry_get(const char *name)
 const ship_registry_entry *ship_registry_get(const SCP_string &name)
 {
 	auto ship_it = Ship_registry_map.find(name);
+
+	// during parse time, also search for legacy ship names
+	if (Parsing_mission && ship_it == Ship_registry_map.end())
+	{
+		SCP_string legacy_hashed;
+		if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name.c_str()))
+			ship_it = Ship_registry_map.find(legacy_hashed);
+	}
+
 	if (ship_it != Ship_registry_map.end())
 		return &Ship_registry[ship_it->second];
 
@@ -8645,6 +8676,15 @@ void ship_delete( object * obj )
 			shipp->weapons.primary_bank_external_model_instance[i] = -1;
 		}
 	}
+
+	// In FRED, clean up the registry so that stale references don't stick around.  Conversely,
+	// in FSO, we need to keep the registry entry so that ships will still be known in the debriefing.
+	if (Fred_running)
+	{
+		auto ship_it = Ship_registry_map.find(shipp->ship_name);
+		if (ship_it != Ship_registry_map.end())
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
+	}
 }
 
 /**
@@ -15026,6 +15066,34 @@ void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset
 		shipp->display_name = "";
 		shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
 	}
+}
+
+bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src)
+{
+	// missions might have ships within wings that were saved using the legacy hash format, with the hash suffix at the end
+	auto hash = get_pointer_to_first_hash_symbol(src);
+	if (hash && *(hash + 1) != '\0')
+	{
+		// find the run of digits immediately preceding the hash
+		auto digits = hash;
+		while (digits > src && isdigit(*(digits - 1)))
+			digits--;
+
+		// the ordinal must be at least one digit, preceded by a space, preceded by the wing name
+		if (digits < hash && digits > (src + 1) && *(digits - 1) == ' ')
+		{
+			// move the ordinal from before the hash to the end of the name
+			dest.assign(src, digits - 1);
+			dest += hash;
+			dest += ' ';
+			dest.append(digits, hash);
+
+			// we changed it
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
