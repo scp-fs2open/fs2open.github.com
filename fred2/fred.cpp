@@ -237,6 +237,7 @@ BOOL CFREDApp::InitInstance() {
 	Outline_lod = GetProfileInt("Preferences", "Outline LOD", 1);
 	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
 	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
+	Classic_menu_layout = GetProfileInt("Preferences", "Classic menu layout", 0) != 0;
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -333,6 +334,10 @@ BOOL CFREDApp::InitInstance() {
 	OnFileNew();
 
 	if (m_pMainWnd == NULL) return FALSE;
+
+	// apply the saved main menu layout preference (the new layout is loaded by default)
+	if (Classic_menu_layout)
+		((CMainFrame *) m_pMainWnd)->apply_menu_layout(true);
 
 	// Enable drag/drop open
 	m_pMainWnd->DragAcceptFiles();
@@ -536,6 +541,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Outline LOD", Outline_lod);
 	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);
 	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
+	WriteProfileInt("Preferences", "Classic menu layout", Classic_menu_layout ? 1 : 0);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);

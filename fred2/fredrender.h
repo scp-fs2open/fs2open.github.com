@@ -28,6 +28,7 @@ extern bool Always_save_display_names;	// When saving a mission, always write di
 										// Wings now support display names, or the ship-change-display-name SEXP can be used, to handle that case.
 extern bool Error_checker_checks_potential_issues;	// Error checker checks not only outright errors but also potential issues
 extern bool Error_checker_checks_potential_issues_once;	// Same as above, but only once, and independent of the selected option
+extern bool Classic_menu_layout;		// Use the classic main menu layout instead of the qtFRED-style layout
 extern int Show_stars;              //!< Bool. If nonzero, draw the starfield, nebulas, and suns. Might also handle skyboxes
 extern int Single_axis_constraint;  //!< Bool. If nonzero, constrain movement to one axis
 extern int Show_distances;          //!< Bool. If nonzero, draw lines between each object and display their distance on the middle of each line

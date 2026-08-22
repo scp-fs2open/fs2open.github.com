@@ -292,6 +292,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
+	ON_COMMAND(ID_CLASSIC_MENU_LAYOUT, OnClassicMenuLayout)
+	ON_UPDATE_COMMAND_UI(ID_CLASSIC_MENU_LAYOUT, OnUpdateClassicMenuLayout)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -4048,6 +4050,19 @@ void CFREDView::OnErrorCheckerChecksPotentialIssues()
 void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
+}
+
+void CFREDView::OnClassicMenuLayout()
+{
+	Classic_menu_layout = !Classic_menu_layout;
+	if (Fred_main_wnd != nullptr)
+		Fred_main_wnd->apply_menu_layout(Classic_menu_layout);
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateClassicMenuLayout(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Classic_menu_layout);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
