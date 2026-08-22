@@ -1,6 +1,6 @@
 
 #include "ddsutils/ddsutils.h"
-#include "ddsutils/ddsutils_etc_cache.h"
+#include "texcache/tex_cache.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
 #include "osapi/osregistry.h"
@@ -532,10 +532,10 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		if (!Cmdline_no_transcode_cache) {
 			//Build the cache MD5 hash
-			key = etc2_cache_make_key(cfp, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
+			key = tex_cache_make_key(cfp, TEX_CACHE_TYPE_ETC2, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
 
 			//Try to load from a cache file
-			if (etc2_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, etc2_size, data)) {
+			if (tex_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, etc2_size, data)) {
 				if (bpp)
 					*bpp = is_dxt1 ? (ubyte)24 : (ubyte)32;
 				cfclose(cfp);
@@ -622,7 +622,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		if (!Cmdline_no_transcode_cache) {
 			//Save to cache
-			etc2_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, data, etc2_size);
+			tex_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, data, etc2_size);
 		}
 		vm_free(rgba);
 		vm_free(comp_data);

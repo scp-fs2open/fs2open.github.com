@@ -1614,15 +1614,11 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_PERSISTENT_BUFFER_MAPPING:
 		return GLAD_GL_ARB_buffer_storage != 0;
 	case gr_capability::CAPABILITY_BPTC:
-		return GLAD_GL_ARB_texture_compression_bptc != 0;
+		return false;// GLAD_GL_ARB_texture_compression_bptc != 0;
 	case gr_capability::CAPABILITY_S3TC:
-		return GLAD_GL_EXT_texture_compression_s3tc != 0;
+		return false;// GLAD_GL_EXT_texture_compression_s3tc != 0;
 	case gr_capability::CAPABILITY_ETC2:
-#ifdef USE_OPENGL_ES
-		return true;
-#else
 		return GLAD_GL_ARB_ES3_compatibility != 0;
-#endif
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		return !Cmdline_no_large_shaders;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:

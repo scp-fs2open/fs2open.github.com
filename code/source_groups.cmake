@@ -192,8 +192,12 @@ endif()
 add_file_folder("ddsutils"
 	ddsutils/ddsutils.cpp
 	ddsutils/ddsutils.h
-	ddsutils/ddsutils_etc_cache.cpp
-	ddsutils/ddsutils_etc_cache.h
+)
+
+# texture transcode cache files
+add_file_folder("texcache"
+	texcache/tex_cache.cpp
+	texcache/tex_cache.h
 )
 
 # Debris files
