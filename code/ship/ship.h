@@ -1046,6 +1046,7 @@ struct ship_registry_entry
 	ship* shipp_or_null() const;
 
 	ship_info* sip() const;
+	int ship_class_index() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -1876,6 +1877,8 @@ extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, in
 extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
 extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
 extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src);
+
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.
