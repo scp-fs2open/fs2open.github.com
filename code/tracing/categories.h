@@ -28,8 +28,10 @@ class Category {
 	/**
 	 * @brief A stable, dense id in the range [0, getCount()) assigned at construction.
 	 *
-	 * Categories are global statics, so ids are handed out in construction order and can be used
-	 * to index a fixed-size array (see the frame profiler's per-category self-time accumulation).
+	 * Ids are handed out in construction order and can be used to index a fixed-size array (see the
+	 * frame profiler's per-category self-time accumulation). A copy of a Category keeps the id of
+	 * the original, so two objects can share an id. The id only names a category; it does not
+	 * identify an object and it gives no access to one.
 	 */
 	int getId() const { return _id; }
 
@@ -41,13 +43,16 @@ class Category {
 	static int getCount();
 
 	/**
-	 * @brief The category with the given id, which must be in [0, getCount()).
+	 * @brief The name of the category with the given id, which must be in [0, getCount()).
 	 *
-	 * Lets code that accumulates per-category data keyed by getId() recover the category from an
-	 * id alone, rather than carrying a parallel id -> Category* array alongside its results.
-	 * Categories are global statics, so the reference is valid for the life of the program.
+	 * Lets code that accumulates per-category data keyed by getId() recover the name from an id
+	 * alone, rather than carrying a parallel id -> name array alongside its results.
+	 *
+	 * The name comes back by value, and no Category object is touched. Most categories are global
+	 * statics, but the Lua API tracing_category constructs one and copies it into a script-owned
+	 * object, so an id can outlive the object that first got it.
 	 */
-	static const Category& getById(int id);
+	static SCP_string getNameById(int id);
 };
 
 extern Category LuaOnFrame;

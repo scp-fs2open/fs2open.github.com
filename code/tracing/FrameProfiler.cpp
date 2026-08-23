@@ -320,14 +320,16 @@ SCP_string FrameProfiler::getContent() {
 }
 
 void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total) {
-	SCP_vector<std::pair<const Category*, uint64_t>> sorted;
+	// Keep the id, not a Category pointer: a category that a script made through the Lua API
+	// tracing_category can be gone by now, but its name stays available through getNameById().
+	SCP_vector<std::pair<int, uint64_t>> sorted;
 	for (size_t id = 0; id < self_time_by_id.size(); id++) {
 		if (self_time_by_id[id] > 0) {
-			sorted.emplace_back(&Category::getById(static_cast<int>(id)), self_time_by_id[id]);
+			sorted.emplace_back(static_cast<int>(id), self_time_by_id[id]);
 		}
 	}
 	std::sort(sorted.begin(), sorted.end(),
-		[](const std::pair<const Category*, uint64_t>& a, const std::pair<const Category*, uint64_t>& b) {
+		[](const std::pair<int, uint64_t>& a, const std::pair<int, uint64_t>& b) {
 			return a.second > b.second;
 		});
 
@@ -338,7 +340,7 @@ void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time
 
 	for (size_t i = 0; i < sorted.size(); i++) {
 		if (i < FRAME_OVERLAY_MAX_CONTRIBUTORS) {
-			overlaySnapshot.top_contributors.push_back({sorted[i].first->getName(), sorted[i].second});
+			overlaySnapshot.top_contributors.push_back({Category::getNameById(sorted[i].first), sorted[i].second});
 		} else {
 			overlaySnapshot.other_nanosec += sorted[i].second;
 		}
