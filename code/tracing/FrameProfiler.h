@@ -22,7 +22,7 @@ namespace tracing {
  *
  * @c self_time_by_id is resized and zeroed to @c Category::getCount() entries and filled with each
  * category's self time, indexed by @c Category::getId() (recover the category with
- * @c Category::getById()). Pass the same vector every frame to reuse its allocation.
+ * @c Category::getNameById()). Pass the same vector every frame to reuse its allocation.
  *
  * @return the sum of all self-times, i.e. the total traced frame time.
  *
