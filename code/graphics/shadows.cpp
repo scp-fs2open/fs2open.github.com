@@ -904,6 +904,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		case OBJ_RAW_POF:
 		case OBJ_PROP: {
 			int model_num = object_get_model_num(objp);
+			if (model_num < 0)
+				break;
 			auto pm = model_get(model_num);
 			model_clear_instance(model_num);
 
