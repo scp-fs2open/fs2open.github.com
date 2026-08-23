@@ -18,6 +18,23 @@ trace_event make_event(const Category& category, EventType type, uint64_t timest
 	return evt;
 }
 
+trace_event make_complete_event(const Category& category,
+	uint64_t timestamp,
+	uint64_t duration,
+	uint64_t event_id,
+	uint64_t end_event_id) {
+	trace_event evt;
+	evt.category = &category;
+	evt.type = EventType::Complete;
+	evt.timestamp = timestamp;
+	evt.duration = duration;
+	evt.event_id = event_id;
+	evt.end_event_id = end_event_id;
+	evt.pid = 1;
+	evt.tid = 1;
+	return evt;
+}
+
 // Small helper to run the function under test and look results up by category.
 struct self_time_result {
 	SCP_vector<uint64_t> by_id;
@@ -147,16 +164,66 @@ TEST(FrameProfilerSelfTime, reused_buffer_is_cleared)
 	EXPECT_EQ(by_id[static_cast<size_t>(Physics.getId())], 0u);
 }
 
-// Ids are dense and the registry round-trips them, which is what lets the overlay snapshot drop
-// the parallel id -> Category* array.
+// Ids are dense and the registry round-trips them to a name, which is what lets the overlay
+// snapshot keep ids alone instead of a parallel id -> name array.
 TEST(TracingCategory, id_round_trips_through_registry)
 {
 	ASSERT_GT(Category::getCount(), 0);
 
 	for (int id = 0; id < Category::getCount(); id++) {
-		EXPECT_EQ(Category::getById(id).getId(), id);
+		EXPECT_FALSE(Category::getNameById(id).empty());
 	}
 
-	EXPECT_EQ(&Category::getById(Physics.getId()), &Physics);
-	EXPECT_EQ(&Category::getById(PostMove.getId()), &PostMove);
+	EXPECT_EQ(Category::getNameById(Physics.getId()), SCP_string(Physics.getName()));
+	EXPECT_EQ(Category::getNameById(PostMove.getId()), SCP_string(PostMove.getName()));
+}
+
+// The overlay snapshot must name its contributors through the registry, not through a Category
+// pointer. This drives the full path that crashed: processEvent -> processFrame ->
+// build_overlay_snapshot -> getNameById.
+TEST(FrameProfilerOverlaySnapshot, contributors_are_named_and_sorted)
+{
+	// A category made at run time, like the one the Lua API tracing_category makes.
+	Category runtime_category("Overlay snapshot test category", false);
+
+	FrameProfiler profiler;
+
+	// The outer scope runs for 10 ns and contains the inner scope, which runs for 3 ns.
+	trace_event outer = make_complete_event(runtime_category, 0, 10, 1, 4);
+	trace_event inner = make_complete_event(Physics, 2, 3, 2, 3);
+
+	profiler.processEvent(&outer);
+	profiler.processEvent(&inner);
+	profiler.processFrame();
+
+	const frame_overlay_snapshot& snapshot = profiler.getOverlaySnapshot();
+
+	EXPECT_TRUE(snapshot.valid);
+	EXPECT_EQ(snapshot.total_nanosec, 10u);
+	ASSERT_EQ(snapshot.top_contributors.size(), 2u);
+
+	// The largest self time comes first.
+	EXPECT_EQ(snapshot.top_contributors[0].name, SCP_string("Overlay snapshot test category"));
+	EXPECT_EQ(snapshot.top_contributors[0].self_nanosec, 7u);
+	EXPECT_EQ(snapshot.top_contributors[1].name, SCP_string(Physics.getName()));
+	EXPECT_EQ(snapshot.top_contributors[1].self_nanosec, 3u);
+	EXPECT_EQ(snapshot.other_nanosec, 0u);
+}
+
+// Not every Category is a global static: the Lua API tracing_category constructs one and copies it
+// into a script-owned object, so the constructed object dies while its id stays in the trace
+// events. The registry must keep the name alive on its own.
+TEST(TracingCategory, name_outlives_the_category_object)
+{
+	int id = -1;
+	{
+		Category temporary("Temporary test category", false);
+		id = temporary.getId();
+
+		// A copy keeps the id of the original, which is how the Lua object gets a usable id.
+		Category copy = temporary;
+		EXPECT_EQ(copy.getId(), id);
+	}
+
+	EXPECT_EQ(Category::getNameById(id), SCP_string("Temporary test category"));
 }
