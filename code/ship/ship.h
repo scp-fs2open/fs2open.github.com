@@ -973,6 +973,7 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
 extern const ship_registry_entry *ship_registry_get(int index);
 extern const ship_registry_entry *ship_registry_get(anchor_t anchor);
+extern void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_key);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1681,9 +1682,9 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
-#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
-#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
+#define WING_INDEX(wingp) (static_cast<int>((wingp)-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>((shipp)-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>((ship_entry)-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start
@@ -1783,6 +1784,8 @@ extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, in
 extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
 extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
 extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src);
+
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.

@@ -5844,7 +5844,15 @@ const ship_registry_entry *eval_ship(int node)
 			return eval_ship(arg_node);
 	}
 
-	auto ship_it = Ship_registry_map.find(CTEXT(node));
+	// look up the ship in the ship registry
+	auto ship_name = CTEXT(node);
+	auto ship_it = Ship_registry_map.find(ship_name);
+	if (ship_it == Ship_registry_map.end())
+	{
+		SCP_string legacy_hashed;
+		if (wing_bash_legacy_hashed_ship_name(legacy_hashed, ship_name))
+			ship_it = Ship_registry_map.find(legacy_hashed);
+	}
 	if (ship_it != Ship_registry_map.end())
 	{
 		// cache the value if it can't change later

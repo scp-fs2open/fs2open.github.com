@@ -1755,7 +1755,7 @@ bool turret_fire_weapon(int weapon_num,
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
-	int turret_weapon_class = weapon_info_get_index(wip);
+	int turret_weapon_class = WEAPON_INFO_INDEX(wip);
 
 #ifndef NDEBUG
 	// moved here from check_ok_to_fire

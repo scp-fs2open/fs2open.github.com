@@ -56,7 +56,7 @@ int Debris_num_submodels = 0;
 
 particle::ParticleEffectHandle Debris_hit_particle;
 
-#define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
+#define	DEBRIS_INDEX(dp) (static_cast<int>((dp)-Debris.data()))
 
 // Find the first available arc slot.  If none is available, and no_create is false, add one.
 debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create);

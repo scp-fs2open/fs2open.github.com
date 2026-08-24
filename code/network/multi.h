@@ -134,7 +134,7 @@ class player;
 //
 
 // netplayer management
-#define NET_PLAYER_INDEX(np)	(static_cast<int>(np-Net_players))
+#define NET_PLAYER_INDEX(np)	(static_cast<int>((np)-Net_players))
 #define NET_PLAYER_NUM(np)		(NET_PLAYER_INDEX(np))
 #define MY_NET_PLAYER_NUM		(NET_PLAYER_INDEX(Net_player))
 

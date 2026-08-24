@@ -387,7 +387,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weap
 	int bank_fired = swp->current_secondary_bank;
 
 	// initialize tsi
-	tsi->weapon_class = weapon_info_get_index(wip);
+	tsi->weapon_class = WEAPON_INFO_INDEX(wip);
 	if (wip->wi_flags[Weapon::Info_Flags::Swarm]) {
 		tsi->num_to_launch = wip->swarm_count;
 	} else {
