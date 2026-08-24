@@ -226,7 +226,7 @@ typedef struct beam {
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
-#define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
+#define BEAM_INDEX(beam)			(static_cast<int>((beam)-Beams.data()))
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS

@@ -977,7 +977,8 @@ extern int Default_cmeasure_index;
 
 extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
 
-#define WEAPON_INDEX(wp)			(int)(wp-Weapons)
+#define WEAPON_INDEX(wp)			(static_cast<int>((wp)-Weapons))
+#define WEAPON_INFO_INDEX(wip)		(static_cast<int>((wip)-Weapon_info.data()))
 
 typedef struct tracking_info {
 	ship_subsys *subsys;
@@ -988,7 +989,6 @@ typedef struct tracking_info {
 } tracking_info;
 
 int weapon_info_lookup(const char *name);
-int weapon_info_get_index(const weapon_info *wip);
 
 inline int weapon_info_size()
 {

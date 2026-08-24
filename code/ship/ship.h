@@ -1769,9 +1769,9 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
-#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
-#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
+#define WING_INDEX(wingp) (static_cast<int>((wingp)-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>((shipp)-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>((ship_entry)-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start
