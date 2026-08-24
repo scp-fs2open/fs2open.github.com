@@ -88,7 +88,11 @@ void TraceEventWriter::processEvent(const trace_event* event) {
 		_out << ",\"id\":\"" << reinterpret_cast<const void*>(event->scope) << "\"";
 	}
 
-	_out << ",\"name\":\"" << event->category->getName() << "\",\"ph\":\"" << getTypeStr(event->type) << "\"";
+	// Read the name through the id, not event->category: this runs on the writer's background
+	// thread, well after the event was recorded, and the Category it names may already be dead
+	// (see trace_event::category_id).
+	_out << ",\"name\":\"" << Category::getNameById(event->category_id) << "\",\"ph\":\""
+		 << getTypeStr(event->type) << "\"";
 
 	switch (event->type) {
 		case EventType::Complete:
