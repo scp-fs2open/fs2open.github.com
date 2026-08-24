@@ -239,6 +239,7 @@ void process_gpu_events() {
 
 void init_event(const Category& category, trace_event* evt) {
 	evt->category = &category;
+	evt->category_id = category.getId();
 
 	evt->timestamp = timer_get_nanoseconds();
 
@@ -411,6 +412,7 @@ void start(const Category& category, trace_event* evt) {
 
 		gpu_trace_event gpu_event;
 		gpu_event.base_evt.category = &category;
+		gpu_event.base_evt.category_id = category.getId();
 		gpu_event.base_evt.tid = 1;
 		gpu_event.base_evt.pid = GPU_PID;
 		gpu_event.base_evt.type = EventType::Begin;
@@ -447,6 +449,7 @@ void end(trace_event* evt) {
 
 		gpu_trace_event gpu_event;
 		gpu_event.base_evt.category = evt->category;
+		gpu_event.base_evt.category_id = evt->category_id;
 		gpu_event.base_evt.tid = 1;
 		gpu_event.base_evt.pid = GPU_PID;
 		gpu_event.base_evt.type = EventType::End;

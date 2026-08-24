@@ -1067,6 +1067,21 @@ void scripting_state_close()
 	scripting_state_inited = 0;
 }
 
+scripting_memory_stats scripting_get_memory_stats()
+{
+	scripting_memory_stats stats;
+
+	lua_State* L = Script_system.GetLuaSession();
+	if (L == nullptr) {
+		return stats;
+	}
+
+	stats.valid = true;
+	stats.lua_heap_bytes = static_cast<size_t>(lua_gc(L, LUA_GCCOUNT, 0)) * 1024 +
+		static_cast<size_t>(lua_gc(L, LUA_GCCOUNTB, 0));
+	return stats;
+}
+
 void scripting_state_do_frame(float  /*frametime*/, bool doKeys)
 {
 	// just incase something is wrong

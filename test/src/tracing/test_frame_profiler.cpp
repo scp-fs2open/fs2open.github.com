@@ -13,6 +13,7 @@ namespace {
 trace_event make_event(const Category& category, EventType type, uint64_t timestamp) {
 	trace_event evt;
 	evt.category = &category;
+	evt.category_id = category.getId();
 	evt.type = type;
 	evt.timestamp = timestamp;
 	return evt;
@@ -25,6 +26,7 @@ trace_event make_complete_event(const Category& category,
 	uint64_t end_event_id) {
 	trace_event evt;
 	evt.category = &category;
+	evt.category_id = category.getId();
 	evt.type = EventType::Complete;
 	evt.timestamp = timestamp;
 	evt.duration = duration;
@@ -164,6 +166,36 @@ TEST(FrameProfilerSelfTime, reused_buffer_is_cleared)
 	EXPECT_EQ(by_id[static_cast<size_t>(Physics.getId())], 0u);
 }
 
+// accumulate_self_times must not dereference a Category through the event: FrameProfiler buffers
+// events across frames (see processFrame()), so a category made through the Lua API
+// tracing_category can die between processEvent() and the processFrame() that finally walks this
+// event. Reading evt.category->getId() on that dangling pointer, and indexing self_time_by_id with
+// whatever garbage id came back, is the out-of-bounds write that used to corrupt the heap (see
+// trace_event::category_id).
+TEST(FrameProfilerSelfTime, category_can_die_before_self_time_is_accumulated)
+{
+	SCP_vector<trace_event> events;
+	int id;
+	{
+		Category temporary("Frame profiler self-time test category", false);
+		id = temporary.getId();
+		events = {
+			make_event(temporary, EventType::Begin, 0),
+			make_event(Physics, EventType::Begin, 5),
+			make_event(Physics, EventType::End, 8),
+			make_event(temporary, EventType::End, 10),
+		};
+	}
+	// temporary is dead here; events still carries its address, but accumulate_self_times must
+	// use category_id, not that address.
+
+	self_time_result r(events);
+
+	EXPECT_EQ(r.by_id[static_cast<size_t>(id)], 7u); // [0,5) + [8,10)
+	EXPECT_EQ(r.self(Physics), 3u);                  // [5,8)
+	EXPECT_EQ(r.total, 10u);
+}
+
 // Ids are dense and the registry round-trips them to a name, which is what lets the overlay
 // snapshot keep ids alone instead of a parallel id -> name array.
 TEST(TracingCategory, id_round_trips_through_registry)
@@ -221,7 +253,7 @@ TEST(TracingCategory, name_outlives_the_category_object)
 		id = temporary.getId();
 
 		// A copy keeps the id of the original, which is how the Lua object gets a usable id.
-		Category copy = temporary;
+		const Category& copy = temporary;
 		EXPECT_EQ(copy.getId(), id);
 	}
 

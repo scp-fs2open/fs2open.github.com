@@ -16,6 +16,9 @@ bool event_sorter(const trace_event& left, const trace_event& right) {
 }
 
 void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) {
+	// Read the name through the id, not evt.category: the Category it names may already be dead
+	// (see trace_event::category_id).
+	const SCP_string category_name = Category::getNameById(evt.category_id);
 	int parent = -1;
 	for (int i = 0; i < (int) samples.size(); i++) {
 		if (!samples[i].open_profiles) {
@@ -31,7 +34,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	}
 
 	for (int i = 0; i < (int) samples.size(); i++) {
-		if (!strcmp(samples[i].name.c_str(), evt.category->getName()) && samples[i].parent == parent) {
+		if (samples[i].name == category_name && samples[i].parent == parent) {
 			// found the profile sample
 			samples[i].open_profiles++;
 			samples[i].profile_instances++;
@@ -44,7 +47,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	// create a new profile sample
 	profile_sample new_sample;
 
-	new_sample.name = SCP_string(evt.category->getName());
+	new_sample.name = category_name;
 	new_sample.open_profiles = 1;
 	new_sample.profile_instances = 1;
 	new_sample.accumulator = 0;
@@ -58,6 +61,9 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 }
 
 void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
+	// Read the name through the id, not evt.category: the Category it names may already be dead
+	// (see trace_event::category_id).
+	const SCP_string category_name = Category::getNameById(evt.category_id);
 	uint num_parents = 0;
 	int child_of = -1;
 
@@ -70,7 +76,7 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 	}
 
 	for (int i = 0; i < (int) samples.size(); i++) {
-		if (!strcmp(samples[i].name.c_str(), evt.category->getName()) && samples[i].parent == child_of) {
+		if (samples[i].name == category_name && samples[i].parent == child_of) {
 			int inner = 0;
 			int parent = -1;
 			uint64_t end_time = evt.timestamp;
@@ -141,14 +147,17 @@ uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector
 		}
 		last_ts = evt.timestamp;
 
-		if (evt.category == nullptr) {
-			// Can't happen today (processEvent filters these out), but keep last_ts advanced above
-			// so a stray null-category event could never cause the next delta to span it.
+		if (evt.category_id < 0 || evt.category_id >= static_cast<int>(self_time_by_id.size())) {
+			// Can't happen today (processEvent filters out null-category events, and every
+			// recorded id is in range at record time), but the category this id names may have
+			// been destroyed since (see trace_event::category_id) -- never trust it blindly, and
+			// keep last_ts advanced above so a stray event could never cause the next delta to
+			// span it.
 			continue;
 		}
 
 		if (evt.type == EventType::Begin) {
-			open_stack.push_back(evt.category->getId());
+			open_stack.push_back(evt.category_id);
 		} else if (evt.type == EventType::End) {
 			if (!open_stack.empty()) {
 				open_stack.pop_back();
