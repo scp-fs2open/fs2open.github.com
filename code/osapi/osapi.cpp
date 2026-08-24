@@ -30,6 +30,17 @@
 #include <sys/types.h>
 #endif
 
+#if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <psapi.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <cstdio>
+#include <unistd.h>
+#endif
+
 namespace
 {
 	const char* ORGANIZATION_NAME = "HardLightProductions";
@@ -921,5 +932,38 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 	ss << getPreferencesPath() << compatiblePath;
 
 	return ss.str();
+}
+
+os_memory_stats os_get_memory_stats()
+{
+	os_memory_stats stats;
+
+#if defined(WIN32)
+	PROCESS_MEMORY_COUNTERS counters;
+	if (GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters))) {
+		stats.valid = true;
+		stats.resident_bytes = counters.WorkingSetSize;
+	}
+#elif defined(__APPLE__)
+	mach_task_basic_info_data_t info;
+	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+	if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info), &count) ==
+		KERN_SUCCESS) {
+		stats.valid = true;
+		stats.resident_bytes = info.resident_size;
+	}
+#elif defined(__linux__)
+	// Field 2 of /proc/self/statm is the resident set size, in pages -- see proc(5).
+	if (FILE* statm = fopen("/proc/self/statm", "r")) {
+		long resident_pages = 0;
+		if (fscanf(statm, "%*d %ld", &resident_pages) == 1) {
+			stats.valid = true;
+			stats.resident_bytes = static_cast<size_t>(resident_pages) * static_cast<size_t>(sysconf(_SC_PAGESIZE));
+		}
+		fclose(statm);
+	}
+#endif
+
+	return stats;
 }
 

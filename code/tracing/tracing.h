@@ -41,6 +41,12 @@ enum class EventType {
  */
 struct trace_event {
 	const Category* category = nullptr;
+	// Category::getId() at record time. A trace_event can outlive the Category it names -- it may
+	// sit in a buffer (FrameProfiler) or cross a thread (ThreadedEventProcessor) before it is
+	// read, and a category made through the Lua API tracing_category can be gone by then. Code
+	// that reads a trace_event after the point where it was recorded must use category_id with
+	// Category::getNameById(), never dereference category.
+	int category_id = -1;
 	const Scope* scope = nullptr;
 	EventType type = EventType::Invalid;
 
