@@ -9,6 +9,9 @@
 #include "io/timer.h"
 #include "model/model.h"
 #include "object/object.h"
+#include "osapi/osapi.h"
+#include "scripting/scripting.h"
+#include "sound/sound.h"
 
 // ImPlot's Plot*() functions are templates that get instantiated here (unlike ImGui's ordinary
 // function API), and their header-inline ImPool<ImPlotItem>::Add() uses memcpy on the
@@ -233,6 +236,9 @@ int Last_memory_stats_refresh_ms = 0;
 object_memory_stats Cached_object_memory_stats;
 model_memory_stats Cached_model_memory_stats;
 gr_memory_stats Cached_gr_memory_stats;
+os_memory_stats Cached_os_memory_stats;
+sound_memory_stats Cached_sound_memory_stats;
+scripting_memory_stats Cached_scripting_memory_stats;
 
 void refresh_memory_stats_if_needed() {
 	int now_ms = timer_get_milliseconds();
@@ -243,6 +249,9 @@ void refresh_memory_stats_if_needed() {
 	Cached_object_memory_stats = obj_get_memory_stats();
 	Cached_model_memory_stats = model_get_memory_stats();
 	Cached_gr_memory_stats = gr_get_memory_stats();
+	Cached_os_memory_stats = os_get_memory_stats();
+	Cached_sound_memory_stats = snd_get_memory_stats();
+	Cached_scripting_memory_stats = scripting_get_memory_stats();
 
 	Last_memory_stats_refresh_ms = now_ms;
 	Memory_stats_initialized = true;
@@ -334,6 +343,38 @@ void draw_asset_memory_stats() {
 	}
 }
 
+/**
+ * Draws the process-wide resident set size (RSS), when the platform supports querying it. This
+ * already includes every other row in this panel -- the engine heap, the Lua heap, the OpenAL
+ * buffers below, and the driver's own mappings for the GPU rows above -- so it's shown on its own
+ * rather than folded into any subsystem total.
+ */
+void draw_process_memory_stats() {
+	const os_memory_stats& stats = Cached_os_memory_stats;
+	if (!stats.valid) {
+		return;
+	}
+
+	ImGui::Separator();
+	ImGui::Text("Process (RSS): %s", format_bytes(stats.resident_bytes).c_str());
+}
+
+/**
+ * Draws memory usage for the audio and scripting subsystems. The audio number is buffer bytes
+ * handed to OpenAL, not an FSO heap allocation, so it's a lower bound rather than an exact figure.
+ */
+void draw_subsystem_memory_stats() {
+	const sound_memory_stats& sound_stats = Cached_sound_memory_stats;
+	const scripting_memory_stats& script_stats = Cached_scripting_memory_stats;
+
+	ImGui::Separator();
+	ImGui::TextUnformatted("Subsystems");
+	ImGui::Text("Audio buffers: %s", format_bytes(sound_stats.audio_buffer_bytes).c_str());
+	if (script_stats.valid) {
+		ImGui::Text("Lua heap: %s", format_bytes(script_stats.lua_heap_bytes).c_str());
+	}
+}
+
 } // namespace
 
 void profiler_overlay_frame() {
@@ -381,8 +422,10 @@ void profiler_overlay_frame() {
 
 	refresh_memory_stats_if_needed();
 	if (ImGui::CollapsingHeader("Memory", ImGuiTreeNodeFlags_DefaultOpen)) {
+		draw_process_memory_stats();
 		draw_object_memory_stats();
 		draw_asset_memory_stats();
+		draw_subsystem_memory_stats();
 	}
 
 	ImGui::End();

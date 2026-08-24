@@ -107,6 +107,20 @@ void os_android_touch_overlay_toggle(bool status);
 void os_android_set_flags_string(const char* json);
 #endif
 
+/**
+ * @brief Process-wide memory usage snapshot, for the profiler overlay's memory panel
+ *
+ * @details Reports the resident set size (RSS) of the FSO process: the physical RAM the operating
+ * system currently has mapped for this process, across every subsystem (engine heap, Lua heap,
+ * OpenAL buffers, driver-side graphics allocations). Not available on every platform, hence the
+ * "valid" flag -- see os_get_memory_stats().
+ */
+struct os_memory_stats {
+	bool valid = false;
+	size_t resident_bytes = 0;
+};
+os_memory_stats os_get_memory_stats();
+
 namespace os
 {
 	/**
