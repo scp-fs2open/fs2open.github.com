@@ -677,7 +677,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
-				set_flag(profile, "$fix target updating with strafe:", AI::Profile_Flags::Fix_target_updating_with_strafe);
+				set_flag(profile, "$fix ai target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
 
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
@@ -1000,6 +1000,6 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 		flags.set(AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 		flags.set(AI::Profile_Flags::Fix_standard_strafe);
-		flags.set(AI::Profile_Flags::Fix_target_updating_with_strafe);
+		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 	}
 }
