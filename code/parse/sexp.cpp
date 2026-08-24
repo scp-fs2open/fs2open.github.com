@@ -10382,6 +10382,11 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 		}
 	}
 
+	// if there is nothing to check, the percentage is meaningless; this can happen if, for example, a wing
+	// arrives from a docking bay and its mothership is destroyed before the wing has a chance to arrive
+	if ( total <= 0 )
+		return SEXP_FALSE;
+
 	// now, look at the percentage
 	if ( ((count * 100) / total) >= percent )
 		return SEXP_KNOWN_TRUE;
