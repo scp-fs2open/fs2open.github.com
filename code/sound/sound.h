@@ -122,10 +122,22 @@ extern float	Default_sound_volume;		// 0 -> 1.0
 extern float	Default_voice_volume;		// 0 -> 1.0
 extern float	Master_sound_volume;		// 0 -> 1.0
 extern float	Master_voice_volume;		// 0 -> 1.0
-extern size_t		Snd_sram;					// System memory consumed by sound data
+extern size_t		Snd_sram;					// Bytes held in OpenAL sound-effect and music-streaming buffers
 extern float aav_voice_volume;
 extern float aav_music_volume;
 extern float aav_effect_volume;
+
+/**
+ * @brief Audio buffer usage snapshot, for the profiler overlay's memory panel
+ *
+ * @details Reports Snd_sram: the bytes held in OpenAL buffers for loaded sound effects and the
+ * music-streaming ring buffers. This is buffer data handed to the OpenAL driver, not an FSO heap
+ * allocation, so it is a lower bound on the audio subsystem's real footprint.
+ */
+struct sound_memory_stats {
+	size_t audio_buffer_bytes = 0;
+};
+sound_memory_stats snd_get_memory_stats();
 
 void snd_set_effects_volume(float volume);
 
