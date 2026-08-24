@@ -320,8 +320,6 @@ void ss_init_pool(team_data *pteam);
 commit_pressed_status create_wings();
 
 // loading/unloading
-void ss_unload_all_icons();
-void ss_unload_all_anims();
 void ss_init_units();
 anim* ss_load_individual_animation(int ship_class);
 
@@ -1497,18 +1495,21 @@ void ship_select_close()
 									// restoring a game from the Options screen invoked from ship select
 }
 
-//	ss_unload_icons() frees the bitmaps used for ship icons
-void ss_unload_all_icons()
+/**
+ * Release the bitmaps and animation held by one team's icon map, while leaving the map populated.
+ */
+static void ss_unload_team_icons(SCP_map<int, ss_icon_info> &icons)
 {
-	if ( Ss_icons == nullptr )
-		return;
-
-	for ( auto &[ship_class, icon] : *Ss_icons ) {
-		for ( int j = 0; j < NUM_ICON_FRAMES; j++ ) {
-			if ( icon.icon_bmaps[j] >= 0 ) {
-				bm_release(icon.icon_bmaps[j]);
-				icon.icon_bmaps[j] = -1;
+	for ( auto &[ship_class, icon] : icons ) {
+		for ( int &bmap : icon.icon_bmaps ) {
+			if ( bmap >= 0 ) {
+				bm_release(bmap);
+				bmap = -1;
 			}
+		}
+
+		if ( icon.ss_anim.num_frames ) {
+			generic_anim_unload(&icon.ss_anim);
 		}
 	}
 }
@@ -1705,18 +1706,6 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 //	if ( play_sound ) {
 		gamesnd_play_iface(InterfaceSounds::SHIP_ICON_CHANGE);
 //	}
-}
-
-void ss_unload_all_anims()
-{
-	if ( Ss_icons == nullptr )
-		return;
-
-	for ( auto &[ship_class, icon] : *Ss_icons ) {
-		if ( icon.ss_anim.num_frames ) {
-			generic_anim_unload(&icon.ss_anim);
-		}
-	}
 }
 
 bool is_weapon_carried(int weapon_index)
@@ -2790,9 +2779,10 @@ void ss_load_icons(int ship_class)
 // load all the icons for ships in the pool
 void ss_load_all_icons()
 {
-	Assert( (Ss_pool != NULL) && (Ss_icons != NULL) );
+	Assert( (Ss_pool != nullptr) && (Ss_icons != nullptr) );
 
-	// drop any icon data from a previous mission; entries are created blank on demand
+	// drop any icon data from a previous load of this team
+	ss_unload_team_icons(*Ss_icons);
 	Ss_icons->clear();
 
 	// note: unlike the weapon pool, all pool members get icons, including exhausted 0-count classes
@@ -3115,22 +3105,19 @@ void ship_select_init_team_data(int team_num)
 
 // called when the briefing is entered
 void ship_select_common_init(bool API_Access)
-{		
-	// initialize team critical data for all teams
-	int idx;
-
-	if(MULTI_TEAM){		
-		// initialize for all teams in the game
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
-			ship_select_init_team_data(idx);
-		}		
-
-		// finally, intialize team data for myself
-		ship_select_init_team_data(Common_team);
-	} else {			
-		ship_select_init_team_data(Common_team);
+{
+	// In team-vs-team, initialize every other team first; we always initialize our own team
+	// last so that the team pointers -- which common_set_team_pointers repoints to whichever
+	// team was initialized most recently -- are left pointing at our team for the rest of the screen.
+	if(MULTI_TEAM){
+		for(int idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+			if(idx != Common_team)
+				ship_select_init_team_data(idx);
+		}
 	}
-	
+
+	ship_select_init_team_data(Common_team);
+
 	if (!API_Access) {
 		init_active_list();
 
@@ -3144,8 +3131,11 @@ void ship_select_common_init(bool API_Access)
 
 void ship_select_common_close()
 {
-	ss_unload_all_icons();
-	ss_unload_all_anims();
+	// unload every team's icons
+	for ( auto &team_icons : Ss_icons_teams ) {
+		ss_unload_team_icons(team_icons);
+		team_icons.clear();
+	}
 }
 
 // change any interface data based on updated Wss_slots[] and Ss_pool[]

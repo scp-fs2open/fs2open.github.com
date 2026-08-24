@@ -1455,13 +1455,49 @@ void wl_load_icons(int weapon_class)
 }
 
 /**
+ * Release the bitmaps and models held by one team's weapon icon map, while leaving the map populated.
+ */
+static void wl_unload_team_icons(SCP_map<int, wl_icon_info> &icons)
+{
+	for ( auto &[weapon_class, icon] : icons ) {
+		for ( int &bmap : icon.icon_bmaps ) {
+			if ( bmap >= 0 ) {
+				bm_release(bmap);
+				bmap = -1;
+			}
+		}
+
+		if ( icon.model_index >= 0 ) {
+			model_unload(icon.model_index);
+			icon.model_index = -1;
+		}
+		if ( icon.laser_bmap >= 0 ) {
+			bm_unload(icon.laser_bmap);
+			icon.laser_bmap = -1;
+		}
+	}
+}
+
+/**
+ * Release and drop every team's weapon icon map
+ */
+static void wl_unload_all_teams_icons()
+{
+	for ( auto &team_icons : Wl_icons_teams ) {
+		wl_unload_team_icons(team_icons);
+		team_icons.clear();
+	}
+}
+
+/**
  * Load all the icons for weapons in the pool
  */
 void wl_load_all_icons()
 {
-	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
+	Assert( (Wl_icons != nullptr) && (Wl_pool != nullptr) );
 
-	// drop any icon data from a previous mission; entries are created blank on demand
+	// drop any icon data from a previous load of this team
+	wl_unload_team_icons(*Wl_icons);
 	Wl_icons->clear();
 
 	// note: unlike the ship pool, icons are only loaded for classes with ships remaining
@@ -1470,44 +1506,6 @@ void wl_load_all_icons()
 			wl_load_icons(weapon_class);
 		}
 	}
-}
-
-/**
- * Frees the bitmaps used for weapon icons
- */
-void wl_unload_icons()
-{
-	if ( Wl_icons == nullptr )
-		return;
-
-	for ( auto &[weapon_class, icon] : *Wl_icons ) {
-		for ( int j = 0; j < NUM_ICON_FRAMES; j++ ) {
-			if ( icon.icon_bmaps[j] >= 0 ) {
-				bm_release(icon.icon_bmaps[j]);
-				icon.icon_bmaps[j] = -1;
-			}
-		}
-
-		if(icon.model_index >= 0) {
-			model_unload(icon.model_index);
-			icon.model_index = -1;
-		}
-		if(icon.laser_bmap >= 0) {
-			bm_unload(icon.laser_bmap);
-			icon.laser_bmap = -1;
-		}
-		if(Cur_Anim.num_frames > 0)
-			generic_anim_unload(&Cur_Anim);
-	}
-}
-
-/**
- * init ship-class specific data
- */
-void wl_init_ship_class_data()
-{
-	// entries are created blank on demand
-	Wl_ships.clear();
 }
 
 /**
@@ -1532,6 +1530,14 @@ void wl_free_ship_class_data()
 	}
 
 	Wl_ships.clear();
+}
+
+/**
+ * init ship-class specific data
+ */
+void wl_init_ship_class_data()
+{
+	wl_free_ship_class_data();
 }
 
 /**
@@ -2050,7 +2056,7 @@ void weapon_select_close_team()
 	if (Weapon_select_open)
 		return;
 
-	wl_unload_icons();
+	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
 }
 
@@ -2060,20 +2066,17 @@ void weapon_select_close_team()
  */
 void weapon_select_common_init(bool API_Access)
 {
-	int idx;
-
+	// In team-vs-team, initialize every other team first; we always initialize our own team
+	// last so that the team pointers -- which common_set_team_pointers repoints to whichever
+	// team was initialized most recently -- are left pointing at our team for the rest of the screen.
 	if(MULTI_TEAM){
-		// initialize for all teams
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
-			weapon_select_init_team(idx);
+		for(int idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+			if(idx != Common_team)
+				weapon_select_init_team(idx);
 		}
-
-		// re-initialize for me specifically
-		weapon_select_init_team(Common_team);
-	} else {	
-		// initialize for my own team
-		weapon_select_init_team(Common_team);
 	}
+
+	weapon_select_init_team(Common_team);
 
 	if (!API_Access) {
 		wl_reset_selected_slot();
@@ -3011,7 +3014,7 @@ void weapon_select_close()
 	// unload bitmaps
 	bm_release(WeaponSelectMaskBitmap);
 
-	wl_unload_icons();
+	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
 	// ...must be last...
 	wl_free_ship_class_data();
