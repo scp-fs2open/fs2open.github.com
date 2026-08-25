@@ -2370,8 +2370,7 @@ static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipPar
 
 static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
 {
-	int i, num_allowed;
-	int allowed_weapons[MAX_WEAPON_TYPES];
+	int i;
 	const int max_banks = (is_primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS);
 	const ubyte weapon_type = (is_dogfight ? DOGFIGHT_WEAPON : REGULAR_WEAPON);
 	const int offset = (is_primary ? 0 : MAX_SHIP_PRIMARY_BANKS);
@@ -2414,15 +2413,14 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 				break;
 			}
 
-			num_allowed = sz2i(stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_LIST_TYPE));
+			SCP_vector<int> allowed_weapons;
+			stuff_int_list(allowed_weapons, ParseLookupType::WEAPON_LIST_TYPE);
 
 			// actually say which weapons are allowed
-			for ( i = 0; i < num_allowed; i++ )
+			for ( int weapon_idx : allowed_weapons )
 			{
-				if ( allowed_weapons[i] >= 0 )		// MK, Bug fix, 9/6/99.  Used to be "allowed_weapons" not "allowed_weapons[i]".
-				{
-					sip->allowed_bank_restricted_weapons[offset+bank].set_flag(allowed_weapons[i], weapon_type);
-				}
+				if ( weapon_idx >= 0 )
+					sip->allowed_bank_restricted_weapons[offset+bank].set_flag(weapon_idx, weapon_type);
 			}
 		}
 
