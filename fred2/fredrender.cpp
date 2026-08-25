@@ -107,6 +107,7 @@ int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
 int Show_coordinates = 0;
+float Fred_label_font_scale = 1.0f;
 int Show_distances = 0;
 int Show_grid = 1;
 int Show_grid_positions = 1;
@@ -487,7 +488,7 @@ void display_distances() {
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW))	{
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+							gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 						}
 				}
 
@@ -593,7 +594,7 @@ void display_ship_info() {
 					else
 						gr_set_color_fast(&colour_white);
 
-					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 				}
 			}
 
@@ -830,7 +831,7 @@ void fredhtl_render_subsystem_highlight(subsys_to_render *s2r, subsystem_highlig
 		g3_rotate_vertex(&text_center, &center_pt);
 		g3_project_vertex(&text_center);
 		if (!(text_center.flags & PF_OVERFLOW)) {
-			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2);
+			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2, GR_RESIZE_FULL, Fred_label_font_scale);
 		}
 	}
 }
@@ -1767,6 +1768,9 @@ void render_frame() {
 				GR_DEBUG_SCOPE("Draw tooltip");
 
 				gr_get_string_size(&w, &h, buf);
+				// scale the box to match the scaled label text
+				w = fl2i(w * Fred_label_font_scale);
+				h = fl2i(h * Fred_label_font_scale);
 
 				x = (int) v.screen.xyw.x;
 				y = (int) v.screen.xyw.y + 20;
@@ -1778,7 +1782,7 @@ void render_frame() {
 				gr_rect(x - 5, y - 5, w + 5, h + 5);
 
 				gr_set_color_fast(&colour_white);
-				gr_string(x, y, buf);
+				gr_string(x, y, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 			}
 	}
 
@@ -1790,8 +1794,9 @@ void render_frame() {
 
 	sprintf(buf, "(%.1f,%.1f,%.1f)", eye_pos.xyz.x, eye_pos.xyz.y, eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
+	w = fl2i(w * Fred_label_font_scale);
 	gr_set_color_fast(&colour_white);
-	gr_string(gr_screen.max_w - w - 2, 2, buf);
+	gr_string(gr_screen.max_w - w - 2, 2, buf, GR_RESIZE_FULL, Fred_label_font_scale);
 
 	g3_end_frame();	 // ** Accounted for
 	render_compass();
