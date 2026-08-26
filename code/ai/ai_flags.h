@@ -176,7 +176,10 @@ namespace AI {
 		Dont_limit_change_in_speed_due_to_physics_whack,
 		Guards_ignore_protected_attackers,
 		Fix_standard_strafe,
-		Fix_target_updating_with_strafe,
+		Fix_ai_target_recovery,	// a) strafing ships that lose their target re-process their orders, like chasing ships already do
+								// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
+								// c) target selection skips ships outside the attacker's actively-pursues list, and self-chosen targets
+								//    outside that list are dropped rather than held forever
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Fix_AI_shield_management_bug,
