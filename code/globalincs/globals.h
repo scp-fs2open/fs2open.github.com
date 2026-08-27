@@ -9,7 +9,6 @@
 #ifndef _GLOBALS_H
 #define _GLOBALS_H
 
-
 // from parselo.h
 #define	PATHNAME_LENGTH			192
 #define	NAME_LENGTH				32
@@ -23,6 +22,9 @@
 #define TRAINING_MESSAGE_LENGTH	512
 #define CONDITION_LENGTH		64
 
+// from missionparse.h and then redefined to the same value in sexp.h
+#define TOKEN_LENGTH	32
+
 // from missionparse.h
 #define MISSION_DESC_LENGTH		512
 
@@ -34,10 +36,7 @@
 #define MAX_SHIPS					500		// max number of ship instances there can be.DTP; bumped from 200 to 400, then to 500 in 2022
 #define SHIPS_LIMIT					500		// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400, then to 500 in 2022
 
-// from missionparse.h and then redefined to the same value in sexp.h
-#define TOKEN_LENGTH	32
-
-#define MAX_SHIP_CLASSES		500
+// MAX_SHIP_CLASSES is no longer needed!  The effective ceiling on ship classes is now 32767, which is determined by the signed SHORT fields in multiplayer loadout sync packets.
 
 #define MAX_WINGS				75
 
@@ -58,17 +57,14 @@
 // Goober5000 - moved from hudescort.cpp
 // size of complete escort list, including all those wanting to get onto list but without space
 #define MAX_COMPLETE_ESCORT_LIST	20
-             
+
 // from weapon.h
 #define MAX_WEAPONS	3000		//Increased from 2000 to 3000 in 2022
 
 #define MAX_WEAPON_TYPES				500
 
-
 // from model.h
-
 #define MAX_MODEL_TEXTURES	64
-
 #define MAX_POLYGON_MODELS  300
 
 // object.h
