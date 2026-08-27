@@ -10526,8 +10526,14 @@ void ship_do_thruster_sounds(object *obj)
 	}
 }
 
+void update_external_weapon_spin(ship *shipp, float frametime);
+
 void ship_process_pre(object *obj, float frametime)
 {
+	// update the external weapon model spin before any firing attempts this frame
+	if ( (obj != nullptr) && (obj->type == OBJ_SHIP) && (frametime != 0.0f) )
+		update_external_weapon_spin(&Ships[obj->instance], frametime);
+
 	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
 	if (MULTIPLAYER_CLIENT)
 	{
@@ -10787,8 +10793,6 @@ void ship_process_post(object * obj, float frametime)
 	update_firing_sounds(obj, shipp);
 
 	update_reload_percent(shipp, frametime);
-
-	update_external_weapon_spin(shipp, frametime);
 
 	ship_dying_frame(obj, num);
 
@@ -12855,9 +12859,9 @@ vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon
 		local_offset = bank.pnt[sub_shot];
 	}
 
-	vec3d slot_pnt, offset;
+	vec3d offset;
 	matrix slot_orient;
-	ship_get_weapon_model_slot_transform(ship_bank, slot, 0.0f, &slot_pnt, &slot_orient);
+	ship_get_weapon_model_slot_transform(ship_bank, slot, 0.0f, nullptr, &slot_orient);
 	vm_vec_unrotate(&offset, &local_offset, &slot_orient);
 
 	return offset;
@@ -21708,23 +21712,30 @@ int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int disp
 // slot's firing normal and is "banked" (rolled) by the slot's angle offset.
 // reload_slide_back is the distance a partially reloaded missile is slid backward along the
 // firing normal; pass 0.0f for primaries and launcher-style secondaries, which don't slide.
+// Either output may be nullptr if the caller doesn't need it.
 void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient)
 {
-	// point the model along the slot's firing direction (identity for the usual dead-ahead normal)
-	matrix norm_orient;
-	vm_vector_2_matrix_norm(&norm_orient, &bank->norm[slot]);
+	if (outorient != nullptr)
+	{
+		// point the model along the slot's firing direction (identity for the usual dead-ahead normal)
+		matrix norm_orient;
+		vm_vector_2_matrix_norm(&norm_orient, &bank->norm[slot]);
 
-	// "Bank" the external model by the angle offset
-	angles angs = { 0.0f, bank->external_model_angle_offset[slot], 0.0f };
-	matrix bank_orient;
-	vm_angles_2_matrix(&bank_orient, &angs);
+		// "Bank" the external model by the angle offset
+		angles angs = { 0.0f, bank->external_model_angle_offset[slot], 0.0f };
+		matrix bank_orient;
+		vm_angles_2_matrix(&bank_orient, &angs);
 
-	vm_matrix_x_matrix(outorient, &norm_orient, &bank_orient);
+		vm_matrix_x_matrix(outorient, &norm_orient, &bank_orient);
+	}
 
-	*outpnt = bank->pnt[slot];
+	if (outpnt != nullptr)
+	{
+		*outpnt = bank->pnt[slot];
 
-	if (reload_slide_back > 0.0f)
-		vm_vec_scale_add2(outpnt, &bank->norm[slot], -reload_slide_back);
+		if (reload_slide_back > 0.0f)
+			vm_vec_scale_add2(outpnt, &bank->norm[slot], -reload_slide_back);
+	}
 }
 
 void ship_render_weapon_models(model_render_params *ship_render_info, model_draw_list *scene, object *obj)
