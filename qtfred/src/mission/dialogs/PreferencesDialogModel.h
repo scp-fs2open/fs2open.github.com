@@ -67,6 +67,9 @@ public:
 	int  getOutlineLod() const;
 	void setOutlineLod(int value);
 
+	double getLabelFontScale() const;
+	void setLabelFontScale(double value);
+
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
@@ -108,6 +111,7 @@ private:
 	DataMenuStyle _dataMenuStyle;
 	int  _toolbarIconSize;
 	int  _outlineLod;
+	float _labelFontScale;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;

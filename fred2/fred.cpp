@@ -235,6 +235,7 @@ BOOL CFREDApp::InitInstance() {
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
 	Outline_lod = GetProfileInt("Preferences", "Outline LOD", 1);
+	Fred_label_font_scale = GetProfileInt("Preferences", "Label font scale percent", 100) / 100.0f;
 	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
 	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
 	Classic_menu_layout = GetProfileInt("Preferences", "Classic menu layout", 0) != 0;
@@ -539,6 +540,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
 	WriteProfileInt("Preferences", "Outline LOD", Outline_lod);
+	WriteProfileInt("Preferences", "Label font scale percent", fl2ir(Fred_label_font_scale * 100.0f));
 	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);
 	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
 	WriteProfileInt("Preferences", "Classic menu layout", Classic_menu_layout ? 1 : 0);

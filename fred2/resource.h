@@ -1616,6 +1616,16 @@
 #define ID_OUTLINE_LOD_4                33111
 #define ID_REORDER                      33112
 #define ID_CLASSIC_MENU_LAYOUT          33113
+#define ID_LABEL_FONT_SCALE_50          33114
+#define ID_LABEL_FONT_SCALE_75          33115
+#define ID_LABEL_FONT_SCALE_100         33116
+#define ID_LABEL_FONT_SCALE_125         33117
+#define ID_LABEL_FONT_SCALE_150         33118
+#define ID_LABEL_FONT_SCALE_200         33119
+#define ID_LABEL_FONT_SCALE_250         33120
+#define ID_LABEL_FONT_SCALE_300         33121
+#define ID_LABEL_FONT_SCALE_350         33122
+#define ID_LABEL_FONT_SCALE_400         33123
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1629,7 +1639,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
 #define _APS_NEXT_CONTROL_VALUE         1747
-#define _APS_NEXT_COMMAND_VALUE         33114
+#define _APS_NEXT_COMMAND_VALUE         33124
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

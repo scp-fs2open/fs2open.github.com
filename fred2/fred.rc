@@ -280,6 +280,19 @@ BEGIN
             MENUITEM "LOD 3",                       33110
             MENUITEM "LOD 4 (lowest detail)",       33111
         END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
+        END
         MENUITEM SEPARATOR
         MENUITEM "Hide Marked Objects",         33002
         MENUITEM "Show Hidden Objects",         33003
@@ -507,6 +520,19 @@ BEGIN
             MENUITEM "LOD 2",                       33109
             MENUITEM "LOD 3",                       33110
             MENUITEM "LOD 4 (lowest detail)",       33111
+        END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
         END
         MENUITEM SEPARATOR
         MENUITEM "Hide Marked Objects",         33002
