@@ -487,6 +487,8 @@ SCP_string ShipTextureReplacementDialogModel::getDefaultName(size_t index) const
 void ShipTextureReplacementDialogModel::setMap(size_t index, const SCP_string& type, const SCP_string& newName)
 {
 	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
+	if (_defaultTextures[index].empty())
+		return;
 	auto pos = _currentTextures[index].find(type);
 	if (pos == _currentTextures[index].end()) {
 		error_display(1, "Tried to set non existant map type %s. Get a programmer", type.c_str());
@@ -499,6 +501,8 @@ void ShipTextureReplacementDialogModel::setMap(size_t index, const SCP_string& t
 SCP_string ShipTextureReplacementDialogModel::getMap(size_t index, const SCP_string& type) const
 {
 	Assertion(index < _currentTextures.size(), "Texture index out of bounds");
+	if (_defaultTextures[index].empty())
+		return "";
 	auto pos = _currentTextures[index].find(type);
 	if (pos == _currentTextures[index].end()) {
 		error_display(1, "Asked for non existant map type %s. Get a programmer", type.c_str());
