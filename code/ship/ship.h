@@ -1046,6 +1046,7 @@ struct ship_registry_entry
 	ship* shipp_or_null() const;
 
 	ship_info* sip() const;
+	int ship_class_index() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;

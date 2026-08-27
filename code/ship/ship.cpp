@@ -229,6 +229,19 @@ ship_info* ship_registry_entry::sip() const
 	}
 }
 
+int ship_registry_entry::ship_class_index() const
+{
+	if (shipnum >= 0)
+		return Ships[shipnum].ship_info_index;
+	else if (pobj_num >= 0)
+		return Parse_objects[pobj_num].ship_class;
+	else
+	{
+		Assertion(false, "A ship registry entry must have either a parse object or a ship!");
+		return -1;
+	}
+}
+
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
@@ -8683,6 +8696,15 @@ void ship_delete( object * obj )
 			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
 			shipp->weapons.primary_bank_external_model_instance[i] = -1;
 		}
+	}
+
+	// In FRED, clean up the registry so that stale references don't stick around.  Conversely,
+	// in FSO, we need to keep the registry entry so that ships will still be known in the debriefing.
+	if (Fred_running)
+	{
+		auto ship_it = Ship_registry_map.find(shipp->ship_name);
+		if (ship_it != Ship_registry_map.end())
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
 	}
 }
 

@@ -343,7 +343,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 	return ade_set_args(L, "s", name);
 }
 
-ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Ship name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.  Beware of setting the name to the name of an existing ship!", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
 	const char* s = nullptr;
@@ -355,10 +355,18 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 
 	ship *shipp = &Ships[objh->objp()->instance];
 
-	if(ADE_SETTING_VAR && s != nullptr) {
+	if(ADE_SETTING_VAR && s != nullptr)
+	{
+		int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+		Assertion(ship_entry_index >= 0, "Ship %s must be in the ship registry!", shipp->ship_name);
+
 		auto len = sizeof(shipp->ship_name);
 		strncpy(shipp->ship_name, s, len);
 		shipp->ship_name[len - 1] = 0;
+
+		// need to update the ship registry too
+		if (ship_entry_index >= 0)
+			ship_registry_rename(ship_entry_index, shipp->ship_name, true);
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);
