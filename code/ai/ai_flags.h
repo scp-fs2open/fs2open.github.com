@@ -200,7 +200,6 @@ namespace AI {
 											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
 		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
-		Fix_predict_position_edgecase_failure, // ensure ai_chase always calculates a reasonable predicted_enemy_pos instead of possibly an uninitialized value
 
 		NUM_VALUES
 	};
