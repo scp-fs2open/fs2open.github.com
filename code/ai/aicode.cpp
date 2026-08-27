@@ -9158,7 +9158,7 @@ void ai_chase()
 						set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
 				}
 			}
-		} else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired]) {
+		} else if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_predict_position_edgecase_failure]) {
 			// no primary weapon to lead with, so just aim at the target
 			predicted_enemy_pos = enemy_pos;
 		}
