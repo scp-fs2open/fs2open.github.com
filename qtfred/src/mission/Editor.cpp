@@ -112,7 +112,7 @@ extern void allocate_parse_text(size_t size);
 namespace fso {
 namespace fred {
 	
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), GlobalShieldStatus::HasShields), Shield_sys_types(MAX_SHIP_CLASSES, GlobalShieldStatus::HasShields) {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), GlobalShieldStatus::HasShields) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -518,9 +518,7 @@ void Editor::clearMission(bool fast_reload) {
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), GlobalShieldStatus::HasShields);
 
-	for (int i = 0; i < MAX_SHIP_CLASSES; i++) {
-		Shield_sys_types[i] = GlobalShieldStatus::HasShields;
-	}
+	Shield_sys_types.clear();
 
 	setupCurrentObjectIndices(-1);
 
@@ -717,7 +715,7 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	shipp->special_shield = -1;
 
 	auto z1 = Shield_sys_teams[shipp->team];
-	auto z2 = Shield_sys_types[ship_type];
+	auto z2 = Shield_sys_types.value_or(ship_type, GlobalShieldStatus::HasShields);
 	if (((z1 == GlobalShieldStatus::NoShields) && z2 != GlobalShieldStatus::HasShields) || (z2 == GlobalShieldStatus::NoShields)) {
 		Objects[obj].flags.set(Object::Object_Flags::No_shields);
 	}
@@ -1882,14 +1880,13 @@ SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 	return out;
 }
 
-void Editor::exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const {
+void Editor::exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_map<int, GlobalShieldStatus>& types) const {
 	teams = Shield_sys_teams;
 	types = Shield_sys_types;
 }
 
-void Editor::importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) {
+void Editor::importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_map<int, GlobalShieldStatus>& types) {
 	Assertion(Shield_sys_teams.size() == teams.size(), "Mismatched shield data from global shield dialog!");
-	Assertion(Shield_sys_types.size() == types.size(), "Mismatched shield data from global shield dialog!");
 
 	Shield_sys_teams = teams;
 	Shield_sys_types = types;
@@ -1897,9 +1894,10 @@ void Editor::importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, co
 	for (int i = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum >= 0) {
 			auto z = Shield_sys_teams[Ships[i].team];
-			if (Shield_sys_types[Ships[i].ship_info_index] == GlobalShieldStatus::HasShields)
+			auto type_z = Shield_sys_types.value_or(Ships[i].ship_info_index, GlobalShieldStatus::HasShields);
+			if (type_z == GlobalShieldStatus::HasShields)
 				z = GlobalShieldStatus::HasShields;
-			else if (Shield_sys_types[Ships[i].ship_info_index] == GlobalShieldStatus::NoShields)
+			else if (type_z == GlobalShieldStatus::NoShields)
 				z = GlobalShieldStatus::NoShields;
 
 			if (z == GlobalShieldStatus::HasShields)
@@ -1913,7 +1911,7 @@ void Editor::importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, co
 // adapted from shield_sys_dlg OnInitDialog()
 void Editor::normalizeShieldSysData() {
 	std::vector<int> teams(Iff_info.size(), 0);
-	std::vector<int> types(MAX_SHIP_CLASSES, 0);
+	SCP_set<int> types_seen;		// which ship classes we've encountered this pass
 
 	for (int i = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum >= 0) {
@@ -1923,13 +1921,12 @@ void Editor::normalizeShieldSysData() {
 			else if (Shield_sys_teams[Ships[i].team] != z)
 				Shield_sys_teams[Ships[i].team] = GlobalShieldStatus::MixedShields;
 
-			if (!types[Ships[i].ship_info_index])
+			if (types_seen.insert(Ships[i].ship_info_index).second)
 				Shield_sys_types[Ships[i].ship_info_index] = z;
 			else if (Shield_sys_types[Ships[i].ship_info_index] != z)
 				Shield_sys_types[Ships[i].ship_info_index] = GlobalShieldStatus::MixedShields;
 
 			teams[Ships[i].team]++;
-			types[Ships[i].ship_info_index]++;
 		}
 	}
 }

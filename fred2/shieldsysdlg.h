@@ -10,7 +10,7 @@
 
 
 extern SCP_vector<int> Shield_sys_teams;
-extern int Shield_sys_types[MAX_SHIP_CLASSES];
+extern SCP_map<int, int> Shield_sys_types;	// ship class -> shield status (0=has, 1=none, 2=mixed); absent = 0
 
 /////////////////////////////////////////////////////////////////////////////
 // shield_sys_dlg dialog

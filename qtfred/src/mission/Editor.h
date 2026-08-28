@@ -243,8 +243,8 @@ class Editor : public QObject {
 
 	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
-	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
-	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types);
+	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_map<int, GlobalShieldStatus>& types) const;
+	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_map<int, GlobalShieldStatus>& types);
 	void normalizeShieldSysData();
 
 	static void strip_quotation_marks(SCP_string& str);
@@ -282,7 +282,7 @@ class Editor : public QObject {
 	int numMarked = 0;
 
 	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
-	SCP_vector<GlobalShieldStatus> Shield_sys_types;
+	SCP_map<int, GlobalShieldStatus> Shield_sys_types;	// ship class -> shield status; absent = HasShields
 
 	bool already_deleting_wing = false;
 
