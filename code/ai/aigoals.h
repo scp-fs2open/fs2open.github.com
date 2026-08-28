@@ -108,6 +108,10 @@ inline bool ai_goal_is_specific_chase(ai_goal_mode ai_mode)
 {
 	return ai_mode == AI_GOAL_CHASE || ai_mode == AI_GOAL_CHASE_WING || ai_mode == AI_GOAL_CHASE_SHIP_CLASS || ai_mode == AI_GOAL_CHASE_SHIP_TYPE;
 }
+inline bool ai_goal_is_standing_chase(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_CHASE_ANY;
+}
 
 enum class ai_achievability { ACHIEVABLE, NOT_ACHIEVABLE, NOT_KNOWN, SATISFIED };
 

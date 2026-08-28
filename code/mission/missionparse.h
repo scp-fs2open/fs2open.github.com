@@ -542,7 +542,7 @@ public:
 
 // Goober5000 - this is now dynamic
 extern SCP_vector<p_object> Parse_objects;
-#define POBJ_INDEX(pobjp) (int)(pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
+#define POBJ_INDEX(pobjp) (static_cast<int>((pobjp)-Parse_objects.data()))
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
@@ -587,6 +587,9 @@ extern SCP_vector<SCP_string> Parse_names;
 // QtFRED's ErrorChecker so the corrections are visible to the designer instead of
 // silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
 extern SCP_vector<SCP_string> Mission_parse_warnings;
+
+// true while a mission is being parsed and post-processed
+extern bool Parsing_mission;
 
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;

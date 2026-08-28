@@ -229,6 +229,19 @@ ship_info* ship_registry_entry::sip() const
 	}
 }
 
+int ship_registry_entry::ship_class_index() const
+{
+	if (shipnum >= 0)
+		return Ships[shipnum].ship_info_index;
+	else if (pobj_num >= 0)
+		return Parse_objects[pobj_num].ship_class;
+	else
+	{
+		Assertion(false, "A ship registry entry must have either a parse object or a ship!");
+		return -1;
+	}
+}
+
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
@@ -238,6 +251,15 @@ int ship_registry_get_index(const char *name)
 	if (ship_it != Ship_registry_map.end())
 		return ship_it->second;
 
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+	{
+		ship_it = Ship_registry_map.find(legacy_hashed);
+		if (ship_it != Ship_registry_map.end())
+			return ship_it->second;
+	}
+
 	return -1;
 }
 
@@ -246,6 +268,15 @@ int ship_registry_get_index(const SCP_string &name)
 	auto ship_it = Ship_registry_map.find(name);
 	if (ship_it != Ship_registry_map.end())
 		return ship_it->second;
+
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name.c_str()))
+	{
+		ship_it = Ship_registry_map.find(legacy_hashed);
+		if (ship_it != Ship_registry_map.end())
+			return ship_it->second;
+	}
 
 	return -1;
 }
@@ -267,18 +298,18 @@ bool ship_registry_exists(int index)
 
 const ship_registry_entry *ship_registry_get(const char *name)
 {
-	auto ship_it = Ship_registry_map.find(name);
-	if (ship_it != Ship_registry_map.end())
-		return &Ship_registry[ship_it->second];
+	auto idx = ship_registry_get_index(name);
+	if (idx >= 0)
+		return &Ship_registry[idx];
 
 	return nullptr;
 }
 
 const ship_registry_entry *ship_registry_get(const SCP_string &name)
 {
-	auto ship_it = Ship_registry_map.find(name);
-	if (ship_it != Ship_registry_map.end())
-		return &Ship_registry[ship_it->second];
+	auto idx = ship_registry_get_index(name);
+	if (idx >= 0)
+		return &Ship_registry[idx];
 
 	return nullptr;
 }
@@ -295,6 +326,27 @@ const ship_registry_entry *ship_registry_get(anchor_t anchor)
 {
 	// anchors are just ship registry indexes (if in bounds) under the hood
 	return ship_registry_get(anchor.value());
+}
+
+void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_key)
+{
+	Assertion(Ship_registry.in_bounds(entry_index), "Invalid ship registry index %d passed to ship_registry_rename!", entry_index);
+	if (!Ship_registry.in_bounds(entry_index))
+		return;
+
+	auto entry = &Ship_registry[entry_index];
+
+	// the old key is sometimes useful for looking up the ship under its previous name;
+	// if not, remove it (provided it actually refers to this entry)
+	if (erase_old_key)
+	{
+		auto ship_it = Ship_registry_map.find(entry->name);
+		if (ship_it != Ship_registry_map.end() && ship_it->second == entry_index)
+			Ship_registry_map.erase(ship_it);
+	}
+
+	strcpy_s(entry->name, new_name);
+	Ship_registry_map[entry->name] = entry_index;
 }
 
 
@@ -4339,7 +4391,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		float help_hull_val;
 		stuff_float(&help_hull_val);
 		if (help_hull_val > 0.0f && help_hull_val <= 1.0f) {
-			sip->ask_help_shield_percent = help_hull_val;
+			sip->ask_help_hull_percent = help_hull_val;
 		} else {
 			error_display(0,"Ask Help Hull Percent for ship class %s is %f. This value is not within range of 0-1.0."
 			              "Assuming default value of %f.", sip->name, help_hull_val, DEFAULT_ASK_HELP_HULL_PERCENT);
@@ -6867,7 +6919,7 @@ void ship::clear()
 	ship_max_hull_strength = 0.0f;
 
 	ship_guardian_threshold = 0;
-	max_guard_radius = -1.0f;
+	max_guard_ranges.clear();
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -8644,6 +8696,15 @@ void ship_delete( object * obj )
 			model_delete_instance(shipp->weapons.primary_bank_external_model_instance[i]);
 			shipp->weapons.primary_bank_external_model_instance[i] = -1;
 		}
+	}
+
+	// In FRED, clean up the registry so that stale references don't stick around.  Conversely,
+	// in FSO, we need to keep the registry entry so that ships will still be known in the debriefing.
+	if (Fred_running)
+	{
+		auto ship_it = Ship_registry_map.find(shipp->ship_name);
+		if (ship_it != Ship_registry_map.end())
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
 	}
 }
 
@@ -12968,15 +13029,18 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 		float target_radius = 0.f;
+		float target_forward_speed = 0.f;
 
 		if (aip->target_objnum >= 0) {
 			target_radius = Objects[aip->target_objnum].radius;
+			target_forward_speed = Objects[aip->target_objnum].phys_info.fspeed;
 		}
 
 		auto launch_curve_data = WeaponLaunchCurveData {
 			num_slots,
 			dist_to_target,
 			target_radius,
+			target_forward_speed,
 		};
 
 		// do timestamp stuff for next firing time
@@ -14264,15 +14328,18 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 		num_slots = pm->missile_banks[bank].num_slots;
 		float target_radius = 0.f;
+		float target_forward_speed = 0.f;
 
 		if (tinfo.objnum >= 0) {
 			target_radius = Objects[tinfo.objnum].radius;
+			target_forward_speed = Objects[tinfo.objnum].phys_info.fspeed;
 		}
 
 		auto launch_curve_data = WeaponLaunchCurveData {
 			num_slots,
 			dist_to_target,
 			target_radius,
+			target_forward_speed,
 		};
 
 		// determine if there is enough ammo left to fire weapons on this bank.  As with primary
@@ -15022,6 +15089,34 @@ void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset
 	}
 }
 
+bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src)
+{
+	// missions might have ships within wings that were saved using the legacy hash format, with the hash suffix at the end
+	auto hash = get_pointer_to_first_hash_symbol(src);
+	if (hash && *(hash + 1) != '\0')
+	{
+		// find the run of digits immediately preceding the hash
+		auto digits = hash;
+		while (digits > src && isdigit(static_cast<unsigned char>(*(digits - 1))))
+			digits--;
+
+		// the ordinal must be at least one digit, preceded by a space, preceded by the wing name
+		if (digits < hash && digits > (src + 1) && *(digits - 1) == ' ')
+		{
+			// move the ordinal from before the hash to the end of the name
+			dest.assign(src, digits - 1);
+			dest += hash;
+			dest += ' ';
+			dest.append(digits, hash);
+
+			// we changed it
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Return the object index of the ship with name *name.
  */
@@ -15245,10 +15340,7 @@ int ship_info_lookup(const char *token)
 	return ship_info_lookup_sub(name);
 }
 
-/**
- * Return the ship index of the ship with name *name.
- */
-int ship_name_lookup(const char *name, int inc_players)
+static int ship_name_lookup_sub(const char *name, int inc_players)
 {
 	Assertion(name != nullptr, "NULL name passed to ship_name_lookup");
 
@@ -15266,7 +15358,26 @@ int ship_name_lookup(const char *name, int inc_players)
 	return -1;
 }
 
-int ship_type_name_lookup_sub(const char *name)
+/**
+ * Return the ship index of the ship with name *name.
+ */
+int ship_name_lookup(const char *name, int inc_players)
+{
+	// try the normal lookup
+	auto idx = ship_name_lookup_sub(name, inc_players);
+	if (idx >= 0)
+		return idx;
+
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+		return ship_name_lookup_sub(legacy_hashed.c_str(), inc_players);
+
+	// couldn't find it
+	return -1;
+}
+
+static int ship_type_name_lookup_sub(const char *name)
 {
 	Assertion(name != nullptr, "NULL name passed to ship_type_name_lookup");
 
@@ -21469,7 +21580,33 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 
 	return inside;
 }
-
+void set_guard_range_ship(float range, const int target_ship_index, ship* shipp)
+{
+	bool done = false;
+	if (range > 0) {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == target_ship_index) {
+				if (range > 0) {
+					exist.range = range;
+				} else {
+					exist.range = -1.0f;
+				}
+				done = true;
+				break;
+			}
+		}
+		if (!done) {
+			auto item = guard_range_entry(range, target_ship_index);
+			shipp->max_guard_ranges.push_back(item);
+		}
+	} else {
+		for (auto& exist : shipp->max_guard_ranges) {
+			if (exist.shipnum == target_ship_index) {
+				exist.range = -1.0f;
+			}
+		}
+	}
+}
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
 	mst->length = obj->phys_info.linear_thrust;
@@ -21803,7 +21940,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	int num = obj->instance;
 	ship *shipp = &Ships[num];
 	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
-	ship *warp_shipp = NULL;
+	ship *warp_shipp = nullptr;
 	bool is_first_stage_arrival = false;
 	bool show_thrusters = (!shipp->flags[Ship_Flags::No_thrusters]);
 	dock_function_info dfi;
@@ -21823,7 +21960,7 @@ void ship_render(object* obj, model_draw_list* scene)
 		// render even in stage 1, which is used for collision detection
 		// purposes -zookeeper
 		if ( Warp_params[warp_shipp->warpin_params_index].warp_type == WT_HYPERSPACE ) {
-			warp_shipp = NULL;
+			warp_shipp = nullptr;
 			is_first_stage_arrival = false;
 		}
 	}

@@ -1095,7 +1095,8 @@ int find_turret_enemy(const ship_subsys *turret_subsys, int objnum, const vec3d 
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
-			ship* target_shipp = &Ships[Objects[target_objnum].instance];
+			// The parent's target can be a weapon or an asteroid, so make sure it's a ship before indexing Ships[]
+			ship* target_shipp = (Objects[target_objnum].type == OBJ_SHIP) ? &Ships[Objects[target_objnum].instance] : nullptr;
 			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 				if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) { // check this flag as well
 					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum,
@@ -1754,7 +1755,7 @@ bool turret_fire_weapon(int weapon_num,
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
-	int turret_weapon_class = weapon_info_get_index(wip);
+	int turret_weapon_class = WEAPON_INFO_INDEX(wip);
 
 #ifndef NDEBUG
 	// moved here from check_ok_to_fire
@@ -2061,9 +2062,9 @@ bool turret_fire_weapon(int weapon_num,
 						subsys_index = ship_get_subsys_index(turret);
 						Assert( subsys_index != -1 );
 						if(wip->wi_flags[Weapon::Info_Flags::Flak]){			
-							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
+							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target, launch_curve_data.target_radius, launch_curve_data.target_forward_speed );
 						} else {
-							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
+							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target, launch_curve_data.target_radius, launch_curve_data.target_forward_speed );
 						}
 					}
 
@@ -2137,6 +2138,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		tsi->turret->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	// create weapon and homing info
@@ -2188,7 +2190,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
-			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f);
+			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f, 0.f);
 		}
 	}
 }
@@ -2361,9 +2363,11 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	float turret_barrel_length = -1.0f;
 
 	float target_radius = 0.f;
+	float target_forward_speed = 0.f;
 
 	if (lep != nullptr) {
 		target_radius = lep->radius;
+		target_forward_speed = lep->phys_info.fspeed;
 	}
 
 	// grab the data for the launch curve inputs
@@ -2371,6 +2375,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 			ss->system_info->turret_num_firing_points,
 			base_dist_to_enemy,
 			target_radius,
+			target_forward_speed,
 	};
 
 	//WMC - go through all valid weapons. Fire spawns if there are any.

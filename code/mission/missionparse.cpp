@@ -178,6 +178,9 @@ SCP_vector<SCP_string> Parse_names;
 
 SCP_vector<SCP_string> Mission_parse_warnings;
 
+// true while a mission is being parsed and post-processed
+bool Parsing_mission = false;
+
 // Routes a parse-time auto-correction notice to the right surface for the app:
 // outside QtFRED, the existing Warning(LOCATION, ...) popup; inside QtFRED, the
 // Mission_parse_warnings queue so the ErrorChecker can present it without a popup.
@@ -4801,7 +4804,25 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		wingp->total_arrived_count++;
 		if (wingp->num_waves > 1)
 		{
+			char pre_bash_name[NAME_LENGTH];
+			strcpy_s(pre_bash_name, p_objp->name);
+
 			wing_bash_ship_name(p_objp, wingp, wingp->total_arrived_count + wingp->red_alert_skipped_ships);
+
+			// if the bash renamed this parse object (which can happen if the ship was saved using the legacy
+			// hash format), re-key its not-yet-present registry entry so that the old name doesn't shadow
+			// lookups of the new name.  (For subsequent waves, the pre-bash name belongs to a previous wave's
+			// ship, whose entry must keep its key; the status and parse object checks exclude that case.)
+			if (stricmp(pre_bash_name, p_objp->name) != 0)
+			{
+				auto ship_it = Ship_registry_map.find(pre_bash_name);
+				if (ship_it != Ship_registry_map.end()
+					&& Ship_registry[ship_it->second].status == ShipStatus::NOT_YET_PRESENT
+					&& Ship_registry[ship_it->second].pobj_num == POBJ_INDEX(p_objp))
+				{
+					ship_registry_rename(ship_it->second, p_objp->name, true);
+				}
+			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
 			if (!ship_registry_exists(p_objp->name))
@@ -7534,6 +7555,8 @@ bool parse_main(const char *mission_name, int flags)
 
 	Assert(Ship_info.size() <= MAX_SHIP_CLASSES);
 
+	Parsing_mission = true;
+
 	do {
 		// don't do this for imports
 		if (!(flags & MPF_IMPORT_FSM)) {
@@ -7584,6 +7607,8 @@ bool parse_main(const char *mission_name, int flags)
 			break;
 		}
 	} while (0);
+
+	Parsing_mission = false;
 
 	if (!Fred_running)
 		strcpy_s(Mission_filename, mission_name);
@@ -8026,6 +8051,17 @@ int mission_parse_get_multi_mission_info( const char *filename )
 	return The_mission.num_players;
 }
 
+static p_object *mission_parse_get_arrival_ship_sub(const char *name)
+{
+	for (auto p_objp : list_range(&Ship_arrival_list))
+	{
+		if (!stricmp(p_objp->name, name))
+			return p_objp;	// still on the arrival list
+	}
+
+	return nullptr;
+}
+
 /**
  * @brief				Returns the parse object on the ship arrival list associated with the given name.
  * @param[in] name		The name of the object
@@ -8036,18 +8072,18 @@ int mission_parse_get_multi_mission_info( const char *filename )
  */
 p_object *mission_parse_get_arrival_ship(const char *name)
 {
-	p_object *p_objp;
-
 	if (name == nullptr)
 		return nullptr;
 
-	for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
-	{
-		if (!stricmp(p_objp->name, name)) 
-		{
-			return p_objp;	// still on the arrival list
-		}
-	}
+	// try the normal lookup
+	auto p_objp = mission_parse_get_arrival_ship_sub(name);
+	if (p_objp)
+		return p_objp;
+
+	// also search for ship names hashed using the legacy format
+	SCP_string legacy_hashed;
+	if (wing_bash_legacy_hashed_ship_name(legacy_hashed, name))
+		return mission_parse_get_arrival_ship_sub(legacy_hashed.c_str());
 
 	return nullptr;
 }

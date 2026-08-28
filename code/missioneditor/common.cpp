@@ -5,6 +5,7 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
+#include "mission/missioncampaign.h"
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "prop/prop.h"
@@ -316,6 +317,24 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 	}
 
 	return "";	// no error
+}
+
+int load_and_find_campaign_mission(const char *mission_filename)
+{
+	if (!mission_filename || !mission_filename[0])
+		return -1;
+
+	int idx = mission_campaign_find_mission(mission_filename);
+	if (idx < 0)
+		return -1;
+
+	if (Campaign.missions[idx].flags & CMISSION_FLAG_FRED_LOAD_PENDING)
+	{
+		read_mission_goal_list(idx);
+		Campaign.missions[idx].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+	}
+
+	return idx;
 }
 
 void reassign_ship_slot(int from, int to, const FredShipSlotConfig& cfg, bool resort_obj_list)

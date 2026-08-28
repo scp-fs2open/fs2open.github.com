@@ -245,6 +245,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
+	// Guard against reentrant ship-editor write-back while the mission is loaded.  The guard is released once the mission has stabilized.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission(flags & MPF_FAST_RELOAD);
 
 	// message 1: required version
@@ -259,6 +262,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		}
 
 		Fred_view_wnd->MessageBox(name);
+		Ship_editor_dialog.bypass_all--;
 		create_new_mission();
 		return false;
 	}
@@ -327,15 +331,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name) != 0) {  // need to fix name
-					update_sexp_references(old_name, name);
-					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
-					update_texture_replacements(old_name, name);
-					int k = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-					if (k >= 0) {
-						Assert(strlen(name) < NAME_LENGTH);
-						strcpy_s(Reinforcements[k].name, name);
-					}
-
+					rename_ship(Wings[i].ship_index[j], name);
 					// bash it again so that we handle display names if needed
 					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
@@ -407,6 +403,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	set_modified(0);
 	stars_post_level_init();
+
+	// mission is fully built and consistent now; allow the editors to repopulate
+	Ship_editor_dialog.bypass_all--;
 
 	recreate_dialogs();
 

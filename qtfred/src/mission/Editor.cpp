@@ -339,15 +339,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name) != 0) {  // need to fix name
-					update_sexp_references(old_name, name);
-					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
-					update_texture_replacements(old_name, name);
-					int k = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-					if (k >= 0) {
-						Assert(strlen(name) < NAME_LENGTH);
-						strcpy_s(Reinforcements[k].name, name);
-					}
-
+					rename_ship(Wings[i].ship_index[j], name);
 					// bash it again so that we handle display names if needed
 					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
@@ -807,11 +799,40 @@ bool Editor::query_ship_name_duplicate(int ship) {
 }
 
 void Editor::fix_ship_name(int ship) {
+	char old_name[NAME_LENGTH];
+	strcpy_s(old_name, Ships[ship].ship_name);
+
 	int i = 1;
 
 	do {
 		sprintf(Ships[ship].ship_name, "U.R.A. Moron %d", i++);
 	} while (query_ship_name_duplicate(ship));
+
+	// This function is called when a newly created ship duplicates the name of an existing ship.  In
+	// that situation, ship_create() will have overwritten the existing ship's registry entry to point
+	// to the new ship, so point it back at the ship that legitimately holds the old name.
+	auto ship_it = Ship_registry_map.find(old_name);
+	if (ship_it != Ship_registry_map.end() && Ship_registry[ship_it->second].shipnum == ship)
+	{
+		int other_shipnum = ship_name_lookup(old_name, 1);
+		if (other_shipnum >= 0)
+		{
+			auto old_entry = &Ship_registry[ship_it->second];
+			old_entry->objnum = Ships[other_shipnum].objnum;
+			old_entry->shipnum = other_shipnum;
+		}
+		else
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
+	}
+
+	// add a fresh registry entry for this ship under its new name
+	ship_registry_entry entry(Ships[ship].ship_name);
+	entry.status = ShipStatus::PRESENT;
+	entry.objnum = Ships[ship].objnum;
+	entry.shipnum = ship;
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[Ships[ship].ship_name] = sz2i(Ship_registry.size() - 1);
 }
 
 void Editor::createNewMission() {
@@ -1436,7 +1457,7 @@ void Editor::update_texture_replacements(const char* old_name, const char* new_n
 			strcpy_s(ii->ship_name, new_name);
 	}
 }
-int Editor::rename_ship(int ship, const char* name) {
+int Editor::rename_ship(int ship, const char* name, bool update_display_name) {
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
 
@@ -1453,27 +1474,26 @@ int Editor::rename_ship(int ship, const char* name) {
 
 	// keep the ship registry in sync
 	auto reg_it = Ship_registry_map.find(Ships[ship].ship_name);
-	if (reg_it != Ship_registry_map.end()) {
-		int reg_idx = reg_it->second;
-		Ship_registry_map.erase(reg_it);
-		strcpy_s(Ship_registry[reg_idx].name, name);
-		Ship_registry_map[name] = reg_idx;
-	}
+	if (reg_it != Ship_registry_map.end())
+		ship_registry_rename(reg_it->second, name, true);
 
 	strcpy_s(Ships[ship].ship_name, name);
 
-	// if this name has a hash, create a default display name
-	if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+	if (update_display_name)
 	{
-		Ships[ship].display_name = Ships[ship].ship_name;
-		end_string_at_first_hash_symbol(Ships[ship].display_name);
-		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
-	}
-	// otherwise reset the display name
-	else
-	{
-		Ships[ship].display_name = "";
-		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+		{
+			Ships[ship].display_name = Ships[ship].ship_name;
+			end_string_at_first_hash_symbol(Ships[ship].display_name);
+			Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+		}
+		// otherwise reset the display name
+		else
+		{
+			Ships[ship].display_name = "";
+			Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+		}
 	}
 
 	missionChanged();

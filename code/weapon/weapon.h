@@ -370,6 +370,7 @@ struct WeaponLaunchCurveData {
 	int num_firepoints;
 	float distance_to_target;
 	float target_radius;
+	float target_forward_speed;
 };
 
 struct weapon_info;
@@ -748,7 +749,8 @@ struct weapon_info
 			},
 			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
 			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}},
-			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}}
+			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}},
+			std::pair {"Target Forward Speed", modular_curves_submember_input<&WeaponLaunchCurveData::target_forward_speed>{}}
 	);
 
   public:
@@ -975,7 +977,8 @@ extern int Default_cmeasure_index;
 
 extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
 
-#define WEAPON_INDEX(wp)			(int)(wp-Weapons)
+#define WEAPON_INDEX(wp)			(static_cast<int>((wp)-Weapons))
+#define WEAPON_INFO_INDEX(wip)		(static_cast<int>((wip)-Weapon_info.data()))
 
 typedef struct tracking_info {
 	ship_subsys *subsys;
@@ -986,7 +989,6 @@ typedef struct tracking_info {
 } tracking_info;
 
 int weapon_info_lookup(const char *name);
-int weapon_info_get_index(const weapon_info *wip);
 
 inline int weapon_info_size()
 {
@@ -1032,6 +1034,7 @@ int weapon_create( const vec3d *pos,
 	ship_subsys *src_turret = nullptr,
 	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
+		0.f,
 		0.f,
 		0.f
 	});

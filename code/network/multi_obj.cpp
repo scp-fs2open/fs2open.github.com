@@ -1223,6 +1223,17 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	return packet_size;
 }
 
+// vm_extract_angles_matrix_alternate returns angles in the range -PI..PI, but the subsystem list packer
+// encodes them as an unsigned fraction of a full rotation, so wrap negatives around before sending.
+static float multi_oo_normalized_angle(float angle)
+{
+	if (angle < 0.0f) {
+		angle += PI2;
+	}
+
+	return angle / PI2;
+}
+
 // pack the appropriate info into the data
 #define PACK_PERCENT(v) { std::uint8_t upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (std::uint8_t)(v * 255.0f) : (std::uint8_t)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(std::uint8_t)); packet_size++; }
 #define PACK_BYTE(v) { memcpy( data + packet_size + header_bytes, &v, 1 ); packet_size += 1; }
@@ -1411,32 +1422,32 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
-					subsys_data.push_back(angs_1->b / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->b));
 				}
 
 				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
-					subsys_data.push_back(angs_1->h / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->h));
 				}
 
 				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
-					subsys_data.push_back(angs_1->p / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->p));
 				}
 
 				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
-					subsys_data.push_back(angs_2->b / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->b));
 				}
 
 				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
-					subsys_data.push_back(angs_2->h / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->h));
 				}
 
 				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
-					subsys_data.push_back(angs_2->p / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->p));
 				}
 
 				// clang says deleting null pointer has no effect
@@ -1600,8 +1611,8 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 	int offset = 0;
 
-	// read flag info
-	ushort in_flags;
+	// read flag info -- this is packed as a single byte, so it must be read back as one
+	ubyte in_flags;
 	memcpy(&in_flags, data, sizeof(ubyte));
 	offset++;
 
@@ -1895,7 +1906,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			full_physics = true;
 		}
 
-		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
+		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &new_phys_info, &local_desired_vel);
 		offset += r5;
 		// change it back to global coordinates.
 		vm_vec_unrotate(&new_phys_info.desired_vel, &local_desired_vel, &new_orient);

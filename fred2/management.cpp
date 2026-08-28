@@ -534,11 +534,40 @@ void fix_prop_name(int prop)
 
 void fix_ship_name(int ship)
 {
+	char old_name[NAME_LENGTH];
+	strcpy_s(old_name, Ships[ship].ship_name);
+
 	int i = 1;
 
 	do {
 		sprintf(Ships[ship].ship_name, "U.R.A. Moron %d", i++);
 	} while (query_ship_name_duplicate(ship));
+
+	// This function is called when a newly created ship duplicates the name of an existing ship.  In
+	// that situation, ship_create() will have overwritten the existing ship's registry entry to point
+	// to the new ship, so point it back at the ship that legitimately holds the old name.
+	auto ship_it = Ship_registry_map.find(old_name);
+	if (ship_it != Ship_registry_map.end() && Ship_registry[ship_it->second].shipnum == ship)
+	{
+		int other_shipnum = ship_name_lookup(old_name, 1);
+		if (other_shipnum >= 0)
+		{
+			auto old_entry = &Ship_registry[ship_it->second];
+			old_entry->objnum = Ships[other_shipnum].objnum;
+			old_entry->shipnum = other_shipnum;
+		}
+		else
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
+	}
+
+	// add a fresh registry entry for this ship under its new name
+	ship_registry_entry entry(Ships[ship].ship_name);
+	entry.status = ShipStatus::PRESENT;
+	entry.objnum = Ships[ship].objnum;
+	entry.shipnum = ship;
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[Ships[ship].ship_name] = sz2i(Ship_registry.size() - 1);
 }
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
@@ -875,11 +904,16 @@ void create_new_mission()
 
 void reset_mission()
 {
+	// Guard against reentrant ship-editor write-back while the mission is reset.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission();
 
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
+
+	Ship_editor_dialog.bypass_all--;
 }
 
 void clear_mission(bool fast_reload)
@@ -1814,7 +1848,7 @@ int get_docking_list(int model_index)
 }
 
 // DA 1/7/99 These ship names are not variables
-int rename_ship(int ship, const char *name)
+int rename_ship(int ship, const char *name, bool update_display_name)
 {
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
@@ -1832,35 +1866,34 @@ int rename_ship(int ship, const char *name)
 
 	// keep the ship registry in sync
 	auto reg_it = Ship_registry_map.find(Ships[ship].ship_name);
-	if (reg_it != Ship_registry_map.end()) {
-		int reg_idx = reg_it->second;
-		Ship_registry_map.erase(reg_it);
-		strcpy_s(Ship_registry[reg_idx].name, name);
-		Ship_registry_map[name] = reg_idx;
-	}
+	if (reg_it != Ship_registry_map.end())
+		ship_registry_rename(reg_it->second, name, true);
 
 	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
 		Ship_editor_dialog.m_ship_name = _T(name);
 
-	// if this name has a hash, create a default display name
-	if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+	if (update_display_name)
 	{
-		Ships[ship].display_name = Ships[ship].ship_name;
-		end_string_at_first_hash_symbol(Ships[ship].display_name);
-		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+		{
+			Ships[ship].display_name = Ships[ship].ship_name;
+			end_string_at_first_hash_symbol(Ships[ship].display_name);
+			Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
 
-		if (ship == cur_ship)
-			Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
-	}
-	// otherwise reset the display name
-	else
-	{
-		Ships[ship].display_name = "";
-		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
+		}
+		// otherwise reset the display name
+		else
+		{
+			Ships[ship].display_name = "";
+			Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
 
-		if (ship == cur_ship)
-			Ship_editor_dialog.m_ship_display_name = _T("<none>");
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T("<none>");
+		}
 	}
 
 	return 0;

@@ -103,6 +103,13 @@ public:
 	void init_tools();
 
 	/**
+	 * @brief Swaps the main menu bar between the qtFRED-style and classic layouts
+	 *
+	 * @param[in] classic If true, load the classic menu; otherwise the newer menu
+	 */
+	void apply_menu_layout(bool classic);
+
+	/**
 	 * @breif Standard deconstructor
 	 */
 	virtual ~CMainFrame();

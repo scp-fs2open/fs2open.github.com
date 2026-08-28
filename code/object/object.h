@@ -54,7 +54,7 @@
 #define OBJ_PROP            17  // A prop object like a landscape. Similar to ships but is entirely non-interactable with the exception of collisions
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	17
+#define MAX_OBJECT_TYPES	18
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
@@ -250,7 +250,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
+#define OBJ_INDEX(objp) (static_cast<int>((objp)-Objects))
 
 /*
  *		FUNCTIONS

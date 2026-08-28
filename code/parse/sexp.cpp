@@ -525,7 +525,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-no-guardian",				OP_SHIP_NO_GUARDIAN,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-guardian-threshold",		OP_SHIP_GUARDIAN_THRESHOLD,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
-	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael
+	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     3,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael + The Force
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
@@ -2265,6 +2265,9 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				}
 			}
 
+		} else if (node_subtype == SEXP_ATOM_OPERATOR) {
+			return SEXP_CHECK_DATA_EXPECTED;	// operators should not be found here
+
 		} else if (node_subtype == SEXP_ATOM_NUMBER) {
 			node_return_type = OPR_POSITIVE;
 			auto ptr = CTEXT(node);
@@ -2395,9 +2398,8 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 			continue;
 
 		} else {
-			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_NUMBER, SEXP_ATOM_STRING, "
-						"SEXP_ATOM_CONTAINER_NAME, or "
-						"SEXP_ATOM_CONTAINER_DATA!",
+			UNREACHABLE("SEXP subtype is %d when it should be SEXP_ATOM_LIST, SEXP_ATOM_OPERATOR, SEXP_ATOM_NUMBER, "
+						"SEXP_ATOM_STRING, SEXP_ATOM_CONTAINER_NAME, or SEXP_ATOM_CONTAINER_DATA!",
 				node_subtype);
 		}
 
@@ -5848,7 +5850,15 @@ const ship_registry_entry *eval_ship(int node)
 			return eval_ship(arg_node);
 	}
 
-	auto ship_it = Ship_registry_map.find(CTEXT(node));
+	// look up the ship in the ship registry
+	auto ship_name = CTEXT(node);
+	auto ship_it = Ship_registry_map.find(ship_name);
+	if (ship_it == Ship_registry_map.end())
+	{
+		SCP_string legacy_hashed;
+		if (wing_bash_legacy_hashed_ship_name(legacy_hashed, ship_name))
+			ship_it = Ship_registry_map.find(legacy_hashed);
+	}
 	if (ship_it != Ship_registry_map.end())
 	{
 		// cache the value if it can't change later
@@ -10375,6 +10385,11 @@ int sexp_percent_ships_arrive_depart_destroy_disarm_disable_scan(int n, int what
 				impossible_count++;
 		}
 	}
+
+	// if there is nothing to check, the percentage is meaningless; this can happen if, for example, a wing
+	// arrives from a docking bay and its mothership is destroyed before the wing has a chance to arrive
+	if ( total <= 0 )
+		return SEXP_FALSE;
 
 	// now, look at the percentage
 	if ( ((count * 100) / total) >= percent )
@@ -19571,27 +19586,48 @@ void sexp_ship_guardian_threshold(int node)
 		ship_entry->shipp()->ship_guardian_threshold = threshold;
 	}
 }
-
-// MjnMixael
+// MjnMixael + The Force
 void sexp_set_guard_range(int node)
 {
 	int range, n = node;
 	bool is_nan, is_nan_forever;
-
-	range = eval_num(n, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever)
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->has_shipp()) {
 		return;
+	}
+	int shipnum = ship_entry->shipnum;
 	n = CDR(n);
-
+	range = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever) {
+		return;
+	}
+	auto true_range = static_cast<float>(range);
+	n = CDR(n);
 	for (; n != -1; n = CDR(n)) {
-		auto ship_entry = eval_ship(n);
-		if (!ship_entry || !ship_entry->has_shipp()) {
+		object_ship_wing_point_team oswpt;
+		eval_object_ship_wing_point_team(&oswpt, n);
+		if (oswpt.type == OSWPT_TYPE_SHIP) {
+			auto shipp = oswpt.shipp();
+			set_guard_range_ship(true_range, shipnum, shipp);
+		} else if (oswpt.type == OSWPT_TYPE_WING) {
+			for (int i = 0; i < oswpt.wingp()->current_count; ++i) {
+				auto shipp = &Ships[oswpt.wingp()->ship_index[i]];
+				set_guard_range_ship(true_range, shipnum, shipp);
+			}
+		} else if (oswpt.type == OSWPT_TYPE_WHOLE_TEAM) {
+			ship_obj* so;
+			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
+				auto shipp = &Ships[Objects[so->objnum].instance];
+				if (shipp->team == oswpt.team) {
+					set_guard_range_ship(true_range, shipnum, shipp);
+				}
+			}
+		} else {
 			continue;
 		}
-
-		// Intentionally no lower bound validation beyond disabling at <= 0.
-		// Mission authors may choose very small positive values for highly restrictive escort behavior.
-		ship_entry->shipp()->max_guard_radius = (range > 0) ? static_cast<float>(range) : -1.0f;
 	}
 }
 
@@ -29016,7 +29052,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_guard_range(node);
 				sexp_val = SEXP_TRUE;
 				break;
-
 			case OP_SHIP_SUBSYS_TARGETABLE:
 				sexp_ship_deal_with_subsystem_flag(cur_node, node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
@@ -32493,9 +32528,11 @@ int query_operator_argument_type(int op_index, int argnum)
 
 		case OP_SET_GUARD_RANGE:
 			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
 				return OPF_NUMBER;
 			else
-				return OPF_SHIP;
+				return OPF_SHIP_WING_WHOLETEAM;
 
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
@@ -35438,6 +35475,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_OP_EXPECTED:
 			return "Operator expected instead of data";
+
+		case SEXP_CHECK_DATA_EXPECTED:
+			return "Data expected instead of operator";
 
 		case SEXP_CHECK_UNKNOWN_OP:
 			return "Unrecognized operator";
@@ -40698,12 +40738,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// MjnMixael
 	{ OP_SET_GUARD_RANGE, "set-guard-range\r\n"
-		"\tSets the max range in meters at which any ships guarding this ship will engage with threats.\r\n"
+		"\tLimits the range that selected ships or wings can move when guarding a specific ship\r\n"
 		"This range will override the default dynamic range behavior for ships obeying a guard order.\r\n"
-		"If the value is <= 0, regular dynamic guard range behavior will resume. Positive values are used as is with no size validation based on ship class.\r\n\r\n"
-		"Takes 2 or more arguments...\r\n"
-		"\t1:\tGuard range cap in meters (<= 0 disables cap).\r\n"
-		"\t2+:\tShip(s) to apply the cap to (ships must be in-mission)." },
+		"If the value is <= 0, regular dynamic guard range behavior will resume. Positive values are used as is with no size validation based on ship class.\r\n"
+		"Warning: Will not apply to future waves of wings or ships not currently in mission.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
+		"\t1:\tShip the escorts won't leave the range of if guarding (Ship must be in mission)\r\n"
+		"\t2:\tGuard range cap in meters (<= 0 disables cap)\r\n"
+		"\t3+:\tEscort ships and wings that the limit applies to" },
 
 	// Goober5000
 	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"

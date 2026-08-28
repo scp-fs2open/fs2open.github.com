@@ -2410,12 +2410,12 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	char savepath[MAX_PATH_LEN];
 
 	strcpy_s(savepath, "");
-	auto p = strrchr(pathname, '\\');
+	auto p = strrchr(pathname, DIR_SEPARATOR_CHAR);
 	if (p) {
 		auto len = p - pathname;
 		strncpy(savepath, pathname, len);
 		savepath[len] = '\0';
-		strcat_s(savepath, "\\");
+		strcat_s(savepath, DIR_SEPARATOR_STR);
 	}
 	strcat_s(savepath, "saving.xxx");
 
