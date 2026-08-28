@@ -346,19 +346,20 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	} 
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_team_weaponry_usage_list(i, _weapon_usage[i]);
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+		SCP_map<int, int> used_pool;
+		generate_weaponry_usage_list_team(i, used_pool);
+		for (auto &entry : Team_data[i].weapon_choices) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
-			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
-				&& (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
-				// convert weaponry_pool to be extras available beyond the current ships weapons
-				Team_data[i].weaponry_count[j] -= _weapon_usage[i][Team_data[i].weaponry_pool[j]];
-				if (Team_data[i].weaponry_count[j] < 0) {
-					Team_data[i].weaponry_count[j] = 0;
+			if (entry.class_variable.empty() && entry.count_variable.empty()) {
+				// convert the weaponry pool to be extras available beyond the current ships weapons
+				entry.count -= used_pool.value_or(entry.class_index, 0);
+				if (entry.count < 0) {
+					entry.count = 0;
 				}
 
-				// zero the used pool entry
-				_weapon_usage[i][Team_data[i].weaponry_pool[j]] = 0;
+				// remove the used pool entry, so that a duplicate loadout entry for the same class
+				// doesn't subtract the wing usage twice (matches FRED2's load_mission)
+				used_pool.erase(entry.class_index);
 			}
 		}
 		// Weapons used in wings but missing from the loadout pool are flagged by the error checker.
@@ -546,34 +547,24 @@ void Editor::clearMission(bool fast_reload) {
 	// set up the default ship types for all teams.  For now, this is the same class
 	// of ships for all teams
 	for (auto i = 0; i < MAX_TVT_TEAMS; i++) {
-		auto count = 0;
+		Team_data[i].ship_choices.clear();
 		for (auto j = 0; j < static_cast<int>(Ship_info.size()); j++) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
-				Team_data[i].ship_list[count] = j;
-				strcpy_s(Team_data[i].ship_list_variables[count], "");
-				Team_data[i].ship_count[count] = 5;
-				strcpy_s(Team_data[i].ship_count_variables[count], "");
-				count++;
+				auto &entry = Team_data[i].ship_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = 5;
 			}
 		}
-		Team_data[i].num_ship_choices = count;
 
-		count = 0;
+		Team_data[i].weapon_choices.clear();
+		Team_data[i].required_weapons.clear();
 		for (auto j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
-				if (Weapon_info[j].subtype == WP_LASER) {
-					Team_data[i].weaponry_count[count] = 16;
-				} else {
-					Team_data[i].weaponry_count[count] = 500;
-				}
-				Team_data[i].weaponry_pool[count] = j;
-				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
-				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
-				count++;
+				auto &entry = Team_data[i].weapon_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = (Weapon_info[j].subtype == WP_LASER) ? 16 : 500;
 			}
-			Team_data[i].weapon_required[j] = false;
 		}
-		Team_data[i].num_weapon_choices = count;
 	}
 
 	unmark_all();
@@ -1617,82 +1608,24 @@ void Editor::disband_wing(int wing_num) {
 
 	missionChanged();
 }
-void Editor::generate_wing_weaponry_usage_list(int* arr, int wing) {
-	int i, j;
-	ship_weapon* swp;
-
-	if (wing < 0) {
-		return;
-	}
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		swp = &Ships[Wings[wing].ship_index[i]].weapons;
-		j = swp->num_primary_banks;
-		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->primary_bank_weapons[j]]++;
-			}
-		}
-
-		j = swp->num_secondary_banks;
-		while (j--) {
-			if (swp->secondary_bank_weapons[j] >= 0 && swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->secondary_bank_weapons[j]] += (int) floor(
-					(swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f
-						/ Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
-			}
-		}
-	}
-}
-void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
-	int i;
-
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		arr[i] = 0;
-	}
+void Editor::updateStartingWingLoadoutUseCounts() {
+	_loadout_usage.clear();
+	_loadout_usage.resize(MAX_TVT_TEAMS);
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		Assert (team >= 0 && team < MAX_TVT_TEAMS);
-
-		for (i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_wing_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
-		}
-	} else {
-		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_wing_weaponry_usage_list(arr, Starting_wings[i]);
-		}
-	}
-}
-void Editor::generate_ship_usage_list(int* arr, int wing) {
-	int i; 
-
-	if (wing < 0) {
-		return;
-	}
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
-	}
-}
-void Editor::updateStartingWingLoadoutUseCounts() {
-	memset(_ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
-
-	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
 		for (int i = 0; i<MAX_TVT_TEAMS; i++) {
 			for (int j = 0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
-				generate_ship_usage_list(_ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
-			}			
-			generate_team_weaponry_usage_list(i, _weapon_usage[i]);
+				generate_ship_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], _loadout_usage[i].ships);
+			}
+			generate_weaponry_usage_list_team(i, _loadout_usage[i].weapons);
 		}
 	}
 	else {
 		for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_ship_usage_list(_ship_usage[0], Starting_wings[i]);
+			generate_ship_usage_list_wing(Starting_wings[i], _loadout_usage[0].ships);
 		}
-		generate_team_weaponry_usage_list(0, _weapon_usage[0]);
-	}	
+		generate_weaponry_usage_list_team(0, _loadout_usage[0].weapons);
+	}
 }
 void Editor::delete_marked() {
 	object* ptr, * next;
@@ -2028,24 +1961,11 @@ SCP_string Editor::get_display_name_for_text_box(const SCP_string &orig_name)
 		return "<none>";
 }
 
-SCP_vector<int> Editor::getStartingWingLoadoutUseCounts() {
+const SCP_vector<Editor::LoadoutUseCounts> &Editor::getStartingWingLoadoutUseCounts() {
 	// update before sending so that we have the most up to date info.
 	updateStartingWingLoadoutUseCounts();
 
-	SCP_vector<int> out;
-
-	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		for (auto& entry : _ship_usage[i]) {
-			out.push_back(entry);
-		}
-	}
-	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		for (auto& entry : _weapon_usage[i]) {
-			out.push_back(entry);
-		}
-	}
-
-	return out;
+	return _loadout_usage;
 }
 
 

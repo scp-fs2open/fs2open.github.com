@@ -547,25 +547,27 @@ extern SCP_vector<p_object> Parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct team_data {
+// one line of a team loadout: a ship or weapon class (given literally or via a sexp variable)
+// and how many of it are available (likewise literal or via a variable)
+struct loadout_entry
+{
+	int class_index = -1;       // resolved ship or weapon class
+	int count = 0;
+	SCP_string class_variable;  // sexp variable name; empty = class was given literally
+	SCP_string count_variable;  // sexp variable name; empty = count was given literally
+};
+
+struct team_data
+{
 	// ships
-	int		default_ship;  // default ship type for player start point (recommended choice)
-	int		num_ship_choices; // number of ship choices inside ship_list 
-	int		loadout_total;	// Total number of ships available of all classes 
-	int		ship_list[MAX_SHIP_CLASSES];
-	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
-	int		ship_count[MAX_SHIP_CLASSES];
-	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
+	int		default_ship = -1;						// default ship type for player start point (recommended choice)
+	SCP_vector<loadout_entry> ship_choices;			// ship classes (and counts) available in the loadout
 
 	// weapons
-	int		num_weapon_choices;
-	bool    do_not_validate;
-	int		weaponry_pool[MAX_WEAPON_TYPES];
-	int		weaponry_count[MAX_WEAPON_TYPES];
-	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	bool	weapon_required[MAX_WEAPON_TYPES];
-} team_data;
+	bool	do_not_validate = false;
+	SCP_vector<loadout_entry> weapon_choices;		// weapon classes (and counts) available in the loadout
+	SCP_set<int> required_weapons;					// weapon classes that cannot be removed in weapon select
+};
 
 #define MAX_P_WINGS		16
 #define MAX_SHIP_LIST	16

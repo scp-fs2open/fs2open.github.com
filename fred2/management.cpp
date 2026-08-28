@@ -917,7 +917,7 @@ void reset_mission()
 void clear_mission(bool fast_reload)
 {
 	char *str;
-	int i, j, count;
+	int i, j;
 	CTime t;
 
 	// clean up everything we need to before we reset back to defaults.
@@ -983,34 +983,24 @@ void clear_mission(bool fast_reload)
 	// set up the default ship types for all teams.  For now, this is the same class
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
-		count = 0;
+		Team_data[i].ship_choices.clear();
 		for ( j = 0; j < ship_info_size(); j++ ) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
-				Team_data[i].ship_list[count] = j;
-				strcpy_s(Team_data[i].ship_list_variables[count], "");
-				Team_data[i].ship_count[count] = 5;
-				strcpy_s(Team_data[i].ship_count_variables[count], "");
-				count++;
+				auto &entry = Team_data[i].ship_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = 5;
 			}
 		}
-		Team_data[i].num_ship_choices = count;
 
-		count = 0;
+		Team_data[i].weapon_choices.clear();
+		Team_data[i].required_weapons.clear();
 		for ( j = 0; j < weapon_info_size(); j++ ) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
-				if (Weapon_info[j].subtype == WP_LASER) {
-					Team_data[i].weaponry_count[count] = 16;
-				} else {
-					Team_data[i].weaponry_count[count] = 500;
-				}
-				Team_data[i].weaponry_pool[count] = j; 
-				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
-				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
-				count++;
+				auto &entry = Team_data[i].weapon_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = (Weapon_info[j].subtype == WP_LASER) ? 16 : 500;
 			}
-			Team_data[i].weapon_required[j] = false;
 		}
-		Team_data[i].num_weapon_choices = count; 
 	}
 
 	unmark_all();
@@ -2457,68 +2447,6 @@ int query_whole_wing_marked(int wing)
 		return 1;
 
 	return 0;
-}
-
-void generate_ship_usage_list(int *arr, int wing) 
-{
-	int i; 
-
-	if (wing < 0) {
-		return;
-	}
-	
-	i = Wings[wing].wave_count;
-	while (i--) {
-		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
-	}
-}
-
-void generate_weaponry_usage_list(int *arr, int wing)
-{
-	int i, j;
-	ship_weapon *swp;
-
-	if (wing < 0)
-		return;
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		swp = &Ships[Wings[wing].ship_index[i]].weapons;
-		j = swp->num_primary_banks;
-		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->primary_bank_weapons[j]]++;
-			}
-		}
-
-		j = swp->num_secondary_banks;
-		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
-			}
-		}
-	}
-}
-
-void generate_weaponry_usage_list(int team, int *arr)
-{
-	int i;
-
-	for (i=0; i<MAX_WEAPON_TYPES; i++)
-		arr[i] = 0;
-	 
-    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		Assert (team >= 0 && team < MAX_TVT_TEAMS);
-
-		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
-		}
-	}
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
-		}
-	}
 }
 
 CJumpNode *jumpnode_get_by_name(const CString& name)
