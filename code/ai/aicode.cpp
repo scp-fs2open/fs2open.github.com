@@ -6500,7 +6500,7 @@ int num_nearby_fighters(int enemy_team_mask, const vec3d *pos, float threshold)
 bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
 {
 	int	num_weapon_types;
-	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
+	int	weapon_id_list[MAX_SHIP_SECONDARY_BANKS], weapon_bank_list[MAX_SHIP_SECONDARY_BANKS];
 	int	i;
 	flagset<Weapon::Info_Flags>	ignore_mask, ignore_mask_without_huge, prio1, prio2;
 	int	initial_bank;
@@ -6539,7 +6539,7 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	}
 
 #ifndef NDEBUG
-	for (i=0; i<MAX_WEAPON_TYPES; i++) {
+	for (i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
 		weapon_id_list[i] = -1;
 		weapon_bank_list[i] = -1;
 	}
@@ -8406,7 +8406,7 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 {
 	float	dot_to_enemy;
 	int	num_weapon_types;
-	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
+	int	weapon_id_list[MAX_SHIP_SECONDARY_BANKS], weapon_bank_list[MAX_SHIP_SECONDARY_BANKS];
 	ship	*shipp;
 	ship	*tshpp;
 	ship_weapon	*swp;
