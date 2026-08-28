@@ -977,6 +977,12 @@ add_file_folder("Model"
 	model/model_flags.h
 )
 
+# Model BVH files
+add_file_folder("Model BVH"
+	model/modelbvh.h
+	model/modelbvh.cpp
+)
+
 # Model Animation files
 add_file_folder("Model Animation"
 	model/animation/modelanimation.cpp
