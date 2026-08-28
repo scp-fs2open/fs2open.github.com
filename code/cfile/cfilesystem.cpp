@@ -612,6 +612,34 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 	}
 }
 
+void cf_build_file_list(); // defined below; rebuilds the full loose-file index across all roots
+
+void cf_add_external_path_root(const char* path)
+{
+	SCP_string rootPath = path;
+	normalize_directory_separators(rootPath);
+
+	if (rootPath.empty() || rootPath.back() != DIR_SEPARATOR_CHAR) {
+		rootPath += DIR_SEPARATOR_CHAR;
+	}
+
+	if (rootPath.size() + 1 >= CF_MAX_PATHNAME_LENGTH) {
+		Error(LOCATION, "The length of external root path '%s' exceeds the maximum of %d!\n", rootPath.c_str(), CF_MAX_PATHNAME_LENGTH);
+	}
+
+	cf_root* root = cf_create_root();
+	root->path = std::move(rootPath);
+	root->location_flags = CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_PRIMARY_MOD;
+	root->roottype = CF_ROOTTYPE_PATH;
+
+	cf_init_root_pathtypes(root);
+	cf_build_pack_list(root); // registers any VP packs under the new root as their own pack roots
+
+	// cf_build_pack_list only discovers VP packs; loose files (e.g. a single external .pof) are
+	// only indexed by a full file-list rebuild, which walks every root's actual directory tree.
+	cf_build_file_list();
+}
+
 void cf_build_root_list(const char *cdrom_dir)
 {
 	Num_roots = 0;
