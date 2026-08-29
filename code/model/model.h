@@ -473,7 +473,7 @@ public:
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
-	std::shared_ptr<ubyte[]> bsp_data;
+	std::shared_ptr<ubyte[]> bsp_data; // the bsp_data loaded and then cleared after has been used in modelread
 
 	int collision_tree_index;
 
@@ -490,6 +490,7 @@ public:
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
+	int     num_polys = 0;          // number of tmaps & flat polys in a submodel, only loaded and used with the -pofspew cmdline
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -1051,8 +1052,6 @@ void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, const char *file);
-
-SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
