@@ -47,15 +47,20 @@ ADE_INDEXER(l_SupportRearmPoolTeam,
 		return ADE_RETURN_NIL;
 	}
 
+	auto &team_pool = The_mission.support_ships.rearm_weapon_pool[team_idx];
+	int pool_default = The_mission.support_ships.rearm_pool_default();
+
 	if (ADE_SETTING_VAR) {
+		// disallow_rearm weapons always read as 0, so there is nothing to store for them
 		if (!Weapon_info[idx].disallow_rearm) {
-			if (amount < 0) {
-				The_mission.support_ships.rearm_weapon_pool[team_idx][idx] = -1;
+			int new_value = (amount < 0) ? -1 : amount;
+
+			// don't store the default value; absence means the default
+			if (new_value == pool_default) {
+				team_pool.erase(idx);
 			} else {
-				The_mission.support_ships.rearm_weapon_pool[team_idx][idx] = amount;
+				team_pool[idx] = new_value;
 			}
-		} else {
-			The_mission.support_ships.rearm_weapon_pool[team_idx][idx] = 0;
 		}
 	}
 
@@ -63,7 +68,7 @@ ADE_INDEXER(l_SupportRearmPoolTeam,
 		return ade_set_args(L, "i", 0);
 	}
 
-	return ade_set_args(L, "i", The_mission.support_ships.rearm_weapon_pool[team_idx][idx]);
+	return ade_set_args(L, "i", team_pool.value_or(idx, pool_default));
 }
 
 ADE_FUNC(__len,

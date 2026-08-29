@@ -10,6 +10,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
+#include <array>
 #include <csetjmp>
 #include <set>
 
@@ -116,7 +117,14 @@ struct support_ship_info
 	bool	disallow_rearm;                      // if true, support ships can only repair and will not rearm weapons
 	bool	allow_rearm_weapon_precedence;       // if true, support ships may swap to precedence weapons when rearm pool is empty
 	bool	rearm_pool_from_loadout;             // initialize rearm pool from mission loadout after filling starting loadout ships
-	int     rearm_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES]; // mission stockpile used to limit support ship rearming
+
+	// mission stockpile used to limit support ship rearming: weapon class -> amount remaining
+	// (-1 = unlimited, 0 = not rearmable, >0 = limited); an absent entry means rearm_pool_default()
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> rearm_weapon_pool;
+
+	// the default for weapon classes without a pool entry: normally unlimited, but when the pool
+	// is seeded from the mission loadout, any weapon not in the loadout cannot be rearmed
+	int rearm_pool_default() const { return rearm_pool_from_loadout ? 0 : -1; }
 
 	void reset();
 };
