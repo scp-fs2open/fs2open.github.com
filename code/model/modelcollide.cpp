@@ -108,7 +108,36 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 
 
 
-// ----- 
+// Computes a polygon's normal directly from its own vertices (Newell's method -- a single O(n)
+// pass, robust for near-planar input and not limited to triangles), rather than trusting a
+// stored "plane_norm" field. bsp_collision_leaf::plane_norm is parsed verbatim from the .pof
+// file (exporter output, never validated against the vertices it's attached to) and can diverge
+// from the true geometric normal by a large margin on real content -- confirmed on a real ship
+// (SC_Asura.pof's turret02: avg 21 degrees, worst-case leaf over 100 degrees off), which flips
+// backface-cull decisions and solves the ray against a tilted, wrong plane. See
+// collision_bugs_found.md ("Bug 3") for the full writeup this fixes.
+//
+// Falls back to the caller-supplied stored normal only when the computed one is degenerate
+// (near-zero magnitude -- a truly zero-area or collinear polygon, where there's nothing
+// meaningful to compute from the vertices).
+static vec3d mc_compute_geometric_normal(int nv, vec3d **verts, const vec3d *stored_norm)
+{
+	vec3d n = vmd_zero_vector;
+	for (int i = 0; i < nv; ++i) {
+		const vec3d *a = verts[i];
+		const vec3d *b = verts[(i + 1) % nv];
+		n.xyz.x += (a->xyz.y - b->xyz.y) * (a->xyz.z + b->xyz.z);
+		n.xyz.y += (a->xyz.z - b->xyz.z) * (a->xyz.x + b->xyz.x);
+		n.xyz.z += (a->xyz.x - b->xyz.x) * (a->xyz.y + b->xyz.y);
+	}
+
+	if (vm_vec_normalize_safe(&n, true) <= 0.0f) {
+		return *stored_norm;
+	}
+	return n;
+}
+
+// -----
 // mc_check_face
 // nv -- number of vertices
 // verts -- actual vertices
@@ -125,6 +154,12 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, vec3d *plane_
 	vec3d	hit_point;
 	float		dist;
 	float		u, v;
+
+	// Use the polygon's own geometry, not the (possibly badly wrong) authored plane_norm --
+	// see mc_compute_geometric_normal() above. Shadowing the parameter means every use below
+	// (backface cull, plane solve, in-polygon test, reported hit_normal) picks up the fix.
+	vec3d geo_norm = mc_compute_geometric_normal(nv, verts, plane_norm);
+	plane_norm = &geo_norm;
 
 	// Check to see if poly is facing away from ray.  If so, don't bother
 	// checking it.
@@ -202,7 +237,13 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 									// NOTE all times are normalized so that t = 1.0 at the end of the frame
 	int		check_face = 1;		// assume we'll check the face.
 	int		check_edges = 1;		// assume we'll check the edges.
-	
+
+	// Use the polygon's own geometry, not the (possibly badly wrong) authored plane_norm --
+	// see mc_compute_geometric_normal() above mc_check_face(). Shadowing the parameter means
+	// every use below picks up the fix.
+	vec3d geo_norm = mc_compute_geometric_normal(nv, verts, plane_norm);
+	plane_norm = &geo_norm;
+
 	// Check to see if poly is facing away from ray.  If so, don't bother
 	// checking it.
 
