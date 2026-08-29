@@ -1695,7 +1695,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil, string|number DockerPoint=nil, string|number DockeePoint=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200).  DockerPoint and DockeePoint only apply to ORDER_DOCK.", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
@@ -1704,6 +1704,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 	int stype = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
+	int docker_index = -1;
+	int dockee_index = -1;
 	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
 	if (n_args < 2)
 		return ADE_RETURN_NIL;
@@ -1757,6 +1759,52 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 			ai_shipname = Ships[tgh->objp()->instance].ship_name;
 			ai_mode = AI_GOAL_DOCK;
 			ai_submode = AIS_DOCK_0;
+
+			polymodel *docker_pm = model_get(Ship_info[Ships[objh->objp()->instance].ship_info_index].model_num);
+			polymodel *dockee_pm = model_get(Ship_info[Ships[tgh->objp()->instance].ship_info_index].model_num);
+
+			if (!lua_isnoneornil(L, 8))
+			{
+				if (lua_isnumber(L, 8))
+				{
+					ade_get_args(L, "*******i", &docker_index);
+					docker_index--;	// Lua --> C/C++
+				}
+				else
+				{
+					const char *name = nullptr;
+					ade_get_args(L, "*******s", &name);
+					docker_index = model_find_dock_name_index(docker_pm, name);
+				}
+
+				if (docker_index < 0 || docker_index >= docker_pm->n_docks)
+				{
+					LuaError(L, "Invalid docker point specified for ship '%s'", Ships[objh->objp()->instance].ship_name);
+					return ade_set_error(L, "b", false);
+				}
+			}
+
+			if (!lua_isnoneornil(L, 9))
+			{
+				if (lua_isnumber(L, 9))
+				{
+					ade_get_args(L, "********i", &dockee_index);
+					dockee_index--;	// Lua --> C/C++
+				}
+				else
+				{
+					const char *name = nullptr;
+					ade_get_args(L, "********s", &name);
+					dockee_index = model_find_dock_name_index(dockee_pm, name);
+				}
+
+				if (dockee_index < 0 || dockee_index >= dockee_pm->n_docks)
+				{
+					LuaError(L, "Invalid dockee point specified for ship '%s'", Ships[tgh->objp()->instance].ship_name);
+					return ade_set_error(L, "b", false);
+				}
+			}
+
 			break;
 		}
 		case LE_ORDER_WAYPOINTS:
@@ -1979,7 +2027,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 		return ade_set_error(L, "b", false);
 
 	//Fire off the goal
-	ai_add_ship_goal_scripting(ai_mode, ai_submode, fl2i(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data);
+	ai_add_ship_goal_scripting(ai_mode, ai_submode, fl2i(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data, docker_index, dockee_index);
 
 	return ADE_RETURN_TRUE;
 }
