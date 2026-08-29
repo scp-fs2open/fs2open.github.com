@@ -75,7 +75,7 @@ extern int Cmdline_NoFPSCap;
 extern bool Cmdline_no_vsync;
 
 // Collision related
-extern bool Cmdline_use_bvh_collision;
+extern bool Cmdline_use_bvh_collision; // defaults true; -no_bvh_collision reverts to the legacy BSP submodel traversal
 
 // HUD related
 extern int Cmdline_ballistic_gauge;
