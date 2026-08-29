@@ -2089,6 +2089,10 @@ void player_generate_death_message(player *player_p)
 			sprintf(msg, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
 			break;
 
+		case OBJ_PROP:
+			sprintf(msg, XSTR( "%s was killed by a collision with an object", -1), player_p->callsign);
+			break;
+
 		case OBJ_BEAM:
 			if (strlen(player_p->killer_parent_name) <= 0)
 			{
