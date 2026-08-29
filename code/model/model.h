@@ -477,9 +477,21 @@ public:
 
 	int collision_tree_index;
 
-	vec3d	geometric_center;		// geometric center of this subobject.  In the same Frame Of 
+	vec3d	geometric_center;		// geometric center of this subobject.  In the same Frame Of
 	                              //  Reference as all other vertices in this submodel. (Relative to pivot point)
 	float		rad;						// radius for each submodel
+
+	// Validated bounding-sphere radius for collision's early-out sphere pre-check
+	// (model_collide()'s MC_SUBMODEL/MC_SUBMODEL_INSTANCE path -- see mc_ray_boundingbox/
+	// fvi_ray_sphere callers in modelcollide.cpp), computed at model-load time from the
+	// submodel's actual collision-tree vertices as max(authored `rad`, true distance from the
+	// submodel's local origin to its farthest vertex). `rad` above is parsed verbatim from the
+	// .pof file and can be significantly too small on real content (confirmed: some submodels'
+	// authored rad undershoots the true extent by 2-250x -- see collision_bugs_found.md "Bug 1"),
+	// which silently makes model_collide() reject valid ray-vs-submodel hits before any polygon
+	// test runs. `rad` itself is left untouched since many other subsystems (rendering culling,
+	// radar, AI targeting, HUD) also read it and may rely on the author-tuned value.
+	float collision_rad = 0.0f;
 
 	vec3d	min;						// The min point of this object's geometry
 	vec3d	max;						// The max point of this object's geometry

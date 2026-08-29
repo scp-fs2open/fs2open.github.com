@@ -1207,7 +1207,10 @@ int model_collide(mc_info *mc_info_obj)
 
 	if ( (Mc->flags & MC_SUBMODEL) || (Mc->flags & MC_SUBMODEL_INSTANCE) )	{
 		first_submodel = Mc->submodel_num;
-		model_radius = Mc_pm->submodel[first_submodel].rad;
+		// collision_rad (validated at model-load time against the submodel's actual vertices)
+		// rather than the authored rad, which can undershoot the true extent -- see
+		// collision_bugs_found.md "Bug 1".
+		model_radius = Mc_pm->submodel[first_submodel].collision_rad;
 	} else {
 		first_submodel = Mc_pm->detail[0];
 		model_radius = Mc_pm->rad;

@@ -3511,6 +3511,22 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		Macro_ubyte_bounds = pm->submodel[i].bsp_data.get() + pm->submodel[i].bsp_data_size;
 		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data.get(), pm->version);
 		Macro_ubyte_bounds = nullptr;
+
+		// The authored `rad` (read verbatim from the .pof, see bsp_info::rad) can undershoot a
+		// submodel's true geometric extent by a wide margin on real content -- confirmed cases
+		// range from 2x to 250x too small (see collision_bugs_found.md "Bug 1"), which silently
+		// makes model_collide()'s bounding-sphere pre-check reject valid ray-vs-submodel hits
+		// before any polygon test runs. Compute a validated radius from the same vertex data the
+		// collision tree was just built from, for that pre-check to use instead of `rad` itself
+		// (left untouched: other subsystems -- rendering culling, radar, AI targeting, HUD --
+		// also read `rad` and may rely on the author-tuned value).
+		float max_dist_sq = 0.0f;
+		for (int vi = 0; vi < tree->n_verts; ++vi) {
+			float d2 = vm_vec_mag_squared(&tree->point_list[vi]);
+			if (d2 > max_dist_sq)
+				max_dist_sq = d2;
+		}
+		pm->submodel[i].collision_rad = std::max(pm->submodel[i].rad, sqrtf(max_dist_sq));
 	}
 
 	// Find the core_radius... the minimum of 
