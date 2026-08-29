@@ -3504,7 +3504,6 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 #endif
 
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
-	extern int Cmdline_spew_pof_info;
 
 	for (i = 0; i < pm->n_models; ++i) {
 		auto* sm = &pm->submodel[i];
