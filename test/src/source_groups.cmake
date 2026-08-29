@@ -51,6 +51,7 @@ add_file_folder("model"
     model/test_modelbvh_leafindex.cpp
     model/test_modelbvh_parity.cpp
     model/test_modelbvh_traversal_parity.cpp
+    model/test_modelbvh_benchmark.cpp
 )
 
 add_file_folder("Parse"
