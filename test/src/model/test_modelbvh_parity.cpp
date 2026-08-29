@@ -145,10 +145,19 @@ void check_model_parity(int model_num, polymodel* pm, std::mt19937& rng, ParityT
 		if (triangles.empty())
 			continue;
 
+		bsp_info& sm = pm->submodel[sm_idx];
+
+		// model_collide() with MC_SUBMODEL never tests a submodel's own geometry when either
+		// flag is set (mc_check_subobj: No_collisions is a hard skip, Nocollide_this_only is a
+		// soft skip -- see collision_bvh_rewrite_plan project notes). Comparing against a
+		// brute-force triangle test that doesn't know about these flags isn't a fair parity
+		// check -- the old system always reports "no hit" here by design, regardless of geometry.
+		if (sm.flags[Model::Submodel_flags::No_collisions] || sm.flags[Model::Submodel_flags::Nocollide_this_only])
+			continue;
+
 		totals.submodels_with_geometry++;
 		bvh_tree tree = bvh_build(triangles);
 
-		bsp_info& sm = pm->submodel[sm_idx];
 		vec3d center = (sm.min + sm.max) * 0.5f;
 		float radius = std::max(sm.rad, 1.0f);
 
@@ -182,7 +191,15 @@ void check_model_parity(int model_num, polymodel* pm, std::mt19937& rng, ParityT
 			mc.pos = &vmd_zero_vector;
 			mc.p0 = &origin;
 			mc.p1 = &target;
-			mc.flags = MC_CHECK_MODEL | MC_SUBMODEL | MC_CHECK_RAY;
+			// MC_CHECK_INVISIBLE_FACES: without it, model_collide() refuses to collide with any
+			// polygon whose texture failed to load (by design -- see mc_check_face's
+			// GetTexture()<0 check). This test's headless FSTestFixture setup only registers the
+			// mod's models directory with cfile, not its actual texture data, so textures never
+			// load here -- without this flag, essentially every textured (non-flat) polygon would
+			// spuriously "miss" regardless of geometry, which isn't a fair comparison. The BVH
+			// side has no notion of texture-load state at all, so this flag makes both sides test
+			// pure geometry, which is what this harness is actually meant to validate.
+			mc.flags = MC_CHECK_MODEL | MC_SUBMODEL | MC_CHECK_RAY | MC_CHECK_INVISIBLE_FACES;
 
 			bool old_hit = model_collide(&mc) != 0;
 
@@ -196,6 +213,12 @@ void check_model_parity(int model_num, polymodel* pm, std::mt19937& rng, ParityT
 			if (old_hit != new_hit) {
 				submodel_hit_mismatches++;
 				totals.hit_mismatches++;
+				if (submodel_hit_mismatches <= 3) {
+					printf("    DEBUG hit mismatch: old=%d new=%d origin=(%.3f,%.3f,%.3f) target=(%.3f,%.3f,%.3f) rad=%.3f min=(%.3f,%.3f,%.3f) max=(%.3f,%.3f,%.3f)\n",
+						old_hit, new_hit, origin.xyz.x, origin.xyz.y, origin.xyz.z, target.xyz.x, target.xyz.y,
+						target.xyz.z, sm.rad, sm.min.xyz.x, sm.min.xyz.y, sm.min.xyz.z, sm.max.xyz.x, sm.max.xyz.y,
+						sm.max.xyz.z);
+				}
 				continue;
 			}
 
@@ -204,6 +227,10 @@ void check_model_parity(int model_num, polymodel* pm, std::mt19937& rng, ParityT
 				if (std::fabs(mc.hit_dist - new_t) > tolerance) {
 					submodel_dist_mismatches++;
 					totals.dist_mismatches++;
+					if (submodel_dist_mismatches <= 3) {
+						printf("    DEBUG dist mismatch: old=%f new=%f delta=%f old_hit_submodel=%d\n", mc.hit_dist, new_t,
+							mc.hit_dist - new_t, mc.hit_submodel);
+					}
 				}
 			}
 		}
