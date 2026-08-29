@@ -33,6 +33,12 @@ struct AABB {
 
 	void grow(const AABB& other)
 	{
+		// An empty/never-grown AABB is still bmin=+FLT_MAX/bmax=-FLT_MAX (see default member
+		// initializers above); growing through it unconditionally would poison this box out to
+		// those sentinel extremes. Bins with zero triangles hit this during the SAH prefix-sum
+		// sweep in build_range() below.
+		if (!other.valid())
+			return;
 		grow(other.bmin);
 		grow(other.bmax);
 	}

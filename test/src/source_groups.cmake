@@ -48,6 +48,7 @@ add_file_folder("mod"
 add_file_folder("model"
     model/test_modelread.cpp
     model/test_modelbvh.cpp
+    model/test_modelbvh_leafindex.cpp
     model/test_modelbvh_parity.cpp
 )
 

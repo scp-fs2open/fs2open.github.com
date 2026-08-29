@@ -1,15 +1,17 @@
 // Golden-parity check between the existing BSP collision tree and the new modelbvh module,
-// run against a real .pof supplied from outside the repo.
+// run against real .pof files supplied from outside the repo.
 //
 // This intentionally does NOT run as part of the normal test suite: no .pof file is (or should
 // be) committed to the repo (game assets are separately licensed -- see the collision-BVH-rewrite
 // project notes), so there is nothing to check it against in CI. Point the FSO_BVH_PARITY_POF
-// environment variable at a real .pof file on disk to run it locally, e.g.:
+// environment variable at a real .pof file OR a directory (searched recursively for *.pof) on
+// disk to run it locally. Multiple entries (files and/or directories) can be given, separated by
+// ';', e.g.:
 //
-//   FSO_BVH_PARITY_POF="E:\Games\Knossos\FS2\somemod\data\models\ship.pof" \
+//   FSO_BVH_PARITY_POF="E:\Games\Knossos\FS2\somemod\data\models;E:\Games\Knossos\FS2\othermod\data\models\ship.pof" \
 //       ./unittests.exe --gtest_filter=*BvhParity*
 //
-// If the variable isn't set, the test is skipped.
+// If the variable isn't set (or resolves to zero .pof files), the test is skipped.
 
 #include <gtest/gtest.h>
 
@@ -26,6 +28,8 @@
 #include <cstdlib>
 #include <filesystem>
 #include <random>
+#include <set>
+#include <vector>
 
 namespace {
 
@@ -90,63 +94,58 @@ bool nearest_frontfacing_hit(const SCP_vector<bvh_triangle>& triangles, const ve
 	return found;
 }
 
-} // namespace
+// Recursively collects every *.pof under `entry` (case-insensitive extension match), or just
+// `entry` itself if it's already a file.
+std::vector<std::filesystem::path> collect_pof_files(const std::filesystem::path& entry)
+{
+	std::vector<std::filesystem::path> result;
 
-class BvhParityTest : public test::FSTestFixture {
-protected:
-	BvhParityTest() : FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+	if (!std::filesystem::exists(entry))
+		return result;
+
+	if (std::filesystem::is_directory(entry)) {
+		for (const auto& de : std::filesystem::recursive_directory_iterator(entry)) {
+			if (!de.is_regular_file())
+				continue;
+			if (stricmp(de.path().extension().string().c_str(), ".pof") == 0)
+				result.push_back(de.path());
+		}
+	} else {
+		result.push_back(entry);
+	}
+
+	return result;
+}
+
+// cfile resolves CF_TYPE_MODELS as "<root>/data/models/" (cfile.cpp: { CF_TYPE_MODELS,
+// "data/models", ".pof", ... }), so the registered root must be the *mod* directory, not the
+// models folder itself. Find the "data" component and use its parent; fall back to the standard
+// <root>/data/models/<file> layout if "data" isn't found in the path for some reason.
+std::filesystem::path find_mod_root(const std::filesystem::path& pof_file)
+{
+	for (std::filesystem::path search = pof_file.parent_path(); search.has_parent_path(); search = search.parent_path()) {
+		if (stricmp(search.filename().string().c_str(), "data") == 0)
+			return search.parent_path();
+	}
+	return pof_file.parent_path().parent_path().parent_path();
+}
+
+struct ParityTotals {
+	long rays = 0;
+	long hit_mismatches = 0;
+	long dist_mismatches = 0;
+	int submodels_with_geometry = 0;
 };
 
-TEST_F(BvhParityTest, RealPofMatchesOldBspTree)
+// Runs the parity check for one already-loaded model, accumulating into `totals`.
+void check_model_parity(int model_num, polymodel* pm, std::mt19937& rng, ParityTotals& totals)
 {
-	const char* pof_path_env = std::getenv("FSO_BVH_PARITY_POF");
-	if (pof_path_env == nullptr || pof_path_env[0] == '\0') {
-		GTEST_SKIP() << "FSO_BVH_PARITY_POF not set; skipping real-.pof golden-parity check.";
-	}
-
-	std::filesystem::path pof_path(pof_path_env);
-	ASSERT_TRUE(std::filesystem::exists(pof_path)) << "File does not exist: " << pof_path_env;
-
-	// cfile resolves CF_TYPE_MODELS as "<root>/data/models/" (cfile.cpp: { CF_TYPE_MODELS, "data/models", ".pof", ... }),
-	// so the registered root must be the *mod* directory, not the models folder itself. Find the
-	// "data" component and use its parent; fall back to the standard <root>/data/models/<file>
-	// layout if "data" isn't found in the path for some reason.
-	std::filesystem::path mod_root;
-	for (std::filesystem::path search = pof_path.parent_path(); search.has_parent_path(); search = search.parent_path()) {
-		if (stricmp(search.filename().string().c_str(), "data") == 0) {
-			mod_root = search.parent_path();
-			break;
-		}
-	}
-	if (mod_root.empty())
-		mod_root = pof_path.parent_path().parent_path().parent_path();
-
-	SCP_string pof_dir = mod_root.string();
-	SCP_string pof_filename = pof_path.filename().string();
-
-	cf_add_external_path_root(pof_dir.c_str());
-
-	int model_num = model_load(pof_filename.c_str(), nullptr, ErrorType::WARNING);
-	ASSERT_GE(model_num, 0) << "model_load() failed to load " << pof_filename;
-
-	polymodel* pm = model_get(model_num);
-	ASSERT_NE(pm, nullptr);
-
-	printf("Loaded '%s': %d submodels\n", pof_filename.c_str(), pm->n_models);
-
-	std::mt19937 rng(20260829); // fixed seed, deterministic
-
-	long total_rays = 0;
-	long total_hit_mismatches = 0;
-	long total_dist_mismatches = 0;
-	int submodels_with_geometry = 0;
-
 	for (int sm_idx = 0; sm_idx < pm->n_models; ++sm_idx) {
 		SCP_vector<bvh_triangle> triangles = model_bvh_extract_submodel_triangles(pm, sm_idx);
 		if (triangles.empty())
 			continue;
 
-		submodels_with_geometry++;
+		totals.submodels_with_geometry++;
 		bvh_tree tree = bvh_build(triangles);
 
 		bsp_info& sm = pm->submodel[sm_idx];
@@ -192,16 +191,11 @@ TEST_F(BvhParityTest, RealPofMatchesOldBspTree)
 			bool new_hit = nearest_frontfacing_hit(triangles, origin, dir, new_t, new_tri);
 
 			submodel_rays++;
-			total_rays++;
+			totals.rays++;
 
 			if (old_hit != new_hit) {
 				submodel_hit_mismatches++;
-				total_hit_mismatches++;
-				if (submodel_hit_mismatches <= 5) {
-					printf("  [submodel %d] hit mismatch: old=%d new=%d origin=(%.2f,%.2f,%.2f) dir=(%.2f,%.2f,%.2f)\n",
-						sm_idx, old_hit, new_hit, origin.xyz.x, origin.xyz.y, origin.xyz.z, dir.xyz.x, dir.xyz.y,
-						dir.xyz.z);
-				}
+				totals.hit_mismatches++;
 				continue;
 			}
 
@@ -209,32 +203,108 @@ TEST_F(BvhParityTest, RealPofMatchesOldBspTree)
 				float tolerance = std::max(1e-3f, 1e-4f * std::fabs(mc.hit_dist));
 				if (std::fabs(mc.hit_dist - new_t) > tolerance) {
 					submodel_dist_mismatches++;
-					total_dist_mismatches++;
-					if (submodel_dist_mismatches <= 5) {
-						printf("  [submodel %d] distance mismatch: old=%f new=%f\n", sm_idx, mc.hit_dist, new_t);
-					}
+					totals.dist_mismatches++;
 				}
 			}
 		}
 
 		if (submodel_hit_mismatches > 0 || submodel_dist_mismatches > 0) {
-			printf("Submodel %d ('%s'): %d triangles, %d rays, %d hit mismatches, %d distance mismatches\n", sm_idx,
-				sm.name, static_cast<int>(triangles.size()), submodel_rays, submodel_hit_mismatches,
-				submodel_dist_mismatches);
+			printf("  submodel %d ('%s'): %d triangles, %d rays, %d hit mismatches, %d distance mismatches\n", sm_idx,
+				sm.name, static_cast<int>(triangles.size()), submodel_rays, submodel_hit_mismatches, submodel_dist_mismatches);
+		}
+	}
+}
+
+} // namespace
+
+class BvhParityTest : public test::FSTestFixture {
+protected:
+	BvhParityTest() : FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+};
+
+TEST_F(BvhParityTest, RealPofsMatchOldBspTree)
+{
+	const char* env = std::getenv("FSO_BVH_PARITY_POF");
+	if (env == nullptr || env[0] == '\0') {
+		GTEST_SKIP() << "FSO_BVH_PARITY_POF not set; skipping real-.pof golden-parity check.";
+	}
+
+	std::vector<std::filesystem::path> pof_files;
+	{
+		SCP_string entries = env;
+		size_t pos = 0;
+		while (pos <= entries.size()) {
+			size_t next = entries.find(';', pos);
+			SCP_string entry = entries.substr(pos, next == SCP_string::npos ? SCP_string::npos : next - pos);
+			if (!entry.empty()) {
+				auto found = collect_pof_files(entry);
+				pof_files.insert(pof_files.end(), found.begin(), found.end());
+			}
+			if (next == SCP_string::npos)
+				break;
+			pos = next + 1;
 		}
 	}
 
-	printf("Summary: %d submodels with geometry, %ld total rays, %ld hit mismatches, %ld distance mismatches\n",
-		submodels_with_geometry, total_rays, total_hit_mismatches, total_dist_mismatches);
+	ASSERT_FALSE(pof_files.empty()) << "FSO_BVH_PARITY_POF resolved to zero .pof files: " << env;
+	printf("Found %d .pof file(s) to test.\n", static_cast<int>(pof_files.size()));
 
-	ASSERT_GT(submodels_with_geometry, 0) << "No submodel produced any triangles -- extraction likely broken";
+	// Register a search root for every distinct mod directory referenced.
+	std::set<std::string> roots_added;
+	for (const auto& f : pof_files) {
+		std::string root = find_mod_root(f).string();
+		if (roots_added.insert(root).second)
+			cf_add_external_path_root(root.c_str());
+	}
+
+	std::mt19937 rng(20260829); // fixed seed, deterministic across the whole run
+
+	ParityTotals totals;
+	int files_loaded = 0;
+
+	for (const auto& pof_path : pof_files) {
+		SCP_string filename = pof_path.filename().string();
+
+		int model_num = model_load(filename.c_str(), nullptr, ErrorType::WARNING);
+		if (model_num < 0) {
+			printf("Skipping (load failed): %s\n", filename.c_str());
+			continue;
+		}
+
+		polymodel* pm = model_get(model_num);
+		if (pm == nullptr) {
+			printf("Skipping (model_get returned null): %s\n", filename.c_str());
+			continue;
+		}
+
+		files_loaded++;
+		printf("Testing '%s': %d submodels\n", filename.c_str(), pm->n_models);
+
+		ParityTotals per_file;
+		check_model_parity(model_num, pm, rng, per_file);
+
+		printf("  -> %d submodels with geometry, %ld rays, %ld hit mismatches, %ld distance mismatches\n",
+			per_file.submodels_with_geometry, per_file.rays, per_file.hit_mismatches, per_file.dist_mismatches);
+
+		totals.rays += per_file.rays;
+		totals.hit_mismatches += per_file.hit_mismatches;
+		totals.dist_mismatches += per_file.dist_mismatches;
+		totals.submodels_with_geometry += per_file.submodels_with_geometry;
+	}
+
+	printf("Summary: %d/%d files loaded, %d submodels with geometry, %ld total rays, %ld hit mismatches, %ld distance mismatches\n",
+		files_loaded, static_cast<int>(pof_files.size()), totals.submodels_with_geometry, totals.rays, totals.hit_mismatches,
+		totals.dist_mismatches);
+
+	ASSERT_GT(files_loaded, 0) << "No .pof file loaded successfully";
+	ASSERT_GT(totals.submodels_with_geometry, 0) << "No submodel produced any triangles -- extraction likely broken";
 
 	// A handful of mismatches on real, potentially imperfect production geometry (near-silhouette
 	// grazing rays, coincident/overlapping polygons, concave pockets where "nearest frontface"
 	// genuinely differs by a hair between two independently-implemented traversals) is expected
 	// and not itself a sign of a BVH bug. A high mismatch rate is not.
-	if (total_rays > 0) {
-		double hit_mismatch_rate = static_cast<double>(total_hit_mismatches) / static_cast<double>(total_rays);
-		EXPECT_LT(hit_mismatch_rate, 0.02) << total_hit_mismatches << "/" << total_rays << " rays disagreed on hit/miss";
+	if (totals.rays > 0) {
+		double hit_mismatch_rate = static_cast<double>(totals.hit_mismatches) / static_cast<double>(totals.rays);
+		EXPECT_LT(hit_mismatch_rate, 0.02) << totals.hit_mismatches << "/" << totals.rays << " rays disagreed on hit/miss";
 	}
 }
