@@ -31,6 +31,7 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
+#include "model/modelbvh_extract.h"
 #include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
@@ -204,6 +205,8 @@ void model_free(polymodel* pm)
 				model_remove_bsp_collision_tree(pm->submodel[i].collision_tree_index);
 				pm->submodel[i].collision_tree_index = -1;
 			}
+
+			pm->submodel[i].bvh.reset();
 		}
 	}
 
@@ -3527,6 +3530,18 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				max_dist_sq = d2;
 		}
 		pm->submodel[i].collision_rad = std::max(pm->submodel[i].rad, sqrtf(max_dist_sq));
+
+		// Stage-3 collision rewrite: build the alternate BVH spatial index over this submodel's
+		// existing collision-tree leaves (see modelbvh_leafindex.h). Opt-in and built alongside
+		// the legacy BSP tree above, not in place of it, so both can coexist -- see
+		// Cmdline_use_bvh_collision. Only built when the flag is on, to avoid the extra load-time
+		// work/memory for everyone else while this is still being validated.
+		if (Cmdline_use_bvh_collision) {
+			SCP_vector<bvh_leaf_primitive> leaf_prims = model_bvh_extract_leaf_primitives(pm, i);
+			if (!leaf_prims.empty()) {
+				pm->submodel[i].bvh = std::make_shared<bvh_leaf_tree>(bvh_build_leaves(std::move(leaf_prims)));
+			}
+		}
 	}
 
 	// Find the core_radius... the minimum of 

@@ -499,6 +499,80 @@ void model_collide_bsp(bsp_collision_tree *tree, int node_index)
 	}
 }
 
+// Stage-3 collision rewrite: tests exactly one collision-tree leaf, independently of any other
+// leaf. This is the BVH-path equivalent of one iteration of model_collide_bsp_poly()'s while
+// loop, deliberately NOT chained via leaf->next -- the legacy path's chain-abort-on-invisible-
+// texture quirk (an early `return` that silently skips every remaining leaf later in the same
+// POF-authored OP_BOUNDBOX chain, not just the current one -- see collision_bugs_found.md
+// "Bug 2") does not apply here: the BVH's leaf unit is one polygon, visited independently, so
+// there is no chain left to abort. This is a deliberate, disclosed behavior difference from the
+// legacy path, not an oversight -- see the stage-3 notes in collision_bvh_rewrite_plan.
+static void mc_check_bvh_leaf(bsp_collision_tree *tree, int leaf_index)
+{
+	bsp_collision_leaf *leaf = &tree->leaf_list[leaf_index];
+
+	bool flat_poly = false;
+	int vert_start = leaf->vert_start;
+	int nv = leaf->num_verts;
+
+	if ( leaf->tmap_num < MAX_MODEL_TEXTURES ) {
+		if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[leaf->tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
+			// Don't check invisible polygons. SUSHI: Unless $collide_invisible is set.
+			// Only skips THIS leaf -- see the function comment above for why that's correct here.
+			if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
+				return;
+		}
+	} else {
+		flat_poly = true;
+	}
+
+	uv_pair uvlist[TMAP_MAX_VERTS];
+	vec3d *points[TMAP_MAX_VERTS];
+	for ( int i = 0; i < nv; ++i ) {
+		int vert_num = tree->vert_list[vert_start+i].vertnum;
+		points[i] = &tree->point_list[vert_num];
+
+		uvlist[i].u = tree->vert_list[vert_start+i].u;
+		uvlist[i].v = tree->vert_list[vert_start+i].v;
+	}
+
+	if ( flat_poly ) {
+		if ( Mc->flags & MC_CHECK_SPHERELINE ) {
+			mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
+		} else {
+			mc_check_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
+		}
+	} else {
+		if ( Mc->flags & MC_CHECK_SPHERELINE ) {
+			mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
+		} else {
+			mc_check_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
+		}
+	}
+}
+
+// Stage-3 collision rewrite: BVH-based replacement for model_collide_bsp()'s tree traversal.
+// Only the spatial index changes -- every leaf the BVH visits still goes through the same
+// mc_check_face()/mc_check_sphereline_face() polygon-level logic (via mc_check_bvh_leaf() above)
+// as the legacy BSP path, so MC_COLLIDE_ALL accumulation, sphere-line edge fallback, backface
+// culling, and all mc_info output fields behave identically. t_max mirrors model_collide_bsp()'s
+// own length cap: bvh_visit_leaves()'s ray parametrization reaches exactly Mc_p1 at t=1 (since
+// Mc_direction = Mc_p1 - Mc_p0, unnormalized), matching mc_check_face()'s own `dist > 1.0f` bound
+// -- not Mc_mag, which is the equivalent bound in a different (absolute-distance) unit that only
+// happens to agree with the t=1 check because Mc_direction's local-space magnitude equals Mc_mag
+// by rigid-transform distance preservation (see the Mc_mag comment near the top of this file).
+static void model_collide_bvh(bsp_collision_tree *tree, const bvh_leaf_tree *bvh)
+{
+	if ( tree == nullptr || bvh == nullptr || bvh->nodes.empty() ) {
+		return;
+	}
+
+	float t_max = (Mc->flags & MC_CHECK_RAY) ? FLT_MAX : 1.0f;
+	bvh_visit_leaves(*bvh, Mc_p0, Mc_direction, t_max, [tree](int32_t leaf_index) {
+		mc_check_bvh_leaf(tree, leaf_index);
+	});
+}
+
 void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
 {
 	ubyte *p = (ubyte *)model_ptr;
@@ -1102,9 +1176,17 @@ void mc_check_subobj( int mn )
 					}
 				}
 
-				model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
+				if (Cmdline_use_bvh_collision && lod_sm->bvh) {
+					model_collide_bvh(model_get_bsp_collision_tree(lod_sm->collision_tree_index), lod_sm->bvh.get());
+				} else {
+					model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
+				}
 			} else {
-				model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
+				if (Cmdline_use_bvh_collision && sm->bvh) {
+					model_collide_bvh(model_get_bsp_collision_tree(sm->collision_tree_index), sm->bvh.get());
+				} else {
+					model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
+				}
 			}
 		}
 	}
