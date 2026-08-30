@@ -3509,15 +3509,10 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		auto* sm = &pm->submodel[i];
 		sm->collision_tree_index = model_create_bsp_collision_tree();
 
-		if (sm->bsp_data == nullptr) {
-			sm->num_polys = 0;
-			continue;
-		}
-
 		auto* bsp_data = sm->bsp_data.get();
 		Macro_ubyte_bounds = bsp_data + sm->bsp_data_size;
 		if (Cmdline_spew_pof_info) {
-			sm->num_polys = submodel_get_num_polys_sub(bsp_data);
+			sm->num_polys = bsp_data != nullptr ? submodel_get_num_polys_sub(bsp_data) : 0;
 		}
 		auto* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
 		model_collide_parse_bsp(tree, bsp_data, pm->version);
