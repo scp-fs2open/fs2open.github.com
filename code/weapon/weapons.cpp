@@ -854,11 +854,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			return -1;
 		}
 
-		// Check if there are too many weapon classes
-		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
-			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
-		}
-
 		w_id = weapon_info_size();
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();

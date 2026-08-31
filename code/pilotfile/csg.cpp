@@ -90,7 +90,7 @@ void pilotfile::csg_read_info()
 		ship_list.push_back(ilist);
 	}
 
-	// weapon list (NOTE: may contain more than MAX_WEAPON_TYPES)
+	// weapon list (NOTE: may contain more weapon classes than this mod defines)
 	list_size = cfread_int(cfp);
 
 	for (idx = 0; idx < list_size; idx++) {

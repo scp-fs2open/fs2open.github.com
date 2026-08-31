@@ -36,7 +36,7 @@
 #define MAX_SHIPS					500		// max number of ship instances there can be.DTP; bumped from 200 to 400, then to 500 in 2022
 #define SHIPS_LIMIT					500		// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400, then to 500 in 2022
 
-// MAX_SHIP_CLASSES is no longer needed!  The effective ceiling on ship classes is now 32767, which is determined by the signed SHORT fields in multiplayer loadout sync packets.
+// MAX_SHIP_CLASSES and MAX_WEAPON_TYPES are no longer needed!  The effective ceiling on both ship and weapon classes is now 32767, which is determined by the signed SHORT fields in multiplayer loadout sync packets.
 
 #define MAX_WINGS				75
 
@@ -60,8 +60,6 @@
 
 // from weapon.h
 #define MAX_WEAPONS	3000		//Increased from 2000 to 3000 in 2022
-
-#define MAX_WEAPON_TYPES				500
 
 // from model.h
 #define MAX_MODEL_TEXTURES	64
