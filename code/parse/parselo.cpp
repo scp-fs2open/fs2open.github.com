@@ -2988,6 +2988,79 @@ int stuff_long(long *l, bool optional)
 	return retval;
 }
 
+//	Stuff an unsigned 64-bit value pointed at by Mp.
+//	Advances past integer characters.
+int stuff_uint64(std::uint64_t *l, bool optional)
+{
+	char *str_start = Mp;
+
+	// since strtoull ignores white space anyway, might as well make it explicit
+	ignore_white_space();
+
+	// this is a bit cumbersome
+	size_t span;
+	if (*Mp == '+')
+	{
+		span = strspn(Mp + 1, "0123456789");
+
+		// account for the sign symbol, but not if it's the only valid character
+		if (span > 0)
+			++span;
+	}
+	else
+		span = strspn(Mp, "0123456789");
+
+	// don't call strtoull unless we found digits, because it will happily parse
+	// (and wrap around) a negative number
+	std::uint64_t result = (span > 0) ? strtoull(Mp, nullptr, 10) : 0;
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no number found?
+	if (span == 0)
+	{
+		if (!optional)
+			error_display(1, "Expected unsigned integer, found [%.32s].\n", next_tokens());
+	}
+	else
+	{
+		*l = result;
+		success = true;
+	}
+
+	if (success)
+		Mp += span;
+
+	// if an unexpected character is part of the number, warn about it
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		error_display(0, "Expected unsigned integer, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
+	}
+
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
+		comma = true;
+
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+	{
+		retval = 2;
+		diag_printf("Stuffed uint64: " UINT64_T_ARG "\n", *l);
+	}
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
+
+	return retval;
+}
+
 int stuff_float_optional(float *f)
 {
 	return stuff_float(f, true);

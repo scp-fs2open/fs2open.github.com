@@ -194,9 +194,17 @@ class flagset {
 	bool any_set() const { return values.any(); }
 	bool none_set() const { return values.none(); }
 
-	void from_u64(std::uint64_t num) { values = (unsigned long) num; }
+	void from_u64(std::uint64_t num)
+	{
+		static_assert(SIZE <= 64, "from_u64 can only be used with flagsets of up to 64 flags");
+		values = std::bitset<SIZE>(num);
+	}
 
-	std::uint64_t to_u64() const { return (std::uint64_t) values.to_ulong(); }
+	std::uint64_t to_u64() const
+	{
+		static_assert(SIZE <= 64, "to_u64 can only be used with flagsets of up to 64 flags");
+		return static_cast<std::uint64_t>(values.to_ullong());
+	}
 
 	size_t hash() const { return std::hash<std::bitset<SIZE>>()(values); }
 };
