@@ -1998,11 +1998,6 @@ static void parse_ship(const char *filename, bool replace)
 			return;
 		}
 
-		// Check if there are too many ship classes
-		if (Ship_info.size() >= MAX_SHIP_CLASSES) {
-			Error(LOCATION, "Too many ship classes before '%s'; maximum is %d.\n", fname, MAX_SHIP_CLASSES);
-		}
-
 		Ship_info.push_back(ship_info());
 		sip = &Ship_info.back();
 		first_time = true;
