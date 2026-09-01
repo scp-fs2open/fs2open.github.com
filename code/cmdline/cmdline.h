@@ -74,9 +74,6 @@ extern int Cmdline_msaa_enabled;
 extern int Cmdline_NoFPSCap;
 extern bool Cmdline_no_vsync;
 
-// Collision related
-extern bool Cmdline_use_triangle_collision; // defaults false; -use_new_collision enables the new per-triangle BVH submodel collision path
-
 // HUD related
 extern int Cmdline_ballistic_gauge;
 extern int Cmdline_dualscanlines;

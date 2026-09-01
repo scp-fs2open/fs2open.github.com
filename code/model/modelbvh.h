@@ -18,43 +18,11 @@
 // autovectorizer. SSE2 (4-wide float) is the project's safe baseline (CI forces
 // -DFORCED_SIMD_INSTRUCTIONS=SSE2 on Windows), hence N=4.
 //
-// Tried N=8 to match AVX's 8-wide float32 lanes (2026-08-30) -- measured *worse*, not better, in
-// two separate attempts:
-// 1. First attempt: LEAF_THRESHOLD was defined as `= BVH_N` (modelbvh.cpp) at the time, so N=8 also
-//    raised the SAH forced-leaf-stop floor -- leaves ended up with roughly twice the average
-//    triangle count, reshaping the tree and changing leaf-visitation order, which flips the outcome
-//    of an already-known traversal-order-sensitive tie-break (fvi_point_face vs. barycentric
-//    containment disagreeing at float-precision boundaries -- see mc_check_bvh_triangle()'s doc
-//    comment in modelcollide.cpp). Result: 1.97x/1.96x median/min BVH-vs-BSP speedup vs. N=4's
-//    2.30x/2.22x, and RAY mismatch rate rose from 0.39% to 0.62% (tripped BvhTriangleParityTest's
-//    calibrated 0.5% threshold).
-// 2. LEAF_THRESHOLD was then decoupled into its own fixed constant (still 4) specifically to retry
-//    N=8 with tree shape held constant. Re-measured: RAY mismatches came back bit-identical to N=4
-//    (3749/950000, confirming the SIMD batch width genuinely cannot change RAY results -- each lane
-//    is an independent per-triangle computation and the "nearest" reduction is a width-independent
-//    linear min-scan, per BvhLeafSimdTests). SPHERELINE mismatches still shifted slightly (5864 vs.
-//    5676) because BVH_N also controls the *internal node* branching factor (emit_node() collapses
-//    the binary SAH tree into BVH_N-wide flat nodes), which reorders traversal independent of leaf
-//    contents -- a second, narrower instance of the same order-sensitivity, not a new mechanism.
-//    Speedup was still worse (1.72x/1.72x): with LEAF_THRESHOLD fixed at 4, real leaves stay sized
-//    around ~4 triangles, so padding every leaf up to a multiple of 8 roughly doubled the total
-//    padded triangle count (14.7M vs. 7.4M primitives) -- pure padding waste that outweighs
-//    whatever wider-register throughput AVX might otherwise buy.
-// Conclusion: N=8 is a straightforward net loss for this codebase's real content at N=4's leaf
-// sizing, not a correctness or measurement artifact. A future width experiment would need to also
-// retune LEAF_THRESHOLD to be a good fit for BVH_N=8-sized leaves (not just decoupled-and-fixed at
-// 4).
-//
-// Codegen ruled out as the cause (2026-08-31): confirmed both widths directly by temporarily
-// setting BVH_N=8, recompiling modelbvh.cpp standalone (/O2 /arch:AVX2, no /GL), and inspecting the
-// generated assembly the same way as N=4 (see ray_triangle_leaf_simd()'s doc comment below). At
-// N=4 the compiler emits packed 128-bit (xmm) SIMD; at N=8 it genuinely emits packed 256-bit (ymm)
-// SIMD for the same det/u/v/t computation (e.g. `vmulps ymm0, ymm3, YMMWORD PTR ...` -- real
-// single-pass 8-wide arithmetic, not two 4-wide passes disguised as one). So the autovectorizer did
-// exactly what the width experiment hoped for -- N=8's measured loss is *entirely* explained by the
-// leaf-padding-waste mechanism above (14.7M vs. 7.4M padded primitives), not a codegen failure. Any
-// future retry of N=8 needs to fix the padding-waste problem (i.e. retune LEAF_THRESHOLD for it)
-// specifically, not re-check whether the compiler can widen -- that part already works.
+// Do not bump this to 8 for AVX without also retuning LEAF_THRESHOLD (modelbvh.cpp) in the same
+// change: measured on real content, N=8 with LEAF_THRESHOLD left at 4 is a net loss (leaf padding
+// roughly doubles the total padded triangle count, which outweighs the wider SIMD registers), and
+// with LEAF_THRESHOLD raised to match it reshapes the tree and shifts leaf-visitation order enough
+// to matter for the traversal-order-sensitive triangle-edge tie-break (see BARY_EPS below).
 constexpr int BVH_N = 4;
 
 // Minimal UV pair, kept local to this module rather than reusing model.h's uv_pair -- this header
@@ -70,7 +38,7 @@ struct bvh_triangle {
 	vec3d v0, v1, v2;
 	int tmap_num = -1;
 	int original_index = -1;
-	int leaf_index = -1; // index into bsp_collision_tree::leaf_list; -1 for synthetic/test triangles
+	int leaf_index = -1; // caller-defined provenance tag (e.g. source leaf at extraction time); -1 if unused
 	bvh_uv uv0, uv1, uv2;
 };
 
@@ -160,19 +128,8 @@ bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& d
 // loop stays a fixed-trip-count, branch-free-per-lane shape for the autovectorizer -- same "plain
 // float[BVH_N] arrays, SSE2 baseline, no hand intrinsics" strategy bvh_node's own child-AABB test
 // already uses. Degenerate padding triangles (see bvh_build()) always fail the |det| check and are
-// never returned as a hit.
-//
-// Confirmed, not assumed (2026-08-31): compiled this file standalone with the project's real
-// release flags (/O2 /arch:AVX2, no /GL so codegen happens at compile time rather than deferred to
-// LTCG) and inspected the generated assembly (/FAs). The det/u/v/t computation loop genuinely
-// vectorizes to packed 128-bit SIMD (xmm registers, VEX-encoded vmulps/vsubps/vaddps/vandps/vxorps
-// throughout the cross-product/dot-product chain) -- not scalar code that merely looks
-// vectorization-friendly. Zero 256-bit (ymm) instructions, which is *correct* for BVH_N=4 (4
-// floats = 128 bits), not a sign of failure -- see BVH_N's own doc comment for what that implies
-// about a hypothetical BVH_N=8 retry. The final "pick nearest valid lane" reduction (the
-// `valid[i]`/`if (valid[i] && t[i] < best_t)` loops) is genuinely scalar control flow (~50
-// conditional jumps in the compiled function) -- expected and fine, since only the per-lane
-// geometry math was ever written to vectorize; the BVH_N=4-iteration reduction was never meant to.
+// never returned as a hit. The final "pick nearest valid lane" reduction is ordinary scalar control
+// flow -- only the per-lane geometry math is written to vectorize.
 // best_t bounds the search (e.g. an already-found candidate's t, or FLT_MAX); returns true and
 // fills out_t/out_triangle_index (an index into the tree's parallel arrays) only for a strictly
 // closer hit.
@@ -180,11 +137,9 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 	float best_t, float& out_t, int32_t& out_triangle_index);
 
 // The ray-vs-AABB slab test and its radius-inflated wrapper live here (inline), not in modelbvh.cpp,
-// specifically so they can inline into bvh_visit_triangles()'s hot per-node-slot loop below --
-// out-of-line in a separate translation unit, the compiler couldn't fold the per-call
-// inflated_min/inflated_max construction or vectorize across the BVH_N slots the SoA bvh_node
-// layout exists for in the first place (measured 2026-08-31: this was the single most-executed
-// operation in the traversal, so it's worth the header-inlining tradeoff here specifically).
+// specifically so they can inline into bvh_visit_triangles()'s hot per-node-slot loop below -- this
+// is the single most-executed operation in the traversal, so the header-inlining tradeoff is worth
+// it here specifically.
 namespace bvh_detail {
 inline bool ray_aabb(const vec3d& origin, const vec3d& inv_dir, const float bmin[3], const float bmax[3], float t_max,
 	float& out_tmin)
@@ -224,16 +179,14 @@ inline bool ray_aabb_visit(const vec3d& origin, const vec3d& inv_dir, const floa
 // Walks the tree, invoking visit(start, count, t_max) for every leaf whose AABB the ray
 // [origin, origin + dir*t_max] intersects, where [start, start+count) indexes the tree's parallel
 // triangle arrays (see bvh_tree::triangle_at()). A whole leaf range is handed to the visitor at
-// once (not one triangle at a time) so a caller can
-// batch-test the leaf's triangles (see the SIMD-friendly leaf intersection design in the stage-4
-// project plan). Every leaf's count is a multiple of BVH_N (see bvh_build()'s padding step), with
-// any padding triangles guaranteed to be degenerate (zero-area) and never a valid hit. Pass
-// t_max = FLT_MAX for an unbounded ray (MC_CHECK_RAY-equivalent).
+// once (not one triangle at a time) so a caller can batch-test the leaf's triangles with SIMD (see
+// ray_triangle_leaf_simd() below). Every leaf's count is a multiple of BVH_N (see bvh_build()'s
+// padding step), with any padding triangles guaranteed to be degenerate (zero-area) and never a
+// valid hit. Pass t_max = FLT_MAX for an unbounded ray (MC_CHECK_RAY-equivalent).
 // `radius` inflates every AABB test by that amount on every axis before testing -- pass
 // Mc->radius for an MC_CHECK_SPHERELINE query, 0.0f for a plain ray. Without this, a sphere query
 // would silently miss any leaf its swept volume would reach but the bare centerline ray-segment
-// doesn't pass through -- a real bug found and fixed via this module's own real-content parity
-// test (see collision_bvh_rewrite_plan project notes).
+// doesn't pass through.
 // The visitor receives t_max by mutable reference and may shrink it (e.g. to the closest hit found
 // so far, for a nearest-hit-only query) -- every AABB test after that point uses the tightened
 // value, pruning subtrees that can no longer contain a closer hit. A visitor that needs every hit

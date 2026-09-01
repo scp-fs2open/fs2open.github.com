@@ -86,15 +86,10 @@ struct BinBuildNode {
 // can still leave a larger leaf un-split when no candidate split beats leaf_cost, so there remains
 // no true hard maximum triangle count per leaf.
 //
-// Deliberately NOT tied to BVH_N (was `= BVH_N` until 2026-08-30) -- this floor controls the SAH
-// tree's *shape* (how many triangles get grouped per leaf, hence traversal/leaf-visitation order),
-// while BVH_N controls the *batch width* the leaf-intersection SIMD loop reads at once. Conflating
-// them made a BVH_N-only experiment (try N=8 for AVX's 8-wide float lanes) also reshape the tree,
-// which changed leaf-visitation order and, via the already-documented fvi_point_face-vs-barycentric
-// tie-break sensitivity (see mc_check_bvh_triangle()'s doc comment in modelcollide.cpp), changed
-// real-content parity/benchmark results for reasons that had nothing to do with SIMD width itself.
-// Kept at the same value BVH_N happened to be (4) so this split is a pure refactor with no behavior
-// change; a future BVH_N-width experiment should vary BVH_N alone and leave this constant fixed.
+// Deliberately NOT tied to BVH_N -- this floor controls the SAH tree's *shape* (how many triangles
+// get grouped per leaf, hence traversal/leaf-visitation order), while BVH_N controls the *batch
+// width* the leaf-intersection SIMD loop reads at once (see BVH_N's own doc comment in modelbvh.h).
+// Currently the same value (4) but the two should be varied independently, not conflated.
 constexpr int LEAF_THRESHOLD = 4;
 constexpr int NUM_BINS = 16;
 
@@ -658,16 +653,12 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 
 		// Same barycentric tolerance as mc_check_triangle_face()'s BARY_EPS in modelcollide.cpp
 		// (u/v here are the same barycentric weights that function's own separate computation
-		// derives, just via Moller-Trumbore instead of a post-hoc vp0/e1/e2 solve). Real bug found
-		// and fixed 2026-08-29: without this, a ray landing exactly on the shared edge between two
-		// adjacent fan triangles could fail *both* triangles' zero-tolerance containment test here
-		// (each seeing itself as juuust outside by floating-point noise) while the scalar
-		// mc_check_triangle_face() reference -- which only ever runs on this function's own
-		// reported candidate -- would have accepted it. Since a false "no hit" here short-circuits
-		// mc_check_bvh_triangle()'s whole fast path (there is no scalar fallback when this
-		// function finds nothing at all, only when it finds an invisible-textured triangle), the
-		// two tests disagreeing at the boundary silently dropped real hits -- this showed up as a
-		// higher-than-expected RAY mismatch rate in the real-content parity test.
+		// derives, just via Moller-Trumbore instead of a post-hoc vp0/e1/e2 solve). Needed so a ray
+		// landing exactly on the shared edge between two adjacent fan triangles doesn't fail *both*
+		// triangles' containment test here (each seeing itself as juuust outside by floating-point
+		// noise) while the scalar mc_check_triangle_face() reference -- which only ever runs on
+		// this function's own reported candidate -- would have accepted it. A zero-tolerance test
+		// here would silently drop real hits at those boundaries.
 		constexpr float BARY_EPS = 1e-4f;
 		bool valid[BVH_N];
 		for (int i = 0; i < BVH_N; ++i) {

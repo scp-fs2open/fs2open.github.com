@@ -920,24 +920,22 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 						 return true;
 					}
 
-					if ( mc.bsp_leaf ) {
-						if ( mc.bsp_leaf->tmap_num < 255 ) {
-							polymodel *pm = model_get(sip->cockpit_model_num);
-							int tmap_num = mc.bsp_leaf->tmap_num;
+					if ( mc.hit_tmap_num >= 0 ) {
+						polymodel *pm = model_get(sip->cockpit_model_num);
+						int tmap_num = mc.hit_tmap_num;
 
-							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
-							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
-							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") != 0 ) {
-								return true;
-							}
-						} else {
+						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
+						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
+						if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") != 0 ) {
 							return true;
 						}
+					} else {
+						return true;
 					}
 				}
 			}
 
-			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
+			if ( sip->flags[Ship::Info_Flags::Show_ship_model]
 				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 
@@ -968,19 +966,17 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 						 return true;
 					}
 
-					if ( mc.bsp_leaf ) {
-						if ( mc.bsp_leaf->tmap_num < 255 ) {
-							polymodel *pm = model_get(sip->model_num);
-							int tmap_num = mc.bsp_leaf->tmap_num;
+					if ( mc.hit_tmap_num >= 0 ) {
+						polymodel *pm = model_get(sip->model_num);
+						int tmap_num = mc.hit_tmap_num;
 
-							Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
-							if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
-							if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") != 0 ) {
-								return true;
-							}
-						} else {
+						Assertion (tmap_num < MAX_MODEL_TEXTURES, "Texture map index (%i) exceeded max", tmap_num);
+						if (tmap_num >= MAX_MODEL_TEXTURES) { return 0; }
+						if ( !(pm->maps[tmap_num].is_transparent) && strcmp(bm_get_filename(mc.hit_bitmap), "glass.dds") != 0 ) {
 							return true;
 						}
+					} else {
+						return true;
 					}
 				}
 			}

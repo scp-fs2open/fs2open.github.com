@@ -48,12 +48,6 @@ add_file_folder("mod"
 add_file_folder("model"
     model/test_modelread.cpp
     model/test_modelbvh.cpp
-    model/test_modelbvh_parity.cpp
-    model/test_modelbvh_triangle_parity.cpp
-    model/test_modelbvh_triangle_benchmark.cpp
-    model/test_modelbvh_triangle_collide_all.cpp
-    model/test_modelbvh_triangle_load_time.cpp
-    model/test_modelbvh_submodel_prune_benchmark.cpp
 )
 
 add_file_folder("Parse"

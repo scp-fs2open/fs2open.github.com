@@ -487,27 +487,20 @@ public:
 	// fvi_ray_sphere callers in modelcollide.cpp), computed at model-load time from the
 	// submodel's actual collision-tree vertices as max(authored `rad`, true distance from the
 	// submodel's local origin to its farthest vertex). `rad` above is parsed verbatim from the
-	// .pof file and can be significantly too small on real content (confirmed: some submodels'
-	// authored rad undershoots the true extent by 2-250x -- see collision_bugs_found.md "Bug 1"),
-	// which silently makes model_collide() reject valid ray-vs-submodel hits before any polygon
-	// test runs. `rad` itself is left untouched since many other subsystems (rendering culling,
-	// radar, AI targeting, HUD) also read it and may rely on the author-tuned value.
+	// .pof file and can be significantly too small on real content, which would otherwise silently
+	// make model_collide() reject valid ray-vs-submodel hits before any polygon test runs. `rad`
+	// itself is left untouched since many other subsystems (rendering culling, radar, AI targeting,
+	// HUD) also read it and may rely on the author-tuned value.
 	float collision_rad = 0.0f;
 
-	// A real per-triangle BVH over this submodel's fan-triangulated collision geometry (see
-	// modelbvh.h/modelbvh_extract.h), built at model-load time alongside the legacy BSP tree when
-	// -use_new_collision is active (see Cmdline_use_triangle_collision). shared_ptr, not
-	// unique_ptr -- bsp_info is explicitly copy-constructed elsewhere (modelreplace.cpp, appending
-	// submodels from one model into another), same as bsp_data/outline_buffer above, and a
-	// shallow-shared BVH is consistent with how bsp_data/collision_tree_index already get shared
-	// by that copy (the appended submodel is genuinely the same source content, just spliced into
-	// a different model's submodel list). Null when the triangle-BVH path is disabled or hasn't
-	// been built for this submodel (e.g. no geometry).
-	//
-	// An earlier, intermediate design (a leaf-level, whole-n-gon BVH sitting between this and the
-	// legacy BSP tree) was implemented, shipped as the default, and later removed once this
-	// per-triangle BVH proved out -- see collision_bvh_rewrite_plan project notes for that
-	// history if archaeology is ever needed; nothing about it remains in the live code.
+	// The per-triangle BVH over this submodel's fan-triangulated collision geometry (see
+	// modelbvh.h/modelbvh_extract.h), built at model-load time from the same vertex data the
+	// (since-freed) BSP collision tree was parsed from. shared_ptr, not unique_ptr -- bsp_info is
+	// explicitly copy-constructed elsewhere (modelreplace.cpp, appending submodels from one model
+	// into another), same as bsp_data/outline_buffer above, and a shallow-shared BVH is consistent
+	// with how collision_tree_index already gets shared by that copy (the appended submodel is
+	// genuinely the same source content, just spliced into a different model's submodel list). Null
+	// when this submodel has no collision geometry.
 	std::shared_ptr<bvh_tree> triangle_bvh;
 
 	vec3d	min;						// The min point of this object's geometry
@@ -1376,7 +1369,7 @@ typedef struct mc_info {
 	bool    edge_hit = false;           // Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.
 	ubyte   *f_poly = nullptr;          // pointer to flat poly where we intersected
 	ubyte   *t_poly = nullptr;          // pointer to tmap poly where we intersected
-	bsp_collision_leaf* bsp_leaf = nullptr;
+	int     hit_tmap_num = -1;          // tmap index of the hit polygon; -1 if flat/untextured or no hit
 
 	SCP_vector<vec3d> hit_points_all;   // used only with MC_COLLIDE_ALL, contains all collision points, in world space, 
 	                                    //     including those against backfacing polies, in arbitrary order
@@ -1457,6 +1450,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
+void model_bsp_collision_tree_release_leaf_data(bsp_collision_tree *tree);
 int model_create_bsp_collision_tree();
 
 

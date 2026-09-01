@@ -35,10 +35,9 @@ SCP_vector<bvh_triangle> model_bvh_extract_submodel_triangles(polymodel* pm, int
 			tri.v2 = vi1;
 			tri.tmap_num = leaf.tmap_num;
 			tri.original_index = poly_index;
-			// The triangle's real index into bsp_collision_tree::leaf_list -- not poly_index (a
-			// skip-compacted counter with different semantics, see the bvh_triangle::leaf_index
-			// comment in modelbvh.h) -- so a stage-4 consumer can look the leaf back up (texture,
-			// invisible-face state) for whichever fan triangle ends up the accepted hit.
+			// The source leaf's index at extraction time -- not poly_index (a skip-compacted
+			// counter with different semantics). Not used by the live collision path (tmap_num is
+			// already copied onto the triangle above), kept for build-time traceability/debugging.
 			tri.leaf_index = li;
 			tri.uv0 = uv0;
 			tri.uv1 = {tree->vert_list[leaf.vert_start + i].u, tree->vert_list[leaf.vert_start + i].v};
