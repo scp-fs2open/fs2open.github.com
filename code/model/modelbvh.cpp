@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <utility>
 
 namespace {
 
@@ -79,7 +80,22 @@ struct BinBuildNode {
 	int left = -1, right = -1; // indices into the bin_nodes array; -1 == leaf
 };
 
-constexpr int LEAF_THRESHOLD = 2;
+// Floor for the SAH build's forced leaf stop, raised from the original 2 so that leaves are usually
+// already close to a clean SIMD-width batch before the padding pass in bvh_build() below rounds
+// them the rest of the way up. This is a floor, not a cap: the SAH cost comparison in build_range()
+// can still leave a larger leaf un-split when no candidate split beats leaf_cost, so there remains
+// no true hard maximum triangle count per leaf.
+//
+// Deliberately NOT tied to BVH_N (was `= BVH_N` until 2026-08-30) -- this floor controls the SAH
+// tree's *shape* (how many triangles get grouped per leaf, hence traversal/leaf-visitation order),
+// while BVH_N controls the *batch width* the leaf-intersection SIMD loop reads at once. Conflating
+// them made a BVH_N-only experiment (try N=8 for AVX's 8-wide float lanes) also reshape the tree,
+// which changed leaf-visitation order and, via the already-documented fvi_point_face-vs-barycentric
+// tie-break sensitivity (see mc_check_bvh_triangle()'s doc comment in modelcollide.cpp), changed
+// real-content parity/benchmark results for reasons that had nothing to do with SIMD width itself.
+// Kept at the same value BVH_N happened to be (4) so this split is a pure refactor with no behavior
+// change; a future BVH_N-width experiment should vary BVH_N alone and leave this constant fixed.
+constexpr int LEAF_THRESHOLD = 4;
 constexpr int NUM_BINS = 16;
 
 // Recursively builds a binary SAH tree over indices[start, start+count), partitioning `indices`
@@ -316,27 +332,6 @@ int emit_node(const SCP_vector<BinBuildNode>& bin_nodes, int bin_node_index, SCP
 	return idx;
 }
 
-bool ray_aabb(const vec3d& origin, const vec3d& inv_dir, const float bmin[3], const float bmax[3], float t_max, float& out_tmin)
-{
-	float o[3] = {origin.xyz.x, origin.xyz.y, origin.xyz.z};
-	float id[3] = {inv_dir.xyz.x, inv_dir.xyz.y, inv_dir.xyz.z};
-
-	float tmin = 0.0f;
-	float tmax = t_max;
-	for (int axis = 0; axis < 3; ++axis) {
-		float t0 = (bmin[axis] - o[axis]) * id[axis];
-		float t1 = (bmax[axis] - o[axis]) * id[axis];
-		if (t0 > t1)
-			std::swap(t0, t1);
-		tmin = std::max(tmin, t0);
-		tmax = std::min(tmax, t1);
-		if (tmin > tmax)
-			return false;
-	}
-	out_tmin = tmin;
-	return true;
-}
-
 // Standard Moller-Trumbore ray-triangle test.
 bool ray_triangle(const vec3d& origin, const vec3d& dir, const bvh_triangle& tri, float& out_t)
 {
@@ -370,6 +365,113 @@ bool ray_triangle(const vec3d& origin, const vec3d& dir, const bvh_triangle& tri
 	return true;
 }
 
+// Rounds every leaf's triangle range up to a multiple of BVH_N by appending degenerate
+// (zero-area, v1==v2==v0) copies of the leaf's last triangle, so a SIMD leaf-intersection pass can
+// always process clean BVH_N-wide chunks with no ragged remainder. Degenerate triangles have
+// det==0 in the Moller-Trumbore test (v1-v0 and v2-v0 are both zero vectors), so they can never
+// register a hit -- mirrors the "impossible box" padding already used for unused bvh_node child
+// slots in emit_node() above. Rewrites each leaf slot's child[]/count[] in place to point at the
+// repacked arrays. Must run after emit_node() has produced tree.nodes and the tree's parallel
+// triangle arrays have been populated (see bvh_build()). Operates on the tree's SoA storage
+// directly -- there is no separate AoS array to keep in sync.
+void pad_leaves_to_simd_width(bvh_tree& tree)
+{
+	SCP_vector<float> v0x, v0y, v0z, v1x, v1y, v1z, v2x, v2y, v2z;
+	SCP_vector<int> tmap_num, original_index, leaf_index;
+	SCP_vector<bvh_uv> uv0, uv1, uv2;
+
+	size_t reserve_n = tree.triangle_count();
+	v0x.reserve(reserve_n);
+	v0y.reserve(reserve_n);
+	v0z.reserve(reserve_n);
+	v1x.reserve(reserve_n);
+	v1y.reserve(reserve_n);
+	v1z.reserve(reserve_n);
+	v2x.reserve(reserve_n);
+	v2y.reserve(reserve_n);
+	v2z.reserve(reserve_n);
+	tmap_num.reserve(reserve_n);
+	original_index.reserve(reserve_n);
+	leaf_index.reserve(reserve_n);
+	uv0.reserve(reserve_n);
+	uv1.reserve(reserve_n);
+	uv2.reserve(reserve_n);
+
+	auto append_real = [&](size_t src) {
+		v0x.push_back(tree.v0x[src]);
+		v0y.push_back(tree.v0y[src]);
+		v0z.push_back(tree.v0z[src]);
+		v1x.push_back(tree.v1x[src]);
+		v1y.push_back(tree.v1y[src]);
+		v1z.push_back(tree.v1z[src]);
+		v2x.push_back(tree.v2x[src]);
+		v2y.push_back(tree.v2y[src]);
+		v2z.push_back(tree.v2z[src]);
+		tmap_num.push_back(tree.tmap_num[src]);
+		original_index.push_back(tree.original_index[src]);
+		leaf_index.push_back(tree.leaf_index[src]);
+		uv0.push_back(tree.uv0[src]);
+		uv1.push_back(tree.uv1[src]);
+		uv2.push_back(tree.uv2[src]);
+	};
+
+	auto append_degenerate = [&](size_t src) {
+		// Same metadata as the source triangle, but v1/v2 collapsed onto v0.
+		v0x.push_back(tree.v0x[src]);
+		v0y.push_back(tree.v0y[src]);
+		v0z.push_back(tree.v0z[src]);
+		v1x.push_back(tree.v0x[src]);
+		v1y.push_back(tree.v0y[src]);
+		v1z.push_back(tree.v0z[src]);
+		v2x.push_back(tree.v0x[src]);
+		v2y.push_back(tree.v0y[src]);
+		v2z.push_back(tree.v0z[src]);
+		tmap_num.push_back(tree.tmap_num[src]);
+		original_index.push_back(tree.original_index[src]);
+		leaf_index.push_back(tree.leaf_index[src]);
+		uv0.push_back(tree.uv0[src]);
+		uv1.push_back(tree.uv1[src]);
+		uv2.push_back(tree.uv2[src]);
+	};
+
+	for (bvh_node& node : tree.nodes) {
+		for (int i = 0; i < BVH_N; ++i) {
+			if (node.child[i] < 0 || node.count[i] <= 0)
+				continue; // internal slot, or an already-unused padding slot from emit_node()
+
+			int start = node.child[i];
+			int count = node.count[i];
+			int new_start = static_cast<int>(v0x.size());
+
+			for (int t = start; t < start + count; ++t)
+				append_real(static_cast<size_t>(t));
+
+			int padded_count = ((count + BVH_N - 1) / BVH_N) * BVH_N;
+			for (int p = count; p < padded_count; ++p)
+				append_degenerate(static_cast<size_t>(start + count - 1));
+
+			node.child[i] = new_start;
+			node.count[i] = padded_count;
+		}
+	}
+
+	tree.v0x = std::move(v0x);
+	tree.v0y = std::move(v0y);
+	tree.v0z = std::move(v0z);
+	tree.v1x = std::move(v1x);
+	tree.v1y = std::move(v1y);
+	tree.v1z = std::move(v1z);
+	tree.v2x = std::move(v2x);
+	tree.v2y = std::move(v2y);
+	tree.v2z = std::move(v2z);
+	tree.tmap_num = std::move(tmap_num);
+	tree.original_index = std::move(original_index);
+	tree.leaf_index = std::move(leaf_index);
+	tree.uv0 = std::move(uv0);
+	tree.uv1 = std::move(uv1);
+	tree.uv2 = std::move(uv2);
+}
+
 } // namespace
 
 bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
@@ -395,9 +497,41 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
 
 	tree.root = emit_node(bin_nodes, root_bin, tree.nodes);
 
-	tree.triangles.reserve(n);
-	for (int i = 0; i < n; ++i)
-		tree.triangles.push_back(triangles[indices[i]]);
+	tree.v0x.reserve(n);
+	tree.v0y.reserve(n);
+	tree.v0z.reserve(n);
+	tree.v1x.reserve(n);
+	tree.v1y.reserve(n);
+	tree.v1z.reserve(n);
+	tree.v2x.reserve(n);
+	tree.v2y.reserve(n);
+	tree.v2z.reserve(n);
+	tree.tmap_num.reserve(n);
+	tree.original_index.reserve(n);
+	tree.leaf_index.reserve(n);
+	tree.uv0.reserve(n);
+	tree.uv1.reserve(n);
+	tree.uv2.reserve(n);
+	for (int i = 0; i < n; ++i) {
+		const bvh_triangle& t = triangles[indices[i]];
+		tree.v0x.push_back(t.v0.xyz.x);
+		tree.v0y.push_back(t.v0.xyz.y);
+		tree.v0z.push_back(t.v0.xyz.z);
+		tree.v1x.push_back(t.v1.xyz.x);
+		tree.v1y.push_back(t.v1.xyz.y);
+		tree.v1z.push_back(t.v1.xyz.z);
+		tree.v2x.push_back(t.v2.xyz.x);
+		tree.v2y.push_back(t.v2.xyz.y);
+		tree.v2z.push_back(t.v2.xyz.z);
+		tree.tmap_num.push_back(t.tmap_num);
+		tree.original_index.push_back(t.original_index);
+		tree.leaf_index.push_back(t.leaf_index);
+		tree.uv0.push_back(t.uv0);
+		tree.uv1.push_back(t.uv1);
+		tree.uv2.push_back(t.uv2);
+	}
+
+	pad_leaves_to_simd_width(tree);
 
 	return tree;
 }
@@ -429,7 +563,7 @@ bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& d
 			float bmin[3] = {node.minx[i], node.miny[i], node.minz[i]};
 			float bmax[3] = {node.maxx[i], node.maxy[i], node.maxz[i]};
 			float t_hit;
-			if (!ray_aabb(origin, inv_dir, bmin, bmax, best_t, t_hit))
+			if (!bvh_detail::ray_aabb(origin, inv_dir, bmin, bmax, best_t, t_hit))
 				continue;
 
 			if (node.count[i] > 0) {
@@ -437,7 +571,7 @@ bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& d
 				int count = node.count[i];
 				for (int t = start; t < start + count; ++t) {
 					float hit_t;
-					if (ray_triangle(origin, dir, tree.triangles[t], hit_t) && hit_t < best_t) {
+					if (ray_triangle(origin, dir, tree.triangle_at(t), hit_t) && hit_t < best_t) {
 						best_t = hit_t;
 						best_tri = t;
 						found = true;
@@ -453,5 +587,103 @@ bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& d
 		out_t = best_t;
 		out_triangle_index = best_tri;
 	}
+	return found;
+}
+
+bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& origin, const vec3d& dir,
+	float best_t, float& out_t, int32_t& out_triangle_index)
+{
+	constexpr float EPS = 1e-8f;
+
+	bool found = false;
+
+	for (int32_t chunk = start; chunk < start + count; chunk += BVH_N) {
+		// Structured as separate fixed-BVH_N-length arrays and per-stage loops (rather than one
+		// scalar per-lane loop calling vm_vec_cross/dot) so the shape matches bvh_node's own
+		// SoA-array style and gives the autovectorizer the best chance of turning this into SIMD --
+		// see the design note on ray_triangle_leaf_simd() in modelbvh.h. Every lane is computed
+		// unconditionally; no lane is ever skipped or early-exited the way the scalar ray_triangle()
+		// does, so there's no data-dependent control flow across lanes.
+		float e1x[BVH_N], e1y[BVH_N], e1z[BVH_N];
+		float e2x[BVH_N], e2y[BVH_N], e2z[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			int32_t idx = chunk + i;
+			e1x[i] = tree.v1x[idx] - tree.v0x[idx];
+			e1y[i] = tree.v1y[idx] - tree.v0y[idx];
+			e1z[i] = tree.v1z[idx] - tree.v0z[idx];
+			e2x[i] = tree.v2x[idx] - tree.v0x[idx];
+			e2y[i] = tree.v2y[idx] - tree.v0y[idx];
+			e2z[i] = tree.v2z[idx] - tree.v0z[idx];
+		}
+
+		float pvecx[BVH_N], pvecy[BVH_N], pvecz[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			pvecx[i] = dir.xyz.y * e2z[i] - dir.xyz.z * e2y[i];
+			pvecy[i] = dir.xyz.z * e2x[i] - dir.xyz.x * e2z[i];
+			pvecz[i] = dir.xyz.x * e2y[i] - dir.xyz.y * e2x[i];
+		}
+
+		float det[BVH_N];
+		for (int i = 0; i < BVH_N; ++i)
+			det[i] = e1x[i] * pvecx[i] + e1y[i] * pvecy[i] + e1z[i] * pvecz[i];
+
+		float inv_det[BVH_N];
+		for (int i = 0; i < BVH_N; ++i)
+			inv_det[i] = (std::fabs(det[i]) < EPS) ? 0.0f : 1.0f / det[i];
+
+		float tvecx[BVH_N], tvecy[BVH_N], tvecz[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			int32_t idx = chunk + i;
+			tvecx[i] = origin.xyz.x - tree.v0x[idx];
+			tvecy[i] = origin.xyz.y - tree.v0y[idx];
+			tvecz[i] = origin.xyz.z - tree.v0z[idx];
+		}
+
+		float u[BVH_N];
+		for (int i = 0; i < BVH_N; ++i)
+			u[i] = (tvecx[i] * pvecx[i] + tvecy[i] * pvecy[i] + tvecz[i] * pvecz[i]) * inv_det[i];
+
+		float qvecx[BVH_N], qvecy[BVH_N], qvecz[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			qvecx[i] = tvecy[i] * e1z[i] - tvecz[i] * e1y[i];
+			qvecy[i] = tvecz[i] * e1x[i] - tvecx[i] * e1z[i];
+			qvecz[i] = tvecx[i] * e1y[i] - tvecy[i] * e1x[i];
+		}
+
+		float v[BVH_N], t[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			v[i] = (dir.xyz.x * qvecx[i] + dir.xyz.y * qvecy[i] + dir.xyz.z * qvecz[i]) * inv_det[i];
+			t[i] = (e2x[i] * qvecx[i] + e2y[i] * qvecy[i] + e2z[i] * qvecz[i]) * inv_det[i];
+		}
+
+		// Same barycentric tolerance as mc_check_triangle_face()'s BARY_EPS in modelcollide.cpp
+		// (u/v here are the same barycentric weights that function's own separate computation
+		// derives, just via Moller-Trumbore instead of a post-hoc vp0/e1/e2 solve). Real bug found
+		// and fixed 2026-08-29: without this, a ray landing exactly on the shared edge between two
+		// adjacent fan triangles could fail *both* triangles' zero-tolerance containment test here
+		// (each seeing itself as juuust outside by floating-point noise) while the scalar
+		// mc_check_triangle_face() reference -- which only ever runs on this function's own
+		// reported candidate -- would have accepted it. Since a false "no hit" here short-circuits
+		// mc_check_bvh_triangle()'s whole fast path (there is no scalar fallback when this
+		// function finds nothing at all, only when it finds an invisible-textured triangle), the
+		// two tests disagreeing at the boundary silently dropped real hits -- this showed up as a
+		// higher-than-expected RAY mismatch rate in the real-content parity test.
+		constexpr float BARY_EPS = 1e-4f;
+		bool valid[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			valid[i] = std::fabs(det[i]) >= EPS && u[i] >= -BARY_EPS && u[i] <= 1.0f + BARY_EPS && v[i] >= -BARY_EPS &&
+				(u[i] + v[i]) <= 1.0f + BARY_EPS && t[i] >= 0.0f && t[i] < best_t;
+		}
+
+		for (int i = 0; i < BVH_N; ++i) {
+			if (valid[i] && t[i] < best_t) {
+				best_t = t[i];
+				out_t = t[i];
+				out_triangle_index = chunk + i;
+				found = true;
+			}
+		}
+	}
+
 	return found;
 }

@@ -22,7 +22,7 @@
 #include "graphics/2d.h"
 #include "io/timer.h"
 #include "model/model_flags.h"
-#include "model/modelbvh_leafindex.h"
+#include "model/modelbvh.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "particle/particle.h"
@@ -494,16 +494,21 @@ public:
 	// radar, AI targeting, HUD) also read it and may rely on the author-tuned value.
 	float collision_rad = 0.0f;
 
-	// Stage-3 collision rewrite: an alternate spatial index over this submodel's collision-tree
-	// leaves (see modelbvh_leafindex.h), built at model-load time alongside the legacy BSP tree
-	// when -use_bvh_collision is active (see Cmdline_use_bvh_collision). shared_ptr, not
-	// unique_ptr, matching bsp_data/outline_buffer above -- bsp_info is explicitly copy-
-	// constructed elsewhere (modelreplace.cpp, appending submodels from one model into another),
-	// same as those two members, and a shallow-shared BVH is consistent with how bsp_data/
-	// collision_tree_index already get shared by that copy (the appended submodel is genuinely
-	// the same source content, just spliced into a different model's submodel list). Null when
-	// the BVH path is disabled or hasn't been built for this submodel (e.g. no geometry).
-	std::shared_ptr<bvh_leaf_tree> bvh;
+	// A real per-triangle BVH over this submodel's fan-triangulated collision geometry (see
+	// modelbvh.h/modelbvh_extract.h), built at model-load time alongside the legacy BSP tree when
+	// -use_new_collision is active (see Cmdline_use_triangle_collision). shared_ptr, not
+	// unique_ptr -- bsp_info is explicitly copy-constructed elsewhere (modelreplace.cpp, appending
+	// submodels from one model into another), same as bsp_data/outline_buffer above, and a
+	// shallow-shared BVH is consistent with how bsp_data/collision_tree_index already get shared
+	// by that copy (the appended submodel is genuinely the same source content, just spliced into
+	// a different model's submodel list). Null when the triangle-BVH path is disabled or hasn't
+	// been built for this submodel (e.g. no geometry).
+	//
+	// An earlier, intermediate design (a leaf-level, whole-n-gon BVH sitting between this and the
+	// legacy BSP tree) was implemented, shipped as the default, and later removed once this
+	// per-triangle BVH proved out -- see collision_bvh_rewrite_plan project notes for that
+	// history if archaeology is ever needed; nothing about it remains in the live code.
+	std::shared_ptr<bvh_tree> triangle_bvh;
 
 	vec3d	min;						// The min point of this object's geometry
 	vec3d	max;						// The max point of this object's geometry

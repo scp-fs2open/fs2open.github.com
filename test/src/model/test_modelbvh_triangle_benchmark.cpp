@@ -1,8 +1,8 @@
-// Performance comparison between the legacy BSP submodel-collision traversal and the new
-// BVH-based one (see model_collide_bvh()/mc_check_bvh_leaf() in modelcollide.cpp), both reached
-// through the real model_collide() entry point via the live Cmdline_use_bvh_collision toggle --
-// same infrastructure as test_modelbvh_traversal_parity.cpp, but measuring wall-clock cost
-// instead of checking correctness.
+// Performance comparison between the legacy BSP submodel-collision traversal and the new stage-4
+// real per-triangle BVH traversal (see model_collide_bvh_triangle()/mc_check_bvh_triangle() in
+// modelcollide.cpp), both reached through the real model_collide() entry point via the live
+// Cmdline_use_triangle_collision toggle -- same infrastructure as test_modelbvh_benchmark.cpp
+// (stage 3's leaf-BVH benchmark), but measuring the triangle-BVH path instead.
 //
 // Skipped by default (no .pof in-repo); point FSO_BVH_PARITY_POF at a real .pof file or
 // directory (or several, ';'-separated) to run it. This is a Release-only, real-world-scale
@@ -72,16 +72,16 @@ double median(std::vector<double> v)
 
 } // namespace
 
-class BvhBenchmarkTest : public test::FSTestFixture {
+class BvhTriangleBenchmarkTest : public test::FSTestFixture {
 protected:
-	BvhBenchmarkTest() : FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+	BvhTriangleBenchmarkTest() : FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
 };
 
-TEST_F(BvhBenchmarkTest, CompareOldAndNewTraversalSpeed)
+TEST_F(BvhTriangleBenchmarkTest, CompareOldAndTriangleBvhTraversalSpeed)
 {
 	const char* env = std::getenv("FSO_BVH_PARITY_POF");
 	if (env == nullptr || env[0] == '\0') {
-		GTEST_SKIP() << "FSO_BVH_PARITY_POF not set; skipping BVH-vs-BSP benchmark.";
+		GTEST_SKIP() << "FSO_BVH_PARITY_POF not set; skipping BVH-vs-BSP triangle benchmark.";
 	}
 
 	std::vector<std::filesystem::path> pof_files;
@@ -109,9 +109,8 @@ TEST_F(BvhBenchmarkTest, CompareOldAndNewTraversalSpeed)
 			cf_add_external_path_root(root.c_str());
 	}
 
-	// Build the BVH for every submodel loaded from here on, alongside the legacy BSP tree, so
-	// both traversals are available to benchmark against the same loaded content.
-	Cmdline_use_bvh_collision = true;
+	// Build the triangle-BVH for every submodel loaded from here on.
+	Cmdline_use_triangle_collision = true;
 
 	std::mt19937 rng(20260829);
 	std::vector<RayCase> cases;
@@ -132,10 +131,10 @@ TEST_F(BvhBenchmarkTest, CompareOldAndNewTraversalSpeed)
 			bsp_info& sm = pm->submodel[sm_idx];
 			if (sm.flags[Model::Submodel_flags::No_collisions] || sm.flags[Model::Submodel_flags::Nocollide_this_only])
 				continue;
-			if (!sm.bvh)
+			if (!sm.triangle_bvh)
 				continue;
 
-			total_triangles += static_cast<long>(sm.bvh->items.size());
+			total_triangles += static_cast<long>(sm.triangle_bvh->triangle_count());
 
 			vec3d center = (sm.min + sm.max) * 0.5f;
 			float radius = std::max(sm.collision_rad, 1.0f);
@@ -165,11 +164,11 @@ TEST_F(BvhBenchmarkTest, CompareOldAndNewTraversalSpeed)
 	ASSERT_GT(files_loaded, 0) << "No .pof file loaded successfully";
 	ASSERT_FALSE(cases.empty()) << "No submodel produced any ray cases -- nothing to benchmark";
 
-	printf("Loaded %d/%d files, %d ray cases, %ld total leaf/triangle primitives across all BVHs\n", files_loaded,
+	printf("Loaded %d/%d files, %d ray cases, %ld total triangle primitives across all triangle-BVHs\n", files_loaded,
 		static_cast<int>(pof_files.size()), static_cast<int>(cases.size()), total_triangles);
 
-	auto run_all = [&](bool use_bvh) {
-		Cmdline_use_bvh_collision = use_bvh;
+	auto run_all = [&](bool use_triangle_bvh) {
+		Cmdline_use_triangle_collision = use_triangle_bvh;
 		for (const RayCase& c : cases) {
 			mc_info mc;
 			mc.model_num = c.model_num;
@@ -205,17 +204,17 @@ TEST_F(BvhBenchmarkTest, CompareOldAndNewTraversalSpeed)
 		new_ms.push_back(std::chrono::duration<double, std::milli>(t2 - t1).count());
 	}
 
-	Cmdline_use_bvh_collision = true; // restore default for anything else sharing the process
+	Cmdline_use_triangle_collision = false; // don't leak this into other tests sharing the process
 
 	double old_med = median(old_ms), new_med = median(new_ms);
 	double old_min = *std::min_element(old_ms.begin(), old_ms.end());
 	double new_min = *std::min_element(new_ms.begin(), new_ms.end());
 	long calls = static_cast<long>(cases.size());
 
-	printf("\n=== BVH vs BSP submodel-collision benchmark (%d trials, %ld calls/trial) ===\n", TRIALS, calls);
-	printf("%-12s %10s %10s %14s %14s\n", "", "median ms", "min ms", "median ns/call", "min ns/call");
-	printf("%-12s %10.3f %10.3f %14.1f %14.1f\n", "BSP (old)", old_med, old_min, old_med * 1e6 / calls, old_min * 1e6 / calls);
-	printf("%-12s %10.3f %10.3f %14.1f %14.1f\n", "BVH (new)", new_med, new_min, new_med * 1e6 / calls, new_min * 1e6 / calls);
+	printf("\n=== BVH(triangle) vs BSP submodel-collision benchmark (%d trials, %ld calls/trial) ===\n", TRIALS, calls);
+	printf("%-16s %10s %10s %14s %14s\n", "", "median ms", "min ms", "median ns/call", "min ns/call");
+	printf("%-16s %10.3f %10.3f %14.1f %14.1f\n", "BSP (old)", old_med, old_min, old_med * 1e6 / calls, old_min * 1e6 / calls);
+	printf("%-16s %10.3f %10.3f %14.1f %14.1f\n", "BVH-triangle", new_med, new_min, new_med * 1e6 / calls, new_min * 1e6 / calls);
 	printf("Speedup (median): %.2fx    Speedup (min): %.2fx\n", old_med / new_med, old_min / new_min);
 
 	SUCCEED() << "See printed output above for timing results -- this test only measures, it does not assert on speed.";

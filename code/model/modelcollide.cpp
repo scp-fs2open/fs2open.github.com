@@ -48,6 +48,17 @@ thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to it
 
 thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
 
+// mc_check_triangle_face() vs mc_check_triangle_sphereline_face(): resolved once per
+// model_collide() call, not per triangle visited -- Mc->flags is invariant for the whole call, so
+// re-testing `Mc->flags & MC_CHECK_SPHERELINE` on every single candidate triangle in
+// mc_check_bvh_triangle()'s nearest-first confirmation loop (which can revisit several triangles
+// per leaf) would be pure repeated branching on an unchanging answer. The legacy BSP path
+// (model_collide_bsp_poly) deliberately keeps its own original per-leaf check -- untouched by
+// design, not retrofitted, since it isn't the hot path this targets.
+using TriangleFaceTestFn = void (*)(const vec3d &, const vec3d &, const vec3d &, const bvh_uv &, const bvh_uv &,
+	const bvh_uv &, bool, int, bsp_collision_leaf *);
+thread_local static TriangleFaceTestFn Mc_triangle_face_test_fn = nullptr;
+
 
 
 void model_collide_free_point_list()
@@ -288,7 +299,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 		// If this is within the collision window, check to see if we hit a face
 		if ( fvi_point_face(&hit_point, nv, verts, plane_norm, &u, &v, uvl_list) ) {
 
-			Mc->hit_dist = face_t;		
+			Mc->hit_dist = face_t;
 			Mc->hit_point = hit_point;
 			Mc->hit_normal = *plane_norm;
 			Mc->hit_submodel = Mc_submodel;			
@@ -400,6 +411,207 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 }
 
+// Stage-4 collision rewrite: triangle-granularity sibling of mc_check_face() above, taking a
+// single triangle's own 3 verts/UVs instead of an n-gon's full vertex list. Uses the triangle's
+// own exact plane (cross product of its two edges -- always planar for 3 points, no Newell
+// averaging needed, unlike mc_compute_geometric_normal()'s n-gon case) for backface cull and the
+// ray/plane solve, and a direct barycentric containment test instead of fvi_point_face's
+// dominant-axis-projection point-in-polygon test (equivalent result, no need for that generality
+// with a fixed 3-vertex input). `has_uv`/`ntmap` mirror mc_check_face()'s own uvl_list/ntmap
+// convention -- has_uv==false for a flat (untextured) polygon. No raw BSP-chunk poly pointer for a
+// BVH-derived hit (Mc->t_poly/f_poly always cleared) -- there's no meaningful raw-chunk pointer for
+// a triangle synthesized by fan-triangulation, so this is always nullptr.
+static void mc_check_triangle_face(const vec3d &v0, const vec3d &v1, const vec3d &v2, const bvh_uv &uv0,
+	const bvh_uv &uv1, const bvh_uv &uv2, bool has_uv, int ntmap, bsp_collision_leaf *bsp_leaf)
+{
+	vec3d e1 = v1 - v0;
+	vec3d e2 = v2 - v0;
+
+	vec3d normal;
+	vm_vec_cross(&normal, &e1, &e2);
+	if (vm_vec_normalize_safe(&normal, true) <= 0.0f)
+		return; // degenerate (zero-area) triangle -- nothing to test against
+
+	if (!(Mc->flags & MC_COLLIDE_ALL) && vm_vec_dot(&Mc_direction, &normal) > 0.0f)
+		return;
+
+	float dist = fvi_ray_plane(nullptr, &v0, &normal, &Mc_p0, &Mc_direction, 0.0f);
+
+	if (dist < 0.0f)
+		return; // If the ray is behind the plane there is no collision
+	if (!(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f))
+		return; // The ray isn't long enough to intersect the plane
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (dist >= Mc->hit_dist))
+		return; // A closer intersection has already been found
+
+	vec3d hit_point;
+	vm_vec_scale_add(&hit_point, &Mc_p0, &Mc_direction, dist);
+
+	// Barycentric containment test against the plane hit point already in hand.
+	vec3d vp0 = hit_point - v0;
+	float d00 = vm_vec_dot(&e1, &e1);
+	float d01 = vm_vec_dot(&e1, &e2);
+	float d11 = vm_vec_dot(&e2, &e2);
+	float d20 = vm_vec_dot(&vp0, &e1);
+	float d21 = vm_vec_dot(&vp0, &e2);
+	float denom = d00 * d11 - d01 * d01;
+	if (fabsf(denom) < 1e-12f)
+		return; // degenerate
+
+	float gamma_v1 = (d11 * d20 - d01 * d21) / denom; // barycentric weight for v1
+	float gamma_v2 = (d00 * d21 - d01 * d20) / denom; // barycentric weight for v2
+	float gamma_v0 = 1.0f - gamma_v1 - gamma_v2;      // barycentric weight for v0
+
+	constexpr float BARY_EPS = 1e-4f;
+	if (gamma_v0 < -BARY_EPS || gamma_v1 < -BARY_EPS || gamma_v2 < -BARY_EPS)
+		return; // outside the triangle
+
+	Mc->hit_dist = dist;
+	Mc->hit_point = hit_point;
+	Mc->hit_submodel = Mc_submodel;
+	Mc->hit_normal = normal;
+
+	if (Mc->flags & MC_COLLIDE_ALL) {
+		Mc->hit_points_all.push_back(hit_point);
+		Mc->hit_submodels_all.push_back(Mc_submodel);
+	}
+
+	if (has_uv) {
+		Mc->hit_u = gamma_v0 * uv0.u + gamma_v1 * uv1.u + gamma_v2 * uv2.u;
+		Mc->hit_v = gamma_v0 * uv0.v + gamma_v1 * uv1.v + gamma_v2 * uv2.v;
+		Mc->hit_bitmap = (ntmap < 0) ? -1 : Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
+	}
+
+	Mc->t_poly = nullptr;
+	Mc->f_poly = nullptr;
+	Mc->bsp_leaf = bsp_leaf;
+
+	Mc->num_hits++;
+}
+
+// Stage-4 collision rewrite: triangle-granularity sibling of mc_check_sphereline_face() above.
+// Mirrors its structure (face test via the sphere-vs-plane touch time, then an edge fallback)
+// exactly, but against the triangle's own exact plane/edges instead of an n-gon's. The edge
+// fallback deliberately calls the existing, unmodified fvi_polyedge_sphereline() with nv=3 on the
+// triangle's own 3 edges, unconditionally -- including whichever edge may be a fan-triangulation
+// diagonal rather than a true polygon boundary. See the stage-4 plan's fan-triangulation decision:
+// ship the simple version, measure for a real signal via golden-parity testing, don't pre-engineer
+// boundary-edge tagging up front. Also mirrors a quirk already present in mc_check_sphereline_face:
+// the edge-hit branch does not set Mc->bsp_leaf (only the face-hit branch does) -- preserved here
+// for exact behavioral parity with the legacy function this is meant to be measured against.
+static void mc_check_triangle_sphereline_face(const vec3d &v0, const vec3d &v1, const vec3d &v2, const bvh_uv &uv0,
+	const bvh_uv &uv1, const bvh_uv &uv2, bool has_uv, int ntmap, bsp_collision_leaf *bsp_leaf)
+{
+	vec3d e1 = v1 - v0;
+	vec3d e2 = v2 - v0;
+
+	vec3d normal;
+	vm_vec_cross(&normal, &e1, &e2);
+	if (vm_vec_normalize_safe(&normal, true) <= 0.0f)
+		return;
+
+	if (!(Mc->flags & MC_COLLIDE_ALL) && vm_vec_dot(&Mc_direction, &normal) > 0.0f)
+		return;
+
+	vec3d hit_point;
+	float face_t, delta_t;
+	if (!fvi_sphere_plane(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, &normal, &v0, &face_t, &delta_t))
+		return;
+
+	int check_face = 1;
+	int check_edges = 1;
+
+	if (face_t > 1.0f) {
+		check_face = 0;
+		check_edges = 0;
+	} else if (face_t < 0.0f) {
+		check_face = 0;
+		if ((face_t + delta_t) < 0.0f)
+			check_edges = 0;
+	}
+
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (face_t >= Mc->hit_dist)) {
+		check_face = 0;
+	}
+
+	if (check_face) {
+		vec3d vp0 = hit_point - v0;
+		float d00 = vm_vec_dot(&e1, &e1);
+		float d01 = vm_vec_dot(&e1, &e2);
+		float d11 = vm_vec_dot(&e2, &e2);
+		float d20 = vm_vec_dot(&vp0, &e1);
+		float d21 = vm_vec_dot(&vp0, &e2);
+		float denom = d00 * d11 - d01 * d01;
+
+		bool on_face = false;
+		float gamma_v0 = 0.0f, gamma_v1 = 0.0f, gamma_v2 = 0.0f;
+		if (fabsf(denom) >= 1e-12f) {
+			gamma_v1 = (d11 * d20 - d01 * d21) / denom;
+			gamma_v2 = (d00 * d21 - d01 * d20) / denom;
+			gamma_v0 = 1.0f - gamma_v1 - gamma_v2;
+			constexpr float BARY_EPS = 1e-4f;
+			on_face = gamma_v0 >= -BARY_EPS && gamma_v1 >= -BARY_EPS && gamma_v2 >= -BARY_EPS;
+		}
+
+		if (on_face) {
+			Mc->hit_dist = face_t;
+			Mc->hit_point = hit_point;
+			Mc->hit_normal = normal;
+			Mc->hit_submodel = Mc_submodel;
+			Mc->edge_hit = false;
+
+			if (Mc->flags & MC_COLLIDE_ALL) {
+				Mc->hit_points_all.push_back(hit_point);
+				Mc->hit_submodels_all.push_back(Mc_submodel);
+			}
+
+			if (has_uv) {
+				Mc->hit_u = gamma_v0 * uv0.u + gamma_v1 * uv1.u + gamma_v2 * uv2.u;
+				Mc->hit_v = gamma_v0 * uv0.v + gamma_v1 * uv1.v + gamma_v2 * uv2.v;
+				Mc->hit_bitmap = (ntmap < 0) ? -1 : Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
+			}
+
+			Mc->t_poly = nullptr;
+			Mc->f_poly = nullptr;
+			Mc->bsp_leaf = bsp_leaf;
+
+			Mc->num_hits++;
+			check_edges = 0;
+		}
+	}
+
+	if (check_edges) {
+		const vec3d *verts[3] = {&v0, &v1, &v2};
+		float sphere_time;
+		if (fvi_polyedge_sphereline(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, 3, verts, &sphere_time)) {
+			Assert(sphere_time >= 0.0f);
+
+			if ((Mc->flags & MC_COLLIDE_ALL) || (Mc->num_hits == 0) || (sphere_time < Mc->hit_dist)) {
+				Mc->hit_dist = sphere_time;
+				Mc->hit_point = hit_point;
+				Mc->hit_normal = normal;
+				Mc->hit_submodel = Mc_submodel;
+				Mc->edge_hit = true;
+
+				if (Mc->flags & MC_COLLIDE_ALL) {
+					Mc->hit_points_all.push_back(hit_point);
+					Mc->hit_submodels_all.push_back(Mc_submodel);
+				}
+
+				Mc->hit_bitmap = (ntmap < 0) ? -1 : Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
+
+				Mc->t_poly = nullptr;
+				Mc->f_poly = nullptr;
+
+				Mc->num_hits++;
+			} else {
+				Assert(Mc->num_hits > 0);
+				Mc->num_hits++;
+			}
+		}
+	}
+}
+
 int model_collide_parse_bsp_defpoints(ubyte * p)
 {
 	uint n;
@@ -499,78 +711,158 @@ void model_collide_bsp(bsp_collision_tree *tree, int node_index)
 	}
 }
 
-// Stage-3 collision rewrite: tests exactly one collision-tree leaf, independently of any other
-// leaf. This is the BVH-path equivalent of one iteration of model_collide_bsp_poly()'s while
-// loop, deliberately NOT chained via leaf->next -- the legacy path's chain-abort-on-invisible-
-// texture quirk (an early `return` that silently skips every remaining leaf later in the same
-// POF-authored OP_BOUNDBOX chain, not just the current one -- see collision_bugs_found.md
-// "Bug 2") does not apply here: the BVH's leaf unit is one polygon, visited independently, so
-// there is no chain left to abort. This is a deliberate, disclosed behavior difference from the
-// legacy path, not an oversight -- see the stage-3 notes in collision_bvh_rewrite_plan.
-static void mc_check_bvh_leaf(bsp_collision_tree *tree, int leaf_index)
+// Runs the face test for triangle tri_index via Mc_triangle_face_test_fn (resolved once per
+// model_collide() call, see its declaration near the top of this file) -- does NOT re-check
+// Mc->flags & MC_CHECK_SPHERELINE itself. Skips (returns false, no face test run) the same
+// invisible-texture case the legacy path applies, keyed off the leaf the triangle came from
+// (tri.leaf_index). check_invisible_faces/collide_invisible are the two flags that decide that --
+// both invariant for the whole model_collide_bvh_triangle() call (Mc->flags and the current
+// submodel's own flag, not per-triangle state), hoisted out to the caller instead of re-read from
+// Mc/Mc_pm on every single candidate -- texture *load* state (GetTexture()) is still genuinely
+// runtime and re-checked here, just not the two flags gating whether it matters. Resolves the leaf
+// exactly once (previously done separately by a visibility pre-check and then again here).
+static bool mc_check_bvh_triangle_candidate(const bsp_collision_tree *tree, const bvh_tree *tbvh, int32_t tri_index,
+	bool check_invisible_faces, bool collide_invisible)
 {
-	bsp_collision_leaf *leaf = &tree->leaf_list[leaf_index];
+	size_t idx = static_cast<size_t>(tri_index);
+	int32_t li = tbvh->leaf_index[idx];
+	bsp_collision_leaf &leaf = tree->leaf_list[li];
 
-	bool flat_poly = false;
-	int vert_start = leaf->vert_start;
-	int nv = leaf->num_verts;
+	if (leaf.tmap_num < MAX_MODEL_TEXTURES && !check_invisible_faces &&
+		Mc_pm->maps[leaf.tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0 && !collide_invisible) {
+		return false;
+	}
 
-	if ( leaf->tmap_num < MAX_MODEL_TEXTURES ) {
-		if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->maps[leaf->tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0) )	{
-			// Don't check invisible polygons. SUSHI: Unless $collide_invisible is set.
-			// Only skips THIS leaf -- see the function comment above for why that's correct here.
-			if (!(Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible]))
+	bool flat_poly = leaf.tmap_num >= MAX_MODEL_TEXTURES;
+	int ntmap = flat_poly ? -1 : tbvh->tmap_num[idx];
+
+	vec3d v0, v1, v2;
+	v0.xyz.x = tbvh->v0x[idx]; v0.xyz.y = tbvh->v0y[idx]; v0.xyz.z = tbvh->v0z[idx];
+	v1.xyz.x = tbvh->v1x[idx]; v1.xyz.y = tbvh->v1y[idx]; v1.xyz.z = tbvh->v1z[idx];
+	v2.xyz.x = tbvh->v2x[idx]; v2.xyz.y = tbvh->v2y[idx]; v2.xyz.z = tbvh->v2z[idx];
+
+	Mc_triangle_face_test_fn(v0, v1, v2, tbvh->uv0[idx], tbvh->uv1[idx], tbvh->uv2[idx], !flat_poly, ntmap, &leaf);
+	return true;
+}
+
+// Tests one leaf range [start, start+count) of a bvh_tree (as handed to a bvh_visit_triangles()
+// visitor). The plain ray, nearest-hit case (the common one -- see the model_collide() consumer
+// audit in collision_bvh_rewrite_plan project notes: beam weapons, HUD targeting, the Lua API)
+// gets a fast path: a SIMD-batched geometry pass (ray_triangle_leaf_simd()) finds the nearest
+// geometrically-valid triangle in one pass; if it's texture-visible, that's the answer. If not
+// (rare), or if this is a sphere-line query (no SIMD batch geometry exists for sphere-vs-triangle
+// -- that's a different, unimplemented test) or MC_COLLIDE_ALL (needs every geometrically-valid
+// triangle visited, not just the nearest), falls back to a plain scalar scan of this one
+// (already spatially-pruned, small) leaf -- matches the project's existing practical conclusion
+// that only the nearest-hit-with-early-out path needs to be fast; MC_COLLIDE_ALL's one production
+// consumer (nebula hull voxelization) is a rare, non-hot-path case that doesn't need to share it.
+// t_max is the traversal's current segment/nearest-hit bound (see bvh_visit_triangles()) -- for the
+// ray fast path below it's used both to seed the SIMD search (so it never wastes a candidate slot,
+// or worse selects a candidate the scalar confirm will reject, on a triangle beyond the query's own
+// segment length) and, on a newly-registered hit, is tightened so later leaves the traversal visits
+// get pruned to only what could still be closer. Not touched for sphereline/MC_COLLIDE_ALL queries
+// below -- MC_COLLIDE_ALL needs every hit, and sphereline has no SIMD fast path to seed.
+static void mc_check_bvh_triangle(const bsp_collision_tree *tree, int32_t start, int32_t count, const bvh_tree *tbvh,
+	float &t_max)
+{
+	bool sphereline = (Mc->flags & MC_CHECK_SPHERELINE) != 0;
+	bool collide_all = (Mc->flags & MC_COLLIDE_ALL) != 0;
+	// Both invariant for this whole submodel query (Mc->flags, and the submodel-level flag Mc_pm
+	// already resolved via Mc_submodel) -- hoisted out of the per-candidate hot loop below instead
+	// of re-read from Mc/Mc_pm on every single triangle.
+	bool check_invisible_faces = (Mc->flags & MC_CHECK_INVISIBLE_FACES) != 0;
+	bool collide_invisible = Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible];
+
+	if (!sphereline && !collide_all) {
+		float best_t = t_max;
+		float simd_t;
+		int32_t simd_idx;
+		bool simd_hit = ray_triangle_leaf_simd(*tbvh, start, count, Mc_p0, Mc_direction, best_t, simd_t, simd_idx);
+
+		if (!simd_hit) {
+			return;
+		}
+		int prior_num_hits = Mc->num_hits;
+		if (mc_check_bvh_triangle_candidate(tree, tbvh, simd_idx, check_invisible_faces, collide_invisible)) {
+			if (Mc->num_hits != prior_num_hits) {
+				// The scalar confirm actually registered a hit -- the common case, done. Tighten
+				// the traversal's bound so later leaves are pruned to only what could be closer.
+				t_max = std::min(t_max, Mc->hit_dist);
 				return;
+			}
+			// ray_triangle_leaf_simd() only knows the *nearest-by-t, texture-visible* candidate
+			// -- it doesn't backface-cull and doesn't know the segment-length bound
+			// (Mc->flags & MC_CHECK_RAY ? unbounded : dist <= 1.0) that
+			// mc_check_triangle_face()/mc_check_triangle_sphereline_face() enforce. So a
+			// geometrically "valid" SIMD candidate can still be rejected by the scalar confirm
+			// (backface, or beyond the segment) with no hit recorded. Don't let that silently
+			// shadow a farther-but-genuinely-acceptable triangle in the same leaf -- fall
+			// through to the exhaustive scalar scan below instead of returning empty-handed.
 		}
-	} else {
-		flat_poly = true;
+
+		// Reached when the nearest SIMD candidate was texture-invisible, or was geometrically
+		// picked but rejected by the scalar confirm for a reason the SIMD pass can't see
+		// (backface, out-of-segment). Exhaustive scan of this small, already spatially-pruned
+		// leaf for the true nearest acceptable hit -- the rare path, not the common one.
+		for (int32_t t = start; t < start + count; ++t) {
+			mc_check_bvh_triangle_candidate(tree, tbvh, t, check_invisible_faces, collide_invisible);
+		}
+		if (Mc->num_hits != prior_num_hits) {
+			t_max = std::min(t_max, Mc->hit_dist);
+		}
+		return;
 	}
 
-	uv_pair uvlist[TMAP_MAX_VERTS];
-	vec3d *points[TMAP_MAX_VERTS];
-	for ( int i = 0; i < nv; ++i ) {
-		int vert_num = tree->vert_list[vert_start+i].vertnum;
-		points[i] = &tree->point_list[vert_num];
-
-		uvlist[i].u = tree->vert_list[vert_start+i].u;
-		uvlist[i].v = tree->vert_list[vert_start+i].v;
+	// Sphereline is nearest-hit too (only MC_COLLIDE_ALL needs every hit) -- there's no SIMD fast
+	// path to seed for it, but the traversal-level prune below still helps by skipping AABB
+	// subtrees beyond whatever's already been found.
+	int prior_num_hits = Mc->num_hits;
+	for (int32_t t = start; t < start + count; ++t) {
+		mc_check_bvh_triangle_candidate(tree, tbvh, t, check_invisible_faces, collide_invisible);
 	}
-
-	if ( flat_poly ) {
-		if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-			mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
-		} else {
-			mc_check_face(nv, points, points[0], &leaf->plane_norm, nullptr, -1, nullptr, leaf);
-		}
-	} else {
-		if ( Mc->flags & MC_CHECK_SPHERELINE ) {
-			mc_check_sphereline_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
-		} else {
-			mc_check_face(nv, points, points[0], &leaf->plane_norm, uvlist, leaf->tmap_num, nullptr, leaf);
-		}
+	if (!collide_all && Mc->num_hits != prior_num_hits) {
+		t_max = std::min(t_max, Mc->hit_dist);
 	}
 }
 
-// Stage-3 collision rewrite: BVH-based replacement for model_collide_bsp()'s tree traversal.
-// Only the spatial index changes -- every leaf the BVH visits still goes through the same
-// mc_check_face()/mc_check_sphereline_face() polygon-level logic (via mc_check_bvh_leaf() above)
-// as the legacy BSP path, so MC_COLLIDE_ALL accumulation, sphere-line edge fallback, backface
-// culling, and all mc_info output fields behave identically. t_max mirrors model_collide_bsp()'s
-// own length cap: bvh_visit_leaves()'s ray parametrization reaches exactly Mc_p1 at t=1 (since
-// Mc_direction = Mc_p1 - Mc_p0, unnormalized), matching mc_check_face()'s own `dist > 1.0f` bound
-// -- not Mc_mag, which is the equivalent bound in a different (absolute-distance) unit that only
-// happens to agree with the t=1 check because Mc_direction's local-space magnitude equals Mc_mag
-// by rigid-transform distance preservation (see the Mc_mag comment near the top of this file).
-static void model_collide_bvh(bsp_collision_tree *tree, const bvh_leaf_tree *bvh)
+// Triangle-BVH replacement for model_collide_bsp()'s tree traversal. Only the spatial index and
+// per-triangle-vs-per-n-gon granularity change -- every triangle visited still goes through the
+// same kind of face/sphereline logic (mc_check_triangle_face()/mc_check_triangle_sphereline_face()
+// via mc_check_bvh_triangle() above) as the legacy BSP path, so MC_COLLIDE_ALL accumulation,
+// sphere-line edge fallback, backface culling, and all mc_info output fields behave the same way.
+// t_max mirrors model_collide_bsp()'s own length cap: bvh_visit_triangles()'s ray parametrization
+// reaches exactly Mc_p1 at t=1 (since Mc_direction = Mc_p1 - Mc_p0, unnormalized), matching
+// mc_check_face()'s own `dist > 1.0f` bound -- not Mc_mag, which is the equivalent bound in a
+// different (absolute-distance) unit that only happens to agree with the t=1 check because
+// Mc_direction's local-space magnitude equals Mc_mag by rigid-transform distance preservation (see
+// the Mc_mag comment near the top of this file).
+static void model_collide_bvh_triangle(bsp_collision_tree *tree, const bvh_tree *tbvh)
 {
-	if ( tree == nullptr || bvh == nullptr || bvh->nodes.empty() ) {
+	if ( tree == nullptr || tbvh == nullptr || tbvh->nodes.empty() ) {
 		return;
 	}
 
 	float t_max = (Mc->flags & MC_CHECK_RAY) ? FLT_MAX : 1.0f;
-	bvh_visit_leaves(*bvh, Mc_p0, Mc_direction, t_max, [tree](int32_t leaf_index) {
-		mc_check_bvh_leaf(tree, leaf_index);
-	});
+	// If a prior submodel in this same model_collide() call already found a hit, don't search this
+	// submodel's tree any farther than that -- matches mc_check_bvh_triangle()'s own former
+	// per-leaf `Mc->num_hits ? Mc->hit_dist : ...` seed, just hoisted to the whole traversal's
+	// initial bound instead of recomputed on every leaf.
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits) {
+		t_max = std::min(t_max, Mc->hit_dist);
+	}
+	// Real bug found and fixed 2026-08-29 via this same real-content parity test (see
+	// collision_bvh_rewrite_plan project notes): a sphere-line query's AABB test must be inflated
+	// by Mc->radius, matching mc_ray_boundingbox()'s handling for the legacy path -- without this,
+	// this traversal silently missed any leaf a sphere's swept volume would reach but the bare
+	// centerline ray-segment doesn't pass through.
+	float radius = (Mc->flags & MC_CHECK_SPHERELINE) ? Mc->radius : 0.0f;
+	// t_max is also this traversal's running nearest-hit prune bound -- see mc_check_bvh_triangle()
+	// and bvh_visit_triangles()'s own doc comments. The visitor tightens it in place as hits are
+	// found, so later leaves/nodes get pruned to only what could still be closer.
+	bvh_visit_triangles(*tbvh, Mc_p0, Mc_direction, t_max, radius,
+		[tree, tbvh](int32_t start, int32_t count, float &leaf_t_max) {
+			mc_check_bvh_triangle(tree, start, count, tbvh, leaf_t_max);
+		});
 }
 
 void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
@@ -1160,6 +1452,21 @@ void mc_check_subobj( int mn )
 			Mc->hit_submodel = Mc_submodel;
 			Mc->hit_bitmap = -1;
 			Mc->num_hits++;
+		} else if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (vm_vec_dist(&Mc_p0, &hitpt) >= Mc->hit_dist)) {
+			// A closer hit was already found (in an earlier-visited sibling submodel, or a
+			// parent) than this box's own nearest ray-entry point -- nothing inside this
+			// submodel's own geometry could possibly beat it, so skip testing it at all. Real
+			// framerate win on the whole-model, multi-submodel-recursion queries that dominate
+			// per-frame cost (weapon-vs-capital-ship hull, AI's ai_big_pick_attack_point() --
+			// self-documented as ~10% of AI frametime, turret hull-blocking checks, beams):
+			// these routinely recurse through 100+ submodels with no MC_SUBMODEL narrowing, and
+			// previously every submodel whose box the ray merely touched got a full BVH/BSP
+			// traversal regardless of whether a much closer hit already existed from a submodel
+			// visited earlier in traversal order. Not applied under MC_COLLIDE_ALL, which needs
+			// every hit, not just the nearest. Still falls through to check this submodel's
+			// children below (goto NoHit) -- a child's own box gets the identical check
+			// independently, this only skips the current submodel's own polygons/BVH.
+			goto NoHit;
 		} else {
 			// The ray intersects this bounding box, so we have to check all the
 			// polygons in this submodel.
@@ -1176,14 +1483,14 @@ void mc_check_subobj( int mn )
 					}
 				}
 
-				if (Cmdline_use_bvh_collision && lod_sm->bvh) {
-					model_collide_bvh(model_get_bsp_collision_tree(lod_sm->collision_tree_index), lod_sm->bvh.get());
+				if (Cmdline_use_triangle_collision && lod_sm->triangle_bvh) {
+					model_collide_bvh_triangle(model_get_bsp_collision_tree(lod_sm->collision_tree_index), lod_sm->triangle_bvh.get());
 				} else {
 					model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
 				}
 			} else {
-				if (Cmdline_use_bvh_collision && sm->bvh) {
-					model_collide_bvh(model_get_bsp_collision_tree(sm->collision_tree_index), sm->bvh.get());
+				if (Cmdline_use_triangle_collision && sm->triangle_bvh) {
+					model_collide_bvh_triangle(model_get_bsp_collision_tree(sm->collision_tree_index), sm->triangle_bvh.get());
 				} else {
 					model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
 				}
@@ -1255,6 +1562,11 @@ int model_collide(mc_info *mc_info_obj)
 	Mc->shield_hit_tri = -1;	// Assume we won't hit any shield polygons
 	Mc->hit_bitmap = -1;
 	Mc->edge_hit = false;
+
+	// Resolved once here, not re-tested per triangle by mc_check_bvh_triangle()'s hot loop -- see
+	// the Mc_triangle_face_test_fn declaration near the top of this file.
+	Mc_triangle_face_test_fn =
+		(Mc->flags & MC_CHECK_SPHERELINE) ? mc_check_triangle_sphereline_face : mc_check_triangle_face;
 
 	if ( (Mc->flags & MC_CHECK_SHIELD) && (Mc->flags & MC_CHECK_MODEL) )	{
 		Error( LOCATION, "Checking both shield and model!\n" );

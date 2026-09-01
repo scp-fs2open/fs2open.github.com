@@ -983,8 +983,6 @@ add_file_folder("Model BVH"
 	model/modelbvh.cpp
 	model/modelbvh_extract.h
 	model/modelbvh_extract.cpp
-	model/modelbvh_leafindex.h
-	model/modelbvh_leafindex.cpp
 )
 
 # Model Animation files
