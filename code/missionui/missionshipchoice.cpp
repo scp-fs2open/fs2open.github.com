@@ -10,6 +10,8 @@
 
 
 
+#include <algorithm>
+
 #include "ai/aigoals.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
@@ -1897,7 +1899,7 @@ bool check_for_gaps_in_weapon_slots()
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
 commit_pressed_status commit_pressed(bool API_Access)
 {
-	int j, player_ship_info_index;
+	int player_ship_info_index;
 	
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
@@ -1932,20 +1934,17 @@ commit_pressed_status commit_pressed(bool API_Access)
 	int num_required_weapons = 0;
 	int num_satisfied_weapons = 0;
 	SCP_string weapon_list;
-	for (j=0; j<weapon_info_size(); j++)
+	for (int weapon_class : Team_data[Common_team].required_weapons)
 	{
-		if (Team_data[Common_team].weapon_required[j])
-		{
-			// add it to the message list
-			num_required_weapons++;
-			if (num_required_weapons > 1)
-				weapon_list.append(1, EOLN);
-			weapon_list.append(Weapon_info[j].get_display_name());
+		// add it to the message list
+		num_required_weapons++;
+		if (num_required_weapons > 1)
+			weapon_list.append(1, EOLN);
+		weapon_list.append(Weapon_info[weapon_class].get_display_name());
 
-			// see if it's carried by any ship
-			if (is_weapon_carried(j))
-				num_satisfied_weapons++;
-		}
+		// see if it's carried by any ship
+		if (is_weapon_carried(weapon_class))
+			num_satisfied_weapons++;
 	}
 	if (num_satisfied_weapons < num_required_weapons)
 	{
@@ -2793,19 +2792,21 @@ void ss_reset_selected_ship()
 
 // There may be ships that are in wings but not in Team_data[0].  Since we still want to show those
 // icons in the ship selection list, the code below checks for these cases.  If a ship is found in
-// a wing, and is not in Team_data[0], it is appended to the end of the ship_count[] and ship_list[] arrays
-// that are in Team_data[0]
+// a wing, and is not in Team_data[0], it is appended to the end of the ship_choices list
+// that is in Team_data[0]
 //
 // exit: number of distinct ship classes available to choose from
 int ss_fixup_team_data(team_data *tdata)
 {
-	int i, j, k, ship_in_parse_player, list_size;
+	int i, j;
 	p_object		*p_objp;
-	team_data	*p_team_data;
+	team_data	*p_team_data = tdata;
 
-	p_team_data = tdata;
-	ship_in_parse_player = 0;
-	list_size = p_team_data->num_ship_choices;
+	auto append_class = [p_team_data](int ship_class) {
+		auto &entry = p_team_data->ship_choices.emplace_back();
+		entry.class_index = ship_class;
+		entry.count = 0;
+	};
 
 	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
 		wing *wp;
@@ -2813,21 +2814,9 @@ int ss_fixup_team_data(team_data *tdata)
 			continue;
 		wp = &Wings[Starting_wings[i]];
 		for ( j = 0; j < wp->current_count; j++ ) {
-			ship_in_parse_player = 0;
-			
-			for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
-				Assert( p_team_data->ship_count[k] >= 0 );
-				if ( p_team_data->ship_list[k] == Ships[wp->ship_index[j]].ship_info_index ) {
-					ship_in_parse_player = 1;
-					break;
-				}
-			}	// end for, go to next item in parse player
-
-			if ( !ship_in_parse_player ) {
-				p_team_data->ship_count[list_size] = 0;
-				p_team_data->ship_list[list_size] = Ships[wp->ship_index[j]].ship_info_index;
-				p_team_data->num_ship_choices++;
-				list_size++;
+			if ( !std::any_of(p_team_data->ship_choices.begin(), p_team_data->ship_choices.end(),
+					[&](const auto &e) { return e.class_index == Ships[wp->ship_index[j]].ship_info_index; }) ) {
+				append_class(Ships[wp->ship_index[j]].ship_info_index);
 			}
 		}	// end for, go get next ship in wing
 
@@ -2835,61 +2824,34 @@ int ss_fixup_team_data(team_data *tdata)
 
 			for ( p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp) ) {
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
-					ship_in_parse_player = 0;
-			
-					for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
-						Assert( p_team_data->ship_count[k] >= 0 );
-						if ( p_team_data->ship_list[k] == p_objp->ship_class ) {
-							ship_in_parse_player = 1;
-							break;
-						}
-					}	// end for, go to next item in parse player
-
-					if ( !ship_in_parse_player ) {
-						p_team_data->ship_count[list_size] = 0;
-						p_team_data->ship_list[list_size] = p_objp->ship_class;
-						p_team_data->num_ship_choices++;
-						list_size++;
+					if ( !std::any_of(p_team_data->ship_choices.begin(), p_team_data->ship_choices.end(),
+							[&](const auto &e) { return e.class_index == p_objp->ship_class; }) ) {
+						append_class(p_objp->ship_class);
 					}
 				}
 			}
 		}
 	}	// end for, go to next wing
 
-	if ( list_size == 0 ) {
-		// ensure that the default player ship is in the ship_list too
-		ship_in_parse_player = 0;
-		for ( k = 0; k < p_team_data->num_ship_choices; k++ ) {
-			Assert( p_team_data->ship_count[k] >= 0 );
-			if ( p_team_data->ship_list[k] == p_team_data->default_ship ) {
-				ship_in_parse_player = 1;
-				break;
-			}
-		}
-		if ( !ship_in_parse_player ) {
-			p_team_data->ship_count[list_size] = 0;
-			p_team_data->ship_list[list_size] = p_team_data->default_ship;
-			p_team_data->num_ship_choices++;
-			list_size++;
-		}
+	if ( p_team_data->ship_choices.empty() && p_team_data->default_ship >= 0 ) {
+		// ensure that the default player ship is in the choices too
+		append_class(p_team_data->default_ship);
 	}
 
-	return list_size;
+	return sz2i(p_team_data->ship_choices.size());
 }
 
 // set numbers of ships in pool to default values
 void ss_init_pool(team_data *pteam)
 {
-	int i;
-
 	Assert( Ss_pool != NULL );
 
 	Ss_pool->clear();
 
 	// set number of available ships based on counts in team_data
 	// (auto-insert starts new entries at 0, so classes listed with a count of 0 stay in the pool as exhausted)
-	for ( i = 0; i < pteam->num_ship_choices; i++ ) {
-		(*Ss_pool)[pteam->ship_list[i]] += pteam->ship_count[i];
+	for ( auto &entry : pteam->ship_choices ) {
+		(*Ss_pool)[entry.class_index] += entry.count;
 	}
 }
 

@@ -115,28 +115,40 @@ void update_custom_wing_indexes()
 		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
 }
 
-void generate_weaponry_usage_list_team(int team, int* arr)
+void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage)
 {
 	int i;
 
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		arr[i] = 0;
+	if (wing_num < 0) {
+		return;
 	}
+
+	i = Wings[wing_num].wave_count;
+	while (i--) {
+		usage[Ships[Wings[wing_num].ship_index[i]].ship_info_index]++;
+	}
+}
+
+void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage)
+{
+	int i;
+
+	usage.clear();
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		Assert(team >= 0 && team < MAX_TVT_TEAMS);
 
 		for (i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], arr);
+			generate_weaponry_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], usage);
 		}
 	} else {
 		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list_wing(Starting_wings[i], arr);
+			generate_weaponry_usage_list_wing(Starting_wings[i], usage);
 		}
 	}
 }
 
-void generate_weaponry_usage_list_wing(int wing_num, int* arr)
+void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage)
 {
 	int i, j;
 	ship_weapon* swp;
@@ -150,20 +162,17 @@ void generate_weaponry_usage_list_wing(int wing_num, int* arr)
 		swp = &Ships[Wings[wing_num].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 &&
-				swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->primary_bank_weapons[j]]++;
+			if (Weapon_info.in_bounds(swp->primary_bank_weapons[j])) {
+				usage[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >= 0 &&
-				swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->secondary_bank_weapons[j]] +=
-					(int)floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f /
-								   Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) +
-							   0.5f);
+			if (Weapon_info.in_bounds(swp->secondary_bank_weapons[j])) {
+				usage[swp->secondary_bank_weapons[j]] +=
+					sz2i(floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f /
+								   Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f));
 			}
 		}
 	}

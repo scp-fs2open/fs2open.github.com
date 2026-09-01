@@ -32,6 +32,7 @@
 #include "math/vecmat.h"
 #include "model/model.h"
 #include "model/modelbvh_extract.h"
+#include "model/modelinterp.h"
 #include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "model/modelsinc.h"
@@ -3508,11 +3509,16 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 	for (i = 0; i < pm->n_models; ++i) {
-		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+		auto* sm = &pm->submodel[i];
+		sm->collision_tree_index = model_create_bsp_collision_tree();
 
-		Macro_ubyte_bounds = pm->submodel[i].bsp_data.get() + pm->submodel[i].bsp_data_size;
-		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data.get(), pm->version);
+		auto* bsp_data = sm->bsp_data.get();
+		Macro_ubyte_bounds = bsp_data + sm->bsp_data_size;
+		if (Cmdline_spew_pof_info) {
+			sm->num_polys = bsp_data != nullptr ? submodel_get_num_polys_sub(bsp_data) : 0;
+		}
+		auto* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
+		model_collide_parse_bsp(tree, bsp_data, pm->version);
 		Macro_ubyte_bounds = nullptr;
 
 		// The authored `rad` (read verbatim from the .pof, see bsp_info::rad) can undershoot a
@@ -3542,6 +3548,12 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				pm->submodel[i].triangle_bvh = std::make_shared<bvh_tree>(bvh_build(std::move(tris)));
 			}
 		}
+	}
+
+	// clear bsp_data cache
+	for (i = 0; i < pm->n_models; ++i) {
+		pm->submodel[i].bsp_data.reset();
+		pm->submodel[i].bsp_data_size = 0;
 	}
 
 	// Find the core_radius... the minimum of 
