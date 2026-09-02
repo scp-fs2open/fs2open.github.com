@@ -176,7 +176,7 @@ namespace
 
 			if (temp < 0.0f)
 			{
-				error_display(0, "Invalid tab spacing %f. Has to be greater or equal to zero.", temp);
+				error_display(0, "Invalid tab width %f! Has to be greater than or equal to zero.", temp);
 			}
 			else
 			{
@@ -191,7 +191,7 @@ namespace
 
 			if (temp < 0.0f)
 			{
-				error_display(0, "Invalid letter spacing %f! Has to be greater or equal to zero.", temp);
+				error_display(0, "Invalid letter spacing %f! Has to be greater than or equal to zero.", temp);
 			}
 			else
 			{
@@ -424,6 +424,21 @@ namespace
 			font->setBottomOffset(temp);
 		}
 
+		if (optional_string("+Tab width:"))
+		{
+			float temp;
+			stuff_float(&temp);
+
+			if (temp < 0.0f)
+			{
+				error_display(0, "Invalid tab width %f! Has to be greater than or equal to zero.", temp);
+			}
+			else
+			{
+				font->setTabWidth(temp);
+			}
+		}
+
 		// Make sure that the height is not invalid
 		font->computeFontMetrics();
 
@@ -651,7 +666,7 @@ namespace font
 		{
 			if (fontNum < 0 || fontNum >= FontManager::numberOfFonts())
 			{
-				error_display(0, "Invalid font number %d! must be greater or equal to zero and smaller than %d.", fontNum, FontManager::numberOfFonts());
+				error_display(0, "Invalid font number %d! Must be greater than or equal to zero and smaller than %d.", fontNum, FontManager::numberOfFonts());
 				font_idx = -1;
 			}
 			else
@@ -693,7 +708,7 @@ namespace font
 	*
 	* @return	The character width.
 	*/
-	int get_char_width_old(fo::font* fnt, ubyte c1, ubyte c2, int *width, int* spacing)
+	int get_char_width_old(const fo::font* fnt, ubyte c1, ubyte c2, int *width, int* spacing)
 	{
 		int i, letter;
 
