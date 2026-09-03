@@ -1695,16 +1695,17 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil, weaponclass TargetWeaponclass=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
 	float priority = 1.0f;	// default to PLAYER_PRIORITY_SHIP
 	int sclass = -1;
 	int stype = -1;
+	int wip_index = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
+	int n_args = ade_get_args(L, "oo|oofooo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype), l_Weaponclass.Get(&wip_index));
 	if (n_args < 2)
 		return ADE_RETURN_NIL;
 	bool omitted_priority = (n_args < 5);
@@ -1967,6 +1968,25 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 				ai_mode = AI_GOAL_CHASE_SHIP_TYPE;
 				ai_shipname = Ship_types[stype].name;
 				ai_submode = SM_ATTACK;
+			}
+			break;
+		}
+		case LE_ORDER_DESTROY_TURRET_TYPE:
+		{
+			if (wip_index >= 0)
+			{
+				ai_mode = AI_GOAL_DESTROY_TURRET_TYPE;
+				int_data = wip_index;
+			}
+			break;
+		}
+		case LE_ORDER_DESTROY_TURRET_TYPE_ON_SHIP:
+		{
+			if (wip_index >= 0 && tgh_valid && tgh->objp()->type == OBJ_SHIP)
+			{
+				ai_mode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
+				ai_shipname = Ships[tgh->objp()->instance].ship_name;
+				int_data = wip_index;
 			}
 			break;
 		}

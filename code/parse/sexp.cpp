@@ -887,6 +887,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead",					OP_AI_PLAY_DEAD,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead-persistent",		OP_AI_PLAY_DEAD_PERSISTENT,				1,	1,			SEXP_GOAL_OPERATOR, },
+	{ "ai-destroy-turret-type",			OP_AI_DESTROY_TURRET_TYPE,				2,	3,			SEXP_GOAL_OPERATOR, },
+	{ "ai-destroy-turret-type-on-ship",	OP_AI_DESTROY_TURRET_TYPE_ON_SHIP,		3,	4,			SEXP_GOAL_OPERATOR, },
 
 	{ "goals",							OP_GOALS_ID,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 
@@ -948,6 +950,8 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING },
 	{ AI_GOAL_FLY_TO_SHIP, OP_AI_FLY_TO_SHIP },
 	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
+	{ AI_GOAL_DESTROY_TURRET_TYPE, OP_AI_DESTROY_TURRET_TYPE },
+	{ AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP, OP_AI_DESTROY_TURRET_TYPE_ON_SHIP },
 };
 
 SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
@@ -32075,6 +32079,8 @@ int query_operator_return_type(int op)
 		case OP_AI_FORM_ON_WING:
 		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
+		case OP_AI_DESTROY_TURRET_TYPE:
+		case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
 			return OPR_AI_GOAL;
 
 		case OP_ANY_OF:
@@ -33090,6 +33096,24 @@ int query_operator_argument_type(int op_index, int argnum)
 			if (argnum == 0)
 				return OPF_SHIP_TYPE;
 			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_DESTROY_TURRET_TYPE:
+			if (argnum == 0)
+				return OPF_WEAPON_NAME;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
+			if (argnum == 0)
+				return OPF_WEAPON_NAME;
+			else if (argnum == 1)
+				return OPF_SHIP;
+			else if (argnum == 2)
 				return OPF_POSITIVE;
 			else
 				return OPF_BOOL;
@@ -37313,6 +37337,8 @@ int get_category(int op_id)
 		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
+		case OP_AI_DESTROY_TURRET_TYPE:
+		case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
 			return OP_CATEGORY_AI;
 
 		case OP_GOALS_ID:
@@ -39933,6 +39959,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
 		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
+	},
+
+	{ OP_AI_DESTROY_TURRET_TYPE, "Ai-destroy-turret-type (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all enemy turrets in the mission that "
+		"are carrying a specified weapon."
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
+	},
+
+	{ OP_AI_DESTROY_TURRET_TYPE_ON_SHIP, "Ai-destroy-turret-type-on-ship (Ship/wing goal)\r\n"
+		"\tThis AI goal causes a ship/wing to destroy all turrets on a specified ship that "
+		"are carrying a specified weapon."
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
+		"\t2:\tName of ship to target\r\n"
+		"\t3:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
 		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 

@@ -675,6 +675,10 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 					str = "ai-chase-ship-type";
 					break;
 
+				case AI_GOAL_DESTROY_TURRET_TYPE:
+					str = "ai-destroy-turret-type";
+					break;
+
 				case AI_GOAL_GUARD:
 					str = "ai-guard";
 					break;
@@ -697,6 +701,10 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 
 				case AI_GOAL_DISARM_SHIP_TACTICAL:
 					str = "ai-disarm-ship-tactical";
+					break;
+
+				case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
+					str = "ai-destroy-turret-type-on-ship";
 					break;
 
 				case AI_GOAL_IGNORE:
