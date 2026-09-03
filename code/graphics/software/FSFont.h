@@ -46,6 +46,7 @@ namespace font
 		bool canScale = false;			//!< If the font is allowed to scale with the user font multiplier
 		float offsetTop = 0.0f;			//!< The offset at the top of a line of text
 		float offsetBottom = 0.0f;		//!< The offset at the bottom of a line of text
+		float tabWidth = 20.0f;			//!< The width of a tab character in pixels (before scaling)
 
 		float _height = 0.0f;
 		float _ascender = 0.0f;
@@ -207,6 +208,13 @@ namespace font
 		float getBottomOffset() const;
 
 		/**
+		* @brief	Gets the width of a tab character for this font, in unscaled pixels
+		*
+		* @return	The tab width.
+		*/
+		float getTabWidth() const;
+
+		/**
 		* @brief    Sets the auto scaling behavior for VFNTs
 		*
 		* @date     24.1.2025
@@ -243,6 +251,13 @@ namespace font
 		* @param	newOffset The new bottom offset for this font
 		*/
 		void setBottomOffset(float newOffset);
+
+		/**
+		* @brief	Sets the tab width for this font, in unscaled pixels
+		*
+		* @param	newTabWidth The new tab width for this font
+		*/
+		void setTabWidth(float newTabWidth);
 
 		/**
 		 * @brief Recomputes the font metrics
