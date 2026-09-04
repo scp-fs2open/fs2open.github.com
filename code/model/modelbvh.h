@@ -140,18 +140,15 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 // unconditionally" strategy, same scalar-gather-then-vector-math shape.
 //
 // NOT WIRED INTO THE LIVE COLLISION PATH -- correctness-tested (SphereTriangleLeafSimdTests in
-// test_modelbvh.cpp) but slower on real ship geometry than the scalar path it was meant to replace
-// (see collision_bvh_rewrite_plan memory note for benchmark numbers). Root cause: unlike
-// ray-triangle's Moller-Trumbore, which is already near-flat-cost per triangle regardless of
-// outcome, the scalar reference this batches (fvi_sphere_plane() + fvi_polyedge_sphereline() via
-// mc_check_triangle_sphereline_face()) has a cheap early-exit that matters a lot in practice --
-// fvi_sphere_plane() failing skips the entire expensive edge test, which is the common case for most
-// triangles in an AABB-pruned leaf. "Every lane computed unconditionally" throws that away: this
-// function pays the full 3-edge quadratic-plus-vertex-fallback cost for every triangle in every
-// leaf, where the scalar path usually bails out after one cheap plane test. Kept in the tree as a
-// validated (correct, just not fast) building block for a future redesign with a cheap per-chunk
-// pre-gate (e.g. a fvi_sphere_plane-only pass to skip the edge lambda for chunks where no lane needs
-// it), not because it's currently useful as-is.
+// test_modelbvh.cpp) but has not been re-benchmarked against the scalar path it was meant to
+// replace since a chunk-level pre-gate was added (see collision_bvh_rewrite_plan memory note for
+// prior benchmark numbers, from before the pre-gate existed). The batched fvi_sphere_plane() face
+// test below computes an `active[]` mask per lane; the 3 edge tests (by far the expensive part --
+// unlike ray-triangle's Moller-Trumbore, which is near-flat-cost regardless of outcome, the scalar
+// reference's edge fallback is what a cheap plane-test failure usually avoids paying for) now run
+// only when at least one lane in the BVH_N chunk has `active[i]` set, skipping all 3 entirely for a
+// chunk where nothing could possibly need them. Still kept unwired from the live collision path
+// pending that re-measurement.
 //
 // A moving sphere against a triangle is the classic "sphere at each vertex, cylinder along each
 // edge, slab for the face" case (see e.g. Real-Time Rendering's collision-detection chapter), and

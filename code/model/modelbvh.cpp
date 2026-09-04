@@ -869,11 +869,27 @@ bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t coun
 			on_face[i] = check_face && bary_ok;
 		}
 
-		bool edgeHit0[BVH_N], edgeHit1[BVH_N], edgeHit2[BVH_N];
+		// Chunk-level pre-gate: test_edge()'s 3 calls are the expensive part of this function (a
+		// stage-1 quadratic, a stage-2 quadratic, and a vertex fallback, all unconditional-per-lane
+		// by design -- see test_edge()'s own comment). Below, edgeHitN[i] is only ever read when
+		// check_edges (== active[i]) is true, so if not one single lane in this chunk has active[i]
+		// set, none of that work can change the result -- skip all 3 edge calls for the whole chunk.
+		// This is the batched fvi_sphere_plane() test above actually being used to prune, not just
+		// computed and discarded; without it, every chunk pays full edge-test cost regardless of
+		// whether any lane in it was ever a real candidate (this is the root cause behind
+		// sphere_triangle_leaf_simd() measuring slower than the scalar path it was meant to replace
+		// -- see the doc comment on this function's declaration in modelbvh.h).
+		bool any_active = false;
+		for (int i = 0; i < BVH_N; ++i)
+			any_active |= active[i];
+
+		bool edgeHit0[BVH_N] = {}, edgeHit1[BVH_N] = {}, edgeHit2[BVH_N] = {};
 		float edgeTime0[BVH_N], edgeTime1[BVH_N], edgeTime2[BVH_N];
-		test_edge(v0x, v0y, v0z, v1x, v1y, v1z, edgeHit0, edgeTime0);
-		test_edge(v1x, v1y, v1z, v2x, v2y, v2z, edgeHit1, edgeTime1);
-		test_edge(v2x, v2y, v2z, v0x, v0y, v0z, edgeHit2, edgeTime2);
+		if (any_active) {
+			test_edge(v0x, v0y, v0z, v1x, v1y, v1z, edgeHit0, edgeTime0);
+			test_edge(v1x, v1y, v1z, v2x, v2y, v2z, edgeHit1, edgeTime1);
+			test_edge(v2x, v2y, v2z, v0x, v0y, v0z, edgeHit2, edgeTime2);
+		}
 
 		for (int i = 0; i < BVH_N; ++i) {
 			bool check_edges = active[i]; // == fvi_ok, see header comment derivation
