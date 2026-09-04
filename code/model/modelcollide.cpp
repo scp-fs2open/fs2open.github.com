@@ -23,9 +23,6 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 
-#define TOL		1E-4
-#define DIST_TOL	1.0
-
 // Some global variables that get set by model_collide and are used internally for
 // checking a collision rather than passing a bunch of parameters around. These are
 // not persistant between calls to model_collide
@@ -117,205 +114,11 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 
 
 
-// Computes a polygon's normal directly from its own vertices (Newell's method -- a single O(n)
-// pass, robust for near-planar input and not limited to triangles), rather than trusting a
-// stored "plane_norm" field. The POF chunk's own plane-normal field is parsed verbatim from the
-// .pof file (exporter output, never validated against the vertices it's attached to) and can
-// diverge from the true geometric normal by a large margin on real content, which flips
-// backface-cull decisions and solves the ray against a tilted, wrong plane.
-//
-// Falls back to the caller-supplied stored normal only when the computed one is degenerate
-// (near-zero magnitude -- a truly zero-area or collinear polygon, where there's nothing
-// meaningful to compute from the vertices).
-static vec3d mc_compute_geometric_normal(int nv, vec3d **verts, const vec3d *stored_norm)
-{
-	vec3d n = vmd_zero_vector;
-	for (int i = 0; i < nv; ++i) {
-		const vec3d *a = verts[i];
-		const vec3d *b = verts[(i + 1) % nv];
-		n.xyz.x += (a->xyz.y - b->xyz.y) * (a->xyz.z + b->xyz.z);
-		n.xyz.y += (a->xyz.z - b->xyz.z) * (a->xyz.x + b->xyz.x);
-		n.xyz.z += (a->xyz.x - b->xyz.x) * (a->xyz.y + b->xyz.y);
-	}
-
-	if (vm_vec_normalize_safe(&n, true) <= 0.0f) {
-		return *stored_norm;
-	}
-	return n;
-}
-
-// ----------------------------------------------------------------------------------------------------------
-// check face with spheres
-//
-//	inputs:	nv				=>		number of vertices
-//				verts			=>		array of vertices
-//				plane_pnt	=>		center point in plane (about which radius is measured)
-//				face_rad		=>		radius of face 
-//				plane_norm	=>		normal of face
-static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt, vec3d * plane_norm, uv_pair * uvl_list, int ntmap)
-{
-	vec3d	hit_point;
-	float		u, v;
-	float		delta_t;			// time sphere takes to cross from one side of plane to the other
-	float		face_t;			// time at which face touches plane
-									// NOTE all times are normalized so that t = 1.0 at the end of the frame
-	int		check_face = 1;		// assume we'll check the face.
-	int		check_edges = 1;		// assume we'll check the edges.
-
-	// Use the polygon's own geometry, not the (possibly badly wrong) authored plane_norm --
-	// see mc_compute_geometric_normal() above. Shadowing the parameter means every use below
-	// picks up the fix.
-	vec3d geo_norm = mc_compute_geometric_normal(nv, verts, plane_norm);
-	plane_norm = &geo_norm;
-
-	// Check to see if poly is facing away from ray.  If so, don't bother
-	// checking it.
-
-	if (!(Mc->flags & MC_COLLIDE_ALL) && vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
-		return;
-	}
-
-	// Find the intersection of this sphere with the plane of the poly
-	if ( !fvi_sphere_plane( &hit_point, &Mc_p0, &Mc_direction, Mc->radius, plane_norm, plane_pnt, &face_t, &delta_t ) ) {
-		return;
-	}
-
-	// If the ray is behind the plane there is no collision
-	if (face_t > 1.0f) {
-		check_face = 0;
-		check_edges = 0;
-	} else if (face_t < 0.0f) {
-		check_face = 0;
-
-		// check whether sphere can hit edge in allowed time range
-		if ( (face_t + delta_t) < 0.0f)
-			check_edges = 0;
-	}
-
-	// If the ray hits, but a closer intersection has already been found, don't check face
-	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (face_t >= Mc->hit_dist ) ) {
-		check_face = 0;		// The ray isn't long enough to intersect the plane
-	}
-
-
-	//vec3d temp_sphere;
-	//vec3d temp_dir;
-	//float temp_dist;
-	// DA 11/5/97  Above is used to test distance between hit_point and sphere_hit_point.
-	// This can be as large as 0.003 on a unit sphere.  I suspect that with larger spheres,
-	// both the relative and absolute error decrease, but this should still be checked for the
-	// case of larger spheres (about 5-10 units).  The error also depends on the geometry of the 
-	// object we're colliding against, but I think to a lesser degree.
-
-	if ( check_face )	{
-		// Find the time of the sphere surface touches the plane
-		// If this is within the collision window, check to see if we hit a face
-		if ( fvi_point_face(&hit_point, nv, verts, plane_norm, &u, &v, uvl_list) ) {
-
-			Mc->hit_dist = face_t;
-			Mc->hit_point = hit_point;
-			Mc->hit_normal = *plane_norm;
-			Mc->hit_submodel = Mc_submodel;			
-			Mc->edge_hit = false;
-
-			if (Mc->flags & MC_COLLIDE_ALL) {
-				Mc->hit_points_all.push_back(hit_point);
-				Mc->hit_submodels_all.push_back(Mc_submodel);
-			}
-
-			if ( uvl_list )	{
-				Mc->hit_u = u;
-				Mc->hit_v = v;
-				if ( ntmap < 0 ) {
-					Mc->hit_bitmap = -1;
-				} else {
-					Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
-				}
-			}
-
-			Mc->hit_tmap_num = ntmap;
-
-			Mc->num_hits++;
-			check_edges = 0;
-			/*
-			vm_vec_scale_add( &temp_sphere, &Mc_p0, &Mc_direction, Mc->hit_dist );
-			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
-			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
-				// get Andsager
-				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
-			}
-			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
-			// Assert( vm_vec_dot( &temp_dir, &Mc_direction ) > 0 );
-			*/
-		}
-	}
-
-
-	if ( check_edges ) {
-		// Either (face_t) is out of range or we miss the face
-		// Check for sphere hitting edge
-
-		// If checking shields, we *still* need to check edges
-
-		// this is where we need another test to cull checking for edges
-		// PUT TEST HERE
-
-		// check each edge to see if we hit, find the closest edge
-		// Mc->hit_dist stores the best edge time of *all* faces
-		float sphere_time;
-		if ( fvi_polyedge_sphereline(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, nv, verts, &sphere_time)) {
-			Assert( sphere_time >= 0.0f );
-			/*
-			vm_vec_scale_add( &temp_sphere, &Mc_p0, &Mc_direction, sphere_time );
-			temp_dist = vm_vec_dist( &temp_sphere, &hit_point );
-			if ( (temp_dist - DIST_TOL > Mc->radius) || (temp_dist + DIST_TOL < Mc->radius) ) {
-				// get Andsager
-				//mprintf(("Estimated radius error: Estimate %f, actual %f Mc->radius\n", temp_dist, Mc->radius));
-			}
-			vm_vec_sub( &temp_dir, &hit_point, &temp_sphere );
-//			Assert( vm_vec_dot( &temp_dir, &Mc_direction ) > 0 );
-			*/
-
-			if ((Mc->flags & MC_COLLIDE_ALL) || (Mc->num_hits==0) || (sphere_time < Mc->hit_dist) ) {
-				// This is closer than best so far
-				Mc->hit_dist = sphere_time;
-				Mc->hit_point = hit_point;
-				Mc->hit_normal = *plane_norm;
-				Mc->hit_submodel = Mc_submodel;
-				Mc->edge_hit = true;
-
-				if (Mc->flags & MC_COLLIDE_ALL) {
-					Mc->hit_points_all.push_back(hit_point);
-					Mc->hit_submodels_all.push_back(Mc_submodel);
-				}
-
-				if ( ntmap < 0 ) {
-					Mc->hit_bitmap = -1;
-				} else {
-					Mc->hit_bitmap = Mc_pm->maps[ntmap].textures[TM_BASE_TYPE].GetTexture();
-				}
-
-				Mc->num_hits++;
-
-			//	nprintf(("Physics", "edge sphere time: %f, normal: (%f, %f, %f) hit_point: (%f, %f, %f)\n", sphere_time,
-			//		Mc->hit_normal.xyz.x, Mc->hit_normal.xyz.y, Mc->hit_normal.xyz.z,
-			//		hit_point.xyz.x, hit_point.xyz.y, hit_point.xyz.z));
-			} else  {	// Not best so far
-				Assert(Mc->num_hits>0);
-				Mc->num_hits++;
-			}
-		}
-	}
-}
-
-// Triangle-granularity face test: takes a single triangle's own 3 verts/UVs instead of an n-gon's
-// full vertex list. Uses the triangle's own exact plane (cross product of its two edges -- always
-// planar for 3 points, no Newell averaging needed, unlike mc_compute_geometric_normal()'s n-gon
-// case) for backface cull and the ray/plane solve, and a direct barycentric containment test
-// instead of fvi_point_face's
-// dominant-axis-projection point-in-polygon test (equivalent result, no need for that generality
-// with a fixed 3-vertex input). `has_uv`/`ntmap` mirror the n-gon face test's own uvl_list/ntmap
-// convention -- has_uv==false for a flat (untextured) polygon.
+// Triangle-granularity face test: takes a single triangle's own 3 verts/UVs. Uses the triangle's own
+// exact plane (cross product of its two edges -- always planar for 3 points) for backface cull and
+// the ray/plane solve, and a direct barycentric containment test instead of a dominant-axis-
+// projection point-in-polygon test. `has_uv`/`ntmap` mirror the flat-poly convention used elsewhere
+// in this file -- has_uv==false for a flat (untextured) polygon.
 static void mc_check_triangle_face(const vec3d &v0, const vec3d &v1, const vec3d &v2, const bvh_uv &uv0,
 	const bvh_uv &uv1, const bvh_uv &uv2, bool has_uv, int ntmap)
 {
@@ -523,13 +326,11 @@ bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d 
 	return found;
 }
 
-// Triangle-granularity sibling of mc_check_sphereline_face() above. Mirrors its structure (face
-// test via the sphere-vs-plane touch time, then an edge fallback) exactly, but against the
-// triangle's own exact plane/edges instead of an n-gon's. The edge fallback deliberately checks
-// this triangle's own 3 edges, unconditionally -- including whichever edge may be a
-// fan-triangulation diagonal rather than a true polygon boundary. Also mirrors
-// mc_check_sphereline_face(): the edge-hit branch does not set Mc->hit_tmap_num (only the face-hit
-// branch does).
+// Sphereline sibling of mc_check_triangle_face() above: a sphere-vs-plane touch-time face test, then
+// an edge fallback against the triangle's own exact plane/edges. The edge fallback deliberately
+// checks this triangle's own 3 edges, unconditionally -- including whichever edge may be a
+// fan-triangulation diagonal rather than a true polygon boundary. The edge-hit branch does not set
+// Mc->hit_tmap_num (only the face-hit branch does).
 static void mc_check_triangle_sphereline_face(const vec3d &v0, const vec3d &v1, const vec3d &v2, const bvh_uv &uv0,
 	const bvh_uv &uv1, const bvh_uv &uv2, bool has_uv, int ntmap)
 {
