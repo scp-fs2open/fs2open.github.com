@@ -675,7 +675,11 @@ static bool mc_check_bvh_triangle_candidate(const bvh_tree *tbvh, int32_t tri_in
 	vec3d v1 = tbvh->vertex(tbvh->i1[idx]);
 	vec3d v2 = tbvh->vertex(tbvh->i2[idx]);
 
+	int prior_num_hits = Mc->num_hits;
 	Mc_triangle_face_test_fn(v0, v1, v2, tbvh->uv0[idx], tbvh->uv1[idx], tbvh->uv2[idx], !flat_poly, ntmap);
+	if (Mc->num_hits != prior_num_hits) {
+		Mc->hit_bvh_original_index = tbvh->original_index[idx];
+	}
 	return true;
 }
 
@@ -699,7 +703,10 @@ static void mc_check_bvh_triangle(int32_t start, int32_t count, const bvh_tree *
 	// already resolved via Mc_submodel) -- hoisted out of the per-candidate hot loop below instead
 	// of re-read from Mc/Mc_pm on every single triangle.
 	bool check_invisible_faces = (Mc->flags & MC_CHECK_INVISIBLE_FACES) != 0;
-	bool collide_invisible = Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible];
+	// Mc_submodel is -1 while checking the shield BVH (see mc_check_shield()) -- there's no
+	// Collide_invisible analogue for shields, so treat it as false rather than indexing submodel[-1].
+	bool collide_invisible =
+		(Mc_submodel >= 0) && Mc_pm->submodel[Mc_submodel].flags[Model::Submodel_flags::Collide_invisible];
 
 	if (!sphereline && !collide_all) {
 		float best_t = t_max;
@@ -1072,135 +1079,32 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 	tree->n_verts = n_verts;
 }
 
-bool mc_shield_check_common(shield_tri	*tri)
-{
-	vec3d * points[3];
-	vec3d hitpoint;
-	 
-	float dist;
-	float sphere_check_closest_shield_dist = FLT_MAX;
-
-	// Check to see if Mc_pmly is facing away from ray.  If so, don't bother
-	// checking it.
-	if (vm_vec_dot(&Mc_direction,&tri->norm) > 0.0f)	{
-		return false;
-	}
-	// get the vertices in the form the next function wants them
-	for (int j = 0; j < 3; j++ )
-		points[j] = &Mc_pm->shield.verts[tri->verts[j]].pos;
-
-	if (!(Mc->flags & MC_CHECK_SPHERELINE) ) {	// Don't do this test for sphere colliding against shields
-		// Find the intersection of this ray with the plane that the Mc_pmly
-		// lies in
-		dist = fvi_ray_plane(NULL, points[0],&tri->norm,&Mc_p0,&Mc_direction,0.0f);
-
-		if ( dist < 0.0f ) return false; // If the ray is behind the plane there is no collision
-		if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) ) return false; // The ray isn't long enough to intersect the plane
-
-		// Find the hit Mc_pmint
-		vm_vec_scale_add( &hitpoint, &Mc_p0, &Mc_direction, dist );
-	
-		// Check to see if the Mc_pmint of intersection is on the plane.  If so, this
-		// also finds the uv's where the ray hit.
-		if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
-			Mc->hit_dist = dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
-			Mc->hit_point = hitpoint;
-			Mc->hit_normal = tri->norm;
-			Mc->hit_submodel = -1;
-			Mc->num_hits++;
-			return true;		// We hit, so we're done
-		}
-	} else {		// Sphere check against shield
-					// This needs to look at *all* shield tris and not just return after the first hit
-
-		// HACK HACK!! The 10000.0 is the face radius, I didn't know this,
-		// so I'm assume 10000 would be as big as ever.
-		mc_check_sphereline_face(3, points, points[0], &tri->norm, NULL, 0);
-		if (Mc->num_hits && Mc->hit_dist < sphere_check_closest_shield_dist) {
-
-			// same behavior whether face or edge
-			// normal, edge_hit, hit_point all updated thru sphereline_face
-			sphere_check_closest_shield_dist = Mc->hit_dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
-			Mc->hit_submodel = -1;
-			Mc->num_hits++;
-			return true;		// We hit, so we're done
-		}
-	} // Mc->flags & MC_CHECK_SPHERELINE else
-
-	return false;
-}
-
-bool mc_check_sldc(int offset)
-{
-	//ShivanSpS - Changed the type char for a type int (Now SLC2)
-	if (offset > Mc_pm->sldc_size - 5) //no way is this big enough
-		return false;
-
-	int* type_p = (int*)(Mc_pm->shield_collision_tree.get() + offset);
-
-	// not used
-	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+4);
-	// split and polygons
-	auto* minbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 8);
-	auto* maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 20);
-
-	// split
-	auto* front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
-	auto* back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
-
-	// polygons
-	auto* num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
-
-	auto* shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
-
-
-
-	// see if it fits inside our bbox
-	if (!mc_ray_boundingbox(minbox_p, maxbox_p, &Mc_p0, &Mc_direction, NULL)) {
-		return false;
-	}
-
-	if (*type_p == 0) // SPLIT
-	{
-		return mc_check_sldc(offset + *front_offset_p) || mc_check_sldc(offset + *back_offset_p);
-	}
-	else
-	{
-		// poly list
-		shield_tri* tri;
-		for (unsigned int i = 0; i < *num_polygons_p; i++)
-		{
-			tri = &Mc_pm->shield.tris[shld_polys[i]];
-
-			mc_shield_check_common(tri);
-
-		} // for (unsigned int i = 0; i < leaf->num_polygons; i++)
-	}
-
-	// shouldn't be reached
-	return false;
-}
-
-// checks a vector collision against a ships shield (if it has shield points defined).
+// checks a vector collision against a ship's shield (if it has shield points defined). Reuses the
+// same BVH traversal and triangle-test functions as hull collision (model_collide_bvh_triangle()),
+// treating the shield mesh as a pseudo-submodel via the Mc_submodel = -1 sentinel -- see the
+// Mc_submodel >= 0 guard around Collide_invisible in mc_check_bvh_triangle(). This is a full-reuse
+// port of the legacy SLDC/SLC2 byte-offset tree walker (mc_check_sldc()/mc_shield_check_common(),
+// removed): unlike that code, it correctly tracks the nearest hit across all candidate triangles
+// (the legacy per-triangle test overwrote the hit unconditionally, so whichever triangle was tested
+// last in traversal order won) and uses geometric rather than authored normals, both as an inherent
+// side effect of running through the same proven functions hull already uses for both.
 void mc_check_shield()
 {
-	int i;
-
-
-	if ( Mc_pm->shield.ntris < 1 )
+	if (Mc_pm->shield.ntris < 1 || !Mc_pm->shield_bvh) {
 		return;
-	if (Mc_pm->shield_collision_tree)
-	{
-		mc_check_sldc(0); // see if we hit the SLDC
 	}
-	else
-	{				
-		for (i = 0; i < Mc_pm->shield.ntris; i++) {
-			mc_shield_check_common(&Mc_pm->shield.tris[i]);
-		}
-	}//model has shield_collsion_tree
+
+	int saved_submodel = Mc_submodel;
+	Mc_submodel = -1;
+	Mc->hit_bvh_original_index = -1;
+
+	model_collide_bvh_triangle(Mc_pm->shield_bvh.get());
+
+	if (Mc->num_hits > 0) {
+		Mc->shield_hit_tri = Mc->hit_bvh_original_index;
+	}
+
+	Mc_submodel = saved_submodel;
 }
 
 

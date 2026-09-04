@@ -850,7 +850,7 @@ public:
 		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
-		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
+		n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
 		vert_source()
 	{
@@ -921,8 +921,7 @@ public:
 	std::shared_ptr<ship_bay_t> ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
-	std::shared_ptr<ubyte[]> shield_collision_tree;
-	int		sldc_size;
+	std::shared_ptr<bvh_tree> shield_bvh;			// per-triangle BVH over the shield mesh, built at load time (see modelread.cpp)
 	SCP_vector<vec3d>		shield_points;
 
 	int			n_paths;
@@ -1344,6 +1343,7 @@ typedef struct mc_info {
 	float   hit_u = 0.0f;               // Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
 	float   hit_v = 0.0f;               // ditto
 	int     shield_hit_tri = -1;        // Which triangle on the shield got hit or -1 if none
+	int     hit_bvh_original_index = -1; // Internal: bvh_triangle::original_index of the winning candidate in the last accepted hit; recovers the caller's own triangle index (e.g. shield_bvh -> shield.tris) from a bvh_tree traversal
 	vec3d   hit_normal = vmd_zero_vector;       //	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
 	bool    edge_hit = false;           // Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.
 	ubyte   *f_poly = nullptr;          // pointer to flat poly where we intersected

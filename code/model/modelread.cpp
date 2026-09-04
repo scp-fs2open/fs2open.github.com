@@ -132,7 +132,6 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 void model_set_bay_path_nums(polymodel *pm);
 
 uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
-uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size);
 
 
 // Goober5000 - see SUBSYSTEM_X in model.h
@@ -1606,9 +1605,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// reset glow points!! - Goober5000
 	pm->n_glow_point_banks = 0;
 
-	// reset SLDC
-	pm->shield_collision_tree = NULL;
-	pm->sldc_size = 0;
+	pm->shield_bvh.reset();
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
@@ -2120,37 +2117,13 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				break;
 			}
 
-			case ID_SLDC: // kazan - Shield Collision tree
-			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
-				if (pm->version < 2200) {
-					//mprintf(("SLDC data is being converted to SLC2.\n"));
-					pm->sldc_size = cfread_int(fp);
+			case ID_SLDC: // Legacy shield collision tree -- shield collision now uses a BVH built
+			              // directly over shield.tris (see shield_bvh), so this chunk is skipped
+			              // entirely; the outer chunk loop below seeks past it by its declared length.
+				break;
 
-					std::unique_ptr<ubyte[]> sldc_tree(new ubyte[pm->sldc_size]);
-					std::unique_ptr<ubyte[]> slc2_tree(new ubyte[pm->sldc_size * 2]);
-
-					cfread(sldc_tree.get(), 1, pm->sldc_size, fp);
-					//mprintf(("SLDC Shield Collision Tree was %d bytes in size\n", pm->sldc_size));
-					pm->sldc_size = convert_sldc_to_slc2(sldc_tree.get(), slc2_tree.get(), pm->sldc_size);
-					//mprintf(("SLC2 Shield Collision Tree is %d bytes in size\n", pm->sldc_size));
-					pm->shield_collision_tree = make_shared<ubyte[]>(pm->sldc_size); //sldc_size is slc2 size, reused variable
-					memcpy(pm->shield_collision_tree.get(), slc2_tree.get(), pm->sldc_size);
-					swap_sldc_data(pm->shield_collision_tree.get());
-				}
-			}
-			break;
-
-			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
-			{
-				if (pm->version >= 2200) {
-					pm->sldc_size = cfread_int(fp);
-					pm->shield_collision_tree = make_shared<ubyte[]>(pm->sldc_size);
-					cfread(pm->shield_collision_tree.get(), 1, pm->sldc_size, fp);
-					swap_sldc_data(pm->shield_collision_tree.get());
-					//mprintf(( "SLC2 Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
-				}
-			}
-			break;
+			case ID_SLC2: // See ID_SLDC above.
+				break;
 
 			case ID_SHLD:
 				{
@@ -3532,6 +3505,28 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		if (!tris.empty()) {
 			pm->submodel[i].triangle_bvh = std::make_shared<bvh_tree>(bvh_build(std::move(tris)));
 		}
+	}
+
+	// Build a per-triangle BVH over the shield mesh too, reusing the same collision machinery as
+	// hull (see mc_check_shield() in modelcollide.cpp). Shield.tris[] are already flat triangles --
+	// no fan-triangulation needed. tmap_num = MAX_MODEL_TEXTURES marks them "flat poly, no texture",
+	// the same sentinel model_collide_parse_bsp_flatpoly() uses for hull's own flat polygons -- this
+	// makes mc_check_bvh_triangle_candidate() skip the texture-visibility check entirely (there is no
+	// texture) and call the face-test function with has_uv=false.
+	if (pm->shield.ntris > 0) {
+		SCP_vector<bvh_triangle> shield_tris;
+		shield_tris.reserve(pm->shield.ntris);
+		for (int si = 0; si < pm->shield.ntris; ++si) {
+			const shield_tri& stri = pm->shield.tris[si];
+			bvh_triangle tri;
+			tri.v0 = pm->shield.verts[stri.verts[0]].pos;
+			tri.v1 = pm->shield.verts[stri.verts[1]].pos;
+			tri.v2 = pm->shield.verts[stri.verts[2]].pos;
+			tri.tmap_num = MAX_MODEL_TEXTURES;
+			tri.original_index = si;
+			shield_tris.push_back(tri);
+		}
+		pm->shield_bvh = std::make_shared<bvh_tree>(bvh_build(std::move(shield_tris)));
 	}
 
 	// clear bsp_data cache -- only needed transiently to get here (parsing it built each submodel's
@@ -5734,55 +5729,6 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 #endif
 }
 
-void swap_sldc_data(ubyte* buffer)
-{
-	//ShivanSpS - Changed type char for a type int for SLC2
-#if BYTE_ORDER == BIG_ENDIAN
-	int* type_p = (int*)(buffer);
-	int* size_p = (int*)(buffer + 4);
-	*size_p = INTEL_INT(*size_p);
-	*type_p = INTEL_INT(*type_p);
-
-	// split and polygons
-	vec3d* minbox_p = (vec3d*)(buffer + 8);
-	vec3d* maxbox_p = (vec3d*)(buffer + 20);
-
-	minbox_p->xyz.x = INTEL_FLOAT(&minbox_p->xyz.x);
-	minbox_p->xyz.y = INTEL_FLOAT(&minbox_p->xyz.y);
-	minbox_p->xyz.z = INTEL_FLOAT(&minbox_p->xyz.z);
-
-	maxbox_p->xyz.x = INTEL_FLOAT(&maxbox_p->xyz.x);
-	maxbox_p->xyz.y = INTEL_FLOAT(&maxbox_p->xyz.y);
-	maxbox_p->xyz.z = INTEL_FLOAT(&maxbox_p->xyz.z);
-
-
-	// split
-	unsigned int* front_offset_p = (unsigned int*)(buffer + 32);
-	unsigned int* back_offset_p = (unsigned int*)(buffer + 36);
-
-	// polygons
-	unsigned int* num_polygons_p = (unsigned int*)(buffer + 32);
-
-	unsigned int* shld_polys = (unsigned int*)(buffer + 36);
-
-	if (*type_p == 0) // SPLIT
-	{
-		*front_offset_p = INTEL_INT(*front_offset_p);
-		*back_offset_p = INTEL_INT(*back_offset_p);
-	}
-	else
-	{
-		*num_polygons_p = INTEL_INT(*num_polygons_p);
-		for (unsigned int i = 0; i < *num_polygons_p; i++)
-		{
-			shld_polys[i] = INTEL_INT(shld_polys[i]);
-		}
-	}
-#else
-	(void)buffer;
-#endif
-}
-
 void glowpoint_override_defaults(glow_point_bank_override *gpo)
 {
 	gpo->name[0] = 0;
@@ -6153,77 +6099,6 @@ void model_subsystem::reset()
 
 model_subsystem::model_subsystem() {
 	reset();
-}
-
-uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
-{
-	//ShivanSpS SLDC must be converted to SLC2 in order to be used by shield collision system
-	//Convert SLDC to SLC2
-	uint node_size, node_type_int, new_tree_size = 0, count = 0;
-	char node_type_char;
-
-	//Process the SLDC tree to the end
-	while (count < tree_size) {
-		//Save Node type and size
-		memcpy(&node_type_char, sldc, 1);
-		memcpy(&node_size, sldc + 1, 4);
-
-		//Convert Node type to int
-		node_type_int = (int)node_type_char;
-
-		//Copy the node type and new node size, move pointers
-		memcpy(slc2, &node_type_int, 4);
-		node_size += 3;
-		memcpy(slc2 + 4, &node_size, 4);
-		node_size -= 3;
-		slc2 += 8;
-		sldc += 5;
-
-
-		//Copy Vectors
-		memcpy(slc2, sldc, 24);
-		slc2 += 24;
-		sldc += 24;
-
-		if (node_type_char == 0) {
-			//Front and back offsets must be adjusted
-			uint front, back, newback = 0;
-			ubyte* p;
-
-			p = sldc - 29;
-			memcpy(&back, p + 33, 4);
-
-			//I need to find the new distance to back.
-			while (p < sldc + back - 29) {
-				uint ns;
-				memcpy(&ns, p + 1, 4);
-				p += ns;
-				newback += ns + 3;
-
-			}
-			//Copy offsets
-			front = node_size + 3;
-			memcpy(slc2, &front, 4); //Front is always this node size+3;
-			memcpy(slc2 + 4, &newback, 4);
-
-			slc2 += 8;
-			sldc += 8;
-		}
-		else {
-			//Copy the remaining data on the node
-			memcpy(slc2, sldc, node_size - 29);
-
-			//Move pointers
-			slc2 += node_size - 29;
-			sldc += node_size - 29;
-		}
-		//Count the new tree size and move the counter
-		count += node_size;
-		new_tree_size += node_size + 3;
-	}
-
-	//return the SLC2 tree size
-	return new_tree_size;
 }
 
 // if bsp_out is NULL then we just calculate new size
