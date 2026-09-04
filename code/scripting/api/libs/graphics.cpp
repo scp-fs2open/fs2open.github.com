@@ -1464,29 +1464,31 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			std::swap(y, y2);
 		}
 
-		auto lines = str_wrap_to_width(s, x2 - x, false);
-
 		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
 		if (y2 < 0)
 			y2 = y + line_ht;
 		size_t max_num_lines = (y2 - y) / line_ht;
-		if (max_num_lines < lines.size())
-			lines.resize(max_num_lines);
-
-		num_lines = static_cast<int>(lines.size());
 
 		int curr_y = y;
-		for(const auto &line: lines)
-		{
-			//Draw the string
-			gr_string(x, curr_y, s + line.first, resize_mode, 1.0f, line.second);
 
-			//Increment line height
+		for (size_t line_num = 0; line_num < max_num_lines; ++line_num)
+		{
+			size_t split_len, split_next_pos;
+			std::tie(split_len, split_next_pos, std::ignore) = split_str_once(s, x2 - x);
+
+			//Draw the string
+			gr_string(x, curr_y, s, resize_mode, 1.0f, split_len);
+			num_lines++;
+
+			//Increment for the next line
 			curr_y += line_ht;
+			if (split_next_pos == 0)
+				break;
+			s += split_next_pos;
 		}
 
-		if (lines.empty())
+		if (y == curr_y)
 		{
 			// If no line was drawn then we need to add one so the next line is
 			// aligned right
