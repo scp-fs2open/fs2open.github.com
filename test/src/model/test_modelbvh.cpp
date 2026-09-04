@@ -301,10 +301,13 @@ TEST(BvhBuildTests, SingleTriangle_ProducesOneLeaf)
 
 	EXPECT_EQ(tree.original_index[0], 0);
 	for (int i = 1; i < BVH_N; ++i) {
-		// Padding triangles are degenerate (zero-area) copies of the leaf's last real triangle.
+		// Padding triangles are degenerate (zero-area) copies of the leaf's last real triangle's
+		// vertex, but tmap_num is an explicit -1 sentinel (not copied from the source triangle) --
+		// see pad_leaves_to_simd_width()'s append_degenerate().
 		bvh_triangle tri = tree.triangle_at(i);
 		EXPECT_TRUE(vm_vec_same(&tri.v0, &tri.v1));
 		EXPECT_TRUE(vm_vec_same(&tri.v0, &tri.v2));
+		EXPECT_EQ(tri.tmap_num, -1);
 	}
 }
 

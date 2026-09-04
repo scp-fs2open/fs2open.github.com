@@ -532,6 +532,12 @@ static bool mc_check_bvh_triangle_candidate(const bvh_tree *tbvh, int32_t tri_in
 	size_t idx = static_cast<size_t>(tri_index);
 	int raw_tmap_num = tbvh->tmap_num[idx];
 
+	// -1 marks a degenerate SIMD-padding triangle (see pad_leaves_to_simd_width() in modelbvh.cpp)
+	// -- never real geometry, and never handed to Mc_pm->maps[] below.
+	if (raw_tmap_num < 0) {
+		return false;
+	}
+
 	if (raw_tmap_num < MAX_MODEL_TEXTURES && !check_invisible_faces &&
 		Mc_pm->maps[raw_tmap_num].textures[TM_BASE_TYPE].GetTexture() < 0 && !collide_invisible) {
 		return false;

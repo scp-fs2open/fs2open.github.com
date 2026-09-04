@@ -389,12 +389,17 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 	};
 
 	auto append_degenerate = [&](size_t src) {
-		// Same metadata as the source triangle, but v1/v2 collapsed onto v0 -- since v0's vertex is
-		// already in the shared pool, this just reuses its index three times, no new pool entries.
+		// v1/v2 collapsed onto v0 -- since v0's vertex is already in the shared pool, this just
+		// reuses its index three times, no new pool entries. tmap_num is set to -1 (matching
+		// bvh_triangle's own "no value" default), not copied from the source triangle: it's an
+		// explicit invalid marker a scalar consumer can reject in O(1) (see
+		// mc_check_bvh_triangle_candidate()) without relying on the collapsed geometry itself
+		// failing whatever test it's handed to -- same "sentinel + explicit skip" pattern Embree's
+		// SIMD triangle leaves use for their own unused lanes.
 		i0.push_back(tree.i0[src]);
 		i1.push_back(tree.i0[src]);
 		i2.push_back(tree.i0[src]);
-		tmap_num.push_back(tree.tmap_num[src]);
+		tmap_num.push_back(-1);
 		original_index.push_back(tree.original_index[src]);
 		leaf_index.push_back(tree.leaf_index[src]);
 		uv0.push_back(tree.uv0[src]);
