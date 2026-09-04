@@ -140,28 +140,18 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 // unconditionally" strategy, same scalar-gather-then-vector-math shape.
 //
 // NOT WIRED INTO THE LIVE COLLISION PATH -- correctness-tested (SphereTriangleLeafSimdTests in
-// test_modelbvh.cpp) but has not been re-benchmarked against the scalar path it was meant to
-// replace since a chunk-level pre-gate was added (see collision_bvh_rewrite_plan memory note for
-// prior benchmark numbers, from before the pre-gate existed). The batched fvi_sphere_plane() face
-// test below computes an `active[]` mask per lane; the 3 edge tests (by far the expensive part --
-// unlike ray-triangle's Moller-Trumbore, which is near-flat-cost regardless of outcome, the scalar
-// reference's edge fallback is what a cheap plane-test failure usually avoids paying for) now run
-// only when at least one lane in the BVH_N chunk has `active[i]` set, skipping all 3 entirely for a
-// chunk where nothing could possibly need them. Still kept unwired from the live collision path
-// pending that re-measurement.
+// test_modelbvh.cpp) but measured slower than the scalar path it was meant to replace (see
+// collision_bvh_rewrite_plan memory note for current numbers). Kept as a validated building block.
 //
 // A moving sphere against a triangle is the classic "sphere at each vertex, cylinder along each
-// edge, slab for the face" case (see e.g. Real-Time Rendering's collision-detection chapter), and
-// this function reproduces FS2's own existing scalar algorithm for that -- fvi_sphere_plane() for
-// the face/slab test, then fvi_polyedge_sphereline()'s edge-cylinder quadratic (with its
-// vertex-sphere fallback) for the three edges -- batched across BVH_N triangles per iteration
-// instead of one triangle at a time. It is a faithful (not approximate) reproduction of that scalar
-// math: every branch in the scalar version (the two Hit/TryVertex fallbacks in
-// fvi_polyedge_sphereline, the on-face/edge dispatch in mc_check_triangle_sphereline_face())
-// becomes an unconditional per-lane bool combined with && / || instead of goto, so the result
-// should agree with the scalar reference bit-for-bit modulo floating-point reassociation -- which
-// is exactly why a caller would still need to re-confirm with the real scalar function rather than
-// trusting this function's fields directly, same as ray_triangle_leaf_simd()'s caller does.
+// edge, slab for the face" case; this function reproduces FS2's own existing scalar algorithm for
+// that -- fvi_sphere_plane() for the face/slab test, then fvi_polyedge_sphereline()'s edge-cylinder
+// quadratic (with its vertex-sphere fallback) for the three edges -- batched across BVH_N triangles
+// per iteration instead of one triangle at a time. Every branch in the scalar version becomes an
+// unconditional per-lane bool combined with && / || instead of goto, so the result should agree
+// with the scalar reference bit-for-bit modulo floating-point reassociation -- which is exactly why
+// a caller would still need to re-confirm with the real scalar function rather than trusting this
+// function's fields directly, same as ray_triangle_leaf_simd()'s caller does.
 //
 // radius is the sphere radius (Mc->radius); this function is not meant to be used for MC_COLLIDE_ALL
 // queries, which need every hit, not just the nearest, same as ray_triangle_leaf_simd() is skipped
