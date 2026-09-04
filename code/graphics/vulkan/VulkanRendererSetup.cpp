@@ -1190,6 +1190,7 @@ bool VulkanRenderer::recreateSwapChain()
 		m_drawManager->onResize();
 	}
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Update VulkanRenderFrame handles to point to the new swap chain, and
 	// recreate their semaphores: an acquire that succeeded against the old swap

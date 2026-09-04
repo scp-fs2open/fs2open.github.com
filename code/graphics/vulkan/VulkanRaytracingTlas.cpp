@@ -1,5 +1,6 @@
 // Per-frame TLAS: gathers the current shadow-casting object set (ships,
-// asteroids, debris) into one top-level acceleration structure each frame.
+// asteroids, debris, raw POFs/props) into one top-level acceleration
+// structure each frame.
 // Split out from VulkanRaytracing.cpp since this is the only part of the
 // raytracing manager that reaches into Ships/Asteroids/Debris/Objects, a
 // distinctly different dependency set from the BLAS cache in
@@ -14,6 +15,9 @@
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "globalincs/systemvars.h"
+#include "graphics/shadows.h"
+#include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
 #include "object/object.h"
@@ -40,12 +44,13 @@ static bool submodelPassesDetailBox(const polymodel* pm, int submodel_num, const
 void VulkanRaytracingManager::pushInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 	vk::DeviceAddress blasAddress,
 	const matrix& orient,
-	const vec3d& pos)
+	const vec3d& pos,
+	uint8_t mask)
 {
 	vk::AccelerationStructureInstanceKHR instance;
 	instance.transform = toVkTransform(orient, pos);
 	instance.instanceCustomIndex = 0;
-	instance.mask = 0xFF;
+	instance.mask = mask;
 	instance.instanceShaderBindingTableRecordOffset = 0;
 	instance.flags = static_cast<VkGeometryInstanceFlagsKHR>(vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable);
 	instance.accelerationStructureReference = blasAddress;
@@ -57,7 +62,8 @@ void VulkanRaytracingManager::addSingleSubmodelInstance(SCP_vector<vk::Accelerat
 	const polymodel_instance* pmi,
 	int submodel_num,
 	const matrix& orient,
-	const vec3d& pos)
+	const vec3d& pos,
+	uint8_t mask)
 {
 	if (submodel_num < 0 || submodel_num >= pm->n_models) {
 		return;
@@ -80,14 +86,16 @@ void VulkanRaytracingManager::addSingleSubmodelInstance(SCP_vector<vk::Accelerat
 		return;
 	}
 
-	pushInstance(instances, entry->address, orient, pos);
+	pushInstance(instances, entry->address, orient, pos, mask);
 }
 
 void VulkanRaytracingManager::walkSubmodelTree(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 	transform_stack& stack,
 	const polymodel* pm,
 	const polymodel_instance* pmi,
-	int submodel_num)
+	int submodel_num,
+	uint8_t mask,
+	bool skipDetailBoxCheck)
 {
 	if (submodel_num < 0 || submodel_num >= pm->n_models) {
 		return;
@@ -135,19 +143,19 @@ void VulkanRaytracingManager::walkSubmodelTree(SCP_vector<vk::AccelerationStruct
 	// producing self-shadowing flicker that only stabilized once the camera cleared the
 	// model's detail-box distance. A failing check also skips this submodel's whole
 	// subtree, exactly like the rasterized path (a culled parent hides its children too).
-	if (!submodelPassesDetailBox(pm, submodel_num, world_orient, world_pos)) {
+	if (!skipDetailBoxCheck && !submodelPassesDetailBox(pm, submodel_num, world_orient, world_pos)) {
 		stack.pop();
 		return;
 	}
 
 	const BlasEntry* entry = getOrBuildBlasEntry(pm->id, submodel_num);
 	if (entry != nullptr) {
-		pushInstance(instances, entry->address, world_orient, world_pos);
+		pushInstance(instances, entry->address, world_orient, world_pos, mask);
 	}
 
 	for (int child = sm.first_child; child >= 0; child = pm->submodel[child].next_sibling) {
 		if (!pm->submodel[child].flags[Model::Submodel_flags::Is_thruster]) {
-			walkSubmodelTree(instances, stack, pm, pmi, child);
+			walkSubmodelTree(instances, stack, pm, pmi, child, mask, skipDetailBoxCheck);
 		}
 	}
 
@@ -157,7 +165,7 @@ void VulkanRaytracingManager::walkSubmodelTree(SCP_vector<vk::AccelerationStruct
 void VulkanRaytracingManager::gatherShadowCasterInstances(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances)
 {
 	// Mirrors the object selection in shadows_render_all() (shadows.cpp) --
-	// ships/asteroids/debris -- but without its per-cascade frustum
+	// ships/asteroids/debris/raw POFs/props -- but without its per-cascade frustum
 	// pre-filter, which lives in shadows.cpp's private state (Shadow_frustums)
 	// and is specific to the rasterized cascade layout. Starting unfiltered is
 	// simpler and safe (never wrongly excludes a caster); spatial culling of
@@ -187,9 +195,15 @@ void VulkanRaytracingManager::gatherShadowCasterInstances(SCP_vector<vk::Acceler
 				continue;
 			}
 
+			// The viewer's own hull is tagged with TLAS_MASK_VIEWER_HULL instead of the
+			// default 0xFF so shadow rays can selectively exclude it -- see that
+			// constant's declaration (shadows.h) for how the two ends of this scheme
+			// meet.
+			uint8_t instanceMask = (objp == Viewer_obj) ? TLAS_MASK_VIEWER_HULL : 0xFF;
+
 			transform_stack stack;
 			stack.push(&objp->pos, &objp->orient);
-			walkSubmodelTree(instances, stack, pm, pmi, pm->detail[0]);
+			walkSubmodelTree(instances, stack, pm, pmi, pm->detail[0], instanceMask);
 			break;
 		}
 		case OBJ_ASTEROID: {
@@ -224,10 +238,66 @@ void VulkanRaytracingManager::gatherShadowCasterInstances(SCP_vector<vk::Acceler
 			addSingleSubmodelInstance(instances, pm, pmi, db.submodel_num, objp->orient, objp->pos);
 			break;
 		}
+		case OBJ_RAW_POF:
+		case OBJ_PROP: {
+			// Mirrors shadows.cpp's OBJ_RAW_POF/OBJ_PROP case: same shape as
+			// OBJ_SHIP (a polymodel + optional polymodel_instance), just
+			// resolved generically instead of via ship_info/Ships[].
+			int model_num = object_get_model_num(objp);
+			polymodel* pm = model_get(model_num);
+			if (pm == nullptr || pm->detail[0] < 0) {
+				continue;
+			}
+
+			int instance_num = object_get_model_instance_num(objp);
+			polymodel_instance* pmi = instance_num < 0 ? nullptr : model_get_instance(instance_num);
+
+			transform_stack stack;
+			stack.push(&objp->pos, &objp->orient);
+			walkSubmodelTree(instances, stack, pm, pmi, pm->detail[0]);
+			break;
+		}
 		default:
 			break;
 		}
 	}
+}
+
+void VulkanRaytracingManager::gatherCockpitShadowCasterInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances)
+{
+	object* objp = Viewer_obj;
+	if (objp == nullptr || objp->type != OBJ_SHIP || objp->instance < 0) {
+		return;
+	}
+
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	if (!ship_player_cockpit_model_would_render(sip) || Shadow_disable_overrides.disable_cockpit) {
+		return; // matches render_viewer_shadow()'s gate on the rasterized cockpit shadow pass (shadows.cpp)
+	}
+
+	polymodel* cockpit_pm = model_get(sip->cockpit_model_num);
+	if (cockpit_pm == nullptr || cockpit_pm->detail[0] < 0) {
+		return;
+	}
+	polymodel_instance* cockpit_pmi =
+		shipp->cockpit_model_instance < 0 ? nullptr : model_get_instance(shipp->cockpit_model_instance);
+
+	// World-space anchor for the cockpit model. ship_cockpit_render_offset() (ship.h)
+	// gives the same rotated+swayed offset ship_render_player_ship() draws the cockpit
+	// with, but that offset is camera-relative there (never combined with objp->pos) --
+	// a rendering convenience specific to the rasterized forward-draw call. The TLAS is
+	// a persistent world-space structure (gatherShadowCasterInstances' OBJ_SHIP case
+	// anchors at true objp->pos/objp->orient, same as here), so adding it onto objp->pos
+	// here is what anchors the cockpit instance the same way.
+	vec3d cockpit_render_offset = ship_cockpit_render_offset(sip, objp);
+	vec3d cockpit_world_pos = objp->pos;
+	vm_vec_add2(&cockpit_world_pos, &cockpit_render_offset);
+
+	transform_stack stack;
+	stack.push(&cockpit_world_pos, &objp->orient);
+	walkSubmodelTree(instances, stack, cockpit_pm, cockpit_pmi, cockpit_pm->detail[0], /* mask */ 0xFF, /* skipDetailBoxCheck */ true);
 }
 
 bool VulkanRaytracingManager::ensureInstanceCapacity(FrameTlasResources& frame, vk::DeviceSize requiredBytes)
@@ -364,6 +434,7 @@ void VulkanRaytracingManager::buildTlas()
 
 	SCP_vector<vk::AccelerationStructureInstanceKHR> instances;
 	gatherShadowCasterInstances(instances);
+	gatherCockpitShadowCasterInstance(instances);
 
 	if (instances.empty()) {
 		return; // keep whatever TLAS (if any) was built last time this slot was used
