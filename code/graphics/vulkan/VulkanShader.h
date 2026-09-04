@@ -59,7 +59,7 @@ public:
 	 * @param device Vulkan logical device
 	 * @return true on success
 	 */
-	bool init(vk::Device device);
+	bool init(vk::Device device, bool hwClipDistance);
 
 	/**
 	 * @brief Shutdown and release all shader modules
