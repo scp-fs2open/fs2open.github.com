@@ -185,11 +185,10 @@ static void mc_check_triangle_face(const vec3d &v0, const vec3d &v1, const vec3d
 	Mc->num_hits++;
 }
 
-// Sphere-vs-point touch time: at what t in [0,1] does |xs0 + vs*t - point| first equal Rs. Same
-// quadratic fvi_polyedge_sphereline()'s TryVertex uses per vertex. Factored out and called through
-// mc_triangle_edges_sphereline()'s own per-vertex cache below, since a triangle's 3 edges share 3
-// vertices between them -- without caching, each vertex fallback would be solved twice, once per
-// adjacent edge.
+// Sphere-vs-point touch time: at what t in [0,1] does |xs0 + vs*t - point| first equal Rs. Called
+// through mc_triangle_edges_sphereline()'s own per-vertex cache below, since a triangle's 3 edges
+// share 3 vertices between them -- without caching, each vertex fallback would be solved twice, once
+// per adjacent edge.
 static bool mc_sphere_point_hit(const vec3d &point, const vec3d &xs0, const vec3d &vs, float vs_sqr, float Rs2,
 	float &out_t)
 {
@@ -206,27 +205,26 @@ static bool mc_sphere_point_hit(const vec3d &point, const vec3d &xs0, const vec3
 	float t1 = (-delta_x_dot_vs + root) * invA;
 	float t2 = (-delta_x_dot_vs - root) * invA;
 	float t = std::min(t1, t2);
-	if (t <= 0.0f || t >= 1.0f) // strict, matching fvi_polyedge_sphereline's own TryVertex bounds
+	if (t <= 0.0f || t >= 1.0f) // strict: touching exactly at t=0 or t=1 doesn't count as a hit
 		return false;
 
 	out_t = t;
 	return true;
 }
 
-// Triangle-specialized replacement for fvi_polyedge_sphereline(nv=3): finds the earliest time the
-// moving sphere touches any of the triangle's 3 edges (as bounded segments, not infinite lines).
+// Finds the earliest time the moving sphere touches any of the triangle's 3 edges (as bounded
+// segments, not infinite lines).
 //
-// For each edge, the touch time against the edge's *infinite* line is a single quadratic solve
-// (fvi_polyedge_sphereline's own "stage 1"). That line-touch time is only a genuine edge hit if the
-// closest point on the infinite line at that instant actually falls within the segment -- a single
-// line-point projection away: s = dot(sphere_center(t_line) - va, ve) / ve_sqr, exact, no tolerance
-// needed. Whenever that's out of [0,1] (or the line quadratic has no real root at all -- meaning the
-// sphere never comes within Rs of the infinite line, so it can't reach either endpoint either, since
-// both endpoints lie on that same line), falls back to mc_sphere_point_hit() against whichever of the
-// edge's two vertices is nearer, matching fvi_polyedge_sphereline's own TryVertex fallback -- via the
-// per-vertex cache above, so a vertex shared by two edges is only ever solved once here.
+// For each edge, the touch time against the edge's *infinite* line is a single quadratic solve.
+// That line-touch time is only a genuine edge hit if the closest point on the infinite line at that
+// instant actually falls within the segment -- a single line-point projection away:
+// s = dot(sphere_center(t_line) - va, ve) / ve_sqr, exact, no tolerance needed. Whenever that's out
+// of [0,1] (or the line quadratic has no real root at all -- meaning the sphere never comes within Rs
+// of the infinite line, so it can't reach either endpoint either, since both endpoints lie on that
+// same line), falls back to mc_sphere_point_hit() against whichever of the edge's two vertices is
+// nearer, via the per-vertex cache above, so a vertex shared by two edges is only ever solved once.
 // Not static: exercised directly (bypassing the Mc thread_local state this file's other functions
-// read) by a correctness test comparing it against fvi_polyedge_sphereline(nv=3) as ground truth.
+// read) by a correctness test.
 bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d &v2, const vec3d &xs0,
 	const vec3d &vs, float Rs, vec3d &out_hit_point, float &out_t)
 {

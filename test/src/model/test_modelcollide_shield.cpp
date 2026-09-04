@@ -1,10 +1,10 @@
 // Correctness parity check for the shield-collision BVH port (mc_check_shield() in
 // modelcollide.cpp): compares model_collide(MC_CHECK_SHIELD) against a brute-force oracle built
-// directly from the public fvi.h primitives (fvi_ray_plane/fvi_sphere_plane/fvi_point_face/
-// fvi_polyedge_sphereline -- the same building blocks the live triangle-test functions use), tracking
-// the nearest hit across every shield triangle explicitly. Deliberately NOT compared against the old
-// SLDC/SLC2 path (removed) -- that path had a real nearest-hit-tracking bug (see
-// collision_bugs_found.md), so it isn't valid ground truth for this check.
+// directly from fvi_ray_plane/fvi_sphere_plane, a barycentric point-in-triangle test matching the
+// live code's own, and mc_triangle_edges_sphereline() for the edge fallback -- tracking the nearest
+// hit across every shield triangle explicitly. Deliberately NOT compared against the old SLDC/SLC2
+// path (removed) -- that path had a real nearest-hit-tracking bug (see collision_bugs_found.md), so
+// it isn't valid ground truth for this check.
 //
 // Only runs when FSO_BVH_PROFILE_POF_DIR names a directory of real .pof files (a Knossos mod install
 // works); skipped otherwise, same convention as test_modelbvh_profile.cpp.
@@ -22,6 +22,11 @@
 #include <cstdlib>
 #include <filesystem>
 #include <random>
+
+// Not declared in any header (modelcollide.cpp keeps it non-static purely so tests can call it
+// directly, bypassing the Mc thread_local state the rest of that file reads).
+bool mc_triangle_edges_sphereline(const vec3d& v0, const vec3d& v1, const vec3d& v2, const vec3d& xs0,
+	const vec3d& vs, float Rs, vec3d& out_hit_point, float& out_t);
 
 namespace {
 
@@ -103,9 +108,9 @@ OracleHit brute_force_shield_ray(polymodel* pm, const vec3d& p0, const vec3d& di
 	return best;
 }
 
-// Sphereline oracle: mirrors mc_check_sphereline_face()'s own face-then-edge structure per triangle,
-// but (unlike the deleted mc_shield_check_common()) explicitly tracks the nearest hit across all
-// shield triangles, not just whichever triangle happened to be tested last.
+// Sphereline oracle: mirrors mc_check_triangle_sphereline_face()'s own face-then-edge structure per
+// triangle, but (unlike the deleted mc_shield_check_common()) explicitly tracks the nearest hit
+// across all shield triangles, not just whichever triangle happened to be tested last.
 OracleHit brute_force_shield_sphereline(polymodel* pm, const vec3d& xs0, const vec3d& vs, float radius)
 {
 	OracleHit best;
@@ -154,9 +159,9 @@ OracleHit brute_force_shield_sphereline(polymodel* pm, const vec3d& xs0, const v
 		}
 
 		if (check_edges) {
-			const vec3d* verts[3] = {&v0, &v1, &v2};
+			vec3d edge_hit_point;
 			float sphere_time;
-			if (fvi_polyedge_sphereline(&hit_point, &xs0, &vs, radius, 3, verts, &sphere_time)) {
+			if (mc_triangle_edges_sphereline(v0, v1, v2, xs0, vs, radius, edge_hit_point, sphere_time)) {
 				if (!best.hit || sphere_time < best.dist) {
 					best.hit = true;
 					best.dist = sphere_time;
