@@ -238,6 +238,34 @@ std::set<int> visit_all_original_indices(const bvh_tree& tree, const vec3d& orig
 	return visited;
 }
 
+// Nearest-hit ray query built from the same two production primitives model_collide() uses --
+// bvh_visit_triangles() for pruned traversal, ray_triangle_leaf_simd() for the per-leaf SIMD test --
+// tightening the traversal's t_max on every closer hit, same as the live collision path does.
+bool query_nearest_ray_hit(const bvh_tree& tree, const vec3d& origin, const vec3d& dir, float& out_t,
+	int& out_triangle_index)
+{
+	bool found = false;
+	float found_t = FLT_MAX;
+	int32_t found_index = -1;
+
+	bvh_visit_triangles(tree, origin, dir, FLT_MAX, 0.0f, [&](int32_t start, int32_t count, float& leaf_t_max) {
+		float simd_t;
+		int32_t simd_index;
+		if (ray_triangle_leaf_simd(tree, start, count, origin, dir, leaf_t_max, simd_t, simd_index)) {
+			found = true;
+			found_t = simd_t;
+			found_index = simd_index;
+			leaf_t_max = simd_t;
+		}
+	});
+
+	if (found) {
+		out_t = found_t;
+		out_triangle_index = found_index;
+	}
+	return found;
+}
+
 } // namespace
 
 TEST(BvhBuildTests, EmptyInput_ProducesEmptyTree)
@@ -414,7 +442,7 @@ TEST(BvhRayTests, Cube_RayHitsFace)
 
 	float t;
 	int tri_index;
-	ASSERT_TRUE(bvh_ray_intersect(tree, origin, dir, t, tri_index));
+	ASSERT_TRUE(query_nearest_ray_hit(tree, origin, dir, t, tri_index));
 	EXPECT_NEAR(t, 4.0f, 1e-3f);
 	ASSERT_GE(tri_index, 0);
 	EXPECT_EQ(tree.tmap_num[tri_index], 5);
@@ -430,7 +458,7 @@ TEST(BvhRayTests, Cube_RayMisses)
 
 	float t;
 	int tri_index;
-	EXPECT_FALSE(bvh_ray_intersect(tree, origin, dir, t, tri_index));
+	EXPECT_FALSE(query_nearest_ray_hit(tree, origin, dir, t, tri_index));
 }
 
 TEST(BvhRayTests, Cube_RayFromInsideHitsNearestFace)
@@ -443,7 +471,7 @@ TEST(BvhRayTests, Cube_RayFromInsideHitsNearestFace)
 
 	float t;
 	int tri_index;
-	ASSERT_TRUE(bvh_ray_intersect(tree, origin, dir, t, tri_index));
+	ASSERT_TRUE(query_nearest_ray_hit(tree, origin, dir, t, tri_index));
 	EXPECT_NEAR(t, 1.0f, 1e-3f);
 	EXPECT_EQ(tree.tmap_num[tri_index], 5);
 }
@@ -479,7 +507,7 @@ TEST(BvhRayTests, ManyRandomTriangles_MatchesBruteForceOracle)
 
 		float actual_t;
 		int actual_index;
-		bool actual_hit = bvh_ray_intersect(tree, origin, dir, actual_t, actual_index);
+		bool actual_hit = query_nearest_ray_hit(tree, origin, dir, actual_t, actual_index);
 
 		ASSERT_EQ(actual_hit, expected_hit) << "ray " << i;
 		if (expected_hit) {

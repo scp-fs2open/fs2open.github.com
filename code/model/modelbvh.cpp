@@ -350,39 +350,6 @@ int emit_node(const SCP_vector<BinBuildNode>& bin_nodes, int bin_node_index, SCP
 	return idx;
 }
 
-// Standard Moller-Trumbore ray-triangle test.
-bool ray_triangle(const vec3d& origin, const vec3d& dir, const bvh_triangle& tri, float& out_t)
-{
-	constexpr float EPS = 1e-8f;
-	vec3d e1 = tri.v1 - tri.v0;
-	vec3d e2 = tri.v2 - tri.v0;
-
-	vec3d pvec;
-	vm_vec_cross(&pvec, &dir, &e2);
-	float det = vm_vec_dot(&e1, &pvec);
-	if (std::fabs(det) < EPS)
-		return false;
-	float inv_det = 1.0f / det;
-
-	vec3d tvec = origin - tri.v0;
-	float u = vm_vec_dot(&tvec, &pvec) * inv_det;
-	if (u < 0.0f || u > 1.0f)
-		return false;
-
-	vec3d qvec;
-	vm_vec_cross(&qvec, &tvec, &e1);
-	float v = vm_vec_dot(&dir, &qvec) * inv_det;
-	if (v < 0.0f || u + v > 1.0f)
-		return false;
-
-	float t = vm_vec_dot(&e2, &qvec) * inv_det;
-	if (t < 0.0f)
-		return false;
-
-	out_t = t;
-	return true;
-}
-
 // Rounds every leaf's triangle range up to a multiple of BVH_N by appending degenerate
 // (zero-area, v1==v2==v0) copies of the leaf's last triangle, so a SIMD leaf-intersection pass can
 // always process clean BVH_N-wide chunks with no ragged remainder. Degenerate triangles have
@@ -538,60 +505,6 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
 	pad_leaves_to_simd_width(tree);
 
 	return tree;
-}
-
-bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& dir, float& out_t, int& out_triangle_index)
-{
-	if (tree.nodes.empty())
-		return false;
-
-	vec3d inv_dir = make_vec3d(dir.xyz.x != 0.0f ? 1.0f / dir.xyz.x : FLT_MAX, dir.xyz.y != 0.0f ? 1.0f / dir.xyz.y : FLT_MAX,
-		dir.xyz.z != 0.0f ? 1.0f / dir.xyz.z : FLT_MAX);
-
-	bool found = false;
-	float best_t = FLT_MAX;
-	int best_tri = -1;
-
-	// Simple explicit-stack traversal; not optimized (no front-to-back ordering) -- this only
-	// needs to be correct, since it exists to validate the build in tests.
-	SCP_vector<int> stack;
-	stack.push_back(tree.root);
-	while (!stack.empty()) {
-		int node_idx = stack.back();
-		stack.pop_back();
-		const bvh_node& node = tree.nodes[node_idx];
-
-		for (int i = 0; i < BVH_N; ++i) {
-			if (node.child[i] < 0)
-				continue;
-			float bmin[3] = {node.minx[i], node.miny[i], node.minz[i]};
-			float bmax[3] = {node.maxx[i], node.maxy[i], node.maxz[i]};
-			float t_hit;
-			if (!bvh_detail::ray_aabb(origin, inv_dir, bmin, bmax, best_t, t_hit))
-				continue;
-
-			if (node.count[i] > 0) {
-				int start = node.child[i];
-				int count = node.count[i];
-				for (int t = start; t < start + count; ++t) {
-					float hit_t;
-					if (ray_triangle(origin, dir, tree.triangle_at(t), hit_t) && hit_t < best_t) {
-						best_t = hit_t;
-						best_tri = t;
-						found = true;
-					}
-				}
-			} else {
-				stack.push_back(node.child[i]);
-			}
-		}
-	}
-
-	if (found) {
-		out_t = best_t;
-		out_triangle_index = best_tri;
-	}
-	return found;
 }
 
 bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& origin, const vec3d& dir,

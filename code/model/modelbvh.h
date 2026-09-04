@@ -95,8 +95,8 @@ struct bvh_tree {
 	}
 
 	// Reconstructs triangle i as a single bvh_triangle, for call sites where that's more convenient
-	// than reading the parallel arrays directly (tests, the scalar bvh_ray_intersect() reference,
-	// and one-off per-accepted-hit lookups) -- none of which are hot paths.
+	// than reading the parallel arrays directly (tests, one-off per-accepted-hit lookups) -- none of
+	// which are hot paths.
 	bvh_triangle triangle_at(size_t i) const
 	{
 		bvh_triangle t;
@@ -118,18 +118,13 @@ struct bvh_tree {
 // internally, and taking ownership keeps the API unambiguous.
 bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles);
 
-// Nearest-hit ray query against a built tree. Not the final optimized traversal (no SIMD, no
-// explicit stack tuning) -- it exists so the build can be validated by ray queries in tests.
-// Returns true and fills out_t/out_triangle_index on a hit; out_triangle_index indexes the tree's
-// parallel triangle arrays (see triangle_at()).
-bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& dir, float& out_t, int& out_triangle_index);
-
 // Batched, SIMD-friendly nearest-hit ray-vs-triangle test over one leaf range [start, start+count)
 // (as handed to a bvh_visit_triangles() visitor -- count is always a multiple of BVH_N). Processes
 // BVH_N triangles per iteration reading directly from the tree's SoA vertex arrays (no transpose:
 // that's the point of storing them this way), computing every lane's Moller-Trumbore result
-// unconditionally (no early return per lane, unlike the scalar ray_triangle() this mirrors) so the
-// loop stays a fixed-trip-count, branch-free-per-lane shape for the autovectorizer -- same "plain
+// unconditionally (no early return per lane, matching a standard Moller-Trumbore test's math but
+// avoiding per-lane branches) so the loop stays a fixed-trip-count, branch-free-per-lane shape for
+// the autovectorizer -- same "plain
 // float[BVH_N] arrays, SSE2 baseline, no hand intrinsics" strategy bvh_node's own child-AABB test
 // already uses. Degenerate padding triangles (see bvh_build()) always fail the |det| check and are
 // never returned as a hit. The final "pick nearest valid lane" reduction is ordinary scalar control
@@ -208,9 +203,8 @@ inline bool ray_aabb(const vec3d& origin, const vec3d& inv_dir, const float bmin
 inline bool ray_aabb_visit(const vec3d& origin, const vec3d& inv_dir, const float bmin[3], const float bmax[3],
 	float t_max, float radius)
 {
-	// Inflate by `radius` before delegating to the shared ray_aabb() slab test (also used,
-	// radius-free, by the scalar bvh_ray_intersect() reference) -- see the radius parameter's
-	// doc comment on bvh_visit_triangles() below for why this exists.
+	// Inflate by `radius` before delegating to the shared ray_aabb() slab test -- see the radius
+	// parameter's doc comment on bvh_visit_triangles() below for why this exists.
 	float inflated_min[3] = {bmin[0] - radius, bmin[1] - radius, bmin[2] - radius};
 	float inflated_max[3] = {bmax[0] + radius, bmax[1] + radius, bmax[2] + radius};
 	float ignored_tmin;
