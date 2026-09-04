@@ -49,6 +49,7 @@ add_file_folder("model"
     model/test_modelread.cpp
     model/test_modelbvh.cpp
     model/test_modelbvh_profile.cpp
+    model/test_modelcollide_sphereline.cpp
 )
 
 add_file_folder("Parse"

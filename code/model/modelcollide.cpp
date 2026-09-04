@@ -382,13 +382,139 @@ static void mc_check_triangle_face(const vec3d &v0, const vec3d &v1, const vec3d
 	Mc->num_hits++;
 }
 
+// Sphere-vs-point touch time: at what t in [0,1] does |xs0 + vs*t - point| first equal Rs. Same
+// quadratic fvi_polyedge_sphereline()'s TryVertex uses per vertex, factored out since a triangle's 3
+// edges share 3 vertices between them (each vertex fallback would otherwise be solved twice, once
+// per adjacent edge).
+static bool mc_sphere_point_hit(const vec3d &point, const vec3d &xs0, const vec3d &vs, float vs_sqr, float Rs2,
+	float &out_t)
+{
+	vec3d delta_x = xs0 - point;
+	float delta_x_sqr = vm_vec_mag_squared(&delta_x);
+	float delta_x_dot_vs = vm_vec_dot(&delta_x, &vs);
+
+	float discriminant = delta_x_dot_vs * delta_x_dot_vs - vs_sqr * (delta_x_sqr - Rs2);
+	if (discriminant <= 0.0f)
+		return false;
+
+	float root = std::sqrt(discriminant);
+	float invA = 1.0f / vs_sqr;
+	float t1 = (-delta_x_dot_vs + root) * invA;
+	float t2 = (-delta_x_dot_vs - root) * invA;
+	float t = std::min(t1, t2);
+	if (t <= 0.0f || t >= 1.0f) // strict, matching fvi_polyedge_sphereline's own TryVertex bounds
+		return false;
+
+	out_t = t;
+	return true;
+}
+
+// Triangle-specialized replacement for fvi_polyedge_sphereline(nv=3): finds the earliest time the
+// moving sphere touches any of the triangle's 3 edges (as bounded segments, not infinite lines).
+//
+// For each edge, the touch time against the edge's *infinite* line is a single quadratic solve
+// (fvi_polyedge_sphereline's own "stage 1"). That line-touch time is only a genuine edge hit if the
+// closest point on the infinite line at that instant actually falls within the segment -- which,
+// unlike fvi_polyedge_sphereline's approach (a second quadratic solve for the edge parameter,
+// cross-checked against the sphere position with a loose distance tolerance), is a single line-point
+// projection away: s = dot(sphere_center(t_line) - va, ve) / ve_sqr, exact, no tolerance needed.
+// Whenever that's out of [0,1] (or the line quadratic has no real root at all -- meaning the sphere
+// never comes within Rs of the infinite line, so it can't reach either endpoint either, since both
+// endpoints lie on that same line), falls back to mc_sphere_point_hit() against whichever of the
+// edge's two vertices is nearer, matching fvi_polyedge_sphereline's own TryVertex fallback.
+// Not static: exercised directly (bypassing the Mc thread_local state this file's other functions
+// read) by a correctness test comparing it against fvi_polyedge_sphereline(nv=3) as ground truth.
+bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d &v2, const vec3d &xs0,
+	const vec3d &vs, float Rs, vec3d &out_hit_point, float &out_t)
+{
+	const vec3d *tri[3] = {&v0, &v1, &v2};
+	float Rs2 = Rs * Rs;
+	float vs_sqr = vm_vec_mag_squared(&vs);
+
+	bool found = false;
+	float best_t = FLT_MAX;
+
+	for (int i = 0; i < 3; ++i) {
+		const vec3d &va = *tri[i];
+		const vec3d &vb = *tri[(i + 1) % 3];
+
+		vec3d ve = vb - va;
+		vec3d delta_x = xs0 - va;
+		float delta_x_dot_ve = vm_vec_dot(&delta_x, &ve);
+		float delta_x_dot_vs = vm_vec_dot(&delta_x, &vs);
+		float delta_x_sqr = vm_vec_mag_squared(&delta_x);
+		float ve_dot_vs = vm_vec_dot(&ve, &vs);
+		float ve_sqr = vm_vec_mag_squared(&ve);
+
+		float A = ve_dot_vs * ve_dot_vs - ve_sqr * vs_sqr;
+		float B = delta_x_dot_ve * ve_dot_vs - delta_x_dot_vs * ve_sqr;
+		float C = delta_x_dot_ve * delta_x_dot_ve + Rs2 * ve_sqr - delta_x_sqr * ve_sqr;
+		float discriminant = B * B - A * C;
+
+		if (discriminant <= 0.0f)
+			continue; // sphere never within Rs of this edge's line, so not of either endpoint either
+
+		float invA = 1.0f / A;
+		float root = std::sqrt(discriminant);
+		float root1 = (-B + root) * invA;
+		float root2 = (-B - root) * invA;
+		if (root2 < root1)
+			std::swap(root1, root2);
+		if (root1 < 0.0f && root1 >= -0.05f)
+			root1 = 0.000001f;
+
+		bool have_edge_hit = false;
+		float edge_t = 0.0f;
+		vec3d edge_point{};
+		if (root1 >= 0.0f && root1 <= 1.0f) {
+			float s = (delta_x_dot_ve + root1 * ve_dot_vs) / ve_sqr;
+			if (s >= 0.0f && s <= 1.0f) {
+				have_edge_hit = true;
+				edge_t = root1;
+				edge_point = va + ve * s;
+			}
+		}
+
+		if (have_edge_hit) {
+			if (edge_t < best_t) {
+				best_t = edge_t;
+				out_hit_point = edge_point;
+				found = true;
+			}
+			continue;
+		}
+
+		float t_v0, t_v1;
+		bool v0_hit = mc_sphere_point_hit(va, xs0, vs, vs_sqr, Rs2, t_v0);
+		bool v1_hit = mc_sphere_point_hit(vb, xs0, vs, vs_sqr, Rs2, t_v1);
+		if (v0_hit && (!v1_hit || t_v0 <= t_v1)) {
+			if (t_v0 < best_t) {
+				best_t = t_v0;
+				out_hit_point = va;
+				found = true;
+			}
+		} else if (v1_hit) {
+			if (t_v1 < best_t) {
+				best_t = t_v1;
+				out_hit_point = vb;
+				found = true;
+			}
+		}
+	}
+
+	if (found) {
+		out_t = best_t;
+	}
+	return found;
+}
+
 // Triangle-granularity sibling of mc_check_sphereline_face() above. Mirrors its structure (face
 // test via the sphere-vs-plane touch time, then an edge fallback) exactly, but against the
-// triangle's own exact plane/edges instead of an n-gon's. The edge fallback deliberately calls the
-// existing, unmodified fvi_polyedge_sphereline() with nv=3 on the triangle's own 3 edges,
-// unconditionally -- including whichever edge may be a fan-triangulation diagonal rather than a
-// true polygon boundary. Also mirrors mc_check_sphereline_face(): the edge-hit branch does not set
-// Mc->hit_tmap_num (only the face-hit branch does).
+// triangle's own exact plane/edges instead of an n-gon's. The edge fallback deliberately checks
+// this triangle's own 3 edges, unconditionally -- including whichever edge may be a
+// fan-triangulation diagonal rather than a true polygon boundary. Also mirrors
+// mc_check_sphereline_face(): the edge-hit branch does not set Mc->hit_tmap_num (only the face-hit
+// branch does).
 static void mc_check_triangle_sphereline_face(const vec3d &v0, const vec3d &v1, const vec3d &v2, const bvh_uv &uv0,
 	const bvh_uv &uv1, const bvh_uv &uv2, bool has_uv, int ntmap)
 {
@@ -469,9 +595,8 @@ static void mc_check_triangle_sphereline_face(const vec3d &v0, const vec3d &v1, 
 	}
 
 	if (check_edges) {
-		const vec3d *verts[3] = {&v0, &v1, &v2};
 		float sphere_time;
-		if (fvi_polyedge_sphereline(&hit_point, &Mc_p0, &Mc_direction, Mc->radius, 3, verts, &sphere_time)) {
+		if (mc_triangle_edges_sphereline(v0, v1, v2, Mc_p0, Mc_direction, Mc->radius, hit_point, sphere_time)) {
 			Assert(sphere_time >= 0.0f);
 
 			if ((Mc->flags & MC_COLLIDE_ALL) || (Mc->num_hits == 0) || (sphere_time < Mc->hit_dist)) {
