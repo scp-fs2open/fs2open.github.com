@@ -14,6 +14,8 @@
 class QOffscreenSurface;
 class QPainter;
 class QPaintEvent;
+class QContextMenuEvent;
+class QWheelEvent;
 class briefing;
 
 namespace fso::fred::dialogs {
@@ -63,6 +65,14 @@ public:
 signals:
 	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
+	void iconCreateRequested(vec3d worldPos);          // Ctrl+click: make a new icon at this world position
+	void iconFromShipCreateRequested(vec3d worldPos);  // Shift+Ctrl+click: Make Icon From Ship at this position
+	void deleteSelectedIconsRequested();        // Delete key: remove the selected icon(s)
+	void nudgeIconsRequested(vec3d worldDelta); // arrow keys: move the selected icon(s) by this offset
+	// drag-box selection: the icons enclosed by the rubber band (additive = add to the current selection)
+	void iconsSelectedInBox(SCP_vector<int> indices, bool additive);
+	void mapContextMenuRequested(QPoint globalPos, vec3d worldPos); // right-click on empty map
+	void iconContextMenuRequested(QPoint globalPos);                // right-click on an icon (selection updated)
 
 protected:
 	bool event(QEvent* evt) override;
@@ -71,6 +81,8 @@ protected:
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
+	void contextMenuEvent(QContextMenuEvent* event) override;
+	void wheelEvent(QWheelEvent* event) override;
 	void paintEvent(QPaintEvent* event) override;
 
 private:
@@ -82,9 +94,24 @@ private:
 	static bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr);
 	void updateEditorHighlightPlayback() const;
 	void drawSelectionBrackets(QPainter& painter);
+	void drawSelectionMarquee(QPainter& painter);
+	// Emit iconsSelectedInBox() for every icon whose center falls inside the rubber band (widget coords).
+	void selectIconsInBox(const QPointF& startLogical, const QPointF& endLogical, bool additive);
 	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
+	// Orbit/pan/zoom camera controls, mirroring the main viewport (right/middle drag = orbit, Shift = pan,
+	// wheel = zoom), sharing the main viewport's orbit-inversion preferences.
+	static vec3d orbitPivot();
+	void beginOrbit(const QPoint& pos);
+	void handleOrbitDrag(const QPoint& pos, Qt::KeyboardModifiers modifiers);
+	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
+	// plane, giving the world position under the cursor for placing a new icon.
+	vec3d worldPosAtMouse(float mouseRefX, float mouseRefY) const;
+	// Map a logical widget position to reference-resolution coords; false if the map geometry isn't ready.
+	bool mouseToReference(const QPointF& logical, float& refX, float& refY) const;
+	// Icons under the given reference-resolution point, top-most (drawn last) first.
+	SCP_vector<int> iconsUnderReference(float refX, float refY) const;
 
 	CameraController _cameraController;
 
@@ -116,10 +143,31 @@ private:
 	bool _draggingIcon = false;
 	int _dragIconIndex = -1;
 	QPointF _dragStartMousePos;
-	vec3d _dragStartIconPos = ZERO_VECTOR;
+	// When a plain click lands on a member of a multi-selection we keep the selection (so a drag moves the
+	// whole group); if the click turns out not to be a drag, this collapses the selection to that icon.
+	int _pendingCollapseIndex = -1;
+
+	// Drag-box (rubber band) selection, started by pressing on empty space. Positions are logical widget
+	// coordinates. _boxSelectActive turns on once the drag passes the click threshold.
+	bool _boxSelectPending = false;
+	bool _boxSelectActive = false;
+	bool _boxSelectAdditive = false;
+	QPointF _boxStartPos;
+	QPointF _boxCurrentPos;
+
+	// Orbit camera drag state. Middle button orbits immediately; right button orbits only once it moves
+	// past a small threshold (so a right-click still opens the context menu).
+	bool _orbitDragging = false;
+	bool _rbuttonDown = false;
+	bool _rbuttonMoved = false;
+	QPoint _rbuttonDownPoint;
+	QPoint _orbitLastMouse;
 	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;
+	// Projection scale (Matrix_scale) the briefing last rendered with, captured so we can unproject
+	// clicks accurately even though the live g3 state belongs to the main editor viewport by then.
+	vec3d _lastMatrixScale = ZERO_VECTOR;
 
 	// Briefing cut transition state (forward/backward cut + jump cuts)
 	bool _cutFadeIn = false;

@@ -322,7 +322,9 @@
           </layout>
          </item>
          <item>
-          <widget class="QGroupBox" name="currentIconInfoGroupBox">
+          <layout class="QGridLayout" name="currentIconOverlayLayout">
+           <item row="0" column="0">
+            <widget class="QGroupBox" name="currentIconInfoGroupBox">
            <property name="minimumSize">
             <size>
              <width>0</width>
@@ -422,7 +424,11 @@
                  </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QDoubleSpinBox" name="scaleDoubleSpinBox"/>
+                 <widget class="QDoubleSpinBox" name="scaleDoubleSpinBox">
+                  <property name="singleStep">
+                   <double>0.100000000000000</double>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
@@ -430,7 +436,7 @@
             </item>
             <item>
              <layout class="QGridLayout" name="iconCheckboxesLayout">
-              <item row="3" column="1">
+              <item row="4" column="0">
                <widget class="QCheckBox" name="highlightCheckBox">
                 <property name="text">
                  <string>Highlight</string>
@@ -441,13 +447,6 @@
                <widget class="QCheckBox" name="useWingIconCheckBox">
                 <property name="text">
                  <string>Use Wing Icon</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QCheckBox" name="changeLocallyCheckBox">
-                <property name="text">
-                 <string>Change locally</string>
                 </property>
                </widget>
               </item>
@@ -468,7 +467,7 @@
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
+              <item row="3" column="1">
                <widget class="QCheckBox" name="useCargoIconCheckBox">
                 <property name="text">
                  <string>Use Cargo Icon</string>
@@ -509,7 +508,16 @@
              </layout>
             </item>
            </layout>
-          </widget>
+            </widget>
+           </item>
+           <item row="0" column="0" alignment="Qt::AlignRight|Qt::AlignTop">
+            <widget class="QCheckBox" name="changeLocallyCheckBox">
+             <property name="text">
+              <string>Change locally</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
          <item>
           <spacer name="verticalSpacer">
@@ -539,7 +547,7 @@
            <item>
             <widget class="QPushButton" name="makeIconFromShipButton">
              <property name="text">
-              <string>From Ship...</string>
+              <string>Make Icon From Ship...</string>
              </property>
              <property name="autoDefault">
               <bool>false</bool>
