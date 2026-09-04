@@ -396,33 +396,12 @@ typedef struct model_tmap_vert {
 	{}
 } model_tmap_vert;
 
-struct bsp_collision_node {
-	vec3d min;
-	vec3d max;
-
-	int back;
-	int front;
-
-	int leaf;
-};
-
-struct bsp_collision_leaf {
-	vec3d plane_norm;
-	int vert_start;
-	ubyte num_verts;
-	ubyte tmap_num;
-
-	int next;
-};
-
+// Per-submodel collision data kept for the model's full lifetime. point_list/n_verts/poly_centers
+// are read directly by three consumers unrelated to collision: submodel_get_random_point()/
+// submodel_get_cross_sectional_*_pos() (modelinterp.cpp), ai_bpap()'s attack-point picking
+// (aibig.cpp), and the Lua Submodel.NumVertices/GetVertex API (model.cpp) -- keep populated even
+// though nothing collision-related reads them past model_collide_parse_bsp().
 struct bsp_collision_tree {
-	bsp_collision_node *node_list;
-	int n_nodes;
-
-	bsp_collision_leaf *leaf_list;
-	int n_leaves;
-
-	model_tmap_vert *vert_list;
 	vec3d *point_list;
 	SCP_vector<vec3d> poly_centers;
 
@@ -493,9 +472,9 @@ public:
 	// HUD) also read it and may rely on the author-tuned value.
 	float collision_rad = 0.0f;
 
-	// The per-triangle BVH over this submodel's fan-triangulated collision geometry (see
-	// modelbvh.h/modelbvh_extract.h), built at model-load time from the same vertex data the
-	// (since-freed) BSP collision tree was parsed from. shared_ptr, not unique_ptr -- bsp_info is
+	// The per-triangle BVH over this submodel's fan-triangulated collision geometry (see modelbvh.h),
+	// built at model-load time directly from model_collide_parse_bsp()'s one walk of the raw BSP
+	// opcode stream. shared_ptr, not unique_ptr -- bsp_info is
 	// explicitly copy-constructed elsewhere (modelreplace.cpp, appending submodels from one model
 	// into another), same as bsp_data/outline_buffer above, and a shallow-shared BVH is consistent
 	// with how collision_tree_index already gets shared by that copy (the appended submodel is
@@ -1446,11 +1425,15 @@ typedef struct mc_info {
 */
 
 int model_collide(mc_info *mc_info_obj);
-void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version);
+
+// Walks the raw POF BSP opcode stream once, populating tree's point_list/n_verts/poly_centers (see
+// bsp_collision_tree's own comment) and emitting one fan-triangulated bvh_triangle per polygon into
+// out_triangles, suitable for bvh_build(). Triangle coordinates are in the submodel's local space.
+void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version,
+	SCP_vector<bvh_triangle> &out_triangles);
 
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
-void model_bsp_collision_tree_release_leaf_data(bsp_collision_tree *tree);
 int model_create_bsp_collision_tree();
 
 

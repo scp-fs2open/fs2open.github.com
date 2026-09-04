@@ -5,9 +5,32 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 #include <utility>
 
 namespace {
+
+// Exact-bitwise vertex dedup key for the shared vertex pool built in bvh_build() below -- see that
+// function's comment for why bitwise (not epsilon) comparison is correct here.
+struct VertexKey {
+	uint32_t bx, by, bz;
+	bool operator==(const VertexKey& o) const { return bx == o.bx && by == o.by && bz == o.bz; }
+};
+struct VertexKeyHash {
+	size_t operator()(const VertexKey& k) const
+	{
+		size_t h = std::hash<uint32_t>()(k.bx);
+		h ^= std::hash<uint32_t>()(k.by) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		h ^= std::hash<uint32_t>()(k.bz) + 0x9e3779b9 + (h << 6) + (h >> 2);
+		return h;
+	}
+};
+uint32_t bits_of(float f)
+{
+	uint32_t u;
+	std::memcpy(&u, &f, sizeof(u));
+	return u;
+}
 
 vec3d make_vec3d(float x, float y, float z)
 {
@@ -371,20 +394,14 @@ bool ray_triangle(const vec3d& origin, const vec3d& dir, const bvh_triangle& tri
 // directly -- there is no separate AoS array to keep in sync.
 void pad_leaves_to_simd_width(bvh_tree& tree)
 {
-	SCP_vector<float> v0x, v0y, v0z, v1x, v1y, v1z, v2x, v2y, v2z;
+	SCP_vector<uint32_t> i0, i1, i2;
 	SCP_vector<int> tmap_num, original_index, leaf_index;
 	SCP_vector<bvh_uv> uv0, uv1, uv2;
 
 	size_t reserve_n = tree.triangle_count();
-	v0x.reserve(reserve_n);
-	v0y.reserve(reserve_n);
-	v0z.reserve(reserve_n);
-	v1x.reserve(reserve_n);
-	v1y.reserve(reserve_n);
-	v1z.reserve(reserve_n);
-	v2x.reserve(reserve_n);
-	v2y.reserve(reserve_n);
-	v2z.reserve(reserve_n);
+	i0.reserve(reserve_n);
+	i1.reserve(reserve_n);
+	i2.reserve(reserve_n);
 	tmap_num.reserve(reserve_n);
 	original_index.reserve(reserve_n);
 	leaf_index.reserve(reserve_n);
@@ -393,15 +410,9 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 	uv2.reserve(reserve_n);
 
 	auto append_real = [&](size_t src) {
-		v0x.push_back(tree.v0x[src]);
-		v0y.push_back(tree.v0y[src]);
-		v0z.push_back(tree.v0z[src]);
-		v1x.push_back(tree.v1x[src]);
-		v1y.push_back(tree.v1y[src]);
-		v1z.push_back(tree.v1z[src]);
-		v2x.push_back(tree.v2x[src]);
-		v2y.push_back(tree.v2y[src]);
-		v2z.push_back(tree.v2z[src]);
+		i0.push_back(tree.i0[src]);
+		i1.push_back(tree.i1[src]);
+		i2.push_back(tree.i2[src]);
 		tmap_num.push_back(tree.tmap_num[src]);
 		original_index.push_back(tree.original_index[src]);
 		leaf_index.push_back(tree.leaf_index[src]);
@@ -411,16 +422,11 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 	};
 
 	auto append_degenerate = [&](size_t src) {
-		// Same metadata as the source triangle, but v1/v2 collapsed onto v0.
-		v0x.push_back(tree.v0x[src]);
-		v0y.push_back(tree.v0y[src]);
-		v0z.push_back(tree.v0z[src]);
-		v1x.push_back(tree.v0x[src]);
-		v1y.push_back(tree.v0y[src]);
-		v1z.push_back(tree.v0z[src]);
-		v2x.push_back(tree.v0x[src]);
-		v2y.push_back(tree.v0y[src]);
-		v2z.push_back(tree.v0z[src]);
+		// Same metadata as the source triangle, but v1/v2 collapsed onto v0 -- since v0's vertex is
+		// already in the shared pool, this just reuses its index three times, no new pool entries.
+		i0.push_back(tree.i0[src]);
+		i1.push_back(tree.i0[src]);
+		i2.push_back(tree.i0[src]);
 		tmap_num.push_back(tree.tmap_num[src]);
 		original_index.push_back(tree.original_index[src]);
 		leaf_index.push_back(tree.leaf_index[src]);
@@ -436,7 +442,7 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 
 			int start = node.child[i];
 			int count = node.count[i];
-			int new_start = static_cast<int>(v0x.size());
+			int new_start = static_cast<int>(i0.size());
 
 			for (int t = start; t < start + count; ++t)
 				append_real(static_cast<size_t>(t));
@@ -450,15 +456,9 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 		}
 	}
 
-	tree.v0x = std::move(v0x);
-	tree.v0y = std::move(v0y);
-	tree.v0z = std::move(v0z);
-	tree.v1x = std::move(v1x);
-	tree.v1y = std::move(v1y);
-	tree.v1z = std::move(v1z);
-	tree.v2x = std::move(v2x);
-	tree.v2y = std::move(v2y);
-	tree.v2z = std::move(v2z);
+	tree.i0 = std::move(i0);
+	tree.i1 = std::move(i1);
+	tree.i2 = std::move(i2);
 	tree.tmap_num = std::move(tmap_num);
 	tree.original_index = std::move(original_index);
 	tree.leaf_index = std::move(leaf_index);
@@ -492,32 +492,41 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
 
 	tree.root = emit_node(bin_nodes, root_bin, tree.nodes);
 
-	tree.v0x.reserve(n);
-	tree.v0y.reserve(n);
-	tree.v0z.reserve(n);
-	tree.v1x.reserve(n);
-	tree.v1y.reserve(n);
-	tree.v1z.reserve(n);
-	tree.v2x.reserve(n);
-	tree.v2y.reserve(n);
-	tree.v2z.reserve(n);
+	tree.i0.reserve(n);
+	tree.i1.reserve(n);
+	tree.i2.reserve(n);
 	tree.tmap_num.reserve(n);
 	tree.original_index.reserve(n);
 	tree.leaf_index.reserve(n);
 	tree.uv0.reserve(n);
 	tree.uv1.reserve(n);
 	tree.uv2.reserve(n);
+
+	// Shared vertex pool: each distinct position is stored once, on first reference while walking
+	// triangles in the SAH build's leaf order (`indices`), so the pool ends up ordered by
+	// first-touch-in-leaf-order. Dedup is exact-bitwise -- every vertex here is a POF-authored float
+	// copied verbatim by the caller into a bvh_triangle, so a genuine shared vertex is bit-identical
+	// wherever it's referenced, and bitwise dedup is far cheaper than an epsilon comparison.
+	SCP_unordered_map<VertexKey, uint32_t, VertexKeyHash> vertex_pool;
+	vertex_pool.reserve(static_cast<size_t>(n));
+	auto intern_vertex = [&](const vec3d& v) -> uint32_t {
+		VertexKey key{bits_of(v.xyz.x), bits_of(v.xyz.y), bits_of(v.xyz.z)};
+		auto it = vertex_pool.find(key);
+		if (it != vertex_pool.end())
+			return it->second;
+		uint32_t idx = static_cast<uint32_t>(tree.vx.size());
+		tree.vx.push_back(v.xyz.x);
+		tree.vy.push_back(v.xyz.y);
+		tree.vz.push_back(v.xyz.z);
+		vertex_pool.emplace(key, idx);
+		return idx;
+	};
+
 	for (int i = 0; i < n; ++i) {
 		const bvh_triangle& t = triangles[indices[i]];
-		tree.v0x.push_back(t.v0.xyz.x);
-		tree.v0y.push_back(t.v0.xyz.y);
-		tree.v0z.push_back(t.v0.xyz.z);
-		tree.v1x.push_back(t.v1.xyz.x);
-		tree.v1y.push_back(t.v1.xyz.y);
-		tree.v1z.push_back(t.v1.xyz.z);
-		tree.v2x.push_back(t.v2.xyz.x);
-		tree.v2y.push_back(t.v2.xyz.y);
-		tree.v2z.push_back(t.v2.xyz.z);
+		tree.i0.push_back(intern_vertex(t.v0));
+		tree.i1.push_back(intern_vertex(t.v1));
+		tree.i2.push_back(intern_vertex(t.v2));
 		tree.tmap_num.push_back(t.tmap_num);
 		tree.original_index.push_back(t.original_index);
 		tree.leaf_index.push_back(t.leaf_index);
@@ -593,22 +602,38 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 	bool found = false;
 
 	for (int32_t chunk = start; chunk < start + count; chunk += BVH_N) {
-		// Structured as separate fixed-BVH_N-length arrays and per-stage loops (rather than one
-		// scalar per-lane loop calling vm_vec_cross/dot) so the shape matches bvh_node's own
-		// SoA-array style and gives the autovectorizer the best chance of turning this into SIMD --
-		// see the design note on ray_triangle_leaf_simd() in modelbvh.h. Every lane is computed
-		// unconditionally; no lane is ever skipped or early-exited the way the scalar ray_triangle()
-		// does, so there's no data-dependent control flow across lanes.
+		// Vertex components are resolved with a per-lane scalar index load from the shared pool
+		// first (there's no hardware gather on this project's SIMD baseline -- confirmed AVX2-only,
+		// and weak even there before Skylake -- so a per-lane scalar load is the right tool, not a
+		// missed-vectorization gap). Separate fixed-BVH_N-length arrays and per-stage loops below so
+		// the autovectorizer has the best chance of turning the arithmetic into SIMD, every lane
+		// computed unconditionally with no data-dependent control flow across lanes.
+		float v0x[BVH_N], v0y[BVH_N], v0z[BVH_N];
+		float v1x[BVH_N], v1y[BVH_N], v1z[BVH_N];
+		float v2x[BVH_N], v2y[BVH_N], v2z[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			int32_t idx = chunk + i;
+			uint32_t a = tree.i0[idx], b = tree.i1[idx], c = tree.i2[idx];
+			v0x[i] = tree.vx[a];
+			v0y[i] = tree.vy[a];
+			v0z[i] = tree.vz[a];
+			v1x[i] = tree.vx[b];
+			v1y[i] = tree.vy[b];
+			v1z[i] = tree.vz[b];
+			v2x[i] = tree.vx[c];
+			v2y[i] = tree.vy[c];
+			v2z[i] = tree.vz[c];
+		}
+
 		float e1x[BVH_N], e1y[BVH_N], e1z[BVH_N];
 		float e2x[BVH_N], e2y[BVH_N], e2z[BVH_N];
 		for (int i = 0; i < BVH_N; ++i) {
-			int32_t idx = chunk + i;
-			e1x[i] = tree.v1x[idx] - tree.v0x[idx];
-			e1y[i] = tree.v1y[idx] - tree.v0y[idx];
-			e1z[i] = tree.v1z[idx] - tree.v0z[idx];
-			e2x[i] = tree.v2x[idx] - tree.v0x[idx];
-			e2y[i] = tree.v2y[idx] - tree.v0y[idx];
-			e2z[i] = tree.v2z[idx] - tree.v0z[idx];
+			e1x[i] = v1x[i] - v0x[i];
+			e1y[i] = v1y[i] - v0y[i];
+			e1z[i] = v1z[i] - v0z[i];
+			e2x[i] = v2x[i] - v0x[i];
+			e2y[i] = v2y[i] - v0y[i];
+			e2z[i] = v2z[i] - v0z[i];
 		}
 
 		float pvecx[BVH_N], pvecy[BVH_N], pvecz[BVH_N];
@@ -628,10 +653,9 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 
 		float tvecx[BVH_N], tvecy[BVH_N], tvecz[BVH_N];
 		for (int i = 0; i < BVH_N; ++i) {
-			int32_t idx = chunk + i;
-			tvecx[i] = origin.xyz.x - tree.v0x[idx];
-			tvecy[i] = origin.xyz.y - tree.v0y[idx];
-			tvecz[i] = origin.xyz.z - tree.v0z[idx];
+			tvecx[i] = origin.xyz.x - v0x[i];
+			tvecy[i] = origin.xyz.y - v0y[i];
+			tvecz[i] = origin.xyz.z - v0z[i];
 		}
 
 		float u[BVH_N];
@@ -670,6 +694,294 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 			if (valid[i] && t[i] < best_t) {
 				best_t = t[i];
 				out_t = t[i];
+				out_triangle_index = chunk + i;
+				found = true;
+			}
+		}
+	}
+
+	return found;
+}
+
+bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& sphere_p0,
+	const vec3d& sphere_dir, float radius, float best_t, float& out_t, int32_t& out_triangle_index)
+{
+	// Query-wide scalars (same sphere for every triangle in this leaf, so these are computed once
+	// per call, not per lane) -- mirrors fvi_polyedge_sphereline()'s own vs_sqr hoist.
+	const float xs0x = sphere_p0.xyz.x, xs0y = sphere_p0.xyz.y, xs0z = sphere_p0.xyz.z;
+	const float vsx = sphere_dir.xyz.x, vsy = sphere_dir.xyz.y, vsz = sphere_dir.xyz.z;
+	const float vs_sqr = vsx * vsx + vsy * vsy + vsz * vsz;
+	const float Rs2 = radius * radius;
+	const float Rs_point2 = 0.2f * radius;
+
+	// Edge-cylinder + vertex-sphere test for one triangle edge (va -> vb), batched over BVH_N lanes.
+	// A faithful per-lane translation of fvi_polyedge_sphereline()'s per-edge body: every goto
+	// becomes an unconditional bool computed for all lanes, combined with && / || instead of control
+	// flow. hitOut/timeOut receive this edge's contribution only (the caller min-reduces across the
+	// triangle's 3 edges, same as the scalar function's running best_sphere_time).
+	auto test_edge = [&](const float avx[BVH_N], const float avy[BVH_N], const float avz[BVH_N],
+						  const float bvx[BVH_N], const float bvy[BVH_N], const float bvz[BVH_N], bool hitOut[BVH_N],
+						  float timeOut[BVH_N]) {
+		float vex[BVH_N], vey[BVH_N], vez[BVH_N];
+		float dxx[BVH_N], dxy[BVH_N], dxz[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			vex[i] = bvx[i] - avx[i];
+			vey[i] = bvy[i] - avy[i];
+			vez[i] = bvz[i] - avz[i];
+			dxx[i] = xs0x - avx[i];
+			dxy[i] = xs0y - avy[i];
+			dxz[i] = xs0z - avz[i];
+		}
+
+		float dx_dot_ve[BVH_N], dx_dot_vs[BVH_N], dx_sqr[BVH_N], ve_dot_vs[BVH_N], ve_sqr[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			dx_dot_ve[i] = dxx[i] * vex[i] + dxy[i] * vey[i] + dxz[i] * vez[i];
+			dx_dot_vs[i] = dxx[i] * vsx + dxy[i] * vsy + dxz[i] * vsz;
+			dx_sqr[i] = dxx[i] * dxx[i] + dxy[i] * dxy[i] + dxz[i] * dxz[i];
+			ve_dot_vs[i] = vex[i] * vsx + vey[i] * vsy + vez[i] * vsz;
+			ve_sqr[i] = vex[i] * vex[i] + vey[i] * vey[i] + vez[i] * vez[i];
+		}
+
+		// Stage 1: closest-approach time along the sphere's own line (fvi_polyedge_sphereline's
+		// first quadratic, "A*x*x + 2*B*x + C = 0" solved for the sphere parameter).
+		float A[BVH_N], B[BVH_N], C[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			A[i] = ve_dot_vs[i] * ve_dot_vs[i] - ve_sqr[i] * vs_sqr;
+			B[i] = dx_dot_ve[i] * ve_dot_vs[i] - dx_dot_vs[i] * ve_sqr[i];
+			C[i] = dx_dot_ve[i] * dx_dot_ve[i] + Rs2 * ve_sqr[i] - dx_sqr[i] * ve_sqr[i];
+		}
+
+		float disc1[BVH_N];
+		for (int i = 0; i < BVH_N; ++i)
+			disc1[i] = B[i] * B[i] - A[i] * C[i];
+
+		bool stage1_disc_pos[BVH_N];
+		for (int i = 0; i < BVH_N; ++i)
+			stage1_disc_pos[i] = disc1[i] > 0.0f;
+
+		float root1[BVH_N];
+		bool stage1_in_range[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			float root = stage1_disc_pos[i] ? std::sqrt(disc1[i]) : 0.0f;
+			float invA = 1.0f / A[i];
+			float r1 = (-B[i] + root) * invA;
+			float r2 = (-B[i] - root) * invA;
+			float lo = std::min(r1, r2);
+			if (lo < 0.0f && lo >= -0.05f)
+				lo = 0.000001f;
+			root1[i] = lo;
+			stage1_in_range[i] = stage1_disc_pos[i] && lo <= 1.0f && lo >= 0.0f;
+		}
+
+		// Stage 2: edge-parameter roots at the stage-1 sphere time, cross-validated against the
+		// sphere's actual surface distance (the "q" check in fvi_polyedge_sphereline) -- this is
+		// what distinguishes a genuine hit on the bounded edge segment from the stage-1 solve simply
+		// finding where the *infinite* edge line comes within Rs of the sphere's line.
+		float A2[BVH_N], B2[BVH_N], C2[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			A2[i] = A[i] * ve_sqr[i];
+			B2[i] = ve_sqr[i] * (dx_dot_ve[i] * vs_sqr - dx_dot_vs[i] * ve_dot_vs[i]);
+			C2[i] = 2.0f * dx_dot_ve[i] * dx_dot_vs[i] * ve_dot_vs[i] + Rs2 * ve_dot_vs[i] * ve_dot_vs[i] -
+					dx_sqr[i] * ve_dot_vs[i] * ve_dot_vs[i] - dx_dot_ve[i] * dx_dot_ve[i] * vs_sqr;
+		}
+
+		bool seg_hit[BVH_N];
+		float seg_time[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			float disc2 = B2[i] * B2[i] - A2[i] * C2[i];
+			float root2sqrt = (disc2 < 0.0f) ? 0.0f : std::sqrt(disc2);
+			float invA2 = 1.0f / A2[i];
+			float root1b = (-B2[i] + root2sqrt) * invA2;
+			float root2b = (-B2[i] - root2sqrt) * invA2;
+
+			float ehx1 = avx[i] + vex[i] * root1b, ehy1 = avy[i] + vey[i] * root1b, ehz1 = avz[i] + vez[i] * root1b;
+			float ehx2 = avx[i] + vex[i] * root2b, ehy2 = avy[i] + vey[i] * root2b, ehz2 = avz[i] + vez[i] * root2b;
+			float shx = xs0x + vsx * root1[i], shy = xs0y + vsy * root1[i], shz = xs0z + vsz * root1[i];
+
+			float q1 = (ehx1 - shx) * (ehx1 - shx) + (ehy1 - shy) * (ehy1 - shy) + (ehz1 - shz) * (ehz1 - shz);
+			float q2 = (ehx2 - shx) * (ehx2 - shx) + (ehy2 - shy) * (ehy2 - shy) + (ehz2 - shz) * (ehz2 - shz);
+
+			bool pass1 = root1b >= 0.0f && root1b <= 1.0f && std::fabs(q1 - Rs2) < Rs_point2;
+			bool pass2 = root2b >= 0.0f && root2b <= 1.0f && std::fabs(q2 - Rs2) < Rs_point2;
+
+			seg_hit[i] = stage1_disc_pos[i] && stage1_in_range[i] && (pass1 || pass2);
+			seg_time[i] = root1[i];
+		}
+
+		// TryVertex fallback: direct sphere-vs-point test against both of this edge's endpoints
+		// (check_sphere_point() in fvi.cpp, inlined). Attempted whenever the stage-1 quadratic had
+		// real roots but the segment test above didn't confirm a hit -- matches every path that
+		// reaches fvi_polyedge_sphereline()'s TryVertex: label.
+		for (int i = 0; i < BVH_N; ++i) {
+			bool need_vertex = stage1_disc_pos[i] && !seg_hit[i];
+
+			float dxb_x = xs0x - bvx[i], dxb_y = xs0y - bvy[i], dxb_z = xs0z - bvz[i];
+			float dxb_sqr = dxb_x * dxb_x + dxb_y * dxb_y + dxb_z * dxb_z;
+			float dxb_dot_vs = dxb_x * vsx + dxb_y * vsy + dxb_z * vsz;
+
+			bool v0hit = false, v1hit = false;
+			float sphere_v0 = FLT_MAX, sphere_v1 = FLT_MAX;
+
+			float discv0 = dx_dot_vs[i] * dx_dot_vs[i] - vs_sqr * (dx_sqr[i] - Rs2);
+			if (discv0 > 0.0f) {
+				float root = std::sqrt(discv0);
+				float r1 = (-dx_dot_vs[i] + root) / vs_sqr;
+				float r2 = (-dx_dot_vs[i] - root) / vs_sqr;
+				float lo = std::min(r1, r2);
+				if (lo > 0.0f && lo < 1.0f) {
+					v0hit = true;
+					sphere_v0 = lo;
+				}
+			}
+
+			float discv1 = dxb_dot_vs * dxb_dot_vs - vs_sqr * (dxb_sqr - Rs2);
+			if (discv1 > 0.0f) {
+				float root = std::sqrt(discv1);
+				float r1 = (-dxb_dot_vs + root) / vs_sqr;
+				float r2 = (-dxb_dot_vs - root) / vs_sqr;
+				float lo = std::min(r1, r2);
+				if (lo > 0.0f && lo < 1.0f) {
+					v1hit = true;
+					sphere_v1 = lo;
+				}
+			}
+
+			bool vertex_hit = v0hit || v1hit;
+			float vertex_time = (v0hit && v1hit) ? std::min(sphere_v0, sphere_v1) : (v0hit ? sphere_v0 : sphere_v1);
+
+			hitOut[i] = seg_hit[i] || (need_vertex && vertex_hit);
+			timeOut[i] = seg_hit[i] ? seg_time[i] : vertex_time;
+		}
+	};
+
+	bool found = false;
+
+	for (int32_t chunk = start; chunk < start + count; chunk += BVH_N) {
+		float v0x[BVH_N], v0y[BVH_N], v0z[BVH_N];
+		float v1x[BVH_N], v1y[BVH_N], v1z[BVH_N];
+		float v2x[BVH_N], v2y[BVH_N], v2z[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			int32_t idx = chunk + i;
+			uint32_t a = tree.i0[idx], b = tree.i1[idx], c = tree.i2[idx];
+			v0x[i] = tree.vx[a];
+			v0y[i] = tree.vy[a];
+			v0z[i] = tree.vz[a];
+			v1x[i] = tree.vx[b];
+			v1y[i] = tree.vy[b];
+			v1z[i] = tree.vz[b];
+			v2x[i] = tree.vx[c];
+			v2y[i] = tree.vy[c];
+			v2z[i] = tree.vz[c];
+		}
+
+		float e1x[BVH_N], e1y[BVH_N], e1z[BVH_N];
+		float e2x[BVH_N], e2y[BVH_N], e2z[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			e1x[i] = v1x[i] - v0x[i];
+			e1y[i] = v1y[i] - v0y[i];
+			e1z[i] = v1z[i] - v0z[i];
+			e2x[i] = v2x[i] - v0x[i];
+			e2y[i] = v2y[i] - v0y[i];
+			e2z[i] = v2z[i] - v0z[i];
+		}
+
+		// Face normal (raw cross product + magnitude; normalize with a guarded reciprocal so a
+		// degenerate/zero-area padding triangle -- see bvh_build() -- yields nx=ny=nz=0 rather than
+		// NaN, which then safely fails every downstream test in this function).
+		float nx[BVH_N], ny[BVH_N], nz[BVH_N];
+		bool degenerate[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			float rx = e1y[i] * e2z[i] - e1z[i] * e2y[i];
+			float ry = e1z[i] * e2x[i] - e1x[i] * e2z[i];
+			float rz = e1x[i] * e2y[i] - e1y[i] * e2x[i];
+			float magsq = rx * rx + ry * ry + rz * rz;
+			degenerate[i] = magsq <= 1e-16f;
+			float inv_mag = degenerate[i] ? 0.0f : 1.0f / std::sqrt(magsq);
+			nx[i] = rx * inv_mag;
+			ny[i] = ry * inv_mag;
+			nz[i] = rz * inv_mag;
+		}
+
+		// fvi_sphere_plane(), batched: face/slab touch-time test against each triangle's own plane.
+		bool active[BVH_N];
+		float face_t[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			float vs_dot_norm = vsx * nx[i] + vsy * ny[i] + vsz * nz[i];
+			bool backface = vs_dot_norm > 0.0f; // MC_COLLIDE_ALL never reaches this function -- see header comment
+			float D = -(nx[i] * v0x[i] + ny[i] * v0y[i] + nz[i] * v0z[i]);
+			float xs0_dot_norm = nx[i] * xs0x + ny[i] * xs0y + nz[i] * xs0z;
+			bool plane_valid = std::fabs(vs_dot_norm) > 1e-30f;
+			float inv_vs = plane_valid ? 1.0f / vs_dot_norm : 0.0f;
+			float t1raw = (-D - xs0_dot_norm + radius) * inv_vs;
+			float t2raw = (-D - xs0_dot_norm - radius) * inv_vs;
+			float t1 = std::min(t1raw, t2raw);
+			float t2 = std::max(t1raw, t2raw);
+			bool fvi_ok = plane_valid && t1 < 1.0f && t2 > 0.0f;
+			active[i] = !degenerate[i] && !backface && fvi_ok;
+			face_t[i] = t1;
+		}
+
+		// Face containment (barycentric), only meaningful where active[i] && face_t[i] >= 0 -- see
+		// mc_check_triangle_sphereline_face()'s check_face/on_face.
+		bool on_face[BVH_N];
+		for (int i = 0; i < BVH_N; ++i) {
+			bool check_face = active[i] && face_t[i] >= 0.0f;
+
+			float t1 = face_t[i];
+			float vtx = xs0x + vsx * t1, vty = xs0y + vsy * t1, vtz = xs0z + vsz * t1;
+			float dist = (vtx - v0x[i]) * nx[i] + (vty - v0y[i]) * ny[i] + (vtz - v0z[i]) * nz[i];
+			float hpx = vtx - dist * nx[i], hpy = vty - dist * ny[i], hpz = vtz - dist * nz[i];
+
+			float vpx = hpx - v0x[i], vpy = hpy - v0y[i], vpz = hpz - v0z[i];
+			float d00 = e1x[i] * e1x[i] + e1y[i] * e1y[i] + e1z[i] * e1z[i];
+			float d01 = e1x[i] * e2x[i] + e1y[i] * e2y[i] + e1z[i] * e2z[i];
+			float d11 = e2x[i] * e2x[i] + e2y[i] * e2y[i] + e2z[i] * e2z[i];
+			float d20 = vpx * e1x[i] + vpy * e1y[i] + vpz * e1z[i];
+			float d21 = vpx * e2x[i] + vpy * e2y[i] + vpz * e2z[i];
+			float denom = d00 * d11 - d01 * d01;
+
+			bool bary_ok = false;
+			if (std::fabs(denom) >= 1e-12f) {
+				constexpr float BARY_EPS = 1e-4f;
+				float gamma_v1 = (d11 * d20 - d01 * d21) / denom;
+				float gamma_v2 = (d00 * d21 - d01 * d20) / denom;
+				float gamma_v0 = 1.0f - gamma_v1 - gamma_v2;
+				bary_ok = gamma_v0 >= -BARY_EPS && gamma_v1 >= -BARY_EPS && gamma_v2 >= -BARY_EPS;
+			}
+			on_face[i] = check_face && bary_ok;
+		}
+
+		bool edgeHit0[BVH_N], edgeHit1[BVH_N], edgeHit2[BVH_N];
+		float edgeTime0[BVH_N], edgeTime1[BVH_N], edgeTime2[BVH_N];
+		test_edge(v0x, v0y, v0z, v1x, v1y, v1z, edgeHit0, edgeTime0);
+		test_edge(v1x, v1y, v1z, v2x, v2y, v2z, edgeHit1, edgeTime1);
+		test_edge(v2x, v2y, v2z, v0x, v0y, v0z, edgeHit2, edgeTime2);
+
+		for (int i = 0; i < BVH_N; ++i) {
+			bool check_edges = active[i]; // == fvi_ok, see header comment derivation
+			bool any_hit;
+			float t;
+
+			if (on_face[i]) {
+				any_hit = true;
+				t = face_t[i];
+			} else if (check_edges) {
+				any_hit = edgeHit0[i] || edgeHit1[i] || edgeHit2[i];
+				t = FLT_MAX;
+				if (edgeHit0[i])
+					t = std::min(t, edgeTime0[i]);
+				if (edgeHit1[i])
+					t = std::min(t, edgeTime1[i]);
+				if (edgeHit2[i])
+					t = std::min(t, edgeTime2[i]);
+			} else {
+				any_hit = false;
+				t = FLT_MAX;
+			}
+
+			if (any_hit && t < best_t) {
+				best_t = t;
+				out_t = t;
 				out_triangle_index = chunk + i;
 				found = true;
 			}

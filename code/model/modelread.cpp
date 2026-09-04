@@ -31,7 +31,6 @@
 #include "math/fvi.h"
 #include "math/vecmat.h"
 #include "model/model.h"
-#include "model/modelbvh_extract.h"
 #include "model/modelinterp.h"
 #include "model/modelrender.h"
 #include "model/modelreplace.h"
@@ -3518,7 +3517,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 			sm->num_polys = bsp_data != nullptr ? submodel_get_num_polys_sub(bsp_data) : 0;
 		}
 		auto* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
-		model_collide_parse_bsp(tree, bsp_data, pm->version);
+		SCP_vector<bvh_triangle> tris;
+		model_collide_parse_bsp(tree, bsp_data, pm->version, tris);
 		Macro_ubyte_bounds = nullptr;
 
 		// The authored `rad` (read verbatim from the .pof, see bsp_info::rad) can undershoot a
@@ -3537,24 +3537,19 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		pm->submodel[i].collision_rad = std::max(pm->submodel[i].rad, sqrtf(max_dist_sq));
 
 		// Build the per-triangle BVH over this submodel's fan-triangulated collision geometry (see
-		// modelbvh.h/modelbvh_extract.h) from the collision tree just parsed above.
-		SCP_vector<bvh_triangle> tris = model_bvh_extract_submodel_triangles(pm, i);
+		// modelbvh.h) directly from model_collide_parse_bsp()'s output above.
 		if (!tris.empty()) {
 			pm->submodel[i].triangle_bvh = std::make_shared<bvh_tree>(bvh_build(std::move(tris)));
 		}
 	}
 
-	// clear bsp_data cache and release the collision tree's node/leaf/vert data -- both are only
-	// needed transiently to get here (parsing bsp_data built the tree; the tree fed the BVH build
-	// and the collision_rad computation above), and every live consumer past this point (the
-	// triangle_bvh, submodel_get_random_point()/poly_centers/point_list readers) is now
-	// self-contained. point_list/poly_centers/n_verts on the tree itself are NOT released here --
-	// see model_bsp_collision_tree_release_leaf_data()'s own comment.
+	// clear bsp_data cache -- only needed transiently to get here (parsing it built each submodel's
+	// point_list/poly_centers and fed the BVH build and the collision_rad computation above), and
+	// every live consumer past this point (the triangle_bvh, submodel_get_random_point()/
+	// poly_centers/point_list readers) is now self-contained.
 	for (i = 0; i < pm->n_models; ++i) {
 		pm->submodel[i].bsp_data.reset();
 		pm->submodel[i].bsp_data_size = 0;
-
-		model_bsp_collision_tree_release_leaf_data(model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index));
 	}
 
 	// Find the core_radius... the minimum of 
@@ -5462,55 +5457,8 @@ void model_remove_bsp_collision_tree(int tree_index)
 {
 	Bsp_collision_tree_list[tree_index].used = false;
 
-	if ( Bsp_collision_tree_list[tree_index].node_list ) {
-		vm_free(Bsp_collision_tree_list[tree_index].node_list);
-	}
-
-	if ( Bsp_collision_tree_list[tree_index].leaf_list ) {
-		vm_free(Bsp_collision_tree_list[tree_index].leaf_list);
-	}
-	
 	if ( Bsp_collision_tree_list[tree_index].point_list ) {
 		vm_free( Bsp_collision_tree_list[tree_index].point_list );
-	}
-	
-	if ( Bsp_collision_tree_list[tree_index].vert_list ) {
-		vm_free( Bsp_collision_tree_list[tree_index].vert_list);
-	}
-}
-
-// Frees a collision tree's node_list/leaf_list/vert_list -- the data that only ever mattered while
-// parsing bsp_data and building the submodel's triangle_bvh from it (see model_load()'s
-// per-submodel loop in this file, and model_bvh_extract_submodel_triangles() in
-// modelbvh_extract.cpp) -- once both are done, for the lifetime of the loaded model. Deliberately
-// does NOT touch point_list/poly_centers/n_verts: submodel_get_random_point() and the
-// cross-sectional-position helpers in modelinterp.cpp, the AI attack-point picker in aibig.cpp, and
-// the Lua Submodel.NumVertices/GetVertex API all read those directly and have nothing to do with
-// the leaf/node structure, so they need to keep working for the model's full lifetime. Safe to call
-// on a tree that's already had this run (or was never parsed) -- every field is null-checked, same
-// as model_remove_bsp_collision_tree() above, which itself remains correct when it later runs (at
-// full model unload) on a tree this has already partially freed.
-void model_bsp_collision_tree_release_leaf_data(bsp_collision_tree *tree)
-{
-	if (tree == nullptr) {
-		return;
-	}
-
-	if (tree->node_list) {
-		vm_free(tree->node_list);
-		tree->node_list = nullptr;
-	}
-	tree->n_nodes = 0;
-
-	if (tree->leaf_list) {
-		vm_free(tree->leaf_list);
-		tree->leaf_list = nullptr;
-	}
-	tree->n_leaves = 0;
-
-	if (tree->vert_list) {
-		vm_free(tree->vert_list);
-		tree->vert_list = nullptr;
 	}
 }
 

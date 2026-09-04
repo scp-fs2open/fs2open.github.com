@@ -62,19 +62,20 @@ struct bvh_node {
 };
 
 // Build output: a depth-first (pre-order) array of N-wide nodes, plus the input triangles
-// reordered into leaf-contiguous (SAH build) order and stored Structure-of-Arrays -- this is the
-// tree's actual triangle storage, not a cache derived from some other array, so leaf-batched SIMD
-// intersection (ray_triangle_leaf_simd()) reads vertex components directly with no per-query
-// transpose. [node.child[i] .. +count[i]) indexes every one of these parallel arrays for leaf slot
-// i. Metadata that's only ever read once per accepted hit (never per SIMD lane) -- tmap_num,
-// original_index, leaf_index, UVs -- stays out of the hot vertex arrays but is still
-// parallel-indexed the same way, for the same reason: one source of truth, no syncing.
+// reordered into leaf-contiguous (SAH build) order. Vertex positions are stored once each in a
+// shared pool (vx/vy/vz), referenced per-triangle by index (i0/i1/i2) -- not duplicated per
+// triangle, avoiding the extra storage duplicated-per-triangle vertices would cost. The pool is
+// ordered by first reference when walking triangles in leaf order (see bvh_build()), so a leaf
+// visit's index lookups tend to land on recently-touched, still-hot pool entries. [node.child[i] ..
+// +count[i]) indexes every one of these parallel arrays for leaf slot i. Metadata that's only ever
+// read once per accepted hit (never per SIMD lane) -- tmap_num, original_index, leaf_index, UVs --
+// stays out of the hot index arrays but is still parallel-indexed the same way, for the same
+// reason: one source of truth, no syncing.
 struct bvh_tree {
 	SCP_vector<bvh_node> nodes;
 
-	SCP_vector<float> v0x, v0y, v0z;
-	SCP_vector<float> v1x, v1y, v1z;
-	SCP_vector<float> v2x, v2y, v2z;
+	SCP_vector<float> vx, vy, vz;
+	SCP_vector<uint32_t> i0, i1, i2;
 	SCP_vector<int> tmap_num;
 	SCP_vector<int> original_index;
 	SCP_vector<int> leaf_index;
@@ -82,7 +83,16 @@ struct bvh_tree {
 
 	int root = 0;
 
-	size_t triangle_count() const { return v0x.size(); }
+	size_t triangle_count() const { return i0.size(); }
+
+	vec3d vertex(uint32_t vi) const
+	{
+		vec3d v;
+		v.xyz.x = vx[vi];
+		v.xyz.y = vy[vi];
+		v.xyz.z = vz[vi];
+		return v;
+	}
 
 	// Reconstructs triangle i as a single bvh_triangle, for call sites where that's more convenient
 	// than reading the parallel arrays directly (tests, the scalar bvh_ray_intersect() reference,
@@ -90,15 +100,9 @@ struct bvh_tree {
 	bvh_triangle triangle_at(size_t i) const
 	{
 		bvh_triangle t;
-		t.v0.xyz.x = v0x[i];
-		t.v0.xyz.y = v0y[i];
-		t.v0.xyz.z = v0z[i];
-		t.v1.xyz.x = v1x[i];
-		t.v1.xyz.y = v1y[i];
-		t.v1.xyz.z = v1z[i];
-		t.v2.xyz.x = v2x[i];
-		t.v2.xyz.y = v2y[i];
-		t.v2.xyz.z = v2z[i];
+		t.v0 = vertex(i0[i]);
+		t.v1 = vertex(i1[i]);
+		t.v2 = vertex(i2[i]);
 		t.tmap_num = tmap_num[i];
 		t.original_index = original_index[i];
 		t.leaf_index = leaf_index[i];
@@ -135,6 +139,44 @@ bool bvh_ray_intersect(const bvh_tree& tree, const vec3d& origin, const vec3d& d
 // closer hit.
 bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& origin, const vec3d& dir,
 	float best_t, float& out_t, int32_t& out_triangle_index);
+
+// Batched, SIMD-friendly nearest-hit sphere-line-vs-triangle test over one leaf range, mirroring
+// ray_triangle_leaf_simd() above: same "plain float[BVH_N] arrays, every lane computed
+// unconditionally" strategy, same scalar-gather-then-vector-math shape.
+//
+// NOT WIRED INTO THE LIVE COLLISION PATH -- correctness-tested (SphereTriangleLeafSimdTests in
+// test_modelbvh.cpp) but slower on real ship geometry than the scalar path it was meant to replace
+// (see collision_bvh_rewrite_plan memory note for benchmark numbers). Root cause: unlike
+// ray-triangle's Moller-Trumbore, which is already near-flat-cost per triangle regardless of
+// outcome, the scalar reference this batches (fvi_sphere_plane() + fvi_polyedge_sphereline() via
+// mc_check_triangle_sphereline_face()) has a cheap early-exit that matters a lot in practice --
+// fvi_sphere_plane() failing skips the entire expensive edge test, which is the common case for most
+// triangles in an AABB-pruned leaf. "Every lane computed unconditionally" throws that away: this
+// function pays the full 3-edge quadratic-plus-vertex-fallback cost for every triangle in every
+// leaf, where the scalar path usually bails out after one cheap plane test. Kept in the tree as a
+// validated (correct, just not fast) building block for a future redesign with a cheap per-chunk
+// pre-gate (e.g. a fvi_sphere_plane-only pass to skip the edge lambda for chunks where no lane needs
+// it), not because it's currently useful as-is.
+//
+// A moving sphere against a triangle is the classic "sphere at each vertex, cylinder along each
+// edge, slab for the face" case (see e.g. Real-Time Rendering's collision-detection chapter), and
+// this function reproduces FS2's own existing scalar algorithm for that -- fvi_sphere_plane() for
+// the face/slab test, then fvi_polyedge_sphereline()'s edge-cylinder quadratic (with its
+// vertex-sphere fallback) for the three edges -- batched across BVH_N triangles per iteration
+// instead of one triangle at a time. It is a faithful (not approximate) reproduction of that scalar
+// math: every branch in the scalar version (the two Hit/TryVertex fallbacks in
+// fvi_polyedge_sphereline, the on-face/edge dispatch in mc_check_triangle_sphereline_face())
+// becomes an unconditional per-lane bool combined with && / || instead of goto, so the result
+// should agree with the scalar reference bit-for-bit modulo floating-point reassociation -- which
+// is exactly why a caller would still need to re-confirm with the real scalar function rather than
+// trusting this function's fields directly, same as ray_triangle_leaf_simd()'s caller does.
+//
+// radius is the sphere radius (Mc->radius); this function is not meant to be used for MC_COLLIDE_ALL
+// queries, which need every hit, not just the nearest, same as ray_triangle_leaf_simd() is skipped
+// for MC_COLLIDE_ALL. best_t bounds the search; returns true and fills out_t/out_triangle_index only
+// for a strictly closer candidate.
+bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& sphere_p0,
+	const vec3d& sphere_dir, float radius, float best_t, float& out_t, int32_t& out_triangle_index);
 
 // The ray-vs-AABB slab test and its radius-inflated wrapper live here (inline), not in modelbvh.cpp,
 // specifically so they can inline into bvh_visit_triangles()'s hot per-node-slot loop below -- this

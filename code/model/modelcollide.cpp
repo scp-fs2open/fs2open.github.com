@@ -119,10 +119,10 @@ int mc_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *
 
 // Computes a polygon's normal directly from its own vertices (Newell's method -- a single O(n)
 // pass, robust for near-planar input and not limited to triangles), rather than trusting a
-// stored "plane_norm" field. bsp_collision_leaf::plane_norm is parsed verbatim from the .pof
-// file (exporter output, never validated against the vertices it's attached to) and can diverge
-// from the true geometric normal by a large margin on real content, which flips backface-cull
-// decisions and solves the ray against a tilted, wrong plane.
+// stored "plane_norm" field. The POF chunk's own plane-normal field is parsed verbatim from the
+// .pof file (exporter output, never validated against the vertices it's attached to) and can
+// diverge from the true geometric normal by a large margin on real content, which flips
+// backface-cull decisions and solves the ray against a tilted, wrong plane.
 //
 // Falls back to the caller-supplied stored normal only when the computed one is degenerate
 // (near-zero magnitude -- a truly zero-area or collinear polygon, where there's nothing
@@ -524,9 +524,8 @@ int model_collide_parse_bsp_defpoints(ubyte * p)
 // model_collide() call). Does NOT re-check Mc->flags & MC_CHECK_SPHERELINE itself.
 // check_invisible_faces/collide_invisible gate the invisible-texture skip; both are invariant for
 // the whole model_collide_bvh_triangle() call, so the caller hoists them out instead of re-reading
-// Mc/Mc_pm per triangle. tmap_num comes straight from the triangle's own bvh_tree storage -- no
-// bsp_collision_leaf lookup needed, since extraction already copied leaf.tmap_num onto the
-// triangle at build time.
+// Mc/Mc_pm per triangle. tmap_num comes straight from the triangle's own bvh_tree storage, set
+// directly by model_collide_parse_bsp() at build time.
 static bool mc_check_bvh_triangle_candidate(const bvh_tree *tbvh, int32_t tri_index, bool check_invisible_faces,
 	bool collide_invisible)
 {
@@ -541,10 +540,9 @@ static bool mc_check_bvh_triangle_candidate(const bvh_tree *tbvh, int32_t tri_in
 	bool flat_poly = raw_tmap_num >= MAX_MODEL_TEXTURES;
 	int ntmap = flat_poly ? -1 : raw_tmap_num;
 
-	vec3d v0, v1, v2;
-	v0.xyz.x = tbvh->v0x[idx]; v0.xyz.y = tbvh->v0y[idx]; v0.xyz.z = tbvh->v0z[idx];
-	v1.xyz.x = tbvh->v1x[idx]; v1.xyz.y = tbvh->v1y[idx]; v1.xyz.z = tbvh->v1z[idx];
-	v2.xyz.x = tbvh->v2x[idx]; v2.xyz.y = tbvh->v2y[idx]; v2.xyz.z = tbvh->v2z[idx];
+	vec3d v0 = tbvh->vertex(tbvh->i0[idx]);
+	vec3d v1 = tbvh->vertex(tbvh->i1[idx]);
+	vec3d v2 = tbvh->vertex(tbvh->i2[idx]);
 
 	Mc_triangle_face_test_fn(v0, v1, v2, tbvh->uv0[idx], tbvh->uv1[idx], tbvh->uv2[idx], !flat_poly, ntmap);
 	return true;
@@ -660,126 +658,145 @@ static void model_collide_bvh_triangle(const bvh_tree *tbvh)
 		});
 }
 
-void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
+// Decodes one polygon chunk's vertices into verts_out (capacity TMAP_MAX_VERTS), writing its
+// tmap_num into *out_tmap_num. Returns the vertex count, or 0 if the chunk is malformed (too many
+// vertices) -- the caller then skips emitting any geometry for it.
+static int model_collide_parse_bsp_tmappoly(model_tmap_vert *verts_out, int *out_tmap_num, void *model_ptr)
 {
 	ubyte *p = (ubyte *)model_ptr;
 
-	uint i;
-	uint nv;
-
-	nv = uw(p + TMAP_NVERTS);
+	uint nv = uw(p + TMAP_NVERTS);
 
 	if (nv > TMAP_MAX_VERTS) {
 		Error(LOCATION, "Model contains TMAP chunk with more than %d vertices!", TMAP_MAX_VERTS);
-		return;
+		return 0;
 	}
 
 	int tmap_num = w(p + TMAP_TEXNUM);
 
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
-		return;
+		return 0;
 	}
 
 	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
-	leaf->tmap_num = (ubyte)tmap_num;
-	leaf->num_verts = (ubyte)nv;
-	leaf->vert_start = (int)vert_buffer->size();
-
-	vec3d *plane_norm = vp(p + TMAP_NORMAL);
-
-	leaf->plane_norm = *plane_norm;
-
-	for ( i = 0; i < nv; ++i ) {
-		vert_buffer->push_back(model_tmap_vert(verts[i]));
+	*out_tmap_num = tmap_num;
+	for (uint i = 0; i < nv; ++i) {
+		verts_out[i] = model_tmap_vert(verts[i]);
 	}
+	return (int)nv;
 }
 
-/**
-* @brief Generates BSP leaf and vertex buffer to check against a bsp collision for a TMAP2 chunk.
-* 
-* @param[out] leaf Generated BSP leaf.
-* @param[out] vert_buffer Vertex buffer forming the polygon being checked against.
-* @param[in] model_ptr Buffer of BSP data from model buffer.
-*/
-void model_collide_parse_bsp_tmap2poly(bsp_collision_leaf* leaf, SCP_vector<model_tmap_vert>* vert_buffer, void* model_ptr)
+// See model_collide_parse_bsp_tmappoly() above.
+static int model_collide_parse_bsp_tmap2poly(model_tmap_vert *verts_out, int *out_tmap_num, void *model_ptr)
 {
 	auto p = (ubyte*)model_ptr;
 
-	uint i;
-	uint nv;
-	int tmap_num;
-	vec3d* plane_norm;
-	model_tmap_vert* verts;
-
-	nv = uw(p + TMAP2_NVERTS);
+	uint nv = uw(p + TMAP2_NVERTS);
 
 	if (nv > TMAP_MAX_VERTS) {
 		Error(LOCATION,"Model contains TMAP2 chunk with more than %d vertices!", TMAP_MAX_VERTS);
-		return;
+		return 0;
 	}
 
-	tmap_num = w(p + TMAP2_TEXNUM);
+	int tmap_num = w(p + TMAP2_TEXNUM);
 
 	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
 		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
-		return;
+		return 0;
 	}
 
-	verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
+	auto verts = reinterpret_cast<model_tmap_vert*>(p + TMAP2_VERTS);
 
-	leaf->tmap_num = (ubyte)tmap_num;
-	leaf->num_verts = (ubyte)nv;
-	leaf->vert_start = (int)vert_buffer->size();
-
-	plane_norm = vp(p + TMAP2_NORMAL);
-
-	leaf->plane_norm = *plane_norm;
-
-	for (i = 0; i < nv; ++i) {
-		vert_buffer->push_back(verts[i]);
+	*out_tmap_num = tmap_num;
+	for (uint i = 0; i < nv; ++i) {
+		verts_out[i] = verts[i];
 	}
+	return (int)nv;
 }
 
-void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model_tmap_vert> *vert_buffer, void *model_ptr)
+// See model_collide_parse_bsp_tmappoly() above. Flat polys have no texture -- tmap_num is set to
+// 255, the sentinel mc_check_bvh_triangle_candidate()'s `raw_tmap_num >= MAX_MODEL_TEXTURES` check
+// already treats as "flat" (the same encoding this function has always used).
+static int model_collide_parse_bsp_flatpoly(model_tmap_vert *verts_out, int *out_tmap_num, void *model_ptr)
 {
 	ubyte *p = (ubyte *)model_ptr;
 
-	uint i;
-	uint nv;
-	short *verts;
-
-	nv = uw(p+36);
+	uint nv = uw(p+36);
 
 	if ( nv > TMAP_MAX_VERTS ) {
 		Int3();
+		return 0;
+	}
+
+	short *verts = (short *)(p+44);
+
+	*out_tmap_num = 255;
+	for (uint i = 0; i < nv; ++i) {
+		verts_out[i].vertnum = verts[i*2];
+		verts_out[i].normnum = 0;
+		verts_out[i].u = 0.0f;
+		verts_out[i].v = 0.0f;
+	}
+	return (int)nv;
+}
+
+// Computes the polygon's center (average of its own verts) and pushes it onto tree->poly_centers --
+// matches how ai_bpap() (code/ai/aibig.cpp) reads this, once per decoded polygon regardless of
+// whether it degenerates into zero triangles below (nv < 3 happens on malformed content; nv <= 0 only
+// from a decode failure above, in which case there's nothing to average, so it's skipped entirely).
+//
+// If nv >= 3, also fan-triangulates (pivot = first vertex) directly into out_triangles. poly_index is
+// a running per-submodel counter, incremented once per polygon that actually produced triangles;
+// both original_index and leaf_index are pure build-time provenance tags, never read by the live
+// collision path (see modelbvh.h).
+static void model_collide_emit_polygon(const model_tmap_vert *verts, int nv, int tmap_num,
+	int &poly_index, bsp_collision_tree *tree, SCP_vector<bvh_triangle> &out_triangles)
+{
+	if (nv <= 0) {
 		return;
 	}
 
-	verts = (short *)(p+44);
-
-	leaf->tmap_num = 255;
-	leaf->num_verts = (ubyte)nv;
-	leaf->vert_start = (int)vert_buffer->size();
-
-	vec3d *plane_norm = vp(p+8);
-
-	leaf->plane_norm = *plane_norm;
-
-	model_tmap_vert vert;
-
-	for ( i = 0; i < nv; ++i ) {
-		vert.vertnum = verts[i*2];
-		vert.normnum = 0;
-		vert.u = 0.0f;
-		vert.v = 0.0f;
-
-		vert_buffer->push_back(vert);
+	vec3d center = vmd_zero_vector;
+	for (int j = 0; j < nv; ++j) {
+		center += *Mc_point_list[verts[j].vertnum];
 	}
+	tree->poly_centers.push_back(center / (float)nv);
+
+	if (nv < 3) {
+		return;
+	}
+
+	const vec3d& v0 = *Mc_point_list[verts[0].vertnum];
+	bvh_uv uv0{verts[0].u, verts[0].v};
+
+	for (int i = 1; i < nv - 1; ++i) {
+		const vec3d& vi = *Mc_point_list[verts[i].vertnum];
+		const vec3d& vi1 = *Mc_point_list[verts[i + 1].vertnum];
+
+		bvh_triangle tri;
+		tri.v0 = v0;
+		tri.v1 = vi;
+		tri.v2 = vi1;
+		tri.tmap_num = tmap_num;
+		tri.original_index = poly_index;
+		tri.leaf_index = poly_index;
+		tri.uv0 = uv0;
+		tri.uv1 = {verts[i].u, verts[i].v};
+		tri.uv2 = {verts[i + 1].u, verts[i + 1].v};
+		out_triangles.push_back(tri);
+	}
+
+	++poly_index;
 }
 
-void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version)
+// Walks the POF BSP opcode stream exactly once, emitting one fan-triangulated bvh_triangle per
+// polygon directly into out_triangles (see model_collide_emit_polygon() above). Only tracks enough
+// state to reach every polygon chunk (front/back descent through OP_SORTNORM/OP_SORTNORM2), not to
+// describe the tree's node topology (min/max/front/back), since nothing needs that beyond reaching
+// the polygons.
+void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version, SCP_vector<bvh_triangle> &out_triangles)
 {
 	TRACE_SCOPE(tracing::ModelParseBSPTree);
 
@@ -799,77 +816,44 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 	if ( n_verts <= 0) {
 		tree->point_list = NULL;
 		tree->n_verts = 0;
-
-		tree->n_nodes = 0;
-		tree->node_list = NULL;
-
-		tree->n_leaves = 0;
-		tree->leaf_list = NULL;
-
-		// finally copy the vert list.
-		tree->vert_list = NULL;
-
 		return;
 	}
 
 	p += chunk_size;
 
-	bsp_collision_node new_node;
-	bsp_collision_leaf new_leaf{ vmd_zero_vector, 0, 0, 0, 0 };
+	// Chunk pointers left to visit, walked breadth-first (a growing vector indexed by i below);
+	// traversal order doesn't matter to out_triangles, only that every polygon chunk gets reached.
+	SCP_vector<ubyte*> worklist;
+	worklist.push_back(p);
 
-	SCP_vector<bsp_collision_node> node_buffer;
-	SCP_vector<bsp_collision_leaf> leaf_buffer;
-	SCP_vector<model_tmap_vert> vert_buffer;
-
-	SCP_map<size_t, ubyte*> bsp_datap;
-
-	node_buffer.push_back(new_node);
+	int poly_index = 0;
+	model_tmap_vert poly_verts[TMAP_MAX_VERTS];
 
 	size_t i = 0;
-	vec3d *min;
-	vec3d *max;
 
-	bsp_datap[i] = p;
-
-	while ( i < node_buffer.size() ) {
-		p = bsp_datap[i];
+	while ( i < worklist.size() ) {
+		p = worklist[i];
 
 		chunk_type = w(p);
 		chunk_size = w(p+4);
 		int front_offset, back_offset;
 		switch ( chunk_type ) {
 		case OP_SORTNORM:
-			if ( version >= 2000 ) {
-				min = vp(p+56);
-				max = vp(p+68);
-
-				node_buffer[i].min = *min;
-				node_buffer[i].max = *max;
-			}
-
-			node_buffer[i].leaf = -1;
-			node_buffer[i].front = -1;
-			node_buffer[i].back = -1;
-
 			front_offset = w(p + 36);
 			if (front_offset) {
 				next_chunk_type = w(p + front_offset);
 
 				if ( next_chunk_type != OP_EOF ) {
-					node_buffer.push_back(new_node);
-					node_buffer[i].front = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].front] = p + front_offset;
+					worklist.push_back(p + front_offset);
 				}
 			}
 
 			back_offset = w(p + 40);
 			if (back_offset) {
 				next_chunk_type = w(p + back_offset);
-				
+
 				if ( next_chunk_type != OP_EOF ) {
-					node_buffer.push_back(new_node);
-					node_buffer[i].back = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].back] = p + back_offset;
+					worklist.push_back(p + back_offset);
 				}
 			}
 
@@ -881,24 +865,12 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			++i;
 			break;
 		case OP_SORTNORM2:
-			min = vp(p + 16);
-			max = vp(p + 28);
-
-			node_buffer[i].min = *min;
-			node_buffer[i].max = *max;
-
-			node_buffer[i].leaf = -1;
-			node_buffer[i].front = -1;
-			node_buffer[i].back = -1;
-
 			front_offset = w(p + 8);
 			if (front_offset) {
 				next_chunk_type = w(p + front_offset);
 
 				if (next_chunk_type != OP_EOF) {
-					node_buffer.push_back(new_node);
-					node_buffer[i].front = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].front] = p + front_offset;
+					worklist.push_back(p + front_offset);
 				}
 			}
 
@@ -907,64 +879,38 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 				next_chunk_type = w(p + back_offset);
 
 				if (next_chunk_type != OP_EOF) {
-					node_buffer.push_back(new_node);
-					node_buffer[i].back = (int)(node_buffer.size() - 1);
-					bsp_datap[node_buffer[i].back] = p + back_offset;
+					worklist.push_back(p + back_offset);
 				}
 			}
-
-			next_p = p + chunk_size;
-			next_chunk_type = OP_EOF;	// should not continue after this chunk
 
 			++i;
 			break;
 		case OP_BOUNDBOX:
-			min = vp(p+8);
-			max = vp(p+20);
-
-			node_buffer[i].min = *min;
-			node_buffer[i].max = *max;
-
-			node_buffer[i].front = -1;
-			node_buffer[i].back = -1;
-			node_buffer[i].leaf = -1;
-
 			next_p = p + chunk_size;
 			next_chunk_type = w(next_p);
 			next_chunk_size = w(next_p+4);
 
 			if (next_chunk_type != OP_EOF &&
 				(next_chunk_type == OP_TMAPPOLY || next_chunk_type == OP_FLATPOLY)) {
-				new_leaf.next = -1;
-
-				node_buffer[i].leaf = (int)leaf_buffer.size();	// get index of where our poly list starts in the leaf buffer
 
 				while ( next_chunk_type != OP_EOF ) {
+					int nv, tmap_num;
 					if ( next_chunk_type == OP_TMAPPOLY ) {
-						model_collide_parse_bsp_tmappoly(&new_leaf, &vert_buffer, next_p);
+						nv = model_collide_parse_bsp_tmappoly(poly_verts, &tmap_num, next_p);
 					} else if ( next_chunk_type == OP_FLATPOLY ) {
-						model_collide_parse_bsp_flatpoly(&new_leaf, &vert_buffer, next_p);
+						nv = model_collide_parse_bsp_flatpoly(poly_verts, &tmap_num, next_p);
 					} else {
 						Int3();
+						nv = 0;
+						tmap_num = 255;
 					}
 
-					// add another polygon center
-					vec3d center = vmd_zero_vector;
-					for (int j = 0; j < new_leaf.num_verts; j++) {
-						center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
-					}
-					tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
-
-					leaf_buffer.push_back(new_leaf);
-
-					leaf_buffer.back().next = (int)leaf_buffer.size();
+					model_collide_emit_polygon(poly_verts, nv, tmap_num, poly_index, tree, out_triangles);
 
 					next_p += next_chunk_size;
 					next_chunk_type = w(next_p);
 					next_chunk_size = w(next_p+4);
 				}
-
-				leaf_buffer.back().next = -1;
 			}
 
 			Assert(next_chunk_type == OP_EOF);
@@ -972,28 +918,11 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			++i;
 			break;
 		case OP_TMAP2POLY:
-			min = vp(p + 8);
-			max = vp(p + 20);
-
-			node_buffer[i].min = *min;
-			node_buffer[i].max = *max;
-
-			node_buffer[i].front = -1;
-			node_buffer[i].back = -1; 
-			node_buffer[i].leaf = (int)leaf_buffer.size();
-
-			model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, p);
-
-			// add another polygon center
-			vec3d center = vmd_zero_vector;
-			for (int j = 0; j < new_leaf.num_verts; j++) {
-				center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];				
+			{
+				int nv, tmap_num;
+				nv = model_collide_parse_bsp_tmap2poly(poly_verts, &tmap_num, p);
+				model_collide_emit_polygon(poly_verts, nv, tmap_num, poly_index, tree, out_triangles);
 			}
-			tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
-
-			leaf_buffer.push_back(new_leaf);
-
-			leaf_buffer.back().next = -1;
 
 			++i;
 			break;
@@ -1010,23 +939,6 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 	}
 
 	tree->n_verts = n_verts;
-
-	// copy node info. this might be a good time to organize the nodes into a cache efficient tree layout.
-	tree->n_nodes = (int)node_buffer.size();
-	tree->node_list = (bsp_collision_node*)vm_malloc(sizeof(bsp_collision_node) * node_buffer.size());
-	memcpy(tree->node_list, &node_buffer[0], sizeof(bsp_collision_node) * node_buffer.size());
-	node_buffer.clear();
-
-	// copy leaves.
-	tree->n_leaves = (int)leaf_buffer.size();
-	tree->leaf_list = (bsp_collision_leaf*)vm_malloc(sizeof(bsp_collision_leaf) * leaf_buffer.size());
-	memcpy(tree->leaf_list, &leaf_buffer[0], sizeof(bsp_collision_leaf) * leaf_buffer.size());
-	leaf_buffer.clear();
-
-	// finally copy the vert list.
-	tree->vert_list = (model_tmap_vert*)vm_malloc(sizeof(model_tmap_vert) * vert_buffer.size());
-	memcpy(tree->vert_list, &vert_buffer[0], sizeof(model_tmap_vert) * vert_buffer.size());
-	vert_buffer.clear();
 }
 
 bool mc_shield_check_common(shield_tri	*tri)
@@ -1250,17 +1162,15 @@ void mc_check_subobj( int mn )
 		} else if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (vm_vec_dist(&Mc_p0, &hitpt) >= Mc->hit_dist)) {
 			// A closer hit was already found (in an earlier-visited sibling submodel, or a
 			// parent) than this box's own nearest ray-entry point -- nothing inside this
-			// submodel's own geometry could possibly beat it, so skip testing it at all. Real
-			// framerate win on the whole-model, multi-submodel-recursion queries that dominate
-			// per-frame cost (weapon-vs-capital-ship hull, AI's ai_big_pick_attack_point() --
-			// self-documented as ~10% of AI frametime, turret hull-blocking checks, beams):
-			// these routinely recurse through 100+ submodels with no MC_SUBMODEL narrowing, and
-			// previously every submodel whose box the ray merely touched got a full BVH/BSP
-			// traversal regardless of whether a much closer hit already existed from a submodel
-			// visited earlier in traversal order. Not applied under MC_COLLIDE_ALL, which needs
-			// every hit, not just the nearest. Still falls through to check this submodel's
-			// children below (goto NoHit) -- a child's own box gets the identical check
-			// independently, this only skips the current submodel's own polygons/BVH.
+			// submodel's own geometry could possibly beat it, so skip testing it at all. Avoids a
+			// full BVH traversal per submodel box the ray merely touches on the whole-model,
+			// multi-submodel-recursion queries that dominate per-frame cost (weapon-vs-capital-ship
+			// hull, AI's ai_big_pick_attack_point() -- self-documented as ~10% of AI frametime,
+			// turret hull-blocking checks, beams): these routinely recurse through 100+ submodels
+			// with no MC_SUBMODEL narrowing. Not applied under MC_COLLIDE_ALL, which needs every
+			// hit, not just the nearest. Still falls through to check this submodel's children below
+			// (goto NoHit) -- a child's own box gets the identical check independently, this only
+			// skips the current submodel's own polygons/BVH.
 			goto NoHit;
 		} else {
 			// The ray intersects this bounding box, so we have to check all the
