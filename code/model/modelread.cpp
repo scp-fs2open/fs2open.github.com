@@ -3521,20 +3521,11 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		model_collide_parse_bsp(tree, bsp_data, pm->version, tris);
 		Macro_ubyte_bounds = nullptr;
 
-		// The authored `rad` (read verbatim from the .pof, see bsp_info::rad) can undershoot a
-		// submodel's true geometric extent by a wide margin on real content, which would silently
-		// make model_collide()'s bounding-sphere pre-check reject valid ray-vs-submodel hits before
-		// any polygon test runs. Compute a validated radius from the same vertex data the collision
-		// tree was just built from, for that pre-check to use instead of `rad` itself (left
-		// untouched: other subsystems -- rendering culling, radar, AI targeting, HUD -- also read
-		// `rad` and may rely on the author-tuned value).
-		float max_dist_sq = 0.0f;
-		for (int vi = 0; vi < tree->n_verts; ++vi) {
-			float d2 = vm_vec_mag_squared(&tree->point_list[vi]);
-			if (d2 > max_dist_sq)
-				max_dist_sq = d2;
-		}
-		pm->submodel[i].collision_rad = std::max(pm->submodel[i].rad, sqrtf(max_dist_sq));
+		// Collision defers to the authored `rad` (read verbatim from the .pof, see bsp_info::rad)
+		// rather than the submodel's actual geometric extent, since an author may intentionally
+		// tune it to make collisions behave differently from the visible mesh -- same value other
+		// subsystems (rendering culling, radar, AI targeting, HUD) already rely on.
+		pm->submodel[i].collision_rad = sm->rad;
 
 		// Build the per-triangle BVH over this submodel's fan-triangulated collision geometry (see
 		// modelbvh.h) directly from model_collide_parse_bsp()'s output above.
