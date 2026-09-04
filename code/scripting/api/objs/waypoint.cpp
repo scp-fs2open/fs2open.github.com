@@ -136,14 +136,5 @@ ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "W
 	return ade_set_args( L, "s", wlh->getList()->get_name());
 }
 
-ADE_FUNC(isValid, l_WaypointList, NULL, "Return if this waypointlist handle is valid", "boolean", "true if valid false otherwise")
-{
-	waypointlist_h* wlh = NULL;
-	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
-		return ADE_RETURN_FALSE;
-	}
-	return ade_set_args(L, "b", wlh != NULL && wlh->isValid());
-}
-
 }
 }

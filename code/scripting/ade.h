@@ -60,7 +60,7 @@ const size_t ODATA_PTR_SIZE = (size_t) -1;
 
 const int ADE_FUNCNAME_UPVALUE_INDEX = 1;
 const int ADE_SETTING_UPVALUE_INDEX = 2;
-const int ADE_DESTRUCTOR_OBJ_UPVALUE_INDEX = 3; // Upvalue which stores the reference to the ade_obj of a destructor
+const int ADE_OBJ_UPVALUE_INDEX = 3; // Upvalue which stores the reference to the ade_obj for destructors and generated functions
 #define ADE_SETTING_VAR lua_toboolean(L,lua_upvalueindex(ADE_SETTING_UPVALUE_INDEX))
 
 template <typename T>
@@ -130,8 +130,10 @@ class ade_table_entry {
 	//Functions/virtfuncs
 	lua_CFunction Function = nullptr;
 
+	// Reference to the ade_obj, passed as an upvalue to Function (for generated functions) and Destructor
+	void* Obj_upvalue = nullptr;
+
 	// For Objects, the destructor of the object
-	void* Destructor_upvalue = nullptr;
 	lua_CFunction Destructor = nullptr;
 
 	size_t Size = 0;

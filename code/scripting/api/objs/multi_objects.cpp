@@ -196,20 +196,6 @@ bool join_ship_choices_h::isValid() const
 //**********HANDLE: channel section
 ADE_OBJ(l_Channel, channel_h, "pxo_channel", "Channel Section handle");
 
-ADE_FUNC(isValid,
-	l_Channel,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	channel_h current;
-	if (!ade_get_args(L, "o", l_Channel.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Name, l_Channel, nullptr, "The name of the channel", "string", "The name")
 {
 	channel_h current;
@@ -300,20 +286,6 @@ ADE_FUNC(joinChannel, l_Channel, nullptr, "Joins the specified channel", nullptr
 
 //**********HANDLE: net player section
 ADE_OBJ(l_NetPlayer, net_player_h, "net_player", "Net Player handle");
-
-ADE_FUNC(isValid,
-	l_NetPlayer,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	net_player_h current;
-	if (!ade_get_args(L, "o", l_NetPlayer.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
 
 ADE_VIRTVAR(Name, l_NetPlayer, nullptr, "The player's callsign", "string", "The player callsign")
 {
@@ -507,20 +479,6 @@ ADE_FUNC(kickPlayer, l_NetPlayer, nullptr, "Kicks the player from the game", nul
 //**********HANDLE: mission section
 ADE_OBJ(l_NetMission, net_mission_h, "net_mission", "Net Mission handle");
 
-ADE_FUNC(isValid,
-	l_NetMission,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	net_mission_h current;
-	if (!ade_get_args(L, "o", l_NetMission.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Name, l_NetMission, nullptr, "The name of the mission", "string", "The name")
 {
 	net_mission_h current;
@@ -683,20 +641,6 @@ ADE_VIRTVAR(Builtin,
 //**********HANDLE: campaign section
 ADE_OBJ(l_NetCampaign, net_campaign_h, "net_campaign", "Net Campaign handle");
 
-ADE_FUNC(isValid,
-	l_NetCampaign,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	net_campaign_h current;
-	if (!ade_get_args(L, "o", l_NetCampaign.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Name, l_NetCampaign, nullptr, "The name of the mission", "string", "The name")
 {
 	net_campaign_h current;
@@ -858,20 +802,6 @@ ADE_VIRTVAR(Builtin,
 
 //**********HANDLE: netgame section
 ADE_OBJ(l_NetGame, net_game_h, "netgame", "Netgame handle");
-
-ADE_FUNC(isValid,
-	l_NetGame,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	net_game_h current;
-	if (!ade_get_args(L, "o", l_NetGame.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
 
 ADE_VIRTVAR(Name,
 	l_NetGame,
@@ -1294,20 +1224,6 @@ ADE_FUNC(setMission,
 //**********HANDLE: channel section
 ADE_OBJ(l_Active_Game, active_game_h, "active_game", "Active Game handle");
 
-ADE_FUNC(isValid,
-	l_Active_Game,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	active_game_h current;
-	if (!ade_get_args(L, "o", l_Active_Game.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Status, l_Active_Game, nullptr, "The status of the game", "string", "The status")
 {
 	active_game_h current;
@@ -1508,20 +1424,6 @@ ADE_FUNC(setSelected, l_Active_Game, nullptr, "Sets the specified game as the se
 //**********HANDLE: channel section
 ADE_OBJ(l_Dogfight_Scores, dogfight_scores_h, "dogfight_scores", "Dogfight scores handle");
 
-ADE_FUNC(isValid,
-	l_Dogfight_Scores,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	dogfight_scores_h current;
-	if (!ade_get_args(L, "o", l_Dogfight_Scores.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Callsign,
 	l_Dogfight_Scores,
 	nullptr,
@@ -1557,20 +1459,6 @@ ADE_FUNC(getKillsOnPlayer,
 
 //**********HANDLE: join choice section
 ADE_OBJ(l_Join_Ship_Choice, join_ship_choices_h, "net_join_choice", "Join Choice handle");
-
-ADE_FUNC(isValid,
-	l_Join_Ship_Choice,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	join_ship_choices_h current;
-	if (!ade_get_args(L, "o", l_Join_Ship_Choice.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
 
 ADE_VIRTVAR(Name, l_Join_Ship_Choice,
 	nullptr,

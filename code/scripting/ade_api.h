@@ -98,7 +98,7 @@ class ade_obj : public ade_lib_handle {
 	static int lua_destructor(lua_State* L)
 	{
 		auto* obj =
-		    static_cast<ade_obj<StoreType>*>(lua_touserdata(L, lua_upvalueindex(ADE_DESTRUCTOR_OBJ_UPVALUE_INDEX)));
+		    static_cast<ade_obj<StoreType>*>(lua_touserdata(L, lua_upvalueindex(ADE_OBJ_UPVALUE_INDEX)));
 		StoreType* value = nullptr;
 		if (!ade_get_args(L, "o", obj->GetPtr(&value))) {
 			return 0;
@@ -110,6 +110,25 @@ class ade_obj : public ade_lib_handle {
 
 		value->~StoreType();
 		return 0;
+	}
+
+	// Automatically generated isValid() API function for types whose StoreType has an isValid() member.
+	// An explicit ADE_FUNC(isValid, ...) declared after the ADE_OBJ replaces this one.
+	static int lua_isValid(lua_State* L)
+	{
+		auto* obj =
+		    static_cast<ade_obj<StoreType>*>(lua_touserdata(L, lua_upvalueindex(ADE_OBJ_UPVALUE_INDEX)));
+		StoreType* value = nullptr;
+		if (!ade_get_args(L, "o", obj->GetPtr(&value))) {
+			return 0;	// nil
+		}
+
+		if (value == nullptr) {
+			return ade_set_args(L, "b", false);
+		}
+
+		// Using the trait rather than calling isValid() directly keeps this compiling for every StoreType
+		return ade_set_args(L, "b", ade_is_valid<StoreType>::get(*value));
 	}
 
   public:
@@ -132,11 +151,29 @@ class ade_obj : public ade_lib_handle {
 			// If this type is not trivial then we need to have a destructor
 			// This is mildly dangerous since "this" will only remain valid if it was constructed statically. Since this
 			// value is only used once at program startup it should be relatively safe
-			ate.Destructor_upvalue = static_cast<void*>(this);
-			ate.Destructor         = lua_destructor;
+			ate.Obj_upvalue = static_cast<void*>(this);
+			ate.Destructor  = lua_destructor;
 		}
 
 		LibIdx = ade_manager::getInstance()->addTableEntry(ate);
+
+		// If the stored type can report its validity, expose that to Lua automatically.  Derived types inherit
+		// this from their base object (which in all current cases stores the same type), so skip it for those.
+		if (ade_is_valid<StoreType>::value && in_deriv == nullptr) {
+			ade_table_entry func;
+
+			func.Name              = "isValid";
+			func.Instanced         = true;
+			func.Type              = 'u';
+			func.Function          = lua_isValid;
+			func.Obj_upvalue       = static_cast<void*>(this);
+			func.Arguments         = nullptr;
+			func.Description       = "Detects whether handle is valid";
+			func.ReturnType        = "boolean";
+			func.ReturnDescription = "true if valid, false if handle is invalid, nil if a syntax/type error occurs";
+
+			ade_manager::getInstance()->getEntry(LibIdx).AddSubentry(func);
+		}
 	}
 
 	// WMC - Use this to store object data for return, or for setting as a global
