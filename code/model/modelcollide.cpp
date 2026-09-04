@@ -383,9 +383,10 @@ static void mc_check_triangle_face(const vec3d &v0, const vec3d &v1, const vec3d
 }
 
 // Sphere-vs-point touch time: at what t in [0,1] does |xs0 + vs*t - point| first equal Rs. Same
-// quadratic fvi_polyedge_sphereline()'s TryVertex uses per vertex, factored out since a triangle's 3
-// edges share 3 vertices between them (each vertex fallback would otherwise be solved twice, once
-// per adjacent edge).
+// quadratic fvi_polyedge_sphereline()'s TryVertex uses per vertex. Factored out and called through
+// mc_triangle_edges_sphereline()'s own per-vertex cache below, since a triangle's 3 edges share 3
+// vertices between them -- without caching, each vertex fallback would be solved twice, once per
+// adjacent edge.
 static bool mc_sphere_point_hit(const vec3d &point, const vec3d &xs0, const vec3d &vs, float vs_sqr, float Rs2,
 	float &out_t)
 {
@@ -414,14 +415,13 @@ static bool mc_sphere_point_hit(const vec3d &point, const vec3d &xs0, const vec3
 //
 // For each edge, the touch time against the edge's *infinite* line is a single quadratic solve
 // (fvi_polyedge_sphereline's own "stage 1"). That line-touch time is only a genuine edge hit if the
-// closest point on the infinite line at that instant actually falls within the segment -- which,
-// unlike fvi_polyedge_sphereline's approach (a second quadratic solve for the edge parameter,
-// cross-checked against the sphere position with a loose distance tolerance), is a single line-point
-// projection away: s = dot(sphere_center(t_line) - va, ve) / ve_sqr, exact, no tolerance needed.
-// Whenever that's out of [0,1] (or the line quadratic has no real root at all -- meaning the sphere
-// never comes within Rs of the infinite line, so it can't reach either endpoint either, since both
-// endpoints lie on that same line), falls back to mc_sphere_point_hit() against whichever of the
-// edge's two vertices is nearer, matching fvi_polyedge_sphereline's own TryVertex fallback.
+// closest point on the infinite line at that instant actually falls within the segment -- a single
+// line-point projection away: s = dot(sphere_center(t_line) - va, ve) / ve_sqr, exact, no tolerance
+// needed. Whenever that's out of [0,1] (or the line quadratic has no real root at all -- meaning the
+// sphere never comes within Rs of the infinite line, so it can't reach either endpoint either, since
+// both endpoints lie on that same line), falls back to mc_sphere_point_hit() against whichever of the
+// edge's two vertices is nearer, matching fvi_polyedge_sphereline's own TryVertex fallback -- via the
+// per-vertex cache above, so a vertex shared by two edges is only ever solved once here.
 // Not static: exercised directly (bypassing the Mc thread_local state this file's other functions
 // read) by a correctness test comparing it against fvi_polyedge_sphereline(nv=3) as ground truth.
 bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d &v2, const vec3d &xs0,
@@ -434,9 +434,25 @@ bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d 
 	bool found = false;
 	float best_t = FLT_MAX;
 
+	// Each of the triangle's 3 vertices is shared by 2 edges, so a naive per-edge vertex-fallback
+	// test would solve mc_sphere_point_hit() for the same vertex twice (once as an edge's "va", once
+	// as the previous edge's "vb"). Computed lazily and cached here instead -- at most once per
+	// vertex over the whole function, not per edge that happens to fall through to it.
+	bool v_computed[3] = {false, false, false};
+	bool v_hit[3];
+	float v_t[3];
+	auto vertex_hit = [&](int vi) -> bool {
+		if (!v_computed[vi]) {
+			v_computed[vi] = true;
+			v_hit[vi] = mc_sphere_point_hit(*tri[vi], xs0, vs, vs_sqr, Rs2, v_t[vi]);
+		}
+		return v_hit[vi];
+	};
+
 	for (int i = 0; i < 3; ++i) {
-		const vec3d &va = *tri[i];
-		const vec3d &vb = *tri[(i + 1) % 3];
+		int i0 = i, i1 = (i + 1) % 3;
+		const vec3d &va = *tri[i0];
+		const vec3d &vb = *tri[i1];
 
 		vec3d ve = vb - va;
 		vec3d delta_x = xs0 - va;
@@ -484,18 +500,17 @@ bool mc_triangle_edges_sphereline(const vec3d &v0, const vec3d &v1, const vec3d 
 			continue;
 		}
 
-		float t_v0, t_v1;
-		bool v0_hit = mc_sphere_point_hit(va, xs0, vs, vs_sqr, Rs2, t_v0);
-		bool v1_hit = mc_sphere_point_hit(vb, xs0, vs, vs_sqr, Rs2, t_v1);
-		if (v0_hit && (!v1_hit || t_v0 <= t_v1)) {
-			if (t_v0 < best_t) {
-				best_t = t_v0;
+		bool v0_hit = vertex_hit(i0);
+		bool v1_hit = vertex_hit(i1);
+		if (v0_hit && (!v1_hit || v_t[i0] <= v_t[i1])) {
+			if (v_t[i0] < best_t) {
+				best_t = v_t[i0];
 				out_hit_point = va;
 				found = true;
 			}
 		} else if (v1_hit) {
-			if (t_v1 < best_t) {
-				best_t = t_v1;
+			if (v_t[i1] < best_t) {
+				best_t = v_t[i1];
 				out_hit_point = vb;
 				found = true;
 			}

@@ -724,12 +724,11 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 	float best_sphere_time;		// earliest time sphere hits edge
 	vec3d delta_x;
 	float delta_x_dot_ve, delta_x_dot_vs, ve_dot_vs, ve_sqr, vs_sqr, delta_x_sqr;
-	vec3d temp_edge_hit, temp_sphere_hit;
+	vec3d temp_edge_hit;
 	float t_sphere_hit = 0.0f;
 	float A, B, C, temp, discriminant, invA;
 	float root, root1, root2;
 	float Rs2 = (Rs * Rs);
-	float Rs_point2 = (0.2f * Rs);
 
 	best_sphere_time = FLT_MAX;
 
@@ -806,47 +805,18 @@ int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs,
 		if (t_sphere_hit >= best_sphere_time)
 			continue;
 
-		vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
-
-		// solve for edge time
-		A *= ve_sqr;
-		B = ve_sqr * (delta_x_dot_ve*vs_sqr - delta_x_dot_vs*ve_dot_vs);
-		C = 2.0f*delta_x_dot_ve*delta_x_dot_vs*ve_dot_vs + Rs2*ve_dot_vs*ve_dot_vs 
-			 - delta_x_sqr*ve_dot_vs*ve_dot_vs - delta_x_dot_ve*delta_x_dot_ve*vs_sqr;
-
-		discriminant = B*B - A*C;
-		invA = 1.0f / A;
-
-		// guard against nearly perpendicular sphere edge velocities
-		if (discriminant < 0.0f)
-			root = 0.0f;
-		else
-			root = fl_sqrt(discriminant);
-
-		root1 = (-B + root) * invA;
-		root2 = (-B - root) * invA;
-
-		// given sphere position, find which edge time (position) allows a valid solution
-		if ( (root1 <= 1.0f) && (root1 >= 0.0f) ) {
-			// try edge root1
-			vm_vec_scale_add( &temp_edge_hit, &v0, &ve, root1 );
-			float q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-			if ( fl_abs(q - Rs2) < Rs_point2 ) {	// error less than 0.1m absolute (2*delta*Radius)
+		// The edge parameter at t_sphere_hit (the touch time against the edge's infinite line, just
+		// solved above) is a single line-point projection away -- exact, no tolerance needed --
+		// rather than a second quadratic solve for the edge parameter cross-checked against the
+		// sphere position with a loose distance tolerance.
+		{
+			float s = (delta_x_dot_ve + t_sphere_hit * ve_dot_vs) / ve_sqr;
+			if (s >= 0.0f && s <= 1.0f) {
+				vm_vec_scale_add(&temp_edge_hit, &v0, &ve, s);
 				goto Hit;
 			}
 		}
-
-		if ( (root2 <= 1.0f) && (root2 >= 0.0f) ) {
-			// try edge root2
-			vm_vec_scale_add( &temp_edge_hit, &v0, &ve, root2 );
-			float q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-			if ( fl_abs(q - Rs2) < Rs_point2 ) {	// error less than 0.1m absolute
-				goto Hit;
-			}
-		} else {
-			// both root1 and root2 out of range so we have to check vertices
-			goto TryVertex;
-		}
+		goto TryVertex;
 
 TryVertex:
 		// try V0
@@ -929,10 +899,6 @@ TryVertex:
 		} else {
 			continue;
 		}
-
-		//vm_vec_scale_add( &temp_sphere_hit, xs0, vs, t_sphere_hit );
-		//q = vm_vec_dist_squared(&temp_edge_hit, &temp_sphere_hit);
-
 
 Hit:
 		if (t_sphere_hit < best_sphere_time) {
