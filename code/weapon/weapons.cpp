@@ -762,6 +762,8 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			hasAnim ? bm_load_either(pspew_buffer.particle_spew_anim.c_str()) : particle::Anim_bitmap_id_smoke)); //Bitmap or Anim
 }
 
+SCP_unordered_map<int, std::array<SCP_unordered_map<SCP_string, float>, PrimarySelectionTargetType::MAX>> primary_selection_target_flags_temp;
+
 /**
  * Parse the information for a specific ship type.
  * Return weapon index if successful, otherwise return -1
@@ -2114,6 +2116,34 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Disallow Support Rearm:")) {
 		stuff_boolean(&wip->disallow_rearm);
+	}
+	
+	if (optional_string("$Primary Selection Target Flags:")) {
+		const int wi_index = static_cast<int>(wip - Weapon_info.data());
+		SCP_string type;
+		SCP_string type_name;
+		float value;
+		for (int i = 0; i < PrimarySelectionTargetType::MAX; i++) {
+			primary_selection_target_flags_temp[i] = {};
+		}
+		while (optional_string("+Condition Type:")) {
+			stuff_string(type, F_NAME);
+			required_string("+Target Class:");
+			stuff_string(type_name, F_NAME);
+			required_string("+Value Multiplier:");
+			stuff_float(&value);
+			if (type == "ARMOR") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::ARMOR].emplace(type_name, value);
+			} else if (type == "SHIP TYPE") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::SHIP_TYPE].emplace(type_name, value);
+			} else if (type == "SHIP CLASS") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::SHIP_CLASS].emplace(type_name, value);
+			} else if (type == "WEAPON CLASS") {
+				primary_selection_target_flags_temp[wi_index][PrimarySelectionTargetType::WEAPON_CLASS].emplace(type_name, value);
+			} else {
+				error_display(0, "Invalid primary selection target flag type '%s' in weapon '%s'!", type.c_str(), wip->name);
+			}
+		}
 	}
 	   
 	if (optional_string("+Weapon Range:")) {
@@ -4351,6 +4381,34 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	return w_id;
 }
 
+void populate_primary_selection_flags()
+{
+	for (int i = 0; i < sz2i(Weapon_info.size()); i++) {
+		weapon_info *wip = &Weapon_info[i];
+		for (int flavor = 0; flavor < PrimarySelectionTargetType::MAX; flavor++) {
+			for (auto& [index_name, mult] : primary_selection_target_flags_temp[i][flavor]) {
+				int index;
+				switch (flavor) {
+					case PrimarySelectionTargetType::ARMOR:
+						index = armor_type_get_idx(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::SHIP_TYPE:
+						index = ship_type_name_lookup(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::SHIP_CLASS:
+						index = ship_info_lookup(index_name.c_str());
+						break;
+					case PrimarySelectionTargetType::WEAPON_CLASS:
+						index = weapon_info_lookup(index_name.c_str());
+						break;
+				}
+				wip->primary_selection_target_flags[flavor].emplace(index, mult);
+			}
+		}
+	}
+	primary_selection_target_flags_temp.clear();
+}
+
 /**
  * For all weapons that spawn weapons, given an index at weaponp->spawn_type,
  * convert the strings in Spawn_names to indices in the Weapon_types array.
@@ -5113,7 +5171,7 @@ void weapon_do_post_parse()
 	translate_spawn_types();
 }
 
-// Called after ship_init() to resolve proximity ship type/class names into indices.
+// Called after ship_init() to resolve proximity ship type/class names into indices, as well as doing the same for primary selection flags.
 void weapon_post_ship_init()
 {
 	const int num_weapons = static_cast<int>(Weapon_info.size());
@@ -5146,6 +5204,8 @@ void weapon_post_ship_init()
 
 	Pending_proximity_type_names.clear();
 	Pending_proximity_class_names.clear();
+
+	populate_primary_selection_flags();
 }
 
 /**
@@ -9044,36 +9104,37 @@ void weapon_get_laser_color(color *c, object *objp)
  */
 float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target)
 {
-	weapon *wp;	
-	int from_player = 0;
 	float total_scale = 1.0f;
 	float hull_pct;
 	int is_big_damage_ship = 0;
-
+	
 	// Goober5000 - additional sanity (target can be NULL)
 	Assert(wip);
-	Assert(wep);
-
+	
 	// sanity
-	if((wip == NULL) || (wep == NULL) || (target == NULL)){
+	if((wip == nullptr) || (target == nullptr)){
 		return 1.0f;
 	}
-
-	// don't scale any damage if its not a weapon	
-	if((wep->type != OBJ_WEAPON) || (wep->instance < 0) || (wep->instance >= MAX_WEAPONS)){
-		return 1.0f;
-	}
-	wp = &Weapons[wep->instance];
-
-	// was the weapon fired by the player
-	from_player = 0;
-	if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags[Object::Object_Flags::Player_ship])){
-		from_player = 1;
-	}
-		
-	// if this is a lockarm weapon, and it was fired unlocked
-	if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired])){		
-		total_scale *= 0.1f;
+	
+	int from_player = 0;
+	if (wep) {
+		weapon *wp;	
+		// don't scale any damage if its not a weapon	
+		if((wep->type != OBJ_WEAPON) || (wep->instance < 0) || (wep->instance >= MAX_WEAPONS)){
+			return 1.0f;
+		}
+		wp = &Weapons[wep->instance];
+	
+		// was the weapon fired by the player
+		from_player = 0;
+		if((wep->parent >= 0) && (wep->parent < MAX_OBJECTS) && (Objects[wep->parent].flags[Object::Object_Flags::Player_ship])){
+			from_player = 1;
+		}
+			
+		// if this is a lockarm weapon, and it was fired unlocked
+		if((wip->wi_flags[Weapon::Info_Flags::Lockarm]) && !(wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired])){		
+			total_scale *= 0.1f;
+		}
 	}
 	
 	// if the hit object was a ship and we're doing damage scaling
@@ -10136,6 +10197,10 @@ void weapon_info::reset()
 
 	// Reset using default constructor
 	this->impact_decal = decals::creation_info();
+
+	for (i = 0; i < PrimarySelectionTargetType::MAX; i++) {
+		this->primary_selection_target_flags[i] = {};
+	}
 
 	this->on_create_program = actions::ProgramSet();
 }
