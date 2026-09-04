@@ -347,31 +347,45 @@ static int Wl_ship_name_coords[GR_NUM_RESOLUTIONS][2] = {
 ///////////////////////////////////////////////////////////////////////
 typedef struct wl_ship_class_info
 {
-	int				overhead_bitmap;
-	int				model_num;
+	int				overhead_bitmap = -1;
+	int				model_num = -1;
 	generic_anim	animation;
+
+	wl_ship_class_info()
+	{
+		generic_anim_init(&animation, nullptr);
+	}
 } wl_ship_class_info;
 
-wl_ship_class_info	Wl_ships[MAX_SHIP_CLASSES];
+// overhead-view data, keyed by ship class; an absent entry means nothing is loaded for that class
+SCP_map<int, wl_ship_class_info>	Wl_ships;
 
 struct wl_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
-	int				laser_bmap;
-	int				model_index;
-	bool			can_use_for_ship;
-	TriStateBool	can_use_for_bank;
+	int				laser_bmap = -1;
+	int				model_index = -1;
+	bool			can_use_for_ship = false;
+	TriStateBool	can_use_for_bank = TriStateBool::UNKNOWN_;
 	generic_anim	animation;
+
+	wl_icon_info()
+	{
+		for (int &bmap : icon_bmaps)
+			bmap = -1;
+		generic_anim_init(&animation, nullptr);
+	}
 };
 
-wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-wl_icon_info	*Wl_icons = NULL;
+// ui info for weapon icons, keyed by weapon class; entries hold usability flags for all weapon classes, but icon bitmaps/models are loaded only for pool weapons
+SCP_map<int, wl_icon_info>	Wl_icons_teams[MAX_TVT_TEAMS];
+SCP_map<int, wl_icon_info>	*Wl_icons = nullptr;
 
-int Plist[MAX_WEAPON_TYPES];	// used to track scrolling of primary icon list
-int Plist_start, Plist_size;
+SCP_vector<int> Plist;	// weapon classes in the primary icon list, in pool order
+int Plist_start;			// scroll offset into Plist
 
-int Slist[MAX_WEAPON_TYPES];	// used to track scrolling of primary icon list
-int Slist_start, Slist_size;
+SCP_vector<int> Slist;	// weapon classes in the secondary icon list, in pool order
+int Slist_start;			// scroll offset into Slist
 
 static int Selected_wl_slot = -1;			// Currently selected ship slot
 static int Selected_wl_class = -1;			// Class of weapon that is selected
@@ -448,7 +462,7 @@ UI_XSTR Weapon_select_text[GR_NUM_RESOLUTIONS][WEAPON_SELECT_NUM_TEXT] = {
 ///////////////////////////////////////////////////////////////////////
 typedef struct carried_icon
 {
-	int weapon_class;		// index Wl_icons[] for carried icon (-1 if carried from bank)
+	int weapon_class;		// weapon class of the carried icon (-1 if carried from bank)
 	int num;					// number of units of weapon
 	int from_bank;			// bank index that icon came from (0..2 primary, 3..6 secondary).  -1 if from list
 	int from_slot;			// ship slot that weapon is part of 
@@ -596,7 +610,7 @@ void weapon_button_do(int i)
 {
 	switch ( i ) {
 			case WL_BUTTON_SCROLL_PRIMARY_UP:
-				if ( common_scroll_up_pressed(&Plist_start, Plist_size, NUM_PRIMARY_MASK_REGIONS) ) {
+				if ( common_scroll_up_pressed(&Plist_start, sz2i(Plist.size()), NUM_PRIMARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -604,7 +618,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_PRIMARY_DOWN:
-				if ( common_scroll_down_pressed(&Plist_start, Plist_size, NUM_PRIMARY_MASK_REGIONS) ) {
+				if ( common_scroll_down_pressed(&Plist_start, sz2i(Plist.size()), NUM_PRIMARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -612,7 +626,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_UP:
-				if ( common_scroll_up_pressed(&Slist_start, Slist_size, NUM_SECONDARY_MASK_REGIONS) ) {
+				if ( common_scroll_up_pressed(&Slist_start, sz2i(Slist.size()), NUM_SECONDARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -620,7 +634,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_DOWN:
-				if ( common_scroll_down_pressed(&Slist_start, Slist_size, NUM_SECONDARY_MASK_REGIONS) ) {
+				if ( common_scroll_down_pressed(&Slist_start, sz2i(Slist.size()), NUM_SECONDARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1235,6 +1249,19 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 }
 
 /**
+ * Return the weapon class shown at the given on-screen row of a scrolling icon list,
+ * or -1 if that row is past the end of the list.
+ */
+static int wl_get_weapon_class_from_list(const SCP_vector<int> &list, int list_start, int row)
+{
+	size_t list_index = list_start + row;
+	if ( list_index >= list.size() )
+		return -1;
+
+	return list[list_index];
+}
+
+/**
  * Go through the possible weapons to choose from, and flag some as disabled since
  * that ship class cannot use that kind of weapon.  The weapon filter is specified
  * in ships.tbl, where each ship has a list of all the possible weapons it can use.
@@ -1248,28 +1275,32 @@ void wl_set_disabled_weapons(int ship_class, int bank_index)
 
 	Assert(ship_class >= 0 && ship_class < ship_info_size());
 	Assert(bank_index < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS);
-	Assert( Wl_icons != NULL );
+	Assert( (Wl_pool != nullptr) && (Wl_icons != nullptr) && (Wss_slots != nullptr) );
 
 	auto sip = &Ship_info[ship_class];
 
-	int i = 0;
-	for ( auto &wi: Weapon_info )
+	// Set the flags for every weapon class, not just the ones with pool or slot entries at this
+	// moment: a script may drop a weapon into a bank between calls (see the Loadout_Weapon
+	// setter), and its icon flags must already be valid when the player interacts with it.
+	// Flag-only entries in the icon map are cheap; icon bitmaps still load only for pool weapons.
+	for ( int weapon_class = 0; weapon_class < weapon_info_size(); weapon_class++ )
 	{
-		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
+		auto &wi = Weapon_info[weapon_class];
+		auto &icon = (*Wl_icons)[weapon_class];
+
+		//	Determine whether this weapon is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
-		Wl_icons[i].can_use_for_ship = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
+		icon.can_use_for_ship = eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]);
 
 		//	Also determine whether the weapon can be used on this bank
-		if ( bank_index < 0 || !Wl_icons[i].can_use_for_ship )
-			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
+		if ( bank_index < 0 || !icon.can_use_for_ship )
+			icon.can_use_for_bank = TriStateBool::UNKNOWN_;
 		else if ( (wi.is_primary() && bank_index >= MAX_SHIP_PRIMARY_BANKS) || (wi.is_secondary() && bank_index < MAX_SHIP_PRIMARY_BANKS) )
-			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
-		else if ( !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank_index]) || eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][i]) )
-			Wl_icons[i].can_use_for_bank = TriStateBool::TRUE_;
+			icon.can_use_for_bank = TriStateBool::UNKNOWN_;
+		else if ( !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank_index]) || eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][weapon_class]) )
+			icon.can_use_for_bank = TriStateBool::TRUE_;
 		else
-			Wl_icons[i].can_use_for_bank = TriStateBool::FALSE_;
-
-		++i;
+			icon.can_use_for_bank = TriStateBool::FALSE_;
 	}
 }
 
@@ -1317,9 +1348,9 @@ void maybe_select_new_weapon(int index)
 	}
 
 	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
-		weapon_class = Plist[Plist_start+index];
+		weapon_class = wl_get_weapon_class_from_list(Plist, Plist_start, index);
 	} else {
-		weapon_class = Slist[Slist_start+index-NUM_PRIMARY_MASK_REGIONS];
+		weapon_class = wl_get_weapon_class_from_list(Slist, Slist_start, index - NUM_PRIMARY_MASK_REGIONS);
 	}
 
 	if ( weapon_class >= 0 ) {
@@ -1397,7 +1428,7 @@ void wl_load_icons(int weapon_class)
 
 	Assert( Wl_icons != NULL );
 
-	icon = &Wl_icons[weapon_class];
+	icon = &(*Wl_icons)[weapon_class];
 
 	if (!Use_3d_weapon_icons || (wip->render_type == WRT_LASER && !VALID_FNAME(wip->tech_model)))
 	{
@@ -1424,76 +1455,56 @@ void wl_load_icons(int weapon_class)
 }
 
 /**
+ * Release the bitmaps and models held by one team's weapon icon map, while leaving the map populated.
+ */
+static void wl_unload_team_icons(SCP_map<int, wl_icon_info> &icons)
+{
+	for ( auto &[weapon_class, icon] : icons ) {
+		for ( int &bmap : icon.icon_bmaps ) {
+			if ( bmap >= 0 ) {
+				bm_release(bmap);
+				bmap = -1;
+			}
+		}
+
+		if ( icon.model_index >= 0 ) {
+			model_unload(icon.model_index);
+			icon.model_index = -1;
+		}
+		if ( icon.laser_bmap >= 0 ) {
+			bm_unload(icon.laser_bmap);
+			icon.laser_bmap = -1;
+		}
+	}
+}
+
+/**
+ * Release and drop every team's weapon icon map
+ */
+static void wl_unload_all_teams_icons()
+{
+	for ( auto &team_icons : Wl_icons_teams ) {
+		wl_unload_team_icons(team_icons);
+		team_icons.clear();
+	}
+}
+
+/**
  * Load all the icons for weapons in the pool
  */
 void wl_load_all_icons()
 {
+	Assert( (Wl_icons != nullptr) && (Wl_pool != nullptr) );
 
-	int i, j;
+	// drop any icon data from a previous load of this team
+	wl_unload_team_icons(*Wl_icons);
+	Wl_icons->clear();
 
-	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		// clear out data
-		generic_anim_init(&Wl_icons[i].animation, NULL);
-		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
-			Wl_icons[i].icon_bmaps[j] = -1;
+	// note: unlike the ship pool, icons are only loaded for classes with ships remaining
+	for ( const auto &[weapon_class, count] : *Wl_pool ) {
+		if ( count > 0 ) {
+			wl_load_icons(weapon_class);
 		}
-		Wl_icons[i].model_index = -1;
-		Wl_icons[i].laser_bmap = -1;
-
-		if ( Wl_pool->value_or(i, 0) > 0 ) {
-			wl_load_icons(i);
-		}
-	}
-}
-
-/**
- * Frees the bitmaps used for weapon icons 
- */
-void wl_unload_icons()
-{
-	int					i,j;
-	wl_icon_info		*icon;
-
-	Assert( Wl_icons != NULL );
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		icon = &Wl_icons[i];
-
-		for ( j = 0; j < NUM_ICON_FRAMES; j++ ) {
-			if ( icon->icon_bmaps[j] >= 0 ) {
-				bm_release(icon->icon_bmaps[j]);
-				icon->icon_bmaps[j] = -1;
-			}
-		}
-
-		if(icon->model_index >= 0) {
-			model_unload(icon->model_index);
-			icon->model_index = -1;
-		}
-		if(icon->laser_bmap >= 0) {
-			bm_unload(icon->laser_bmap);
-			icon->laser_bmap = -1;
-		}
-		if(Cur_Anim.num_frames > 0)
-			generic_anim_unload(&Cur_Anim);
-	}
-}
-
-/**
- * init ship-class specific data
- */
-void wl_init_ship_class_data()
-{
-	int i;
-	wl_ship_class_info	*wl_ship;
-
-	for ( i = 0; i < ship_info_size(); i++ ) {
-		wl_ship = &Wl_ships[i];
-		wl_ship->overhead_bitmap = -1;
-		wl_ship->model_num = -1;
-		generic_anim_init(&wl_ship->animation, NULL);
 	}
 }
 
@@ -1502,26 +1513,31 @@ void wl_init_ship_class_data()
  */
 void wl_free_ship_class_data()
 {
-	int i;
-	wl_ship_class_info	*wl_ship;
-
-	for ( i = 0; i < ship_info_size(); i++ ) {
-		wl_ship = &Wl_ships[i];
-
-		if ( wl_ship->overhead_bitmap != -1 ) {
-			bm_release(wl_ship->overhead_bitmap);
-			wl_ship->overhead_bitmap = -1;
+	for ( auto &[ship_class, wl_ship] : Wl_ships ) {
+		if ( wl_ship.overhead_bitmap != -1 ) {
+			bm_release(wl_ship.overhead_bitmap);
+			wl_ship.overhead_bitmap = -1;
 		}
 
-		if ( wl_ship->model_num != -1 ) {
+		if ( wl_ship.model_num != -1 ) {
 			// this should unload the model from memory only if it's not used in the mission
-			model_unload(wl_ship->model_num);
-			wl_ship->model_num = -1;
+			model_unload(wl_ship.model_num);
+			wl_ship.model_num = -1;
 		}
 
-		if(wl_ship->animation.num_frames)
-			generic_anim_unload(&wl_ship->animation);
+		if(wl_ship.animation.num_frames)
+			generic_anim_unload(&wl_ship.animation);
 	}
+
+	Wl_ships.clear();
+}
+
+/**
+ * init ship-class specific data
+ */
+void wl_init_ship_class_data()
+{
+	wl_free_ship_class_data();
 }
 
 /**
@@ -1604,19 +1620,15 @@ void wl_maybe_reset_selected_weapon_class()
 	}
 
 	// then check for a primary weapon in the pool
-	for ( i = 0; i < Plist_size; i++ ) {
-		if ( Plist[i] >= 0 ) {
-			Selected_wl_class = Plist[i];
-			return;
-		}
+	if ( !Plist.empty() ) {
+		Selected_wl_class = Plist.front();
+		return;
 	}
 
 	// finally, if no others found yet, check for a secondary weapon in the pool
-	for ( i = 0; i < Slist_size; i++ ) {
-		if ( Slist[i] >= 0 ) {
-			Selected_wl_class = Slist[i];
-			return;
-		}
+	if ( !Slist.empty() ) {
+		Selected_wl_class = Slist.front();
+		return;
 	}
 }
 
@@ -1850,25 +1862,12 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
  */
 void wl_add_index_to_list(int wi_index)
 {
-	int i;
 	if ( Weapon_info[wi_index].subtype == WP_MISSILE ) {
-
-		for ( i=0; i<Slist_size; i++ ) {
-			if ( Slist[i] == wi_index )
-				break;
-		}
-
-		if ( i == Slist_size ) 
-			Slist[Slist_size++] = wi_index;
-
+		if ( !Slist.contains(wi_index) )
+			Slist.push_back(wi_index);
 	} else {
-		for ( i=0; i<Plist_size; i++ ) {
-			if ( Plist[i] == wi_index )
-				break;
-		}
-
-		if ( i == Plist_size ) 
-			Plist[Plist_size++] = wi_index;
+		if ( !Plist.contains(wi_index) )
+			Plist.push_back(wi_index);
 	}
 }
 
@@ -1990,27 +1989,20 @@ void wl_fill_slots()
  */
 void wl_init_icon_lists()
 {
-	int i;
-
 	Assert( Wl_pool != NULL );
 
-	Plist_start = 0;		// offset into Plist[]
+	Plist_start = 0;
 	Slist_start = 0;
 
-	Plist_size = 0;		// number of active elements in Plist[]
-	Slist_size = 0;
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Plist[i] = -1;
-		Slist[i] = -1;
-	}
+	Plist.clear();
+	Slist.clear();
 
 	for ( const auto &[weapon_class, count] : *Wl_pool ) {
 		if ( count > 0 ) {
 			if ( Weapon_info[weapon_class].subtype == WP_MISSILE ) {
-				Slist[Slist_size++] = weapon_class;
+				Slist.push_back(weapon_class);
 			} else {
-				Plist[Plist_size++] = weapon_class;
+				Plist.push_back(weapon_class);
 			}
 		}
 	}
@@ -2022,8 +2014,8 @@ void wl_init_icon_lists()
 void wl_set_team_pointers(int team)
 {
 	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
-	
-	Wl_icons = Wl_icons_teams[team];
+
+	Wl_icons = &Wl_icons_teams[team];
 }
 
 /**
@@ -2032,11 +2024,11 @@ void wl_set_team_pointers(int team)
 void wl_reset_team_pointers()
 {
 	Assert( !Weapon_select_open );
-	
+
 	if ( Weapon_select_open )
 		return;
-	
-	Wl_icons = NULL;
+
+	Wl_icons = nullptr;
 }
 
 /**
@@ -2064,7 +2056,7 @@ void weapon_select_close_team()
 	if (Weapon_select_open)
 		return;
 
-	wl_unload_icons();
+	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
 }
 
@@ -2074,20 +2066,17 @@ void weapon_select_close_team()
  */
 void weapon_select_common_init(bool API_Access)
 {
-	int idx;
-
+	// In team-vs-team, initialize every other team first; we always initialize our own team
+	// last so that the team pointers -- which common_set_team_pointers repoints to whichever
+	// team was initialized most recently -- are left pointing at our team for the rest of the screen.
 	if(MULTI_TEAM){
-		// initialize for all teams
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
-			weapon_select_init_team(idx);
+		for(int idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+			if(idx != Common_team)
+				weapon_select_init_team(idx);
 		}
-
-		// re-initialize for me specifically
-		weapon_select_init_team(Common_team);
-	} else {	
-		// initialize for my own team
-		weapon_select_init_team(Common_team);
 	}
+
+	weapon_select_init_team(Common_team);
 
 	if (!API_Access) {
 		wl_reset_selected_slot();
@@ -2890,9 +2879,9 @@ void weapon_select_do(float frametime)
 		sx = mx + Wl_delta_x;
 		sy = my + Wl_delta_y;
 
-		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use_for_ship )
+		if ( (*Wl_icons)[Carried_wl_icon.weapon_class].can_use_for_ship )
 		{
-			wl_icon_info *icon = &Wl_icons[Carried_wl_icon.weapon_class];
+			wl_icon_info *icon = &(*Wl_icons)[Carried_wl_icon.weapon_class];
 			weapon_info *wip = &Weapon_info[Carried_wl_icon.weapon_class];
 			if(icon->icon_bmaps[WEAPON_ICON_FRAME_SELECTED] != -1)
 			{
@@ -2945,7 +2934,7 @@ void weapon_select_do(float frametime)
 
 		// check so see if this is really a legal weapon to carry away
 		// (don't check can_use_for_bank here because we may drop the weapon on a bank that wasn't previously selected)
-		if ( !Wl_icons[Carried_wl_icon.weapon_class].can_use_for_ship )
+		if ( !(*Wl_icons)[Carried_wl_icon.weapon_class].can_use_for_ship )
 		{
 			int diffx, diffy;
 			diffx = abs(Carried_wl_icon.from_x-mx);
@@ -3025,7 +3014,7 @@ void weapon_select_close()
 	// unload bitmaps
 	bm_release(WeaponSelectMaskBitmap);
 
-	wl_unload_icons();
+	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
 	// ...must be last...
 	wl_free_ship_class_data();
@@ -3066,7 +3055,7 @@ void wl_render_icon_count(int num, int x, int y)
 /**
  * Render icon 
  *
- * @param index             index into Wl_icons[], identifying which weapon to draw
+ * @param index             weapon class, identifying which weapon to draw
  * @param x                 x screen position to draw icon at
  * @param y                 y screen position to draw icon at
  * @param num               count for weapon
@@ -3084,7 +3073,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	if ( Selected_wl_slot == -1 )
 		return;
 
-	icon = &Wl_icons[index];
+	icon = &(*Wl_icons)[index];
 
 	if ( icon->icon_bmaps[0] == -1 && icon->model_index == -1 && icon->laser_bmap == -1) {
 		wl_load_icons(index);
@@ -3235,7 +3224,7 @@ void draw_wl_icon_with_number(int list_count, int weapon_class)
 	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
 
 
-	if ( Wl_icons[weapon_class].can_use_for_ship && Wl_icons[weapon_class].can_use_for_bank != TriStateBool::FALSE_ )
+	if ( (*Wl_icons)[weapon_class].can_use_for_ship && (*Wl_icons)[weapon_class].can_use_for_bank != TriStateBool::FALSE_ )
 	{
 		gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
 	}
@@ -3253,17 +3242,15 @@ void draw_wl_icon_with_number(int list_count, int weapon_class)
  */
 void draw_wl_icons()
 {
-	int i, count;
-
-	count=0;
-	for ( i = Plist_start; i < Plist_size; i++ ) {
+	int count=0;
+	for ( size_t i = Plist_start; i < Plist.size(); ++i ) {
 		draw_wl_icon_with_number(count, Plist[i]);
 		if ( ++count >= NUM_PRIMARY_MASK_REGIONS )
 			break;
 	}
 
 	count=0;
-	for ( i = Slist_start; i < Slist_size; i++ ) {
+	for ( size_t i = Slist_start; i < Slist.size(); ++i ) {
 		draw_wl_icon_with_number(count+NUM_PRIMARY_MASK_REGIONS, Slist[i]);
 		if ( ++count >= NUM_SECONDARY_MASK_REGIONS )
 			break;
@@ -3294,13 +3281,13 @@ void wl_pick_icon_from_list(int index)
 	}
 
 	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
-		weapon_class = Plist[Plist_start+index];
+		weapon_class = wl_get_weapon_class_from_list(Plist, Plist_start, index);
 	} else {
-		weapon_class = Slist[Slist_start+index-NUM_PRIMARY_MASK_REGIONS];
+		weapon_class = wl_get_weapon_class_from_list(Slist, Slist_start, index - NUM_PRIMARY_MASK_REGIONS);
 	}
 
 	// there isn't a weapon there at all!
-	if ( weapon_class < 0 ) 
+	if ( weapon_class < 0 )
 		return;
 
 	Assert( Wl_pool != NULL );
@@ -3348,7 +3335,7 @@ void pick_from_ship_slot(int num)
 		return;
 	}
 
-	Assert(Wl_icons[wep[num]].can_use_for_ship);
+	Assert((*Wl_icons)[wep[num]].can_use_for_ship);
 	// we can't Assert on can_use_for_bank here because we may have clicked on a bank that isn't selected
 
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
@@ -3525,7 +3512,7 @@ void start_weapon_animation(int weapon_class)
 
 	Weapon_anim_class = weapon_class;
 
-	if ( Wl_icons[weapon_class].model_index >= 0 )
+	if ( (*Wl_icons)[weapon_class].model_index >= 0 )
 		return;
 }
 

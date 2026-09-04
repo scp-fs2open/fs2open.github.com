@@ -96,6 +96,17 @@ namespace font
 		return this->offsetTop;
 	}
 
+	float FSFont::getTabWidth() const
+	{
+		return this->tabWidth;
+	}
+
+	void FSFont::setTabWidth(float newTabWidth)
+	{
+		Assertion(newTabWidth >= 0.0f, "Invalid tab width passed!");
+		this->tabWidth = newTabWidth;
+	}
+
 	float FSFont::getHeight() const
 	{
 		return _height;
