@@ -1,4 +1,7 @@
 
+#include "mod_table/mod_table.h"
+#include "scripting/ade_args.h"
+#include "scripting/api/objs/shipclass.h"
 #include "scripting/scripting_doc.h"
 
 #include "scripting/ScriptingTestFixture.h"
@@ -48,6 +51,14 @@ TEST_F(ScriptingBaseTest, isValidDocumentation) {
 	ASSERT_NE(isValidByClass.end(), isValidByClass.find("soundfile"));
 	ASSERT_EQ("Detects whether handle is valid", isValidByClass["object"]->description);
 
+	// Generated from a validator registered with ADE_OBJ_VALIDATOR
+	ASSERT_NE(isValidByClass.end(), isValidByClass.find("shipclass"));
+	ASSERT_NE(isValidByClass.end(), isValidByClass.find("weaponclass"));
+	ASSERT_NE(isValidByClass.end(), isValidByClass.find("team"));
+	ASSERT_NE(isValidByClass.end(), isValidByClass.find("loadout_ship"));
+	ASSERT_NE(isValidByClass.end(), isValidByClass.find("HudGauge"));
+	ASSERT_EQ("Detects whether handle is valid", isValidByClass["shipclass"]->description);
+
 	// Derived classes inherit it rather than listing their own
 	ASSERT_EQ(isValidByClass.end(), isValidByClass.find("ship"));
 	ASSERT_EQ(isValidByClass.end(), isValidByClass.find("sound3D"));
@@ -55,6 +66,30 @@ TEST_F(ScriptingBaseTest, isValidDocumentation) {
 	// An explicit declaration replaces the generated one
 	ASSERT_NE(isValidByClass.end(), isValidByClass.find("sound"));
 	ASSERT_NE(SCP_string::npos, isValidByClass["sound"]->description.find("sound entry"));
+}
+
+// Exercises the generated isValid() of an int-index handle from Lua
+TEST_F(ScriptingBaseTest, intValidator) {
+	this->EvalTestScript();
+}
+
+// A registered validator must also drive the "return nil instead of an invalid object" option in ade_set_args
+TEST_F(ScriptingBaseTest, intValidatorNilReturn) {
+	auto L = _state->GetLuaSession();
+	const bool previous = Lua_API_returns_nil_instead_of_invalid_object;
+
+	// Headless there are no ship classes, so index 0 is invalid
+	Lua_API_returns_nil_instead_of_invalid_object = false;
+	::scripting::ade_set_args(L, "o", ::scripting::api::l_Shipclass.Set(0));
+	ASSERT_TRUE(lua_isuserdata(L, -1));
+	lua_pop(L, 1);
+
+	Lua_API_returns_nil_instead_of_invalid_object = true;
+	::scripting::ade_set_args(L, "o", ::scripting::api::l_Shipclass.Set(0));
+	ASSERT_TRUE(lua_isnil(L, -1));
+	lua_pop(L, 1);
+
+	Lua_API_returns_nil_instead_of_invalid_object = previous;
 }
 
 class ScriptingSerializationTest : public ScriptingBaseTest {

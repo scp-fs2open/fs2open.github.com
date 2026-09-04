@@ -133,6 +133,10 @@ class ade_table_entry {
 	// Reference to the ade_obj, passed as an upvalue to Function (for generated functions) and Destructor
 	void* Obj_upvalue = nullptr;
 
+	// For Objects, an optional validity predicate taking a pointer to the stored value.  Set via ADE_OBJ_VALIDATOR;
+	// takes precedence over the stored type's isValid() member.
+	bool (*Validator)(const void*) = nullptr;
+
 	// For Objects, the destructor of the object
 	lua_CFunction Destructor = nullptr;
 
@@ -246,6 +250,29 @@ struct ade_is_valid <T, decltype((void)(std::declval<T>().isValid()), 0)> : std:
 		return t.isValid();
 	}
 };
+
+/**
+ * @brief Determines whether a value stored in an API object is valid
+ *
+ * A validator registered (via ADE_OBJ_VALIDATOR) on the object's table entry, or on that of any object it derives
+ * from, takes precedence; otherwise the stored type's isValid() member is used, and types without one are always
+ * considered valid.
+ *
+ * @param idx The table entry index of the API object
+ * @param value The stored value
+ */
+template <typename T>
+bool ade_object_is_valid(size_t idx, const T& value)
+{
+	for (size_t i = idx; i != UINT_MAX; i = ade_manager::getInstance()->getEntry(i).DerivatorIdx)
+	{
+		const auto& entry = ade_manager::getInstance()->getEntry(i);
+		if (entry.Validator != nullptr)
+			return entry.Validator(&value);
+	}
+
+	return ade_is_valid<T>::get(value);
+}
 
 /**
  * @brief Converts an object index to something that can be used with ade_set_args.

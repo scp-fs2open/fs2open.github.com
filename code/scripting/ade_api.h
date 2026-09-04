@@ -104,16 +104,13 @@ class ade_obj : public ade_lib_handle {
 			return 0;
 		}
 
-		if (value == nullptr) {
-			return 0;
-		}
-
 		value->~StoreType();
 		return 0;
 	}
 
-	// Automatically generated isValid() API function for types whose StoreType has an isValid() member.
-	// An explicit ADE_FUNC(isValid, ...) declared after the ADE_OBJ replaces this one.
+	// Automatically generated isValid() API function for types whose StoreType has an isValid() member or which have
+	// a validator registered via ADE_OBJ_VALIDATOR.  An explicit ADE_FUNC(isValid, ...) declared after the ADE_OBJ
+	// replaces this one.
 	static int lua_isValid(lua_State* L)
 	{
 		auto* obj =
@@ -123,15 +120,30 @@ class ade_obj : public ade_lib_handle {
 			return 0;	// nil
 		}
 
-		if (value == nullptr) {
-			return ade_set_args(L, "b", false);
-		}
+		return ade_set_args(L, "b", ade_object_is_valid(obj->GetIdx(), *value));
+	}
 
-		// Using the trait rather than calling isValid() directly keeps this compiling for every StoreType
-		return ade_set_args(L, "b", ade_is_valid<StoreType>::get(*value));
+	// Registers the generated isValid() function as a member of this object.  Safe to call more than once.
+	void registerIsValid() const
+	{
+		ade_table_entry func;
+
+		func.Name              = "isValid";
+		func.Instanced         = true;
+		func.Type              = 'u';
+		func.Function          = lua_isValid;
+		func.Obj_upvalue       = const_cast<void*>(static_cast<const void*>(this));
+		func.Arguments         = nullptr;
+		func.Description       = "Detects whether handle is valid";
+		func.ReturnType        = "boolean";
+		func.ReturnDescription = "true if valid, false if handle is invalid, nil if a syntax/type error occurs";
+
+		ade_manager::getInstance()->getEntry(LibIdx).AddSubentry(func);
 	}
 
   public:
+	using value_type = StoreType;
+
 	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr, size_t size = 0, ade_serialize_func serializer = nullptr, ade_deserialize_func deserializer = nullptr)
 	{
 		ade_table_entry ate;
@@ -160,20 +172,16 @@ class ade_obj : public ade_lib_handle {
 		// If the stored type can report its validity, expose that to Lua automatically.  Derived types inherit
 		// this from their base object (which in all current cases stores the same type), so skip it for those.
 		if (ade_is_valid<StoreType>::value && in_deriv == nullptr) {
-			ade_table_entry func;
-
-			func.Name              = "isValid";
-			func.Instanced         = true;
-			func.Type              = 'u';
-			func.Function          = lua_isValid;
-			func.Obj_upvalue       = static_cast<void*>(this);
-			func.Arguments         = nullptr;
-			func.Description       = "Detects whether handle is valid";
-			func.ReturnType        = "boolean";
-			func.ReturnDescription = "true if valid, false if handle is invalid, nil if a syntax/type error occurs";
-
-			ade_manager::getInstance()->getEntry(LibIdx).AddSubentry(func);
+			registerIsValid();
 		}
+	}
+
+	// Registers a validity predicate for this object, used by the generated isValid() function and by ade_set_args
+	// when returning nil instead of invalid objects.  Use the ADE_OBJ_VALIDATOR macro rather than calling this directly.
+	void setValidator(bool (*fn)(const void*)) const
+	{
+		ade_manager::getInstance()->getEntry(LibIdx).Validator = fn;
+		registerIsValid();
 	}
 
 	// WMC - Use this to store object data for return, or for setting as a global
@@ -256,7 +264,60 @@ class ade_obj : public ade_lib_handle {
  * @ingroup ade_api
  */
 #define ADE_OBJ_DERIV(field, type, name, desc, deriv)                                                                  \
+	static_assert(std::is_same<type,                                                                                   \
+		std::remove_cv_t<std::remove_reference_t<decltype(SCP_TOKEN_CONCAT(get_, deriv)())>>::value_type>::value,        \
+		"A derived API object must store the same type as the object it derives from");                                 \
 	ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)(), ade_multi_serializer<type>)
+
+/**
+ * Validator registration class.  Use the ADE_OBJ_VALIDATOR macro rather than declaring one of these directly.
+ *
+ * @ingroup ade_api
+ */
+class ade_validator {
+  public:
+	template <class StoreType>
+	ade_validator(const ade_obj<StoreType>& obj, bool (*fn)(const void*))
+	{
+		obj.setValidator(fn);
+	}
+};
+
+/**
+ * @brief Declare a validity predicate for an API object
+ *
+ * This generates an isValid() function for the object, and also lets the engine return nil instead of an invalid
+ * handle when the mod table option for that is set.  Use this for objects whose stored type cannot report its own
+ * validity (e.g. an int index into a table); objects whose stored type has an isValid() member get this automatically.
+ *
+ * @param field The name of the object field (e.g. l_Shipclass)
+ * @param var The name by which the stored value is referred to in the expression
+ * @param expr An expression yielding true when the value is valid; evaluated each time validity is checked
+ *
+ * @ingroup ade_api
+ */
+#define ADE_OBJ_VALIDATOR(field, var, expr)                                                                            \
+	static bool SCP_TOKEN_CONCAT(field, _validator)(const void* ade_validator_value)                                    \
+	{                                                                                                                  \
+		const auto& var =                                                                                                \
+			*static_cast<const std::remove_reference_t<decltype(field)>::value_type*>(ade_validator_value);                \
+		return (expr);                                                                                                   \
+	}                                                                                                                  \
+	static ::scripting::ade_validator SCP_TOKEN_CONCAT(field, _validator_registrar)(SCP_TOKEN_CONCAT(get_, field)(),    \
+		SCP_TOKEN_CONCAT(field, _validator))
+
+/**
+ * @brief Declare an index-based API object as valid for the range [0, upper)
+ *
+ * Shorthand for ADE_OBJ_VALIDATOR for the common case of an int index.  The upper bound is evaluated each time
+ * validity is checked, so it can (and usually should) be a function call or a container size.
+ *
+ * @param field The name of the object field (e.g. l_Shipclass)
+ * @param upper The exclusive upper bound of the valid range
+ *
+ * @ingroup ade_api
+ */
+#define ADE_OBJ_VALIDATOR_RANGE(field, upper) ADE_OBJ_VALIDATOR(field, idx, idx >= 0 && idx < (upper))
 
 /**
  * @brief Declare an API object but don't define it

@@ -8,6 +8,7 @@ namespace api {
 
 //**********HANDLE: Asteroid
 ADE_OBJ_NO_MULTI(l_AudioStream, int, "audio_stream", "An audio stream handle");
+ADE_OBJ_VALIDATOR(l_AudioStream, idx, idx >= 0);
 
 ADE_FUNC(play,
 	l_AudioStream,
@@ -159,21 +160,6 @@ ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream",
 	}
 
 	return ade_set_args(L, "f", (float)audiostream_get_duration(streamHandle));
-}
-
-ADE_FUNC(isValid,
-	l_AudioStream,
-	nullptr,
-	"Determines if the handle is valid",
-	"boolean",
-	"true if valid, false otherwise")
-{
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", streamHandle >= 0);
 }
 
 } // namespace api
