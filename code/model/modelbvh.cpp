@@ -621,6 +621,136 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 	return found;
 }
 
+// Batched "could this triangle possibly be hit at all" gate for one BVH_N-wide chunk: combines
+// fvi_sphere_plane()'s time-window plane test with a projected-circle spatial gate (project onto
+// the plane perpendicular to the sweep direction -- see the caller's basis_u/basis_v derivation --
+// where the swept sphere's own projection is a single fixed point for the whole [0,1] sweep, so
+// "is this triangle within `radius` of that point, in 2D" is a necessary condition for a hit
+// regardless of face_t's time window, which the plane test alone can't express since an infinite
+// plane has no notion of the triangle's actual bounded extent) into one active[] mask. Both
+// sub-tests are pulled into this one function, isolated from on_face/test_edge below, so this piece
+// can be reworked independently of them if it ever needs hand SIMD intrinsics instead of relying on
+// the autovectorizer.
+//
+// The projected-circle gate is Ericson's closest-point-on-triangle region test (RTCD 5.1.5), same
+// "every lane computed unconditionally" strategy as test_edge() below: every region's candidate
+// point and membership condition is computed for every lane regardless of outcome (a raw division
+// in a region that turns out not to apply just produces an unused inf/nan, discarded by the select
+// below it, same as test_edge()'s own unconditional 1.0f/A[i]), and the final closest point is a
+// priority-ordered ternary cascade (rA ? candA : rB ? candB : ...) that mirrors Ericson's original
+// if/else-if priority exactly (first matching region wins) while compiling to selects, not branches.
+//
+// Also returns face_t[] (the plane touch time, meaningful only where active[i]) and the face normal
+// nx/ny/nz[] -- both needed again by the caller's on_face containment test, computed once here
+// rather than twice.
+static void sphere_triangle_active_mask_simd(const float v0x[BVH_N], const float v0y[BVH_N],
+	const float v0z[BVH_N], const float v1x[BVH_N], const float v1y[BVH_N], const float v1z[BVH_N],
+	const float v2x[BVH_N], const float v2y[BVH_N], const float v2z[BVH_N], const float e1x[BVH_N],
+	const float e1y[BVH_N], const float e1z[BVH_N], const float e2x[BVH_N], const float e2y[BVH_N],
+	const float e2z[BVH_N], float xs0x, float xs0y, float xs0z, float vsx, float vsy, float vsz, float radius,
+	float Rs2, float bux, float buy, float buz, float bvx, float bvy, float bvz, float p0u, float p0v,
+	bool active[BVH_N], float face_t[BVH_N], float nx[BVH_N], float ny[BVH_N], float nz[BVH_N])
+{
+	// Face normal (raw cross product + magnitude; normalize with a guarded reciprocal so a
+	// degenerate/zero-area padding triangle -- see bvh_build() -- yields nx=ny=nz=0 rather than
+	// NaN, which then safely fails every downstream test in this function).
+	bool degenerate[BVH_N];
+	for (int i = 0; i < BVH_N; ++i) {
+		float rx = e1y[i] * e2z[i] - e1z[i] * e2y[i];
+		float ry = e1z[i] * e2x[i] - e1x[i] * e2z[i];
+		float rz = e1x[i] * e2y[i] - e1y[i] * e2x[i];
+		float magsq = rx * rx + ry * ry + rz * rz;
+		degenerate[i] = magsq <= 1e-16f;
+		float inv_mag = degenerate[i] ? 0.0f : 1.0f / std::sqrt(magsq);
+		nx[i] = rx * inv_mag;
+		ny[i] = ry * inv_mag;
+		nz[i] = rz * inv_mag;
+	}
+
+	// fvi_sphere_plane(), batched: face/slab touch-time test against each triangle's own plane.
+	for (int i = 0; i < BVH_N; ++i) {
+		float vs_dot_norm = vsx * nx[i] + vsy * ny[i] + vsz * nz[i];
+		bool backface = vs_dot_norm > 0.0f; // MC_COLLIDE_ALL never reaches this function -- see header comment
+		float D = -(nx[i] * v0x[i] + ny[i] * v0y[i] + nz[i] * v0z[i]);
+		float xs0_dot_norm = nx[i] * xs0x + ny[i] * xs0y + nz[i] * xs0z;
+		bool plane_valid = std::fabs(vs_dot_norm) > 1e-30f;
+		float inv_vs = plane_valid ? 1.0f / vs_dot_norm : 0.0f;
+		float t1raw = (-D - xs0_dot_norm + radius) * inv_vs;
+		float t2raw = (-D - xs0_dot_norm - radius) * inv_vs;
+		float t1 = std::min(t1raw, t2raw);
+		float t2 = std::max(t1raw, t2raw);
+		bool fvi_ok = plane_valid && t1 < 1.0f && t2 > 0.0f;
+		active[i] = !degenerate[i] && !backface && fvi_ok;
+		face_t[i] = t1;
+	}
+
+	// Projected-circle spatial gate: closest-point-on-2D-triangle-to-a-point via Ericson's region
+	// test (RTCD 5.1.5) against the triangle projected onto (bu, bv), compared to the sphere's own
+	// fixed projected position. ANDed into active[] since it's an independent necessary condition,
+	// not a replacement for the time-window check above. Every lane computed unconditionally
+	// (including already-inactive ones -- see this function's own doc comment) so the loop stays a
+	// fixed-trip-count, branch-free-per-lane shape for the autovectorizer.
+	for (int i = 0; i < BVH_N; ++i) {
+		float au = v0x[i] * bux + v0y[i] * buy + v0z[i] * buz;
+		float av = v0x[i] * bvx + v0y[i] * bvy + v0z[i] * bvz;
+		float bu_ = v1x[i] * bux + v1y[i] * buy + v1z[i] * buz;
+		float bv_ = v1x[i] * bvx + v1y[i] * bvy + v1z[i] * bvz;
+		float cu = v2x[i] * bux + v2y[i] * buy + v2z[i] * buz;
+		float cv = v2x[i] * bvx + v2y[i] * bvy + v2z[i] * bvz;
+
+		float abu = bu_ - au, abv = bv_ - av;
+		float acu = cu - au, acv = cv - av;
+		float apu = p0u - au, apv = p0v - av;
+		float d1 = abu * apu + abv * apv;
+		float d2 = acu * apu + acv * apv;
+
+		float bpu = p0u - bu_, bpv = p0v - bv_;
+		float d3 = abu * bpu + abv * bpv;
+		float d4 = acu * bpu + acv * bpv;
+
+		float cpu = p0u - cu, cpv = p0v - cv;
+		float d5 = abu * cpu + abv * cpv;
+		float d6 = acu * cpu + acv * cpv;
+
+		float vc = d1 * d4 - d3 * d2;
+		float vb = d5 * d2 - d1 * d6;
+		float va = d3 * d6 - d5 * d4;
+		float d4d3 = d4 - d3, d5d6 = d5 - d6;
+
+		// Region membership, in the same priority order as Ericson's original if/else-if cascade --
+		// each condition is evaluated on its own raw d1..d6/va/vb/vc, not on "not an earlier region",
+		// since the ternary select below already gives first-listed-wins priority regardless of
+		// whether any of these can geometrically overlap.
+		bool rA = d1 <= 0.0f && d2 <= 0.0f;
+		bool rB = d3 >= 0.0f && d4 <= d3;
+		bool rAB = vc <= 0.0f && d1 >= 0.0f && d3 <= 0.0f;
+		bool rC = d6 >= 0.0f && d5 <= d6;
+		bool rAC = vb <= 0.0f && d2 >= 0.0f && d6 <= 0.0f;
+		bool rBC = va <= 0.0f && d4d3 >= 0.0f && d5d6 >= 0.0f;
+
+		// Every region's candidate point computed unconditionally, including the divisions -- a
+		// division in a region that doesn't end up selected just produces an unused inf/nan,
+		// discarded by the select below, same as test_edge()'s own unconditional 1.0f/A[i].
+		float v_ab = d1 / (d1 - d3);
+		float w_ac = d2 / (d2 - d6);
+		float w_bc = d4d3 / (d4d3 + d5d6);
+		float in_denom = 1.0f / (va + vb + vc);
+		float v_in = vb * in_denom, w_in = vc * in_denom;
+
+		float candABu = au + v_ab * abu, candABv = av + v_ab * abv;
+		float candACu = au + w_ac * acu, candACv = av + w_ac * acv;
+		float candBCu = bu_ + w_bc * (cu - bu_), candBCv = bv_ + w_bc * (cv - bv_);
+		float candINu = au + abu * v_in + acu * w_in, candINv = av + abv * v_in + acv * w_in;
+
+		float closest_u = rA ? au : rB ? bu_ : rAB ? candABu : rC ? cu : rAC ? candACu : rBC ? candBCu : candINu;
+		float closest_v = rA ? av : rB ? bv_ : rAB ? candABv : rC ? cv : rAC ? candACv : rBC ? candBCv : candINv;
+
+		float dpu = p0u - closest_u, dpv = p0v - closest_v;
+		bool spatial_possible = (dpu * dpu + dpv * dpv) <= Rs2;
+		active[i] = active[i] && spatial_possible;
+	}
+}
+
 bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& sphere_p0,
 	const vec3d& sphere_dir, float radius, float best_t, float& out_t, int32_t& out_triangle_index)
 {
@@ -631,6 +761,26 @@ bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t coun
 	const float vs_sqr = vsx * vsx + vsy * vsy + vsz * vsz;
 	const float Rs2 = radius * radius;
 	const float Rs_point2 = 0.2f * radius;
+
+	// An orthonormal basis (bu, bv) for the plane perpendicular to the sphere's sweep direction,
+	// computed once per call (not per lane) -- the sphere center's component along that plane never
+	// changes as it moves purely along sphere_dir, so the sphere's own projection onto (bu, bv) is a
+	// single fixed point for the whole [0,1] sweep, and "is this triangle within `radius` of that
+	// point, in 2D" is a necessary (but not sufficient -- see below) condition for a hit, regardless
+	// of where in [0,1] the closest approach actually falls. Cheaper to rule a triangle out here,
+	// once per chunk, than via the full 3-edge test.
+	vec3d basis_n = sphere_dir;
+	vm_vec_normalize_safe(&basis_n, true);
+	vec3d arbitrary = (std::fabs(basis_n.xyz.z) < 0.9f) ? make_vec3d(0.0f, 0.0f, 1.0f) : make_vec3d(1.0f, 0.0f, 0.0f);
+	vec3d basis_u, basis_v;
+	vm_vec_cross(&basis_u, &arbitrary, &basis_n);
+	vm_vec_normalize_safe(&basis_u, true);
+	vm_vec_cross(&basis_v, &basis_n, &basis_u);
+
+	const float bux = basis_u.xyz.x, buy = basis_u.xyz.y, buz = basis_u.xyz.z;
+	const float bvx = basis_v.xyz.x, bvy = basis_v.xyz.y, bvz = basis_v.xyz.z;
+	const float p0u = xs0x * bux + xs0y * buy + xs0z * buz;
+	const float p0v = xs0x * bvx + xs0y * bvy + xs0z * bvz;
 
 	// Edge-cylinder + vertex-sphere test for one triangle edge (va -> vb), batched over BVH_N lanes.
 	// A faithful per-lane translation of fvi_polyedge_sphereline()'s per-edge body: every goto
@@ -803,41 +953,12 @@ bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t coun
 			e2z[i] = v2z[i] - v0z[i];
 		}
 
-		// Face normal (raw cross product + magnitude; normalize with a guarded reciprocal so a
-		// degenerate/zero-area padding triangle -- see bvh_build() -- yields nx=ny=nz=0 rather than
-		// NaN, which then safely fails every downstream test in this function).
-		float nx[BVH_N], ny[BVH_N], nz[BVH_N];
-		bool degenerate[BVH_N];
-		for (int i = 0; i < BVH_N; ++i) {
-			float rx = e1y[i] * e2z[i] - e1z[i] * e2y[i];
-			float ry = e1z[i] * e2x[i] - e1x[i] * e2z[i];
-			float rz = e1x[i] * e2y[i] - e1y[i] * e2x[i];
-			float magsq = rx * rx + ry * ry + rz * rz;
-			degenerate[i] = magsq <= 1e-16f;
-			float inv_mag = degenerate[i] ? 0.0f : 1.0f / std::sqrt(magsq);
-			nx[i] = rx * inv_mag;
-			ny[i] = ry * inv_mag;
-			nz[i] = rz * inv_mag;
-		}
-
-		// fvi_sphere_plane(), batched: face/slab touch-time test against each triangle's own plane.
 		bool active[BVH_N];
 		float face_t[BVH_N];
-		for (int i = 0; i < BVH_N; ++i) {
-			float vs_dot_norm = vsx * nx[i] + vsy * ny[i] + vsz * nz[i];
-			bool backface = vs_dot_norm > 0.0f; // MC_COLLIDE_ALL never reaches this function -- see header comment
-			float D = -(nx[i] * v0x[i] + ny[i] * v0y[i] + nz[i] * v0z[i]);
-			float xs0_dot_norm = nx[i] * xs0x + ny[i] * xs0y + nz[i] * xs0z;
-			bool plane_valid = std::fabs(vs_dot_norm) > 1e-30f;
-			float inv_vs = plane_valid ? 1.0f / vs_dot_norm : 0.0f;
-			float t1raw = (-D - xs0_dot_norm + radius) * inv_vs;
-			float t2raw = (-D - xs0_dot_norm - radius) * inv_vs;
-			float t1 = std::min(t1raw, t2raw);
-			float t2 = std::max(t1raw, t2raw);
-			bool fvi_ok = plane_valid && t1 < 1.0f && t2 > 0.0f;
-			active[i] = !degenerate[i] && !backface && fvi_ok;
-			face_t[i] = t1;
-		}
+		float nx[BVH_N], ny[BVH_N], nz[BVH_N];
+		sphere_triangle_active_mask_simd(v0x, v0y, v0z, v1x, v1y, v1z, v2x, v2y, v2z, e1x, e1y, e1z, e2x, e2y, e2z,
+			xs0x, xs0y, xs0z, vsx, vsy, vsz, radius, Rs2, bux, buy, buz, bvx, bvy, bvz, p0u, p0v, active, face_t, nx,
+			ny, nz);
 
 		// Face containment (barycentric), only meaningful where active[i] && face_t[i] >= 0 -- see
 		// mc_check_triangle_sphereline_face()'s check_face/on_face.
