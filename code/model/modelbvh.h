@@ -135,31 +135,6 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles);
 bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& origin, const vec3d& dir,
 	float best_t, float& out_t, int32_t& out_triangle_index);
 
-// Batched, SIMD-friendly nearest-hit sphere-line-vs-triangle test over one leaf range, mirroring
-// ray_triangle_leaf_simd() above: same "plain float[BVH_N] arrays, every lane computed
-// unconditionally" strategy, same scalar-gather-then-vector-math shape.
-//
-// NOT WIRED INTO THE LIVE COLLISION PATH -- correctness-tested (SphereTriangleLeafSimdTests in
-// test_modelbvh.cpp) but measured slower than the scalar path it was meant to replace (see
-// collision_bvh_rewrite_plan memory note for current numbers). Kept as a validated building block.
-//
-// A moving sphere against a triangle is the classic "sphere at each vertex, cylinder along each
-// edge, slab for the face" case; this function reproduces FS2's own existing scalar algorithm for
-// that -- fvi_sphere_plane() for the face/slab test, then fvi_polyedge_sphereline()'s edge-cylinder
-// quadratic (with its vertex-sphere fallback) for the three edges -- batched across BVH_N triangles
-// per iteration instead of one triangle at a time. Every branch in the scalar version becomes an
-// unconditional per-lane bool combined with && / || instead of goto, so the result should agree
-// with the scalar reference bit-for-bit modulo floating-point reassociation -- which is exactly why
-// a caller would still need to re-confirm with the real scalar function rather than trusting this
-// function's fields directly, same as ray_triangle_leaf_simd()'s caller does.
-//
-// radius is the sphere radius (Mc->radius); this function is not meant to be used for MC_COLLIDE_ALL
-// queries, which need every hit, not just the nearest, same as ray_triangle_leaf_simd() is skipped
-// for MC_COLLIDE_ALL. best_t bounds the search; returns true and fills out_t/out_triangle_index only
-// for a strictly closer candidate.
-bool sphere_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, const vec3d& sphere_p0,
-	const vec3d& sphere_dir, float radius, float best_t, float& out_t, int32_t& out_triangle_index);
-
 // The ray-vs-AABB slab test and its radius-inflated wrapper live here (inline), not in modelbvh.cpp,
 // specifically so they can inline into bvh_visit_triangles()'s hot per-node-slot loop below -- this
 // is the single most-executed operation in the traversal, so the header-inlining tradeoff is worth
