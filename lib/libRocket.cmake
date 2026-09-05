@@ -2,7 +2,23 @@
 # Build script for libRocket =======
 #===================================
 
-set(LIBROCKET_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libRocket")
+# Fetch the libRocket sources. We only consume the source tree here (the
+# Rocket* targets below are defined by this script, not by libRocket's own
+# build system), and the repository has no top-level CMakeLists.txt, so
+# FetchContent_MakeAvailable() populates it without calling add_subdirectory().
+#
+# Offline / local development: point FetchContent at an existing checkout to
+# skip the download, e.g.
+#     -DFETCHCONTENT_SOURCE_DIR_LIBROCKET=/path/to/libRocket
+# or set FETCHCONTENT_BASE_DIR to a shared cache so clean rebuilds reuse it.
+include(FetchContent)
+FetchContent_Declare(libRocket
+	GIT_REPOSITORY https://github.com/scp-fs2open/libRocket.git
+	GIT_TAG        b0c18e17d257a46db8395485895185915f483ede
+)
+FetchContent_MakeAvailable(libRocket)
+
+set(LIBROCKET_DIR "${librocket_SOURCE_DIR}")
 
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0015 NEW)
