@@ -10831,12 +10831,15 @@ void ship_process_post(object * obj, float frametime)
 				shipp->weapons.secondary_bank_start_ammo[i] = shipp->weapons.secondary_bank_ammo[i];
 			}
 
-			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing]) {
+			// the pool only exists for player loadout teams
+			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing] && shipp->team >= 0 && shipp->team < Num_teams) {
 				const int weapon_class = shipp->weapons.secondary_bank_weapons[i];
 				if (SCP_vector_inbounds(Weapon_info, weapon_class)) {
-					auto& slot = The_mission.support_ships.rearm_weapon_pool[shipp->team][weapon_class];
-					if (slot >= 0) {
-						slot = MAX(0, slot - shipp->weapons.secondary_bank_ammo[i]);
+					// an absent entry is either unlimited or already 0, so subtracting from it is a no-op either way
+					auto& team_pool = The_mission.support_ships.rearm_weapon_pool[shipp->team];
+					auto it = team_pool.find(weapon_class);
+					if (it != team_pool.end() && it->second >= 0) {
+						it->second = MAX(0, it->second - shipp->weapons.secondary_bank_ammo[i]);
 					}
 				}
 			}
@@ -10855,11 +10858,13 @@ void ship_process_post(object * obj, float frametime)
 			}
 
 			const int weapon_class = shipp->weapons.primary_bank_weapons[i];
-			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing] &&
-				SCP_vector_inbounds(Weapon_info, weapon_class) && Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::Ballistic]) {
-				auto& slot = The_mission.support_ships.rearm_weapon_pool[shipp->team][weapon_class];
-				if (slot >= 0) {
-					slot = MAX(0, slot - shipp->weapons.primary_bank_ammo[i]);
+			// the pool only exists for player loadout teams
+			if (The_mission.support_ships.rearm_pool_from_loadout && shipp->flags[Ship_Flags::From_player_wing] && shipp->team >= 0 && shipp->team < Num_teams
+			&& SCP_vector_inbounds(Weapon_info, weapon_class) && Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::Ballistic]) {
+				auto& team_pool = The_mission.support_ships.rearm_weapon_pool[shipp->team];
+				auto it = team_pool.find(weapon_class);
+				if (it != team_pool.end() && it->second >= 0) {
+					it->second = MAX(0, it->second - shipp->weapons.primary_bank_ammo[i]);
 				}
 			}
 		}
@@ -16100,7 +16105,7 @@ float ship_calculate_rearm_duration( object *objp )
 
 static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 {
-	if ((weapon_class < 0) || (weapon_class >= MAX_WEAPON_TYPES)) {
+	if (!Weapon_info.in_bounds(weapon_class)) {
 		return 0;
 	}
 
@@ -16117,7 +16122,7 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 		return -1;
 	}
 
-	return The_mission.support_ships.rearm_weapon_pool[team][weapon_class];
+	return The_mission.support_ships.rearm_weapon_pool[team].value_or(weapon_class, The_mission.support_ships.rearm_pool_default());
 }
 
 static bool weapon_allowed_for_current_game_type(int weapon_flags)
@@ -16212,7 +16217,7 @@ static void use_mission_rearm_pool_for_weapon(int weapon_class, int amount, int 
 		return;
 	}
 
-	if ((weapon_class < 0) || (weapon_class >= MAX_WEAPON_TYPES)) {
+	if (!Weapon_info.in_bounds(weapon_class)) {
 		return;
 	}
 
@@ -16221,12 +16226,18 @@ static void use_mission_rearm_pool_for_weapon(int weapon_class, int amount, int 
 		return;
 	}
 
-	if (The_mission.support_ships.rearm_weapon_pool[team][weapon_class] < 0) {
+	auto &team_pool = The_mission.support_ships.rearm_weapon_pool[team];
+
+	int cur = team_pool.value_or(weapon_class, The_mission.support_ships.rearm_pool_default());
+	if (cur < 0) {
 		return;
 	}
 
-	The_mission.support_ships.rearm_weapon_pool[team][weapon_class] =
-		MAX(0, The_mission.support_ships.rearm_weapon_pool[team][weapon_class] - amount);
+	// don't insert an entry when nothing changes
+	int next = MAX(0, cur - amount);
+	if (next != cur) {
+		team_pool[weapon_class] = next;
+	}
 }
 
 // ==================================================================================
