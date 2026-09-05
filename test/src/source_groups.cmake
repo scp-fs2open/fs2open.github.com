@@ -93,6 +93,10 @@ add_file_folder("Test Util"
     util/test_util.h
 )
 
+add_file_folder("Tracing"
+    tracing/test_frame_profiler.cpp
+)
+
 add_file_folder("Utils"
     utils/HeapAllocatorTest.cpp
 )

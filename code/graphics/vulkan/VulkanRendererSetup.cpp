@@ -879,6 +879,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 			enabledExtensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
 			mprintf(("Vulkan: Enabling %s (HDR10 metadata)\n", VK_EXT_HDR_METADATA_EXTENSION_NAME));
 		}
+		// Required by the Vulkan Portability subset whenever the physical device
+		// advertises it (MoltenVK / macOS). Creating a device without it is
+		// undefined behavior and trips VUID-VkDeviceCreateInfo-pProperties-04451.
+		// The extension-name macro lives in vulkan_beta.h (VK_ENABLE_BETA_EXTENSIONS);
+		// our headers do not enable that, so use the literal string instead.
+		if (strcmp(ext.extensionName, "VK_KHR_portability_subset") == 0) {
+			enabledExtensions.push_back("VK_KHR_portability_subset");
+			mprintf(("Vulkan: Enabling VK_KHR_portability_subset\n"));
+		}
 		if (strcmp(ext.extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0) {
 			hasAccelerationStructureExt = true;
 		}

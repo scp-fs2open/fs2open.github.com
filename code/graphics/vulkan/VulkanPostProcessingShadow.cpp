@@ -70,7 +70,8 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateImageMemory(m_depth.image, MemoryUsage::GpuOnly, m_depth.allocation)) {
+		if (!m_ctx->memoryManager->allocateImageMemory(
+				m_depth.image, MemoryUsage::GpuOnly, m_depth.allocation, MemoryPurpose::RenderTarget)) {
 			m_ctx->device.destroyImage(m_depth.image);
 			m_depth.image = nullptr;
 			return false;

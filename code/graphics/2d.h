@@ -690,6 +690,56 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
  */
 typedef void* gr_sync;
 
+/**
+ * @brief Per-backend diagnostic counters, populated only when -gr_debug is active
+ *
+ * Each stat group carries its own "valid" flag since not every backend collects every
+ * group (e.g. per-draw-call counters currently only exist in the Vulkan backend). See
+ * gr_get_debug_stats().
+ */
+struct gr_debug_stats {
+	bool uniform_buffer_valid = false;
+	size_t uniform_buffer_size = 0;
+	size_t uniform_buffer_used = 0;
+
+	bool draw_stats_valid = false;
+	int draw_calls = 0;
+	int draw_indexed_calls = 0;
+	int total_vertices = 0;
+	int total_indices = 0;
+	int apply_material_calls = 0;
+	int apply_material_failures = 0;
+	int no_pipeline_skips = 0;
+	int descriptor_sets_allocated = 0;
+	int descriptor_writes = 0;
+	size_t pipeline_count = 0;
+	int on_demand_texture_uploads = 0;
+};
+
+/**
+ * @brief Cross-backend memory usage snapshot for the profiler overlay's memory panel
+ *
+ * Unlike gr_debug_stats, this is always populated when queried (no -gr_debug gate) -- memory
+ * usage is meant to be visible to anyone with the profiler overlay open. Each group still carries
+ * its own "valid" flag since not every backend/build collects every group (e.g. both graphics
+ * backends disabled at build time). See gr_get_memory_stats().
+ */
+struct gr_memory_stats {
+	bool model_heap_valid = false;
+	size_t model_vertex_heap_used = 0;
+	size_t model_vertex_heap_size = 0;
+	size_t model_index_heap_used = 0;
+	size_t model_index_heap_size = 0;
+
+	bool locked_bitmap_ram_valid = false;
+	size_t locked_bitmap_ram_bytes = 0;
+
+	bool gpu_purpose_valid = false;
+	size_t gpu_texture_bytes = 0;
+	size_t gpu_geometry_bytes = 0;
+	size_t gpu_render_target_bytes = 0;
+};
+
 typedef struct screen {
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
@@ -963,6 +1013,14 @@ typedef struct screen {
 	std::function<void(const char* name)> gf_push_debug_group;
 	std::function<void()> gf_pop_debug_group;
 
+	// Fills in whichever debug_stats groups this backend collects. Defaults to a no-op
+	// so backends without per-draw-call counters (OpenGL, stub) don't have to assign it.
+	std::function<void(gr_debug_stats& stats)> gf_get_debug_stats = [](gr_debug_stats&) {};
+
+	// Fills in whichever memory_stats groups this backend collects (GPU-purpose byte totals).
+	// Defaults to a no-op so backends without per-purpose tagging don't have to assign it.
+	std::function<void(gr_memory_stats& stats)> gf_get_memory_stats = [](gr_memory_stats&) {};
+
 	std::function<int()> gf_create_query_object;
 	std::function<void(int obj, QueryType type)> gf_query_value;
 	std::function<bool(int obj)> gf_query_value_available;
@@ -1153,6 +1211,23 @@ bool gr_is_screenshot_requested();
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
 
+/**
+ * @brief Collects whichever graphics-API debug stats are available for the active backend
+ *
+ * Returns a default-constructed (all-invalid) gr_debug_stats unless -gr_debug is active. Safe
+ * to call every frame regardless of backend or debug flag.
+ */
+gr_debug_stats gr_get_debug_stats();
+
+/**
+ * @brief Collects whichever cross-backend memory usage stats are available
+ *
+ * Unlike gr_get_debug_stats(), this is always populated (no -gr_debug gate) -- memory usage is
+ * meant to be visible whenever the profiler overlay is open. Safe to call every frame regardless
+ * of backend or build configuration; groups a backend/build doesn't support stay invalid/zero.
+ */
+gr_memory_stats gr_get_memory_stats();
+
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();
 }
@@ -1309,6 +1384,16 @@ inline void gr_post_process_restore_zbuffer()
  * ImGui::Render() and gr_imgui_render_draw_data().
  */
 void gr_imgui_begin_frame();
+
+/**
+ * @brief Renders and submits the open ImGui frame, if any. Called by gr_flip().
+ */
+void gr_imgui_end_frame();
+
+/**
+ * @brief Whether an ImGui frame is currently open for contributions
+ */
+bool gr_imgui_frame_active();
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,

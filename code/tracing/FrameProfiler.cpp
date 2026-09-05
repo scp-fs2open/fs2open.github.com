@@ -3,6 +3,7 @@
 
 #include "FrameProfiler.h"
 
+#include "cmdline/cmdline.h"
 #include "globalincs/systemvars.h"
 
 using namespace tracing;
@@ -15,6 +16,9 @@ bool event_sorter(const trace_event& left, const trace_event& right) {
 }
 
 void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) {
+	// Read the name through the id, not evt.category: the Category it names may already be dead
+	// (see trace_event::category_id).
+	const SCP_string category_name = Category::getNameById(evt.category_id);
 	int parent = -1;
 	for (int i = 0; i < (int) samples.size(); i++) {
 		if (!samples[i].open_profiles) {
@@ -30,7 +34,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	}
 
 	for (int i = 0; i < (int) samples.size(); i++) {
-		if (!strcmp(samples[i].name.c_str(), evt.category->getName()) && samples[i].parent == parent) {
+		if (samples[i].name == category_name && samples[i].parent == parent) {
 			// found the profile sample
 			samples[i].open_profiles++;
 			samples[i].profile_instances++;
@@ -43,7 +47,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	// create a new profile sample
 	profile_sample new_sample;
 
-	new_sample.name = SCP_string(evt.category->getName());
+	new_sample.name = category_name;
 	new_sample.open_profiles = 1;
 	new_sample.profile_instances = 1;
 	new_sample.accumulator = 0;
@@ -57,6 +61,9 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 }
 
 void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
+	// Read the name through the id, not evt.category: the Category it names may already be dead
+	// (see trace_event::category_id).
+	const SCP_string category_name = Category::getNameById(evt.category_id);
 	uint num_parents = 0;
 	int child_of = -1;
 
@@ -69,7 +76,7 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 	}
 
 	for (int i = 0; i < (int) samples.size(); i++) {
-		if (!strcmp(samples[i].name.c_str(), evt.category->getName()) && samples[i].parent == child_of) {
+		if (samples[i].name == category_name && samples[i].parent == child_of) {
 			int inner = 0;
 			int parent = -1;
 			uint64_t end_time = evt.timestamp;
@@ -119,6 +126,47 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 }
 
 namespace tracing {
+
+uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id) {
+	self_time_by_id.assign(static_cast<size_t>(Category::getCount()), 0);
+
+	if (events.empty()) {
+		return 0;
+	}
+
+	uint64_t total = 0;
+	SCP_vector<int> open_stack; // category ids of currently-open scopes
+	open_stack.reserve(32);
+	uint64_t last_ts = events.front().timestamp;
+
+	for (const auto& evt : events) {
+		if (!open_stack.empty()) {
+			const uint64_t delta = evt.timestamp - last_ts;
+			self_time_by_id[static_cast<size_t>(open_stack.back())] += delta;
+			total += delta;
+		}
+		last_ts = evt.timestamp;
+
+		if (evt.category_id < 0 || evt.category_id >= static_cast<int>(self_time_by_id.size())) {
+			// Can't happen today (processEvent filters out null-category events, and every
+			// recorded id is in range at record time), but the category this id names may have
+			// been destroyed since (see trace_event::category_id) -- never trust it blindly, and
+			// keep last_ts advanced above so a stray event could never cause the next delta to
+			// span it.
+			continue;
+		}
+
+		if (evt.type == EventType::Begin) {
+			open_stack.push_back(evt.category_id);
+		} else if (evt.type == EventType::End) {
+			if (!open_stack.empty()) {
+				open_stack.pop_back();
+			}
+		}
+	}
+
+	return total;
+}
 
 FrameProfiler::FrameProfiler() {
 
@@ -279,47 +327,70 @@ void FrameProfiler::dump_output(SCP_stringstream& out,
 SCP_string FrameProfiler::getContent() {
 	return content;
 }
+
+void FrameProfiler::build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total) {
+	// Keep the id, not a Category pointer: a category that a script made through the Lua API
+	// tracing_category can be gone by now, but its name stays available through getNameById().
+	SCP_vector<std::pair<int, uint64_t>> sorted;
+	for (size_t id = 0; id < self_time_by_id.size(); id++) {
+		if (self_time_by_id[id] > 0) {
+			sorted.emplace_back(static_cast<int>(id), self_time_by_id[id]);
+		}
+	}
+	std::sort(sorted.begin(), sorted.end(),
+		[](const std::pair<int, uint64_t>& a, const std::pair<int, uint64_t>& b) {
+			return a.second > b.second;
+		});
+
+	overlaySnapshot.valid = true;
+	overlaySnapshot.total_nanosec = total;
+	overlaySnapshot.top_contributors.clear();
+	overlaySnapshot.other_nanosec = 0;
+
+	for (size_t i = 0; i < sorted.size(); i++) {
+		if (i < FRAME_OVERLAY_MAX_CONTRIBUTORS) {
+			overlaySnapshot.top_contributors.push_back({Category::getNameById(sorted[i].first), sorted[i].second});
+		} else {
+			overlaySnapshot.other_nanosec += sorted[i].second;
+		}
+	}
+}
 void FrameProfiler::processFrame() {
 
 	std::lock_guard<std::mutex> vectorGuard(_eventsMutex);
 
 	std::sort(_bufferedEvents.begin(), _bufferedEvents.end(), event_sorter);
 
-	SCP_stringstream stream;
+	// Overlay fast path: per-category self-time via a single stack walk (see accumulate_self_times).
+	// _selfTimeScratch is a member so the per-frame run reuses its allocation.
+	const uint64_t total = accumulate_self_times(_bufferedEvents, _selfTimeScratch);
+	build_overlay_snapshot(_selfTimeScratch, total);
 
-	SCP_vector<profile_sample> samples;
+	// Legacy on-screen text dump (-profile_frame_time). This still builds the full parent/child
+	// sample tree (process_begin/process_end) and the min/avg/max history, both O(n^2); only pay for
+	// it when that output is actually consumed, not for the overlay.
+	if (Cmdline_frame_profile) {
+		SCP_stringstream stream;
+		SCP_vector<profile_sample> samples;
 
-	bool start_found = false;
-	bool end_found = false;
-	uint64_t start_profile_time = 0;
-	uint64_t end_profile_time = 0;
-
-	for (auto& event : _bufferedEvents) {
-		if (!start_found) {
-			start_profile_time = event.timestamp;
-			start_found = true;
+		for (auto& event : _bufferedEvents) {
+			switch (event.type) {
+				case EventType::Begin:
+					process_begin(samples, event);
+					break;
+				case EventType::End:
+					process_end(samples, event);
+					break;
+				default:
+					break;
+			}
 		}
-		if (!end_found) {
-			end_profile_time = event.timestamp;
-			end_found = true;
-		}
 
-		switch (event.type) {
-			case EventType::Begin:
-				process_begin(samples, event);
-				break;
-			case EventType::End:
-				process_end(samples, event);
-				break;
-			default:
-				break;
-		}
+		dump_output(stream, 0, 0, samples);
+		content = stream.str();
 	}
+
 	_bufferedEvents.clear();
-
-	dump_output(stream, start_profile_time, end_profile_time, samples);
-
-	content = stream.str();
 }
 
 }

@@ -22,6 +22,7 @@
 #include "material.h"
 #include "matrix.h"
 
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
@@ -42,6 +43,7 @@
 #include "render/3d.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "tracing/ProfilerOverlay.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 #include "utils/string_utils.h"
@@ -3170,24 +3172,38 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap          = bitmap_num;
 }
 
-static void output_uniform_debug_data()
+gr_debug_stats gr_get_debug_stats()
 {
-	if (gr_screen.mode == GraphicsAPI::Stub) {
-		return;
+	gr_debug_stats stats;
+
+	if (!Cmdline_graphics_debug_output) {
+		return stats;
 	}
 
-	int line_height = gr_get_font_height() + 1;
+	if (UniformBufferManager) {
+		stats.uniform_buffer_valid = true;
+		stats.uniform_buffer_size = UniformBufferManager->getBufferSize();
+		stats.uniform_buffer_used = UniformBufferManager->getCurrentlyUsedSize();
+	}
 
-	gr_set_color_fast(&Color_bright_white);
+	gr_screen.gf_get_debug_stats(stats);
 
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
-	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
-	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
+	return stats;
 }
+
+static bool Imgui_frame_active = false;
 
 void gr_imgui_begin_frame()
 {
+	if (Imgui_frame_active) {
+		return;
+	}
+
+	// The stub renderer (standalone server) never assigns the ImGui entry points.
+	if (!gr_screen.gf_imgui_new_frame || !ImGui::GetCurrentContext()) {
+		return;
+	}
+
 	gr_imgui_new_frame();      // renderer backend (OpenGL/Vulkan)
 	ImGui_ImplSDL3_NewFrame(); // platform backend, derives the display size from the SDL window
 
@@ -3205,6 +3221,23 @@ void gr_imgui_begin_frame()
 	}
 
 	ImGui::NewFrame();
+	Imgui_frame_active = true;
+}
+
+void gr_imgui_end_frame()
+{
+	if (!Imgui_frame_active) {
+		return;
+	}
+
+	ImGui::Render();
+	gr_imgui_render_draw_data();
+	Imgui_frame_active = false;
+}
+
+bool gr_imgui_frame_active()
+{
+	return Imgui_frame_active;
 }
 
 void gr_flip(bool execute_scripting)
@@ -3225,9 +3258,13 @@ void gr_flip(bool execute_scripting)
 
 	model_process_cached_ui_render_instances();
 
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
+	// Every presented frame drains the frame profiler and contributes the overlay window to
+	// this frame's ImGui pass. Doing it here rather than per game state is what keeps the
+	// profiler's event buffer bounded: collection is global, so the drain has to be too.
+	tracing::profiler_overlay_frame();
+
+	// Closes whatever ImGui frame the overlay (or the lab, or the options screen) opened.
+	gr_imgui_end_frame();
 
 	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
 	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
@@ -3494,6 +3531,30 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	auto gpuHeap = get_gpu_heap(heap_type);
 
 	gpuHeap->freeGpuData(data_offset);
+}
+
+gr_memory_stats gr_get_memory_stats()
+{
+	gr_memory_stats stats;
+
+	// gpu_heaps[] entries stay null when gpu_heap_init() early-returned (GraphicsAPI::Stub, e.g.
+	// a build with both graphics backends disabled), so this must not assume a live heap.
+	auto vertex_heap = get_gpu_heap(GpuHeap::ModelVertex);
+	auto index_heap = get_gpu_heap(GpuHeap::ModelIndex);
+	if (vertex_heap != nullptr && index_heap != nullptr) {
+		stats.model_heap_valid = true;
+		stats.model_vertex_heap_used = vertex_heap->usedBytes();
+		stats.model_vertex_heap_size = vertex_heap->bufferSize();
+		stats.model_index_heap_used = index_heap->usedBytes();
+		stats.model_index_heap_size = index_heap->bufferSize();
+	}
+
+	stats.locked_bitmap_ram_valid = true;
+	stats.locked_bitmap_ram_bytes = bm_texture_ram;
+
+	gr_screen.gf_get_memory_stats(stats);
+
+	return stats;
 }
 
 void gr_set_gamma(float gamma)
