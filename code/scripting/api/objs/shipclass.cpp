@@ -9,6 +9,7 @@
 #include "species.h"
 #include "shiptype.h"
 #include "team_colors.h"
+#include "texture_replacement.h"
 #include "vecmath.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
@@ -28,6 +29,7 @@ namespace api {
 
 //**********HANDLE: default primary
 ADE_OBJ(l_Default_Primary, int, "default_primary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Primary, ship_info_size());
 
 ADE_INDEXER(l_Default_Primary,
 	"number idx",
@@ -70,6 +72,7 @@ ADE_FUNC(__len,
 
 //**********HANDLE: default secondary
 ADE_OBJ(l_Default_Secondary, int, "default_secondary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Secondary, ship_info_size());
 
 ADE_INDEXER(l_Default_Secondary,
 	"number idx",
@@ -112,6 +115,7 @@ ADE_FUNC(__len,
 	
 //**********HANDLE: Shipclass
 ADE_OBJ(l_Shipclass, int, "shipclass", "Ship class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Shipclass, ship_info_size());
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
@@ -653,6 +657,21 @@ ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit d
 	return ade_set_args(L, "o", l_CockpitDisplayInfos.Set(cockpit_displays_info_h(ship_info_idx)));
 }
 
+ADE_VIRTVAR(ReplacementTextures, l_Shipclass, nullptr, "Gets the replacement textures defined in the table entry of this ship class", "texture_replacements", "Array handle, or invalid texture_replacements handle if the shipclass handle is invalid")
+{
+	int ship_info_idx = -1;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&ship_info_idx)))
+		return ade_set_error(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h()));
+
+	if (ship_info_idx < 0 || ship_info_idx >= ship_info_size())
+		return ade_set_error(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "This property is read only.");
+
+	return ade_set_args(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h(ship_info_idx)));
+}
+
 ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number", "Hitpoints, or 0 if handle is invalid")
 {
 	int idx;
@@ -1117,18 +1136,6 @@ ADE_FUNC(hasCustomStrings,
 	return ade_set_args(L, "b", result);
 }
 
-ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is available in the techroom", "boolean", "Whether ship has been revealed in the techroom, false if handle is invalid")
 {
 	int idx;
@@ -1327,10 +1334,6 @@ ADE_FUNC(renderSelectModel,
 			}
 		}
 		render_info.set_team_color(tcolor, "none", 0, 0);
-	}
-
-	if (sip->replacement_textures.size() > 0) {
-		render_info.set_replacement_textures(modelNum, sip->replacement_textures);
 	}
 
 	select_effect_params params;

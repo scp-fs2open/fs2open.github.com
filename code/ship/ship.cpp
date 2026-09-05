@@ -7157,9 +7157,14 @@ void ship::apply_replacement_textures(const SCP_vector<texture_replace> &replace
 
 			int tnum = tmap->FindTexture(tr.old_texture);
 			if (tnum > -1)
-				(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = tr.new_texture_id;
+				pmi->texture_replace->reference(j * TM_NUM_TYPES + tnum, tr.new_texture_id);
 		}
 	}
+}
+
+void ship::load_and_apply_replacement_textures(const SCP_vector<texture_replace> &replacements)
+{
+	model_instance_load_replacement_textures(model_get_instance(model_instance_num), replacements);
 }
 
 void ship_weapon::clear() 
@@ -8449,9 +8454,7 @@ void ship_close_cockpit_displays(ship* shipp)
 			bm_release(Player_displays[i].foreground);
 		}
 
-		if ( Player_displays[i].target >= 0 ) {
-			bm_release(Player_displays[i].target);
-		}
+		// the render target is owned by Player_cockpit_textures, not by the display
 	}
 
 	Player_displays.clear();
@@ -8487,8 +8490,14 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 		}
 	}
 
+	// if the texture isn't on the model, there is nothing to draw to
+	if ( glow_target < 0 ) {
+		Warning(LOCATION, "Cockpit display '%s' draws to texture '%s', which is not on cockpit model '%s'.  The display will not be created.", display->name, display->filename, pm->filename);
+		return;
+	}
+
 	// create a render target for this cockpit texture
-	auto& glow_texture = (*Player_cockpit_textures)[glow_target];
+	int glow_texture = (*Player_cockpit_textures)[glow_target];
 	if ( glow_texture == -1) {
 		bm_get_info(diffuse_handle, &w, &h);
 		glow_texture = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
@@ -8497,6 +8506,8 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 		if ( glow_texture < 0 ) {
 			return;
 		}
+
+		Player_cockpit_textures->adopt(glow_target, glow_texture);
 	}
 
 	new_display.background = -1;
@@ -11590,14 +11601,12 @@ static void ship_model_change(int n, int ship_type)
 	ship_info	*sip;
 	ship			*sp;
 	polymodel * pm;
-	polymodel_instance * pmi;
 	object *objp;
 
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 	objp = &Objects[sp->objnum];
-	pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -11694,36 +11703,11 @@ static void ship_model_change(int n, int ship_type)
 		sp->cockpit_model_instance = model_create_instance(model_objnum_special::OBJNUM_COCKPIT, sip->cockpit_model_num);
 	else
 		sp->cockpit_model_instance = -1;
-	
-	pmi = model_get_instance(sp->model_instance_num);
 
 	// Goober5000 - deal with texture replacement by re-applying the same code we used during parsing
 	// wookieejedi - replacement textures are loaded in mission parse, so need to load any new textures here
 	// Lafiel - this now has to happen last, as the texture replacement stuff is stored in the pmi
-	if ( !sip->replacement_textures.empty() ) {
-
-		// clear and reset replacement textures because the new positions may be different
-		pmi->texture_replace = std::make_shared<model_texture_replace>();
-		auto& texture_replace_deref = *pmi->texture_replace;
-
-		// now fill them in according to texture name
-		for (const auto& tr : sip->replacement_textures) {
-			// look for textures
-			for (auto j = 0; j < pm->n_textures; j++) {
-
-				texture_map* tmap = &pm->maps[j];
-				int tnum = tmap->FindTexture(tr.old_texture);
-
-				if (tnum > -1) {
-					// load new texture
-					int new_tex = bm_load_either(tr.new_texture);
-					if (new_tex > -1) {
-						texture_replace_deref[j * TM_NUM_TYPES + tnum] = new_tex;
-					}
-				}
-			}
-		}
-	}
+	sp->load_and_apply_replacement_textures(sip->replacement_textures);
 }
 
 /**

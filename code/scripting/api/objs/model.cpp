@@ -5,6 +5,7 @@
 #include "vecmath.h"
 #include "eye.h"
 #include "texture.h"
+#include "texturemap.h"
 
 extern void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
@@ -121,6 +122,22 @@ ADE_VIRTVAR(Textures, l_Model, nullptr, "Model textures", "textures", "Model tex
 		LuaError(L, "Assigning textures is not supported");
 
 	return ade_set_args(L, "o", l_ModelTextures.Set(model_h(pm)));
+}
+
+ADE_VIRTVAR(TextureMaps, l_Model, nullptr, "Model materials", "texturemaps", "Array of the model's materials, or an invalid texturemaps handle if the model handle is invalid")
+{
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
+		return ade_set_error(L, "o", l_ModelTextureMaps.Set(model_h()));
+
+	polymodel *pm = mdl->Get();
+	if (!pm)
+		return ade_set_error(L, "o", l_ModelTextureMaps.Set(model_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning texture maps is not supported");
+
+	return ade_set_args(L, "o", l_ModelTextureMaps.Set(model_h(pm)));
 }
 
 ADE_VIRTVAR(Thrusters, l_Model, nullptr, "Model thrusters", "thrusters", "Model thrusters, or an invalid thrusters handle if the model handle is invalid")
@@ -327,15 +344,6 @@ ADE_FUNC(getDetailRoot, l_Model, "[number detailLevel]", "Returns the root submo
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(pm, pm->detail[detail])));
 }
 
-ADE_FUNC(isValid, l_Model, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	model_h *mdl;
-	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", mdl->isValid());
-}
-
 ADE_VIRTVAR(Name, l_Submodel, nullptr, "Gets the submodel's name", "string", "The name or an empty string if invalid")
 {
 	submodel_h *smh = nullptr;
@@ -508,15 +516,6 @@ ADE_FUNC(getParent, l_Submodel, nullptr, "Gets the parent submodel of this submo
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smh->GetModel(), sm->parent)));
 }
 
-ADE_FUNC(isValid, l_Submodel, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	submodel_h *smh;
-	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", smh->isValid());
-}
-
 ADE_VIRTVAR(NoCollide, l_Submodel, nullptr, "Whether the submodel and its children ignore collisions", "boolean", "The flag, or error-false if invalid")
 {
 	submodel_h* smh = nullptr;
@@ -606,20 +605,11 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(pm, index)));
 }
 
-ADE_FUNC(isValid, l_ModelSubmodels, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if invalid, nil if a syntax/type error occurs")
-{
-	model_h *msh;
-	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", msh->isValid());
-}
-
 
 //**********HANDLE: modeltextures
-ADE_OBJ(l_ModelTextures, model_h, "textures", "Array of textures");
+ADE_OBJ(l_ModelTextures, model_h, "textures", "Flat array of model textures.  Each material (texture_map) on the model contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Slots that the material does not use hold invalid texture handles.  The TextureMaps array exposes the same slots grouped per material, as texture_map handles.");
 
-ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", "Number of model textures")
+ADE_FUNC(__len, l_ModelTextures, nullptr, "Number of texture slots on the model, i.e. the number of materials multiplied by " SCP_TOKEN_TO_STR(TM_NUM_TYPES), "number", "Number of texture slots, or 0 if handle is invalid")
 {
 	model_h *mth;
 	if (!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
@@ -632,7 +622,7 @@ ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", 
 	return ade_set_args(L, "i", TM_NUM_TYPES * pm->n_textures);
 }
 
-ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "texture", "Model textures, or invalid modeltextures handle if model handle is invalid")
+ADE_INDEXER(l_ModelTextures, "number/string IndexOrTextureFilename", "Gets or sets a texture slot.  A number is a 1-based index into the flat array (see the \"textures\" handle description for the layout); a string is matched against the filename of every slot on every material.  Setting a slot changes the shared model, and so affects every object using it.  The model takes its own reference to the texture, so the script does not need to keep the handle alive.", "texture", "Texture, or invalid texture handle if the model handle is invalid or the index/name does not match")
 {
 	model_h *mth = NULL;
 	texture_h* new_tex   = nullptr;
@@ -662,33 +652,19 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 
 	if(tinfo == NULL)
 	{
-		for (int i = 0; i < pm->n_textures; i++)
-		{
-			tmap = &pm->maps[i];
-
-			int tnum = tmap->FindTexture(s);
-			if(tnum > -1)
-				tinfo = &tmap->textures[tnum];
-		}
+		int slot = model_find_texture_slot(pm, s);
+		if (slot >= 0)
+			tinfo = &pm->maps[slot / TM_NUM_TYPES].textures[slot % TM_NUM_TYPES];
 	}
 
 	if(tinfo == NULL)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (ADE_SETTING_VAR && new_tex != nullptr) {
-		tinfo->SetTexture(new_tex->handle);
+		tinfo->SetTexture(new_tex->handle, true);
 	}
 
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(tinfo->GetTexture())));
-}
-
-ADE_FUNC(isValid, l_ModelTextures, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	model_h *mth;
-	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", mth->isValid());
 }
 
 
@@ -730,15 +706,6 @@ ADE_INDEXER(l_ModelEyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint",
 	return ade_set_args(L, "o", l_Eyepoint.Set(eye_h(pm->id, index)));
 }
 
-ADE_FUNC(isValid, l_ModelEyepoints, NULL, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
-{
-	model_h *eph;
-	if(!ade_get_args(L, "o", l_ModelEyepoints.GetPtr(&eph)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", eph->isValid());
-}
-
 //**********HANDLE: thrusters
 ADE_OBJ(l_ModelThrusters, model_h, "thrusters", "The thrusters of a model");
 
@@ -775,15 +742,6 @@ ADE_INDEXER(l_ModelThrusters, "number Index", "Array of all thrusterbanks on thi
 		LuaError(L, "Assigning thruster banks is not supported");
 
 	return ade_set_args(L, "o", l_Thrusterbank.Set(thrusterbank_h(pm->id, idx)));
-}
-
-ADE_FUNC(isValid, l_ModelThrusters, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	model_h *trh;
-	if(!ade_get_args(L, "o", l_ModelThrusters.GetPtr(&trh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", trh->isValid());
 }
 
 //**********HANDLE: thrusterbank
@@ -849,18 +807,6 @@ ADE_INDEXER(l_Thrusterbank, "number Index", "Array of glowpoint", "glowpoint", "
 	return ade_set_args(L, "o", l_Glowpoint.Set(glowpoint_h(tbh->modelh.GetID(), -1, tbh->thrusterbank_index, idx)));
 }
 
-ADE_FUNC(isValid, l_Thrusterbank, nullptr, "Detects if this handle is valid", "boolean", "true if this handle is valid, false otherwise")
-{
-	thrusterbank_h* trh;
-	if(!ade_get_args(L, "o", l_Thrusterbank.GetPtr(&trh)))
-		return ADE_RETURN_FALSE;
-
-	if (!trh->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", trh->isValid());
-}
-
 //**********HANDLE: glow point banks
 ADE_OBJ(l_ModelGlowpointbanks, model_h, "glowpointbanks", "Array of model glow point banks");
 
@@ -897,15 +843,6 @@ ADE_INDEXER(l_ModelGlowpointbanks, "glowpointbank", "Gets a glow point bank hand
 		LuaError(L, "Assigning glow point banks is not supported");
 
 	return ade_set_args(L, "o", l_Glowpointbank.Set(glowpointbank_h(pm->id, index)));
-}
-
-ADE_FUNC(isValid, l_ModelGlowpointbanks, nullptr, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
-{
-	model_h *modelh;
-	if(!ade_get_args(L, "o", l_ModelGlowpointbanks.GetPtr(&modelh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", modelh->isValid());
 }
 
 //**********HANDLE: glow point bank
@@ -973,15 +910,6 @@ ADE_INDEXER(l_Glowpointbank, "glowpoint", "Gets a glow point handle", "glowpoint
 // **********
 // NOTE: Any fields or functions of glowpointbank will need to take glowpoint_bank_overrides into account
 // **********
-
-ADE_FUNC(isValid, l_Glowpointbank, nullptr, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
-{
-	glowpointbank_h* gpbh = nullptr;
-	if (!ade_get_args(L, "o", l_Glowpointbank.GetPtr(&gpbh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", gpbh->isValid());
-}
 
 //**********HANDLE: glowpoint
 ADE_OBJ(l_Glowpoint, glowpoint_h, "glowpoint", "A model glowpoint");
@@ -1081,16 +1009,6 @@ ADE_VIRTVAR(Radius, l_Glowpoint, nullptr, "The radius of the glowpoint", "number
 		LuaError(L, "This property is read-only");
 
 	return ade_set_args(L, "f", point->radius);
-}
-
-ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns whether this handle is valid or not", "boolean", "True if handle is valid, false otherwise")
-{
-	glowpoint_h glh;
-
-	if(!ade_get_args(L, "o", l_Glowpoint.Get(&glh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", glh.isValid());
 }
 
 //**********HANDLE: dockingbays
@@ -1310,23 +1228,6 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 	vm_vec_add(&final_pos, &dockee_dock_pos, &docker_dock_pos);
 
 	return ade_set_args(L, "oo", l_Vector.Set(final_pos),l_Matrix.Set(matrix_h(&final_orient)));
-}
-
-ADE_FUNC(isValid, l_Dockingbay, nullptr, "Detects whether is valid or not", "boolean", "true if valid, false otherwise")
-{
-	dockingbay_h* dbh = nullptr;
-
-	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
-	{
-		return ADE_RETURN_FALSE;
-	}
-
-	if (dbh == nullptr)
-	{
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", dbh->isValid());
 }
 
 }

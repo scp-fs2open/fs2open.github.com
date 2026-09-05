@@ -1676,8 +1676,9 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
 		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
 			 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
-			 "<br><strong>IMPORTANT:</strong> Textures will not be unload themselves unless you explicitly tell them to do so."
-			 "When you are done with a texture, call the unload() function to free up memory.",
+			 "<br>The texture stays loaded for as long as any Lua reference to the handle exists; its reference is released automatically once the handle is garbage collected.  "
+			 "Anything the texture is assigned to, such as a model or ship texture slot, takes its own reference, so the script does not need to keep the handle alive after assigning it.  "
+			 "Call unload() to release the texture sooner.",
 		 "texture",
 		 "Texture handle, or invalid texture handle if texture couldn't be loaded")
 {

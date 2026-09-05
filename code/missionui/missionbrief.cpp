@@ -1105,9 +1105,9 @@ void brief_render_closeup(int ship_class, float frametime)
 			gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
 		}
 
-		auto sip = &Ship_info[ship_class];
-		if (!sip->replacement_textures.empty())
-			render_info.set_replacement_textures(Closeup_icon->modelnum, sip->replacement_textures);
+		// the instance carries the ship class's replacement textures, if any
+		if (Closeup_icon->model_instance_num >= 0)
+			render_info.set_replacement_textures(model_get_instance(Closeup_icon->model_instance_num)->texture_replace);
 
 		render_info.set_flags(MR_AUTOCENTER);
 	}

@@ -26,8 +26,7 @@
 #include "mod_table/mod_table.h"
 #include "tracing/categories.h"
 #include "tracing/tracing.h"
-#define BMPMAN_INTERNAL
-#include "bmpman/bm_internal.h"
+#include "bmpman/bmpman.h"
 
 using namespace Rocket::Core;
 
@@ -169,11 +168,8 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 		else if (submode.Find("bmpman,") == 0) {
 			int handle = std::atoi(submode.Substring(7).CString());
 
-			auto* entry = bm_get_entry(handle);
-			if (entry->handle != handle)
+			if (bm_add_ref(handle) < 0)
 				return false;
-
-			entry->load_count++;
 
 			bm_get_info(handle, &texture_dimensions.x, &texture_dimensions.y);
 
@@ -261,7 +257,8 @@ void RocketRenderingInterface::ReleaseTexture(TextureHandle texture)
 	if (tex->is_animation) {
 		generic_anim_unload(&tex->animation);
 	} else {
-		bm_release(tex->bm_handle);
+		// the reference was taken with bm_add_ref(), which counts on the first frame of an animation
+		bm_release_ref(tex->bm_handle);
 	}
 	delete tex;
 }

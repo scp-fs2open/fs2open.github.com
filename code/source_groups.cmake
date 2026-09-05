@@ -1617,6 +1617,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/techroom.h
 	scripting/api/objs/texture.cpp
 	scripting/api/objs/texture.h
+	scripting/api/objs/texture_replacement.cpp
+	scripting/api/objs/texture_replacement.h
 	scripting/api/objs/texturemap.cpp
 	scripting/api/objs/texturemap.h
     scripting/api/objs/time_obj.cpp

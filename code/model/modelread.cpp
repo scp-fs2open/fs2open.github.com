@@ -5006,6 +5006,40 @@ void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *sm
 	smi->shift_accel = sm->default_shift_accel;
 }
 
+void model_instance_load_replacement_textures(polymodel_instance *pmi, const SCP_vector<texture_replace> &replacements)
+{
+	// discard whatever the instance had, because the new positions may be different
+	pmi->texture_replace = nullptr;
+
+	if (replacements.empty())
+		return;
+
+	auto pm = model_get(pmi->model_num);
+	pmi->texture_replace = std::make_shared<model_texture_replace>();
+
+	// now fill them in according to texture name
+	for (const auto &tr : replacements)
+	{
+		// look for textures
+		for (int j = 0; j < pm->n_textures; j++)
+		{
+			int tnum = pm->maps[j].FindTexture(tr.old_texture);
+			if (tnum < 0)
+				continue;
+
+			// each slot takes over the reference from its own load
+			int new_tex;
+			if (!stricmp(tr.new_texture, "invisible"))
+				new_tex = REPLACE_WITH_INVISIBLE;
+			else
+				new_tex = bm_load_either(tr.new_texture);
+
+			if (new_tex != -1)
+				pmi->texture_replace->adopt(j * TM_NUM_TYPES + tnum, new_tex);
+		}
+	}
+}
+
 // Sets the submodel instance data when a tech room model instance is created.
 // This only needs to be done at creation, not every frame.
 void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
@@ -5013,6 +5047,9 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
 	flagset<Ship::Subsystem_Flags> empty;
+
+	// the instance carries the class's replacement textures, so that screens rendering it don't have to load them themselves
+	model_instance_load_replacement_textures(pmi, sip->replacement_textures);
 
 	sip->animations.clearShipData(pmi);
 	sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(animation::ModelAnimationDirection::FWD, true, true);

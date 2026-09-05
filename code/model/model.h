@@ -163,8 +163,10 @@ struct submodel_instance
 #define TM_SPEC_GLOSS_TYPE	6		// optional reflectance map (specular and gloss)
 #define TM_AMBIENT_TYPE		7		// optional ambient occlusion map with ambient occlusion and cavity occlusion factors for red and green channels.
 #define TM_NUM_TYPES		8		//WMC - Number of texture_info objects in texture_map
-									//Used by scripting - if you change this, do a search
-									//to update switch() statement in lua.cpp
+									//Used by scripting: the "textures" and "modelinstancetextures" Lua handles expose
+									//a flat array with TM_NUM_TYPES entries per texture_map, in the order listed above.
+									//If you add or reorder a type, update the docs for those handles in
+									//scripting/api/objs/model.cpp and scripting/api/objs/modelinstance.cpp.
 
 inline const SCP_map<int, SCP_string> MODEL_TEXTURE_SUFFIXES = {
 	{ TM_GLOW_TYPE,       "-glow" },
@@ -191,12 +193,35 @@ inline const SCP_string& model_texture_longest_suffix() {
 // Goober5000 - since we need something < 0
 #define REPLACE_WITH_INVISIBLE	-47
 
-class model_texture_replace : public std::array<int, MAX_REPLACEMENT_TEXTURES> {
+// Per-instance texture replacements, indexed by (texture_map index * TM_NUM_TYPES + TM_*_TYPE).  Each entry is a bitmap
+// handle, -1 for no replacement, or REPLACE_WITH_INVISIBLE.  The array owns one load-count reference on every bitmap
+// handle it holds and releases them all when it is destroyed, so entries can only be written through adopt(),
+// reference(), or clear().  The exception is render targets, which bm_release() will not free unless explicitly asked;
+// the cockpit display code stores those here, and they are left alone when the array is destroyed, as before.
+class model_texture_replace
+{
+	std::array<int, MAX_REPLACEMENT_TEXTURES> m_handles;
+
 public:
-	model_texture_replace() : std::array<int, MAX_REPLACEMENT_TEXTURES>() {
-		for (int& tex : *this)
-			tex = -1;
-	}
+	model_texture_replace();
+	~model_texture_replace();
+
+	model_texture_replace(const model_texture_replace&) = delete;
+	model_texture_replace& operator=(const model_texture_replace&) = delete;
+
+	int operator[](int index) const { return m_handles[index]; }
+	auto begin() const { return m_handles.begin(); }
+	auto end() const { return m_handles.end(); }
+
+	// Stores a handle whose load-count reference (e.g. from bm_load) the array takes over from the caller.
+	void adopt(int index, int handle);
+
+	// Stores a handle that someone else owns; the array takes its own load-count reference on it.  REPLACE_WITH_INVISIBLE is
+	// stored as-is; any other invalid handle clears the slot.
+	void reference(int index, int handle);
+
+	// Removes any replacement in this slot.
+	void clear(int index);
 };
 
 // Data specific to a particular instance of a model.
@@ -788,6 +813,7 @@ class texture_info
 private:
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
+	int held_texture;		// texture (if any) on which this object holds its own load-count reference; see SetTexture
 
 	//WMC - Removed unneeded struct and is_anim to clean this up.
 	//If num_frames is < 2, it doesn't need to be treated like an animation.
@@ -809,8 +835,14 @@ public:
 	void PageIn();
 	void PageOut(bool release);
 
+	// Resets the texture to the original one, releasing any reference taken by SetTexture(..., true).
 	int ResetTexture();
-	int SetTexture(int n_tex);
+
+	// Sets the texture to draw with.  If take_reference is true, this object takes its own load-count reference on
+	// the new texture and keeps it until ResetTexture(), PageOut(true), or a later SetTexture() with take_reference
+	// releases it.  Use this when the handle comes from somewhere the model does not control, such as a script, so
+	// that the texture cannot be freed out from under the model.
+	int SetTexture(int n_tex, bool take_reference = false);
 };
 
 // taylor
@@ -1267,6 +1299,11 @@ extern void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_insta
 
 // Sets the submodel instance data in a submodel
 extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_num);
+
+// Loads the given replacement textures (e.g. a ship class's table entry, which has filenames only) for a model instance,
+// discarding any replacement textures the instance already had.  The instance owns the loaded bitmaps.
+struct texture_replace;
+extern void model_instance_load_replacement_textures(polymodel_instance *pmi, const SCP_vector<texture_replace> &replacements);
 
 void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 

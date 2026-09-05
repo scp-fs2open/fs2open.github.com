@@ -333,7 +333,7 @@ bool ShipTextureReplacementDialogModel::apply()
 					if (!mainName.empty() && !lcase_equal(mainName, _defaultTextures[i])) {
 						int id = load_tex(mainName);
 						if (id != -1)
-							(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + TM_BASE_TYPE] = id;
+							pmi->texture_replace->adopt(groupIdx * TM_NUM_TYPES + TM_BASE_TYPE, id);
 					}
 
 					// Sub-type slots.
@@ -356,7 +356,7 @@ bool ShipTextureReplacementDialogModel::apply()
 
 						int id = load_tex(fullName);
 						if (id != -1)
-							(*pmi->texture_replace)[groupIdx * TM_NUM_TYPES + tmType] = id;
+							pmi->texture_replace->adopt(groupIdx * TM_NUM_TYPES + tmType, id);
 					}
 				}
 			}
@@ -368,14 +368,19 @@ bool ShipTextureReplacementDialogModel::apply()
 					continue;
 				if (stricmp(tr.ship_name, shipp.ship_name) != 0)
 					continue;
-				int id = (tr.new_texture_id != -1) ? tr.new_texture_id : load_tex(tr.new_texture);
+				// FRED entries never carry a loaded bitmap, so load it here
+				int id = load_tex(tr.new_texture);
 				if (id == -1)
 					continue;
+				// one bitmap may go into several slots, so each slot takes its own reference
 				for (int j = 0; j < pm->n_textures; j++) {
 					int tnum = pm->maps[j].FindTexture(tr.old_texture);
 					if (tnum >= 0)
-						(*pmi->texture_replace)[j * TM_NUM_TYPES + tnum] = id;
+						pmi->texture_replace->reference(j * TM_NUM_TYPES + tnum, id);
 				}
+				// and the reference from loading is no longer needed (the check skips REPLACE_WITH_INVISIBLE)
+				if (id >= 0)
+					bm_release(id);
 			}
 		};
 

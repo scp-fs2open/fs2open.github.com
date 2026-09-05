@@ -18,6 +18,7 @@
 #include "team.h"
 #include "team_colors.h"
 #include "texture.h"
+#include "texturemap.h"
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
@@ -959,12 +960,28 @@ ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "mo
 
 	polymodel_instance *dest = model_get_instance(Ships[dh->objp()->instance].model_instance_num);
 
-	if(ADE_SETTING_VAR && sh && sh->isValid()) {
+	if(ADE_SETTING_VAR && sh && sh->isValid())
 		dest->texture_replace = model_get_instance(Ships[sh->objp()->instance].model_instance_num)->texture_replace;
-		
-	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
+}
+
+ADE_VIRTVAR(TextureMaps, l_Ship, "modelinstancetexturemaps", "Gets the ship's materials.  Assigning another ship's TextureMaps makes this ship share that ship's replacement textures, exactly as assigning Textures does.", "modelinstancetexturemaps", "Array of the ship's materials, or invalid modelinstancetexturemaps handle if ship handle is invalid")
+{
+	object_h *sh = nullptr;
+	object_h *dh;
+	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&dh), l_Ship.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	if(!dh->isValid())
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	polymodel_instance *dest = model_get_instance(Ships[dh->objp()->instance].model_instance_num);
+
+	if(ADE_SETTING_VAR && sh && sh->isValid())
+		dest->texture_replace = model_get_instance(Ships[sh->objp()->instance].model_instance_num)->texture_replace;
+
+	return ade_set_args(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h(dest)));
 }
 
 ADE_VIRTVAR(FlagAffectedByGravity, l_Ship, "boolean", "Checks for the \"affected-by-gravity\" flag", "boolean", "True if flag is set, false if flag is not set and nil on error")

@@ -26,16 +26,6 @@ bool background_el_h::isValid() const
 	}
 }
 
-ADE_FUNC(isValid, l_BackgroundElement, nullptr, "Determines if this handle is valid", "boolean",
-         "true if valid, false if not.")
-{
-	background_el_h* el = nullptr;
-	if (!ade_get_args(L, "o", l_BackgroundElement.GetPtr(&el)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", el->isValid());
-}
-
 ADE_VIRTVAR(Orientation, l_BackgroundElement, "orientation", "Backround element orientation (treating the angles as correctly calculated)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
 	background_el_h* el = nullptr;
