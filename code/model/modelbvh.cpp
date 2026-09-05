@@ -361,14 +361,12 @@ int emit_node(const SCP_vector<BinBuildNode>& bin_nodes, int bin_node_index, SCP
 // directly -- there is no separate AoS array to keep in sync.
 void pad_leaves_to_simd_width(bvh_tree& tree)
 {
-	SCP_vector<uint32_t> i0, i1, i2;
+	SCP_vector<bvh_tri_indices> tris;
 	SCP_vector<int> tmap_num, original_index, leaf_index;
 	SCP_vector<bvh_uv> uv0, uv1, uv2;
 
 	size_t reserve_n = tree.triangle_count();
-	i0.reserve(reserve_n);
-	i1.reserve(reserve_n);
-	i2.reserve(reserve_n);
+	tris.reserve(reserve_n);
 	tmap_num.reserve(reserve_n);
 	original_index.reserve(reserve_n);
 	leaf_index.reserve(reserve_n);
@@ -377,9 +375,7 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 	uv2.reserve(reserve_n);
 
 	auto append_real = [&](size_t src) {
-		i0.push_back(tree.i0[src]);
-		i1.push_back(tree.i1[src]);
-		i2.push_back(tree.i2[src]);
+		tris.push_back(tree.tris[src]);
 		tmap_num.push_back(tree.tmap_num[src]);
 		original_index.push_back(tree.original_index[src]);
 		leaf_index.push_back(tree.leaf_index[src]);
@@ -396,9 +392,7 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 		// mc_check_bvh_triangle_candidate()) without relying on the collapsed geometry itself
 		// failing whatever test it's handed to -- same "sentinel + explicit skip" pattern Embree's
 		// SIMD triangle leaves use for their own unused lanes.
-		i0.push_back(tree.i0[src]);
-		i1.push_back(tree.i0[src]);
-		i2.push_back(tree.i0[src]);
+		tris.push_back({tree.tris[src].i0, tree.tris[src].i0, tree.tris[src].i0});
 		tmap_num.push_back(-1);
 		original_index.push_back(tree.original_index[src]);
 		leaf_index.push_back(tree.leaf_index[src]);
@@ -414,7 +408,7 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 
 			int start = node.child[i];
 			int count = node.count[i];
-			int new_start = static_cast<int>(i0.size());
+			int new_start = static_cast<int>(tris.size());
 
 			for (int t = start; t < start + count; ++t)
 				append_real(static_cast<size_t>(t));
@@ -428,9 +422,7 @@ void pad_leaves_to_simd_width(bvh_tree& tree)
 		}
 	}
 
-	tree.i0 = std::move(i0);
-	tree.i1 = std::move(i1);
-	tree.i2 = std::move(i2);
+	tree.tris = std::move(tris);
 	tree.tmap_num = std::move(tmap_num);
 	tree.original_index = std::move(original_index);
 	tree.leaf_index = std::move(leaf_index);
@@ -464,9 +456,7 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
 
 	tree.root = emit_node(bin_nodes, root_bin, tree.nodes);
 
-	tree.i0.reserve(n);
-	tree.i1.reserve(n);
-	tree.i2.reserve(n);
+	tree.tris.reserve(n);
 	tree.tmap_num.reserve(n);
 	tree.original_index.reserve(n);
 	tree.leaf_index.reserve(n);
@@ -486,19 +476,17 @@ bvh_tree bvh_build(SCP_vector<bvh_triangle> triangles)
 		auto it = vertex_pool.find(key);
 		if (it != vertex_pool.end())
 			return it->second;
-		uint32_t idx = static_cast<uint32_t>(tree.vx.size());
-		tree.vx.push_back(v.xyz.x);
-		tree.vy.push_back(v.xyz.y);
-		tree.vz.push_back(v.xyz.z);
+		uint32_t idx = static_cast<uint32_t>(tree.verts.size());
+		tree.verts.push_back(v);
 		vertex_pool.emplace(key, idx);
 		return idx;
 	};
 
 	for (int i = 0; i < n; ++i) {
 		const bvh_triangle& t = triangles[indices[i]];
-		tree.i0.push_back(intern_vertex(t.v0));
-		tree.i1.push_back(intern_vertex(t.v1));
-		tree.i2.push_back(intern_vertex(t.v2));
+		// Braced-init-list elements are sequenced left-to-right (guaranteed since C++11), so this
+		// interns v0/v1/v2 in a fixed, well-defined order despite intern_vertex()'s side effects.
+		tree.tris.push_back(bvh_tri_indices{intern_vertex(t.v0), intern_vertex(t.v1), intern_vertex(t.v2)});
 		tree.tmap_num.push_back(t.tmap_num);
 		tree.original_index.push_back(t.original_index);
 		tree.leaf_index.push_back(t.leaf_index);
@@ -531,16 +519,19 @@ bool ray_triangle_leaf_simd(const bvh_tree& tree, int32_t start, int32_t count, 
 		float v2x[BVH_N], v2y[BVH_N], v2z[BVH_N];
 		for (int i = 0; i < BVH_N; ++i) {
 			int32_t idx = chunk + i;
-			uint32_t a = tree.i0[idx], b = tree.i1[idx], c = tree.i2[idx];
-			v0x[i] = tree.vx[a];
-			v0y[i] = tree.vy[a];
-			v0z[i] = tree.vz[a];
-			v1x[i] = tree.vx[b];
-			v1y[i] = tree.vy[b];
-			v1z[i] = tree.vz[b];
-			v2x[i] = tree.vx[c];
-			v2y[i] = tree.vy[c];
-			v2z[i] = tree.vz[c];
+			const bvh_tri_indices& tri = tree.tris[idx];
+			const vec3d& v0 = tree.verts[tri.i0];
+			const vec3d& v1 = tree.verts[tri.i1];
+			const vec3d& v2 = tree.verts[tri.i2];
+			v0x[i] = v0.xyz.x;
+			v0y[i] = v0.xyz.y;
+			v0z[i] = v0.xyz.z;
+			v1x[i] = v1.xyz.x;
+			v1y[i] = v1.xyz.y;
+			v1z[i] = v1.xyz.z;
+			v2x[i] = v2.xyz.x;
+			v2y[i] = v2.xyz.y;
+			v2z[i] = v2.xyz.z;
 		}
 
 		float e1x[BVH_N], e1y[BVH_N], e1z[BVH_N];

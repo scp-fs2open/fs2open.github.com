@@ -61,21 +61,34 @@ struct bvh_node {
 	int32_t count[BVH_N];
 };
 
+// One triangle's vertex-pool indices, interleaved rather than three parallel arrays -- i0/i1/i2 of
+// a given triangle are always fetched together (never independently), so keeping them adjacent
+// means one 12-byte read instead of three reads to three unrelated arrays.
+struct bvh_tri_indices {
+	uint32_t i0, i1, i2;
+};
+
 // Build output: a depth-first (pre-order) array of N-wide nodes, plus the input triangles
 // reordered into leaf-contiguous (SAH build) order. Vertex positions are stored once each in a
-// shared pool (vx/vy/vz), referenced per-triangle by index (i0/i1/i2) -- not duplicated per
-// triangle, avoiding the extra storage duplicated-per-triangle vertices would cost. The pool is
-// ordered by first reference when walking triangles in leaf order (see bvh_build()), so a leaf
-// visit's index lookups tend to land on recently-touched, still-hot pool entries. [node.child[i] ..
-// +count[i]) indexes every one of these parallel arrays for leaf slot i. Metadata that's only ever
-// read once per accepted hit (never per SIMD lane) -- tmap_num, original_index, leaf_index, UVs --
-// stays out of the hot index arrays but is still parallel-indexed the same way, for the same
-// reason: one source of truth, no syncing.
+// shared pool (verts), referenced per-triangle by index (tris) -- not duplicated per triangle,
+// avoiding the extra storage duplicated-per-triangle vertices would cost. Both are interleaved
+// (vec3d / bvh_tri_indices), not split into per-component arrays: a vertex's x/y/z (or a
+// triangle's three indices) are never read independently of each other, so splitting them into
+// separate arrays would only turn one small contiguous read into several unrelated ones. The
+// SIMD leaf test still assembles its own per-component float[BVH_N] arrays from these -- that's a
+// destination-side shape for vectorized math, not a reason to store the source that way, since
+// gathering by index requires a per-lane scalar read either way (no HW gather on this project's
+// SIMD baseline). The pool is ordered by first reference when walking triangles in leaf order (see
+// bvh_build()), so a leaf visit's index lookups tend to land on recently-touched, still-hot pool
+// entries. [node.child[i] .. +count[i]) indexes every one of these parallel arrays for leaf slot i.
+// Metadata that's only ever read once per accepted hit (never per SIMD lane) -- tmap_num,
+// original_index, leaf_index, UVs -- stays out of the hot arrays but is still parallel-indexed the
+// same way, for the same reason: one source of truth, no syncing.
 struct bvh_tree {
 	SCP_vector<bvh_node> nodes;
 
-	SCP_vector<float> vx, vy, vz;
-	SCP_vector<uint32_t> i0, i1, i2;
+	SCP_vector<vec3d> verts;
+	SCP_vector<bvh_tri_indices> tris;
 	SCP_vector<int> tmap_num;
 	SCP_vector<int> original_index;
 	SCP_vector<int> leaf_index;
@@ -83,16 +96,9 @@ struct bvh_tree {
 
 	int root = 0;
 
-	size_t triangle_count() const { return i0.size(); }
+	size_t triangle_count() const { return tris.size(); }
 
-	vec3d vertex(uint32_t vi) const
-	{
-		vec3d v;
-		v.xyz.x = vx[vi];
-		v.xyz.y = vy[vi];
-		v.xyz.z = vz[vi];
-		return v;
-	}
+	vec3d vertex(uint32_t vi) const { return verts[vi]; }
 
 	// Reconstructs triangle i as a single bvh_triangle, for call sites where that's more convenient
 	// than reading the parallel arrays directly (tests, one-off per-accepted-hit lookups) -- none of
@@ -100,9 +106,9 @@ struct bvh_tree {
 	bvh_triangle triangle_at(size_t i) const
 	{
 		bvh_triangle t;
-		t.v0 = vertex(i0[i]);
-		t.v1 = vertex(i1[i]);
-		t.v2 = vertex(i2[i]);
+		t.v0 = vertex(tris[i].i0);
+		t.v1 = vertex(tris[i].i1);
+		t.v2 = vertex(tris[i].i2);
 		t.tmap_num = tmap_num[i];
 		t.original_index = original_index[i];
 		t.leaf_index = leaf_index[i];
@@ -172,6 +178,7 @@ inline bool ray_aabb_visit(const vec3d& origin, const vec3d& inv_dir, const floa
 	float ignored_tmin;
 	return ray_aabb(origin, inv_dir, inflated_min, inflated_max, t_max, ignored_tmin);
 }
+
 } // namespace bvh_detail
 
 // Walks the tree, invoking visit(start, count, t_max) for every leaf whose AABB the ray

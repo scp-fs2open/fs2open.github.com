@@ -495,9 +495,9 @@ static bool mc_check_bvh_triangle_candidate(const bvh_tree *tbvh, int32_t tri_in
 	bool flat_poly = raw_tmap_num >= MAX_MODEL_TEXTURES;
 	int ntmap = flat_poly ? -1 : raw_tmap_num;
 
-	vec3d v0 = tbvh->vertex(tbvh->i0[idx]);
-	vec3d v1 = tbvh->vertex(tbvh->i1[idx]);
-	vec3d v2 = tbvh->vertex(tbvh->i2[idx]);
+	vec3d v0 = tbvh->vertex(tbvh->tris[idx].i0);
+	vec3d v1 = tbvh->vertex(tbvh->tris[idx].i1);
+	vec3d v2 = tbvh->vertex(tbvh->tris[idx].i2);
 
 	int prior_num_hits = Mc->num_hits;
 	Mc_triangle_face_test_fn(v0, v1, v2, tbvh->uv0[idx], tbvh->uv1[idx], tbvh->uv2[idx], !flat_poly, ntmap);
