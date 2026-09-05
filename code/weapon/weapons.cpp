@@ -914,11 +914,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->subtype = subtype;
 	}
 
-	// assign subtype-specific flags
+	// assign subtype-specific flags and defaults
 	if (first_time)
 	{
 		if (wip->subtype == WP_MISSILE)
 			wip->wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
+
+		// retail primaries fire all points at once while retail secondaries cycle
+		wip->firing_pattern = wip->is_primary() ? FiringPattern::ALL_AT_ONCE : FiringPattern::CYCLE_FORWARD;
 	}
 
 	if (optional_string("+Title:")) {
@@ -4054,25 +4057,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Firing Pattern:")) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
-		if (!stricmp(fname, "CYCLE FORWARD")) {
-			wip->firing_pattern = FiringPattern::CYCLE_FORWARD;
-		} else if (!stricmp(fname, "CYCLE REVERSE")) {
-			wip->firing_pattern = FiringPattern::CYCLE_REVERSE;
-		} else if (!stricmp(fname, "RANDOM EXHAUSTIVE")) {
-			wip->firing_pattern = FiringPattern::RANDOM_EXHAUSTIVE;
-		} else if (!stricmp(fname, "RANDOM NONREPEATING")) {
-			wip->firing_pattern = FiringPattern::RANDOM_NONREPEATING;
-		} else if (!stricmp(fname, "RANDOM REPEATING")) {
-			wip->firing_pattern = FiringPattern::RANDOM_REPEATING;
+		auto pattern = firing_pattern_from_string(fname);
+		if (pattern.has_value()) {
+			wip->firing_pattern = *pattern;
+		} else {
+			error_display(0, "\"%s\" is not a valid $Firing Pattern: for weapon %s", fname, wip->name);
 		}
 	}
 
+	// note that zero is allowed for this, and means the weapon fires nothing
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
+		if (wip->shots < 0) {
+			error_display(0, "$Shots: for weapon %s cannot be negative; setting to 0", wip->name);
+			wip->shots = 0;
+		}
 	}
 
+	// note that zero is allowed for this, and means the weapon fires nothing
 	if( optional_string("$Cycle Multishot:")){
 		stuff_int(&wip->cycle_multishot);
+		if (wip->cycle_multishot < 0) {
+			error_display(0, "$Cycle Multishot: for weapon %s cannot be negative; setting to 0", wip->name);
+			wip->cycle_multishot = 0;
+		}
 	}
 
 	//Left in for compatibility
@@ -7046,6 +7054,26 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
+std::optional<FiringPattern> firing_pattern_from_string(const char *name)
+{
+	static const std::pair<const char *, FiringPattern> pattern_names[] =
+	{
+		{ "ALL AT ONCE",         FiringPattern::ALL_AT_ONCE },
+		{ "CYCLE FORWARD",       FiringPattern::CYCLE_FORWARD },
+		{ "CYCLE REVERSE",       FiringPattern::CYCLE_REVERSE },
+		{ "RANDOM EXHAUSTIVE",   FiringPattern::RANDOM_EXHAUSTIVE },
+		{ "RANDOM NONREPEATING", FiringPattern::RANDOM_NONREPEATING },
+		{ "RANDOM REPEATING",    FiringPattern::RANDOM_REPEATING },
+	};
+
+	for (const auto &entry : pattern_names)
+	{
+		if (!stricmp(entry.first, name))
+			return entry.second;
+	}
+	return std::nullopt;
+}
+
 static size_t *get_pointer_to_weapon_fire_pattern_index(ship_weapon *ship_weapon_p, int swp_pbank, int swp_sbank)
 {
 	if (ship_weapon_p)
@@ -10005,7 +10033,7 @@ void weapon_info::reset()
 	this->fof_spread_rate = 0.0f;
 	this->fof_reset_rate = 0.0f;
 	this->max_fof_spread = 0.0f;
-	this->firing_pattern = FiringPattern::STANDARD;
+	this->firing_pattern = FiringPattern::CYCLE_FORWARD;
 	this->shots = 1;
 	this->cycle_multishot = 1;
 

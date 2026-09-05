@@ -104,6 +104,41 @@ struct external_weapon_state
 	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
 };
 
+// Per-bank firing point state for the FiringPattern feature: which point fires next, and in what
+// order.  next() consumes points at fire time; peek() lets the HUD preview upcoming points without
+// disturbing the state.  shot_index is the position within the current volley (0 to shot_count-1).
+class FirepointState
+{
+	SCP_vector<int> m_indices;	// firing point order, shuffled; used by the RANDOM_* patterns
+	int m_cursor = 0;			// next-to-fire position; used by the CYCLE_* and RANDOM_EXHAUSTIVE patterns
+
+	void ensure(int num_points);
+	void shuffle(SCP_vector<int>::iterator first, SCP_vector<int>::iterator last);
+
+public:
+	void clear();
+	void reset(int num_points);
+
+	// return to the start of the cycle without changing the firing point order
+	void restart() { m_cursor = 0; }
+
+	// returns the model firing point index for this shot and advances the state
+	int next(FiringPattern pattern, int shot_index, int num_points);
+
+	// returns the model firing point index that next(pattern, shot_index, ...) would return, without advancing
+	int peek(FiringPattern pattern, int shot_index, int num_points) const;
+
+	// per-volley upkeep (reshuffling for the RANDOM_* patterns); call once after a volley is fired
+	void post_fire(FiringPattern pattern, int shot_count, int num_points);
+};
+
+// How many firing points fire in a volley, and how many projectiles each of those points fires
+struct FirepointCounts
+{
+	int shot_count;
+	int multishot_count;
+};
+
 class ship_weapon {
 public:
 	int num_primary_banks;					// Number of primary banks (same as model)
@@ -174,9 +209,7 @@ public:
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 
-	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
-	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
-																		// For randomized ones, keeps track of where we are in primary_firepoint_indices
+	FirepointState primary_firepoint_state[MAX_SHIP_PRIMARY_BANKS];		// per-bank firing point cycling state for the FiringPattern feature
 
 	size_t primary_bank_substitution_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_substitution_pattern_index[MAX_SHIP_SECONDARY_BANKS];
@@ -1832,6 +1865,13 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
+
+// the firing pattern currently in effect for this bank: the ship's dynamic pattern if dynamic
+// linking is active, otherwise the weapon's pattern
+FiringPattern ship_get_firing_pattern(const ship_info *sip, const ship_weapon *swp, const weapon_info *wip, int bank);
+
+// how many firing points fire per volley (shot_count) and how many projectiles each fires (multishot_count)
+FirepointCounts ship_get_firepoint_counts(const ship_info *sip, const ship_weapon *swp, const weapon_info *wip, FiringPattern pattern, int bank, int num_points, float multishot_curve_mult = 1.0f);
 extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
 extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
