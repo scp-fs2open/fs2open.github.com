@@ -22259,6 +22259,7 @@ void sexp_beam_fire(int node, bool at_coords)
 		// store the weapon info index
 		if (Weapon_info[fire_info.turret->weapons.primary_bank_weapons[idx]].wi_flags[Weapon::Info_Flags::Beam]) {
 			fire_info.beam_info_index = fire_info.turret->weapons.primary_bank_weapons[idx];
+			fire_info.bank = idx;
 		}
 	}
 
