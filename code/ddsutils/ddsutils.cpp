@@ -1,5 +1,6 @@
 
 #include "ddsutils/ddsutils.h"
+#include "texcache/tex_cache.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
 #include "osapi/osregistry.h"
@@ -10,6 +11,10 @@
 #define BCDEC_IMPLEMENTATION 1
 PUSH_SUPPRESS_WARNINGS
 #include "ddsutils/bcdec.h"
+POP_SUPPRESS_WARNINGS
+
+PUSH_SUPPRESS_WARNINGS
+#include <ProcessRGB.hpp>
 POP_SUPPRESS_WARNINGS
 
 /*	Currently supported formats:
@@ -68,6 +73,35 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 	return false;
 }
 
+enum class dds_conv_target { none, bgra, etc2 };
+
+static dds_conv_target dds_get_conversion_target(const DDS_HEADER &dds_header)
+{
+	if ( !conversion_needed(dds_header) ) {
+		return dds_conv_target::none;
+	}
+
+	const bool is_cubemap = (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP) == DDSCAPS2_CUBEMAP;
+	const bool has_depth = (dds_header.dwFlags & DDSD_DEPTH) == DDSD_DEPTH;
+
+	if ( !is_cubemap && !has_depth && gr_is_capable(gr_capability::CAPABILITY_ETC2) ) {
+		return dds_conv_target::etc2;
+	}
+
+	return dds_conv_target::bgra;
+}
+
+static size_t compute_etc2_size(const DDS_HEADER& dds_header, uint block_bytes)
+{
+	size_t total = 0;
+	for (uint i = 0; i < dds_header.dwMipMapCount; i++) {
+		const uint w = std::max(1U, dds_header.dwWidth >> i);
+		const uint h = std::max(1U, dds_header.dwHeight >> i);
+		total += (size_t)((w + 3) / 4) * ((h + 3) / 4) * block_bytes;
+	}
+	return total;
+}
+
 // Memory usage for uncompressed textures is quite high. Some MVP assets can
 // require well over a GB of VRAM for a single ship after conversion. To help
 // alleviate this we need to resize those textures where possible. At 1024x1024
@@ -75,9 +109,10 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 // of textures.
 //
 // NOTE: modifies header!!
-//
+// ETC2: For converting to ETC2 limit all to MAX_SIZE or half-size
+// 
 // returns: number of mipmap levels to skip
-static uint conversion_resize(DDS_HEADER &dds_header)
+static uint conversion_resize(DDS_HEADER& dds_header, dds_conv_target target)
 {
 	const size_t MAX_SIZE = 1024;
 	uint width, height, depth, offset = 0;
@@ -98,6 +133,15 @@ static uint conversion_resize(DDS_HEADER &dds_header)
 			break;
 		}
 
+		width >>= 1;
+		height >>= 1;
+		depth >>= 1;
+
+		++offset;
+	}
+
+	// For ETC2 conversion: if we are not limiting by MAX_SIZE, drop a level (50% size reduction)
+	if ((target == dds_conv_target::etc2) && (offset == 0) && (offset < dds_header.dwMipMapCount - 1) && (width > 4) && (height > 4)) {
 		width >>= 1;
 		height >>= 1;
 		depth >>= 1;
@@ -262,6 +306,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	int ct = DDS_UNCOMPRESSED;
 	int is_cubemap = 0;
 	bool convert = false;
+	dds_conv_target conv_target = dds_conv_target::none;
 
 
 	if (img_cfp == NULL) {
@@ -352,9 +397,15 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	}
 
 	// maybe do conversion if format not supported
-	convert = conversion_needed(dds_header);
+	conv_target = dds_get_conversion_target(dds_header);
+	convert = (conv_target != dds_conv_target::none);
 
-	if (convert) {
+	if (conv_target == dds_conv_target::etc2) {
+		dds_header.dwMipMapCount -= conversion_resize(dds_header, dds_conv_target::etc2);
+		dds_header.dwMipMapCount = std::max(1U, dds_header.dwMipMapCount);
+
+		ct = (ct == DDS_DXT1) ? DDS_ETC2_RGB : DDS_ETC2_RGBA8;
+	} else if (convert) {
 		// switch to uncompressed format and reset vars
 		dds_header.ddspf.dwFlags &= ~DDPF_FOURCC;
 		dds_header.ddspf.dwFlags |= DDPF_RGB;
@@ -362,7 +413,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 		dds_header.ddspf.dwRGBBitCount = 32;
 
 		// NOTE: modifies header and returns offset for mipmap count
-		dds_header.dwMipMapCount -= conversion_resize(dds_header);
+		dds_header.dwMipMapCount -= conversion_resize(dds_header, dds_conv_target::bgra);
 		dds_header.dwMipMapCount = std::max(1U, dds_header.dwMipMapCount);
 
 		ct = (is_cubemap) ? DDS_CUBEMAP_UNCOMPRESSED : DDS_UNCOMPRESSED;
@@ -375,8 +426,12 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	}
 
 	// stuff important info
-	if (size)
-		*size = compute_dds_size(dds_header, convert);
+	if (size) {
+		if (conv_target == dds_conv_target::etc2)
+			*size = compute_etc2_size(dds_header, (ct == DDS_ETC2_RGB) ? 8u : 16u);
+		else
+			*size = compute_dds_size(dds_header, convert);
+	}
 
 	if (bpp)
 		*bpp = get_bit_count(dds_header);
@@ -420,8 +475,8 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 	// make sure there is an extension
 	strcpy_s(real_name, filename);
-	char *p = strchr(real_name, '.');
-	if (p) { *p = 0; }
+	char *per = strchr(real_name, '.');
+	if (per) { *per = 0; }
 	strcat_s(real_name, ".dds");
 
 	// open it up and go to the data section
@@ -445,9 +500,133 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 	size = compute_dds_size(dds_header);	// don't add padding on this one!!
 
+	const dds_conv_target tgt = dds_get_conversion_target(dds_header);
+
 	// read in the data
-	if ( !conversion_needed(dds_header) ) {
+	if ( tgt == dds_conv_target::none ) {
 		cfread(data, 1, (int)size, cfp);
+	} else if (tgt == dds_conv_target::etc2) {
+		//Convert to ETC2 RGBA8 EAC
+		const uint orig_width = dds_header.dwWidth;
+		const uint orig_height = dds_header.dwHeight;
+		const uint orig_mips = dds_header.dwMipMapCount;
+
+		// NOTE: this alters the width, height, and depth values in the header,
+		//       so we have to jump through some hoops to get the proper values
+		const uint mipmap_offset = conversion_resize(dds_header, dds_conv_target::etc2);
+		const uint out_mips = orig_mips - mipmap_offset;
+
+		const bool is_dxt1 = (dds_header.ddspf.dwFourCC == FOURCC_DXT1);
+		const uint out_block_bytes = is_dxt1 ? 8u : 16u;
+		const int  cache_fmt = is_dxt1 ? DDS_ETC2_RGB : DDS_ETC2_RGBA8;
+
+		size_t etc2_size = 0;
+		for (uint m = 0; m < out_mips; ++m) {
+			const uint w = std::max(1U, dds_header.dwWidth >> m);
+			const uint h = std::max(1U, dds_header.dwHeight >> m);
+			etc2_size += (size_t)((w + 3) / 4) * ((h + 3) / 4) * out_block_bytes;
+		}
+
+		extern bool Cmdline_no_transcode_cache;
+		SCP_string key;
+
+		if (!Cmdline_no_transcode_cache) {
+			//Build the cache MD5 hash
+			key = tex_cache_make_key(cfp, TEX_CACHE_TYPE_ETC2, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
+
+			//Try to load from a cache file
+			if (tex_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, etc2_size, data)) {
+				if (bpp)
+					*bpp = is_dxt1 ? (ubyte)24 : (ubyte)32;
+				cfclose(cfp);
+				return DDS_ERROR_NONE;
+			}
+		}
+
+		void (*decode)(const void* in, void* out, int pitch) = nullptr;
+		uint32_t block_bytes = 0;
+
+		switch (dds_header.ddspf.dwFourCC) {
+			case FOURCC_DX10:
+				decode = bcdec_bc7;
+				block_bytes = BCDEC_BC7_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT5:
+				decode = bcdec_bc3;
+				block_bytes = BCDEC_BC3_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT1:
+				decode = bcdec_bc1;
+				block_bytes = BCDEC_BC1_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT3:
+				decode = bcdec_bc2;
+				block_bytes = BCDEC_BC2_BLOCK_SIZE;
+				break;
+			default:
+				Error(LOCATION, "Invalid FourCC (%d) for DDS ETC2 transcode!", dds_header.ddspf.dwFourCC);
+				break;
+		}
+
+		auto comp_data = (ubyte*)vm_malloc(size);
+		cfread(comp_data, 1, (int)size, cfp);
+
+		const uint max_w = (dds_header.dwWidth + 3) & ~3u;
+		const uint max_h = (dds_header.dwHeight + 3) & ~3u;
+		auto rgba = (ubyte*)vm_malloc((size_t)max_w * max_h * 4);
+
+		ubyte* src = comp_data;
+		size_t out_offset = 0;
+
+		// if we resized then skip over all of that data (altering values to match pre-resize)
+		for (uint x = 0; x < mipmap_offset; ++x) {
+			const uint sw = std::max(1U, orig_width >> x);
+			const uint sh = std::max(1U, orig_height >> x);
+			src += (size_t)((sw + 3) / 4) * ((sh + 3) / 4) * block_bytes;
+		}
+
+		for (uint m = mipmap_offset; m < orig_mips; ++m) {
+			// width/height/depth at post-resize mipmap sizes, so compensate here
+			const uint w = std::max(1U, dds_header.dwWidth >> (m - mipmap_offset));
+			const uint h = std::max(1U, dds_header.dwHeight >> (m - mipmap_offset));
+			const uint pw = (w + 3) & ~3u;
+			const uint ph = (h + 3) & ~3u;
+
+			for (uint i = 0; i < ph; i += 4) {
+				for (uint j = 0; j < pw; j += 4) {
+					decode(src, rgba + ((size_t)i * pw + j) * 4, (int)(pw * 4));
+					src += block_bytes;
+				}
+			}
+
+			// etcpak wants BGRA -> swap R<->B
+			const size_t px_count = (size_t)pw * ph;
+			for (size_t p = 0; p < px_count; ++p) {
+				ubyte* px = rgba + p * 4;
+				const ubyte tmp = px[0];
+				px[0] = px[2];
+				px[2] = tmp;
+			}
+
+			const uint32_t blocks = (pw / 4) * (ph / 4);
+
+			if (is_dxt1) {
+				CompressEtc2Rgb(reinterpret_cast<const uint32_t*>(rgba), reinterpret_cast<uint64_t*>(data + out_offset), blocks, pw, true);
+			}
+			else {
+				CompressEtc2Rgba(reinterpret_cast<const uint32_t*>(rgba), reinterpret_cast<uint64_t*>(data + out_offset), blocks, pw, true);
+			}
+
+			out_offset += (size_t)blocks * out_block_bytes;
+		}
+
+		if (!Cmdline_no_transcode_cache) {
+			//Save to cache
+			tex_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, data, etc2_size);
+		}
+		vm_free(rgba);
+		vm_free(comp_data);
+		comp_data = nullptr;
 	} else {
 		// Compression format not supported, convert to BGRA
 		ubyte *comp_data = (ubyte*)vm_malloc(size);
@@ -462,7 +641,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		// NOTE: this alters the width, height, and depth values in the header,
 		//       so we have to jump through some hoops to get the proper values
-		const uint mipmap_offset = conversion_resize(dds_header);
+		const uint mipmap_offset = conversion_resize(dds_header, dds_conv_target::bgra);
 
 		const int num_faces = (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP) ? 6 : 1;
 		const bool has_depth = (dds_header.dwFlags & DDSD_DEPTH) == DDSD_DEPTH;

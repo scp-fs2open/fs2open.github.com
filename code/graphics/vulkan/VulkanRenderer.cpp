@@ -17,6 +17,7 @@
 #include "mod_table/mod_table.h"
 
 #include <SDL3/SDL_vulkan.h>
+#include <algorithm>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -798,6 +799,38 @@ bool VulkanRenderer::isTextureCompressionBCSupported() const
 	}
 
 	return m_deviceFeatures.textureCompressionBC == VK_TRUE;
+}
+
+bool VulkanRenderer::isTextureCompressionS3TCSupported() const
+{
+	if (!m_physicalDevice) {
+		return false;
+	}
+
+	if (m_deviceFeatures.textureCompressionBC == VK_TRUE)
+		return true;
+
+	constexpr std::array<vk::Format, 3> formats = {
+		vk::Format::eBc1RgbaUnormBlock, // DXT1
+		vk::Format::eBc2UnormBlock,     // DXT3
+		vk::Format::eBc3UnormBlock,     // DXT5
+	};
+
+	constexpr vk::FormatFeatureFlags required = vk::FormatFeatureFlagBits::eSampledImage | vk::FormatFeatureFlagBits::eSampledImageFilterLinear;
+
+	return std::all_of(formats.begin(), formats.end(), [this, required](vk::Format fmt) {
+		const auto props = m_physicalDevice.getFormatProperties(fmt);
+		return (props.optimalTilingFeatures & required) == required;
+	});
+}
+
+bool VulkanRenderer::isTextureCompressionETC2Supported() const
+{
+	if (!m_physicalDevice) {
+		return false;
+	}
+
+	return m_deviceFeatures.textureCompressionETC2 == VK_TRUE;
 }
 
 bool VulkanRenderer::isDepthClampSupported() const
