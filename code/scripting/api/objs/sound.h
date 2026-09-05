@@ -53,6 +53,8 @@ struct soundfile_h {
 	sound_load_id idx;
 
 	explicit soundfile_h(sound_load_id id = sound_load_id::invalid());
+
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Soundfile, soundfile_h);

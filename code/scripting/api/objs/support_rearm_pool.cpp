@@ -11,6 +11,7 @@ namespace scripting::api {
 
 //****HANDLE: support_rearm_pool_team
 ADE_OBJ(l_SupportRearmPoolTeam, int, "support_rearm_pool_team", "Support rearm pool team handle");
+ADE_OBJ_VALIDATOR(l_SupportRearmPoolTeam, idx, idx >= 0 && idx < Num_teams && idx < MAX_TVT_TEAMS);
 
 ADE_INDEXER(l_SupportRearmPoolTeam,
 	"number/weaponclass IndexOrClass, number amount",

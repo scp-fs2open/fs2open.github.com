@@ -1099,15 +1099,6 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 	return ade_set_args(L, "b", in_sight);
 }
 
-ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_subsys_h *sso;
-	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sso->isValid());
-}
-
 }
 }
 

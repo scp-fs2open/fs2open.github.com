@@ -379,6 +379,7 @@ ADE_FUNC(__len, l_Loadout_Weapon, nullptr, "The number of weapon banks in the sl
 
 //**********HANDLE: loadout ship
 ADE_OBJ_NO_MULTI(l_Loadout_Ship, int, "loadout_ship", "Loadout handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Loadout_Ship, MAX_WSS_SLOTS);
 
 ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Ship,
