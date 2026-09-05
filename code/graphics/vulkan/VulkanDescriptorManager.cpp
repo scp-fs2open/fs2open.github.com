@@ -11,7 +11,7 @@ namespace graphics::vulkan {
 static constexpr DescriptorBindingTemplate s_globalBindings[] = {
 	{GlobalBinding::Lights,        vk::DescriptorType::eUniformBuffer,        1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
 	{GlobalBinding::DeferredData,  vk::DescriptorType::eUniformBuffer,        1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray},
+	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray, /*depthCompare=*/true},
 	{GlobalBinding::EnvMap,        vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::ShadowCascadeParams, vk::DescriptorType::eUniformBuffer,  1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
@@ -68,8 +68,17 @@ static constexpr VulkanDescriptorManager::UniformBindingEntry s_perDrawUBOs[] = 
 
 // ========== DescriptorFallbacks ==========
 
-const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t) const
+const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t, bool depthCompare) const
 {
+	if (depthCompare) {
+		// A shadow sampler must get a depth view whatever its view type. Only the 2D-array
+		// shape exists today (GlobalBinding::ShadowMap); assert rather than hand back a
+		// color view, which is the exact validation error this fallback removes.
+		Assertion(t == vk::ImageViewType::e2DArray,
+			"DescriptorFallbacks::getImage: no depth fallback for ImageViewType %d", static_cast<int>(t));
+		return shadowMap;
+	}
+
 	switch (t) {
 	case vk::ImageViewType::e2D:      return texture2D;
 	case vk::ImageViewType::e2DArray: return texture2DArray;
@@ -113,6 +122,7 @@ void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet s
 		auto& slot = m_bindingSlots[b.binding];
 		slot.count = b.count;
 		slot.viewType = b.viewType;
+		slot.depthCompare = b.depthCompare;
 
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
 		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
@@ -124,7 +134,7 @@ void DescriptorWriter::writeSet(DescriptorSetIndex setIndex, vk::DescriptorSet s
 		if (isImage) {
 			Assert(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
 			auto* dst = &m_imageInfos[m_imageInfoCount];
-			const auto& fallbackImg = m_fallbacks->getImage(b.viewType);
+			const auto& fallbackImg = m_fallbacks->getImage(b.viewType, b.depthCompare);
 			for (uint32_t j = 0; j < b.count; ++j) {
 				dst[j] = fallbackImg;
 			}
@@ -234,7 +244,7 @@ void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo&
 	if (info.imageView) {
 		*slot.imageInfo = info;
 	} else {
-		*slot.imageInfo = m_fallbacks->getImage(slot.viewType);
+		*slot.imageInfo = m_fallbacks->getImage(slot.viewType, slot.depthCompare);
 	}
 }
 
@@ -311,6 +321,7 @@ void VulkanDescriptorManager::buildFallbacks(VulkanBufferManager* bufMgr, Vulkan
 	m_fallbacks.texture2DArray = texMgr->getFallbackTextureInfo2DArray();
 	m_fallbacks.textureCube = texMgr->getFallbackTextureInfoCube();
 	m_fallbacks.texture3D = texMgr->getFallbackTextureInfo3D();
+	m_fallbacks.shadowMap = texMgr->getFallbackShadowMapInfo();
 	if (m_raytracingEnabled && rtMgr != nullptr) {
 		// Seed with the permanent empty TLAS; setCurrentShadowTlas() takes over
 		// once the first real TLAS is built.
