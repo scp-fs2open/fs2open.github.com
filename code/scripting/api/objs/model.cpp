@@ -5,6 +5,7 @@
 #include "vecmath.h"
 #include "eye.h"
 #include "texture.h"
+#include "texturemap.h"
 
 extern void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
@@ -121,6 +122,22 @@ ADE_VIRTVAR(Textures, l_Model, nullptr, "Model textures", "textures", "Model tex
 		LuaError(L, "Assigning textures is not supported");
 
 	return ade_set_args(L, "o", l_ModelTextures.Set(model_h(pm)));
+}
+
+ADE_VIRTVAR(TextureMaps, l_Model, nullptr, "Model materials", "texturemaps", "Array of the model's materials, or an invalid texturemaps handle if the model handle is invalid")
+{
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
+		return ade_set_error(L, "o", l_ModelTextureMaps.Set(model_h()));
+
+	polymodel *pm = mdl->Get();
+	if (!pm)
+		return ade_set_error(L, "o", l_ModelTextureMaps.Set(model_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning texture maps is not supported");
+
+	return ade_set_args(L, "o", l_ModelTextureMaps.Set(model_h(pm)));
 }
 
 ADE_VIRTVAR(Thrusters, l_Model, nullptr, "Model thrusters", "thrusters", "Model thrusters, or an invalid thrusters handle if the model handle is invalid")
@@ -590,7 +607,7 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 
 
 //**********HANDLE: modeltextures
-ADE_OBJ(l_ModelTextures, model_h, "textures", "Flat array of model textures.  Each material (texture_map) on the model contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Slots that the material does not use hold invalid texture handles.");
+ADE_OBJ(l_ModelTextures, model_h, "textures", "Flat array of model textures.  Each material (texture_map) on the model contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Slots that the material does not use hold invalid texture handles.  The TextureMaps array exposes the same slots grouped per material, as texture_map handles.");
 
 ADE_FUNC(__len, l_ModelTextures, nullptr, "Number of texture slots on the model, i.e. the number of materials multiplied by " SCP_TOKEN_TO_STR(TM_NUM_TYPES), "number", "Number of texture slots, or 0 if handle is invalid")
 {
@@ -635,14 +652,9 @@ ADE_INDEXER(l_ModelTextures, "number/string IndexOrTextureFilename", "Gets or se
 
 	if(tinfo == NULL)
 	{
-		for (int i = 0; i < pm->n_textures; i++)
-		{
-			tmap = &pm->maps[i];
-
-			int tnum = tmap->FindTexture(s);
-			if(tnum > -1)
-				tinfo = &tmap->textures[tnum];
-		}
+		int slot = model_find_texture_slot(pm, s);
+		if (slot >= 0)
+			tinfo = &pm->maps[slot / TM_NUM_TYPES].textures[slot % TM_NUM_TYPES];
 	}
 
 	if(tinfo == NULL)

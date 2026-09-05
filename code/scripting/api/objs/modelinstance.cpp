@@ -6,12 +6,13 @@
 #include "object.h"
 #include "vecmath.h"
 #include "texture.h"
+#include "texturemap.h"
 
 namespace scripting {
 namespace api {
 
 //**********HANDLE: modelinstancetextures (compatible with preceding shiptextures)
-ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Flat array of textures for one model instance.  It has the same layout as the model's \"textures\" handle: each material (texture_map) contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Reads return the instance's replacement texture for that slot if one is set, otherwise the model's texture.  Writes set a replacement texture on this instance only.");
+ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Flat array of textures for one model instance.  It has the same layout as the model's \"textures\" handle: each material (texture_map) contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Reads return the instance's replacement texture for that slot if one is set, otherwise the model's texture.  Writes set a replacement texture on this instance only.  The TextureMaps array exposes the same slots grouped per material, as texture_map handles.");
 
 ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of texture slots on the model instance, i.e. the number of materials multiplied by " SCP_TOKEN_TO_STR(TM_NUM_TYPES), "number", "Number of texture slots, or 0 if handle is invalid")
 {
@@ -43,35 +44,7 @@ ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Ge
 
 	polymodel_instance *pmi = mih->Get();
 	polymodel *pm = model_get(pmi->model_num);
-	int final_index = -1;
-	int i;
-
-	char fname[MAX_FILENAME_LEN];
-	if (pmi->texture_replace != nullptr)
-	{
-		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-		{
-			bm_get_filename((*pmi->texture_replace)[i], fname);
-
-			if(!strextcmp(fname, s)) {
-				final_index = i;
-				break;
-			}
-		}
-	}
-
-	if(final_index < 0)
-	{
-		for (i = 0; i < pm->n_textures; i++)
-		{
-			int tm_num = pm->maps[i].FindTexture(s);
-			if(tm_num > -1)
-			{
-				final_index = i*TM_NUM_TYPES+tm_num;
-				break;
-			}
-		}
-	}
+	int final_index = model_instance_find_texture_slot(pmi, pm, s);
 
 	if (final_index < 0)
 	{
@@ -251,6 +224,22 @@ ADE_VIRTVAR(Textures, l_ModelInstance, "modelinstancetextures", "Gets model inst
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dh->Get())));
+}
+
+ADE_VIRTVAR(TextureMaps, l_ModelInstance, "modelinstancetexturemaps", "Gets the model instance's materials.  Assigning another instance's TextureMaps makes this instance share that instance's replacement textures, exactly as assigning Textures does.", "modelinstancetexturemaps", "Array of the model instance's materials, or invalid modelinstancetexturemaps handle if modelinstance handle is invalid")
+{
+	modelinstance_h *sh = nullptr;
+	modelinstance_h *dh;
+	if(!ade_get_args(L, "o|o", l_ModelInstance.GetPtr(&dh), l_ModelInstance.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	if(!dh->isValid())
+		return ade_set_error(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h()));
+
+	if(ADE_SETTING_VAR && sh && sh->isValid())
+		dh->Get()->texture_replace = sh->Get()->texture_replace;
+
+	return ade_set_args(L, "o", l_ModelInstanceTextureMaps.Set(modelinstance_h(dh->Get())));
 }
 
 ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "submodel_instances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
