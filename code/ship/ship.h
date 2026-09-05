@@ -107,16 +107,27 @@ struct external_weapon_state
 // Per-bank firing point state for the FiringPattern feature: which point fires next, and in what
 // order.  next() consumes points at fire time; peek() lets the HUD preview upcoming points without
 // disturbing the state.  shot_index is the position within the current volley (0 to shot_count-1).
+//
+// The shuffling is deterministic: it is driven by static_rand(), which is seeded identically on every
+// machine in a multiplayer game, so given the same seed and the same sequence of calls every machine
+// and platform produces the same firing point order.  (The state stays in sync only as long as every
+// machine sees every volley; a dropped fire packet desyncs the bank until its next reset.)
 class FirepointState
 {
-	SCP_vector<int> m_indices;	// firing point order, shuffled; used by the RANDOM_* patterns
-	int m_cursor = 0;			// next-to-fire position; used by the CYCLE_* and RANDOM_EXHAUSTIVE patterns
+	SCP_vector<int> m_indices;			// firing point order, shuffled; used by the RANDOM_* patterns
+	int m_cursor = 0;					// next-to-fire position; used by the CYCLE_* and RANDOM_EXHAUSTIVE patterns
+	unsigned int m_seed = 0;			// see seed()
+	unsigned int m_shuffle_count = 0;	// combined with the seed so that each successive shuffle is different
 
 	void ensure(int num_points);
 	void shuffle(SCP_vector<int>::iterator first, SCP_vector<int>::iterator last);
 
 public:
 	void clear();
+
+	// sets the seed for all subsequent shuffles; call before reset()
+	void seed(unsigned int seed);
+
 	void reset(int num_points);
 
 	// return to the start of the cycle without changing the firing point order

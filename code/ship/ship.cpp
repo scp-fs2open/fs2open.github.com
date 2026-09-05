@@ -87,10 +87,10 @@
 #include "ship/shiphit.h"
 #include "ship/subsysdamage.h"
 #include "species_defs/species_defs.h"
+#include "parse/encrypt.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
-#include "utils/RandomRange.h"
 #include "utils/string_utils.h"
 #include "weapon/beam.h"
 #include "weapon/corkscrew.h"
@@ -7157,13 +7157,25 @@ void FirepointState::clear()
 {
 	m_indices.clear();
 	m_cursor = 0;
+	m_seed = 0;
+	m_shuffle_count = 0;
 }
 
-// Shuffles a range of the firing point order.  All of the patterns go through here so that there is
-// one place to control how the order is randomized.
+void FirepointState::seed(unsigned int seed)
+{
+	m_seed = seed;
+	m_shuffle_count = 0;
+}
+
+// Shuffles a range of the firing point order.  Each shuffle draws from a fresh static_rand() sequence
+// derived from the seed and the shuffle count, so successive shuffles differ but every machine in a
+// multiplayer game reproduces them exactly.
 void FirepointState::shuffle(SCP_vector<int>::iterator first, SCP_vector<int>::iterator last)
 {
-	std::shuffle(first, last, util::seeder);
+	util::StaticRandGenerator rng(static_rand(static_cast<int>((m_seed + m_shuffle_count) & 0x7fffffffu)));
+	m_shuffle_count++;
+
+	util::deterministic_shuffle(first, last, rng);
 }
 
 void FirepointState::reset(int num_points)
@@ -7274,6 +7286,25 @@ void FirepointState::post_fire(FiringPattern pattern, int shot_count, int num_po
 			// the CYCLE_* patterns need no upkeep
 			break;
 	}
+}
+
+// Derives the seed for a bank's firing point state.  The ship name is used because it is unique
+// per ship and is available at this point on every machine in a multiplayer game, unlike the net
+// signature, which isn't assigned until after ship_create() returns.
+//
+// In multiplayer the seed must be identical on every machine, and static_rand() is already rebuilt
+// per mission from the netgame seed (see game_level_init).  In single player the Semirand table is
+// only built once per session (from ai_init), so a random salt is added to keep the firing orders
+// from repeating when a mission is replayed.
+static unsigned int ship_firepoint_seed(const ship *shipp, int bank, bool is_secondary)
+{
+	unsigned int seed = hash_fnv1a(shipp->ship_name, strlen(shipp->ship_name));
+	seed = hash_fnv1a(seed ^ static_cast<unsigned int>(bank + (is_secondary ? MAX_SHIP_PRIMARY_BANKS : 0)));
+
+	if (!(Game_mode & GM_MULTIPLAYER))
+		seed ^= static_cast<unsigned int>(Random::next());
+
+	return seed;
 }
 
 void ship_weapon::clear()
@@ -11193,6 +11224,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 		swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
 
+		swp->primary_firepoint_state[i].seed(ship_firepoint_seed(shipp, i, false));
 		swp->primary_firepoint_state[i].reset(pm->gun_banks[i].num_slots);
 	}
 
@@ -11216,6 +11248,7 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 		swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
 
+		swp->secondary_firepoint_state[i].seed(ship_firepoint_seed(shipp, i, true));
 		swp->secondary_firepoint_state[i].reset(pm->missile_banks[i].num_slots);
 	}
 
@@ -11774,9 +11807,11 @@ static void ship_model_change(int n, int ship_type)
 	sp->base_texture_anim_timestamp = _timestamp();
 
 	for (int bank_i = 0; bank_i < pm->n_guns; bank_i++) {
+		sp->weapons.primary_firepoint_state[bank_i].seed(ship_firepoint_seed(sp, bank_i, false));
 		sp->weapons.primary_firepoint_state[bank_i].reset(pm->gun_banks[bank_i].num_slots);
 	}
 	for (int bank_i = 0; bank_i < pm->n_missiles; bank_i++) {
+		sp->weapons.secondary_firepoint_state[bank_i].seed(ship_firepoint_seed(sp, bank_i, true));
 		sp->weapons.secondary_firepoint_state[bank_i].reset(pm->missile_banks[bank_i].num_slots);
 	}
 
