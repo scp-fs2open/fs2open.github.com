@@ -22,7 +22,6 @@ CSupportRearmDlg::CSupportRearmDlg(CWnd* pParent) : CDialog(CSupportRearmDlg::ID
 	m_max_subsys_repair_val = 100.0f;
 	m_weapon_pool_amount = 0;
 	m_rearm_pool_team = 0;
-	memset(m_rearm_weapon_pool, 0, sizeof(m_rearm_weapon_pool));
 }
 
 void CSupportRearmDlg::DoDataExchange(CDataExchange* pDX)
@@ -70,7 +69,7 @@ BOOL CSupportRearmDlg::OnInitDialog()
 	m_rearm_pool_from_loadout = The_mission.support_ships.rearm_pool_from_loadout ? TRUE : FALSE;
 	m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
-	memcpy(m_rearm_weapon_pool, The_mission.support_ships.rearm_weapon_pool, sizeof(m_rearm_weapon_pool));
+	m_rearm_weapon_pool = The_mission.support_ships.rearm_weapon_pool;
 	m_rearm_pool_team = 0;
 
 	CDialog::OnInitDialog();
@@ -111,7 +110,7 @@ CString CSupportRearmDlg::format_weapon_pool_entry(int weapon_class) const
 {
 	CString text;
 	const auto& wi = Weapon_info[weapon_class];
-	int amount = m_rearm_weapon_pool[m_rearm_pool_team][weapon_class];
+	int amount = m_rearm_weapon_pool[m_rearm_pool_team].value_or(weapon_class, rearm_pool_default());
 	if (wi.disallow_rearm) {
 		text.Format("%s - 0 (disabled by weapon settings)", wi.name);
 		return text;
@@ -163,7 +162,7 @@ void CSupportRearmDlg::update_weapon_amount_display()
 	if (weapon_class < 0 || weapon_class >= weapon_info_size()) {
 		m_weapon_pool_amount = 0;
 	} else {
-		m_weapon_pool_amount = m_rearm_weapon_pool[m_rearm_pool_team][weapon_class];
+		m_weapon_pool_amount = m_rearm_weapon_pool[m_rearm_pool_team].value_or(weapon_class, rearm_pool_default());
 	}
 
 	UpdateData(FALSE);
@@ -188,12 +187,23 @@ void CSupportRearmDlg::set_selected_weapon_amount(int amount)
 		amount = -1;
 	}
 
-	m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = amount;
+	set_weapon_pool_entry(weapon_class, amount);
 	weapon_list->DeleteString(sel);
 	weapon_list->InsertString(sel, format_weapon_pool_entry(weapon_class));
 	weapon_list->SetItemData(sel, weapon_class);
 	weapon_list->SetCurSel(sel);
 	update_weapon_amount_display();
+}
+
+void CSupportRearmDlg::set_weapon_pool_entry(int weapon_class, int amount)
+{
+	// don't store the default value; absence means the default
+	auto &team_pool = m_rearm_weapon_pool[m_rearm_pool_team];
+	if (amount == rearm_pool_default()) {
+		team_pool.erase(weapon_class);
+	} else {
+		team_pool[weapon_class] = amount;
+	}
 }
 
 void CSupportRearmDlg::set_all_weapon_amount(int amount)
@@ -208,9 +218,9 @@ void CSupportRearmDlg::set_all_weapon_amount(int amount)
 			}
 
 			if (Weapon_info[weapon_class].disallow_rearm) {
-				m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = 0;
+				set_weapon_pool_entry(weapon_class, 0);
 			} else {
-				m_rearm_weapon_pool[m_rearm_pool_team][weapon_class] = normalized_amount;
+				set_weapon_pool_entry(weapon_class, normalized_amount);
 			}
 		}
 
@@ -318,6 +328,20 @@ void CSupportRearmDlg::OnOptionChanged()
 		return;
 	}
 
+	// "rearm pool from loadout" changes the pool's default amount, so the displayed entries must be
+	// redrawn (preserving the current selection)
+	auto* weapon_list = (CListBox*)GetDlgItem(IDC_SUPPORT_REARM_WEAPON_LIST);
+	if (weapon_list != nullptr) {
+		const int previous_sel = weapon_list->GetCurSel();
+		populate_weapon_list();
+		if (previous_sel != LB_ERR && previous_sel < weapon_list->GetCount()) {
+			weapon_list->SetCurSel(previous_sel);
+		} else if (weapon_list->GetCount() > 0) {
+			weapon_list->SetCurSel(0);
+		}
+		update_weapon_amount_display();
+	}
+
 	update_control_states();
 }
 
@@ -394,7 +418,7 @@ void CSupportRearmDlg::OnOK()
 	The_mission.support_ships.rearm_pool_from_loadout = (m_rearm_pool_from_loadout != FALSE);
 	The_mission.support_ships.max_hull_repair_val = m_max_hull_repair_val;
 	The_mission.support_ships.max_subsys_repair_val = m_max_subsys_repair_val;
-	memcpy(The_mission.support_ships.rearm_weapon_pool, m_rearm_weapon_pool, sizeof(m_rearm_weapon_pool));
+	The_mission.support_ships.rearm_weapon_pool = m_rearm_weapon_pool;
 
 	CDialog::OnOK();
 }
