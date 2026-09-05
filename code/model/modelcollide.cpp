@@ -55,11 +55,6 @@ thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the curr
 // untouched.
 thread_local static bool Mc_use_toplevel_bvh_for_children = false;
 
-// TEMPORARY: A/B validation toggle for the top-level submodel LBVH vs the legacy per-submodel
-// recursive walk it replaces for the whole-model query shape -- non-static so a correctness/
-// benchmark test can flip it. Remove once trusted (see test_modelcollide_toplevel_bvh.cpp).
-thread_local bool Mc_force_legacy_submodel_walk = false;
-
 // mc_check_triangle_face() vs mc_check_triangle_sphereline_face(): resolved once per
 // model_collide() call, not per triangle visited -- Mc->flags is invariant for the whole call, so
 // re-testing `Mc->flags & MC_CHECK_SPHERELINE` on every single candidate triangle in
@@ -1449,7 +1444,7 @@ int model_collide(mc_info *mc_info_obj)
 		// Don't check it or its children if it is destroyed
 		if ( Mc_pmi ) {
 			if ( !Mc_pmi->submodel[Mc_pm->detail[0]].blown_off ) {
-				Mc_use_toplevel_bvh_for_children = !Mc_force_legacy_submodel_walk;
+				Mc_use_toplevel_bvh_for_children = true;
 				mc_check_subobj(Mc_pm->detail[0]);
 				Mc_use_toplevel_bvh_for_children = false;
 			}
