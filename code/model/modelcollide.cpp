@@ -1163,13 +1163,23 @@ static void model_collide_get_submodel_bvh(int root_mn, const lbvh_tree *&out_tr
 		return;
 	}
 
-	if (Mc_pmi->submodel_bvh_cache_frame != Framecount || !Mc_pmi->submodel_bvh_cache) {
-		if (!Mc_pmi->submodel_bvh_cache) {
-			Mc_pmi->submodel_bvh_cache = std::make_unique<lbvh_tree>();
+	// Fast path: this frame's tree is already built (the overwhelmingly common case -- most ships get
+	// hit at most once per frame, and even a ship hit repeatedly is normally hit repeatedly from the
+	// same thread). The acquire load pairs with the release store below, so once it observes the
+	// current Framecount, submodel_bvh_cache/submodel_bvh_cache_transforms are guaranteed fully
+	// written and safe to read without the lock.
+	if (Mc_pmi->submodel_bvh_cache_frame.load(std::memory_order_acquire) != Framecount) {
+		std::scoped_lock lock(Mc_pmi->submodel_bvh_cache_mutex);
+		// Re-check inside the lock: another thread may have already rebuilt this frame's tree while
+		// this thread was waiting on the mutex.
+		if (Mc_pmi->submodel_bvh_cache_frame.load(std::memory_order_relaxed) != Framecount) {
+			if (!Mc_pmi->submodel_bvh_cache) {
+				Mc_pmi->submodel_bvh_cache = std::make_unique<lbvh_tree>();
+			}
+			model_collide_build_submodel_bvh(
+				Mc_pm, Mc_pmi, root_mn, *Mc_pmi->submodel_bvh_cache, Mc_pmi->submodel_bvh_cache_transforms);
+			Mc_pmi->submodel_bvh_cache_frame.store(Framecount, std::memory_order_release);
 		}
-		model_collide_build_submodel_bvh(
-			Mc_pm, Mc_pmi, root_mn, *Mc_pmi->submodel_bvh_cache, Mc_pmi->submodel_bvh_cache_transforms);
-		Mc_pmi->submodel_bvh_cache_frame = Framecount;
 	}
 
 	out_tree = Mc_pmi->submodel_bvh_cache.get();

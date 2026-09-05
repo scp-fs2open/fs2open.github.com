@@ -15,6 +15,8 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <atomic>
+#include <mutex>
 #include <utility>
  
 #include "actions/Program.h"
@@ -229,9 +231,18 @@ struct polymodel_instance
 	// can't be built once at load time; instead it's rebuilt lazily on first use each frame (checked
 	// against the global Framecount) and reused by every collision query against this instance for
 	// the rest of that frame.
+	//
+	// Collision checks run on a worker-thread pool (objcollide.cpp's queue_mp_collision()), and
+	// pairs are load-balanced by queue length, not partitioned by target object -- two pairs that
+	// both involve this same ship instance (e.g. two weapons converging on it) can easily land on
+	// different threads within the same frame. submodel_bvh_cache_frame is therefore atomic (so the
+	// fast-path "already built this frame" read is well-defined without the mutex), and an actual
+	// rebuild is additionally guarded by submodel_bvh_cache_mutex so two threads racing to rebuild
+	// in the same frame can't both write the tree at once, or hand a partially-built one to a reader.
 	std::unique_ptr<lbvh_tree> submodel_bvh_cache;
 	SCP_vector<submodel_top_level_transform> submodel_bvh_cache_transforms;
-	int submodel_bvh_cache_frame = -1;
+	std::atomic<int> submodel_bvh_cache_frame{-1};
+	std::mutex submodel_bvh_cache_mutex;
 };
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
