@@ -7938,6 +7938,14 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 				auto weapon_pm = model_get(display_model_num);
 				num_secondaries_rendered = 0;
 
+				// figure out which points will fire next so they can be highlighted
+				int next_shot_count = 0;
+				FiringPattern firing_pattern = FiringPattern::ALL_AT_ONCE;
+				if (swp->current_secondary_bank == i) {
+					firing_pattern = ship_get_firing_pattern(sip, swp, wip, i);
+					next_shot_count = ship_get_secondary_firepoint_counts(sp, i, bank->num_slots).shot_count;
+				}
+
 				for(k = 0; k < bank->num_slots; k++)
 				{
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
@@ -7949,7 +7957,15 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 
 					model_render_params weapon_render_info;
 
-					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(sp, i) ) ) ) {
+					bool fires_next = false;
+					for (int q = 0; q < next_shot_count; q++) {
+						if (swp->secondary_firepoint_state[i].peek(firing_pattern, q, bank->num_slots) == k) {
+							fires_next = true;
+							break;
+						}
+					}
+
+					if (fires_next) {
 						weapon_render_info.set_color(Color_bright_blue);
 					} else {
 						weapon_render_info.set_color(Color_bright_white);

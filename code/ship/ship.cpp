@@ -7310,7 +7310,6 @@ void ship_weapon::clear()
         primary_bank_ammo[i] = 0;
         primary_bank_start_ammo[i] = 0;
         primary_bank_capacity[i] = 0;
-        primary_next_slot[i] = 0;
         primary_bank_fof_cooldown[i] = 0;
 
         primary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
@@ -7340,7 +7339,7 @@ void ship_weapon::clear()
         secondary_bank_ammo[i] = 0;
         secondary_bank_start_ammo[i] = 0;
         secondary_bank_capacity[i] = 0;
-        secondary_next_slot[i] = 0;
+        secondary_firepoint_state[i].clear();
 
 		secondary_animation_position[i] = EModelAnimationPosition::MA_POS_NOT_SET;
 
@@ -8151,15 +8150,12 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			if (Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
 			{
 				ship_system->weapons.secondary_bank_ammo[k] = 0;
-				ship_system->weapons.secondary_next_slot[k] = 0;
 				continue;
 			}
 
 			float weapon_size = Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].cargo_size;
 			Assertion( weapon_size > 0.0f, "Cargo size for secondary weapon %s is invalid, must be greater than 0.\n", Weapon_info[ship_system->weapons.secondary_bank_weapons[k]].name );
 			ship_system->weapons.secondary_bank_ammo[k] = (Fred_running ? 100 : (int)std::lround(ship_system->weapons.secondary_bank_capacity[k] / weapon_size));
-
-			ship_system->weapons.secondary_next_slot[k] = 0;
 		}
 
 		// Goober5000
@@ -10851,17 +10847,19 @@ void update_reload_percent(ship *shipp, float frametime)
 
 			int points = pm->missile_banks[i].num_slots;
 			int missles_left = shipp->weapons.secondary_bank_ammo[i];
-			int next_point = shipp->weapons.secondary_next_slot[i];
-			float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
+			auto wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[i]];
+			float fire_wait = wip->fire_wait;
 			float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
 
 			//ok so...we want to move up missles but only if there is a missle there to be moved up
-			//there is a missle behind next_point, and how ever many missles there are left after that
+			//the missles are considered to be loaded in the points that will fire next
 
 			if (points > missles_left) {
 				//there are more slots than missles left, so not all of the slots will have missles drawn on them
-				for (int k = next_point; k < next_point+missles_left; k ++) {
-					float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
+				auto firing_pattern = ship_get_firing_pattern(&Ship_info[shipp->ship_info_index], &shipp->weapons, wip, i);
+				for (int k = 0; k < missles_left; k++) {
+					int pt = shipp->weapons.secondary_firepoint_state[i].peek(firing_pattern, k, points);
+					float &s_pct = shipp->secondary_point_reload_pct.get(i, pt);
 					if (s_pct < 1.0)
 						s_pct += reload_time * frametime;
 					if (s_pct > 1.0)
@@ -11217,6 +11215,8 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		}
 
 		swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
+
+		swp->secondary_firepoint_state[i].reset(pm->missile_banks[i].num_slots);
 	}
 
 	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ){
@@ -11775,6 +11775,9 @@ static void ship_model_change(int n, int ship_type)
 
 	for (int bank_i = 0; bank_i < pm->n_guns; bank_i++) {
 		sp->weapons.primary_firepoint_state[bank_i].reset(pm->gun_banks[bank_i].num_slots);
+	}
+	for (int bank_i = 0; bank_i < pm->n_missiles; bank_i++) {
+		sp->weapons.secondary_firepoint_state[bank_i].reset(pm->missile_banks[bank_i].num_slots);
 	}
 
 	model_delete_instance(sp->model_instance_num);
@@ -12979,7 +12982,8 @@ vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon
 
 FiringPattern ship_get_firing_pattern(const ship_info *sip, const ship_weapon *swp, const weapon_info *wip, int bank)
 {
-	if (sip->flags[Ship::Info_Flags::Dyn_primary_linking])
+	// dynamic linking is a primary-only feature
+	if (wip->is_primary() && sip->flags[Ship::Info_Flags::Dyn_primary_linking])
 		return sip->dyn_firing_patterns_allowed[bank][swp->dynamic_firing_pattern[bank]];
 
 	return wip->firing_pattern;
@@ -12992,7 +12996,7 @@ FirepointCounts ship_get_firepoint_counts(const ship_info *sip, const ship_weapo
 	// for cycling patterns, $Shots: is the number of points to fire from at a time and $Cycle Multishot: is
 	// the number of projectiles per point; for ALL_AT_ONCE, every point fires and $Shots: is the number of
 	// projectiles per point (used mostly for the 'shotgun' effect)
-	if (sip->flags[Ship::Info_Flags::Dyn_primary_linking])
+	if (wip->is_primary() && sip->flags[Ship::Info_Flags::Dyn_primary_linking])
 	{
 		counts.shot_count = MIN(num_points, swp->primary_bank_slot_count[bank]);
 		counts.multishot_count = fl2i(i2fl(wip->cycle_multishot) * multishot_curve_mult);
@@ -13012,6 +13016,22 @@ FirepointCounts ship_get_firepoint_counts(const ship_info *sip, const ship_weapo
 		counts.shot_count = num_points;
 		counts.multishot_count = fl2i(i2fl(wip->shots) * multishot_curve_mult);
 	}
+
+	return counts;
+}
+
+FirepointCounts ship_get_secondary_firepoint_counts(const ship *shipp, int bank, int num_points)
+{
+	auto sip = &Ship_info[shipp->ship_info_index];
+	auto swp = &shipp->weapons;
+	auto wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+
+	auto counts = ship_get_firepoint_counts(sip, swp, wip, ship_get_firing_pattern(sip, swp, wip, bank), bank, num_points);
+
+	// dual fire launches twice as many missiles per volley.  Since the flag is ignored rather than
+	// cleared for banks that can't use it, the capability check is essential here.
+	if (shipp->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(shipp, bank))
+		counts.shot_count = MIN(num_points, counts.shot_count * 2);
 
 	return counts;
 }
@@ -14047,7 +14067,7 @@ bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank)
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 {
-	int			n, weapon_idx, j, bank, bank_adjusted, num_fired;
+	int			n, weapon_idx, fired_weapon_idx, bank, bank_adjusted, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -14132,6 +14152,10 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	weapon_idx = swp->secondary_bank_weapons[bank];
+
+	// this tracks the class of the weapon that was most recently created, which can differ from the bank's
+	// class if the weapon substitutes; it is used for the effects and sounds that follow the actual shot
+	fired_weapon_idx = weapon_idx;
 
 	// It's possible for banks to be empty without issue
 	// but indices outside the weapon_info range are a problem
@@ -14402,154 +14426,160 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			goto done_secondary;
 		}
 
-		int start_slot, end_slot;
-		no_energy = shipp->weapon_energy < 2 * wip->energy_consumed; // whether there's enough energy for at least 1 shot was checked above
-
 		// Dual fire can be unavailable for this bank because it has only one firepoint, because
 		// the weapon disallows it, or because of an ai_profiles restriction.  In any of these
 		// cases the flag is ignored rather than cleared so the dual fire preference isn't lost
-		// when cycling through banks or weapons.
-		if ( shipp->flags[Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(shipp, bank) ) {
-			start_slot = swp->secondary_next_slot[bank];
-			// AL 11-19-97: Ensure enough ammo remains when firing linked secondary weapons
-			if ( check_ammo && ((swp->secondary_bank_ammo[bank] < 2 && !no_ammo_needed) || no_energy) ) {
-				end_slot = start_slot;
+		// when cycling through banks or weapons.  The counts helper takes all of this into account.
+		FiringPattern firing_pattern = ship_get_firing_pattern(sip, swp, wip, bank);
+		auto [shot_count, multishot_count] = ship_get_secondary_firepoint_counts(shipp, bank, num_slots);
+
+		// Note: unlike primaries, secondaries do not scale their fire wait by the number of firing points
+		// when using a cycling pattern, because cycling is the retail behavior for secondaries.
+
+		// AL 11-19-97: Ensure enough ammo (and energy) remains when firing linked secondary weapons.
+		// Fire as many projectiles as we can afford, but at least one, since that much was checked above.
+		// (A shot or multishot count of zero fires nothing, so there is nothing to clamp in that case.)
+		if ( check_ammo && shot_count > 0 && multishot_count > 0 ) {
+			int affordable = INT_MAX;
+			if ( !no_ammo_needed )
+				affordable = MIN(affordable, swp->secondary_bank_ammo[bank]);
+			if ( wip->energy_consumed > 0.0f )
+				affordable = MIN(affordable, fl2i(shipp->weapon_energy / wip->energy_consumed));
+			affordable = MAX(affordable, 1);
+
+			// shot_count * multishot_count must not exceed what we can afford, so if a single
+			// shot's worth of projectiles is already too many, fire one shot with fewer projectiles
+			if ( multishot_count > affordable ) {
+				multishot_count = affordable;
+				shot_count = 1;
 			} else {
-				end_slot = start_slot+1;
+				shot_count = MIN(shot_count, affordable / multishot_count);
 			}
-		} else {
-			start_slot = swp->secondary_next_slot[bank];
-			end_slot = start_slot;
 		}
 
-		int pnt_index=start_slot;
-		//If this is a tertiary weapon, only subtract one piece of ammo
-		for ( j = start_slot; j <= end_slot; j++ ) {
-			int	weapon_num;
+		for ( int shot_index = 0; shot_index < shot_count; shot_index++ ) {
+			int pt = swp->secondary_firepoint_state[bank].next(firing_pattern, shot_index, num_slots);
 
-			swp->secondary_next_slot[bank]++;
-			if ( swp->secondary_next_slot[bank] > (num_slots-1) ){
-				swp->secondary_next_slot[bank] = 0;
-			}
+			shipp->secondary_point_reload_pct.set(bank, pt, 0.0f);
+			vec3d dir = pm->missile_banks[bank].norm[pt];
 
-			if ( pnt_index >= num_slots ){
-				pnt_index = 0;
-			}
-			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
-			pnt = pm->missile_banks[bank].pnt[pnt_index];
-			vec3d dir;
-			dir = pm->missile_banks[bank].norm[pnt_index];
+			for ( int multishot_index = 0; multishot_index < multishot_count; multishot_index++ ) {
+				int	weapon_num;
 
-			// external model firing points only apply when the external models are actually drawn
-			// (matching the primary bank behavior in ship_fire_primary)
-			polymodel *weapon_model = nullptr;
-			if(sip->draw_secondary_models[bank] && wip->external_model_num >= 0){
-				weapon_model = model_get(wip->external_model_num);
-			}
+				pnt = pm->missile_banks[bank].pnt[pt];
 
-			// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
-			vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->secondary_bank_external_weapon[bank], wip, weapon_model, &pm->missile_banks[bank], pnt_index, true);
-			vm_vec_add2(&pnt, &external_fp_offset);
-			pnt_index++;
-			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
-			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
-
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				Assert( Weapon_info[weapon_idx].subtype == WP_MISSILE );
-			}
-
-			matrix firing_orient;
-			if (obj == Player_obj && sip->aims_at_flight_cursor_secondary)
-			{
-				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
-				firing_orient = firing_orient * obj->orient;
-			} 
-			else if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
-			{
-				firing_orient = obj->orient;
-			}
-			else
-			{
-				vec3d firing_vec;
-				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
-			}
-
-			// create the weapon -- for multiplayer, the net_signature is assigned inside
-			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, swp, -1, bank, launch_curve_data);
-
-			if (weapon_num == -1) {
-				// Weapon most likely failed to fire
-				if (obj == Player_obj) {
-					ship_maybe_do_secondary_fail_sound_hud(wip, false);
-				}
-				continue;
-			}
-
-			if (weapon_num >= 0) {
-				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
-				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
-				has_fired = true;
-
-				// create the muzzle flash effect
-				shipfx_flash_create(obj, sip->model_num, &pnt, &dir, 0, weapon_idx, weapon_num);
-
-				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
-					// calculate some arbitrary value between 100
-					// (mass * velocity) / 10
-					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f * sip->ship_shudder_modifier * wip->shudder_modifier);
+				// external model firing points only apply when the external models are actually drawn
+				// (matching the primary bank behavior in ship_fire_primary)
+				polymodel *weapon_model = nullptr;
+				if(sip->draw_secondary_models[bank] && wip->external_model_num >= 0){
+					weapon_model = model_get(wip->external_model_num);
 				}
 
-				num_fired++;
-				swp->detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));;		//	Can detonate 1/2 second later.
-				if (Weapon_info[weapon_idx].wi_flags[Weapon::Info_Flags::Remote])
-					swp->remote_detonaters_active++;
+				// chained weapons cycle through the external model's firing points; other weapons use the 0 index slot
+				vec3d external_fp_offset = ship_get_external_model_fp_offset(&swp->secondary_bank_external_weapon[bank], wip, weapon_model, &pm->missile_banks[bank], pt, true);
+				vm_vec_add2(&pnt, &external_fp_offset);
+				vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
+				vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
-				// possibly add this to the rollback vector
-				if ((Game_mode & (GM_MULTIPLAYER | GM_STANDALONE_SERVER)) && rollback_shot){
-					multi_ship_record_add_rollback_wep(weapon_num);
+				if ( Game_mode & GM_MULTIPLAYER ) {
+					Assert( Weapon_info[weapon_idx].subtype == WP_MISSILE );
 				}
 
-				// subtract the number of missiles fired
-				if ( !Weapon_energy_cheat ){
-					if(!Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
-						swp->secondary_bank_ammo[bank]--;
-
-					shipp->weapon_energy -= wip->energy_consumed;
+				matrix firing_orient;
+				if (obj == Player_obj && sip->aims_at_flight_cursor_secondary)
+				{
+					vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
+					firing_orient = firing_orient * obj->orient;
+				} 
+				else if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
+				{
+					firing_orient = obj->orient;
+				}
+				else
+				{
+					vec3d firing_vec;
+					vm_vec_unrotate(&firing_vec, &dir, &obj->orient);
+					vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 				}
 
-				if (wip->wi_flags[Weapon::Info_Flags::Apply_Recoil]) {
-					float recoil_force = (wip->mass * wip->max_speed * wip->recoil_modifier * sip->ship_recoil_modifier);
+				// create the weapon -- for multiplayer, the net_signature is assigned inside
+				// of weapon_create
+				weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, swp, -1, bank, launch_curve_data);
 
-					vec3d impulse = firing_orient.vec.fvec * -recoil_force;
+				if (weapon_num == -1) {
+					// Weapon most likely failed to fire
+					if (obj == Player_obj) {
+						ship_maybe_do_secondary_fail_sound_hud(wip, false);
+					}
+					continue;
+				}
 
-					ship_apply_whack(&impulse, &firing_pos, obj);
+				if (weapon_num >= 0) {
+					// note that this is the class that was actually created, which can differ from the bank's
+					// class via $Substitute:; weapon_idx itself must not change, or the next shot in this volley
+					// would have its substitution resolved from the substituted class rather than the bank's
+					fired_weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
+					weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
+					has_fired = true;
+
+					// create the muzzle flash effect
+					shipfx_flash_create(obj, sip->model_num, &pnt, &dir, 0, fired_weapon_idx, weapon_num);
+
+					if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+						// calculate some arbitrary value between 100
+						// (mass * velocity) / 10
+						game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f * sip->ship_shudder_modifier * wip->shudder_modifier);
+					}
+
+					num_fired++;
+					swp->detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));;		//	Can detonate 1/2 second later.
+					if (Weapon_info[fired_weapon_idx].wi_flags[Weapon::Info_Flags::Remote])
+						swp->remote_detonaters_active++;
+
+					// possibly add this to the rollback vector
+					if ((Game_mode & (GM_MULTIPLAYER | GM_STANDALONE_SERVER)) && rollback_shot){
+						multi_ship_record_add_rollback_wep(weapon_num);
+					}
+
+					// subtract the number of missiles fired
+					if ( !Weapon_energy_cheat ){
+						if(!Weapon_info[swp->secondary_bank_weapons[bank]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
+							swp->secondary_bank_ammo[bank]--;
+
+						shipp->weapon_energy -= wip->energy_consumed;
+					}
+
+					if (wip->wi_flags[Weapon::Info_Flags::Apply_Recoil]) {
+						float recoil_force = (wip->mass * wip->max_speed * wip->recoil_modifier * sip->ship_recoil_modifier);
+
+						vec3d impulse = firing_orient.vec.fvec * -recoil_force;
+
+						ship_apply_whack(&impulse, &firing_pos, obj);
+					}
 				}
 			}
 		}
+
+		swp->secondary_firepoint_state[bank].post_fire(firing_pattern, shot_count, num_slots);
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon_idx].cockpit_launch_snd.isValid() ) {
-			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-		} else if (Weapon_info[weapon_idx].launch_snd.isValid()) {
-			snd_play(gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+		if ( Weapon_info[fired_weapon_idx].cockpit_launch_snd.isValid() ) {
+			snd_play( gamesnd_get_game_sound(Weapon_info[fired_weapon_idx].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else if (Weapon_info[fired_weapon_idx].launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[fired_weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
 		}
 
 		swp = &Player_ship->weapons;
 		if (bank >= 0) {
 			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, bank)){
-				joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
-			} else {
-				joy_ff_play_secondary_shoot((int) wip->cargo_size);
-			}
+			// scale the force feedback by the number of missiles actually launched
+			joy_ff_play_secondary_shoot((int) (wip->cargo_size * MAX(num_fired, 1)));
 		}
 
 	} else {
-		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
-			snd_play_3d( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), &obj->pos, &View_position );
+		if ( Weapon_info[fired_weapon_idx].launch_snd.isValid() ) {
+			snd_play_3d( gamesnd_get_game_sound(Weapon_info[fired_weapon_idx].launch_snd), &obj->pos, &View_position );
 		}
 	}
 
@@ -14587,7 +14617,7 @@ done_secondary:
 		}
 	
 		// maybe announce a shockwave weapon
-		ai_maybe_announce_shockwave_weapon(obj, weapon_idx);
+		ai_maybe_announce_shockwave_weapon(obj, fired_weapon_idx);
 	}
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
@@ -14625,7 +14655,7 @@ done_secondary:
 				scripting::hook_param("User", 'o', objp),
 				scripting::hook_param("Target", 'o', target)
 			);
-			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, SCP_vector<int>{ weapon_idx }, false };
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, SCP_vector<int>{ fired_weapon_idx }, false };
 			scripting::hooks::OnWeaponFired->run(conditions, param_list);
 			scripting::hooks::OnSecondaryFired->run(std::move(conditions), std::move(param_list));
 		}

@@ -169,7 +169,6 @@ public:
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
 	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
-	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 	// end ballistic primary support
 
@@ -183,7 +182,6 @@ public:
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
 	int secondary_bank_start_ammo[MAX_SHIP_SECONDARY_BANKS];	// Number of missiles starting in secondary bank -- Every time the secondary bank changes, this must change too!
 	int secondary_bank_capacity[MAX_SHIP_SECONDARY_BANKS];		// Max number of missiles in bank
-	int secondary_next_slot[MAX_SHIP_SECONDARY_BANKS];			// Next slot to fire in the bank
 	int secondary_bank_rearm_time[MAX_SHIP_SECONDARY_BANKS];	// timestamp which indicates when bank can get new missile
 
 	int tertiary_bank_ammo;			// Number of shots left tertiary bank
@@ -210,6 +208,7 @@ public:
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 
 	FirepointState primary_firepoint_state[MAX_SHIP_PRIMARY_BANKS];		// per-bank firing point cycling state for the FiringPattern feature
+	FirepointState secondary_firepoint_state[MAX_SHIP_SECONDARY_BANKS];
 
 	size_t primary_bank_substitution_pattern_index[MAX_SHIP_PRIMARY_BANKS];
 	size_t secondary_bank_substitution_pattern_index[MAX_SHIP_SECONDARY_BANKS];
@@ -1872,6 +1871,10 @@ FiringPattern ship_get_firing_pattern(const ship_info *sip, const ship_weapon *s
 
 // how many firing points fire per volley (shot_count) and how many projectiles each fires (multishot_count)
 FirepointCounts ship_get_firepoint_counts(const ship_info *sip, const ship_weapon *swp, const weapon_info *wip, FiringPattern pattern, int bank, int num_points, float multishot_curve_mult = 1.0f);
+
+// the same for a secondary bank, including the dual fire doubling if it applies to this bank
+FirepointCounts ship_get_secondary_firepoint_counts(const ship *shipp, int bank, int num_points);
+
 extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
 extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
