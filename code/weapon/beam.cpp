@@ -367,30 +367,24 @@ int beam_fire(beam_fire_info *fire_info)
 	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr)) {
 		// using substitution
 
-		// get to the instance of the gun
-		Assertion(fire_info->shooter->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", fire_info->shooter->type);
-		Assertion((fire_info->shooter->instance < MAX_SHIPS) && (fire_info->shooter->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", fire_info->shooter->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[fire_info->shooter->instance]);
-		Assert(parent_shipp != nullptr);
-
-		size_t* position = get_pointer_to_weapon_fire_pattern_index(fire_info->beam_info_index, fire_info->shooter->instance, fire_info->turret);
-		Assertion(position != nullptr, "'%s' is trying to fire a weapon that is not selected", Ships[fire_info->shooter->instance].ship_name);
-
-		size_t curr_pos = *position;
-		if ((parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) && curr_pos > 0) {
-			curr_pos--;
+		// the turret and fighter firing code both tell us which bank the beam is in
+		int pbank = fire_info->bank;
+		ship *parent_shipp = nullptr;
+		ship_weapon* swp = nullptr;
+		if (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED) {
+			swp = &fire_info->turret->weapons;
+		} else if (fire_info->fire_method == BFM_FIGHTER_FIRED) {
+			parent_shipp = &Ships[fire_info->shooter->instance];
+			swp = &parent_shipp->weapons;
 		}
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
 
-		if (wip->weapon_substitution_pattern[curr_pos] == -1) {
-			// weapon doesn't want any sub
-			return -1;
-		}
-		else if (wip->weapon_substitution_pattern[curr_pos] != fire_info->beam_info_index) {
-			fire_info->beam_info_index = wip->weapon_substitution_pattern[curr_pos];
-			// weapon wants to sub with weapon other than me
+		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(fire_info->beam_info_index, swp, pbank, -1, parent_shipp);
+
+		if (use_substitution) {
+			if (substituted_weapon_info_index < 0)
+				return -1;
+
+			fire_info->beam_info_index = substituted_weapon_info_index;
 			return beam_fire(fire_info);
 		}
 	}

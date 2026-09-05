@@ -63,6 +63,7 @@ void swarm_level_init()
 		tswarmp->turret		  = NULL;
 		tswarmp->target_subsys = NULL;
 		tswarmp->time_to_fire  = 0;
+		tswarmp->swp_sbank = -1;
 	}
 
 	Turret_swarm_validity_next_check_time = timestamp(TURRET_SWARM_VALIDITY_CHECKTIME);
@@ -286,6 +287,7 @@ int turret_swarm_create()
 	tswarmp->turret = NULL;
 	tswarmp->target_subsys = NULL;
 	tswarmp->time_to_fire = 0;
+	tswarmp->swp_sbank = -1;
 
 	tswarmp->flags |= SWARM_USED;
 	return i;
@@ -309,7 +311,7 @@ void turret_swarm_delete(int i)
 }
 
 // Set up turret swarm info struct
-void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, bool no_tracking_object)
+void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, int swp_sbank, bool no_tracking_object)
 {
 	turret_swarm_info	*tsi;
 	object *parent_obj;
@@ -404,6 +406,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weap
 	tsi->target_subsys = turret->targeted_subsys;
 	tsi->time_to_fire = 1;	// first missile next frame
 	tsi->weapon_num = weapon_num;
+	tsi->swp_sbank = swp_sbank;
 }
 
 void turret_swarm_fire_from_turret(turret_swarm_info *tsi);

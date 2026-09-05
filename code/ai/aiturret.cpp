@@ -350,6 +350,18 @@ const weapon_info *get_turret_weapon_wip(const ship_weapon *swp, int weapon_num)
 		return &Weapon_info[wi_index];
 }
 
+// similar to the above, since "weapon_num" is a bank index over multiple banks
+static std::pair<int, int> get_turret_weapon_bank(int weapon_num)
+{
+	int pbank = -1;
+	int sbank = -1;
+	if (weapon_num >= MAX_SHIP_PRIMARY_BANKS)
+		sbank = weapon_num - MAX_SHIP_PRIMARY_BANKS;
+	else
+		pbank = weapon_num;
+	return { pbank, sbank };
+}
+
 int get_turret_weapon_next_fire_stamp(const ship_weapon *swp, int weapon_num)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
@@ -1729,6 +1741,7 @@ bool turret_fire_weapon(int weapon_num,
 	auto wip = get_turret_weapon_wip(&turret->weapons, weapon_num);
 	if (!wip)
 		return false;
+	auto [turret_pbank, turret_sbank] = get_turret_weapon_bank(weapon_num);
 
 	bool in_lab = (gameseq_get_state() == GS_STATE_LAB);
 
@@ -1839,6 +1852,7 @@ bool turret_fire_weapon(int weapon_num,
 				else
 					fire_info.target_subsys = nullptr;
 				fire_info.turret = turret;
+				fire_info.bank = turret_pbank;
 				fire_info.burst_seed = old_burst_seed;
 				fire_info.fire_method = BFM_TURRET_FIRED;
 				fire_info.per_burst_rotation = swp->per_burst_rot;
@@ -1850,7 +1864,6 @@ bool turret_fire_weapon(int weapon_num,
 					fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
 					fire_info.target_pos1 = turret->last_aim_enemy_pos;
 				}
-
 
 				// fire a beam weapon
 				weapon_objnum = beam_fire(&fire_info);
@@ -1877,23 +1890,10 @@ bool turret_fire_weapon(int weapon_num,
 		}
 		// don't fire swam, but set up swarm info instead
 		else if ((wip->wi_flags[Weapon::Info_Flags::Swarm]) || (wip->wi_flags[Weapon::Info_Flags::Corkscrew])) {
-			if (swp->current_secondary_bank < 0) {
-				swp->current_secondary_bank = 0;
-			}
-			int bank_to_fire = swp->current_secondary_bank;
-			if (!in_lab && (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, bank_to_fire)) {
-				if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
-					swp->current_secondary_bank++;
-					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
-						swp->current_secondary_bank = 0;
-					}
-					return false;
-				} else {
-					return false;
-				}
+			if (!in_lab && (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, turret_sbank)) {
+				return false;
 			} else {
-				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos, in_lab);
-
+				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos, turret_sbank, in_lab);
 				turret->flags.set(Ship::Subsystem_Flags::Has_fired);	//set fired flag for scripting -nike
 				return true;
 			}
@@ -1904,86 +1904,30 @@ bool turret_fire_weapon(int weapon_num,
 			int shots = fl2i(i2fl(wip->shots) * shots_mult);
 			for (int i = 0; i < shots; i++) {
 				if (!in_lab && turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
-					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
-					if (wip->subtype == WP_LASER) {
+					if (turret_pbank >= 0) {
 						int points;
-						if (swp->num_primary_banks <= 0) {
-							return false;
-						}
-
-						if (swp->current_primary_bank < 0){
-							swp->current_primary_bank = 0;
-							return false;
-						}
-
-						int	num_primary_banks = swp->num_primary_banks;
-
-						Assert(num_primary_banks > 0);
-						if (num_primary_banks < 1){
-							return false;
-						}
-
-						bank_to_fire = swp->current_primary_bank;
-
 						if (turret->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) {
-							points = num_slots;
+							points = turret->system_info->turret_num_firing_points;
 						} else {
 							points = 1;
 						}
 
-						if (swp->primary_bank_ammo[bank_to_fire] >= points) {
-							swp->primary_bank_ammo[bank_to_fire] -= points;
-						} else if ((swp->primary_bank_ammo[bank_to_fire] >= 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
+						if (swp->primary_bank_ammo[turret_pbank] >= points) {
+							swp->primary_bank_ammo[turret_pbank] -= points;
+						} else if ((swp->primary_bank_ammo[turret_pbank] >= 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
 							// default behavior allowed ammo to be negative
-							swp->primary_bank_ammo[bank_to_fire] -= points;
-						} else if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns]) && (swp->primary_bank_ammo[bank_to_fire] < 0)) {
-							swp->current_primary_bank++;
-							if (swp->current_primary_bank >= swp->num_primary_banks) {
-								swp->current_primary_bank = 0;
-							}
-							return false;
+							swp->primary_bank_ammo[turret_pbank] -= points;
 						} else {
 							return false;
 						}
 					}
-					else if (wip->subtype == WP_MISSILE) {
-						if (swp->num_secondary_banks <= 0) {
-							return false;
-						}
-
-						if (swp->current_secondary_bank < 0){
-							swp->current_secondary_bank = 0;
-							return false;
-						}
-
-						bank_to_fire = swp->current_secondary_bank;
-
-						int start_slot, end_slot;
-
-						start_slot = swp->secondary_next_slot[bank_to_fire];
-						end_slot = start_slot;
-
-						for (int j = start_slot; j <= end_slot; j++) {
-							swp->secondary_next_slot[bank_to_fire]++;
-
-							if (Weapon_info[swp->secondary_bank_weapons[bank_to_fire]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo])
-								continue;
-
-							if (swp->secondary_next_slot[bank_to_fire] > (num_slots - 1)){
-								swp->secondary_next_slot[bank_to_fire] = 0;
-							}
-
-							if (swp->secondary_bank_ammo[bank_to_fire] > 0) {
-								swp->secondary_bank_ammo[bank_to_fire]--;
-							} else if ((swp->secondary_bank_ammo[bank_to_fire] == 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
+					else if (turret_sbank >= 0) {
+						if (!wip->wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+							if (swp->secondary_bank_ammo[turret_sbank] > 0) {
+								swp->secondary_bank_ammo[turret_sbank]--;
+							} else if ((swp->secondary_bank_ammo[turret_sbank] == 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
 								// default behavior allowed ammo to be negative
-								swp->secondary_bank_ammo[bank_to_fire]--;
-							} else if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns]) && (swp->secondary_bank_ammo[bank_to_fire] < 0)) {
-								swp->current_secondary_bank++;
-								if (swp->current_secondary_bank >= swp->num_secondary_banks) {
-									swp->current_secondary_bank = 0;
-								}
-								return false;
+								swp->secondary_bank_ammo[turret_sbank]--;
 							} else {
 								return false;
 							}
@@ -1998,7 +1942,7 @@ bool turret_fire_weapon(int weapon_num,
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, false, nullptr, true, nullptr);
 
-				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, true, false, 0.0f, turret, launch_curve_data);
+				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, true, false, swp, turret_pbank, turret_sbank, launch_curve_data);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
@@ -2142,7 +2086,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	};
 
 	// create weapon and homing info
-	weapon_objnum = weapon_create(&turret_pos, &firing_orient, tsi->weapon_class, tsi->parent_objnum, -1, true, false, 0.0f, tsi->turret, launch_curve_data);
+	weapon_objnum = weapon_create(&turret_pos, &firing_orient, tsi->weapon_class, tsi->parent_objnum, -1, true, false, &tsi->turret->weapons, -1, tsi->swp_sbank, launch_curve_data);
 	weapon_set_tracking_info(weapon_objnum, tsi->parent_objnum, tsi->target_objnum, 1, tsi->target_subsys);
 
 	// do other cool stuff if weapon is created.
