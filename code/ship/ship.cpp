@@ -13643,7 +13643,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
-								false, false, swp->primary_bank_fof_cooldown[bank_to_fire], nullptr, launch_curve_data );
+								false, false, swp, bank_to_fire, -1, launch_curve_data );
 
 							if (weapon_objnum == -1) {
 								// Weapon most likely failed to fire
@@ -14026,7 +14026,8 @@ bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank)
 	if (Weapon_info[weapon_class].wi_flags[Weapon::Info_Flags::No_doublefire])
 		return false;
 
-	if (shipp->objnum == OBJ_INDEX(Player_obj))
+	// use the flag, not Player_obj, for multiplayer correctness
+	if (shipp->objnum >= 0 && Objects[shipp->objnum].flags[Object::Object_Flags::Player_ship])
 	{
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire])
 			return false;
@@ -14481,7 +14482,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, 0.f, nullptr, launch_curve_data);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, swp, -1, bank, launch_curve_data);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
@@ -22378,7 +22379,7 @@ bool ship_stop_secondary_fire(object* objp)
 }
 
 bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index) {
-	return swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo];
+	return bank_index >= 0 && (swp->secondary_bank_ammo[bank_index] > 0 || Weapon_info[swp->secondary_bank_weapons[bank_index]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]);
 }
 
 
