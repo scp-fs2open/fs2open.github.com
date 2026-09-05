@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "math/curve.h"
 #include "model/animation/modelanimation.h"
 #include "model/animation/modelanimation_driver.h"
@@ -27,7 +29,8 @@ namespace animation {
 
 			//While this flag implies Reset_at_completion semantically, it's implemented in a conflicting manner. Hence, make sure that seamless will take priority, and force-disable reset at completion if set
 			anim.m_flags.set(animation::Animation_Flags::Reset_at_completion, false);
-		}}
+		}},
+		{ "seamless forward shutdown",	animation::Animation_Flags::Seamless_forward_shutdown,			true }
 	};
 
 	SCP_unordered_map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
@@ -114,6 +117,8 @@ namespace animation {
 							instanceData.time = animationTimeWrap(instanceData.time - instanceData.duration, 0, anim.m_flagData.loopsFrom, AnimationTimeWrapMode::BOUNCE_ONCE).first;
 							instanceData.canonicalDirection = ModelAnimationDirection::RWD;
 							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+							//the shutdown enters the startup ramp with the pose it has at the loop boundary
+							instanceData.reverseStartTime = anim.m_flagData.loopsFrom;
 						}
 						else {
 							//Loop from start
@@ -184,9 +189,9 @@ namespace animation {
 
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
-		
+
 		if (applyOnly) {
-			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
+			calculateCurrentAnimation(applyBuffer, instanceData.time, pmi);
 
 			return instanceData.state;
 		}
@@ -240,7 +245,7 @@ namespace animation {
 				driver(*this, instanceData, pmi);
 			}
 
-			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
+			calculateCurrentAnimation(applyBuffer, instanceData.time, pmi);
 
 			if ((prevTime > instanceData.time && instanceData.canonicalDirection == ModelAnimationDirection::FWD) || (prevTime < instanceData.time && instanceData.canonicalDirection == ModelAnimationDirection::RWD)) {
 				//We _should_ have been going FWD, but we appear to have gone backwards (or we _should_ have been going FWD, but we appear to have gone forwards).
@@ -261,23 +266,75 @@ namespace animation {
 		return instanceData.state;
 	}
 	
+	void ModelAnimation::calculateCurrentAnimation(ModelAnimationSubmodelBuffer& applyBuffer, float time, polymodel_instance* pmi) {
+		const instance_data& instanceData = m_instances[pmi->id];
+
+		if (m_flags[Animation_Flags::Seamless_forward_shutdown] && instanceData.canonicalDirection == ModelAnimationDirection::RWD) {
+			//Mirror this animation's motion about the pose it had when the reversal began, so that the motion continues
+			//forward while the animation winds down, rather than retracing backwards.  For a spin-up ramp played in
+			//reverse, this yields a decelerating forward spin.
+
+			//Compute this animation's pose at the current time and at the mirror pivot, each on a clean base
+			ModelAnimationSubmodelBuffer currentBuffer, pivotBuffer;
+			m_set->initializeSubmodelBuffer(pmi, currentBuffer);
+			m_set->initializeSubmodelBuffer(pmi, pivotBuffer);
+			m_animation->calculateAnimation(currentBuffer, time, pmi->id);
+			m_animation->calculateAnimation(pivotBuffer, instanceData.reverseStartTime, pmi->id);
+
+			for (auto& current : currentBuffer) {
+				if (!current.second.modified)
+					continue;
+
+				const auto& pivot = pivotBuffer[current.first];
+				const ModelAnimationData<>& base = current.first->getInitialData(pmi);
+
+				//The buffers contain delta-on-base; factor the base back out to get this animation's deltas
+				matrix baseTransp, currentDelta, pivotDelta;
+				vm_copy_transpose(&baseTransp, &base.orientation);
+				vm_matrix_x_matrix(&currentDelta, &current.second.data.orientation, &baseTransp);
+				vm_matrix_x_matrix(&pivotDelta, &pivot.data.orientation, &baseTransp);
+
+				//Mirror the current delta about the pivot delta: mirrored = pivot * current^-1 * pivot
+				matrix currentDeltaTransp, tmp;
+				ModelAnimationData<true> mirrored;
+				vm_copy_transpose(&currentDeltaTransp, &currentDelta);
+				vm_matrix_x_matrix(&tmp, &pivotDelta, &currentDeltaTransp);
+				matrix mirroredOrient;
+				vm_matrix_x_matrix(&mirroredOrient, &tmp, &pivotDelta);
+				mirrored.orientation = mirroredOrient;
+
+				vec3d currentPos, pivotPos, posDelta, mirroredPos;
+				vm_vec_sub(&currentPos, &current.second.data.position, &base.position);
+				vm_vec_sub(&pivotPos, &pivot.data.position, &base.position);
+				vm_vec_sub(&posDelta, &pivotPos, &currentPos);
+				vm_vec_add(&mirroredPos, &pivotPos, &posDelta);
+				mirrored.position = mirroredPos;
+
+				applyBuffer[current.first].data.applyDelta(mirrored);
+				applyBuffer[current.first].modified = true;
+			}
+
+			return;
+		}
+
+		m_animation->calculateAnimation(applyBuffer, time, pmi->id);
+	}
+
 	void ModelAnimation::start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force, bool instant, bool pause, const float* multiOverrideTime) {
 		if (pmi == nullptr)
 			return;
 
 		instance_data& instanceData = m_instances[pmi->id];
 
-		if (multiOverrideTime == nullptr && m_isMultiCompatible && (Game_mode & GM_MULTIPLAYER) && id != 0) {
+		//Model instances that don't belong to an object (external weapon models, the skybox, cockpits) cannot be
+		//multi-synced; their animations just run locally on each machine.
+		if (multiOverrideTime == nullptr && m_isMultiCompatible && (Game_mode & GM_MULTIPLAYER) && id != 0 && pmi->objnum >= 0) {
 			//We are in multiplayer. Send animation to server to start. Server starts animation online, and sends start request back (which'll have multiOverride == true).
 			//If we _are_ the server, also just start the animation
 
-			object* objp = pmi->objnum >= 0 ? &Objects[pmi->objnum] : nullptr;
+			object* objp = &Objects[pmi->objnum];
 
-			if(objp != nullptr)
-				send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
-			else {
-				//Find special mode based on id and send
-			}
+			send_animation_triggered_packet(id, objp, 0, direction, force, instant, pause);
 
 			if(MULTIPLAYER_CLIENT)
 				return;
@@ -308,7 +365,11 @@ namespace animation {
 		
 		if (direction == ModelAnimationDirection::RWD) {
 			instanceData.state = ModelAnimationState::RUNNING;
-			instanceData.time -= timeOffset; 
+			instanceData.time -= timeOffset;
+			if (instanceData.canonicalDirection != ModelAnimationDirection::RWD) {
+				//the pose at this time is the mirror pivot for Seamless_forward_shutdown
+				instanceData.reverseStartTime = instanceData.time;
+			}
 			instanceData.canonicalDirection = ModelAnimationDirection::RWD;
 			if (force)
 				instanceData.time = instant ? 0 : instanceData.duration - timeOffset;
@@ -319,6 +380,12 @@ namespace animation {
 			instanceData.canonicalDirection = ModelAnimationDirection::FWD;
 			if (force)
 				instanceData.time = instant ? instanceData.duration : 0 + timeOffset;
+
+			//an explicit forward start cancels a pending or in-progress seamless shutdown
+			if (m_flags[Animation_Flags::Seamless_with_startup]) {
+				instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop, false);
+				instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown, false);
+			}
 		}
 		
 		//Since initial types never get stepped, they need to be manually applied here once.
@@ -361,6 +428,28 @@ namespace animation {
 		if (instance != m_instances.end())
 			return instance->second.time;
 		return 0.0f;
+	}
+
+	bool ModelAnimation::isFullyStarted(int pmi_id) const {
+		auto instance = m_instances.find(pmi_id);
+		if (instance == m_instances.end())
+			return false;
+
+		const instance_data& instanceData = instance->second;
+
+		if (instanceData.state == ModelAnimationState::UNTRIGGERED || instanceData.state == ModelAnimationState::NEED_RECALC)
+			return false;
+
+		//A seamless animation is fully started once it is playing forward within the seamless loop portion
+		if (m_flags[Animation_Flags::Seamless_with_startup])
+			return instanceData.canonicalDirection == ModelAnimationDirection::FWD && instanceData.time >= m_flagData.loopsFrom;
+
+		//Other looping animations have no startup portion to wait for
+		if (m_flags[Animation_Flags::Loop])
+			return instanceData.canonicalDirection == ModelAnimationDirection::FWD;
+
+		//Non-looping animations are fully started once they have played to completion
+		return instanceData.canonicalDirection == ModelAnimationDirection::FWD && instanceData.time >= instanceData.duration;
 	}
 
 	void ModelAnimation::stepAnimations(float frametime, polymodel_instance* pmi) {
@@ -946,6 +1035,44 @@ namespace animation {
 		return !animations.empty();
 	}
 
+	void ModelAnimationSet::AnimationList::startShutdown() const {
+		if (pmi_id < 0)
+			return;
+
+		polymodel_instance* pmi = model_get_instance(pmi_id);
+		for (const auto& anim : animations) {
+			if (anim->m_instances[pmi_id].state == ModelAnimationState::UNTRIGGERED)
+				continue;
+
+			if (anim->m_flags[Animation_Flags::Loop]) {
+				//Looping animations finish their current loop and then stop; for seamless animations this plays their shutdown
+				anim->m_instances[pmi_id].instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+			}
+			else {
+				anim->start(pmi, ModelAnimationDirection::RWD);
+			}
+		}
+	}
+
+	bool ModelAnimationSet::AnimationList::isFullyStarted() const {
+		if (pmi_id < 0)
+			return true;
+
+		return std::all_of(animations.cbegin(), animations.cend(),
+			[this](const std::shared_ptr<ModelAnimation>& anim) { return anim->isFullyStarted(pmi_id); });
+	}
+
+	bool ModelAnimationSet::AnimationList::anyActive() const {
+		if (pmi_id < 0)
+			return false;
+
+		return std::any_of(animations.cbegin(), animations.cend(),
+			[this](const std::shared_ptr<ModelAnimation>& anim) {
+				auto instance = anim->m_instances.find(pmi_id);
+				return instance != anim->m_instances.end() && instance->second.state != ModelAnimationState::UNTRIGGERED;
+			});
+	}
+
 	int ModelAnimationSet::AnimationList::getTime() const {
 		if (pmi_id < 0)
 			return 0;
@@ -960,6 +1087,25 @@ namespace animation {
 		}
 
 		return (int)(duration * 1000.0f);
+	}
+
+	int ModelAnimationSet::AnimationList::getModelSpawnTime() const {
+		if (pmi_id < 0)
+			return 0;
+
+		float spawnTime = 0.0f;
+
+		for (const auto& anim : animations) {
+			if (anim->m_instances[pmi_id].state == ModelAnimationState::UNTRIGGERED)
+				continue;
+
+			//The spawn time is deliberately not capped to the duration: for an auto-reversing
+			//animation the return leg plays past the one-way duration that getTime() reports
+			float localTime = (anim->m_flagData.modelSpawnTime >= 0.0f) ? anim->m_flagData.modelSpawnTime : anim->m_instances[pmi_id].duration;
+			spawnTime = spawnTime < localTime ? localTime : spawnTime;
+		}
+
+		return (int)(spawnTime * 1000.0f);
 	}
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
@@ -1022,6 +1168,10 @@ namespace animation {
 
 			return getAll(pmi, type, subtype);
 
+		case ModelAnimationTriggerType::WeaponWarmup:
+			//Weapon-owned animations have no subtype
+			return getAll(pmi, type);
+
 		case ModelAnimationTriggerType::DockBayDoor:
 			//Index of the dock bay door
 			subtype = atoi(triggeredBy.c_str());
@@ -1033,6 +1183,17 @@ namespace animation {
 		case ModelAnimationTriggerType::TurretFired:
 		case ModelAnimationTriggerType::TurretFiring: {
 			//Name of the turret subsys that needs to be firing
+			SCP_string name(triggeredBy);
+			SCP_tolower(name);
+
+			return get(pmi, type, name);
+		}
+
+		case ModelAnimationTriggerType::WeaponReload: {
+			//The name of the turret subsys, or the index of the secondary bank
+			if (can_construe_as_integer(triggeredBy.c_str()))
+				return getAll(pmi, type, atoi(triggeredBy.c_str()), true);
+
 			SCP_string name(triggeredBy);
 			SCP_tolower(name);
 
@@ -1172,7 +1333,9 @@ namespace animation {
 	{ModelAnimationTriggerType::Scripted, {"scripted", false}},
 	{ModelAnimationTriggerType::TurretFired, {"turret-fired", true}},
 	{ModelAnimationTriggerType::PrimaryFired,   {"primary-fired", true}},
-	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}}
+	{ModelAnimationTriggerType::SecondaryFired, {"secondary-fired", true}},
+	{ModelAnimationTriggerType::WeaponWarmup, {"weapon-warmup", false}},
+	{ModelAnimationTriggerType::WeaponReload, {"weapon-reload", true}}
 	};
 
 	ModelAnimationTriggerType anim_match_type(const char* p)
@@ -1358,6 +1521,20 @@ namespace animation {
 				name = parsedname;
 				break;
 			}
+			case ModelAnimationTriggerType::WeaponReload: {
+				//The name of the turret subsys, or the index of the secondary bank
+				char parsedname[NAME_LENGTH];
+				stuff_string(parsedname, F_NAME, NAME_LENGTH);
+
+				if (can_construe_as_integer(parsedname))
+					subtype = atoi(parsedname);
+				else {
+					strlwr(parsedname);
+					name = parsedname;
+				}
+
+				break;
+			}
 
 			case ModelAnimationTriggerType::Initial:
 			case ModelAnimationTriggerType::Afterburner:
@@ -1374,6 +1551,18 @@ namespace animation {
 			for (const auto& flag : unparsed) {
 				error_display(0, "Unknown flag %s in flag list!", flag.c_str());
 			}
+
+			if (animation->m_flags[Animation_Flags::Seamless_forward_shutdown] && !animation->m_flags[Animation_Flags::Seamless_with_startup]) {
+				error_display(0, "Animation flag \"seamless forward shutdown\" requires \"seamless with startup\". Ignoring it.");
+				animation->m_flags.set(Animation_Flags::Seamless_forward_shutdown, false);
+			}
+		}
+
+		if (optional_string("+Model Spawn Time:")) {
+			stuff_float(&animation->m_flagData.modelSpawnTime);
+
+			if (type != ModelAnimationTriggerType::WeaponReload)
+				error_display(0, "+Model Spawn Time: is only used by %s animations.", Animation_types.at(ModelAnimationTriggerType::WeaponReload).first);
 		}
 
 		if (Animation_types.find(type)->second.second) {
@@ -1834,6 +2023,7 @@ namespace animation {
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
+		{"$Spin Up:", 			ModelAnimationSegmentSpinUp::parser},
 		{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
 		{"$Particles During:", 		ModelAnimationSegmentParticlesDuring::parser},

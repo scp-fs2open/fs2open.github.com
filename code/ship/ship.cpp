@@ -425,6 +425,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "starts locked",              Model::Subsystem_Flags::Turret_locked,                      true, false },
 	{ "no aggregate",			    Model::Subsystem_Flags::No_aggregate,		                true, false },
 	{ "wait for animation",         Model::Subsystem_Flags::Turret_anim_wait,                   true, false },
+	{ "show external weapon model", Model::Subsystem_Flags::Show_external_weapon_model,         true, false },
 	{ "play fire sound for player", Model::Subsystem_Flags::Player_turret_sound,                true, false },
 	{ "only target if can fire",    Model::Subsystem_Flags::Turret_only_target_if_can_fire,     true, false },
 	{ "no disappear",			    Model::Subsystem_Flags::No_disappear,                       true, false },
@@ -5615,6 +5616,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				//If we've set any subsystem as landable, set a ship-info flag as a shortcut for later
 				if (sp->flags[Model::Subsystem_Flags::Allow_landing])
 					sip->flags.set(Ship::Info_Flags::Allow_landings);
+
+				//Turrets showing external weapon models render through the same path as bank weapon models
+				if (sp->flags[Model::Subsystem_Flags::Show_external_weapon_model])
+					sip->flags.set(Ship::Info_Flags::Draw_weapon_models);
 			}
 
 			if (turret_has_barrel_fov)
@@ -6983,6 +6988,7 @@ void ship::clear()
 	}
 
 	secondary_point_reload_pct.init(0, 0, 0.0f);
+	secondary_point_reload_stamp.init(0, 0, 0);
 	// ---------- done with weapons init
 
 	shield_hits = 0;
@@ -7483,6 +7489,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 			max_points_per_bank = num_slots;
 	}
 	shipp->secondary_point_reload_pct.init(sip->num_secondary_banks, max_points_per_bank, 1.0f);
+	shipp->secondary_point_reload_stamp.init(sip->num_secondary_banks, max_points_per_bank, 0);
 
 	shipp->armor_type_idx = sip->armor_type_idx;
 	shipp->shield_armor_type_idx = sip->shield_armor_type_idx;
@@ -7737,6 +7744,11 @@ void ship_subsys::clear()
 
 	turret_animation_position = MA_POS_NOT_SET;
 	turret_animation_done_time = 0;
+
+	for (i = 0; i < MAX_TFP; i++) {
+		turret_external_weapon_state[i] = TurretExternalWeaponState::LOADED;
+		turret_external_weapon_reload_stamp[i] = 0;
+	}
 
 	for (i = 0; i < MAX_TFP; i++)
 		turret_swarm_info_index[i] = -1;
@@ -8686,6 +8698,7 @@ void ship_delete( object * obj )
 	{
 		if (ext.model_instance >= 0)
 		{
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext.model_instance));
 			model_delete_instance(ext.model_instance);
 			ext.model_instance = -1;
 		}
@@ -8694,6 +8707,7 @@ void ship_delete( object * obj )
 	{
 		if (ext.model_instance >= 0)
 		{
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext.model_instance));
 			model_delete_instance(ext.model_instance);
 			ext.model_instance = -1;
 		}
@@ -10541,13 +10555,13 @@ void ship_do_thruster_sounds(object *obj)
 	}
 }
 
-void update_external_weapon_spin(ship *shipp, float frametime);
+void update_external_weapon_animations(ship *shipp, float frametime);
 
 void ship_process_pre(object *obj, float frametime)
 {
-	// update the external weapon model spin before any firing attempts this frame
+	// update the external weapon model animations before any firing attempts this frame
 	if ( (obj != nullptr) && (obj->type == OBJ_SHIP) && (frametime != 0.0f) )
-		update_external_weapon_spin(&Ships[obj->instance], frametime);
+		update_external_weapon_animations(&Ships[obj->instance], frametime);
 
 	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
 	if (MULTIPLAYER_CLIENT)
@@ -10680,47 +10694,116 @@ void update_firing_sounds(object* objp, ship* shipp)
 	}
 }
 
-// Spins the Gun_rotation submodels of external weapon models up or down.  A bank that tried to
-// fire this frame requests spin-up (see ship_fire_primary, which also refuses to fire until the
-// barrels are up to speed); all other banks wind down.  Only primary banks spin.
-void update_external_weapon_spin(ship *shipp, float frametime)
+// Updates the animation state of one bank's external weapon model: makes sure the bank's model
+// instance exists, starts or winds down the weapon's warmup animations based on whether the
+// bank tried to fire this frame, and steps the instance's running animations.
+static void update_external_weapon_bank_animations(external_weapon_state *ext, int weapon_idx, float frametime)
+{
+	if (weapon_idx < 0)
+	{
+		ext->warmup_requested = false;
+		return;
+	}
+
+	weapon_info *wip = &Weapon_info[weapon_idx];
+
+	// the instance is also created at render time, but a ship that is never rendered still
+	// needs its animations (and the warmup firing gate) to work
+	int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+	int instance_num = ship_get_external_weapon_model_instance(ext, weapon_idx, display_model_num);
+
+	if (instance_num < 0)
+		return;
+
+	polymodel_instance *pmi = model_get_instance(instance_num);
+
+	bool warmup_wanted = ext->warmup_requested;
+	ext->warmup_requested = false;
+
+	if (warmup_wanted != ext->warmup_active)
+	{
+		auto warmup_anims = wip->animations.getAll(pmi, animation::ModelAnimationTriggerType::WeaponWarmup);
+		if (warmup_wanted)
+			warmup_anims.start(animation::ModelAnimationDirection::FWD);
+		else
+			warmup_anims.startShutdown();
+		ext->warmup_active = warmup_wanted;
+	}
+
+	animation::ModelAnimation::stepAnimations(frametime, pmi);
+}
+
+// Progresses the external weapon model state of one turret: firing points emptied by firing
+// become loaded again once the turret's post-firing animations complete, playing the
+// weapon-reload animation first if the ship has one.  The weapon model reappears when the
+// reload animation completes, since the animation may show the round being moved into place.
+static void update_turret_external_weapon_models(ship *shipp, ship_subsys *pss)
+{
+	model_subsystem *tp = pss->system_info;
+
+	if ( !(tp->flags[Model::Subsystem_Flags::Show_external_weapon_model]) || tp->turret_num_firing_points < 1 )
+		return;
+
+	auto sip_anims = &Ship_info[shipp->ship_info_index].animations;
+	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
+
+	// lazily computed: the model may not reappear while the turret's firing (door) or
+	// post-firing animations are still playing
+	bool anims_checked = false;
+	bool anims_idle = false;
+
+	for (int k = 0; k < tp->turret_num_firing_points; k++)
+	{
+		auto &state = pss->turret_external_weapon_state[k];
+
+		if (state == TurretExternalWeaponState::EMPTY)
+		{
+			if (!anims_checked)
+			{
+				//For legacy animations using subtype for turret number
+				anims_idle = !(sip_anims->getAll(pmi, animation::ModelAnimationTriggerType::TurretFiring, tp->subobj_num, true)
+					//For modern animations using proper triggered-by-subsys name
+					+ sip_anims->get(pmi, animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(tp))).anyActive()
+					&& !sip_anims->get(pmi, animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(tp)).anyActive();
+				anims_checked = true;
+			}
+
+			if (anims_idle)
+			{
+				auto reload_anims = sip_anims->get(pmi, animation::ModelAnimationTriggerType::WeaponReload, animation::anim_name_from_subsys(tp));
+				if (reload_anims.start(animation::ModelAnimationDirection::FWD, true))
+				{
+					state = TurretExternalWeaponState::RELOADING;
+					pss->turret_external_weapon_reload_stamp[k] = timestamp(reload_anims.getModelSpawnTime());
+				}
+				else
+					state = TurretExternalWeaponState::LOADED;
+			}
+		}
+		else if (state == TurretExternalWeaponState::RELOADING)
+		{
+			if (timestamp_elapsed(pss->turret_external_weapon_reload_stamp[k]))
+				state = TurretExternalWeaponState::LOADED;
+		}
+	}
+}
+
+// Updates the animations of all of a ship's external weapon models.  A bank that tried to fire
+// this frame starts its warmup animations (see ship_fire_primary, which also refuses to fire
+// until they are fully started); all other banks wind theirs down.  Turret firing points
+// emptied by firing reload once the turret's post-firing animations complete.
+void update_external_weapon_animations(ship *shipp, float frametime)
 {
 	ship_weapon *swp = &shipp->weapons;
 
 	for (int i = 0; i < swp->num_primary_banks; i++)
-	{
-		auto &ext = swp->primary_bank_external_weapon[i];
+		update_external_weapon_bank_animations(&swp->primary_bank_external_weapon[i], swp->primary_bank_weapons[i], frametime);
 
-		if (swp->primary_bank_weapons[i] < 0)
-		{
-			ext.rotate_rate = 0.0f;
-			ext.spin_up_requested = false;
-			continue;
-		}
+	for (int i = 0; i < swp->num_secondary_banks; i++)
+		update_external_weapon_bank_animations(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], frametime);
 
-		auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
-		if (ext.spin_up_requested && wip->weapon_submodel_rotate_vel > 0.0f)
-		{
-			ext.rotate_rate += wip->weapon_submodel_rotate_accell * frametime;
-			if (ext.rotate_rate > wip->weapon_submodel_rotate_vel)
-				ext.rotate_rate = wip->weapon_submodel_rotate_vel;
-		}
-		else if (ext.rotate_rate > 0.0f)
-		{
-			ext.rotate_rate -= wip->weapon_submodel_rotate_accell * frametime;
-			if (ext.rotate_rate < 0.0f)
-				ext.rotate_rate = 0.0f;
-		}
-		ext.spin_up_requested = false;
-
-		if (ext.rotate_rate > 0.0f)
-		{
-			ext.rotate_ang += ext.rotate_rate * frametime;
-			while (ext.rotate_ang > PI2)
-				ext.rotate_ang -= PI2;
-		}
-	}
+	for (auto pss: list_range(&shipp->subsys_list))
+		update_turret_external_weapon_models(shipp, pss);
 }
 
 // This was previously part of obj_move_call_physics(), but secondary_point_reload_pct is only used for rendering and has nothing to do with physics at all.
@@ -12708,7 +12791,7 @@ static int ship_stop_fire_primary_bank(object * obj, int bank_to_stop)
 
 	shipp = &Ships[obj->instance];
 
-	// (external weapon model spin-down is handled by update_external_weapon_spin)
+	// (external weapon model warmup shutdown is handled by update_external_weapon_animations)
 
 	if(shipp->was_firing_last_frame[bank_to_stop] == 0)
 		return 0;
@@ -13039,13 +13122,14 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
 		}
 
-		if (winfo_p->weapon_submodel_rotate_vel > 0.0f) {
+		if (!winfo_p->animations.isEmpty()) {
 			auto &ext = swp->primary_bank_external_weapon[bank_to_fire];
 
-			// spin up the Gun_rotation submodels (see update_external_weapon_spin), and
-			// don't fire until the barrels are up to speed
-			ext.spin_up_requested = true;
-			if (ext.rotate_rate < winfo_p->weapon_submodel_rotate_vel)
+			// start the weapon's warmup animations (see update_external_weapon_animations), and
+			// don't fire until they are fully started
+			ext.warmup_requested = true;
+			if (ext.model_instance >= 0
+					&& !winfo_p->animations.getAll(model_get_instance(ext.model_instance), animation::ModelAnimationTriggerType::WeaponWarmup).isFullyStarted())
 				continue;
 		}
 		// if this is a targeting laser, start it up   ///- only targeting laser if it is tag-c, otherwise it's a fighter beam -Bobboau
@@ -13857,6 +13941,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if (banks_fired & (1 << bank)) {
 				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+
+				// also fire any primary-fired animations on the weapon's own external model (e.g. recoil)
+				int fired_weapon = shipp->weapons.primary_bank_weapons[bank];
+				if (fired_weapon >= 0 && shipp->weapons.primary_bank_external_weapon[bank].model_instance >= 0) {
+					Weapon_info[fired_weapon].animations.getAll(model_get_instance(shipp->weapons.primary_bank_external_weapon[bank].model_instance), animation::ModelAnimationTriggerType::PrimaryFired).start(animation::ModelAnimationDirection::FWD, true);
+				}
+
 				firedWeapons.emplace_back(shipp->weapons.primary_bank_weapons[bank]);
 			}
 		}
@@ -14440,6 +14531,17 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				pnt_index = 0;
 			}
 			shipp->secondary_point_reload_pct.set(bank, pnt_index, 0.0f);
+
+			// a weapon-reload animation replaces the slide-back reload visual: start it and
+			// keep this point's missile hidden until it completes
+			{
+				auto reload_anims = sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::WeaponReload, bank, true);
+				if (!reload_anims.isEmpty()) {
+					reload_anims.start(animation::ModelAnimationDirection::FWD, true);
+					shipp->secondary_point_reload_stamp.set(bank, pnt_index, timestamp(reload_anims.getModelSpawnTime()));
+				}
+			}
+
 			pnt = pm->missile_banks[bank].pnt[pnt_index];
 			vec3d dir;
 			dir = pm->missile_banks[bank].norm[pnt_index];
@@ -14623,6 +14725,11 @@ done_secondary:
 
 		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 		sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+
+		// also fire any secondary-fired animations on the weapon's own external model (e.g. launcher recoil)
+		if (swp->secondary_bank_external_weapon[bank].model_instance >= 0) {
+			wip->animations.getAll(model_get_instance(swp->secondary_bank_external_weapon[bank].model_instance), animation::ModelAnimationTriggerType::SecondaryFired).start(animation::ModelAnimationDirection::FWD, true);
+		}
 
 		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnSecondaryFired->isActive()) {
 			auto param_list = scripting::hook_param_list(
@@ -21679,47 +21786,59 @@ void ship_render_batch_thrusters(object *obj)
 	}
 }
 
-// Lazily creates the model instance used to spin the Gun_rotation submodels of the external
-// weapon model in the given primary bank, recreating it if the bank's weapon has changed since
-// the last call (weapons can be swapped mid-mission by SEXPs, scripts, or rearming).  The ideal
-// place to create the instance would be in parse_object_create_sub, but the player can alter
-// the ship loadout after that function runs.
+// Lazily creates the model instance used to animate a bank's external weapon model (spinning
+// Gun_rotation submodels or playing the weapon's animations), recreating it if the bank's
+// weapon has changed since the last call (weapons can be swapped mid-mission by SEXPs, scripts,
+// or rearming).  The ideal place to create the instance would be in parse_object_create_sub,
+// but the player can alter the ship loadout after that function runs.
 // display_model_num is the model the caller renders for this bank (the weapon's external model,
 // or its own model as the fallback).
 // Returns the model instance number, or -1 if the bank's weapon doesn't need an instance.
-int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num)
+int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weapon_idx, int display_model_num)
 {
-	int weapon_idx = swp->primary_bank_weapons[bank];
-	auto &ext = swp->primary_bank_external_weapon[bank];
-
-	if (ext.model_instance_weapon != weapon_idx)
+	if (ext->model_instance_weapon != weapon_idx)
 	{
 		// the weapon changed, so any existing instance belongs to the old weapon's model
-		if (ext.model_instance >= 0)
+		if (ext->model_instance >= 0)
 		{
-			model_delete_instance(ext.model_instance);
-			ext.model_instance = -1;
+			animation::ModelAnimationSet::stopAnimations(model_get_instance(ext->model_instance));
+			model_delete_instance(ext->model_instance);
+			ext->model_instance = -1;
 		}
+		ext->warmup_requested = false;
+		ext->warmup_active = false;
 
 		if (weapon_idx >= 0 && display_model_num >= 0)
 		{
-			auto pm = model_get(display_model_num);
-
-			// create a model instance only if at least one submodel has gun rotation
-			for (int mn = 0; mn < pm->n_models; mn++)
-			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-				{
-					ext.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
-					break;
-				}
-			}
+			// create a model instance only if the weapon has animations to play on it
+			// (old-style Gun_rotation submodels get a warmup animation synthesized at page-in)
+			if (!Weapon_info[weapon_idx].animations.isEmpty())
+				ext->model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, display_model_num);
 		}
 
-		ext.model_instance_weapon = weapon_idx;
+		ext->model_instance_weapon = weapon_idx;
 	}
 
-	return ext.model_instance;
+	return ext->model_instance;
+}
+
+// Picks the weapon whose model is displayed at a turret's firing points: the first weapon
+// with a displayable model, secondaries preferred.  Returns -1 if there is none.
+static int turret_get_display_weapon(const ship_weapon *swp)
+{
+	for (int i = 0; i < swp->num_secondary_banks; i++)
+	{
+		int weapon_idx = swp->secondary_bank_weapons[i];
+		if (weapon_idx >= 0 && (Weapon_info[weapon_idx].external_model_num >= 0 || Weapon_info[weapon_idx].model_num >= 0))
+			return weapon_idx;
+	}
+	for (int i = 0; i < swp->num_primary_banks; i++)
+	{
+		int weapon_idx = swp->primary_bank_weapons[i];
+		if (weapon_idx >= 0 && (Weapon_info[weapon_idx].external_model_num >= 0 || Weapon_info[weapon_idx].model_num >= 0))
+			return weapon_idx;
+	}
+	return -1;
 }
 
 // Computes the position and orientation, in the ship model's frame, at which to render an
@@ -21766,6 +21885,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	int i,k;
 	ship_weapon *swp = &shipp->weapons;
 	auto ship_pm = model_get(sip->model_num);
+	auto ship_pmi = model_get_instance(shipp->model_instance_num);
 
 	scene->push_transform(&obj->pos, &obj->orient);
 
@@ -21789,26 +21909,9 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			continue;
 		}
 
-		int external_model_instance = ship_get_external_weapon_model_instance(swp, i, display_model_num);
+		int external_model_instance = ship_get_external_weapon_model_instance(&swp->primary_bank_external_weapon[i], swp->primary_bank_weapons[i], display_model_num);
 
 		auto bank = &ship_pm->gun_banks[i];
-
-		if ( external_model_instance >= 0 )
-		{
-			auto pmi = model_get_instance(external_model_instance);
-			auto pm = model_get(pmi->model_num);
-
-			// spin the submodels by the gun rotation
-			for (int mn = 0; mn < pm->n_models; ++mn)
-			{
-				if (pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
-				{
-					angles angs = vmd_zero_angles;
-					angs.b = swp->primary_bank_external_weapon[i].rotate_ang;
-					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
-				}
-			}
-		}
 
 		for ( k = 0; k < bank->num_slots; k++ ) {
 			vec3d slot_pnt;
@@ -21832,6 +21935,8 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 			continue;
 		}
 
+		int external_model_instance = ship_get_external_weapon_model_instance(&swp->secondary_bank_external_weapon[i], swp->secondary_bank_weapons[i], display_model_num);
+
 		auto bank = &ship_pm->missile_banks[i];
 
 		if (wip->wi_flags[Weapon::Info_Flags::External_weapon_lnch]) {
@@ -21840,30 +21945,86 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 				matrix slot_orient;
 				ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
 		} else {
 			auto weapon_pm = model_get(display_model_num);
 			int num_secondaries_rendered = 0;
+
+			// a weapon-reload animation replaces the slide-back reload visual: reloading
+			// points are hidden until the animation completes
+			bool anim_reload = !sip->animations.getAll(ship_pmi, animation::ModelAnimationTriggerType::WeaponReload, i, true).isEmpty();
 
 			for ( k = 0; k < bank->num_slots; k++ ) {
 				if ( num_secondaries_rendered >= shipp->weapons.secondary_bank_ammo[i] ) {
 					break;
 				}
 
-				float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
-				if ( reload_pct <= 0.0f ) {
-					continue;
+				float reload_slide_back = 0.0f;
+
+				if (anim_reload) {
+					if ( !timestamp_elapsed(shipp->secondary_point_reload_stamp.get(i, k)) ) {
+						continue;
+					}
+				} else {
+					float reload_pct = shipp->secondary_point_reload_pct.get(i, k);
+					if ( reload_pct <= 0.0f ) {
+						continue;
+					}
+					reload_slide_back = (1.0f - reload_pct) * weapon_pm->rad;
 				}
 
 				num_secondaries_rendered++;
 
 				vec3d slot_pnt;
 				matrix slot_orient;
-				ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
+				ship_get_weapon_model_slot_transform(bank, k, reload_slide_back, &slot_pnt, &slot_orient);
 
-				model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
+				model_render_queue(ship_render_info, scene, display_model_num, external_model_instance, &slot_orient, &slot_pnt);
 			}
+		}
+	}
+
+	//turret weapons
+	for (ship_subsys *pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss)) {
+		auto tp = pss->system_info;
+
+		if ( !(tp->flags[Model::Subsystem_Flags::Show_external_weapon_model]) )
+			continue;
+		if ( tp->turret_num_firing_points < 1 || tp->turret_gun_sobj < 0 )
+			continue;
+
+		// don't show weapons on a destroyed turret
+		if ( pss->max_hits > 0.0f && pss->current_hits <= 0.0f )
+			continue;
+
+		int weapon_idx = turret_get_display_weapon(&pss->weapons);
+		if ( weapon_idx < 0 )
+			continue;
+		auto wip = &Weapon_info[weapon_idx];
+
+		// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+		int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+		if ( display_model_num < 0 )
+			continue;
+
+		for ( k = 0; k < tp->turret_num_firing_points; k++ ) {
+			if ( pss->turret_external_weapon_state[k] != TurretExternalWeaponState::LOADED )
+				continue;
+
+			// the firing points are in the turret gun submodel's frame, so transform them
+			// (and the firing normal) through the submodel chain into the ship's frame
+			vec3d slot_pnt;
+			model_instance_local_to_global_point(&slot_pnt, &tp->turret_firing_point[k], ship_pm, ship_pmi, tp->turret_gun_sobj);
+
+			vec3d fire_dir;
+			model_instance_local_to_global_dir(&fire_dir, &tp->turret_norm, ship_pm, ship_pmi, tp->turret_gun_sobj);
+			vm_vec_normalize_safe(&fire_dir);
+
+			matrix slot_orient;
+			vm_vector_2_matrix_norm(&slot_orient, &fire_dir);
+
+			model_render_queue(ship_render_info, scene, display_model_num, &slot_orient, &slot_pnt);
 		}
 	}
 

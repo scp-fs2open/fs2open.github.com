@@ -75,6 +75,7 @@ namespace Model {
 		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
 		Burst_ignores_RoF_Mult,		// The turret's fire rate multiplier won't affect burst delay.
+		Show_external_weapon_model,	// render the turret's weapon model at each loaded firing point; firing points empty when fired and reload after the post-firing animations -- Goober5000
 
         NUM_VALUES
 	};

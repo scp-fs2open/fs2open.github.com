@@ -49,6 +49,8 @@ namespace animation {
 		TurretFired,	 // Triggered after a turret has fired -The E
 		PrimaryFired,    // Triggered when a primary weapon has fired.
 		SecondaryFired,  // Triggered when a secondary weapon has fired.
+		WeaponWarmup,	 // Weapon-owned animations (on the weapon's external model): plays while the weapon's bank is trying to fire; the bank holds fire until the animation is fully started (e.g. gatling barrel spin-up).
+		WeaponReload,	 // Plays while a firing point reloads its external weapon model, which reappears when the animation completes.  Keyed by turret subsystem name for turrets (see the "show external weapon model" subsystem flag), or by secondary bank index for ship weapon banks (replacing the slide-back reload visual).
 
 		MaxAnimationTypes
 	};
@@ -60,6 +62,7 @@ namespace animation {
 		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
 		Pause_on_reverse,		//Will cause any start in RWD direction to behave as a call to pause the animation. Required (and also only really useful) when a looping animation is supposed to be triggered by an internal engine trigger
 		Seamless_with_startup,	//Provides automatic handling of animations that loop with an initialization part (effectively looping from a specific time)
+		Seamless_forward_shutdown,	//While a Seamless_with_startup animation plays its shutdown (or is otherwise reversed), mirror its motion about the pose where the reversal began, so that the motion continues forward while winding down (e.g. decelerating gun barrels) instead of retracing backwards. Requires Seamless_with_startup.
 		NUM_VALUES
 	};
 
@@ -216,6 +219,7 @@ namespace animation {
 			float duration = 0.0f;
 			flagset<animation::Animation_Instance_Flags> instance_flags;
 			float speed = 1.0f;
+			float reverseStartTime = 0.0f;	//the time at which the animation last started playing in reverse; the mirror pivot for Seamless_forward_shutdown
 		};
 
 	private:
@@ -237,11 +241,16 @@ namespace animation {
 		struct {
 			//Seamless_with_startup
 			float loopsFrom = 0.0f;
+			//WeaponReload: the time in seconds at which the external weapon model reappears (e.g. the moment
+			//an auto-reversing loader arm places the round), or -1 to reappear when the animation completes
+			float modelSpawnTime = -1.0f;
 		} m_flagData;
 
 	private:
 		static void driverTime(ModelAnimation& anim, instance_data& instance, polymodel_instance* pmi, float frametime);
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
+		//Calculates the animation at the given time into the buffer, applying the Seamless_forward_shutdown mirror if applicable
+		void calculateCurrentAnimation(ModelAnimationSubmodelBuffer& applyBuffer, float time, polymodel_instance* pmi);
 
 		//The main driver for the animation "time"
 		std::function<void(ModelAnimation&, instance_data&, polymodel_instance*, float)> m_driver = driverTime;
@@ -266,7 +275,11 @@ namespace animation {
 		void stop(polymodel_instance* pmi, bool cleanup = true, bool forceStop = false);
 
 		float getTime(int pmi_id) const;
-		
+
+		//True once the animation has finished starting up: for Seamless_with_startup animations, once it is playing forward in the seamless loop portion;
+		//for other animations, once it has completed.  Used to gate things (like weapon fire) on an animation being "up to speed".
+		bool isFullyStarted(int pmi_id) const;
+
 		static void stepAnimations(float frametime, polymodel_instance* pmi);
 
 		unsigned int id = 0;
@@ -348,7 +361,16 @@ namespace animation {
 		public:
 			inline AnimationList() : AnimationList(-1) {}
 			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
+			//Winds the animations down: looping animations stop once their current loop completes (entering their shutdown for seamless animations), others play in reverse
+			void startShutdown() const;
 			int getTime() const;
+			//Like getTime, but honors each animation's +Model Spawn Time: for when the external weapon model should reappear
+			int getModelSpawnTime() const;
+			//True once every animation in the list is fully started (see ModelAnimation::isFullyStarted); true for an empty list
+			bool isFullyStarted() const;
+			//True if any animation in the list has been triggered and has not yet fully reset
+			bool anyActive() const;
+			inline bool isEmpty() const { return animations.empty(); }
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
 			void setSpeed(float speed = 1.0f) const;
 			AnimationList& operator+=(const AnimationList& rhs);
@@ -401,8 +423,6 @@ namespace animation {
 		static SCP_unordered_map<SCP_string, ParsedModelAnimation> s_animationsById;
 		static SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> s_moveablesById;
 
-		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
-
 		//Internal Parsing Methods
 		static void parseSingleAnimation();
 		static void parseSingleMoveable();
@@ -410,6 +430,8 @@ namespace animation {
 
 
 	public:
+		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
+
 		std::shared_ptr<ModelAnimationSegment> parseSegment();
 		//Per Animation parsing Data
 		SCP_string m_animationName;
