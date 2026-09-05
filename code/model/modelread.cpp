@@ -3529,6 +3529,12 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		pm->shield_bvh = std::make_shared<bvh_tree>(bvh_build(std::move(shield_tris)));
 	}
 
+	// Top-level BVH over every non-root submodel's own box, rest pose (no instance exists yet to
+	// rotate/translate anything) -- see model_collide_get_submodel_bvh() in modelcollide.cpp, which
+	// uses this whenever a whole-model collision query has no polymodel_instance.
+	model_collide_build_submodel_bvh(
+		pm, nullptr, pm->detail[0], pm->submodel_bvh_restpose, pm->submodel_bvh_restpose_transforms);
+
 	// clear bsp_data cache -- only needed transiently to get here (parsing it built each submodel's
 	// point_list/poly_centers and fed the BVH build and the collision_rad computation above), and
 	// every live consumer past this point (the triangle_bvh, submodel_get_random_point()/

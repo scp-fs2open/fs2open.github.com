@@ -23,6 +23,7 @@
 #include "io/timer.h"
 #include "model/model_flags.h"
 #include "model/modelbvh.h"
+#include "model/modellbvh.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "particle/particle.h"
@@ -200,6 +201,17 @@ public:
 	}
 };
 
+// Cumulative transform for one submodel, expressed the same way modelcollide.cpp's Mc_orient/Mc_base
+// already are: rotating a world-space ray already placed in the ship's top-level (detail[0]) local
+// frame directly into this submodel's own local frame, composed through every ancestor's own
+// rotation/offset. Paired 1:1 (by submodel index) with a polymodel/polymodel_instance's top-level
+// submodel BVH (see modelcollide.cpp's model_collide_get_submodel_bvh()) so a query that finds this
+// submodel as a BVH candidate can jump straight to testing it without re-walking its ancestor chain.
+struct submodel_top_level_transform {
+	matrix orient = vmd_identity_matrix;
+	vec3d base = vmd_zero_vector;
+};
+
 // Data specific to a particular instance of a model.
 struct polymodel_instance
 {
@@ -209,7 +221,17 @@ struct polymodel_instance
 
 	std::shared_ptr<model_texture_replace> texture_replace = nullptr;
 
-	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox) 
+	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox)
+
+	// Per-frame top-level submodel BVH cache -- see polymodel::submodel_bvh_restpose for the
+	// no-instance equivalent, and modelcollide.cpp's model_collide_get_submodel_bvh() for how this
+	// gets (re)built. Submodels can rotate/translate at runtime, so unlike the rest-pose version this
+	// can't be built once at load time; instead it's rebuilt lazily on first use each frame (checked
+	// against the global Framecount) and reused by every collision query against this instance for
+	// the rest of that frame.
+	std::unique_ptr<lbvh_tree> submodel_bvh_cache;
+	SCP_vector<submodel_top_level_transform> submodel_bvh_cache_transforms;
+	int submodel_bvh_cache_frame = -1;
 };
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -924,6 +946,15 @@ public:
 	std::shared_ptr<bvh_tree> shield_bvh;			// per-triangle BVH over the shield mesh, built at load time (see modelread.cpp)
 	SCP_vector<vec3d>		shield_points;
 
+	// Top-level BVH over every submodel's own bounding box (excluding detail[0] itself), rest-pose
+	// (identity rotation/offset throughout). Used only when a model_collide() call has no
+	// polymodel_instance (Mc_pmi == nullptr) -- submodels can't move without one, so this is built
+	// once here at load time rather than needing the per-frame refresh polymodel_instance's own copy
+	// does (see modelcollide.cpp's model_collide_get_submodel_bvh()). Parallel-indexed by submodel
+	// number, matching lbvh_item::submodel_index.
+	lbvh_tree submodel_bvh_restpose;
+	SCP_vector<submodel_top_level_transform> submodel_bvh_restpose_transforms;
+
 	int			n_paths;
 	std::shared_ptr<model_path[]>	paths;
 
@@ -1435,6 +1466,18 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
+
+// Builds a top-level BVH over every submodel reachable from root_mn's own children (root_mn itself
+// is excluded -- callers already test it separately), for use by model_collide()'s whole-model query
+// path (see model_collide_get_submodel_bvh() in modelcollide.cpp). pmi may be null (rest-pose only,
+// identity transforms throughout) -- used both for polymodel::submodel_bvh_restpose (built once at
+// load time in modelread.cpp) and polymodel_instance::submodel_bvh_cache (rebuilt lazily once per
+// frame in modelcollide.cpp, since submodels can rotate/translate when an instance exists).
+// out_transforms is sized to pm->n_models; only reachable, non-No_collisions (and, when pmi is
+// non-null, non-blown_off) submodels get a populated entry -- matches which submodels end up in the
+// tree.
+void model_collide_build_submodel_bvh(polymodel *pm, polymodel_instance *pmi, int root_mn, lbvh_tree &out_tree,
+	SCP_vector<submodel_top_level_transform> &out_transforms);
 
 
 typedef struct mst_info {

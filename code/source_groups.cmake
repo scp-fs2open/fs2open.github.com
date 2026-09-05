@@ -982,6 +982,8 @@ add_file_folder("Model"
 add_file_folder("Model BVH"
 	model/modelbvh.h
 	model/modelbvh.cpp
+	model/modellbvh.h
+	model/modellbvh.cpp
 )
 
 # Model Animation files

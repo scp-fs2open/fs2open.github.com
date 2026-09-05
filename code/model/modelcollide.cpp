@@ -13,6 +13,7 @@
 #define MODEL_LIB
 
 #include "cmdline/cmdline.h"
+#include "globalincs/systemvars.h" // for Framecount -- see model_collide_get_submodel_bvh()
 #include "graphics/tmapper.h"
 #include "math/fvi.h"
 #include "math/vecmat.h"
@@ -44,6 +45,20 @@ thread_local static float		Mc_mag;			// The length of the ray
 thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
 thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
+
+// Set only around model_collide()'s single top-level mc_check_subobj(Mc_pm->detail[0]) call for the
+// whole-model query shape (MC_CHECK_MODEL, neither MC_SUBMODEL nor MC_SUBMODEL_INSTANCE) -- tells
+// mc_check_subobj()'s children-walk to use the flat top-level submodel BVH (see
+// mc_check_children_via_toplevel_bvh()) instead of its own recursive first_child/next_sibling walk.
+// Left false for MC_SUBMODEL_INSTANCE (which can start at an arbitrary, non-root submodel, and whose
+// narrower subtree wasn't the profiled cost driver this exists for), so that path's recursion is
+// untouched.
+thread_local static bool Mc_use_toplevel_bvh_for_children = false;
+
+// TEMPORARY: A/B validation toggle for the top-level submodel LBVH vs the legacy per-submodel
+// recursive walk it replaces for the whole-model query shape -- non-static so a correctness/
+// benchmark test can flip it. Remove once trusted (see test_modelcollide_toplevel_bvh.cpp).
+thread_local bool Mc_force_legacy_submodel_walk = false;
 
 // mc_check_triangle_face() vs mc_check_triangle_sphereline_face(): resolved once per
 // model_collide() call, not per triangle visited -- Mc->flags is invariant for the whole call, so
@@ -922,32 +937,21 @@ void mc_check_shield()
 }
 
 
-// This function recursively checks a submodel and its children
-// for a collision with a vector.
-void mc_check_subobj( int mn )
+// Tests submodel mn's own geometry (bounding box, LOD selection, triangle_bvh; also the detail[0]
+// root's whole-model bbox pre-check and shield-check-and-return), assuming Mc_orient/Mc_base are
+// already set for mn's own frame -- either by mc_check_subobj()'s incremental per-level accumulation,
+// or (for the whole-model query's flattened path) by mc_check_children_via_toplevel_bvh() jumping
+// directly to a submodel's precomputed cumulative transform. Returns false for the 3 cases that mean
+// "don't check this submodel's children either" (a null ray in this frame, the whole-model bbox
+// pre-check missing at the root, or the root's shield check firing) -- true otherwise, matching
+// mc_check_subobj()'s own original fall-through-to-NoHit-vs-early-return distinction.
+static bool mc_check_subobj_own_geometry(int mn)
 {
 	vec3d tempv;
-	vec3d hitpt;		// used in bounding box check
-	bsp_info * sm;
-	int i;
+	vec3d hitpt; // used in bounding box check
+	bsp_info *sm = &Mc_pm->submodel[mn];
 
-	Assert( mn >= 0 );
-	Assert( mn < Mc_pm->n_models );
-	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
-	
-	sm = &Mc_pm->submodel[mn];
-	if (sm->flags[Model::Submodel_flags::No_collisions]) return; // don't do collisions
-	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
-
-	if (Mc->flags & MC_RESPECT_DETAIL_BOX_SPHERE) {
-		vec3d local;
-		vm_vec_sub(&local, &Eye_position, Mc->pos);
-		vm_vec_rotate(&local, &local, Mc->orient);
-		if (!model_render_check_detail_box(&local, Mc_pm, mn, MR_NORMAL))
-			goto NoHit; //This submodel is a detail box that is not displayed, skip it
-	}
-
-	// Rotate the world check points into the current subobject's 
+	// Rotate the world check points into the current subobject's
 	// frame of reference.
 	// After this block, Mc_p0, Mc_p1, Mc_direction, and Mc_mag are correct
 	// and relative to this subobjects' frame of reference.
@@ -959,56 +963,47 @@ void mc_check_subobj( int mn )
 	vm_vec_sub(&Mc_direction, &Mc_p1, &Mc_p0);
 
 	// bail early if no ray exists
-	if ( IS_VEC_NULL(&Mc_direction) ) {
-		return;
+	if (IS_VEC_NULL(&Mc_direction)) {
+		return false;
 	}
 
-	if (Mc_pm->detail[0] == mn)	{
+	if (Mc_pm->detail[0] == mn) {
 		// Quickly bail if we aren't inside the full model bbox
-		if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))	{
-			return;
+		if (!mc_ray_boundingbox(&Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL)) {
+			return false;
 		}
 
-		// If we are checking the root submodel, then we might want to check	
+		// If we are checking the root submodel, then we might want to check
 		// the shield at this point
-		if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 )) {
+		if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0)) {
 			mc_check_shield();
-			return;
+			return false;
 		}
 	}
 
 	if (!(Mc->flags & MC_CHECK_MODEL)) {
-		return;
+		return false;
 	}
-	
+
 	Mc_submodel = mn;
 
 	// Check if the ray intersects this subobject's bounding box
-	if ( mc_ray_boundingbox(&sm->min, &sm->max, &Mc_p0, &Mc_direction, &hitpt) ) {
+	if (mc_ray_boundingbox(&sm->min, &sm->max, &Mc_p0, &Mc_direction, &hitpt)) {
 		if (Mc->flags & MC_ONLY_BOUND_BOX) {
-			float dist = vm_vec_dist( &Mc_p0, &hitpt );
+			float dist = vm_vec_dist(&Mc_p0, &hitpt);
 
-			// If the ray is behind the plane there is no collision
-			if (dist < 0.0f) {
-				goto NoHit;
+			// If the ray is behind the plane there is no collision, or isn't long enough to reach
+			// it, or a closer intersection has already been found -- none of these skip children.
+			if (dist >= 0.0f && ((Mc->flags & MC_CHECK_RAY) || dist <= Mc_mag) &&
+				!(Mc->num_hits && dist >= Mc->hit_dist)) {
+				Mc->hit_dist = dist;
+				Mc->hit_point = hitpt;
+				Mc->hit_submodel = Mc_submodel;
+				Mc->hit_bitmap = -1;
+				Mc->num_hits++;
 			}
-
-			// The ray isn't long enough to intersect the plane
-			if ( !(Mc->flags & MC_CHECK_RAY) && (dist > Mc_mag) ) {
-				goto NoHit;
-			}
-
-			// If the ray hits, but a closer intersection has already been found, return
-			if ( Mc->num_hits && (dist >= Mc->hit_dist) ) {
-				goto NoHit;
-			}
-
-			Mc->hit_dist = dist;
-			Mc->hit_point = hitpt;
-			Mc->hit_submodel = Mc_submodel;
-			Mc->hit_bitmap = -1;
-			Mc->num_hits++;
-		} else if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (vm_vec_dist(&Mc_p0, &hitpt) >= Mc->hit_dist)) {
+		} else if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits &&
+				   ((vm_vec_dist(&Mc_p0, &hitpt) / Mc_mag) >= Mc->hit_dist)) {
 			// A closer hit was already found (in an earlier-visited sibling submodel, or a
 			// parent) than this box's own nearest ray-entry point -- nothing inside this
 			// submodel's own geometry could possibly beat it, so skip testing it at all. Avoids a
@@ -1017,22 +1012,21 @@ void mc_check_subobj( int mn )
 			// hull, AI's ai_big_pick_attack_point() -- self-documented as ~10% of AI frametime,
 			// turret hull-blocking checks, beams): these routinely recurse through 100+ submodels
 			// with no MC_SUBMODEL narrowing. Not applied under MC_COLLIDE_ALL, which needs every
-			// hit, not just the nearest. Still falls through to check this submodel's children below
-			// (goto NoHit) -- a child's own box gets the identical check independently, this only
-			// skips the current submodel's own polygons/BVH.
-			goto NoHit;
+			// hit, not just the nearest. Children are still checked -- a child's own box gets the
+			// identical check independently, this only skips the current submodel's own
+			// polygons/BVH. vm_vec_dist() returns an absolute distance while Mc->hit_dist is a
+			// parametric fraction of Mc_direction (whose local-space magnitude equals Mc_mag by
+			// rigid-transform distance preservation) -- dividing by Mc_mag puts both sides in the
+			// same units before comparing.
 		} else {
 			// The ray intersects this bounding box, so we have to check all the
 			// polygons in this submodel.
 			if (Mc->lod > 0 && sm->num_details > 0) {
-				bsp_info* lod_sm = sm;
+				bsp_info *lod_sm = sm;
 
-				for (i = Mc->lod - 1; i >= 0; i--) {
+				for (int i = Mc->lod - 1; i >= 0; i--) {
 					if (sm->details[i] != -1) {
 						lod_sm = &Mc_pm->submodel[sm->details[i]];
-
-						// mprintf(("Checking %s collision for %s using %s instead\n", Mc_pm->filename, sm->name,
-						// lod_sm->name));
 						break;
 					}
 				}
@@ -1048,6 +1042,247 @@ void mc_check_subobj( int mn )
 		}
 	}
 
+	return true;
+}
+
+// Recursively collects every submodel reachable from mn's own children into out_tree/out_transforms
+// (see model_collide_build_submodel_bvh() below, which starts this off). orient/base is mn's own
+// already-known cumulative transform (identity/zero at the true root). Mirrors
+// mc_check_subobj()'s children-walk subtree-exclusion rules exactly: No_collisions and (when pmi
+// exists) blown_off both exclude the whole subtree, not just the one submodel -- matching that the
+// original recursion simply never calls itself for either case.
+static void mc_collect_submodel_bvh_recursive(polymodel *pm, polymodel_instance *pmi, int mn, const matrix &orient,
+	const vec3d &base, SCP_vector<lbvh_item> &items, SCP_vector<submodel_top_level_transform> &out_transforms)
+{
+	bsp_info *sm = &pm->submodel[mn];
+	if (sm->flags[Model::Submodel_flags::No_collisions]) {
+		return;
+	}
+	if (pmi && pmi->submodel[mn].blown_off) {
+		// Matches mc_check_subobj()'s children-walk: a blown_off submodel never even has
+		// mc_check_subobj() called on it, so it excludes itself (not just its subtree) here too.
+		return;
+	}
+
+	out_transforms[mn].orient = orient;
+	out_transforms[mn].base = base;
+
+	// Transform this submodel's own local box into the shared top-level frame (rotate all 8 corners,
+	// take the component-wise min/max) -- the inverse of mc_check_subobj_own_geometry()'s own
+	// world-to-local rotation above, so a top-level-frame ray can be tested against every submodel's
+	// box in one shared coordinate system. Loose (a rotated box isn't tight), but only used for
+	// top-level pruning -- the actual precise test still uses the untransformed local box once the
+	// ray is rotated into this submodel's own frame via the cached transform.
+	const vec3d &bmin = sm->min, &bmax = sm->max;
+	vec3d local_corners[8];
+	vm_vec_make(&local_corners[0], bmin.xyz.x, bmin.xyz.y, bmin.xyz.z);
+	vm_vec_make(&local_corners[1], bmax.xyz.x, bmin.xyz.y, bmin.xyz.z);
+	vm_vec_make(&local_corners[2], bmin.xyz.x, bmax.xyz.y, bmin.xyz.z);
+	vm_vec_make(&local_corners[3], bmax.xyz.x, bmax.xyz.y, bmin.xyz.z);
+	vm_vec_make(&local_corners[4], bmin.xyz.x, bmin.xyz.y, bmax.xyz.z);
+	vm_vec_make(&local_corners[5], bmax.xyz.x, bmin.xyz.y, bmax.xyz.z);
+	vm_vec_make(&local_corners[6], bmin.xyz.x, bmax.xyz.y, bmax.xyz.z);
+	vm_vec_make(&local_corners[7], bmax.xyz.x, bmax.xyz.y, bmax.xyz.z);
+	lbvh_item item;
+	item.submodel_index = mn;
+	for (int i = 0; i < 8; ++i) {
+		vec3d world;
+		vm_vec_unrotate(&world, &local_corners[i], &orient);
+		vm_vec_add2(&world, &base);
+		if (i == 0) {
+			item.box_min = item.box_max = world;
+		} else {
+			item.box_min.xyz.x = std::min(item.box_min.xyz.x, world.xyz.x);
+			item.box_min.xyz.y = std::min(item.box_min.xyz.y, world.xyz.y);
+			item.box_min.xyz.z = std::min(item.box_min.xyz.z, world.xyz.z);
+			item.box_max.xyz.x = std::max(item.box_max.xyz.x, world.xyz.x);
+			item.box_max.xyz.y = std::max(item.box_max.xyz.y, world.xyz.y);
+			item.box_max.xyz.z = std::max(item.box_max.xyz.z, world.xyz.z);
+		}
+	}
+	items.push_back(item);
+
+	for (int i = sm->first_child; i >= 0; i = pm->submodel[i].next_sibling) {
+		bsp_info *csm = &pm->submodel[i];
+		matrix instance_orient = vmd_identity_matrix;
+		vec3d instance_offset = csm->offset;
+		if (pmi) {
+			auto csmi = &pmi->submodel[i];
+			instance_orient = csmi->canonical_orient;
+			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
+		}
+
+		vec3d child_base;
+		vm_vec_unrotate(&child_base, &instance_offset, &orient);
+		vm_vec_add2(&child_base, &base);
+		matrix child_orient;
+		vm_matrix_x_matrix(&child_orient, &orient, &instance_orient);
+
+		mc_collect_submodel_bvh_recursive(pm, pmi, i, child_orient, child_base, items, out_transforms);
+	}
+}
+
+void model_collide_build_submodel_bvh(polymodel *pm, polymodel_instance *pmi, int root_mn, lbvh_tree &out_tree,
+	SCP_vector<submodel_top_level_transform> &out_transforms)
+{
+	out_transforms.assign(pm->n_models, submodel_top_level_transform{});
+	SCP_vector<lbvh_item> items;
+
+	// root_mn's own cumulative transform is identity/zero in this tree's frame (Mc_p0/Mc_direction,
+	// the ray mc_check_children_via_toplevel_bvh() queries this tree with, are already root_mn's own
+	// frame). Each of root_mn's direct children still needs its own offset/canonical_orient composed
+	// in before recursing -- same as mc_collect_submodel_bvh_recursive()'s own children loop does for
+	// every deeper level; skipping that composition here was the bug this comment now guards against.
+	bsp_info *root_sm = &pm->submodel[root_mn];
+	for (int i = root_sm->first_child; i >= 0; i = pm->submodel[i].next_sibling) {
+		bsp_info *csm = &pm->submodel[i];
+		matrix instance_orient = vmd_identity_matrix;
+		vec3d instance_offset = csm->offset;
+		if (pmi) {
+			auto csmi = &pmi->submodel[i];
+			instance_orient = csmi->canonical_orient;
+			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
+		}
+
+		mc_collect_submodel_bvh_recursive(pm, pmi, i, instance_orient, instance_offset, items, out_transforms);
+	}
+
+	out_tree = lbvh_build(std::move(items));
+}
+
+// Returns the top-level submodel BVH (and matching cumulative-transform array) to use for a
+// whole-model query rooted at root_mn, (re)building it as needed. With no instance, submodels never
+// move -- polymodel::submodel_bvh_restpose was already built once at load time (modelread.cpp) and
+// is reused forever. With an instance, submodels can rotate/translate at runtime (turrets, triggered
+// animations, Lua-driven rotation), so polymodel_instance::submodel_bvh_cache is instead rebuilt
+// lazily on first use each frame (checked against the global Framecount) and reused by every
+// collision query against this instance for the rest of that frame -- matching how rendering already
+// treats submodel transforms (recomputed fresh from canonical_orient/canonical_offset every frame,
+// no persistent world-transform cache).
+static void model_collide_get_submodel_bvh(int root_mn, const lbvh_tree *&out_tree,
+	const SCP_vector<submodel_top_level_transform> *&out_transforms)
+{
+	if (!Mc_pmi) {
+		out_tree = &Mc_pm->submodel_bvh_restpose;
+		out_transforms = &Mc_pm->submodel_bvh_restpose_transforms;
+		return;
+	}
+
+	if (Mc_pmi->submodel_bvh_cache_frame != Framecount || !Mc_pmi->submodel_bvh_cache) {
+		if (!Mc_pmi->submodel_bvh_cache) {
+			Mc_pmi->submodel_bvh_cache = std::make_unique<lbvh_tree>();
+		}
+		model_collide_build_submodel_bvh(
+			Mc_pm, Mc_pmi, root_mn, *Mc_pmi->submodel_bvh_cache, Mc_pmi->submodel_bvh_cache_transforms);
+		Mc_pmi->submodel_bvh_cache_frame = Framecount;
+	}
+
+	out_tree = Mc_pmi->submodel_bvh_cache.get();
+	out_transforms = &Mc_pmi->submodel_bvh_cache_transforms;
+}
+
+// Replaces mc_check_subobj()'s recursive first_child/next_sibling children-walk for the whole-model
+// query shape (see Mc_use_toplevel_bvh_for_children's own doc comment) -- a flat traversal of every
+// descendant's precomputed box/transform instead of an incremental per-level walk. root_mn's own
+// geometry was already tested by the caller; this only handles its descendants.
+static void mc_check_children_via_toplevel_bvh(int root_mn)
+{
+	const lbvh_tree *tree = nullptr;
+	const SCP_vector<submodel_top_level_transform> *transforms = nullptr;
+	model_collide_get_submodel_bvh(root_mn, tree, transforms);
+	if (!tree || tree->root < 0) {
+		return;
+	}
+
+	float t_max = (Mc->flags & MC_CHECK_RAY) ? FLT_MAX : 1.0f;
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits) {
+		t_max = std::min(t_max, Mc->hit_dist);
+	}
+	float radius = (Mc->flags & MC_CHECK_SPHERELINE) ? Mc->radius : 0.0f;
+
+	// Copy the query ray out of Mc_p0/Mc_direction before traversing -- those are thread_local
+	// globals, and the visitor below calls mc_check_subobj_own_geometry(), which overwrites them
+	// with whatever submodel it just tested. Passing the globals directly into lbvh_visit() by
+	// reference would corrupt the traversal's own ray after the very first candidate.
+	vec3d root_p0 = Mc_p0;
+	vec3d root_direction = Mc_direction;
+
+	matrix saved_orient = Mc_orient;
+	vec3d saved_base = Mc_base;
+
+	lbvh_visit(*tree, root_p0, root_direction, t_max, radius, [&](int32_t submodel_index) {
+		bsp_info *csm = &Mc_pm->submodel[submodel_index];
+
+		// No_collisions and (instanced) blown_off are already excluded at cache-build time (see
+		// mc_collect_submodel_bvh_recursive()) -- they can't change within a frame's cached tree the
+		// way collision_checked can (an explicitly per-call, caller-populated mc_info field, not
+		// persistent instance state -- see its own doc comment in model.h), so it's re-checked here,
+		// walking up the (static) parent chain to match mc_check_subobj()'s own subtree-exclusion
+		// behavior for it.
+		if (!Mc->collision_checked.empty()) {
+			for (int p = submodel_index; p >= 0; p = Mc_pm->submodel[p].parent) {
+				if (Mc->collision_checked[p]) {
+					return;
+				}
+			}
+		}
+
+		// Nocollide_this_only skips only this submodel's own geometry test, same as
+		// mc_check_subobj()'s `goto NoHit` for it -- its children remain independently reachable as
+		// their own tree entries, no special handling needed for them here.
+		if (csm->flags[Model::Submodel_flags::Nocollide_this_only]) {
+			return;
+		}
+
+		if (Mc->flags & MC_RESPECT_DETAIL_BOX_SPHERE) {
+			vec3d local;
+			vm_vec_sub(&local, &Eye_position, Mc->pos);
+			vm_vec_rotate(&local, &local, Mc->orient);
+			if (!model_render_check_detail_box(&local, Mc_pm, submodel_index, MR_NORMAL)) {
+				return;
+			}
+		}
+
+		Mc_orient = (*transforms)[submodel_index].orient;
+		Mc_base = (*transforms)[submodel_index].base;
+		mc_check_subobj_own_geometry(submodel_index);
+
+		if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits) {
+			t_max = std::min(t_max, Mc->hit_dist);
+		}
+	});
+
+	Mc_orient = saved_orient;
+	Mc_base = saved_base;
+}
+
+// This function recursively checks a submodel and its children
+// for a collision with a vector.
+void mc_check_subobj( int mn )
+{
+	bsp_info * sm;
+	int i;
+
+	Assert( mn >= 0 );
+	Assert( mn < Mc_pm->n_models );
+	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
+
+	sm = &Mc_pm->submodel[mn];
+	if (sm->flags[Model::Submodel_flags::No_collisions]) return; // don't do collisions
+	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
+
+	if (Mc->flags & MC_RESPECT_DETAIL_BOX_SPHERE) {
+		vec3d local;
+		vm_vec_sub(&local, &Eye_position, Mc->pos);
+		vm_vec_rotate(&local, &local, Mc->orient);
+		if (!model_render_check_detail_box(&local, Mc_pm, mn, MR_NORMAL))
+			goto NoHit; //This submodel is a detail box that is not displayed, skip it
+	}
+
+	if (!mc_check_subobj_own_geometry(mn)) {
+		return;
+	}
+
 NoHit:
 
 	// If we're only checking one submodel, return
@@ -1055,14 +1290,19 @@ NoHit:
 		return;
 	}
 
-	
+
 	// If this subobject doesn't have any children, we're done checking it.
 	if ( sm->num_children < 1 ) return;
-	
+
+	if (Mc_use_toplevel_bvh_for_children) {
+		mc_check_children_via_toplevel_bvh(mn);
+		return;
+	}
+
 	// Save instance (Mc_orient, Mc_base, Mc_point_base)
 	matrix saved_orient = Mc_orient;
 	vec3d saved_base = Mc_base;
-	
+
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
@@ -1071,7 +1311,7 @@ NoHit:
 		vec3d instance_offset = csm->offset;
 		bool blown_off = false;
 		bool collision_checked = false;
-		
+
 		if ( Mc_pmi ) {
 			auto csmi = &Mc_pmi->submodel[i];
 			instance_orient = csmi->canonical_orient;
@@ -1209,10 +1449,14 @@ int model_collide(mc_info *mc_info_obj)
 		// Don't check it or its children if it is destroyed
 		if ( Mc_pmi ) {
 			if ( !Mc_pmi->submodel[Mc_pm->detail[0]].blown_off ) {
+				Mc_use_toplevel_bvh_for_children = !Mc_force_legacy_submodel_walk;
 				mc_check_subobj(Mc_pm->detail[0]);
+				Mc_use_toplevel_bvh_for_children = false;
 			}
 		} else {
+			Mc_use_toplevel_bvh_for_children = true;
 			mc_check_subobj(Mc_pm->detail[0]);
+			Mc_use_toplevel_bvh_for_children = false;
 		}
 	}
 
