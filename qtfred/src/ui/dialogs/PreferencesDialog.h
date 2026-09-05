@@ -35,6 +35,14 @@ private slots:
 	void on_outlineLodCombo_currentIndexChanged(int index);
 	void on_labelFontScaleSpin_valueChanged(double value);
 	void on_themeCombo_currentIndexChanged(int index);
+	// Graphics
+	void on_enablePostProcessing_toggled(bool checked);
+	void on_shadowQualityCombo_currentIndexChanged(int index);
+	void on_aaModeCombo_currentIndexChanged(int index);
+	void on_msaaCombo_currentIndexChanged(int index);
+	void on_textureFilterCombo_currentIndexChanged(int index);
+	void on_anisotropyCombo_currentIndexChanged(int index);
+	void on_gammaSpin_valueChanged(double value);
 	void on_dataMenuStyleCombo_currentIndexChanged(int index);
 	void on_showSexpHelpMissionEvents_toggled(bool checked);
 	void on_showSexpHelpMissionGoals_toggled(bool checked);
@@ -64,6 +72,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	std::unique_ptr<Ui::PreferencesDialog> ui;
 	std::unique_ptr<PreferencesDialogModel> _model;
+	//! Anisotropy levels backing the combo, in combo order. Queried once; hardware-dependent.
+	SCP_vector<float> _anisotropyLevels;
 	std::map<ControlAction, QKeySequenceEdit*> _controlEditors;
 	FredView* _fredView = nullptr;
 	EditorViewport* _viewport = nullptr;
