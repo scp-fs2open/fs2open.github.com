@@ -42,15 +42,23 @@ struct bvh_triangle {
 	bvh_uv uv0, uv1, uv2;
 };
 
-// One N-wide BVH node, Structure-of-Arrays so a ray-vs-N-children test is a handful of SIMD
-// compares over plain float arrays with no transpose.
+// One N-wide BVH node, Structure-of-Arrays. The benefit this actually delivers is memory
+// locality, not vectorized compute: one node fetch (128 bytes at BVH_N=4, 2 cache lines) brings
+// every child's box and child[]/count[] metadata into cache at once, turning "which of these
+// children are worth pursuing" into a single memory transaction instead of the several scattered
+// node fetches an equivalent binary tree would need to make the same decision. The traversal's
+// per-node box test (bvh_visit_triangles() below) is a plain scalar loop over the BVH_N slots, not
+// a vectorized compare across them -- a genuine 4-wide rewrite of that test was tried and measured
+// slower on real content (SIMD across sibling children turned out not to pay off here), so it stays
+// scalar; don't re-attempt this blind. SoA still earns its keep elsewhere: ray_triangle_leaf_simd()
+// (below) does genuinely vectorize across BVH_N triangles, just in a different array than this one.
 //
 // Per slot i:
 //   count[i] > 0  -> leaf: child[i] is the start index into bvh_tree::triangles, count[i] triangles.
 //   count[i] == 0 -> internal: child[i] is the index of the child node in bvh_tree::nodes.
 // Unused slots (fewer than BVH_N real children) are padded with an impossible box (min > max) so
-// the SIMD slab test fails them for free, and child[i] == -1 so an accidental traversal into a
-// padding slot is obvious rather than reading garbage.
+// the slab test fails them for free, and child[i] == -1 so an accidental traversal into a padding
+// slot is obvious rather than reading garbage.
 //
 // TODO(bvh-stage2): consider alignas(64)/an aligned allocator for bvh_node once hand SIMD
 // intrinsics (which need aligned loads) are introduced. Not needed for autovectorization.
