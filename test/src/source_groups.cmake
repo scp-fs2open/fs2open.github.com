@@ -87,6 +87,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Starfield"
+    starfield/test_sun_disc.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h

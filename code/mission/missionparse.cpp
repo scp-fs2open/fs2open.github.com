@@ -6278,6 +6278,17 @@ void parse_one_background(background_t *background)
 		sle.div_x = 1;
 		sle.div_y = 1;
 
+		// apparent diameter in degrees, overriding both the sun's stars.tbl entry and the
+		// size that would otherwise be measured from its bitmap. Optional, so missions
+		// written before 26.1 simply don't have it
+		if (optional_string("+AngularSize:")) {
+			stuff_float(&sle.angular_size);
+			if (sle.angular_size < 0.0f) {
+				error_display(0, "+AngularSize: for sun '%s' must be >= 0 (got %f); ignoring it.", sle.filename, sle.angular_size);
+				sle.angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
+			}
+		}
+
 		// add it
 		background->suns.push_back(sle);
 	}
@@ -9785,6 +9796,22 @@ bool check_for_25_1_data()
 	{
 		if (Wings[wingnum].has_display_name())
 			return true;
+	}
+
+	return false;
+}
+
+bool check_for_26_1_data()
+{
+	// a sun that carries its own apparent diameter (+AngularSize:) can't be represented
+	// in an older mission file
+	for (const auto &background : Backgrounds)
+	{
+		for (const auto &sun : background.suns)
+		{
+			if (sun.angular_size >= 0.0f)
+				return true;
+		}
 	}
 
 	return false;

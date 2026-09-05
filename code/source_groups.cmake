@@ -481,6 +481,8 @@ add_file_folder("Graphics"
 	graphics/shader_types.cpp
 	graphics/shader_types.h
 	graphics/render_queue.h
+	graphics/rtao.cpp
+	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -1757,6 +1759,8 @@ add_file_folder("Starfield"
 	starfield/nebula.h
 	starfield/starfield.cpp
 	starfield/starfield.h
+	starfield/sun_disc.cpp
+	starfield/sun_disc.h
 	starfield/supernova.cpp
 	starfield/supernova.h
 	starfield/starfield_flags.h
