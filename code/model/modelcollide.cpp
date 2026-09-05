@@ -1185,7 +1185,7 @@ static void mc_check_children_via_toplevel_bvh(int root_mn)
 	const lbvh_tree *tree = nullptr;
 	const SCP_vector<submodel_top_level_transform> *transforms = nullptr;
 	model_collide_get_submodel_bvh(root_mn, tree, transforms);
-	if (!tree || tree->root < 0) {
+	if (!tree || tree->root == INT32_MIN) {
 		return;
 	}
 

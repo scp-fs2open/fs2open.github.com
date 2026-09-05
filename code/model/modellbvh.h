@@ -19,20 +19,27 @@ struct lbvh_item {
 	int submodel_index = -1;
 };
 
+// Every node has exactly two children -- the recursive build only ever creates a node to join two
+// already-built subtrees, so there's no partial/padding slot to represent (unlike modelbvh.h's
+// bvh_node, which pads unused slots of a wider fixed fan-out). Each slot's box is stored inline,
+// mirroring bvh_node's per-slot boxes, so the slab test can reject a child before following it.
+//
+// A slot is either another node or a leaf naming a submodel directly, distinguished by the sign of
+// child[i]: child[i] >= 0 is a node index into lbvh_tree::nodes; child[i] < 0 is a leaf, and its
+// submodel index is -child[i] - 1 (the -1 shift avoids colliding with node index 0, since -0 == 0).
 struct lbvh_node {
-	vec3d min, max;
-	int32_t left = -1, right = -1; // child node indices; both -1 means this is a leaf
-	int32_t item = -1;             // valid only when left/right == -1 -- index into lbvh_tree::items
+	vec3d min[2], max[2];
+	int32_t child[2];
 };
 
 struct lbvh_tree {
 	SCP_vector<lbvh_node> nodes;
-	SCP_vector<lbvh_item> items; // kept in caller-supplied order, not sorted-by-Morton-code order
-	int32_t root = -1;
+	vec3d root_min, root_max; // whole-tree box; only nodes reached via a parent slot get one otherwise
+	int32_t root = INT32_MIN; // INT32_MIN == empty (no items); otherwise same encoding as lbvh_node::child
 };
 
 // Builds an LBVH over the given items. Takes ownership (same convention as bvh_build()) since the
-// items end up stored in the returned tree.
+// items are consumed during construction.
 lbvh_tree lbvh_build(SCP_vector<lbvh_item> items);
 
 // Visits every leaf item whose (radius-inflated) box the ray [origin, origin + dir*t_max] could

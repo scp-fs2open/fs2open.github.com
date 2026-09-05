@@ -42,7 +42,7 @@ SCP_vector<int32_t> visit_all(const lbvh_tree& tree, const vec3d& p0, const vec3
 TEST(ModelLbvh, EmptyTree)
 {
 	lbvh_tree tree = lbvh_build({});
-	EXPECT_EQ(tree.root, -1);
+	EXPECT_EQ(tree.root, INT32_MIN);
 	auto hits = visit_all(tree, V(-10, 0, 0), V(10, 0, 0));
 	EXPECT_TRUE(hits.empty());
 }
