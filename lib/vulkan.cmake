@@ -97,7 +97,7 @@ get_prebuilt_path(PREBUILT_PATH)
 
 set(USING_PREBUILT_VULKAN ${VULKAN_USE_PRECOMPILED})
 
-if(PLATFORM_WINDOWS OR PLATFORM_MAC)
+if(PLATFORM_WINDOWS OR PLATFORM_MAC OR ANDROID)
 	set(USING_PREBUILT_VULKAN TRUE)
 elseif(PLATFORM_LINUX AND FSO_BUILD_APPIMAGE)
 	set(USING_PREBUILT_VULKAN TRUE)
@@ -139,7 +139,7 @@ if(USING_PREBUILT_VULKAN)
 		find_library(MOLTENVK_LIBRARY MoltenVK PATHS "${PREBUILT_PATH}" NO_DEFAULT_PATH)
 
 		add_target_copy_files("${MOLTENVK_LIBRARY}")
-	else()
+	elseif(NOT ANDROID) # Android ships its own Vulkan loader (system libvulkan.so)
 		message(STATUS "Using pre-built Vulkan-Loader library.")
 
 		if(PLATFORM_WINDOWS)
