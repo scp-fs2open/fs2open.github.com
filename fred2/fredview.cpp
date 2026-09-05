@@ -3361,9 +3361,32 @@ int CFREDView::global_error_check_player_wings(int multi)
 		}
 	}
 
-//	// player's wing must have a true arrival
-//	free_sexp2(Wings[z].arrival_cue);
-//	Wings[z].arrival_cue = Locked_sexp_true;
+	// The wing containing the player start must be present at mission start, so a custom arrival cue
+	// is only useful for controlling the arrival of subsequent waves.  Flag a single-wave wing with a
+	// custom cue as a potential issue, but never change the cue itself.
+	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
+	{
+		for (i=0; i<MAX_WINGS; i++)
+		{
+			if (!Wings[i].wave_count || Wings[i].num_waves > 1)
+				continue;
+			if (Wings[i].arrival_cue == Locked_sexp_true)
+				continue;
+
+			bool contains_player_start = false;
+			for (z=0; z<Wings[i].wave_count; z++)
+				if (Objects[Ships[Wings[i].ship_index[z]].objnum].type == OBJ_START)
+					contains_player_start = true;
+
+			if (contains_player_start)
+			{
+				SCP_string issue_buf;
+				sprintf(issue_buf, "Potential issue detected in wing %s:\n\nThis wing contains a player start and a custom arrival cue, but only one wave.  The arrival cue must evaluate to true at mission start, or the player will not be created.", Wings[i].name);
+				if (Fred_main_wnd->MessageBox(issue_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+					return 1;
+			}
+		}
+	}
 
 	// Check to be sure that any player wing doesn't have > 1 wave for multiplayer
 	if ( multi )
