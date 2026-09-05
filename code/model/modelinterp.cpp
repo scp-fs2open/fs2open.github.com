@@ -1454,29 +1454,18 @@ void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& sk
 		pm->maps[i].PageOut(release);
 	}
 
-	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
+	// NOTE: these can only be paged out, not released, because a virtual POF copies glow point banks from its source
+	// models without taking a reference per copy, so two banks can share one handle and releasing would over-release.
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
 		if(skipGlowBanks.contains(j))
 			continue;
 		glow_point_bank* bank = &pm->glow_point_banks[j];
 
-		if (bank->glow_bitmap >= 0) {
-		//	if (release) {
-		//		bm_release(bank->glow_bitmap);
-		//		bank->glow_bitmap = -1;
-		//	} else {
-				bm_unload(bank->glow_bitmap);
-		//	}
-		}
+		if (bank->glow_bitmap >= 0)
+			bm_page_out(bank->glow_bitmap);
 
-		if (bank->glow_neb_bitmap >= 0) {
-		//	if (release) {
-		//		bm_release(bank->glow_neb_bitmap);
-		//		bank->glow_neb_bitmap = -1;
-		//	} else {
-				bm_unload(bank->glow_neb_bitmap);
-		//	}
-		}
+		if (bank->glow_neb_bitmap >= 0)
+			bm_page_out(bank->glow_neb_bitmap);
 	}
 }
 
@@ -2670,18 +2659,17 @@ texture_info::texture_info()
 }
 texture_info::texture_info(int bm_handle)
 {
+	clear();
+
 	if(!bm_is_valid(bm_handle))
-	{
-		clear();
 		return;
-	}
 
 	this->original_texture = bm_handle;
 	this->ResetTexture();
 }
 void texture_info::clear()
 {
-	texture = original_texture = -1;
+	texture = original_texture = held_texture = -1;
 	num_frames = 0;
 	total_time = 1.0f;
 }
@@ -2722,25 +2710,47 @@ void texture_info::PageIn()
 
 void texture_info::PageOut(bool release)
 {
-	if (texture >= 0) {
-		if (release) {
-			bm_release(texture);
-			texture = -1;
-			num_frames = 0;
-			total_time = 1.0f;
-		} else {
-			bm_unload(texture);
-		}
+	if (release) {
+		// release our own reference to a texture that was set from outside, if any
+		if (held_texture >= 0)
+			bm_release_ref(held_texture);
+
+		// release the texture we loaded; note that this is not necessarily the texture currently being drawn with
+		if (original_texture >= 0)
+			bm_release_ref(original_texture);
+
+		clear();
+	} else if (original_texture >= 0) {
+		// page out the texture we loaded, keeping our reference so that it can be paged back in; a texture set from
+		// outside is left alone, since whoever set it may still be using it
+		bm_page_out(original_texture);
 	}
 }
 int texture_info::ResetTexture()
 {
-	return this->SetTexture(original_texture);
+	int result = this->SetTexture(original_texture);
+
+	// drop the held reference once we are back on the original
+	if (held_texture >= 0 && texture == original_texture) {
+		bm_release_ref(held_texture);
+		held_texture = -1;
+	}
+
+	return result;
 }
-int texture_info::SetTexture(int n_tex)
+int texture_info::SetTexture(int n_tex, bool take_reference)
 {
 	if(n_tex != -1 && !bm_is_valid(n_tex))
 		return texture;
+
+	if (take_reference) {
+		// take the new reference before releasing the old one, in case they are the same texture
+		if (n_tex != -1)
+			bm_add_ref(n_tex);
+		if (held_texture >= 0)
+			bm_release_ref(held_texture);
+		held_texture = n_tex;
+	}
 
 	//Set the new texture
 	texture = n_tex;
@@ -2819,6 +2829,56 @@ void texture_map::ResetToOriginal()
 {
 	for(int i = 0; i < TM_NUM_TYPES; i++)
 		this->textures[i].ResetTexture();
+}
+
+//********************-----CLASS: model_texture_replace-----********************//
+model_texture_replace::model_texture_replace()
+{
+	m_handles.fill(-1);
+}
+
+model_texture_replace::~model_texture_replace()
+{
+	for (int tex : m_handles)
+		if (tex >= 0)
+			bm_release_ref(tex);
+}
+
+static bool valid_replacement_index(int index)
+{
+	Assertion(index >= 0 && index < MAX_REPLACEMENT_TEXTURES, "Replacement texture index %d is out of range!", index);
+	return index >= 0 && index < MAX_REPLACEMENT_TEXTURES;
+}
+
+void model_texture_replace::adopt(int index, int handle)
+{
+	if (!valid_replacement_index(index))
+		return;
+
+	int& slot = m_handles[index];
+
+	if (slot >= 0)
+		bm_release_ref(slot);
+
+	slot = handle;
+}
+
+void model_texture_replace::reference(int index, int handle)
+{
+	// check this before taking the reference, since adopt() would refuse it without releasing
+	if (!valid_replacement_index(index))
+		return;
+
+	// REPLACE_WITH_INVISIBLE is stored as-is; anything else must be a valid bitmap, or the slot is cleared
+	if (handle != REPLACE_WITH_INVISIBLE && bm_add_ref(handle) < 0)
+		handle = -1;
+
+	adopt(index, handle);
+}
+
+void model_texture_replace::clear(int index)
+{
+	adopt(index, -1);
 }
 
 bsp_polygon_data::bsp_polygon_data(ubyte* _bsp_data, int _bsp_data_size)
