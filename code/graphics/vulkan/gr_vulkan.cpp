@@ -5,6 +5,7 @@
 #include "VulkanTexture.h"
 #include "VulkanShader.h"
 #include "VulkanDescriptorManager.h"
+#include "VulkanDeletionQueue.h"
 #include "VulkanPipeline.h"
 #include "VulkanQuery.h"
 #include "VulkanState.h"
@@ -41,7 +42,7 @@ std::unique_ptr<VulkanRenderer> renderer_instance;
 
 // Sync object for tracking frame completion
 struct VulkanSyncObject {
-	uint64_t frameNumber;
+	FrameSyncPoint point;
 };
 
 // ========== Renderer-level functions ==========
@@ -50,6 +51,22 @@ void vulkan_setup_frame()
 {
 	auto* renderer = getRendererInstance();
 	renderer->setupFrame();
+}
+
+void vulkan_viewport_size_changed()
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr) {
+		renderer->syncToSurfaceExtent();
+	}
+}
+
+void vulkan_release_viewport(os::Viewport* view)
+{
+	auto* renderer = getRendererInstance();
+	if (renderer != nullptr && view != nullptr) {
+		renderer->releaseViewport(view);
+	}
 }
 
 void vulkan_flip()
@@ -245,7 +262,7 @@ gr_sync vulkan_sync_fence()
 {
 	auto* renderer = getRendererInstance();
 	auto* sync = new VulkanSyncObject();
-	sync->frameNumber = renderer->getCurrentFrameNumber();
+	sync->point = renderer->captureSyncPoint();
 	return static_cast<gr_sync>(sync);
 }
 
@@ -262,7 +279,7 @@ bool vulkan_sync_wait(gr_sync sync, uint64_t timeoutns)
 	// timeout or when the fence was taken during the still-recording frame --
 	// callers (e.g. UniformBufferManager's segment fences) depend on this to
 	// know whether the GPU is done with a resource.
-	return renderer->waitForFrame(syncObj->frameNumber, timeoutns);
+	return renderer->waitForSyncPoint(syncObj->point, timeoutns);
 }
 
 void vulkan_sync_delete(gr_sync sync)
@@ -359,6 +376,71 @@ void vulkan_print_screen(const char* filename)
 	vm_free(pixels);
 }
 
+void vulkan_end_offscreen_frame()
+{
+	// Everything frame-scoped that setupFrame()/flip() would recycle. An off-screen renderer never
+	// reaches either, so without this the descriptor pool chain grows a chunk every few frames, the
+	// deletion queue's retirement clock never ticks, and the bump allocator climbs until it doubles
+	// -- and a mid-frame doubling used to hand draws stale uniforms (the qtFRED briefing icon
+	// flicker). Minutes with the briefing editor open reached multiple GB.
+	//
+	// Safe only because gr_end_offscreen_frame()'s contract is that the frame's GPU work has
+	// already completed: the readback that produced the image host-waits on a fence, and queue
+	// submissions execute in order, so every submission up to that point has retired.
+	if (auto* renderer = getRendererInstance()) {
+		// Advances the sync frame counter and rewinds the bump allocator. The counter matters as
+		// much as the memory: sync objects are stamped with it, and UniformBufferManager's segment
+		// fences can only ever resolve if it moves.
+		renderer->endOffscreenFrame();
+	}
+
+	if (auto* descriptorManager = getDescriptorManager()) {
+		descriptorManager->beginFrame();
+	}
+
+	if (auto* deletionQueue = getDeletionQueue()) {
+		deletionQueue->processDestructions();
+	}
+}
+
+bool vulkan_read_render_target(ubyte* out_rgba, int width, int height)
+{
+	auto* texManager = getTextureManager();
+	const int rtHandle = texManager ? texManager->getCurrentRenderTarget() : -1;
+	if (rtHandle < 0) {
+		return false;
+	}
+
+	auto* ts = texManager->getTextureSlot(rtHandle);
+	if (ts == nullptr) {
+		return false;
+	}
+
+	ubyte* pixels = nullptr;
+	uint32_t w = 0;
+	uint32_t h = 0;
+	if (!renderer_instance->readbackRenderTarget(ts, &pixels, &w, &h)) {
+		return false;
+	}
+
+	// The caller sized its buffer from the bitmap it bound, so a disagreement means it is reading
+	// something other than what it thinks. Refuse rather than overrun.
+	const bool sizeMatches = w == static_cast<uint32_t>(width) && h == static_cast<uint32_t>(height);
+	if (!sizeMatches) {
+		nprintf(("vulkan", "vulkan_read_render_target: caller expected %dx%d but the bound target is "
+		                   "%ux%u\n", width, height, w, h));
+	} else {
+		// R8G8B8A8_UNORM, already RGBA order with real alpha, and row 0 is the top row -- which is
+		// the top-down order gr_read_render_target() promises. Deliberately not the flip
+		// vulkan_blob_screen() applies below: that one exists only to make its PNG match OpenGL's.
+		memcpy(out_rgba, pixels, static_cast<size_t>(w) * h * 4);
+	}
+
+	vm_free(pixels);
+
+	return sizeMatches;
+}
+
 SCP_string vulkan_blob_screen()
 {
 	ubyte* pixels = nullptr;
@@ -419,7 +501,26 @@ std::unique_ptr<os::Viewport> stub_create_viewport(const os::ViewPortProperties&
 {
 	return {};
 }
-void stub_use_viewport(os::Viewport* /*view*/) {}
+void vulkan_use_viewport(os::Viewport* view)
+{
+	auto* renderer = getRendererInstance();
+	if (renderer == nullptr || view == nullptr) {
+		return;
+	}
+
+	if (!renderer->useViewport(view)) {
+		return;
+	}
+
+	// Match gr_opengl_use_viewport(): the engine's idea of the screen follows whichever surface is
+	// being drawn to now. The swap chain extent is used rather than the viewport's own getSize(),
+	// because that reports logical pixels and the surface was sized in device pixels -- scaling one
+	// into the other by hand is what leaves gr_screen disagreeing with what is being presented.
+	const auto extent = renderer->getCurrentTargetExtent();
+	if (extent.width > 0 && extent.height > 0) {
+		gr_screen_resize(static_cast<int>(extent.width), static_cast<int>(extent.height));
+	}
+}
 SCP_vector<const char*> stub_openxr_get_extensions() { return {}; }
 bool stub_openxr_test_capabilities() { return false; }
 bool stub_openxr_create_session() { return false; }
@@ -435,6 +536,7 @@ void init_function_pointers()
 {
 	// function pointers...
 	gr_screen.gf_setup_frame = vulkan_setup_frame;
+	gr_screen.gf_viewport_size_changed = vulkan_viewport_size_changed;
 	gr_screen.gf_set_clip = vulkan_set_clip;
 	gr_screen.gf_reset_clip = vulkan_reset_clip;
 
@@ -442,6 +544,8 @@ void init_function_pointers()
 
 	gr_screen.gf_print_screen = vulkan_print_screen;
 	gr_screen.gf_blob_screen = vulkan_blob_screen;
+	gr_screen.gf_read_render_target = vulkan_read_render_target;
+	gr_screen.gf_end_offscreen_frame = vulkan_end_offscreen_frame;
 
 	gr_screen.gf_zbuffer_get = vulkan_zbuffer_get;
 	gr_screen.gf_zbuffer_set = vulkan_zbuffer_set;
@@ -561,7 +665,8 @@ void init_function_pointers()
 	gr_screen.gf_delete_query_object = vulkan_delete_query_object;
 
 	gr_screen.gf_create_viewport = stub_create_viewport;
-	gr_screen.gf_use_viewport = stub_use_viewport;
+	gr_screen.gf_use_viewport = vulkan_use_viewport;
+	gr_screen.gf_release_viewport = vulkan_release_viewport;
 
 	gr_screen.gf_bind_uniform_buffer = vulkan_bind_uniform_buffer;
 

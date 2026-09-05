@@ -148,42 +148,78 @@ size_t VulkanBufferManager::bumpAllocate(size_t size)
 	size_t alignedOffset = (alloc.cursor + m_uboAlignment - 1) & ~(static_cast<size_t>(m_uboAlignment) - 1);
 
 	if (alignedOffset + size > alloc.capacity) {
-		growFrameAllocator();
-		// After growth, cursor is 0 so alignedOffset is 0
-		alignedOffset = 0;
-		Assertion(size <= alloc.capacity, "Frame allocator growth failed to provide enough capacity");
+		// Growth preserves the cursor and copies the live contents across, so every offset handed
+		// out before the growth still addresses the same bytes -- alignedOffset stays valid.
+		growFrameAllocator(alignedOffset + size);
+		Assertion(alignedOffset + size <= alloc.capacity,
+			"Frame allocator growth failed to provide enough capacity");
 	}
 
 	alloc.cursor = alignedOffset + size;
 	return alignedOffset;
 }
 
-void VulkanBufferManager::growFrameAllocator()
+void VulkanBufferManager::growFrameAllocator(size_t requiredEnd)
 {
 	auto& alloc = m_frameAllocs[m_currentFrame];
 
-	// Double capacity until sufficient
+	// Double capacity until sufficient. requiredEnd covers the allocation that triggered the
+	// growth; the cursor is carried over, so the new buffer has to fit both.
 	size_t newCapacity = alloc.capacity > 0 ? alloc.capacity * 2 : FRAME_ALLOC_INITIAL_SIZE;
-	// Ensure at least the current cursor position can fit (handles pathological single-alloc case)
-	while (newCapacity < alloc.cursor) {
+	while (newCapacity < requiredEnd) {
 		newCapacity *= 2;
 	}
 
 	nprintf(("vulkan", "Growing frame allocator %u: %zuKB -> %zuKB\n",
 		m_currentFrame, alloc.capacity / 1024, newCapacity / 1024));
 
-	// Queue old buffer for deferred destruction - the deletion queue's FRAMES_TO_WAIT=2
-	// ensures the old buffer survives through current frame's GPU execution.
-	// Existing handles with frameAllocBuffer pointing to the old buffer remain valid.
-	auto* deletionQueue = getDeletionQueue();
-	if (alloc.mappedPtr) {
-		m_memoryManager->unmapMemory(alloc.allocation);
-	}
-	deletionQueue->queueBuffer(alloc.buffer, alloc.allocation);
+	// Growth must not disturb allocations already handed out this frame. Callers keep a
+	// (frameAllocBuffer, frameAllocOffset) pair and go on writing through the *current*
+	// allocator's mapping while binding the buffer recorded at allocation time -- so if growth
+	// swapped the buffer out from under them, their writes would land in the new buffer while
+	// their draws kept reading the old one. Normally the next frame's index change forces a
+	// realloc before that can be observed, which is why it only shows up where the frame index
+	// stands still (qtFRED's briefing map renders outside flip()).
+	//
+	// So: carry the cursor over, copy the live bytes to the same offsets in the new buffer, and
+	// repoint every handle still referencing the old buffer. Offsets stay valid, contents stay
+	// intact, and writes and reads agree again.
+	const vk::Buffer oldBuffer = alloc.buffer;
+	VulkanAllocation oldAllocation = alloc.allocation; // unmapMemory takes a non-const reference
+	void* oldMapped = alloc.mappedPtr;
+	const size_t liveBytes = alloc.cursor;
 
-	// Create new buffer
-	alloc = {};
-	Verification(createFrameAllocBuffer(alloc, newCapacity), "Failed to grow Vulkan frame-allocator buffer");
+	FrameBumpAllocator grown = {};
+	Verification(createFrameAllocBuffer(grown, newCapacity), "Failed to grow Vulkan frame-allocator buffer");
+
+	if (liveBytes > 0 && oldMapped != nullptr && grown.mappedPtr != nullptr) {
+		memcpy(grown.mappedPtr, oldMapped, liveBytes);
+		m_memoryManager->flushMemory(grown.allocation, 0, liveBytes);
+	}
+	grown.cursor = liveBytes;
+	// Growth is not a rewind -- offsets survive it -- so the generation has to carry over too, or
+	// handles allocated before it would compare equal to a later generation and look fresh.
+	grown.generation = alloc.generation;
+
+	// The old buffer stays alive through the deletion queue so draws already recorded against it
+	// keep reading intact data until it retires.
+	auto* deletionQueue = getDeletionQueue();
+	if (oldMapped) {
+		m_memoryManager->unmapMemory(oldAllocation);
+	}
+	if (oldBuffer) {
+		deletionQueue->queueBuffer(oldBuffer, oldAllocation);
+	}
+
+	alloc = grown;
+
+	if (oldBuffer) {
+		for (auto& bufferObj : m_buffers) {
+			if (bufferObj.valid && bufferObj.isStreaming() && bufferObj.frameAllocBuffer == oldBuffer) {
+				bufferObj.frameAllocBuffer = alloc.buffer;
+			}
+		}
+	}
 }
 
 // ========== Init / Shutdown ==========
@@ -306,6 +342,7 @@ void VulkanBufferManager::setCurrentFrame(uint32_t frameIndex, uint64_t frameNum
 	// Reset bump cursor — safe because the GPU fence for this frame-in-flight
 	// was already waited on before setCurrentFrame is called.
 	m_frameAllocs[m_currentFrame].cursor = 0;
+	++m_frameAllocs[m_currentFrame].generation;
 }
 
 // ========== Buffer usage / memory helpers ==========
@@ -555,17 +592,20 @@ void VulkanBufferManager::updateBufferData(gr_buffer_handle handle, size_t size,
 			bufferObj.frameAllocOffset = offset;
 			bufferObj.dataSize = size;
 			bufferObj.frameAllocFrame = m_currentFrame;
+			bufferObj.frameAllocGeneration = alloc.generation;
 		} else {
 			// Pattern B: pre-alloc for offset writes (null data)
-			if (bufferObj.frameAllocFrame != m_currentFrame || size > bufferObj.dataSize) {
-				// First allocation this frame, or need more space
+			if (bufferObj.frameAllocFrame != m_currentFrame ||
+				bufferObj.frameAllocGeneration != alloc.generation || size > bufferObj.dataSize) {
+				// First allocation this frame, the cursor was rewound under us, or need more space
 				size_t offset = bumpAllocate(size);
 				bufferObj.frameAllocBuffer = alloc.buffer;
 				bufferObj.frameAllocOffset = offset;
 				bufferObj.dataSize = size;
 				bufferObj.frameAllocFrame = m_currentFrame;
+				bufferObj.frameAllocGeneration = alloc.generation;
 			}
-			// Otherwise: same frame and size fits — keep current allocation
+			// Otherwise: same frame, same generation and size fits — keep current allocation
 		}
 	} else {
 		// Static / PersistentMapping path.
@@ -620,15 +660,16 @@ void VulkanBufferManager::updateBufferDataOffset(gr_buffer_handle handle, size_t
 		// Auto-allocate if not yet allocated this frame.  This happens when
 		// the caller skips updateBufferData (e.g. gr_add_to_immediate_buffer
 		// when the data fits the existing buffer size).
-		if (bufferObj.frameAllocFrame != m_currentFrame) {
+		auto& fa = m_frameAllocs[m_currentFrame];
+		if (bufferObj.frameAllocFrame != m_currentFrame || bufferObj.frameAllocGeneration != fa.generation) {
 			size_t allocSize = std::max(bufferObj.dataSize, offset + size);
 			Assert(allocSize > 0);
-			auto& fa = m_frameAllocs[m_currentFrame];
 			size_t allocOffset = bumpAllocate(allocSize);
 			bufferObj.frameAllocBuffer = fa.buffer;
 			bufferObj.frameAllocOffset = allocOffset;
 			bufferObj.dataSize = allocSize;
 			bufferObj.frameAllocFrame = m_currentFrame;
+			bufferObj.frameAllocGeneration = fa.generation;
 		}
 
 		Assert(offset + size <= bufferObj.dataSize);
@@ -665,7 +706,7 @@ void* VulkanBufferManager::mapBuffer(gr_buffer_handle handle)
 	}
 
 	if (bufferObj.isStreaming()) {
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assert(isFrameAllocCurrent(bufferObj));
 		auto& alloc = m_frameAllocs[m_currentFrame];
 		return static_cast<uint8_t*>(alloc.mappedPtr) + bufferObj.frameAllocOffset;
 	}
@@ -694,7 +735,7 @@ void VulkanBufferManager::flushMappedBuffer(gr_buffer_handle handle, size_t offs
 
 	if (bufferObj.isStreaming()) {
 		// Adjust offset for current frame's allocation
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assert(isFrameAllocCurrent(bufferObj));
 		auto& alloc = m_frameAllocs[m_currentFrame];
 		m_memoryManager->flushMemory(alloc.allocation, bufferObj.frameAllocOffset + offset, size);
 	} else {
@@ -719,6 +760,30 @@ void VulkanBufferManager::bindUniformBuffer(uniform_block_type blockType, size_t
 
 // ========== Buffer queries ==========
 
+bool VulkanBufferManager::isFrameAllocCurrent(const VulkanBufferObject& bufferObj) const
+{
+	if (!bufferObj.isStreaming()) {
+		return true;
+	}
+
+	return bufferObj.frameAllocFrame == m_currentFrame &&
+	       bufferObj.frameAllocGeneration == m_frameAllocs[m_currentFrame].generation;
+}
+
+bool VulkanBufferManager::isFrameAllocCurrent(gr_buffer_handle handle) const
+{
+	if (!isValidHandle(handle)) {
+		return false;
+	}
+
+	const VulkanBufferObject& bufferObj = m_buffers[handle.value()];
+	if (!bufferObj.valid) {
+		return false;
+	}
+
+	return isFrameAllocCurrent(bufferObj);
+}
+
 vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 {
 	if (!isValidHandle(handle)) {
@@ -732,7 +797,12 @@ vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 
 	if (bufferObj.isStreaming()) {
 		// Streaming buffers return the frame allocator buffer they were uploaded to
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		Assertion(isFrameAllocCurrent(bufferObj),
+			"Streaming buffer %d was allocated in frame %u (generation %u) but fetched in frame %u "
+			"(generation %u) -- it must be uploaded again before it can be drawn with. A binding kept "
+			"from an earlier frame belongs on getVkBufferForBinding().",
+			handle.value(), bufferObj.frameAllocFrame, bufferObj.frameAllocGeneration, m_currentFrame,
+			m_frameAllocs[m_currentFrame].generation);
 		return bufferObj.frameAllocBuffer;
 	} else {
 		// Record that this frame (potentially) references the buffer -- consulted
@@ -740,6 +810,21 @@ vk::Buffer VulkanBufferManager::getVkBuffer(gr_buffer_handle handle) const
 		bufferObj.lastUsedFrameNumber = m_currentFrameNumber;
 		return bufferObj.buffer;
 	}
+}
+
+vk::Buffer VulkanBufferManager::getVkBufferForBinding(gr_buffer_handle handle) const
+{
+	if (!isFrameAllocCurrent(handle)) {
+		// Either the handle no longer resolves at all, or it is a streaming buffer whose
+		// sub-allocation belongs to a frame that has since been recycled. Both mean the caller
+		// has to fall back; only getVkBuffer() treats the latter as a bug.
+		return nullptr;
+	}
+
+	// Delegated rather than inlined: getVkBuffer()'s non-streaming branch stamps
+	// lastUsedFrameNumber, which is what updateBufferData() consults to decide whether a rewrite
+	// has to orphan. Duplicating the lookup here would mean remembering to keep that stamp.
+	return getVkBuffer(handle);
 }
 
 size_t VulkanBufferManager::getBufferSize(gr_buffer_handle handle) const
@@ -783,11 +868,10 @@ size_t VulkanBufferManager::getFrameBaseOffset(gr_buffer_handle handle) const
 
 	if (bufferObj.isStreaming()) {
 		// Return the bump allocator offset for the most recent upload this frame.
-		// Stale handle detection: if frameAllocFrame != m_currentFrame, this buffer
-		// was not uploaded this frame and the offset would be meaningless (the bump
-		// allocator has been reset). This indicates a buffer marked Streaming/Dynamic
-		// is being bound for rendering without being uploaded first.
-		Assert(bufferObj.frameAllocFrame == m_currentFrame);
+		// Stale handle detection: a sub-allocation that is not the live one has a meaningless
+		// offset (the bump allocator has rewound since), which means a buffer marked
+		// Streaming/Dynamic is being bound for rendering without being uploaded first.
+		Assert(isFrameAllocCurrent(bufferObj));
 		return bufferObj.frameAllocOffset;
 	} else {
 		return 0;

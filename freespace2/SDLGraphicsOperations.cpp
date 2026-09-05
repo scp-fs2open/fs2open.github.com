@@ -204,7 +204,72 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 		}
 	}
 
+	if (_vulkanLibraryLoaded) {
+		SDL_Vulkan_UnloadLibrary();
+		_vulkanLibraryLoaded = false;
+	}
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+}
+void* SDLGraphicsOperations::getVulkanProcAddr()
+{
+	// Creating a window with SDL_WINDOW_VULKAN already loads the loader, but this must also work
+	// before any such window exists, and SDL refcounts the load so the extra call is harmless.
+	if (!_vulkanLibraryLoaded) {
+		if (!SDL_Vulkan_LoadLibrary(nullptr)) {
+			mprintf(("Failed to load the Vulkan library: %s\n", SDL_GetError()));
+			return nullptr;
+		}
+		_vulkanLibraryLoaded = true;
+	}
+
+	auto procAddr = reinterpret_cast<void*>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+	if (procAddr == nullptr) {
+		mprintf(("Failed to get vkGetInstanceProcAddr: %s\n", SDL_GetError()));
+	}
+
+	return procAddr;
+}
+bool SDLGraphicsOperations::getVulkanInstanceExtensions(SCP_vector<SCP_string>& extensions)
+{
+	uint32_t count = 0;
+	auto extPtr = SDL_Vulkan_GetInstanceExtensions(&count);
+
+	if (extPtr == nullptr) {
+		mprintf(("Error in SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
+		return false;
+	}
+
+	extensions.reserve(extensions.size() + count);
+	for (uint32_t i = 0; i < count; ++i) {
+		extensions.emplace_back(extPtr[i]);
+	}
+
+	return true;
+}
+uint64_t SDLGraphicsOperations::createVulkanSurface(os::Viewport* view, void* vkInstance)
+{
+	Assertion(view != nullptr, "Invalid viewport specified!");
+
+	// Not VK_NULL_HANDLE: this file also compiles without the Vulkan headers, where the handle type
+	// comes from SDL_vulkan.h and that macro doesn't exist.
+	auto surface = os::vulkan_handle_cast<VkSurfaceKHR>(0);
+	if (!SDL_Vulkan_CreateSurface(view->toSDLWindow(), static_cast<VkInstance>(vkInstance), nullptr, &surface)) {
+		mprintf(("Failed to create Vulkan surface: %s\n", SDL_GetError()));
+		return 0;
+	}
+
+	return os::vulkan_handle_value(surface);
+}
+void SDLGraphicsOperations::destroyVulkanSurface(void* vkInstance, uint64_t surface)
+{
+	if (surface == 0) {
+		return;
+	}
+
+	SDL_Vulkan_DestroySurface(static_cast<VkInstance>(vkInstance),
+		os::vulkan_handle_cast<VkSurfaceKHR>(surface),
+		nullptr);
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {

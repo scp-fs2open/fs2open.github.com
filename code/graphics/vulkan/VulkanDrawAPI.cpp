@@ -215,9 +215,13 @@ void vulkan_scene_texture_begin()
 
 	auto* renderer = getRendererInstance();
 
-	// Switch to HDR scene render pass when post-processing is enabled
+	// Switch to HDR scene render pass when post-processing is enabled. The post-processor's targets
+	// are sized for the main viewport's swap chain, so this stays off anywhere else -- qtFRED's
+	// briefing map renders through brief_render_map() and never opens a scene-texture scope, so
+	// nothing is lost by that today.
 	auto* pp = getPostProcessor();
-	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override) {
+	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override &&
+		renderer->isMainTargetCurrent()) {
 		renderer->beginSceneRendering();
 		High_dynamic_range = true;
 	} else {
