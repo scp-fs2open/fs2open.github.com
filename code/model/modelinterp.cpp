@@ -2673,18 +2673,17 @@ texture_info::texture_info()
 }
 texture_info::texture_info(int bm_handle)
 {
+	clear();
+
 	if(!bm_is_valid(bm_handle))
-	{
-		clear();
 		return;
-	}
 
 	this->original_texture = bm_handle;
 	this->ResetTexture();
 }
 void texture_info::clear()
 {
-	texture = original_texture = -1;
+	texture = original_texture = held_texture = -1;
 	num_frames = 0;
 	total_time = 1.0f;
 }
@@ -2725,25 +2724,51 @@ void texture_info::PageIn()
 
 void texture_info::PageOut(bool release)
 {
-	if (texture >= 0) {
-		if (release) {
-			bm_release(texture);
-			texture = -1;
-			num_frames = 0;
-			total_time = 1.0f;
-		} else {
-			bm_unload(texture);
+	if (release) {
+		// release our own reference to a texture that was set from outside, if any
+		if (held_texture >= 0) {
+			bm_release_ref(held_texture);
+			held_texture = -1;
 		}
+
+		// release the texture we loaded; note that this is not necessarily the texture currently being drawn with
+		if (original_texture >= 0)
+			bm_release(original_texture);
+
+		texture = original_texture = -1;
+		num_frames = 0;
+		total_time = 1.0f;
+	} else if (original_texture >= 0) {
+		// page out the texture we loaded, keeping our reference so that it can be paged back in; a texture set from
+		// outside is left alone, since whoever set it may still be using it
+		bm_page_out(original_texture);
 	}
 }
 int texture_info::ResetTexture()
 {
-	return this->SetTexture(original_texture);
+	int result = this->SetTexture(original_texture);
+
+	// we no longer need to keep the other texture alive, unless the reset failed and it is still being drawn
+	if (held_texture >= 0 && (texture != held_texture || held_texture == original_texture)) {
+		bm_release_ref(held_texture);
+		held_texture = -1;
+	}
+
+	return result;
 }
-int texture_info::SetTexture(int n_tex)
+int texture_info::SetTexture(int n_tex, bool take_reference)
 {
 	if(n_tex != -1 && !bm_is_valid(n_tex))
 		return texture;
+
+	if (take_reference) {
+		// take the new reference before releasing the old one, in case they are the same texture
+		if (n_tex != -1)
+			bm_add_ref(n_tex);
+		if (held_texture >= 0)
+			bm_release_ref(held_texture);
+		held_texture = n_tex;
+	}
 
 	//Set the new texture
 	texture = n_tex;
@@ -2822,6 +2847,47 @@ void texture_map::ResetToOriginal()
 {
 	for(int i = 0; i < TM_NUM_TYPES; i++)
 		this->textures[i].ResetTexture();
+}
+
+//********************-----CLASS: model_texture_replace-----********************//
+model_texture_replace::model_texture_replace()
+{
+	m_handles.fill(-1);
+}
+
+model_texture_replace::~model_texture_replace()
+{
+	for (int tex : m_handles)
+		if (tex >= 0)
+			bm_release_ref(tex);
+}
+
+void model_texture_replace::adopt(int index, int handle)
+{
+	Assertion(index >= 0 && index < MAX_REPLACEMENT_TEXTURES, "Replacement texture index %d is out of range!", index);
+	if (index < 0 || index >= MAX_REPLACEMENT_TEXTURES)
+		return;
+
+	int& slot = m_handles[index];
+
+	if (slot >= 0)
+		bm_release_ref(slot);
+
+	slot = handle;
+}
+
+void model_texture_replace::reference(int index, int handle)
+{
+	// REPLACE_WITH_INVISIBLE is stored as-is; anything else must be a valid bitmap, or the slot is cleared
+	if (handle != REPLACE_WITH_INVISIBLE && bm_add_ref(handle) < 0)
+		handle = -1;
+
+	adopt(index, handle);
+}
+
+void model_texture_replace::clear(int index)
+{
+	adopt(index, -1);
 }
 
 bsp_polygon_data::bsp_polygon_data(ubyte* _bsp_data, int _bsp_data_size)

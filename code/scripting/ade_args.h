@@ -307,8 +307,9 @@ void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
 
 	if (Lua_API_returns_nil_instead_of_invalid_object) {
-		// If the underlying type has an isValid, it'll be evaluated; otherwise it'll be always true.
-		bool isValid = ade_is_valid<T>::get(od.value);
+		// A registered validator wins; otherwise, if the underlying type has an isValid, it'll be evaluated;
+		// otherwise it'll be always true.
+		bool isValid = ade_object_is_valid(od.idx, od.value);
 
 		if (!isValid) {
 			lua_pushnil(L);

@@ -81,6 +81,13 @@ SCP_vector<std::array<bitmap_slot, BM_BLOCK_SIZE>> bm_blocks;
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of private variables at file scope (static).
 static bool bm_inited = false;
+
+// Some objects with static storage duration (e.g. model_texture_replace held by a global shared_ptr) release bitmaps
+// in their destructors.  If the program exits without bm_close(), bm_blocks may be destroyed before they are, so this
+// guard, which is destroyed before bm_blocks because it is defined after it, marks bmpman as uninitialized first.
+static struct bm_static_destruction_guard {
+	~bm_static_destruction_guard() { bm_inited = false; }
+} Bm_static_destruction_guard;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
@@ -2920,6 +2927,9 @@ void bm_print_bitmaps() {
 int bm_release(int handle, int clear_render_targets) {
 	Assert(handle >= 0);
 
+	if (!bm_inited)
+		return 0;
+
 	bitmap_entry *be;
 
 	be = bm_get_entry(handle);
@@ -3017,6 +3027,36 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	return 1;
+}
+
+int bm_add_ref(int handle) {
+	if (!bm_is_valid(handle))
+		return -1;
+
+	// render targets are not counted, because bm_release() will not release them anyway
+	if (bm_is_render_target(handle))
+		return handle;
+
+	// animations are counted on their first frame
+	int first_frame = bm_get_info(handle);
+	if (first_frame < 0)
+		return -1;
+
+	bm_get_entry(first_frame)->load_count++;
+
+	return first_frame;
+}
+
+int bm_release_ref(int handle) {
+	if (!bm_is_valid(handle))
+		return 0;
+
+	// animations are counted on their first frame
+	int first_frame = bm_get_info(handle);
+	if (first_frame < 0)
+		return 0;
+
+	return bm_release(first_frame);
 }
 
 bool bm_release_rendertarget(int handle) {
@@ -3210,6 +3250,9 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 		return -1;
 	}
 
+	if (!bm_inited)
+		return 0;
+
 	be = bm_get_entry(handle);
 	bmp = &be->bm;
 
@@ -3265,6 +3308,30 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 	}
 
 	return 1;
+}
+
+int bm_page_out(int handle) {
+	if (!bm_inited || handle < 0)
+		return 0;
+
+	auto be = bm_get_entry(handle);
+
+	if (be->type == BM_TYPE_NONE || be->handle != handle)
+		return 0;
+
+	// someone else holds a reference and may be using the data
+	if (be->load_count > 1) {
+		nprintf(("BmpMan", "Not paging out %s because it has a load count of %d\n", be->filename, be->load_count));
+		return 0;
+	}
+
+	int result = bm_unload(handle);
+
+	// bm_unload() gives up a reference, but ours is kept
+	if (be->load_count == 0)
+		be->load_count = 1;
+
+	return result;
 }
 
 void bm_unload_all() {

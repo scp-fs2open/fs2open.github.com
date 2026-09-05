@@ -277,6 +277,20 @@ int bm_unload(int handle, int clear_render_targets = 0, bool nodebug = false);
 int bm_unload_fast(int handle, int clear_render_targets = 0);
 
 /**
+ * @brief Frees a bitmap's data without giving up the caller's load-count reference
+ *
+ * @details Use this to page out a bitmap that will be needed again later: the slot and the caller's reference are kept,
+ *   and the data is reloaded the next time the bitmap is locked.  Unlike bm_unload(), this never consumes a reference,
+ *   and the data is only freed if the caller is the sole holder, since anyone else holding a reference may be using it.
+ *
+ * @param handle  The bitmap handle
+ *
+ * @returns 1 if the data was freed,
+ * @returns 0 otherwise
+ */
+int bm_page_out(int handle);
+
+/**
  * @brief Frees both a bitmap's data and it's associated slot.
  *
  * @details Once called, the bm number 'n' cannot be used until bm_load or bm_create is re-inits the slot.
@@ -292,6 +306,34 @@ int bm_unload_fast(int handle, int clear_render_targets = 0);
  * @todo upgrade return type and clear_render_targets type to bools
  */
 int bm_release(int handle, int clear_render_targets = 0);
+
+/**
+ * @brief Takes an additional load-count reference on a bitmap that is already loaded
+ *
+ * @details This is the equivalent of loading the bitmap a second time: the bitmap will not be freed until every
+ *   reference has been released.  Use it when storing a handle that was loaded by someone else, so that the stored
+ *   handle stays valid even after the original loader releases it.  Every call must be balanced by a call to
+ *   bm_release_ref().
+ *
+ * @param handle  The bitmap handle.  For animations, any frame may be passed; the reference is taken on the first frame.
+ *   Render targets are not counted, since bm_release() will not release them without being explicitly asked to.
+ *
+ * @returns the handle the reference was taken on (the first frame for animations), or
+ * @returns -1 if the handle is not a valid bitmap
+ */
+int bm_add_ref(int handle);
+
+/**
+ * @brief Releases a load-count reference taken by bm_add_ref() or by loading the bitmap
+ *
+ * @details Same as bm_release(), except that any frame of an animation may be passed.
+ *
+ * @param handle  The bitmap handle.  For animations, any frame may be passed; the reference is released on the first frame.
+ *
+ * @returns 1 if the bitmap was freed,
+ * @returns 0 otherwise
+ */
+int bm_release_ref(int handle);
 
 /**
  * @brief Detaches the render target of a bitmap if it exists

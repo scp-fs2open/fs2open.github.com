@@ -60,23 +60,5 @@ ADE_FUNC(schedule,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(isValid,
-	l_Executor,
-	nullptr,
-	"Determined if this handle is valid",
-	"boolean",
-	"true if valid, false otherwise.")
-{
-	executor_h* executor = nullptr;
-	if (!ade_get_args(L, "o", l_Executor.GetPtr(&executor))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	if (executor == nullptr || !executor->isValid()) {
-		return ADE_RETURN_FALSE;
-	}
-	return ADE_RETURN_TRUE;
-}
-
 } // namespace api
 } // namespace scripting

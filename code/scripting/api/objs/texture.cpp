@@ -3,8 +3,6 @@
 
 #include "texture.h"
 #include "bmpman/bmpman.h"
-#define BMPMAN_INTERNAL
-#include "bmpman/bm_internal.h"
 
 namespace scripting {
 namespace api {
@@ -12,7 +10,7 @@ namespace api {
 texture_h::texture_h() = default;
 texture_h::texture_h(int bm, bool refcount, int parent_bm) : handle(bm), parent_handle(parent_bm) {
 	if (refcount && isValid())
-		bm_get_entry(parent_bm != -1 ? parent_bm : bm)->load_count++;
+		bm_add_ref(parent_bm != -1 ? parent_bm : bm);
 }
 texture_h::~texture_h()
 {
@@ -31,7 +29,9 @@ texture_h::~texture_h()
 	//Otherwise it is possible (and has been observed in practice) that the parent texture get's deleted before all dependent objects,
 	//causing this release of the dependent object to clear unrelated textures that were assigned the previously freed spots.
 	//So instead, both lock and later unlock the parent texture rather than this child texture. -Lafiel
-	bm_release(parent_handle != -1 ? parent_handle : handle);
+	//Note 3: bm_add_ref() and bm_release_ref() both operate on the first frame of an animation, so a subframe handle
+	//with no parent recorded is still released on the same entry the reference was taken on.
+	bm_release_ref(parent_handle != -1 ? parent_handle : handle);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
 
@@ -101,15 +101,6 @@ ADE_INDEXER(l_Texture, "number",
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame, true, first)));
 }
 
-ADE_FUNC(isValid, l_Texture, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	texture_h* th;
-	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", th->isValid());
-}
-
 ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 {
 	texture_h* th;
@@ -120,7 +111,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
 
-	bm_release(th->handle);
+	bm_release_ref(th->handle);
 
 	//WMC - invalidate this handle
 	th->handle = -1;

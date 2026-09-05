@@ -11,9 +11,9 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: modelinstancetextures (compatible with preceding shiptextures)
-ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Model instance textures handle");
+ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Flat array of textures for one model instance.  It has the same layout as the model's \"textures\" handle: each material (texture_map) contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Reads return the instance's replacement texture for that slot if one is set, otherwise the model's texture.  Writes set a replacement texture on this instance only.");
 
-ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model instance", "number", "Number of textures on the model instance, or 0 if handle is invalid")
+ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of texture slots on the model instance, i.e. the number of materials multiplied by " SCP_TOKEN_TO_STR(TM_NUM_TYPES), "number", "Number of texture slots, or 0 if handle is invalid")
 {
 	modelinstance_h *mih;
 	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
@@ -30,7 +30,7 @@ ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model
 	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
 }
 
-ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Array of model instance textures", "texture", "Texture, or invalid texture handle on failure")
+ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Gets or sets a texture slot.  A number is a 1-based index into the flat array (see the \"modelinstancetextures\" handle description for the layout).  A string is matched first against the filenames of this instance's replacement textures, then against the filename of every slot on every material of the model.  Setting a slot sets a replacement texture on this instance only; set it to an invalid texture handle to clear the replacement.  The instance takes its own reference to the texture, so the script does not need to keep the handle alive.", "texture", "Texture, or invalid texture handle if the handle is invalid or the index/name does not match")
 {
 	modelinstance_h *mih;
 	const char* s;
@@ -86,24 +86,15 @@ ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Ar
 			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
-		if (tdx != nullptr) {
-			(*pmi->texture_replace)[final_index] = tdx->isValid() ? tdx->handle : -1;
-		}
+		// an invalid texture handle clears the replacement
+		if (tdx != nullptr)
+			pmi->texture_replace->reference(final_index, tdx->handle);
 	}
 
 	if (pmi->texture_replace != nullptr && (*pmi->texture_replace)[final_index] >= 0)
 		return ade_set_args(L, "o", l_Texture.Set(texture_h((*pmi->texture_replace)[final_index])));
 	else
 		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
-}
-
-ADE_FUNC(isValid, l_ModelInstanceTextures, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	modelinstance_h *mih;
-	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", mih->isValid());
 }
 
 
@@ -276,15 +267,6 @@ ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "
 		LuaError(L, "Attempt to use Incomplete Feature: submodel instance copy");
 
 	return ade_set_args(L, "o", l_ModelSubmodelInstances.Set(modelsubmodelinstances_h(pmi)));
-}
-
-ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	modelinstance_h *mih;
-	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", mih->isValid());
 }
 
 ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
@@ -473,15 +455,6 @@ ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation,
 	return ade_set_args(L, "oo", l_Vector.Set(local_pnt), l_Matrix.Set(matrix_h(&local_orient)));
 }
 
-ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	submodelinstance_h *smih;
-	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", smih->isValid());
-}
-
 
 ADE_OBJ(l_ModelSubmodelInstances, modelsubmodelinstances_h, "submodel_instances", "Array of submodel instances");
 
@@ -554,15 +527,6 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 	return ade_set_args(L, "o", l_SubmodelInstance.Set(submodelinstance_h(pmi, index)));
-}
-
-ADE_FUNC(isValid, l_ModelSubmodelInstances, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if invalid, nil if a syntax/type error occurs")
-{
-	modelsubmodelinstances_h *msih;
-	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", msih->isValid());
 }
 
 }

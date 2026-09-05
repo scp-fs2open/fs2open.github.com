@@ -316,7 +316,8 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 				// when using va_args for some reason.
 				lua_pushstring(L, "<UNNAMED FUNCTION>");
 				lua_pushboolean(L, 0);
-				lua_pushcclosure(L, Function, 2);
+				lua_pushlightuserdata(L, Obj_upvalue);	// upvalue(3) = Reference to ade_obj, if this is a generated function
+				lua_pushcclosure(L, Function, 3);
 			}
 			nset++;
 			break;
@@ -430,7 +431,7 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 			lua_pushstring(L, "__gc");
 			lua_pushfstring(L, "%s Destructor", GetName()); // upvalue(1) = function name
 			lua_pushboolean(L, 0);                          // upvalue(2) = setting true/false
-			lua_pushlightuserdata(L, Destructor_upvalue);   // upvalue(3) = Reference to ade_obj
+			lua_pushlightuserdata(L, Obj_upvalue);          // upvalue(3) = Reference to ade_obj
 			lua_pushcclosure(L, Destructor, 3);
 			lua_rawset(L, mtb_ldx);
 		}
@@ -488,6 +489,20 @@ int ade_table_entry::SetTable(lua_State* L, int p_amt_ldx, int p_mtb_ldx)
 size_t ade_table_entry::AddSubentry(ade_table_entry& n_ate) {
 	ade_table_entry ate = n_ate;
 	ate.ParentIdx = Idx;
+
+	// If a subentry with this name already exists (e.g. an explicitly declared function overriding one that was
+	// automatically generated), replace it in place so that both Lua and the documentation see only the latest one
+	if (ate.Name != nullptr) {
+		for (size_t i = 0; i < Num_subentries; i++) {
+			auto& existing = ade_manager::getInstance()->getEntry(Subentries[i]);
+			if (existing.Name != nullptr && strcmp(existing.Name, ate.Name) == 0) {
+				ate.Idx = existing.Idx;
+				existing = ate;
+				return ate.Idx;
+			}
+		}
+	}
+
 	size_t new_idx = ade_manager::getInstance()->addTableEntry(ate);
 
 	//WMC - Oi. Moving the Ade_table_entries vector
