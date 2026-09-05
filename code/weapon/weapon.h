@@ -352,13 +352,16 @@ struct ConditionalImpact {
 };
 
 enum class FiringPattern {
-	STANDARD,
-	CYCLE_FORWARD,
+	ALL_AT_ONCE,			// every firing point fires each volley (the default for primaries, per retail)
+	CYCLE_FORWARD,			// firing points take turns (the default for secondaries, per retail)
 	CYCLE_REVERSE,
-	RANDOM_EXHAUSTIVE,
-	RANDOM_NONREPEATING,
-	RANDOM_REPEATING,
+	RANDOM_EXHAUSTIVE,		// random order, but each point fires once before any point repeats
+	RANDOM_NONREPEATING,	// random order; consecutive volleys avoid repeating points where possible
+	RANDOM_REPEATING,		// fully random order every volley
 };
+
+// maps a tables string (e.g. "CYCLE FORWARD") to a firing pattern; case-insensitive
+std::optional<FiringPattern> firing_pattern_from_string(const char *name);
 
 float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
