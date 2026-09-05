@@ -959,7 +959,11 @@ public:
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
+	// Applies replacement textures whose bitmaps have already been loaded (new_texture_id is set); the model instance takes its own references
 	void apply_replacement_textures(const SCP_vector<texture_replace> &replacements);
+
+	// Applies replacement textures given by filename only (e.g. a ship class's table entry), loading the bitmaps for the model instance
+	void load_and_apply_replacement_textures(const SCP_vector<texture_replace> &replacements);
 };
 
 struct ai_target_priority {
