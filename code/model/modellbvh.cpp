@@ -49,7 +49,8 @@ vec3d box_max_of(const vec3d &a, const vec3d &b)
 	return r;
 }
 
-// See lbvh_node::child's doc comment: submodel_index >= 0 always, so this is always < 0.
+// See lbvh_node::child's doc comment: submodel_index >= 0 always, so this is always < 0 (and never
+// INT32_MIN for any submodel_index that will ever exist -- that value is reserved for "empty slot").
 int32_t encode_leaf(int submodel_index)
 {
 	return -submodel_index - 1;
@@ -58,40 +59,35 @@ int32_t encode_leaf(int submodel_index)
 // One entry per item, after sorting by Morton code.
 struct SortedEntry {
 	uint32_t code;
-	int32_t item_index; // indexes the `items` parameter threaded through build_range()
+	int32_t item_index; // indexes the `items` parameter threaded through the build
 };
 
 // A just-built subtree: either a leaf (encode_leaf() of some submodel, no node pushed) or an
 // internal node (a non-negative index freshly pushed to tree.nodes), plus that subtree's own box --
 // needed regardless of which case, since a leaf has no node of its own to look the box up from
-// later, and the caller (a would-be parent) always needs it for its own slot.
+// later, and the caller (a would-be parent slot) always needs it.
 struct Subtree {
 	int32_t code;
 	vec3d box_min, box_max;
 };
 
-// pbrt-style sequential LBVH build: recursively partitions [start, end) of the Morton-sorted range
-// by the highest bit that still differs across it (binary search, since the range is sorted),
-// descending one bit per level until a partition isolates a single item. A bit that doesn't
-// discriminate anything in the current range (e.g. two submodels that happen to land in the same
-// Morton cell) is skipped rather than forcing an uneven split; running out of bits entirely with more
-// than one item left (duplicate codes) falls back to a plain median split so recursion still
-// terminates.
-Subtree build_range(lbvh_tree &tree, const SCP_vector<SortedEntry> &sorted, const SCP_vector<lbvh_item> &items,
-	int32_t start, int32_t end, int bit)
-{
-	if (end - start == 1) {
-		const lbvh_item &it = items[sorted[start].item_index];
-		return {encode_leaf(it.submodel_index), it.box_min, it.box_max};
-	}
+// Where [start, end) (sorted by Morton code) should split: the highest bit that still differs
+// across the range, found by binary search since the range is sorted, skipping any leading bit that
+// doesn't discriminate anything within it (e.g. two submodels landing in the same Morton cell).
+// bit_used is the bit the split actually happened on, or -1 if every bit was exhausted (duplicate
+// codes), in which case pos is a plain median split so the caller still makes progress.
+struct SplitPoint {
+	int32_t pos;
+	int bit_used;
+};
 
-	int32_t split;
-	if (bit < 0) {
-		split = start + (end - start) / 2;
-	} else {
+SplitPoint find_split(const SCP_vector<SortedEntry> &sorted, int32_t start, int32_t end, int bit)
+{
+	while (bit >= 0) {
 		uint32_t mask = 1u << bit;
 		if ((sorted[start].code & mask) == (sorted[end - 1].code & mask)) {
-			return build_range(tree, sorted, items, start, end, bit - 1);
+			--bit;
+			continue;
 		}
 		int32_t lo = start, hi = end - 1;
 		while (lo < hi) {
@@ -102,25 +98,102 @@ Subtree build_range(lbvh_tree &tree, const SCP_vector<SortedEntry> &sorted, cons
 				lo = mid + 1;
 			}
 		}
-		split = lo;
+		return {lo, bit};
+	}
+	return {start + (end - start) / 2, -1};
+}
+
+Subtree build_node(lbvh_tree &tree, const SCP_vector<SortedEntry> &sorted, const SCP_vector<lbvh_item> &items,
+	int32_t start, int32_t end, int bit);
+
+// Resolves one child slot's range into either a leaf (single item) or a further BVH_N-wide node
+// (built recursively), and writes its box/child code into `node`'s slot i.
+Subtree fill_slot(lbvh_tree &tree, const SCP_vector<SortedEntry> &sorted, const SCP_vector<lbvh_item> &items,
+	lbvh_node &node, int slot, int32_t start, int32_t end, int bit)
+{
+	Subtree sub;
+	if (end - start == 1) {
+		const lbvh_item &it = items[sorted[start].item_index];
+		sub = {encode_leaf(it.submodel_index), it.box_min, it.box_max};
+	} else {
+		sub = build_node(tree, sorted, items, start, end, bit);
+	}
+	node.minx[slot] = sub.box_min.xyz.x;
+	node.miny[slot] = sub.box_min.xyz.y;
+	node.minz[slot] = sub.box_min.xyz.z;
+	node.maxx[slot] = sub.box_max.xyz.x;
+	node.maxy[slot] = sub.box_max.xyz.y;
+	node.maxz[slot] = sub.box_max.xyz.z;
+	node.child[slot] = sub.code;
+	return sub;
+}
+
+// Builds one BVH_N(=4)-wide node over [start, end) (end - start > 1): splits the Morton-sorted range
+// in two, then splits each half again wherever it still holds more than one item -- collapsing what
+// would be two binary LBVH levels into a single 4-wide node, the same "greedily collapsed" shape
+// bvh_build() uses for the triangle module (see modelbvh.h's own doc comment on BVH_N). A range that
+// already dropped to one item after the first split becomes a leaf slot directly instead of forcing
+// a pointless second split, so a node always ends up with 2-4 real children, never fewer.
+Subtree build_node(lbvh_tree &tree, const SCP_vector<SortedEntry> &sorted, const SCP_vector<lbvh_item> &items,
+	int32_t start, int32_t end, int bit)
+{
+	SplitPoint top = find_split(sorted, start, end, bit);
+	int32_t mid = top.pos;
+	int next_bit = top.bit_used - 1;
+
+	int32_t range_start[BVH_N], range_end[BVH_N];
+	int range_bit[BVH_N];
+	int n_ranges = 0;
+	auto add_range = [&](int32_t s, int32_t e, int b) {
+		range_start[n_ranges] = s;
+		range_end[n_ranges] = e;
+		range_bit[n_ranges] = b;
+		++n_ranges;
+	};
+
+	if (mid - start > 1) {
+		SplitPoint ls = find_split(sorted, start, mid, next_bit);
+		add_range(start, ls.pos, ls.bit_used - 1);
+		add_range(ls.pos, mid, ls.bit_used - 1);
+	} else {
+		add_range(start, mid, next_bit);
+	}
+	if (end - mid > 1) {
+		SplitPoint rs = find_split(sorted, mid, end, next_bit);
+		add_range(mid, rs.pos, rs.bit_used - 1);
+		add_range(rs.pos, end, rs.bit_used - 1);
+	} else {
+		add_range(mid, end, next_bit);
 	}
 
-	Subtree left = build_range(tree, sorted, items, start, split, bit - 1);
-	Subtree right = build_range(tree, sorted, items, split, end, bit - 1);
-
 	lbvh_node node;
-	node.min[0] = left.box_min;
-	node.max[0] = left.box_max;
-	node.child[0] = left.code;
-	node.min[1] = right.box_min;
-	node.max[1] = right.box_max;
-	node.child[1] = right.code;
+	vec3d node_min, node_max;
+	for (int slot = 0; slot < BVH_N; ++slot) {
+		if (slot < n_ranges) {
+			Subtree sub = fill_slot(tree, sorted, items, node, slot, range_start[slot], range_end[slot],
+				range_bit[slot]);
+			if (slot == 0) {
+				node_min = sub.box_min;
+				node_max = sub.box_max;
+			} else {
+				node_min = box_min_of(node_min, sub.box_min);
+				node_max = box_max_of(node_max, sub.box_max);
+			}
+		} else {
+			// Impossible box (min > max), matching bvh_node's own padding convention -- fails the
+			// slab test for free even without consulting child[slot] first.
+			node.minx[slot] = node.miny[slot] = node.minz[slot] = FLT_MAX;
+			node.maxx[slot] = node.maxy[slot] = node.maxz[slot] = -FLT_MAX;
+			node.child[slot] = INT32_MIN;
+		}
+	}
+
 	tree.nodes.push_back(node);
 
 	Subtree result;
 	result.code = static_cast<int32_t>(tree.nodes.size()) - 1;
-	result.box_min = box_min_of(left.box_min, right.box_min);
-	result.box_max = box_max_of(left.box_max, right.box_max);
+	result.box_min = node_min;
+	result.box_max = node_max;
 	return result;
 }
 
@@ -154,8 +227,16 @@ lbvh_tree lbvh_build(SCP_vector<lbvh_item> items)
 		return a.code != b.code ? a.code < b.code : a.item_index < b.item_index;
 	});
 
-	tree.nodes.reserve(static_cast<size_t>(n - 1));
-	Subtree root = build_range(tree, sorted, items, 0, n, 29);
+	if (n == 1) {
+		const lbvh_item &it = items[sorted[0].item_index];
+		tree.root = encode_leaf(it.submodel_index);
+		tree.root_min = it.box_min;
+		tree.root_max = it.box_max;
+		return tree;
+	}
+
+	tree.nodes.reserve(static_cast<size_t>((n + BVH_N - 2) / (BVH_N - 1)));
+	Subtree root = build_node(tree, sorted, items, 0, n, 29);
 	tree.root = root.code;
 	tree.root_min = root.box_min;
 	tree.root_max = root.box_max;
@@ -195,9 +276,13 @@ void lbvh_visit(const lbvh_tree &tree, const vec3d &origin, const vec3d &dir, fl
 		int32_t idx = stack[--sp];
 		const lbvh_node &node = tree.nodes[idx];
 
-		for (int i = 0; i < 2; ++i) {
-			float bmin[3] = {node.min[i].xyz.x, node.min[i].xyz.y, node.min[i].xyz.z};
-			float bmax[3] = {node.max[i].xyz.x, node.max[i].xyz.y, node.max[i].xyz.z};
+		for (int i = 0; i < BVH_N; ++i) {
+			if (node.child[i] == INT32_MIN) {
+				continue;
+			}
+
+			float bmin[3] = {node.minx[i], node.miny[i], node.minz[i]};
+			float bmax[3] = {node.maxx[i], node.maxy[i], node.maxz[i]};
 			if (!bvh_detail::ray_aabb_visit(origin, inv_dir, bmin, bmax, t_max, radius)) {
 				continue;
 			}

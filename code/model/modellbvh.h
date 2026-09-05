@@ -2,34 +2,38 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/vmallocator.h"
-#include "model/modelbvh.h" // reuses bvh_detail::ray_aabb_visit for the slab test
+#include "model/modelbvh.h" // reuses BVH_N and bvh_detail::ray_aabb_visit for the slab test
 
 #include <cstdint>
 #include <functional>
 
 // Top-level BVH over a ship's own submodel bounding boxes, distinct from modelbvh.h's per-submodel
-// triangle BVH. Binary (2-wide) nodes and a Morton-code (LBVH) build, not the SAH build the triangle
-// module uses -- the item count here is always small (a ship's own n_models, realistically tens to a
-// couple hundred) and this tree is meant to be thrown away and rebuilt every frame for an animated
-// ship instance (see model_collide_get_submodel_bvh() in modelcollide.cpp), so build cost matters
-// more than tree quality; SAH's cost-evaluation search isn't worth paying every frame at this scale.
+// triangle BVH. Morton-code (LBVH) built, not the SAH build the triangle module uses -- the item
+// count here is always small (a ship's own n_models, realistically tens to a couple hundred) and
+// this tree is meant to be thrown away and rebuilt every frame for an animated ship instance (see
+// model_collide_get_submodel_bvh() in modelcollide.cpp), so build cost matters more than tree
+// quality; SAH's cost-evaluation search isn't worth paying every frame at this scale.
 
 struct lbvh_item {
 	vec3d box_min, box_max; // in the ship's top-level (detail[0]) local frame -- see modelcollide.cpp
 	int submodel_index = -1;
 };
 
-// Every node has exactly two children -- the recursive build only ever creates a node to join two
-// already-built subtrees, so there's no partial/padding slot to represent (unlike modelbvh.h's
-// bvh_node, which pads unused slots of a wider fixed fan-out). Each slot's box is stored inline,
-// mirroring bvh_node's per-slot boxes, so the slab test can reject a child before following it.
+// Same BVH_N=4, Structure-of-Arrays shape as modelbvh.h's bvh_node (see that struct's own doc
+// comment for the SIMD rationale), built by collapsing 2 binary LBVH split levels into each node
+// instead of bvh_build()'s SAH cost search -- cheap enough to redo every frame.
 //
-// A slot is either another node or a leaf naming a submodel directly, distinguished by the sign of
-// child[i]: child[i] >= 0 is a node index into lbvh_tree::nodes; child[i] < 0 is a leaf, and its
-// submodel index is -child[i] - 1 (the -1 shift avoids colliding with node index 0, since -0 == 0).
+// A slot is either another node or a leaf naming a submodel directly, distinguished by child[i]:
+//   child[i] >= 0            -> internal: index of the child node in lbvh_tree::nodes.
+//   child[i] < 0, != INT32_MIN -> leaf: submodel index is -child[i] - 1 (the -1 shift avoids
+//                                  colliding with node index 0, since -0 == 0).
+//   child[i] == INT32_MIN    -> unused padding slot (fewer than BVH_N real children).
+// Unused slots are also given an impossible box (min > max, matching bvh_node's own padding
+// convention) so the slab test fails them for free even if a caller ever skipped the child check.
 struct lbvh_node {
-	vec3d min[2], max[2];
-	int32_t child[2];
+	float minx[BVH_N], miny[BVH_N], minz[BVH_N];
+	float maxx[BVH_N], maxy[BVH_N], maxz[BVH_N];
+	int32_t child[BVH_N];
 };
 
 struct lbvh_tree {
