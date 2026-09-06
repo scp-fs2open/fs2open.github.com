@@ -156,6 +156,7 @@ void RenderWidget::keyPressEvent(QKeyEvent* key) {
 	if (_viewport != nullptr && key->key() == Qt::Key_Escape && _viewport->button_down) {
 		_viewport->cancel_drag();
 		_usingMarkingBox = false;
+		_window->setMouseGrabEnabled(false);
 		key->accept();
 		return;
 	}
@@ -206,6 +207,7 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 		if (_viewport != nullptr && _viewport->button_down) {
 			_viewport->cancel_drag();
 			_usingMarkingBox = false;
+			_window->setMouseGrabEnabled(false);
 			event->accept();
 			return;
 		}
@@ -241,6 +243,11 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_viewport->on_object = _viewport->select_object(event->position().x() * _window->devicePixelRatio(),
 		event->position().y() * _window->devicePixelRatio());
 	_viewport->button_down = 1;
+
+	// Grab the mouse for the duration of the drag. The render surface is an embedded QWindow that
+	// only receives (and forwards) mouse events while the cursor is over it, so a fast drag out of
+	// the viewport would otherwise drop the move/release events and strand the selection box.
+	_window->setMouseGrabEnabled(true);
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
 		if (_viewport->on_object == -1) {
@@ -369,6 +376,10 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	updateCursor();
 
 	if (!event->buttons().testFlag(Qt::LeftButton)) {
+		if (_viewport->button_down) {
+			// Button came up without a release event reaching us; drop the grab so it never dangles.
+			_window->setMouseGrabEnabled(false);
+		}
 		_viewport->button_down = false;
 	}
 
@@ -423,6 +434,9 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 
 	_markingBox.x2 = event->position().x() * _window->devicePixelRatio();
 	_markingBox.y2 = event->position().y() * _window->devicePixelRatio();
+
+	// Drag finished: drop the grab taken in mousePressEvent (before any modal dialog below runs).
+	_window->setMouseGrabEnabled(false);
 
 	if (_viewport->button_down) {
 		if (abs(_markingBox.x1 - _markingBox.x2) > 1 || abs(_markingBox.y1 - _markingBox.y2) > 1) {
