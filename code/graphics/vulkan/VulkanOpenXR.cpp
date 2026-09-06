@@ -311,7 +311,7 @@ void end_frame(VulkanRenderer* renderer, bool stereo)
 
 	// SETUP FUNCTIONS VULKAN
 
-#ifdef FSO_OPENXR
+#ifdef FS_OPENXR
 SCP_vector<const char*> vulkan_openxr_get_extensions()
 {
 	return { XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME };
