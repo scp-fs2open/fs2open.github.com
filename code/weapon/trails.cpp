@@ -149,7 +149,7 @@ void trail_render( trail * trailp )
 		return;
 	}
 
-	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
+	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE_WITH_BACKFACES);
 
 	if (trailp->single_segment) {
 		Assertion(trailp->tail == 2, "Single segment trail with more than two values!");
@@ -327,8 +327,12 @@ void trail_render( trail * trailp )
 
 				verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
 				verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
-
-				batching_add_quad(ti->texture.bitmap_id, verts, batchp);
+				if (Detail.num_particles == NUM_DEFAULT_DETAIL_LEVELS) {
+					batching_add_quad_twisted(ti->texture.bitmap_id, verts, batchp);
+				} else {
+					batching_add_quad(ti->texture.bitmap_id, verts, batchp);
+				}
+				
 			}
 		}
 
