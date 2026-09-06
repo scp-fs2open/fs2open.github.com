@@ -1,0 +1,18 @@
+set(ETCPAK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/etcpak")
+
+# Note: BC7 encoder was commented out in ProcessDxtc as it needs C++20 and not included
+set(ETCPAK_SOURCES
+	"${ETCPAK_DIR}/ProcessRGB.cpp"
+	"${ETCPAK_DIR}/Tables.cpp"
+	"${ETCPAK_DIR}/Dither.cpp"
+	"${ETCPAK_DIR}/ProcessDxtc.cpp")
+
+add_library(etcpak STATIC ${ETCPAK_SOURCES})
+
+target_include_directories(etcpak SYSTEM PUBLIC "${ETCPAK_DIR}")
+
+suppress_warnings(etcpak)
+
+set_target_properties(etcpak PROPERTIES FOLDER "3rdparty")
+
+target_link_libraries(etcpak PUBLIC compiler)

@@ -140,7 +140,10 @@ bool vulkan_is_capable(gr_capability capability)
 		return getRendererInstance()->isTextureCompressionBCSupported();
 	case gr_capability::CAPABILITY_S3TC:
 		// Vulkan always supports BC1/BC2/BC3 (S3TC equivalent) as core features
-		return true;
+		// But this is optional on mobile gpus, so check anyway
+		return getRendererInstance()->isTextureCompressionS3TCSupported();
+	case gr_capability::CAPABILITY_ETC2:
+		return getRendererInstance()->isTextureCompressionETC2Supported();
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		// Same troubleshooting switch as OpenGL: -no_large_shaders splits the model
 		// ubershader into per-flag-combination variants for drivers that choke on the
