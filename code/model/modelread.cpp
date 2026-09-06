@@ -446,9 +446,9 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const 
 	char closing_bracket = '\0';
 	bool success = false;
 
-	pause_parse();
-	Mp = buf;
-	snprintf(Current_filename, sizeof(Current_filename), "submodel %s on %s", submodel_name, filename);
+	char pseudo_filename[MAX_PATH_LEN];
+	snprintf(pseudo_filename, sizeof(pseudo_filename), "submodel %s on %s", submodel_name, filename);
+	PauseParseGuard guard(buf, pseudo_filename);
 
 	// Check if there's a missing line break before the next "$".
 	char end_separator = '\0';
@@ -463,8 +463,8 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const 
 	}
 
 	// Note that we can't simply return from within this block
-	// because we always need to call unpause_parse before we
-	// leave the function.  A one-iteration loop with break
+	// because we always need to revert the end_separator replacement
+	// before we leave the function.  A one-iteration loop with break
 	// statements allows the code to jump to the end.  Alternatively,
 	// goto could have been used.
 	do {
@@ -508,7 +508,6 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const 
 		*end_pos = end_separator;
 	}
 
-	unpause_parse();
 	return success;
 }
 
@@ -3289,9 +3288,8 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
-	pause_parse();
-	Mp = Parse_text;
-	strcpy_s(Current_filename, filename);
+	// not parsing anything from Parse_text, but this makes parse errors report the model filename
+	PauseParseGuard guard(Parse_text, filename);
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
@@ -3336,7 +3334,6 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		}
 		Polygon_models[num] = NULL;
 
-		unpause_parse();
 		return -1;
 	}
 
@@ -3537,7 +3534,6 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
 	model_set_bay_path_nums(pm);
 
-	unpause_parse();
 	if (sip != nullptr)
 		sip->model_num = pm->id;
 
