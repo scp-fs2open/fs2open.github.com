@@ -1054,7 +1054,7 @@ void os_android_touch_overlay_toggle(bool status)
     }
 }
 
-void os_android_touch_overlay_set_opacity(float opacity)
+void os_android_touch_overlay_set_opacity(int opacity)
 {
 	// Get the JNI environment pointer and current Activity instance via SDL
 	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
@@ -1066,7 +1066,7 @@ void os_android_touch_overlay_set_opacity(float opacity)
 		if (ga) {
 			jmethodID methodId = android_get_static_method(env, ga, "setOverlayOpacity", "(F)V");
 			if (methodId) {
-				env->CallStaticVoidMethod(ga, methodId, static_cast<jfloat>(opacity));
+				env->CallStaticVoidMethod(ga, methodId, static_cast<jfloat>(opacity) / 100.0f);
 			} else {
 				mprintf(("os_android_touch_overlay_set_opacity: Couldn't get the methodID.\n"));
 			}
@@ -1095,12 +1095,12 @@ static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverla
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(touch_ui_change)
 	.default_val(true)
-	.importance(2)
+	.importance(0)
 	.finish();
 
-static bool touch_ui_opacity_change(float new_val, bool initial)
+static bool touch_ui_opacity_change(int new_val, bool initial)
 {
-	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+	Assertion(new_val >= 0 && new_val <= 100, "Invalid value %d supplied by options system!", new_val);
 	if (initial) {
 		return false;
 	}
@@ -1108,23 +1108,23 @@ static bool touch_ui_opacity_change(float new_val, bool initial)
 	return true;
 }
 
-static SCP_string touch_ui_opacity_display(float value)
+static SCP_string touch_ui_opacity_display(int value)
 {
 	SCP_string result;
-	sprintf(result, "%.0f%%", value * 100.0f);
+	sprintf(result, "%d%%", value);
 	return result;
 }
 
-static auto TouchOverlayOpacityOption = options::OptionBuilder<float>("Input.TouchOverlayOpacity",
+static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
 	std::pair<const char*, int>{"Touch Overlay Opacity", -1}, // TODO: set string id after approval
 	std::pair<const char*, int>{"Set the opacity of the touch overlay", -1}) // TODO: set string id after approval
 	.category(std::make_pair("Input", 1827))
 	.level(options::ExpertLevel::Beginner)
-	.range(0.0f, 1.0f)
+	.range(0, 100)
 	.display(touch_ui_opacity_display)
 	.change_listener(touch_ui_opacity_change)
-	.default_val(0.20f)
-	.importance(1)
+	.default_val(20)
+	.importance(0)
 	.finish();
 	
 void os_android_touch_overlay_init()
