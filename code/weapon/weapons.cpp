@@ -33,6 +33,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
 #include "model/animation/modelanimation_driver.h"
+#include "model/animation/modelanimation_segments.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -8759,6 +8760,78 @@ void weapon_mark_as_used(int weapon_type)
 }
 
 /**
+ * Backwards compatibility: synthesizes a weapon-warmup animation for weapons using the old gun
+ * rotation system ($Submodel Rotation Speed: / $Submodel Rotation Acceleration: in weapons.tbl,
+ * plus the Gun_rotation flag on submodels of the weapon's display model).  The animation
+ * accelerates each Gun_rotation submodel about its bank (Z) axis up to the tabled velocity,
+ * loops seamlessly at speed, and decelerates forward when the weapon stops firing, matching the
+ * old hardcoded behavior.  If the display model has no Gun_rotation submodels, the old system
+ * still delayed firing by the spin-up time, so a segmentless wait animation preserves the gate.
+ *
+ * This must run after the weapon's models are loaded; it does nothing if the weapon already has
+ * a warmup animation, whether modder-supplied or from a previous call.
+ */
+static void weapon_maybe_create_gun_rotation_animation(weapon_info *wip)
+{
+	int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+	if (display_model_num < 0)
+		return;
+
+	for (const auto &trigger : wip->animations.getRegisteredTriggers())
+	{
+		if (trigger.type == animation::ModelAnimationTriggerType::WeaponWarmup)
+			return;
+	}
+
+	polymodel *pm = model_get(display_model_num);
+
+	float ramp_time = (wip->weapon_submodel_rotate_accell > 0.0f) ? wip->weapon_submodel_rotate_vel / wip->weapon_submodel_rotate_accell : 0.0f;
+
+	angles velocity = { 0.0f, wip->weapon_submodel_rotate_vel, 0.0f };
+	angles acceleration = { 0.0f, wip->weapon_submodel_rotate_accell, 0.0f };
+
+	auto spin_segments = std::make_shared<animation::ModelAnimationSegmentParallel>();
+	bool found_submodel = false;
+
+	for (int mn = 0; mn < pm->n_models; mn++)
+	{
+		if (!pm->submodel[mn].flags[Model::Submodel_flags::Gun_rotation])
+			continue;
+		found_submodel = true;
+
+		auto submodel = wip->animations.getSubmodel(pm->submodel[mn].name);
+
+		auto serial = std::make_shared<animation::ModelAnimationSegmentSerial>();
+		// spin up to speed, then one full revolution at constant velocity, which the animation loops over
+		serial->addSegment(std::make_shared<animation::ModelAnimationSegmentSpinUp>(submodel, velocity, acceleration));
+		serial->addSegment(std::make_shared<animation::ModelAnimationSegmentRotation>(submodel, std::nullopt, velocity, PI2 / wip->weapon_submodel_rotate_vel, std::nullopt));
+		spin_segments->addSegment(serial);
+	}
+
+	auto warmup_anim = std::make_shared<animation::ModelAnimation>();
+
+	if (found_submodel)
+		warmup_anim->setAnimation(spin_segments);
+	else
+	{
+		// no submodels to spin; just reproduce the old firing delay
+		auto serial = std::make_shared<animation::ModelAnimationSegmentSerial>();
+		serial->addSegment(std::make_shared<animation::ModelAnimationSegmentWait>(ramp_time));
+		serial->addSegment(std::make_shared<animation::ModelAnimationSegmentWait>(1.0f));
+		warmup_anim->setAnimation(serial);
+	}
+
+	warmup_anim->m_flags.set(animation::Animation_Flags::Loop);
+	warmup_anim->m_flags.set(animation::Animation_Flags::Seamless_with_startup);
+	warmup_anim->m_flags.set(animation::Animation_Flags::Seamless_forward_shutdown);
+	warmup_anim->m_flagData.loopsFrom = ramp_time;
+
+	SCP_string name = "legacy-gun-rotation";
+	wip->animations.emplace(warmup_anim, name, name, animation::ModelAnimationTriggerType::WeaponWarmup, animation::ModelAnimationSet::SUBTYPE_DEFAULT,
+		animation::ModelAnimationParseHelper::getUniqueAnimationID(name + animation::Animation_types.at(animation::ModelAnimationTriggerType::WeaponWarmup).first, 'v', wip->name));
+}
+
+/**
  * Pages in the model(s) and, optionally, all graphics for a single weapon.
  *
  * @param wip           Pointer to the weapon_info to page in.
@@ -8823,6 +8896,10 @@ static void weapon_page_in_one(weapon_info *wip, bool load_graphics)
 		if (external_pm->n_guns > 1)
 			Warning(LOCATION, "External model %s of weapon %s has %d gun banks; only the firing points of the first bank are used.", wip->external_model_name, wip->name, external_pm->n_guns);
 	}
+
+	// convert old-style gun rotation to a weapon-warmup animation
+	if (wip->weapon_submodel_rotate_vel > 0.0f)
+		weapon_maybe_create_gun_rotation_animation(wip);
 
 	//Load shockwaves
 	shockwave_create_info_load(&wip->shockwave);

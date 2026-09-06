@@ -96,12 +96,11 @@ struct reinforcements {
 // points when the ship enables $Show Primary Models: / $Show Secondary Models:.
 struct external_weapon_state
 {
-	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
+	int model_instance = -1;		// model instance used to animate the external model, or -1 if the weapon doesn't need one
 	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
 	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
-	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
-	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
-	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
+	bool warmup_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_animations()
+	bool warmup_active = false;		// whether the weapon-warmup animations are currently triggered
 };
 
 class ship_weapon {
@@ -349,11 +348,22 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
+
 struct guard_range_entry {
 	float range;
 	int shipnum;
 	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
 };
+
+// display state of the external weapon model at one of a turret's firing points
+// (see the "show external weapon model" subsystem flag)
+enum class TurretExternalWeaponState : ubyte
+{
+	LOADED,		// the weapon model is shown at the firing point
+	EMPTY,		// the firing point fired; nothing is shown until the turret's post-firing animations complete
+	RELOADING,	// the weapon-reload animation is playing (it may show the round being moved into place); the weapon model appears when it completes
+};
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -405,9 +415,14 @@ public:
 	EModelAnimationPosition	turret_animation_position;
 	int		turret_animation_done_time;
 
+	// external weapon model display state, per firing point (see the "show external weapon model" subsystem flag):
+	// a fired point's model is hidden until the turret's post-firing animations complete and any weapon-reload animation has played
+	TurretExternalWeaponState	turret_external_weapon_state[MAX_TFP];
+	int		turret_external_weapon_reload_stamp[MAX_TFP];	// when a RELOADING firing point becomes LOADED again
+
 	// swarm (rapid fire) info
-	int		turret_swarm_info_index[MAX_TFP];	
-	int		turret_swarm_num;	
+	int		turret_swarm_info_index[MAX_TFP];
+	int		turret_swarm_num;
 
 	// awacs info
 	float		awacs_intensity;
@@ -881,6 +896,7 @@ public:
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
+	reload_pct<int> secondary_point_reload_stamp;	//for banks with a weapon-reload animation (which replaces the slide-back visual), when each point's missile reappears
 
 	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
 																//Sound index for thrusters
@@ -1834,7 +1850,7 @@ extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
 extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
-extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
+extern int ship_get_external_weapon_model_instance(external_weapon_state *ext, int weapon_idx, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 extern bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank);
 bool ship_start_secondary_fire(object* objp);
@@ -2055,6 +2071,11 @@ int is_support_allowed(object *objp, bool do_simple_check = false);
 //		*gpos: absolute position of gun firing point
 //		*gvec: vector fro *gpos to *targetp
 void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp, vec3d *gpos, bool avg_origin, vec3d *gvec, bool use_angles, const vec3d *targetp);
+
+// Marks the firing point a turret just fired from as empty, so that its external weapon model
+// stops rendering until the turret reloads (see the "show external weapon model" subsystem
+// flag).  fire_pos is the turret_next_fire_pos value that was used for the shot.
+void turret_external_weapon_model_fired(ship_subsys *turret, int fire_pos);
 
 //	Given an object and a turret on that object, return the global position and forward vector
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
