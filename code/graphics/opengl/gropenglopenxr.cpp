@@ -483,7 +483,7 @@ bool gr_opengl_openxr_test_capabilities() { return false; }
 
 bool gr_opengl_openxr_create_session() { return false; }
 
-int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& allowed) { return 0; }
+int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/) { return 0; }
 
 bool gr_opengl_openxr_acquire_swapchain_buffers() { return false; }
 
