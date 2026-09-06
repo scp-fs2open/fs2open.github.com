@@ -2,6 +2,7 @@
 #include "VulkanRenderer.h"
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
+#include "VulkanOpenXR.h"
 #include "VulkanTexture.h"
 
 #include "cmdline/cmdline.h"
@@ -17,6 +18,8 @@
 
 #include <SDL3/SDL_vulkan.h>
 #include <cstdint>
+
+#include "graphics/openxr.h"
 
 
 extern float flFrametime;
@@ -299,6 +302,30 @@ vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
 	return chosen;
 }
 
+/**
+ * @brief The size of the actual window, which is not the render resolution
+ *
+ * Only used where the surface declines to tell us its extent (Wayland reports
+ * UINT32_MAX and lets the client pick). gr_screen.max_w/max_h is the wrong
+ * answer there: with -window_res set -- which -vr forces -- the window is
+ * smaller than the resolution the engine draws at.
+ */
+vk::Extent2D windowExtent()
+{
+	if (auto* viewport = os::getMainViewport()) {
+		const auto size = viewport->getSize();
+		if (size.first > 0 && size.second > 0) {
+			return vk::Extent2D(size.first, size.second);
+		}
+	}
+
+	if (Cmdline_window_res) {
+		return vk::Extent2D(Cmdline_window_res->first, Cmdline_window_res->second);
+	}
+
+	return vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
+}
+
 vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)
 {
 	if (values.surfaceCapabilities.currentExtent.width != UINT32_MAX) {
@@ -325,6 +352,13 @@ bool VulkanRenderer::initialize()
 
 	// Load the RenderDoc API if available before doing anything with OpenGL
 	renderdoc::loadApi();
+
+	// Capture the render resolution BEFORE the window exists. Creating it can
+	// queue an SDL resize event, and osapi's handler answers those with an
+	// unconditional gr_screen_resize() to the *window* size -- which would
+	// quietly collapse the render resolution onto the window resolution and
+	// erase the very distinction this extent exists to preserve.
+	m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 
 	if (!initDisplayDevice()) {
 		return false;
@@ -495,7 +529,7 @@ bool VulkanRenderer::initialize()
 	// Initialize post-processing
 	m_postProcessor = std::make_unique<VulkanPostProcessor>();
 	if (!m_postProcessor->init(m_device.get(), m_physicalDevice, m_memoryManager.get(),
-	                           m_swapChainExtent, m_depthFormat, m_hdrActive)) {
+	                           m_renderExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
 	} else {
@@ -541,15 +575,29 @@ bool VulkanRenderer::initDisplayDevice() const
 	attrs.enable_vulkan = true;
 
 	attrs.display = gr_get_preferred_display();
-	attrs.width = static_cast<uint32_t>(gr_screen.max_w);
-	attrs.height = static_cast<uint32_t>(gr_screen.max_h);
+
+	// The window is the window resolution, not the render resolution -- with
+	// -window_res (which -vr forces on) they differ, and the frame is scaled
+	// into the window by the output-encode pass. Asking for max_w/max_h here
+	// would be a lie that SDLGraphicsOperations::createViewport silently
+	// corrects anyway, since it applies Cmdline_window_res itself.
+	if (Cmdline_window_res) {
+		attrs.width = Cmdline_window_res->first;
+		attrs.height = Cmdline_window_res->second;
+	} else {
+		attrs.width = static_cast<uint32_t>(gr_screen.max_w);
+		attrs.height = static_cast<uint32_t>(gr_screen.max_h);
+	}
 
 	attrs.title = Osreg_title;
 	if (!Window_title.empty()) {
 		attrs.title = Window_title;
 	}
 
-	if (Using_in_game_options) {
+	if (Cmdline_enable_vr) {
+		// Must use windowed mode here
+	}
+	else if (Using_in_game_options) {
 		switch (Gr_configured_window_state) {
 		case os::ViewportState::Windowed:
 			// That's the default
@@ -740,7 +788,13 @@ bool VulkanRenderer::initializeInstance()
 		createInstanceChain.unlink<vk::ValidationFeaturesEXT>();
 	}
 
-	vk::UniqueInstance instance = vk::createInstanceUnique(createInstanceChain.get<vk::InstanceCreateInfo>(), nullptr);
+	vk::UniqueInstance instance;
+
+	if (openxr_requested())
+		instance = vulkan_openxr_create_instance(createInstanceChain.get<vk::InstanceCreateInfo>());
+	else
+		instance = vk::createInstanceUnique(createInfo, nullptr);
+
 	if (!instance) {
 		return false;
 	}
@@ -819,6 +873,17 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 
 	mprintf(("Physical Vulkan devices:\n"));
 	std::for_each(values.cbegin(), values.cend(), printPhysicalDevice);
+
+	// A VR session dictates which GPU we must render on -- the one the headset is
+	// attached to. Drop everything else before scoring, so a discrete card can
+	// never outrank the device the runtime actually requires.
+	const auto requiredDevice = vulkan_openxr_required_physical_device(m_vkInstance.get());
+	if (requiredDevice) {
+		values.erase(std::remove_if(values.begin(),
+						 values.end(),
+						 [&requiredDevice](const PhysicalDeviceValues& value) { return value.device != requiredDevice; }),
+			values.end());
+	}
 
 	// Remove devices that do not have the features we need
 	values.erase(std::remove_if(values.begin(),
@@ -979,7 +1044,10 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 	}
 
-	m_device = deviceValues.device.createDeviceUnique(deviceCreateChain.get<vk::DeviceCreateInfo>());
+	if (openxr_requested())
+		m_device = vulkan_openxr_create_device(deviceValues.device, deviceCreateChain.get<vk::DeviceCreateInfo>());
+	else
+		m_device = deviceValues.device.createDeviceUnique(deviceCreateChain.get<vk::DeviceCreateInfo>());
 
 	// Load device-level function pointers for the dynamic dispatcher
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device.get());
@@ -1034,12 +1102,14 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 
 	const auto surfaceFormat = chooseSurfaceFormat(deviceValues);
 
+	const vk::Extent2D window = windowExtent();
+
 	vk::SwapchainCreateInfoKHR createInfo;
 	createInfo.surface = m_vkSurface.get();
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, gr_screen.max_w, gr_screen.max_h);
+	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, window.width, window.height);
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment
 	                      | vk::ImageUsageFlagBits::eTransferSrc
@@ -1075,7 +1145,21 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	m_hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
 	Gr_hdr_output_active = m_hdrActive;
 	m_swapChainExtent = createInfo.imageExtent;
+
+	// Without -window_res the render resolution simply is the window, so follow
+	// gr_screen (which gr_screen_resize() has already updated for this
+	// recreation). With it, the two are deliberately independent -- the window
+	// is whatever Cmdline_window_res says (SDLGraphicsOperations::createViewport
+	// forces it) while the engine keeps drawing at gr_screen.max_w/max_h -- so
+	// the value captured in initialize() must survive untouched.
+	if (!Cmdline_window_res) {
+		m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
+	}
+
 	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
+	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",
+		m_renderExtent.width, m_renderExtent.height,
+		m_swapChainExtent.width, m_swapChainExtent.height));
 
 	m_swapChainImageViews.reserve(m_swapChainImages.size());
 	for (const auto& image : m_swapChainImages) {
@@ -1144,7 +1228,8 @@ bool VulkanRenderer::recreateSwapChain()
 	freshValues.presentQueueIndex = {true, m_presentQueueFamilyIndex};
 
 	// Check for 0x0 extent (minimized window) — caller should retry later
-	auto extent = chooseSwapChainExtent(freshValues, gr_screen.max_w, gr_screen.max_h);
+	const vk::Extent2D window = windowExtent();
+	auto extent = chooseSwapChainExtent(freshValues, window.width, window.height);
 	if (extent.width == 0 || extent.height == 0) {
 		nprintf(("vulkan", "Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
 		return false;
@@ -1178,7 +1263,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(m_swapChainExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();

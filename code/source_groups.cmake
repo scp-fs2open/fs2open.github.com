@@ -610,6 +610,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanDrawAPI.cpp
 		graphics/vulkan/VulkanMemory.cpp
 		graphics/vulkan/VulkanMemory.h
+		graphics/vulkan/VulkanOpenXR.cpp
+		graphics/vulkan/VulkanOpenXR.h
 		graphics/vulkan/VulkanPerFrameUbo.cpp
 		graphics/vulkan/VulkanPerFrameUbo.h
 		graphics/vulkan/VulkanPipeline.cpp
