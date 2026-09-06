@@ -19,6 +19,7 @@
 #include "freespace.h"
 
 #include "io/mouse.h"
+#include "io/gamepad.h"
 
 #undef LOCAL
 #include "extensions/ImGuizmo.h"
@@ -126,20 +127,33 @@ void LabManager::onFrame(float frametime) {
 	int mouse_y = 0;
 	mouse_get_pos(&mouse_x, &mouse_y);
 
-	const bool lmb_down = mouse_down(MOUSE_LEFT_BUTTON) != 0;
+	auto key_flags = key_get_shift_status();
+
+	bool lmb_down = mouse_down(MOUSE_LEFT_BUTTON) != 0;
+	bool rmb_down = mouse_down(MOUSE_RIGHT_BUTTON) != 0;
+
 	bool lmb_pressed = lmb_down && !LastLmbDown;
+
+	// don't let gamepad nav override mouse control
+	if (io::gamepad::navActive() && !lmb_down && !rmb_down) {
+		io::gamepad::get_camera_vals(&dx, &dy, &dz, &lmb_down, &rmb_down, &key_flags);
+		lmb_pressed = lmb_down && !LastLmbDown;
+	} else if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
+		// NOTE: when using gamepad nav a window will always be hovered
+		if (dz != 0) {
+			dz = 0;
+		}
+
+		if (lmb_pressed) {
+			lmb_pressed = false;
+		}
+	}
+
 	LastLmbDown = lmb_down;
 
-	if (lmb_pressed && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
-		lmb_pressed = false;
-	}
-
-	if (dz != 0 && ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow)) {
-		dz = 0;
-	}
 	auto& current_camera = Renderer->getCurrentCamera();
 	current_camera->handleInput(
-		dx, dy, dz, lmb_down, lmb_pressed, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status(), mouse_x, mouse_y);
+		dx, dy, dz, lmb_down, lmb_pressed, rmb_down, key_flags, mouse_x, mouse_y);
 
 	if (!current_camera->handlesObjectPlacement()) {
 		const bool over_camera_overlay = Renderer->getShowOrientationWidget() && current_camera->isOverlayHit(mouse_x, mouse_y);

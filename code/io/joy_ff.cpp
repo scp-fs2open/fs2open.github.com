@@ -33,6 +33,7 @@ static auto ForceFeedbackOption = options::OptionBuilder<bool>("Input.ForceFeedb
 					 std::pair<const char*, int>{"Enable or disable force feedback", 1729})
 					 .category(std::make_pair("Input", 1827))
 					 .level(options::ExpertLevel::Beginner)
+					 .importance(25)
 					 .default_val(true)
 					 .change_listener([](bool val, bool) {
 						 if (val) joy_ff_init();
@@ -47,6 +48,7 @@ static auto HitEffectOption = options::OptionBuilder<bool>("Input.HitEffect",
 					 std::pair<const char*, int>{"Enable or disable the directional hit effect", 1731})
 					 .category(std::make_pair("Input", 1827))
 					 .level(options::ExpertLevel::Beginner)
+					 .importance(24)
 					 .default_val(true)
 					 .change_listener([](bool val, bool) {
 						 Joy_ff_directional_hit_effect_enabled = val;
@@ -57,9 +59,10 @@ static auto HitEffectOption = options::OptionBuilder<bool>("Input.HitEffect",
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto ForceFeedbackStrength = options::OptionBuilder<int>("Input.FFStrength",
 					 std::pair<const char*, int>{"Force Feedback Strength", 1756},
-					 std::pair<const char*, int>{"The realtive strength of Force Feedback effects", 1757})
+					 std::pair<const char*, int>{"The relative strength of Force Feedback effects", 1757})
 					 .category(std::make_pair("Input", 1827))
 					 .level(options::ExpertLevel::Beginner)
+					 .importance(23)
 					 .range(0, 100)
 					 .default_val(100)
 					 .flags({options::OptionFlags::RangeTypeInteger})

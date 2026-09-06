@@ -741,6 +741,11 @@ void control_config_common_init();
 void control_config_common_close();
 
 /*!
+ * @brief detect whether control config is in search or binding modes
+ */
+bool control_config_special_mode();
+
+/*!
  * @brief init config menu
  */
 void control_config_init(bool API_Access = false);

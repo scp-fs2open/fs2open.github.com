@@ -80,6 +80,7 @@
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
 #include "io/cursor.h"
+#include "io/gamepad.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/key.h"
@@ -2108,6 +2109,7 @@ void game_init()
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
+		io::gamepad::init();
 		io::joystick::init();
 	}
 
@@ -4693,6 +4695,7 @@ void game_flush()
 {
 	key_flush();
 	mouse_flush();
+	joy_flush();
 	snazzy_flush();
 
 	Joymouse_button_status = 0;
@@ -4715,6 +4718,10 @@ int game_check_key()
 	// convert keypad enter to normal enter
 	if ((k & KEY_MASK) == KEY_PADENTER)
 		k = (k & ~KEY_MASK) | KEY_ENTER;
+
+	if ( !k ) {
+		k = io::gamepad::get_key();
+	}
 
 	return k;
 }
@@ -4753,7 +4760,8 @@ int game_poll()
 	int k = key_inkey();
 
 	// Move the mouse cursor with the joystick. Currently uses Joystick0
-	if (os_foreground() && !io::mouse::CursorManager::get()->isCursorShown() && (Use_joy_mouse))	{
+	// (NOTE: ignore this when using gamepad navigation to avoid a mess)
+	if (Use_joy_mouse && os_foreground() && io::mouse::CursorManager::get()->isCursorShown() && !io::gamepad::navActive()) {
 		// Move the mouse cursor with the joystick
 		int mx, my;
 
@@ -6453,6 +6461,8 @@ void game_do_state_common(int state,int no_networking)
 #endif
 	Last_frame_ui_timestamp = ui_timestamp();
 
+	io::gamepad::do_frame();
+
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
@@ -7130,6 +7140,7 @@ void game_shutdown(void)
 
 	control_config_common_close();
 	io::joystick::shutdown();
+	io::gamepad::shutdown();
 
 	audiostream_close();
 	snd_close();

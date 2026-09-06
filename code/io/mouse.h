@@ -124,4 +124,7 @@ extern void mouse_force_pos(float x, float y);
  */
 short bit_distance(short x);
 
+// update mouse with position which is already scaled for max_w/max_h
+void mouse_update_pos_scaled(int x, int y, float dx, float dy);
+
 #endif
