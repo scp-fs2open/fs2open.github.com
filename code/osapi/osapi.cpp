@@ -1095,7 +1095,7 @@ static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverla
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(touch_ui_change)
 	.default_val(true)
-	.importance(0)
+	.importance(2)
 	.finish();
 
 static bool touch_ui_opacity_change(int new_val, bool initial)
@@ -1108,23 +1108,16 @@ static bool touch_ui_opacity_change(int new_val, bool initial)
 	return true;
 }
 
-static SCP_string touch_ui_opacity_display(int value)
-{
-	SCP_string result;
-	sprintf(result, "%d%%", value);
-	return result;
-}
-
 static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
 	std::pair<const char*, int>{"Touch Overlay Opacity", -1}, // TODO: set string id after approval
 	std::pair<const char*, int>{"Set the opacity of the touch overlay", -1}) // TODO: set string id after approval
 	.category(std::make_pair("Input", 1827))
 	.level(options::ExpertLevel::Beginner)
 	.range(0, 100)
-	.display(touch_ui_opacity_display)
-	.change_listener(touch_ui_opacity_change)
 	.default_val(20)
-	.importance(0)
+	.flags({ options::OptionFlags::RangeTypeInteger })
+	.change_listener(touch_ui_opacity_change)
+	.importance(1)
 	.finish();
 	
 void os_android_touch_overlay_init()
