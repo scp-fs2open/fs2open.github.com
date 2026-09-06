@@ -1054,6 +1054,31 @@ void os_android_touch_overlay_toggle(bool status)
     }
 }
 
+void os_android_touch_overlay_set_opacity(float opacity)
+{
+	// Get the JNI environment pointer and current Activity instance via SDL
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
+
+	if (env && activity) {
+		// Locate the Java class (GameActivity on KnossosNET)
+		jclass ga = env->GetObjectClass(activity);
+		if (ga) {
+			jmethodID methodId = android_get_static_method(env, ga, "setOverlayOpacity", "(F)V");
+			if (methodId) {
+				env->CallStaticVoidMethod(ga, methodId, static_cast<jfloat>(opacity));
+			} else {
+				mprintf(("os_android_touch_overlay_set_opacity: Couldn't get the methodID.\n"));
+			}
+			env->DeleteLocalRef(ga);
+		} else {
+			mprintf(("os_android_touch_overlay_set_opacity: Couldn't get java class.\n"));
+		}
+	} else {
+		mprintf(("os_android_touch_overlay_set_opacity: Couldn't get JNI environment or activity.\n"));
+	}
+}
+
 static bool touch_ui_change(bool new_val, bool initial)
 {
 	if (initial) {
@@ -1064,19 +1089,48 @@ static bool touch_ui_change(bool new_val, bool initial)
 }
 
 static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverlay",
-	std::pair<const char*, int>{"Touch Overlay", -1},
-	std::pair<const char*, int>{"Enable or disable the Touch Overlay", -1})
+	std::pair<const char*, int>{"Touch Overlay", -1}, // TODO: set string id after approval
+	std::pair<const char*, int>{"Enable or disable the touch overlay", -1}) // TODO: set string id after approval
 	.category(std::make_pair("Input", 1827))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(touch_ui_change)
 	.default_val(true)
-	.importance(0)
+	.importance(2)
+	.finish();
+
+static bool touch_ui_opacity_change(float new_val, bool initial)
+{
+	Assertion(new_val >= 0.0f && new_val <= 1.0f, "Invalid value %f supplied by options system!", new_val);
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_set_opacity(new_val);
+	return true;
+}
+
+static SCP_string touch_ui_opacity_display(float value)
+{
+	SCP_string result;
+	sprintf(result, "%.0f%%", value * 100.0f);
+	return result;
+}
+
+static auto TouchOverlayOpacityOption = options::OptionBuilder<float>("Input.TouchOverlayOpacity",
+	std::pair<const char*, int>{"Touch Overlay Opacity", -1}, // TODO: set string id after approval
+	std::pair<const char*, int>{"Set the opacity of the touch overlay", -1}) // TODO: set string id after approval
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.range(0.0f, 1.0f)
+	.display(touch_ui_opacity_display)
+	.change_listener(touch_ui_opacity_change)
+	.default_val(0.20f)
+	.importance(1)
 	.finish();
 	
 void os_android_touch_overlay_init()
 {
 	os_android_touch_overlay_toggle(TouchOverlayOption->getValue());
+	os_android_touch_overlay_set_opacity(TouchOverlayOpacityOption->getValue());
 }
-
 #endif
 
