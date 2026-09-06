@@ -315,15 +315,15 @@ vk::Extent2D windowExtent()
 	if (auto* viewport = os::getMainViewport()) {
 		const auto size = viewport->getSize();
 		if (size.first > 0 && size.second > 0) {
-			return vk::Extent2D(size.first, size.second);
+			return {size.first, size.second};
 		}
 	}
 
 	if (Cmdline_window_res) {
-		return vk::Extent2D(Cmdline_window_res->first, Cmdline_window_res->second);
+		return {Cmdline_window_res->first, Cmdline_window_res->second};
 	}
 
-	return vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
+	return {static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h)};
 }
 
 vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)

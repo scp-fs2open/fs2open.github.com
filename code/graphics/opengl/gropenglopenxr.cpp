@@ -113,7 +113,7 @@ bool gr_opengl_openxr_create_session() {
 		XWindowAttributes wa;
 		XGetWindowAttributes(xdisplay, xwindow, &wa);
 
-		GLXContext glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
+		auto glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
 
 		int glxfbconfigid, glxscreenid, nfbconfigs;
 		glXQueryContext(xdisplay, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
