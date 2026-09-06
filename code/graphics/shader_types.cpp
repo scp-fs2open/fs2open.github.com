@@ -25,14 +25,14 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Post Processing", false },
 
-	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", nullptr,
-		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Gaussian Blur", false },
+	{ SDR_TYPE_POST_PROCESS_BLOOM_DOWNSAMPLE, "post-v.sdr", "bloom-downsample-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Bloom Downsampling", false },
+
+	{ SDR_TYPE_POST_PROCESS_BLOOM_UPSAMPLE, "post-v.sdr", "bloom-upsample-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Bloom Upsampling", false },
 
 	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Bloom Compositing", false },
-
-	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", nullptr,
-		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Bloom Brightpass", false },
 
 	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", nullptr,
 		{ VATTRIB_POSITION }, "FXAA", false },
@@ -132,10 +132,6 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
-
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
-
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},
 
 	{SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA", {}, "NanoVG edge anti-alias"},
 
