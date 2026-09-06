@@ -482,6 +482,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				for (const glow_point_bank* gpb : glowpointbanks) {
 					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::num_points, &glow_point_bank::points);
 					change_submodel_numbers(pm->glow_point_banks[insertFrom], replaceSubobjNo);
+					insertFrom++;
 				}
 			}
 		}
