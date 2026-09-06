@@ -36,8 +36,11 @@
 #include "utils/modular_curves.h"
 
 #include <optional>
+#include <tuple>
 
 class object;
+class ship;
+class ship_weapon;
 class ship_subsys;
 
 #define WP_UNUSED    -1
@@ -1030,8 +1033,9 @@ int weapon_create( const vec3d *pos,
 	int group_id=-1,
 	bool is_locked = false,
 	bool is_spawned = false,
-	float fof_cooldown = 0.0f,
-	ship_subsys *src_turret = nullptr,
+	ship_weapon *src_swp = nullptr,
+	int src_pbank = -1,
+	int src_sbank = -1,
 	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
 		0.f,
@@ -1046,8 +1050,8 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 }
 
 // gets the substitution pattern pointer for a given weapon
-// src_turret may be null
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
+// returns [use_substitution, substituted_weapon_info_index]
+std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);

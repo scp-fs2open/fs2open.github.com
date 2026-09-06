@@ -30,6 +30,8 @@ typedef struct turret_swarm_info {
 	ship_subsys*	target_subsys;
 	int				time_to_fire;
 	int				weapon_num;
+	int				swp_pbank;
+	int				swp_sbank;
 } turret_swarm_info;
 
 struct swarm_info {
@@ -52,7 +54,7 @@ void	swarm_maybe_fire_missile(int shipnum);
 
 int	turret_swarm_create();
 void	turret_swarm_delete(int i);
-void	turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, bool no_tracking_object = false);
+void	turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, int swp_pbank, int swp_sbank, bool no_tracking_object = false);
 void	turret_swarm_check_validity();
 
 #endif /* __FREESPACE_SWARM_H__ */

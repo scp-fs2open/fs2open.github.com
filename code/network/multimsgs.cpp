@@ -3475,7 +3475,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
@@ -8382,6 +8382,12 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.burst_index = 0;
 
+	// the weapon class arrives over the network, so validate it before using it to index Weapon_info
+	if (!Weapon_info.in_bounds(fire_info.beam_info_index)) {
+		nprintf(("Network", "Received invalid weapon class %d for BEAM weapon!\n", fire_info.beam_info_index));
+		return;
+	}
+
 	if ( fire_info.target && (target_subsys_index >= 0) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
 		fire_info.target_subsys = ship_get_indexed_subsys(targetp, target_subsys_index);
@@ -8394,12 +8400,14 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			Assertion(bank >= 0, "Fighter BEAM bank is invalid!");
 			Assertion(point >= 0, "Fighter BEAM point is invalid!");
 
-			if ( (bank < 0) || (point < 0) ) {
+			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+
+			// the bank and point also arrive over the network, so validate them against the model
+			if ( (bank < 0) || (bank >= pm->n_guns) || (point < 0) || (point >= pm->gun_banks[bank].num_slots) ) {
 				nprintf(("Network", "Couldn't get firing point for fighter BEAM weapon!\n"));
 				return;
 			}
 
-			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
 			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
@@ -8779,7 +8787,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	};
 
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 	if (weapon_objnum != -1) {
 		const weapon_info& wip = Weapon_info[wid];
 		if ( wip.launch_snd.isValid() ) {
