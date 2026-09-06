@@ -5,6 +5,8 @@
 #include "localization/localize.h"
 #include "math/floating.h"
 
+#include "util/FSTestFixture.h"
+
 #include <gtest/gtest.h>
 
 using namespace options;
@@ -102,9 +104,12 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 //
 // These call the typed Option<T>::getValue() (via a static_cast down to the option's real, statically-known
 // type) rather than getCurrentValueDescription(), because several options' display functions call XSTR() for
-// localized display strings (e.g. "On"/"Off", the shadow quality tiers), and this test binary never runs
-// lcl_init() to set up the localization tables XSTR needs. getValue() only exercises the deserializer, which
-// is exactly the contract these tests are checking anyway.
+// localized display strings (e.g. "On"/"Off", the shadow quality tiers). XSTR() hits an Int3() unless
+// lcl_xstr_init() ran first, and the OptionsManagerOverride fixture never runs it. Only FSTestFixture does,
+// and Xstr_inited stays set for the rest of the process afterwards, so under --gtest_shuffle a display call
+// from this fixture crashes or passes purely by test order. getValue() only exercises the deserializer, which
+// is exactly the contract these tests are checking anyway. The one test that must go through a display
+// function uses the OptionsManagerOverrideLocalized fixture below instead.
 
 TEST_F(OptionsManagerOverride, BoolOverrideRoundTrips)
 {
@@ -223,7 +228,26 @@ TEST_F(OptionsManagerOverride, ShadowRenderMethodDefaultFollowsTheGlobal)
 	ASSERT_EQ(typedOpt->getValue(), ShadowRenderMethod::Raytraced);
 }
 
-TEST_F(OptionsManagerOverride, MsaaOverrideAcceptsEverySampleCountTheFlagAllows)
+// Graphics.MSAASamples uses a MapValueDisplay, so the check below cannot avoid XSTR(): Option<T> builds the
+// display string for every value inside getValidValues(), and toDescription() catches MapValueDisplay's throw
+// for an unmapped value and falls back to the serialized JSON, so an XSTR-free reformulation could no longer
+// tell a mapped value from an unmapped one. This fixture therefore runs the full FSTestFixture setup, which
+// calls lcl_init() and lcl_xstr_init(), instead of relying on some earlier test to have done it.
+class OptionsManagerOverrideLocalized : public test::FSTestFixture {
+  public:
+	OptionsManagerOverrideLocalized() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
+
+  protected:
+	void TearDown() override
+	{
+		OptionsManager::instance()->clearOverrides();
+		OptionsManager::instance()->discardChanges();
+
+		test::FSTestFixture::TearDown();
+	}
+};
+
+TEST_F(OptionsManagerOverrideLocalized, MsaaOverrideAcceptsEverySampleCountTheFlagAllows)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.MSAASamples");
 	ASSERT_NE(opt, nullptr);
