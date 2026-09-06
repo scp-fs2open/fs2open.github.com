@@ -968,6 +968,7 @@ add_file_folder("Model"
 	model/model.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
+	model/modelinterp.h
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
@@ -975,6 +976,14 @@ add_file_folder("Model"
 	model/modelreplace.cpp
 	model/modelsinc.h
 	model/model_flags.h
+)
+
+# Model BVH files
+add_file_folder("Model BVH"
+	model/modelbvh.h
+	model/modelbvh.cpp
+	model/modellbvh.h
+	model/modellbvh.cpp
 )
 
 # Model Animation files

@@ -15,6 +15,8 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <atomic>
+#include <mutex>
 #include <utility>
  
 #include "actions/Program.h"
@@ -22,6 +24,8 @@
 #include "graphics/2d.h"
 #include "io/timer.h"
 #include "model/model_flags.h"
+#include "model/modelbvh.h"
+#include "model/modellbvh.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
 #include "particle/particle.h"
@@ -199,6 +203,17 @@ public:
 	}
 };
 
+// Cumulative transform for one submodel, expressed the same way modelcollide.cpp's Mc_orient/Mc_base
+// already are: rotating a world-space ray already placed in the ship's top-level (detail[0]) local
+// frame directly into this submodel's own local frame, composed through every ancestor's own
+// rotation/offset. Paired 1:1 (by submodel index) with a polymodel/polymodel_instance's top-level
+// submodel BVH (see modelcollide.cpp's model_collide_get_submodel_bvh()) so a query that finds this
+// submodel as a BVH candidate can jump straight to testing it without re-walking its ancestor chain.
+struct submodel_top_level_transform {
+	matrix orient = vmd_identity_matrix;
+	vec3d base = vmd_zero_vector;
+};
+
 // Data specific to a particular instance of a model.
 struct polymodel_instance
 {
@@ -208,7 +223,26 @@ struct polymodel_instance
 
 	std::shared_ptr<model_texture_replace> texture_replace = nullptr;
 
-	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox) 
+	int objnum;								// id of the object using this pmi, or -1 if no object (e.g. skybox)
+
+	// Per-frame top-level submodel BVH cache -- see polymodel::submodel_bvh_restpose for the
+	// no-instance equivalent, and modelcollide.cpp's model_collide_get_submodel_bvh() for how this
+	// gets (re)built. Submodels can rotate/translate at runtime, so unlike the rest-pose version this
+	// can't be built once at load time; instead it's rebuilt lazily on first use each frame (checked
+	// against the global Framecount) and reused by every collision query against this instance for
+	// the rest of that frame.
+	//
+	// Collision checks run on a worker-thread pool (objcollide.cpp's queue_mp_collision()), and
+	// pairs are load-balanced by queue length, not partitioned by target object -- two pairs that
+	// both involve this same ship instance (e.g. two weapons converging on it) can easily land on
+	// different threads within the same frame. submodel_bvh_cache_frame is therefore atomic (so the
+	// fast-path "already built this frame" read is well-defined without the mutex), and an actual
+	// rebuild is additionally guarded by submodel_bvh_cache_mutex so two threads racing to rebuild
+	// in the same frame can't both write the tree at once, or hand a partially-built one to a reader.
+	std::unique_ptr<lbvh_tree> submodel_bvh_cache;
+	SCP_vector<submodel_top_level_transform> submodel_bvh_cache_transforms;
+	std::atomic<int> submodel_bvh_cache_frame{-1};
+	std::mutex submodel_bvh_cache_mutex;
 };
 
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
@@ -395,33 +429,12 @@ typedef struct model_tmap_vert {
 	{}
 } model_tmap_vert;
 
-struct bsp_collision_node {
-	vec3d min;
-	vec3d max;
-
-	int back;
-	int front;
-
-	int leaf;
-};
-
-struct bsp_collision_leaf {
-	vec3d plane_norm;
-	int vert_start;
-	ubyte num_verts;
-	ubyte tmap_num;
-
-	int next;
-};
-
+// Per-submodel collision data kept for the model's full lifetime. point_list/n_verts/poly_centers
+// are read directly by three consumers unrelated to collision: submodel_get_random_point()/
+// submodel_get_cross_sectional_*_pos() (modelinterp.cpp), ai_bpap()'s attack-point picking
+// (aibig.cpp), and the Lua Submodel.NumVertices/GetVertex API (model.cpp) -- keep populated even
+// though nothing collision-related reads them past model_collide_parse_bsp().
 struct bsp_collision_tree {
-	bsp_collision_node *node_list;
-	int n_nodes;
-
-	bsp_collision_leaf *leaf_list;
-	int n_leaves;
-
-	model_tmap_vert *vert_list;
 	vec3d *point_list;
 	SCP_vector<vec3d> poly_centers;
 
@@ -473,13 +486,34 @@ public:
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
-	std::shared_ptr<ubyte[]> bsp_data;
+	std::shared_ptr<ubyte[]> bsp_data; // the bsp_data loaded and then cleared after has been used in modelread
 
 	int collision_tree_index;
 
-	vec3d	geometric_center;		// geometric center of this subobject.  In the same Frame Of 
+	vec3d	geometric_center;		// geometric center of this subobject.  In the same Frame Of
 	                              //  Reference as all other vertices in this submodel. (Relative to pivot point)
 	float		rad;						// radius for each submodel
+
+	// Validated bounding-sphere radius for collision's early-out sphere pre-check
+	// (model_collide()'s MC_SUBMODEL/MC_SUBMODEL_INSTANCE path -- see mc_ray_boundingbox/
+	// fvi_ray_sphere callers in modelcollide.cpp), computed at model-load time from the
+	// submodel's actual collision-tree vertices as max(authored `rad`, true distance from the
+	// submodel's local origin to its farthest vertex). `rad` above is parsed verbatim from the
+	// .pof file and can be significantly too small on real content, which would otherwise silently
+	// make model_collide() reject valid ray-vs-submodel hits before any polygon test runs. `rad`
+	// itself is left untouched since many other subsystems (rendering culling, radar, AI targeting,
+	// HUD) also read it and may rely on the author-tuned value.
+	float collision_rad = 0.0f;
+
+	// The per-triangle BVH over this submodel's fan-triangulated collision geometry (see modelbvh.h),
+	// built at model-load time directly from model_collide_parse_bsp()'s one walk of the raw BSP
+	// opcode stream. shared_ptr, not unique_ptr -- bsp_info is
+	// explicitly copy-constructed elsewhere (modelreplace.cpp, appending submodels from one model
+	// into another), same as bsp_data/outline_buffer above, and a shallow-shared BVH is consistent
+	// with how collision_tree_index already gets shared by that copy (the appended submodel is
+	// genuinely the same source content, just spliced into a different model's submodel list). Null
+	// when this submodel has no collision geometry.
+	std::shared_ptr<bvh_tree> triangle_bvh;
 
 	vec3d	min;						// The min point of this object's geometry
 	vec3d	max;						// The max point of this object's geometry
@@ -490,6 +524,7 @@ public:
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
+	int     num_polys = 0;          // number of tmaps & flat polys in a submodel, only loaded and used with the -pofspew cmdline
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -848,7 +883,7 @@ public:
 		: id(-1), version(0), flags(0), n_detail_levels(0), num_debris_objects(0), n_models(0), num_lights(0), lights(NULL),
 		n_view_positions(0), rad(0.0f), core_radius(0.0f), n_textures(0), submodel(NULL), n_guns(0), n_missiles(0), n_docks(0),
 		n_thrusters(0), gun_banks(NULL), missile_banks(NULL), docking_bays(NULL), thrusters(NULL), ship_bay(NULL), shield(),
-		shield_collision_tree(NULL), sldc_size(0), n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
+		n_paths(0), paths(NULL), mass(0), num_xc(0), xc(NULL), num_split_plane(0),
 		num_ins(0), used_this_mission(0), n_glow_point_banks(0), glow_point_banks(nullptr),
 		vert_source()
 	{
@@ -919,9 +954,17 @@ public:
 	std::shared_ptr<ship_bay_t> ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
-	std::shared_ptr<ubyte[]> shield_collision_tree;
-	int		sldc_size;
+	std::shared_ptr<bvh_tree> shield_bvh;			// per-triangle BVH over the shield mesh, built at load time (see modelread.cpp)
 	SCP_vector<vec3d>		shield_points;
+
+	// Top-level BVH over every submodel's own bounding box (excluding detail[0] itself), rest-pose
+	// (identity rotation/offset throughout). Used only when a model_collide() call has no
+	// polymodel_instance (Mc_pmi == nullptr) -- submodels can't move without one, so this is built
+	// once here at load time rather than needing the per-frame refresh polymodel_instance's own copy
+	// does (see modelcollide.cpp's model_collide_get_submodel_bvh()). Parallel-indexed by submodel
+	// number, matching lbvh_item::submodel_index.
+	lbvh_tree submodel_bvh_restpose;
+	SCP_vector<submodel_top_level_transform> submodel_bvh_restpose_transforms;
 
 	int			n_paths;
 	std::shared_ptr<model_path[]>	paths;
@@ -1051,8 +1094,6 @@ void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, const char *file);
-
-SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1344,11 +1385,12 @@ typedef struct mc_info {
 	float   hit_u = 0.0f;               // Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
 	float   hit_v = 0.0f;               // ditto
 	int     shield_hit_tri = -1;        // Which triangle on the shield got hit or -1 if none
+	int     hit_bvh_original_index = -1; // Internal: bvh_triangle::original_index of the winning candidate in the last accepted hit; recovers the caller's own triangle index (e.g. shield_bvh -> shield.tris) from a bvh_tree traversal
 	vec3d   hit_normal = vmd_zero_vector;       //	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
 	bool    edge_hit = false;           // Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.
 	ubyte   *f_poly = nullptr;          // pointer to flat poly where we intersected
 	ubyte   *t_poly = nullptr;          // pointer to tmap poly where we intersected
-	bsp_collision_leaf* bsp_leaf = nullptr;
+	int     hit_tmap_num = -1;          // tmap index of the hit polygon; -1 if flat/untextured or no hit
 
 	SCP_vector<vec3d> hit_points_all;   // used only with MC_COLLIDE_ALL, contains all collision points, in world space, 
 	                                    //     including those against backfacing polies, in arbitrary order
@@ -1425,11 +1467,28 @@ typedef struct mc_info {
 */
 
 int model_collide(mc_info *mc_info_obj);
-void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version);
+
+// Walks the raw POF BSP opcode stream once, populating tree's point_list/n_verts/poly_centers (see
+// bsp_collision_tree's own comment) and emitting one fan-triangulated bvh_triangle per polygon into
+// out_triangles, suitable for bvh_build(). Triangle coordinates are in the submodel's local space.
+void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version,
+	SCP_vector<bvh_triangle> &out_triangles);
 
 bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
+
+// Builds a top-level BVH over every submodel reachable from root_mn's own children (root_mn itself
+// is excluded -- callers already test it separately), for use by model_collide()'s whole-model query
+// path (see model_collide_get_submodel_bvh() in modelcollide.cpp). pmi may be null (rest-pose only,
+// identity transforms throughout) -- used both for polymodel::submodel_bvh_restpose (built once at
+// load time in modelread.cpp) and polymodel_instance::submodel_bvh_cache (rebuilt lazily once per
+// frame in modelcollide.cpp, since submodels can rotate/translate when an instance exists).
+// out_transforms is sized to pm->n_models; only reachable, non-No_collisions (and, when pmi is
+// non-null, non-blown_off) submodels get a populated entry -- matches which submodels end up in the
+// tree.
+void model_collide_build_submodel_bvh(polymodel *pm, polymodel_instance *pmi, int root_mn, lbvh_tree &out_tree,
+	SCP_vector<submodel_top_level_transform> &out_transforms);
 
 
 typedef struct mst_info {

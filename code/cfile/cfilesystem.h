@@ -18,6 +18,13 @@
 void cf_build_secondary_filelist( const char *cdrom_path );
 void cf_free_secondary_filelist();
 
+// Registers an additional directory as a cfile search root, independent of the normal mod/VP
+// root discovery (cf_add_mod_roots) -- for local/manual tooling that needs to load a single file
+// from an arbitrary external directory (e.g. testing against an on-disk asset outside the repo
+// and outside any configured mod path), not for normal game data loading. cfile_init() must have
+// already been called. Safe to call more than once; each call adds one more search root.
+void cf_add_external_path_root(const char* path);
+
 // Internal stuff
 typedef struct cf_pathtype {
 	int			index;					// To verify that the CF_TYPE define is correctly indexed into this array

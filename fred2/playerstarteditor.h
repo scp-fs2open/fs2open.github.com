@@ -81,7 +81,7 @@ private:
 
 	bool autobalance; 
 
-	// ship pool info; an absent map entry means "not in the loadout" / "no variable" (the old -1 sentinel)
+	// ship pool info; an absent map entry means "not in the loadout" / "no variable"
 	SCP_map<int, int> static_ship_pool[MAX_TVT_TEAMS];			// ship class -> count set by the team loadout
 	SCP_map<int, int> dynamic_ship_pool[MAX_TVT_TEAMS];			// string sexp variable index -> count
 	SCP_map<int, int> static_ship_variable_pool[MAX_TVT_TEAMS];	// ship class -> number sexp variable index supplying its count

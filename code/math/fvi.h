@@ -117,10 +117,7 @@ int fvi_ray_boundingbox(const vec3d *min, const vec3d *max, const vec3d * p0, co
 
 // sphere polygon collision prototypes
 
-// Given a polygon vertex list and a moving sphere, find the first contact the sphere makes with the edge, if any
-int fvi_polyedge_sphereline(vec3d *hit_point, const vec3d *xs0, const vec3d *vs, float Rs, int nv, vec3d const *const *verts, float *hit_time);
-
-int fvi_sphere_plane(vec3d *intersect_point, const vec3d *sphere_center_start, const vec3d *sphere_velocity, float sphere_radius, 
+int fvi_sphere_plane(vec3d *intersect_point, const vec3d *sphere_center_start, const vec3d *sphere_velocity, float sphere_radius,
 							const vec3d *plane_normal, const vec3d *plane_point, float *hit_time, float *delta_time);
 
 // finds the point of intersection between two lines or the closest points if lines do not intersect

@@ -1,6 +1,7 @@
 #include "modelreplace.h"
 
 #include "model/model.h"
+#include "model/modelinterp.h"
 
 #include "cfile/cfile.h"
 
