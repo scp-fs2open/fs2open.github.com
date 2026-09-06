@@ -1055,8 +1055,12 @@ extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, Graph
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
 
 // The render API (GraphicsAPI::OpenGL/GraphicsAPI::Vulkan) selected via the "Graphics.RenderAPI" in-game option (or a mod's
-// default settings table). Does not account for the -vulkan command line override; see Cmdline_vulkan for that.
+// default settings table). The -vulkan/-opengl command line flags still win over this; see Cmdline_graphics_api.
 extern GraphicsAPI gr_get_configured_render_api();
+
+// The display name of a render API, e.g. "OpenGL". Returns "Unknown???" for GraphicsAPI values that are not
+// a real backend, such as GraphicsAPI::Stub.
+extern const char* gr_render_api_name(GraphicsAPI api);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);

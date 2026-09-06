@@ -221,6 +221,18 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .parser(parse_lighting_func)
                      .finish();
 
+const char* gr_render_api_name(GraphicsAPI api)
+{
+	switch (api) {
+	case GraphicsAPI::OpenGL:
+		return "OpenGL";
+	case GraphicsAPI::Vulkan:
+		return "Vulkan";
+	default:
+		return "Unknown???";
+	}
+}
+
 // The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
 // In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
 // with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.
@@ -243,24 +255,15 @@ static void parse_render_api_func()
 
 static SCP_vector<GraphicsAPI> render_api_enumerator() { return {GraphicsAPI::OpenGL, GraphicsAPI::Vulkan}; }
 
-static SCP_string render_api_display(const GraphicsAPI& api)
-{
-	switch (api) {
-	case GraphicsAPI::Vulkan:
-		return "Vulkan";
-	case GraphicsAPI::OpenGL:
-	default:
-		return "OpenGL";
-	}
-}
+static SCP_string render_api_display(const GraphicsAPI& api) { return gr_render_api_name(api); }
 
-// Read directly via getValue() at the one call site that needs it (freespace.cpp, right before gr_init()),
-// rather than bound to a global via a change listener -- like Resolution/Anisotropy, this can't take effect
-// without a restart, so there is no "live" value to keep in sync.
+// Read directly via getValue() at the one call site that needs it (gr_init() itself), rather than bound to a
+// global via a change listener -- like Resolution/Anisotropy, this can't take effect without a restart, so
+// there is no "live" value to keep in sync.
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto RenderAPIOption __UNUSED = options::OptionBuilder<GraphicsAPI>("Graphics.RenderAPI",
-                     SCP_string("Render API"),
-                     SCP_string("Selects the rendering backend used by the engine. Requires a restart to take effect."))
+                     std::pair<const char*, int>{"Render API", -1},
+                     std::pair<const char*, int>{"Selects the rendering backend used by the engine. Requires a restart to take effect.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .enumerator(render_api_enumerator)
@@ -901,7 +904,8 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
-                              {8, {"8 Samples", 1695}}})
+                              {8, {"8 Samples", 1695}},
+                              {16, {"16 Samples", 1935}}})
                      .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
@@ -2066,8 +2070,12 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 
 		// Pick the rendering backend from the in-game Graphics.RenderAPI option (or the mod's default
-		// settings table). A -vulkan/-opengl command line flag still wins below via Cmdline_graphics_api.
-		d_mode = gr_get_configured_render_api();
+		// settings table), but only where the caller did not ask for a specific one. FRED passes OpenGL and
+		// the unit tests pass Stub, and neither should be replaced by a player setting.
+		// A -vulkan/-opengl command line flag still wins below via Cmdline_graphics_api.
+		if (d_mode == GraphicsAPI::Default) {
+			d_mode = gr_get_configured_render_api();
+		}
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);

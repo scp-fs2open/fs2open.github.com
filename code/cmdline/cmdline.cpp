@@ -1784,13 +1784,16 @@ bool SetCmdlineParams()
 	// We need to set both the raw global (for the legacy !Using_in_game_options path) and the
 	// Option<T> override (for the modern path) since either backend may be the one actually consulted.
 	if(window_arg.found()) {
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0", "-window");
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-window");
 		Cmdline_window = true;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1", "-fullscreen_window");
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Borderless))),
+			"-fullscreen_window");
 		Cmdline_fullscreen_window = true;
 		Cmdline_window = false; /* Make sure no-one sets both */
 	}
@@ -1811,9 +1814,8 @@ bool SetCmdlineParams()
 		int height = 0;
 
 		if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
-			SCP_string override;
-			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
-			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override, res_flag_name);
+			options::OptionsManager::instance()->setOverride("Graphics.Resolution",
+				std::unique_ptr<json_t>(json_pack("{s:i, s:i}", "width", width, "height", height)), res_flag_name);
 		} else {
 			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
 		}
@@ -1834,15 +1836,17 @@ bool SetCmdlineParams()
 	}
 	if (hdr_nits_arg.found()) {
 		// presence of the flag alone forces HDR output on, overriding the in-game HDR setting
-		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true", "-hdr");
+		options::OptionsManager::instance()->setOverride("Graphics.HDR",
+			std::unique_ptr<json_t>(json_true()), "-hdr");
 
 		if (hdr_nits_arg.has_param()) {
 			float paperwhite_nits = 0.0f, peak_nits = 0.0f;
 			if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
-				// std::to_string always includes a decimal point, so this is a valid JSON real
-				// (json_unpack's "f" format rejects a bare integer like "400")
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits), "-hdr");
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits), "-hdr");
+				// json_real keeps these JSON reals; json_unpack's "f" format rejects a bare integer like "400"
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite",
+					std::unique_ptr<json_t>(json_real(paperwhite_nits)), "-hdr");
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance",
+					std::unique_ptr<json_t>(json_real(peak_nits)), "-hdr");
 			} else {
 				Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
 			}
@@ -1940,38 +1944,23 @@ bool SetCmdlineParams()
 
 	if ( fov_arg.found() ) {
 		auto val = fov_arg.get_float();
-		if (val > 0.1) {
-			VIEWER_ZOOM_DEFAULT = val;
-		} else {
-			VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
+		if (val <= 0.1f) {
+			val = DEFAULT_FOV;
 		}
-
-		// VIEWER_ZOOM_DEFAULT is only ever a bare float this early (before any VR/asymmetric FOV setup runs),
-		// but guard the variant access defensively rather than assume it.
-		if (std::holds_alternative<float>(VIEWER_ZOOM_DEFAULT)) {
-			SCP_string override;
-			sprintf(override, "%f", std::get<float>(VIEWER_ZOOM_DEFAULT));
-			options::OptionsManager::instance()->setOverride("Graphics.FOV", override, "-fov");
-		}
+		VIEWER_ZOOM_DEFAULT = val;
+		options::OptionsManager::instance()->setOverride("Graphics.FOV",
+			std::unique_ptr<json_t>(json_real(val)), "-fov");
 	}
 
 	if ( fov_cockpit_arg.found() ) {
 		auto val = fov_cockpit_arg.get_float();
-		if (val > 0.1) {
+		if (val > 0.1f) {
 			COCKPIT_ZOOM_DEFAULT = val;
+			options::OptionsManager::instance()->setOverride("Graphics.CockpitFOV",
+				std::unique_ptr<json_t>(json_real(val)), "-fov_cockpit");
 		}
 		else {
 			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-		}
-
-		// Graphics.CockpitFOV's change listener only applies its value when Graphics.CockpitFOVToggle is on, so
-		// force that on too -- otherwise the modern options path would silently ignore -fov_cockpit.
-		options::OptionsManager::instance()->setOverride("Graphics.CockpitFOVToggle", "true", "-fov_cockpit");
-
-		if (std::holds_alternative<float>(COCKPIT_ZOOM_DEFAULT)) {
-			SCP_string override;
-			sprintf(override, "%f", std::get<float>(COCKPIT_ZOOM_DEFAULT));
-			options::OptionsManager::instance()->setOverride("Graphics.CockpitFOV", override, "-fov_cockpit");
 		}
 	}
 
@@ -1991,13 +1980,18 @@ bool SetCmdlineParams()
 
 		Cmdline_fullscreen_window = false;
 		Cmdline_window = true; /* Make sure no-one sets both */
-		options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0", "-vr");
+		// These replace the removeWindowModeOption()/removeVSyncOption() calls that used to hide these two
+		// options in VR. An override keeps them visible but disabled in the options menu, with the tooltip
+		// naming -vr as the reason, which tells the player more than the control simply not being there.
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-vr");
 
 		// Turn off VSync, since we definitely don't want to be capped by the main monitor
 		// the OpenXR runtime should have a buffered wait which will behave, effectively,
 		// as a VSync to VR goggle driver
 		Gr_enable_vsync = false;
-		options::OptionsManager::instance()->setOverride("Graphics.VSync", "false", "-vr");
+		options::OptionsManager::instance()->setOverride("Graphics.VSync",
+			std::unique_ptr<json_t>(json_false()), "-vr");
 
 		openxr_prepare();
 	}
@@ -2052,7 +2046,8 @@ bool SetCmdlineParams()
 	if(no_vsync_arg.found() )
 	{
 		Gr_enable_vsync = false;
-		options::OptionsManager::instance()->setOverride("Graphics.VSync", "false", "-no_vsync");
+		options::OptionsManager::instance()->setOverride("Graphics.VSync",
+			std::unique_ptr<json_t>(json_false()), "-no_vsync");
 	}
 
 	if ( normal_arg.found() ) {
@@ -2092,9 +2087,8 @@ bool SetCmdlineParams()
 			}
 		}
 
-		SCP_string override;
-		sprintf(override, "%d", static_cast<int>(Gr_aa_mode));
-		options::OptionsManager::instance()->setOverride("Graphics.AAMode", override,
+		options::OptionsManager::instance()->setOverride("Graphics.AAMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(Gr_aa_mode))),
 			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
 	}
 
@@ -2112,9 +2106,8 @@ bool SetCmdlineParams()
 			break;
 		}
 
-		SCP_string override;
-		sprintf(override, "%d", Cmdline_msaa_enabled);
-		options::OptionsManager::instance()->setOverride("Graphics.MSAASamples", override, "-msaa");
+		options::OptionsManager::instance()->setOverride("Graphics.MSAASamples",
+			std::unique_ptr<json_t>(json_integer(Cmdline_msaa_enabled)), "-msaa");
 	}
 
 	if ( glow_arg.found() )
@@ -2240,7 +2233,8 @@ bool SetCmdlineParams()
 	if ( softparticles_arg.found() )
 	{
 		Cmdline_softparticles = 1;
-		options::OptionsManager::instance()->setOverride("Graphics.SoftParticles", "true", "-soft_particles");
+		options::OptionsManager::instance()->setOverride("Graphics.SoftParticles",
+			std::unique_ptr<json_t>(json_true()), "-soft_particles");
 	}
 
 	if ( fb_explosions_arg.found() )
@@ -2254,17 +2248,25 @@ bool SetCmdlineParams()
     }
 
 	if (fb_explosions_arg.found() || fb_thrusters_arg.found()) {
-		SCP_string override;
-		sprintf(override, "%llu", static_cast<unsigned long long>(Gr_framebuffer_effects.to_u64()));
-		options::OptionsManager::instance()->setOverride("Graphics.FramebufferEffects", override,
-			fb_explosions_arg.found() && fb_thrusters_arg.found() ? "-fb_explosions -fb_thrusters"
-			: fb_explosions_arg.found() ? "-fb_explosions" : "-fb_thrusters");
+		SCP_string reason;
+		if (fb_explosions_arg.found()) {
+			reason = "-fb_explosions";
+		}
+		if (fb_thrusters_arg.found()) {
+			if (!reason.empty()) {
+				reason += " ";
+			}
+			reason += "-fb_thrusters";
+		}
+		options::OptionsManager::instance()->setOverride("Graphics.FramebufferEffects",
+			std::unique_ptr<json_t>(json_integer(static_cast<json_int_t>(Gr_framebuffer_effects.to_u64()))), reason);
 	}
 
 	if ( no_postprocess_arg.found() )
 	{
 		Gr_post_processing_enabled = false;
-		options::OptionsManager::instance()->setOverride("Graphics.PostProcessing", "false", "-no_post_process");
+		options::OptionsManager::instance()->setOverride("Graphics.PostProcessing",
+			std::unique_ptr<json_t>(json_false()), "-no_post_process");
 	}
 
 	if( reparse_mainhall_arg.found() )
@@ -2282,7 +2284,9 @@ bool SetCmdlineParams()
 		// Deliberately not calling setOverride() here: mod_table_init() (which runs after cmdline parsing but
 		// before OptionsManager::loadInitialValues()) may still adjust Shadow_quality via game_settings.tbl's
 		// "$Shadow Quality Default:" when Shadow_quality_uses_mod_option is set, and an override registered now
-		// would freeze in the Medium fallback and ignore that later adjustment.
+		// would freeze in the Medium fallback and ignore that later adjustment. Graphics.Shadows' default_func
+		// reads Shadow_quality instead, so this value reaches the in-game options path that way, and the
+		// player keeps the ability to change it.
 	}
 
 	if( shadow_quality_arg.found() )
@@ -2314,9 +2318,8 @@ bool SetCmdlineParams()
 
 		// Unlike `-enable_shadows` alone, an explicit quality level is an unambiguous hard override that
 		// nothing else (mod defaults included) should be able to silently override.
-		SCP_string override;
-		sprintf(override, "%d", static_cast<int>(Shadow_quality));
-		options::OptionsManager::instance()->setOverride("Graphics.Shadows", override, "-shadow_quality");
+		options::OptionsManager::instance()->setOverride("Graphics.Shadows",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(Shadow_quality))), "-shadow_quality");
 	}
 
 	if( rt_shadows_arg.found() )
@@ -2326,30 +2329,33 @@ bool SetCmdlineParams()
 		// CAPABILITY_RAYTRACED_SHADOWS -- the CSM path is used either way.
 		Shadow_render_method = ShadowRenderMethod::Raytraced;
 
-		SCP_string override;
-		sprintf(override, "%d", static_cast<int>(ShadowRenderMethod::Raytraced));
-		options::OptionsManager::instance()->setOverride("Graphics.ShadowRenderMethod", override, "-rt_shadows");
+		// No need to gate this on shadows_raytracing_supported(): that answer is only meaningful after
+		// gr_init(), which runs later, and shadows_remove_unsupported_options() then removes this option
+		// altogether on hardware that cannot raytrace, so the override never reaches the options menu there.
+		options::OptionsManager::instance()->setOverride("Graphics.ShadowRenderMethod",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(ShadowRenderMethod::Raytraced))), "-rt_shadows");
 	}
 
 	if( no_deferred_lighting_arg.found() )
 	{
 		Cmdline_no_deferred_lighting = 1;
-		options::OptionsManager::instance()->setOverride("Graphics.DeferredLighting", "false", "-no_deferred");
+		options::OptionsManager::instance()->setOverride("Graphics.DeferredLighting",
+			std::unique_ptr<json_t>(json_false()), "-no_deferred");
 	}
 
 	if( deferred_lighting_cockpit_arg.found() )
 	{
 		Cmdline_deferred_lighting_cockpit = true;
-		options::OptionsManager::instance()->setOverride("Graphics.DeferredCockpitLighting", "true", "-deferred_cockpit");
+		options::OptionsManager::instance()->setOverride("Graphics.DeferredCockpitLighting",
+			std::unique_ptr<json_t>(json_true()), "-deferred_cockpit");
 	}
 
 	if (anisotropy_level_arg.found())
 	{
 		Cmdline_aniso_level = anisotropy_level_arg.get_int();
 
-		SCP_string override;
-		sprintf(override, "%.1f", static_cast<float>(Cmdline_aniso_level));
-		options::OptionsManager::instance()->setOverride("Graphics.Anisotropy", override, "-anisotropic_filter");
+		options::OptionsManager::instance()->setOverride("Graphics.Anisotropy",
+			std::unique_ptr<json_t>(json_real(static_cast<double>(Cmdline_aniso_level))), "-anisotropic_filter");
 	}
 
 	if (frame_profile_write_file.found())
@@ -2437,12 +2443,12 @@ bool SetCmdlineParams()
 	if (vulkan.found()) {
 		Cmdline_graphics_api = GraphicsAPI::Vulkan;
 		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
-			std::to_string(static_cast<int>(GraphicsAPI::Vulkan)), "-vulkan");
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(GraphicsAPI::Vulkan))), "-vulkan");
 	}
 	else if (opengl.found()) {
 		Cmdline_graphics_api = GraphicsAPI::OpenGL;
 		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
-			std::to_string(static_cast<int>(GraphicsAPI::OpenGL)), "-opengl");
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(GraphicsAPI::OpenGL))), "-opengl");
 	}
 
 	//Deprecated flags - CommanderDJ

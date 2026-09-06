@@ -65,7 +65,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1933 // This is the next available ID
+// #define XSTR_SIZE	1936 // This is the next available ID
 
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
@@ -217,18 +217,17 @@ void lcl_init(int lang_init)
 	int lang = -1;
 	if (lang_init < 0) {
 
-		// Register a -lang command line flag as an override *before* consulting the in-game option below, so
-		// that lookup already returns the cmdline-selected language on the modern (Using_in_game_options) path,
-		// instead of the override only being reachable via the redundant "now try the commandline" tier further
-		// down (which only ever ran on the legacy, !Using_in_game_options path anyway, since the option lookup's
-		// always-valid default index meant `lang` was never still negative by the time execution reached it).
+		// Resolve the -lang command line flag once, and register it as an override *before* the in-game
+		// option below reads its value, so that the modern (Using_in_game_options) path gets the
+		// cmdline-selected language straight out of the option lookup.
+		int cmdline_lang = -1;
 		if (!Cmdline_lang.empty()) {
-			int cmdline_lang_idx = lcl_find_lang_index_by_name(Cmdline_lang);
-			if (SCP_vector_inbounds(Lcl_languages, cmdline_lang_idx)) {
-				SCP_string override_json =
-					json_dump_string_new(language_serializer(cmdline_lang_idx), JSON_COMPACT | JSON_ENSURE_ASCII);
-				options::OptionsManager::instance()->setOverride("Game.Language", override_json, "-lang");
+			cmdline_lang = lcl_find_lang_index_by_name(Cmdline_lang);
+			if (Lcl_languages.in_bounds(cmdline_lang)) {
+				options::OptionsManager::instance()->setOverride("Game.Language",
+					std::unique_ptr<json_t>(language_serializer(cmdline_lang)), "-lang");
 			} else {
+				cmdline_lang = -1;
 				Warning(LOCATION, "Unrecognized -lang value \"%s\"; ignoring.", Cmdline_lang.c_str());
 			}
 		}
@@ -238,17 +237,15 @@ void lcl_init(int lang_init)
 			lang = LanguageOption->getValue();
 
 			// make sure the language index is valid for the current mod
-			if (!SCP_vector_inbounds(Lcl_languages, lang)) {
+			if (!Lcl_languages.in_bounds(lang)) {
 				lang = -1;
 			}
 		}
 
-		// now try the the commandline (only still reachable on the legacy !Using_in_game_options path, since
-		// the override above already resolves this for the modern path)
+		// now try the commandline. This is still reachable on the modern path too: the option's
+		// deserializer returns -1 when the persisted language no longer exists in the current mod.
 		if (lang < 0) {
-			if (!Cmdline_lang.empty()) {
-				lang = lcl_find_lang_index_by_name(Cmdline_lang);
-			}
+			lang = cmdline_lang;
 		}
 
 		// still nothing, so go to the ini file
