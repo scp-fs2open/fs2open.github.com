@@ -848,7 +848,7 @@ const char *sexp_container_CTEXT(int node)
 
 		if (result.front() != sexp_container::DELIM) {
 			if (!Sexp_nodes[node].cache) {
-				Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
+				Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_CONTAINER_NAME, result);
 			} else {
 				Sexp_nodes[node].cache->update_container_CTEXT_result(result);
 			}

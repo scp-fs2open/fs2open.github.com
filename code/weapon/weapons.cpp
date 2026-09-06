@@ -381,17 +381,6 @@ int weapon_info_lookup(const char *name)
 	return -1;
 }
 
-/**
- * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
- * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
- */
-int weapon_info_get_index(const weapon_info *wip)
-{
-	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
-	const weapon_info *data = Weapon_info.data();
-	return static_cast<int>(std::distance(data, wip));
-}
-
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp)
 {
@@ -3885,7 +3874,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->particle_spewers[spew_index] = particle::util::parseEffect(wip->name);
 			}
 			else { // we have a valid index, now parse the spewer already
-				auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][spew_index];
+				auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][spew_index];
 				if (pspew_buffer.particle_spew_type == PSPEW_NONE) {
 					//This must be an uninitialized effect, store defaults.
 					pspew_buffer.particle_spew_count = 1;
@@ -3988,7 +3977,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (wip->particle_spewers.empty()) {
 				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
 			}
-			auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][0];
+			auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][0];
 			pspew_buffer.particle_spew_count = 1;
 			pspew_buffer.particle_spew_time = 25;
 			pspew_buffer.particle_spew_vel = 0.4f;
@@ -7057,31 +7046,69 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys * src_turret)
+static size_t *get_pointer_to_weapon_fire_pattern_index(ship_weapon *ship_weapon_p, int swp_pbank, int swp_sbank)
 {
-	Assertion(ship_idx >= 0 && ship_idx < MAX_SHIPS, "Invalid ship index in get_pointer_to_weapon_fire_pattern_index()");
-	ship* shipp = &Ships[ship_idx];
-	ship_weapon* ship_weapon_p = &(shipp->weapons);
-	if(src_turret)
+	if (ship_weapon_p)
 	{
-		ship_weapon_p = &src_turret->weapons;
+		if (swp_pbank >= 0)
+		{
+			Assertion(swp_pbank < MAX_SHIP_PRIMARY_BANKS, "swp_pbank is %d, which is out of range [0,%d)", swp_pbank, MAX_SHIP_PRIMARY_BANKS);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[swp_pbank]);
+		}
+		if (swp_sbank >= 0)
+		{
+			Assertion(swp_sbank < MAX_SHIP_SECONDARY_BANKS, "swp_sbank is %d, which is out of range [0,%d)", swp_sbank, MAX_SHIP_SECONDARY_BANKS);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[swp_sbank]);
+		}
 	}
-	Assert( ship_weapon_p != NULL );
+	return nullptr;
+}
 
-	// search for the corresponding bank pattern index for the weapon_type that is being fired.
-	// Note: Because a weapon_type may not be unique to a weapon bank per ship this search may attribute
-	// the weapon to the wrong bank.  Hopefully this isn't a problem.
-	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
-		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
+// gets the substitution pattern pointer for a given weapon
+// returns [use_substitution, substituted_weapon_info_index]
+std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check)
+{
+	auto wip = &Weapon_info[weapon_info_index];
+	if (wip->num_substitution_patterns == 0)
+		return { false, -1 };
+
+	bool paired_shot = false;
+	if (shipp_to_check)
+	{
+		// only advance the pattern once per linked/paired shot rather than once per projectile
+		if (wip->subtype == WP_LASER)
+		{
+			paired_shot = shipp_to_check->flags[Ship::Ship_Flags::Primary_linked];
+		}
+		else if (wip->subtype == WP_MISSILE && shipp_to_check->flags[Ship::Ship_Flags::Secondary_dual_fire])
+		{
+			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
+			paired_shot = ship_secondary_bank_can_dual_fire(shipp_to_check, sbank);
 		}
 	}
-	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
-		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
+
+	auto position = get_pointer_to_weapon_fire_pattern_index(swp, pbank, sbank);
+	if (position)
+	{
+		size_t curr_pos = *position;
+		if (paired_shot && curr_pos > 0)
+			curr_pos--;
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
+
+		if (wip->weapon_substitution_pattern[curr_pos] == -1)
+		{
+			// weapon doesn't want any sub
+			return { true, -1 };
+		}
+		else if (wip->weapon_substitution_pattern[curr_pos] != weapon_info_index)
+		{
+			// weapon wants to sub with weapon other than me
+			return { true, wip->weapon_substitution_pattern[curr_pos] };
 		}
 	}
-	return NULL;
+
+	return { false, -1 };
 }
 
 /**
@@ -7090,7 +7117,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret, const WeaponLaunchCurveData& launch_curve_data )
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, ship_weapon *src_swp, int src_pbank, int src_sbank, const WeaponLaunchCurveData& launch_curve_data )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -7115,38 +7142,17 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if ( (wip->num_substitution_patterns > 0) && (parent_objp != NULL)) {
 		// using substitution
+		// linked/dual fire pairing only applies to ship-level fire, not to turrets or non-ship parents
+		ship *parent_shipp = nullptr;
+		if (parent_objp->type == OBJ_SHIP && src_swp == &Ships[parent_objp->instance].weapons)
+			parent_shipp = &Ships[parent_objp->instance];
+		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(weapon_type, src_swp, src_pbank, src_sbank, parent_shipp);
 
-		// get to the instance of the gun
-		Assertion( parent_objp->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", parent_objp->type );
-		Assertion( (parent_objp->instance < MAX_SHIPS) && (parent_objp->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", parent_objp->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[parent_objp->instance]);
-		Assert( parent_shipp != NULL );
+		if (use_substitution) {
+			if (substituted_weapon_info_index < 0)
+				return -1;
 
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_objp->instance, src_turret);
-		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
-
-		size_t curr_pos = *position;
-		// only advance the pattern once per linked/paired shot rather than once per projectile
-		bool paired_shot = false;
-		if (Weapon_info[weapon_type].subtype == WP_LASER) {
-			paired_shot = parent_shipp->flags[Ship::Ship_Flags::Primary_linked];
-		} else if (Weapon_info[weapon_type].subtype == WP_MISSILE && !src_turret && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]) {
-			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
-			paired_shot = ship_secondary_bank_can_dual_fire(parent_shipp, parent_shipp->weapons.current_secondary_bank);
-		}
-		if (paired_shot && (curr_pos > 0)) {
-			curr_pos--;
-		}
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
-
-		if ( wip->weapon_substitution_pattern[curr_pos] == -1 ) {
-			// weapon doesn't want any sub
-			return -1;
-		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
-			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
+			return weapon_create(pos, porient, substituted_weapon_info_index, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
 		}
 	}
 
@@ -7158,7 +7164,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		float test = rng.next();
 		if (test < failure_rate) {
 			if (wip->failure_sub != -1) {
-				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
 			} else {
 				return -1;
 			}
@@ -7211,9 +7217,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	orient = &morient;
 
 	float combined_fof = wip->field_of_fire * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FOF_MULT, launch_curve_data);
-	// If there is a fof_cooldown value, increase the spread linearly
-	if (fof_cooldown != 0.0f) {
-		combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
+	{
+		// If there is a fof_cooldown value, increase the spread linearly
+		float fof_cooldown = 0.0f;
+		if (src_swp && src_pbank >= 0)
+			fof_cooldown = src_swp->primary_bank_fof_cooldown[src_pbank];
+//		if (src_swp && src_sbank >= 0)
+//			fof_cooldown = src_swp->secondary_bank_fof_cooldown[src_sbank];
+		if (fof_cooldown != 0.0f)
+			combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
 	}
 
 	if(combined_fof > 0.0f){
@@ -8826,9 +8838,14 @@ static void weapon_page_in_one(weapon_info *wip, bool load_graphics)
 	if (VALID_FNAME(wip->external_model_name))
 		wip->external_model_num = model_load(wip->external_model_name);
 
-	if (wip->external_model_num == -1)
-		wip->external_model_num = wip->model_num;
+	if (wip->external_model_num >= 0)
+	{
+		polymodel *external_pm = model_get(wip->external_model_num);
 
+		// only the first gun bank of an external model supplies firing points
+		if (external_pm->n_guns > 1)
+			Warning(LOCATION, "External model %s of weapon %s has %d gun banks; only the firing points of the first bank are used.", wip->external_model_name, wip->name, external_pm->n_guns);
+	}
 
 	//Load shockwaves
 	shockwave_create_info_load(&wip->shockwave);
@@ -8868,8 +8885,8 @@ void weapons_page_in()
 
 	// for weapons in weaponry pool
 	for (i = 0; i < Num_teams; i++) {
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
-			used_weapons[Team_data[i].weaponry_pool[j]] += Team_data[i].weaponry_count[j];
+		for (auto &entry : Team_data[i].weapon_choices) {
+			used_weapons[entry.class_index] += entry.count;
 		}
 	}
 

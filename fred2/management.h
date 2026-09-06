@@ -98,7 +98,7 @@ int query_initial_orders_conflict(int wing);
 int query_initial_orders_empty(ai_goal* ai_goals);
 int set_reinforcement(const char* name, int state);
 int get_docking_list(int model_index);
-int rename_ship(int ship, const char* name);
+int rename_ship(int ship, const char* name, bool update_display_name = true);
 void fix_ship_name(int ship);
 int internal_integrity_check();
 void correct_marking();
@@ -116,9 +116,6 @@ const char* get_order_name(ai_goal_mode order);
 void object_moved(object* ptr);
 int invalidate_references(const char* name, sexp_ref_type type);
 int query_whole_wing_marked(int wing);
-void generate_weaponry_usage_list(int team, int* arr);
-void generate_weaponry_usage_list(int* arr, int wing);
-void generate_ship_usage_list(int* arr, int wing);
 
 CJumpNode* jumpnode_get_by_name(const CString& name);
 

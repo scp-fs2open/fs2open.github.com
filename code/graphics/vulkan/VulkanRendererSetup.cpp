@@ -208,7 +208,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
-	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %" PRIu64 "\n",
+	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as " UINT64_T_ARG "\n",
 		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),

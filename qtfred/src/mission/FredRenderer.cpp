@@ -145,7 +145,7 @@ void draw_asteroid_field() {
 
 enum class subsystem_highlight { BOUNDING_BOX, LABEL };
 
-void fredhtl_render_subsystem_highlight(fso::fred::subsys_to_render *s2r, subsystem_highlight highlight)
+void fredhtl_render_subsystem_highlight(fso::fred::subsys_to_render *s2r, subsystem_highlight highlight, float label_scale = 1.0f)
 {
 	vertex text_center;
 	SCP_string buf;
@@ -226,7 +226,7 @@ void fredhtl_render_subsystem_highlight(fso::fred::subsys_to_render *s2r, subsys
 		g3_rotate_vertex(&text_center, &center_pt);
 		g3_project_vertex(&text_center);
 		if (!(text_center.flags & PF_OVERFLOW)) {
-			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2);
+			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2, GR_RESIZE_FULL, label_scale);
 		}
 	}
 }
@@ -351,7 +351,7 @@ void FredRenderer::display_distances() {
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf);
+							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 						}
 				}
 
@@ -468,7 +468,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						gr_set_color_fast(&colour_white);
 					}
 
-					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 				}
 			}
 		}
@@ -506,7 +506,7 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 				for (auto ss : list_range(&shipp->subsys_list)) {
 					if (ss->system_info->subobj_num != -1) {
 						subsys_to_render s2r = { true, objp, ss };
-						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::LABEL);
+						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::LABEL, view().Label_font_scale);
 					}
 				}
 			}
@@ -520,7 +520,7 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 
 				if (Render_subsys.do_render) {
 					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::BOUNDING_BOX);
-					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::LABEL);
+					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::LABEL, view().Label_font_scale);
 				} else {
 					cancel_display_active_ship_subsystem(Render_subsys);
 				}
@@ -1070,6 +1070,9 @@ void FredRenderer::render_frame(int cur_object_index,
 		if (!(v.codes & CC_BEHIND)) {
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 				gr_get_string_size(&w, &h, buf);
+				// scale the box to match the scaled label text
+				w = fl2i(w * view().Label_font_scale);
+				h = fl2i(h * view().Label_font_scale);
 
 				x = (int) v.screen.xyw.x;
 				y = (int) v.screen.xyw.y + 20;
@@ -1081,7 +1084,7 @@ void FredRenderer::render_frame(int cur_object_index,
 				gr_rect(x - 5, y - 5, w + 5, h + 5);
 
 				gr_set_color_fast(&colour_white);
-				gr_string(x, y, buf);
+				gr_string(x, y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 			}
 		}
 	}
@@ -1101,8 +1104,9 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->camera.eye_pos.xyz.x, _viewport->camera.eye_pos.xyz.y, _viewport->camera.eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
+	w = fl2i(w * view().Label_font_scale);
 	gr_set_color_fast(&colour_white);
-	gr_string(gr_screen.max_w - w - 2, 2, buf);
+	gr_string(gr_screen.max_w - w - 2, 2, buf, GR_RESIZE_FULL, view().Label_font_scale);
 
 	const auto hiddenLayerCount = _viewport->getHiddenLayerCount();
 	if (hiddenLayerCount > 0) {
@@ -1110,7 +1114,7 @@ void FredRenderer::render_frame(int cur_object_index,
 		sprintf(buf, "%d %s Hidden",
 				hiddenLayerCount,
 				hiddenLayerCount == 1 ? "Layer" : "Layers");
-		gr_string(8, 8, buf);
+		gr_string(8, 8, buf, GR_RESIZE_FULL, view().Label_font_scale);
 	}
 
 	g3_end_frame(); // ** Accounted for

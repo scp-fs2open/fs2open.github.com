@@ -188,6 +188,26 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_3, OnUpdateOutlineLod3)
 	ON_COMMAND(ID_OUTLINE_LOD_4, OnOutlineLod4)
 	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_4, OnUpdateOutlineLod4)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_50, OnLabelFontScale50)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_50, OnUpdateLabelFontScale50)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_75, OnLabelFontScale75)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_75, OnUpdateLabelFontScale75)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_100, OnLabelFontScale100)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_100, OnUpdateLabelFontScale100)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_125, OnLabelFontScale125)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_125, OnUpdateLabelFontScale125)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_150, OnLabelFontScale150)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_150, OnUpdateLabelFontScale150)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_200, OnLabelFontScale200)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_200, OnUpdateLabelFontScale200)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_250, OnLabelFontScale250)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_250, OnUpdateLabelFontScale250)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_300, OnLabelFontScale300)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_300, OnUpdateLabelFontScale300)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_350, OnLabelFontScale350)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_350, OnUpdateLabelFontScale350)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_400, OnLabelFontScale400)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_400, OnUpdateLabelFontScale400)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
 	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
@@ -292,6 +312,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
+	ON_COMMAND(ID_CLASSIC_MENU_LAYOUT, OnClassicMenuLayout)
+	ON_UPDATE_COMMAND_UI(ID_CLASSIC_MENU_LAYOUT, OnUpdateClassicMenuLayout)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -1183,6 +1205,10 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
+						char new_name[NAME_LENGTH];
+						wing_bash_ship_name(new_name, Wings[Duped_wing].name, Wings[Duped_wing].wave_count + 1);
+						rename_ship(ship, new_name);
+						// bash it again for the display name
 						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
@@ -1817,6 +1843,40 @@ void CFREDView::OnUpdateOutlineLod1(CCmdUI* pCmdUI) { OnUpdateOutlineLod(1, pCmd
 void CFREDView::OnUpdateOutlineLod2(CCmdUI* pCmdUI) { OnUpdateOutlineLod(2, pCmdUI); }
 void CFREDView::OnUpdateOutlineLod3(CCmdUI* pCmdUI) { OnUpdateOutlineLod(3, pCmdUI); }
 void CFREDView::OnUpdateOutlineLod4(CCmdUI* pCmdUI) { OnUpdateOutlineLod(4, pCmdUI); }
+
+void CFREDView::OnLabelFontScale(float scale)
+{
+	Fred_label_font_scale = scale;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateLabelFontScale(float scale, CCmdUI* pCmdUI)
+{
+	// tolerant compare, since the value is stored as a float derived from an int percentage
+	pCmdUI->SetCheck(fl_equal(Fred_label_font_scale, scale, 0.001f));
+}
+
+void CFREDView::OnLabelFontScale50() { OnLabelFontScale(0.5f); }
+void CFREDView::OnLabelFontScale75() { OnLabelFontScale(0.75f); }
+void CFREDView::OnLabelFontScale100() { OnLabelFontScale(1.0f); }
+void CFREDView::OnLabelFontScale125() { OnLabelFontScale(1.25f); }
+void CFREDView::OnLabelFontScale150() { OnLabelFontScale(1.5f); }
+void CFREDView::OnLabelFontScale200() { OnLabelFontScale(2.0f); }
+void CFREDView::OnLabelFontScale250() { OnLabelFontScale(2.5f); }
+void CFREDView::OnLabelFontScale300() { OnLabelFontScale(3.0f); }
+void CFREDView::OnLabelFontScale350() { OnLabelFontScale(3.5f); }
+void CFREDView::OnLabelFontScale400() { OnLabelFontScale(4.0f); }
+void CFREDView::OnUpdateLabelFontScale50(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale75(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.75f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale100(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale125(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.25f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale150(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale200(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale250(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale300(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale350(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale400(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(4.0f, pCmdUI); }
 
 void CFREDView::OnEditorsGoals()
 {
@@ -4048,6 +4108,19 @@ void CFREDView::OnErrorCheckerChecksPotentialIssues()
 void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
+}
+
+void CFREDView::OnClassicMenuLayout()
+{
+	Classic_menu_layout = !Classic_menu_layout;
+	if (Fred_main_wnd != nullptr)
+		Fred_main_wnd->apply_menu_layout(Classic_menu_layout);
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateClassicMenuLayout(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Classic_menu_layout);
 }
 
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 

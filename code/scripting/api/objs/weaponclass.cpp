@@ -1371,7 +1371,7 @@ ADE_FUNC(isWeaponRequired,
 
 	//This could be requested before Common_team has been initialized, so let's check.
 	if (Common_select_inited) {
-		return ade_set_args(L, "b", Team_data[Common_team].weapon_required[idx]);
+		return ade_set_args(L, "b", Team_data[Common_team].required_weapons.contains(idx));
 	} else {
 		return ADE_RETURN_NIL;
 	}

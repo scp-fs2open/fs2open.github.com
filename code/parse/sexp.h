@@ -1389,7 +1389,8 @@ struct sexp_cached_data
 	}
 };
 
-typedef struct sexp_node {
+struct sexp_node
+{
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
@@ -1399,11 +1400,11 @@ typedef struct sexp_node {
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
 
-	sexp_cached_data *cache;	// Goober5000
+	std::unique_ptr<sexp_cached_data> cache;	// Goober5000
 	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
 
 	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
-} sexp_node;
+};
 
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)

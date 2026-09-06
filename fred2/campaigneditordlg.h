@@ -44,6 +44,12 @@ public:
 	void onRootInserted(int old_formula, int new_formula) override;
 	void onRootMoved(int node1, int node2, bool insert_before) override;
 
+	SCP_vector<SCP_string> getMissionNames() override;
+	bool hasDefaultMissionName() override;
+
+	SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name) override;
+	SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name) override;
+
 // Form Data
 public:
 	void mission_selected(int num);

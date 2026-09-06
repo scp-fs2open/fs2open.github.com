@@ -23,11 +23,13 @@ extern int Show_outlines;           //!< Bool. If nonzero, draw each object's me
 extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh lines
 extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
 extern int Outline_lod;				// The LOD to use for wireframe outlines (0 = highest detail, default 1)
+extern float Fred_label_font_scale;	// Multiplier applied to viewport text labels
 extern bool Always_save_display_names;	// When saving a mission, always write display names to the mission file even if the display name is not set.
 										// But ships in wings are excepted, because a display name will cause a ship to have the same name in every wave.
 										// Wings now support display names, or the ship-change-display-name SEXP can be used, to handle that case.
 extern bool Error_checker_checks_potential_issues;	// Error checker checks not only outright errors but also potential issues
 extern bool Error_checker_checks_potential_issues_once;	// Same as above, but only once, and independent of the selected option
+extern bool Classic_menu_layout;		// Use the classic main menu layout instead of the qtFRED-style layout
 extern int Show_stars;              //!< Bool. If nonzero, draw the starfield, nebulas, and suns. Might also handle skyboxes
 extern int Single_axis_constraint;  //!< Bool. If nonzero, constrain movement to one axis
 extern int Show_distances;          //!< Bool. If nonzero, draw lines between each object and display their distance on the middle of each line

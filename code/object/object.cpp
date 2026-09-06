@@ -2234,9 +2234,20 @@ int object_get_model_num(const object *objp)
 			return Weapon_info[wp->weapon_info_index].model_num;
 		}
 		case OBJ_RAW_POF:
-			return Pof_objects[objp->instance].model_num;
+		{
+			// Pof_objects is a map with a monotonic id as the key, not an array with an index
+			auto pof_it = Pof_objects.find(objp->instance);
+			if (pof_it == Pof_objects.end())
+				return -1;
+			return pof_it->second.model_num;
+		}
 		case OBJ_PROP:
-			return Prop_info[objp->instance].model_num;
+		{
+			// the instance of a prop object is an index into Props, not into Prop_info
+			if (objp->instance < 0 || objp->instance >= static_cast<int>(Props.size()) || !Props[objp->instance].has_value())
+				return -1;
+			return Prop_info[Props[objp->instance]->prop_info_index].model_num;
+		}
 		default:
 			break;
 	}
@@ -2290,9 +2301,19 @@ int object_get_model_instance_num(const object *objp)
 			return jnp->GetPolymodelInstanceNum();
 		}
 		case OBJ_RAW_POF:
-			return Pof_objects[objp->instance].model_instance;
+		{
+			auto pof_it = Pof_objects.find(objp->instance);
+			if (pof_it == Pof_objects.end())
+				return -1;
+			return pof_it->second.model_instance;
+		}
 		case OBJ_PROP:
-			return prop_id_lookup(objp->instance)->model_instance_num;
+		{
+			// props_level_close() clears Props while the prop objects can still be alive
+			if (objp->instance < 0 || objp->instance >= static_cast<int>(Props.size()) || !Props[objp->instance].has_value())
+				return -1;
+			return Props[objp->instance]->model_instance_num;
+		}
 		default:
 			break;
 	}

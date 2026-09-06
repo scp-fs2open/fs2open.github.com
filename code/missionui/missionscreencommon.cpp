@@ -85,11 +85,6 @@ shader Icon_shaders[NUM_ICON_FRAMES];
 loadout_data Player_loadout;	// what the ship and weapon loadout is... used since we want to use the 
 								// same loadout if the mission is played again
 
-//wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
-//int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
-//int		Ss_pool[MAX_SHIP_CLASSES];				// ship pool
-//int		Wss_num_wings;								// number of player wings
-
 wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
 SCP_map<int, int>	Wl_pool_teams[MAX_TVT_TEAMS];
 SCP_map<int, int>	Ss_pool_teams[MAX_TVT_TEAMS];
@@ -1148,7 +1143,7 @@ void wss_maybe_restore_loadout()
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(slot->wep[j])) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1161,7 +1156,7 @@ void wss_maybe_restore_loadout()
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(Wss_slots[i].wep[j])) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1196,7 +1191,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
+		if (Ship_info.in_bounds(slot->ship_class)) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1205,7 +1200,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+			if (Ship_info.in_bounds(slot->ship_class) && Weapon_info.in_bounds(slot->wep[j])) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
