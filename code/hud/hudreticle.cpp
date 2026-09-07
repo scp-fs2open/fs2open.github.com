@@ -447,10 +447,6 @@ void HudGaugeReticle::getFirepointStatus() {
 					// use this bank's pattern, not the current bank's (the old code got this wrong under dynamic linking)
 					FiringPattern firing_pattern = ship_get_firing_pattern(sip, swp, wip, i);
 
-					// fighter beams with +BeamShots predate firing patterns and always cycle forward through the points
-					if (!sip->flags[Ship::Info_Flags::Dyn_primary_linking] && wip->wi_flags[Weapon::Info_Flags::Beam] && wip->b_info.beam_shots)
-						firing_pattern = FiringPattern::CYCLE_FORWARD;
-
 					int shot_count = ship_get_firepoint_counts(sip, swp, wip, firing_pattern, i, num_points).shot_count;
 
 					for (int j = 0; j < num_points; j++) {

@@ -13021,6 +13021,10 @@ FiringPattern ship_get_firing_pattern(const ship_info *sip, const ship_weapon *s
 	if (wip->is_primary() && sip->flags[Ship::Info_Flags::Dyn_primary_linking])
 		return sip->dyn_firing_patterns_allowed[bank][swp->dynamic_firing_pattern[bank]];
 
+	// fighter beams without a tabled pattern always cycle forward, as they did before firing patterns existed
+	if (wip->uses_legacy_fighter_beam_firing())
+		return FiringPattern::CYCLE_FORWARD;
+
 	return wip->firing_pattern;
 }
 
@@ -13030,16 +13034,24 @@ FirepointCounts ship_get_firepoint_counts(const ship_info *sip, const ship_weapo
 
 	// for cycling patterns, $Shots: is the number of points to fire from at a time and $Cycle Multishot: is
 	// the number of projectiles per point; for ALL_AT_ONCE, every point fires and $Shots: is the number of
-	// projectiles per point (used mostly for the 'shotgun' effect)
+	// projectiles per point (used mostly for the 'shotgun' effect).  Fighter beams without a tabled pattern
+	// use their own legacy mapping: the beam's +Shots: is the number of points and $Shots: is the number of
+	// beams per point.  Secondaries without a tabled pattern keep their retail behavior of one missile from
+	// one point, since $Shots: already governs how many missiles the same weapon fires from a turret.
 	if (wip->is_primary() && sip->flags[Ship::Info_Flags::Dyn_primary_linking])
 	{
 		counts.shot_count = MIN(num_points, swp->primary_bank_slot_count[bank]);
 		counts.multishot_count = fl2i(i2fl(wip->cycle_multishot) * multishot_curve_mult);
 	}
-	else if (wip->wi_flags[Weapon::Info_Flags::Beam] && wip->b_info.beam_shots)
+	else if (wip->uses_legacy_fighter_beam_firing())
 	{
 		counts.shot_count = MIN(wip->b_info.beam_shots, num_points);
 		counts.multishot_count = fl2i(i2fl(wip->shots) * multishot_curve_mult);
+	}
+	else if (wip->uses_legacy_secondary_firing())
+	{
+		counts.shot_count = 1;
+		counts.multishot_count = 1;
 	}
 	else if (pattern != FiringPattern::ALL_AT_ONCE)
 	{
@@ -13463,10 +13475,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if(winfo_p->wi_flags[Weapon::Info_Flags::Beam]){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau				
 
 				FiringPattern firing_pattern = ship_get_firing_pattern(sip, swp, winfo_p, bank_to_fire);
-
-				// fighter beams with +BeamShots predate firing patterns and always cycle forward through the points
-				if (!sip->flags[Ship::Info_Flags::Dyn_primary_linking] && winfo_p->b_info.beam_shots)
-					firing_pattern = FiringPattern::CYCLE_FORWARD;
 
 				float multishot_curve_mult = winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data);
 				auto [shot_count, multishot_count] = ship_get_firepoint_counts(sip, swp, winfo_p, firing_pattern, bank_to_fire, num_slots, multishot_curve_mult);

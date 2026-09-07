@@ -619,8 +619,8 @@ struct weapon_info
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
 	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
 	float max_fof_spread;			//The maximum fof increase that the shots can spread to
-	FiringPattern firing_pattern;
-	int	  shots;					//the number of shots that will be fired at a time, 
+	FiringPattern firing_pattern;	// see also Info_Flags::Firing_pattern_specified
+	int	  shots;					//the number of shots that will be fired at a time,
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
 	int   cycle_multishot;			//ugly hack -- used to control multishot if the weapon uses any non-standard firing pattern, since $shots is used for fire point number
@@ -953,6 +953,17 @@ struct weapon_info
     inline bool is_secondary()          const { return subtype == WP_MISSILE; }
     inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
     inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
+
+    // Fighter beams predate firing patterns, and originally cycled forward through +Shots: firing points per
+    // trigger pull, firing $Shots: beams from each.  That behavior is kept for compatibility unless the weapon
+    // tables a $Firing Pattern:, in which case the beam fires exactly like a gun would with that pattern.
+    inline bool uses_legacy_fighter_beam_firing() const { return is_beam() && b_info.beam_shots > 0 && !wi_flags[Weapon::Info_Flags::Firing_pattern_specified]; }
+
+    // Secondaries have always launched one missile from one firing point per trigger pull, and $Shots: already
+    // means something for the same weapon when it is fired from a turret.  Honoring $Shots: and $Cycle Multishot:
+    // on a secondary bank would therefore silently rebalance existing tables, so it only happens for a secondary
+    // that opts in by tabling a $Firing Pattern:.
+    inline bool uses_legacy_secondary_firing() const { return is_secondary() && !wi_flags[Weapon::Info_Flags::Firing_pattern_specified]; }
 
     inline bool is_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_heat,Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
 	inline bool is_locked_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }

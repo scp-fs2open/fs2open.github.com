@@ -415,7 +415,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			Weapon::Info_Flags::Apply_Recoil,
 			Weapon::Info_Flags::Has_display_name,
 			Weapon::Info_Flags::Vampiric,
-			Weapon::Info_Flags::Detonate_on_expiration
+			Weapon::Info_Flags::Detonate_on_expiration,
+			Weapon::Info_Flags::Firing_pattern_specified
 		};
 
 		// clear all flags except for the ones that are preset by other fields in the weapon
@@ -3257,7 +3258,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->beam_curves.add_curve("Beam Lifetime", weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, modular_curves_entry{curve_parse(" Beam Lifetime will not be modified.")});
 		}
 
-		// # of shots (only used for type D beams)
+		// # of shots: the number of aim vectors for antifighter (type D) turret beams, and for fighter beams
+		// without a $Firing Pattern:, the number of firing points per trigger pull (see uses_legacy_fighter_beam_firing)
 		if(optional_string("+Shots:")) {
 			stuff_int(&wip->b_info.beam_shots);
 		}
@@ -4060,6 +4062,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		auto pattern = firing_pattern_from_string(fname);
 		if (pattern.has_value()) {
 			wip->firing_pattern = *pattern;
+			wip->wi_flags.set(Weapon::Info_Flags::Firing_pattern_specified);
 		} else {
 			error_display(0, "\"%s\" is not a valid $Firing Pattern: for weapon %s", fname, wip->name);
 		}
