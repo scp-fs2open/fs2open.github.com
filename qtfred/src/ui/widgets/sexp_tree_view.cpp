@@ -1815,9 +1815,10 @@ void sexp_tree_view::insertOperatorAction(int op) {
 	auto* old_item = tree_item_handle(tree_nodes[item_index]);
 	auto* root_parent = old_item ? old_item->parent() : nullptr;
 	const int old_item_index = item_index;
+	const bool is_formula_root = tree_nodes[old_item_index].parent == -1;
 	const int node = _actions.insert_operator(op, root_parent);
 
-	if (_interface->getFlags()[TreeFlags::LabeledRoot] && root_parent != nullptr) {
+	if (is_formula_root && _interface->getFlags()[TreeFlags::LabeledRoot] && root_parent != nullptr) {
 		rootNodeFormulaChanged(old_item_index, node);
 		root_parent->setData(0, FormulaDataRole, node);
 	}
