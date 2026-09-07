@@ -44,8 +44,7 @@ using namespace parse;
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char		Current_filename[MAX_PATH_LEN];
-char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
+char		Current_filename[MAX_PATH_LEN];	// the file currently being read or parsed
 char		Error_str[ERROR_LENGTH];
 int		Warning_count, Error_count;
 int		fred_parse_flag = 0;
@@ -53,7 +52,7 @@ int		Token_found_flag;
 
 char 	*Parse_text = nullptr;
 char	*Parse_text_raw = nullptr;
-char	*Mp = NULL, *Mp_save = NULL;
+char	*Mp = nullptr;
 const char	*token_found;
 
 SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
@@ -2257,7 +2256,7 @@ int parse_get_line(char *lineout, int max_line_len, const char *textin, int inpu
 			else if (found_line_ending != file_line_ending_type && !warned_for_this_file)
 			{
 				// we can't use error_display() here because we're in the middle of reading the file
-				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename_sub, line_num);
+				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename, line_num);
 				warned_for_this_file = true;
 			}
 
@@ -2299,7 +2298,7 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
-	strcpy_s(Current_filename_sub, filename);
+	strcpy_s(Current_filename, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2323,8 +2322,8 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 void read_file_text_from_default(const default_file& file, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy_s(Current_filename_sub, "internal default file ");
-	strcat_s(Current_filename_sub, file.filename);
+	strcpy_s(Current_filename, "internal default file ");
+	strcat_s(Current_filename, file.filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2371,6 +2370,9 @@ void stop_parse()
 	}
 
 	Parse_text_size = 0;
+	Mp = nullptr;
+
+	Current_filename[0] = '\0';
 }
 
 void allocate_parse_text(size_t size)
@@ -2698,7 +2700,7 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
-	strcpy_s(Current_filename_sub, filename);
+	strcpy_s(Current_filename, filename);
 
 	// if we are paused then raw_bytes must not be NULL!!
 	if ( !Bookmarks.empty() && (raw_bytes == nullptr) ) {
@@ -3754,8 +3756,6 @@ void reset_parse(char *text)
 
 	Warning_count = 0;
 	Error_count = 0;
-
-	strcpy_s(Current_filename, Current_filename_sub);
 }
 
 // Display number of warnings and errors at the end of a parse.
