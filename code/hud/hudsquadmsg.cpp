@@ -124,6 +124,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define ID2		2
 
 SCP_vector<std::pair<CommOrderType, SCP_string>> Comm_order_types;
+SCP_vector<std::pair<CommOrderType, SCP_string>> Parsed_comm_orders;
 
 int player_order::orderingCounter = 0;
 
@@ -180,27 +181,17 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 
 void hud_init_comm_orders()
 {
-	int i;
-
-	Comm_order_types.clear();
-
 	if (!Parsed_comm_orders.empty()) {
-		for (i = 0; i < sz2i(Parsed_comm_orders.size()); i++)	{
-			Comm_order_types.emplace_back(static_cast<CommOrderType>(Parsed_comm_orders[i].first), Parsed_comm_orders[i].second);
-		}
+		Comm_order_types = Parsed_comm_orders;
 	} else {
-		std::array<std::pair<CommOrderType, SCP_string>, NUM_DEFAULT_COMM_ORDER_TYPES> Default_comm_order_types =
-		{
-			std::pair(CommOrderType::MSG_SHIPS, XSTR("Ships", 293)),
-			std::pair(CommOrderType::MSG_WINGS, XSTR("Wings", 294)),
-			std::pair(CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, XSTR("All Fighters", 295)),
-			std::pair(CommOrderType::REINFORCEMENTS, XSTR("Reinforcements", 296)),
-			std::pair(CommOrderType::REARM_REPAIR, XSTR("Rearm/Repair Subsys", 297)),
-			std::pair(CommOrderType::ABORT_REARM, XSTR("Abort Rearm", 298)),
+		Comm_order_types = {
+			{ CommOrderType::MSG_SHIPS, XSTR("Ships", 293) },
+			{ CommOrderType::MSG_WINGS, XSTR("Wings", 294) },
+			{ CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, XSTR("All Fighters", 295) },
+			{ CommOrderType::REINFORCEMENTS, XSTR("Reinforcements", 296) },
+			{ CommOrderType::REARM_REPAIR, XSTR("Rearm/Repair Subsys", 297) },
+			{ CommOrderType::ABORT_REARM, XSTR("Abort Rearm", 298) },
 		};
-		for (i = 0; i < sz2i(Default_comm_order_types.size()); i++)	{
-			Comm_order_types.emplace_back(Default_comm_order_types[i]);
-		}
 	}
 
 	for (auto& order : Player_orders)

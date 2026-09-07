@@ -75,8 +75,6 @@ struct reinforcements;
 
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 
-#define NUM_DEFAULT_COMM_ORDER_TYPES 6
-
 enum SmallCraftFlavor : int {
 	ALL_FIGHTERS_AND_BOMBERS,
 	ALL_FIGHTERS,
@@ -98,6 +96,11 @@ enum CommOrderType : int {
 	// deliberately after MAX_COMM_ORDER_TYPES so that it stays outside the range of real order types
 	LUA_GENERAL_CATEGORY,
 };
+
+// the comm menu order types parsed from "$Available squad orders:" in game_settings.tbl, with the
+// text to display for each.  empty if the mod did not specify a list, in which case the retail
+// defaults are used instead; see hud_init_comm_orders().
+extern SCP_vector<std::pair<CommOrderType, SCP_string>> Parsed_comm_orders;
 
 typedef struct mmode_item {
 	int instance;    // instance in Ships/Wings array of this menu item

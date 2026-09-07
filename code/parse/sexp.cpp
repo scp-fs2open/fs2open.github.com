@@ -32518,10 +32518,12 @@ int query_operator_argument_type(int op_index, int argnum)
 			}
 
 		case OP_ORDER:
-			if (argnum == 1)
+			if (argnum == 0)
+				return OPF_ORDER_RECIPIENT;
+			else if (argnum == 1)
 				return OPF_AI_ORDER;
 			else
-				return OPF_SHIP_WING;	// arg 0 or 2
+				return OPF_SHIP_WING;	// arg 2
 
 		case OP_QUERY_ORDERS:
 			if (argnum == 0)

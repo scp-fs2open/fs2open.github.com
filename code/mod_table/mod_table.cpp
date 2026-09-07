@@ -191,7 +191,6 @@ float Min_radius_for_persistent_debris;
 bool Zero_radius_explosions_skip_fireballs;
 bool Render_insignias_as_decals;
 bool Link_special_point_subsystems_to_destroyed_submodels;
-SCP_vector<std::pair<int, SCP_string>> Parsed_comm_orders;
 
 
 #ifdef WITH_DISCORD
@@ -517,21 +516,21 @@ void parse_mod_table(const char *filename)
 					required_string("+Text:");
 					stuff_string(text, F_NAME);
 					if (!stricmp(order_type.c_str(), "MESSAGE SHIPS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::MSG_SHIPS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_SHIPS, text);
 					} else if (!stricmp(order_type.c_str(), "MESSAGE WINGS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::MSG_WINGS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_WINGS, text);
 					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL FIGHTERS AND BOMBERS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, text);
 					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL FIGHTERS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::MSG_ALL_FIGHTERS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_FIGHTERS, text);
 					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL BOMBERS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::MSG_ALL_BOMBERS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_BOMBERS, text);
 					} else if (!stricmp(order_type.c_str(), "REINFORCEMENTS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::REINFORCEMENTS, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::REINFORCEMENTS, text);
 					} else if (!stricmp(order_type.c_str(), "REARM/REPAIR SUBSYSTEMS")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::REARM_REPAIR, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::REARM_REPAIR, text);
 					} else if (!stricmp(order_type.c_str(), "ABORT REARM")) {
-						Parsed_comm_orders.emplace_back(std::pair(CommOrderType::ABORT_REARM, text));
+						Parsed_comm_orders.emplace_back(CommOrderType::ABORT_REARM, text);
 					} else {
 						error_display(0, "Game Settings Table: Invalid squad order type %s found!  Skipping this entry.", order_type.c_str());
 					}
