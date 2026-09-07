@@ -157,6 +157,13 @@ const SCP_set<size_t> target_messages = []() {
 	return setunion;
 }();
 
+// order_to values in the squad message history for orders that went to every small craft of a given
+// flavor rather than to one ship or wing.  Real recipients are stored as get_parse_name_index(), which
+// is always >= 0, so these can never collide with one.
+#define ORDER_TO_ALL_FIGHTERS_BOMBERS	-1
+#define ORDER_TO_ALL_FIGHTERS			-2
+#define ORDER_TO_ALL_BOMBERS			-3
+
 static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavor) {
 	switch (flavor) {
 		case SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS:
@@ -216,6 +223,7 @@ SCP_vector<squadmsg_history> Squadmsg_history;
 
 // forward declarations
 void hud_add_issued_order(const char *name, int order);
+void hud_add_issued_order(SmallCraftFlavor flavor, int order);
 void hud_update_last_order(const char *target, int order_source, int special_index);
 bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr, bool isWing = false);
 bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
@@ -1088,7 +1096,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		// send the command to the wing
 		if ( Wings[i].current_count > 0 ) {
 			if (send_message) {
-				hud_add_issued_order("All Fighters", command);
+				hud_add_issued_order(flavor, command);
 				if ( hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_UPDATE, player_num) ) {
 					send_message = 0;
 				}
@@ -1143,7 +1151,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		// don't let one respond here either.  It still receives the order -- we just keep looking for
 		// an AI ship to acknowledge it.
 		if ( send_message && !(objp->flags[Object::Object_Flags::Player_ship]) ) {
-			hud_add_issued_order("All Fighters", command);
+			hud_add_issued_order(flavor, command);
 			if ( hud_squadmsg_send_ship_command(objp->instance, command, 1, SQUADMSG_HISTORY_UPDATE, player_num) ) {
 				send_message = 0;
 			}
@@ -1858,9 +1866,10 @@ void hud_squadmsg_type_select( )
 				if (Hide_main_rearm_items_in_comms_gauge) {
 					item.active = -1;
 				} else {
+					// note that being repaired or awaiting repair enables the abort regardless of whether
+					// support is still allowed; otherwise revoking support mid-repair would strand the player
 					item.active = (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)
 						|| mission_is_repair_scheduled(Player_obj))
-						&& is_support_allowed(Player_obj)
 						&& Msg_shortcut_command == -1;
 				}
 				break;
@@ -2196,9 +2205,14 @@ void hud_squadmsg_ship_command()
 				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 					continue;
 
-				// don't send messge to ships not on player's team, or that are in a wing.
+				// don't count ships not on player's team
 				shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team != Player_ship->team)
+					continue;
+
+				// nor the ship giving the order or the instructor, since hud_squadmsg_send_to_all_fighters()
+				// will not order them either
+				if ((shipp == Player_ship) || is_instructor(&Objects[so->objnum]))
 					continue;
 
 				// don't send message to non fighter or bomber wings
@@ -2629,22 +2643,39 @@ int hud_squadmsg_do_frame( )
 		return 0;
 }
 
-void hud_add_issued_order(const char *name, int order)
-{  
-	squadmsg_history *latest_order = new squadmsg_history(); 
+// helper for the two functions below: pushes a history entry with an already-resolved order_to
+static void hud_add_issued_order_to(int order_to, int order)
+{
+	squadmsg_history latest_order;
 
-	if (!strcmp(name, "All Fighters")) {
-		latest_order->order_to  = -1; 
-	}
-	else {
-		latest_order->order_to = get_parse_name_index(name);
-	}
-	latest_order->order = order;
-	latest_order->order_time = Missiontime;
-	
+	latest_order.order_to = order_to;
+	latest_order.order = order;
+	latest_order.order_time = Missiontime;
+
 	//stick it in history
-	Squadmsg_history.push_back(*latest_order); 
-	delete latest_order;
+	Squadmsg_history.push_back(latest_order);
+}
+
+void hud_add_issued_order(const char *name, int order)
+{
+	hud_add_issued_order_to(get_parse_name_index(name), order);
+}
+
+// for the "message all <x>" orders, which have no single named recipient
+void hud_add_issued_order(SmallCraftFlavor flavor, int order)
+{
+	switch (flavor) {
+		case SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS:
+			hud_add_issued_order_to(ORDER_TO_ALL_FIGHTERS_BOMBERS, order);
+			return;
+		case SmallCraftFlavor::ALL_FIGHTERS:
+			hud_add_issued_order_to(ORDER_TO_ALL_FIGHTERS, order);
+			return;
+		case SmallCraftFlavor::ALL_BOMBERS:
+			hud_add_issued_order_to(ORDER_TO_ALL_BOMBERS, order);
+			return;
+	}
+	UNREACHABLE("Invalid SmallCraftFlavor of %i in 'hud_add_issued_order()'", static_cast<int>(flavor));
 }
 
 void hud_update_last_order(const char *target, int order_source, int special_index)
@@ -2665,10 +2696,16 @@ void hud_update_last_order(const char *target, int order_source, int special_ind
 
 int hud_query_order_issued(const char *to, const char *order_name, const char *target_name, int timestamp, const char *from, const char *special_argument)
 {
-	int i, order = -1, ship_or_wing = -1, target = -1, source = -1; 
-	
-	// if the desired order was not sent to all fighters 
-	if (strcmp(to, "<all fighters>") != 0) {
+	int i, order = -1, ship_or_wing = ORDER_TO_ALL_FIGHTERS_BOMBERS, target = -1, source = -1;
+
+	// the "message all <x>" orders have no named recipient, so they are matched by sentinel instead
+	if (!strcmp(to, SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS)) {
+		ship_or_wing = ORDER_TO_ALL_FIGHTERS_BOMBERS;
+	} else if (!strcmp(to, SEXP_ORDER_TO_ALL_FIGHTERS)) {
+		ship_or_wing = ORDER_TO_ALL_FIGHTERS;
+	} else if (!strcmp(to, SEXP_ORDER_TO_ALL_BOMBERS)) {
+		ship_or_wing = ORDER_TO_ALL_BOMBERS;
+	} else {
 		ship_or_wing = get_parse_name_index(to);
 	}
 

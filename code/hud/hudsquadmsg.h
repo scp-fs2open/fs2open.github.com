@@ -33,6 +33,13 @@
 #define MESSAGE_ALL_BOMBERS					-998
 #define MESSAGE_ALL_FIGHTERS_BOMBERS		-999
 
+// recipient names accepted by the order and query-orders SEXPs for orders that were sent to every small
+// craft rather than to a specific ship or wing.  "<all fighters>" is retail and covers fighters and bombers
+// alike; the other two match the fighters-only and bombers-only comm menu items.
+#define SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS	"<all fighters>"
+#define SEXP_ORDER_TO_ALL_FIGHTERS			"<all fighters only>"
+#define SEXP_ORDER_TO_ALL_BOMBERS			"<all bombers>"
+
 class object;
 struct reinforcements;
 

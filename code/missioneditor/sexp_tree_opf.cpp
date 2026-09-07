@@ -802,7 +802,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_order_recipient() const
 {
 	sexp_list_item head;
 
-	head.add_data("<all fighters>");
+	head.add_data(SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS);
+	head.add_data(SEXP_ORDER_TO_ALL_FIGHTERS);
+	head.add_data(SEXP_ORDER_TO_ALL_BOMBERS);
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
@@ -3108,7 +3110,7 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i) const
 			break;
 
 		case OPF_ORDER_RECIPIENT:
-			str = "<all fighters>";
+			str = SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS;
 			break;
 
 		case OPF_SHIP_OR_NONE:

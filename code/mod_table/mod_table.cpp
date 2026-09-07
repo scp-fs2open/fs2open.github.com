@@ -507,6 +507,9 @@ void parse_mod_table(const char *filename)
 			}
 
 			if (optional_string("$Available squad orders:")) {
+				// this list replaces any list from a previously parsed table, rather than adding to it
+				Parsed_comm_orders.clear();
+
 				SCP_string order_type;
 				SCP_string text;
 				while (optional_string("+Order Type:")) {
