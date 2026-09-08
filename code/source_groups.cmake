@@ -968,6 +968,7 @@ add_file_folder("Model"
 	model/model.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
+	model/modelinterp.h
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
