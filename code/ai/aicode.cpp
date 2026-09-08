@@ -7832,7 +7832,7 @@ bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_ag
 	ship* shipp = &Ships[pl_objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	if ((flag_to_check) && sip->is_small_ship()) {
+	if ((flag_to_check) && sip->is_small_ship() && pl_objp->phys_info.speed > 0.0f) {
 		vec3d collide_vec = pl_objp->phys_info.vel * (avoidance_aggression / (PI2 / sip->srotation_time));
 		float radius_contribution = (pl_objp->phys_info.speed + pl_objp->radius) / pl_objp->phys_info.speed;
 		collide_vec *= radius_contribution;
