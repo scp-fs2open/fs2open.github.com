@@ -10,6 +10,7 @@
 
 #include <csetjmp>
 #include <algorithm>
+#include <memory>
 
 #include "ai/aibig.h"
 #include "ai/aigoals.h"
@@ -13623,32 +13624,33 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
 
-				vec3d total_impulse;
-				vec3d *firepoint_list;
-				size_t current_firepoint = 0;
-
-				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
-					firepoint_list = new vec3d[shot_count * multishot_count];
-					vm_vec_zero(&total_impulse);
-				} else {
-					firepoint_list = nullptr;
-				}
-
 				// external model firing points only apply when the external models are actually drawn
 				polymodel *weapon_model = nullptr;
 				if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0))
 					weapon_model = model_get(winfo_p->external_model_num);
 
+				// weapons that don't chain their external model firing points fire from all of them at once
+				// (note that external model firing points always come from the model's first gun bank)
+				int sub_shots = 1;
+				if (weapon_model && weapon_model->n_guns && !(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
+					sub_shots = weapon_model->gun_banks[0].num_slots;
+
+				// whether the bank applies recoil is a property of the bank's own weapon, so check that here before we do any substitution
+				bool apply_recoil = winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil];
+
+				vec3d total_impulse;
+				std::unique_ptr<vec3d[]> firepoint_list;
+				size_t current_firepoint = 0;
+
+				if (apply_recoil){
+					firepoint_list = std::make_unique<vec3d[]>(shot_count * multishot_count * sub_shots);
+					vm_vec_zero(&total_impulse);
+				}
+
 				for (int shot_index = 0; shot_index < shot_count; shot_index++) {
 					int pt = swp->primary_firepoint_state[bank_to_fire].next(firing_pattern, shot_index, num_slots);
 
 					for (int j = 0; j < multishot_count; j++) {
-						int sub_shots = 1;
-						// weapons that don't chain their external model firing points fire from all of them at once
-						// (note that external model firing points always come from the model's first gun bank)
-						if (weapon_model && weapon_model->n_guns && !(winfo_p->wi_flags[Weapon::Info_Flags::External_weapon_fp]))
-							sub_shots = weapon_model->gun_banks[0].num_slots;
-
 						for(int s = 0; s<sub_shots; s++){
 							pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 							vec3d dir;
@@ -13715,7 +13717,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							}
 
-							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
+							if (apply_recoil){	// Function to add recoil functionality - DahBlount
 								vec3d local_impulse = firing_orient.vec.fvec;
 
 								float recoil_force = (winfo_p->mass * winfo_p->max_speed * winfo_p->recoil_modifier * sip->ship_recoil_modifier);
@@ -13796,13 +13798,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				swp->primary_firepoint_state[bank_to_fire].post_fire(firing_pattern, shot_count, num_slots);
 
-				if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){
-					vec3d avg_firepoint;
-
-					vm_vec_avg_n(&avg_firepoint, (int)current_firepoint, firepoint_list);
-
-					ship_apply_whack(&total_impulse, &avg_firepoint, obj);
-					delete[] firepoint_list;
+				if (apply_recoil){
+					// a bank that fired nothing has no firepoints to average
+					if (current_firepoint > 0) {
+						vec3d avg_firepoint;
+						vm_vec_avg_n(&avg_firepoint, sz2i(current_firepoint), firepoint_list.get());
+						ship_apply_whack(&total_impulse, &avg_firepoint, obj);
+					}
 				}
 			}
 
