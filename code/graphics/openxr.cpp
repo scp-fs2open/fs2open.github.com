@@ -529,9 +529,9 @@ void openxr_start_frame() {
 // Stubs for when building without OpenXR support.
 // NOTE: macOS has issues linking with OpenXR.
 
-void openxr_prepare(float hudscale) {}
+void openxr_prepare(float /*hudscale*/) {}
 
-float openxr_preinit(float req_ar, float scale) {
+float openxr_preinit(float /*req_ar*/, float /*scale*/) {
 	mprintf(("Cannot create OpenXR session. Not built with OpenXR support.\n"));
 	return 0.0f;
 }
