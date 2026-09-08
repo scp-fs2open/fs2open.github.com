@@ -10,6 +10,7 @@
 #include "VulkanDescriptorManager.h"
 #include "graphics/grinternal.h"
 #include "graphics/2d.h"
+#include "graphics/openxr.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "nebula/neb.h"
@@ -27,7 +28,7 @@ namespace graphics::vulkan {
 
 bool PostProcessContext::initScratchUBO()
 {
-	return scratchRing.init(device, memoryManager, SCRATCH_UBO_MAX_SLOTS, SCRATCH_UBO_SLOT_SIZE);
+	return scratchRing.init(device, memoryManager, (openxr_requested() ? 2 : 1) * SCRATCH_UBO_MAX_SLOTS, SCRATCH_UBO_SLOT_SIZE);
 }
 
 void PostProcessContext::shutdownScratchUBO()

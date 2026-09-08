@@ -6,6 +6,7 @@
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "starfield/starfield.h"
+#include "hud/hudparse.h"
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
@@ -184,7 +185,10 @@ static bool openxr_init_swapchains() {
 			XR_TYPE_SWAPCHAIN_CREATE_INFO,
 			nullptr,
 			0,
-			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT,
+			//Vulkan runtimes hand back images they expect to receive again in
+			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, which requires the color
+			//attachment usage. Inert for OpenGL.
+			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT,
 			chosenFormat,
 			1,
 			xr_configurationviews[i].recommendedImageRectWidth,
