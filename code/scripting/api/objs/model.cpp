@@ -590,9 +590,9 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 
 
 //**********HANDLE: modeltextures
-ADE_OBJ(l_ModelTextures, model_h, "textures", "Array of textures");
+ADE_OBJ(l_ModelTextures, model_h, "textures", "Flat array of model textures.  Each material (texture_map) on the model contributes " SCP_TOKEN_TO_STR(TM_NUM_TYPES) " consecutive entries, in this order: base, glow, specular, normal, height, misc, reflectance, ambient occlusion.  So for material N (1-based), the base map is at index (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+1, the glow map at (N-1)*" SCP_TOKEN_TO_STR(TM_NUM_TYPES) "+2, and so on.  Slots that the material does not use hold invalid texture handles.");
 
-ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", "Number of model textures")
+ADE_FUNC(__len, l_ModelTextures, nullptr, "Number of texture slots on the model, i.e. the number of materials multiplied by " SCP_TOKEN_TO_STR(TM_NUM_TYPES), "number", "Number of texture slots, or 0 if handle is invalid")
 {
 	model_h *mth;
 	if (!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
@@ -605,7 +605,7 @@ ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", 
 	return ade_set_args(L, "i", TM_NUM_TYPES * pm->n_textures);
 }
 
-ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "texture", "Model textures, or invalid modeltextures handle if model handle is invalid")
+ADE_INDEXER(l_ModelTextures, "number/string IndexOrTextureFilename", "Gets or sets a texture slot.  A number is a 1-based index into the flat array (see the \"textures\" handle description for the layout); a string is matched against the filename of every slot on every material.  Setting a slot changes the shared model, and so affects every object using it.  The model takes its own reference to the texture, so the script does not need to keep the handle alive.", "texture", "Texture, or invalid texture handle if the model handle is invalid or the index/name does not match")
 {
 	model_h *mth = NULL;
 	texture_h* new_tex   = nullptr;
@@ -649,7 +649,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	if (ADE_SETTING_VAR && new_tex != nullptr) {
-		tinfo->SetTexture(new_tex->handle);
+		tinfo->SetTexture(new_tex->handle, true);
 	}
 
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(tinfo->GetTexture())));

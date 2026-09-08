@@ -842,16 +842,8 @@ void draw_3d_overhead_view(int model_num,
 
 		model_clear_instance(model_num);
 		int model_instance = -1;
-		auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance);
-		// Only set up the instance when it was freshly created; the cached instance persists across frames.
-		if (cache_result == TriStateBool::TRUE_) {
-			model_set_up_techroom_instance(sip, model_instance);
-		}
+		model_get_cached_ui_render_instance_for_class(render_info, model_num, sip, &model_instance);
 		polymodel* pm = model_get(model_num);
-
-		if (sip->replacement_textures.size() > 0) {
-			render_info.set_replacement_textures(model_num, sip->replacement_textures);
-		}
 
 		if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons)) {
 			gr_reset_clip();

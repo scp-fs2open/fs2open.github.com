@@ -5561,6 +5561,41 @@ void post_process_mission_props()
 	}
 }
 
+// Loads the bitmaps for a parse object's replacement textures.  The parse object holds a reference to each one for the
+// lifetime of the mission, so that every ship created from it (e.g. each wave of a wing) can share them.
+static void mission_load_replacement_textures(p_object &p_obj)
+{
+	for (auto &tr : p_obj.replacement_textures)
+	{
+		if (!stricmp(tr.new_texture, "invisible"))
+		{
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		}
+		else
+		{
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+
+		// not found?
+		if (tr.new_texture_id == -1)
+			mprintf(("Could not load replacement texture %s for ship %s\n", tr.new_texture, p_obj.name));
+	}
+}
+
+// Releases the references taken by mission_load_replacement_textures()
+static void mission_release_replacement_textures(p_object &p_obj)
+{
+	for (auto &tr : p_obj.replacement_textures)
+	{
+		// the check skips REPLACE_WITH_INVISIBLE
+		if (tr.new_texture_id >= 0)
+			bm_release_ref(tr.new_texture_id);
+		tr.new_texture_id = -1;
+	}
+}
+
 // Goober5000
 void post_process_ships_wings()
 {
@@ -5628,28 +5663,14 @@ void post_process_ships_wings()
 		}
 
 		// also load any replacement textures (do this outside the parse loop because we may have ship class replacements too)
-		for (SCP_vector<texture_replace>::iterator tr = p_obj.replacement_textures.begin(); tr != p_obj.replacement_textures.end(); ++tr)
+		mission_load_replacement_textures(p_obj);
+
+		// account for FRED
+		if (Fred_running)
 		{
-			// load the texture
-			if (!stricmp(tr->new_texture, "invisible"))
+			for (const auto &tr : p_obj.replacement_textures)
 			{
-				// invisible is a special case
-				tr->new_texture_id = REPLACE_WITH_INVISIBLE;
-			}
-			else
-			{
-				// try to load texture or anim as normal
-				tr->new_texture_id = bm_load_either(tr->new_texture);
-			}
-
-			// not found?
-			if (tr->new_texture_id < 0)
-				mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_obj.name));
-
-			// account for FRED
-			if (Fred_running)
-			{
-				Fred_texture_replacements.push_back(*tr);
+				Fred_texture_replacements.push_back(tr);
 				Fred_texture_replacements.back().new_texture_id = -1;
 			}
 		}
@@ -7399,6 +7420,24 @@ void support_ship_info::reset()
 	}
 }
 
+// Releases the references to the replacement textures of every parse object (see mission_load_replacement_textures());
+// ships created from those objects hold their own.
+static void mission_release_replacement_textures()
+{
+	for (auto &p_obj : Parse_objects)
+		mission_release_replacement_textures(p_obj);
+
+	mission_release_replacement_textures(Support_ship_pobj);
+}
+
+void mission_parse_level_close()
+{
+	// The parse objects themselves are kept until the next mission is parsed, since the debriefing and red alert code
+	// still consult them, but nothing needs their replacement textures once the mission's ships are gone.  (This is
+	// also done in mission_init(), for the paths that never reach a level close, such as loading a mission in FRED.)
+	mission_release_replacement_textures();
+}
+
 /**
  * Initialize the mission and related data structures.
  */
@@ -7459,6 +7498,7 @@ void mission_init(mission *pm, bool quick_init)
 	}
 	Total_initially_docked = 0;
 
+	mission_release_replacement_textures();
 	Parse_objects.clear();
 	list_init(&Ship_arrival_list);	// init list for arrival ships
 
@@ -7577,6 +7617,7 @@ void mission_parse_close()
 	}
 
 	// the destructor for each p_object will clear its dock list
+	mission_release_replacement_textures();
 	Parse_objects.clear();
 }
 
@@ -9248,6 +9289,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// object since I'm no longer working with a mission file.  These exceptions will be noted with
 	// comments
 
+	// the previous support ship's parse object may still hold replacement texture references
+	mission_release_replacement_textures(Support_ship_pobj);
+
 	Support_ship_pobj = p_object();		// get a fresh p_object with default fields
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
@@ -9263,6 +9307,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	Assert(pobj->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 	pobj->max_shield_recharge = sip->max_shield_recharge;
 	pobj->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+	mission_load_replacement_textures(*pobj);
 	pobj->score = sip->score;
 
 	// get average position of all ships
