@@ -1,6 +1,8 @@
 #include "Random.h"
 #include "RandomRange.h"
 
+#include "math/staticrand.h"
+
 #include <limits>
 #include <random>
 
@@ -83,5 +85,13 @@ bool Random::flip_coin()
 void Random::advance(unsigned long long distance)
 {
 	SCP_rng.advance(distance);
+}
+
+static_assert(StaticRandGenerator::max() == static_cast<unsigned int>(STATIC_RAND_MAX), "StaticRandGenerator::max() must match STATIC_RAND_MAX");
+
+StaticRandGenerator::result_type StaticRandGenerator::operator()()
+{
+	// mask before the cast: static_rand() negates a negative input, which would overflow for INT_MIN
+	return static_cast<result_type>(static_rand(static_cast<int>((m_seed + m_count++) & 0x7fffffffu)));
 }
 } // namespace util
