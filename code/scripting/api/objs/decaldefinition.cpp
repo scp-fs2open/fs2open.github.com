@@ -13,6 +13,7 @@ namespace api {
 
 //**********HANDLE: DecalDefinitionclass
 ADE_OBJ(l_DecalDefinitionclass, int, "decaldefinition", "Decal definition handle");
+ADE_OBJ_VALIDATOR(l_DecalDefinitionclass, idx, decals::DecalDefinitions.in_bounds(idx));
 
 ADE_FUNC(__tostring, l_DecalDefinitionclass, nullptr, "Decal definition name", "string", "Decal definition unique id, or an empty string if handle is invalid")
 {
@@ -40,18 +41,6 @@ ADE_FUNC(__eq, l_DecalDefinitionclass, "decaldefinition, decaldefinition", "Chec
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", idx1 == idx2);
-}
-
-ADE_FUNC(isValid, l_DecalDefinitionclass, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if (!ade_get_args(L, "o", l_DecalDefinitionclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (idx < 0 || idx >= static_cast<int>(decals::DecalDefinitions.size()))
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_VIRTVAR(Name, l_DecalDefinitionclass, "string", "Decal definition name", "string", "Decal definition name, or empty string if handle is invalid")

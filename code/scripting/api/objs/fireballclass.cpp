@@ -11,6 +11,7 @@ namespace api {
 
 //**********HANDLE: Fireballclass
 ADE_OBJ(l_Fireballclass, int, "fireballclass", "Fireball class handle");
+ADE_OBJ_VALIDATOR(l_Fireballclass, idx, Fireball_info.in_bounds(idx));
 
 ADE_FUNC(__tostring, l_Fireballclass, NULL, "Fireball class name", "string", "Fireball class unique id, or an empty string if handle is invalid")
 {
@@ -98,18 +99,6 @@ ADE_VIRTVAR(FPS, l_Fireballclass, NULL, "The FPS with which this fireball's anim
 		LuaError(L, "This property is read-only");
 
 	return ade_set_args(L, "i", Fireball_info[idx].lod[0].fps);
-}
-
-ADE_FUNC(isValid, l_Fireballclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Fireballclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (!SCP_vector_inbounds(Fireball_info, idx))
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getTableIndex, l_Fireballclass, NULL, "Gets the index value of the fireball class", "number", "index value of the fireball class")

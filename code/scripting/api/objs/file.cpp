@@ -26,18 +26,6 @@ void cfile_h::close()
 //**********HANDLE: File
 ADE_OBJ(l_File, cfile_h, "file", "File handle");
 
-ADE_FUNC(isValid, l_File, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	cfile_h* cfp = nullptr;
-	if (!ade_get_args(L, "o", l_File.GetPtr(&cfp)))
-		return ADE_RETURN_NIL;
-
-	if (cfp == nullptr || !cfp->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(close, l_File, NULL, "Instantly closes file and invalidates all file handles", NULL, NULL)
 {
 	cfile_h* cfp = nullptr;

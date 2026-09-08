@@ -15,6 +15,7 @@ namespace api {
 
 //**********HANDLE: Wing
 ADE_OBJ(l_Wing, int, "wing", "Wing handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Wing, Num_wings);
 
 ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship handle, or invalid ship handle if index is invalid or wing handle is invalid")
 {
@@ -84,18 +85,6 @@ ADE_VIRTVAR(DisplayName, l_Wing, "string", "Wing display name", "string", "The d
 	}
 
 	return ade_set_args(L, "s", wingp->display_name.c_str());
-}
-
-ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Wing.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (idx < 0 || idx >= Num_wings)
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string", "'Wing', or empty string if handle is invalid")

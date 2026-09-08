@@ -46,15 +46,6 @@ bool message_entry_h::isValid() const
 //**********HANDLE: log entry
 ADE_OBJ(l_Log_Entry, log_entry_h, "log_entry", "Log Entry handle");
 
-ADE_FUNC(isValid, l_Log_Entry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	log_entry_h current;
-	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Timestamp, l_Log_Entry, nullptr, "The timestamp of the log entry", "string", "The timestamp")
 {
 	log_entry_h current;
@@ -214,15 +205,6 @@ ADE_VIRTVAR(SegmentColors,
 
 //**********HANDLE: message entry
 ADE_OBJ(l_Message_Entry, message_entry_h, "message_entry", "Message Entry handle");
-
-ADE_FUNC(isValid, l_Message_Entry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	message_entry_h current;
-	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
 
 ADE_VIRTVAR(Timestamp, l_Message_Entry, nullptr, "The timestamp of the message entry", "string", "The timestamp")
 {
