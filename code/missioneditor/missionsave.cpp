@@ -4326,7 +4326,7 @@ int Fred_mission_save::save_objects()
 int Fred_mission_save::save_players()
 {
 	bool wrote_fso_data = false;
-	int i, j;
+	int i;
 	int var_idx;
 	SCP_map<int, int> used_pool;
 
@@ -4525,18 +4525,17 @@ int Fred_mission_save::save_players()
 		// version-gated support options; see also check_for_25_1_data()
 		auto more_support_options_version = gameversion::version(25, 1);
 
+		// a savable pool entry is one on a rearmable player-allowed weapon with a non-default (!= -1) amount
+		auto is_savable_rearm_pool_entry = [](const std::pair<const int, int> &entry) {
+			return Weapon_info[entry.first].wi_flags[Weapon::Info_Flags::Player_allowed] &&
+				   !Weapon_info[entry.first].disallow_rearm && entry.second != -1;
+		};
+
+		const auto &team_rearm_pool = The_mission.support_ships.rearm_weapon_pool[i];
+
 		bool has_rearm_pool_entries = false;
 		if (save_config.save_format != MissionFormat::RETAIL && The_mission.required_fso_version >= more_support_options_version && !The_mission.support_ships.rearm_pool_from_loadout) {
-			for (j = 0; j < weapon_info_size(); j++) {
-				// mirror the skip conditions used when writing the pool below
-				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed] || Weapon_info[j].disallow_rearm) {
-					continue;
-				}
-				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
-					has_rearm_pool_entries = true;
-					break;
-				}
-			}
+			has_rearm_pool_entries = std::any_of(team_rearm_pool.begin(), team_rearm_pool.end(), is_savable_rearm_pool_entry);
 		}
 		if (has_rearm_pool_entries) {
 			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
@@ -4545,17 +4544,11 @@ int Fred_mission_save::save_players()
 				fout("\n\n+Support Rearm Pool:");
 			}
 
+			// the map iterates in ascending weapon class order, matching the old full scan
 			fout(" (\n");
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-					continue;
-				}
-				// Default is -1 (unlimited). Skip disallow_rearm weapons too, parse normalizes them to 0 anyway.
-				if (Weapon_info[j].disallow_rearm) {
-					continue;
-				}
-				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
-					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
+			for (const auto &entry : team_rearm_pool) {
+				if (is_savable_rearm_pool_entry(entry)) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[entry.first].name, entry.second);
 				}
 			}
 			fout(")");

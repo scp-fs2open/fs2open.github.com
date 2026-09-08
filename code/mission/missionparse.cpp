@@ -1305,13 +1305,8 @@ void parse_player_info2(mission *pm)
 		required_string("+Weaponry Pool:");
 		stuff_loadout_list(list2, ParseLookupType::MISSION_LOADOUT_WEAPON_LIST);
 
-		// When seeding the rearm pool from the loadout, reset this team's row to 0 so the per-weapon
-		// loadout counts below accumulate from a clean baseline (rather than the -1 "unlimited" default).
-		if (pm->support_ships.rearm_pool_from_loadout) {
-			for (int wep = 0; wep < MAX_WEAPON_TYPES; ++wep) {
-				pm->support_ships.rearm_weapon_pool[nt][wep] = 0;
-			}
-		}
+		// When seeding the rearm pool from the loadout, the per-weapon loadout counts below accumulate
+		// from a clean baseline: rearm_pool_default() is 0 in this mode, so no reset is needed here.
 
 		// check weapon class loadout entries
 		for (auto &wc : list2) {
@@ -1338,10 +1333,12 @@ void parse_player_info2(mission *pm)
 			entry.count = wc.count;
 
 			if (pm->support_ships.rearm_pool_from_loadout) {
-				if (Weapon_info[wc.index].disallow_rearm) {
-					pm->support_ships.rearm_weapon_pool[nt][wc.index] = 0;
-				} else if (wc.count > 0 && pm->support_ships.rearm_weapon_pool[nt][wc.index] >= 0) {
-					pm->support_ships.rearm_weapon_pool[nt][wc.index] += wc.count;
+				// disallow_rearm weapons stay at the from_loadout default of 0, i.e. absent
+				if (!Weapon_info[wc.index].disallow_rearm && wc.count > 0) {
+					int cur = pm->support_ships.rearm_weapon_pool[nt].value_or(wc.index, 0);
+					if (cur >= 0) {
+						pm->support_ships.rearm_weapon_pool[nt][wc.index] = cur + wc.count;
+					}
 				}
 			}
 
@@ -1371,16 +1368,17 @@ void parse_player_info2(mission *pm)
 						continue;
 					}
 
-					auto& slot = pm->support_ships.rearm_weapon_pool[nt][wc.index];
+					auto& team_pool = pm->support_ships.rearm_weapon_pool[nt];
 					if (Weapon_info[wc.index].disallow_rearm) {
-						slot = 0;
+						team_pool[wc.index] = 0;
 					} else if (wc.count < 0) {
-						slot = -1;
+						team_pool.erase(wc.index);	// explicit unlimited == the -1 default, i.e. absent
 					} else if (wc.count == 0) {
-						slot = 0;
+						team_pool[wc.index] = 0;
 					} else if (wc.count > 0) {
 						// First explicit entry replaces the -1 (unlimited) default; later duplicate entries accumulate.
-						slot = (slot < 0) ? wc.count : slot + wc.count;
+						int cur = team_pool.value_or(wc.index, -1);
+						team_pool[wc.index] = (cur < 0) ? wc.count : cur + wc.count;
 					}
 				}
 			}
@@ -7387,7 +7385,7 @@ void support_ship_info::reset()
 	tally = 0;
 	support_available_for_species = 0; // will be filled in by the next loop
 	for (auto& team_pool : rearm_weapon_pool) {
-		std::fill(std::begin(team_pool), std::end(team_pool), -1); // -1 == unlimited per-weapon
+		team_pool.clear(); // absent == rearm_pool_default()
 	}
 	disallow_rearm = false;
 	allow_rearm_weapon_precedence = false;
@@ -9750,10 +9748,8 @@ bool check_for_25_1_data()
 	}
 
 	for (int team = 0; team < Num_teams; ++team) {
-		for (int pool_wep = 0; pool_wep < MAX_WEAPON_TYPES; ++pool_wep) {
-			if (The_mission.support_ships.rearm_weapon_pool[team][pool_wep] != -1) {
-				return true;
-			}
+		if (!The_mission.support_ships.rearm_weapon_pool[team].empty()) {
+			return true;
 		}
 	}
 
