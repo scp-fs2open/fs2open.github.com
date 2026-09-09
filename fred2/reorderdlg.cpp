@@ -7,7 +7,7 @@
 #include "management.h"
 #include "reorderdlg.h"
 
-#include "missioneditor/common.h"
+#include "missioneditor/slot_operations.h"
 #include "ship/ship.h"
 
 #ifdef _DEBUG

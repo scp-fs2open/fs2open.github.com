@@ -1,6 +1,6 @@
 #include "mission/dialogs/ReorderDialogModel.h"
 
-#include "missioneditor/common.h"
+#include "missioneditor/slot_operations.h"
 #include "jumpnode/jumpnode.h"
 #include "object/waypoint.h"
 #include "prop/prop.h"
@@ -111,15 +111,24 @@ void ReorderDialogModel::moveItem(Type type, int from_pos, int to_pos)
 		rotate_wing_slots(slotList, from_pos, to_pos, cfg);
 		break;
 	}
-	case Type::Props:
-		rotate_prop_slots(slotList, from_pos, to_pos);
+	case Type::Props: {
+		FredPropSlotConfig cfg;
+		rotate_prop_slots(slotList, from_pos, to_pos, cfg);
 		break;
-	case Type::WaypointLists:
-		rotate_waypoint_lists(from_pos, to_pos);
+	}
+	case Type::WaypointLists: {
+		FredWaypointConfig cfg;
+		cfg.cur_waypoint = &_editor->cur_waypoint;
+		cfg.cur_waypoint_list = &_editor->cur_waypoint_list;
+		cfg.cur_object_index = &_editor->currentObject;
+		rotate_waypoint_lists(from_pos, to_pos, cfg);
 		break;
-	case Type::JumpNodes:
-		rotate_jump_nodes(slotList, from_pos, to_pos);
+	}
+	case Type::JumpNodes: {
+		FredJumpNodeSlotConfig cfg;
+		rotate_jump_node_slots(slotList, from_pos, to_pos, cfg);
 		break;
+	}
 	}
 
 	set_modified();
