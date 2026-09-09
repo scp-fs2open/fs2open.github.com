@@ -3,6 +3,7 @@
 
 #include "VulkanRenderer.h"
 
+#include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
 #include "mod_table/mod_table.h"
@@ -92,6 +93,33 @@ vk::PresentModeKHR choosePresentMode(const PhysicalDeviceValues& values)
 	mprintf(("Vulkan: Present mode: %s (Gr_enable_vsync=%d)\n", name, Gr_enable_vsync ? 1 : 0));
 
 	return chosen;
+}
+
+/**
+ * @brief The size of the actual window, which is not the render resolution
+ *
+ * Only used where the surface declines to tell us its extent (Wayland reports
+ * UINT32_MAX and lets the client pick). gr_screen.max_w/max_h is the wrong
+ * answer there: with -window_res set -- which -vr forces -- the window is
+ * smaller than the resolution the engine draws at.
+ *
+ * The target's own viewport answers first, so qtFRED's second window gets its own size rather
+ * than the main one's.
+ */
+vk::Extent2D windowExtent(const VulkanPresentTarget& target)
+{
+	if (target.viewport != nullptr) {
+		const auto size = target.viewport->getSize();
+		if (size.first > 0 && size.second > 0) {
+			return {size.first, size.second};
+		}
+	}
+
+	if (Cmdline_window_res) {
+		return {Cmdline_window_res->first, Cmdline_window_res->second};
+	}
+
+	return {static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h)};
 }
 
 vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)
@@ -211,7 +239,7 @@ void VulkanRenderer::createCompositionResources(VulkanPresentTarget& target)
 		vk::ImageCreateInfo imageInfo;
 		imageInfo.imageType = vk::ImageType::e2D;
 		imageInfo.format = HDR_COLOR_FORMAT;
-		imageInfo.extent = vk::Extent3D(target.extent.width, target.extent.height, 1);
+		imageInfo.extent = vk::Extent3D(target.renderExtent.width, target.renderExtent.height, 1);
 		imageInfo.mipLevels = 1;
 		imageInfo.arrayLayers = 1;
 		imageInfo.samples = vk::SampleCountFlagBits::e1;
@@ -270,8 +298,8 @@ void VulkanRenderer::createFrameBuffers(VulkanPresentTarget& target)
 		framebufferInfo.renderPass = m_renderPass.get();
 		framebufferInfo.attachmentCount = 2;
 		framebufferInfo.pAttachments = attachments;
-		framebufferInfo.width = target.extent.width;
-		framebufferInfo.height = target.extent.height;
+		framebufferInfo.width = target.renderExtent.width;
+		framebufferInfo.height = target.renderExtent.height;
 		framebufferInfo.layers = 1;
 
 		target.framebuffers.push_back(m_device->createFramebufferUnique(framebufferInfo));
@@ -332,8 +360,8 @@ void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
 	vk::ImageCreateInfo imageInfo;
 	imageInfo.imageType = vk::ImageType::e2D;
 	imageInfo.format = m_depthFormat;
-	imageInfo.extent.width = target.extent.width;
-	imageInfo.extent.height = target.extent.height;
+	imageInfo.extent.width = target.renderExtent.width;
+	imageInfo.extent.height = target.renderExtent.height;
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
 	imageInfo.arrayLayers = 1;
@@ -363,7 +391,7 @@ void VulkanRenderer::createDepthResources(VulkanPresentTarget& target)
 	target.depthImageView = m_device->createImageViewUnique(viewInfo);
 
 	nprintf(("vulkan", "Vulkan: Created depth buffer (%dx%d, format %d)\n",
-		target.extent.width, target.extent.height, static_cast<int>(m_depthFormat)));
+		target.renderExtent.width, target.renderExtent.height, static_cast<int>(m_depthFormat)));
 }
 
 
@@ -514,12 +542,14 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 
 	const auto surfaceFormat = chooseSurfaceFormat(deviceValues);
 
+	const vk::Extent2D window = windowExtent(target);
+
 	vk::SwapchainCreateInfoKHR createInfo;
 	createInfo.surface = target.surface.get();
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, gr_screen.max_w, gr_screen.max_h);
+	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, window.width, window.height);
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment
 	                      | vk::ImageUsageFlagBits::eTransferSrc
@@ -555,7 +585,28 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 	target.hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
 	Gr_hdr_output_active = target.hdrActive;
 	target.extent = createInfo.imageExtent;
+
+	// Only the main target can draw at a size other than its window. Without -window_res the render
+	// resolution simply is the window, so follow gr_screen (which gr_screen_resize() has already
+	// updated for this recreation). With it, the two are deliberately independent -- the window is
+	// whatever Cmdline_window_res says (SDLGraphicsOperations::createViewport forces it) while the
+	// engine keeps drawing at gr_screen.max_w/max_h -- so the value captured in initialize() must
+	// survive untouched. qtFRED's extra viewports have no such split: useViewport() resizes
+	// gr_screen to whichever one is current, so they draw at their own swap chain extent.
+	if (&target == m_mainTarget) {
+		if (!Cmdline_window_res) {
+			m_renderExtent =
+				vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
+		}
+		target.renderExtent = m_renderExtent;
+	} else {
+		target.renderExtent = target.extent;
+	}
+
 	mprintf(("Vulkan: Swap chain output mode: %s\n", target.hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
+	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",
+		target.renderExtent.width, target.renderExtent.height,
+		target.extent.width, target.extent.height));
 
 	target.imageViews.reserve(target.images.size());
 	for (const auto& image : target.images) {
@@ -625,7 +676,8 @@ bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 	}
 
 	// Check for 0x0 extent (minimized window) — caller should retry later
-	auto extent = chooseSwapChainExtent(freshValues, gr_screen.max_w, gr_screen.max_h);
+	const vk::Extent2D window = windowExtent(target);
+	auto extent = chooseSwapChainExtent(freshValues, window.width, window.height);
 	if (extent.width == 0 || extent.height == 0) {
 		nprintf(("vulkan", "Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
 		return false;
@@ -659,7 +711,7 @@ bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(target.extent)) {
+	if (m_postProcessor && !m_postProcessor->resize(target.renderExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();
