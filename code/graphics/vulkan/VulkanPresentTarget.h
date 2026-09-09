@@ -74,6 +74,13 @@ struct VulkanPresentTarget {
 	bool hdrActive = false; // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
 	vk::Extent2D extent;
 
+	// The size everything before the output-encode pass is drawn at: the composition image, the
+	// depth buffer and the post-processor's targets. Usually the same as extent, but the main
+	// target keeps the two apart when -window_res is set (which -vr forces): the engine goes on
+	// drawing at gr_screen.max_w/max_h while the window is smaller, and the encode pass scales one
+	// into the other. See VulkanRenderer::m_renderExtent and createSwapChain().
+	vk::Extent2D renderExtent;
+
 	SCP_vector<vk::Image> images;
 	SCP_vector<vk::UniqueImageView> imageViews;
 	SCP_vector<vk::UniqueFramebuffer> framebuffers;

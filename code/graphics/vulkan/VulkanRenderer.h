@@ -156,15 +156,6 @@ class VulkanRenderer {
 	bool isMainTargetCurrent() const { return m_current == m_mainTarget; }
 
 	/**
-	 * @brief The extent the current target actually presents at, in device pixels
-	 *
-	 * This is what the render pass area and the framebuffers are sized to, so it is what gr_screen
-	 * has to agree with. Callers must not compute it themselves from a window's logical size and a
-	 * scale factor -- that rounds differently from the way the surface was sized.
-	 */
-	vk::Extent2D getCurrentTargetExtent() const { return m_current != nullptr ? m_current->extent : vk::Extent2D(); }
-
-	/**
 	 * @brief End frame - ends render pass, submits, and presents
 	 * Called at the END of each frame after all draw calls
 	 */
@@ -272,9 +263,14 @@ class VulkanRenderer {
 	uint32_t getGraphicsQueueFamilyIndex() const { return m_graphicsQueueFamilyIndex; }
 
 	/**
-	 * @brief Size of the actual window / swap chain images
+	 * @brief The extent the current target actually presents at, in device pixels
+	 *
+	 * The size of its window and of its swap chain images. This is also what the encode pass and
+	 * its framebuffers are sized to, so it is what gr_screen has to agree with. Callers must not
+	 * compute it themselves from a window's logical size and a scale factor -- that rounds
+	 * differently from the way the surface was sized.
 	 */
-	vk::Extent2D getSwapChainExtent() const { return m_swapChainExtent; }
+	vk::Extent2D getSwapChainExtent() const { return m_current != nullptr ? m_current->extent : vk::Extent2D(); }
 
 	/**
 	 * @brief Size everything is rendered at, which is not always the window size
@@ -285,13 +281,15 @@ class VulkanRenderer {
 	 * composition image, depth, and the post-processor's scene and G-buffer
 	 * targets -- is sized to this, and the encode pass scales it into the swap
 	 * chain image. OpenGL does the same thing with Back_framebuffer.
+	 *
+	 * Per target, because each one draws at its own size; see VulkanPresentTarget::renderExtent.
 	 */
-	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
+	vk::Extent2D getRenderExtent() const { return m_current != nullptr ? m_current->renderExtent : m_renderExtent; }
 
 	/**
 	 * @brief Get the composition image the frame is currently being rendered into
 	 *
-	 * This is the fp16 image behind m_swapChainFramebuffers -- the whole frame
+	 * This is the fp16 image behind the current target's framebuffers -- the whole frame
 	 * (3D scene, HUD and menus alike) lands here, and encodeToSwapChain() later
 	 * converts it into the actual swap chain image. Returns a null handle if
 	 * composition resources do not exist yet.
@@ -633,7 +631,7 @@ class VulkanRenderer {
 	VulkanPresentTarget* m_current = nullptr;
 
 	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
-	vk::Extent2D m_swapChainExtent;
+
 	// The resolution the engine draws at (gr_screen.max_w/max_h), which is not
 	// always the window size: when Cmdline_window_res is set,
 	// SDLGraphicsOperations::createViewport sizes the window from that instead,
@@ -641,11 +639,10 @@ class VulkanRenderer {
 	// exactly that split (Cmdline_window_res 1000x1000 vs. the VR resolution
 	// option), so treating the two as one is what put whole frames in the
 	// upper-left corner of the screen.
+	//
+	// Captured in initialize() before the window exists, and only ever applied to the main target:
+	// see createSwapChain(), which is where each target picks up its own render extent.
 	vk::Extent2D m_renderExtent;
-	SCP_vector<vk::Image> m_swapChainImages;
-	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
-	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
-	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
 
 	// Shared by every target, and deliberately so: the render passes bake in the composition (fp16)
 	// and depth formats, which are the same everywhere, so keeping one set keeps every cached

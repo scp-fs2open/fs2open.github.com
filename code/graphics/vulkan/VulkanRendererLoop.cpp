@@ -214,8 +214,8 @@ void VulkanRenderer::setupFrame()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
@@ -597,8 +597,8 @@ void VulkanRenderer::endSceneRendering()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->renderExtent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -608,9 +608,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_renderExtent.height),
-		static_cast<float>(m_renderExtent.width),
-		-static_cast<float>(m_renderExtent.height));
+		static_cast<float>(m_current->renderExtent.height),
+		static_cast<float>(m_current->renderExtent.width),
+		-static_cast<float>(m_current->renderExtent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -791,8 +791,8 @@ void VulkanRenderer::resumeSwapChainPass()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 }
@@ -805,8 +805,8 @@ void VulkanRenderer::restartCompositionPass()
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
-	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.framebuffer = m_current->framebuffers[m_current->currentImage].get();
+	pass.extent = m_current->renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 }
