@@ -517,18 +517,11 @@ void vulkan_use_viewport(os::Viewport* view)
 	// being drawn to now. The swap chain extent is used rather than the viewport's own getSize(),
 	// because that reports logical pixels and the surface was sized in device pixels -- scaling one
 	// into the other by hand is what leaves gr_screen disagreeing with what is being presented.
-	const auto extent = renderer->getCurrentTargetExtent();
+	const auto extent = renderer->getSwapChainExtent();
 	if (extent.width > 0 && extent.height > 0) {
 		gr_screen_resize(static_cast<int>(extent.width), static_cast<int>(extent.height));
 	}
 }
-SCP_vector<const char*> stub_openxr_get_extensions() { return {}; }
-bool stub_openxr_test_capabilities() { return false; }
-bool stub_openxr_create_session() { return false; }
-int64_t stub_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/) { return 0; }
-bool stub_openxr_acquire_swapchain_buffers() { return false; }
-bool stub_openxr_flip() { return false; }
-void stub_use_viewport(os::Viewport* /*view*/) {}
 
 // ========== Function pointer table ==========
 // Implementations are defined in their respective files:
