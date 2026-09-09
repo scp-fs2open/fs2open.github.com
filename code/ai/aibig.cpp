@@ -1449,7 +1449,7 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 			collide_time = false;
 			collide_distance = false;
 		} else {
-			collide_time = (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+			collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
 			collide_distance = dist_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 		}
 	} else {
@@ -1460,7 +1460,7 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		} else {
 			dist_normal_to_target = 0.2f * dist_to_target;
 		}
-		collide_time = (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+		collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
 		collide_distance = dist_normal_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 	}
 
