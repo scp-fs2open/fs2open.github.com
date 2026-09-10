@@ -182,6 +182,13 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	sflags << "#version " << GLSL_version << " es\n";
 #endif
 	sflags << "#define OPENGL\n";
+
+#ifdef USE_OPENGL_ES
+	if (!GLAD_GL_EXT_clip_cull_distance) {
+		sflags << "#define SDR_FLAG_SW_CLIP_FALLBACK\n";
+	}
+#endif
+
 	sflags << shader_get_shadow_cascade_defines();
 	sflags << shader_get_rt_shadow_light_limit_define();
 
@@ -487,13 +494,6 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				// assign vert attribute binding locations before we link the shader
 				glBindAttribLocation(program->getShaderHandle(), (GLint)i, GL_vertex_attrib_info[i].name.c_str());
 			}
-
-			// bind fragment data locations before we link the shader
-			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
-			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
-			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
-			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
-			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
 
 			if (do_shader_caching()) {
 				// Enable shader caching

@@ -1453,7 +1453,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 			"Deferred lightning is enabled in settings but the gpu does not support the minimum of 6 draw buffers. "
 			"This will result in rendering errors.");
 	}
-
+	
+	mprintf(("  Depth Clamp support : %s\n", GLAD_GL_EXT_depth_clamp ? NOX("YES") : NOX("NO")));
+	mprintf(("  HW Cull distance support : %s\n", GLAD_GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
 	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
 	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
 	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));

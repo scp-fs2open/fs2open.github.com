@@ -1,8 +1,15 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+precision highp samplerBuffer;
+#else
 #extension GL_ARB_gpu_shader5: enable
-
 #ifndef GEOMETRY_FALLBACK
 #extension GL_ARB_shader_viewport_layer_array : enable
+#endif
 #endif
 
 #ifdef VULKAN
@@ -62,12 +69,25 @@ uniform samplerBuffer transform_tex;
 // supports writing gl_Layer from the vertex shader, see CAPABILITY_FAST_SHADOWS).
 #ifdef GEOMETRY_FALLBACK
 out VertexOutput {
-#if !defined(GL_ARB_gpu_shader5)
+#if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5)
 	float instance;
 #endif
 	float clipModel;
 	vec3 normal;
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+    float vClipDist;
+#endif
 } vertOut;
+#elif defined(SDR_FLAG_SW_CLIP_FALLBACK)
+#ifdef VULKAN
+layout(location = 0) out VertexOutput {
+	float vClipDist;
+} vertOut;
+#else
+out VertexOutput {
+	float vClipDist;
+} vertOut;
+#endif
 #endif
 
 #define TEXELS_PER_MATRIX 4
@@ -108,7 +128,7 @@ void main()
 #ifdef VULKAN
 	int instanceIndex = gl_InstanceIndex;
 #else
-	#if !defined(GL_ARB_gpu_shader5)
+	#if !defined(GL_ARB_gpu_shader5) && !defined(GL_EXT_gpu_shader5)
 		#ifdef APPLE
 			vertOut.instance = float(gl_InstanceIDARB);
 		#else
@@ -129,11 +149,19 @@ void main()
         gl_Position = position;
     }
 
+#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 	if (use_clip_plane != 0) {
 		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 	} else {
 		gl_ClipDistance[0] = 1.0;
 	}
+#else
+	if (use_clip_plane != 0) {
+		vertOut.vClipDist = dot(clip_equation, modelMatrix * orient * vertex);
+	} else {
+		vertOut.vClipDist = 1.0;
+	}
+#endif
 
 #ifdef GEOMETRY_FALLBACK
     vertOut.normal = normal;
