@@ -39,12 +39,14 @@ OptionsManager* options::OptionsManager::instance()
 //Gets the value of an option from the Config using the option key
 std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
+	// An override always wins. The options UI disables the control for an overridden option, and
+	// setConfigValue() rejects writes to one, so no edit can be pending here anyway.
 	auto override_iter = _config_overrides.find(key);
 	if (override_iter != _config_overrides.end()) {
 		// We return a reference to an existing object so we need to increment the reference count
-		json_incref(override_iter->second.get());
+		json_incref(override_iter->second.value.get());
 		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
-		return std::unique_ptr<json_t>(override_iter->second.get());
+		return std::unique_ptr<json_t>(override_iter->second.value.get());
 	}
 
 	auto changed_iter = _changed_values.find(key);
@@ -79,19 +81,55 @@ std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const 
 //Sets the value for the option
 void OptionsManager::setConfigValue(const SCP_string& key,std::unique_ptr<json_t>&& value)
 {
+	// An overridden option is not editable. Accepting the edit here would write it to the config file and
+	// live-apply it through valueChanged(), but getValue() would keep returning the override, so the game
+	// and the options menu would disagree for the rest of the session.
+	if (isOverridden(key)) {
+		return;
+	}
+
 	_changed_values[key] = std::move(value);
 }
 
 //Provides a method for overriding a built-in option setting
 //Generally used for commandline settings
-void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
+void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason)
 {
 	json_error_t err;
 	auto el = json_loads(json.c_str(), JSON_DECODE_ANY, &err);
 	if (el == nullptr) {
 		return;
 	}
-	_config_overrides.emplace(key, std::unique_ptr<json_t>(el));
+	setOverride(key, std::unique_ptr<json_t>(el), reason);
+}
+
+void OptionsManager::setOverride(const SCP_string& key, std::unique_ptr<json_t>&& value, const SCP_string& reason)
+{
+	if (value == nullptr) {
+		return;
+	}
+	// insert_or_assign (rather than emplace) so a later override for the same key, e.g. from a second cmdline
+	// flag targeting the same option, replaces the earlier one instead of being silently ignored.
+	_config_overrides.insert_or_assign(key, OverrideEntry{std::move(value), reason});
+
+	// An override wins over a pending edit, so drop any edit that is already pending for this key.
+	_changed_values.erase(key);
+}
+
+void OptionsManager::clearOverrides() { _config_overrides.clear(); }
+
+bool OptionsManager::isOverridden(const SCP_string& key) const
+{
+	return _config_overrides.find(key) != _config_overrides.end();
+}
+
+std::optional<SCP_string> OptionsManager::getOverrideReason(const SCP_string& key) const
+{
+	auto iter = _config_overrides.find(key);
+	if (iter == _config_overrides.end()) {
+		return std::nullopt;
+	}
+	return iter->second.reason;
 }
 
 //Adds an option to the options vector
