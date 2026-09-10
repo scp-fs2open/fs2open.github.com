@@ -9,6 +9,7 @@
 #include "TraceEventWriter.h"
 #include "MainFrameTimer.h"
 #include "FrameProfiler.h"
+#include "options/Option.h"
 
 #include <cinttypes>
 #include <fstream>
@@ -20,18 +21,18 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-static int64_t get_tid() {
+static int64_t query_tid() {
     return (int64_t) GetCurrentThreadId();
 }
 #elif __LINUX__
 #include <sys/syscall.h>
-static int64_t get_tid() {
+static int64_t query_tid() {
 	return (int64_t) syscall(SYS_gettid);
 }
 #else
 #include <pthread.h>
 
-static int64_t get_tid() {
+static int64_t query_tid() {
 // This is not a reliable way of getting the tid but it's better than nothing
     return (int64_t) pthread_self();
 }
@@ -39,16 +40,29 @@ static int64_t get_tid() {
 
 // A function for getting the id of the current process
 #ifdef WIN32
-static int64_t get_pid() {
+static int64_t query_pid() {
     return (int64_t)GetCurrentProcessId();
 }
 #else
 #include <unistd.h>
 
-static int64_t get_pid() {
+static int64_t query_pid() {
 	return (int64_t) getpid();
 }
 #endif
+
+// Cached accessors: the thread/process id never changes for the lifetime of a thread, but the
+// underlying queries are real syscalls on Linux (SYS_gettid) and glibc (getpid, uncached since
+// 2.25). A trace event is emitted for every TRACE_SCOPE, so querying these per event dominated the
+// tracing overhead -- cache them in thread-local storage so each thread pays the syscall only once.
+static int64_t get_tid() {
+	thread_local const int64_t tid = query_tid();
+	return tid;
+}
+static int64_t get_pid() {
+	thread_local const int64_t pid = query_pid();
+	return pid;
+}
 
 namespace {
 
@@ -57,6 +71,12 @@ using namespace tracing;
 std::unique_ptr<ThreadedTraceEventWriter> traceEventWriter;
 std::unique_ptr<ThreadedMainFrameTimer> mainFrameTimer;
 std::unique_ptr<FrameProfiler> frameProfiler;
+// Guards frameProfiler's lifetime. submit_event() reads it from whichever thread emits a trace
+// event -- not just the main thread; e.g. the cutscene decode/audio threads (TRACE_SCOPE in
+// cutscene/player.cpp) -- while set_frame_profiling_enabled() constructs/destroys it from the main
+// thread whenever the "Frame Profiler Overlay" option is toggled at runtime. Without this, a toggle
+// mid-cutscene can free the object out from under a concurrent processEvent() call.
+std::mutex frameProfilerMutex;
 
 SCP_vector<int> query_objects;
 // Free list for backends where queries are immediately reusable (OpenGL).
@@ -139,8 +159,11 @@ void submit_event(trace_event* evt) {
 		mainFrameTimer->processEvent(evt);
 	}
 
-	if (frameProfiler) {
-		frameProfiler->processEvent(evt);
+	{
+		std::lock_guard<std::mutex> lock(frameProfilerMutex);
+		if (frameProfiler) {
+			frameProfiler->processEvent(evt);
+		}
 	}
 }
 
@@ -216,6 +239,7 @@ void process_gpu_events() {
 
 void init_event(const Category& category, trace_event* evt) {
 	evt->category = &category;
+	evt->category_id = category.getId();
 
 	evt->timestamp = timer_get_nanoseconds();
 
@@ -240,10 +264,12 @@ void init() {
 		mainFrameTimer.reset(new ThreadedMainFrameTimer());
 		do_async_events = true;
 	}
-	if (Cmdline_frame_profile) {
-		frameProfiler.reset(new FrameProfiler());
-		do_trace_events = true;
-	}
+	// -profile_frame_time turns the profiler on for the whole session (kept for backward
+	// compatibility). OR in the current state rather than overwriting it: the
+	// "Game.ProfilerOverlay" option's loadInitialValues() call (see OptionsManager) runs before
+	// tracing::init(), so a persisted "on" setting may already have enabled the profiler by the
+	// time we get here, and -profile_frame_time knows nothing about it.
+	set_frame_profiling_enabled(Cmdline_frame_profile || frame_profiling_active());
 
 	do_gpu_queries = gr_is_capable(gr_capability::CAPABILITY_TIMESTAMP_QUERY);
 	queries_reusable = gr_is_capable(gr_capability::CAPABILITY_QUERIES_REUSABLE);
@@ -265,16 +291,68 @@ void process_events() {
 	}
 }
 void frame_profile_process_frame() {
-	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
+	if (!frameProfiler) {
+		return;
+	}
 
-	return frameProfiler->processFrame();
+	frameProfiler->processFrame();
 }
 
 SCP_string get_frame_profile_output() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
 	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
 
 	return frameProfiler->getContent();
 }
+
+const frame_overlay_snapshot& get_frame_profiler_overlay_snapshot() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
+	Assertion(frameProfiler, "Frame profiling must be enabled for this function!");
+
+	return frameProfiler->getOverlaySnapshot();
+}
+
+bool frame_profiling_active() {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
+	return frameProfiler != nullptr;
+}
+
+void set_frame_profiling_enabled(bool enable) {
+	std::lock_guard<std::mutex> lock(frameProfilerMutex);
+
+	// The profiler's existence is the single source of truth for "is the frame profiler
+	// collecting". submit_event() feeds it whenever it exists, and frame_profile_process_frame()
+	// (the only thing that drains its event buffer) is driven from gr_flip(), so collection and
+	// draining are gated on the same condition and cannot drift apart. Destroying it on disable
+	// is what stops collection -- leaving a live profiler behind while nothing drained it is how
+	// its buffer used to grow without bound.
+	if (enable != (frameProfiler != nullptr)) {
+		if (enable) {
+			frameProfiler.reset(new FrameProfiler());
+		} else {
+			frameProfiler = nullptr;
+		}
+	}
+
+	// Recomputed unconditionally, not just on a transition: init() clears do_trace_events before
+	// calling us, and the option's change listener may already have enabled the profiler by then.
+	do_trace_events = Cmdline_json_profiling || enable;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ProfilerOverlayOption = options::OptionBuilder<bool>("Game.ProfilerOverlay",
+	std::pair<const char*, int>{"Frame Profiler Overlay", 1932},
+	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1933})
+	.category(std::make_pair("Graphics", 1825))
+	.level(options::ExpertLevel::Advanced)
+	.default_val(false)
+	.change_listener([](const bool& val, bool) {
+		set_frame_profiling_enabled(val);
+		return true;
+	})
+	.importance(69)
+	.finish();
 
 void shutdown() {
 	if (queries_reusable) {
@@ -334,6 +412,7 @@ void start(const Category& category, trace_event* evt) {
 
 		gpu_trace_event gpu_event;
 		gpu_event.base_evt.category = &category;
+		gpu_event.base_evt.category_id = category.getId();
 		gpu_event.base_evt.tid = 1;
 		gpu_event.base_evt.pid = GPU_PID;
 		gpu_event.base_evt.type = EventType::Begin;
@@ -370,6 +449,7 @@ void end(trace_event* evt) {
 
 		gpu_trace_event gpu_event;
 		gpu_event.base_evt.category = evt->category;
+		gpu_event.base_evt.category_id = evt->category_id;
 		gpu_event.base_evt.tid = 1;
 		gpu_event.base_evt.pid = GPU_PID;
 		gpu_event.base_evt.type = EventType::End;

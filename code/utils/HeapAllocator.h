@@ -69,6 +69,18 @@ class HeapAllocator {
 	 * @return The active allocations in this heap.
 	 */
 	size_t numAllocations() const;
+
+	/**
+	 * @brief Retrieves the total number of bytes currently allocated from this heap
+	 * @return The sum of the sizes of all active allocations.
+	 */
+	size_t usedBytes() const;
+
+	/**
+	 * @brief Retrieves the total size of the heap, including both allocated and free space
+	 * @return The current heap size.
+	 */
+	size_t heapSize() const;
 };
 
 }

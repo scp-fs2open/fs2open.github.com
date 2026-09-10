@@ -70,7 +70,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.vbo, MemoryUsage::CpuToGpu, m_sphereMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.vbo);
 			m_sphereMesh.vbo = nullptr;
 			return false;
@@ -95,7 +96,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_sphereMesh.ibo, MemoryUsage::CpuToGpu, m_sphereMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_sphereMesh.ibo);
 			m_sphereMesh.ibo = nullptr;
 			return false;
@@ -126,7 +128,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.vbo, MemoryUsage::CpuToGpu, m_cylinderMesh.vboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.vbo);
 			m_cylinderMesh.vbo = nullptr;
 			return false;
@@ -150,7 +153,8 @@ bool VulkanDeferredLighting::initLightVolumes()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateBufferMemory(m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc)) {
+		if (!m_ctx->memoryManager->allocateBufferMemory(
+				m_cylinderMesh.ibo, MemoryUsage::CpuToGpu, m_cylinderMesh.iboAlloc, MemoryPurpose::Geometry)) {
 			m_ctx->device.destroyBuffer(m_cylinderMesh.ibo);
 			m_cylinderMesh.ibo = nullptr;
 			return false;
@@ -790,7 +794,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		// Set 0: Global
 		vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 		if (!globalSet) return false;
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 		writer.setBuffer(GlobalBinding::Lights, {m_deferredUBO,
 			lightDataOffset + (li * lightDataSize), sizeof(graphics::deferred_light_data)});
 		writer.setBuffer(GlobalBinding::DeferredData, {m_deferredUBO,
@@ -803,19 +807,19 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 		if (!materialSet) return false;
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		writer.setImageArray(MaterialBinding::TextureArray, gbufTexArray);
 
 		// Set 2: PerDraw
 		vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		if (!perDrawSet) return false;
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::Matrices, {m_deferredUBO,
 			matrixDataOffset + (li * matrixDataSize), sizeof(graphics::matrix_uniforms)});
 		writer.flush();
 
-		std::array<vk::DescriptorSet, 3> sets = { globalSet, materialSet, perDrawSet };
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, sets, {});
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		return true;
 	};

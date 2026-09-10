@@ -3,10 +3,35 @@
 
 namespace tracing {
 
-Category::Category(const char* name, bool is_graphics) : _name(name), _graphics_category(is_graphics) {
+namespace {
+// Function-local static (Meyers singleton) to avoid any static-init-order dependency: categories
+// are themselves global statics, so this registry must be alive before the first one is constructed.
+// Each Category adds its name here at construction; the index of the name is the category id.
+//
+// The registry keeps the name by value and never keeps a Category pointer. Not every Category is a
+// global static: the Lua API tracing_category constructs one and copies it into a script-owned
+// object, so the constructed object can be dead while its id is still in the trace events. A copy
+// keeps the id of the original, which stays correct because the id only selects a name here.
+SCP_vector<SCP_string>& category_registry()
+{
+	static SCP_vector<SCP_string> registry;
+	return registry;
+}
+} // namespace
+
+Category::Category(const char* name, bool is_graphics)
+	: _name(name), _graphics_category(is_graphics), _id(static_cast<int>(category_registry().size())) {
+	category_registry().push_back(_name);
 }
 const char* Category::getName() const {
 	return _name.c_str();
+}
+int Category::getCount() {
+	return static_cast<int>(category_registry().size());
+}
+SCP_string Category::getNameById(int id) {
+	Assertion(id >= 0 && id < getCount(), "Category id %d is out of range!", id);
+	return category_registry()[static_cast<size_t>(id)];
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;

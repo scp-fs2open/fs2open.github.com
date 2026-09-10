@@ -173,6 +173,16 @@ void HeapAllocator::free(size_t offset) {
 size_t HeapAllocator::numAllocations() const {
 	return _allocatedRanges.size();
 }
+size_t HeapAllocator::usedBytes() const {
+	size_t total = 0;
+	for (const auto& range : _allocatedRanges) {
+		total += range.size;
+	}
+	return total;
+}
+size_t HeapAllocator::heapSize() const {
+	return _heapSize;
+}
 bool HeapAllocator::check_connected_range(const MemoryRange& left, const MemoryRange& right) {
 	return left.offset + left.size == right.offset;
 }

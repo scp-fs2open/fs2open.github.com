@@ -15,6 +15,7 @@
 #include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "io/joy_ff.h"
+#include "tracing/tracing.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -27,6 +28,17 @@
 #elif defined(WIN32)
 #include <sys/stat.h>
 #include <sys/types.h>
+#endif
+
+#if defined(WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <psapi.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <cstdio>
+#include <unistd.h>
 #endif
 
 namespace
@@ -819,7 +831,10 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+	// The profiler overlay is drawn from gr_flip(), so it can be on screen in any state — it
+	// needs input forwarded wherever it is active, not in a fixed list of states.
+	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS) ||
+		tracing::frame_profiling_active()) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
 		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
 		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
@@ -917,5 +932,38 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 	ss << getPreferencesPath() << compatiblePath;
 
 	return ss.str();
+}
+
+os_memory_stats os_get_memory_stats()
+{
+	os_memory_stats stats;
+
+#if defined(WIN32)
+	PROCESS_MEMORY_COUNTERS counters;
+	if (GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters))) {
+		stats.valid = true;
+		stats.resident_bytes = counters.WorkingSetSize;
+	}
+#elif defined(__APPLE__)
+	mach_task_basic_info_data_t info;
+	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+	if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info), &count) ==
+		KERN_SUCCESS) {
+		stats.valid = true;
+		stats.resident_bytes = info.resident_size;
+	}
+#elif defined(__linux__)
+	// Field 2 of /proc/self/statm is the resident set size, in pages -- see proc(5).
+	if (FILE* statm = fopen("/proc/self/statm", "r")) {
+		long resident_pages = 0;
+		if (fscanf(statm, "%*d %ld", &resident_pages) == 1) {
+			stats.valid = true;
+			stats.resident_bytes = static_cast<size_t>(resident_pages) * static_cast<size_t>(sysconf(_SC_PAGESIZE));
+		}
+		fclose(statm);
+	}
+#endif
+
+	return stats;
 }
 
