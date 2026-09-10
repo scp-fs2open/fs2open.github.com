@@ -8,6 +8,7 @@ void main() {
 }
 #else
 in vec4 vertPosition;
+in vec4 vertTexCoord;
 
 out vec2 v_rcpFrame;
 noperspective out vec2 v_pos;
@@ -20,6 +21,8 @@ layout (std140) uniform genericData {
 void main() {
 	gl_Position = vertPosition;
 	v_rcpFrame = vec2(1.0/rt_w, 1.0/rt_h);
-	v_pos = vertPosition.xy*0.5 + 0.5;
+	// Use the real texcoord rather than deriving it from vertPosition: the draw call may ask for a
+	// sub-rectangle of the source texture, which the clip-space formula ignored. Matches post-v.sdr.
+	v_pos = vertTexCoord.xy;
 }
 #endif

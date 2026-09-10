@@ -15,6 +15,7 @@
 #include <graphics/font.h>
 #include <graphics/matrix.h>
 #include <graphics/light.h>
+#include <graphics/shadows.h>
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>
@@ -27,6 +28,8 @@
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
 #include <cfile/cfile.h>
+
+#include <optional>
 
 #include "mission/object.h"
 #include "prop/prop.h"
@@ -52,6 +55,38 @@ void enable_htl() {
 }
 
 void disable_htl() {
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+}
+
+//! Scoped gr_scene_texture_begin()/end(), so the two can't drift apart as render_frame() grows.
+struct ScenePostProcessing {
+	ScenePostProcessing() { gr_scene_texture_begin(); }
+	~ScenePostProcessing() { gr_scene_texture_end(); }
+
+	ScenePostProcessing(const ScenePostProcessing&) = delete;
+	ScenePostProcessing& operator=(const ScenePostProcessing&) = delete;
+};
+
+/**
+ * @brief Render the shadow pass for the current camera.
+ *
+ * Only meaningful inside a ScenePostProcessing scope: the shadow pass writes into deferred
+ * G-buffer surfaces that only exist while the scene texture is bound. Mirrors game_render_frame(),
+ * which calls this right after its own gr_scene_texture_begin() + stars_draw().
+ *
+ * shadows_render_all() works on the HTL proj/view matrix stack -- the same one enable_htl() and
+ * disable_htl() push and pop for the starfield -- and expects it to be open: it ends whatever is
+ * active (gr_end_view_matrix() asserts on modelview_matrix_depth) and restores it when done. The
+ * starfield's disable_htl() just popped that stack, hence the push here, and the matching pop
+ * afterwards so the next frame's enable_htl() doesn't assert on a stack left open.
+ */
+void render_shadows() {
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, nullptr, nullptr, nullptr);
+
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
 }
@@ -994,6 +1029,15 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Optionally run the 3D world through the game's HDR post-processing pipeline (bloom,
+	// tonemapping, lightshafts, shadows) instead of drawing straight to the default framebuffer.
+	// Brackets only the 3D content, the same way game_render_frame() does; the 2D overlays further
+	// down (distances, ship info, tooltips) stay outside it.
+	std::optional<ScenePostProcessing> postProcessing;
+	if (view().Graphics.enablePostProcessing) {
+		postProcessing.emplace();
+	}
+
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
 	int saved_detail_stars = Detail.num_stars;
@@ -1002,6 +1046,10 @@ void FredRenderer::render_frame(int cur_object_index,
 	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
 	Detail.num_stars = saved_detail_stars;
+
+	if (postProcessing) {
+		render_shadows();
+	}
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
@@ -1018,6 +1066,8 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 0, 64);
 	render_models(cur_object_index);
 	render_volumetric_overlay();
+
+	postProcessing.reset();
 
 	if (view().Show_distances) {
 		display_distances();

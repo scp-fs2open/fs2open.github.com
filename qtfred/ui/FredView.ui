@@ -120,6 +120,8 @@
     <addaction name="separator"/>
     <addaction name="actionLighting_from_Suns"/>
     <addaction name="actionRender_Full_Detail"/>
+    <addaction name="separator"/>
+    <addaction name="actionEnable_Post_Processing"/>
    </widget>
    <widget class="QMenu" name="menuSpeed">
     <property name="title">
@@ -856,6 +858,17 @@
    </property>
    <property name="text">
     <string>Render Full Detail</string>
+   </property>
+  </action>
+  <action name="actionEnable_Post_Processing">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Enable Post Processing</string>
+   </property>
+   <property name="toolTip">
+    <string>Render the 3D viewport through the game's HDR post-processing pipeline (bloom, tonemapping, lightshafts)</string>
    </property>
   </action>
   <action name="actionCamera">
