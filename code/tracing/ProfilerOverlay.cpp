@@ -10,6 +10,7 @@
 #include "model/model.h"
 #include "object/object.h"
 #include "osapi/osapi.h"
+#include "parse/encrypt.h"
 #include "scripting/scripting.h"
 #include "sound/sound.h"
 
@@ -25,6 +26,7 @@
 #pragma pop_macro("memcpy")
 
 #include <algorithm>
+#include <cstring>
 #include <numeric>
 
 namespace tracing {
@@ -34,29 +36,44 @@ namespace {
 constexpr size_t HISTORY_SIZE = 300; // ~5s at 60 FPS
 constexpr double NANOSEC_PER_MS = 1'000'000.0;
 
-SCP_vector<float> History_ms;
+SCP_queue<float> History_ms;
+
+// The queue keeps the frame times, but it does not permit iteration. The overlay copies the
+// queue into this buffer one time in each frame. The statistics and the graph then read the buffer.
+SCP_vector<float> History_snapshot;
 
 void push_history(float frame_ms) {
-	History_ms.push_back(frame_ms);
+	History_ms.push(frame_ms);
 	if (History_ms.size() > HISTORY_SIZE) {
-		History_ms.erase(History_ms.begin());
+		History_ms.pop();
 	}
 }
 
-float history_average() {
-	if (History_ms.empty()) {
-		return 0.0f;
+void update_history_snapshot() {
+	SCP_queue<float> remaining = History_ms;
+
+	History_snapshot.clear();
+	History_snapshot.reserve(remaining.size());
+	while (!remaining.empty()) {
+		History_snapshot.push_back(remaining.front());
+		remaining.pop();
 	}
-	float sum = std::accumulate(History_ms.begin(), History_ms.end(), 0.0f);
-	return sum / static_cast<float>(History_ms.size());
 }
 
-float history_median() {
-	if (History_ms.empty()) {
+float history_average(const SCP_vector<float>& history) {
+	if (history.empty()) {
+		return 0.0f;
+	}
+	float sum = std::accumulate(history.begin(), history.end(), 0.0f);
+	return sum / static_cast<float>(history.size());
+}
+
+float history_median(const SCP_vector<float>& history) {
+	if (history.empty()) {
 		return 0.0f;
 	}
 
-	SCP_vector<float> sorted_copy(History_ms.begin(), History_ms.end());
+	SCP_vector<float> sorted_copy(history.begin(), history.end());
 	size_t mid = sorted_copy.size() / 2;
 	std::nth_element(sorted_copy.begin(), sorted_copy.begin() + mid, sorted_copy.end());
 	float median = sorted_copy[mid];
@@ -69,8 +86,8 @@ float history_median() {
 	return median;
 }
 
-void draw_frametime_graph() {
-	if (History_ms.empty()) {
+void draw_frametime_graph(const SCP_vector<float>& history) {
+	if (history.empty()) {
 		return;
 	}
 
@@ -81,9 +98,9 @@ void draw_frametime_graph() {
 			"ms",
 			ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines,
 			ImPlotAxisFlags_AutoFit);
-		ImPlot::SetupAxisLimits(ImAxis_X1, 0, static_cast<double>(History_ms.size()), ImPlotCond_Always);
+		ImPlot::SetupAxisLimits(ImAxis_X1, 0, static_cast<double>(history.size()), ImPlotCond_Always);
 
-		ImPlot::PlotLine("frametime", History_ms.data(), static_cast<int>(History_ms.size()));
+		ImPlot::PlotLine("frametime", history.data(), static_cast<int>(history.size()));
 
 		ImPlot::EndPlot();
 	}
@@ -95,11 +112,7 @@ void draw_frametime_graph() {
  * hue; "Other" gets a fixed neutral grey (see draw_frame_budget_bar).
  */
 ImU32 color_for_name(const char* name) {
-	uint32_t hash = 2166136261u; // FNV-1a
-	for (const char* p = name; *p != '\0'; ++p) {
-		hash ^= static_cast<uint8_t>(*p);
-		hash *= 16777619u;
-	}
+	const uint32_t hash = hash_fnv1a(name, strlen(name));
 	const float hue = static_cast<float>(hash % 360) / 360.0f;
 	return ImGui::ColorConvertFloat4ToU32(static_cast<ImVec4>(ImColor::HSV(hue, 0.55f, 0.95f)));
 }
@@ -379,7 +392,8 @@ void draw_subsystem_memory_stats() {
 
 void profiler_overlay_frame() {
 	if (!frame_profiling_active()) {
-		History_ms.clear();
+		History_ms = {};
+		History_snapshot.clear();
 		return;
 	}
 
@@ -400,18 +414,20 @@ void profiler_overlay_frame() {
 	ImGui::SetNextWindowSize(ImVec2(380, 480), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
-	if (History_ms.empty()) {
+	update_history_snapshot();
+
+	if (History_snapshot.empty()) {
 		ImGui::TextUnformatted("Collecting data...");
 	} else {
-		float avg_ms = history_average();
-		float median_ms = history_median();
+		float avg_ms = history_average(History_snapshot);
+		float median_ms = history_median(History_snapshot);
 
 		ImGui::Text("Avg: %.2f ms (%.0f FPS)   Median: %.2f ms",
 			avg_ms,
 			avg_ms > 0.0f ? 1000.0f / avg_ms : 0.0f,
 			median_ms);
 
-		draw_frametime_graph();
+		draw_frametime_graph(History_snapshot);
 
 		ImGui::Separator();
 
