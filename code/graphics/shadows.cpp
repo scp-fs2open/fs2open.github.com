@@ -794,7 +794,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		viewer_list.render_all();
 	}
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
+	const bool renderCockpitModel = ship_render_player_cockpit(sip);
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;

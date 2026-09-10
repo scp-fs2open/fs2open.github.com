@@ -306,7 +306,6 @@ typedef struct cockpit_display {
 
 extern bool Disable_cockpits;
 extern bool Disable_cockpit_sway;
-extern bool Cockpit_active;
 
 extern SCP_vector<cockpit_display> Player_displays;
 
@@ -1795,6 +1794,12 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
+// whether this ship class shows a cockpit at all: it has a cockpit model and the player hasn't turned cockpits off
+extern bool ship_cockpit_enabled(const ship_info* sip);
+// whether the cockpit model is rendered for this ship class when it is the viewer
+extern bool ship_render_player_cockpit(const ship_info* sip);
+// whether the viewer's cockpit is being rendered this frame
+extern bool ship_render_player_cockpit_active();
 extern bool ship_render_player_ship_casts_shadow_on_cockpit();
 extern bool ship_render_player_has_closeup_visuals();
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
