@@ -3,6 +3,8 @@
 #include "Editor.h"
 #include "EditorViewport.h"
 
+#include <cmath>
+
 #include <globalincs/alphacolors.h>
 #include <mission/missiongrid.h>
 #include <globalincs/systemvars.h>
@@ -983,6 +985,16 @@ void FredRenderer::render_models(int cur_object_index) {
 	bool f = false;
 	enable_htl();
 
+	// Mirrors obj_render_queue_all()'s bind right before scene.render_all(). The model shaders
+	// read rtShadowSampleCount, the RTAO params and the per-cascade smoothness out of this block,
+	// but that bind lives in obj_render_queue_all() and we render through obj_render_all(), so
+	// nothing here binds it for the model pass. Without it the pass runs on the zero-filled
+	// fallback UBO -- a sample count of 0, which collapses traceShadowRayCone() to a single hard
+	// ray and makes shadows ignore the sun's angular size entirely.
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+	}
+
 	auto render_function = [&](object* objp) {
 		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			return;
@@ -1002,10 +1014,17 @@ void FredRenderer::render_frame(int cur_object_index,
 	qreal scale)
 {
 
-	// Make sure our OpenGL context is used for rendering
+	// Make sure our render target is the one being drawn into
 	gr_use_viewport(_targetView);
-	uint32_t width = _targetView->getSize().first * scale;
-	uint32_t height = _targetView->getSize().second * scale;
+
+	// Round rather than truncate: getSize() is in logical pixels, and Qt rounds when it sizes the
+	// native surface from them. Truncating lands a pixel short of the real surface on fractional
+	// display scaling, which leaves gr_screen (and so the viewport gr_setup_viewport derives from
+	// it) disagreeing with the size the renderer is actually presenting at.
+	const auto logicalSize = _targetView->getSize();
+	const auto width = static_cast<uint32_t>(std::lround(logicalSize.first * scale));
+	const auto height = static_cast<uint32_t>(std::lround(logicalSize.second * scale));
+
 	// Resize the rendering window in case the previous size was different
 	gr_screen_resize(width, height);
 

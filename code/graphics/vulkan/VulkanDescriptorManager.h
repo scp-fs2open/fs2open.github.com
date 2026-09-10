@@ -22,11 +22,18 @@ struct DescriptorBindingTemplate {
 	uint32_t count;                      // 1 for most, 16 for texture array
 	vk::ShaderStageFlags stages;
 	vk::ImageViewType viewType;          // only meaningful for eCombinedImageSampler
+	// True when the shader declares this binding as a shadow sampler (samplerXShadow) and
+	// therefore samples it with depth comparison. Such a binding needs a depth-format
+	// fallback view: a color view fails the format-feature check in
+	// VUID-vkCmdDraw-None-06479 even on draws that never read the descriptor.
+	bool depthCompare;
 
 	constexpr DescriptorBindingTemplate(uint32_t binding_, vk::DescriptorType type_,
 	                                     uint32_t count_, vk::ShaderStageFlags stages_,
-	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D)
-		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_) {}
+	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D,
+	                                     bool depthCompare_ = false)
+		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_),
+		  depthCompare(depthCompare_) {}
 };
 
 struct DescriptorSetTemplate : ArrayView<DescriptorBindingTemplate> {
@@ -40,6 +47,12 @@ struct DescriptorFallbacks {
 	vk::DescriptorImageInfo textureCube;
 	vk::DescriptorImageInfo texture3D;
 
+	// Depth-format (SHADOW_DEPTH_FORMAT) 1x1 2D-array view plus a compare-enabled sampler,
+	// for bindings declared as samplerXShadow. Used whenever no real shadow map is bound:
+	// shadows turned off entirely, and also every frame before VulkanShadowMap::init()
+	// runs its lazy first-use setup.
+	vk::DescriptorImageInfo shadowMap;
+
 	// Unlike the fields above (fixed dummy defaults, set once by buildFallbacks()),
 	// this is refreshed every frame by VulkanDescriptorManager::setCurrentShadowTlas()
 	// to the live shadow TLAS -- or the permanent 0-instance fallback before the
@@ -49,7 +62,7 @@ struct DescriptorFallbacks {
 	// up automatically, so callers never need to bind it explicitly.
 	vk::AccelerationStructureKHR shadowTlas;
 
-	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t) const;
+	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t, bool depthCompare) const;
 };
 
 /**
@@ -299,13 +312,13 @@ public:
 	 *
 	 * Only meaningful for a set this writer actually wrote; a set reused from a
 	 * memoization cache was not written here, so its caller owns the offsets.
-	 * Always sized to the set layout's dynamic descriptor count (offsets for
-	 * bindings left at their fallback stay 0). Points at stable per-set storage —
+	 * Covers the set layout's dynamic descriptor count with room to spare (offsets
+	 * for bindings left at their fallback stay 0). Views stable per-set storage —
 	 * valid until the next writeSet() of that set.
 	 */
-	const uint32_t* dynamicOffsets(DescriptorSetIndex setIndex) const
+	ArrayView<uint32_t> dynamicOffsets(DescriptorSetIndex setIndex) const
 	{
-		return m_dynOffsets[static_cast<size_t>(setIndex)].data();
+		return m_dynOffsets[static_cast<size_t>(setIndex)];
 	}
 
 	/**
@@ -335,6 +348,7 @@ private:
 		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
 		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
 		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+		bool depthCompare = false;                            // for fallback lookup
 		int dynIndex = -1;                                    // slot in m_dynOffsets, or -1 if not dynamic
 	};
 

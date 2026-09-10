@@ -27,11 +27,17 @@
 #include "mission/Editor.h"
 #include "FredApplication.h"
 #include "ui/FredView.h"
+#include "ui/QtGraphicsOperations.h"
 
 namespace fso::fred {
 
 RenderWindow::RenderWindow(RenderWidget* renderWidget) : QWindow((QWindow*) nullptr), _renderWidget(renderWidget) {
-	setSurfaceType(QWindow::OpenGLSurface);
+	// A surface type cannot be changed once the window has been realized, and a window inside
+	// QWidget::createWindowContainer() cannot be un-realized and rebuilt without losing the
+	// container's embedding, so this is the only place it can be decided. The QVulkanInstance is
+	// attached later (it does not exist yet -- this window is created before the renderer builds it)
+	// but still before create(), which is what actually matters.
+	setSurfaceType(fredUsingVulkanSurfaces() ? QWindow::VulkanSurface : QWindow::OpenGLSurface);
 }
 
 void RenderWindow::initializeGL(const QSurfaceFormat& surfaceFmt) {
