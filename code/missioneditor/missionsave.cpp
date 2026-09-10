@@ -1035,6 +1035,15 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Scale:");
 			parse_comments();
 			fout(" %f", sle->scale_x);
+
+			// apparent diameter, only written when this mission actually sets one; see
+			// check_for_26_1_data()
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+AngularSize:",
+				1,
+				";;FSO 26.1.0;;",
+				SUN_ANGULAR_SIZE_UNSPECIFIED,
+				" %f",
+				sle->angular_size);
 		}
 
 		// save background bitmaps by filename
@@ -3171,7 +3180,15 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	auto version_24_1 = gameversion::version(24, 1);
 	auto version_24_3 = gameversion::version(24, 3);
 	auto version_25_1 = gameversion::version(25, 1);
-	if (MISSION_VERSION >= version_25_1) {
+	auto version_26_1 = gameversion::version(26, 1);
+	if (MISSION_VERSION >= version_26_1) {
+		Warning(LOCATION,
+			"Notify an SCP coder: now that the required mission version is at least 26.1, the check_for_26_1_data(), "
+			"check_for_25_1_data(), check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can "
+			"be removed");
+	} else if (check_for_26_1_data()) {
+		The_mission.required_fso_version = version_26_1;
+	} else if (MISSION_VERSION >= version_25_1) {
 		Warning(LOCATION,
 			"Notify an SCP coder: now that the required mission version is at least 25.1, the check_for_25_1_data(), "
 			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");

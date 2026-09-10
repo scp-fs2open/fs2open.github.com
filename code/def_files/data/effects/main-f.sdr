@@ -101,11 +101,16 @@ uniform shadowCascadeParams {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 #ifdef VULKAN
@@ -118,6 +123,7 @@ layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sMiscmap materialTextures[6]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
+layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
 layout(set = 1, binding = 5) uniform sampler2D sFramebuffer;
 
 #ifdef MODEL_SDR_FLAG_RT_SHADOWS
@@ -164,6 +170,7 @@ uniform sampler2DArray sMiscmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 uniform sampler2DArrayShadow shadow_map;
+uniform sampler2DArray shadow_map_raw;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
 in VertexOutput {
@@ -248,7 +255,11 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
 			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
-			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias);
+			// For directional lights ml_sourceRadius is the tangent of the sun's
+			// angular radius ($SunAngularSize) -- 0 keeps hard shadows.
+			shadow = traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE,
+				rtShadowBias, lights[i].ml_sourceRadius,
+				rtShadowSampleCount, gl_FragCoord.xy);
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;
@@ -410,7 +421,7 @@ void main()
 			// up to MAX_RT_SHADOW_LIGHTS) inside CalculateLighting()'s loop instead --
 			// this single shared `shadow` value only matters for the CSM fallback below.
 			#ifndef MODEL_SDR_FLAG_RT_SHADOWS
-				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+				shadow = getShadowValue(shadow_map, shadow_map_raw, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, penumbra_scale, cascade_offset, cascade_count);
 			#endif
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);

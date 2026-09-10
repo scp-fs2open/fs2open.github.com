@@ -6,33 +6,46 @@
 #define SAMPLES_PCSS 1
 #endif
 
-float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float maxUVOffset)
-{
+// Full 16-tap Poisson disc. Unconditional (independent of SMOOTH_PCSS) because it has three
+// consumers with different needs: samplePoissonPCSS() takes the first SAMPLES_PCSS of these,
+// pcssBlockerSearch() always wants the first 8 regardless of SAMPLES_PCSS (a blocker search
+// only needs a coarse estimate), and the raytraced cone/AO sampling further below always
+// wants the full spread. Keeping one table means none of those three can end up indexing
+// past a table sized for a different consumer.
+const vec2 poissonDisc16[16] = vec2[](
+	vec2(-0.76275, -0.3432573),
+	vec2(-0.5226235, -0.8277544),
+	vec2(-0.3780261, 0.01528688),
+	vec2(-0.7742821, 0.4245702),
+	vec2(0.04196143, -0.02622231),
+	vec2(-0.2974772, -0.4722782),
+	vec2(-0.516093, 0.71495),
+	vec2(-0.3257416, 0.3910343),
+	vec2(0.2705966, 0.6670476),
+	vec2(0.4918377, 0.1853267),
+	vec2(0.4428544, -0.6251478),
+	vec2(-0.09204347, 0.9267113),
+	vec2(0.391505, -0.2558275),
+	vec2(0.05605913, -0.7570801),
+	vec2(0.81772, -0.02475523),
+	vec2(0.6890262, 0.5191521)
+);
+
+// Low-quality raster PCSS fallback: a single centered sample (i.e. no offset at all) rather
+// than poissonDisc16[0], which is just one arbitrary tap among sixteen and no better centered
+// than any other.
+const vec2 poissonDiscCenter[1] = vec2[](vec2(0.0, 0.0));
+
+// samplePoissonPCSS()'s tap table: the full disc when taking all SAMPLES_PCSS == 16 of them,
+// or the single centered sample when SAMPLES_PCSS == 1.
 #if SMOOTH_PCSS
-	vec2 poissonDisc[16] = vec2[](
-		vec2(-0.76275, -0.3432573),
-		vec2(-0.5226235, -0.8277544),
-		vec2(-0.3780261, 0.01528688),
-		vec2(-0.7742821, 0.4245702),
-		vec2(0.04196143, -0.02622231),
-		vec2(-0.2974772, -0.4722782),
-		vec2(-0.516093, 0.71495),
-		vec2(-0.3257416, 0.3910343),
-		vec2(0.2705966, 0.6670476),
-		vec2(0.4918377, 0.1853267),
-		vec2(0.4428544, -0.6251478),
-		vec2(-0.09204347, 0.9267113),
-		vec2(0.391505, -0.2558275),
-		vec2(0.05605913, -0.7570801),
-		vec2(0.81772, -0.02475523),
-		vec2(0.6890262, 0.5191521)
-	);
+#define poissonDisc poissonDisc16
 #else
-	vec2 poissonDisc[1] = vec2[](
-		vec2(0.0,0.0)
-	);
+#define poissonDisc poissonDiscCenter
 #endif
 
+float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float maxUVOffset)
+{
 	float visibility = 0.0f;
 	for (int i=0; i<SAMPLES_PCSS; i++) {
 	    vec4 uv = shadowUV;
@@ -42,8 +55,80 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float ma
 	return visibility * (1.0f/float(SAMPLES_PCSS));
 }
 
-float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV[NUM_SHADOW_CASCADES],
+// PCSS blocker search: raw (non-compare) depth taps within searchRadiusUV, using the first 8
+// of poissonDisc16 (always the full-spread table, not samplePoissonPCSS()'s poissonDisc --
+// a blocker search only needs a coarse estimate, not the final filtered result, but it needs
+// that estimate regardless of how many taps the raster PCSS path itself is set to take).
+// "Blocker" = stored < receiverDepth, matching the GL_LEQUAL/eLessOrEqual compare convention
+// the hardware PCF sampler already uses (visible iff Dref <= stored) -- see the compare-sampler
+// setup in gropengltnl.cpp / VulkanPostProcessingShadow.cpp.
+// A negative return means "no blockers found", which the average blocker depth (always >= 0)
+// can't otherwise be distinguished from "found some at depth 0".
+float pcssBlockerSearch(sampler2DArray shadow_map_raw, vec4 shadowUV, float searchRadiusUV)
+{
+	float sum = 0.0;
+	int blockerCount = 0;
+	for (int i = 0; i < 8; i++) {
+		vec2 uv = shadowUV.xy + poissonDisc16[i] * searchRadiusUV;
+		float sampled = texture(shadow_map_raw, vec3(uv, shadowUV.z)).r;
+		if (sampled < shadowUV.w) {
+			sum += sampled;
+			blockerCount++;
+		}
+	}
+	return blockerCount > 0 ? (sum / float(blockerCount)) : -1.0;
+}
+
+// Computes the PCSS penumbra radius for one cascade sample: a blocker search followed by
+// the orthographic-light penumbra formula (see shadow_smoothness_scale()'s doc comment in
+// shadows.cpp for the derivation), clamped to [1 texel, smoothnessCeiling]. penumbraScale is
+// Shadow_penumbra_scale[cascade] -- a negative value is the "unsupported or user-disabled"
+// sentinel (see shadow_contact_hardening_enabled() in shadows.cpp), in which case this
+// returns smoothnessCeiling immediately: bit-identical to the fixed-width behavior from
+// before contact hardening existed, and skips the blocker search's extra texture reads.
+float pcssPenumbraRadius(sampler2DArrayShadow shadow_map, sampler2DArray shadow_map_raw,
+						  vec4 shadowUV, float penumbraScale, float smoothnessCeiling)
+{
+	float texelFloor = 1.0 / float(textureSize(shadow_map, 0).x);
+
+	if (penumbraScale < 0.0) {
+		return smoothnessCeiling;
+	}
+
+	float avgBlockerDepth = pcssBlockerSearch(shadow_map_raw, shadowUV, smoothnessCeiling);
+	if (avgBlockerDepth < 0.0) {
+		// The sparse 8-tap search found nothing, but that doesn't prove there's no thin
+		// occluder nearby -- run the full PCF at the hardest radius rather than assuming
+		// fully lit, so a missed thin blocker still reads as an edge instead of popping to
+		// no shadow at all.
+		return texelFloor;
+	}
+
+	float deltaDepth = max(shadowUV.w - avgBlockerDepth, 0.0);
+	return clamp(deltaDepth * penumbraScale, texelFloor, smoothnessCeiling);
+}
+
+// PCSS-filtered shadow visibility for a single cascade: looks up its penumbra radius (see
+// pcssPenumbraRadius()) and samples the shadow map at that radius. Factored out of
+// getShadowValue() below so the cascade-index unpacking (v/i from cascade/4, cascade%4) and
+// the penumbra-radius lookup each appear once, whichever of getShadowValue()'s two return
+// paths runs.
+float shadowVisibilityForCascade(sampler2DArrayShadow shadow_map, sampler2DArray shadow_map_raw,
+	vec4 shadowUV, int cascade, vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4],
+	vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4])
+{
+	int v = cascade / 4;
+	int i = cascade % 4;
+
+	float radius = pcssPenumbraRadius(shadow_map, shadow_map_raw, shadowUV,
+		penumbra_scale[v][i], smoothness_factors[v][i]);
+
+	return samplePoissonPCSS(shadow_map, shadowUV, radius);
+}
+
+float getShadowValue(sampler2DArrayShadow shadow_map, sampler2DArray shadow_map_raw, float depth, vec4 shadowUV[NUM_SHADOW_CASCADES],
 					 vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4], vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4],
+					 vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4],
 					 int cascade_offset, int cascade_count)
 {
 	int cascade = cascade_offset + cascade_count;
@@ -52,19 +137,19 @@ float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV
 	}
 	if (cascade >= cascade_offset + cascade_count || cascade < cascade_offset) return 1.0;
 
-    int cascade_v = cascade / 4;
-    int cascade_i = cascade % 4;
-
 	float cascade_start = (cascade > cascade_offset) ? cascade_distances[(cascade - 1) / 4][(cascade - 1) % 4] : 0.0;
-	float cascade_end = cascade_distances[cascade_v][cascade_i];
+	float cascade_end = cascade_distances[cascade / 4][cascade % 4];
 	float dist_threshold = (cascade_end - cascade_start) * 0.2;
 
 	if (cascade_end - dist_threshold > depth || cascade >= cascade_offset + cascade_count - 1)
-		return samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade_v][cascade_i]);
+		return shadowVisibilityForCascade(shadow_map, shadow_map_raw, shadowUV[cascade], cascade,
+			smoothness_factors, penumbra_scale);
 
 	return mix(
-		samplePoissonPCSS(shadow_map, shadowUV[cascade], smoothness_factors[cascade_v][cascade_i]),
-		samplePoissonPCSS(shadow_map, shadowUV[cascade + 1], smoothness_factors[(cascade + 1) / 4][(cascade + 1) % 4]),
+		shadowVisibilityForCascade(shadow_map, shadow_map_raw, shadowUV[cascade], cascade,
+			smoothness_factors, penumbra_scale),
+		shadowVisibilityForCascade(shadow_map, shadow_map_raw, shadowUV[cascade + 1], cascade + 1,
+			smoothness_factors, penumbra_scale),
 		smoothstep(cascade_end - dist_threshold, cascade_end, depth));
 }
 // Raytraced shadow test via inline ray query against the shadow TLAS. Only
@@ -79,7 +164,7 @@ float getShadowValue(sampler2DArrayShadow shadow_map, float depth, vec4 shadowUV
 // in deferred-f.sdr/main-f.sdr references it regardless of which shadow method is active.
 const float RT_SHADOW_MAX_DISTANCE = 10000.0;
 
-#if defined(MODEL_SDR_FLAG_RT_SHADOWS) || defined(RT_SHADOWS)
+#if defined(MODEL_SDR_FLAG_RT_SHADOWS) || defined(RT_SHADOWS) || defined(RTAO)
 #extension GL_EXT_ray_query : require
 
 // Ray origin bias grows with distance from the camera, between the rtShadowBiasMin/
@@ -125,6 +210,139 @@ float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNor
 	while (rayQueryProceedEXT(rq)) {}
 
 	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;
+}
+
+// Penumbra/AO sampling: at most this many rays per fragment per light, matching the size of
+// poissonDisc16 above (the RT cone/AO sampling below always wants the full 16-tap spread,
+// independent of SAMPLES_PCSS/SMOOTH_PCSS -- see the comment on poissonDisc16). rtShadowSampleCount/
+// rtaoSampleCount (shadowCascadeParams) are clamped against it, so a bad uniform value can't
+// index out of the pattern.
+#define RT_SHADOW_MAX_SAMPLES 16
+
+// Orthonormal basis spanning the plane perpendicular to axis (a unit vector).
+void rtBuildOnb(vec3 axis, out vec3 tangent, out vec3 bitangent)
+{
+	vec3 up = (abs(axis.z) < 0.999) ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+	tangent = normalize(cross(up, axis));
+	bitangent = cross(axis, tangent);
+}
+
+// Interleaved gradient noise (Jimenez 2014) -> per-fragment [0,1) value used to
+// rotate the shared disc pattern. Callers pass gl_FragCoord.xy as the seed; it is
+// a parameter rather than read here because this file is also compiled in vertex
+// stages, where gl_FragCoord doesn't exist.
+float rtInterleavedGradientNoise(vec2 seed)
+{
+	return fract(52.9829189 * fract(dot(seed, vec2(0.06711056, 0.00583715))));
+}
+
+// Soft (penumbra) variant of traceShadowRay: averages up to sampleCount occlusion
+// rays whose directions are jittered inside a cone of half-angle
+// atan(coneHalfAngleTan) around worldLightDir. Callers derive coneHalfAngleTan
+// from the light's source radius -- for directional lights the light's
+// source_radius IS the tangent of its angular radius (see $SunAngularSize in
+// stars.tbl / starfield.cpp), for local lights it's sourceRadius / lightDist --
+// so penumbras widen with occluder distance like a real area light's would.
+//
+// noiseSeed decorrelates the sample pattern between fragments (see
+// rtInterleavedGradientNoise() for why it's a parameter). There is no temporal
+// accumulation in the engine, so the penumbra must fully resolve in this one
+// pass: the disc pattern is fixed and only its per-fragment rotation is
+// randomized, trading a little visible grain for stable, flicker-free output.
+//
+// sampleCount <= 1 or coneHalfAngleTan <= 0.0 falls back to the single hard ray,
+// bit-identical to traceShadowRay() -- that keeps the pre-penumbra look and cost
+// as the default (mods opt in via source radii, users via the sample option).
+float traceShadowRayCone(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir,
+	float tMax, float bias, float coneHalfAngleTan, int sampleCount, vec2 noiseSeed)
+{
+	if (sampleCount <= 1 || coneHalfAngleTan <= 0.0) {
+		return traceShadowRay(tlas, worldPos, worldNormal, worldLightDir, tMax, bias);
+	}
+
+	vec3 origin = worldPos + worldNormal * bias;
+	vec3 direction = normalize(worldLightDir);
+
+	vec3 tangent, bitangent;
+	rtBuildOnb(direction, tangent, bitangent);
+
+	float rotAngle = rtInterleavedGradientNoise(noiseSeed) * 6.2831853;
+	float cosR = cos(rotAngle);
+	float sinR = sin(rotAngle);
+
+	int samples = min(sampleCount, RT_SHADOW_MAX_SAMPLES);
+	float visibility = 0.0;
+	for (int i = 0; i < samples; ++i) {
+		vec2 p = poissonDisc16[i];
+		p = vec2(p.x * cosR - p.y * sinR, p.x * sinR + p.y * cosR);
+		vec3 sampleDir = normalize(direction + (tangent * p.x + bitangent * p.y) * coneHalfAngleTan);
+
+		rayQueryEXT rq;
+		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+			0xFF, origin, 0.001, sampleDir, tMax);
+		while (rayQueryProceedEXT(rq)) {}
+
+		if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
+			visibility += 1.0;
+		}
+	}
+	return visibility / float(samples);
+}
+
+// Raytraced ambient occlusion: averages up to sampleCount occlusion rays of
+// length `radius` over the hemisphere around worldNormal and returns ambient
+// visibility in [0,1] (1 = fully open), shaped by pow(visibility, strength).
+// Mapping the shared disc pattern up onto the hemisphere (z = sqrt(1-|p|^2))
+// makes the samples cosine-weighted, matching the diffuse ambient term being
+// occluded. radius/strength come from the mod's lighting profile ($RTAO Radius /
+// $RTAO Strength); scene scale varies too much (fighters vs. capships) for a
+// built-in constant.
+//
+// Hits accumulate with a (1 - t/radius) falloff so geometry entering the radius
+// occludes gradually instead of popping. That needs the *closest* hit's t, so
+// these rays deliberately omit gl_RayFlagsTerminateOnFirstHitEXT (any-hit t
+// would make the falloff arbitrary); the extra traversal cost is small because
+// tMax = radius keeps the rays short.
+//
+// sampleCount < 1, radius <= 0, or strength <= 0 returns 1.0 (no occlusion) --
+// callers gate on the RTAO shader variant, this just keeps bad uniforms benign.
+float traceAmbientOcclusion(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal,
+	float radius, float strength, int sampleCount, float bias, vec2 noiseSeed)
+{
+	if (sampleCount < 1 || radius <= 0.0 || strength <= 0.0) {
+		return 1.0;
+	}
+
+	vec3 origin = worldPos + worldNormal * bias;
+
+	vec3 tangent, bitangent;
+	rtBuildOnb(worldNormal, tangent, bitangent);
+
+	float rotAngle = rtInterleavedGradientNoise(noiseSeed) * 6.2831853;
+	float cosR = cos(rotAngle);
+	float sinR = sin(rotAngle);
+
+	int samples = min(sampleCount, RT_SHADOW_MAX_SAMPLES);
+	float occlusion = 0.0;
+	for (int i = 0; i < samples; ++i) {
+		vec2 p = poissonDisc16[i];
+		p = vec2(p.x * cosR - p.y * sinR, p.x * sinR + p.y * cosR);
+		vec3 sampleDir = normalize(tangent * p.x + bitangent * p.y
+			+ worldNormal * sqrt(max(1.0 - dot(p, p), 0.0)));
+
+		rayQueryEXT rq;
+		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT,
+			0xFF, origin, 0.001, sampleDir, radius);
+		while (rayQueryProceedEXT(rq)) {}
+
+		if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+			float hitT = rayQueryGetIntersectionTEXT(rq, true);
+			occlusion += 1.0 - clamp(hitT / radius, 0.0, 1.0);
+		}
+	}
+
+	float visibility = clamp(1.0 - occlusion / float(samples), 0.0, 1.0);
+	return pow(visibility, strength);
 }
 #endif
 
