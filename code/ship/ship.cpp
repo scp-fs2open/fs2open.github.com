@@ -9631,10 +9631,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipfx_large_blowup_init(shipp);
 				// need to timeout immediately to keep physics in sync
 				shipp->really_final_death_time = timestamp(0);
-				polymodel *pm = model_get(sip->model_num);
-				shipp->end_death_time = timestamp((int) pm->core_radius);
 			} else if (sip->disable_main_fireball) {
-				shipp->end_death_time = shipp->really_final_death_time = timestamp( 0 );
+				shipp->really_final_death_time = timestamp( 0 );
 			} else {
 				float explosion_life = 0.0f;
 				// else, just a single big fireball
