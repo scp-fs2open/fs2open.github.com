@@ -88,7 +88,7 @@ size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& su
 
 // Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
 // or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash)
+static TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash = 0)
 {
 	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
 	if (model_instance_out == nullptr) {
@@ -118,6 +118,29 @@ TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_insta
 	entry.last_used_framecount = Framecount;
 	*model_instance_out = entry.model_instance;
 	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
+}
+
+TriStateBool model_get_cached_ui_render_instance_for_class(model_render_params& render_info, int model_num, ship_info* sip, int* model_instance_out, size_t instance_data_hash)
+{
+	// key the instance by ship class as well, since classes sharing a model may differ in replacement textures
+	if (sip != nullptr)
+		boost::hash_combine(instance_data_hash, static_cast<size_t>(sip - Ship_info.data()));
+
+	auto cache_result = model_get_cached_ui_render_instance(model_num, model_instance_out, instance_data_hash);
+	if (cache_result == TriStateBool::UNKNOWN_)
+		return cache_result;
+
+	// only set up the instance when it was freshly created; the cached instance persists across frames, so re-running
+	// this every frame would re-apply initial animations on top of the already-animated pose
+	if (sip != nullptr && cache_result == TriStateBool::TRUE_)
+		model_set_up_techroom_instance(sip, *model_instance_out);
+
+	// the instance carries the ship class's replacement textures, if any; a bare model has none, and the caller may
+	// have set some of its own
+	if (sip != nullptr)
+		render_info.set_replacement_textures(model_get_instance(*model_instance_out)->texture_replace);
+
+	return cache_result;
 }
 
 void model_process_cached_ui_render_instances()
@@ -327,27 +350,6 @@ bool model_render_params::is_team_color_set() const
 
 void model_render_params::set_replacement_textures(std::shared_ptr<const model_texture_replace> textures)
 {
-	Replacement_textures = std::move(textures);
-}
-
-void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
-{
-	auto textures = std::make_shared<model_texture_replace>();
-
-	polymodel* pm = model_get(modelnum);
-
-	for (const auto& tr : replacement_textures) 
-	{
-		for (int i = 0; i < pm->n_textures; ++i) 
-		{
-			texture_map *tmap = &pm->maps[i];
-
-			int tnum = tmap->FindTexture(tr.old_texture);
-			if (tnum > -1)
-				(*textures)[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
-		}
-	}
-
 	Replacement_textures = std::move(textures);
 }
 
@@ -1774,7 +1776,7 @@ void model_render_glowpoint_bitmap(int point_num, const vec3d *pos, const matrix
 			vm_vec_sub(&tempv,&View_position,&loc_offset);
 			vm_vec_normalize(&tempv);
 
-			if ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) {
+			if ( The_mission.flags[Mission::Mission_Flags::Fullneb] && bank->glow_neb_bitmap >= 0 ) {
 				batching_add_quad(bank->glow_neb_bitmap, verts);
 			} else {
 				batching_add_quad(bank->glow_bitmap, verts);
@@ -3115,7 +3117,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
-		(*pmi->texture_replace)[final_index] = texture;
+		pmi->texture_replace->adopt(final_index, texture);
 	} else
 		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
 }
@@ -3152,7 +3154,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			model_num = model_load(sip, true);
-			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
 			break;
 
@@ -3240,29 +3241,26 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	if (model_type == TECH_SHIP) {
 		auto sip = &Ship_info[class_idx];
 		const auto subsystem_hash = model_hash_subsystem_name_list_for_cache(destroyed_subsystems);
-		const auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance, subsystem_hash);
-		if (cache_result == TriStateBool::TRUE_) {
-			model_set_up_techroom_instance(sip, model_instance);
-			if (!destroyed_subsystems.empty()) {
-				auto pm = model_get(model_num);
-				auto pmi = model_get_instance(model_instance);
-				flagset<Ship::Subsystem_Flags> empty;
+		const auto cache_result = model_get_cached_ui_render_instance_for_class(render_info, model_num, sip, &model_instance, subsystem_hash);
+		if (cache_result == TriStateBool::TRUE_ && !destroyed_subsystems.empty()) {
+			auto pm = model_get(model_num);
+			auto pmi = model_get_instance(model_instance);
+			flagset<Ship::Subsystem_Flags> empty;
 
-				for (int idx = 0; idx < sip->n_subsystems; ++idx) {
-					auto& subsystem = sip->subsystems[idx];
+			for (int idx = 0; idx < sip->n_subsystems; ++idx) {
+				auto& subsystem = sip->subsystems[idx];
 
-					if (subsystem.subobj_num < 0 || subsystem.subobj_num >= pm->n_models ||
-						subsystem.model_num != model_num) {
-						continue;
-					}
+				if (subsystem.subobj_num < 0 || subsystem.subobj_num >= pm->n_models ||
+					subsystem.model_num != model_num) {
+					continue;
+				}
 
-					for (auto& destroyed_name : destroyed_subsystems) {
-						if (!stricmp(subsystem.subobj_name, destroyed_name.c_str()) ||
-							!stricmp(subsystem.name, destroyed_name.c_str())) {
-							pmi->submodel[subsystem.subobj_num].blown_off = true;
-							model_replicate_submodel_instance(pm, pmi, subsystem.subobj_num, empty);
-							break;
-						}
+				for (auto& destroyed_name : destroyed_subsystems) {
+					if (!stricmp(subsystem.subobj_name, destroyed_name.c_str()) ||
+						!stricmp(subsystem.name, destroyed_name.c_str())) {
+						pmi->submodel[subsystem.subobj_num].blown_off = true;
+						model_replicate_submodel_instance(pm, pmi, subsystem.subobj_num, empty);
+						break;
 					}
 				}
 			}
