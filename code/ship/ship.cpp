@@ -15569,9 +15569,9 @@ int ship_find_num_turrets(object *objp)
 	return n;
 }
 
-bool turret_has_weapon(ship_subsys *ssp, int wi_index)
+bool turret_has_weapon(const ship_subsys *ssp, int wi_index)
 {
-	ship_weapon *swp = &ssp->weapons;
+	const ship_weapon *swp = &ssp->weapons;
 	for ( auto& i : swp->primary_bank_weapons ) {
 		if (i == wi_index) {
 			return true;
@@ -15582,13 +15582,11 @@ bool turret_has_weapon(ship_subsys *ssp, int wi_index)
 			return true;
 		}
 	}
-	
-	ssp = GET_NEXT( ssp );
 
 	return false;
 }
 
-float ship_get_turret_type_aggregate_hits(ship *shipp, int wi_index)
+float ship_get_turret_type_aggregate_hits(const ship *shipp, int wi_index)
 {
 	float strength = 0.0f;
 	ship_subsys *ssp;
@@ -15601,30 +15599,10 @@ float ship_get_turret_type_aggregate_hits(ship *shipp, int wi_index)
 		return 0.0f;
 	}
 
-	ssp = GET_FIRST(&shipp->subsys_list);
-	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
-		ship_weapon *swp = &ssp->weapons;
-		bool weapon_found = false;
-		for ( auto& i : swp->primary_bank_weapons ) {
-			if (weapon_found) {
-				break;
-			}
-			if (i == wi_index) {
-				weapon_found = true;
-				strength += ssp->current_hits;
-			}
+	for (auto ssp : list_range(&shipp->subsys_list)) {
+		if (ssp->system_info->type == SUBSYSTEM_TURRET && turret_has_weapon(ssp, wi_index)) {
+			strength += ssp->current_hits;
 		}
-		for ( auto& i : swp->secondary_bank_weapons ) {
-			if (weapon_found) {
-				break;
-			}
-			if (i == wi_index) {
-				weapon_found = true;
-				strength += ssp->current_hits;
-			}
-		}
-		
-		ssp = GET_NEXT( ssp );
 	}
 
 	return strength;

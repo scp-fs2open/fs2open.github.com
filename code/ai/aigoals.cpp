@@ -1053,12 +1053,14 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	case OP_AI_DESTROY_TURRET_TYPE:
 		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE;
 		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 		
 	case OP_AI_DESTROY_TURRET_TYPE_ON_SHIP:
 		aigp->ai_mode = AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP;
 		aigp->int_data = weapon_info_lookup(ai_get_goal_target_name( CTEXT(CDR(node)), &dummy ));
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_WARP_OUT:
@@ -1863,9 +1865,13 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 	// similarly for attacking all turrets with a certain weapon class
 	if (aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+		if (!Weapon_info.in_bounds(aigp->int_data)) {
+			Warning(LOCATION, "Unknown weapon type index %i found for AI_GOAL_DESTROY_TURRET_TYPE.  Killing ai goal", aigp->int_data );
+			return ai_achievability::NOT_ACHIEVABLE;
+		}
 		for (auto so : list_range(&Ship_obj_list)) {
 			auto type_objp = &Objects[so->objnum];
-			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead] || !Weapon_info.in_bounds(aigp->int_data))
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
 			ship *potential_target_shipp = &Ships[type_objp->instance];
 			if (ship_get_turret_type_aggregate_hits(potential_target_shipp, aigp->int_data) > 0.0f) {
@@ -1955,8 +1961,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
 			// destroyed when shipnum is valid
 
-			// can't determine the status of this goal if ship not valid
-			if (!target_ship_entry || !target_ship_entry->has_shipp() || !Weapon_info.in_bounds(aigp->int_data)) {
+			if (!Weapon_info.in_bounds(aigp->int_data)) {
+				Warning(LOCATION, "Unknown weapon type index %i found for AI_GOAL_DESTROY_TURRET_TYPE.  Killing ai goal", aigp->int_data );
+				return_val = ai_achievability::NOT_ACHIEVABLE;
+				status = 1;
+			} else if (!target_ship_entry || !target_ship_entry->has_shipp()) { // can't determine the status of this goal if ship not valid
 				status = 0;
 			} else {
 				status = (ship_get_turret_type_aggregate_hits(target_ship_entry->shipp(), aigp->int_data) <= 0.0f) ? 1 : 0;
@@ -2720,7 +2729,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP must refer to a valid weapon class!");
 		other_obj = current_goal_target_ship->objp();
 		ai_attack_object( objp, other_obj);
-		ai_set_attack_subsystem( objp, SUBSYSTEM_TURRET, current_goal->int_data );
+		ai_set_attack_subsystem( objp, -SUBSYSTEM_TURRET, current_goal->int_data );
 		break;
 	}
 
@@ -2737,7 +2746,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_DESTROY_TURRET_TYPE:
 		Assertion(current_goal->int_data >= 0, "The target of AI_GOAL_DESTROY_TURRET_TYPE must refer to a valid weapon class!");
 		ai_attack_object( objp, nullptr, -1, -1, current_goal->int_data);
-		ai_set_attack_subsystem( objp, SUBSYSTEM_TURRET, current_goal->int_data );
+		ai_set_attack_subsystem( objp, -SUBSYSTEM_TURRET, current_goal->int_data );
 		break;
 
 	// chase-ship-class is chase-any but restricted to a subset of ships

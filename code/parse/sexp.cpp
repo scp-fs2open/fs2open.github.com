@@ -40037,8 +40037,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_DESTROY_TURRET_TYPE, "Ai-destroy-turret-type (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all enemy turrets in the mission that "
-		"are carrying a specified weapon."
-		"Takes 2 arguments...\r\n"
+		"are carrying a specified weapon.\r\n\r\n"
+		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
 		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
@@ -40046,8 +40046,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_DESTROY_TURRET_TYPE_ON_SHIP, "Ai-destroy-turret-type-on-ship (Ship/wing goal)\r\n"
 		"\tThis AI goal causes a ship/wing to destroy all turrets on a specified ship that "
-		"are carrying a specified weapon."
-		"Takes 2 arguments...\r\n"
+		"are carrying a specified weapon.\r\n\r\n"
+		"Takes 3 or 4 arguments...\r\n"
 		"\t1:\tName of weapon (primary or secondary) that should be attacked\r\n"
 		"\t2:\tName of ship to target\r\n"
 		"\t3:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"

@@ -15605,8 +15605,8 @@ void ai_frame(int objnum)
 					set_targeted_subsys(aip, NULL, -1);
 				}
 			} else {
-				// targeted subsys is destroyed, so stop attacking it
 				set_targeted_subsys(aip, NULL, -1);
+				// targeted subsys is destroyed, so stop attacking it
 			}
 		}
 	}
