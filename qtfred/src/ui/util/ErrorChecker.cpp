@@ -1293,7 +1293,6 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		case AI_GOAL_PLAY_DEAD:
 		case AI_GOAL_PLAY_DEAD_PERSISTENT:
 		case AI_GOAL_WARP:
-		case AI_GOAL_DESTROY_TURRET_TYPE:
 			flag = 0;
 			break;
 
@@ -1321,7 +1320,6 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
-		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 			flag = 2;
 			break;
 

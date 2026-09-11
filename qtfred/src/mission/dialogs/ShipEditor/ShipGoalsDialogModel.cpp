@@ -171,8 +171,6 @@ void ShipGoalsDialogModel::updateItem(int item)
 	case AI_GOAL_FORM_ON_WING:
 	case AI_GOAL_STAY_STILL:
 	case AI_GOAL_CHASE_SHIP_CLASS:
-	case AI_GOAL_DESTROY_TURRET_TYPE:
-	case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 		break;
 
 	case AI_GOAL_DESTROY_SUBSYSTEM: {
@@ -533,8 +531,6 @@ void ShipGoalsDialogModel::initialize(ai_goal* goals)
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_FORM_ON_WING:
-		case AI_GOAL_DESTROY_TURRET_TYPE:
-		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 			break;
 
 		case AI_GOAL_WAYPOINTS:
