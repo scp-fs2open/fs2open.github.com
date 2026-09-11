@@ -2099,42 +2099,6 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 	}
 
-	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
-	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL))
-	{
-		if (target_ship_entry && target_ship_entry->has_shipp()) {
-			// if the ship has no turrets, we can't disarm it!
-			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count == 0)
-				return ai_achievability::NOT_ACHIEVABLE;
-		} else {
-			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
-			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
-		}
-	}
-
-	if ((status == SHIP_STATUS_ARRIVED) && aigp->ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP) {
-		if (target_ship_entry && target_ship_entry->has_shipp()) {
-			// if the ship has no turrets of the relevant type, we can't destroy them!
-			ship_subsys *ssp = GET_FIRST(&target_ship_entry->shipp()->subsys_list);
-			bool weapon_found = false;
-			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count > 0) {
-				while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
-					if (turret_has_weapon(ssp, aigp->int_data)) {
-						weapon_found = true;
-						break;
-					}
-					ssp = GET_NEXT( ssp );
-				}
-			}
-			if (!weapon_found) {
-				return ai_achievability::NOT_ACHIEVABLE;
-			}
-		} else {
-			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
-			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
-		}
-	}
-
 	// if the goal is an ignore/disable/disarm goal, then 
 	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
 	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags[AI::Goal_Flags::Goals_purged]))
