@@ -15589,7 +15589,6 @@ bool turret_has_weapon(const ship_subsys *ssp, int wi_index)
 float ship_get_turret_type_aggregate_hits(const ship *shipp, int wi_index)
 {
 	float strength = 0.0f;
-	ship_subsys *ssp;
 
 	//	For a dying ship, all subsystem strengths are zero.
 	if (shipp->flags[Ship::Ship_Flags::Dying])

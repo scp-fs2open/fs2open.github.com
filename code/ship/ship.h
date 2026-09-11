@@ -1918,8 +1918,8 @@ extern int ship_get_subsys_index(const ship_subsys *subsys);
 
 extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_check = false);
 extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
-extern bool turret_has_weapon(ship_subsys *ssp, int wi_index);
-extern float ship_get_turret_type_aggregate_hits(ship *shipp, int wi_index);
+extern bool turret_has_weapon(const ship_subsys *ssp, int wi_index);
+extern float ship_get_turret_type_aggregate_hits(const ship *shipp, int wi_index);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(const ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos);
