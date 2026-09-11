@@ -104,7 +104,7 @@ void CModifyVariableDlg::OnDeleteVariable()
 bool CModifyVariableDlg::IsChangeSafe(char *message)
 {
 	// Can't as there are SEXPs using it. 
-	int num_counts = m_p_sexp_tree->get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
+	int num_counts = m_p_sexp_tree->_model.get_variable_count(Sexp_variables[get_sexp_var_index()].variable_name);
 	if (num_counts > 0) {
 		char buffer[256];
 		sprintf(buffer, "%s Used in %d SEXP(s).", message, num_counts);
@@ -113,7 +113,7 @@ bool CModifyVariableDlg::IsChangeSafe(char *message)
 	}
 	
 	// Can't as it is used in the team loadout
-	num_counts = m_p_sexp_tree->get_loadout_variable_count(get_sexp_var_index());
+	num_counts = m_p_sexp_tree->_model.get_loadout_variable_count(get_sexp_var_index());
 	if (num_counts > 0) {
 		char buffer[256];
 		sprintf(buffer, "%s Used in %d location(s) in loadout.", message, num_counts);

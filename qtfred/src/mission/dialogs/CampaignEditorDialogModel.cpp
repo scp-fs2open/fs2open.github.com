@@ -2,7 +2,7 @@
 
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"
-#include "../src/mission/missionsave.h"
+#include "missioneditor/campaignsave.h"
 #include "parse/sexp.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -18,6 +18,57 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(QObject* parent, fso::fred:
 	: AbstractDialogModel(parent, viewport), m_tree_ops(tree_ops)
 {
 	initializeData();
+}
+
+CampaignEditorDialogModel::~CampaignEditorDialogModel()
+{
+	// Release everything we allocated into the global Campaign struct while the
+	// dialog was open (mission name strings, lazy-loaded goal/event lists, etc.).
+	mission_campaign_clear();
+}
+
+void CampaignEditorDialogModel::syncCampaignMissionList()
+{
+	// The shared sexp tree code (sexp_tree_opf.cpp) reads Campaign.num_missions and
+	// Campaign.missions[].name to decide whether is-previous-event-* /
+	// is-previous-goal-* operators are usable. The OPF_GOAL_NAME / OPF_EVENT_NAME
+	// data-list paths additionally need each referenced mission's goals/events
+	// (which read_mission_goal_list() lazy-loads from disk into the same struct).
+	// Mirror our WIP list into Campaign.missions[] so all of that "just works",
+	// while preserving any lazy-loaded caches for missions whose filename hasn't
+	// changed since the last sync.
+	const int new_count = static_cast<int>(m_missions.size());
+
+	// Free entries that fall outside the new range (e.g. user removed missions).
+	for (int i = new_count; i < Campaign.num_missions; i++) {
+		if (Campaign.missions[i].name) {
+			vm_free(Campaign.missions[i].name);
+			Campaign.missions[i].name = nullptr;
+		}
+		Campaign.missions[i].events.clear();
+		Campaign.missions[i].goals.clear();
+		Campaign.missions[i].flags = 0;
+	}
+
+	Campaign.num_missions = new_count;
+
+	for (int i = 0; i < new_count && i < MAX_CAMPAIGN_MISSIONS; i++) {
+		const char* new_name = m_missions[i].filename.c_str();
+		const bool name_changed = (Campaign.missions[i].name == nullptr)
+			|| (strcmp(Campaign.missions[i].name, new_name) != 0);
+
+		if (name_changed) {
+			if (Campaign.missions[i].name) {
+				vm_free(Campaign.missions[i].name);
+			}
+			Campaign.missions[i].name = vm_strdup(new_name);
+			// New filename — invalidate any cached goal/event list and mark for lazy reload.
+			Campaign.missions[i].events.clear();
+			Campaign.missions[i].goals.clear();
+			Campaign.missions[i].flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
+		}
+		Campaign.missions[i].level = m_missions[i].level;
+	}
 }
 
 bool CampaignEditorDialogModel::apply()
@@ -51,7 +102,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		// Copy simple properties from the global Campaign struct
 		m_campaign_filename = Campaign.filename;
 		m_campaign_name = Campaign.name;
-		m_campaign_descr = Campaign.desc ? Campaign.desc : "";
+		m_campaign_descr = Campaign.description;
 		m_campaign_type = Campaign.type;
 		m_num_players = Campaign.num_players;
 		m_flags = Campaign.flags;
@@ -100,8 +151,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		}
 
 		// Copy ship and weapon permissions from the global Campaign struct
-		m_ships_allowed.assign(Campaign.ships_allowed, Campaign.ships_allowed + MAX_SHIP_CLASSES);
-		m_weapons_allowed.assign(Campaign.weapons_allowed, Campaign.weapons_allowed + MAX_WEAPON_TYPES);
+		m_ships_allowed = Campaign.ships_allowed;
+		m_weapons_allowed = Campaign.weapons_allowed;
 
 	} else {
 		// CREATING A NEW CAMPAIGN
@@ -113,9 +164,6 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		m_campaign_type = CAMPAIGN_TYPE_SINGLE;
 		m_num_players = 0;
 		m_flags = CF_DEFAULT_VALUE;
-
-		m_ships_allowed.assign(MAX_SHIP_CLASSES, false);
-		m_weapons_allowed.assign(MAX_WEAPON_TYPES, false);
 	}
 
 	// Load the list of available mission files from the directory.
@@ -124,6 +172,10 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 	// Set initial selection states to none.
 	m_current_mission_index = -1;
 	m_current_branch_index = -1;
+
+	// Keep Campaign.num_missions in sync so the sexp tree's OPF_MISSION_NAME gate
+	// (used by is-previous-event-*/is-previous-goal-*) sees the loaded campaign.
+	syncCampaignMissionList();
 
 	// Mark the model as unmodified since this is a fresh load or new state.
 	_modified = false;
@@ -256,7 +308,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 
 	// Copy simple properties
 	strcpy_s(Campaign.name, m_campaign_name.c_str());
-	Campaign.desc = m_campaign_descr.empty() ? nullptr : strdup(m_campaign_descr.c_str());
+	Campaign.description = m_campaign_descr;
 	Campaign.type = m_campaign_type;
 	Campaign.num_players = m_num_players;
 	Campaign.flags = m_flags;
@@ -264,12 +316,8 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.custom_data = m_custom_data;
 
 	// Copy ship and weapon permissions
-	for (int i = 0; i < MAX_SHIP_CLASSES; ++i) {
-		Campaign.ships_allowed[i] = m_ships_allowed[i];
-	}
-	for (int i = 0; i < MAX_WEAPON_TYPES; ++i) {
-		Campaign.weapons_allowed[i] = m_weapons_allowed[i];
-	}
+	Campaign.ships_allowed = m_ships_allowed;
+	Campaign.weapons_allowed = m_weapons_allowed;
 
 	// Copy mission data
 	for (int i = 0; i < Campaign.num_missions; ++i) {
@@ -386,7 +434,7 @@ void CampaignEditorDialogModel::sortMissions()
 
 void CampaignEditorDialogModel::stopSpeech()
 {
-	if (_waveId >= -1) {
+	if (_waveId >= 0) {
 		audiostream_close_file(_waveId, false);
 		_waveId = -1;
 	}
@@ -436,6 +484,11 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 
 	// Immediately clear the global struct again now that we have our safe working copy.
 	clearCampaignGlobal();
+
+	// clearCampaignGlobal() also zeroed Campaign.num_missions, but the sexp tree's
+	// OPF_MISSION_NAME gate needs that count to be non-zero for is-previous-event-* /
+	// is-previous-goal-* to be usable. Restore it from the WIP list.
+	syncCampaignMissionList();
 }
 
 void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
@@ -461,19 +514,84 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 	// Copy our working data to the global Campaign struct.
 	commitWorkingCopyToGlobal();
 
-	// Call the global save function.
-	CFred_mission_save mission_saver;
-	if (mission_saver.save_campaign_file(target_filename.c_str())) {
-		// Save failed, clean up the global.
-		clearCampaignGlobal();
-		return;
+	Fred_campaign_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (m_save_format == CampaignFormat::Retail) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (m_save_format == CampaignFormat::CompatibilityMode) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
 	}
 
-	// On success, update our internal state.
-	modify(m_campaign_filename, target_filename);
+	// Create a lookup map for mission indices by filename for efficient lookup.
+	std::map<SCP_string, int> mission_indices;
+	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
+		mission_indices[m_missions[i].filename] = i;
+	}
 
-	// Clean up the global struct now that the save is complete.
-	clearCampaignGlobal();
+	SCP_vector<campaign_link> links;
+	// Iterate through each mission to find its outgoing branches.
+	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
+		const auto& mission = m_missions[i];
+
+		// Iterate through each branch of the current mission.
+		for (const auto& branch : mission.branches) {
+
+			// Find the 'to' mission index using our lookup map.
+			int to_index = -1;
+			if (!branch.next_mission_name.empty()) {
+				auto it = mission_indices.find(branch.next_mission_name);
+				if (it != mission_indices.end()) {
+					to_index = it->second;
+				}
+			}
+
+			campaign_link link;
+			link.from = i;
+			link.to = to_index;
+			link.sexp = m_tree_ops.saveSexp(branch.sexp_formula);
+			link.node = branch.sexp_formula;
+			link.is_mission_loop = branch.is_loop;
+			link.is_mission_fork = branch.is_fork;
+
+			// The descriptive text fields only apply to special (loop/fork) branches.
+			if (branch.is_loop || branch.is_fork) {
+				link.mission_branch_txt = branch.loop_description.empty() ? nullptr : branch.loop_description.c_str();
+				link.mission_branch_brief_anim = branch.loop_briefing_anim.empty() ? nullptr : branch.loop_briefing_anim.c_str();
+				link.mission_branch_brief_sound = branch.loop_briefing_sound.empty() ? nullptr : branch.loop_briefing_sound.c_str();
+			} else {
+				link.mission_branch_txt = nullptr;
+				link.mission_branch_brief_anim = nullptr;
+				link.mission_branch_brief_sound = nullptr;
+			}
+
+			links.emplace_back(link);
+		}
+	}
+
+	bool failure = save.save_campaign_file(target_filename.c_str(), links);
+
+	if (failure) {
+		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+			"Save Error",
+			"An error occurred while saving the campaign.",
+			{DialogButton::Ok});
+	}else{
+		// On success, update our internal state.
+		modify(m_campaign_filename, target_filename);
+
+		// Clean up the global struct now that the save is complete.
+		clearCampaignGlobal();
+
+		// clearCampaignGlobal() zeroed Campaign.num_missions, but the dialog is still
+		// open and the sexp tree relies on that count for is-previous-event-*/
+		// is-previous-goal-* operator availability.
+		syncCampaignMissionList();
+	}
 }
 
 bool CampaignEditorDialogModel::checkValidity()
@@ -782,6 +900,7 @@ void CampaignEditorDialogModel::addMission(const SCP_string& filename, int level
 
 	// Adding or removing missions changes the list of available files.
 	loadAvailableMissions();
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -803,6 +922,7 @@ void CampaignEditorDialogModel::removeMission(int mission_index)
 
 	// Adding or removing missions changes the list of available files.
 	loadAvailableMissions();
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -940,6 +1060,7 @@ void CampaignEditorDialogModel::setMissionAsFirst(int mission_index)
 	auto mission = m_missions[mission_index];
 	m_missions.erase(m_missions.begin() + mission_index);
 	m_missions.insert(m_missions.begin(), mission);
+	syncCampaignMissionList();
 	set_modified();
 }
 
@@ -1280,7 +1401,45 @@ void CampaignEditorDialogModel::moveBranchDown()
 	// Swap the selected branch with the one below it.
 	std::swap(mission.branches[m_current_branch_index], mission.branches[m_current_branch_index + 1]);
 	set_modified();
-	
+
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
+}
+
+void CampaignEditorDialogModel::moveBranchToTop()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == 0) {
+		return;
+	}
+	// Rotate the selected branch to the front, preserving the order of the rest.
+	std::rotate(mission.branches.begin(), mission.branches.begin() + m_current_branch_index, mission.branches.begin() + m_current_branch_index + 1);
+	set_modified();
+
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
+}
+
+void CampaignEditorDialogModel::moveBranchToBottom()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == static_cast<int>(mission.branches.size()) - 1) {
+		return;
+	}
+	// Rotate the selected branch to the back, preserving the order of the rest.
+	std::rotate(mission.branches.begin() + m_current_branch_index, mission.branches.begin() + m_current_branch_index + 1, mission.branches.end());
+	set_modified();
+
 	m_current_branch_index = -1; // set no branch selected
 	// Rebuild the visual tree from the model's authoritative state
 	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
@@ -1368,30 +1527,6 @@ void CampaignEditorDialogModel::removeBranch(int mission_index, int branch_index
 	set_modified();
 }
 
-void CampaignEditorDialogModel::updateCurrentBranch(int internal_node_id)
-{
-	// Ensure a mission and a branch are currently selected.
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return;
-	}
-	auto& mission = m_missions[m_current_mission_index];
-	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
-		return;
-	}
-
-	// Tell the tree to save the specified branch.
-	// The tree will serialize its internal model for that branch into a new SEXP
-	// and return the new formula index.
-	int new_sexp_formula = m_tree_ops.saveSexp(internal_node_id);
-
-	// Update the model's data with the new formula.
-	// The 'modify' helper also handles setting the modified flag.
-	auto& branch = mission.branches[m_current_branch_index];
-	modify(branch.sexp_formula, new_sexp_formula);
-
-	m_tree_ops.expandBranch(internal_node_id);
-}
-
 bool CampaignEditorDialogModel::getCurrentBranchIsSpecial() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
@@ -1443,7 +1578,7 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 	SCP_vector<std::tuple<SCP_string, int, bool>> ship_list;
 	for (int i = 0; i < static_cast<int>(Ship_info.size()); i++) {
 		if (Ship_info[i].flags[Ship::Info_Flags::Player_ship]) {
-			ship_list.emplace_back(Ship_info[i].name, i, m_ships_allowed[i]);
+			ship_list.emplace_back(Ship_info[i].name, i, m_ships_allowed.contains(i));
 		}
 	}
 	return ship_list;
@@ -1451,9 +1586,13 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 
 void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowed)
 {
-	if (SCP_vector_inbounds(m_ships_allowed, ship_class_index)) {
-		if (m_ships_allowed[ship_class_index] != allowed) {
-			m_ships_allowed[ship_class_index] = allowed;
+	if (Ship_info.in_bounds(ship_class_index)) {
+		if (m_ships_allowed.contains(ship_class_index) != allowed) {
+			if (allowed) {
+				m_ships_allowed.insert(ship_class_index);
+			} else {
+				m_ships_allowed.erase(ship_class_index);
+			}
 			set_modified();
 		}
 	}
@@ -1464,7 +1603,7 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 	SCP_vector<std::tuple<SCP_string, int, bool>> weapon_list;
 	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
 		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			weapon_list.emplace_back(Weapon_info[i].name, i, m_weapons_allowed[i]);
+			weapon_list.emplace_back(Weapon_info[i].name, i, m_weapons_allowed.contains(i));
 		}
 	}
 	return weapon_list;
@@ -1472,9 +1611,13 @@ SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllo
 
 void CampaignEditorDialogModel::setAllowedWeapon(int weapon_class_index, bool allowed)
 {
-	if (SCP_vector_inbounds(m_weapons_allowed, weapon_class_index)) {
-		if (m_weapons_allowed[weapon_class_index] != allowed) {
-			m_weapons_allowed[weapon_class_index] = allowed;
+	if (Weapon_info.in_bounds(weapon_class_index)) {
+		if (m_weapons_allowed.contains(weapon_class_index) != allowed) {
+			if (allowed) {
+				m_weapons_allowed.insert(weapon_class_index);
+			} else {
+				m_weapons_allowed.erase(weapon_class_index);
+			}
 			set_modified();
 		}
 	}

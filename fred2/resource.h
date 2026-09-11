@@ -11,9 +11,10 @@
 #define IDD_VOICE_MANAGER               102
 #define IDR_MAINFRAME                   128
 #define IDR_MAINMENU                    128
-#define IDR_FREDTYPE                    129
-#define IDR_CAMPAIGN_VIEW               130
-#define IDR_CAMPAIGN_DLG                131
+#define IDR_MAINMENU_CLASSIC            129
+#define IDR_FREDTYPE                    130
+#define IDR_CAMPAIGN_VIEW               131
+#define IDR_CAMPAIGN_DLG                132
 #define IDR_TOOLBAR1                    150
 #define IDD_SHIP_EDITBAR                154
 #define IDD_SHIP_CLASS_EDITOR           161
@@ -73,12 +74,14 @@
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
+#define IDD_PROP_EDITOR                 229
 #define IDD_ADJUST_GRID                 230
 #define IDD_SHIELD_SYS                  231
 #define IDR_ASTEROID_FIELD_MENU         232
 #define IDR_CPGN_VIEW_OFF               233
 #define IDR_CPGN_VIEW_ON                234
 #define IDD_CALC_RELATIVE_COORDS        235
+#define IDR_PROP_EDIT_MENU              236
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
 #define IDB_STOP                        240
@@ -135,6 +138,12 @@
 #define IDD_MUSIC_PLAYER                330
 #define IDD_VOLUMETRICS                 332
 #define IDD_EDIT_CUSTOM_STRINGS         333
+#define IDD_SUPPORT_REARM_OPTIONS       334
+#define IDD_REORDER                     335
+#define IDB_MOVE_TO_TOP                 336
+#define IDB_MOVE_UP                     337
+#define IDB_MOVE_DOWN                   338
+#define IDB_MOVE_TO_BOTTOM              339
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -713,6 +722,7 @@
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
 #define IDC_DISPLAY_NAME                1325
+#define IDC_WING_DISPLAY_NAME           1326
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -1170,9 +1180,7 @@
 #define IDC_DISABLE_ETS                 1630
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
-#define IDC_NEB2_NEAR_MULTIPLIER        1632
 #define IDC_EDIT6                       1633
-#define IDC_NEB2_FAR_MULTIPLIER         1634
 #define IDC_MISSION_LOG_TRUE            1635
 #define IDC_MISSION_LOG_FALSE           1636
 #define IDC_MISSION_LOG_STATE_CHANGE    1637
@@ -1265,6 +1273,44 @@
 #define IDC_SELECT_ASTEROID             1706
 #define IDC_SMOOTHING                   1707
 #define IDC_SPIN_SMOOTHING              1708
+#define IDC_PROP_NAME                   1709
+#define IDC_PROP_PREV                   1710
+#define IDC_PROP_NEXT                   1711
+#define IDC_PROP_FLAGS                  1712
+#define IDC_NEB2_FOG_1000M_VIS          1713
+#define IDC_NEB2_FOG_NEAR_DIST          1714
+#define IDC_NEB2_FOG_SKYBOX_CLIP        1715
+#define IDC_NEB2_FOG_CLIP               1716
+#define IDC_SUPPORT_REARM_OPTIONS       1717
+#define IDC_DISALLOW_SUPPORT_SHIPS      1718
+#define IDC_LIMIT_SUPPORT_REARM_TO_POOL 1719
+#define IDC_DISALLOW_SUPPORT_REARM      1720
+#define IDC_ALLOW_SUPPORT_REARM_PRECEDENCE 1721
+#define IDC_SUPPORT_REARM_POOL_FROM_LOADOUT 1722
+#define IDC_SUPPORT_REARM_WEAPON_LIST   1723
+#define IDC_SUPPORT_REARM_POOL_AMOUNT   1724
+#define IDC_SUPPORT_REARM_SET_AMOUNT    1725
+#define IDC_SUPPORT_REARM_SET_UNLIMITED 1726
+#define IDC_SUPPORT_REARM_SET_ZERO      1727
+#define IDC_SUPPORT_REARM_SET_ALL_AMOUNT 1728
+#define IDC_SUPPORT_REARM_SET_ALL_UNLIMITED 1729
+#define IDC_SUPPORT_REARM_SET_ALL_ZERO   1730
+#define IDC_SUPPORT_REARM_POOL_TEAM      1731
+#define IDC_REORDER_TYPE                1732
+#define IDC_REORDER_LIST                1733
+#define IDC_REORDER_MOVE_TO_TOP         1734
+#define IDC_REORDER_MOVE_UP             1735
+#define IDC_REORDER_MOVE_DOWN           1736
+#define IDC_REORDER_MOVE_TO_BOTTOM      1737
+#define IDC_EVENT_MOVE_TO_TOP           1738
+#define IDC_EVENT_MOVE_UP               1739
+#define IDC_EVENT_MOVE_DOWN             1740
+#define IDC_EVENT_MOVE_TO_BOTTOM        1741
+#define IDC_MESSAGE_MOVE_TO_TOP         1742
+#define IDC_MESSAGE_MOVE_UP             1743
+#define IDC_MESSAGE_MOVE_DOWN           1744
+#define IDC_MESSAGE_MOVE_TO_BOTTOM      1745
+#define IDC_INSERT_MSG                  1746
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1300,6 +1346,7 @@
 #define ID_VIEW_ELEVATIONS              32806
 #define ID_VIEW_WAYPOINTS               32807
 #define ID_VIEW_GRID                    32808
+#define ID_EDITORS_PROPS                32809
 #define ID_MIKE_GRIDCONTROL             32811
 #define ID_PROPERTIES_ONE               32812
 #define ID_PROPERTIES_TWO               32813
@@ -1559,19 +1606,40 @@
 #define ID_MISC_POINTUSINGUVEC          33101
 #define ID_MUSIC_PLAYER                 33102
 #define ID_EDITORS_VOLUMETRICS          33103
+#define ID_NEW_PROP_TYPE                33104
+#define ID_STATIC_SHIP_LABEL            33105
+#define ID_STATIC_PROP_LABEL            33106
+#define ID_OUTLINE_LOD_0                33107
+#define ID_OUTLINE_LOD_1                33108
+#define ID_OUTLINE_LOD_2                33109
+#define ID_OUTLINE_LOD_3                33110
+#define ID_OUTLINE_LOD_4                33111
+#define ID_REORDER                      33112
+#define ID_CLASSIC_MENU_LAYOUT          33113
+#define ID_LABEL_FONT_SCALE_50          33114
+#define ID_LABEL_FONT_SCALE_75          33115
+#define ID_LABEL_FONT_SCALE_100         33116
+#define ID_LABEL_FONT_SCALE_125         33117
+#define ID_LABEL_FONT_SCALE_150         33118
+#define ID_LABEL_FONT_SCALE_200         33119
+#define ID_LABEL_FONT_SCALE_250         33120
+#define ID_LABEL_FONT_SCALE_300         33121
+#define ID_LABEL_FONT_SCALE_350         33122
+#define ID_LABEL_FONT_SCALE_400         33123
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
 #define ID_INDICATOR_MODIFIED           59145
 
+
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        335
-#define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_RESOURCE_VALUE        340
+#define _APS_NEXT_CONTROL_VALUE         1747
+#define _APS_NEXT_COMMAND_VALUE         33124
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

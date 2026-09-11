@@ -51,7 +51,7 @@ ADE_FUNC(__newindex, l_RPC, "function(any arg) => void rpc_body", "Sets the func
 	return ade_set_args(L, "u", rpc->func);
 }
 
-ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set on RPC creation */]", "Calls the RPC on the specified recipients with the given argument.", "boolean", "True, if RPC call happened (not a guarantee for arrival at the recipient!)")
+ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient /* RPC_* */]", "Calls the RPC on the specified RPC_* recipients with the given argument. The recipient defaults to what was set on RPC creation.", "boolean", "True, if RPC call happened (not a guarantee for arrival at the recipient!)")
 {
 	rpc_h rpc;
 	luacpp::LuaValue argument;
@@ -81,7 +81,7 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set o
 		recipient_lua = lua_net_reciever::BOTH;
 		break;
 	default:
-		UNREACHABLE("RPC recipient enum is bad! Get a programmer!");
+		Assertion(false, "RPC recipient enum is bad! Get a programmer!");
 		return ade_set_error(L, "b", false);
 	}
 
@@ -98,7 +98,7 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set o
 		mode_lua = lua_net_mode::UNRELIABLE;
 		break;
 	default:
-		UNREACHABLE("RPC mode enum is bad! Get a programmer!");
+		Assertion(false, "RPC mode enum is bad! Get a programmer!");
 		return ade_set_error(L, "b", false);
 	}
 
@@ -132,7 +132,7 @@ ADE_FUNC(waitRPC,
 		{
 			// Keep checking the time until the timestamp is elapsed
 			auto self = shared_from_this();
-			auto cb = [this, self, resolver](
+			auto cb = [this, self, resolver = std::move(resolver)](
 				executor::IExecutionContext::State contextState) {
 					if (contextState == executor::IExecutionContext::State::Invalid) {
 						mprintf(("waitRPC: Context is invalid, possibly due to a game state change (current state is %s). Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));

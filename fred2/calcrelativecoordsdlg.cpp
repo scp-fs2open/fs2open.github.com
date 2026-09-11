@@ -65,14 +65,11 @@ BOOL calc_relative_coords_dlg::OnInitDialog()
 		}
 		else if (ptr->type == OBJ_WAYPOINT)
 		{
-			SCP_string text;
-			int waypoint_num;
+			char text[NAME_LENGTH];
+			waypoint_stuff_name(text, ptr->instance);
 
-			auto wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-			Assert(wp_list != nullptr);
-			sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-			m_origin_list.AddString(text.c_str());
-			m_satellite_list.AddString(text.c_str());
+			m_origin_list.AddString(text);
+			m_satellite_list.AddString(text);
 
 			added = true;
 		}

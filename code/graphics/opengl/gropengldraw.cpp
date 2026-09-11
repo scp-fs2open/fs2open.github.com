@@ -28,6 +28,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_framebuffer_ms;
@@ -47,11 +50,13 @@ GLuint Scene_luminance_texture;
 GLuint Scene_depth_texture;
 GLuint Scene_depth_texture_ms;
 GLuint Cockpit_depth_texture;
-GLuint Scene_stencil_buffer;
 
 GLuint Back_framebuffer;
 GLuint Back_texture;
 GLuint Back_depth_texture;
+
+GLuint GammaBlit_framebuffer;
+GLuint GammaBlit_texture;
 
 GLuint Distortion_framebuffer = 0;
 GLuint Distortion_texture[2];
@@ -283,10 +288,18 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D,
+		0,
+		GL_DEPTH24_STENCIL8,
+		Scene_texture_width,
+		Scene_texture_height,
+		0,
+		GL_DEPTH_COMPONENT,
+		GL_FLOAT,
+		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Cockpit_depth_texture, "Cockpit depth texture");
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
 	gr_zbuffer_set(GR_ZBUFF_FULL);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -304,15 +317,17 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, Scene_texture_width, Scene_texture_height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D,
+		0,
+		GL_DEPTH24_STENCIL8,
+		Scene_texture_width,
+		Scene_texture_height,
+		0,
+		GL_DEPTH_COMPONENT,
+		GL_FLOAT,
+		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Scene_depth_texture, "Scene depth texture");
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
-
-	//setup main stencil buffer
-	glGenRenderbuffers(1, &Scene_stencil_buffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, Scene_stencil_buffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Scene_texture_width, Scene_texture_height);
-	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, Scene_stencil_buffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 
@@ -349,6 +364,13 @@ void opengl_setup_scene_textures()
 		Gr_enable_soft_particles = false;
 		return;
 	}
+
+#ifdef USE_OPENGL_ES
+	if (Cmdline_msaa_enabled > 0) {
+		Cmdline_msaa_enabled = 0;
+		Warning(LOCATION, "MSAA is not currently supported under OpenGL ES. Disabling MSAA.");
+	}
+#endif
 
 	if (Cmdline_msaa_enabled > 0) {
 		glEnable(GL_MULTISAMPLE);
@@ -491,13 +513,13 @@ void opengl_setup_scene_textures()
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
 			Cmdline_msaa_enabled,
-			GL_DEPTH_COMPONENT24,
+			GL_DEPTH24_STENCIL8,
 			Scene_texture_width,
 			Scene_texture_height,
 			GL_TRUE);
 		opengl_set_object_label(GL_TEXTURE, Scene_depth_texture_ms, "Scene depth texture multisample");
 		glFramebufferTexture2D(GL_FRAMEBUFFER,
-			GL_DEPTH_ATTACHMENT,
+			GL_DEPTH_STENCIL_ATTACHMENT,
 			GL_TEXTURE_2D_MULTISAMPLE,
 			Scene_depth_texture_ms,
 			0);
@@ -545,12 +567,58 @@ void opengl_setup_scene_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, gr_screen.max_w, gr_screen.max_h, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+		glTexImage2D(GL_TEXTURE_2D,
+			0,
+			GL_DEPTH24_STENCIL8,
+			gr_screen.max_w,
+			gr_screen.max_h,
+			0,
+			GL_DEPTH_STENCIL,
+			GL_UNSIGNED_INT_24_8,
+			nullptr);
 		opengl_set_object_label(GL_TEXTURE, Back_depth_texture, "Backbuffer depth texture");
 
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, Back_depth_texture, 0);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Back_depth_texture, 0);
 		gr_zbuffer_set(GR_ZBUFF_FULL);
 		glClear(GL_DEPTH_BUFFER_BIT);
+
+		// Intermediate target for the gamma-correction pass. The gamma pass samples Back_texture and writes
+		// here (an offscreen FBO->FBO draw, same as every other post-process pass); the result is then
+		// presented to the window via glBlitFramebuffer. Some drivers show flicker when a shader draw that
+		// samples a just-rendered texture targets the window-system default framebuffer directly, so the
+		// final presentation step always goes through a blit instead.
+		glGenFramebuffers(1, &GammaBlit_framebuffer);
+		GL_state.BindFrameBuffer(GammaBlit_framebuffer);
+		opengl_set_object_label(GL_FRAMEBUFFER, GammaBlit_framebuffer, "Gamma blit framebuffer");
+
+		if (Scene_ldr_texture != 0 && Scene_texture_width == gr_screen.max_w && Scene_texture_height == gr_screen.max_h) {
+			// Scene_ldr_texture is dead scratch by flip time: its consumers (tonemap, AA, the final
+			// post pass) all write before reading within gr_opengl_post_process_end(), which completes
+			// before the flip. Reuse it as the gamma pass target instead of allocating another
+			// screen-sized texture. GammaBlit_texture stays 0 so shutdown won't delete it.
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
+		} else {
+			// Scene textures are clamped to GL_max_renderbuffer_size and may not cover the screen;
+			// fall back to a dedicated texture in that case.
+			glGenTextures(1, &GammaBlit_texture);
+
+			GL_state.Texture.SetActiveUnit(0);
+			GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+			GL_state.Texture.Enable(GammaBlit_texture);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
+
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, GammaBlit_texture, 0);
+			opengl_set_object_label(GL_TEXTURE, GammaBlit_texture, "Gamma blit texture");
+		}
+
+		GL_state.BindFrameBuffer(Back_framebuffer);
 	}
 
 	//Setup thruster distortion framebuffer
@@ -652,6 +720,31 @@ void opengl_scene_texture_shutdown()
 	if ( Scene_framebuffer ) {
 		glDeleteFramebuffers(1, &Scene_framebuffer);
 		Scene_framebuffer = 0;
+	}
+
+	if (Back_texture) {
+		glDeleteTextures(1, &Back_texture);
+		Back_texture = 0;
+	}
+
+	if (Back_depth_texture) {
+		glDeleteTextures(1, &Back_depth_texture);
+		Back_depth_texture = 0;
+	}
+
+	if (Back_framebuffer) {
+		glDeleteFramebuffers(1, &Back_framebuffer);
+		Back_framebuffer = 0;
+	}
+
+	if (GammaBlit_texture) {
+		glDeleteTextures(1, &GammaBlit_texture);
+		GammaBlit_texture = 0;
+	}
+
+	if (GammaBlit_framebuffer) {
+		glDeleteFramebuffers(1, &GammaBlit_framebuffer);
+		GammaBlit_framebuffer = 0;
 	}
 
 	glDeleteTextures(2, Distortion_texture);
@@ -1161,12 +1254,23 @@ void gr_opengl_render_decals(decal_material* material_info,
 
 void gr_opengl_start_decal_pass() {
 	// For now we only render into the diffuse channel of the framebuffer
+#ifndef USE_OPENGL_ES
 	GLenum buffers[] = {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT4,
 	};
 	glDrawBuffers(3, buffers);
+#else
+	GLenum buffers[] = {
+		GL_COLOR_ATTACHMENT0,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT2,
+		GL_NONE,
+		GL_COLOR_ATTACHMENT4,
+	};
+	glDrawBuffers(5, buffers);
+#endif
 }
 void gr_opengl_stop_decal_pass() {
 	GLenum buffers2[] = {

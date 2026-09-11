@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Initial Orders - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Initial Orders</nav>
+<h1>Initial Orders</h1>
+<p>Accessed via the <strong>Initial Orders</strong> button in the
+<a href="ShipEditorDialog.html">Ship Editor</a> or <a href="WingEditorDialog.html">Wing Editor</a>.</p>
+<p>Sets the AI orders the ship or wing follows at mission start. Orders are evaluated
+in priority order and can be overridden at runtime by events or
+<a href="../concepts/sexps.html">SEXPs</a>.</p>
+
+<h2>Order properties</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Order</td><td>The AI order to issue (attack, guard, ignore, etc.).</td></tr>
+    <tr><td>Target</td><td>The ship, wing, or other object the order applies to.
+        Not all orders require a target.</td></tr>
+    <tr><td>Target subsystem</td><td>Limits the order to a specific subsystem on
+        the target. Only available for orders that support subsystem
+        targeting.</td></tr>
+    <tr><td>Bay</td><td>The dock bay to use. Only available for orders that involve
+        docking or launching.</td></tr>
+    <tr><td>Priority</td><td>Determines which order takes precedence when multiple
+        orders are active. Range is 1–200. Orders with a priority above 89 may
+        outrank orders issued by the player during play.</td></tr>
+</table>
+</body>
+</html>

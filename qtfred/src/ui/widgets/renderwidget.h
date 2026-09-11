@@ -1,16 +1,14 @@
 #pragma once
 
 #include <memory>
-#include <unordered_map>
 
 #include <QWindow>
 #include <QWidget>
-#include <mission/FredRenderer.h>
+#include <mission/EditorViewport.h>
 
 #include "osapi/osapi.h"
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 
 class Editor;
 class RenderWidget;
@@ -52,7 +50,6 @@ class RenderWidget: public QWidget {
 	std::unique_ptr<QCursor> _moveCursor;
 	std::unique_ptr<QCursor> _rotateCursor;
 
-	std::unordered_map<int, int> qt2fsKeys;
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
 
@@ -62,6 +59,15 @@ class RenderWidget: public QWidget {
 	Marking_box _markingBox;
 
 	QPoint _lastMouse;
+
+	// Orbit camera drag state
+	bool _orbitDragging = false;
+	bool _rbuttonDown = false;
+	bool _rbuttonMoved = false;
+	QPoint _orbitLastMouse;
+	QPoint _rbuttonDownPoint;
+
+	void handleOrbitDrag(QPoint point, Qt::KeyboardModifiers modifiers);
 
  public:
 	explicit RenderWidget(QWidget* parent);
@@ -77,6 +83,7 @@ class RenderWidget: public QWidget {
  protected:
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
+	bool event(QEvent* evt) override;
 
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
@@ -84,9 +91,10 @@ class RenderWidget: public QWidget {
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent*) override;
 
+	void wheelEvent(QWheelEvent* event) override;
+
 	void contextMenuEvent(QContextMenuEvent* event) override;
 	void updateCursor() const;
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

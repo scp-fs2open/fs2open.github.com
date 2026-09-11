@@ -19,11 +19,13 @@
 
 class ship_subsys;
 class ship;
+struct prop;
 class waypoint_list;
 class object;
 class waypoint;
 class p_object;
 struct ship_obj;
+class gamesnd_id;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -38,6 +40,7 @@ enum sexp_opf_t : int {
 	OPF_BOOL,
 	OPF_NUMBER,
 	OPF_SHIP,
+	OPF_PROP,
 	OPF_WING,
 	OPF_SUBSYSTEM,
 	OPF_POINT,						// either a 3d point in space, or a waypoint name
@@ -54,6 +57,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_POINT,					// a waypoint or a ship
 	OPF_GOAL_NAME,					// name of goal (or maybe event?) from a mission
 	OPF_SHIP_WING,					// either a ship or wing name (they don't conflict)
+	OPF_SHIP_PROP,                  // either a ship or a prop
 	OPF_SHIP_WING_WHOLETEAM,		// Karajorma - Ship, wing or an entire team's worth of ships
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
@@ -66,6 +70,7 @@ enum sexp_opf_t : int {
 	OPF_MEDAL_NAME,					// name of medals
 	OPF_WEAPON_NAME,				// name of a weapon
 	OPF_SHIP_CLASS_NAME,			// name of a ship class
+	OPF_PROP_CLASS_NAME,            // name of a prop class
 	OPF_CUSTOM_HUD_GAUGE,			// name of custom HUD gauge
 	OPF_HUGE_WEAPON,				// name of a secondary bomb type weapon
 	OPF_SHIP_NOT_PLAYER,			// a ship, but not a player ship
@@ -594,6 +599,7 @@ enum : int {
 	OP_CARGO_NO_DEPLETE,
 	OP_SET_SPECIAL_WARPOUT_NAME,
 	OP_SHIP_VANISH,
+	OP_PROP_VANISH, // MjnMixael
 	OP_SHIELDS_ON,	//-Sesquipedalian
 	OP_SHIELDS_OFF,	//-Sesquipedalian
 	
@@ -648,7 +654,9 @@ enum : int {
 	OP_ROTATING_SUBSYS_SET_TURN_TIME,	// Goober5000
 	OP_PLAYER_USE_AI,	// Goober5000
 	OP_PLAYER_NOT_USE_AI,	// Goober5000
-	
+	OP_SET_PLAYER_TARGET, // LuytenKy
+	OP_CLEAR_PLAYER_TARGET, // LuytenKy
+
 	OP_HUD_DISABLE_EXCEPT_MESSAGES,	// Goober5000
 	OP_FORCE_JUMP,	// Goober5000
 	OP_HUD_SET_TEXT, //WMC
@@ -681,6 +689,7 @@ enum : int {
 	OP_CUTSCENES_SET_TIME_COMPRESSION,	// WMC
 	OP_CUTSCENES_RESET_TIME_COMPRESSION,	// WMC
 	OP_CUTSCENES_FORCE_PERSPECTIVE,	// WMC
+	OP_ALLOW_PHOTO_MODE,
 	OP_JUMP_NODE_SET_JUMPNODE_NAME,	// CommanderDJ
 	OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME,
 	OP_JUMP_NODE_SET_JUMPNODE_COLOR,	// WMC
@@ -690,8 +699,10 @@ enum : int {
 	OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
 	OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
+	OP_SET_GUARD_RANGE, //MjnMixael + The Force
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
+	OP_PROP_CREATE,     // MjnMixael
 	OP_WEAPON_CREATE,	// Goober5000
 	OP_SET_OBJECT_SPEED_X, // Deprecated by wookieejedi
 	OP_SET_OBJECT_SPEED_Y, // Deprecated by wookieejedi
@@ -889,6 +900,7 @@ enum : int {
 	OP_DESTROY_INSTANTLY_WITH_DEBRIS,	// Asteroth
 	OP_TRIGGER_ANIMATION_NEW,	// Lafiel
 	OP_UPDATE_MOVEABLE,	// Lafiel
+	OP_ADVANCE_MOVEABLE, // Lafiel
 	OP_NAV_SET_COLOR, 	// Goober5000
 	OP_NAV_SET_VISITED_COLOR, 	// Goober5000
 	OP_CONTAINER_ADD_TO_LIST,	// Karajorma/jg18
@@ -1102,7 +1114,7 @@ enum class sexp_mode
 #define SEXP_ATOM				2
 
 // flags for sexpressions -- masked onto the end of the type field
-#define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be persistant across missions
+#define SEXP_FLAG_PERSISTENT				(1<<31)		// should this sexp node be kept across missions, i.e. not freed -- note, NOT the same as variable/container persistence
 #define SEXP_FLAG_VARIABLE					(1<<30)
 
 // sexp variable definitions
@@ -1126,6 +1138,18 @@ enum class sexp_mode
 #define SEXP_VARIABLE_NETWORK				(1<<28)
 #define SEXP_VARIABLE_SAVE_TO_PLAYER_FILE	(1<<27)
 
+// There are three types of persistence for variables and containers:
+// 1. No persistence: the value is only kept for the duration of a mission's gameplay
+// 2. Campaign-persistence: the value is scoped to a campaign, and has no value outside the campaign
+// 3. Player-persistence: the value is scoped to the player/pilot file, and can be referenced in any campaign
+// And there are two ways that persistent variables/containers are saved:
+// 1. When the mission progresses with an outcome that is "accepted" by the player
+// 2. When the mission closes in any way (progress, quit, restart)
+// So, there can be four combinations of persistence (campaign/player times progress/close).  When persistent variables
+// were first implemented, there was an assumption that player-persistence implied save-on-close, and that
+// campaign-persistence implied save-on-progress, and the original mission parsing code reflects that.  But after the
+// 2018 rework, either type can be used with either save.  The 2018 rework also introduced new terminology:
+// "eternal" means player-persistent, and "non-eternal" means campaign-persistent.
 #define SEXP_VARIABLE_IS_PERSISTENT (SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS|SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE)
 
 #define BLOCK_EXP_SIZE					6
@@ -1179,19 +1203,23 @@ enum sexp_error_check
 
 	SEXP_CHECK_NONOP_ARGS,              // non-operator has arguments
 	SEXP_CHECK_OP_EXPECTED,             // operator expected, but found data instead
+	SEXP_CHECK_DATA_EXPECTED,           // data expected, but found operator instead
 	SEXP_CHECK_UNKNOWN_OP,              // unrecognized operator
 	SEXP_CHECK_TYPE_MISMATCH,           // return type or data type mismatch
-	SEXP_CHECK_BAD_ARG_COUNT,           // argument count in incorrect
+	SEXP_CHECK_BAD_ARG_COUNT,           // argument count is incorrect
+	SEXP_CHECK_BAD_ARG_COUNT_BENIGN,    // ditto, but don't prevent the mission from loading
 	SEXP_CHECK_UNKNOWN_TYPE,            // unrecognized return type of data type
 
 	SEXP_CHECK_INVALID_NUM = 101,       // number is not valid
 	SEXP_CHECK_INVALID_SHIP,            // invalid ship name
+	SEXP_CHECK_INVALID_PROP,            // invalid prop name
 	SEXP_CHECK_INVALID_WING,            // invalid wing name
 	SEXP_CHECK_INVALID_SUBSYS,          // invalid subsystem
 	SEXP_CHECK_INVALID_IFF,             // invalid iff string
 	SEXP_CHECK_INVALID_POINT,           // invalid point
 	SEXP_CHECK_NEGATIVE_NUM,            // negative number wasn't allowed
 	SEXP_CHECK_INVALID_SHIP_WING,       // invalid ship/wing
+	SEXP_CHECK_INVALID_SHIP_PROP,       // invalid ship/prop
 	SEXP_CHECK_INVALID_SHIP_TYPE,       // invalid ship type
 	SEXP_CHECK_UNKNOWN_MESSAGE,         // invalid message
 	SEXP_CHECK_INVALID_PRIORITY,        // invalid priority for a message
@@ -1361,7 +1389,8 @@ struct sexp_cached_data
 	}
 };
 
-typedef struct sexp_node {
+struct sexp_node
+{
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
@@ -1371,11 +1400,11 @@ typedef struct sexp_node {
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
 
-	sexp_cached_data *cache;	// Goober5000
+	std::unique_ptr<sexp_cached_data> cache;	// Goober5000
 	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
 
 	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
-} sexp_node;
+};
 
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)
@@ -1456,6 +1485,7 @@ extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
+extern gamesnd_id sexp_get_sound_index(int node);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
 const char *opr_type_name(sexp_opr_t opr_type);
@@ -1467,7 +1497,7 @@ extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, con
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern bool sexp_query_type_match(int opf, int opr);
-extern int sexp_match_closest_operator(const SCP_string &str, int opf);
+extern int sexp_match_closest_operator(const SCP_string &str, int opf, size_t min = SCP_string::npos);
 extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();
@@ -1477,8 +1507,9 @@ struct ship_registry_entry;
 struct wing;
 
 // Goober5000 - stuff with caching
-// (included in the header file because Lua uses the first three)
+// (included in the header file because Lua uses the first four)
 extern const ship_registry_entry *eval_ship(int node);
+extern const prop* eval_prop(int node);
 extern wing *eval_wing(int node);
 extern int sexp_get_variable_index(int node);
 extern int sexp_atoi(int node);
@@ -1508,7 +1539,6 @@ bool sexp_replace_variable_names_with_values(char *text, int max_len);	// Goober
 bool sexp_replace_variable_names_with_values(SCP_string &text);	// Goober5000
 int get_nth_variable_index(int nth, int variable_type);	// Karajorma
 int sexp_variable_count();
-int sexp_campaign_file_variable_count();	// Goober5000
 int sexp_variable_typed_count(int sexp_variables_index, int variable_type); // Karajorma
 void sexp_variable_delete(int index);
 void sexp_variable_sort();

@@ -18,8 +18,9 @@ DECLARE_ADE_OBJ(l_Vector, vec3d);
 //I initially store the matrix in this struct.
 enum class MatrixState {
 	Fine,
-	MatrixOutOfdate,
-	AnglesOutOfDate
+	MatrixOutOfDate,
+	AnglesOutOfDate,
+	NeedsOrthonormalize		// matrix is not orthonormal; orthogonalize before use; angles are also stale
 };
 struct matrix_h {
  private:

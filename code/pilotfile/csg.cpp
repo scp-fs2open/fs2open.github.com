@@ -78,7 +78,7 @@ void pilotfile::csg_read_info()
 	//       this is not necessarily fatal
 	//
 
-	// ship list (NOTE: may contain more than MAX_SHIP_CLASSES)
+	// ship list (NOTE: may contain more ship classes than this mod defines)
 	list_size = cfread_int(cfp);
 
 	for (idx = 0; idx < list_size; idx++) {
@@ -90,7 +90,7 @@ void pilotfile::csg_read_info()
 		ship_list.push_back(ilist);
 	}
 
-	// weapon list (NOTE: may contain more than MAX_WEAPON_TYPES)
+	// weapon list (NOTE: may contain more weapon classes than this mod defines)
 	list_size = cfread_int(cfp);
 
 	for (idx = 0; idx < list_size; idx++) {
@@ -163,7 +163,7 @@ void pilotfile::csg_read_info()
 
 		if (allowed) {
 			if (ship_list[idx].index >= 0) {
-				Campaign.ships_allowed[ship_list[idx].index] = 1;
+				Campaign.ships_allowed.insert(ship_list[idx].index);
 			} else {
 				mprintf(("Found invalid ship \"%s\" in campaign save file. Skipping...\n", ship_list[idx].name.c_str()));
 			}
@@ -177,7 +177,7 @@ void pilotfile::csg_read_info()
 
 		if (allowed) {
 			if (weapon_list[idx].index >= 0) {
-				Campaign.weapons_allowed[weapon_list[idx].index] = 1;
+				Campaign.weapons_allowed.insert(weapon_list[idx].index);
 			} else {
 				mprintf(("Found invalid weapon \"%s\" in campaign save file. Skipping...\n",
 				         weapon_list[idx].name.c_str()));
@@ -247,12 +247,12 @@ void pilotfile::csg_write_info()
 
 	// allowed ships
 	for (idx = 0; idx < ship_info_size(); idx++) {
-		cfwrite_ubyte(Campaign.ships_allowed[idx], cfp);
+		cfwrite_ubyte(Campaign.ships_allowed.contains(idx) ? 1 : 0, cfp);
 	}
 
 	// allowed weapons
 	for (idx = 0; idx < weapon_info_size(); idx++) {
-		cfwrite_ubyte(Campaign.weapons_allowed[idx], cfp);
+		cfwrite_ubyte(Campaign.weapons_allowed.contains(idx) ? 1 : 0, cfp);
 	}
 
 	// single/campaign squad name & image
@@ -567,22 +567,26 @@ void pilotfile::csg_read_loadout()
 	cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, cfp);
 	cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, cfp);
 
-	// ship pool
+	// clear out any values from a previously loaded CSG
+	Player_loadout.ship_pool.clear();
+	Player_loadout.weapon_pool.clear();
+
+	// ship pool (-1 means the class is not in the loadout, which is the same as absent)
 	list_size = ship_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
-		if (ship_list[idx].index >= 0) {
+		if (ship_list[idx].index >= 0 && count != -1) {
 			Player_loadout.ship_pool[ship_list[idx].index] = count;
 		}
 	}
 
-	// weapon pool
+	// weapon pool (0 means the class is not in the loadout, which is the same as absent)
 	list_size = weapon_list.size();
 	for (idx = 0; idx < list_size; idx++) {
 		count = cfread_int(cfp);
 
-		if (weapon_list[idx].index >= 0) {
+		if (weapon_list[idx].index >= 0 && count != 0) {
 			Player_loadout.weapon_pool[weapon_list[idx].index] = count;
 		}
 	}
@@ -677,14 +681,14 @@ void pilotfile::csg_write_loadout()
 	cfwrite_string_len(Player_loadout.filename, cfp);
 	cfwrite_string_len(Player_loadout.last_modified, cfp);
 
-	// ship pool
+	// ship pool (absent classes are not in the loadout, i.e. -1)
 	for (idx = 0; idx < ship_info_size(); idx++) {
-		cfwrite_int(Player_loadout.ship_pool[idx], cfp);
+		cfwrite_int(Player_loadout.ship_pool.value_or(idx, -1), cfp);
 	}
 
-	// weapon pool
+	// weapon pool (absent classes are not in the loadout, i.e. 0)
 	for (idx = 0; idx < weapon_info_size(); idx++) {
-		cfwrite_int(Player_loadout.weapon_pool[idx], cfp);
+		cfwrite_int(Player_loadout.weapon_pool.value_or(idx, 0), cfp);
 	}
 
 	// play ship loadout
@@ -895,7 +899,7 @@ void pilotfile::csg_read_redalert()
 
 			// this is quite likely a *bad* thing if it doesn't happen
 			if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
-				Red_alert_ship_status.push_back( ras );
+				Red_alert_ship_status.push_back( std::move(ras) );
 			}
 		}
 	}
@@ -924,7 +928,7 @@ void pilotfile::csg_read_redalert()
 			rws.total_destroyed = cfread_int(cfp);
 			rws.total_vanished = cfread_int(cfp);
 
-			Red_alert_wing_status.push_back(rws);
+			Red_alert_wing_status.push_back(std::move(rws));
 		}
 	}
 
@@ -1183,7 +1187,13 @@ void pilotfile::csg_read_variables()
 			temp_var.type = cfread_int(cfp);
 			cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
 			cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
-			Campaign.persistent_variables.push_back(temp_var);
+			Campaign.persistent_variables.push_back(std::move(temp_var));
+
+			// eternal variables belong in the player file
+			Assert(!(temp_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE));
+			if (temp_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+				Campaign.persistent_variables.pop_back();
+			}
 		}
 	}
 
@@ -1202,7 +1212,7 @@ void pilotfile::csg_read_variables()
 				temp_var.type = cfread_int(cfp);
 				cfread_string_len(temp_var.text, TOKEN_LENGTH, cfp);
 				cfread_string_len(temp_var.variable_name, TOKEN_LENGTH, cfp);
-				Campaign.red_alert_variables.push_back(temp_var);
+				Campaign.red_alert_variables.push_back(std::move(temp_var));
 			}
 		}
 	}
@@ -1217,11 +1227,9 @@ void pilotfile::csg_write_variables()
 	cfwrite_int((int)Campaign.persistent_variables.size(), cfp);
 
 	for (idx = 0; idx < (int)Campaign.persistent_variables.size(); idx++) {
-		if (!(Campaign.persistent_variables[idx].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-			cfwrite_int(Campaign.persistent_variables[idx].type, cfp);
-			cfwrite_string_len(Campaign.persistent_variables[idx].text, cfp);
-			cfwrite_string_len(Campaign.persistent_variables[idx].variable_name, cfp);
-		}
+		cfwrite_int(Campaign.persistent_variables[idx].type, cfp);
+		cfwrite_string_len(Campaign.persistent_variables[idx].text, cfp);
+		cfwrite_string_len(Campaign.persistent_variables[idx].variable_name, cfp);
 	}
 
 	cfwrite_int((int)Campaign.red_alert_variables.size(), cfp);
@@ -1499,6 +1507,12 @@ void pilotfile::csg_read_containers()
 		Campaign.persistent_containers.emplace_back();
 		auto& container = Campaign.persistent_containers.back();
 		csg_read_container(container);
+
+		// eternal containers belong in the player file
+		Assert(!container.is_eternal());
+		if (container.is_eternal()) {
+			Campaign.persistent_containers.pop_back();
+		}
 	}
 
 	Campaign.red_alert_containers.clear();
@@ -1540,7 +1554,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 			container.map_data.emplace(temp_key, temp_buf);
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 
@@ -1551,7 +1565,6 @@ void pilotfile::csg_write_containers()
 	cfwrite_int((int)Campaign.persistent_containers.size(), cfp);
 
 	for (const auto& container : Campaign.persistent_containers) {
-		Assert(!container.is_eternal()); // eternal containers should be written to player file
 		csg_write_container(container);
 	}
 
@@ -1581,7 +1594,7 @@ void pilotfile::csg_write_container(const sexp_container &container)
 			cfwrite_string_len(key_data.second.c_str(), cfp);
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 
@@ -1601,8 +1614,8 @@ void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 
 	// zero out allowed ships/weapons
 	if (reset_ships_and_weapons) {
-		memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-		memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+		Campaign.ships_allowed.clear();
+		Campaign.weapons_allowed.clear();
 	}
 
 	// reset campaign status

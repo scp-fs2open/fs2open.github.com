@@ -32,14 +32,20 @@ class LabUi {
 	static void build_object_list();
 	static void build_asteroid_list();
 	static void build_debris_list();
-	void build_background_list() const;
+	static void build_prop_list();
+	static void build_prop_subtype_list();
+	static void build_background_list();
 	void show_render_options();
 	void show_object_options() const;
+	static void show_controls_reference();
 	void show_object_selector() const;
 	void show_background_selector() const;
 	void build_toolbar_entries();
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
+	static void build_shadow_method_combobox();
+	static void build_max_rt_shadow_lights_slider();
+	static void build_rt_shadow_bias_sliders();
 	void build_tone_mapper_combobox();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
@@ -50,9 +56,9 @@ class LabUi {
 		object* objp,
 		ship* shipp) const;
 	void build_weapon_options(ship* shipp) const;
-	void build_primary_weapon_combobox(SCP_string& text,
+	static void build_primary_weapon_combobox(SCP_string& text,
 		weapon_info* wip,
-		int& primary_slot) const;
+		int& primary_slot) ;
 	void build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
 	static void build_dock_test_options(ship* shipp);
 	static void build_bay_test_options(ship_info* sip);
@@ -86,6 +92,10 @@ class LabUi {
 	bool show_object_selection_dialog = true;
 	bool show_object_options_dialog = false;
 	bool show_background_selection_dialog = true;
+	bool show_controls_reference_dialog = false;
+
+	// used to track the "Reset View" function
+	bool reset_view = false;
 
 	// used to track the "Close Lab" function
 	bool close_lab = false;
@@ -114,6 +124,8 @@ class LabUi {
 	bool show_weapons = false;
 	bool show_emissive_lighting = false;
 	bool show_particles = true;
+	bool use_orthographic_projection = false;
+	bool show_orientation_widget = true;
 	
 	std::optional<vec3d> volumetrics_pos_backup = std::nullopt;
 };

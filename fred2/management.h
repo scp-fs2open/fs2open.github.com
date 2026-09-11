@@ -29,6 +29,7 @@ extern waypoint* cur_waypoint;
 extern waypoint_list* cur_waypoint_list;
 extern int Update_ship;
 extern int Update_wing;
+extern int Update_prop;
 
 extern ai_goal_list Ai_goal_list[];
 extern int Ai_goal_list_size;
@@ -63,8 +64,8 @@ CString get_display_name_for_text_box(const char *orig_name);
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void set_physics_controls();
 int dup_object(object* objp);
-int create_object_on_grid(int waypoint_instance = -1);
-int create_object(vec3d* pos, int waypoint_instance = -1);
+int create_object_on_grid(int waypoint_instance = -1, bool prop = false);
+int create_object(vec3d* pos, int waypoint_instance = -1, bool prop = false);
 int create_player(vec3d* pos, matrix* orient, int type = -1);
 void create_new_mission();
 void reset_mission();
@@ -78,7 +79,7 @@ int delete_object(int obj);
 int delete_object(object* ptr);
 int delete_ship(int ship);
 void delete_marked();
-void delete_reinforcement(int num);
+void delete_reinforcement(const char *name);
 int delete_ship_from_wing(int ship = cur_ship);
 int find_free_wing();
 int query_object_in_wing(int obj = cur_object_index);
@@ -89,14 +90,15 @@ void clear_menu(CMenu* ptr);
 void generate_wing_popup_menu(CMenu* mptr, int first_id, int state);
 void generate_ship_popup_menu(CMenu* mptr, int first_id, int state, int filter = 0);
 int string_lookup(const CString& str1, char* strlist[], int max);
+void clean_up_selections();
 int update_dialog_boxes();
 void set_cur_wing(int wing);
 int gray_menu_tree(CMenu* base);
 int query_initial_orders_conflict(int wing);
 int query_initial_orders_empty(ai_goal* ai_goals);
-int set_reinforcement(char* name, int state);
+int set_reinforcement(const char* name, int state);
 int get_docking_list(int model_index);
-int rename_ship(int ship, const char* name);
+int rename_ship(int ship, const char* name, bool update_display_name = true);
 void fix_ship_name(int ship);
 int internal_integrity_check();
 void correct_marking();
@@ -114,9 +116,6 @@ const char* get_order_name(ai_goal_mode order);
 void object_moved(object* ptr);
 int invalidate_references(const char* name, sexp_ref_type type);
 int query_whole_wing_marked(int wing);
-void generate_weaponry_usage_list(int team, int* arr);
-void generate_weaponry_usage_list(int* arr, int wing);
-void generate_ship_usage_list(int* arr, int wing);
 
 CJumpNode* jumpnode_get_by_name(const CString& name);
 
@@ -129,11 +128,16 @@ extern void management_add_ships_to_combo(CComboBox* box, int flags);
 
 // Goober5000
 extern int wing_is_player_wing(int wing);
-extern void update_custom_wing_indexes();
-extern void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
-extern void stuff_special_arrival_anchor_name(char* buf, int anchor_num, int retail_format);
 extern void update_texture_replacements(const char* old_name, const char* new_name);
 
-extern void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len);
+// Load a button bitmap, remapping its background colors to system colors as needed.
+// This mirrors the color substitution MFC performs for toolbar bitmaps.  Caller owns
+// the returned HBITMAP.
+extern HBITMAP load_btnface_mapped(UINT id);
+
+// Build an icon from a button bitmap resource, treating the given color as transparent.
+// Icons, unlike bitmaps, render correctly grayed when the button is disabled.  Caller
+// owns the returned HICON and must call DestroyIcon on it when done.
+extern HICON load_button_icon(UINT id, COLORREF transparent);
 
 #endif

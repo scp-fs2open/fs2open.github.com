@@ -34,10 +34,6 @@ extern int fred_parse_flag;
 extern int Token_found_flag;
 
 
-#define	COMMENT_CHAR	(char)';'
-#define	EOLN			(char)0x0a
-#define CARRIAGE_RETURN (char)0x0d
-
 enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
 
 #define	F_NAME					1
@@ -84,13 +80,15 @@ extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore
 extern int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash = false);
 
 extern void consolidate_double_characters(char *str, char ch);
+extern void consolidate_double_characters(SCP_string &str, char ch);
 
 // for limiting strings that may be very long; useful for dialog boxes
 char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);
 
 // white space
-extern int is_white_space(char ch);
-extern int is_white_space(unicode::codepoint_t cp);
+extern bool is_white_space(char ch);
+extern bool is_white_space(unicode::codepoint_t cp);
+extern size_t find_white_space(const char *str);
 extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
@@ -102,8 +100,9 @@ extern void drop_leading_white_space(SCP_string &str);
 extern void drop_white_space(SCP_string &str);
 
 // gray space
-extern int is_gray_space(char ch);
+extern bool is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
+extern size_t find_gray_space(const char *str);
 extern void ignore_gray_space(const char **pp = nullptr);
 
 // other
@@ -165,6 +164,7 @@ extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for,
 extern int stuff_float(float *f, bool optional = false);
 extern int stuff_int(int *i, bool optional = false);
 extern int stuff_long(long *l, bool optional = false);
+extern int stuff_uint64(std::uint64_t *l, bool optional = false);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_int_optional(int *i);
 extern int stuff_float_optional(float *f);
@@ -247,17 +247,14 @@ void parse_string_flag_list_special(Flagset& dest, const special_flag_def_list_n
 }
 
 template<class T>
-void stuff_flagset(T *dest) {
-    long l = 0;
-    stuff_long(&l);
+void stuff_flagset(T *dest)
+{
+    std::uint64_t val = 0;
+    stuff_uint64(&val);
 
-	if (l < 0) {
-		error_display(0, "Expected flagset value but got negative value %lu!\n", l);
-		l = 0;
-	}
-    dest->from_u64((std::uint64_t) l);
+    dest->from_u64(val);
 
-    diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
+    diag_printf("Stuffed flagset: " UINT64_T_ARG "\n", dest->to_u64());
 }
 
 extern size_t stuff_int_list(int *ilp, size_t max_ints, ParseLookupType lookup_type = ParseLookupType::RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
@@ -392,6 +389,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);
 extern int optional_string_fred(const char *pstr, const char *end = NULL, const char *end2 = NULL);
+extern int required_string_one_of_fred(int arg_count, ...);
 
 // Goober5000
 extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
@@ -411,8 +409,9 @@ extern char *stristr(char *str, const char *substr);
 extern bool can_construe_as_integer(const char *text);
 
 // Goober5000 (ditto for C++)
-extern void vsprintf(SCP_string &dest, const char *format, va_list ap);
+extern void vsprintf(SCP_string &dest, const char *format, va_list ap, size_t write_offset = 0);
 extern void sprintf(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+extern void sprintf_concat(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);

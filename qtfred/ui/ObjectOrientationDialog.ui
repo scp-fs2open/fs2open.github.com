@@ -223,7 +223,7 @@
           <widget class="QGroupBox" name="transformSettingsGroupBox">
            <layout class="QVBoxLayout" name="transformVerticalLayout">
             <item>
-             <widget class="QRadioButton" name="transformIndependantlyRadioButton">
+             <widget class="QRadioButton" name="transformIndependentlyRadioButton">
               <property name="text">
                <string>Transform Objects Independently</string>
               </property>

@@ -23,6 +23,7 @@
 #include "wing.h"
 
 #include "ai/aigoals.h"
+#include "ai/ai.h"
 #include "globalincs/utility.h"
 #include "hud/hudets.h"
 #include "hud/hudshield.h"
@@ -34,7 +35,6 @@
 #include "object/objectdock.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
-#include "scripting/api/objs/message.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
@@ -343,7 +343,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 	return ade_set_args(L, "s", name);
 }
 
-ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Ship name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.  Beware of setting the name to the name of an existing ship!", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
 	const char* s = nullptr;
@@ -355,10 +355,18 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 
 	ship *shipp = &Ships[objh->objp()->instance];
 
-	if(ADE_SETTING_VAR && s != nullptr) {
+	if(ADE_SETTING_VAR && s != nullptr)
+	{
+		int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+		Assertion(ship_entry_index >= 0, "Ship %s must be in the ship registry!", shipp->ship_name);
+
 		auto len = sizeof(shipp->ship_name);
 		strncpy(shipp->ship_name, s, len);
 		shipp->ship_name[len - 1] = 0;
+
+		// need to update the ship registry too
+		if (ship_entry_index >= 0)
+			ship_registry_rename(ship_entry_index, shipp->ship_name, true);
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);
@@ -784,20 +792,21 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
-		// we have a different target, or are clearng the target
+		// we have a different target, or are clearing the target
 		if(newh && newh->isValid())	{
-			aip->target_objnum = newh->objnum;
-			aip->target_signature = newh->sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objnum);
 
-			if (aip == Player_ai)
+			if (aip == Player_ai) {
+				// prevent hud_target_change_check() from restoring the wrong targeted subsystem
+				if (newh->objp()->type == OBJ_SHIP)
+					Ships[newh->objp()->instance].last_targeted_subobject[Player_num] = nullptr;
+
 				hud_shield_hit_reset(newh->objp());
+			}
 		} else if (lua_isnil(L, 2)) {
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -825,25 +834,21 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 	{
 		if(newh && newh->isValid())
 		{
-			if (aip == Player_ai) {
-				if (aip->target_signature != newh->objh.sig)
-					hud_shield_hit_reset(newh->objh.objp());
+			// this must be checked before the signature is updated in set_target_objnum
+			if (aip == Player_ai && aip->target_signature != newh->objh.sig)
+				hud_shield_hit_reset(newh->objh.objp());
 
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objh.objnum);
+			set_targeted_subsys(aip, newh->ss, newh->objh.objnum);
+
+			if (aip == Player_ai)
 				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
-			}
-
-			aip->target_objnum = newh->objh.objnum;
-			aip->target_signature = newh->objh.sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 		}
 		else
 		{
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-
-			set_targeted_subsys(aip, NULL, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -1272,7 +1277,7 @@ ADE_VIRTVAR(DepartureLocation, l_Ship, "string", "The ship's departure location"
 	return ship_getset_location_helper(L, &ship::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
 }
 
-static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
+static int ship_getset_anchor_helper(lua_State* L, anchor_t ship::* field)
 {
 	object_h* objh;
 	const char* s = nullptr;
@@ -1286,10 +1291,11 @@ static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? anchor_t::invalid() : anchor_t(ship_registry_get_index(s));
 	}
 
-	return ade_set_args(L, "s", (shipp->*field >= 0) ? Parse_names[shipp->*field].c_str() : "<no anchor>");
+	auto anchor_entry = ship_registry_get(shipp->*field);
+	return ade_set_args(L, "s", anchor_entry ? anchor_entry->name : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Ship, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
@@ -1331,8 +1337,8 @@ extern int sendMessage_sub(lua_State* L, const void* sender, int messageSource, 
 
 ADE_FUNC(sendMessage,
 	l_Ship,
-	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL]",
-	"Sends a message from the given ship with the given priority.<br>"
+	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL /* MESSAGE_PRIORITY_* */]",
+	"Sends a message from the given ship with the given MESSAGE_PRIORITY_* priority.<br>"
 	"If delay is specified, the message will be delayed by the specified time in seconds.",
 	"boolean",
 	"true if successful, false otherwise")
@@ -1610,6 +1616,48 @@ ADE_FUNC(fireSecondary, l_Ship, NULL, "Fires ship secondary bank(s)", "number", 
 	return ade_set_args(L, "i", ship_fire_secondary(objh->objp(), 0));
 }
 
+ADE_FUNC(callSupport,
+	l_Ship,
+	nullptr,
+	"Forces this ship to request support rearm/repair if it's a valid ship type, not docked, and support is allowed.",
+	"boolean",
+	"True if a support request was issued, false otherwise")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh))) {
+		return ade_set_error(L, "b", false);
+	}
+
+	if (!objh->isValid()) {
+		return ade_set_error(L, "b", false);
+	}
+
+	auto objp = objh->objp();
+	auto shipp = &Ships[objp->instance];
+	auto aip = &Ai_info[shipp->ai_index];
+	auto sip = &Ship_info[shipp->ship_info_index];
+
+	if (!sip->is_fighter_bomber()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (object_is_docked(objp)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	if (!is_support_allowed(objp)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	ai_issue_rearm_request(objp);
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid",
 	gameversion::version(22, 0, 0, 0),
 	"To account for the new animation tables, please use getSubmodelAnimationTime()")
@@ -1647,7 +1695,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
@@ -2250,6 +2298,23 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 	return Ship_info[shipp->ship_info_index].animations.updateMoveable(model_get_instance(shipp->model_instance_num), name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(advanceSubmodelMoveableToFinal, l_Ship, "string name",
+	"Advances a moveable animation to its final state immediately. Name is the name of the moveable.",
+	"boolean", "True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* name = nullptr;
+
+	if (!ade_get_args(L, "os", l_Ship.GetPtr(&objh), &name))
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp()->instance];
+	return Ship_info[shipp->ship_info_index].animations.advanceMoveableToFinal(model_get_instance(shipp->model_instance_num), name) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;
@@ -2839,6 +2904,23 @@ ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All 
 		return ADE_RETURN_NIL;
 
 	return jettison_helper(L, docker_objh, jettison_speed, 2);
+}
+
+ADE_FUNC(isDockLeader, l_Ship, nullptr, "Returns whether this ship is currently docked and is the dock leader for its docked group", "boolean", "True if this ship is docked and is the dock leader, false otherwise, nil if ship handle is invalid")
+{
+	object_h* objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (objh == nullptr || !objh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (!object_is_docked(objh->objp()))
+		return ADE_RETURN_FALSE;
+
+	auto shipp = &Ships[objh->objp()->instance];
+	return shipp->flags[Ship::Ship_Flags::Dock_leader] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(AddElectricArc, l_Ship, "vector firstPoint, vector secondPoint, number duration, number width, [number segment_depth, boolean persistent_points]",

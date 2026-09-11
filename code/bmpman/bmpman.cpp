@@ -13,6 +13,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define BMPMAN_INTERNAL
 
+#include "globalincs/pstypes.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "bmpman/bm_internal.h"
@@ -32,6 +33,7 @@
 #include "tgautils/tgautils.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "ktxutils/ktxutils.h"
 
 #include <cctype>
 #include <climits>
@@ -59,8 +61,8 @@ size_t bm_texture_ram = 0;
 int Bm_paging = 0;
 
 // Extension type lists
-const BM_TYPE bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX };
-const char *bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx" };
+const BM_TYPE bm_type_list[] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_PNG, BM_TYPE_JPG, BM_TYPE_PCX, BM_TYPE_KTX };
+const char* bm_ext_list[] = { ".dds", ".tga", ".png", ".jpg", ".pcx", ".ktx" };
 const int BM_NUM_TYPES = sizeof(bm_type_list) / sizeof(bm_type_list[0]);
 
 const BM_TYPE bm_ani_type_list[] = { BM_TYPE_EFF, BM_TYPE_ANI, BM_TYPE_PNG };
@@ -82,7 +84,12 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
-SCP_map<int,ubyte*> bm_lookup_cache;
+struct bm_lookup_cache_entry {
+	ubyte* data;
+	int width;
+	int height;
+};
+SCP_map<int, bm_lookup_cache_entry> bm_lookup_cache;
 
 /**
  * How much RAM bmpman can use for textures.
@@ -143,30 +150,31 @@ bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames) {
 // Declaration of private functions and templates(declared as static type func(type param);)
 
 bitmap_lookup::bitmap_lookup(int bitmap_num):
-	Bitmap_data(NULL)
+	Bitmap_data(nullptr),
+	Width(0),
+	Height(0),
+	Num_channels(3)
 {
 	if ( !bm_is_valid(bitmap_num) ) return;
-
-	Num_channels = 3;
 
 	if ( bm_has_alpha_channel(bitmap_num) ) {
 		Num_channels = 4;
 	}
 
-	bitmap_entry *be = bm_get_entry(bitmap_num);
-	
-	Width = be->bm.w;
-	Height = be->bm.h;
-
-
 	auto cache_search = bm_lookup_cache.find(bitmap_num);
 	if (cache_search == bm_lookup_cache.end()) {
-		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+		// The texture in graphics memory may be smaller than the bitmap itself, e.g. when mipmap levels
+		// are culled at lower texture detail settings, so the readback reports the dimensions of the
+		// data it actually returns.
+		Bitmap_data = gr_get_bitmap_from_texture(bitmap_num, &Width, &Height);
 
-		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
-		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+		if (Bitmap_data != nullptr) {
+			bm_lookup_cache.insert({bitmap_num, {Bitmap_data, Width, Height}});
+		}
 	} else {
-		Bitmap_data = cache_search->second;
+		Bitmap_data = cache_search->second.data;
+		Width = cache_search->second.width;
+		Height = cache_search->second.height;
 	}
 }
 
@@ -189,6 +197,11 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
+	// without an alpha channel there is nothing to look up, and indexing channel 3 would read out of bounds
+	if ( Num_channels < 4 ) {
+		return 1.0f;
+	}
+
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
 
@@ -197,7 +210,7 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 
 void clear_bm_lookup_cache() {
 	for(auto &iter: bm_lookup_cache) {
-		free(iter.second);
+		vm_free(iter.second.data);
 	}
 	bm_lookup_cache.clear();
 }
@@ -205,7 +218,7 @@ void clear_bm_lookup_cache() {
 /**
  * Converts the bitmap referenced by bmp to the type specified by flags
  */
-static void bm_convert_format(bitmap *bmp, ushort flags);
+static void bm_convert_format(bitmap *bmp, uint flags);
 
 /**
  * Frees a bitmap's data if it can
@@ -598,8 +611,8 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 		return -1;
 
 	// make sure that we have valid data
+	Assertion(data != nullptr, "No valid data received for 3D Bitmap creation!");
 	if (data == nullptr) {
-		UNREACHABLE("No valid data received for 3D Bitmap creation!");
 		return -1;
 	}
 
@@ -639,7 +652,7 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 	return n;
 }
 
-void bm_convert_format(bitmap *bmp, ushort flags) {
+void bm_convert_format(bitmap *bmp, uint flags) {
 	int idx;
 
 	// no transparency for 24 bpp images
@@ -901,7 +914,7 @@ void bm_get_frame_usage(int *ntotal, int *nnew) {
 #endif
 }
 
-int bm_get_info(int handle, int *w, int * h, ushort* flags, int *nframes, int *fps) {
+int bm_get_info(int handle, int *w, int * h, uint* flags, int *nframes, int *fps) {
 	bitmap * bmp;
 
 	if (!bm_inited) return -1;
@@ -1055,6 +1068,24 @@ int bm_is_compressed(int num) {
 	case BM_TYPE_CUBEMAP_DXT5:
 		return DDS_CUBEMAP_DXT5;
 
+	case BM_TYPE_ETC2_RGB:
+		return KTX_ETC2_RGB;
+
+	case BM_TYPE_ETC2_SRGB:
+		return KTX_ETC2_SRGB;
+
+	case BM_TYPE_ETC2_RGBA_EAC:
+		return KTX_ETC2_RGBA_EAC;
+
+	case BM_TYPE_ETC2_SRGBA_EAC:
+		return KTX_ETC2_SRGBA_EAC;
+
+	case BM_TYPE_ETC2_RGBA1:
+		return KTX_ETC2_RGB_A1;
+
+	case BM_TYPE_ETC2_SRGBA1:
+		return KTX_ETC2_SRGB_A1;
+
 	default:
 		return 0;
 	}
@@ -1148,6 +1179,16 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 			return -1;
 		}
 	}
+	// its a KTX file
+	else if (type == BM_TYPE_KTX) {
+		int ktx_ct;
+		int ktx_error = ktx1_read_header(filename, img_cfp, w, h, bpp, &ktx_ct, mm_lvl, size);
+		if (ktx_error != KTX1_ERROR_NONE) {
+			mprintf(("ktx: could not open '%s'\n", filename));
+			return -1;
+		}
+		*c_type = (BM_TYPE)ktx_ct;
+	}
 	// if its a tga file
 	else if (type == BM_TYPE_TGA) {
 		int tga_error = targa_read_header(filename, img_cfp, w, h, bpp, NULL);
@@ -1181,7 +1222,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 		}
 	}
 	else {
-		UNREACHABLE("Unknown file type specified! This is probably a coding error.");
+		UNREACHABLE("Unknown file type %d specified! This is probably a coding error.", type);
 
 		return -1;
 	}
@@ -1361,6 +1402,8 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 		c_type = BM_TYPE_JPG;
 	} else if (!stricmp(NOX("pcx"), ext)) {
 		c_type = BM_TYPE_PCX;
+	} else if (!stricmp(NOX("ktx"), ext)) {
+		c_type = BM_TYPE_KTX;
 	} else {
 		mprintf(("BMPMAN: Unknown file type in EFF parse!\n"));
 		return false;
@@ -1390,7 +1433,7 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 /**
 * Lock an image files data into memory
 */
-static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
+static int bm_load_image_data(int handle, int bpp, uint flags, bool nodebug)
 {
 	BM_TYPE c_type = BM_TYPE_NONE;
 	int true_bpp;
@@ -1480,6 +1523,10 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 
 		case BM_TYPE_3D:
 			bm_lock_user(handle, bs, bmp, true_bpp, flags, false);
+			break;
+
+		case BM_TYPE_KTX:
+			bm_lock_ktx1(handle, bs, bmp, true_bpp, flags);
 			break;
 
 		default:
@@ -1941,7 +1988,7 @@ int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **
 	return -1;
 }
 
-bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
+bitmap * bm_lock(int handle, int bpp, uint flags, bool nodebug) {
 	bitmap			*bmp;
 
 	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
@@ -2038,7 +2085,7 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 	return bmp;
 }
 
-void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, ushort flags) {
+void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, uint flags) {
 	anim				*the_anim;
 	anim_instance	*the_anim_instance;
 	bitmap			*bm;
@@ -2164,7 +2211,7 @@ void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, usho
 }
 
 
-void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort /*flags*/) {
+void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, uint /*flags*/) {
 	auto be = &bs->entry;
 	int first_frame = be->info.ani.first_frame;
 	auto first_entry = bm_get_entry(first_frame);
@@ -2214,7 +2261,7 @@ void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort 
 }
 
 
-void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /*flags*/) {
+void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*flags*/) {
 	ubyte *data = NULL;
 	int error;
 	ubyte dds_bpp = 0;
@@ -2278,7 +2325,7 @@ void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /
 #endif
 }
 
-void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort /*flags*/) {
+void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint /*flags*/) {
 	ubyte *data = NULL;
 	int d_size = 0;
 	int jpg_error = JPEG_ERROR_INVALID;
@@ -2325,7 +2372,7 @@ void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort /*fla
 #endif
 }
 
-void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
+void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags) {
 	ubyte *data;
 	int pcx_error;
 	char filename[MAX_FILENAME_LEN];
@@ -2370,7 +2417,7 @@ void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /*flags*/) {
+void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*flags*/) {
 	ubyte *data = NULL;
 	//assume 32 bit - libpng should expand everything
 	int d_size;
@@ -2415,7 +2462,7 @@ void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, ushort /
 #endif
 }
 
-void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
+void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags) {
 	ubyte *data = NULL;
 	int byte_size;
 	char filename[MAX_FILENAME_LEN];
@@ -2474,7 +2521,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags, bool convert) {
+void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags, bool convert) {
 	auto be = &bs->entry;
 
 	// Unload any existing data
@@ -2767,6 +2814,21 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 			frame_entry->used_flags = BMP_TEX_CUBEMAP;
 			continue;
 
+		case BM_TYPE_ETC2_RGB:
+		case BM_TYPE_ETC2_SRGB:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGB8;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA1:
+		case BM_TYPE_ETC2_SRGBA1:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGBA1;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA_EAC:
+		case BM_TYPE_ETC2_SRGBA_EAC:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGBA8;
+			continue;
+
 		default:
 			continue;
 		}
@@ -2810,6 +2872,21 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 		case BM_TYPE_CUBEMAP_DXT3:
 		case BM_TYPE_CUBEMAP_DXT5:
 			entry->used_flags = BMP_TEX_CUBEMAP;
+			continue;
+
+		case BM_TYPE_ETC2_RGB:
+		case BM_TYPE_ETC2_SRGB:
+			entry->used_flags = BMP_TEX_ETC2_RGB8;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA1:
+		case BM_TYPE_ETC2_SRGBA1:
+			entry->used_flags = BMP_TEX_ETC2_RGBA1;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA_EAC:
+		case BM_TYPE_ETC2_SRGBA_EAC:
+			entry->used_flags = BMP_TEX_ETC2_RGBA8;
 			continue;
 
 		default:
@@ -3397,38 +3474,67 @@ bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animat
 	}
 	return false;
 }
-SDL_Surface* bm_to_sdl_surface(int handle) {
+
+SDL_Surface* bm_to_sdl_surface(int handle)
+{
 	Assertion(bm_is_valid(handle), "%d is no valid bitmap handle!", handle);
 
-	int w;
-	int h;
-
-	bm_get_info(handle, &w, &h, nullptr, nullptr);
-	Uint32 rmask, gmask, bmask, amask;
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		amask = 0x000000ff;
-#else
-	rmask = 0x00ff0000;
-	gmask = 0x0000ff00;
-	bmask = 0x000000ff;
-	amask = 0xff000000;
-#endif
-
-	SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-	if (SDL_LockSurface(bitmapSurface) < 0) {
-		return nullptr;
-	}
 	bitmap* bmp = bm_lock(handle, 32, BMP_TEX_XPARENT);
 
-	memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), static_cast<size_t>(w * h * 4));
+	auto bitmapSurface = SDL_CreateSurface(bmp->w, bmp->h, SDL_PIXELFORMAT_BGRA32);
+
+	if (bitmapSurface) {
+		memcpy(bitmapSurface->pixels, reinterpret_cast<void *>(bmp->data),
+			   bmp->w * bmp->h * (bmp->bpp >> 3));
+	}
 
 	bm_unlock(handle);
-	SDL_UnlockSurface(bitmapSurface);
+	bm_unload(handle);
 
 	return bitmapSurface;
 
+}
+
+// copied bm_lock_dds and adjusted for ktx. missing BIG_ENDIAN
+void bm_lock_ktx1(int handle, bitmap_slot* bs, bitmap* bmp, int bpp, uint flags)
+{
+	(void)bpp;
+	(void)flags;
+	ubyte* data = nullptr;
+	ubyte ktx_bpp = 0;
+	int ktx_error = KTX1_ERROR_NONE;
+	char filename[MAX_FILENAME_LEN];
+
+	auto be = &bs->entry;
+
+	bm_free_data(bs);
+
+	Assert(be->mem_taken > 0);
+	Assert(&be->bm == bmp);
+
+	data = (ubyte*)bm_malloc(handle, be->mem_taken);
+	if (!data)
+		return;
+	memset(data, 0, be->mem_taken);
+
+	// make sure we are using the correct filename in the case of an EFF.
+	// this will populate filename[] whether it's EFF or not
+	EFF_FILENAME_CHECK;
+
+	ktx_error = ktx1_read_bitmap(filename, data, &ktx_bpp);
+
+	if (ktx_error != KTX1_ERROR_NONE) 
+	{
+		mprintf(("KTX: read_bitmap error=%d file='%s'\n", ktx_error, filename));
+		bm_free_data(bs);
+		return;
+	}
+
+	bmp->bpp = ktx_bpp;
+	bmp->data = (ptr_u)data;
+	bmp->flags = 0;
+
+#ifdef BMPMAN_NDEBUG
+	Assert(be->data_size > 0);
+#endif
 }

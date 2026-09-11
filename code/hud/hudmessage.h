@@ -16,7 +16,7 @@
 #include "graphics/generic.h"
 #include "hud/hud.h"
 
-#define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
+#define MAX_HUD_LINE_BUF			256			// maximum size for a HUD message
 
 // If these are changed, the lua 'addMessageToScrollback' method in mission.cpp should be updated.
 #define HUD_SOURCE_COMPUTER		0
@@ -30,13 +30,20 @@
 
 #define HUD_SOURCE_TEAM_OFFSET	8	// must be higher than any previous hud source
 
-typedef struct HUD_message_data {
+struct HUD_message_data
+{
 	SCP_string text;
 	int source;  // where this message came from so we can color code it
 	int x;
-} HUD_message_data;
 
-typedef struct line_node {
+	HUD_message_data() = default;
+	HUD_message_data(SCP_string _text, int _source, int _x)
+		: text(std::move(_text)), source(_source), x(_x)
+	{}
+};
+
+struct line_node
+{
 	fix time;  // timestamp when message was added
 	int timer_padding; // the mission timer padding, in seconds, at the time the message was added
 	int source;  // who/what the source of the message was (for color coding)
@@ -44,7 +51,11 @@ typedef struct line_node {
 	int y;
 	int underline_width;
 	SCP_string text;
-} line_node;
+
+	line_node(fix _time, int _timer_padding, int _source, int _x, int _y, int _underline_width, SCP_string _text)
+		: time(_time), timer_padding(_timer_padding), source(_source), x(_x), y(_y), underline_width(_underline_width), text(std::move(_text))
+	{}
+};
 
 extern SCP_vector<line_node> Msg_scrollback_vec;
 
@@ -67,12 +78,12 @@ int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
 void HUD_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 void hud_sourced_print(int source, const char *msg);
+void hud_sourced_print(int source, const SCP_string &msg);
 void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from specified source
 void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
 void HUD_add_to_scrollback(const char *text, int source);
-void hud_add_line_to_scrollback(const char *text, int source, int t, int x, int y, int w);
 void hud_add_msg_to_scrollback(const char *text, int source, int t);
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES

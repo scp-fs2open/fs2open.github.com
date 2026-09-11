@@ -20,7 +20,7 @@ class jumpnode_dlg : public CDialog
 // Construction
 public:
 	int bypass_errors;
-	int update_data();
+	int update_data(int redraw = 1);
 	void initialize_data(int full_update);
 	void OnOK();
 	BOOL Create();

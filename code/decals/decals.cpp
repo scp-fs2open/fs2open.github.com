@@ -185,11 +185,20 @@ Decal::Decal() {
 	vm_vec_make(&scale, 1.f, 1.f, 1.f);
 }
 
+void Decal::markForDeletion() {
+	orig_obj_type = OBJ_NONE;
+}
+
 bool Decal::isValid() const  {
 	if (!object.isValid()) {
 		return false;
 	}
 	if (object.objp()->flags[Object::Object_Flags::Should_be_dead]) {
+		return false;
+	}
+
+	if (orig_obj_type == OBJ_NONE) {
+		//Decal should be cleared
 		return false;
 	}
 
@@ -219,7 +228,7 @@ bool Decal::isValid() const  {
 			return false;
 		}
 	} else {
-		Assertion(false, "Only ships are currently supported for decals!");
+		UNREACHABLE("Only ships are currently supported for decals!");
 		return false;
 	}
 
@@ -258,7 +267,7 @@ float smoothstep(float edge0, float edge1, float x) {
 namespace decals {
 
 void initialize() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		Decal_system_active = false;
 		return;
 	}
@@ -350,6 +359,10 @@ void pageInDecal(const creation_info& info) {
 			  "Invalid decal handle detected!");
 
 	DecalDefinitions[info.definition_handle].pageIn();
+}
+
+bool decalSystemActive() {
+	return Decal_system_active && Decal_option_active && gr_is_capable(gr_capability::CAPABILITY_INSTANCED_RENDERING);
 }
 
 void initializeMission() {
@@ -450,7 +463,7 @@ inline static void renderDecal(graphics::decal_draw_list& draw_list, const Decal
 }
 
 void renderAll() {
-	if (!Decal_system_active || !Decal_option_active || !gr_is_capable(gr_capability::CAPABILITY_INSTANCED_RENDERING)) {
+	if (!decalSystemActive()) {
 		return;
 	}
 
@@ -465,6 +478,24 @@ void renderAll() {
 
 			*iter = active_decals.back();
 			active_decals.pop_back();
+			continue;
+		}
+
+		// next decal, only increment the iterator if we found a valid value so nothing gets skipped
+		// otherwise we may skip a decal which can then get through to the draw_list loop while being invalid
+		++iter;
+	}
+
+	for (auto iter = active_single_frame_decals.begin(); iter != active_single_frame_decals.end();) {
+		if (!iter->isValid()) {
+			// if we're sitting on the very last element, popping-back will invalidate the iterator!
+			if (iter + 1 == active_single_frame_decals.end()) {
+				active_single_frame_decals.pop_back();
+				break;
+			}
+
+			*iter = active_single_frame_decals.back();
+			active_single_frame_decals.pop_back();
 			continue;
 		}
 
@@ -533,7 +564,16 @@ void addDecal(creation_info& info, const object* host, int submodel, const vec3d
 }
 
 void addSingleFrameDecal(Decal&& info) {
-	active_single_frame_decals.push_back(info);
+	active_single_frame_decals.push_back(std::move(info));
+}
+
+void invalidateForShip(const ship* shipp) {
+	int objnum = shipp->objnum;
+	for (Decal& decal : active_decals) {
+		if (decal.object.objnum == objnum) {
+			decal.markForDeletion();
+		}
+	}
 }
 
 }

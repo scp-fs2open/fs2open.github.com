@@ -1145,7 +1145,7 @@ int popup(int flags, int nchoices, ... )
 
 	// get msg text
 	format = va_arg( args, char * );
-	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text), format, args);
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 	
@@ -1202,7 +1202,7 @@ int popup_till_condition(int (*condition)(), ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text), format, args);
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 
@@ -1313,8 +1313,8 @@ bool popup_conditional_create(int flags, ...)
 	char *format, *s;
 	va_list args;
 
+	Assertion(!Popup_is_active, "Can't create a conditional popup while another popup is open!");
 	if (Popup_is_active) {
-		UNREACHABLE("Can't create a conditional popup while another popup is open!");
 		return false;
 	}
 
@@ -1333,7 +1333,7 @@ bool popup_conditional_create(int flags, ...)
 
 	// get msg text
 	format = va_arg( args, char * );
-	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text)-1, format, args);
+	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text), format, args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
 
 	va_end(args);

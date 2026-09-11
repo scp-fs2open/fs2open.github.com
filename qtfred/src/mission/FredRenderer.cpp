@@ -21,12 +21,15 @@
 #include <ship/shipfx.h>
 #include <jumpnode/jumpnode.h>
 #include <asteroid/asteroid.h>
+#include <prop/prop.h>
 #include <iff_defs/iff_defs.h>
 #include <math/fvi.h>
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
+#include <cfile/cfile.h>
 
 #include "mission/object.h"
+#include "prop/prop.h"
 #include "weapon/weapon.h"
 
 
@@ -38,8 +41,6 @@ const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 
 const int FRED_COLOUR_WHITE = 0xffffff;
 const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
-
-const int BRIEFING_LOOKAT_POINT_ID = 99999;
 
 void enable_htl() {
 	gr_set_proj_matrix((4.0f / 9.0f) * PI * FRED_DEFAULT_HTL_FOV,
@@ -77,8 +78,6 @@ void init_fred_colors() {
 int grid_colors_inited = 0;
 color Fred_grid_bright;
 color Fred_grid_dark;
-color Fred_grid_bright_aa;
-color Fred_grid_dark_aa;
 
 void draw_asteroid_field() {
 	int i, j;
@@ -144,7 +143,9 @@ void draw_asteroid_field() {
 	}
 }
 
-void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
+enum class subsystem_highlight { BOUNDING_BOX, LABEL };
+
+void fredhtl_render_subsystem_highlight(fso::fred::subsys_to_render *s2r, subsystem_highlight highlight, float label_scale = 1.0f)
 {
 	vertex text_center;
 	SCP_string buf;
@@ -158,123 +159,79 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 
 	auto bsp = &pm->submodel[subobj_num];
 
-	vec3d front_top_left = bsp->bounding_box[7];
-	vec3d front_top_right = bsp->bounding_box[6];
-	vec3d front_bot_left = bsp->bounding_box[4];
-	vec3d front_bot_right = bsp->bounding_box[5];
-	vec3d back_top_left = bsp->bounding_box[3];
-	vec3d back_top_right = bsp->bounding_box[2];
-	vec3d back_bot_left = bsp->bounding_box[0];
-	vec3d back_bot_right = bsp->bounding_box[1];
+	// transform bounding box corners from submodel-local space to world space
+	// and draw edges as thick camera-facing quads via g3_render_rod
+	color clr_red;
+	gr_init_color(&clr_red, 255, 32, 32);
+	float rod_width = 2.0f;
 
-	gr_set_color(255, 32, 32);
+	auto transform_and_draw_box = [&](const vec3d *bbox, int sobj_num) {
+		vec3d corners[8];
+		for (int i = 0; i < 8; i++)
+			model_instance_local_to_global_point(&corners[i], &bbox[i], pm, pmi, sobj_num, &objp->orient, &objp->pos);
 
-	enable_htl();
+		// 12 edges of a box: front face, back face, connecting edges
+		// bounding_box indices: 0=BBL 1=BBR 2=BTR 3=BTL 4=FBL 5=FBR 6=FTR 7=FTL
+		static const int edges[12][2] = {
+			{7, 6}, {6, 5}, {5, 4}, {4, 7},  // front face
+			{3, 2}, {2, 1}, {1, 0}, {0, 3},  // back face
+			{7, 3}, {6, 2}, {4, 0}, {5, 1},  // connecting edges
+		};
 
-	// get into the frame of reference of the submodel
-	int g3_count = 1;
-	g3_start_instance_matrix(&objp->pos, &objp->orient, true);
-	int mn = subobj_num;
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
-	{
-		g3_start_instance_matrix(&pm->submodel[mn].offset, &pmi->submodel[mn].canonical_orient, true);
-		g3_count++;
-		mn = pm->submodel[mn].parent;
-	}
-
-
-	//draw a cube around the subsystem
-	g3_draw_htl_line(&front_top_left, &front_top_right);
-	g3_draw_htl_line(&front_top_right, &front_bot_right);
-	g3_draw_htl_line(&front_bot_right, &front_bot_left);
-	g3_draw_htl_line(&front_bot_left, &front_top_left);
-
-	g3_draw_htl_line(&back_top_left, &back_top_right);
-	g3_draw_htl_line(&back_top_right, &back_bot_right);
-	g3_draw_htl_line(&back_bot_right, &back_bot_left);
-	g3_draw_htl_line(&back_bot_left, &back_top_left);
-
-	g3_draw_htl_line(&front_top_left, &back_top_left);
-	g3_draw_htl_line(&front_top_right, &back_top_right);
-	g3_draw_htl_line(&front_bot_left, &back_bot_left);
-	g3_draw_htl_line(&front_bot_right, &back_bot_right);
-
-
-	//draw another cube around a gun for a two-part turret
-	if ((ss->system_info->turret_gun_sobj >= 0) && (ss->system_info->turret_gun_sobj != ss->system_info->subobj_num))
-	{
-		bsp_info *bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
-
-		front_top_left = bsp_turret->bounding_box[7];
-		front_top_right = bsp_turret->bounding_box[6];
-		front_bot_left = bsp_turret->bounding_box[4];
-		front_bot_right = bsp_turret->bounding_box[5];
-		back_top_left = bsp_turret->bounding_box[3];
-		back_top_right = bsp_turret->bounding_box[2];
-		back_bot_left = bsp_turret->bounding_box[0];
-		back_bot_right = bsp_turret->bounding_box[1];
-
-		g3_start_instance_matrix(&bsp_turret->offset, &pmi->submodel[ss->system_info->turret_gun_sobj].canonical_orient, true);
-
-		g3_draw_htl_line(&front_top_left, &front_top_right);
-		g3_draw_htl_line(&front_top_right, &front_bot_right);
-		g3_draw_htl_line(&front_bot_right, &front_bot_left);
-		g3_draw_htl_line(&front_bot_left, &front_top_left);
-
-		g3_draw_htl_line(&back_top_left, &back_top_right);
-		g3_draw_htl_line(&back_top_right, &back_bot_right);
-		g3_draw_htl_line(&back_bot_right, &back_bot_left);
-		g3_draw_htl_line(&back_bot_left, &back_top_left);
-
-		g3_draw_htl_line(&front_top_left, &back_top_left);
-		g3_draw_htl_line(&front_top_right, &back_top_right);
-		g3_draw_htl_line(&front_bot_left, &back_bot_left);
-		g3_draw_htl_line(&front_bot_right, &back_bot_right);
-
-		g3_done_instance(true);
-	}
-
-	for (int i = 0; i < g3_count; i++)
-		g3_done_instance(true);
-
-	disable_htl();
-
-	// get text
-	buf = ss->system_info->subobj_name;
-
-	// add weapons if present
-	for (int i = 0; i < ss->weapons.num_primary_banks; ++i)
-	{
-		int wi = ss->weapons.primary_bank_weapons[i];
-		if (wi >= 0)
-		{
-			buf += "\n";
-			buf += Weapon_info[wi].name;
+		for (const auto& edge : edges) {
+			vec3d pts[2] = { corners[edge[0]], corners[edge[1]] };
+			g3_render_rod(&clr_red, 2, pts, rod_width);
 		}
-	}
-	for (int i = 0; i < ss->weapons.num_secondary_banks; ++i)
-	{
-		int wi = ss->weapons.secondary_bank_weapons[i];
-		if (wi >= 0)
-		{
-			buf += "\n";
-			buf += Weapon_info[wi].name;
-		}
-	}
+	};
 
-	//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
-	vec3d center_pt;
-	vm_vec_unrotate(&center_pt, &bsp->offset, &objp->orient);
-	vm_vec_add2(&center_pt, &objp->pos);
-	g3_rotate_vertex(&text_center, &center_pt);
-	g3_project_vertex(&text_center);
-	if (!(text_center.flags & PF_OVERFLOW)) {
-		gr_set_color_fast(&colour_white);
-		gr_string((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str());
+	if (highlight == subsystem_highlight::BOUNDING_BOX) {
+		enable_htl();
+
+		// draw a box around the subsystem
+		transform_and_draw_box(bsp->bounding_box, subobj_num);
+
+		// draw another box around a gun for a two-part turret
+		if ((ss->system_info->turret_gun_sobj >= 0) && (ss->system_info->turret_gun_sobj != ss->system_info->subobj_num))
+			transform_and_draw_box(pm->submodel[ss->system_info->turret_gun_sobj].bounding_box, ss->system_info->turret_gun_sobj);
+
+		disable_htl();
+	} else {
+		// get text
+		buf = ss->system_info->subobj_name;
+
+		// add weapons if present
+		for (int i = 0; i < ss->weapons.num_primary_banks; ++i)
+		{
+			int wi = ss->weapons.primary_bank_weapons[i];
+			if (wi >= 0)
+			{
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+		for (int i = 0; i < ss->weapons.num_secondary_banks; ++i)
+		{
+			int wi = ss->weapons.secondary_bank_weapons[i];
+			if (wi >= 0)
+			{
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+
+		//draw the text.  rotate the center of the subsystem into place before finding out where to put the text
+		vec3d center_pt;
+		vm_vec_unrotate(&center_pt, &bsp->offset, &objp->orient);
+		vm_vec_add2(&center_pt, &objp->pos);
+		g3_rotate_vertex(&text_center, &center_pt);
+		g3_project_vertex(&text_center);
+		if (!(text_center.flags & PF_OVERFLOW)) {
+			gr_string_outlined((int)text_center.screen.xyw.x, (int)text_center.screen.xyw.y, buf.c_str(), &colour_white, &colour_black, 2, GR_RESIZE_FULL, label_scale);
+		}
 	}
 }
 
-void render_active_rect(bool box_marking, const Marking_box& marking_box) {
+void render_active_rect(bool box_marking, const fso::fred::Marking_box& marking_box) {
 	if (box_marking) {
 		gr_set_color(255, 255, 255);
 		gr_line(marking_box.x1, marking_box.y1, marking_box.x1, marking_box.y2);
@@ -299,8 +256,7 @@ void draw_compass_arrow(vec3d* v0) {
 
 }
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 ViewSettings::ViewSettings() {
 }
 
@@ -308,12 +264,21 @@ FredRenderer::FredRenderer(os::Viewport* targetView) : _targetView(targetView) {
 	init_fred_colors();
 }
 FredRenderer::~FredRenderer() {
+	freeVolumetricModel();
 }
 void FredRenderer::setViewport(EditorViewport* viewport) {
 	Assertion(_viewport == nullptr, "Resetting viewport is not supported");
 	Assertion(viewport != nullptr, "Invalid viewport specified!");
 
 	_viewport = viewport;
+}
+
+void FredRenderer::freeVolumetricModel() {
+	if (_volumetric_model_num >= 0) {
+		model_unload(_volumetric_model_num);
+		_volumetric_model_num = -1;
+	}
+	_volumetric_cached_pof.clear();
 }
 
 void FredRenderer::render_grid(grid* gridp) {
@@ -325,24 +290,13 @@ void FredRenderer::render_grid(grid* gridp) {
 	if (!grid_colors_inited) {
 		grid_colors_inited = 1;
 
-		gr_init_alphacolor(&Fred_grid_dark_aa, 64, 64, 64, 255);
-		gr_init_alphacolor(&Fred_grid_bright_aa, 128, 128, 128, 255);
 		gr_init_color(&Fred_grid_dark, 64, 64, 64);
 		gr_init_color(&Fred_grid_bright, 128, 128, 128);
 	}
 
 	ncols = gridp->ncols;
 	nrows = gridp->nrows;
-	if (double_fine_gridlines) {
-		ncols *= 2;
-		nrows *= 2;
-	}
-
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_dark_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_dark);
-	}
+	gr_set_color_fast(&Fred_grid_dark);
 
 	//	Draw the column lines.
 	for (i = 0; i <= ncols; i++) {
@@ -357,11 +311,7 @@ void FredRenderer::render_grid(grid* gridp) {
 	nrows = gridp->nrows / 2;
 
 	// now draw the larger, brighter gridlines that is x10 the scale of smaller one.
-	if (view().Aa_gridlines) {
-		gr_set_color_fast(&Fred_grid_bright_aa);
-	} else {
-		gr_set_color_fast(&Fred_grid_bright);
-	}
+	gr_set_color_fast(&Fred_grid_bright);
 
 	for (i = 0; i <= ncols; i++) {
 		g3_draw_htl_line(&gridp->gpoints5[i], &gridp->gpoints6[i]);
@@ -375,32 +325,6 @@ void FredRenderer::render_grid(grid* gridp) {
 	gr_zbuffer_set(1);
 }
 
-void FredRenderer::hilight_bitmap() {
-	/*
-int i;
-vertex p[4];
-
-if (Starfield_bitmaps[Cur_bitmap].bitmap_index == -1)  // can't draw if no bitmap
-return;
-
-for (i=0; i<4; i++)
-{
-g3_rotate_faraway_vertex(&p[i], &Starfield_bitmaps[Cur_bitmap].points[i]);
-if (p[i].codes & CC_BEHIND)
-return;
-
-g3_project_vertex(&p[i]);
-if (p[i].flags & PF_OVERFLOW)
-return;
-}
-
-gr_set_color(255, 255, 255);
-g3_draw_line(&p[0], &p[1]);
-g3_draw_line(&p[1], &p[2]);
-g3_draw_line(&p[2], &p[3]);
-g3_draw_line(&p[3], &p[0]);
-*/
-}
 
 void FredRenderer::display_distances() {
 	char buf[20];
@@ -427,7 +351,7 @@ void FredRenderer::display_distances() {
 						if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 							sprintf(buf, "%.1f", vm_vec_dist(&objp->pos, &o2->pos));
 							gr_set_color_fast(&colour_white);
-							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf);
+							gr_string((int)v.screen.xyw.x, (int)v.screen.xyw.y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 						}
 				}
 
@@ -478,7 +402,18 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 			}
 		}
 
+		if ((objp->type == OBJ_PROP) && !view().Show_props) {
+			render = 0;
+		}
+
+		if ((objp->type == OBJ_JUMP_NODE) && !view().Show_jump_nodes) {
+			render = 0;
+		}
+
 		if (objp->flags[Object::Object_Flags::Hidden]) {
+			render = 0;
+		}
+		if (!_viewport->isObjectVisibleInLayer(objp)) {
 			render = 0;
 		}
 
@@ -498,16 +433,20 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 					} else if (objp->type == OBJ_WAYPOINT) {
 						int idx;
 						waypoint_list* wp_list = find_waypoint_list_with_instance(objp->instance, &idx);
-						Assert(wp_list != NULL);
+						Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", objp->instance);
+						if (wp_list == nullptr) {
+							objp = GET_NEXT(objp);
+							continue;
+						}
 						sprintf(buf, "%s\nWaypoint %d", wp_list->get_name(), idx + 1);
-					} else if (objp->type == OBJ_POINT) {
-						if (objp->instance == BRIEFING_LOOKAT_POINT_ID)
-							strcpy_s(buf, "Camera lookat point");
-						else
-							strcpy_s(buf, "Briefing icon");
 					} else if (objp->type == OBJ_JUMP_NODE) {
 						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
 						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
+					} else if (objp->type == OBJ_PROP) {
+						auto propp = prop_id_lookup(objp->instance);
+						if (propp != nullptr) {
+							sprintf(buf, "%s\n", propp->prop_name);
+						}
 					} else
 						Assert(0);
 				}
@@ -529,7 +468,7 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						gr_set_color_fast(&colour_white);
 					}
 
-					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf);
+					gr_string((int) v.screen.xyw.x, (int) v.screen.xyw.y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 				}
 			}
 		}
@@ -548,15 +487,26 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 	if (cur_object_index != -1) {
 		if (Objects[cur_object_index].type == OBJ_SHIP) {
 			object* objp = &Objects[cur_object_index];
+			if (!_viewport->isObjectVisibleInLayer(objp)) {
+				return;
+			}
 
 			// if this option is checked, we want to render info for all subsystems, not just the ones we select with K and Shift-K
 			if (view().Highlight_selectable_subsys) {
 				auto shipp = &Ships[objp->instance];
 
-				for (auto ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss)) {
+				// first pass: draw all bounding boxes
+				for (auto ss : list_range(&shipp->subsys_list)) {
 					if (ss->system_info->subobj_num != -1) {
 						subsys_to_render s2r = { true, objp, ss };
-						fredhtl_render_subsystem_bounding_box(&s2r);
+						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::BOUNDING_BOX);
+					}
+				}
+				// second pass: draw all labels
+				for (auto ss : list_range(&shipp->subsys_list)) {
+					if (ss->system_info->subobj_num != -1) {
+						subsys_to_render s2r = { true, objp, ss };
+						fredhtl_render_subsystem_highlight(&s2r, subsystem_highlight::LABEL, view().Label_font_scale);
 					}
 				}
 			}
@@ -569,7 +519,8 @@ void FredRenderer::display_active_ship_subsystem(subsys_to_render& Render_subsys
 				}
 
 				if (Render_subsys.do_render) {
-					fredhtl_render_subsystem_bounding_box(&Render_subsys);
+					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::BOUNDING_BOX);
+					fredhtl_render_subsystem_highlight(&Render_subsys, subsystem_highlight::LABEL, view().Label_font_scale);
 				} else {
 					cancel_display_active_ship_subsystem(Render_subsys);
 				}
@@ -588,8 +539,8 @@ void FredRenderer::render_compass() {
 	gr_set_clip(gr_screen.max_w - 100, 0, 100, 100);
 	g3_start_frame(0); // ** Accounted for
 	// required !!!
-	vm_vec_scale_add2(&eye, &_viewport->eye_orient.vec.fvec, -1.5f);
-	g3_set_view_matrix(&eye, &_viewport->eye_orient, 1.0f);
+	vm_vec_scale_add2(&eye, &_viewport->camera.eye_orient.vec.fvec, -1.5f);
+	g3_set_view_matrix(&eye, &_viewport->camera.eye_orient, 1.0f);
 
 	v.xyz.x = 1.0f;
 	v.xyz.y = v.xyz.z = 0.0f;
@@ -621,126 +572,7 @@ void FredRenderer::render_compass() {
 	g3_end_frame(); // ** Accounted for
 }
 
-void FredRenderer::draw_orient_sphere2(int col, object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
 
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			gr_set_color((col >> 16) & 0xff, (col >> 8) & 0xff, col & 0xff);
-			g3_draw_sphere(&v, size);
-			gr_set_color(r, g, b);
-			g3_draw_sphere(&v, size * 0.75f);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::draw_orient_sphere(object* obj, int r, int g, int b) {
-	int flag = 0;
-	vertex v;
-	vec3d v1, v2;
-	float size;
-
-	size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &obj->pos) / 20.0f);
-	if (size < LOLLIPOP_SIZE) {
-		size = LOLLIPOP_SIZE;
-	}
-
-	if ((obj->type != OBJ_WAYPOINT) && (obj->type != OBJ_POINT)) {
-		flag = (vm_vec_dot(&_viewport->eye_orient.vec.fvec, &obj->orient.vec.fvec) < 0.0f);
-		v1 = v2 = obj->pos;
-		vm_vec_scale_add2(&v1, &obj->orient.vec.fvec, size);
-		vm_vec_scale_add2(&v2, &obj->orient.vec.fvec, size * 1.5f);
-
-		if (!flag) {
-			gr_set_color(192, 192, 192);
-			rpd_line(&v1, &v2);
-		}
-	}
-
-	gr_set_color(r, g, b);
-	g3_rotate_vertex(&v, &obj->pos);
-	if (!(v.codes & CC_BEHIND)) {
-		if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
-			g3_draw_sphere(&v, size);
-		}
-	}
-
-	if (flag) {
-		gr_set_color(192, 192, 192);
-		rpd_line(&v1, &v2);
-	}
-}
-
-void FredRenderer::render_model_x(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
-	vec3d gpos; //	Location of point on grid.
-	vec3d tpos;
-	float dxz;
-	plane tplane;
-	vec3d* gv;
-
-	if (!view().Show_grid_positions) {
-		return;
-	}
-
-	tplane.A = gridp->gmatrix.vec.uvec.xyz.x;
-	tplane.B = gridp->gmatrix.vec.uvec.xyz.y;
-	tplane.C = gridp->gmatrix.vec.uvec.xyz.z;
-	tplane.D = gridp->planeD;
-
-	compute_point_on_plane(&gpos, &tplane, pos);
-	dxz = vm_vec_dist(pos, &gpos) / 8.0f;
-	gv = &gridp->gmatrix.vec.uvec;
-	if (gv->xyz.x * pos->xyz.x + gv->xyz.y * pos->xyz.y + gv->xyz.z * pos->xyz.z < -gridp->planeD) {
-		gr_set_color(0, 127, 0);
-	} else {
-		gr_set_color(192, 192, 192);
-	}
-
-
-	rpd_line(&gpos, pos); //	Line from grid to object center.
-
-	tpos = gpos;
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, -dxz / 2);
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.fvec, -dxz / 2);
-
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, dxz / 2);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.fvec, dxz / 2);
-
-	rpd_line(&gpos, &tpos);
-
-	vm_vec_scale_add2(&gpos, &gridp->gmatrix.vec.rvec, dxz);
-	vm_vec_scale_add2(&tpos, &gridp->gmatrix.vec.rvec, -dxz);
-
-	rpd_line(&gpos, &tpos);
-}
 
 void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme*/) {
 	vec3d gpos; //	Location of point on grid.
@@ -787,15 +619,24 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme
 }
 
 void FredRenderer::render_one_model_htl(object* objp,
-										int cur_object_index,
-										bool Bg_bitmap_dialog) {
+										int cur_object_index) {
 	int z;
 	object* o2;
 
 	Assert(objp->type != OBJ_NONE);
+	// OBJ_POINT objects (briefing icons / camera lookat) are a FRED2-era construct.  QtFRED's
+	// briefing dialog renders its icons in its own widget and never adds them to the main
+	// object list, so encountering one here means something has gone very wrong.
+	Assertion(objp->type != OBJ_POINT, "OBJ_POINT object (instance %d) appeared in the main editor's render loop; QtFRED does not support OBJ_POINT objects.", objp->instance);
+
+	// if this object isn't fully created yet, don't render it
+	if (objp->type == OBJ_SHIP && Ships[objp->instance].create_time == 0)
+		return;
+	if (objp->type == OBJ_PROP && (!Props[objp->instance].has_value() || Props[objp->instance].value().create_time == 0))
+		return;
 
 	if (objp->type == OBJ_JUMP_NODE) {
-		return;
+		return; // jump nodes have their own render loop in render_frame
 	}
 
 	if ((objp->type == OBJ_WAYPOINT) && !view().Show_waypoints) {
@@ -816,6 +657,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 		}
 	}
 
+	if ((objp->type == OBJ_PROP) && !view().Show_props) {
+		return;
+	}
+
 	if (objp->flags[Object::Object_Flags::Hidden]) {
 		return;
 	}
@@ -824,9 +669,9 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	if (!view().Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked]))) {
 		/* don't draw the outlines we would normally draw */;
-	} else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog) {
+	} else if (OBJ_INDEX(objp) == cur_object_index) {
 		Fred_outline = FRED_COLOUR_WHITE;
-	} else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog) { // is it a marked object?
+	} else if (objp->flags[Object::Object_Flags::Marked]) { // is it a marked object?
 		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
 	} else if ((objp->type == OBJ_SHIP) && view().Show_outlines) {
 		color* iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
@@ -839,7 +684,47 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	// build flags
-	if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
+	if ((objp->type == OBJ_PROP) && (view().Show_ship_models || view().Show_outlines)) {
+		uint64_t flags = MR_NORMAL;
+
+		if (!view().Lighting_on) {
+			flags |= MR_NO_LIGHTING;
+		}
+
+		if (view().FullDetail) {
+			flags |= MR_FULL_DETAIL;
+		}
+
+		auto propp = prop_id_lookup(objp->instance);
+		if (propp == nullptr || !SCP_vector_inbounds(Prop_info, propp->prop_info_index)) {
+			return;
+		}
+
+		model_render_params render_info;
+		render_info.set_debug_flags(0);
+
+		if (Fred_outline) {
+			// use a different LOD for the wireframe to reduce visual clutter on high-poly models
+			int prop_model_num = Prop_info[propp->prop_info_index].model_num;
+			int outline_lod = std::min(view().Outline_lod, model_get(prop_model_num)->n_detail_levels - 1);
+			render_info.set_detail_level_lock(outline_lod);
+			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+			model_render_immediate(&render_info,
+								   prop_model_num,
+								   propp->model_instance_num,
+								   &objp->orient,
+								   &objp->pos);
+			render_info.set_detail_level_lock(-1);
+		}
+
+		render_info.set_flags(flags);
+		model_render_immediate(&render_info,
+							   Prop_info[propp->prop_info_index].model_num,
+							   propp->model_instance_num,
+							   &objp->orient,
+							   &objp->pos);
+	} else if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
 		uint64_t flags = 0;
 
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
@@ -851,6 +736,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		uint debug_flags = 0;
 		if (view().Show_dock_points) {
+			debug_flags |= MR_DEBUG_DOCK_POINTS;
+		}
+
+		if (view().Show_bay_paths) {
 			debug_flags |= MR_DEBUG_BAY_PATHS;
 		}
 
@@ -870,21 +759,38 @@ void FredRenderer::render_one_model_htl(object* objp,
 			flags |= MR_FULL_DETAIL;
 		}
 
+		g3_done_instance(false);
+
+		int ship_model_num = Ship_info[Ships[z].ship_info_index].model_num;
+		int ship_model_instance_num = Ships[z].model_instance_num;
+
+		// Outline pass: use a dedicated pass with MR_NO_POLYS so is_outlines_only_htl fires
+		// in the renderer. Modern HTL models don't have outline_buffer, so relying on
+		// MR_SHOW_OUTLINE_HTL alone (without MR_NO_POLYS) silently does nothing.
 		if (Fred_outline) {
-			flags |= MR_SHOW_OUTLINE_HTL;
+			model_render_params outline_info;
+			// use a different LOD for the wireframe to reduce visual clutter on high-poly models
+			int outline_lod = std::min(view().Outline_lod, model_get(ship_model_num)->n_detail_levels - 1);
+			outline_info.set_detail_level_lock(outline_lod);
+
+			outline_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
+			outline_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING);
+			model_render_immediate(&outline_info, ship_model_num, ship_model_instance_num, &objp->orient, &objp->pos);
+
+			outline_info.set_detail_level_lock(-1);
 		}
 
-		model_render_params render_info;
-		render_info.set_debug_flags(debug_flags);
-		render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
-		render_info.set_flags(flags);
+		if (view().Show_ship_models) {
+			model_render_params render_info;
+			render_info.set_debug_flags(debug_flags);
+			render_info.set_replacement_textures(model_get_instance(ship_model_instance_num)->texture_replace);
+			render_info.set_flags(flags);
+			if (Ship_info[Ships[z].ship_info_index].uses_team_colors)
+				render_info.set_team_color(Ships[z].team_name, Ships[z].secondary_team_name, Ships[z].team_change_timestamp, Ships[z].team_change_time);
+			model_render_immediate(&render_info, ship_model_num, ship_model_instance_num, &objp->orient, &objp->pos);
+		}
 
-		g3_done_instance(0);
-
-		model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
-
-		if (view().Draw_outline_at_warpin_position 
+		if (view().Draw_outline_at_warpin_position
 			&& (Ships[z].arrival_cue != Locked_sexp_true || Ships[z].arrival_delay > 0)
 			&& Ships[z].arrival_cue != Locked_sexp_false
 			&& !Ships[z].flags[Ship::Ship_Flags::No_arrival_warp])
@@ -897,9 +803,10 @@ void FredRenderer::render_one_model_htl(object* objp,
 				vec3d warpin_pos;
 				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
 
-				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
-				render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
+				model_render_params warpin_info;
+				warpin_info.set_color(65, 65, 65);	// grey; see rgba_defaults
+				warpin_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				model_render_immediate(&warpin_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
 			}
 		}
 	} else {
@@ -920,23 +827,24 @@ void FredRenderer::render_one_model_htl(object* objp,
 			g = 127;
 			b = 0;
 		} else if (objp->type == OBJ_WAYPOINT) {
-			r = 96;
-			g = 0;
-			b = 112;
-		} else if (objp->type == OBJ_POINT) {
-			if (objp->instance != BRIEFING_LOOKAT_POINT_ID) {
-				///! \fixme Briefing stuff!
-				//Assert(Briefing_dialog);
-				return;
+			waypoint_list* wpt_list = find_waypoint_list_with_instance(objp->instance);
+			if (wpt_list && wpt_list->get_has_custom_color()) {
+				r = wpt_list->get_color_r();
+				g = wpt_list->get_color_g();
+				b = wpt_list->get_color_b();
+			} else {
+				r = 96;
+				g = 0;
+				b = 112;
 			}
-
-			r = 196;
-			g = 32;
-			b = 196;
+		} else if (objp->type == OBJ_PROP) {
+			r = 255;
+			g = 255;
+			b = 255;
 		} else
 			Assert(0);
 
-		float size = fl_sqrt(vm_vec_dist(&_viewport->eye_pos, &objp->pos) / 20.0f);
+		float size = fl_sqrt(vm_vec_dist(&_viewport->camera.eye_pos, &objp->pos) / 20.0f);
 
 		if (size < LOLLIPOP_SIZE) {
 			size = LOLLIPOP_SIZE;
@@ -952,11 +860,14 @@ void FredRenderer::render_one_model_htl(object* objp,
 	}
 
 	if (objp->type == OBJ_WAYPOINT) {
-		for (auto objIdx : rendering_order) {
-			o2 = &Objects[objIdx];
-			if (o2->type == OBJ_WAYPOINT) {
-				if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1)) {
-					g3_draw_htl_line(&o2->pos, &objp->pos);
+		waypoint_list* wpt_list = find_waypoint_list_with_instance(objp->instance);
+		if (!wpt_list || !wpt_list->get_no_draw_lines()) {
+			for (auto objIdx : rendering_order) {
+				o2 = &Objects[objIdx];
+				if (o2->type == OBJ_WAYPOINT) {
+					if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1)) {
+						g3_draw_htl_line(&o2->pos, &objp->pos);
+					}
 				}
 			}
 		}
@@ -966,8 +877,66 @@ void FredRenderer::render_one_model_htl(object* objp,
 	rendering_order.push_back(OBJ_INDEX(objp));
 }
 
-void FredRenderer::render_models(int cur_object_index,
-								 bool Bg_bitmap_dialog) {
+void FredRenderer::render_volumetric_overlay() {
+	if (!The_mission.volumetrics) {
+		return;
+	}
+
+	constexpr float alpha = 0.35f;
+
+	const volumetric_nebula& neb = *The_mission.volumetrics;
+	if (!neb.get_enabled() || neb.getHullPof().empty()) {
+		return;
+	}
+
+	const SCP_string& pof = neb.getHullPof();
+	if (pof != _volumetric_cached_pof) {
+		// Stamp the cache before model_load so a re-entrant paint (e.g. from
+		// an Error() dialog pumping events on a missing POF) sees the load
+		// as already attempted and bails out instead of re-loading.
+		freeVolumetricModel();
+		_volumetric_cached_pof = pof;
+		if (cf_exists_full(pof.c_str(), CF_TYPE_MODELS)) {
+			_volumetric_model_num = model_load(pof.c_str());
+		} else {
+			mprintf(("Volumetric nebula hull POF '%s' not found; skipping editor overlay.\n", pof.c_str()));
+			if (_viewport->dialogProvider != nullptr) {
+				SCP_string msg = "Volumetric nebula hull POF '";
+				msg += pof;
+				msg += "' was not found. The nebula will render without an editor overlay until a valid POF is set in the Volumetric Nebula dialog.";
+				_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+															"Volumetric Nebula POF Missing",
+															msg,
+															{ DialogButton::Ok });
+			}
+		}
+	}
+
+	if (_volumetric_model_num < 0) {
+		return;
+	}
+
+	const auto& col = neb.getNebulaColor();
+	// Premultiply by alpha. MR_NO_TEXTURING + MR_ALL_XPARENT lands on
+	// ALPHA_BLEND_ADDITIVE (glBlendFunc(GL_ONE, GL_ONE)) which ignores
+	// src.alpha, so scaling RGB here is what actually controls intensity.
+	const int r = static_cast<int>(std::get<0>(col) * alpha * 255.0f);
+	const int g = static_cast<int>(std::get<1>(col) * alpha * 255.0f);
+	const int b = static_cast<int>(std::get<2>(col) * alpha * 255.0f);
+	const vec3d pos = neb.getPos();
+
+	enable_htl();
+
+	model_render_params fill;
+	fill.set_color(r, g, b);
+	fill.set_alpha(1.0f);
+	fill.set_flags(MR_NO_LIGHTING | MR_NO_TEXTURING | MR_NO_BATCH | MR_ALL_XPARENT);
+	model_render_immediate(&fill, _volumetric_model_num, &vmd_identity_matrix, &pos);
+
+	disable_htl();
+}
+
+void FredRenderer::render_models(int cur_object_index) {
 	gr_set_color_fast(&colour_white);
 
 	rendering_order.clear();
@@ -980,36 +949,30 @@ void FredRenderer::render_models(int cur_object_index,
 	enable_htl();
 
 	auto render_function = [&](object* objp) {
-		this->render_one_model_htl(objp,
-								   cur_object_index,
-								   Bg_bitmap_dialog);
+		if (!_viewport->isObjectVisibleInLayer(objp)) {
+			return;
+		}
+		this->render_one_model_htl(objp, cur_object_index);
 	};
 
 	obj_render_all(render_function, &f);
 
 	disable_htl();
-
-	///! \fixme Handle briefing stuff properly.
-#if 0
-    if (Briefing_dialog)
-    {
-        obj_render_all(render_one_model_briefing_screen, &f);
-        Briefing_dialog->batch_render();
-    }
-#endif
 }
 
 void FredRenderer::render_frame(int cur_object_index,
-								subsys_to_render& Render_subsys,
-								bool box_marking,
-								const Marking_box& marking_box,
-								bool Bg_bitmap_dialog) {
+	subsys_to_render& Render_subsys,
+	bool box_marking,
+	const Marking_box& marking_box,
+	qreal scale)
+{
 
 	// Make sure our OpenGL context is used for rendering
 	gr_use_viewport(_targetView);
-
+	uint32_t width = _targetView->getSize().first * scale;
+	uint32_t height = _targetView->getSize().second * scale;
 	// Resize the rendering window in case the previous size was different
-	gr_screen_resize(_targetView->getSize().first, _targetView->getSize().second);
+	gr_screen_resize(width, height);
 
 	char buf[256];
 	int x, y, w, h, inst;
@@ -1022,37 +985,6 @@ void FredRenderer::render_frame(int cur_object_index,
 
 	gr_reset_clip();
 	gr_clear();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog) {
-        CRect rect;
-
-        Fred_main_wnd->GetClientRect(rect);
-        True_rw = rect.Width();
-        True_rh = rect.Height();
-        if (Fixed_briefing_size) {
-            True_rw = Briefing_window_resolution[0];
-            True_rh = Briefing_window_resolution[1];
-
-        }
-        else {
-            if ((float)True_rh / (float)True_rw > (float)Briefing_window_resolution[1] / (float)Briefing_window_resolution[0]) {
-                True_rh = (int)((float)Briefing_window_resolution[1] * (float)True_rw / (float)Briefing_window_resolution[0]);
-
-            }
-            else {  // Fred is wider than briefing window
-                True_rw = (int)((float)Briefing_window_resolution[0] * (float)True_rh / (float)Briefing_window_resolution[1]);
-            }
-        }
-
-        g3_start_frame(0); // ** Accounted for
-        gr_set_color(255, 255, 255);
-        gr_line(0, True_rh, True_rw, True_rh);
-        gr_line(True_rw, 0, True_rw, True_rh);
-        g3_end_frame();	 // ** Accounted for
-        gr_set_clip(0, 0, True_rw, True_rh);
-    }
-#endif
 
 	g3_start_frame(1); // ** Accounted for
 	// 1 means use zbuffering
@@ -1060,36 +992,32 @@ void FredRenderer::render_frame(int cur_object_index,
 	font::set_font(font::FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 
+	// Force max star detail so the editor always shows the full Num_stars count
+	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
+	int saved_detail_stars = Detail.num_stars;
+	Detail.num_stars = MAX_DETAIL_VALUE;
 	enable_htl();
-	if (Bg_bitmap_dialog) {
-		stars_draw(view().Show_stars, 1, view().Show_stars, 0, 0);
-	} else {
-		stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
-	}
+	stars_draw(view().Show_stars, view().Show_stars, view().Show_stars, 0, 0);
 	disable_htl();
+	Detail.num_stars = saved_detail_stars;
 
 	if (view().Show_horizon) {
 		gr_set_color(128, 128, 64);
 		g3_draw_horizon_line();
 	}
 
-	if (view().Show_asteroid_field) {
-		gr_set_color(192, 96, 16);
-		draw_asteroid_field();
-	}
+	gr_set_color(192, 96, 16);
+	draw_asteroid_field();
 
 	if (view().Show_grid) {
 		render_grid(_viewport->The_grid);
 	}
-	if (Bg_bitmap_dialog) {
-		hilight_bitmap();
-	}
 
 	gr_set_color(0, 0, 64);
-	render_models(cur_object_index,
-				  Bg_bitmap_dialog);
+	render_models(cur_object_index);
+	render_volumetric_overlay();
 
 	if (view().Show_distances) {
 		display_distances();
@@ -1099,7 +1027,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	display_active_ship_subsystem(Render_subsys, cur_object_index);
 	render_active_rect(box_marking, marking_box);
 
-	if (query_valid_object(_viewport->Cursor_over)) { // display a tool-tip like infobox
+	if (query_valid_object(_viewport->Cursor_over) && _viewport->isObjectVisibleInLayer(&Objects[_viewport->Cursor_over])) { // display a tool-tip like infobox
 		pos = Objects[_viewport->Cursor_over].pos;
 		inst = Objects[_viewport->Cursor_over].instance;
 		if ((Objects[_viewport->Cursor_over].type == OBJ_SHIP) || (Objects[_viewport->Cursor_over].type == OBJ_START)) {
@@ -1122,16 +1050,18 @@ void FredRenderer::render_frame(int cur_object_index,
 		} else if (Objects[_viewport->Cursor_over].type == OBJ_WAYPOINT) {
 			int idx;
 			waypoint_list* wp_list = find_waypoint_list_with_instance(inst, &idx);
-			Assert(wp_list != NULL);
-			sprintf(buf,
-					"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
-					wp_list->get_name(),
-					idx + 1,
-					pos.xyz.x,
-					pos.xyz.y,
-					pos.xyz.z);
-		} else if (Objects[_viewport->Cursor_over].type == OBJ_POINT) {
-			sprintf(buf, "Briefing icon\n( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			Assertion(wp_list != nullptr, "Could not find waypoint list for object instance %d", inst);
+			if (wp_list == nullptr) {
+				sprintf(buf, "Waypoint %d\n( %.1f , %.1f , %.1f ) ", idx + 1, pos.xyz.x, pos.xyz.y, pos.xyz.z);
+			} else {
+				sprintf(buf,
+						"%s\nWaypoint %d\n( %.1f , %.1f , %.1f ) ",
+						wp_list->get_name(),
+						idx + 1,
+						pos.xyz.x,
+						pos.xyz.y,
+						pos.xyz.z);
+			}
 		} else {
 			sprintf(buf, "( %.1f , %.1f , %.1f ) ", pos.xyz.x, pos.xyz.y, pos.xyz.z);
 		}
@@ -1140,6 +1070,9 @@ void FredRenderer::render_frame(int cur_object_index,
 		if (!(v.codes & CC_BEHIND)) {
 			if (!(g3_project_vertex(&v) & PF_OVERFLOW)) {
 				gr_get_string_size(&w, &h, buf);
+				// scale the box to match the scaled label text
+				w = fl2i(w * view().Label_font_scale);
+				h = fl2i(h * view().Label_font_scale);
 
 				x = (int) v.screen.xyw.x;
 				y = (int) v.screen.xyw.y + 20;
@@ -1151,7 +1084,7 @@ void FredRenderer::render_frame(int cur_object_index,
 				gr_rect(x - 5, y - 5, w + 5, h + 5);
 
 				gr_set_color_fast(&colour_white);
-				gr_string(x, y, buf);
+				gr_string(x, y, buf, GR_RESIZE_FULL, view().Label_font_scale);
 			}
 		}
 	}
@@ -1159,13 +1092,30 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_set_color(0, 160, 0);
 
 	enable_htl();
-	jumpnode_render_all();
+	if (view().Show_jump_nodes) {
+		for (auto& jn : Jump_nodes) {
+			const object* jnObj = jn.GetSCPObject();
+			if (jnObj != nullptr && _viewport->isObjectVisibleInLayer(jnObj)) {
+				jn.Render(&jnObj->pos);
+			}
+		}
+	}
 	disable_htl();
 
-	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->eye_pos.xyz.x, _viewport->eye_pos.xyz.y, _viewport->eye_pos.xyz.z);
+	sprintf(buf, "(%.1f,%.1f,%.1f)", _viewport->camera.eye_pos.xyz.x, _viewport->camera.eye_pos.xyz.y, _viewport->camera.eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
+	w = fl2i(w * view().Label_font_scale);
 	gr_set_color_fast(&colour_white);
-	gr_string(gr_screen.max_w - w - 2, 2, buf);
+	gr_string(gr_screen.max_w - w - 2, 2, buf, GR_RESIZE_FULL, view().Label_font_scale);
+
+	const auto hiddenLayerCount = _viewport->getHiddenLayerCount();
+	if (hiddenLayerCount > 0) {
+		gr_set_color(255, 0, 0);
+		sprintf(buf, "%d %s Hidden",
+				hiddenLayerCount,
+				hiddenLayerCount == 1 ? "Layer" : "Layers");
+		gr_string(8, 8, buf, GR_RESIZE_FULL, view().Label_font_scale);
+	}
 
 	g3_end_frame(); // ** Accounted for
 	render_compass();
@@ -1173,14 +1123,9 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_flip();
 
 	gr_reset_clip();
-	///! \fixme Briefing related!
-#if 0
-    if (Briefing_dialog)
-        gr_set_clip(0, 0, True_rw, True_rh);
-#endif
 
 	g3_start_frame(0); // ** Accounted for
-	g3_set_view_matrix(&_viewport->eye_pos, &_viewport->eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 }
 void FredRenderer::resize(int width, int height) {
 	// Make sure the following call targets the right view port
@@ -1195,5 +1140,4 @@ ViewSettings& FredRenderer::view() {
 	return _viewport->view;
 }
 
-}
-}
+} // namespace fso::fred

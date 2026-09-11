@@ -16,6 +16,8 @@
 #include <cfloat>
 #include <limits>
 
+#include "globalincs/pstypes.h"		// for PI
+
 extern float frand();
 extern int rand_chance(float frametime, float chance = 1.0f);
 float frand_range(float min, float max);
@@ -50,6 +52,20 @@ inline bool fl_is_nan(float fl) {
 
 // convert a measurement in radians to degrees
 #define fl_degrees(fl)	(static_cast<float>((fl) * (180.0f / PI)))
+
+constexpr float DEGREE_UB = 359.99f;	// upper bound in degrees when rounding to 100ths place
+
+// convert a measurement in radians to degrees, rounding to the nearest .01 (used in FRED)
+constexpr float fl_degrees_100ths(float fl)
+{
+	float val = fl_degrees(fl);
+
+	float new_val = fl2ir(val * 100.0f) / 100.0f;
+	if (new_val > DEGREE_UB)
+		new_val -= 360.0f;
+
+	return new_val;
+}
 
 // sees if a floating point number is within a certain threshold (by default, epsilon) of zero
 inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon())

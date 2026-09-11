@@ -43,7 +43,7 @@
 #define OBJ_DEBRIS          6	//a flying piece of ship debris
 //#define OBJ_CMEASURE      7	//a countermeasure, such as chaff
 #define OBJ_GHOST           8	//so far, just a placeholder for when a player dies.
-#define OBJ_POINT           9	//generic object type to display a point in Fred.
+#define OBJ_POINT           9	// FRED2 briefing icons only; not used by QtFRED.  Deprecate with FRED2.
 #define OBJ_SHOCKWAVE       10	// a shockwave
 #define OBJ_WING            11	// not really a type used anywhere, but I need it for Fred.
 #define OBJ_OBSERVER        12	// used for multiplayer observers (possibly single player later)
@@ -51,9 +51,10 @@
 #define OBJ_JUMP_NODE       14	// A jump node object, used only in Fred.
 #define OBJ_BEAM            15	// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
 #define OBJ_RAW_POF         16	// A raw pof file. has no physics, ai or anything. Currently only used in the Lab to render tech models
+#define OBJ_PROP            17  // A prop object like a landscape. Similar to ships but is entirely non-interactable with the exception of collisions
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	17
+#define MAX_OBJECT_TYPES	18
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
@@ -119,6 +120,7 @@ typedef struct obj_flag_description {
 extern obj_flag_name Object_flag_names[];
 extern obj_flag_description Object_flag_descriptions[];
 extern const int Num_object_flag_names;
+extern const size_t Num_object_flag_descriptions;
 
 struct dock_instance;
 class model_draw_list;
@@ -248,7 +250,7 @@ extern object *Player_obj;	// Which object is the player. Has to be valid.
 // given it's pointer.  This way, we can replace it with a macro
 // to check that the pointer is valid for debugging.
 // This code will break in 64 bit builds when we have more than 2^31 objects but that will probably never happen
-#define OBJ_INDEX(objp) static_cast<int>(objp-Objects)
+#define OBJ_INDEX(objp) (static_cast<int>((objp)-Objects))
 
 /*
  *		FUNCTIONS

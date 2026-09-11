@@ -28,15 +28,22 @@ namespace api {
 ADE_OBJ(l_Vector, vec3d, "vector", "Vector object");
 
 void matrix_h::ValidateAngles() {
+	if (status == MatrixState::NeedsOrthonormalize) {
+		vm_orthogonalize_matrix(&mtx);
+		status = MatrixState::AnglesOutOfDate;
+	}
 	if (status == MatrixState::AnglesOutOfDate) {
 		vm_extract_angles_matrix(&ang, &mtx);
 		status = MatrixState::Fine;
 	}
 }
 void matrix_h::ValidateMatrix() {
-	if (status == MatrixState::MatrixOutOfdate) {
+	if (status == MatrixState::MatrixOutOfDate) {
 		vm_angles_2_matrix(&mtx, &ang);
 		status = MatrixState::Fine;
+	} else if (status == MatrixState::NeedsOrthonormalize) {
+		vm_orthogonalize_matrix(&mtx);
+		status = MatrixState::AnglesOutOfDate;	// matrix valid; angles still stale
 	}
 }
 matrix_h::matrix_h() {
@@ -49,7 +56,7 @@ matrix_h::matrix_h(const matrix* in) {
 }
 matrix_h::matrix_h(const angles* in) {
 	ang = *in;
-	status = MatrixState::MatrixOutOfdate;
+	status = MatrixState::MatrixOutOfDate;
 }
 matrix_h::matrix_h(const vec3d *fvec, const vec3d *uvec, const vec3d *rvec) {
 	vm_vector_2_matrix(&mtx, fvec, uvec, rvec);
@@ -143,9 +150,9 @@ ADE_INDEXER(l_Matrix,
 //and recalculating every time.
 
 		if (idx < 0) {
-			mh->SetStatus(MatrixState::MatrixOutOfdate);
+			mh->SetStatus(MatrixState::MatrixOutOfDate);
 		} else {
-			mh->SetStatus(MatrixState::AnglesOutOfDate);
+			mh->SetStatus(MatrixState::NeedsOrthonormalize);
 		}
 
 //Might as well put this here
@@ -205,12 +212,14 @@ ADE_FUNC(copy,
 	return ade_set_args(L, "o", l_Matrix.Set(*mh));
 }
 
-ADE_FUNC(getInterpolated,
+ADE_FUNC_DEPRECATED(getInterpolated,
 		 l_Matrix,
 		 "orientation Final, number Factor",
-		 "Returns orientation that has been interpolated to Final by Factor (0.0-1.0).  This is a pure linear interpolation with no consideration given to matrix validity or normalization.  You may want 'rotationalInterpolate' instead.",
+		 "Returns orientation that has been interpolated to Final by Factor (0.0-1.0).  This is a pure linear interpolation; the result is not generally a valid orientation matrix, though the engine will orthonormalize it before use.  Prefer 'rotationalInterpolate'.",
 		 "orientation",
-		 "Interpolated orientation, or null orientation on failure") {
+		 "Interpolated orientation, or null orientation on failure",
+		 gameversion::version(26, 0),
+		 "Use rotationalInterpolate instead.  Pure linear interpolation does not preserve matrix orthonormality.") {
 	matrix_h* oriA = NULL;
 	matrix_h* oriB = NULL;
 	float factor = 0.0f;
@@ -227,7 +236,9 @@ ADE_FUNC(getInterpolated,
 		final.a1d[i] = A->a1d[i] + (B->a1d[i] - A->a1d[i]) * factor;
 	}
 
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final)));
+	matrix_h result(&final);
+	result.SetStatus(MatrixState::NeedsOrthonormalize);
+	return ade_set_args(L, "o", l_Matrix.Set(result));
 }
 
 ADE_FUNC(rotationalInterpolate,

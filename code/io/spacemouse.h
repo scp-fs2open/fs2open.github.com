@@ -1,11 +1,8 @@
 #pragma once
 
-#include "globalincs/vmallocator.h"
+#include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 #include "io/timer.h"
-
-struct hid_device_;
-typedef hid_device_ hid_device;
 
 namespace io
 {
@@ -27,14 +24,14 @@ namespace io
 			const SpaceMouseDefinition& m_definition;
 			const int m_pollingFrequency;
 
-			hid_device* m_deviceHandle;
+			SDL_hid_device* m_deviceHandle;
 			SpaceMouseMovement m_current;
 			SCP_vector<bool> m_keypresses;
 			UI_TIMESTAMP m_lastPolled;
 			
 			void poll();
 			void pollMaybe();
-			SpaceMouse(const SpaceMouseDefinition& definition, hid_device* deviceHandle, int pollingFrequency = 10);
+			SpaceMouse(const SpaceMouseDefinition& definition, SDL_hid_device* deviceHandle, int pollingFrequency = 10);
 		public:
 			~SpaceMouse();
 
@@ -57,6 +54,15 @@ namespace io
 			@returns An optional SpaceMouse object, if found
 			*/
 			static std::unique_ptr<SpaceMouse> searchSpaceMice(int pollingFrequency = 10);
+
+			/*
+			@brief Returns a shared SpaceMouse instance for the process.
+
+			This avoids opening the same HID device from multiple call sites.
+			@param pollingFrequency Polling frequency to use when creating the shared instance.
+			@returns A pointer to the shared SpaceMouse instance, or nullptr if no supported device is present.
+			*/
+			static SpaceMouse* getSharedSpaceMouse(int pollingFrequency = 10);
 		};
 	}
 }

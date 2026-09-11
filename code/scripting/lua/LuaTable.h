@@ -110,6 +110,12 @@ class LuaTable: public LuaValue {
      */
 	~LuaTable() override;
 
+	// Since we have a user-declared destructor, we need these too.
+	LuaTable(const LuaTable&) noexcept = default;
+	LuaTable& operator=(const LuaTable&) noexcept = default;
+	LuaTable(LuaTable&&) noexcept = default;
+	LuaTable& operator=(LuaTable&&) noexcept = default;
+
 	/**
      * @brief Sets the metatable.
      *

@@ -3,6 +3,7 @@
 #include "ui_ShipCustomWarpDialog.h"
 
 #include "mission/util.h"
+#include <globalincs/globals.h>
 
 #include <ship/shipfx.h>
 #include <ui/util/SignalBlockers.h>
@@ -15,14 +16,18 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
+
+	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditAnim->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
 	} else {
 		this->setWindowTitle("Edit Warp-In Parameters");
 	}
-	updateUI(true);
+	updateUi(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -47,14 +52,18 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 		_model.reset(new ShipCustomWarpDialogModel(this, viewport, departure));
 	}
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
+
+	ui->lineEditStartSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditEndSound->setMaxLength(MAX_FILENAME_LEN - 1);
+	ui->lineEditAnim->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
 	} else {
 		this->setWindowTitle("Edit Warp-In Parameters");
 	}
-	updateUI(true);
+	updateUi(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -71,24 +80,14 @@ void ShipCustomWarpDialog::on_comboBoxType_currentIndexChanged(int index)
 	_model->setType(index);
 }
 void ShipCustomWarpDialog::on_lineEditStartSound_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditStartSound->text());
-	if (!temp.isEmpty()) {
-		_model->setStartSound(temp.toLatin1().constData());
-	} else {
-		_model->setStartSound("");
-	}
+{
+	SCP_string startSound = ui->lineEditStartSound->text().toUtf8().constData();
+	_model->setStartSound(startSound);
 }
 void ShipCustomWarpDialog::on_lineEditEndSound_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditEndSound->text());
-	if (!temp.isEmpty()) {
-		_model->setEndSound(temp.toLatin1().constData());
-	} else {
-		_model->setEndSound("");
-	}
+{
+	SCP_string endSound = ui->lineEditEndSound->text().toUtf8().constData();
+	_model->setEndSound(endSound);
 }
 void ShipCustomWarpDialog::on_doubleSpinBoxEngage_valueChanged(double value)
 {
@@ -111,14 +110,9 @@ void ShipCustomWarpDialog::on_doubleSpinBoxRadius_valueChanged(double value)
 	_model->setRadius(value);
 }
 void ShipCustomWarpDialog::on_lineEditAnim_editingFinished()
-{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditAnim->text());
-	if (!temp.isEmpty()) {
-		_model->setAnim(temp.toLatin1().constData());
-	} else {
-		_model->setAnim("");
-	}
+{
+	SCP_string anim = ui->lineEditAnim->text().toUtf8().constData();
+	_model->setAnim(anim);
 }
 void ShipCustomWarpDialog::on_checkBoxSupercap_toggled(bool state)
 {
@@ -136,7 +130,7 @@ void ShipCustomWarpDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 void ShipCustomWarpDialog::reject()
 { // Asks the user if they want to save changes, if any
@@ -150,9 +144,17 @@ void ShipCustomWarpDialog::reject()
 void ShipCustomWarpDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
-void ShipCustomWarpDialog::updateUI(const bool firstrun)
+void ShipCustomWarpDialog::updateUi(const bool firstrun)
 {
 	util::SignalBlockers blockers(this);
 	if (firstrun) {

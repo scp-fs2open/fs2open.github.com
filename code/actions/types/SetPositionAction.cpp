@@ -27,7 +27,7 @@ ActionResult SetPositionAction::execute(ProgramLocals& locals) const
 
 std::unique_ptr<Action> SetPositionAction::clone() const
 {
-	return std::unique_ptr<Action>(new SetPositionAction(*this));
+	return std::make_unique<SetPositionAction>(*this);
 }
 
 } // namespace types

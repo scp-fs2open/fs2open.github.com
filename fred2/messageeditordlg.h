@@ -29,7 +29,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CMessageEditorDlg)
 	enum { IDD = IDD_MESSAGE_EDITOR };
-	sexp_tree	m_tree;
+	sexp_tree_view	m_tree;
 	CString	m_avi_filename;
 	CString	m_wave_filename;
 	CString	m_message_text;
@@ -44,6 +44,8 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CMessageEditorDlg)
+	public:
+	virtual BOOL DestroyWindow();
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL

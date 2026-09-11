@@ -146,16 +146,5 @@ float RelativeCoordinatesDialogModel::to_degrees(float rad)
 	return normalize_degrees(deg);
 }
 
-float RelativeCoordinatesDialogModel::normalize_degrees(float deg)
-{
-	while (deg < -180.0f)
-		deg += 180.0f;
-	while (deg > 180.0f)
-		deg -= 180.0f;
-	// check for negative zero...
-	if (deg == -0.0f)
-		return 0.0f;
-	return deg;
-}
 
 } // namespace fso::fred::dialogs

@@ -182,7 +182,8 @@ ADE_VIRTVAR(isVisible,
 		current.getScene()->flags.set(Cutscene::Cutscene_Flags::Viewable, visible);
 		Pilot.save_savefile();
 	}
-	if (current.getScene()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
+	if (current.getScene()->flags.any_of(Cutscene::Cutscene_Flags::Viewable,
+			 Cutscene::Cutscene_Flags::Always_viewable) &&
 		!current.getScene()->flags[Cutscene::Cutscene_Flags::Never_viewable]) 
 	{
 		return ade_set_args(L, "b", true);
@@ -222,16 +223,6 @@ ADE_FUNC(hasCustomData, l_TechRoomCutscene, nullptr, "Detects whether the cutsce
 
 	bool result = !current.getScene()->custom_data.empty();
 	return ade_set_args(L, "b", result);
-}
-
-ADE_FUNC(isValid, l_TechRoomCutscene, NULL, "Detects whether cutscene is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	cutscene_info_h current;
-	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
-		return ADE_RETURN_NIL;
-	}
-
-	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

@@ -19,7 +19,7 @@ bool FictionViewerDialogModel::apply() {
 		_fictionViewerStages.clear();
 		Mission_music[SCORE_FICTION_VIEWER] = -1;
 	} else {
-		// Keep whatever you’ve edited in _fictionViewerStages
+		// Keep whatever you've edited in _fictionViewerStages
 		Mission_music[SCORE_FICTION_VIEWER] = _fictionMusic; // -1 for none is valid
 	}
 
@@ -52,6 +52,7 @@ void FictionViewerDialogModel::initializeData() {
 
 	// music is managed through the mission
 	_fictionMusic = Mission_music[SCORE_FICTION_VIEWER];
+	_modified = false;
 }
 
 const SCP_vector<std::pair<SCP_string, int>>& FictionViewerDialogModel::getMusicOptions()

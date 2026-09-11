@@ -3,13 +3,14 @@
 
 #include "SDLGraphicsOperations.h"
 
+#ifdef WITH_VULKAN
+#include "backends/imgui_impl_vulkan.h"
+#endif
 #include "cmdline/cmdline.h"
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#include <SDL_vulkan.h>
-#include "backends/imgui_impl_sdl.h"
+#include <SDL3/SDL_vulkan.h>
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_opengl3.h"
-#endif
 
 namespace {
 void setOGLProperties(const os::ViewPortProperties& props)
@@ -21,7 +22,11 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, props.pixel_format.blue_size);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, props.pixel_format.depth_size);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, props.pixel_format.stencil_size);
+	#ifndef USE_OPENGL_ES
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	#else
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
+	#endif
 	// disabled due to issues with implementation; may be re-enabled in future
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
@@ -33,7 +38,9 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, props.gl_attributes.major_version);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, props.gl_attributes.minor_version);
-
+#ifdef USE_OPENGL_ES 
+	SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+#endif
 	int profile;
 	switch (props.gl_attributes.profile) {
 		case os::OpenGLProfile::Core:
@@ -42,8 +49,11 @@ void setOGLProperties(const os::ViewPortProperties& props)
 		case os::OpenGLProfile::Compatibility:
 			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 			break;
+		case os::OpenGLProfile::ES:
+			profile = SDL_GL_CONTEXT_PROFILE_ES;
+			break;
 		default:
-			UNREACHABLE("Unhandled profile value!");
+			UNREACHABLE("Unhandled profile value %d!", static_cast<int>(props.gl_attributes.profile));
 			return;
 	}
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, profile);
@@ -66,11 +76,11 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	~SDLOpenGLContext() override {
-		SDL_GL_DeleteContext(_glCtx);
+		SDL_GL_DestroyContext(_glCtx);
 	}
 
 	os::OpenGLLoadProc getLoaderFunction() override {
-		return SDL_GL_GetProcAddress;
+		return reinterpret_cast<os::OpenGLLoadProc>(SDL_GL_GetProcAddress);
 	}
 
 	void makeCurrent(SDL_Window* window) {
@@ -78,7 +88,7 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	bool setSwapInterval(int status) override {
-		return SDL_GL_SetSwapInterval(status) == 0;
+		return SDL_GL_SetSwapInterval(status);
 	}
 };
 class SDLWindowViewPort: public os::Viewport {
@@ -101,7 +111,7 @@ class SDLWindowViewPort: public os::Viewport {
 	}
 	std::pair<uint32_t, uint32_t> getSize() override {
 		int width, height;
-		SDL_GetWindowSize(_window, &width, &height);
+		SDL_GetWindowSizeInPixels(_window, &width, &height);
 
 		return std::make_pair(width, height);
 	}
@@ -111,18 +121,35 @@ class SDLWindowViewPort: public os::Viewport {
 	void setState(os::ViewportState state) override {
 		switch (state) {
 			case os::ViewportState::Windowed:
-				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_TRUE);
+				SDL_SetWindowFullscreen(_window, false);
+				SDL_SetWindowBordered(_window, true);
 				break;
 			case os::ViewportState::Borderless:
-				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_FALSE);
+				SDL_SetWindowFullscreen(_window, false);
+				SDL_SetWindowBordered(_window, false);
 				break;
-			case os::ViewportState::Fullscreen:
-				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
+			case os::ViewportState::Fullscreen: {
+				SDL_DisplayMode target;
+				int width, height;
+
+				if (SDL_GetWindowSizeInPixels(_window, &width, &height)) {
+					if (SDL_GetClosestFullscreenDisplayMode(SDL_GetDisplayForWindow(_window),
+															width, height, 0.0f, true, &target))
+					{
+						SDL_SetWindowFullscreenMode(_window, &target);
+					}
+				}
+
+				// NOTE: This can be buggy if the mode failed to set since FSO
+				// doesn't account for a difference between assumed window size
+				// and actual window size. This can present as screen anomalies
+				// such as distortion, mirroring, or flickering.
+				SDL_SetWindowFullscreen(_window, true);
+
 				break;
+			}
 			default:
-				UNREACHABLE("Invalid window state!");
+				UNREACHABLE("Invalid window state %d!", static_cast<int>(state));
 				break;
 		}
 	}
@@ -148,47 +175,65 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 	setenv("force_s3tc_enable", "true", 1);
 #endif
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
 		return;
 	}
 }
 SDLGraphicsOperations::~SDLGraphicsOperations() {
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	
-	ImGui_ImplSDL2_Shutdown();
+	// make sure imgui stuff is initialized before trying to shut it down
+	if (ImGui::GetCurrentContext()) {
+		if (ImGui::GetIO().BackendPlatformUserData) {
+			ImGui_ImplSDL3_Shutdown();
+		}
 
-	if (!Cmdline_vulkan) {
-		ImGui_ImplOpenGL3_Shutdown();
+		if ( ImGui::GetIO().BackendRendererUserData ) {
+			switch (gr_screen.mode) {
+				case GraphicsAPI::OpenGL:
+					ImGui_ImplOpenGL3_Shutdown();
+					break;
+				case GraphicsAPI::Vulkan:
+#ifdef WITH_VULKAN
+					ImGui_ImplVulkan_Shutdown();
+#endif
+					break;
+				default:
+					break;
+			}
+
+		}
 	}
+
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
-	uint32_t windowflags = SDL_WINDOW_SHOWN;
+	uint32_t windowflags = 0;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;
 		setOGLProperties(props);
 	}
-#if SDL_VERSION_ATLEAST(2, 0, 6)
 	if (props.enable_vulkan) {
 		windowflags |= SDL_WINDOW_VULKAN;
 	}
-#endif
 	if (props.flags[os::ViewPortFlags::Borderless]) {
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
 	if (props.flags[os::ViewPortFlags::Fullscreen]) {
-		windowflags |= SDL_WINDOW_FULLSCREEN;
+		// don't set window flag here since we need to alter the display mode
+		// first and that can only be done after the window is created
+		//
+		// windowflags |= SDL_WINDOW_FULLSCREEN;
 	}
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
 	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
-		windowflags |= SDL_WINDOW_INPUT_GRABBED;
+		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
 
 	SDL_Rect bounds;
-	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
+	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
 		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
 		return nullptr;
 	}
@@ -214,8 +259,6 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	}
 
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
-										  x,
-										  y,
 										  width,
 										  height,
 										  windowflags);
@@ -224,6 +267,22 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		return nullptr;
 	}
 
+	// switch to fullscreen if we should
+	if (props.flags[os::ViewPortFlags::Fullscreen]) {
+		SDL_DisplayMode target;
+
+		if (SDL_GetClosestFullscreenDisplayMode(props.display, width, height, 0.0f, true, &target)) {
+			SDL_SetWindowFullscreenMode(window, &target);
+		}
+
+		// NOTE: This can be buggy if the mode failed to set since FSO doesn't
+		// account for a difference between assumed window size and actual window
+		// size. This can present as screen anomalies such as distortion, mirroring,
+		// or flickering.
+		SDL_SetWindowFullscreen(window, true);
+	}
+
+	SDL_SetWindowPosition(window, x, y);
 	SDL_RaiseWindow(window);
 
 	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
@@ -267,9 +326,14 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		r, g, b, depth, stencil, db, fsaa_samples));
 
-	
-	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
+
+	#ifndef USE_OPENGL_ES
+	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
 	ImGui_ImplOpenGL3_Init();
+	#else
+	ImGui_ImplOpenGL3_Init("#version 300 es");
+	#endif
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));
 }

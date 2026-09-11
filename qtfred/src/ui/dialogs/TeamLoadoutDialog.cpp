@@ -47,7 +47,7 @@ void TeamLoadoutDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void TeamLoadoutDialog::reject()
@@ -64,7 +64,15 @@ void TeamLoadoutDialog::reject()
 void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void TeamLoadoutDialog::initializeUi()
@@ -643,7 +651,7 @@ void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
 	case QMessageBox::Cancel:
 		break;
 	default:
-		UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+		UNREACHABLE("Bad return value %d from confirmation message box in the Loadout dialog editor.", ret);
 		break;
 	}
 
@@ -871,7 +879,7 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 			return; // not a column we handle
 	}
 
-	// Now repaint only the affected rows from the model’s *current* state.
+	// Now repaint only the affected rows from the model's *current* state.
 	refreshShipRows(selRows);
 }
 
@@ -937,7 +945,7 @@ void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 			return; // not a column we handle
 	}
 
-	// Now repaint only the affected rows from the model’s *current* state.
+	// Now repaint only the affected rows from the model's *current* state.
 	refreshWeaponRows(selRows);
 }
 
@@ -993,7 +1001,7 @@ void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 			return; // not a column we handle
 	}
 
-	// Now repaint only the affected rows from the model’s *current* state.
+	// Now repaint only the affected rows from the model's *current* state.
 	refreshShipVarRows(selRows);
 }
 
@@ -1049,7 +1057,7 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 			return; // not a column we handle
 	}
 
-	// Now repaint only the affected rows from the model’s *current* state.
+	// Now repaint only the affected rows from the model's *current* state.
 	refreshWeaponVarRows(selRows);
 }
 

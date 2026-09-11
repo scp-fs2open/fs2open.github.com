@@ -13,36 +13,34 @@
 #include "model/model.h"
 #include "model/modelrender.h"
 
-SCP_list<CJumpNode> Jump_nodes;
+SCP_vector<CJumpNode> Jump_nodes;
 
 /**
  * Constructor for CJumpNode class, default
  */
 CJumpNode::CJumpNode()
-{	
+{
     gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 
 	m_name[0] = '\0';
 	m_display[0] = '\0';
-	
-    m_pos.xyz.x = 0.0f;
-    m_pos.xyz.y = 0.0f;
-    m_pos.xyz.z = 0.0f;
 }
 
 /**
  * Constructor for CJumpNode class, with world position argument
  */
 CJumpNode::CJumpNode(const vec3d* position)
-{	
-	Assert(position != NULL);
-	
+{
+	Assertion(position != nullptr, "Position should not be null!");
+	if (position == nullptr)
+		position = &vmd_zero_vector;
+
 	gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
-	
+
 	// Set m_name and m_display
 	sprintf(m_name, XSTR( "Jump Node %d", 632), Jump_nodes.size());
 	m_display[0] = '\0';
-	
+
 	// Set m_modelnum and m_radius
 	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), nullptr, ErrorType::WARNING);
 	if (m_modelnum == -1) {
@@ -50,15 +48,11 @@ CJumpNode::CJumpNode(const vec3d* position)
 	} else {
 		m_radius = model_get_radius(m_modelnum);
 	}
-	
-    m_pos.xyz.x = position->xyz.x;
-    m_pos.xyz.y = position->xyz.y;
-    m_pos.xyz.z = position->xyz.z;
-    
+
 	// Create the object
-    flagset<Object::Object_Flags> default_flags;
-    default_flags.set(Object::Object_Flags::Renders);
-    m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, NULL, &m_pos, m_radius, default_flags);
+	flagset<Object::Object_Flags> default_flags;
+	default_flags.set(Object::Object_Flags::Renders);
+	m_objnum = obj_create(OBJ_JUMP_NODE, -1, -1, nullptr, position, m_radius, default_flags);
 
 	if (m_modelnum >= 0) {
 		// set up animation in case of instrinsic_rotate
@@ -70,61 +64,21 @@ CJumpNode::CJumpNode(const vec3d* position)
 	}
 }
 
-CJumpNode::CJumpNode(CJumpNode&& other) noexcept
-	: m_radius(other.m_radius), m_modelnum(other.m_modelnum), m_objnum(other.m_objnum), m_polymodel_instance_num(other.m_polymodel_instance_num), m_flags(other.m_flags)
+/**
+ * Free the polymodel instance and unload the model, if applicable
+ */
+void CJumpNode::FreeModelResources()
 {
-	other.m_radius = 0.0f;
-	other.m_modelnum = -1;
-	other.m_objnum = -1;
-	other.m_polymodel_instance_num = -1;
-	other.m_flags = 0;
-
-	m_display_color = other.m_display_color;
-	m_pos = other.m_pos;
-
-	strcpy_s(m_name, other.m_name);
-	strcpy_s(m_display, other.m_display);
-}
-
-CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
-{
-	if (this != &other)
+	if (m_polymodel_instance_num >= 0)
 	{
-		m_radius = other.m_radius;
-		m_modelnum = other.m_modelnum;
-		m_objnum = other.m_objnum;
-		m_flags = other.m_flags;
-		m_polymodel_instance_num = other.m_polymodel_instance_num;
-
-		other.m_radius = 0.0f;
-		other.m_modelnum = -1;
-		other.m_objnum = -1;
-		other.m_flags = 0;
-		other.m_polymodel_instance_num = -1;
-
-		m_display_color = other.m_display_color;
-		m_pos = other.m_pos;
-
-		strcpy_s(m_name, other.m_name);
-		strcpy_s(m_display, other.m_display);
+		model_delete_instance(m_polymodel_instance_num);
+		m_polymodel_instance_num = -1;
 	}
 
-	return *this;
-}
-
-/**
- * Destructor for CJumpNode class
- */
-CJumpNode::~CJumpNode()
-{
 	if (m_modelnum >= 0)
 	{
 		model_unload(m_modelnum);
-	}
-
-	if (m_objnum >= 0 && Objects[m_objnum].type != OBJ_NONE)
-	{
-		obj_delete(m_objnum);
+		m_modelnum = -1;
 	}
 }
 
@@ -158,6 +112,14 @@ int CJumpNode::GetModelNumber() const
 }
 
 /**
+ * @return Radius of jump node model
+ */
+float CJumpNode::GetRadius() const
+{
+	return m_radius;
+}
+
+/**
  * @return Index into Objects[]
  */
 int CJumpNode::GetSCPObjectNumber() const
@@ -170,8 +132,8 @@ int CJumpNode::GetSCPObjectNumber() const
  */
 const object *CJumpNode::GetSCPObject() const
 {
-	Assert(m_objnum != -1);
-    return &Objects[m_objnum];
+	Assertion(m_objnum >= 0, "jump node does not have an object number!");
+	return &Objects[m_objnum];
 }
 
 /**
@@ -187,7 +149,8 @@ const color &CJumpNode::GetColor() const
  */
 const vec3d *CJumpNode::GetPosition() const
 {
-	return &m_pos;
+	Assert(m_objnum != -1);
+	return &Objects[m_objnum].pos;
 }
 
 /*
@@ -245,21 +208,37 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 		Warning(LOCATION, "Couldn't load model file %s for jump node %s", model_name, m_name);
 		return;
 	}
-	
+
 	//If there's an old model, unload it
-	if(m_modelnum != -1)
-		model_unload(m_modelnum);
+	FreeModelResources();
 
 	//Now actually set stuff
 	m_modelnum = new_model;
 	m_flags |= JN_SPECIAL_MODEL;
 	m_radius = model_get_radius(m_modelnum);
 
+	// keep the engine-side object radius in sync with the new model.  The
+	// in-game jump-into-subspace check uses model_get_radius() directly so it
+	// is unaffected, but render culling, HUD brackets and FRED selection all
+	// read Objects[].radius - leaving it at the default-model radius makes the
+	// node cull/bracket at the wrong size after a $Special Model parse or a
+	// set-jumpnode-model sexp.
+	if (m_objnum >= 0) {
+		Objects[m_objnum].radius = m_radius;
+	}
+
 	//Do we want to change poly showing?
 	if(show_polys)
 		m_flags |= JN_SHOW_POLYS;
 	else
 		m_flags &= ~JN_SHOW_POLYS;
+
+	// refresh the model instance
+	auto pm = model_get(m_modelnum);
+	if (pm->flags & PM_FLAG_HAS_INTRINSIC_MOTION)
+		m_polymodel_instance_num = model_create_instance(m_objnum, m_modelnum);
+	else
+		m_polymodel_instance_num = -1;
 }
 
 /**
@@ -470,15 +449,30 @@ void CJumpNode::Render(model_draw_list *scene, const vec3d *pos, const vec3d *vi
  */
 CJumpNode *jumpnode_get_by_name(const char* name)
 {
-	Assert(name != NULL);
-	SCP_list<CJumpNode>::iterator jnp;
+	Assert(name != nullptr);
 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		if(!stricmp(jnp->GetName(), name)) 
-			return &(*jnp);
-	}
+	for (auto &jn : Jump_nodes)
+		if (!stricmp(jn.GetName(), name))
+			return &jn;
 
-	return NULL;
+	return nullptr;
+}
+
+/**
+ * Get jump node index by given name
+ *
+ * @param name Name of jump node
+ * @return Jump node index
+ */
+int jumpnode_lookup(const char *name)
+{
+	Assert(name != nullptr);
+
+	for (size_t i = 0; i < Jump_nodes.size(); i++)
+		if (!stricmp(Jump_nodes[i].GetName(), name))
+			return sz2i(i);
+
+	return -1;
 }
 
 /**
@@ -508,13 +502,8 @@ CJumpNode *jumpnode_get_by_objnum(int objnum)
 CJumpNode *jumpnode_get_by_objp(const object *objp)
 {
 	Assert(objp != nullptr);
-
-	for (CJumpNode &jnp : Jump_nodes) {
-		if (jnp.GetSCPObject() == objp)
-			return &(jnp);
-	}
-
-	return nullptr;
+	int objnum = OBJ_INDEX(objp);
+	return jumpnode_get_by_objnum(objnum);
 }
 
 /**
@@ -526,17 +515,15 @@ CJumpNode *jumpnode_get_by_objp(const object *objp)
 CJumpNode *jumpnode_get_which_in(const object *objp)
 {
 	Assert(objp != NULL);
-	SCP_list<CJumpNode>::iterator jnp;
-	float radius, dist;
 
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		if(jnp->GetModelNumber() < 0)
+	for (auto &jnp : Jump_nodes) {
+		if (jnp.GetModelNumber() < 0)
 			continue;
 
-		radius = model_get_radius( jnp->GetModelNumber() );
-		dist = vm_vec_dist( &objp->pos, &jnp->GetSCPObject()->pos );
+		float radius = jnp.GetRadius();
+		float dist = vm_vec_dist( &objp->pos, &jnp.GetSCPObject()->pos );
 		if ( dist <= radius ) {
-			return &(*jnp);
+			return &jnp;
 		}
 	}
 
@@ -550,11 +537,8 @@ CJumpNode *jumpnode_get_which_in(const object *objp)
  */
 void jumpnode_render_all()
 {
-	SCP_list<CJumpNode>::iterator jnp;
-	
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {	
-		jnp->Render(&jnp->GetSCPObject()->pos);
-	}
+	for (auto &jnp : Jump_nodes)
+		jnp.Render(&jnp.GetSCPObject()->pos);
 }
 
 /**
@@ -562,5 +546,27 @@ void jumpnode_render_all()
  */
 void jumpnode_level_close()
 {
+	// Clear all jump nodes.  Note that this can happen either before or after objects are cleaned up.
 	Jump_nodes.clear();
+}
+
+/**
+ * Delete the jump node corresponding to this object.  Since this is called from obj_delete(),
+ * it frees the node's resources and detaches it from the object, but it does not delete the
+ * object itself, nor does it remove the node from the Jump_nodes vector.
+ *
+ * @param objp Object pointer
+ */
+void jumpnode_delete(object *objp)
+{
+	Assert(objp != nullptr);
+	Assert(objp->type == OBJ_JUMP_NODE);
+
+	auto jn = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+	Assertion(jn != nullptr, "Jump node object %d does not correspond to a CJumpNode!", OBJ_INDEX(objp));
+	if (jn == nullptr)
+		return;
+
+	jn->FreeModelResources();
+	jn->m_objnum = -1;
 }

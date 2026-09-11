@@ -28,7 +28,7 @@ ADE_VIRTVAR(Name, l_SEXPVariable, "string", "SEXP Variable name.", "string", "SE
 	return ade_set_args(L, "s", sv->variable_name);
 }
 
-ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistence, uses SEXPVAR_*_PERSISTENT enumerations", "enumeration", "SEXPVAR_*_PERSISTENT enumeration, or invalid numeration if handle is invalid")
+ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persistence level, uses SEXPVAR_PERSIST_* enumerations", "enumeration", "A SEXPVAR_PERSIST_* enumeration, or invalid enumeration if handle is invalid")
 {
 	sexpvar_h *svh = NULL;
 	enum_h *type = NULL;
@@ -70,7 +70,7 @@ ADE_VIRTVAR(Persistence, l_SEXPVariable, "enumeration", "SEXP Variable persisten
 	return ade_set_args(L, "o", l_Enum.Set(ren));
 }
 
-ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable type, uses SEXPVAR_TYPE_* enumerations", "enumeration", "SEXPVAR_TYPE_* enumeration, or invalid numeration if handle is invalid")
+ADE_VIRTVAR(Type, l_SEXPVariable, "enumeration", "SEXP Variable value type, uses SEXPVAR_TYPE_* enumerations", "enumeration", "A SEXPVAR_TYPE_* enumeration, or invalid enumeration if handle is invalid")
 {
 	sexpvar_h *svh = NULL;
 	enum_h *type = NULL;
@@ -154,18 +154,6 @@ ADE_FUNC(__tostring, l_SEXPVariable, NULL, "Returns SEXP name", "string", "SEXP 
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Sexp_variables[svh->idx].variable_name);
-}
-
-ADE_FUNC(isValid, l_SEXPVariable, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	sexpvar_h *svh = NULL;
-	if(!ade_get_args(L, "o", l_SEXPVariable.GetPtr(&svh)))
-		return ADE_RETURN_NIL;
-
-	if(!svh->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(delete, l_SEXPVariable, NULL, "Deletes a SEXP Variable", "boolean", "True if successful, false if the handle is invalid")

@@ -13,6 +13,7 @@
 #include "FRED.h"
 #include "freddoc.h"
 #include "CmdBrief.h"
+#include "management.h"
 #include "cfile/cfile.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
@@ -36,6 +37,7 @@ cmd_brief_dlg::cmd_brief_dlg(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 
 	m_wave_id = -1;
+	m_play_icon = nullptr;
 }
 
 void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
@@ -74,8 +76,8 @@ BOOL cmd_brief_dlg::OnInitDialog()
 	last_cmd_brief = NULL;
 
 	CDialog::OnInitDialog();
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	update_data();
 	return TRUE;
@@ -318,7 +320,7 @@ BOOL cmd_brief_dlg::DestroyWindow()
 	m_wave_id = -1;
 
 	update_data();
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 
 	// the command briefing is updated whether we close it, click OK, or click Cancel,
 	// so autosave here instead of in the OK case

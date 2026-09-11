@@ -177,6 +177,20 @@ int create_wing() {
 		dlg.m_name.TrimLeft();
 		dlg.m_name.TrimRight();
 		string_copy(Wings[wing].name, dlg.m_name, NAME_LENGTH - 1);
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+		{
+			Wings[wing].display_name = Wings[wing].name;
+			end_string_at_first_hash_symbol(Wings[wing].display_name);
+			Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+		// otherwise reset the display name
+		else
+		{
+			Wings[wing].display_name = "";
+			Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
 	}
 
 	set_cur_indices(-1);
@@ -213,7 +227,8 @@ int create_wing() {
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked])
+	if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)
+		&& Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked])
 		count = 1;
 
 	ptr = GET_FIRST(&obj_used_list);
@@ -235,6 +250,8 @@ int create_wing() {
 
 			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship], &Wings[wing], i + 1, true);
 
 			Wings[wing].ship_index[i] = ship;
 			Ships[ship].wingnum = wing;
@@ -303,11 +320,8 @@ int delete_wing(int wing_num, int bypass) {
 		return r;
 
 	already_deleting_wing = 1;
-	for (i = 0; i<Num_reinforcements; i++)
-		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
-			delete_reinforcement(i);
-			break;
-		}
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
@@ -407,12 +421,17 @@ void remove_ship_from_wing(int ship, int min) {
 				if (Objects[obj].type == OBJ_SHIP) {
 					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
 			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count))
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			if (Wings[wing].wave_count) {
+				const auto max_threshold = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+				if (Wings[wing].threshold > max_threshold)
+					Wings[wing].threshold = max_threshold;
+			}
 		}
 
 		Ships[ship].wingnum = -1;
@@ -424,13 +443,15 @@ void remove_ship_from_wing(int ship, int min) {
 	rename_ship(ship, buf);
 }
 
-void remove_wing(int wing_num)
+void disband_wing(int wing_num)
 {
 	int i, total;
 	object *ptr;
 
 	if (check_wing_dependencies(wing_num))
 		return;
+
+	delete_reinforcement(Wings[wing_num].name);
 
 	Ship_editor_dialog.bypass_errors = Wing_editor_dialog.bypass_errors = 1;
 	Ship_editor_dialog.update_data(0);

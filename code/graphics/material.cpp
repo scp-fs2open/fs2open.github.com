@@ -2,6 +2,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/2d.h"
 #include "graphics/material.h"
+#include "graphics/shadows.h"
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 
@@ -183,6 +184,17 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 	material_set_unlit(mat_info, base_tex, alpha, true, true);
 
 	mat_info->set_color_scale(color_scale);
+
+	// When an additive batched bitmap (e.g. a model glowpoint) is drawn into a render target, its
+	// texture typically has no alpha channel, so the sampled alpha is 1 everywhere. Additive alpha
+	// blending then inflates the target's alpha to opaque across the whole sprite quad, even where
+	// the RGB is ~black. Because these render targets are later straight-alpha composited (e.g. the
+	// SCPUI 3D ship/weapon select preview), those dark regions show up as opaque black squares. Skip
+	// alpha writes in that case so the target's coverage (the opaque model silhouette) is preserved.
+	// Normal screen rendering (rendering_to_texture == -1) is unaffected.
+	if (gr_screen.rendering_to_texture != -1 && mat_info->get_blend_mode() == ALPHA_BLEND_ADDITIVE) {
+		mat_info->set_color_mask(true, true, true, false);
+	}
 }
 
 void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale) {
@@ -674,14 +686,12 @@ bool model_material::is_batched() const
 	return Batched;
 }
 
-void model_material::set_fog(int r, int g, int b, float _near, float _far)
+void model_material::set_fog(int r, int g, int b)
 {
 	Fog_params.enabled = true;
 	Fog_params.r = r;
 	Fog_params.g = g;
 	Fog_params.b = b;
-	Fog_params.dist_near = _near;
-	Fog_params.dist_far = _far;
 }
 
 void model_material::set_fog()
@@ -736,14 +746,19 @@ uint model_material::get_shader_flags() const
     }
 
 	if (Shadow_casting) {
-		// if we're building the shadow map, we likely only need the flags here and above so bail
-		Shader_flags |= MODEL_SDR_FLAG_SHADOW_MAP;
-
+		// Shadow map generation now uses a dedicated shader (SDR_TYPE_MODEL_SHADOW_MAP)
 		return Shader_flags;
 	}
 
 	if (uses_thick_outlines() && gr_is_capable(gr_capability::CAPABILITY_THICK_OUTLINE)) {
 		Shader_flags |= MODEL_SDR_FLAG_THICK_OUTLINES;
+	}
+
+	// Must stay a genuine compile-time flag (like SHADOW_MAP/THICK_OUTLINES above),
+	// not one gated only via the runtime `flags` uniform below -- see the comment
+	// on MODEL_SDR_FLAG_RT_SHADOWS in model_shader_flags.h.
+	if (is_shadow_receiving() && shadows_use_raytracing()) {
+		Shader_flags |= MODEL_SDR_FLAG_RT_SHADOWS;
 	}
 
     if (!gr_is_capable(gr_capability::CAPABILITY_LARGE_SHADER)) {

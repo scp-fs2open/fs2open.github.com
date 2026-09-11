@@ -19,7 +19,7 @@ expression::ProgramVariables getDefaultTableVariables()
 	expression::ProgramVariables vars;
 
 	vars.setValue({"locals", "position"}, expression::Value(vmd_zero_vector));
-	vars.setValue({"locals", "direction"}, expression::Value(vmd_zero_vector));
+	vars.setValue({"locals", "direction"}, expression::Value(vmd_z_vector));
 
 	return vars;
 }

@@ -40,11 +40,8 @@ player_h::~player_h()
 		delete _plr;
 }
 player_h::player_h(player_h&& other) noexcept
-	: _owned(other._owned), _plr(other._plr)
-{
-	other._owned = false;
-	other._plr = nullptr;
-}
+	: _owned(std::exchange(other._owned, false)), _plr(std::exchange(other._plr, nullptr))
+{}
 player_h& player_h::operator=(player_h&& other) noexcept
 {
 	if (this != &other)
@@ -52,11 +49,8 @@ player_h& player_h::operator=(player_h&& other) noexcept
 		if (_owned)
 			delete _plr;
 
-		_owned = other._owned;
-		_plr = other._plr;
-
-		other._owned = false;
-		other._plr = nullptr;
+		_owned = std::exchange(other._owned, false);
+		_plr = std::exchange(other._plr, nullptr);
 	}
 
 	return *this;
@@ -209,18 +203,6 @@ ADE_VIRTVAR(ShowSkipPopup,
 	}
 
 	return ade_set_args(L, "b", plr->get()->show_skip_popup != 0);
-}
-
-ADE_FUNC(isValid, l_Player, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	player_h* plr;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
-		return ADE_RETURN_NIL;
-
-	if (!plr->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getName, l_Player, NULL, "Gets current player name", "string", "Player name, or empty string if handle is invalid")

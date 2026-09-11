@@ -27,3 +27,34 @@ vec3 linear_to_srgb(vec3 val) {
 vec4 linear_to_srgb(vec4 val) {
 	return pow(val, vec4(SRGB_GAMMA_INVERSE));
 }
+
+// ===== HDR10 helpers (PQ / ST.2084 + BT.2020) =====
+//
+// These are used by the final output-encode pass when HDR10 output is active.
+// The composition buffer stores values in an extended-sRGB encoding where 1.0
+// maps to "paper white"; the encode pass decodes to linear, scales to display
+// nits, converts BT.709 primaries to BT.2020, then applies the PQ transfer.
+
+// BT.709 -> BT.2020 primary conversion (linear light). GLSL is column-major,
+// so each vec3 below is a COLUMN of the standard row-major conversion matrix.
+const mat3 bt709_to_bt2020_mat = mat3(
+	vec3(0.627403914, 0.069097158, 0.016391439),
+	vec3(0.329283028, 0.919540405, 0.088013308),
+	vec3(0.043313057, 0.011362437, 0.895595253));
+
+vec3 bt709_to_bt2020(vec3 c) {
+	return bt709_to_bt2020_mat * c;
+}
+
+// SMPTE ST.2084 (PQ) inverse-EOTF / OETF. Input is linear luminance normalized
+// so that 1.0 == 10000 nits (the PQ system peak). Output is the PQ-encoded
+// signal in [0,1] suitable for an HDR10 (BT.2020 + ST.2084) swap chain.
+vec3 linear_to_pq(vec3 L) {
+	const float m1 = 0.1593017578125;
+	const float m2 = 78.84375;
+	const float c1 = 0.8359375;
+	const float c2 = 18.8515625;
+	const float c3 = 18.6875;
+	vec3 Lm1 = pow(max(L, vec3(0.0)), vec3(m1));
+	return pow((c1 + c2 * Lm1) / (1.0 + c3 * Lm1), vec3(m2));
+}

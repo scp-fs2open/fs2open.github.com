@@ -33,23 +33,45 @@ namespace unicode {
  */
 typedef char32_t codepoint_t;
 
+/**
+ * @brief An invalid and ignorable character, equivalent to -1
+ */
+constexpr codepoint_t invalid_char = static_cast<codepoint_t>(-1);
+
+/**
+ * @brief Substitute for malformed UTF-8 so that a bad decode can degrade gracefully
+ */
+constexpr codepoint_t replacement_char = 0xFFFD;
+
+constexpr codepoint_t comment_char =    static_cast<codepoint_t>(COMMENT_CHAR);
+constexpr codepoint_t eoln =            static_cast<codepoint_t>(EOLN);
+constexpr codepoint_t carriage_return = static_cast<codepoint_t>(CARRIAGE_RETURN);
+
 class text_iterator {
 	const char* current_byte = nullptr;
 	const char* range_end_byte = nullptr;
 	const char* range_start_byte = nullptr;
 
 	bool is_from_same_range(const text_iterator& other) const;
+
  public:
 	explicit text_iterator(const char* current_byte, const char* range_start_byte, const char* range_end_byte = nullptr);
 
-	typedef codepoint_t value_type;
+	using difference_type = std::ptrdiff_t;
+	using value_type = codepoint_t;
+	using pointer = codepoint_t const *;
+	using reference = codepoint_t const &;
+	using iterator_category = std::bidirectional_iterator_tag;
 
 	const char* pos() const;
 
 	text_iterator& operator++();
 	text_iterator& operator--();
 
-	value_type operator*();
+	text_iterator operator++(int);
+	text_iterator operator--(int);
+
+	value_type operator*() const;
 
 	bool operator==(const text_iterator& rhs) const;
 	bool operator!=(const text_iterator& rhs) const;

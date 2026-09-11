@@ -41,6 +41,9 @@ extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
 
+// # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
+enum class GraphicsAPI : uint8_t { Default, Stub, OpenGL, Vulkan };
+
 // z-buffering stuff
 extern int gr_zbuffering, gr_zbuffering_mode;
 extern int gr_global_zbuffering;
@@ -71,6 +74,16 @@ bool gr_is_smaa_mode(AntiAliasMode mode);
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
+
+// HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
+extern bool Gr_enable_hdr;
+// True once the renderer has actually negotiated an HDR10 swap chain (read-only,
+// set by the active renderer). Distinct from Gr_enable_hdr, which is the request.
+extern bool Gr_hdr_output_active;
+// Reference white luminance in nits (the brightness of SDR "paper white" / UI when HDR is active).
+extern float Gr_hdr_paperwhite_nits;
+// Display peak luminance in nits used for tone curve clamping and HDR10 metadata.
+extern float Gr_hdr_peak_nits;
 
 extern bool Deferred_lighting;
 extern bool High_dynamic_range;
@@ -209,10 +222,15 @@ enum shader_type {
 	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
 	SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
 	SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING,
+	SDR_TYPE_POST_PROCESS_SMAA_RESOLVE,
 
 	SDR_TYPE_ENVMAP_SPHERE_WARP,
 
 	SDR_TYPE_IRRADIANCE_MAP_GEN,
+
+	SDR_TYPE_SHADOW_MAP_GEN,
+
+	SDR_TYPE_GAMMA_BLIT,
 
 	NUM_SHADER_TYPES
 };
@@ -236,10 +254,18 @@ enum shader_type {
 #define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
 
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
+#define SDR_FLAG_COPY_CLAMP01 (1 << 1)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
+#define SDR_FLAG_GAMMA_HDR10 (1 << 0)
+
 #define SDR_FLAG_ENV_MAP (1 << 0)
+#define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+
+#define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
+
+#define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
 
 enum class uniform_block_type {
@@ -252,6 +278,8 @@ enum class uniform_block_type {
 	Matrices = 6,
 	MovieData = 7,
 	GenericData = 8,
+	ShadowMapData = 9,
+	ShadowCascadeParams = 10,
 
 	NUM_BLOCK_TYPES
 };
@@ -262,7 +290,6 @@ struct vertex_format_data
 		POSITION4,
 		POSITION3,
 		POSITION2,
-		SCREEN_POS,
 		COLOR3,
 		COLOR4,
 		COLOR4F,
@@ -338,8 +365,12 @@ enum class gr_capability {
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC,
+	CAPABILITY_S3TC,
 	CAPABILITY_LARGE_SHADER,
-	CAPABILITY_INSTANCED_RENDERING
+	CAPABILITY_INSTANCED_RENDERING,
+	CAPABILITY_FAST_SHADOWS,
+	CAPABILITY_QUERIES_REUSABLE,
+	CAPABILITY_RAYTRACED_SHADOWS
 };
 
 struct gr_capability_def {
@@ -615,9 +646,8 @@ public:
 };
 
 struct indexed_vertex_source {
-	void* Vertex_list = nullptr;
-	void* Index_list = nullptr;
-
+	std::shared_ptr<uint8_t[]> Vertex_list = nullptr;
+	std::shared_ptr<uint8_t[]> Index_list = nullptr;
 	gr_buffer_handle Vbuffer_handle;
 	size_t Vertex_offset = 0;
 	size_t Base_vertex_offset = 0;
@@ -672,7 +702,7 @@ typedef struct screen {
 	int save_center_w = 0, save_center_h = 0; // Width and height of center monitor
 	int save_center_offset_x = 0, save_center_offset_y = 0;
 	int res = 0;                             // GR_640 or GR_1024
-	int mode = 0;                            // What mode gr_init was called with.
+	GraphicsAPI mode = GraphicsAPI::Default;                            // What mode gr_init was called with.
 	float aspect = 0.0f, clip_aspect = 0.0f; // Aspect ratio = 0, aspect of clip_width/clip_height
 	int rowsize = 0;                         // What you need to add to go to next row (includes bytes_per_pixel)
 	int bits_per_pixel = 0;                  // How many bits per pixel it is. (7,8,15,16,24,32)
@@ -790,8 +820,21 @@ typedef struct screen {
 
 	std::function<void(int)> gf_set_texture_addressing;
 
-	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage)> gf_create_buffer;
+	std::function<gr_buffer_handle(BufferType type, BufferUsageHint usage, bool rt_capable)> gf_create_buffer;
 	std::function<void(gr_buffer_handle handle)> gf_delete_buffer;
+
+	// Optional lifecycle hooks for backends that maintain auxiliary per-model GPU
+	// state (e.g. Vulkan's raytraced-shadow BLAS cache). Default to no-ops so
+	// backends that don't need them (OpenGL, stub) don't have to assign anything.
+	std::function<void(int pm_id)> gf_model_loaded = [](int) {};
+	std::function<void(int pm_id)> gf_model_unloaded = [](int) {};
+
+	// Rebuilds the raytraced-shadow top-level acceleration structure for the
+	// current frame from the live shadow-casting object set. Called once per
+	// frame from shadows_render_all(), alongside the cascaded shadow map pass --
+	// the shading pass picks between the two per shadows_use_raytracing().
+	// No-op default.
+	std::function<void()> gf_build_shadow_tlas = []() {};
 
 	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
 	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
@@ -832,9 +875,12 @@ typedef struct screen {
 	std::function<void()> gf_clear_states;
 
 	std::function<void(int bitmap_handle, int bpp, const ubyte* data, int width, int height)> gf_update_texture;
-	std::function<void(void* data_out, int bitmap_num)> gf_get_bitmap_from_texture;
+	// Reads the texture uploaded for a bitmap back from graphics memory.  Returns a vm_malloc'd buffer
+	// (freed by the caller with vm_free) and reports the dimensions of the returned data, which may be
+	// smaller than the bitmap if the texture was culled at upload; returns nullptr on failure.
+	std::function<ubyte*(int bitmap_num, int* width_out, int* height_out)> gf_get_bitmap_from_texture;
 
-	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos)> gf_shadow_map_start;
+	std::function<void(matrix4* shadow_view_matrix, const matrix* light_matrix, vec3d* eye_pos, bool first_pass)> gf_shadow_map_start;
 	std::function<void()> gf_shadow_map_end;
 
 	std::function<void()> gf_start_decal_pass;
@@ -844,6 +890,9 @@ typedef struct screen {
 	std::function<
 		void(model_material* material_info, indexed_vertex_source* vert_source, vertex_buffer* bufferp, size_t texi)>
 		gf_render_model;
+	std::function<void(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+		vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)>
+		gf_render_shadow_draw;
 	std::function<void(shield_material* material_info,
 		primitive_type prim_type,
 		vertex_layout* layout,
@@ -934,6 +983,10 @@ typedef struct screen {
 
 	std::function<void(bool set_override)> gf_override_fog;
 
+	// ImGui backend integration
+	std::function<void()> gf_imgui_new_frame;
+	std::function<void()> gf_imgui_render_draw_data;
+
 	//OpenXR functions
 	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
 	std::function<bool()> gf_openxr_test_capabilities;
@@ -986,11 +1039,7 @@ bool gr_lua_context_active();
 //--------------------------------------
 // Call this at application startup
 
-// # Software Re-added by Kazan --- THIS HAS TO STAY -- It is used by standalone!
-#define GR_DEFAULT				(-1)		// set to use default settings
-#define GR_STUB					(100)
-#define GR_OPENGL (104) // Use OpenGl hardware renderer
-#define GR_VULKAN (105) // Use Vulkan hardware renderer
+#define GR_DEFAULT (-1)
 
 // resolution constants   - always keep resolutions in ascending order and starting from 0  
 #define GR_NUM_RESOLUTIONS			2
@@ -1002,11 +1051,39 @@ bool gr_lua_context_active();
 
 extern const char *Resolution_prefixes[GR_NUM_RESOLUTIONS];
 
-extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode = GR_DEFAULT,
+extern bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode = GraphicsAPI::Default,
 					int d_width = GR_DEFAULT, int d_height = GR_DEFAULT, int d_depth = GR_DEFAULT);
+
+// The render API (GraphicsAPI::OpenGL/GraphicsAPI::Vulkan) selected via the "Graphics.RenderAPI" in-game option (or a mod's
+// default settings table). The -vulkan/-opengl command line flags still win over this; see Cmdline_graphics_api.
+extern GraphicsAPI gr_get_configured_render_api();
+
+// The display name of a render API, e.g. "OpenGL". Returns "Unknown???" for GraphicsAPI values that are not
+// a real backend, such as GraphicsAPI::Stub.
+extern const char* gr_render_api_name(GraphicsAPI api);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
+
+/**
+ * @brief Converts a position or delta from OS window pixels into internal render-target pixels
+ *
+ * @details When -window_res is in effect the frame is rendered into an offscreen buffer sized
+ * gr_screen.max_w/max_h and only stretched to the window when we flip, so everything the engine
+ * draws lives in render space while SDL reports input in window space. These are pure scale
+ * factors with no offset, so they are equally valid for absolute positions and for deltas.
+ *
+ * Note that this is unrelated to the gr_resize_screen_pos() family, which handles the retail
+ * 640/1024 menu coordinate system.
+ */
+void gr_window_to_render_pos(float& x, float& y);
+
+/**
+ * @brief Converts a position or delta from internal render-target pixels into OS window pixels
+ *
+ * @see gr_window_to_render_pos
+ */
+void gr_render_to_window_pos(float& x, float& y);
 
 // Call this when your app ends.
 extern void gr_close();
@@ -1043,13 +1120,17 @@ bool gr_resize_screen_posf(float *x, float *y, float *w = NULL, float *h = NULL,
 // Does formatted printing.  This calls gr_string after formatting,
 // so if you don't need to format the string, then call gr_string
 // directly.
-extern void gr_printf( int x, int y, const char * format, SCP_FORMAT_STRING ... ) SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf(int x, int y, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 // same as gr_printf but positions text correctly in menus
-extern void gr_printf_menu( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_menu(int x, int y, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_menu(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 // same as gr_printf_menu but accounts for menu zooming
-extern void gr_printf_menu_zoomed( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_menu_zoomed(int x, int y, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_menu_zoomed(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 // same as gr_printf but doesn't resize for non-standard resolutions
-extern void gr_printf_no_resize( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_no_resize(int x, int y, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);
+extern void gr_printf_no_resize(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(4, 5);
 
 // Returns the size of the string in pixels in w and h
 extern void gr_get_string_size( int *w, int *h, const char * text, float scaleMultiplier = 1.0f, size_t len = std::string::npos);
@@ -1063,7 +1144,7 @@ extern int gr_get_dynamic_font_lines(int number_default_lines);
 extern io::mouse::Cursor* Web_cursor;
 
 // Called by OS when application gets/looses focus
-extern void gr_activate(int active);
+extern void gr_activate(bool active);
 
 #define GR_CALL(x) (x)
 
@@ -1073,6 +1154,9 @@ extern void gr_activate(int active);
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
 #define gr_blob_screen		GR_CALL(gr_screen.gf_blob_screen)
 #define gr_dump_envmap		GR_CALL(gr_screen.gf_dump_envmap)
+
+void gr_request_screenshot(const char* filename);
+bool gr_is_screenshot_requested();
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
@@ -1131,12 +1215,45 @@ inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)
 
-inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage)
+/**
+ * @brief Create a GPU buffer
+ * @param type The buffer type (Vertex, Index, Uniform)
+ * @param usage Usage hint for optimization
+ * @param rt_capable If true (Vulkan only), the buffer is created with the extra
+ *        usage flags (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT and
+ *        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR)
+ *        needed to use it as acceleration structure geometry input. Ignored by
+ *        backends without raytraced shadow support.
+ */
+inline gr_buffer_handle gr_create_buffer(BufferType type, BufferUsageHint usage, bool rt_capable = false)
 {
-	return gr_screen.gf_create_buffer(type, usage);
+	return gr_screen.gf_create_buffer(type, usage, rt_capable);
 }
 
 #define gr_delete_buffer GR_CALL(gr_screen.gf_delete_buffer)
+
+/**
+ * @brief Notify the graphics backend that a model finished loading (its GPU
+ * vertex/index buffers are already uploaded at this point). No-op on backends
+ * that don't need per-model GPU state.
+ */
+inline void gr_model_loaded(int pm_id)
+{
+	gr_screen.gf_model_loaded(pm_id);
+}
+
+/**
+ * @brief Notify the graphics backend that a model is about to be freed, so it
+ * can release any auxiliary per-model GPU state before the model's own GPU
+ * buffers are destroyed.
+ */
+inline void gr_model_unloaded(int pm_id)
+{
+	gr_screen.gf_model_unloaded(pm_id);
+}
+
+#define gr_build_shadow_tlas GR_CALL(gr_screen.gf_build_shadow_tlas)
+
 #define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
 inline void* gr_map_buffer(gr_buffer_handle handle)
@@ -1188,6 +1305,18 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
 
 #define gr_override_fog					GR_CALL(gr_screen.gf_override_fog)
+
+#define gr_imgui_new_frame				GR_CALL(gr_screen.gf_imgui_new_frame)
+#define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
+
+/**
+ * @brief Starts an ImGui frame, sized to the render target rather than to the OS window
+ *
+ * @details Drives the renderer backend, the SDL platform backend and ImGui itself, then corrects
+ * the display size the platform backend derived from the window. Must be paired with
+ * ImGui::Render() and gr_imgui_render_draw_data().
+ */
+void gr_imgui_begin_frame();
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,
@@ -1254,6 +1383,12 @@ inline void gr_render_movie(movie_material* material_info,
 inline void gr_render_model(model_material* material_info, indexed_vertex_source *vert_source, vertex_buffer* bufferp, size_t texi)
 {
 	gr_screen.gf_render_model(material_info, vert_source, bufferp, texi);
+}
+
+inline void gr_render_shadow_draw(gr_buffer_handle ubo_handle, size_t ubo_offset, size_t ubo_size,
+                                   vertex_buffer* buffer, indexed_vertex_source* vert_src, size_t texi)
+{
+	gr_screen.gf_render_shadow_draw(ubo_handle, ubo_offset, ubo_size, buffer, vert_src, texi);
 }
 
 inline void gr_render_rocket_primitives(interface_material* material_info,
@@ -1480,6 +1615,10 @@ void gr_set_gamma(float gamma);
 void gr_get_post_process_effect_names(SCP_vector<SCP_string> &names);
 
 bool gr_is_viewport_window();
+
+void gr_uniform_buffer_managers_init();
+
+SDL_DisplayID gr_get_preferred_display();
 
 // Include this last to make the 2D rendering function available everywhere
 #include "graphics/render.h"

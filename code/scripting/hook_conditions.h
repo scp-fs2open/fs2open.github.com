@@ -27,7 +27,7 @@ public:
 	SCP_string documentation;
 
 	virtual std::unique_ptr<EvaluatableCondition> parse(const SCP_string& /*input*/) const {
-		return make_unique<EvaluatableCondition>();
+		return std::make_unique<EvaluatableCondition>();
 	};
 
 	ParseableCondition() : documentation("Invalid Condition. Will never evaluate.") { }
@@ -77,6 +77,12 @@ struct ShipDepartConditions {
 struct WeaponDeathConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const weapon* dying_wep;
+};
+
+struct WeaponProximityTriggeredConditions {
+	HOOK_DEFINE_CONDITIONS;
+	const weapon* triggered_wep;
+	const ship* trigger_shipp;
 };
 
 struct ObjectDeathConditions {

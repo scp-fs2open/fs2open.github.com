@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Campaign Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Narrative &rsaquo; Campaign Editor</nav>
+<h1>Campaign Editor</h1>
+<p>Opens via <strong>File &rsaquo; Campaign Editor</strong>. The Campaign Editor opens
+as its own window rather than a modal dialog.</p>
+<p>Links individual missions into a branching campaign. Each mission is a node in a
+graph; directed edges between nodes carry SEXP conditions that determine which mission
+the player flies next.</p>
+
+<p><strong>Use retail campaign file format</strong> - saves the campaign in the older
+retail-compatible format. Leave unchecked for new campaigns.
+<strong>Check campaign</strong> runs the error checker against the current
+campaign. Both controls are available on both tabs.</p>
+
+<h2>Campaign Specs tab</h2>
+
+<h3>Identity</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Campaign name shown in the campaign selection
+        screen.</td></tr>
+    <tr><td>Type</td><td>Single player, multiplayer co-op, or multiplayer team
+        vs. team.</td></tr>
+    <tr><td>Description</td><td>Long-form campaign description shown in the
+        selection screen.</td></tr>
+    <tr><td>Reset tech room</td><td>When checked, the player's tech room is cleared
+        at the start of the campaign and only ships and weapons unlocked during
+        play are available.</td></tr>
+    <tr><td>Custom data</td><td>Opens the Custom Data dialog for attaching arbitrary
+        key-value pairs to the campaign file, used by scripting and
+        mods.</td></tr>
+</table>
+
+<h3>Starting ships and weapons</h3>
+<p>Check which ships and weapons are available to the player at the very start of
+the campaign, before any missions have been completed.</p>
+
+<h2>Campaign Flow tab</h2>
+
+<h3>Mission list</h3>
+<p>Lists all <code>.fs2</code> mission files available to add to the campaign.
+Select a mission from the list then right-click in the graph view to add it as a
+node.</p>
+
+<h3>Mission properties</h3>
+<p>Select a mission node in the graph to edit its properties:</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Briefing cutscene</td><td>Video played before the briefing for this
+        mission.</td></tr>
+    <tr><td>Debriefing persona</td><td>Index of the debriefing persona used after
+        this mission.</td></tr>
+    <tr><td>Mainhall</td><td>Which main hall is shown between missions.</td></tr>
+    <tr><td>Substitute mainhall</td><td>Preferred main hall to use if present in
+        the currently loaded mod, analogous to alt music.</td></tr>
+</table>
+
+<h3>Branches</h3>
+<p>Shows all outgoing branches from the selected mission. Each branch has a
+<a href="../concepts/sexps.html">SEXP</a> condition; the first branch whose condition
+is true is the one taken. New branches are automatically given a <code>true</code>
+formula. Use the <strong>up/down arrows</strong> to reorder branch priority.</p>
+
+<table>
+    <tr><th>Branch type</th><th>Description</th></tr>
+    <tr><td>Branch to Mission</td><td>Proceeds to another mission in the campaign.
+        The SEXP dot is black.</td></tr>
+    <tr><td>Branch to Campaign Loop</td><td>An optional loop the player can accept
+        or skip. The SEXP dot is blue.</td></tr>
+    <tr><td>Repeat Mission</td><td>Loops back to the current mission, allowing the
+        player to retry it. The SEXP dot is black.</td></tr>
+    <tr><td>End Campaign</td><td>Ends the campaign. The SEXP dot is
+        black.</td></tr>
+</table>
+
+<p>Selecting a <strong>loop branch</strong> reveals additional fields:</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Loop description</td><td>Text shown on the loop accept/skip screen
+        in-game.</td></tr>
+    <tr><td>Animation</td><td>Animation played on the loop screen.</td></tr>
+    <tr><td>Voice file</td><td>Narration audio for the loop screen.</td></tr>
+</table>
+
+<h3>Graph view</h3>
+<p>Missions appear as boxes; drag connectors between them to create branches:</p>
+<table>
+    <tr><th>Connector</th><th>Creates</th></tr>
+    <tr><td>Blue → Green</td><td>A normal branch. The SEXP condition determines
+        whether this path is taken.</td></tr>
+    <tr><td>Orange → Green</td><td>A loop branch. The player is given the option to
+        accept or skip the loop before it executes.</td></tr>
+    <tr><td>Blue → End Campaign node</td><td>An end-of-campaign branch. The campaign
+        ends when this branch is taken. The same SEXP priority rules
+        apply.</td></tr>
+</table>
+<p>The End Campaign node is created automatically. Right-click a node in the graph
+for additional options, including <strong>Add Repeat Mission</strong>, which creates
+a branch that loops back to the same mission, the standard way to let the player
+retry a mission after failure.</p>
+</body>
+</html>

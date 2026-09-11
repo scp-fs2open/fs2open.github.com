@@ -1,6 +1,7 @@
 #include "modelreplace.h"
 
 #include "model/model.h"
+#include "model/modelinterp.h"
 
 #include "cfile/cfile.h"
 
@@ -12,17 +13,17 @@
 
 static SCP_unordered_map<SCP_string, std::vector<VirtualPOFDefinition>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> virtual_pofs;
 static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = {
-	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
-	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
-	{"$Add Engine:", &make_unique<VirtualPOFOperationAddEngine> },
-	{"$Add Glowpoint:", &make_unique<VirtualPOFOperationAddGlowpoint> },
-	{"$Add Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
-	{"$Add Dock Point:", &make_unique<VirtualPOFOperationAddDockPoint> },
-	{"$Add Path:", &make_unique<VirtualPOFOperationAddPath> },
-	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
-	{"$Set Subsystem Data:", &make_unique<VirtualPOFOperationChangeSubsystemData> },
-	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
-	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
+	{"$Add Subobject:", &std::make_unique<VirtualPOFOperationAddSubmodel> },
+	{"$Add Turret:", &std::make_unique<VirtualPOFOperationAddTurret> },
+	{"$Add Engine:", &std::make_unique<VirtualPOFOperationAddEngine> },
+	{"$Add Glowpoint:", &std::make_unique<VirtualPOFOperationAddGlowpoint> },
+	{"$Add Weapon Bank:", &std::make_unique<VirtualPOFOperationAddWeapons> },
+	{"$Add Dock Point:", &std::make_unique<VirtualPOFOperationAddDockPoint> },
+	{"$Add Path:", &std::make_unique<VirtualPOFOperationAddPath> },
+	{"$Rename Subobjects:", &std::make_unique<VirtualPOFOperationRenameSubobjects> },
+	{"$Set Subsystem Data:", &std::make_unique<VirtualPOFOperationChangeSubsystemData> },
+	{"$Set Subobject Data:", &std::make_unique<VirtualPOFOperationChangeData> },
+	{"$Set Header Data:", &std::make_unique<VirtualPOFOperationHeaderData> }
 };
 
 /*
@@ -86,7 +87,7 @@ public:
 		
 		//Don't load from cache if it's a virtual pof (always reload these) or we don't have it cached
 		if ((vp_it != virtual_pofs.end() && (int)vp_it->second.size() > depth[pof_name]) || it == cache.end()) {
-			auto pmh = ::make_shared<polymodel_holder>(pof_name, depth);
+			auto pmh = std::make_shared<polymodel_holder>(pof_name, depth);
 			if(pmh->needs_emplace)
 				cache.emplace(pof_name, pmh);
 			return pmh;
@@ -202,10 +203,12 @@ void virtual_pof_init() {
 
 template<typename T, bool vmalloc, typename member_t>
 inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t T::* ptm) {
-	if (vmalloc)
-		result.*ptm = (member_t)vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (size));
+	if constexpr (is_smart_pointer_v<std::decay_t<decltype(result.*ptm)>>)
+		result.*ptm = make_shared<typename std::decay_t<decltype(result.*ptm)>::element_type[]>(size);
+	else if constexpr (vmalloc)
+		result.*ptm = static_cast<member_t>(vm_malloc(sizeof(std::remove_pointer_t<member_t>) * size));
 	else
-		result.*ptm = new typename std::remove_pointer<member_t>::type[size];
+		result.*ptm = new std::remove_pointer_t<member_t>[size];
 
 	for (int i = 0; i < size; i++)
 		(result.*ptm)[i] = (item.*ptm)[i];
@@ -225,40 +228,19 @@ T object_copy_including_array_member(const T& item, int T::* size, member_t T::*
 }
 
 template<typename T>
-int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
+int reallocate_and_copy_array(std::shared_ptr<T[]>& array, int& size, size_t to_add) {
 	//Make sure to keep old data
-	T* oldArray = array;
-
-	Assertion(size >= 0, "Tried to realloc an array of negative size %d!", size);
-	int size_before = size;
-
-	//Realloc new submodel array of proper size
-	size += static_cast<int>(to_add);
-	array = new T[MAX(0,size)];
-
-	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
-	for (int i = 0; i < size_before; i++)
-		array[i] = std::move(oldArray[i]);
-	delete[] oldArray;
-
-	return size_before;
-}
-
-template<typename T>
-int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
-	//Make sure to keep old data
-	T* oldArray = array;
+	std::shared_ptr<T[]> oldArray = array;
 
 	int size_before = size;
 
 	//Realloc new submodel array of proper size
 	size += static_cast<int>(to_add);
-	array = (T*)vm_malloc(sizeof(T) * size);
+	array = make_shared<T[]>(size);
 
 	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
 	for (int i = 0; i < size_before; i++)
 		array[i] = std::move(oldArray[i]);
-	vm_free(oldArray);
 
 	return size_before;
 }
@@ -269,7 +251,7 @@ int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
 //Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere
 #define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& pass, map_t replace){ \
 	const auto it = replace.find(pass.first); \
-	intype input = { (it == replace.end() ? pass.first : it->second), pass.second };
+	intype input = { (it == replace.end() ? pass.first : it->second), std::move(pass.second) };
 #define CHANGE_HELPER_MAP_KEY_END  return input; }
 
 //Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place
@@ -286,11 +268,11 @@ CHANGE_HELPER(change_submodel_numbers, bsp_info, int)
 	for (auto& detail : input.details)
 		REPLACE_IF_EQ(detail);
 	REPLACE_IF_EQ(input.first_child);
-	REPLACE_IF_EQ(input.i_replace);
+	REPLACE_IF_EQ(input.prev_form);
 	for (auto& debris : input.live_debris)
 		REPLACE_IF_EQ(debris);
 	REPLACE_IF_EQ(input.look_at_submodel);
-	REPLACE_IF_EQ(input.my_replacement);
+	REPLACE_IF_EQ(input.next_form);
 	REPLACE_IF_EQ(input.next_sibling);
 	REPLACE_IF_EQ(input.parent);
 CHANGE_HELPER_END
@@ -359,7 +341,7 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 	}
 
 	if (optional_string("$Rename Subobjects:")) {
-		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
+		rename = std::make_unique<VirtualPOFOperationRenameSubobjects>();
 	}
 
 	required_string("+Destination Subobject:");
@@ -501,6 +483,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				for (const glow_point_bank* gpb : glowpointbanks) {
 					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::num_points, &glow_point_bank::points);
 					change_submodel_numbers(pm->glow_point_banks[insertFrom], replaceSubobjNo);
+					insertFrom++;
 				}
 			}
 		}
@@ -753,10 +736,10 @@ VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
 void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
 
-	w_bank*& banks = primary ? pm->gun_banks : pm->missile_banks;
+	auto& banks = primary ? pm->gun_banks : pm->missile_banks;
 	int& n_banks = primary ? pm->n_guns : pm->n_missiles;
 
-	const w_bank* const& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
+	const auto& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
 	const int& n_banks_src = primary ? appendingPM->pm()->n_guns : appendingPM->pm()->n_missiles;
 
 	const int& n_banks_max = primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
@@ -860,9 +843,9 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 		}
 	}
 
-	int destdock = reallocate_and_copy_array_vmalloc(pm->docking_bays, pm->n_docks, 1);
+	int destdock = reallocate_and_copy_array(pm->docking_bays, pm->n_docks, 1);
 	pm->docking_bays[destdock] = object_copy_including_array_member(appendingPM->docking_bays[dockpoint], &dock_bay::num_spline_paths, &dock_bay::splines);
-	int splinefrom = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
+	int splinefrom = reallocate_and_copy_array(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
 	
 	for (int i = 0; i < pm->docking_bays[destdock].num_spline_paths; i++) {
 		pm->paths[i + splinefrom] = object_copy_including_array_member(appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]], &model_path::nverts, &model_path::verts);
@@ -957,7 +940,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 		return;
 	}
 
-	int destpath = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, 1);
+	int destpath = reallocate_and_copy_array(pm->paths, pm->n_paths, 1);
 	pm->paths[destpath] = object_copy_including_array_member(appendingPM->paths[sourcePathNr], &model_path::nverts, &model_path::verts);
 
 	if (targetParentSubsystem) {

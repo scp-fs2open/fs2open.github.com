@@ -32,6 +32,10 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 // of whoever is calling these functions.  These functions are strictly
 // for damaging ship's hulls, shields, and subsystems.  Nothing more.
 
+// handle a -destroyed submodel in the special case where it is related to a special-point subsystem
+// (the usual submodel-submodel case is handled through the normal code paths)
+void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed);
+
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d *hitpos, bool no_explosion = false );
 

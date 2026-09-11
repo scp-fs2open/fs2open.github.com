@@ -1,4 +1,5 @@
 #include <QtWidgets/QMessageBox>
+#include <QShortcut>
 #include "MissionGoalsDialog.h"
 
 #include "ui/util/SignalBlockers.h"
@@ -13,14 +14,22 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 {
 	ui->setupUi(this);
 
-	ui->goalEventTree->initializeEditor(viewport->editor, this);
+	ui->goalEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->goalEventTree);
 
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
 
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_goals);
+
+	// Shift+F1 toggles the sexp help pane for this session without changing the saved preference.
+	auto* helpToggle = new QShortcut(QKeySequence(QStringLiteral("Shift+F1")), this);
+	connect(helpToggle, &QShortcut::activated, this, [this] {
+		ui->helpTextBox->setVisible(!ui->helpTextBox->isVisible());
+	});
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUi);
+	connect(ui->goalEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 
@@ -37,7 +46,7 @@ void MissionGoalsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void MissionGoalsDialog::reject()
@@ -54,7 +63,15 @@ void MissionGoalsDialog::reject()
 void MissionGoalsDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void MissionGoalsDialog::updateUi()
@@ -102,9 +119,9 @@ void MissionGoalsDialog::load_tree()
 	ui->goalEventTree->clear_tree();
 	auto& goals = _model->getGoals();
 	for (auto& goal : goals) {
-		goal.formula = ui->goalEventTree->load_sub_tree(goal.formula, true, "true");
+		goal.formula = ui->goalEventTree->_model.load_sub_tree(goal.formula, true, "true");
 	}
-	ui->goalEventTree->post_load();
+	ui->goalEventTree->_model.post_load();
 }
 void MissionGoalsDialog::recreate_tree()
 {
@@ -116,7 +133,7 @@ void MissionGoalsDialog::recreate_tree()
 		}
 
 		auto h = ui->goalEventTree->insert(goal.name.c_str());
-		h->setData(0, sexp_tree::FormulaDataRole, goal.formula);
+		h->setData(0, sexp_tree_view::FormulaDataRole, goal.formula);
 		ui->goalEventTree->add_sub_tree(goal.formula, h);
 	}
 
@@ -131,7 +148,7 @@ void MissionGoalsDialog::createNewObjective()
 	ui->goalEventTree->setCurrentItemIndex(-1);
 	ui->goalEventTree->add_operator("true", h);
 	auto index = goal.formula = ui->goalEventTree->getCurrentItemIndex();
-	h->setData(0, sexp_tree::FormulaDataRole, index);
+	h->setData(0, sexp_tree_view::FormulaDataRole, index);
 
 	ui->goalEventTree->setCurrentItem(h);
 }

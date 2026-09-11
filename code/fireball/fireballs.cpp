@@ -107,7 +107,7 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0F, SND_PRIORITY_SINGLE_INSTANCE, NULL, fb->warp_sound_range_multiplier); // play warp sound effect
 }
 
-static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fireball_index)
+static void fireball_generate_unique_id(char *unique_id, size_t buffer_size, int fireball_index)
 {
 	Assertion(SCP_vector_inbounds(Fireball_info, fireball_index), "fireball_index is out of bounds!");
 
@@ -115,37 +115,37 @@ static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fir
 	{
 		// use sensible names for the fireball.tbl default entries
 		case FIREBALL_EXPLOSION_MEDIUM:
-			strncpy(unique_id, "Medium Explosion", buffer_len);
+			strncpy(unique_id, "Medium Explosion", buffer_size-1);
 			break;
 
 		case FIREBALL_WARP:
-			strncpy(unique_id, "Warp Effect", buffer_len);
+			strncpy(unique_id, "Warp Effect", buffer_size-1);
 			break;
 
 		case FIREBALL_KNOSSOS:
-			strncpy(unique_id, "Knossos Effect", buffer_len);
+			strncpy(unique_id, "Knossos Effect", buffer_size-1);
 			break;
 
 		case FIREBALL_ASTEROID:
-			strncpy(unique_id, "Asteroid Explosion", buffer_len);
+			strncpy(unique_id, "Asteroid Explosion", buffer_size-1);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE1:
-			strncpy(unique_id, "Large Explosion 1", buffer_len);
+			strncpy(unique_id, "Large Explosion 1", buffer_size-1);
 			break;
 
 		case FIREBALL_EXPLOSION_LARGE2:
-			strncpy(unique_id, "Large Explosion 2", buffer_len);
+			strncpy(unique_id, "Large Explosion 2", buffer_size-1);
 			break;
 
 		// base the id on the index
 		default:
-			snprintf(unique_id, buffer_len, "Custom Fireball %d", fireball_index - NUM_DEFAULT_FIREBALLS + 1);
+			snprintf(unique_id, buffer_size, "Custom Fireball %d", fireball_index - NUM_DEFAULT_FIREBALLS + 1);
 			break;
 	}
 
 	// null-terminate
-	unique_id[buffer_len - 1] = '\0';
+	unique_id[buffer_size-1] = '\0';
 }
 
 /**
@@ -920,19 +920,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 		return -1;
 	}
 
-
-	if (!Unused_fireball_indices.empty()) {
-		n = Unused_fireball_indices.back();
-		Unused_fireball_indices.pop_back();
-	}
-	else {
-		n = static_cast<int>(Fireballs.size());
-		Fireballs.emplace_back();
-	}
-
-	fireball* new_fireball = &Fireballs[n];
-
-	// get an lod to use	
+	// get an lod to use
 	fb_lod = fireball_get_lod(pos, fd, size);
 
 	// change lod if low res is desired
@@ -947,8 +935,21 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	}
 	fl = &fd->lod[fb_lod];
 
-	new_fireball->lod = (char)fb_lod;
+	// don't create a fireball without usable graphics
+	if (fl->bitmap_id < 0 || fl->fps <= 0 || fl->num_frames <= 0) {
+		return -1;
+	}
 
+	if (!Unused_fireball_indices.empty()) {
+		n = Unused_fireball_indices.back();
+		Unused_fireball_indices.pop_back();
+	} else {
+		n = sz2i(Fireballs.size());
+		Fireballs.emplace_back();
+	}
+	auto new_fireball = &Fireballs[n];
+
+	new_fireball->lod = (char)fb_lod;
 	new_fireball->flags = extra_flags;
 	new_fireball->warp_open_sound_index = warp_open_sound;
 	new_fireball->warp_close_sound_index = warp_close_sound;
@@ -1005,7 +1006,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 			break;
 
 		default:
-			UNREACHABLE("Bad type set in fireball_create");
+			UNREACHABLE("Bad type %d set in fireball_create", new_fireball->fireball_render_type);
 			break;
 	}
 
@@ -1088,8 +1089,8 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 {
 	Assert( red && blue && green );
 
+	Assertion(SCP_vector_inbounds(Fireball_info, idx), "idx is out of bounds!");
 	if (!SCP_vector_inbounds(Fireball_info, idx)) {
-		UNREACHABLE("idx is out of bounds!");
 		
 		*red = 1.0f;
 		*green = 1.0f;

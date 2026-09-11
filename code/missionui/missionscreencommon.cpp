@@ -32,12 +32,14 @@
 #include "io/mouse.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "missionui/chatbox.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "network/multi.h"
 #include "network/multi_endgame.h"
 #include "network/multimsgs.h"
@@ -83,19 +85,14 @@ shader Icon_shaders[NUM_ICON_FRAMES];
 loadout_data Player_loadout;	// what the ship and weapon loadout is... used since we want to use the 
 								// same loadout if the mission is played again
 
-//wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
-//int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
-//int		Ss_pool[MAX_SHIP_CLASSES];				// ship pool
-//int		Wss_num_wings;								// number of player wings
-
 wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
-int		Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-int		Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+SCP_map<int, int>	Wl_pool_teams[MAX_TVT_TEAMS];
+SCP_map<int, int>	Ss_pool_teams[MAX_TVT_TEAMS];
 int		Wss_num_wings_teams[MAX_TVT_TEAMS];
 
 wss_unit	*Wss_slots = NULL;
-int		*Wl_pool = NULL;
-int		*Ss_pool = NULL;
+SCP_map<int, int>	*Wl_pool = nullptr;
+SCP_map<int, int>	*Ss_pool = nullptr;
 int		Wss_num_wings;
 
 //////////////////////////////////////////////////////////////////
@@ -499,8 +496,8 @@ void common_set_team_pointers(int team)
 	Assert( (team >= 0) && (team < MAX_TVT_TEAMS) );
 
 	Wss_slots = Wss_slots_teams[team];
-	Ss_pool = Ss_pool_teams[team];
-	Wl_pool = Wl_pool_teams[team];
+	Ss_pool = &Ss_pool_teams[team];
+	Wl_pool = &Wl_pool_teams[team];
 
 	ss_set_team_pointers(team);
 	wl_set_team_pointers(team);
@@ -515,8 +512,8 @@ void common_reset_team_pointers()
 	// these are done last so that we can make use of the Assert()'s in the above
 	// functions to make sure the screens are exited and this is safe
 	Wss_slots = NULL;
-	Ss_pool = NULL;
-	Wl_pool = NULL;
+	Ss_pool = nullptr;
+	Wl_pool = nullptr;
 }
 
 // common_select_init() will load in animations and bitmaps that are common to the 
@@ -1058,8 +1055,13 @@ int common_scroll_up_pressed(int *start, int size, int max_show)
 //
 int common_scroll_down_pressed(int *start, int size, int max_show)
 {
-	// check if we even need to scroll at all
+	// if the whole list fits on screen, the start offset must be 0;
+	// reset a stale non-zero offset so the up arrow doesn't get stuck
 	if ( size <= max_show ) {
+		if ( *start > 0 ) {
+			*start = 0;
+			return 1;
+		}
 		return 0;
 	}
 
@@ -1093,14 +1095,10 @@ void wss_save_loadout()
 	Assert( (Ss_pool != NULL) && (Wl_pool != NULL) && (Wss_slots != NULL) );
 
 	// save the ship pool
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Player_loadout.ship_pool[i] = Ss_pool[i]; 
-	}
+	Player_loadout.ship_pool = *Ss_pool;
 
 	// save the weapons pool
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Player_loadout.weapon_pool[i] = Wl_pool[i]; 
-	}
+	Player_loadout.weapon_pool = *Wl_pool;
 
 	// save the ship class / weapons for each slot
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
@@ -1130,23 +1128,13 @@ void wss_maybe_restore_loadout()
 		return;
 	}
 
-	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is 
+	// first we generate a pool of ships and weapons used the last time this mission was played. We also generate a pool of what is
 	// available in this mission.
-	int	last_loadout_ships[MAX_SHIP_CLASSES];
-	int	this_loadout_ships[MAX_SHIP_CLASSES];
+	SCP_vector<int> last_loadout_ships(ship_info_size(), 0);
+	SCP_vector<int> this_loadout_ships(ship_info_size(), 0);
 
-	int	last_loadout_weapons[MAX_WEAPON_TYPES];
-	int	this_loadout_weapons[MAX_WEAPON_TYPES];
-
-	// zero all pools
-	for (i = 0; i < MAX_SHIP_CLASSES; i++) {
-		last_loadout_ships[i] = 0; 
-		this_loadout_ships[i] = 0; 
-	}
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		last_loadout_weapons[i] = 0; 
-		this_loadout_weapons[i] = 0; 
-	}
+	SCP_vector<int> last_loadout_weapons(weapon_info_size(), 0);
+	SCP_vector<int> this_loadout_weapons(weapon_info_size(), 0);
 
 	// record the ship classes / weapons used last time
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
@@ -1155,7 +1143,7 @@ void wss_maybe_restore_loadout()
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(slot->wep[j])) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1168,7 +1156,7 @@ void wss_maybe_restore_loadout()
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(Wss_slots[i].wep[j])) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1177,21 +1165,25 @@ void wss_maybe_restore_loadout()
 
 	// now compare the two, adding in what was left in the pools. If there are less of a ship or weapon class in the mission now
 	// than there were last time, we can't restore and must abort.
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] >= 1) {
-			this_loadout_ships[i] += Ss_pool[i];
-		}
-		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
-			return; 
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count >= 1) {
+			this_loadout_ships[ship_class] += count;
 		}
 	}
-	
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] >= 1) {
-			this_loadout_weapons[i] += Wl_pool[i];
+	for (i = 0; i < ship_info_size(); i++) {
+		if ( this_loadout_ships[i] < last_loadout_ships[i]) {
+			return;
 		}
+	}
+
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count >= 1) {
+			this_loadout_weapons[weapon_class] += count;
+		}
+	}
+	for (i = 0; i < weapon_info_size(); i++) {
 		if ( this_loadout_weapons[i] < last_loadout_weapons[i]) {
-			return; 
+			return;
 		}
 	}
 
@@ -1199,7 +1191,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
+		if (Ship_info.in_bounds(slot->ship_class)) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1208,7 +1200,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+			if (Ship_info.in_bounds(slot->ship_class) && Weapon_info.in_bounds(slot->wep[j])) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
@@ -1218,14 +1210,25 @@ void wss_maybe_restore_loadout()
 		}
 	}	
 
-	// restore the ship pool
+	// restore the ship pool.  Update counts for classes already in the loadout, then add any class the
+	// previous runthrough used that isn't in it (two passes so we don't iterate over mid-loop inserts).
+	for (auto &[ship_class, count] : *Ss_pool) {
+		count = this_loadout_ships[ship_class];
+	}
 	for ( i = 0; i < ship_info_size(); i++ ) {
-		Ss_pool[i] = this_loadout_ships[i]; 
+		if (this_loadout_ships[i] > 0 && !Ss_pool->contains(i)) {
+			(*Ss_pool)[i] = this_loadout_ships[i];
+		}
 	}
 
 	// restore the weapons pool
+	for (auto &[weapon_class, count] : *Wl_pool) {
+		count = this_loadout_weapons[weapon_class];
+	}
 	for ( i = 0; i < weapon_info_size(); i++ ) {
-		Wl_pool[i] = this_loadout_weapons[i]; 
+		if (this_loadout_weapons[i] > 0 && !Wl_pool->contains(i)) {
+			(*Wl_pool)[i] = this_loadout_weapons[i];
+		}
 	}
 }
 
@@ -1384,10 +1387,10 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return 0;
 
-	// write the ship pool
+	// write the ship pool (only positive counts; the pool map can also hold exhausted 0-count entries)
 	pool_size = 0;
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] > 0) {
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count > 0) {
 			++pool_size;
 		}
 	}
@@ -1396,17 +1399,17 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 
 	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of ship pool exceeds max data size!");
 
-	for (i = 0; i < ship_info_size(); i++) {
-		if (Ss_pool[i] > 0) {
-			ADD_SHORT(static_cast<short>(i));
-			ADD_SHORT(static_cast<short>(Ss_pool[i]));
+	for (const auto &[ship_class, count] : *Ss_pool) {
+		if (count > 0) {
+			ADD_SHORT(static_cast<short>(ship_class));
+			ADD_SHORT(static_cast<short>(count));
 		}
 	}
 
 	// write the weapon pool
 	pool_size = 0;
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] > 0) {
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count > 0) {
 			++pool_size;
 		}
 	}
@@ -1415,10 +1418,10 @@ int store_wss_data(ubyte *data, __UNUSED const unsigned int max_size, interface_
 
 	Assertion((((sizeof(short)+sizeof(short)) * pool_size) + packet_size) < max_size, "Size of weapon pool exceeds max data size!");
 
-	for (i = 0; i < weapon_info_size(); i++) {
-		if (Wl_pool[i] > 0) {
-			ADD_SHORT(static_cast<short>(i));
-			ADD_SHORT(static_cast<short>(Wl_pool[i]));
+	for (const auto &[weapon_class, count] : *Wl_pool) {
+		if (count > 0) {
+			ADD_SHORT(static_cast<short>(weapon_class));
+			ADD_SHORT(static_cast<short>(count));
 		}
 	}
 
@@ -1473,28 +1476,28 @@ int restore_wss_data(ubyte *data)
 		return 0;
 
 	// restore ship pool
-	memset(Ss_pool, 0, MAX_SHIP_CLASSES*sizeof(int));
+	Ss_pool->clear();
 	GET_USHORT(pool_size);
 
 	for (i = 0; i < pool_size; i++) {
 		GET_SHORT(b1);
 		GET_SHORT(b2);
 
-		if (b1 < MAX_SHIP_CLASSES) {
-			Ss_pool[b1] = b2;
+		if (Ship_info.in_bounds(b1)) {
+			(*Ss_pool)[b1] = b2;
 		}
 	}
 
 	// restore weapons pool
-	memset(Wl_pool, 0, MAX_WEAPON_TYPES*sizeof(int));
+	Wl_pool->clear();
 	GET_USHORT(pool_size);
 
 	for (i = 0; i < pool_size; i++) {
 		GET_SHORT(b1);
 		GET_SHORT(b2);
 
-		if (b1 < MAX_SHIP_CLASSES) {
-			Wl_pool[b1] = b2;
+		if (Weapon_info.in_bounds(b1)) {
+			(*Wl_pool)[b1] = b2;
 		}
 	}
 
@@ -1551,13 +1554,18 @@ int restore_wss_data(ubyte *data)
 	return offset;
 }
 
-void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
+void draw_model_icon(int model_id, uint64_t flags, int x, int y, int w, int h, ship_info* sip, weapon_info* wip, float zoom_multiplier, int resize_mode)
 {
+	// Can't draw a non-model
+	if (model_id < 0)
+		return;
+
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = vmd_zero_angles;
-	float zoom = closeup_zoom * 2.5f;
 
-	if(sip == NULL)
+	if (sip == nullptr)
 	{
 		//Assume it's a weapon
 		rot_angles.h = -(PI_2);
@@ -1585,14 +1593,20 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	gr_set_clip(x, y, w, h, resize_mode);
 	g3_start_frame(1);
-	if(sip != NULL)
+	if (sip != nullptr)
 	{
-		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
+		const auto& closeup_pos = sip->icon_closeup_pos.value_or(sip->closeup_pos);
+		const auto closeup_zoom = sip->icon_closeup_zoom.value_or(sip->closeup_zoom);
+		const auto zoom = closeup_zoom * zoom_multiplier * 2.5f;
+
+		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, zoom);
 
 		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
+		Assertion(wip != nullptr, "Weapon is null, get a coder!");
+
 		polymodel *pm = model_get(model_id);
 		bsp_info *bs = NULL;	//tehe
 		for(int i = 0; i < pm->n_models; i++)
@@ -1609,24 +1623,23 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 			bs = &pm->submodel[0];
 		}
 
-		vec3d weap_closeup = *closeup_pos;
+		vec3d weap_closeup = wip->icon_closeup_pos.value_or(wip->closeup_pos);
 		float y_closeup;
-		float tm_zoom = closeup_zoom;
+		float tm_zoom = wip->icon_closeup_zoom.value_or(wip->closeup_zoom) * zoom_multiplier;
 
-		//Find the center of teh submodel
-		weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z)/2.0f);
-		weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y)/2.0f);
-		//weap_closeup.xyz.z = (weap_closeup.xyz.x/tanf(zoom / 2.0f));
-		weap_closeup.xyz.z = -(bs->rad/tanf(tm_zoom/2.0f));
+		if (!wip->icon_closeup_pos.has_value()) {
+			// Find the center of the submodel when no icon-specific position override is defined
+			weap_closeup.xyz.x = -(bs->min.xyz.z + (bs->max.xyz.z - bs->min.xyz.z) / 2.0f);
+			weap_closeup.xyz.y = -(bs->min.xyz.y + (bs->max.xyz.y - bs->min.xyz.y) / 2.0f);
+			weap_closeup.xyz.z = -(bs->rad / tanf(tm_zoom / 2.0f));
 
-		y_closeup = -(weap_closeup.xyz.y/tanf(tm_zoom / 2.0f));
-		if(y_closeup < weap_closeup.xyz.z)
-		{
-			weap_closeup.xyz.z = y_closeup;
-		}
-		if(bs->min.xyz.x < weap_closeup.xyz.z)
-		{
-			weap_closeup.xyz.z = bs->min.xyz.x;
+			y_closeup = -(weap_closeup.xyz.y / tanf(tm_zoom / 2.0f));
+			if (y_closeup < weap_closeup.xyz.z) {
+				weap_closeup.xyz.z = y_closeup;
+			}
+			if (bs->min.xyz.x < weap_closeup.xyz.z) {
+				weap_closeup.xyz.z = bs->min.xyz.x;
+			}
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
@@ -1651,9 +1664,15 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
+	int model_instance = -1;
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (sip != nullptr && cache_result == TriStateBool::TRUE_) {
+		model_set_up_techroom_instance(sip, model_instance);
+	}
 
 	render_info.set_flags(flags);
-	model_render_immediate(&render_info, model_id, &object_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, model_id, model_instance, &object_orient, &vmd_zero_vector);
 	Glowpoint_override = false;
 
 	gr_end_view_matrix();
@@ -1663,11 +1682,20 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 	gr_reset_clip();
 }
 
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, select_effect_params effect_params)
+void draw_model_rotating(model_render_params *render_info, int ship_class, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, select_effect_params effect_params)
 {
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
 		return;
+
+	int model_instance = -1;
+	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across frames.
+	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class) && cache_result == TriStateBool::TRUE_) {
+		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
+	}
+
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
 
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
@@ -1817,12 +1845,12 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
 				if ( flags & MR_IS_MISSILE )  {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 				} else {
-					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+					shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 				}
 
-				model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 				shadows_end_render();
 
 				gr_set_clip(x1, y1, x2, y2, resize_mode);
@@ -1842,14 +1870,14 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				
 				render_info->set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
-				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time >= 1.5f) { // Render the ship in Phase 2 onwards
 				render_info->set_clip_plane(plane_point,ship_normal);
 				render_info->set_flags(flags);
 
-				model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+				model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			}
 
 			if (time < 2.5f) { // Render the scanline in Phase 1 and 2
@@ -1909,9 +1937,9 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f}});
 			} else {
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f);
+				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 2000.0f, -closeup_pos->xyz.z + pm->rad + 10000.0f}});
 			}
 
 			model_render_params shadow_render_info;
@@ -1919,7 +1947,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			shadow_render_info.set_flags(flags | MR_NO_TEXTURING | MR_NO_LIGHTING);
 			shadow_render_info.set_detail_level_lock(0);
 
-			model_render_immediate(&shadow_render_info, model_id, &model_orient, &vmd_zero_vector);
+			model_render_immediate(&shadow_render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 			shadows_end_render();
 		}
 
@@ -1937,7 +1965,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_flags(flags);
 		}
 
-		model_render_immediate(render_info, model_id, &model_orient, &vmd_zero_vector);
+		model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
 
 		batching_render_all();
 

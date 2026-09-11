@@ -42,7 +42,7 @@ int Shockwave_inited = 0;
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
-#define SW_INDEX(sw) (sw-Shockwaves)
+#define SW_INDEX(sw) (static_cast<int>((sw)-Shockwaves))
 	
 // -----------------------------------------------------------
 // Externals
@@ -60,6 +60,7 @@ static void parse_shockwaves_func()
 	Use_3D_shockwaves = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwaves",
                      std::pair<const char*, int>{"Shockwaves", 1722},
                      std::pair<const char*, int>{"The way shockwaves are displayed. Changes will be reflected in the next loaded mission.", 1723})
@@ -181,7 +182,8 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, tmp_flags + Object::Object_Flags::Renders, false );
 
 	if ( objnum == -1 ){
-		Int3();
+		mprintf(("Couldn't create shockwave object -- out of object slots\n"));
+		return -1;
 	}
 
 	sw->objnum = objnum;
@@ -306,7 +308,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		CLAMP(sw->radius, 0.0f, sw->outer_radius);
 	}
 
-	if ( sw->time_elapsed > sw->total_time ) {
+	// It is possible the shockwave may have lifetime shorter than one frame (e.g. high speed, small radius), 
+	// which by default results in shockwave applying no damage.
+	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
+	bool sw_expired = sw->time_elapsed > sw->total_time;
+	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+
+	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
@@ -441,6 +449,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 	}	// end for
+
+	// See the sw_expired check above: shockwave has now applied its final damage pass this frame, so let it die.  
+	// With the flag off we already returned before the loop.
+	if ( sw_expired && sw_expire_fix ) {
+        shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
+	}
 }
 
 /**

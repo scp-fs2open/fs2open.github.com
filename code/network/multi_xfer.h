@@ -87,7 +87,7 @@ void multi_xfer_xor_flags(int handle,int flags);
 int multi_xfer_get_flags(int handle);
 
 // if the passed filename is being xferred, return the xfer handle, otherwise return -1
-int multi_xfer_lookup(char *filename);
+int multi_xfer_lookup(const char *filename);
 
 // get the % of completion of the passed file handle, return < 0 if invalid
 float multi_xfer_pct_complete(int handle);

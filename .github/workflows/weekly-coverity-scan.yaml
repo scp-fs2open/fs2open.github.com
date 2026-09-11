@@ -11,7 +11,6 @@ on:
     - cron: "5 0 * * 5" # Run once per a week on Friday morning (midnight UTC, 4 AM EST), to avoid Coverity's submission limits
 
 env:
-  QT_VERSION: 5.12.12
   coverity_email: SirKnightlySCP@gmail.com
   coverity_token: ${{ secrets.COVERITY_TOKEN }}
 
@@ -20,7 +19,7 @@ jobs:
     name: Build FSO With Coverity Wrapper
     if: github.repository == 'scp-fs2open/fs2open.github.com'
     runs-on: ${{ matrix.config.os }}
-    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
+    container: ghcr.io/scp-fs2open/linux_build:sha-ab87451
     strategy:
       fail-fast: false
       matrix:
@@ -29,9 +28,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v7
         with:
           submodules: recursive # `true` to checkout submodules, `recursive` to recursively checkout submodules
+      - name: Set workspace as safe
+        # This appears to be broken in current actions, so do it manually
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       # pipe results of wget to a log file because it's very verbose and rarely fails
       - name: Install Coverity
@@ -49,7 +51,6 @@ jobs:
         env:
           CONFIGURATION: Release
           COMPILER: gcc-9
-          ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
       - name: Build FSO with Coverity Wrapper

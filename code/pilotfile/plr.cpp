@@ -64,7 +64,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = ship_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->ship_kills.push_back(ilist);
+		scoring->ship_kills.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 
@@ -78,7 +78,7 @@ void read_multi_stats(pilot::FileHandler* handler, scoring_special_t* scoring) {
 		ilist.index = medals_info_lookup(ilist.name.c_str());
 		ilist.val = handler->readInt("val");
 
-		scoring->medals_earned.push_back(ilist);
+		scoring->medals_earned.push_back(std::move(ilist));
 	}
 	handler->endArrayRead();
 }
@@ -356,7 +356,10 @@ void pilotfile::plr_read_variables()
 		handler->readString("text", n_var.text, TOKEN_LENGTH);
 		handler->readString("variable_name", n_var.variable_name, TOKEN_LENGTH);
 
-		p->variables.push_back( n_var );
+		Assert(n_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE);
+		if (n_var.type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+			p->variables.push_back(std::move(n_var));
+		}
 	}
 	handler->endArrayRead();
 }
@@ -411,7 +414,12 @@ void pilotfile::plr_read_containers()
 				container.map_data.emplace(key, data);
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
+		}
+
+		Assert(container.is_eternal());
+		if (!container.is_eternal()) {
+			p->containers.pop_back();
 		}
 	}
 	handler->endArrayRead();
@@ -449,7 +457,7 @@ void pilotfile::plr_write_containers()
 				++i;
 			}
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		handler->endSectionWrite();
@@ -560,7 +568,7 @@ void pilotfile::plr_read_stats()
 		for (size_t idx = 0; idx < list_size; idx++) {
 			auto j = all_time_stats.ship_kills[idx].index;
 
-			if (j >= 0) {
+			if (p->stats.kills.in_bounds(j)) {
 				p->stats.kills[j] = all_time_stats.ship_kills[idx].val;
 			}
 		}
@@ -657,7 +665,7 @@ void pilotfile::plr_read_stats_multi()
 		for (size_t idx = 0; idx < list_size; idx++) {
 			auto j = multi_stats.ship_kills[idx].index;
 
-			if (j >= 0) {
+			if (p->stats.kills.in_bounds(j)) {
 				p->stats.kills[j] = multi_stats.ship_kills[idx].val;
 			}
 		}

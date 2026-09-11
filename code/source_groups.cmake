@@ -115,6 +115,8 @@ add_file_folder("Bmpman"
 add_file_folder("Camera"
 	camera/camera.cpp
 	camera/camera.h
+	camera/photomode.cpp
+	camera/photomode.h
 )
 
 add_file_folder("Cheats Table"
@@ -229,6 +231,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
+	def_files/data/effects/default-material-f.sdr
+	def_files/data/effects/default-material-v.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
 	def_files/data/effects/deferred-clear-v.sdr
@@ -245,6 +249,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/fxaa-v.sdr
 	def_files/data/effects/fxaapre-f.sdr
 	def_files/data/effects/gamma.sdr
+	def_files/data/effects/gamma-correct-f.sdr
 	def_files/data/effects/irrmap-f.sdr
 	def_files/data/effects/lighting.sdr
 	def_files/data/effects/ls-f.sdr
@@ -264,6 +269,9 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_map-f.sdr
+	def_files/data/effects/shadow_map-g.sdr
+	def_files/data/effects/shadow_map-v.sdr
 	def_files/data/effects/shadows.sdr
 	def_files/data/effects/shield-impact-v.sdr
 	def_files/data/effects/shield-impact-f.sdr
@@ -274,10 +282,12 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/smaa-edge-f.sdr
 	def_files/data/effects/smaa-neighbour-v.sdr
 	def_files/data/effects/smaa-neighbour-f.sdr
+	def_files/data/effects/smaa-resolve-f.sdr
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
 	def_files/data/effects/volumetric-f.sdr
+	def_files/data/effects/z-compress.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -466,6 +476,11 @@ add_file_folder("Graphics"
 	graphics/post_processing.h
 	graphics/render.cpp
 	graphics/render.h
+	graphics/shader_preprocess.cpp
+	graphics/shader_preprocess.h
+	graphics/shader_types.cpp
+	graphics/shader_types.h
+	graphics/render_queue.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -512,6 +527,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/ShaderProgram.h
 		graphics/opengl/SmaaAreaTex.h
 		graphics/opengl/SmaaSearchTex.h
+		graphics/opengl/es_compatibility.h
 	)
 endif()
 
@@ -560,6 +576,10 @@ add_file_folder("Graphics\\\\SoftwareGr\\\\Font"
 add_file_folder("Graphics\\\\Util"
 	graphics/util/GPUMemoryHeap.cpp
 	graphics/util/GPUMemoryHeap.h
+	graphics/util/pixel_swizzle.h
+	graphics/util/pixel_swizzle.cpp
+	graphics/util/primitives.h
+	graphics/util/primitives.cpp
 	graphics/util/uniform_structs.h
 	graphics/util/UniformAligner.h
 	graphics/util/UniformAligner.cpp
@@ -573,12 +593,65 @@ if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
 		graphics/vulkan/gr_vulkan.cpp
 		graphics/vulkan/gr_vulkan.h
-		graphics/vulkan/RenderFrame.cpp
-		graphics/vulkan/RenderFrame.h
-		graphics/vulkan/vulkan_stubs.cpp
-		graphics/vulkan/vulkan_stubs.h
+		graphics/vulkan/VulkanBarrier.cpp
+		graphics/vulkan/VulkanBarrier.h
+		graphics/vulkan/VulkanBuffer.cpp
+		graphics/vulkan/VulkanBuffer.h
+		graphics/vulkan/VulkanConvert.cpp
+		graphics/vulkan/VulkanConvert.h
+		graphics/vulkan/VulkanDeferred.cpp
+		graphics/vulkan/VulkanDeferred.h
+		graphics/vulkan/VulkanDeletionQueue.cpp
+		graphics/vulkan/VulkanDeletionQueue.h
+		graphics/vulkan/VulkanDescriptorManager.cpp
+		graphics/vulkan/VulkanDescriptorManager.h
+		graphics/vulkan/VulkanDraw.cpp
+		graphics/vulkan/VulkanDraw.h
+		graphics/vulkan/VulkanDrawAPI.cpp
+		graphics/vulkan/VulkanMemory.cpp
+		graphics/vulkan/VulkanMemory.h
+		graphics/vulkan/VulkanOpenXR.cpp
+		graphics/vulkan/VulkanOpenXR.h
+		graphics/vulkan/VulkanPerFrameUbo.cpp
+		graphics/vulkan/VulkanPerFrameUbo.h
+		graphics/vulkan/VulkanPipeline.cpp
+		graphics/vulkan/VulkanPipeline.h
+		graphics/vulkan/VulkanPostProcessing.cpp
+		graphics/vulkan/VulkanPostProcessing.h
+		graphics/vulkan/VulkanPostProcessingBloom.cpp
+		graphics/vulkan/VulkanPostProcessingCommon.cpp
+		graphics/vulkan/VulkanPostProcessingDistortion.cpp
+		graphics/vulkan/VulkanPostProcessingFog.cpp
+		graphics/vulkan/VulkanPostProcessingGBuffer.cpp
+		graphics/vulkan/VulkanPostProcessingLDR.cpp
+		graphics/vulkan/VulkanPostProcessingLighting.cpp
+		graphics/vulkan/VulkanPostProcessingMSAA.cpp
+		graphics/vulkan/VulkanPostProcessingSMAA.cpp
+		graphics/vulkan/VulkanPostProcessingShadow.cpp
+		graphics/vulkan/VulkanQuery.cpp
+		graphics/vulkan/VulkanQuery.h
+		graphics/vulkan/VulkanRaytracing.cpp
+		graphics/vulkan/VulkanRaytracing.h
+		graphics/vulkan/VulkanRaytracingBlas.cpp
+		graphics/vulkan/VulkanRaytracingTlas.cpp
 		graphics/vulkan/VulkanRenderer.cpp
 		graphics/vulkan/VulkanRenderer.h
+		graphics/vulkan/VulkanRendererImGui.cpp
+		graphics/vulkan/VulkanRendererLoop.cpp
+		graphics/vulkan/VulkanRendererSetup.cpp
+		graphics/vulkan/VulkanRenderFrame.cpp
+		graphics/vulkan/VulkanRenderFrame.h
+		graphics/vulkan/VulkanShader.cpp
+		graphics/vulkan/VulkanShader.h
+		graphics/vulkan/VulkanShaderCompiler.cpp
+		graphics/vulkan/VulkanShaderCompiler.h
+		graphics/vulkan/VulkanState.cpp
+		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanTexture.cpp
+		graphics/vulkan/VulkanTexture.h
+		graphics/vulkan/VulkanTextureAPI.cpp
+		graphics/vulkan/VulkanVertexFormat.cpp
+		graphics/vulkan/VulkanVertexFormat.h
 	)
 endif()
 
@@ -674,7 +747,11 @@ add_file_folder("Io"
 	io/joy.h
 	io/joy-sdl.cpp
 	io/joy_ff.h
-	io/joy_ff-sdl.cpp
+	io/joy_ff.cpp
+	io/joy_haptic.h
+	io/joy_haptic.cpp
+	io/joy_rumble.h
+	io/joy_rumble.cpp
 	io/spacemouse.cpp
 	io/spacemouse.h
 )
@@ -840,6 +917,20 @@ add_file_folder("Mission"
 add_file_folder("MissionEditor"
 	missioneditor/common.cpp
 	missioneditor/common.h
+	missioneditor/campaignsave.cpp
+	missioneditor/campaignsave.h
+	missioneditor/missionsave.cpp
+	missioneditor/missionsave.h
+	missioneditor/objectduplication.cpp
+	missioneditor/objectduplication.h
+	missioneditor/sexp_annotation_model.cpp
+	missioneditor/sexp_annotation_model.h
+	missioneditor/sexp_tree_model.cpp
+	missioneditor/sexp_tree_model.h
+	missioneditor/sexp_tree_opf.cpp
+	missioneditor/sexp_tree_opf.h
+	missioneditor/sexp_tree_actions.cpp
+	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files
@@ -879,6 +970,7 @@ add_file_folder("Model"
 	model/model.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
+	model/modelinterp.h
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
@@ -1115,6 +1207,7 @@ add_file_folder("Parse\\\\SEXP"
 # Particle files
 add_file_folder("Particle"
 	particle/EffectHost.h
+	particle/EffectHost.cpp
 	particle/particle.cpp
 	particle/particle.h
 	particle/ParticleEffect.cpp
@@ -1147,6 +1240,8 @@ add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.h
 	particle/volumes/LegacyAACuboidVolume.cpp
 	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/ModelSurfaceVolume.cpp
+	particle/volumes/ModelSurfaceVolume.h
 	particle/volumes/PointVolume.cpp
 	particle/volumes/PointVolume.h
 	particle/volumes/RingVolume.cpp
@@ -1208,6 +1303,13 @@ add_file_folder("Popup"
 	popup/popup.h
 	popup/popupdead.cpp
 	popup/popupdead.h
+)
+
+# Prop files
+add_file_folder("Prop"
+	prop/prop.cpp
+	prop/prop.h
+	prop/prop_flags.h
 )
 
 # Radar files
@@ -1474,6 +1576,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/prop.cpp
+	scripting/api/objs/prop.h
+	scripting/api/objs/propclass.cpp
+	scripting/api/objs/propclass.h
 	scripting/api/objs/rank.cpp
 	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp
@@ -1500,6 +1606,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp
 	scripting/api/objs/species.h
+	scripting/api/objs/support_rearm_pool.cpp
+	scripting/api/objs/support_rearm_pool.h
 	scripting/api/objs/streaminganim.cpp
 	scripting/api/objs/streaminganim.h
 	scripting/api/objs/subsystem.cpp
@@ -1520,6 +1628,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/tracing_category.h
 	scripting/api/objs/vecmath.cpp
 	scripting/api/objs/vecmath.h
+	scripting/api/objs/volumetric.cpp
+	scripting/api/objs/volumetric.h
 	scripting/api/objs/waypoint.cpp
 	scripting/api/objs/waypoint.h
 	scripting/api/objs/weaponclass.cpp
@@ -1562,6 +1672,7 @@ add_file_folder("Scripting\\\\Lua\\\\BitOp"
 
 # Ship files
 add_file_folder("Ship"
+	ship/anchor_t.h
 	ship/afterburner.cpp
 	ship/afterburner.h
 	ship/awacs.cpp
@@ -1600,16 +1711,30 @@ add_file_folder("Sound"
 	sound/rtvoice.h
 	sound/sound.cpp
 	sound/sound.h
-	sound/speech.cpp
 	sound/speech.h
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
 
-if (APPLE)
+if (WIN32)
 	add_file_folder("Sound"
 		${file_root_sound}
-		sound/speech.mm
+		sound/speech_win.cpp
+	)
+elseif (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_mac.mm
+	)
+elseif (ANDROID)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_android.cpp
+	)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech_linux.cpp
 	)
 endif()
 
@@ -1710,8 +1835,11 @@ add_file_folder("Utils"
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
+	utils/reset_on_move.h
 	utils/string_utils.cpp
 	utils/string_utils.h
+	utils/table_viewer.cpp
+	utils/table_viewer.h
 	utils/strings.h
 	utils/threading.cpp
 	utils/threading.h
@@ -1753,4 +1881,10 @@ add_file_folder("Weapon"
 add_file_folder("Windows Stubs"
 	windows_stub/config.h
 	windows_stub/stubs.cpp
+)
+
+# ktx utils files
+add_file_folder("ktxutils"
+	ktxutils/ktxutils.cpp
+	ktxutils/ktxutils.h
 )

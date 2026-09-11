@@ -104,8 +104,8 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 // following defines/vars are used to build menus that are used in messaging mode
 
 char Squad_msg_title[256] = "";
-mmode_item MsgItems[MAX_MENU_ITEMS];
-int Num_menu_items = -1; // number of items for a message menu
+SCP_vector<mmode_item> MsgItems;
+static bool Rebuild_MsgItems = true;
 
 static int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
 static int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
@@ -218,10 +218,11 @@ void hud_squadmsg_start()
 	Msg_key = -1;
 	Msg_key_set_from_scripting = false;
 
-	Num_menu_items = -1;													// reset the menu items
+	Rebuild_MsgItems = true;												// reset the menu items
+	MsgItems.clear();
 	First_menu_item = 0;
 	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
-	Display_selector = false;
+	Display_selector = Always_show_selected_item_in_comms_gauge;
 
 	Squad_msg_mode = SM_MODE_TYPE_SELECT;							// start off at the base state
 	Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
@@ -376,11 +377,7 @@ int hud_squadmsg_count_ships(int add_to_menu)
 		count++;
 		if (add_to_menu)
 		{
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = shipp->get_display_name();
-			MsgItems[Num_menu_items].instance = SHIP_INDEX(shipp);
-			MsgItems[Num_menu_items].active = 1;
-			Num_menu_items++;
+			MsgItems.push_back({SHIP_INDEX(shipp), 1, shipp->get_display_name()});
 		}
 	}
 
@@ -394,7 +391,7 @@ bool hud_squadmsg_wing_valid(wing *wingp)
 
 	// a couple of special cases to account for before adding to count (or to menu).  Don't count
 	// wings that are leaving or left.
-	if ( wingp->flags[Ship::Wing_Flags::Gone, Ship::Wing_Flags::Departing] )
+	if ( wingp->flags.any_of(Ship::Wing_Flags::Gone,Ship::Wing_Flags::Departing) )
 		return false;
 
 	// Goober5000 - instead of checking wing leader, let's check all ships in wing;
@@ -431,12 +428,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[wingnum]) ) {
 			count++;
 			if ( add_to_menu ) {
-				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[wingnum].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text);
-				MsgItems[Num_menu_items].instance = wingnum;
-				MsgItems[Num_menu_items].active = 1;
-				Num_menu_items++;
+				MsgItems.push_back({wingnum, 1, Wings[wingnum].get_display_name()});
 			}
 		}
 	}
@@ -453,12 +445,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 		if ( hud_squadmsg_wing_valid(&Wings[i]) ) {
 			count++;
 			if ( add_to_menu ) {
-				Assert ( Num_menu_items < MAX_MENU_ITEMS );
-				MsgItems[Num_menu_items].text = Wings[i].name;
-				end_string_at_first_hash_symbol(MsgItems[Num_menu_items].text); 
-				MsgItems[Num_menu_items].instance = i;
-				MsgItems[Num_menu_items].active = 1;
-				Num_menu_items++;
+				MsgItems.push_back({i, 1, Wings[i].get_display_name()});
 			}
 		}
 	}
@@ -471,15 +458,17 @@ int hud_squadmsg_count_wings( int add_to_menu )
 void hud_squadmsg_do_mode( int mode )
 {
 	Squad_msg_mode = mode;
-	Num_menu_items = -1;
+	MsgItems.clear();
+	Rebuild_MsgItems = true;
 	First_menu_item = 0;
+	Selected_menu_item = 0;   // keep offset consistent with the reset page across submenu transitions
 }
 
 void hud_squadmsg_page_down()
 {
-	if ( (First_menu_item + MAX_MENU_DISPLAY) < Num_menu_items ) {
+	if ( (First_menu_item + MAX_MENU_DISPLAY) < sz2i(MsgItems.size()) ) {
 		First_menu_item += MAX_MENU_DISPLAY;
-		Assert ( First_menu_item < Num_menu_items );
+		Assert ( First_menu_item < sz2i(MsgItems.size()) );
 	}
 }
 
@@ -492,77 +481,52 @@ void hud_squadmsg_page_up()
 }
 
 //Fuctions that allow selection of specific comms menu items with simple up/down/select buttons
-void hud_squadmsg_selection_move_down() {
+void hud_squadmsg_selection_move( bool up ) {
+	if (Rebuild_MsgItems || MsgItems.empty())
+		return;
 
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move down
-		++Selected_menu_item;
 		Display_selector = true;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
-		//Move to next page if we went outside of current one
-		if (Selected_menu_item == MAX_MENU_DISPLAY 
-			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
-		{
-			hud_squadmsg_page_down();
-			Selected_menu_item = 0;
+		//The selection moves +/-1 through the whole menu, wrapping around at either end.
+		//First_menu_item and Selected_menu_item are just the page and the offset within the page.
+		int num_items = sz2i(MsgItems.size());
+		int step = up ? -1 : 1;
+		int selected_index = First_menu_item + Selected_menu_item;
+
+		//skip over any hidden items (such as when using Hide_main_rearm_items_in_comms_gauge).
+		//bound the search by the item count so a fully hidden menu does not loop forever.
+		for (int i = 0; i < num_items; i++) {
+			selected_index = (selected_index + step + num_items) % num_items;
+
+			//stop once we land on a visible item
+			if (MsgItems[selected_index].active >= 0)
+				break;
 		}
 
-		//Select the first menu item if we went outside items range, so we can loop around
-		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
-		{
-			First_menu_item = 0;
-			Selected_menu_item = First_menu_item;
-		}
-	}
-}
-
-void hud_squadmsg_selection_move_up() {
-
-	//Check if comms menu is up
-	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
-	{
-		//move up
-		--Selected_menu_item;
-		Display_selector = true;
-
-		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
-		gamesnd_play_iface(InterfaceSounds::SCROLL);
-		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
-
-		//Move to previous page if it exists
-		if (Selected_menu_item < 0 && First_menu_item > 0)
-		{
-			hud_squadmsg_page_up();
-			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
-		}
-
-		//Select the last menu item if we went outside items range, so we can loop around
-		else if (Selected_menu_item < 0) 
-		{
-			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
-			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
-			//exactly like pageUp/pageDown does
-			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
-			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
-		}
+		Selected_menu_item = selected_index % MAX_MENU_DISPLAY;
+		First_menu_item = selected_index - Selected_menu_item;
 	}
 }
 
 //function that tricks hud_squadmsg_get_key() into thinking player selected a menu item with a num key press
 //Yes, this is a pretty much a hack, but it's simple and works with every squadmsg type.
 void hud_squadmsg_selection_select() {
+	if (Rebuild_MsgItems) {
+		return;
+	}
 	
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
 		//Check if selected option is even active
-		if ((MsgItems[Selected_menu_item + First_menu_item].active > 0))
+		if ((sz2i(MsgItems.size()) > Selected_menu_item + First_menu_item) && (MsgItems[Selected_menu_item + First_menu_item].active > 0))
 		{
 			Msg_key_used = 1;
 			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
@@ -581,7 +545,7 @@ int hud_squadmsg_get_total_keys()
 	int num_keys_used;
 
 	num_keys_used = MAX_KEYS_NO_SCROLL;
-	if ( Num_menu_items > MAX_MENU_DISPLAY )
+	if ( sz2i(MsgItems.size()) > MAX_MENU_DISPLAY )
 		num_keys_used = MAX_KEYS_USED;
 
 	return num_keys_used;
@@ -671,15 +635,16 @@ int hud_squadmsg_get_key()
 			} else if ( k == KEY_ESC ) {
 				hud_squadmsg_toggle();
 				return -1;
-			} else if ( (i < Num_menu_items) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) )		// return any key if selecting reinforcement
+			} else if ( (i < sz2i(MsgItems.size())) && (Squad_msg_mode == SM_MODE_REINFORCEMENTS) ) {		// return any key if selecting reinforcement
 				return i;
+			}
 
 			// play general fail sound if inactive item hit.
-			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active == 0)) {
+			else if ((i + First_menu_item < sz2i(MsgItems.size())) && (MsgItems[i + First_menu_item].active == 0)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
-			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active > 0)) {	// only return keys that are associated with menu items
+			else if ((i + First_menu_item < sz2i(MsgItems.size())) && (MsgItems[i + First_menu_item].active > 0)) {	// only return keys that are associated with menu items
 				return i + First_menu_item;
 			}
 
@@ -1014,7 +979,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
 			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
-			paramList);
+			std::move(paramList));
 	}
 
 	return isOverride;
@@ -1229,7 +1194,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	ordering_shipp = &Ships[ainfo->shipnum];
 
 	// a shortcut to save on repetitive coding.  If the order is a 'target' order, make the default
-	// mesage be "no target"
+	// message be "no target"
 	message = MESSAGE_NOSIR;
 	if (target_messages.count((size_t)command) > 0 && (ainfo->target_objnum == -1)) {
 		message = MESSAGE_NO_TARGET;
@@ -1723,18 +1688,16 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 // return number of available reinforcements, 0 if none available
 int hud_squadmsg_reinforcements_available(int team)
 {
-	int i, count = 0;
+	int count = 0;
 
-	for (i = 0; i < Num_reinforcements; i++) {
-		int wingnum;
-
+	for (const auto &reinforcement: Reinforcements) {
 		// no more left
-		if ( Reinforcements[i].num_uses >= Reinforcements[i].uses ){
+		if (reinforcement.num_uses >= reinforcement.uses ){
 			continue;
 		}
 
 		// incorrect team
-		if ( team != ship_get_reinforcement_team(i) ){
+		if ( team != ship_get_reinforcement_team(reinforcement) ){
 			continue;
 		}
 
@@ -1742,7 +1705,7 @@ int hud_squadmsg_reinforcements_available(int team)
 		// Goober5000 - if it can't arrive, it doesn't count.  This should check
 		// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
 		// a reinforcement menu containing no valid selections.
-		if ( (wingnum = wing_name_lookup(Reinforcements[i].name, 1)) != -1 ) {
+		if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 			Assert ( Wings[wingnum].arrival_cue >= 0 );
 			if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
 				|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -1751,7 +1714,7 @@ int hud_squadmsg_reinforcements_available(int team)
 		} else {
 			p_object *p_objp;
 
-			p_objp = mission_parse_get_arrival_ship( Reinforcements[i].name );
+			p_objp = mission_parse_get_arrival_ship( reinforcement.name );
 			if ( p_objp != NULL ) {
 				if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
 					|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -1783,24 +1746,26 @@ void hud_squadmsg_type_select( )
 
 	num_order_types += (int)lua_cat_list.size();
 
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
+
 	// Add the items
 	for (i = 0; i < num_order_types; i++)
 	{
+
 		if (i < NUM_COMM_ORDER_TYPES) {
-			MsgItems[i].text = Comm_order_types[i];
+			MsgItems.push_back({0, 1, Comm_order_types[i]}); // assume active
 		} else {
-			MsgItems[i].text = lua_cat_list[i - NUM_COMM_ORDER_TYPES];
+			MsgItems.push_back({0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]}); // assume active
 		}
-		MsgItems[i].active = 1;						// assume active
 	}
-	Num_menu_items = num_order_types;
 
 
 	// check to see if the player is a traitor.  If so, then he will not
 	// be able to do anything from this menu
 	if ((Player_ship != NULL) && (Player_ship->team == Iff_traitor)) {
-		for (i = 0; i < MAX_MENU_ITEMS; i++ )
-			MsgItems[i].active = 0;
+		for (auto &item : MsgItems)
+			item.active = 0;
 		goto do_main_menu;
 	}
 
@@ -1837,8 +1802,8 @@ void hud_squadmsg_type_select( )
 	//
 	// also, only allow support ship if this player is not allowed to messaage. 
 	if ( (hud_communications_state(Player_ship) != COMM_OK) || ((Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player)) ) {
-		for ( i = 0; i < MAX_MENU_ITEMS; i++ ){
-			MsgItems[i].active = 0;
+		for (auto &item : MsgItems){
+			item.active = 0;
 		}
 
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
@@ -1846,7 +1811,7 @@ void hud_squadmsg_type_select( )
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
 	// check to see if the player is scheduled to be repaired by incoming ship
-	if ( Ai_info[Ships[Player_obj->instance].ai_index].ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair] ) {
+	if (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
 		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
 	}
@@ -1881,7 +1846,7 @@ do_main_menu:
 	strcpy_s(Squad_msg_title, XSTR( "Message What", 316));
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {							// when k != -1, we have a key that associates with menu item
-		Assert ( k < Num_menu_items );
+		Assert ( k < sz2i(MsgItems.size()) );
 		if ( k == TYPE_SHIP_ITEM ){
 			hud_squadmsg_do_mode( SM_MODE_SHIP_SELECT );
 		} else if ( k == TYPE_WING_ITEM ) {
@@ -1911,8 +1876,9 @@ void hud_squadmsg_ship_select()
 {
 	int k;
 
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 		hud_squadmsg_count_ships( 1 );
 	}
 
@@ -1938,8 +1904,9 @@ void hud_squadmsg_wing_select()
 {
 	int k;
 
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 		hud_squadmsg_count_wings( 1 );
 	}
 
@@ -1973,23 +1940,20 @@ void hud_squadmsg_msg_all_fighters()
 
 // called to actually bring in a reinforcement.  For single player games, always gets called.
 // for multiplayer games, always called on the server side.  Clients should never get here
-void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
+void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int  /*player_num*/)
 {
 	int i, delay;
-	reinforcements *rp;
 	p_object *p_objp;
-
-	rp = &Reinforcements[reinforcement_num];
 
 	// safety net mainly for multiplayer servers in case some odd data desync occurs between 
 	// server and clients
-	if ( MULTIPLAYER_MASTER && (rp->num_uses >= rp->uses) ) {
+	if ( MULTIPLAYER_MASTER && (reinforcement.num_uses >= reinforcement.uses) ) {
 		return;
 	}
 
 	// check to see if the reinforcement called was a wing.
 	for (i = 0; i < Num_wings; i++ ) {
-		if ( !stricmp(rp->name, Wings[i].name) ) {
+		if ( !stricmp(reinforcement.name, Wings[i].name) ) {
 			// if the wing is currently present, skip this request so we don't waste a "use"
 			if (Wings[i].current_count > 0) {
 				return;
@@ -2001,7 +1965,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
             Wings[i].flags.set(Ship::Wing_Flags::Reset_reinforcement);
 
 			// set up the arrival delay.  If it is 0, then make is some random number of seconds
-			delay = rp->arrival_delay;
+			delay = reinforcement.arrival_delay;
 			if ( delay == 0 )
 				delay = (int)(frand() * 3.0) + 3;
 			Wings[i].arrival_delay = timestamp(delay * 1000);
@@ -2012,14 +1976,14 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 	// if we found no wing name that matched the reinforcement name, then look for a ship
 	// of the same name
 	if ( i == Num_wings ) {
-		p_objp = mission_parse_get_arrival_ship( rp->name );
+		p_objp = mission_parse_get_arrival_ship( reinforcement.name );
 		if ( p_objp ) {
 			// by resetting the reinforcement flag, we will allow code which normally handles arrivals
 			// to make this reinforcement arrive.  Doing so keeps the data structures clean.
             p_objp->flags.remove(Mission::Parse_Object_Flags::SF_Reinforcement);
 
 			// set up the arrival delay
-			delay = rp->arrival_delay;
+			delay = reinforcement.arrival_delay;
 			if ( delay == 0 )
 				delay = (int)(frand() * 3.0) + 3;		// between 3 and 6 seconds to arrive
 			p_objp->arrival_delay = timestamp(delay * 1000);
@@ -2031,7 +1995,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 
 	// increment the number of times this is used.  Incremented here on single player and multiplayer
 	// server side only.  Clients keep track of own count when they actually call something in.
-	rp->num_uses++;
+	reinforcement.num_uses++;
 
 	// commented out on 9/9/98 because these messages simply are not used
 	/*
@@ -2043,31 +2007,30 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 			break;
 
 	//if ( i > 0 )
-	//	message_send_to_player( rp->yes_messages[Random::next(i)], rp->name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
+	//	message_send_to_player( rp->yes_messages[Random::next(i)], reinforcement.name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
 	*/
 
-	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, rp->name, NULL);
+	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, reinforcement.name, nullptr);
 }
 
 // function to display a list of reinforcements available to the player
 void hud_squadmsg_reinforcement_select()
 {
-	int i, k, wingnum;
-	reinforcements *rp;
+	if ( Rebuild_MsgItems ) {
+		MsgItems.clear();
+		Rebuild_MsgItems = false;
 
-	if ( Num_menu_items == -1 ) {
-		Num_menu_items = 0;
-		for (i = 0; i < Num_reinforcements; i++) {
-			rp = &Reinforcements[i];
-			SCP_string rp_name = rp->name;
+		int i = -1;
+		for (const auto &reinforcement: Reinforcements) {
+			++i;	// start at 0; increment at top of loop due to continues
 
 			// don't put reinforcements onto the list that have already been used up.
-			if ( rp->num_uses >= rp->uses ){
+			if (reinforcement.num_uses >= reinforcement.uses) {
 				continue;
 			}
 
 			// don't put items which are not on my team
-			if((Player_ship != NULL) && (ship_get_reinforcement_team(i) != Player_ship->team)){
+			if ((Player_ship != nullptr) && (ship_get_reinforcement_team(reinforcement) != Player_ship->team)) {
 				continue;
 			}
 			
@@ -2075,18 +2038,19 @@ void hud_squadmsg_reinforcement_select()
 			// Goober5000 - if it can't arrive, it doesn't count.  This should check
 			// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
 			// a reinforcement menu containing no valid selections.
-			if ( (wingnum = wing_name_lookup(rp->name, 1)) != -1 ) {
+			const char *r_name;
+			if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 				Assert ( Wings[wingnum].arrival_cue >= 0 );
 				if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
 					|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
 					continue;
 				}
 
-				end_string_at_first_hash_symbol(rp_name);
+				r_name = Wings[wingnum].get_display_name();	// this will handle getting rid of the hash if necessary
 			} else {
 				p_object *p_objp;
 				
-				p_objp = mission_parse_get_arrival_ship( rp->name );
+				p_objp = mission_parse_get_arrival_ship(reinforcement.name );
 				if ( p_objp != NULL ) {
 					if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
 						|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
@@ -2097,25 +2061,16 @@ void hud_squadmsg_reinforcement_select()
 					continue;
 				}
 
-				rp_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
+				r_name = p_objp->get_display_name();	// this will handle getting rid of the hash if necessary
 			}
 
-			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = std::move(rp_name);
-			MsgItems[Num_menu_items].instance = i;
-			MsgItems[Num_menu_items].active = 0;
-
-			if ( rp->flags & RF_IS_AVAILABLE ) {
-				MsgItems[Num_menu_items].active = 1;
-			}
-
-			Num_menu_items++;
+			MsgItems.push_back({i, (reinforcement.flags & RF_IS_AVAILABLE) ? 1 : 0, r_name}); // set the item to active if reinforcement is available
 		}
 	}
 
 //	hud_squadmsg_display_menu( "Select Reinforcement" );	
 	strcpy_s(Squad_msg_title, XSTR( "Select Ship/Wing", 319)); // AL 11-14-97: Reinforcement didn't fit, so using this for now
-	k = hud_squadmsg_get_key();
+	int k = hud_squadmsg_get_key();
 	if (k != -1) {
 		int rnum;
 
@@ -2135,7 +2090,7 @@ void hud_squadmsg_reinforcement_select()
 			Reinforcements[rnum].num_uses++;			// increment this variable here since clients need to maintain a valid count
 			send_player_order_packet(SQUAD_MSG_REINFORCEMENT, rnum, 0);
 		} else {
-			hud_squadmsg_call_reinforcement(rnum);
+			hud_squadmsg_call_reinforcement(Reinforcements[rnum]);
 		}
 	}
 }
@@ -2166,25 +2121,23 @@ void hud_squadmsg_ship_command()
 		default_orders.insert(default_messages.cbegin(), default_messages.cend());
 	}
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	for(size_t order_id : default_orders) {
-		Assert (Num_menu_items < MAX_MENU_ITEMS);
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-		MsgItems[Num_menu_items].instance = (int)order_id;
-		MsgItems[Num_menu_items].active = 0;
+		MsgItems.push_back({(int)order_id, 0, Player_orders[order_id].localized_name});
 
 		// check the bit to see if the command is active
 		if (orders.find(order_id) != orders.end())
-			MsgItems[Num_menu_items].active = 1;
+			MsgItems.back().active = 1;
 
 		// if the order cannot be carried out by the ship, then item should be inactive
 		if ((Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid(Msg_instance, (int)order_id))
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
 		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// if messaging all fighters, see if we should gray out the order if no one will accept it,
 		// or modify the text if only some of the ships will accept it
@@ -2216,14 +2169,13 @@ void hud_squadmsg_ship_command()
 			if (!all_accept) {
 				// either modify the text if a partial accept, or grey it out if no one accepts
 				if (partial_accept) {
-					MsgItems[Num_menu_items].text += XSTR("(*)", 320);
+					MsgItems.back().text += XSTR("(*)", 320);
 				} else {
-					MsgItems[Num_menu_items].active = 0;
+					MsgItems.back().active = 0;
 				}
 			}
 		}
 
-		Num_menu_items++;
 	
 	}
 
@@ -2233,7 +2185,7 @@ void hud_squadmsg_ship_command()
 	// when we get a valid goal, we must add the goal to the ai ship's goal list
 
 	if ( k != -1 ) {
-		Assert ( k < Num_menu_items );
+		Assert ( k < sz2i(MsgItems.size()) );
 		// when messaging all fighters or ignoring target, call the send_to_all_fighters routine
 		// Goober5000 - ignore no longer sends to all fighters
 		if (Msg_instance == MESSAGE_ALL_FIGHTERS)
@@ -2249,9 +2201,9 @@ void hud_squadmsg_msg_general()
 {
 	int k;
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	for (size_t order_id = 0; order_id < Player_orders.size(); order_id++) {
-		Assert(Num_menu_items < MAX_MENU_ITEMS);
 
 		if (Player_orders[order_id].lua_id <= 0) {
 			continue;
@@ -2271,17 +2223,12 @@ void hud_squadmsg_msg_general()
 
 		//Only add it if it is enabled for the mission
 		if (lua_porder->cur_enabled) {
-
-			MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-			MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
-			MsgItems[Num_menu_items].active = (int)lua_porder->cur_valid;
+			MsgItems.push_back({Player_orders[order_id].lua_id, (int)lua_porder->cur_valid, Player_orders[order_id].localized_name});
 
 			// do some other checks to possibly gray out other items.
 			// if no target, remove any items which are associated with the players target
 			if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
-				MsgItems[Num_menu_items].active = 0;
-
-			Num_menu_items++;
+				MsgItems.back().active = 0;
 		}
 	}
 
@@ -2291,7 +2238,7 @@ void hud_squadmsg_msg_general()
 	// when we get a valid goal, we must add the goal to the ai ship's goal list
 
 	if (k != -1) {
-		Assert(k < Num_menu_items);
+		Assert( k < sz2i(MsgItems.size()) );
 		
 		ai_lua_start_general(MsgItems[k].instance, Player_ai->target_objnum);
 
@@ -2322,7 +2269,8 @@ void hud_squadmsg_wing_command()
 	
 	default_orders.erase(CAPTURE_TARGET_ITEM); // we cannot capture any target with a wing.
 
-	Num_menu_items = 0;
+	MsgItems.clear();
+	Rebuild_MsgItems = false;
 	shipnum = wingp->ship_index[wingp->special_ship];
 	Assertion(shipnum >= 0, "Special ship (%d) for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->special_ship, wingp->name, shipnum);
 	orders = Ships[shipnum].orders_accepted;		// get the orders that the wing leader will accept
@@ -2330,24 +2278,21 @@ void hud_squadmsg_wing_command()
 	for ( size_t order_id : default_orders ) {
 		// add the set of default orders to the comm menu.  We will currently allow all messages
 		// to be available in the wing.
-		Assert ( Num_menu_items < MAX_MENU_ITEMS );
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-		MsgItems[Num_menu_items].instance = (int)order_id;
-		MsgItems[Num_menu_items].active = 0;
+		MsgItems.push_back({(int)order_id, 0, Player_orders[order_id].localized_name});
 
 		// possibly grey out the menu item depending on whether or not the "wing" will accept this order
 		// the "wing" won't accept the order if the first ship in the wing doesn't accept it.
 		if ( orders.find(order_id) != orders.end() )
-			MsgItems[Num_menu_items].active = 1;
+			MsgItems.back().active = 1;
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
 		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0, true) )
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems.back().active = 0;
 
 		// if no ship in the wing can depart then gray out the departure order
 		if (order_id == DEPART_ITEM) {
-			if (MsgItems[Num_menu_items].active > 0) {
+			if (MsgItems.back().active > 0) {
 				int active = 0;
 				for (int i = 0; i < wingp->current_count; i++) {
 					if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
@@ -2355,12 +2300,9 @@ void hud_squadmsg_wing_command()
 						break;
 					}
 				}
-				MsgItems[Num_menu_items].active = active;
+				MsgItems.back().active = active;
 			}
 		}
-
-		Num_menu_items++;
-	
 	}
 
 	
@@ -2860,6 +2802,18 @@ bool HudGaugeSquadMessage::canRender() const
 		return false;
 	}
 
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
+	if (render_for_cockpit_toggle > 0) {
+		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
+	}
+
 	if (!( Player->flags & PLAYER_FLAGS_MSG_MODE )) {
 		return false;
 	}
@@ -2900,15 +2854,17 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderString(x + Header_offsets[0], y + fl2i(Header_offsets[1] * scale), title, scale, config);
 	}
 
+	int msg_items_size = sz2i(MsgItems.size());
+
 	int nitems;
 	if (!config) {
-		if (Num_menu_items < MAX_MENU_DISPLAY)
-			nitems = Num_menu_items;
+		if (msg_items_size < MAX_MENU_DISPLAY)
+			nitems = msg_items_size;
 		else {
 			if (First_menu_item == 0) // First_menu_item == 0 means first page of items
 				nitems = MAX_MENU_DISPLAY;
-			else if ((Num_menu_items - First_menu_item) <= MAX_MENU_DISPLAY) // check if remaining items fit on one page
-				nitems = Num_menu_items - First_menu_item;
+			else if (msg_items_size - First_menu_item <= MAX_MENU_DISPLAY) // check if remaining items fit on one page
+				nitems = msg_items_size - First_menu_item;
 			else {
 				nitems = MAX_MENU_DISPLAY;
 			}
@@ -2949,9 +2905,6 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Abort Rearm", 298)
 			};
 			strcpy_s(text, temp_comm_order_types[i]);
-			if (Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
-				MsgItems[First_menu_item + i].active = -1;
-			}
 		}
 
 		// blit the background
@@ -2972,7 +2925,10 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 			setGaugeColor(HUD_C_DIM, config);
 		}
 
-		if (MsgItems[First_menu_item + i].active >= 0) {
+		bool item_visible = config
+			? (!Hide_main_rearm_items_in_comms_gauge) || ((i != TYPE_REPAIR_REARM_ITEM) && (i != TYPE_REPAIR_REARM_ABORT_ITEM))
+			: (MsgItems[First_menu_item + i].active >= 0);
+		if (item_visible) {
 			// first print an icon to indicate selected item
 			item_num = (i + 1) % MAX_MENU_DISPLAY;
 			if (isSelectedItem && Display_selector) {
@@ -2997,7 +2953,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	// maybe draw an extra line in to make room for [pgdn], or for the 'no active items'
 	// display
-	if (!config && (!messaging_allowed || none_valid || ((First_menu_item + nitems) < Num_menu_items) || (Msg_shortcut_command != -1))) {
+	if (!config && (!messaging_allowed || none_valid || ((First_menu_item + nitems) < msg_items_size) || (Msg_shortcut_command != -1))) {
 		// blit the background
 		setGaugeColor(HUD_C_NONE, config);
 		if ( Mbox_gauge[1].first_frame >= 0 ) {		
@@ -3022,7 +2978,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderPrintf(x + fl2i(Pgup_offsets[0] * scale), y + fl2i(Pgup_offsets[1] * scale), scale, config, "%s", XSTR( "[pgup]", 312) );
 	}
 
-	if ( (First_menu_item + nitems) < Num_menu_items ) {
+	if ( (First_menu_item + nitems) < msg_items_size ) {
 		renderPrintf(x + fl2i(Pgdn_offsets[0] * scale), y + fl2i(Pgdn_offsets[1] * scale), scale, config, "%s", XSTR( "[pgdn]", 313));
 	}
 

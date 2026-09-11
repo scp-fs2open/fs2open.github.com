@@ -49,7 +49,7 @@ VideoPresenter::VideoPresenter(const MovieProperties& props) : _properties(props
 		material_set_unlit(&_rgb_material, _planeTextureHandles[0], 1.0f, true, false);
 		break;
 	default:
-		UNREACHABLE("Unhandled enum value!");
+		UNREACHABLE("Unhandled enum value %d!", static_cast<int>(props.pixelFormat));
 		break;
 	}
 }
@@ -86,7 +86,7 @@ void VideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 			bpp = 32;
 			break;
 		default:
-			UNREACHABLE("Unhandled enum value!");
+			UNREACHABLE("Unhandled enum value %d!", static_cast<int>(_properties.pixelFormat));
 			break;
 		}
 
@@ -145,7 +145,7 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2, float 
 		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
 		break;
 	default:
-		UNREACHABLE("Unhandled enum value!");
+		UNREACHABLE("Unhandled enum value %d!", static_cast<int>(_properties.pixelFormat));
 		break;
 	}
 }

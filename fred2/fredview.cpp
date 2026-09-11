@@ -31,6 +31,8 @@
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
+#include "prop/prop.h" // for prop names
+#include "missioneditor/common.h"
 #include "MissionGoalsDlg.h"
 #include "MissionCutscenesDlg.h"
 #include "wing.h"
@@ -60,6 +62,7 @@
 #include "sound/audiostr.h"
 #include "mission/missiongrid.h"
 #include "calcrelativecoordsdlg.h"
+#include "reorderdlg.h"
 #include "musicplayerdlg.h"
 #include "volumetricsdlg.h"
 #include "customdatadlg.h"
@@ -149,6 +152,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_WAYPOINTS, OnUpdateViewWaypoints)
 	ON_WM_LBUTTONDOWN()
 	ON_COMMAND(ID_EDITORS_SHIPS, OnEditorsShips)
+	ON_COMMAND(ID_EDITORS_PROPS, OnEditorsProps)
 	ON_WM_KEYDOWN()
 	ON_WM_KEYUP()
 	ON_WM_SETFOCUS()
@@ -156,6 +160,11 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_WM_SIZE()
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
+	ON_WM_MBUTTONDOWN()
+	ON_WM_MBUTTONUP()
+	ON_WM_RBUTTONDOWN()
+	ON_WM_RBUTTONUP()
+	ON_WM_MOUSEWHEEL()
 	ON_COMMAND(ID_MISCSTUFF_SHOWSHIPSASICONS, OnMiscstuffShowshipsasicons)
 	ON_WM_CONTEXTMENU()
 	ON_COMMAND(ID_EDIT_POPUP_SHOW_SHIP_ICONS, OnEditPopupShowShipIcons)
@@ -169,6 +178,36 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_EXTERNAL, OnChangeViewpointExternal)
 	ON_UPDATE_COMMAND_UI(ID_CHANGE_VIEWPOINT_FOLLOW, OnUpdateChangeViewpointFollow)
 	ON_COMMAND(ID_CHANGE_VIEWPOINT_FOLLOW, OnChangeViewpointFollow)
+	ON_COMMAND(ID_OUTLINE_LOD_0, OnOutlineLod0)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_0, OnUpdateOutlineLod0)
+	ON_COMMAND(ID_OUTLINE_LOD_1, OnOutlineLod1)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_1, OnUpdateOutlineLod1)
+	ON_COMMAND(ID_OUTLINE_LOD_2, OnOutlineLod2)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_2, OnUpdateOutlineLod2)
+	ON_COMMAND(ID_OUTLINE_LOD_3, OnOutlineLod3)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_3, OnUpdateOutlineLod3)
+	ON_COMMAND(ID_OUTLINE_LOD_4, OnOutlineLod4)
+	ON_UPDATE_COMMAND_UI(ID_OUTLINE_LOD_4, OnUpdateOutlineLod4)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_50, OnLabelFontScale50)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_50, OnUpdateLabelFontScale50)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_75, OnLabelFontScale75)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_75, OnUpdateLabelFontScale75)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_100, OnLabelFontScale100)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_100, OnUpdateLabelFontScale100)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_125, OnLabelFontScale125)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_125, OnUpdateLabelFontScale125)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_150, OnLabelFontScale150)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_150, OnUpdateLabelFontScale150)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_200, OnLabelFontScale200)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_200, OnUpdateLabelFontScale200)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_250, OnLabelFontScale250)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_250, OnUpdateLabelFontScale250)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_300, OnLabelFontScale300)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_300, OnUpdateLabelFontScale300)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_350, OnLabelFontScale350)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_350, OnUpdateLabelFontScale350)
+	ON_COMMAND(ID_LABEL_FONT_SCALE_400, OnLabelFontScale400)
+	ON_UPDATE_COMMAND_UI(ID_LABEL_FONT_SCALE_400, OnUpdateLabelFontScale400)
 	ON_COMMAND(ID_EDITORS_GOALS, OnEditorsGoals)
 	ON_COMMAND(ID_EDITORS_CUTSCENES, OnEditorsCutscenes)
 	ON_COMMAND(ID_SPEED1, OnSpeed1)
@@ -273,6 +312,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
+	ON_COMMAND(ID_CLASSIC_MENU_LAYOUT, OnClassicMenuLayout)
+	ON_UPDATE_COMMAND_UI(ID_CLASSIC_MENU_LAYOUT, OnUpdateClassicMenuLayout)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -324,6 +365,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LOOKAT_OBJ, OnUpdateLookatObj)
 	ON_COMMAND(ID_EDITORS_ADJUST_GRID, OnEditorsAdjustGrid)
 	ON_COMMAND(ID_CALC_RELATIVE_COORDS, OnCalcRelativeCoords)
+	ON_COMMAND(ID_REORDER, OnReorder)
 	ON_COMMAND(ID_MUSIC_PLAYER, OnMusicPlayer)
 	ON_COMMAND(ID_EDITORS_SHIELD_SYS, OnEditorsShieldSys)
 	ON_COMMAND(ID_LEVEL_OBJ, OnLevelObj)
@@ -966,23 +1008,31 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	drag_rotate_save_backup();
 	
 	if (nFlags & MK_CONTROL)	{  // add a new object
-		if (!Bg_bitmap_dialog) {
-			if (on_object == -1) {
-				Selection_lock = 0;  // force off selection lock
-				on_object = create_object_on_grid(waypoint_instance);
+		bool shift_down = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
-			} else
-				Dup_drag = 1;
-
+		if (shift_down) {
+			Selection_lock = 0; // force off selection lock
+			on_object = create_object_on_grid(waypoint_instance, true);
 		} else {
-			/*
-			Selection_lock = 0;  // force off selection lock
-			on_object = Cur_bitmap = create_bg_bitmap();
-			Bg_bitmap_dialog->update_data();
-			Update_window = 1;
-			if (Cur_bitmap == -1)
-				MessageBox("Background bitmap limit reached.\nCan't add more.");
-			*/
+
+			if (!Bg_bitmap_dialog) {
+				if (on_object == -1) {
+					Selection_lock = 0; // force off selection lock
+					on_object = create_object_on_grid(waypoint_instance);
+
+				} else
+					Dup_drag = 1;
+
+			} else {
+				/*
+				Selection_lock = 0;  // force off selection lock
+				on_object = Cur_bitmap = create_bg_bitmap();
+				Bg_bitmap_dialog->update_data();
+				Update_window = 1;
+				if (Cur_bitmap == -1)
+					MessageBox("Background bitmap limit reached.\nCan't add more.");
+				*/
+			}
 		}
 
 	} else if (!Selection_lock) {
@@ -1028,7 +1078,7 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	CView::OnLButtonDown(nFlags, point);
 }
 
-void CFREDView::OnMouseMove(UINT nFlags, CPoint point) 
+void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 {
 	// RT point
 
@@ -1038,6 +1088,26 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	last_mouse_y = marking_box.y2 = point.y;
 	Cursor_over = select_object(point.x, point.y);
 
+	// Orbit camera: middle button drag
+	if (m_orbit_dragging && (nFlags & MK_MBUTTON)) {
+		handle_orbit_drag(point, nFlags);
+		CView::OnMouseMove(nFlags, point);
+		return;
+	}
+
+	// Orbit camera: right button drag
+	if (m_rbutton_down && (nFlags & MK_RBUTTON) && viewpoint == 0 && Control_mode == 0) {
+		if (!m_rbutton_moved) {
+			if (abs(point.x - m_rbutton_down_point.x) > 2 || abs(point.y - m_rbutton_down_point.y) > 2)
+				m_rbutton_moved = true;
+		}
+		if (m_rbutton_moved) {
+			handle_orbit_drag(point, nFlags);
+			CView::OnMouseMove(nFlags, point);
+			return;
+		}
+	}
+
 	if (!(nFlags & MK_LBUTTON))
 		button_down = 0;
 
@@ -1046,7 +1116,7 @@ void CFREDView::OnMouseMove(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (!button_down && GetCapture() == this)
+	if (!button_down && !m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1079,7 +1149,7 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 	if (button_down && GetCapture() != this)
 		cancel_drag();
 
-	if (GetCapture() == this)
+	if (!m_orbit_dragging && !m_rbutton_down && GetCapture() == this)
 		ReleaseCapture();
 
 	if (button_down) {
@@ -1131,13 +1201,15 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 							break;
 						}
 
-// Can't do player starts, since only player 1 is currently allowed to be in a wing
-
+						// Can't do player starts, since only player 1 is currently allowed to be in a wing
 						Assert(objp->type == OBJ_SHIP);
 						ship = objp->instance;
 						Assert(Ships[ship].wingnum == -1);
-						wing_bash_ship_name(Ships[ship].ship_name, Wings[Duped_wing].name,
-							Wings[Duped_wing].wave_count + 1);
+						char new_name[NAME_LENGTH];
+						wing_bash_ship_name(new_name, Wings[Duped_wing].name, Wings[Duped_wing].wave_count + 1);
+						rename_ship(ship, new_name);
+						// bash it again for the display name
+						wing_bash_ship_name(&Ships[ship], &Wings[Duped_wing], Wings[Duped_wing].wave_count + 1, true);
 
 						Wings[Duped_wing].ship_index[Wings[Duped_wing].wave_count] = ship;
 						Ships[ship].wingnum = Duped_wing;
@@ -1164,6 +1236,94 @@ void CFREDView::OnLButtonUp(UINT nFlags, CPoint point)
 	CView::OnLButtonUp(nFlags, point);
 }
 
+// ---------- Orbit camera mouse handlers ----------
+
+void CFREDView::handle_orbit_drag(CPoint point, UINT nFlags)
+{
+	int dx = point.x - m_orbit_last_mouse.x;
+	int dy = point.y - m_orbit_last_mouse.y;
+	m_orbit_last_mouse = point;
+
+	if (nFlags & MK_SHIFT)
+		orbit_camera_pan(dx, dy);
+	else
+		orbit_camera_rotate(dx, dy);
+	Update_window = 1;
+}
+
+void CFREDView::OnMButtonDown(UINT nFlags, CPoint point)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return;
+
+	vec3d pivot = orbit_camera_get_pivot();
+	auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+	orbit_camera_init_from_current_view(&pivot, grid_orient);
+
+	m_orbit_dragging = true;
+	m_orbit_last_mouse = point;
+	SetCapture();
+}
+
+void CFREDView::OnMButtonUp(UINT nFlags, CPoint point)
+{
+	if (m_orbit_dragging) {
+		m_orbit_dragging = false;
+		if (GetCapture() == this && !m_rbutton_down)
+			ReleaseCapture();
+	}
+}
+
+void CFREDView::OnRButtonDown(UINT nFlags, CPoint point)
+{
+	m_rbutton_down = true;
+	m_rbutton_moved = false;
+	m_rbutton_down_point = point;
+	m_orbit_last_mouse = point;
+
+	if (viewpoint == 0 && Control_mode == 0) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+		SetCapture();
+	}
+}
+
+void CFREDView::OnRButtonUp(UINT nFlags, CPoint point)
+{
+	bool was_dragging = m_rbutton_moved;
+	m_rbutton_down = false;
+	m_rbutton_moved = false;
+
+	if (GetCapture() == this && !m_orbit_dragging)
+		ReleaseCapture();
+
+	if (!was_dragging) {
+		// No drag occurred — show context menu as normal
+		CPoint screen_point = point;
+		ClientToScreen(&screen_point);
+		OnContextMenu(this, screen_point);
+	}
+}
+
+BOOL CFREDView::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (viewpoint != 0 || Control_mode != 0)
+		return CView::OnMouseWheel(nFlags, zDelta, pt);
+
+	if (!Orbit_active) {
+		vec3d pivot = orbit_camera_get_pivot();
+		auto grid_orient = The_grid ? &The_grid->gmatrix : nullptr;
+		orbit_camera_init_from_current_view(&pivot, grid_orient);
+	}
+
+	orbit_camera_zoom(zDelta / -200.0f);
+	Update_window = 1;
+	return TRUE;
+}
+
+// ---------- End orbit camera mouse handlers ----------
+
 //	This function never gets called because nothing causes
 //	the WM_GOODBYE event to occur.
 // False! When you close the Ship Dialog, this function is called! --MK, 8/30/96
@@ -1185,6 +1345,18 @@ void CFREDView::OnEditorsShips()
 	Ship_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Ship_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsProps()
+{
+	Assert(Prop_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Prop_wnd_data, &Prop_editor_dialog, 0))
+		return;
+
+	Prop_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Prop_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT lParam)
@@ -1228,11 +1400,10 @@ void CFREDView::OnSetFocus(CWnd* pOldWnd)
 		Update_wing = 0;
 	}
 
-/*	if (Wing_editor_dialog.verify() == -1)
-		return;  // abort
-
-	if (Ship_editor_dialog.verify() == -1)
-		return;  // abort*/
+	if (Update_prop) {
+		Prop_editor_dialog.initialize_data(1);
+		Update_prop = 0;
+	}
 
 	if (update_dialog_boxes()) {
 		nprintf(("Fred routing", "OnSetFocus() returned (error occured)\n"));
@@ -1321,7 +1492,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
+		if (ptr->flags.any_of(Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing))
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);
@@ -1376,7 +1547,7 @@ void select_objects()
 		}
 	}
 
-	Update_ship = Update_wing = 1;
+	Update_ship = Update_wing = Update_prop = 1;
 }
 
 LRESULT CFREDView::OnMenuPopupShips(WPARAM wParam, LPARAM lParam)
@@ -1452,10 +1623,14 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			else {
 				CString str;
 
-				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP))
+				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP)) {
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
-				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
+				} else if (Objects[objnum].type == OBJ_PROP) {
+					id = ID_EDITORS_PROPS;
+					str.Format("Edit %s", prop_id_lookup(Objects[objnum].instance)->prop_name);
+
+				} else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					auto jnp = jumpnode_get_by_objnum(objnum);
 					Assert(jnp != nullptr);
 
@@ -1463,12 +1638,11 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", jnp->GetName());
 
 				} else if (Objects[objnum].type == OBJ_WAYPOINT) {
-					int idx;
-					waypoint_list *wp_list = find_waypoint_list_with_instance(Objects[objnum].instance, &idx);
-					Assert(wp_list != NULL);
+					char text[NAME_LENGTH];
+					waypoint_stuff_name(text, Objects[objnum].instance);
 
 					id = ID_EDITORS_WAYPOINT;
-					str.Format("Edit %s:%d", wp_list->get_name(), idx + 1);
+					str.Format("Edit %s", text);
 
 				} else if (Objects[objnum].type == OBJ_POINT) {
 					return;
@@ -1647,6 +1821,62 @@ void CFREDView::OnChangeViewpointFollow()
 	view_obj = cur_object_index;
 	Update_window = 1;
 }
+
+void CFREDView::OnOutlineLod(int lod)
+{
+	Outline_lod = lod;
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateOutlineLod(int lod, CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Outline_lod == lod);
+}
+
+void CFREDView::OnOutlineLod0() { OnOutlineLod(0); }
+void CFREDView::OnOutlineLod1() { OnOutlineLod(1); }
+void CFREDView::OnOutlineLod2() { OnOutlineLod(2); }
+void CFREDView::OnOutlineLod3() { OnOutlineLod(3); }
+void CFREDView::OnOutlineLod4() { OnOutlineLod(4); }
+void CFREDView::OnUpdateOutlineLod0(CCmdUI* pCmdUI) { OnUpdateOutlineLod(0, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod1(CCmdUI* pCmdUI) { OnUpdateOutlineLod(1, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod2(CCmdUI* pCmdUI) { OnUpdateOutlineLod(2, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod3(CCmdUI* pCmdUI) { OnUpdateOutlineLod(3, pCmdUI); }
+void CFREDView::OnUpdateOutlineLod4(CCmdUI* pCmdUI) { OnUpdateOutlineLod(4, pCmdUI); }
+
+void CFREDView::OnLabelFontScale(float scale)
+{
+	Fred_label_font_scale = scale;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateLabelFontScale(float scale, CCmdUI* pCmdUI)
+{
+	// tolerant compare, since the value is stored as a float derived from an int percentage
+	pCmdUI->SetCheck(fl_equal(Fred_label_font_scale, scale, 0.001f));
+}
+
+void CFREDView::OnLabelFontScale50() { OnLabelFontScale(0.5f); }
+void CFREDView::OnLabelFontScale75() { OnLabelFontScale(0.75f); }
+void CFREDView::OnLabelFontScale100() { OnLabelFontScale(1.0f); }
+void CFREDView::OnLabelFontScale125() { OnLabelFontScale(1.25f); }
+void CFREDView::OnLabelFontScale150() { OnLabelFontScale(1.5f); }
+void CFREDView::OnLabelFontScale200() { OnLabelFontScale(2.0f); }
+void CFREDView::OnLabelFontScale250() { OnLabelFontScale(2.5f); }
+void CFREDView::OnLabelFontScale300() { OnLabelFontScale(3.0f); }
+void CFREDView::OnLabelFontScale350() { OnLabelFontScale(3.5f); }
+void CFREDView::OnLabelFontScale400() { OnLabelFontScale(4.0f); }
+void CFREDView::OnUpdateLabelFontScale50(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale75(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(0.75f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale100(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale125(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.25f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale150(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(1.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale200(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale250(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(2.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale300(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.0f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale350(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(3.5f, pCmdUI); }
+void CFREDView::OnUpdateLabelFontScale400(CCmdUI* pCmdUI) { OnUpdateLabelFontScale(4.0f, pCmdUI); }
 
 void CFREDView::OnEditorsGoals()
 {
@@ -1993,6 +2223,10 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 				OnEditorsShips();
 				break;
 
+			case OBJ_PROP:
+				OnEditorsProps();
+				break;
+
 			case OBJ_WAYPOINT:
 				OnEditorsWaypoint();
 				break;
@@ -2295,7 +2529,7 @@ int query_single_wing_marked()
 void CFREDView::OnDisbandWing() 
 {
 	if (query_single_wing_marked()) {
-		remove_wing(cur_wing);
+		disband_wing(cur_wing);
 		FREDDoc_ptr->autosave("wing disband");
 
 	} else
@@ -2441,15 +2675,11 @@ int CFREDView::global_error_check()
 	object *ptr;
 	brief_stage *sp;
 	SCP_string anchor_message;
-	SCP_set<int> anchor_shipnums_checked;
+	SCP_set<anchor_t> anchors_checked;
 
 	g_err = multi = 0;
 	if ( The_mission.game_type & MISSION_TYPE_MULTI )
 		multi = 1;
-
-//	if (!stricmp(The_mission.name, "Untitled"))
-//		if (error("You haven't given this mission a title yet.\nThis is done from the Mission Specs Editor (Shift-N)."))
-//			return 1;
 
 	// cycle though all the objects and verify every possible aspect of them
 	obj_count = t = 0;
@@ -2474,6 +2704,9 @@ int CFREDView::global_error_check()
 					ptr->type = OBJ_SHIP;
 					Player_starts--;
 					t--;
+
+					ensure_valid_player_start_shipnum();
+
 					if (error("Invalid ship type for a player.  Ship has been reset to non-player ship.")){
 						return 1;
 					}
@@ -2574,7 +2807,7 @@ int CFREDView::global_error_check()
 				return internal_error("Object references an illegal waypoint number in path");
 			}
 
-			sprintf(buf, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			waypoint_stuff_name(buf, i);
 			names[obj_count] = new char[strlen(buf) + 1];
 			strcpy(names[obj_count], buf);
 			flags[obj_count] = 1;
@@ -2585,7 +2818,7 @@ int CFREDView::global_error_check()
 			//Shouldn't be needed anymore.
 			//If we really do need it, call me and I'll write a is_valid function for jumpnodes -WMC
 		} 
-		else if (ptr->type == OBJ_JUMP_NODE)
+		else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP)
 		{
 			//nothing needs to be done here, we just need to make sure the else doesn't occur
 		}
@@ -2635,13 +2868,13 @@ int CFREDView::global_error_check()
 			}
 
 			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION) {
-				if (Ships[i].arrival_anchor < 0){
+				if (!Ships[i].arrival_anchor.isValid()){
 					if (error("Ship \"%s\" requires a valid arrival target", Ships[i].ship_name)){
 						return 1;
 					}
 				}
 				if (Ships[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY) {
-					check_anchor_for_hangar_bay(anchor_message, anchor_shipnums_checked, Ships[i].arrival_anchor, Ships[i].ship_name, true, true);
+					check_anchor_for_hangar_bay(anchor_message, anchors_checked, Ships[i].arrival_anchor, Ships[i].ship_name, true, true);
 					if (!anchor_message.empty() && error("%s", anchor_message.c_str())) {
 						return 1;
 					}
@@ -2649,13 +2882,13 @@ int CFREDView::global_error_check()
 			}
 
 			if (Ships[i].departure_location != DepartureLocation::AT_LOCATION) {
-				if (Ships[i].departure_anchor < 0){
+				if (!Ships[i].departure_anchor.isValid()){
 					if (error("Ship \"%s\" requires a valid departure target", Ships[i].ship_name)){
 						return 1;
 					}
 				}
 				if (Ships[i].departure_location == DepartureLocation::TO_DOCK_BAY) {
-					check_anchor_for_hangar_bay(anchor_message, anchor_shipnums_checked, Ships[i].departure_anchor, Ships[i].ship_name, true, false);
+					check_anchor_for_hangar_bay(anchor_message, anchors_checked, Ships[i].departure_anchor, Ships[i].ship_name, true, false);
 					if (!anchor_message.empty() && error("%s", anchor_message.c_str())) {
 						return 1;
 					}
@@ -2824,7 +3057,7 @@ int CFREDView::global_error_check()
 				return internal_error("Number of waves for \"%s\" is negative", Wings[i].name);
 			}
 
-			if ((Wings[i].threshold < 0) || (Wings[i].threshold >= Wings[i].wave_count)){
+			if (Wings[i].threshold < 0){
 				return internal_error("Threshold for \"%s\" is invalid", Wings[i].name);
 			}
 
@@ -2852,11 +3085,11 @@ int CFREDView::global_error_check()
 			}
 
 			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION) {
-				if (Wings[i].arrival_anchor < 0)
+				if (!Wings[i].arrival_anchor.isValid())
 					if (error("Wing \"%s\" requires a valid arrival target", Wings[i].name))
 						return 1;
 				if (Wings[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY) {
-					check_anchor_for_hangar_bay(anchor_message, anchor_shipnums_checked, Wings[i].arrival_anchor, Wings[i].name, false, true);
+					check_anchor_for_hangar_bay(anchor_message, anchors_checked, Wings[i].arrival_anchor, Wings[i].name, false, true);
 					if (!anchor_message.empty() && error("%s", anchor_message.c_str())) {
 						return 1;
 					}
@@ -2864,11 +3097,11 @@ int CFREDView::global_error_check()
 			}
 
 			if (Wings[i].departure_location != DepartureLocation::AT_LOCATION) {
-				if (Wings[i].departure_anchor < 0)
+				if (!Wings[i].departure_anchor.isValid())
 					if (error("Wing \"%s\" requires a valid departure target", Wings[i].name))
 						return 1;
 				if (Wings[i].departure_location == DepartureLocation::TO_DOCK_BAY) {
-					check_anchor_for_hangar_bay(anchor_message, anchor_shipnums_checked, Wings[i].departure_anchor, Wings[i].name, false, false);
+					check_anchor_for_hangar_bay(anchor_message, anchors_checked, Wings[i].departure_anchor, Wings[i].name, false, false);
 					if (!anchor_message.empty() && error("%s", anchor_message.c_str())) {
 						return 1;
 					}
@@ -2900,8 +3133,8 @@ int CFREDView::global_error_check()
 			}
 		}
 
-		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
+		for (const auto &jj: ii.get_waypoints()) {
+			waypoint_stuff_name(buf, jj);
 			for (z=0; z<obj_count; z++){
 				if (names[z]){
 					if (!stricmp(names[z], buf)){
@@ -2926,21 +3159,17 @@ int CFREDView::global_error_check()
 		}
 	}
 
-	if (Num_reinforcements > MAX_REINFORCEMENTS){
-		return internal_error("Number of reinforcements exceeds max limit");
-	}
-
-	for (i=0; i<Num_reinforcements; i++) {
+	for (const auto &reinforcement: Reinforcements) {
 		z = 0;
 		for (ship=0; ship<MAX_SHIPS; ship++){
-			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
+			if ((Ships[ship].objnum >= 0) && !stricmp(Ships[ship].ship_name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
 		}
 
 		for (wing=0; wing<MAX_WINGS; wing++){
-			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, Reinforcements[i].name)) {
+			if (Wings[wing].wave_count && !stricmp(Wings[wing].name, reinforcement.name)) {
 				z = 1;
 				break;
 			}
@@ -2967,7 +3196,9 @@ int CFREDView::global_error_check()
 				return -1;
 	}*/
 
-	Assert((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0));
+	if ((Player_start_shipnum < 0) || (Player_start_shipnum >= MAX_SHIPS) || (Ships[Player_start_shipnum].objnum < 0)){
+		return internal_error("Mission has no valid player start ship");
+	}
 	i = global_error_check_player_wings(multi);
 	if (i){
 		return i;
@@ -3130,9 +3361,32 @@ int CFREDView::global_error_check_player_wings(int multi)
 		}
 	}
 
-//	// player's wing must have a true arrival
-//	free_sexp2(Wings[z].arrival_cue);
-//	Wings[z].arrival_cue = Locked_sexp_true;
+	// The wing containing the player start must be present at mission start, so a custom arrival cue
+	// is only useful for controlling the arrival of subsequent waves.  Flag a single-wave wing with a
+	// custom cue as a potential issue, but never change the cue itself.
+	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
+	{
+		for (i=0; i<MAX_WINGS; i++)
+		{
+			if (!Wings[i].wave_count || Wings[i].num_waves > 1)
+				continue;
+			if (Wings[i].arrival_cue == Locked_sexp_true)
+				continue;
+
+			bool contains_player_start = false;
+			for (z=0; z<Wings[i].wave_count; z++)
+				if (Objects[Ships[Wings[i].ship_index[z]].objnum].type == OBJ_START)
+					contains_player_start = true;
+
+			if (contains_player_start)
+			{
+				SCP_string issue_buf;
+				sprintf(issue_buf, "Potential issue detected in wing %s:\n\nThis wing contains a player start and a custom arrival cue, but only one wave.  The arrival cue must evaluate to true at mission start, or the player will not be created.", Wings[i].name);
+				if (Fred_main_wnd->MessageBox(issue_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+					return 1;
+			}
+		}
+	}
 
 	// Check to be sure that any player wing doesn't have > 1 wave for multiplayer
 	if ( multi )
@@ -3371,27 +3625,22 @@ int CFREDView::error(const char *msg, ...)
 
 int CFREDView::internal_error(const char *msg, ...)
 {
-	char buf[2048];
+	SCP_string buf;
 	va_list args;
 
 	va_start(args, msg);
-	vsnprintf(buf, sizeof(buf)-1, msg, args);
+	vsprintf(buf, msg, args);
 	va_end(args);
-	buf[sizeof(buf)-1] = '\0';
 
 	g_err = 1;
 
 #ifndef NDEBUG
-	char buf2[2048];
+	buf += "\n\nThis is an internal error.  Please notify a coder about this.  Click cancel to debug.";
 
-	sprintf(buf2, "%s\n\nThis is an internal error.  Please let Jason\n"
-		"know about this so he can fix it.  Click cancel to debug.", buf);
-
-	if (MessageBox(buf2, "Internal Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDCANCEL)
+	if (MessageBox(buf.c_str(), "Internal Error", MB_OKCANCEL | MB_ICONEXCLAMATION) == IDCANCEL)
 		Int3();  // drop to debugger so the problem can be analyzed.
-
 #else
-	MessageBox(buf, "Error", MB_OK | MB_ICONEXCLAMATION);
+	MessageBox(buf.c_str(), "Error", MB_OK | MB_ICONEXCLAMATION);
 #endif
 
 	return -1;
@@ -3432,6 +3681,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 			return 1;
 	}
 
+	z = 0;
 	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
 		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
@@ -3883,6 +4133,19 @@ void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
 }
 
+void CFREDView::OnClassicMenuLayout()
+{
+	Classic_menu_layout = !Classic_menu_layout;
+	if (Fred_main_wnd != nullptr)
+		Fred_main_wnd->apply_menu_layout(Classic_menu_layout);
+	theApp.write_ini_file();
+}
+
+void CFREDView::OnUpdateClassicMenuLayout(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Classic_menu_layout);
+}
+
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
 {
 	int z;
@@ -4190,9 +4453,14 @@ void CFREDView::OnEditorsBriefing()
 
 void CFREDView::OnEditorsDebriefing() 
 {
-	debriefing_editor_dlg dlg;
+	if (!Debriefing_dialog) {
+		Debriefing_dialog = new debriefing_editor_dlg;
+		Debriefing_dialog->create();
+	}
 
-	dlg.DoModal();
+	Debriefing_dialog->SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Debriefing_dialog->ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnSaveCamera() 
@@ -4307,6 +4575,13 @@ void CFREDView::OnEditorsAdjustGrid()
 void CFREDView::OnCalcRelativeCoords()
 {
 	calc_relative_coords_dlg dlg;
+
+	dlg.DoModal();
+}
+
+void CFREDView::OnReorder()
+{
+	reorder_dlg dlg;
 
 	dlg.DoModal();
 }
@@ -4885,9 +5160,9 @@ void CFREDView::OnUpdateViewFullDetail(CCmdUI *pCmdUI)
 	pCmdUI->SetCheck(FullDetail);
 }
 
-BOOL CFREDView::DestroyWindow() 
+BOOL CFREDView::DestroyWindow()
 {
-	// TODO: Add your specialized code here and/or call the base class
+	Fred_view_wnd = nullptr;
 	return CView::DestroyWindow();
 }
 

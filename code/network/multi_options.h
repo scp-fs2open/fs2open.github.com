@@ -50,6 +50,7 @@ typedef struct multi_global_options {
 	char		std_passwd[STD_PASSWD_LEN+1];							// standalone host password
 	char		std_pname[STD_NAME_LEN+1];								// permanent name for the standalone - if any
 	int		std_framecap;												// standalone frame cap
+	bool	std_rollback;												// use rollback for primary/dumbfire shots
 
 	ushort		webapiPort;
 	SCP_string	webapiUsername;
@@ -79,6 +80,7 @@ typedef struct multi_global_options {
 		memset(std_passwd, 0, STD_PASSWD_LEN+1);
 		memset(std_pname, 0, STD_NAME_LEN+1);
 		std_framecap = 30;
+		std_rollback = true;
 
 		webapiPort = 8080;
 		webapiUsername = "admin";

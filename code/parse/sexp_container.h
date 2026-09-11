@@ -209,9 +209,6 @@ bool sexp_container_replace_refs_with_values(char *text, size_t max_len);
 
 const char *sexp_container_CTEXT(int node);
 
-// persistence
-bool sexp_container_has_persistent_non_eternal_containers();
-
 // SEXPs
 int sexp_container_eval_status_sexp(int op_num, int node);
 int sexp_container_eval_change_sexp(int op_num, int node);

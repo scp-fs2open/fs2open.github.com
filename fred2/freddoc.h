@@ -8,10 +8,8 @@
  * source.
  *
  */
-#include "MissionSave.h"
 
-#define MISSION_BACKUP_NAME     "Backup"
-#define MISSION_BACKUP_DEPTH    9
+#include "missioneditor/missionsave.h"
 
 #define US_WORLD_CHANGED    0x01
 #define US_VIEW_CHANGED     0x02

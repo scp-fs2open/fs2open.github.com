@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "prop/prop.h"
 #include "scripting/global_hooks.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
@@ -141,9 +142,12 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Asteroid",
 	"Jump Node",
 	"Beam",
-	"Raw Pof"
+	"Raw Pof",
+	"Prop"
 //XSTR:ON
 };
+
+static_assert(MAX_OBJECT_TYPES == OBJ_PROP + 1, "Object_type_names needs an entry for every object type!");
 
 obj_flag_name Object_flag_names[] = {
     { Object::Object_Flags::Invulnerable,			"invulnerable",						},
@@ -175,9 +179,12 @@ obj_flag_description Object_flag_descriptions[] = {
 	{ Object::Object_Flags::Dont_change_orientation,	"Will not let an object change orientation.  Upon destruction it will still do the death roll and explosion."},
 	{ Object::Object_Flags::Collides,					"This object will collide with other objects."},
 	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set.  (Normally an object that does not collide is also not attacked.)"},
+	{ Object::Object_Flags::Player_ship,			"Ship is a player ship."},
+	{ Object::Object_Flags::Special_warpin,			"Ship uses the special Knossos warp-in animation."},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
+extern const size_t Num_object_flag_descriptions = sizeof(Object_flag_descriptions) / sizeof(obj_flag_description);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
@@ -279,6 +286,7 @@ int free_object_slots(int target_num_used)
 				case OBJ_JUMP_NODE:				
 				case OBJ_BEAM:
 				case OBJ_RAW_POF:
+				case OBJ_PROP:
 					break;
 				default:
 					Int3();	//	Hey, what kind of object is this?  Unknown!
@@ -730,7 +738,8 @@ void obj_delete(int objnum)
 	case OBJ_POINT:
 		break;  // requires no action, handled by the Fred code.
 	case OBJ_JUMP_NODE:
-		break;  // requires no further action, handled by jumpnode deconstructor.
+		jumpnode_delete(objp);
+		break;
 	case OBJ_DEBRIS:
 		debris_delete( objp );
 		break;
@@ -759,6 +768,9 @@ void obj_delete(int objnum)
 	case OBJ_RAW_POF:
 		model_delete_instance(Pof_objects[objp->instance].model_instance);
 		Pof_objects.erase(objp->instance);
+		break;
+	case OBJ_PROP:
+		prop_delete(objp);
 		break;
 	case OBJ_NONE:
 		Int3();
@@ -1269,6 +1281,8 @@ void obj_move_all_pre(object *objp, float frametime)
 		break;
 	case OBJ_RAW_POF:
 		break;
+	case OBJ_PROP:
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1362,8 +1376,12 @@ void obj_move_all_post(object *objp, float frametime)
 
 					light_color.multiply_rgbai(r_mult, g_mult, b_mult, 1.f, intensity_mult);
 
-					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
-						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
+					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f) {
+						// LASER-rendered weapons (the common case: primary bolts) fire far more often
+						// than missiles, so excluding them from raytraced-shadow candidacy is a large,
+						// cheap cut to the number of lights that pass through that selection each frame.
+						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius, wi->render_type == WRT_LASER);
+					}
 				}
 			}
 
@@ -1402,7 +1420,9 @@ void obj_move_all_post(object *objp, float frametime)
 
 			//Check for changing team colors
 			ship* shipp = &Ships[objp->instance];
-			if (Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
+			// team_change_time is nonzero only while a fade is in progress (see sexp_change_team_color),
+			// so use that as the initial short-circuit check before the string match
+			if (shipp->team_change_time != 0 && Ship_info[shipp->ship_info_index].uses_team_colors && stricmp(shipp->secondary_team_name.c_str(), "none") != 0) {
 				if (f2fl(Missiontime) * 1000 > f2fl(shipp->team_change_timestamp) * 1000 + shipp->team_change_time) {
 					shipp->team_name = shipp->secondary_team_name;
 					shipp->team_change_timestamp = 0;
@@ -1531,6 +1551,9 @@ void obj_move_all_post(object *objp, float frametime)
 		case OBJ_RAW_POF:
 			break;
 
+		case OBJ_PROP:
+			break;
+
 		case OBJ_NONE:
 			Int3();
 			break;
@@ -1628,8 +1651,12 @@ void obj_move_all(float frametime)
 		}
 
 		// Goober5000 - accommodate objects that aren't supposed to move in some way (at least until they're destroyed)
-		bool dont_change_position = objp->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
-		bool dont_change_orientation = objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+		bool dont_change_position =
+			objp->flags.any_of(Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile) &&
+			objp->hull_strength > 0.0f;
+		bool dont_change_orientation =
+			objp->flags.any_of(Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile) &&
+			objp->hull_strength > 0.0f;
 
 		// skip the physics if we're totally immobile
 		if (!dont_change_position || !dont_change_orientation) {
@@ -1680,6 +1707,7 @@ void obj_move_all(float frametime)
 		// and look_at needs to happen last or the angle may be off by a frame)
 		model_do_intrinsic_motions(objp);
 
+		// Future TODO: Props will need a version of this when submodel animation support is added.
 		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
 		if (objp->type == OBJ_SHIP)
 			ship_model_replicate_submodels(objp);
@@ -1688,7 +1716,7 @@ void obj_move_all(float frametime)
 		obj_move_all_post(objp, frametime);
 
 		// Equipment script processing
-		if (objp->type == OBJ_SHIP) {
+		if (objp->type == OBJ_SHIP && scripting::hooks::OnWeaponEquipped->isActive()) {
 			ship* shipp = &Ships[objp->instance];
 			object* target;
 
@@ -1699,13 +1727,11 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (scripting::hooks::OnWeaponEquipped->isActive()) {
-				scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
-					scripting::hook_param_list(
-						scripting::hook_param("User", 'o', objp),
-						scripting::hook_param("Target", 'o', target)
-					));
-			}
+			scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
+				scripting::hook_param_list(
+					scripting::hook_param("User", 'o', objp),
+					scripting::hook_param("Target", 'o', target)
+				));
 		}
 	}
 
@@ -1889,7 +1915,7 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 		// Always execute the hook content
 		bool skip_render = scripting::hooks::OnObjectRender->isOverride(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
-		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, std::move(param_list));
 
 		// Clear the render scene context
 		scripting::api::Current_scene = nullptr;
@@ -1926,15 +1952,17 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_ASTEROID:
 		asteroid_render(obj, scene);
 		break;
-	case OBJ_JUMP_NODE:
-		for ( SCP_list<CJumpNode>::iterator jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp ) {
-			if ( jnp->GetSCPObject() != obj ) {
+	case OBJ_JUMP_NODE: {
+		int objnum = OBJ_INDEX(obj);
+		for ( auto &jnp : Jump_nodes ) {
+			if ( jnp.GetSCPObjectNumber() != objnum ) {
 				continue;
 			}
 
-			jnp->Render(scene, &obj->pos, &Eye_position);
+			jnp.Render(scene, &obj->pos, &Eye_position);
 		}
 		break;
+	}
 	case OBJ_WAYPOINT:
 		// 		if (Show_waypoints)	{
 		// 			gr_set_color( 128, 128, 128 );
@@ -1947,6 +1975,9 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 		break;
 	case OBJ_RAW_POF:
 		raw_pof_render(obj, scene);
+		break;
+	case OBJ_PROP:
+		prop_render(obj, scene);
 		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
@@ -2054,6 +2085,7 @@ int obj_team(object *objp)
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
 		case OBJ_RAW_POF:
+		case OBJ_PROP:
 			team = -1;
 			break;
 
@@ -2202,7 +2234,20 @@ int object_get_model_num(const object *objp)
 			return Weapon_info[wp->weapon_info_index].model_num;
 		}
 		case OBJ_RAW_POF:
-			return Pof_objects[objp->instance].model_num;
+		{
+			// Pof_objects is a map with a monotonic id as the key, not an array with an index
+			auto pof_it = Pof_objects.find(objp->instance);
+			if (pof_it == Pof_objects.end())
+				return -1;
+			return pof_it->second.model_num;
+		}
+		case OBJ_PROP:
+		{
+			// the instance of a prop object is an index into Props, not into Prop_info
+			if (objp->instance < 0 || objp->instance >= static_cast<int>(Props.size()) || !Props[objp->instance].has_value())
+				return -1;
+			return Prop_info[Props[objp->instance]->prop_info_index].model_num;
+		}
 		default:
 			break;
 	}
@@ -2256,7 +2301,19 @@ int object_get_model_instance_num(const object *objp)
 			return jnp->GetPolymodelInstanceNum();
 		}
 		case OBJ_RAW_POF:
-			return Pof_objects[objp->instance].model_instance;
+		{
+			auto pof_it = Pof_objects.find(objp->instance);
+			if (pof_it == Pof_objects.end())
+				return -1;
+			return pof_it->second.model_instance;
+		}
+		case OBJ_PROP:
+		{
+			// props_level_close() clears Props while the prop objects can still be alive
+			if (objp->instance < 0 || objp->instance >= static_cast<int>(Props.size()) || !Props[objp->instance].has_value())
+				return -1;
+			return Props[objp->instance]->model_instance_num;
+		}
 		default:
 			break;
 	}

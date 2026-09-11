@@ -946,6 +946,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 		sso->ss->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, nullptr, flak_range);
@@ -1096,15 +1097,6 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 	bool in_sight = ship_subsystem_in_sight(sso->objh.objp(), sso->ss, from, &world_pos, false);
 
 	return ade_set_args(L, "b", in_sight);
-}
-
-ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_subsys_h *sso;
-	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sso->isValid());
 }
 
 }

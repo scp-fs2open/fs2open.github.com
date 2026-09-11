@@ -17,6 +17,8 @@
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/oswpt.h"
+#include "scripting/api/objs/prop.h"
+#include "scripting/api/objs/propclass.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -28,6 +30,7 @@
 #include "scripting/api/objs/wing.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "prop/prop.h"
 #include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
@@ -41,6 +44,8 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "string",       OPF_STRING },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
+														  { "prop",         OPF_PROP },
+														  { "propname",     OPF_PROP },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
 														  { "waypoint",     OPF_POINT },
@@ -48,6 +53,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
+														  { "propclass",    OPF_PROP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
 														  { "ship+waypoint",OPF_SHIP_POINT },
@@ -199,6 +205,29 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h(objp)));
 	}
+	case OPF_PROP: {
+		auto prop_entry = eval_prop(node);
+
+		// if this is a propname type, we want the name of a valid prop but not the prop itself
+		// (if the prop is not valid, return an empty string)
+		if (argtype.first == "propname") {
+			return LuaValue::createValue(_action.getLuaState(), prop_entry ? prop_entry->prop_name : "");
+		}
+
+		if (!prop_entry || (prop_entry->objnum < 0)) {
+			// Name is invalid
+			return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h()));
+		}
+
+		auto objp = &Objects[prop_entry->objnum];
+
+		// The other SEXP code does not validate the object type so this should be safe
+		Assertion(objp->type == OBJ_PROP,
+			"Prop '%s' was found in the Props array but has a different object type in the Objects array. Get a coder!",
+			CTEXT(node));
+
+		return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h(objp)));
+	}
 	case OPF_MESSAGE: {
 		auto name = CTEXT(node);
 
@@ -224,13 +253,18 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto name = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), l_Shipclass.Set(ship_info_lookup(name)));
 	}
+	case OPF_PROP_CLASS_NAME: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_Propclass.Set(prop_info_lookup(name)));
+	}
 	case OPF_WEAPON_NAME: {
 		auto name = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), l_Weaponclass.Set(weapon_info_lookup(name)));
 	}
 	case OPF_GAME_SND: {
-		auto name = CTEXT(node);
-		return LuaValue::createValue(_action.getLuaState(), l_SoundEntry.Set(sound_entry_h(gamesnd_get_by_name(name))));
+		// handle a table index, an operator, or a name (matching what the core SEXPs accept);
+		// -1 or <none> yields an invalid handle that the script can check with :isValid()
+		return LuaValue::createValue(_action.getLuaState(), l_SoundEntry.Set(sound_entry_h(sexp_get_sound_index(node))));
 	}
 	case OPF_STRING: {
 		auto text = CTEXT(node);
@@ -271,13 +305,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || !ship_entry->has_shipp()) {
-			// Name is invalid
-			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+		if (!ship_entry || !ship_entry->has_objp()) {
+			// Ship is not present in the mission (never arrived, destroyed, or departed)
+			return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h()));
 		}
 
 		ship_subsys* ss = ship_get_subsys(ship_entry->shipp(), name);
-		
+
 		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp(), ss)));
 	}
 	case OPF_DOCKER_POINT: {
@@ -301,7 +335,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto ship_entry = eval_ship(this_node);
 		if (!ship_entry || !ship_entry->has_shipp()) {
 			// Name is invalid
-			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+			return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h()));
 		}
 
 		auto docker_pm = model_get(Ship_info[ship_entry->shipp()->ship_info_index].model_num);
@@ -342,8 +376,8 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			auto text = CTEXT(node);
 			return LuaValue::createValue(_action.getLuaState(), text);
 		} else {
-			UNREACHABLE(
-				"Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
+			Assertion(false,
+				"Unhandled argument type '%s'! Someone added an argument type but didn't add handling code to execute().", argtype.first.c_str());
 			return LuaValue::createNil(_action.getLuaState());
 		}
 	}
@@ -723,7 +757,7 @@ void LuaSEXP::parseTable() {
 				if (skip)
 					continue;
 
-				thisList.list.push_back(item);
+				thisList.list.push_back(std::move(item));
 			}
 
 			if (thisList.list.size() == 0) {
@@ -777,7 +811,7 @@ void LuaSEXP::parseTable() {
 				dyn_param.operator_name = _name;
 				dyn_param.parameter_map.push_back(param_map);
 
-				Dynamic_parameters.push_back(dyn_param);
+				Dynamic_parameters.push_back(std::move(dyn_param));
 			}
 		}
 		else if (parent_param_index >= 0)
@@ -799,14 +833,14 @@ void LuaSEXP::parseTable() {
 			if (optional_string("+Suffix:")) {
 				SCP_string suffix;
 				stuff_string(suffix, F_NAME);
-				Dynamic_enum_suffixes.push_back({_name, param_index, suffix});
+				Dynamic_enum_suffixes.push_back({_name, param_index, std::move(suffix)});
 			}
 		}
 
 		if (variable_arg_part) {
-			_varargs_type_pattern.push_back(type);
+			_varargs_type_pattern.push_back(std::move(type));
 		} else {
-			_argument_types.push_back(type);
+			_argument_types.push_back(std::move(type));
 		}
 
 		if (optional_string("$Repeat")) {

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Support Options - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo;
+    <a href="MissionSpecsDialog.html">Mission Specs</a> &rsaquo; Support Options</nav>
+<h1>Support Options</h1>
+<p>Opens via <strong>Editors &rsaquo; Mission Specs &rsaquo; Support Options</strong>.</p>
+<p>Controls whether support ships appear in the mission, how much they can repair, whether
+they can rearm weapons, and how many of each weapon they carry in their rearm pool.</p>
+
+<h2>Repair settings</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Allow Support Ships</td><td>When unchecked, no support ship can appear in
+        this mission regardless of the loadout.</td></tr>
+    <tr><td>Support Ships Repair Hull</td><td>Allows support ships to repair hull damage
+        in addition to subsystems. Subsystem repair is always available when support ships
+        are allowed.</td></tr>
+    <tr><td>Hull Repair Ceiling</td><td>Maximum percentage of hull integrity a support
+        ship can restore. Only meaningful when hull repair is enabled.</td></tr>
+    <tr><td>Subsystem Repair Ceiling</td><td>Maximum percentage of subsystem integrity a
+        support ship can restore.</td></tr>
+</table>
+
+<h2>Rearm options</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Disallow Support Rearm</td><td>Prevents support ships from rearming any
+        weapons. Repair is still permitted if support ships are allowed.</td></tr>
+    <tr><td>Limit Rearm to Mission Pool</td><td>Restricts rearming to the quantities
+        defined in the <strong>Support Rearm Pool</strong> table below. Once a weapon's
+        pool is exhausted, support ships cannot supply more of it. A pool value of
+        <strong>-1</strong> means unlimited for that weapon.</td></tr>
+    <tr><td>Set Rearm Pool from Loadout Pool surplus</td><td>Initialises each weapon's
+        pool amount from any surplus left over in the player loadout pool at mission
+        start, in addition to any values set manually.</td></tr>
+    <tr><td>Use Weapon Precedence when pool is empty</td><td>When a weapon's pool is
+        exhausted, the support ship substitutes a weapon from the precedence list defined
+        in the weapon tables rather than simply refusing to rearm.</td></tr>
+</table>
+
+<h2>Support Rearm Pool</h2>
+<p>Sets how many of each weapon the support ships can supply across the entire mission.
+Only active when <strong>Limit Rearm to Mission Pool</strong> is checked. Each team in
+a Team vs. Team mission has its own independent pool; use <strong>Pool Team</strong> to
+switch between them.</p>
+<p>Select a weapon in the list to edit its pool amount, then use the buttons to apply a
+value. The amount field accepts any integer; use <strong>-1</strong> for unlimited.</p>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Pool Team</td><td>Selects which team's pool is shown. In non-Team vs. Team
+        missions only one team entry is present.</td></tr>
+    <tr><td>Weapon list</td><td>Lists all player-allowed weapons. Select a weapon to
+        target it with the amount buttons.</td></tr>
+    <tr><td>Pool Amount</td><td>Amount to apply when clicking <strong>Set Amount</strong>
+        or <strong>Set ALL to Amount</strong>.</td></tr>
+    <tr><td>Set Amount</td><td>Sets the selected weapon's pool to the value in
+        <strong>Pool Amount</strong>.</td></tr>
+    <tr><td>Set Unlimited (-1)</td><td>Sets the selected weapon's pool to -1
+        (unlimited).</td></tr>
+    <tr><td>Set Zero</td><td>Sets the selected weapon's pool to 0, preventing support
+        ships from supplying it entirely.</td></tr>
+    <tr><td>Set ALL to Amount</td><td>Applies the <strong>Pool Amount</strong> value to
+        every weapon in the list at once.</td></tr>
+    <tr><td>Set ALL to Unlimited</td><td>Sets every weapon's pool to -1.</td></tr>
+    <tr><td>Set ALL to Zero</td><td>Sets every weapon's pool to 0.</td></tr>
+</table>
+</body>
+</html>

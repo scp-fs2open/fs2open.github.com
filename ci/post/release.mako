@@ -22,13 +22,15 @@ Windows:  [url=http://scp.fsmods.net/builds/Launcher55g.zip]Launcher 5.5g[/url] 
 OS X:  Soulstorm's [url=https://www.hard-light.net/forums/index.php/topic,51391.0.html]OS X Launcher 3.0[/url]
 Linux:  [url=https://www.hard-light.net/forums/index.php/topic,53206.0.html]YAL[/url] or [url=https://www.hard-light.net/wiki/index.php/Fs2_open_on_Linux/Graphics_Settings]by hand[/url] or whatever you can figure out.[/hidden]
 
-[img]https://scp.indiegames.us/img/windows-icon.png[/img] [color=green][size=12pt]Windows (32/64-bit)[/size][/color]
+[img]https://scp.indiegames.us/img/windows-icon.png[/img] [color=green][size=12pt]Windows (32/64-bit/ARM64)[/size][/color]
 [size=8pt]Compiled using GitHub Actions on Windows Server 2019 (10.0.17763), Visual Studio Enterprise 2019[/size]
 
 [b]64-bit:[/b] ${build(groups["Win64"].mainFile)}
 
 [b]32-bit:[/b] ${build(groups["Win32"].mainFile)}
 [size=8pt]This one is based on the SSE2 Optimizations from the MSVC Compiler.[/size]
+
+[b]ARM64:[/b] ${build(groups["WinARM64"].mainFile)}
 
 [hidden=Alternative builds]
 

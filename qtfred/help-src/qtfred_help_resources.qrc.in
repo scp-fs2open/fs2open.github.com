@@ -1,0 +1,5 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="/help">
+    <file alias="qtfred_help.qch">@QTFRED_HELP_QCH@</file>
+</qresource>
+</RCC>

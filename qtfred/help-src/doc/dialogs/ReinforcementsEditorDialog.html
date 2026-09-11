@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Reinforcements - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Reinforcements</nav>
+<h1>Reinforcements Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Reinforcements</strong>.</p>
+<p>Designates wings that the player can call in as reinforcements via the comm menu
+during the mission. Reinforcement wings do not spawn automatically at mission start.
+Instead of auto-spawning when their arrival cue becomes true, the arrival cue
+determines when the option to call that reinforcement becomes available in the comm
+menu. The wing then warps in only when the player actually calls it.</p>
+
+<h2>Wing lists</h2>
+<p>The left panel lists all wings in the mission. Select one or more and use
+<strong>Add</strong> to designate them as reinforcements; they appear in the right
+panel. Select a wing in the right panel and use <strong>Remove</strong> to revoke
+its reinforcement status.</p>
+
+<h2>Reinforcement properties</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Uses</td><td>Maximum number of times the player can call this
+        reinforcement. Once the limit is reached the option disappears from the comm
+        menu.</td></tr>
+    <tr><td>Delay</td><td>Time in seconds between when the player calls the
+        reinforcement and when the wing actually warps in.</td></tr>
+</table>
+
+<div class="note">Reinforcement wings must still have their arrival cues and arrival
+location configured in the <a href="WingEditorDialog.html">Wing Editor</a>. The
+arrival cue controls when the reinforcement option appears in the comm menu; the
+arrival location controls where the wing warps in when called.</div>
+</body>
+</html>

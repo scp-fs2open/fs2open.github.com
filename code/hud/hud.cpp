@@ -364,9 +364,9 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 }
 
 // constructor for custom gauges
-HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
+HudGauge::HudGauge(int _gauge_config, bool _slew, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
-reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
+reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
 disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), scripting_render_override(false), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
 render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -896,7 +896,12 @@ void HudGauge::render(float /*frametime*/, bool config)
 	}
 }
 
-void HudGauge::renderString(int x, int y, const char *str, float scale, bool config)
+void HudGauge::renderString(int x, int y, const char *str, float scale, bool config) const
+{
+	renderString(x, y, str, std::string::npos, scale, config);
+}
+
+void HudGauge::renderString(int x, int y, const char *str, size_t len, float scale, bool config) const
 {
 	int nx = 0, ny = 0;
 	int resize = GR_RESIZE_FULL;
@@ -923,15 +928,20 @@ void HudGauge::renderString(int x, int y, const char *str, float scale, bool con
 	if (HUD_shadows) {
 		color cur = gr_screen.current_color;
 		gr_set_color_fast(&Color_black);
-		gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
+		gr_string(x + nx + 1, y + ny + 1, str, resize, scale, len);
 		gr_set_color_fast(&cur);
 	}
 
-	gr_string(x + nx, y + ny, str, resize, scale);
+	gr_string(x + nx, y + ny, str, resize, scale, len);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderString(int x, int y, int gauge_id, const char *str, float scale, bool config)
+void HudGauge::renderString(int x, int y, int gauge_id, const char *str, float scale, bool config) const
+{
+	renderString(x, y, gauge_id, str, std::string::npos, scale, config);
+}
+
+void HudGauge::renderString(int x, int y, int gauge_id, const char *str, size_t len, float scale, bool config) const
 {
 	int nx = 0, ny = 0;
 	int resize = GR_RESIZE_FULL;
@@ -960,57 +970,60 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str, float s
 		if (HUD_shadows) {
 			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
-			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, resize, scale);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, len, resize, scale);
 			gr_set_color_fast(&cur);
 		}
-		emp_hud_string(x + nx, y + ny, gauge_id, str, resize, scale);
+		emp_hud_string(x + nx, y + ny, gauge_id, str, len, resize, scale);
 	} else {
 		if (HUD_shadows) {
 			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
-			gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
+			gr_string(x + nx + 1, y + ny + 1, str, resize, scale, len);
 			gr_set_color_fast(&cur);
 		}
-		gr_string(x + nx, y + ny, str, resize, scale);
+		gr_string(x + nx, y + ny, str, resize, scale, len);
 	}
 
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s, float scale, bool config)
+void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s, float scale, bool config) const
+{
+	renderStringAlignCenter(x, y, area_width, s, std::string::npos, scale, config);
+}
+
+void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s, size_t len, float scale, bool config) const
 {
 	int w, h;
 
-	gr_get_string_size(&w, &h, s, scale);
-	renderString(x + ((area_width - w) / 2), y, s, scale, config);
+	gr_get_string_size(&w, &h, s, scale, len);
+	renderString(x + ((area_width - w) / 2), y, s, len, scale, config);
 }
 
-void HudGauge::renderPrintf(int x, int y, float scale, bool config, const char* format, ...)
+void HudGauge::renderPrintf(int x, int y, float scale, bool config, SCP_FORMAT_STRING const char* format, ...) const
 {
-	char tmp[256] = "";
+	SCP_string tmp;
 	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, tmp, scale, config);
+	renderString(x, y, tmp.c_str(), scale, config);
 }
 
-void HudGauge::renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, const char* format, ...)
+void HudGauge::renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, SCP_FORMAT_STRING const char* format, ...) const
 {
-	char tmp[256] = "";
+	SCP_string tmp;
 	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, gauge_id, tmp, scale, config);
+	renderString(x, y, gauge_id, tmp.c_str(), scale, config);
 }
 
 void HudGauge::renderBitmapColor(int frame, int x, int y, float scale, bool config) const
@@ -2525,7 +2538,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		by += fl2i(line_h * scale);
 		sy += fl2i(line_h * scale);
 
-		info_lines.push_back(info);
+		info_lines.push_back(std::move(info));
 
 		// Remove it from hud_subsys_list
 		if ( best_index < (num-i-1) ) {
@@ -2571,7 +2584,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		info.value_y = y + fl2i(hull_integ_offsets[1] * scale);
 
 		// Insert at the top since hull is always first
-		info_lines.insert(info_lines.begin(), info);
+		info_lines.insert(info_lines.begin(), std::move(info));
 	}
 
 	if (info_lines.empty()) {

@@ -100,6 +100,7 @@ void VoiceActingManagerModel::initializeData()
 	_suffix = Suffix::WAV;
 	_includeSenderInFilename = false;
 	_whichPersonaToSync = 0;
+	_modified = false;
 }
 
 SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices()
@@ -126,7 +127,7 @@ SCP_vector<SCP_string> VoiceActingManagerModel::fileChoices()
 			out.emplace_back(".wav");
 			break;
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", i);
 			break;
 		}
 	}
@@ -160,7 +161,7 @@ SCP_string VoiceActingManagerModel::getSuffixString() const
 		case Suffix::WAV:
 			return ".wav";
 		default:
-			Assertion(false, "Invalid file type selected!");
+			UNREACHABLE("Invalid file type %d selected!", static_cast<int>(_suffix));
 			return ".wav";
 	}
 }
@@ -193,7 +194,7 @@ SCP_string VoiceActingManagerModel::generateFilename(ExportSelection sel, int nu
 			prefix += _abbrevMessage;
 			break;
 		default:
-			Assertion(false, "Invalid export selection for filename generation!");
+			UNREACHABLE("Invalid export selection %d for filename generation!", static_cast<int>(sel));
 			prefix = ""; // Fallback, shouldn't happen
 	}
 
@@ -352,7 +353,7 @@ bool VoiceActingManagerModel::generateScript(const SCP_string& absoluteFilePath)
 
 	// Mission metadata
 	fout(fp, "%s\n", Mission_filename);
-	fout(fp, "%s\n\n", The_mission.name);
+	fout(fp, "%s\n\n", The_mission.name.c_str());
 
 	auto writeMessageEntry = [&](const char* filename,
 								 const SCP_string& text,

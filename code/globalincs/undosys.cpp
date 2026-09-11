@@ -6,6 +6,8 @@
 #include "globalincs/undosys.h"
 #include "globalincs/vmallocator.h"
 
+#include <utility>
+
 // Pure virtual deconstructors must be defined.
 Undo_item_base::~Undo_item_base() = default;
 
@@ -47,21 +49,19 @@ void Undo_system::clear_redo() {
 	redo_stack.clear();
 }
 
-size_t Undo_system::save_stack(Undo_stack& stack) {
+size_t Undo_system::save_stack(Undo_stack&& stack) {
 	if (stack.size() == 0) {
 		return 0;
 	}
-	
+
 	clear_redo();
 
-	// Copy the stack onto the heap, and push it into our undo_stack as a single item
-	Undo_item_base *new_item = new Undo_stack(stack);
+	// Move the stack onto the heap, and push it into our undo_stack as a single item.
+	// The move empties the input stack, so there's only one deletion handler for the items.
+	Undo_item_base *new_item = new Undo_stack(std::move(stack));
 
 	Assert(new_item != nullptr);
 	undo_stack.push_back(new_item);
-
-	// Input stack is told to untrack the items, so that there's only one deletion handler for them
-	stack.untrack();
 
 	clamp_stacks();
 
@@ -129,6 +129,18 @@ Undo_stack::~Undo_stack() {
 	clear();
 }
 
+Undo_stack& Undo_stack::operator=(Undo_stack&& other) noexcept {
+	if (this != &other) {
+		// delete any items we currently track, since the vector assignment below would otherwise leak them
+		clear();
+
+		reverse = other.reverse;
+		// exchange rather than move, to guarantee the source is left empty and never deletes the items
+		stack = std::exchange(other.stack, {});
+	}
+	return *this;
+}
+
 void Undo_stack::reserve(size_t size) {
 	stack.reserve(size);
 }
@@ -152,10 +164,6 @@ std::pair<const void*, const void*> Undo_stack::restore() {
 
 size_t Undo_stack::size() {
 	return stack.size();
-}
-
-void Undo_stack::untrack() {
-	stack.clear();
 }
 
 void Undo_stack::clear() {

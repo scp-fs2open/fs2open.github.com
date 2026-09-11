@@ -10,6 +10,7 @@ namespace Model {
 		Is_live_debris,					// whether current submodel is a live debris model
 		Is_thruster,					// is an engine thruster submodel
 		Is_damaged,						// is a submodel that represents a damaged submodel (e.g. a -destroyed version of some other submodel)
+		Is_lod,							// is a submodel that is a lower LOD of a different submodel
 		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
 		Gun_rotation,					// for animated weapon models
 		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity

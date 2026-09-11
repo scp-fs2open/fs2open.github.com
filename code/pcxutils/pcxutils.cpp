@@ -312,11 +312,16 @@ int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte * /*pal*
 				if ( byte_size == 1 ) {
 					auto pixel_val = data;
 					if (!mask_bitmap) {
-						// 8 bit-per-pixel aa bitmaps are a bit special since they only use values in the range [0, 15] where 15 wraps
-						// around back to 0. Since the rest of the code expects the value to be in the range [0, 255] the pixel value
-						// needs to be adjusted here. By multiplying the value with 17 the original range [0, 15] is mapped to [0, 255]
-						// This only applies to bitmaps that are not used as masks since mask bitmaps use higher values
-						// to indicate their mask area
+						// 8-bit-per-pixel HUD gauge PCX aabitmaps use the pixel value directly as an alpha level —
+						// the actual RGB colors in the palette are completely ignored. The valid range is [0, 15]:
+						//   [0]:    fully transparent (alpha 0)
+						//   [1-14]: black-to-white gradient (alpha = value * 17)
+						//   [15]:   special HUD background (alpha 17, matching index 1, for a dark transparent tint)
+						//   [>15]:  clamped to fully transparent (alpha 0)
+						// Because only the pixel value matters, the palette in the source file must be ordered so that
+						// index 0 is the transparent end and index 14 is the opaque end. A reversed palette causes the
+						// gauge to render as a solid white square (see GitHub issue #4148).
+						// Mask bitmaps skip this block because they use the full value range for the mask area.
 						if (data > 15) {
 							pixel_val = 0;
 						} else if (data == 15) {

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Debriefing - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Narrative &rsaquo; Debriefing</nav>
+<h1>Debriefing</h1>
+<p>Opens via <strong>Editors &rsaquo; Debriefing</strong>.</p>
+<p>Builds the post-mission debrief shown after the player returns to base. Each stage
+has a usage formula; only stages whose formula evaluates to true are shown, so you
+can deliver different feedback depending on how the mission went.</p>
+
+<h2>Teams</h2>
+<p>In multiplayer missions each team can have its own independent debriefing. Use the
+team selector to switch which team's debriefing you are editing. <strong>Copy to other
+team</strong> duplicates the entire debriefing (all stages) to the other team,
+overwriting it.</p>
+
+<h2>Stage controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Navigate between stages.</td></tr>
+    <tr><td>Add stage</td><td>Appends a new stage at the end.</td></tr>
+    <tr><td>Insert stage</td><td>Inserts a new stage after the current one.</td></tr>
+    <tr><td>Delete stage</td><td>Removes the current stage.</td></tr>
+</table>
+
+<h2>Per-stage fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Stage text</td><td>The main body text displayed and read aloud to the
+        player during this stage.</td></tr>
+    <tr><td>Recommendation text</td><td>A follow-up line shown when the player presses
+        the Recommendations button in the debriefing screen. Optional - leave blank
+        to show nothing.</td></tr>
+    <tr><td>Voice file</td><td>Audio narration for this stage's text.</td></tr>
+    <tr><td>Usage formula</td><td><a href="../concepts/sexps.html">SEXP</a> evaluated
+        after the mission ends. This stage is shown only if the formula is
+        true.</td></tr>
+</table>
+
+<h2>Music</h2>
+<p>Music applies to the entire debriefing, not individual stages. Three tracks can be
+assigned depending on mission outcome:</p>
+<table>
+    <tr><th>Track</th><th>When played</th></tr>
+    <tr><td>Success</td><td>All primary and secondary goals were
+        completed.</td></tr>
+    <tr><td>Average</td><td>The mission was passed but not all goals were
+        met.</td></tr>
+    <tr><td>Failure</td><td>The mission was failed, or the player turned
+        traitor.</td></tr>
+</table>
+</body>
+</html>

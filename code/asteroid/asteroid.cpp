@@ -648,24 +648,30 @@ void asteroid_create_all()
 	int max_asteroids = Asteroid_field.num_initial_asteroids; // * (1.0f - 0.1f*(MAX_DETAIL_VALUE-Detail.asteroid_density)));
 
 	int num_debris_types = 0;
+	int num_valid = 0;	// count of valid (non-(-1)) entries written into shipDebrisOddsTable
 
 	// get number of debris types
 	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		num_debris_types = static_cast<int>(Asteroid_field.field_debris_type.size());
 
-		// Calculate the odds table
+		// Calculate the odds table; skip invalid entries (field_debris_type[idx] == -1 means
+		// missionparse invalidated the entry because the type no longer exists in Asteroid_info)
 		for (idx=0; idx<num_debris_types; idx++) {
+			if (Asteroid_field.field_debris_type[idx] == -1)
+				continue;
 			float debris_weight = Asteroid_info[Asteroid_field.field_debris_type[idx]].spawn_weight;
-			shipDebrisOddsTable[idx].random_threshold = max_weighted_range + debris_weight;
-			shipDebrisOddsTable[idx].debris_type = Asteroid_field.field_debris_type[idx];
+			shipDebrisOddsTable[num_valid].random_threshold = max_weighted_range + debris_weight;
+			shipDebrisOddsTable[num_valid].debris_type = Asteroid_field.field_debris_type[idx];
 			max_weighted_range += debris_weight;
+			num_valid++;
 		}
 	}
 
 	// Load Asteroid/debris models
 	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		for (idx=0; idx<num_debris_types; idx++) {
-			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
+			if (Asteroid_field.field_debris_type[idx] != -1)
+				asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
 	} else {
 		for (const auto& subtype : Asteroid_field.field_asteroid_type) {
@@ -690,7 +696,7 @@ void asteroid_create_all()
 
 			float rand_choice = frand() * max_weighted_range;
 
-			for (idx = 0; idx < static_cast<int>(Asteroid_field.field_debris_type.size()); idx++) {
+			for (idx = 0; idx < num_valid; idx++) {
 				// for ship debris, choose type according to odds table
 				if (rand_choice < shipDebrisOddsTable[idx].random_threshold) {
 					asteroid_create(&Asteroid_field, shipDebrisOddsTable[idx].debris_type, 0);
@@ -1077,8 +1083,10 @@ void asteroid_delete( object * obj )
 
 	asp = &Asteroids[num];
 
-	if (asp->model_instance_num >= 0)
+	if (asp->model_instance_num >= 0) {
 		model_delete_instance(asp->model_instance_num);
+		asp->model_instance_num = -1;
+	}
 
 	if (asp->target_objnum >= 0) {
 		for (asteroid_target& target : Asteroid_targets) {
@@ -1315,9 +1323,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
 				// turn off all moving submodels, collide against only 1 at a time.
-				// turn off collision detection for all moving submodels
+				mc.collision_checked.assign(pm->n_models, 0);
 				for (auto submodel: submodel_vector) {
-					pmi->submodel[submodel].collision_checked = true;
+					mc.collision_checked[submodel] = true;
 				}
 
 				// Only check single submodel now, since children of moving submodels are handled as moving as well
@@ -1325,10 +1333,8 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 
 				// check each submodel in turn
 				for (auto submodel: submodel_vector) {
-					auto smi = &pmi->submodel[submodel];
-
 					// turn on just one submodel for collision test
-					smi->collision_checked = false;
+					mc.collision_checked[submodel] = false;
 
 					// find the start and end positions of the sphere in submodel RF
 					model_instance_global_to_local_point(&p0, &light_obj->last_pos, pm, pmi, submodel, &heavy_obj->last_orient, &heavy_obj->last_pos, true);
@@ -1360,8 +1366,11 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 						}
 					}
 					// Don't look at this submodel again
-					smi->collision_checked = true;
+					mc.collision_checked[submodel] = true;
 				}
+
+				// Clear collision_checked before base model pass so it auto-inits fresh
+				mc.collision_checked.clear();
 
 			}
 
@@ -1430,9 +1439,9 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		// everything above was calculated relative to the heavy's position
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr))
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr))
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
 			mc_ret_val = 0;
@@ -1607,8 +1616,13 @@ static float asteroid_create_explosion(object *objp)
 	}
 
 	fireball_scale_multiplier = asteroid_get_fireball_scale_multiplier(objp->instance);
+	auto fireball_radius = objp->radius * fireball_scale_multiplier;
 
-	fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), objp->radius*fireball_scale_multiplier, false, &objp->phys_info.vel );
+	if (Zero_radius_explosions_skip_fireballs && fl_near_zero(fireball_radius))
+		fireball_objnum = -1;
+	else
+		fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), fireball_radius, false, &objp->phys_info.vel );
+
 	if ( fireball_objnum > -1 )	{
 		explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 	} else {
@@ -2220,7 +2234,7 @@ static void asteroid_parse_section()
 			}
 			return;
 		}
-		asteroid_list.push_back(asteroid_t);
+		asteroid_list.push_back(std::move(asteroid_t));
 		asteroid_p = &asteroid_list[asteroid_list.size() - 1];
 
 	}
@@ -2318,7 +2332,7 @@ static void asteroid_parse_section()
 					thisType.type_name.c_str(),
 					asteroid_p->name);
 			} else {
-				asteroid_p->subtypes.push_back(thisType);
+				asteroid_p->subtypes.push_back(std::move(thisType));
 			}
 		}
 	}
@@ -2607,7 +2621,7 @@ static void verify_asteroid_splits()
 		}
 
 		// Replace splits with only valid splits
-		Asteroid_info[i].split_info = splits_t;
+		Asteroid_info[i].split_info = std::move(splits_t);
 	}
 }
 
@@ -2634,6 +2648,11 @@ static void verify_asteroid_list()
 
 		if (found)
 			continue;
+
+		if (asteroid_list.empty()) {
+			mprintf(("%s asteroid not found and no fallback available in asteroid_list.\n", asteroid_size[i].c_str()));
+			continue;
+		}
 
 		//Left this as a log print instead of a Warning because of retail-Mjn
 		mprintf(("%s asteroid not found. Using asteroid %s\n", asteroid_size[i].c_str(), asteroid_list[0].name));
@@ -2689,8 +2708,10 @@ void asteroid_init()
 	parse_modular_table("*-ast.tbm", asteroid_parse_tbl);
 
 	//No asteroids defined. Bail!
-	if (asteroid_list.empty())
+	if (asteroid_list.empty()) {
+		mprintf(("No asteroids defined in asteroid.tbl or any modular tables. Asteroid fields will not function.\n"));
 		return;
+	}
 
 	// now verify the asteroids were found and put them in the correct order
 	verify_asteroid_list();

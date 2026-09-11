@@ -42,6 +42,7 @@ typedef struct ai_flag_description {
 extern ai_flag_name Ai_flag_names[];
 extern ai_flag_description Ai_flag_descriptions[];
 extern const int Num_ai_flag_names;
+extern const size_t Num_ai_flag_descriptions;
 
 //	dock_orient_and_approach() modes.
 #define	DOA_APPROACH	1		//	Approach the current point on the path (aip->path_cur)
@@ -493,8 +494,8 @@ extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
 
-extern ai_class *Ai_classes;
-extern char** Ai_class_names;
+extern SCP_vector<ai_class> Ai_classes;
+extern SCP_vector<const char*> Ai_class_names;
 
 extern int Num_ai_classes;
 extern int Ai_firing_enabled;

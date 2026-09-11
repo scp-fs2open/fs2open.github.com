@@ -12,6 +12,7 @@
 
 #include "bmpman/bmpman.h"
 #include "freespace.h"
+#include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
@@ -1633,7 +1634,7 @@ void options_detail_do_frame()
 		options_force_button_frame(VERY_HIGH_DETAIL_N, 2);
 		break;
 	default:
-		Assertion(false, "Invalid preset called for in Options menu");
+		UNREACHABLE("Invalid preset %d called for in Options menu", static_cast<int>(current_preset));
 		break;
 	}
 }

@@ -35,7 +35,7 @@ class SpawnShipCheat : public CustomCheat {
 	SCP_string shipName;
 	public:
 
-	SpawnShipCheat(SCP_string cheat_code, SCP_string cheat_msg,  bool require_cheats_enabled, SCP_string class_name, SCP_string ship_name) : CustomCheat(cheat_code, cheat_msg, require_cheats_enabled),
+	SpawnShipCheat(SCP_string cheat_code, SCP_string cheat_msg,  bool require_cheats_enabled, SCP_string class_name, SCP_string ship_name) : CustomCheat(std::move(cheat_code), std::move(cheat_msg), require_cheats_enabled),
 		shipClassName(std::move(class_name)),
 		shipName(std::move(ship_name)) { }
 

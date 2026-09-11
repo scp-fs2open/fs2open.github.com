@@ -36,6 +36,14 @@ private:
 	CGrid*		m_pGDlg;
 	int global_error_check_player_wings(int multi);
 
+	// Orbit camera drag state
+	bool m_orbit_dragging = false;
+	bool m_rbutton_down = false;
+	bool m_rbutton_moved = false;
+	CPoint m_orbit_last_mouse;
+	CPoint m_rbutton_down_point;
+	void handle_orbit_drag(CPoint point, UINT nFlags);
+
 protected: // create from serialization only
 	CFREDView();
 	DECLARE_DYNCREATE(CFREDView)
@@ -105,6 +113,7 @@ protected:
 	afx_msg void OnUpdateViewWaypoints(CCmdUI* pCmdUI);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnEditorsShips();
+	afx_msg void OnEditorsProps();
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
@@ -125,6 +134,40 @@ protected:
 	afx_msg void OnChangeViewpointExternal();
 	afx_msg void OnUpdateChangeViewpointFollow(CCmdUI* pCmdUI);
 	afx_msg void OnChangeViewpointFollow();
+	afx_msg void OnOutlineLod0();
+	afx_msg void OnOutlineLod1();
+	afx_msg void OnOutlineLod2();
+	afx_msg void OnOutlineLod3();
+	afx_msg void OnOutlineLod4();
+	afx_msg void OnUpdateOutlineLod0(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod1(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod2(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod3(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateOutlineLod4(CCmdUI* pCmdUI);
+	void OnOutlineLod(int lod);
+	void OnUpdateOutlineLod(int lod, CCmdUI* pCmdUI);
+	afx_msg void OnLabelFontScale50();
+	afx_msg void OnLabelFontScale75();
+	afx_msg void OnLabelFontScale100();
+	afx_msg void OnLabelFontScale125();
+	afx_msg void OnLabelFontScale150();
+	afx_msg void OnLabelFontScale200();
+	afx_msg void OnLabelFontScale250();
+	afx_msg void OnLabelFontScale300();
+	afx_msg void OnLabelFontScale350();
+	afx_msg void OnLabelFontScale400();
+	afx_msg void OnUpdateLabelFontScale50(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale75(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale100(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale125(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale150(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale200(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale250(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale300(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale350(CCmdUI* pCmdUI);
+	afx_msg void OnUpdateLabelFontScale400(CCmdUI* pCmdUI);
+	void OnLabelFontScale(float scale);
+	void OnUpdateLabelFontScale(float scale, CCmdUI* pCmdUI);
 	afx_msg void OnEditorsGoals();
 	afx_msg void OnEditorsCutscenes();
 	afx_msg void OnSpeed1();
@@ -229,6 +272,8 @@ protected:
 	afx_msg void OnUpdateAlwaysSaveDisplayNames(CCmdUI* pCmdUI);
 	afx_msg void OnErrorCheckerChecksPotentialIssues();
 	afx_msg void OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI);
+	afx_msg void OnClassicMenuLayout();
+	afx_msg void OnUpdateClassicMenuLayout(CCmdUI* pCmdUI);
 	afx_msg void OnUpdateNewShipType(CCmdUI* pCmdUI);
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
@@ -280,6 +325,7 @@ protected:
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
 	afx_msg void OnCalcRelativeCoords();
+	afx_msg void OnReorder();
 	afx_msg void OnMusicPlayer();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
@@ -330,6 +376,11 @@ protected:
 	afx_msg void OnUpdateViewLighting(CCmdUI* pCmdUI);
 	afx_msg void OnViewFullDetail();
 	afx_msg void OnUpdateViewFullDetail(CCmdUI *pCmdUI);
+	afx_msg void OnMButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnMButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnRButtonUp(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	//}}AFX_MSG
 	afx_msg void OnGroup(UINT nID);
 	afx_msg void OnSetGroup(UINT nID);

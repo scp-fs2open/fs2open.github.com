@@ -26,12 +26,13 @@ class music_player_dlg : public CDialog {
 	int m_cursor_pos;
 	int m_autoplay;
 
-	CBitmap m_play_bm;
-	CBitmap m_stop_bm;
-	CBitmap m_next_bm;
-	CBitmap m_prev_bm;
+	HICON m_play_icon;
+	HICON m_stop_icon;
+	HICON m_next_icon;
+	HICON m_prev_icon;
 
 	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
+	virtual BOOL DestroyWindow();
 
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSelMusicList();

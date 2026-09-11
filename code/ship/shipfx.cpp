@@ -19,6 +19,7 @@
 #include "fireball/fireballs.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/shadows.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
@@ -33,6 +34,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "prop/prop.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
 #include "scripting/hook_api.h"
@@ -221,7 +223,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const s
 static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 {
 	// if ship has live debris, detonate that subsystem now
-	// search for any live debris
+	// search for any submodels which have live debris
 
 	ship *shipp = &Ships[ship_objp->instance];
 	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
@@ -232,41 +234,25 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 		return;
 	}
 
-	int live_debris_submodel = -1;
-	for (int idx=0; idx<pm->num_debris_objects; idx++) {
-		if (pm->submodel[pm->debris_objects[idx]].flags[Model::Submodel_flags::Is_live_debris]) {
-			live_debris_submodel = pm->debris_objects[idx];
+	for (auto pss: list_range(&shipp->subsys_list)) {
+		if (pss->system_info != nullptr) {
+			int submodel_num = pss->system_info->subobj_num;
 
-			// get submodel that produces live debris
-			int model_get_parent_submodel_for_live_debris( int model_num, int live_debris_model_num );
-			int parent = model_get_parent_submodel_for_live_debris(pm->id, live_debris_submodel);
-			Assert(parent != -1);
+			// Subsystems without a valid submodel cannot produce live debris
+			if (submodel_num < 0 || submodel_num >= pm->n_models) {
+				continue;
+			}
 
-			// check if already blown off  (ship model set)
-			if ( !pmi->submodel[parent].blown_off ) {
-		
-				// get ship_subsys for live_debris
-				// Go through all subsystems and look for submodel the subsystems with "parent" submodel.
-				ship_subsys	*pss = NULL;
-				for ( pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-					if (pss->system_info->subobj_num == parent) {
-						break;
-					}
-				}
+			// find the submodels which aren't already blown up and have live debris
+			if (!pmi->submodel[submodel_num].blown_off && pm->submodel[submodel_num].num_live_debris > 0) {
+				vec3d exp_center, tmp = ZERO_VECTOR;
+				model_instance_local_to_global_point(&exp_center, &tmp, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+				
+				// create its debris
+				shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
 
-				Assert (pss != NULL);
-				if (pss != NULL) {
-					if (pss->system_info != NULL) {
-						vec3d exp_center, tmp = ZERO_VECTOR;
-						model_instance_local_to_global_point(&exp_center, &tmp, pm, pmi, parent, &ship_objp->orient, &ship_objp->pos );
-
-						// if not blown off, blow it off
-						shipfx_subsystem_maybe_create_live_debris(ship_objp, shipp, pss, &exp_center, 3.0f);
-
-						// now set subsystem as blown off, so we only get one copy
-						pmi->submodel[parent].blown_off = true;
-					}
-				}
+				// now set subsystem as blown off, so we only get one copy
+				pmi->submodel[submodel_num].blown_off = true;
 			}
 		}
 	}
@@ -557,7 +543,7 @@ void shipfx_warpin_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpInHook->isOverride(conditions, params)) {
-			OnWarpInHook->run(conditions, params);
+			OnWarpInHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -577,7 +563,7 @@ void shipfx_warpin_start( object *objp )
 	{
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpInHook->run(conditions, params);
+		OnWarpInHook->run(conditions, std::move(params));
 	}
 }
 
@@ -720,7 +706,7 @@ void shipfx_warpout_start( object *objp )
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpOutHook->isOverride(conditions, params)) {
-			OnWarpOutHook->run(conditions, params);
+			OnWarpOutHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -762,7 +748,7 @@ void shipfx_warpout_start( object *objp )
 	if (OnWarpOutHook->isActive()) {
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
-		OnWarpOutHook->run(conditions, params);
+		OnWarpOutHook->run(conditions, std::move(params));
 	}
 }
 
@@ -806,13 +792,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 	vec3d rp0, rp1;
 	vec3d light_dir;
 
-	// The mc_info struct only needs to be initialized once for this entire function.  This is because
-	// every time the mc variable is reused, every parameter that model_collide reads from is reassigned.
-	// Therefore the stale fields in the rest of the struct do not matter because either a) they are never
-	// read from, or b) they are overwritten by the new collision calculation.
-	mc_info mc;
-
-	rp0 = *eye_pos;	
+	rp0 = *eye_pos;
 	
 	// get the light dir
 	if(!light_get_global_dir(&light_dir, light_n)){
@@ -826,6 +806,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			continue;
 
 		if ( src_obj != objp )	{
+			mc_info mc;
+
 			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 			mc.model_instance_num = Ships[objp->instance].model_instance_num;
@@ -842,6 +824,32 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 		}
 	}
 
+	for (const auto& p : Props) {
+		if (p.has_value()) {
+			objp = &Objects[p->objnum];
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			if (src_obj != objp) {
+				mc_info mc;
+
+				vm_vec_scale_add(&rp1, &rp0, &light_dir, objp->radius * 10.0f);
+
+				mc.model_instance_num = p->model_instance_num;
+				mc.model_num = Prop_info[p->prop_info_index].model_num;
+				mc.orient = &objp->orient;
+				mc.pos = &objp->pos;
+				mc.p0 = &rp0;
+				mc.p1 = &rp1;
+				mc.flags = MC_CHECK_MODEL;
+
+				if (model_collide(&mc)) {
+					return true;
+				}
+			}
+		}
+	}
+
 	// Check all the big hull debris pieces.
 	for (auto &db: Debris)	{
 		if ( !(db.flags[Debris_Flags::Used]) || !db.is_hull ){
@@ -851,6 +859,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 		objp = &Objects[db.objnum];
 
 		vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+		mc_info mc;
 
 		mc.model_instance_num = -1;
 		mc.model_num = db.model_num;	// Fill in the model to check
@@ -879,6 +889,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
+
+				mc_info mc;
 
 				mc.model_instance_num = -1;
 				mc.model_num = sip->cockpit_model_num;
@@ -928,6 +940,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
 				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
+
+				mc_info mc;
 
 				mc.model_instance_num = -1;
 				mc.model_num = sip->model_num;
@@ -991,6 +1005,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
         objp = &Objects[ast->objnum];
 
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
+
+    	mc_info mc;
 
 		mc.model_instance_num = -1;
 		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check
@@ -1082,7 +1098,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
 				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
-				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+				particleSource->setHost(std::make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
 
 				auto *weapon_objp = &Objects[weapon_objnum];
 				auto *wp = &Weapons[weapon_objp->instance];
@@ -1248,9 +1264,9 @@ void shipfx_emit_spark( int n, int sn )
 	WarpEffect* warp_effect = nullptr;
 
 	if ((shipp->is_arriving()) && (shipp->warpin_effect))
-		warp_effect = shipp->warpin_effect;
+		warp_effect = shipp->warpin_effect.get();
 	else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect))
-		warp_effect = shipp->warpout_effect;
+		warp_effect = shipp->warpout_effect.get();
 
 	if (warp_effect != nullptr && point_is_clipped_by_warp(&outpnt, warp_effect))
 		return;
@@ -1540,10 +1556,6 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 	// set up render flags
 	uint64_t render_flags = MR_NORMAL;
-
-	if ( Rendering_to_shadow_map ) {
-		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
-	}
 
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
@@ -2030,6 +2042,39 @@ void shipfx_large_blowup_queue_render(model_draw_list *scene, ship* shipp)
 	}
 }
 
+void shipfx_shadow_render_blowup(shadow_render_list* shadow_list, ship* shipp)
+{
+	Assert(shipp->large_ship_blowup_index > -1);
+	Assert(shipp->large_ship_blowup_index < (int)Split_ships.size());
+
+	split_ship* the_split_ship = &Split_ships[shipp->large_ship_blowup_index];
+	Assert(the_split_ship->used);
+
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	for (int half_idx = 0; half_idx < 2; half_idx++) {
+		clip_ship* half = (half_idx == 0) ? &the_split_ship->front_ship : &the_split_ship->back_ship;
+		if (half->length_left <= 0) continue;
+
+		vec3d clip_plane_norm, orig_ship_world_center, model_clip_plane_pt;
+		vm_vec_unrotate(&clip_plane_norm, &half->clip_plane_norm, &half->orient);
+		vm_vec_unrotate(&orig_ship_world_center, &half->model_center_disp_to_orig_center, &half->orient);
+		vm_vec_add2(&orig_ship_world_center, &half->local_pivot);
+
+		vec3d temp;
+		vm_vec_make(&temp, 0.0f, 0.0f, half->cur_clip_plane_pt);
+		vm_vec_unrotate(&model_clip_plane_pt, &temp, &half->orient);
+		vm_vec_add2(&model_clip_plane_pt, &orig_ship_world_center);
+
+		shadow_render_list::clip_plane_info clip;
+		clip.normal = clip_plane_norm;
+		clip.position = model_clip_plane_pt;
+
+		shadow_render_list::add_model_draws(shadow_list, pm, pmi, shipp->objnum, &half->local_pivot, &half->orient, &clip);
+	}
+}
+
 // ================== DO THE ELECTRIC ARCING STUFF =====================
 // Creates any new ones, moves old ones.
 
@@ -2258,7 +2303,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					break;
 
 				default:
-					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
+					Assertion(false, "Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create
@@ -2828,302 +2873,6 @@ void shipfx_stop_engine_wash_sound()
 	}
 }
 
-class CombinedVariable
-{
-public:
-	static const int TYPE_NONE;
-	static const int TYPE_FLOAT;
-	static const int TYPE_IMAGE;
-	static const int TYPE_INT;
-	static const int TYPE_SOUND;
-	static const int TYPE_STRING;
-private:
-	int Type;
-	float	su_Float;
-	int		su_Image;
-	int		su_Int;
-	gamesnd_id su_Sound;
-	char	*su_String;
-public:
-	//TYPE_NONE
-	CombinedVariable();
-	//TYPE_FLOAT
-	CombinedVariable(float n_Float);
-	//TYPE_INT
-	CombinedVariable(int n_Int);
-	//TYPE_IMAGE
-	CombinedVariable(int n_Int, ubyte type_override);
-	//TYPE_SOUND
-	CombinedVariable(gamesnd_id n_snd);
-	//TYPE_STRING
-	CombinedVariable(char *n_String);
-	//All types
-	~CombinedVariable();
-
-	//Returns 1 if buffer was successfully written to
-	int getFloat(float *output);
-	//Returns handle or < 0 on failure/wrong type
-	int getHandle();
-	//Returns handle, or < 0 on failure/wrong type
-	int getImage();
-	//Returns 1 if buffer was successfully written to
-	int getInt(int *output);
-	//Returns handle, or < 0 on failure/wrong type
-	gamesnd_id getSound();
-	//Returns 1 if buffer was successfully written to
-	int getString(char *output, size_t output_max);
-
-	//Returns true if TYPE_NONE
-	bool isEmpty();
-};
-
-//Workaround for MSVC6
-const int CombinedVariable::TYPE_NONE=0;
-const int CombinedVariable::TYPE_FLOAT = 1;
-const int CombinedVariable::TYPE_IMAGE = 2;
-const int CombinedVariable::TYPE_INT = 3;
-const int CombinedVariable::TYPE_SOUND = 4;
-const int CombinedVariable::TYPE_STRING  = 5;
-
-//Member functions
-CombinedVariable::CombinedVariable()
-{
-	Type = TYPE_NONE;
-}
-
-CombinedVariable::CombinedVariable(float n_Float)
-{
-	Type = TYPE_FLOAT;
-	su_Float = n_Float;
-}
-
-CombinedVariable::CombinedVariable(int n_Int)
-{
-	Type = TYPE_INT;
-	su_Int = n_Int;
-}
-
-CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
-{
-	if(type_override == TYPE_IMAGE)
-	{
-		Type = TYPE_IMAGE;
-		su_Image = n_Int;
-	}
-	else
-	{
-		Type = TYPE_INT;
-		su_Int = n_Int;
-	}
-}
-CombinedVariable::CombinedVariable(gamesnd_id n_snd) {
-	Type = TYPE_SOUND;
-	su_Sound = n_snd;
-}
-
-CombinedVariable::CombinedVariable(char *n_String)
-{
-	Type = TYPE_STRING;
-	su_String = (char *)vm_malloc(strlen(n_String)+1);
-	strcpy(su_String, n_String);
-}
-
-CombinedVariable::~CombinedVariable()
-{
-	if(Type == TYPE_STRING)
-	{
-		vm_free(su_String);
-	}
-}
-
-int CombinedVariable::getFloat(float *output)
-{
-	if(Type == TYPE_FLOAT)
-	{
-		*output  = su_Float;
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		*output = i2fl(su_Image);
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		*output = i2fl(su_Int);
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		*output = (float)atof(su_String);
-		return 1;
-	}
-	return 0;
-}
-int CombinedVariable::getHandle()
-{
-	int i = 0;
-	if(this->getInt(&i))
-		return i;
-	else
-		return -1;
-}
-int CombinedVariable::getImage()
-{
-	if(Type == TYPE_IMAGE)
-		return this->getHandle();
-	else
-		return -1;
-}
-int CombinedVariable::getInt(int *output)
-{
-	if(output == NULL)
-		return 0;
-
-	if(Type == TYPE_FLOAT)
-	{
-		*output  = fl2i(su_Float);
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		*output = su_Image;
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		*output = su_Int;
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		*output = atoi(su_String);
-		return 1;
-	}
-
-	return 0;
-}
-gamesnd_id CombinedVariable::getSound()
-{
-	if(Type == TYPE_SOUND)
-		return su_Sound;
-	else
-		return {};
-}
-int CombinedVariable::getString(char *output, size_t output_max)
-{
-	if(output == NULL || output_max == 0)
-		return 0;
-
-	if(Type == TYPE_FLOAT)
-	{
-		snprintf(output, output_max, "%f", su_Float);
-		return 1;
-	}
-	if(Type == TYPE_IMAGE)
-	{
-		if(bm_is_valid(su_Image))
-			snprintf(output, output_max, "%s", bm_get_filename(su_Image));
-		return 1;
-	}
-	if(Type == TYPE_INT)
-	{
-		snprintf(output, output_max, "%i", su_Int);
-		return 1;
-	}
-	if(Type == TYPE_SOUND)
-	{
-		Error(LOCATION, "Sound CombinedVariables are not supported yet.");
-		/*if(snd_is_valid(su_Sound))
-			snprintf(output, output_max, "%s", snd_get_filename(su_Sound));*/
-		return 1;
-	}
-	if(Type == TYPE_STRING)
-	{
-		strncpy(output, su_String, output_max);
-		return 1;
-	}
-	return 0;
-}
-bool CombinedVariable::isEmpty()
-{
-	return (Type != TYPE_NONE);
-}
-
-void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, size_t num)
-{
-	if(dest == NULL || src == NULL || num == 0)
-		return;
-
-	char buf[NAME_LENGTH*2];
-	buf[sizeof(buf)-1] = '\0';
-
-	flag_def_list *sp = NULL;
-	CombinedVariable *dp = NULL;
-	for(size_t i = 0; i < num; i++)
-	{
-		sp = &src[i];
-		dp = &dest[i];
-
-		snprintf(buf, sizeof(buf)-1, "+%s:", sp->name);
-		if(optional_string(buf))
-		{
-			switch(sp->var)
-			{
-				case CombinedVariable::TYPE_FLOAT:
-				{
-					float f = 0.0f;
-					stuff_float(&f);
-					*dp = CombinedVariable(f);
-					break;
-				}
-				case CombinedVariable::TYPE_INT:
-				{
-					int myInt = 0;
-					stuff_int(&myInt);
-					*dp = CombinedVariable(myInt);
-					break;
-				}
-				case CombinedVariable::TYPE_IMAGE:
-				{
-					char buf2[MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN);
-					int idx = bm_load(buf2);
-					*dp = CombinedVariable(idx, CombinedVariable::TYPE_IMAGE);
-					break;
-				}
-				case CombinedVariable::TYPE_SOUND:
-				{
-					char buf2[MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN);
-					auto idx = gamesnd_get_by_name(buf);
-					*dp = CombinedVariable(idx);
-					break;
-				}
-				case CombinedVariable::TYPE_STRING:
-				{
-					char buf2[MAX_NAME_LEN + MAX_FILENAME_LEN];
-					stuff_string(buf2, F_NAME, MAX_FILENAME_LEN+MAX_NAME_LEN);
-					*dp = CombinedVariable(buf2);
-					break;
-				}
-			}
-		}
-	}
-}
-
-#define WV_ANIMATION		0
-#define WV_RADIUS			1
-#define WV_SPEED			2
-#define WV_TIME				3
-
-flag_def_list Warp_variables[] = {
-	{"Animation",		WV_ANIMATION,		CombinedVariable::TYPE_STRING},
-	{"Radius",			WV_RADIUS,			CombinedVariable::TYPE_FLOAT},
-	{"Speed",			WV_SPEED,			CombinedVariable::TYPE_FLOAT},
-	{"Time",			WV_TIME,			CombinedVariable::TYPE_FLOAT},
-};
-
 
 WarpParams::WarpParams()
 {
@@ -3201,50 +2950,44 @@ void ship_set_warp_effects(object *objp)
 	if (warpout_type & WT_DEFAULT_WITH_FIREBALL)
 		warpout_type = WT_DEFAULT;
 
-	if (shipp->warpin_effect != nullptr)
-		delete shipp->warpin_effect;
-
 	switch (warpin_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpin_effect = new WE_Default(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Default>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpin_effect = new WE_BSG(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_BSG>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_SWEEPER:
-			shipp->warpin_effect = new WE_Homeworld(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Homeworld>(objnum, WarpDirection::WARP_IN);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpin_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_IN);
+			shipp->warpin_effect = std::make_unique<WE_Hyperspace>(objnum, WarpDirection::WARP_IN);
 			break;
 		default:
-			shipp->warpin_effect = new WarpEffect();
+			shipp->warpin_effect = std::make_unique<WarpEffect>();
 	}
-
-	if (shipp->warpout_effect != nullptr)
-		delete shipp->warpout_effect;
 
 	switch (warpout_type)
 	{
 		case WT_DEFAULT:
 		case WT_KNOSSOS:
 		case WT_DEFAULT_THEN_KNOSSOS:
-			shipp->warpout_effect = new WE_Default(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Default>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_IN_PLACE_ANIM:
-			shipp->warpout_effect = new WE_BSG(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_BSG>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_SWEEPER:
-			shipp->warpout_effect = new WE_Homeworld(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Homeworld>(objnum, WarpDirection::WARP_OUT);
 			break;
 		case WT_HYPERSPACE:
-			shipp->warpout_effect = new WE_Hyperspace(objnum, WarpDirection::WARP_OUT);
+			shipp->warpout_effect = std::make_unique<WE_Hyperspace>(objnum, WarpDirection::WARP_OUT);
 			break;
 		default:
-			shipp->warpout_effect = new WarpEffect();
+			shipp->warpout_effect = std::make_unique<WarpEffect>();
 	}
 }
 

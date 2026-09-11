@@ -11,7 +11,10 @@
 
 #include "asteroid/asteroid.h"
 #include "cmdline/cmdline.h"
+#include "decals/decals.h"
 #include "gamesequence/gamesequence.h"
+#include "globalincs/systemvars.h"
+#include "math/floating.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
@@ -20,11 +23,14 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
+#include "prop/prop.h"
+#include "parse/encrypt.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -49,7 +55,106 @@ extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, c
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
-model_batch_buffer TransformBufferHandler;
+SCP_unordered_map<cached_ui_render_instance_key, cached_ui_render_instance_entry, cached_ui_render_instance_key_hash> Cached_ui_render_instance_cache;
+int Ui_render_instance_cache_last_processed_framecount = -1;
+constexpr int UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE = 5;
+
+size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names)
+{
+	if (subsystem_names.empty()) {
+		return 0;
+	}
+
+	SCP_vector<SCP_string> normalized_names;
+	normalized_names.reserve(subsystem_names.size());
+
+	for (const auto& name : subsystem_names) {
+		auto normalized = name;
+		SCP_tolower(normalized);
+		normalized_names.push_back(std::move(normalized));
+	}
+
+	std::sort(normalized_names.begin(), normalized_names.end());
+
+	size_t seed = 0;
+	
+	boost::hash_combine(seed, static_cast<uint32_t>(normalized_names.size()));
+	for (const auto& name : normalized_names) {
+		boost::hash_combine(seed, hash_fnv1a(name));
+	}
+
+	return seed;
+}
+
+// Returns TriStateBool::TRUE_ if a new instance was created, TriStateBool::FALSE_ if an existing instance was returned,
+// or TriStateBool::UNKNOWN_ if there was an error (and model_instance_out will be set to -1 in this case)
+TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash)
+{
+	Assertion(model_instance_out != nullptr, "model_instance_out must not be null!");
+	if (model_instance_out == nullptr) {
+		return TriStateBool::UNKNOWN_;
+	}
+
+	cached_ui_render_instance_key key;
+	key.model_num = model_num;
+	key.state_instance_id = gameseq_get_state_instance_id();
+	key.instance_data_hash = instance_data_hash;
+
+	auto& entry = Cached_ui_render_instance_cache[key];
+
+	auto created_new = false;
+
+	if (entry.model_instance < 0) {
+		entry.model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
+		if (entry.model_instance < 0) {
+			Warning(LOCATION, "Failed to create cached UI render model instance for model id %d.", model_num);
+			Cached_ui_render_instance_cache.erase(key);
+			*model_instance_out = -1;
+			return TriStateBool::UNKNOWN_;
+		}
+		created_new = true;
+	}
+
+	entry.last_used_framecount = Framecount;
+	*model_instance_out = entry.model_instance;
+	return created_new ? TriStateBool::TRUE_ : TriStateBool::FALSE_;
+}
+
+void model_process_cached_ui_render_instances()
+{
+	if (Ui_render_instance_cache_last_processed_framecount == Framecount) {
+		return;
+	}
+
+	Ui_render_instance_cache_last_processed_framecount = Framecount;
+
+	for (auto it = Cached_ui_render_instance_cache.begin(); it != Cached_ui_render_instance_cache.end();) {
+		// This should never trigger but if it does it means something has gone very wrong with the cache management logic
+		Assertion(it->second.model_instance >= 0, "Corrupted UI render instance cache entry found");
+
+		if (it->second.model_instance < 0 || it->second.last_used_framecount < 0 ||
+			(Framecount - it->second.last_used_framecount) > UI_RENDER_INSTANCE_CACHE_UNUSED_FRAMES_GRACE) {
+			if (it->second.model_instance >= 0) {
+				model_delete_instance(it->second.model_instance);
+			}
+			it = Cached_ui_render_instance_cache.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
+void model_clear_cached_ui_render_instances()
+{
+	for (auto& instance : Cached_ui_render_instance_cache) {
+		if (instance.second.model_instance >= 0) {
+			model_delete_instance(instance.second.model_instance);
+		}
+	}
+
+	Cached_ui_render_instance_cache.clear();
+	Ui_render_instance_cache_last_processed_framecount = -1;
+}
 
 model_render_params::model_render_params() :
 	Model_flags(MR_NORMAL),
@@ -57,6 +162,7 @@ model_render_params::model_render_params() :
 	Objnum(-1),
 	Detail_level_locked(-1),
 	Depth_scale(1500.0f),
+	Attached_model_draw_distance(-1.0f),
 	Warp_bitmap(-1),
 	Warp_alpha(-1.0f),
 	Xparent_alpha(1.0f),
@@ -109,8 +215,13 @@ int model_render_params::get_detail_level_lock() const
 }
 
 float model_render_params::get_depth_scale() const
-{ 
-	return Depth_scale; 
+{
+	return Depth_scale;
+}
+
+float model_render_params::get_attached_model_draw_distance() const
+{
+	return Attached_model_draw_distance;
 }
 
 int model_render_params::get_warp_bitmap() const
@@ -221,7 +332,7 @@ void model_render_params::set_replacement_textures(std::shared_ptr<const model_t
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = make_shared<model_texture_replace>();
+	auto textures = std::make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -275,6 +386,11 @@ void model_render_params::set_warp_params(int bitmap, float alpha, const vec3d &
 void model_render_params::set_depth_scale(float scale)
 {
 	Depth_scale = scale;
+}
+
+void model_render_params::set_attached_model_draw_distance(float distance)
+{
+	Attached_model_draw_distance = distance;
 }
 
 void model_render_params::set_debug_flags(uint flags)
@@ -396,59 +512,16 @@ void model_batch_buffer::submit_buffer_data()
 	gr_update_transform_buffer(Mem_alloc, Mem_alloc_size);
 }
 
-model_draw_list::model_draw_list():
-Transformations()
+model_draw_list::model_draw_list()
 {
 	reset();
-}
-
-void model_draw_list::reset()
-{
-	Render_elements.clear();
-	Render_keys.clear();
-
-	Transformations.clear();
-
-	Current_scale.xyz.x = 1.0f;
-	Current_scale.xyz.y = 1.0f;
-	Current_scale.xyz.z = 1.0f;
-
-	Render_initialized = false;
-}
-
-void model_draw_list::sort_draws()
-{
-	std::sort(Render_keys.begin(), Render_keys.end(),
-			  [this](const int a, const int b) { return model_draw_list::sort_draw_pair(this, a, b); });
-}
-
-void model_draw_list::start_model_batch(int n_models)
-{
-	TransformBufferHandler.set_num_models(n_models);
-}
-
-void model_draw_list::add_submodel_to_batch(int model_num)
-{
-	matrix4 transform;
-
-	transform = Transformations.get_transform();
-
-	// set scale
-	vm_vec_scale(&transform.vec.rvec, Current_scale.xyz.x);
-	vm_vec_scale(&transform.vec.uvec, Current_scale.xyz.y);
-	vm_vec_scale(&transform.vec.fvec, Current_scale.xyz.z);
-
-	// set visibility
-	transform.a1d[15] = 0.0f;
-
-	TransformBufferHandler.set_model_transform(transform, model_num);
 }
 
 void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth)
 {
 	arc_effect new_arc;
 
-	new_arc.transform = Transformations.get_transform();
+	new_arc.transform = get_transform();
 	new_arc.v1 = *v1;
 	new_arc.v2 = *v2;
 	new_arc.primary = *primary;
@@ -462,9 +535,9 @@ void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector
 
 void model_draw_list::set_light_filter(const vec3d *pos, float rad)
 {
-	Scene_light_handler.setLightFilter(pos, rad);
+	_lights.setLightFilter(pos, rad);
 
-	Current_lights_set = Scene_light_handler.bufferLights();
+	Current_lights_set = _lights.bufferLights();
 }
 
 void model_draw_list::add_buffer_draw(const model_material *render_material, const indexed_vertex_source *vert_src, const vertex_buffer *buffer, size_t texi, uint tmap_flags)
@@ -472,17 +545,11 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	queued_buffer_draw draw_data;
 	draw_data.render_material = *render_material;
 
-	if (Rendering_to_shadow_map) {
-		draw_data.render_material.set_shadow_casting(true);
-	} else {
-		// If the zbuffer type is FULL then this buffer may be drawn in the deferred lighting part otherwise we need to
-		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
-		// TODO: This should really be handled somewhere else. This feels like a crude hack...
+	{
 		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL
 			&& gr_is_capable(gr_capability::CAPABILITY_DEFERRED_LIGHTING) && light_deferred_enabled();
 
 		if (possibly_deferred) {
-			// Fog is handled differently in deferred shader situations
 			draw_data.render_material.set_fog();
 		}
 
@@ -498,12 +565,12 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 		draw_data.scale.xyz.y = 1.0f;
 		draw_data.scale.xyz.z = 1.0f;
 
-		draw_data.transform_buffer_offset = TransformBufferHandler.get_buffer_offset();
+		draw_data.transform_buffer_offset = _batchBuffer.get_buffer_offset();
 
 		draw_data.render_material.set_batching(true);
 	} else {
-		draw_data.transform = Transformations.get_transform();
-		draw_data.scale = Current_scale;
+		draw_data.transform = get_transform();
+		draw_data.scale = _scale;
 		draw_data.transform_buffer_offset = INVALID_SIZE;
 		draw_data.render_material.set_batching(false);
 	}
@@ -516,8 +583,7 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 	draw_data.flags = tmap_flags;
 	draw_data.lights = Current_lights_set;
 
-	Render_elements.push_back(draw_data);
-	Render_keys.push_back((int) (Render_elements.size() - 1));
+	push_element(std::move(draw_data));
 }
 
 void model_draw_list::render_buffer(const queued_buffer_draw &render_elements)
@@ -534,14 +600,13 @@ void model_draw_list::render_buffer(const queued_buffer_draw &render_elements)
 vec3d model_draw_list::get_view_position() const
 {
 	matrix basis_world;
-	matrix4 transform_mat = Transformations.get_transform();
+	matrix4 transform_mat = _transforms.get_transform();
 	matrix orient;
 	vec3d pos;
 
 	vm_matrix4_get_orientation(&orient, &transform_mat);
 	vm_matrix4_get_offset(&pos, &transform_mat);
 
-	// get the world basis of our current local space.
 	vm_matrix_x_matrix(&basis_world, &Object_matrix, &orient);
 
 	vec3d eye_pos_local;
@@ -553,52 +618,15 @@ vec3d model_draw_list::get_view_position() const
 	return return_val;
 }
 
-void model_draw_list::push_transform(const vec3d *pos, const matrix *orient)
-{
-	Transformations.push(pos, orient);
-}
-
-void model_draw_list::pop_transform()
-{
-	Transformations.pop();
-}
-
-void model_draw_list::set_scale(const vec3d *scale)
-{
-	if ( scale == NULL ) {
-		Current_scale.xyz.x = 1.0f;
-		Current_scale.xyz.y = 1.0f;
-		Current_scale.xyz.z = 1.0f;
-		return;
-	}
-
-	Current_scale = *scale;
-}
-
 void model_draw_list::init()
 {
 	reset();
 
 	for (auto& l : Lights) {
 		if ( l.type == Light_Type::Directional || !Deferred_lighting ) {
-			Scene_light_handler.addLight(&l);
+			_lights.addLight(&l);
 		}	
 	}
-
-	TransformBufferHandler.reset();
-}
-
-void model_draw_list::init_render(bool sort)
-{
-	if ( sort ) {
-		sort_draws();
-	}
-
-	TransformBufferHandler.submit_buffer_data();
-
-	build_uniform_buffer();
-
-	Render_initialized = true;
 }
 
 void model_draw_list::render_all(gr_zbuffer_type depth_mode)
@@ -606,15 +634,13 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 	GR_DEBUG_SCOPE("Render draw list");
 	TRACE_SCOPE(tracing::SubmitDraws);
 
-	Assertion(Render_initialized, "init_render must be called before any render_all call!");
+	Assertion(_initialized, "init_render must be called before any render_all call!");
 
-	Scene_light_handler.resetLightState();
+	_lights.resetLightState();
 
-	for ( size_t i = 0; i < Render_keys.size(); ++i ) {
-		int render_index = Render_keys[i];
-
-		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || Render_elements[render_index].render_material.get_depth_mode() == depth_mode ) {
-			render_buffer(Render_elements[render_index]);
+	for (int render_index : _keys) {
+		if ( depth_mode == ZBUFFER_TYPE_DEFAULT || _elements[render_index].render_material.get_depth_mode() == depth_mode ) {
+			render_buffer(_elements[render_index]);
 		}
 	}
 
@@ -641,6 +667,51 @@ void model_draw_list::render_arcs()
 	gr_zbuffer_set(mode);
 }
 
+void model_draw_list::add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num)
+{
+	insignia_draw_data new_insignia;
+
+	new_insignia.transform = get_transform();
+	new_insignia.pm = pm;
+	new_insignia.detail_level = detail_level;
+	new_insignia.bitmap_num = bitmap_num;
+
+	new_insignia.clip = params->is_clip_plane_set();
+	new_insignia.clip_normal = params->get_clip_plane_normal();
+	new_insignia.clip_position = params->get_clip_plane_pos();
+
+	Insignias.push_back(new_insignia);
+}
+
+void model_draw_list::render_insignia(const insignia_draw_data &insignia_info)
+{
+	if ( insignia_info.clip ) {
+		vec3d tmp;
+		vec3d pos;
+
+		vm_matrix4_get_offset(&pos, &insignia_info.transform);
+		vm_vec_sub(&tmp, &pos, &insignia_info.clip_position);
+		vm_vec_normalize(&tmp);
+
+		if ( vm_vec_dot(&tmp, &insignia_info.clip_normal) < 0.0f) {
+			return;
+		}
+	}
+
+	g3_start_instance_matrix(&insignia_info.transform);	
+
+	model_render_insignias(&insignia_info);
+
+	g3_done_instance(true);
+}
+
+void model_draw_list::render_insignias() const
+{
+	for (const auto& ins : Insignias) {
+		render_insignia(ins);
+	}
+}
+
 void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const color *clr)
 {
 	outline_draw draw_info;
@@ -648,7 +719,7 @@ void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const c
 	draw_info.vert_array = vert_array;
 	draw_info.n_verts = n_verts;
 	draw_info.clr = *clr;
-	draw_info.transform = Transformations.get_transform();
+	draw_info.transform = get_transform();
 
 	Outlines.push_back(draw_info);
 }
@@ -677,10 +748,10 @@ void model_draw_list::render_outline(const outline_draw &outline_info)
 	g3_done_instance(true);
 }
 
-bool model_draw_list::sort_draw_pair(const model_draw_list* target, const int a, const int b)
+bool model_draw_list::sort_draw_pair(int a, int b) const
 {
-	auto draw_call_a = &target->Render_elements[a];
-	auto draw_call_b = &target->Render_elements[b];
+	auto draw_call_a = &_elements[a];
+	auto draw_call_b = &_elements[b];
 
 	if ( draw_call_a->sdr_flags != draw_call_b->sdr_flags ) {
 		return draw_call_a->sdr_flags < draw_call_b->sdr_flags;
@@ -733,17 +804,15 @@ void model_draw_list::build_uniform_buffer() {
 
 	TRACE_SCOPE(tracing::BuildModelUniforms);
 
-	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData, Render_keys.size());
+	_dataBuffer = gr_get_uniform_buffer(uniform_block_type::ModelData, _keys.size());
 
-	for (auto render_index : Render_keys) {
-		auto& queued_draw = Render_elements[render_index];
+	for (auto render_index : _keys) {
+		auto& queued_draw = _elements[render_index];
 
-		// Set lighting here so that it can be captured by the uniform conversion below
 		if ( queued_draw.render_material.is_lit() ) {
-			Scene_light_handler.setLights(&queued_draw.lights);
+			_lights.setLights(&queued_draw.lights);
 		} else {
-
-			Scene_light_handler.resetLightState();
+			_lights.resetLightState();
 		}
 
 		auto element = _dataBuffer.aligner().addTypedElement<graphics::model_uniform_data>();
@@ -848,10 +917,13 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 	}
 }
 
-float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked)
+float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked, const vec3d* eye_pos)
 {
+	if (eye_pos == nullptr)
+		eye_pos = &Eye_position;
+
 	vec3d closest_pos;
-	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
+	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, eye_pos );
 
 	if ( detail_level_locked < 0 ) {
 		switch (Detail.detail_distance) {
@@ -1111,20 +1183,6 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 		} else {
 			alpha = forced_alpha;
-
-			//Check for invisible or transparent textures so they don't show up in the shadow maps - Valathil
-			if ( Rendering_to_shadow_map ) {
-				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
-					tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
-				} else {
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
-				}
-
-				if ( texture_maps[TM_BASE_TYPE] < 0 ) {
-					continue;
-				}
-			}
 		}
 
 		if ( (texture_maps[TM_BASE_TYPE] == -1) && !no_texturing && !(debug_flags & MR_DEBUG_NO_DIFFUSE) ) {
@@ -1155,11 +1213,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		if ( use_blending ) {
 			use_depth_test = true;
 		} else {
-			if ( (model_flags & MR_NO_ZBUFFER) || (model_flags & MR_ALL_XPARENT) ) {
-				use_depth_test = false;
-			} else {
-				use_depth_test = true;
-			}
+			use_depth_test = !((model_flags & MR_NO_ZBUFFER) || (model_flags & MR_ALL_XPARENT));
 		}
 
 		gr_alpha_blend blend_mode = model_render_determine_blend_mode(texture_maps[TM_BASE_TYPE], use_blending);
@@ -1170,7 +1224,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		}
 
 		rendering_material->set_depth_mode(depth_mode);
-		rendering_material->set_blend_mode(blend_mode);
+		rendering_material->set_blend_mode(depth_mode == ZBUFFER_TYPE_FULL ? ALPHA_BLEND_NONE : blend_mode);
 		
 		color clr = interp->get_color();
 		model_render_determine_color(&clr, alpha, blend_mode, no_texturing ? true : false, rendering_material->is_desaturated());
@@ -1246,7 +1300,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
-		scene->add_outline(sm->outline_buffer, sm->n_verts_outline, &outline_color);
+		scene->add_outline(sm->outline_buffer.get(), sm->n_verts_outline, &outline_color);
 	} else {
 		if ( trans_buffer && sm->trans_buffer.flags & VB_FLAG_TRANS ) {
 			model_render_buffers(scene, rendering_material, interp, &sm->trans_buffer, pm, mn, detail_level, tmap_flags);
@@ -1480,7 +1534,6 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 	}
 		
 	uint64_t flags = render_info->get_model_flags();
-	int objnum = render_info->get_object_number();
 
 	// Set the flags we will pass to the tmapper
 	uint tmap_flags = TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB;
@@ -1544,26 +1597,15 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 
 	// RT - Put this here to fog debris
 	if( tmap_flags & TMAP_FLAG_PIXEL_FOG ) {
-		float fog_near, fog_far;
-		object *obj = NULL;
-
-		if (objnum >= 0)
-			obj = &Objects[objnum];
-
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, obj);
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		rendering_material.set_fog(r, g, b, fog_near, fog_far);
+		rendering_material.set_fog(r, g, b);
 	} else {
 		rendering_material.set_fog();
 	}
 
-	if(Rendering_to_shadow_map) {
-		rendering_material.set_depth_bias(-1024);
-	} else {
-		rendering_material.set_depth_bias(0);
-	}
+	rendering_material.set_depth_bias(0);
 
 	vec3d view_pos = scene->get_view_position();
 
@@ -1630,11 +1672,11 @@ void model_render_glowpoint_bitmap(int point_num, const vec3d *pos, const matrix
 
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
 			&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		}
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr) 
 			&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		}
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
@@ -1789,10 +1831,10 @@ void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const mat
 		WarpEffect* warp_effect = nullptr;
 
 		if ((shipp->is_arriving()) && Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		}
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		}
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
@@ -1912,11 +1954,10 @@ float model_render_get_point_activation(const glow_point_bank* bank, const glow_
 void model_render_set_glow_points(const polymodel *pm, int objnum)
 {
 	int time = timestamp();
-	glow_point_bank_override *gpo = NULL;
+	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
-	SCP_unordered_map<int, void*>::iterator gpoi;
-	ship_info *sip = NULL;
-	ship *shipp = NULL;
+	ship_info *sip = nullptr;
+	ship *shipp = nullptr;
 
 	if ( Glowpoint_override ) {
 		return;
@@ -1928,11 +1969,11 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 		if ( objp != NULL && objp->type == OBJ_SHIP ) {
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
-			gpoi = sip->glowpoint_bank_override_map.find(-1);
+			auto gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
 				override_all = true;
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[-1];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 		}
 	}
@@ -1941,12 +1982,12 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
 		if ( !override_all && sip ) {
-			gpoi = sip->glowpoint_bank_override_map.find(i);
+			auto gpoi = sip->glowpoint_bank_override_map.find(i);
 
 			if ( gpoi != sip->glowpoint_bank_override_map.end() ) {
-				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			} else {
-				gpo = NULL;
+				gpo = nullptr;
 			}
 		}
 
@@ -1975,26 +2016,21 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 {
 	Assert(pmi == nullptr || pm->id == pmi->model_num);
 
-	if ( Rendering_to_shadow_map ) {
-		return;
-	}
-
 	int i, j;
 
 	int cull = gr_set_cull(0);
 
 	glow_point_bank_override *gpo = nullptr;
 	bool override_all = false;
-	SCP_unordered_map<int, void*>::iterator gpoi;
 	ship_info *sip = nullptr;
 
 	if ( shipp ) {
 		sip = &Ship_info[shipp->ship_info_index];
-		gpoi = sip->glowpoint_bank_override_map.find(-1);
+		auto gpoi = sip->glowpoint_bank_override_map.find(-1);
 
 		if(gpoi != sip->glowpoint_bank_override_map.end()) {
 			override_all = true;
-			gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[-1];
+			gpo = &glowpoint_bank_overrides[gpoi->second];
 		}
 	}
 
@@ -2002,9 +2038,9 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
 		if(!override_all && sip) {
-			gpoi = sip->glowpoint_bank_override_map.find(i);
+			auto gpoi = sip->glowpoint_bank_override_map.find(i);
 			if(gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*) sip->glowpoint_bank_override_map[i];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			} else {
 				gpo = nullptr;
 			}
@@ -2100,10 +2136,6 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 	polymodel_instance *pmi = nullptr;
 	vertex p;
 	bool do_render = false;
-
-	if ( Rendering_to_shadow_map ) {
-		return;
-	}
 
 	if ( pm == NULL ) {
 		Int3();
@@ -2212,11 +2244,11 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 
 				if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr)
 					&& Warp_params[shipp->warpin_params_index].warp_type != WT_HYPERSPACE) {
-					warp_effect = shipp->warpin_effect;
+					warp_effect = shipp->warpin_effect.get();
 				}
 				else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr)
 					&& Warp_params[shipp->warpout_params_index].warp_type != WT_HYPERSPACE) {
-					warp_effect = shipp->warpout_effect;
+					warp_effect = shipp->warpout_effect.get();
 				}
 
 				if (warp_effect != nullptr && point_is_clipped_by_warp(&world_pnt, warp_effect))
@@ -2382,6 +2414,74 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 	}
 }
 
+void model_render_insignias(const insignia_draw_data *insignia_data)
+{
+	auto pm = insignia_data->pm;
+	int detail_level = insignia_data->detail_level;
+	int bitmap_num = insignia_data->bitmap_num;
+
+	// if the model has no insignias, or we don't have a texture, then bail
+	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
+		return;
+
+	int idx, s_idx;
+	vertex vecs[3];
+	vec3d t1, t2, t3;
+	int i1, i2, i3;
+
+	material insignia_material;
+	insignia_material.set_depth_bias(1);
+
+	// set the proper texture
+	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
+
+	if ( insignia_data->clip ) {
+		insignia_material.set_clip_plane(insignia_data->clip_normal, insignia_data->clip_position);
+	}
+
+	// otherwise render them	
+	for(idx=0; idx<pm->num_ins; idx++){	
+		// skip insignias not on our detail level
+		if(pm->ins[idx].detail_level != detail_level){
+			continue;
+		}
+
+		for(s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++){
+			// get vertex indices
+			i1 = pm->ins[idx].faces[s_idx][0];
+			i2 = pm->ins[idx].faces[s_idx][1];
+			i3 = pm->ins[idx].faces[s_idx][2];
+
+			// transform vecs and setup vertices
+			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
+			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
+			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
+
+			g3_transfer_vertex(&vecs[0], &t1);
+			g3_transfer_vertex(&vecs[1], &t2);
+			g3_transfer_vertex(&vecs[2], &t3);
+
+			// setup texture coords
+			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
+			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
+
+			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
+			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
+
+			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
+			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
+
+			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
+			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
+			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
+			vecs[0].a = vecs[1].a = vecs[2].a = 255;
+
+			// draw the polygon
+			g3_render_primitives_colored_textured(&insignia_material, vecs, 3, PRIM_TYPE_TRIFAN, false);
+		}
+	}
+}
+
 SCP_vector<vec3d> Arc_segment_points;
 
 void model_render_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte depth_limit)
@@ -2503,6 +2603,10 @@ void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, u
 		model_draw_bay_paths_htl(model_num);
 	}
 
+	if ( debug_flags & MR_DEBUG_DOCK_POINTS ) {
+		model_draw_dock_points_htl(model_num);
+	}
+
 	if ( (flags & MR_AUTOCENTER) && (set_autocen) ) {
 		g3_done_instance(true);
 	}
@@ -2541,6 +2645,7 @@ void model_render_immediate(const model_render_params* render_info, int model_nu
 	}
 
 	model_list.render_outlines();
+	model_list.render_insignias();
 	model_list.render_arcs();
 	
 	gr_zbias(0);
@@ -2602,8 +2707,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		scene->set_light_filter(pos, pm->rad);
 	}
 
-	ship *shipp = NULL;
-	object *objp = NULL;
+	ship *shipp = nullptr;
+	object *objp = nullptr;
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
@@ -2664,22 +2769,28 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	bool is_outlines_only = (model_flags & MR_NO_POLYS) && ((model_flags & MR_SHOW_OUTLINE_PRESET) || (model_flags & MR_SHOW_OUTLINE));
 	bool is_outlines_only_htl = (model_flags & MR_NO_POLYS) && (model_flags & MR_SHOW_OUTLINE_HTL);
 
+	float depth;
+	if (interp->get_attached_model_draw_distance() >= 0.0f) {
+		// this is an attached weapon model, rendered inside its parent's pushed transform, so pos
+		// is in the parent's frame; measure the depth from the eye position in that same frame
+		vec3d local_eye = scene->get_view_position();
+		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock(), &local_eye);
+
+		// don't render weapon models beyond the ship's tabled Weapon Model Draw Distance (which defaults to 200)
+		if (depth > interp->get_attached_model_draw_distance()) {
+			return;
+		}
+	} else {
+		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
+	}
+
 	scene->push_transform(pos, orient);
 
-	float depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
 	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
 
 	// Send the detail level to the lab for displaying
 	if (gameseq_get_state() == GS_STATE_LAB) {
 		Lab_object_detail_level = detail_level;
-	}
-
-	// If we're rendering attached weapon models, check against the ships' tabled Weapon Model Draw Distance (which defaults to 200)
-	if ( model_flags & MR_ATTACHED_MODEL && shipp != NULL ) {
-		if (depth > Ship_info[shipp->ship_info_index].weapon_model_draw_distance) {
-			scene->pop_transform();
-			return;
-		}
 	}
 
 // #ifndef NDEBUG
@@ -2701,13 +2812,10 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	// if we're in nebula mode, fog everything except for the warp holes and other non-fogged models
 	if ( (The_mission.flags[Mission::Mission_Flags::Fullneb]) && (Neb2_render_mode != NEB2_RENDER_NONE) && !(model_flags & MR_NO_FOGGING) ) {
-		float fog_near = 10.0f, fog_far = 1000.0f;
-		neb2_get_adjusted_fog_values(&fog_near, &fog_far, nullptr, objp);
-
 		unsigned char r, g, b;
 		neb2_get_fog_color(&r, &g, &b);
 
-		rendering_material.set_fog(r, g, b, fog_near, fog_far);
+		rendering_material.set_fog(r, g, b);
 	} else {
 		rendering_material.set_fog();
 	}
@@ -2774,11 +2882,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		rendering_material.set_color_mask(true, true, true, true);
 	}
 
-	if ( Rendering_to_shadow_map ) {
-		rendering_material.set_depth_bias(-1024);
-	} else {
-		rendering_material.set_depth_bias(0);
-	}
+	rendering_material.set_depth_bias(0);
 
 	if ( !(model_flags & MR_NO_BATCH) && pm->flags & PM_FLAG_BATCHED
 		&& !(is_outlines_only || is_outlines_only_htl) ) {
@@ -2816,7 +2920,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 		if ( (is_outlines_only || is_outlines_only_htl) && pm->submodel[detail_model_num].outline_buffer != NULL ) {
 			color outline_color = interp->get_color();
-			scene->add_outline(pm->submodel[detail_model_num].outline_buffer, pm->submodel[detail_model_num].n_verts_outline, &outline_color);
+			scene->add_outline(pm->submodel[detail_model_num].outline_buffer.get(), pm->submodel[detail_model_num].n_verts_outline, &outline_color);
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 
@@ -2863,11 +2967,11 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	}
 
 	// MARKED!
-	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) && objnum >= 0 ) {
+	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
 		int bitmap_num = interp->get_insignia_bitmap();
-		if ( (!pm->ins.empty()) && (bitmap_num >= 0) ) {
-
-			for (const auto& ins : pm->ins) {
+		if ( Render_insignias_as_decals && objnum >= 0 && (pm->num_ins > 0) && (bitmap_num >= 0) ) {
+			for (int ins_idx = 0; ins_idx < pm->num_ins; ins_idx++) {
+				const insignia& ins = pm->ins[ins_idx];
 				// skip insignias not on our detail level
 				if (ins.detail_level != detail_level) {
 					continue;
@@ -2885,6 +2989,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 				decal.definition_handle = std::make_tuple(bitmap_num, -1, -1);
 				decals::addSingleFrameDecal(std::move(decal));
 			}
+		} else {
+			scene->add_insignia(interp, pm, detail_level, bitmap_num);
 		}
 	}
 
@@ -2932,6 +3038,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 		objp = &Objects[objnum];
 		int tentative_num = -1;
 
+		// TODO: Add Prop support here
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 			tentative_num = shipp->model_instance_num;
@@ -2979,6 +3086,8 @@ void model_render_set_wireframe_color(const color* clr)
 void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
 {
 	Assert(pmi != nullptr);
+	if (pmi == nullptr)
+		return;
 	polymodel* pm = model_get(pmi->model_num);
 
 	int final_index = -1;
@@ -3003,7 +3112,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 			texture = bm_load_either(new_name);
 
 		if (pmi->texture_replace == nullptr) {
-			pmi->texture_replace = make_shared<model_texture_replace>();
+			pmi->texture_replace = std::make_shared<model_texture_replace>();
 		}
 
 		(*pmi->texture_replace)[final_index] = texture;
@@ -3013,9 +3122,11 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor, const SCP_vector<SCP_string>& destroyed_subsystems)
 {
 
+	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
+	
 	model_render_params render_info;
 	const vec3d *closeup_pos;
 	float closeup_zoom;
@@ -3042,6 +3153,22 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			// Make sure model is loaded
 			model_num = model_load(sip, true);
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
+
+			break;
+
+		case TECH_PROP:
+			prop_info* pip;
+			pip = &Prop_info[class_idx];
+
+			closeup_pos = &pip->closeup_pos;
+			closeup_zoom = pip->closeup_zoom;
+
+			if (pip->flags[Prop::Info_Flags::No_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			model_num = model_load(pip->pof_file.c_str());
 
 			break;
 
@@ -3109,10 +3236,37 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	int model_instance = -1;
 
-	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	// Get a cached UI render instance for ships so repeated UI/Lua renders avoid per-call allocation churn
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
-		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+		auto sip = &Ship_info[class_idx];
+		const auto subsystem_hash = model_hash_subsystem_name_list_for_cache(destroyed_subsystems);
+		const auto cache_result = model_get_cached_ui_render_instance(model_num, &model_instance, subsystem_hash);
+		if (cache_result == TriStateBool::TRUE_) {
+			model_set_up_techroom_instance(sip, model_instance);
+			if (!destroyed_subsystems.empty()) {
+				auto pm = model_get(model_num);
+				auto pmi = model_get_instance(model_instance);
+				flagset<Ship::Subsystem_Flags> empty;
+
+				for (int idx = 0; idx < sip->n_subsystems; ++idx) {
+					auto& subsystem = sip->subsystems[idx];
+
+					if (subsystem.subobj_num < 0 || subsystem.subobj_num >= pm->n_models ||
+						subsystem.model_num != model_num) {
+						continue;
+					}
+
+					for (auto& destroyed_name : destroyed_subsystems) {
+						if (!stricmp(subsystem.subobj_name, destroyed_name.c_str()) ||
+							!stricmp(subsystem.name, destroyed_name.c_str())) {
+							pmi->submodel[subsystem.subobj_num].blown_off = true;
+							model_replicate_submodel_instance(pm, pmi, subsystem.subobj_num, empty);
+							break;
+						}
+					}
+				}
+			}
+		}
 	}
 
 	render_info.set_detail_level_lock(0);
@@ -3140,10 +3294,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	// Bye!!
 	g3_end_frame();
 	gr_reset_clip();
-
-	// Now that we've rendered the frame we can remove the instance if one was created for ships
-	if (model_type == TECH_SHIP)
-		model_delete_instance(model_instance);
 
 	return true;
 }

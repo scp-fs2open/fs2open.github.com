@@ -3625,9 +3625,9 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 			a = bitbuffer_get_signed(&buf,5);
 			b = bitbuffer_get_signed(&buf,5);
 			c = bitbuffer_get_signed(&buf,5);
-			pi->rotvel.xyz.x = pi->max_rotvel.xyz.x * i2fl(a)/15.0f;
-			pi->rotvel.xyz.y = pi->max_rotvel.xyz.y * i2fl(b)/15.0f;
-			pi->rotvel.xyz.z = pi->max_rotvel.xyz.z * i2fl(c)/15.0f;
+			pi->desired_rotvel.xyz.x = pi->max_rotvel.xyz.x * i2fl(a)/15.0f;
+			pi->desired_rotvel.xyz.y = pi->max_rotvel.xyz.y * i2fl(b)/15.0f;
+			pi->desired_rotvel.xyz.z = pi->max_rotvel.xyz.z * i2fl(c)/15.0f;
 
 		}
 

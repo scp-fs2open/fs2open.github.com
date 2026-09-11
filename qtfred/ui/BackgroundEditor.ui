@@ -147,12 +147,15 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="bitmapPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -164,12 +167,15 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="bitmapBankSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapBankSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -181,12 +187,15 @@
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QSpinBox" name="bitmapHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="bitmapHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -268,7 +277,7 @@
         <item>
          <layout class="QVBoxLayout" name="sunLeftLayout">
           <item>
-           <widget class="QListWidget" name="sunsListWidget"/>
+           <widget class="QListWidget" name="sunListWidget"/>
           </item>
           <item>
            <layout class="QHBoxLayout" name="sunsButtonsLayout">
@@ -312,12 +321,15 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QSpinBox" name="sunPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="sunPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -329,12 +341,15 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QSpinBox" name="sunHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="sunHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -484,42 +499,106 @@
             <item>
              <layout class="QFormLayout" name="nebulaBottomForm">
               <item row="0" column="0">
-               <widget class="QLabel" name="fogNearLabel">
+               <widget class="QLabel" name="fog1000mVisLabel">
                 <property name="text">
-                 <string>Fog Near Multiplier</string>
+                 <string>Visibility at 1000m</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QLabel" name="fogFarLabel">
+               <widget class="QLabel" name="fogNearDistanceLabel">
                 <property name="text">
-                 <string>Fog Far Multiplier</string>
+                 <string>Fog Near Distance</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="fogSkyboxClipLabel">
+                <property name="text">
+                 <string>Skybox Clip Distance</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QLabel" name="fogClipLabel">
+                <property name="text">
+                 <string>Fog Clip Distance</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QDoubleSpinBox" name="fogNearDoubleSpinBox">
+               <widget class="QDoubleSpinBox" name="fog1000mVisDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Fraction of light that survives 1000 meters of fog (smaller = thicker fog).</string>
+                </property>
+                <property name="decimals">
+                 <number>8</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
                 <property name="maximum">
-                 <double>16777215.000000000000000</double>
+                 <double>1.000000000000000</double>
                 </property>
                 <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-                <property name="value">
-                 <double>1.000000000000000</double>
+                 <double>0.001000000000000</double>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QDoubleSpinBox" name="fogFarDoubleSpinBox">
+               <widget class="QDoubleSpinBox" name="fogNearDistanceDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Distance from the camera where fog starts (in meters).</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.010000000000000</double>
+                </property>
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
                 </property>
                 <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-                <property name="value">
                  <double>1.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QDoubleSpinBox" name="fogSkyboxClipDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Maximum render distance for the skybox in fog (in meters). 0 disables skybox fog.</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QDoubleSpinBox" name="fogClipDoubleSpinBox">
+                <property name="toolTip">
+                 <string>Maximum render distance for the scene in fog (in meters). 0 disables scene fog.</string>
+                </property>
+                <property name="decimals">
+                 <number>2</number>
+                </property>
+                <property name="minimum">
+                 <double>0.000000000000000</double>
+                </property>
+                <property name="maximum">
+                 <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>100.000000000000000</double>
                 </property>
                </widget>
               </item>
@@ -869,12 +948,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxPitchSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxPitchSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -886,12 +968,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxBankSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxBankSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -903,12 +988,15 @@
              </widget>
             </item>
             <item>
-             <widget class="QSpinBox" name="skyboxHeadingSpin">
+             <widget class="IntegerSnapDoubleSpinBox" name="skyboxHeadingSpin">
               <property name="wrapping">
                <bool>true</bool>
               </property>
               <property name="maximum">
-               <number>16777215</number>
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>1.000000000000000</double>
               </property>
              </widget>
             </item>
@@ -1039,6 +1127,73 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::IntegerSnapDoubleSpinBox</class>
+   <extends>QDoubleSpinBox</extends>
+   <header>ui/widgets/IntegerSnapDoubleSpinBox.h</header>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>backgroundSelectionCombo</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>removeButton</tabstop>
+  <tabstop>importButton</tabstop>
+  <tabstop>swapWithButton</tabstop>
+  <tabstop>swapWithCombo</tabstop>
+  <tabstop>bitmapListWidget</tabstop>
+  <tabstop>addBitmapButton</tabstop>
+  <tabstop>changeBitmapButton</tabstop>
+  <tabstop>deleteBitmapButton</tabstop>
+  <tabstop>bitmapTypeCombo</tabstop>
+  <tabstop>bitmapScaleXDoubleSpinBox</tabstop>
+  <tabstop>bitmapScaleYDoubleSpinBox</tabstop>
+  <tabstop>bitmapDivXSpinBox</tabstop>
+  <tabstop>bitmapDivYSpinBox</tabstop>
+  <tabstop>sunListWidget</tabstop>
+  <tabstop>addSunButton</tabstop>
+  <tabstop>changeSunButton</tabstop>
+  <tabstop>deleteSunButton</tabstop>
+  <tabstop>sunSelectionCombo</tabstop>
+  <tabstop>sunScaleDoubleSpinBox</tabstop>
+  <tabstop>useCorrectAngleFormatCheckBox</tabstop>
+  <tabstop>fullNebulaCheckBox</tabstop>
+  <tabstop>poofsListWidget</tabstop>
+  <tabstop>rangeSpinBox</tabstop>
+  <tabstop>nebulaPatternCombo</tabstop>
+  <tabstop>nebulaLightningCombo</tabstop>
+  <tabstop>shipTrailsCheckBox</tabstop>
+  <tabstop>fog1000mVisDoubleSpinBox</tabstop>
+  <tabstop>fogNearDistanceDoubleSpinBox</tabstop>
+  <tabstop>fogSkyboxClipDoubleSpinBox</tabstop>
+  <tabstop>fogClipDoubleSpinBox</tabstop>
+  <tabstop>displayBgsInNebulaCheckbox</tabstop>
+  <tabstop>overrideFogPaletteCheckBox</tabstop>
+  <tabstop>fogOverrideRedSpinBox</tabstop>
+  <tabstop>fogOverrideGreenSpinBox</tabstop>
+  <tabstop>fogOverrideBlueSpinBox</tabstop>
+  <tabstop>ambientLightRedSlider</tabstop>
+  <tabstop>ambientLightGreenSlider</tabstop>
+  <tabstop>ambientLightBlueSlider</tabstop>
+  <tabstop>skyboxModelButton</tabstop>
+  <tabstop>skyboxEdit</tabstop>
+  <tabstop>noLightingCheckBox</tabstop>
+  <tabstop>transparentCheckBox</tabstop>
+  <tabstop>forceClampCheckBox</tabstop>
+  <tabstop>noZBufferCheckBox</tabstop>
+  <tabstop>noCullCheckBox</tabstop>
+  <tabstop>noGlowMapsCheckBox</tabstop>
+  <tabstop>numStarsSlider</tabstop>
+  <tabstop>subspaceCheckBox</tabstop>
+  <tabstop>envMapButton</tabstop>
+  <tabstop>envMapEdit</tabstop>
+  <tabstop>lightingProfileCombo</tabstop>
+  <tabstop>oldNebulaPatternCombo</tabstop>
+  <tabstop>oldNebulaColorCombo</tabstop>
+  <tabstop>oldNebulaPitchSpinBox</tabstop>
+  <tabstop>oldNebulaBankSpinBox</tabstop>
+  <tabstop>oldNebulaHeadingSpinBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

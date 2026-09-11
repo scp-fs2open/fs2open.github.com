@@ -53,6 +53,7 @@ static void parse_music_volume_func()
 	Default_music_volume = volume;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music",
                      std::pair<const char*, int>{"Music", 1371},
                      std::pair<const char*, int>{"Volume used for playing music", 1760})

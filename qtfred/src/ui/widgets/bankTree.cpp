@@ -1,103 +1,166 @@
 #include "bankTree.h"
+
+#include <QDrag>
+
 namespace fso::fred {
+
+namespace {
+constexpr const char* MIME_BANK_TREE_WEAPON = "application/banktreeweapon";
+} // namespace
+
 bankTree::bankTree(QWidget* parent) : QTreeView(parent)
 {
 	setAcceptDrops(true);
 }
+
 void bankTree::dragEnterEvent(QDragEnterEvent* event)
 {
-	if (event->mimeData()->hasFormat("application/weaponid")) {
+	if (event->mimeData()->hasFormat(MIME_WEAPON_ID) || event->mimeData()->hasFormat(MIME_BANK_TREE_WEAPON)) {
 		event->acceptProposedAction();
-	}
-}
-void bankTree::dropEvent(QDropEvent* event)
-{
-	auto item = indexAt(event->pos());
-	if (!item.isValid()) {
-		return;
-	}
-	bool accepted = model()->dropMimeData(event->mimeData(), Qt::CopyAction, -1, 0, item);
-	if (accepted) {
-		event->acceptProposedAction();
-	}
-}
-void bankTree::dragMoveEvent(QDragMoveEvent* event)
-{
-	auto pos = QCursor::pos();
-	auto index = indexAt(pos);
-	if (!index.isValid()) {
-		return;
-	}
-	if (dynamic_cast<BankTreeModel*>(model())->checktype(index) == 0) {
-		event->accept();
 	} else {
 		event->ignore();
 	}
 }
-void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+
+void bankTree::dragMoveEvent(QDragMoveEvent* event)
 {
-	QItemSelection newlySelected;
-	QItemSelection select;
-	QItemSelection deselect(deselected);
-	if (selected.empty()) {
-		QTreeView::selectionChanged(selected, deselected);
-		if (selectionModel()->selectedIndexes().empty()) {
-			typeSelected = -1;
-		}
+	const QModelIndex index = indexAt(event->position().toPoint());
+	if (!index.isValid() || index.data(BankItemIsLabelRole).toBool()) {
+		event->ignore();
 		return;
 	}
-	for (auto& sidx : selected.indexes()) {
-		bool match = false;
-		for (auto& didx : deselected.indexes()) {
-			if (sidx == didx) {
-				match = true;
-				break;
-			}
-		}
-		if (!match) {
-			QItemSelectionRange selection(sidx);
-			newlySelected.append(selection);
-		}
-	}
-	if (!newlySelected.empty()) {
-		if (typeSelected == -1) {
-			typeSelected = dynamic_cast<BankTreeModel*>(model())->checktype(newlySelected.indexes().first());
-			for (auto& sidx : newlySelected.indexes()) {
-				if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-					QItemSelectionRange selection(sidx);
-					select.append(selection);
-				}
-			}
-		} else {
-			int type = dynamic_cast<BankTreeModel*>(model())->checktype(newlySelected.indexes().first());
-			if (type != typeSelected) {
-				typeSelected = type;
-				for (auto& sidx : selected.indexes()) {
-					QItemSelectionRange selection(sidx);
-					deselect.append(selection);
-				}
-				for (auto& sidx : newlySelected.indexes()) {
-					if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-						QItemSelectionRange selection(sidx);
-						select.append(selection);
-					}
-				}
-				selectionModel()->clear();
-				typeSelected = -1;
-			} else {
-				for (auto& sidx : newlySelected.indexes()) {
-					if (dynamic_cast<BankTreeModel*>(model())->checktype(sidx) == typeSelected) {
-						QItemSelectionRange selection(sidx);
-						select.append(selection);
-					}
-				}
-			}
-		}
-	}
-	QTreeView::selectionChanged(select, deselect);
+	event->acceptProposedAction();
 }
-int bankTree::getTypeSelected() const
+
+void bankTree::dropEvent(QDropEvent* event)
 {
-	return typeSelected;
+	QModelIndex target = indexAt(event->position().toPoint());
+	if (!target.isValid() || target.data(BankItemIsLabelRole).toBool()) {
+		event->ignore();
+		return;
+	}
+	if (target.column() != 0) {
+		target = target.sibling(target.row(), 0);
+	}
+
+	const QMimeData* mime = event->mimeData();
+	if (mime->hasFormat(MIME_BANK_TREE_WEAPON)) {
+		QByteArray bytes = mime->data(MIME_BANK_TREE_WEAPON);
+		QDataStream stream(&bytes, QIODevice::ReadOnly);
+		int weaponId = 0;
+		int sourceBanksId = 0;
+		int sourceBankId = 0;
+		stream >> weaponId >> sourceBanksId >> sourceBankId;
+		const bool isCopy = (event->modifiers() & Qt::ControlModifier) != 0;
+		weaponMoved(target, weaponId, sourceBanksId, sourceBankId, isCopy);
+		event->acceptProposedAction();
+	} else if (mime->hasFormat(MIME_WEAPON_ID)) {
+		QByteArray bytes = mime->data(MIME_WEAPON_ID);
+		QDataStream stream(&bytes, QIODevice::ReadOnly);
+		int weaponId = 0;
+		stream >> weaponId;
+		weaponDroppedFromList(target, weaponId);
+		event->acceptProposedAction();
+	} else {
+		event->ignore();
+	}
+}
+
+void bankTree::startDrag(Qt::DropActions /*supportedActions*/)
+{
+	QModelIndex source;
+	for (const QModelIndex& idx : selectionModel()->selectedIndexes()) {
+		if (idx.column() != 0 || !idx.isValid()) {
+			continue;
+		}
+		if (idx.data(BankItemIsLabelRole).toBool()) {
+			continue;
+		}
+		source = idx;
+		break;
+	}
+	if (!source.isValid()) {
+		return;
+	}
+	const int weaponId = source.data(Qt::UserRole).toInt();
+	// "None" (-1) and "CONFLICT" (-2) slots have no weapon to drag.
+	if (weaponId < 0) {
+		return;
+	}
+
+	const QModelIndex parent = source.parent();
+	if (!parent.isValid()) {
+		return;
+	}
+	const int sourceBanksId = parent.data(BankItemIdRole).toInt();
+	const int sourceBankId = source.data(BankItemIdRole).toInt();
+
+	auto* mime = new QMimeData();
+	QByteArray bytes;
+	QDataStream stream(&bytes, QIODevice::WriteOnly);
+	stream << weaponId << sourceBanksId << sourceBankId;
+	mime->setData(MIME_BANK_TREE_WEAPON, bytes);
+
+	auto* drag = new QDrag(this);
+	drag->setMimeData(mime);
+	drag->exec(Qt::MoveAction | Qt::CopyAction, Qt::MoveAction);
+}
+
+void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
+{
+	QTreeView::selectionChanged(selected, deselected);
+
+	if (m_autoFiltering) {
+		return;
+	}
+
+	const auto newlySelected = selected.indexes();
+	if (newlySelected.isEmpty()) {
+		return;
+	}
+
+	QModelIndex pivot;
+	for (const QModelIndex& idx : newlySelected) {
+		if (idx.column() == 0 && idx.isValid()) {
+			pivot = idx;
+			break;
+		}
+	}
+	if (!pivot.isValid()) {
+		return;
+	}
+	const bool pivotIsBank = pivot.data(BankItemIsLabelRole).toBool();
+
+	QItemSelectionModel* sm = selectionModel();
+	QItemSelection toDeselect;
+	for (const QModelIndex& idx : sm->selectedIndexes()) {
+		if (idx.column() != 0) {
+			continue;
+		}
+		if (idx.data(BankItemIsLabelRole).toBool() != pivotIsBank) {
+			toDeselect.select(idx, idx);
+		}
+	}
+
+	if (!toDeselect.isEmpty()) {
+		m_autoFiltering = true;
+		sm->select(toDeselect, QItemSelectionModel::Deselect | QItemSelectionModel::Rows);
+		m_autoFiltering = false;
+	}
+}
+
+bankTree::SelectionType bankTree::getSelectionType() const
+{
+	const auto* sm = selectionModel();
+	if (sm == nullptr) {
+		return SelectionType::None;
+	}
+	for (const QModelIndex& idx : sm->selectedIndexes()) {
+		if (idx.column() != 0 || !idx.isValid()) {
+			continue;
+		}
+		return idx.data(BankItemIsLabelRole).toBool() ? SelectionType::Bank : SelectionType::Weapon;
+	}
+	return SelectionType::None;
 }
 } // namespace fso::fred

@@ -2,6 +2,7 @@
 #include "matrix.h"
 
 #include "graphics/util/UniformBuffer.h"
+#include "cmdline/cmdline.h"
 
 #include <graphics/util/uniform_structs.h>
 
@@ -26,6 +27,9 @@ static int htl_2d_matrix_depth    = 0;
 static bool htl_2d_matrix_set     = false;
 
 static bool matrix_uniform_up_to_date = false;
+
+static bool  gr_ortho_override_active   = false;
+static float gr_ortho_override_distance = 0.0f;
 
 static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
@@ -53,9 +57,18 @@ static void create_perspective_projection_matrix(matrix4 *out, float left, float
 	out->a1d[5] = 2.0f * near_dist / (top - bottom);
 	out->a1d[8] = (right + left) / (right - left);
 	out->a1d[9] = (top + bottom) / (top - bottom);
-	out->a1d[10] = -(far_dist + near_dist) / (far_dist - near_dist);
 	out->a1d[11] = -1.0f;
-	out->a1d[14] = -2.0f * far_dist * near_dist / (far_dist - near_dist);
+
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
+		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1])
+		// Y-flip is handled by negative viewport height (VK_KHR_maintenance1)
+		out->a1d[10] = -far_dist / (far_dist - near_dist);
+		out->a1d[14] = -far_dist * near_dist / (far_dist - near_dist);
+	} else {
+		// OpenGL NDC Z range is [-1, 1]
+		out->a1d[10] = -(far_dist + near_dist) / (far_dist - near_dist);
+		out->a1d[14] = -2.0f * far_dist * near_dist / (far_dist - near_dist);
+	}
 }
 
 static void create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist)
@@ -64,11 +77,20 @@ static void create_orthographic_projection_matrix(matrix4* out, float left, floa
 
 	out->a1d[0] = 2.0f / (right - left);
 	out->a1d[5] = 2.0f / (top - bottom);
-	out->a1d[10] = -2.0f / (far_dist - near_dist);
 	out->a1d[12] = -(right + left) / (right - left);
 	out->a1d[13] = -(top + bottom) / (top - bottom);
-	out->a1d[14] = -(far_dist + near_dist) / (far_dist - near_dist);
 	out->a1d[15] = 1.0f;
+
+	if (gr_screen.mode == GraphicsAPI::Vulkan) {
+		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1])
+		// Y-flip is handled by negative viewport height (VK_KHR_maintenance1)
+		out->a1d[10] = -1.0f / (far_dist - near_dist);
+		out->a1d[14] = -near_dist / (far_dist - near_dist);
+	} else {
+		// OpenGL NDC Z range is [-1, 1]
+		out->a1d[10] = -2.0f / (far_dist - near_dist);
+		out->a1d[14] = -(far_dist + near_dist) / (far_dist - near_dist);
+	}
 }
 
 void gr_start_instance_matrix(const vec3d *offset, const matrix *rotation)
@@ -127,7 +149,18 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 
 	gr_last_projection_matrix = gr_projection_matrix;
 
-	if (std::holds_alternative<float>(fov)) {
+	if (gr_ortho_override_active && std::holds_alternative<float>(fov)) {
+		float half_h = gr_ortho_override_distance * tanf(std::get<float>(fov) * 0.5f);
+		float half_w = half_h * aspect;
+		if (gr_screen.rendering_to_texture != -1) {
+			create_orthographic_projection_matrix(&gr_projection_matrix, -half_w, half_w, half_h, -half_h, z_near, z_far);
+		} else {
+			create_orthographic_projection_matrix(&gr_projection_matrix, -half_w, half_w, -half_h, half_h, z_near, z_far);
+		}
+		// Clear after the first call so that shadow/deferred
+		// restore calls later in the same frame are not affected
+		gr_ortho_override_active = false;
+	} else if (std::holds_alternative<float>(fov)) {
 		float clip_width, clip_height;
 		clip_height = tan(std::get<float>(fov) * 0.5f) * z_near;
 		clip_width = clip_height * aspect;
@@ -272,7 +305,11 @@ void gr_end_2d_matrix()
 	Assert( htl_2d_matrix_depth == 1 );
 
 	// reset viewport to what it was originally set to by the proj matrix
-	gr_set_viewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	if (gr_screen.rendering_to_texture != -1) {
+		gr_set_viewport(gr_screen.offset_x, gr_screen.offset_y, gr_screen.clip_width, gr_screen.clip_height);
+	} else {
+		gr_set_viewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	}
 
 	gr_projection_matrix = gr_last_projection_matrix;
 
@@ -392,4 +429,16 @@ void gr_matrix_set_uniforms()
 	                       sizeof(graphics::matrix_uniforms), uniform_buffer.bufferHandle());
 
 	matrix_uniform_up_to_date = true;
+}
+
+void gr_activate_ortho_proj_override(float camera_distance)
+{
+	gr_ortho_override_active   = true;
+	gr_ortho_override_distance = camera_distance;
+}
+
+void gr_deactivate_ortho_proj_override()
+{
+	gr_ortho_override_active   = false;
+	gr_ortho_override_distance = 0.0f;
 }

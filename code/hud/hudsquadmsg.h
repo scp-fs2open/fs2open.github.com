@@ -30,6 +30,7 @@
 #define MESSAGE_ALL_FIGHTERS		-999
 
 class object;
+struct reinforcements;
 
 // defines for messages that can be sent from the player.  Indexes into Player_orders
 
@@ -61,7 +62,6 @@ class object;
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
-#define MAX_MENU_ITEMS 50   // max number of items in the menu
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 
 // following are defines and character strings that are used as part of messaging mode
@@ -82,8 +82,7 @@ typedef struct mmode_item {
 } mmode_item;
 
 extern char Squad_msg_title[256];
-extern mmode_item MsgItems[MAX_MENU_ITEMS];
-extern int Num_menu_items; // number of items for a message menu
+extern SCP_vector<mmode_item> MsgItems;
 
 typedef struct player_order {
 private:
@@ -181,7 +180,7 @@ extern void hud_squadmsg_rearm_shortcut();
 extern int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
 extern int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
 extern void hud_squadmsg_send_to_all_fighters( int command, int player_num = -1 );
-extern void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num = -1);
+extern void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int player_num = -1);
 
 extern int hud_squadmsg_reinforcements_available(int team);
 
@@ -191,8 +190,7 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 void hud_squadmsg_do_mode( int mode );
 
 // functions for menu item selection with simple up/down/select buttons
-void hud_squadmsg_selection_move_down();
-void hud_squadmsg_selection_move_up();
+void hud_squadmsg_selection_move( bool up );
 void hud_squadmsg_selection_select();
 
 // Added for checking message validity - Mjn

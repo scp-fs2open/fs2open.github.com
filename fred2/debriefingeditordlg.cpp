@@ -13,6 +13,7 @@
 #include "FRED.h"
 #include "DebriefingEditorDlg.h"
 #include "FREDDoc.h"
+#include "management.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
 #include "globalincs/linklist.h"
@@ -51,6 +52,36 @@ debriefing_editor_dlg::debriefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_last_stage = -1;
 	m_voice_id = -1;
 	select_sexp_node = -1;
+	m_play_icon = nullptr;
+}
+
+void debriefing_editor_dlg::create()
+{
+	CDialog::Create(IDD);
+	theApp.init_window(&Debriefing_wnd_data, this);
+}
+
+void debriefing_editor_dlg::focus_sexp(int node)
+{
+	int i, t, n;
+
+	n = m_tree.select_sexp_node = node;
+	if (n == -1)
+		return;
+
+	for (t = 0; t < Num_teams; t++) {
+		for (i = 0; i < Debriefings[t].num_stages; i++) {
+			if (query_node_in_sexp(n, Debriefings[t].stages[i].formula)) {
+				m_current_debriefing = t;
+				Debriefing = &Debriefings[t];
+				m_cur_stage = i;
+				update_data();
+				GetDlgItem(IDC_TREE)->SetFocus();
+				m_tree.hilite_item(m_tree.select_sexp_node);
+				return;
+			}
+		}
+	}
 }
 
 void debriefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
@@ -118,11 +149,9 @@ void debriefing_editor_dlg::OnInitMenu(CMenu* pMenu)
 
 BOOL debriefing_editor_dlg::OnInitDialog()
 {
-	int i, n;
-
 	CDialog::OnInitDialog();
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 	CComboBox *box;
 	box = (CComboBox *) GetDlgItem(IDC_ICON_IMAGE);
 
@@ -150,29 +179,16 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	m_debriefAvg_music = Mission_music[SCORE_DEBRIEFING_AVERAGE] + 1;
 	m_debriefFail_music = Mission_music[SCORE_DEBRIEFING_FAILURE] + 1;
 
-	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
-	n = m_tree.select_sexp_node = select_sexp_node;
-	select_sexp_node = -1;
-	if (n != -1) {
-		for (i=0; i<Debriefing->num_stages; i++)
-			if (query_node_in_sexp(n, Debriefing->stages[i].formula))
-				break;
-
-		if (i < Debriefing->num_stages) {
-			m_cur_stage = i;
-			update_data();
-			GetDlgItem(IDC_TREE) -> SetFocus();
-			m_tree.hilite_item(m_tree.select_sexp_node);
-			set_modified();
-			return FALSE;
-		}
-	}
+	m_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 
 	CDialog::OnInitDialog();
 	update_data();
-	set_modified();
 
-	// hard coded stuff to deal with the multiple briefings per mission.
+	if (select_sexp_node != -1) {
+		focus_sexp(select_sexp_node);
+		select_sexp_node = -1;
+		return FALSE;
+	}
 
 	return TRUE;
 }
@@ -200,11 +216,21 @@ void debriefing_editor_dlg::update_data(int update)
 		if (ptr->formula >= 0)
 			free_sexp2(ptr->formula);
 
-		ptr->formula = m_tree.save_tree();
-		deconvert_multiline_string(ptr->text, m_text);
-		lcl_fred_replace_stuff(ptr->text);
-		deconvert_multiline_string(ptr->recommendation_text, m_rec_text);
-		lcl_fred_replace_stuff(ptr->recommendation_text);
+		ptr->formula = m_tree._model.save_tree();
+
+		SCP_string new_text, new_rec_text;
+		deconvert_multiline_string(new_text, m_text);
+		lcl_fred_replace_stuff(new_text);
+		deconvert_multiline_string(new_rec_text, m_rec_text);
+		lcl_fred_replace_stuff(new_rec_text);
+
+		if (modified || ptr->text != new_text || ptr->recommendation_text != new_rec_text
+				|| stricmp(ptr->voice, m_voice) != 0)
+			set_modified();
+
+		modified = 0;
+		ptr->text = new_text;
+		ptr->recommendation_text = new_rec_text;
 		string_copy(ptr->voice, m_voice, MAX_FILENAME_LEN - 1);
 	}
 
@@ -425,7 +451,7 @@ void debriefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
-void debriefing_editor_dlg::OnClose() 
+void debriefing_editor_dlg::OnClose()
 {
 	audiostream_close_file(m_voice_id, 0);
 	m_voice_id = -1;
@@ -436,7 +462,10 @@ void debriefing_editor_dlg::OnClose()
 	Mission_music[SCORE_DEBRIEFING_AVERAGE] = m_debriefAvg_music - 1;
 	Mission_music[SCORE_DEBRIEFING_FAILURE] = m_debriefFail_music - 1;
 
-	CDialog::OnClose();
+	theApp.record_window_data(&Debriefing_wnd_data, this);
+	debriefing_editor_dlg *ptr = Debriefing_dialog;
+	Debriefing_dialog = nullptr;
+	delete ptr;
 
 	FREDDoc_ptr->autosave("debriefing editor");
 }
@@ -471,10 +500,11 @@ BOOL debriefing_editor_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CDialog::OnCommand(wParam, lParam);
 }
 
-BOOL debriefing_editor_dlg::DestroyWindow() 
+BOOL debriefing_editor_dlg::DestroyWindow()
 {
+	Debriefing_dialog = nullptr;
 	audiostream_close_file(m_voice_id, 0);
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	return CDialog::DestroyWindow();
 }
 

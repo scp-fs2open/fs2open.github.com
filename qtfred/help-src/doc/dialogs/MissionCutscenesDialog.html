@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Mission Cutscenes - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Mission Cutscenes</nav>
+<h1>Mission Cutscenes</h1>
+<p>Opens via <strong>Editors &rsaquo; Mission Cutscenes</strong>.</p>
+<p>Defines cutscene movies that play at specific points around the mission. Each
+cutscene entry pairs a type, which determines <em>when</em> it can play, with a
+movie filename and a <a href="../concepts/sexps.html">SEXP</a> condition. The
+cutscene plays when its SEXP evaluates to true.</p>
+
+<h2>Cutscene types</h2>
+<table>
+    <tr><th>Type</th><th>When it plays</th></tr>
+    <tr><td>Fiction Viewer</td><td>Just before the fiction viewer game state.</td></tr>
+    <tr><td>Command Briefing</td><td>Just before the command briefing game state.</td></tr>
+    <tr><td>Briefing</td><td>Just before the briefing game state.</td></tr>
+    <tr><td>Pre-game</td><td>Just before the mission starts, after Accept has been
+        pressed.</td></tr>
+    <tr><td>Debriefing</td><td>Just before the debriefing game state.</td></tr>
+    <tr><td>Post-debriefing</td><td>When the debriefing has been accepted but before
+        exiting the mission.</td></tr>
+    <tr><td>End Campaign</td><td>When the campaign has been completed.</td></tr>
+</table>
+
+<h2>Cutscene list and SEXP tree</h2>
+<p>The main area shows all cutscenes for the mission alongside their SEXP trees. The
+<strong>Display Cutscene</strong> dropdown filters the list to show one type at a
+time. A description of when the selected type plays appears beneath the dropdown.
+Use <strong>New Cutscene</strong> to add a new entry of the currently displayed
+type.</p>
+
+<h2>Cutscene properties</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Type</td><td>When this cutscene will play. Changing the type moves the
+        entry into the corresponding type group.</td></tr>
+    <tr><td>Filename</td><td>The movie file to play.</td></tr>
+</table>
+</body>
+</html>

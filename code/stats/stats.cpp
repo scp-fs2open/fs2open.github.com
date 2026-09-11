@@ -18,6 +18,7 @@
 #include "stats/stats.h"
 
 static const scoring_struct *Player_stats;
+// coverity[GLOBAL_INIT_ORDER] -- safe; default-constructed, no cross-TU dependencies
 static scoring_struct All_time_ever_stats;
 
 void show_stats_init()
@@ -261,7 +262,7 @@ void show_stats_numbers(const scoring_struct &stats, bool use_m_stats, int sx, i
 
 int stats_get_kills(const scoring_struct &stats, bool use_m_stats, int ship_class)
 {
-	Assertion(ship_class >= 0 && ship_class < MAX_SHIP_CLASSES, "ship_class is out of bounds!");
+	Assertion(stats.kills.in_bounds(ship_class), "ship_class is out of bounds!");
 
 	if (use_m_stats)
 		return stats.m_okKills[ship_class];

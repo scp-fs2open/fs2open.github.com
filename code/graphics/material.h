@@ -172,8 +172,6 @@ class model_material : public material
 		int r = 0;
 		int g = 0;
 		int b = 0;
-		float dist_near = -1.0f;
-		float dist_far = -1.0f;
 	};
 
  private:
@@ -255,7 +253,7 @@ public:
     int get_shader_runtime_early_flags() const;
 	int get_shader_runtime_flags() const;
 
-	void set_fog(int r, int g, int b, float near, float far);
+	void set_fog(int r, int g, int b);
 	void set_fog();
 	bool is_fogged() const;
 	const fog& get_fog() const;

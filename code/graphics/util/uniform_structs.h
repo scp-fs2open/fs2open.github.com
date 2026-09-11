@@ -18,15 +18,7 @@ namespace graphics {
  */
 
 struct deferred_global_data {
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
-
 	matrix4 inv_view_matrix;
-
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
 
 	float invScreenWidth;
 	float invScreenHeight;
@@ -46,7 +38,7 @@ struct deferred_light_data {
 	float coneInnerAngle;
 
 	vec3d coneDir;
-	float dualCone;
+	int dualCone;
 
 	vec3d scale;
 	float lightRadius;
@@ -79,16 +71,14 @@ struct model_uniform_data {
 	matrix4 viewMatrix;
 	matrix4 projMatrix;
 	matrix4 textureMatrix;
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
 
 	vec4 color;
 
 	model_light lights[MAX_UNIFORM_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
@@ -110,7 +100,7 @@ struct model_uniform_data {
 	int gammaSpec;
 	int envGloss;
 	int effect_num;
-	int sBasemapIndex;  // moved up here to track alignment
+	int sBasemapIndex;
 
 	vec4 fogColor;
 
@@ -125,11 +115,6 @@ struct model_uniform_data {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
 	int sGlowmapIndex;
 	int sSpecmapIndex;
 	int sNormalmapIndex;
@@ -143,6 +128,26 @@ struct model_uniform_data {
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
+
+
+struct shadow_uniform_data {
+	matrix4 modelViewMatrix;
+	matrix4 modelMatrix;
+	vec4 clip_equation;
+	int use_clip_plane;
+	int buffer_matrix_offset;
+	float pad[2];
+};
+
+const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
+
+struct shadow_cascade_static_data {
+	int cascade_offset;
+	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
+	matrix4 shadow_mv_matrix;
+};
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
@@ -227,7 +232,10 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+
+	float hdr_paperwhite_nits;
+	float hdr_peak_nits;
+	float pad[3];
 };
 
 struct smaa_data {
@@ -288,8 +296,10 @@ struct fog_data {
 	float fog_density;
 	float zNear;
 	float zFar;
+	float clip_inf_dist;
+	float clip_dist;
 
-	float pad[1];
+	float pad[3];
 };
 
 struct volumetric_fog_data {
@@ -404,6 +414,17 @@ struct post_data {
 
 struct irrmap_data {
 	int face;
+};
+
+// Final output-encode pass (gamma-correct-f.sdr). The SDR leg uses only `gamma`;
+// the HDR10 leg (SDR_FLAG_GAMMA_HDR10 / HDR10_OUTPUT variant) additionally uses
+// the paper-white and peak nits. `gamma` is field 0 so both legs read it from
+// the same std140 offset.
+struct gamma_encode_data {
+	float gamma;
+	float hdr_paperwhite_nits; // HDR10_OUTPUT only
+	float hdr_peak_nits;       // HDR10_OUTPUT only
+	float pad[1];
 };
 
 } // namespace generic_data

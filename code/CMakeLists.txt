@@ -39,7 +39,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC ${PNG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC ${JPEG_LIBS})
 TARGET_LINK_LIBRARIES(code PUBLIC lz4)
 
-TARGET_LINK_LIBRARIES(code PUBLIC sdl2)
+TARGET_LINK_LIBRARIES(code PUBLIC sdl3)
 
 if (FSO_BUILD_WITH_FFMPEG)
 	TARGET_LINK_LIBRARIES(code PUBLIC ffmpeg)
@@ -76,8 +76,6 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
 target_link_libraries(code PUBLIC anl)
 
-target_link_libraries(code PUBLIC hidapi::hidapi)
-
 target_link_libraries(code PUBLIC imgui)
 
 IF(FSO_BUILD_WITH_OPENXR)
@@ -113,16 +111,9 @@ if (FSO_BUILD_WITH_OPENGL)
 	target_compile_definitions(code PUBLIC WITH_OPENGL)
 endif()
 if (FSO_BUILD_WITH_VULKAN)
-	find_package(Vulkan REQUIRED)
-	if (Vulkan_FOUND)
-		target_compile_definitions(code PUBLIC WITH_VULKAN)
-		target_link_libraries(code PRIVATE Vulkan::Vulkan)
-
-		target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
-	else()
-		message(WARNING "FSO_BUILD_WITH_VULKAN was set, but the package was unable to be found. Forcing OFF.")
-		set(FSO_BUILD_WITH_VULKAN OFF CACHE BOOL "Enable compilation of the Vulkan renderer" FORCE)
-	endif()
+	target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
+	target_include_directories(code PUBLIC Vulkan::Headers)
+	target_link_libraries(code PUBLIC VulkanMemoryAllocator)
 endif()
 
 include(shaders.cmake)

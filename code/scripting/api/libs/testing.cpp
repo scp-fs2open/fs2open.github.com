@@ -33,7 +33,7 @@ ADE_LIB(l_Testing, "Testing", "ts", "Experimental or testing stuff");
 
 ADE_FUNC(openAudioStreamMem,
 	l_Testing,
-	"string snddata, enumeration stream_type /* AUDIOSTREAM_* values */",
+	"string snddata, enumeration stream_type /* AUDIOSTREAM_* */",
 	"Opens an audio stream of the specified in-memory file contents and type.",
 	"audio_stream",
 	"A handle to the opened stream or invalid on error")

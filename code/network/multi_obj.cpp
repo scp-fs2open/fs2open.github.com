@@ -139,8 +139,12 @@ struct oo_general_info {
 
 oo_general_info Oo_info;
 
-// flags
-bool Afterburn_hack = false;			// HACK!!!
+// This is part of a fix for AB trails and related model animations not working
+// for other ships in multi. The "hack" part is so the fix applies to hosts as well.
+// This could possibly be revisited in a future multi bump with a better solution - taylor
+// See: https://github.com/scp-fs2open/fs2open.github.com/commit/186bd01
+// Or: "mantis bug 895 response" in SCP Internal on HLP forums
+static bool Afterburn_hack = false;			// HACK!!!
 
 // returns the last frame's index.
 int multi_find_prev_frame_idx();
@@ -632,10 +636,9 @@ void multi_ship_record_do_rollback()
 
 	// set up all restore points and ship portion of the collision list
 	for (ship& cur_ship : Ships) {
-
-		// once this happens, we've run out of ships.
+		// skip destroyed ships
 		if (cur_ship.objnum < 0) {
-			break;
+			continue;
 		}
 
 		objp = &Objects[cur_ship.objnum];
@@ -904,10 +907,10 @@ void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIM
 		}
 	}
 
-	if (prev_index < 0 || post_index < 0) { 
-		mprintf(("Getting prev_index %d and post_index %d, which is not valid, while trying to update the ship record.\n", prev_index, post_index));
+	if ((prev_index < 0) || (prev_index == post_index)) {
 		return;
-	} else if (prev_index == post_index) {
+	} else if (post_index < 0) {
+		mprintf(("Getting prev_index %d and post_index %d, which is not valid, while trying to update the ship record.\n", prev_index, post_index));
 		return;
 	}
 
@@ -1220,6 +1223,17 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	return packet_size;
 }
 
+// vm_extract_angles_matrix_alternate returns angles in the range -PI..PI, but the subsystem list packer
+// encodes them as an unsigned fraction of a full rotation, so wrap negatives around before sending.
+static float multi_oo_normalized_angle(float angle)
+{
+	if (angle < 0.0f) {
+		angle += PI2;
+	}
+
+	return angle / PI2;
+}
+
 // pack the appropriate info into the data
 #define PACK_PERCENT(v) { std::uint8_t upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (std::uint8_t)(v * 255.0f) : (std::uint8_t)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(std::uint8_t)); packet_size++; }
 #define PACK_BYTE(v) { memcpy( data + packet_size + header_bytes, &v, 1 ); packet_size += 1; }
@@ -1408,32 +1422,32 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				// here we're checking to see if the subsystems rotated enough to send.
 				if (angs_1 != nullptr && angs_1->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1b;
-					subsys_data.push_back(angs_1->b / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->b));
 				}
 
 				if (angs_1 != nullptr && angs_1->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1h;
-					subsys_data.push_back(angs_1->h / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->h));
 				}
 
 				if (angs_1 != nullptr && angs_1->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_1p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_1p;
-					subsys_data.push_back(angs_1->p / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_1->p));
 				}
 
 				if (angs_2 != nullptr && angs_2->b != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2b[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2b;
-					subsys_data.push_back(angs_2->b / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->b));
 				}
 
 				if (angs_2 != nullptr && angs_2->h != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2h[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2h;
-					subsys_data.push_back(angs_2->h / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->h));
 				}
 
 				if (angs_2 != nullptr && angs_2->p != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_2p[i]) {
 					flags[i] |= OO_SUBSYS_ROTATION_2p;
-					subsys_data.push_back(angs_2->p / PI2);
+					subsys_data.push_back(multi_oo_normalized_angle(angs_2->p));
 				}
 
 				// clang says deleting null pointer has no effect
@@ -1490,16 +1504,18 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		auto submode = (short)(aip->submode);
 		ushort target_signature = 0;
 
-		// either send out the waypoint they are trying to get to *or* their current target
+		// either send out the waypoint they are trying to get to *or* their current target.
 		if (umode == AIM_WAYPOINTS) {
 			// if it's already started pointing to a waypoint, grab its net_signature and send that instead
 			waypoint* wp;
 			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
 				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
-		} // send the target signature. 2021 Version!
-		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
-			
+		} else if (aip->target_objnum >= 0) {
+			// prefer live target_objnum so clients can check both ordered goal targets and spontaneous targets
+			target_signature = Objects[aip->target_objnum].net_signature;
+		}  else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
+			// send the target signature. 2021 Version!
 			int instance = ship_name_lookup(aip->goals[0].target_name);
 			if (instance > -1) {
 				target_signature = Objects[Ships[instance].objnum].net_signature;
@@ -1595,8 +1611,8 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 
 	int offset = 0;
 
-	// read flag info
-	ushort in_flags;
+	// read flag info -- this is packed as a single byte, so it must be read back as one
+	ubyte in_flags;
 	memcpy(&in_flags, data, sizeof(ubyte));
 	offset++;
 
@@ -1838,10 +1854,18 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 	// SPECIAL CLIENT INFO
 	// ---------------------------------------------------------------------------------------------------------------
 
+	// make sure the ab hack is reset before we read in new info
+	Afterburn_hack = false;
+
 	// if this is from a player, read his button info
 	if(MULTIPLAYER_MASTER){
 		int r0 = multi_oo_unpack_client_data(pl, data + offset, seq_num > Interp_info[objnum].get_client_info_comparison_frame());
 		offset += r0;
+
+		// update comparison frame
+		if (seq_num > Interp_info[objnum].get_client_info_comparison_frame()) {
+			Interp_info[objnum].set_client_info_comparison_frame(seq_num);
+		}
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------
@@ -1882,7 +1906,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			full_physics = true;
 		}
 
-		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &pobjp->phys_info, &local_desired_vel);
+		int r5 = multi_pack_unpack_desired_vel_and_desired_rotvel(0, full_physics, data + offset, &new_phys_info, &local_desired_vel);
 		offset += r5;
 		// change it back to global coordinates.
 		vm_vec_unrotate(&new_phys_info.desired_vel, &local_desired_vel, &new_orient);
@@ -2127,15 +2151,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 		if( seq_num > Interp_info[objnum].get_ai_comparison_frame() ){
 			if ( shipp->ai_index >= 0 ){
-				// make sure to undo the wrap if it occurred during compression for unset ai mode.
-				if (umode == 255) {
-					Ai_info[shipp->ai_index].mode = -1; 
-				}
-				else {
-					Ai_info[shipp->ai_index].mode = umode;
-				}
-				Ai_info[shipp->ai_index].submode = submode;		
-
 				// set this guy's target objnum, and other info
 				target_objp = multi_get_network_object( target_signature );
 
@@ -2182,29 +2197,30 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		GET_INT(ai_submode);
 		GET_USHORT(dock_sig);		
 
-		// verify that it's a valid ship							
-		if((shipp != nullptr) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
-			// bash ai info, this info does not get rebashed, because it is not as vital.
-			Ai_info[shipp->ai_index].ai_flags.from_u64(ai_flags);
-			Ai_info[shipp->ai_index].mode = ai_mode;
-			Ai_info[shipp->ai_index].submode = ai_submode;
+		if (seq_num > Interp_info[objnum].get_support_comparison_frame()) {
+			// verify that it's a valid ship
+			if((shipp != nullptr) && (shipp->ai_index >= 0) && (shipp->ai_index < MAX_AI_INFO)){
+				// bash ai info, this info does not get rebashed, because it is not as vital.
+				Ai_info[shipp->ai_index].ai_flags.from_u64(ai_flags);
+				Ai_info[shipp->ai_index].mode = ai_mode;
+				Ai_info[shipp->ai_index].submode = ai_submode;
 
-			object *objp = multi_get_network_object( dock_sig );
-			if(objp != nullptr){
-				Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
-				if ((objp->instance > -1) && (objp->type == OBJ_SHIP)) {
-					Ai_info[shipp->ai_index].goals[0].target_name = Ships[objp->instance].ship_name;
-					Ai_info[shipp->ai_index].goals[0].target_signature = objp->signature;
-				} else {
-					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
-					Ai_info[shipp->ai_index].goals[0].target_signature = 0;
+				object *objp = multi_get_network_object( dock_sig );
+				if(objp != nullptr){
+					Ai_info[shipp->ai_index].support_ship_objnum = OBJ_INDEX(objp);
+					if ((objp->instance > -1) && (objp->type == OBJ_SHIP)) {
+						Ai_info[shipp->ai_index].goals[0].target_name = Ships[objp->instance].ship_name;
+						Ai_info[shipp->ai_index].goals[0].target_signature = objp->signature;
+					} else {
+						Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
+						Ai_info[shipp->ai_index].goals[0].target_signature = 0;
+					}
 				}
 			}
-		}			
-	} 
 
-	// make sure the ab hack is reset before we read in new info
-	Afterburn_hack = false;
+			Interp_info[objnum].set_support_comparison_frame(seq_num);
+		}
+	}
 
 	// afterburner info
 	if ( (oo_flags & OO_AFTERBURNER_NEW) || Afterburn_hack ) {
@@ -2721,8 +2737,8 @@ void multi_init_oo_and_ship_tracker()
 	temp_sent_to_player.subsystem_z.reserve(MAX_MODEL_SUBSYSTEMS);
 	temp_sent_to_player.subsystem_z.push_back(0.0f);
 
-	temp_netplayer_records.last_sent.push_back(temp_sent_to_player);
-	Oo_info.frame_info.push_back(temp_position_records);
+	temp_netplayer_records.last_sent.push_back(std::move(temp_sent_to_player));
+	Oo_info.frame_info.push_back(std::move(temp_position_records));
 	
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		Oo_info.player_frame_info.push_back(temp_netplayer_records);

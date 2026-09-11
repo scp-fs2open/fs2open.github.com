@@ -42,7 +42,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Up</string>
+            <string/>
            </property>
           </widget>
          </item>
@@ -55,7 +55,7 @@
             </sizepolicy>
            </property>
            <property name="text">
-            <string>Down</string>
+            <string/>
            </property>
           </widget>
          </item>

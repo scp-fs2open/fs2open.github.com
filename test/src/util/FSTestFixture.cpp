@@ -52,7 +52,7 @@ void test::FSTestFixture::SetUp() {
 		}
 
 		if (_initFlags & INIT_GRAPHICS) {
-			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
+			if (!gr_init(nullptr, GraphicsAPI::Stub, 1024, 768)) {
 				FAIL() << "Graphics init failed!";
 			}
 
@@ -113,13 +113,13 @@ void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);
 }
 void test::FSTestFixture::init_cmdline() {
-	std::unique_ptr<char* []> parts(new char* [_cmdlineArgs.size()]);
+	std::vector<char*> parts(_cmdlineArgs.size());
 
 	for (size_t i = 0; i < _cmdlineArgs.size(); ++i) {
-		parts[i] = const_cast<char*>(_cmdlineArgs[i].c_str());
+		parts[i] = _cmdlineArgs[i].data();
 	}
 
-	parse_cmdline((int) _cmdlineArgs.size(), parts.get());
+	parse_cmdline(sz2i(_cmdlineArgs.size()), parts.data());
 }
 void test::FSTestFixture::pushModDir(const SCP_string& mod) {
 	if (!_currentModDir.empty()) {

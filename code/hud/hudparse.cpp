@@ -317,7 +317,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					preset.g = rgb[1];
 					preset.b = rgb[2];
 
-					HC_colors[i] = preset;
+					HC_colors[i] = std::move(preset);
 					if (optional_string("+Default")) {
 						HC_default_color = i;
 					}
@@ -1761,6 +1761,10 @@ void load_gauge_custom(gauge_settings* settings)
 			stuff_boolean(&settings->slew);
 		}
 
+		if (optional_string("Message Gauge:")) {
+			stuff_boolean(&settings->message_gauge);
+		}
+
 		if (optional_string("Config:")) {
 			stuff_boolean(&visible_in_config);
 		}
@@ -1780,7 +1784,7 @@ void load_gauge_custom(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
+	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
 
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
@@ -1795,6 +1799,10 @@ void load_gauge_custom(gauge_settings* settings)
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
 	hud_gauge->initVisible_in_config(visible_in_config);
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		hud_gauge->initSlew(true);
+	}
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -3362,6 +3370,10 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		hud_gauge->initSlew(true);
+	}
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

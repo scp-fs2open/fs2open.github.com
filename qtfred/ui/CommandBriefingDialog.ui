@@ -170,12 +170,9 @@
        <item>
         <layout class="QGridLayout" name="fileSelectionGridLayout">
          <item row="2" column="2">
-          <widget class="QLineEdit" name="speechFileName">
+          <widget class="QLineEdit" name="speechFilename">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -183,9 +180,6 @@
           <widget class="QLineEdit" name="actionHighResolutionFilenameEdit">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -207,9 +201,6 @@
           <widget class="QLineEdit" name="actionLowResolutionFilenameEdit">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -257,12 +248,9 @@
           </widget>
          </item>
          <item row="1" column="2">
-          <widget class="QLineEdit" name="animationFileName">
+          <widget class="QLineEdit" name="animationFilename">
            <property name="text">
             <string/>
-           </property>
-           <property name="maxLength">
-            <number>31</number>
            </property>
           </widget>
          </item>
@@ -270,11 +258,6 @@
           <widget class="QPushButton" name="actionTestSpeechFileButton">
            <property name="text">
             <string/>
-           </property>
-           <property name="icon">
-            <iconset>
-             <selectedon>:/images/play.png</selectedon>
-            </iconset>
            </property>
           </widget>
          </item>
@@ -318,21 +301,22 @@
  </widget>
  <tabstops>
   <tabstop>actionAddStage</tabstop>
-  <tabstop>actionPrevStage</tabstop>
-  <tabstop>actionNextStage</tabstop>
   <tabstop>actionInsertStage</tabstop>
   <tabstop>actionDeleteStage</tabstop>
-  <tabstop>actionCopyToOtherTeams</tabstop>
+  <tabstop>actionPrevStage</tabstop>
+  <tabstop>actionNextStage</tabstop>
   <tabstop>actionBriefingTextEditor</tabstop>
-  <tabstop>animationFileName</tabstop>
+  <tabstop>animationFilename</tabstop>
   <tabstop>actionBrowseAnimation</tabstop>
-  <tabstop>speechFileName</tabstop>
+  <tabstop>speechFilename</tabstop>
   <tabstop>actionBrowseSpeechFile</tabstop>
   <tabstop>actionTestSpeechFileButton</tabstop>
   <tabstop>actionLowResolutionFilenameEdit</tabstop>
   <tabstop>actionLowResolutionBrowse</tabstop>
   <tabstop>actionHighResolutionFilenameEdit</tabstop>
   <tabstop>actionHighResolutionBrowse</tabstop>
+  <tabstop>actionChangeTeams</tabstop>
+  <tabstop>actionCopyToOtherTeams</tabstop>
  </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>

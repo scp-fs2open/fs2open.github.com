@@ -337,7 +337,7 @@
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="fso::fred::sexp_tree" name="sxtBranches">
+              <widget class="fso::fred::sexp_tree_view" name="sxtBranches">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -355,26 +355,42 @@
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_3">
                <item>
-                <widget class="QPushButton" name="moveBranchUpButton">
+                <widget class="QPushButton" name="moveBranchTopButton">
+                 <property name="toolTip">
+                  <string>Move to top</string>
+                 </property>
                  <property name="text">
                   <string/>
                  </property>
-                 <property name="icon">
-                  <iconset>
-                   <selectedon>:/images/arrow_up.png</selectedon>
-                  </iconset>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="moveBranchUpButton">
+                 <property name="toolTip">
+                  <string>Move up</string>
+                 </property>
+                 <property name="text">
+                  <string/>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QPushButton" name="moveBranchDownButton">
+                 <property name="toolTip">
+                  <string>Move down</string>
+                 </property>
                  <property name="text">
                   <string/>
                  </property>
-                 <property name="icon">
-                  <iconset>
-                   <selectedon>:/images/arrow_down.png</selectedon>
-                  </iconset>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="moveBranchBottomButton">
+                 <property name="toolTip">
+                  <string>Move to bottom</string>
+                 </property>
+                 <property name="text">
+                  <string/>
                  </property>
                 </widget>
                </item>
@@ -469,11 +485,6 @@
                 </property>
                 <property name="text">
                  <string/>
-                </property>
-                <property name="icon">
-                 <iconset>
-                  <selectedon>:/images/play.png</selectedon>
-                 </iconset>
                 </property>
                </widget>
               </item>
@@ -588,9 +599,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
   <customwidget>
    <class>CampaignMissionGraph</class>
@@ -598,6 +609,39 @@
    <header>ui/widgets/CampaignMissionGraph.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>mainTabs</tabstop>
+  <tabstop>nameLineEdit</tabstop>
+  <tabstop>typeComboBox</tabstop>
+  <tabstop>descriptionPlainTextEdit</tabstop>
+  <tabstop>resetTechAtStartCheckBox</tabstop>
+  <tabstop>campaignCustomDataButton</tabstop>
+  <tabstop>shipsListWidget</tabstop>
+  <tabstop>weaponsListWidget</tabstop>
+  <tabstop>availableMissionsListWidget</tabstop>
+  <tabstop>fredMissionButton</tabstop>
+  <tabstop>missionNameLineEdit</tabstop>
+  <tabstop>missionDescriptionPlainTextEdit</tabstop>
+  <tabstop>briefCutsceneComboBox</tabstop>
+  <tabstop>debriefingPersonaSpinBox</tabstop>
+  <tabstop>mainhallComboBox</tabstop>
+  <tabstop>substituteMainhallComboBox</tabstop>
+  <tabstop>sxtBranches</tabstop>
+  <tabstop>moveBranchTopButton</tabstop>
+  <tabstop>moveBranchUpButton</tabstop>
+  <tabstop>moveBranchDownButton</tabstop>
+  <tabstop>moveBranchBottomButton</tabstop>
+  <tabstop>loopDescriptionPlainTextEdit</tabstop>
+  <tabstop>loopAnimLineEdit</tabstop>
+  <tabstop>loopAnimBrowseButton</tabstop>
+  <tabstop>loopVoiceLineEdit</tabstop>
+  <tabstop>loopVoiceBrowseButton</tabstop>
+  <tabstop>testVoiceButton</tabstop>
+  <tabstop>availableMissionsFilterLineEdit</tabstop>
+  <tabstop>graphView</tabstop>
+  <tabstop>retailFormatCheckbox</tabstop>
+  <tabstop>errorCheckerButton</tabstop>
+ </tabstops>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

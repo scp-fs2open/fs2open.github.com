@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Special Stats - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; <a href="ShipEditorDialog.html">Ship Editor</a> &rsaquo; Special Stats</nav>
+<h1>Special Stats</h1>
+<p>Accessed via the <strong>Special Stats</strong> button in the <a href="ShipEditorDialog.html">Ship Editor</a>.</p>
+<p>Per-instance overrides for statistics normally defined by the ship class. All
+sections are independently enabled and only apply when their checkbox is
+checked.</p>
+
+<h2>Special explosion</h2>
+<p>Overrides the ship's death explosion with custom parameters.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Damage</td><td>Amount of damage dealt to nearby ships.</td></tr>
+    <tr><td>Blast</td><td>Physical force applied to nearby ships, pushing them
+        away from the explosion. Scales with distance the same way damage
+        does.</td></tr>
+    <tr><td>Inner radius</td><td>Ships within this distance receive full damage
+        and blast.</td></tr>
+    <tr><td>Outer radius</td><td>Ships beyond this distance receive no damage or
+        blast. Between the inner and outer radius, both values scale down with
+        distance.</td></tr>
+    <tr><td>Create shockwave</td><td>When checked, the explosion also spawns an
+        expanding shockwave.</td></tr>
+    <tr><td>Shockwave speed</td><td>Expansion speed of the shockwave in game units
+        per second. Only available when <strong>Create shockwave</strong> is
+        checked.</td></tr>
+    <tr><td>Custom death roll time</td><td>When checked, overrides the duration of
+        the pre-death roll animation (the period of secondary explosions before the
+        final detonation). Set the duration in milliseconds.</td></tr>
+</table>
+
+<h2>Special hitpoints</h2>
+<p>Overrides the ship's maximum hitpoints with a flat value, replacing the ship
+class table entry entirely for this instance.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Enable special shield hitpoints</td><td>When checked, sets an absolute
+        maximum shield strength for this ship, replacing the class
+        default.</td></tr>
+    <tr><td>Enable special hitpoints</td><td>When checked, sets an absolute maximum
+        hull strength for this ship, replacing the class default.</td></tr>
+</table>
+</body>
+</html>

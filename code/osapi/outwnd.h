@@ -10,6 +10,7 @@
 #ifndef _OUTWND_H
 #define _OUTWND_H
 
+#include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
 void load_filter_info();
@@ -23,5 +24,24 @@ void outwnd_debug_window_do_frame(float frametime);
 void outwnd_debug_window_deinit();
 
 extern bool Log_debug_output_to_file;
+
+struct outwnd_filter_struct {
+	char name[NAME_LENGTH];
+	bool enabled;
+};
+
+// Returns the known log filter categories. New categories are added to this list
+// the first time they are used by an nprintf()/mprintf() call.
+const SCP_vector<outwnd_filter_struct>& outwnd_get_filters();
+void outwnd_set_filter_enabled(const char* name, bool enabled);
+
+// A single line that was written to the log, kept around so it can be displayed in a UI.
+struct OutwndLogEntry {
+	SCP_string category;
+	SCP_string text;
+};
+
+const SCP_deque<OutwndLogEntry>& outwnd_get_log_history();
+void outwnd_clear_log_history();
 
 #endif	// _OUTWND_H

@@ -7,6 +7,7 @@
  * as the "mod table", and contains many misc FSO specific settings.
  */
 
+#include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
@@ -127,8 +128,11 @@ bool Neb_affects_beams;
 bool Neb_affects_weapons;
 bool Neb_affects_particles;
 bool Neb_affects_fireballs;
-std::tuple<float, float, float, float> Shadow_distances;
-std::tuple<float, float, float, float> Shadow_distances_cockpit;
+SCP_vector<float> Shadow_distances;
+static SCP_vector<float> Shadow_distances_cockpit;
+SCP_vector<float> Shadow_smoothness_factor;
+int Num_shadow_cascades = 4;
+int Num_cockpit_shadow_cascades = 4;
 bool Show_ship_casts_shadow;
 bool Cockpit_shares_coordinate_space;
 bool Show_ship_only_if_cockpits_enabled;
@@ -170,6 +174,7 @@ bool Use_new_scanning_behavior;
 bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Hide_main_rearm_items_in_comms_gauge;
+bool Always_show_selected_item_in_comms_gauge;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
@@ -182,9 +187,13 @@ bool Show_locked_status_scramble_missions;
 bool Disable_expensive_turret_target_check;
 float Shield_percent_skips_damage;
 float Min_radius_for_persistent_debris;
+bool Zero_radius_explosions_skip_fireballs;
+bool Render_insignias_as_decals;
+bool Link_special_point_subsystems_to_destroyed_submodels;
 
 
 #ifdef WITH_DISCORD
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
                      std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
@@ -297,7 +306,7 @@ void parse_mod_table(const char *filename)
 						splash.is_default = true;
 					}
 
-					Splash_screens.push_back(splash);
+					Splash_screens.push_back(std::move(splash));
 				}
 			}
 
@@ -489,6 +498,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Hide main Rearm/Repair items in Comms Gauge:")) {
 				stuff_boolean(&Hide_main_rearm_items_in_comms_gauge);
+			}
+
+			if (optional_string("$Always show selected item in Comms Gauge:")) {
+				stuff_boolean(&Always_show_selected_item_in_comms_gauge);
 			}
 
 			optional_string("#SEXP SETTINGS");
@@ -882,23 +895,46 @@ void parse_mod_table(const char *filename)
 			}
 
 			if (optional_string("$Shadow Cascade Distances:")) {
-				float dis[4];
-				stuff_float_list(dis, 4);
-				if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
-					Shadow_distances = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+				SCP_vector<float> dis;
+				stuff_float_list(dis);
+				bool valid = !dis.empty() && dis[0] >= 0.0f;
+				for (size_t i = 1; valid && i < dis.size(); i++) {
+					valid = dis[i] > dis[i - 1];
+				}
+				if (valid) {
+					Shadow_distances = std::move(dis);
+					Num_shadow_cascades = static_cast<int>(Shadow_distances.size());
 				} else {
-					error_display(0, "$Shadow Cascade Distances are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+					error_display(0, "$Shadow Cascade Distances: values must be non-negative and strictly increasing. Assuming default distances.");
 				}
 			}
 
 			if (optional_string("$Shadow Cascade Distances Cockpit:")) {
-				float dis[4];
-				stuff_float_list(dis, 4);
-				if ((dis[0] >= 0) && (dis[1] > dis[0]) && (dis[2] > dis[1]) && (dis[3] > dis[2])) {
-					Shadow_distances_cockpit = std::make_tuple((dis[0]), (dis[1]), (dis[2]), (dis[3]));
+				SCP_vector<float> dis;
+				stuff_float_list(dis);
+				bool valid = !dis.empty() && dis[0] >= 0.0f;
+				for (size_t i = 1; valid && i < dis.size(); i++) {
+					valid = dis[i] > dis[i - 1];
 				}
-				else {
-					error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
+				if (valid) {
+					Shadow_distances_cockpit = std::move(dis);
+					Num_cockpit_shadow_cascades = static_cast<int>(Shadow_distances_cockpit.size());
+				} else {
+					error_display(0, "$Shadow Cascade Distances Cockpit: values must be non-negative and strictly increasing. Assuming default distances.");
+				}
+			}
+
+			if (optional_string("$Shadow Smoothness Factor:")) {
+				SCP_vector<float> smoothness;
+				stuff_float_list(smoothness);
+				bool valid = !smoothness.empty();
+				for (size_t i = 0; valid && i < smoothness.size(); i++) {
+					valid = smoothness[i] > 0.0f;
+				}
+				if (valid) {
+					Shadow_smoothness_factor = std::move(smoothness);
+				} else {
+					error_display(0, "$Shadow Smoothness Factor: all values must be > 0. Using defaults.");
 				}
 			}
 
@@ -1000,6 +1036,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Disable all non-custom generic debris:")) {
 				stuff_boolean(&Disable_all_noncustom_generic_debris);
+			}
+
+			if (optional_string("$Render insignias as decals:")) {
+				stuff_boolean(&Render_insignias_as_decals);
 			}
 
 			optional_string("#NETWORK SETTINGS");
@@ -1638,6 +1678,14 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Min_radius_for_persistent_debris);
 			}
 
+			if (optional_string("$Zero-radius explosions skip fireballs:")) {
+				stuff_boolean(&Zero_radius_explosions_skip_fireballs);
+			}
+
+			if (optional_string("$Link special-point subsystems to -destroyed submodels:")) {
+				stuff_boolean(&Link_special_point_subsystems_to_destroyed_submodels);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1687,6 +1735,35 @@ void mod_table_init()
 		Using_in_game_options = false;
 		mprintf((
 			"Game Settings Table: Disabling in-game options system because the commandline override was detected!.\n"));
+	}
+
+	//Validate and process shadow settings. This has to happen here rather than in mod_table_post_process as to run before graphics init.
+	{
+		//Validate that we have the correct number of shadow smoothness factors
+		if (Num_shadow_cascades + Num_cockpit_shadow_cascades != static_cast<int>(Shadow_smoothness_factor.size())) {
+			Warning(LOCATION, "$Shadow Smoothness Factor: number of values (currently %d) must match number of total cascades (%d cockpit cascades + %d main scene cascades = %d total cascades).", static_cast<int>(Shadow_smoothness_factor.size()), Num_cockpit_shadow_cascades, Num_shadow_cascades, Num_cockpit_shadow_cascades + Num_shadow_cascades);
+			int current_last = static_cast<int>(Shadow_smoothness_factor.size());
+			Shadow_smoothness_factor.resize(Num_shadow_cascades + Num_cockpit_shadow_cascades);
+			for (int i = current_last; i < Num_shadow_cascades + Num_cockpit_shadow_cascades; ++i)
+				Shadow_smoothness_factor[i] = 1.f / 300.f;
+		}
+
+		//If we guarantee that no cockpit / local show ship shadows are ever rendered, we can remove the cascades and save some VRAM
+		if (Shadow_disable_overrides.disable_cockpit) {
+			Shadow_smoothness_factor.erase(Shadow_smoothness_factor.begin(), Shadow_smoothness_factor.begin() + Num_cockpit_shadow_cascades);
+			Num_cockpit_shadow_cascades = 0;
+			Shadow_distances_cockpit.clear();
+		}
+
+		if (Num_cockpit_shadow_cascades + Num_shadow_cascades > 16)
+			Warning(LOCATION, "Requested number of shadow cascades total is %d. Not all systems may support that, and performance will degrade with many shadow cascades.", Num_cockpit_shadow_cascades + Num_shadow_cascades);
+
+		//Insert the normal distances after the shadow distances as to keep them in ascending order
+		Shadow_distances_cockpit.insert(Shadow_distances_cockpit.end(), Shadow_distances.begin(), Shadow_distances.end());
+		std::swap(Shadow_distances_cockpit, Shadow_distances);
+
+		//Stale data
+		Shadow_distances_cockpit.clear();
 	}
 }
 
@@ -1815,8 +1892,11 @@ void mod_table_reset()
 	Neb_affects_weapons = false;
 	Neb_affects_particles = false;
 	Neb_affects_fireballs = false;
-	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
-	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Shadow_distances = {200.0f, 600.0f, 2500.0f, 8000.0f};
+	Shadow_distances_cockpit = {0.25f, 0.75f, 1.5f, 3.0f};
+	Shadow_smoothness_factor = {1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f, 1.0f/300.0f, 1.0f/250.0f, 1.0f/200.0f, 1.0f/200.0f};
+	Num_shadow_cascades = static_cast<int>(Shadow_distances.size());
+	Num_cockpit_shadow_cascades = static_cast<int>(Shadow_distances_cockpit.size());
 	Show_ship_casts_shadow = false;
 	Cockpit_shares_coordinate_space = false;
 	Show_ship_only_if_cockpits_enabled = false;
@@ -1866,6 +1946,7 @@ void mod_table_reset()
 	Use_new_scanning_behavior = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
 	Dont_show_callsigns_in_escort_list = false;
+	Always_show_selected_item_in_comms_gauge = false;
 	Hide_main_rearm_items_in_comms_gauge = false;
 	Fix_scripted_velocity = false;
 	// These colors were taken from missionscreencommon.cpp line 591 which
@@ -1884,6 +1965,9 @@ void mod_table_reset()
 	Disable_expensive_turret_target_check = false;
 	Shield_percent_skips_damage = 0.1f;
 	Min_radius_for_persistent_debris = 50.0f;
+	Zero_radius_explosions_skip_fireballs = false;
+	Render_insignias_as_decals = false;
+	Link_special_point_subsystems_to_destroyed_submodels = false;
 }
 
 void mod_table_set_version_flags()
@@ -1911,5 +1995,9 @@ void mod_table_set_version_flags()
 		Fix_asteroid_bounding_box_check = true;
 		Disable_expensive_turret_target_check = true;
 		Skybox_internal_depth_consistency = true;
+	}
+	if (mod_supports_version(26, 0, 0)) {
+		Zero_radius_explosions_skip_fireballs = true;
+		Render_insignias_as_decals = true;
 	}
 }

@@ -366,7 +366,7 @@ void parse_species_tbl(const char *filename)
 
 			// don't add new entry if this is just a modified one
 			if (!no_create)
-				Species_info.push_back(new_species);
+				Species_info.push_back(std::move(new_species));
 		}
 
 		required_string("#END");

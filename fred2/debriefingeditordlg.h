@@ -1,12 +1,13 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
 
+#pragma once
 
 #include "mission/missionbriefcommon.h"
 
@@ -18,6 +19,8 @@ class debriefing_editor_dlg : public CDialog
 // Construction
 public:
 	void OnOK();
+	void create();
+	void focus_sexp(int node);
 	void update_data(int update = 1);
 	debriefing_editor_dlg(CWnd* pParent = NULL);   // standard constructor
 	int select_sexp_node;
@@ -25,7 +28,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(debriefing_editor_dlg)
 	enum { IDD = IDD_DEBRIEFING_EDITOR };
-	sexp_tree	m_tree;
+	sexp_tree_view	m_tree;
 	CString	m_text;
 	CString	m_voice;
 	CString	m_stage_title;
@@ -36,7 +39,7 @@ public:
 	int		m_current_debriefing;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
 
 // Overrides
 	// ClassWizard generated virtual function overrides

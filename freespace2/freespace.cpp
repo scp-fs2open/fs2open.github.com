@@ -20,6 +20,7 @@
 #endif // !_MINGW
 #else
 #ifdef APPLE_APP
+ #include <sys/sysctl.h>
  #include <sys/types.h>
  #include <libproc.h>
 #endif
@@ -41,6 +42,7 @@
 #include "asteroid/asteroid.h"
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
+#include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
@@ -121,6 +123,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelrender.h"
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
@@ -165,6 +168,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "prop/prop.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -202,8 +206,7 @@
 #include "weapon/weapon.h"
 
 
-#include <SDL.h>
-#include <SDL_main.h>
+#include <SDL3/SDL_main.h>
 
 #include <cinttypes>
 #include <stdexcept>
@@ -272,6 +275,7 @@ static void parse_skill_func()
 	Game_skill_level = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
@@ -295,6 +299,7 @@ static void parse_screenshake_func()
 	Screenshake_enabled = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
@@ -317,6 +322,7 @@ static void parse_unfocused_pause_func()
 	Allow_unfocused_pause = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
@@ -394,6 +400,7 @@ int Show_net_stats;
 bool Pre_player_entry = false;
 
 int	Fred_running = 0;
+int	Qtfred_running = 0;
 bool running_unittests = false;
 
 // required for hudtarget... kinda dumb, but meh
@@ -814,6 +821,21 @@ void game_sunspot_process(float frametime)
 }
 
 
+// Top/bottom bar height for the "dead view" / supernova letterbox
+static int dead_view_letterbox_yborder()
+{
+	return gr_screen.max_h / 4;
+}
+
+// Apply the clip rect for the "dead view" / supernova letterbox interior
+static void set_dead_view_letterbox_clip()
+{
+	int yborder = dead_view_letterbox_yborder();
+	//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
+	// J.S. I've changed my ways!! See the new "no constants" code!!!
+	gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
+}
+
 /**
  * Call once a frame to diminish the flash effect to 0.
  * @param frametime Period over which to dimish at ::DIMINISH_RATE
@@ -897,7 +919,18 @@ static void game_flash_diminish(float frametime)
 		if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
 
 		if ( (r!=0) || (g!=0) || (b!=0) ) {
+			// the letterbox bars are drawn earlier in the frame, but game_render_hud calls gr_reset_clip()
+			// before this runs, so the flash would paint over the bars unless we re-apply the letterbox clip
+			bool letterbox_active = (Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT);
+			if (letterbox_active) {
+				set_dead_view_letterbox_clip();
+			}
+
 			gr_flash( r, g, b );
+
+			if (letterbox_active) {
+				gr_reset_clip();
+			}
 		}
 	}
 	
@@ -915,9 +948,9 @@ void game_level_close()
 	//to accidentally use an override here without realizing it.
 	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
 	{
-		// save player-persistent variables and containers
-		mission_campaign_save_on_close_variables();	// Goober5000
-		mission_campaign_save_on_close_containers(); // jg18
+		// save on-close variables and containers
+		mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);	// Goober5000
+		mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_CLOSE, false);	// jg18
 
 		// De-Initialize the game subsystems
 		obj_delete_all();
@@ -934,6 +967,7 @@ void game_level_close()
 		shockwave_level_close();
 		fireball_close();	
 		shield_hit_close();
+		props_level_close();
 		asteroid_level_close();
 		jumpnode_level_close();
 		waypoint_level_close();
@@ -943,13 +977,14 @@ void game_level_close()
 		ct_level_close();
 		beam_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
+		photo_mode_set_active(false);
 		cam_close();
 		subtitles_close();
 		animation::ModelAnimationSet::stopAnimations();
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_close_cockpit_displays(Player_ship);
+		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -1042,6 +1077,7 @@ void game_level_init()
 
 	Perspective_locked = false;
 	Slew_locked = false;
+	game_set_photo_mode_allowed(true);
 
 	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
@@ -1067,6 +1103,7 @@ void game_level_init()
 	NavSystem_Init();				// zero out the nav system
 
 	ai_level_init();				//	Call this before ship_init() because it reads ai.tbl.
+	props_level_init();
 	multi_init_oo_and_ship_tracker();	// Inits/resets multiplayer ship tracking system.  Has to be done before creating any ships.
 	ship_level_init();
 	player_level_init();
@@ -1427,6 +1464,11 @@ void game_post_level_init()
 #endif
 
 	training_mission_init();
+
+	// the asteroids enabled variable can be set via sexp 
+	// so ensure it is resets to the default value before creating asteroids 
+	// --wookieejedi
+	Asteroids_enabled = 1;
 	asteroid_create_all();
 
 	// set ambient light for level
@@ -1717,10 +1759,85 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-#ifdef FS2_VOICER
-// This is really awful but thank the guys of X11 for naming something "Window"
-#	include "SDL_syswm.h" // For SDL_SysWMinfo
+static const char *get_exe_name(const char *argv0)
+{
+	// Doing this the hard way, rather than using SCP_string, so that we're only
+	// using a single ptr's worth of memory to figure it out
+
+	static const char *exe_name = nullptr;
+
+	if (exe_name == nullptr) {
+		if ( !argv0 ) {
+			return "";
+		}
+
+		for (auto i = strlen(argv0) - 1; i > 0; --i) {
+			if (argv0[i] == DIR_SEPARATOR_CHAR) {
+				exe_name = argv0 + i + 1;
+				break;
+			}
+		}
+
+		if ( !exe_name ) {
+			exe_name = argv0;
+		}
+	}
+
+	return exe_name;
+}
+
+static const char *get_cpu_type()
+{
+	// In some cases the SDL_Has*() functions will just report the architecture
+	// that the SDL lib was built with or what emulation says. A M-series Mac
+	// running a x86_64 binary will report as x86 instead of ARM, for instance.
+	// A similar thing happens with WOW64 Windows processes. So use native
+	// functionality where possible to get true values and use SDL functions
+	// only as fallback.
+
+#ifdef _WIN32
+	typedef BOOL (WINAPI *ISWOW64PROCESS2PTR)(HANDLE, USHORT*, USHORT*);
+
+	USHORT processArch = 0, nativeArch = 0;
+	HMODULE hKernel32 = LoadLibraryA("kernel32.dll");
+
+	if (hKernel32) {
+		ISWOW64PROCESS2PTR pIsWow64Process2 = reinterpret_cast<ISWOW64PROCESS2PTR>(GetProcAddress(hKernel32, "IsWow64Process2"));
+
+		if (pIsWow64Process2) {
+			HANDLE hProcess = GetCurrentProcess();
+
+			if (hProcess) {
+				pIsWow64Process2(hProcess, &processArch, &nativeArch);
+				CloseHandle(hProcess);
+			}
+		}
+
+		FreeLibrary(hKernel32);
+	}
+
+	if (nativeArch == IMAGE_FILE_MACHINE_ARM64) {
+		return "ARM64";
+	}
+#elif defined(APPLE_APP)
+	int val = 0;
+	size_t valSize = sizeof(val);
+
+	if ( !sysctlbyname("hw.optional.arm64", &val, &valSize, nullptr, 0) ) {
+		if (val == 1) {
+			return "ARM64";
+		}
+	}
 #endif
+
+	if (SDL_HasARMSIMD() || SDL_HasNEON()) {
+		return "ARM";
+	} else if (SDL_HasSSE() || SDL_HasAVX()) {
+		return "x86";
+	}
+
+	return "<unknown>";
+}
 
 /**
  * Game initialisation
@@ -1759,13 +1876,19 @@ void game_init()
 		nprintf(("Network", "Standalone running\n"));
 	}
 
+	mprintf(("Platform: %s\n", SDL_GetPlatform()));
+	mprintf(("CPU: %s, %d logical cores\n", get_cpu_type(), SDL_GetNumLogicalCPUCores()));
+	mprintf(("Memory: %d MiB\n", SDL_GetSystemRAM()));
+	mprintf(("Build: %s, " SIZE_T_ARG "-bit, %s-endian\n", get_exe_name(nullptr),
+			 sizeof(void*) << 3, (SDL_BYTEORDER == SDL_LIL_ENDIAN) ? "little" : "big"));
+
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
 	threading::init_task_pool();
 
 #ifndef NDEBUG
-	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
+	mprintf(("FreeSpace Open version: %s\n", FS_VERSION_FULL));
 
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
@@ -1869,11 +1992,7 @@ void game_init()
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
 
-	int graphics_api = GR_DEFAULT;
-	if (Cmdline_vulkan)
-		graphics_api = GR_VULKAN;
-
-	if (!gr_init(std::move(sdlGraphicsOperations), graphics_api)) {
+	if (!gr_init(std::move(sdlGraphicsOperations))) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;
@@ -1890,13 +2009,13 @@ void game_init()
 #ifdef FS2_VOICER
 	if(Cmdline_voice_recognition)
 	{
-		SDL_SysWMinfo info;
-		SDL_VERSION(&info.version); // initialize info structure with SDL version info
-
+		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+															 SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+															 nullptr));
 		bool voiceRectOn = false;
-		if(SDL_GetWindowWMInfo(os::getSDLMainWindow(), &info)) { // the call returns true on success
+		if(hwnd) { // the call returns true on success
 			// success
-			voiceRectOn = VOICEREC_init(info.info.win.window, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+			voiceRectOn = VOICEREC_init(hwnd, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 		} else {
 			// call failed
 			mprintf(( "Couldn't get window information: %s\n", SDL_GetError() ));
@@ -2022,6 +2141,7 @@ void game_init()
 	weapon_init();
 	glowpoint_init();
 	ship_init();						// read in ships.tbl	
+	prop_init();
 
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
@@ -2263,15 +2383,15 @@ void game_show_framerate()
 		MEMORYSTATUSEX mem_stats;
 		mem_stats.dwLength = sizeof(mem_stats);
 		if (GlobalMemoryStatusEx(&mem_stats)) {
-			sprintf(mem_buffer, "Physical Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
+			sprintf(mem_buffer, "Physical Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Pagefile Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
+			sprintf(mem_buffer, "Pagefile Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Virtual Free:  %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
+			sprintf(mem_buffer, "Virtual Free:  " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 		}
 	}
@@ -2558,18 +2678,15 @@ void game_set_view_clip(float  /*frametime*/)
 	if ((Game_mode & GM_DEAD) || (supernova_stage() >= SUPERNOVA_STAGE::HIT))
 	{
 		// Set the clip region for the letterbox "dead view"
-		int yborder = gr_screen.max_h/4;
-
 		if (g3_in_frame() == 0) {
+			int yborder = dead_view_letterbox_yborder();
 			// Ensure that the bars are black
 			gr_set_color(0,0,0);
 			gr_set_bitmap(0); // Valathil - Don't ask me why this has to be here but otherwise the black bars don't draw
 			gr_rect(0, 0, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 			gr_rect(0, gr_screen.max_h-yborder, gr_screen.max_w, yborder, GR_RESIZE_NONE);
 		} else {
-			//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
-			// J.S. I've changed my ways!! See the new "no constants" code!!!
-			gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE );	
+			set_dead_view_letterbox_clip();
 		}
 	}
 	else {
@@ -2967,7 +3084,7 @@ void say_view_target()
 				}
 
 			default:
-				UNREACHABLE("Trying to view an invalid object!");
+				UNREACHABLE("Trying to view an invalid object %d!", Objects[Player_ai->target_objnum].type);
 				break;
 			}
 
@@ -3511,14 +3628,21 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		stars_draw(1,1,1,0,0);
 	}
 
-	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position);
+	shadows_render_all(Proj_fov, &Eye_matrix, &Eye_position, offset, rot_offset, fov_override);
 	obj_render_queue_all();
+
+	// render all ships with shader effects on them
+	auto obji = effect_ships.begin();
+	for(;obji != effect_ships.end();++obji)
+	{
+		obj_render(*obji);
+	}
+	effect_ships.clear();
 
 	render_shields();
 
 	if (!Trail_render_override) trail_render_all();						// render missilie trails after everything else.
 	particle::render_all();					// render particles after everything else.
-	
 
 	beam_render_all();						// render all beam weapons
 
@@ -3532,13 +3656,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_copy_effect_texture();
 
-	// render all ships with shader effects on them
-	SCP_vector<object*>::iterator obji = effect_ships.begin();
-	for(;obji != effect_ships.end();++obji)
-	{
-		obj_render(*obji);
-	}
-	effect_ships.clear();
 
 	// render distortions after the effect framebuffer is copied.
 	batching_render_all(true);
@@ -3629,6 +3746,8 @@ void game_simulation_frame()
 	{
 		cam_do_frame(flRealframetime);
 	}
+
+	photo_mode_do_frame(flRealframetime);
 
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
@@ -4106,7 +4225,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 			if (fov_override)
 				g3_set_fov(*fov_override);
 
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
 		}
 	}
 
@@ -4143,6 +4262,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	gr_reset_clip();
 	game_render_post_frame();
+	photo_mode_maybe_render_hud();
 
 	game_tst_frame();
 
@@ -4540,6 +4660,7 @@ void game_do_frame(bool set_frametime)
 	}
 
 	game_update_missiontime();
+	photo_mode_clear_screenshot_queued_flag();
 
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
@@ -4750,6 +4871,8 @@ int game_poll()
 
 		case KEY_PRINT_SCRN: 
 			{
+				photo_mode_set_screenshot_queued_flag();
+
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
@@ -4768,7 +4891,7 @@ int game_poll()
 				}
 
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
-				gr_print_screen(tmp_name);
+				gr_request_screenshot(tmp_name);
 
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
@@ -5241,6 +5364,10 @@ void game_leave_state( int old_state, int new_state )
 {
 	events::GameLeaveState(old_state, new_state);
 
+	// Clear cached UI model instances when changing game states.
+	// New state UI screens can lazily recreate any instances they need.
+	model_clear_cached_ui_render_instances();
+
 	int end_mission = 1;
 
 	switch (new_state) {
@@ -5261,6 +5388,10 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
+	}
+
+	if (old_state == GS_STATE_GAME_PLAY && new_state != GS_STATE_GAME_PLAY) {
+		photo_mode_set_active(false);
 	}
 
 	// This is kind of a hack but it ensures options are logged even if scripting calls for a state change with an override active
@@ -5408,7 +5539,7 @@ void game_leave_state( int old_state, int new_state )
 				common_select_close();
 			}
 
-			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG) {
+			if (new_state != GS_STATE_CONTROL_CONFIG && new_state != GS_STATE_HUD_CONFIG && new_state != GS_STATE_INGAME_OPTIONS) {
 				// unpause all sounds, since we could be headed back to the game
 				// only unpause if we're in-mission; we could also be in the main hall
 				if (Game_mode & GM_IN_MISSION) {
@@ -5690,7 +5821,7 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_LAB:
-			lab_close();
+			lab_close(new_state != GS_STATE_OPTIONS_MENU);
 			// restore default cursor and enable it --wookieejedi
 			if (!Is_standalone) {
 				io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
@@ -5758,7 +5889,7 @@ void game_enter_state( int old_state, int new_state )
 
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
-			scripting::hooks::OnStateStart->run(script_param_list);
+			scripting::hooks::OnStateStart->run(std::move(script_param_list));
 			return;
 		}
 	}
@@ -6042,8 +6173,7 @@ void game_enter_state( int old_state, int new_state )
 
 #ifndef NDEBUG
 			// required to truely make mouse deltas zeroed in debug mouse code
-void mouse_force_pos(int x, int y);
-			mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+			mouse_force_pos(gr_screen.max_w / 2.0f, gr_screen.max_h / 2.0f);
 #endif
 
 			game_flush();
@@ -6281,6 +6411,10 @@ void mouse_force_pos(int x, int y);
 			break;		
 
 		case GS_STATE_LOOP_BRIEF:
+			if (old_state == GS_STATE_MAIN_MENU) {
+				main_hall_stop_music(true);
+				main_hall_stop_ambient();
+			}
 			loop_brief_init();
 			break;
 
@@ -6702,7 +6836,7 @@ void game_spew_pof_info_sub(int model_num, polymodel *pm, int sm, CFILE *out, in
 
 	// find the # of faces for this _individual_ object	
 	total = submodel_get_num_polys(model_num, sm);
-	if(strstr(pm->submodel[sm].name, "-destroyed")){
+	if (submodel_is_destroyed_form(pm->submodel[sm].name)) {
 		sub_total_destroyed = total;
 	}
 	
@@ -6734,8 +6868,7 @@ void game_spew_pof_info()
 	if(out == nullptr){
 		BAIL();
 	}	
-	int counted = 0;
-	for(int idx=0; idx<num_files; idx++, counted++){
+	for(int idx=0; idx<num_files; idx++){
 		sprintf(str, "%s.pof", pof_list[idx]);
 		int model_num = model_load(str);
 		if(model_num >= 0){
@@ -6837,9 +6970,13 @@ int game_main(int argc, char *argv[])
 	tmp_mem = nullptr;
 #endif // _WIN32
 
-
 	if ( !parse_cmdline(argc, argv) ) {
 		return 1;
+	}
+
+	if (LoggingEnabled) {
+		// passing an argument will set the name
+		get_exe_name(argv[0]);
 	}
 
 	game_init();
@@ -7408,11 +7545,11 @@ void Do_model_timings_test()
 	int model_id[MAX_POLYGON_MODELS];
 
 	// Load them all
-	for (auto & sip : Ship_info) {
-		sip.model_num = model_load(sip.pof_file);
+	for (auto & si : Ship_info) {
+		si.model_num = model_load(&si, false);
 
-		model_used[sip.model_num % MAX_POLYGON_MODELS]++;
-		model_id[sip.model_num % MAX_POLYGON_MODELS] = sip.model_num;
+		model_used[si.model_num % MAX_POLYGON_MODELS]++;
+		model_id[si.model_num % MAX_POLYGON_MODELS] = si.model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );
@@ -7544,7 +7681,7 @@ int detect_lang()
 
 	// try and open the file to verify
 	font::stuff_first(first_font);
-	CFILE *detect = cfopen(const_cast<char*>(first_font.c_str()), "rb");
+	CFILE *detect = cfopen(first_font.c_str(), "rb");
 
 	// will use default setting if something went wrong
 	if (!detect)
@@ -8020,6 +8157,14 @@ int main(int argc, char *argv[])
 	int result = -1;
 	Assert(argc > 0);
 
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("FreeSpace Open", FS_VERSION_FULL, "us.indiegames.scp.FreeSpaceOpen");
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "game");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
@@ -8062,9 +8207,8 @@ int main(int argc, char *argv[])
     if (strcmp("/sbin/launchd", pathbuf) == 0) {
         // Finder sets the working directory to the root of the drive so we have to get a little creative
         // to find out where on the disk we should be running from for CFILE's sake.
-        char *path_name = SDL_GetBasePath();
+        auto path_name = SDL_GetBasePath();
         chdir(path_name);
-        SDL_free(path_name);
     }
 #endif
 #endif

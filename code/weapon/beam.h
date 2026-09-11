@@ -102,7 +102,7 @@ typedef struct beam_fire_info {
 	vec3d			starting_pos;							// starting positiong for floating beams -MageKing17
 	beam_info		*beam_info_override;			// (optional), pass this in to override all beam movement info (for multiplayer)
 	int				num_shots;						// (optional), only used for type D weapons
-	int bank;									// for fighters, which bank of the primary weapons are they in
+	int bank;									// which primary bank the beam is in (for fighters and turrets)
 	int point;									// for fighters, which point on the bank it is from
 	int bfi_flags;
 	char team;									// for floating beams, determines which team the beam is on
@@ -226,7 +226,7 @@ typedef struct beam {
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
 extern int Beam_count;
 
-#define BEAM_INDEX(beam)			(int)((beam) - Beams.data())
+#define BEAM_INDEX(beam)			(static_cast<int>((beam)-Beams.data()))
 
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
@@ -278,6 +278,9 @@ int beam_collide_missile(obj_pair *pair);
 
 // collide a beam with debris, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_debris(obj_pair *pair);
+
+// collide a beam with a prop, returns 1 if we can ignore all future collisions between the 2 objects
+int beam_collide_prop(obj_pair* pair);
 
 // pre-move (before collision checking - but AFTER ALL OTHER OBJECTS HAVE BEEN MOVED)
 void beam_move_all_pre();

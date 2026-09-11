@@ -1025,7 +1025,7 @@ void dock_remove_instance(object *objp, object *other_objp)
 	else
 	{
 		// Trigger an assertion, we can recover from this one, thankfully.
-		UNREACHABLE("Tried to undock an object that isn't docked!\n");
+		Assertion(false, "Tried to undock an object that isn't docked!\n");
 	}
 }
 

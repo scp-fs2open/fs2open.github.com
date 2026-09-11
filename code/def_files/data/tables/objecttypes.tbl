@@ -53,8 +53,9 @@ $AI:
 	+Ignored on cripple by:	( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )	
 $Skip Death Roll Percent Chance: 0.0											
 
-$Name:					Cargo											
-$Scannable:				YES												
+$Name:						Cargo										
+$Targetable as unscanned:	YES											
+$Scannable by default:		YES											
 $Max Debris Speed:		200												
 $FF Multiplier:			0.10											
 $EMP Multiplier:		10.0											
@@ -156,7 +157,8 @@ $Praise Destruction:	YES
 $On Hotkey List:		YES												
 $Target as Threat:		YES												
 $Show Attack Direction:	YES												
-$Scannable:				YES												
+$Targetable as unscanned:	YES											
+$Scannable by default:	YES												
 $Max Debris Speed:		150												
 $FF Multiplier:			1.0												
 $EMP Multiplier:		2.0												

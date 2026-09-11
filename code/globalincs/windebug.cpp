@@ -40,7 +40,7 @@
 #	include "globalincs/mspdb_callstack.h"
 #endif
 
-extern void gr_activate(int active);
+extern void gr_activate(bool active);
 
 #ifndef _ASSERT
   #ifndef _DEBUG

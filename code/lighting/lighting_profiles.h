@@ -25,7 +25,12 @@ enum class TonemapperAlgorithm : int
 	Reinhard_Jodie = 5,
 	Reinhard_Extended = 6,
 	PPC = 7,
-	PPC_RGB = 8
+	PPC_RGB = 8,
+	// Display-referred, paper-white-relative. Not an author-selectable choice
+	// (see name_to_tonemapper()) -- current_tonemapper() forces this whenever
+	// Gr_hdr_output_active is true, overriding whatever the active profile
+	// or Lab UI has stored.
+	HdrScene = 9
 };
 
 struct piecewise_power_curve_values {
@@ -82,6 +87,7 @@ class profile {
 };
 
 const SCP_string &default_name();
+const SCP_string& non_mission_name();
 const profile* current();
 enum TonemapperAlgorithm name_to_tonemapper(SCP_string name);
 SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
@@ -103,4 +109,23 @@ float lab_get_emissive();
 void lab_set_emissive(float in);
 SCP_vector<SCP_string> list_profiles();
 void switch_to(const SCP_string& name);
+void switch_to_non_mission();
+
+// Use the tech room profile and then automatically
+// remove it on destruction.
+class set_non_mission_profile {
+  public:
+	set_non_mission_profile() : _old_profile_name(current()->name)
+	{
+		switch_to_non_mission();
+	}
+
+	~set_non_mission_profile()
+	{
+		switch_to(_old_profile_name);
+	}
+
+  private:
+	SCP_string _old_profile_name;
+};
 } // namespace lighting_profiles

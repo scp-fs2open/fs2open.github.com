@@ -15,6 +15,7 @@
 #include <csetjmp>
 
 #include <cctype>
+#include "cmdline/cmdline.h"
 #include "globalincs/version.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
@@ -68,23 +69,41 @@ static const SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
 
 
 //	Return true if this character is white space, else false.
-int is_white_space(char ch)
+bool is_white_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == EOLN) || (ch == CARRIAGE_RETURN));
 }
-int is_white_space(unicode::codepoint_t cp)
+
+//	Return true if this character is white space, else false.
+bool is_white_space(unicode::codepoint_t cp)
 {
 	return ((cp == UNICODE_CHAR(' ')) || (cp == UNICODE_CHAR('\t')) || (cp == (unicode::codepoint_t)EOLN) || (cp == (unicode::codepoint_t)CARRIAGE_RETURN));
 }
 
+//  Returns the length of the string up to but excluding any white space.  This could be the entire string if the string contains no white space.
+//	Equivalently, returns the position of the first white space character, or the string length if no white space is found.
+size_t find_white_space(const char *str)
+{
+	return strcspn(str, " \t\n\r");
+}
+
 // Returns true if this character is gray space, else false (gray space is white space except for EOLN).
-int is_gray_space(char ch)
+bool is_gray_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t'));
 }
 
-bool is_gray_space(unicode::codepoint_t cp) {
+// Returns true if this character is gray space, else false (gray space is white space except for EOLN).
+bool is_gray_space(unicode::codepoint_t cp)
+{
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
+}
+
+//  Returns the length of the string up to but excluding any white space.  This could be the entire string if the string contains no white space.
+//	Equivalently, returns the position of the first white space character, or the string length if no white space is found.
+size_t find_gray_space(const char *str)
+{
+	return strcspn(str, " \t");
 }
 
 bool is_parenthesis(char ch)
@@ -823,6 +842,58 @@ int required_string_one_of(int arg_count, ...)
 		advance_to_eoln(NULL);
 		ignore_white_space();
 		count++;
+	}
+
+	return -1;
+}
+
+int required_string_one_of_fred(int arg_count, ...)
+{
+	Assertion(arg_count > 0, "required_string_one_of_fred() called with arg_count of %d; get a coder!\n", arg_count);
+
+	va_list vl;
+	int idx;
+	char* expected;
+
+	ignore_white_space();
+
+	while (*Mp != '\0') {
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			if (strnicmp(expected, Mp, strlen(expected)) == 0) {
+				diag_printf("Found required string [%s]\n", token_found = expected);
+				va_end(vl);
+				return idx;
+			}
+		}
+		va_end(vl);
+
+		advance_to_eoln(nullptr);
+		ignore_white_space();
+	}
+
+	// EOF reached without finding any token
+	if (*Mp == '\0') {
+		SCP_string message = "Unable to find any required token: ";
+
+		va_start(vl, arg_count);
+		for (idx = 0; idx < arg_count; idx++) {
+			expected = va_arg(vl, char*);
+			message += "[";
+			message += expected;
+			message += "]";
+			if (arg_count == 2 && idx == 0) {
+				message += " or ";
+			} else if (idx == arg_count - 2) {
+				message += ", or ";
+			} else if (idx < arg_count - 2) {
+				message += ", ";
+			}
+		}
+		va_end(vl);
+
+		diag_printf("%s\n", message.c_str());
 	}
 
 	return -1;
@@ -2498,6 +2569,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	if (isLatin1)
 	{
 		unicode::convert_encoding(buffer, str, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
+		return;
 	}
 
 	// unknown encoding, so just truncate
@@ -2908,6 +2980,79 @@ int stuff_long(long *l, bool optional)
 	{
 		retval = 2;
 		diag_printf("Stuffed long: %ld\n", *l);
+	}
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
+
+	return retval;
+}
+
+//	Stuff an unsigned 64-bit value pointed at by Mp.
+//	Advances past integer characters.
+int stuff_uint64(std::uint64_t *l, bool optional)
+{
+	char *str_start = Mp;
+
+	// since strtoull ignores white space anyway, might as well make it explicit
+	ignore_white_space();
+
+	// this is a bit cumbersome
+	size_t span;
+	if (*Mp == '+')
+	{
+		span = strspn(Mp + 1, "0123456789");
+
+		// account for the sign symbol, but not if it's the only valid character
+		if (span > 0)
+			++span;
+	}
+	else
+		span = strspn(Mp, "0123456789");
+
+	// don't call strtoull unless we found digits, because it will happily parse
+	// (and wrap around) a negative number
+	std::uint64_t result = (span > 0) ? strtoull(Mp, nullptr, 10) : 0;
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no number found?
+	if (span == 0)
+	{
+		if (!optional)
+			error_display(1, "Expected unsigned integer, found [%.32s].\n", next_tokens());
+	}
+	else
+	{
+		*l = result;
+		success = true;
+	}
+
+	if (success)
+		Mp += span;
+
+	// if an unexpected character is part of the number, warn about it
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		error_display(0, "Expected unsigned integer, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
+	}
+
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
+		comma = true;
+
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+	{
+		retval = 2;
+		diag_printf("Stuffed uint64: " UINT64_T_ARG "\n", *l);
 	}
 	else if (optional)
 		retval = comma ? 1 : 0;
@@ -3578,7 +3723,7 @@ void pause_parse()
 	Mark.Warning_count = Warning_count;
 	Mark.Error_count = Error_count;
 
-	Bookmarks.push_back(Mark);
+	Bookmarks.push_back(std::move(Mark));
 }
 
 // unpause parsing to continue with previously parsing file
@@ -4330,18 +4475,10 @@ bool can_construe_as_integer(const char *text)
 
 // Goober5000
 // yoinked gratefully from dbugfile.cpp
-void vsprintf(SCP_string &dest, const char *format, va_list ap)
+void vsprintf(SCP_string &dest, const char *format, va_list ap, size_t write_offset)
 {
 	va_list copy;
-
-#if defined(_MSC_VER) && _MSC_VER < 1800
-	// Only Visual Studio >= 2013 supports va_copy
-	// This isn't portable but should work for Visual Studio
-	copy = ap;
-#else
 	va_copy(copy, ap);
-#endif
-
 	int needed_length = vsnprintf(nullptr, 0, format, copy);
 	va_end(copy);
 
@@ -4350,15 +4487,23 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		return;
 	}
 
-	dest.resize(static_cast<size_t>(needed_length));
-	vsnprintf(&dest[0], dest.size() + 1, format, ap);
+	dest.resize(write_offset + i2sz(needed_length));
+	vsnprintf(&dest[write_offset], i2sz(needed_length) + 1, format, ap);
 }
 
-void sprintf(SCP_string &dest, const char *format, ...)
+void sprintf(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
 	vsprintf(dest, format, args);
+	va_end(args);
+}
+
+void sprintf_concat(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsprintf(dest, format, args, dest.size());
 	va_end(args);
 }
 
@@ -4475,7 +4620,7 @@ void consolidate_double_characters(char *src, char ch)
 	while (*src)
 	{
 		if (*src == ch && *(src + 1) == ch)
-			dest--;
+			--dest;
 
 		++src;
 		++dest;
@@ -4483,6 +4628,28 @@ void consolidate_double_characters(char *src, char ch)
 		if (src != dest)
 			*dest = *src;
 	}
+}
+
+// Goober5000
+// Used for escape sequences: ## to #, !! to !, etc.
+void consolidate_double_characters(SCP_string &str, char ch)
+{
+	auto src = str.begin();
+	auto dest = src;
+	while (src != str.end())
+	{
+		if (*src == ch && *(src + 1) == ch)
+			--dest;
+
+		++src;
+		++dest;
+
+		if (src != dest && src != str.end())
+			*dest = *src;
+	}
+
+	if (src != dest)
+		str.resize(dest - str.begin());
 }
 
 char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)
@@ -4885,8 +5052,8 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
+	Assertion( (name_check != nullptr) && (parse_callback != nullptr) && ((*name_check) == '*'), "parse_modular_table() called with invalid arguments; get a coder!\n");
+	if ( (name_check == nullptr) || (parse_callback == nullptr) || ((*name_check) != '*') ) {
 		return 0;
 	}
 

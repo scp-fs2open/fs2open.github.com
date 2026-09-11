@@ -53,7 +53,7 @@ Lastly, you can make stacks of undo operations, so that a single op in the syste
 		for (int i = 0; i < JOY_AXIS_ACTIONS; ++i) {
 			stack.save(Axis_map_to[i], Axis_map_to);		// This example saves a C style array. Does the same thing without a wrapper, but wasteful
 		
-		Undo_controls.save_stack(stack) // Save the stack as a single item!
+		Undo_controls.save_stack(std::move(stack)) // Save the stack as a single item!  (the stack is empty afterwards)
 	}
 
 	std::pair<const void*, const void*> ref = Undo_controls.undo();
@@ -161,6 +161,14 @@ public:
 
 	~Undo_stack() override;
 
+	// The destructor deletes the tracked items, so a copy would double-delete;
+	// a stack is transferred into the undo system by move, which empties the
+	// source so that only one owner ever deletes the items.
+	Undo_stack(const Undo_stack&) = delete;
+	Undo_stack& operator=(const Undo_stack&) = delete;
+	Undo_stack(Undo_stack&&) noexcept = default;
+	Undo_stack& operator=(Undo_stack&&) noexcept;
+
 	/*!
 	 * @brief Restores all items within the undo stack
 	 *
@@ -201,15 +209,6 @@ public:
 	  * @brief Deletes all tracked items in the internal vector
 	  */
 	 void clear();
-
-protected:
-	friend class Undo_system;
-
-	/*!
-	 * @brief Calls ::clear() on the internal vector
-	 * @note Caution: This does not delete the tracked Undo_items
-	 */
-	void untrack();
 
 private:
 	bool reverse;   // Direction to walk the stack. forward = false, reverse = True
@@ -259,13 +258,14 @@ public:
 	/*!
 	 * @brief Saves a stack of undo-items as a single undo-item within the system
 	 *
-	 * @param[in,out] stack  The undo stack to save to the undo system.  Data in the stack is "unspecified" after this operation
+	 * @param[in,out] stack  The undo stack to save to the undo system.  Must be passed with std::move(); the
+	 *  stack is empty after this operation
 	 *
-	 * @details  The undo system effectively moves the stack into its internal containers, claiming ownership of the
-	 *  Undo_items and deleting them upon going out of scope.  The input stack is told to untrack the Undo_items in
-	 *  the process, so that there is only ever one reference to the Undo_item like a std::unique_ptr
+	 * @details  The undo system moves the stack into its internal containers, claiming ownership of the
+	 *  Undo_items and deleting them upon going out of scope.  The move empties the input stack, so that there
+	 *  is only ever one owner of each Undo_item, like a std::unique_ptr
 	 */
-	size_t save_stack(Undo_stack& stack);
+	size_t save_stack(Undo_stack&& stack);
 
 	/*!
 	 * @brief Undo's the last changed item and save the changes into the Redo stack

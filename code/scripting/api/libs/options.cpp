@@ -134,7 +134,7 @@ ADE_FUNC(writeIPAddressTable, l_Options, "table", "Saves the table to the multip
 				// then carry on
 				try {
 					SCP_string ip = item.second.getValue<SCP_string>();
-					list.push_back(ip);
+					list.push_back(std::move(ip));
 				} catch (const luacpp::LuaException& /*e*/) {
 					// We were likely fed a userdata that was not an string.
 					// Since we can't actually tell whether that's the case before we try to get the value, and the

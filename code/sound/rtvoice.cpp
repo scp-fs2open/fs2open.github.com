@@ -95,7 +95,7 @@ void CALLBACK TimeProc(unsigned int /*id*/, unsigned int /*msg*/, DWORD_PTR /*us
 	Rtv_callback();
 }
 #else
-Uint32 TimeProc(Uint32 interval, void * /*param*/)
+Uint32 TimeProc(void * /* userdata */, SDL_TimerID /* timerID */, Uint32 interval)
 {
 	if ( !Rtv_callback ) {
 		SDL_RemoveTimer(Rtv_record_timer_id);

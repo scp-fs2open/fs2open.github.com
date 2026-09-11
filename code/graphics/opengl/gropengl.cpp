@@ -42,10 +42,15 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "pngutils/pngutils.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
+
+#include "backends/imgui_impl_opengl3.h"
 
 #include <glad/glad.h>
 
-// minimum GL version we can reliably support is 3.2
+// minimum GL / GLES version we can reliably support is 3.2
 static const int MIN_REQUIRED_GL_VERSION = 32;
 
 // minimum GLSL version we can reliably support is 110
@@ -116,15 +121,54 @@ void gr_opengl_flip()
 		return;
 
 	if (Cmdline_window_res) {
+		GL_state.PopFramebufferState();
+
+		const float gamma = Cmdline_no_set_gamma ? 1.0f : Gr_gamma;
+		GLuint present_source = Back_framebuffer;
+
+		// At gamma 1.0 the correction shader is an identity transform, so skip the extra
+		// fullscreen pass and present Back_framebuffer directly.
+		if (gamma != 1.0f) {
+			// Gamma-correct Back_texture into an offscreen scratch texture. This is an FBO -> FBO
+			// draw, the same class of operation as every other post-process pass. Presenting straight
+			// into the window-system default framebuffer from a shader draw that samples a
+			// just-rendered texture caused flicker on some drivers, so the hand-off to the screen
+			// always goes through glBlitFramebuffer instead.
+			GL_state.BindFrameBuffer(GammaBlit_framebuffer);
+			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+			opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_GAMMA_BLIT, 0));
+
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, Back_texture);
+			Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+
+			GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
+			GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+			// The last material of the frame may have left color writes disabled (e.g. a masked
+			// model pass in the briefing map render). The old blit-only present ignored the color
+			// mask, but this is a regular draw and needs color writes and no stencil to take effect.
+			GL_state.ColorMask(true, true, true, true);
+			GL_state.StencilTest(GL_FALSE);
+
+			opengl_set_generic_uniform_data<graphics::generic_data::gamma_encode_data>(
+				[gamma](graphics::generic_data::gamma_encode_data* data) {
+					data->gamma = gamma;
+				});
+
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+			present_source = GammaBlit_framebuffer;
+		}
+
 		GL_state.BindFrameBuffer(0, GL_DRAW_FRAMEBUFFER);
-		GL_state.BindFrameBuffer(Back_framebuffer, GL_READ_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(present_source, GL_READ_FRAMEBUFFER);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 		glDrawBuffer(GL_NONE);
 
-		GL_state.PopFramebufferState();
+		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
 	}
 
 	if (Cmdline_gl_finish)
@@ -276,7 +320,7 @@ void gr_opengl_print_screen(const char *filename)
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.png", filename);
+	snprintf(tmp, MAX_PATH_LEN, "screenshots/%s.png", filename);
 
     _mkdir(os_get_config_path("screenshots").c_str());
 
@@ -286,12 +330,19 @@ void gr_opengl_print_screen(const char *filename)
 	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
 	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
+	// Clamp float values to [0,1] when reading from the GL_RGBA16F back framebuffer.
+	// The default GL_FIXED_ONLY only clamps fixed-point FBOs, leaving float FBO reads
+	// with out-of-range values (HDR > 1.0) producing undefined behavior when converted
+	// to integer types, which manifests as rainbow artifacts on bright areas.
+	glClampColor(GL_CLAMP_READ_COLOR, GL_TRUE);
+
 	// now for the data
 	if (Use_PBOs) {
 		Assert( !pbo );
 		glGenBuffers(1, &pbo);
 
 		if ( !pbo ) {
+			glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
 			return;
 		}
 
@@ -306,6 +357,7 @@ void gr_opengl_print_screen(const char *filename)
 		pixels = (GLubyte*) vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
 
 		if (pixels == NULL) {
+			glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
 			return;
 		}
 
@@ -313,10 +365,20 @@ void gr_opengl_print_screen(const char *filename)
 		glFlush();
 	}
 
+	glClampColor(GL_CLAMP_READ_COLOR, GL_FIXED_ONLY);
+
+	// Force alpha to fully opaque so screenshots are not saved with transparency.
+	// The framebuffer alpha can be < 255 due to blending operations affecting the alpha
+	// channel as a side effect, even though the rendered image itself is opaque.
+	int num_pixels = gr_screen.max_w * gr_screen.max_h;
+	for (int i = 0; i < num_pixels; i++) {
+		pixels[i * 4 + 3] = 255;
+	}
+
 	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), gr_screen.max_w, gr_screen.max_h, true, pixels)) {
 		ReleaseWarning(LOCATION, "Failed to write screenshot to \"%s\".", os_get_config_path(tmp).c_str());
 	}
-	
+
 	if (pbo) {
 		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
 		pixels = NULL;
@@ -436,7 +498,7 @@ void gr_opengl_dump_envmap(const char* filename)
 	glBindTexture(sphere_tex->texture_target, sphere_tex->texture_id);
 	pixels = (GLubyte*)vm_malloc(sphere_width * sphere_height * 4, memory::quiet_alloc);
 	glGetTexImage(sphere_tex->texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+	snprintf(tmp, MAX_PATH_LEN, "envmaps/%s.png", filename);
 	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), 4 * width, 2 * height, true, pixels)) {
 		ReleaseWarning(LOCATION, "Failed to write envmap to \"%s\".", os_get_config_path(tmp).c_str());
 	}
@@ -875,7 +937,11 @@ std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProper
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
+#ifndef USE_OPENGL_ES
 	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+#else
+	attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+#endif
 
 	return graphic_operations->createViewport(attrs);
 }
@@ -900,9 +966,13 @@ int opengl_init_display_device()
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
+#ifndef USE_OPENGL_ES
 	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+#else
+	attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+#endif
 
-	attrs.display = os_config_read_uint("Video", "Display", 0);
+	attrs.display = gr_get_preferred_display();
 	attrs.width = (uint32_t) gr_screen.max_w;
 	attrs.height = (uint32_t) gr_screen.max_h;
 
@@ -970,6 +1040,16 @@ int opengl_init_display_device()
 	current_viewport = port;
 
 	return 0;
+}
+
+static void gr_opengl_imgui_new_frame()
+{
+	ImGui_ImplOpenGL3_NewFrame();
+}
+
+static void gr_opengl_imgui_render_draw_data()
+{
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 void gr_opengl_init_function_pointers()
@@ -1072,6 +1152,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_stop_decal_pass = gr_opengl_stop_decal_pass;
 
 	gr_screen.gf_render_model = gr_opengl_render_model;
+	gr_screen.gf_render_shadow_draw = gr_opengl_render_shadow_draw;
 	gr_screen.gf_render_primitives= gr_opengl_render_primitives;
 	gr_screen.gf_render_primitives_particle	= gr_opengl_render_primitives_particle;
 	gr_screen.gf_render_primitives_batched	= gr_opengl_render_primitives_batched;
@@ -1103,6 +1184,9 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
 	gr_screen.gf_override_fog = gr_opengl_override_fog;
+
+	gr_screen.gf_imgui_new_frame = gr_opengl_imgui_new_frame;
+	gr_screen.gf_imgui_render_draw_data = gr_opengl_imgui_render_draw_data;
 
 	gr_screen.gf_openxr_get_extensions = gr_opengl_openxr_get_extensions;
 	gr_screen.gf_openxr_test_capabilities = gr_opengl_openxr_test_capabilities;
@@ -1250,7 +1334,11 @@ static void init_extensions() {
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 
+#ifndef USE_OPENGL_ES
 	sscanf(glsl_ver, "%d.%d", &major, &minor);
+#else
+	sscanf(glsl_ver, "OpenGL ES GLSL ES %d.%d", &major, &minor);
+#endif
 	ver = (major * 100) + minor;
 
 	GLSL_version = ver;
@@ -1344,10 +1432,38 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	}
 #endif
 
-	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
-	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));
-	mprintf(( "  OpenGL Version   : %s\n", glGetString(GL_VERSION) ));
+	mprintf(("  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR)));
+	mprintf(("  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER)));
+	mprintf(("  OpenGL Version   : %s\n", glGetString(GL_VERSION)));
+	mprintf(( "  GLSL Version	  : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION)));
 	mprintf(( "\n" ));
+	mprintf(("Extensions: \n"));
+	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Layered viewport support : %s\n", GLAD_GL_ARB_shader_viewport_layer_array ? NOX("YES") : NOX("NO")));
+	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
+	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
+
+	#ifdef USE_OPENGL_ES
+	GLint maxBuffers;
+	glGetIntegerv(GL_MAX_DRAW_BUFFERS, &maxBuffers);
+	mprintf(("  Max draw buffers : %d\n", maxBuffers));
+
+	if (maxBuffers < 6 && (Cmdline_deferred_lighting_cockpit || Cmdline_no_deferred_lighting != 0)) {
+		Warning(LOCATION,
+			"Deferred lightning is enabled in settings but the gpu does not support the minimum of 6 draw buffers. "
+			"This will result in rendering errors.");
+	}
+
+	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
+	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
+	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Anisotropic filter support: %s\n", GLAD_GL_EXT_texture_filter_anisotropic ? NOX("YES") : NOX("NO")));
+	//for a theorical GLES MSAA implementation
+	mprintf(("  Multisampled render to texture support: %s\n", GLAD_GL_EXT_multisampled_render_to_texture ? NOX("YES") : NOX("NO")));
+	mprintf(("  Multisampled render to texture support 2: %s\n", GLAD_GL_EXT_multisampled_render_to_texture2 ? NOX("YES") : NOX("NO")));
+	glEnable(GL_BLEND); // needed for glBlendFunci
+	#endif
+	mprintf(("\n"));
 
 	// Build a string identifier for this OpenGL implementation
 	GL_implementation_id.clear();
@@ -1409,7 +1525,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
+	#ifndef USE_OPENGL_ES
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	#endif
 
 	glDepthRange(0.0, 1.0);
 
@@ -1423,6 +1541,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	Gr_current_green = &Gr_green;
 	Gr_current_alpha = &Gr_alpha;
 
+	// Initialize uniform buffer managers
+	gr_uniform_buffer_managers_init();
 
 	gr_setup_frame();
 	gr_opengl_reset_clip();
@@ -1447,12 +1567,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  GL_max_renderbuffer_size,
 		  GL_max_renderbuffer_size ));
 
-	mprintf(( "  S3TC texture support: %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  BPTC texture support: %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
-	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
-
-	mprintf(( "  OpenGL Shader Version: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION) ));
+	mprintf(("  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
+	mprintf(("  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear")));
 
 	mprintf(("  Max uniform block size: %d\n", GL_state.Constants.GetMaxUniformBlockSize()));
 	mprintf(("  Max uniform buffer bindings: %d\n", GL_state.Constants.GetMaxUniformBlockBindings()));
@@ -1486,6 +1602,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && light_deferred_enabled();
 	case gr_capability::CAPABILITY_SHADOWS:
+			return !Cmdline_no_geo_sdr_effects || (GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5);
 	case gr_capability::CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;
 	case gr_capability::CAPABILITY_BATCHED_SUBMODELS:
@@ -1498,10 +1615,19 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_buffer_storage != 0;
 	case gr_capability::CAPABILITY_BPTC:
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
+	case gr_capability::CAPABILITY_S3TC:
+		return GLAD_GL_EXT_texture_compression_s3tc != 0;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		return !Cmdline_no_large_shaders;
 	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
 		return GLAD_GL_ARB_vertex_attrib_binding;
+	case gr_capability::CAPABILITY_FAST_SHADOWS:
+		return GLAD_GL_ARB_vertex_attrib_binding && GLAD_GL_ARB_shader_viewport_layer_array && GLAD_GL_ARB_gpu_shader5;
+	case gr_capability::CAPABILITY_QUERIES_REUSABLE:
+		return true;
+	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
+		// Raytraced shadows are only implemented for the Vulkan backend.
+		return false;
 	}
 
 
@@ -1572,7 +1698,7 @@ DCF(ogl_anisotropy, "toggles anisotropic filtering")
 	bool process = true;
 	int value;
 
-	if ( gr_screen.mode != GR_OPENGL ) {
+	if ( gr_screen.mode != GraphicsAPI::OpenGL ) {
 		dc_printf("Can only set anisotropic filter in OpenGL mode.\n");
 		return;
 	}

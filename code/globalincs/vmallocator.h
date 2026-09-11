@@ -15,6 +15,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 template <typename T>
@@ -32,6 +33,16 @@ public:
 		return std::find(this->begin(), this->end(), item) != this->end();
 	}
 
+	void concat(SCP_vector<T>&& other)
+	{
+		insert(this->end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
+	}
+
+	void concat(const SCP_vector<T>& other)
+	{
+		insert(this->end(), other.begin(), other.end());
+	}
+
 	bool in_bounds(int idx) const
 	{
 		return (idx >= 0) && (static_cast<size_t>(idx) < this->size());
@@ -42,10 +53,21 @@ public:
 		return idx < this->size();
 	}
 };
+template<typename T> SCP_vector(std::initializer_list<T>) -> SCP_vector<T>;
 
 template <typename T>
 bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
+}
+
+template <typename T>
+bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const T& item) {
+	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return lcase_equal(iterator_item, item); }) != vector.end();
+}
+
+template <typename T>
+bool SCP_vector_contains_lcase(const SCP_vector<T>& vector, const char* item) {
+	return std::find_if(vector.begin(), vector.end(), [&item](const T& iterator_item) { return !stricmp(iterator_item.c_str(), item); }) != vector.end();
 }
 
 template <typename T>
@@ -69,7 +91,7 @@ public:
 		return std::find(this->begin(), this->end(), item) != this->end();
 	}
 };
-
+template<typename T> SCP_list(std::initializer_list<T>) -> SCP_list<T>;
 
 extern std::locale SCP_default_locale;
 
@@ -97,11 +119,55 @@ extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
 extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
 
 
-template <typename T, typename U>
-using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
+template <typename T, typename U, typename Less = std::less<T>>
+class SCP_map : public std::map<T, U, Less, std::allocator<std::pair<const T, U>>>
+{
+public:
+	using std::map<T, U, Less, std::allocator<std::pair<const T, U>>>::map;	// inherit all constructors
 
-template <typename T, typename U>
-using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
+	bool contains(const T& key) const
+	{
+		return this->find(key) != this->end();
+	}
+
+	// returns a copy of the value at the key, or a copy of default_value if the key is not present;
+	// mirrors std::optional::value_or, and accepts any default that is convertible to the mapped type
+	template <typename V = U>
+	U value_or(const T& key, V&& default_value) const
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : static_cast<U>(std::forward<V>(default_value));
+	}
+
+	// returns a reference to the value at the key, or to default_value if the key is not present;
+	// the map and default_value must both outlive the returned reference (use value_or otherwise)
+	const U& at_or(const T& key, const U& default_value) const&
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : default_value;
+	}
+
+	// deleted to prevent returning a reference to a temporary default, which would dangle
+	const U& at_or(const T& key, const U&& default_value) const& = delete;
+
+	// deleted to prevent returning a reference into a temporary map, which would dangle
+	const U& at_or(const T& key, const U& default_value) && = delete;
+	const U& at_or(const T& key, const U& default_value) const&& = delete;
+};
+template<typename T, typename U> SCP_map(std::initializer_list<std::pair<T, U>>) -> SCP_map<T, U>;
+
+template <typename T, typename U, typename Less = std::less<T>>
+class SCP_multimap : public std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>
+{
+public:
+	using std::multimap<T, U, Less, std::allocator<std::pair<const T, U>>>::multimap;	// inherit all constructors
+
+	bool contains(const T& key) const
+	{
+		return this->find(key) != this->end();
+	}
+};
+template<typename T, typename U> SCP_multimap(std::initializer_list<std::pair<T, U>>) -> SCP_multimap<T, U>;
 
 template <typename T>
 using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
@@ -109,29 +175,31 @@ using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
 template <typename T>
 using SCP_deque = std::deque<T, std::allocator<T>>;
 
-template <typename T>
-class SCP_set : public std::set<T, std::less<T>, std::allocator<T>>
+template <typename T, typename Less = std::less<T>>
+class SCP_set : public std::set<T, Less, std::allocator<T>>
 {
 public:
-	using std::set<T, std::less<T>, std::allocator<T>>::set;	// inherit all constructors
+	using std::set<T, Less, std::allocator<T>>::set;	// inherit all constructors
 
 	bool contains(const T& item) const
 	{
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_set(std::initializer_list<T>) -> SCP_set<T>;
 
-template <typename T>
-class SCP_multiset : public std::multiset<T, std::less<T>, std::allocator<T>>
+template <typename T, typename Less = std::less<T>>
+class SCP_multiset : public std::multiset<T, Less, std::allocator<T>>
 {
 public:
-	using std::multiset<T, std::less<T>, std::allocator<T>>::multiset;	// inherit all constructors
+	using std::multiset<T, Less, std::allocator<T>>::multiset;	// inherit all constructors
 
 	bool contains(const T& item) const
 	{
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_multiset(std::initializer_list<T>) -> SCP_multiset<T>;
 
 // Now that the codebase is on C++17, we can use the standard hash.  (Enum classes are not hashable on C++ < 14.)
 template <typename T>
@@ -161,7 +229,41 @@ struct SCP_string_lcase_less_than {
 };
 
 template <typename Key, typename T, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
-using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>;
+class SCP_unordered_map : public std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>
+{
+public:
+	using std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>::unordered_map;	// inherit all constructors
+
+	bool contains(const Key& key) const
+	{
+		return this->find(key) != this->end();
+	}
+
+	// returns a copy of the value at the key, or a copy of default_value if the key is not present;
+	// mirrors std::optional::value_or, and accepts any default that is convertible to the mapped type
+	template <typename V = T>
+	T value_or(const Key& key, V&& default_value) const
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : static_cast<T>(std::forward<V>(default_value));
+	}
+
+	// returns a reference to the value at the key, or to default_value if the key is not present;
+	// the map and default_value must both outlive the returned reference (use value_or otherwise)
+	const T& at_or(const Key& key, const T& default_value) const&
+	{
+		auto it = this->find(key);
+		return (it != this->end()) ? it->second : default_value;
+	}
+
+	// deleted to prevent returning a reference to a temporary default, which would dangle
+	const T& at_or(const Key& key, const T&& default_value) const& = delete;
+
+	// deleted to prevent returning a reference into a temporary map, which would dangle
+	const T& at_or(const Key& key, const T& default_value) && = delete;
+	const T& at_or(const Key& key, const T& default_value) const&& = delete;
+};
+template<typename Key, typename T> SCP_unordered_map(std::initializer_list<std::pair<Key, T>>) -> SCP_unordered_map<Key, T>;
 
 template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 class SCP_unordered_set : public std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>
@@ -174,20 +276,13 @@ public:
 		return this->find(item) != this->end();
 	}
 };
+template<typename T> SCP_unordered_set(std::initializer_list<T>) -> SCP_unordered_set<T>;
 
-template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
-	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
 	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
 }
 
-template <typename T, typename... Args>
-typename std::enable_if<!std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(Args&&... args) {
-	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
-}
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(std::size_t n) {
 	return std::shared_ptr<T>(new typename std::remove_extent<T>::type[n]());

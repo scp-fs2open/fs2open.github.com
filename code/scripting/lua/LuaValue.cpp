@@ -52,8 +52,8 @@ LuaValue::LuaValue(lua_State* state) : _luaState(state)
 	Assertion(state != nullptr, "Lua state pointer is not valid!");
 }
 
-LuaValue::LuaValue(const LuaValue&) = default;
-LuaValue& LuaValue::operator=(const LuaValue&) = default;
+LuaValue::LuaValue(const LuaValue&) noexcept = default;
+LuaValue& LuaValue::operator=(const LuaValue&) noexcept = default;
 
 LuaValue::LuaValue(LuaValue&&) noexcept = default;
 LuaValue& LuaValue::operator=(LuaValue&&) noexcept = default;

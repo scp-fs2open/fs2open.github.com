@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -445,7 +446,7 @@ void hud_config_get_unique_huds()
 				}
 			}
 
-			HC_available_huds.push_back(newPair);
+			HC_available_huds.push_back(std::move(newPair));
 			seenHuds.insert(hudName);
 		}
 	}
@@ -1873,7 +1874,7 @@ void hud_config_green_slider()
 		for(const auto& gauge_pair : HC_gauge_map){
             const SCP_string& gauge_id = gauge_pair.first;
             if (!gauge_id.empty()) {                
-                gr_init_alphacolor(&HUD_config.gauge_colors[gauge_id], pos, HUD_config.gauge_colors[gauge_id].green, HUD_config.gauge_colors[gauge_id].blue, HUD_config.gauge_colors[gauge_id].alpha);
+                gr_init_alphacolor(&HUD_config.gauge_colors[gauge_id], HUD_config.gauge_colors[gauge_id].red, pos, HUD_config.gauge_colors[gauge_id].blue, HUD_config.gauge_colors[gauge_id].alpha);
             }
         }
 	}
@@ -1897,7 +1898,7 @@ void hud_config_blue_slider()
 		for(const auto& gauge_pair : HC_gauge_map){
             const SCP_string& gauge_id = gauge_pair.first;
             if (!gauge_id.empty()) {                
-                gr_init_alphacolor(&HUD_config.gauge_colors[gauge_id], pos, HUD_config.gauge_colors[gauge_id].green, HUD_config.gauge_colors[gauge_id].blue, HUD_config.gauge_colors[gauge_id].alpha);
+                gr_init_alphacolor(&HUD_config.gauge_colors[gauge_id], HUD_config.gauge_colors[gauge_id].red, HUD_config.gauge_colors[gauge_id].green, pos, HUD_config.gauge_colors[gauge_id].alpha);
             }
         }
 	}

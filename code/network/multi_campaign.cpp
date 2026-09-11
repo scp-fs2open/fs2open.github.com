@@ -270,38 +270,38 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		if(!val){
 			// all ships
 			for(idx = 0; idx < ship_info_size(); idx++) {
-				Campaign.ships_allowed[idx] = 1;
+				Campaign.ships_allowed.insert(idx);
 			}
 
 			// all weapons
 			for(idx = 0; idx < weapon_info_size(); idx++) {
-				Campaign.weapons_allowed[idx] = 1;
+				Campaign.weapons_allowed.insert(idx);
 			}
 		} else {
-			// clear the ships and weapons allowed arrays
-			memset(Campaign.ships_allowed,0,MAX_SHIP_CLASSES);
-			memset(Campaign.weapons_allowed,0,MAX_WEAPON_TYPES);
+			// clear the ships and weapons allowed sets
+			Campaign.ships_allowed.clear();
+			Campaign.weapons_allowed.clear();
 
 			// get all ship classes
 			GET_USHORT(spool_size);
 			for(idx=0;idx<spool_size;idx++){
 				GET_USHORT(s_val);
 
-				if (s_val < MAX_SHIP_CLASSES) {
-					Campaign.ships_allowed[s_val] = 1;
+				if (Ship_info.in_bounds(s_val)) {
+					Campaign.ships_allowed.insert(s_val);
 				}
-			} 
-	
+			}
+
 			// get all weapon classes
 			GET_USHORT(wpool_size);
 			for(idx=0;idx<wpool_size;idx++){
 				GET_USHORT(s_val);
 
-				if (s_val < MAX_WEAPON_TYPES) {
-					Campaign.weapons_allowed[s_val] = 1;
+				if (Weapon_info.in_bounds(s_val)) {
+					Campaign.weapons_allowed.insert(s_val);
 				}
 			}
-		}	
+		}
 
 		// ack the server
 		Net_player->state = NETPLAYER_STATE_CPOOL_ACK;
@@ -449,7 +449,6 @@ void multi_campaign_send_debrief_info()
 void multi_campaign_send_pool_status()
 {
 	ubyte data[MAX_PACKET_SIZE],val;
-	int idx;
 	int spool_size;
 	int wpool_size;
 	int packet_size = 0;
@@ -471,21 +470,8 @@ void multi_campaign_send_pool_status()
 		val = 0x1;
 		ADD_DATA(val);
 
-		// determine how many ship types we're going to add
-		spool_size = 0;
-		for(idx = 0; idx < ship_info_size(); idx++) {
-			if(Campaign.ships_allowed[idx]){
-				spool_size++;
-			}
-		}
-		
-		// determine how many weapon types we're going to add
-		wpool_size = 0;
-		for(idx = 0; idx < weapon_info_size(); idx++){
-			if(Campaign.weapons_allowed[idx]){
-				wpool_size++;
-			}
-		}
+		spool_size = sz2i(Campaign.ships_allowed.size());
+		wpool_size = sz2i(Campaign.weapons_allowed.size());
 
 #ifndef NDEBUG
 		// make sure it'll all fit into this packet
@@ -495,20 +481,16 @@ void multi_campaign_send_pool_status()
 				  "Allowed ship/weapon pool is too large!");
 #endif
 
-		// add all ship types
+		// add all ship types (SCP_set iterates in ascending class order)
 		ADD_USHORT(static_cast<ushort>(spool_size));
-		for(idx = 0; idx < ship_info_size(); idx++) {
-			if(Campaign.ships_allowed[idx]){
-				ADD_USHORT(static_cast<ushort>(idx));
-			}
+		for(int ship_class : Campaign.ships_allowed) {
+			ADD_USHORT(static_cast<ushort>(ship_class));
 		}
 
 		// add all weapon types
 		ADD_USHORT(static_cast<ushort>(wpool_size));
-		for(idx = 0; idx < weapon_info_size(); idx++){
-			if(Campaign.weapons_allowed[idx]){
-				ADD_USHORT(static_cast<ushort>(idx));
-			}
+		for(int weapon_class : Campaign.weapons_allowed) {
+			ADD_USHORT(static_cast<ushort>(weapon_class));
 		}
 	}
 

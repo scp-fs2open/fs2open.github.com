@@ -172,6 +172,8 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		Assert(index != -1);
 		Assert(info_index != -1);			// this is the team value
 
+		entry.pname_display = Wings[index].get_display_name();
+
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
 		// first ship in the list because the info_index contains the wave count
@@ -206,7 +208,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			if (std::find_if(Log_entries.begin(), Log_entries.end(), [index](const log_entry& le) {
 				return (le.type == LOG_SHIP_DEPARTED) && (le.index == index);
 			}) == Log_entries.end()) {
-				UNREACHABLE("cannot find any departed ships from wing %s that supposedly departed.", Wings[index].name);	// get Allender
+				Assertion(false, "cannot find any departed ships from wing %s that supposedly departed.", Wings[index].name);	// get Allender
 			}
 		}
 #endif
@@ -717,7 +719,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 				break;
 			}	// matches case statement!
 			default:
-				UNREACHABLE("Unhandled enum value!");
+				UNREACHABLE("Unhandled enum value %d!", entry.type);
 				break;
 		}
 

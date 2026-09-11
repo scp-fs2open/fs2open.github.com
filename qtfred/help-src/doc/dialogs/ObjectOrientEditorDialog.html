@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Object Orientation Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Objects &rsaquo; Object Orientation Editor</nav>
+<h1>Object Orientation Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Object Orientation</strong>.</p>
+<p>Precisely sets the position and orientation of one or more selected objects using
+numeric input. Useful when you need exact coordinates or angles rather than dragging
+objects in the viewport.</p>
+
+<h2>Position</h2>
+<p><strong>X</strong>, <strong>Y</strong>, and <strong>Z</strong> set the world-space
+coordinates of the object.</p>
+
+<h2>Orientation</h2>
+<p><strong>P</strong> (pitch), <strong>B</strong> (bank), and <strong>H</strong>
+(heading) set the object's facing angles. These controls are disabled when
+<strong>Point To</strong> is active.</p>
+
+<h2>Point To</h2>
+<p>Instead of specifying PBH angles directly, <strong>Point To</strong> automatically
+orients the object so that it faces a chosen target. Use the drop-down to select
+another object in the mission to point at, or enter a specific set of world-space
+coordinates to point toward instead.</p>
+
+<h2>Absolute vs. Relative</h2>
+<table>
+    <tr><th>Mode</th><th>Behavior</th></tr>
+    <tr><td>Set absolute</td><td>The values entered are treated as final world-space
+        coordinates and angles. The object is placed exactly where you specify,
+        regardless of where it currently is.</td></tr>
+    <tr><td>Set relative</td><td>The values entered are added to the object's current
+        position and orientation. Entering X&nbsp;=&nbsp;100 moves the object 100
+        units further along the X axis from wherever it already is.</td></tr>
+</table>
+
+<h2>Transform Objects Independently vs. Relative to Origin Object</h2>
+<p>This option only matters when multiple objects are selected.</p>
+<table>
+    <tr><th>Mode</th><th>Behavior</th></tr>
+    <tr><td>Transform Objects Independently</td><td>Each selected object is transformed
+        on its own. The same position or orientation values are applied to every object
+        separately, so they all end up at the same location or facing the same
+        direction. Use this when you want to snap a group of objects to a common
+        position or give them all an identical heading.</td></tr>
+    <tr><td>Transform Relative to Origin Object</td><td>The selected objects are moved
+        or rotated as a group, preserving the spatial relationships between them. The
+        transform is applied to the group as a whole using one object as the reference
+        point, so the objects stay the same distance and orientation relative to each
+        other. Use this when repositioning or rotating a formation without breaking
+        it apart.</td></tr>
+</table>
+</body>
+</html>

@@ -22,7 +22,7 @@ ADE_FUNC(__len, l_Shields, nullptr, "Number of shield segments", "number", "Numb
 	return ade_set_args(L, "i", static_cast<int>(objh->objp()->shield_quadrant.size()));
 }
 
-ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
+ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or SHIELD_NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float nval = -1.0f;
@@ -132,15 +132,6 @@ ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all
 	}
 
 	return ade_set_args(L, "f", shield_get_max_strength(objh->objp()));
-}
-
-ADE_FUNC(isValid, l_Shields, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_Shields.GetPtr(&oh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", oh->isValid());
 }
 
 }

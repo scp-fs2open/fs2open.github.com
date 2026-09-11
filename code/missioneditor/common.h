@@ -1,6 +1,16 @@
 #pragma once
 #include "globalincs/globals.h"
 #include "mission/missionmessage.h"
+#include "ship/anchor_t.h"
+
+// Default AWACS range applied when the nebula intensity is unset or invalid
+constexpr float DEFAULT_NEBULA_RANGE = 3000.0f;
+
+// Smallest meaningful change in an orientation input field (degrees)
+constexpr float ORIENT_INPUT_THRESHOLD = 0.01f;
+
+// Normalize a degree value into the range [-180, 180]
+float normalize_degrees(float deg);
 
 // Voice acting manager
 #define INVALID_MESSAGE ((MMessage*)SIZE_MAX) // was originally SIZE_T_MAX but that wasn't available outside fred. May need more research.
@@ -24,3 +34,128 @@ extern bool Voice_group_messages;
 
 extern SCP_string Voice_script_default_string;
 extern SCP_string Voice_script_instructions_string;
+
+void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len);
+
+void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, bool retail_format);
+
+void stuff_special_arrival_anchor_name(char* buf, int anchor_num, bool retail_format);
+
+int anchor_to_target(anchor_t anchor);
+
+anchor_t target_to_anchor(int target);
+
+// Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
+// name arrays via wing_name_lookup.
+void update_custom_wing_indexes();
+
+// The _team variant clears the map first; the two _wing variants accumulate into it
+// (so callers that build a total across several wings must clear the map themselves).
+void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
+
+// If Player_start_shipnum no longer refers to a valid player start ship, repoint it to the
+// first remaining player start in the mission (or -1 if there are none).  Call this after
+// changing a ship to or from an OBJ_START via demotion, deletion, etc.
+void ensure_valid_player_start_shipnum();
+
+// Make the given object the sole player start, per single-player semantics: promote it to
+// OBJ_START, demote every other player start to OBJ_SHIP, adjust Player_starts to match,
+// and repoint Player_start_shipnum.  Returns true if anything changed.
+bool set_single_player_start(int objnum);
+
+// Check whether the given name is empty, starts with '<', or conflicts with an existing ship,
+// wing, waypoint path, jump node, or target priority group.
+// Returns an empty string if the name is valid, otherwise a self-contained reason string
+// (e.g. "The name is already being used by a wing").  The exclude parameters prevent matching
+// against the entity currently being renamed.
+SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
+
+// Resolve a mission filename to its index in Campaign.missions[], lazy-loading the mission's goal/event name lists from disk if the
+// FRED_LOAD_PENDING flag is still set.  Returns -1 if the mission isn't in the campaign.
+int load_and_find_campaign_mission(const char *mission_filename);
+
+struct FredShipSlotConfig
+{
+	char (*fred_alt_names)[NAME_LENGTH + 1] = nullptr;
+	char (*fred_callsigns)[NAME_LENGTH + 1] = nullptr;
+
+	int *cur_ship = nullptr;
+};
+
+// Move the ship currently in Ships[from] into Ships[to], updating every
+// back-reference (Objects, Ai_info, Wings, Player_start_shipnum, Ship_registry,
+// and editor-side fields supplied via cfg).  Leaves Ships[from] empty.
+// Preconditions: from != to, Ships[from].objnum >= 0, Ships[to].objnum < 0.
+// No caller may hold a ship* to either slot across this call.
+// Fields in cfg whose pointers are nullptr are skipped.
+void reassign_ship_slot(int from, int to, const FredShipSlotConfig& cfg, bool resort_obj_list = true);
+
+// Swap the contents of two slots.  Both must be valid (Ships[a].objnum >= 0
+// and Ships[b].objnum >= 0).  Implemented as three calls to reassign_ship_slot
+// via a temporary empty slot.
+void swap_ship_slots(int a, int b, const FredShipSlotConfig& cfg);
+
+// Move the item at position from_pos in slots to position to_pos, shifting the
+// items in between by one position.
+void rotate_ship_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredShipSlotConfig& cfg);
+
+struct FredWingSlotConfig
+{
+	int (*wing_objects)[MAX_SHIPS_PER_WING] = nullptr;
+	int *cur_wing = nullptr;
+};
+
+// Move the wing currently in Wings[from] into Wings[to], updating every
+// back-reference (Ships[i].wingnum, Starting/Squadron/TVT_wings caches, and
+// editor-side fields supplied via cfg).  Leaves Wings[from] empty.
+// Preconditions: from != to, Wings[from].wave_count > 0, Wings[to].wave_count == 0.
+// No caller may hold a wing* to either slot across this call.
+// Fields in cfg whose pointers are nullptr are skipped.
+void reassign_wing_slot(int from, int to, const FredWingSlotConfig& cfg, bool update_wing_indexes = true);
+
+// Swap the contents of two slots.  Both must be valid (Wings[a].wave_count > 0
+// and Wings[b].wave_count > 0).  Implemented as three calls to
+// reassign_wing_slot via a temporary empty slot.
+void swap_wing_slots(int a, int b, const FredWingSlotConfig& cfg);
+
+// Move the item at position from_pos in slots to position to_pos, shifting the
+// items in between by one position.
+void rotate_wing_slots(const SCP_vector<int>& slots, int from_pos, int to_pos, const FredWingSlotConfig& cfg);
+
+// Restore the obj_used_list invariant for the OBJ_SHIP/OBJ_START subset:
+// among ship-type entries, list order matches Ships[] index order.
+void resort_ships_in_obj_used_list();
+
+// Same, for the OBJ_PROP subset: among prop entries, obj_used_list order matches
+// Props[] index order.  UI lists that walk obj_used_list, like the Scene Browser,
+// depend on this to show props in their reordered Props[] order.
+void resort_props_in_obj_used_list();
+
+// Props and waypoint paths live in SCP_vectors rather than the fixed
+// Ships[]/Wings[] arrays, and their only index-based back-reference is the
+// owning object's instance (everything else refers to them by name).  So unlike
+// the ship/wing slot helpers above, these reorder the elements directly and just
+// re-point the OBJ_PROP / OBJ_WAYPOINT object instances.
+
+// Move the prop at display position from_pos to to_pos within `slots` (the
+// occupied Props[] indices, in display order), shifting the props in between by
+// one and preserving their relative order.  Props[] may contain empty nullopt
+// holes; those stay put while the occupants are permuted among their slots.
+// Also resorts obj_used_list so Scene Browser matches.
+void rotate_prop_slots(const SCP_vector<int>& slots, int from_pos, int to_pos);
+
+// Move the waypoint list at index from_pos to to_pos within Waypoint_lists,
+// shifting the lists in between by one and preserving their relative order.
+// Waypoint_lists is kept compact, so positions are plain indices.
+void rotate_waypoint_lists(int from_pos, int to_pos);
+
+// Move the jump node at display position from_pos to to_pos within `slots` (the
+// live Jump_nodes[] indices, in display order), shifting the nodes in between by
+// one and preserving their relative order.  Unlike ships/props there is no
+// object-instance back-reference to re-point: a jump node links to its object via
+// CJumpNode::m_objnum, which travels with the node, and is looked up by
+// objnum/name, and the Scene Browser and mission save both iterate Jump_nodes
+// directly so permuting the occupants among their slots is all that is needed.
+void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos);

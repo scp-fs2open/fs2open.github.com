@@ -12,12 +12,13 @@
 #ifndef _EVENTEDITOR_H
 #define _EVENTEDITOR_H
 
-#include "Sexp_tree.h"
+#include "sexp_tree_view.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 
 
-class event_sexp_tree : public sexp_tree
+class event_sexp_tree : public sexp_tree_view
 {
 public:
 	// for tooltips
@@ -26,6 +27,11 @@ public:
 
 	void edit_comment(HTREEITEM h);
 	void edit_bg_color(HTREEITEM h);
+	SCP_string get_node_comment(int node_index) const override;
+	SCP_string get_item_comment(HTREEITEM h, int node_index) const override;
+
+	// Set by event_editor during initialization
+	SexpAnnotationModel* m_annotations = nullptr;
 
 protected:
 	virtual void PreSubclassWindow();
@@ -37,19 +43,22 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-void event_annotation_prune();
-int event_annotation_lookup(HTREEITEM handle);
-void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, int annotation_index);
 void event_annotation_swap_image(event_sexp_tree *tree, HTREEITEM handle, event_annotation &ea);
 
 
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
-class event_editor : public CDialog
+class event_editor : public CDialog, public SexpTreeEditorInterface
 {
 // Construction
 public:
+	int getRootReturnType() const override;
+	int onRootDeleted(int formula_node) override;
+	void onRootRenamed(int formula_node, const char* new_name) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
+
 	void update_persona();
 	void save();
 	char *current_message_name(int index);
@@ -65,15 +74,11 @@ public:
 	int query_modified();
 	void OnOK();		// default MFC OK behavior
 	void OnCancel();	// default MFC Cancel behavior
-	int handler(int code, int node, const char *str = nullptr);
 	void create_tree();
 	void load_tree();
 	int modified;
 	int select_sexp_node;
 	event_editor(CWnd* pParent = NULL);   // standard constructor
-
-	void populate_path(event_annotation &ea, HTREEITEM h);
-	HTREEITEM traverse_path(const event_annotation &ea);
 
 // Dialog Data
 	//{{AFX_DATA(event_editor)
@@ -108,7 +113,11 @@ public:
 	int		m_log_state_change;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
+	HICON m_move_to_top_icon;
+	HICON m_move_up_icon;
+	HICON m_move_down_icon;
+	HICON m_move_to_bottom_icon;
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -140,6 +149,7 @@ protected:
 	afx_msg void OnInsert();
 	afx_msg void OnSelchangeMessageList();
 	afx_msg void OnNewMsg();
+	afx_msg void OnInsertMsg();
 	afx_msg void OnDeleteMsg();
 	afx_msg void OnMsgNote();
 	afx_msg void OnBrowseAvi();
@@ -150,15 +160,27 @@ protected:
 	afx_msg void OnSelchangeTeam();
 	afx_msg void OnSelchangeMessageTeam();
 	afx_msg void OnDblclkMessageList();
+	afx_msg void OnEventMoveToTop();
+	afx_msg void OnEventMoveUp();
+	afx_msg void OnEventMoveDown();
+	afx_msg void OnEventMoveToBottom();
+	afx_msg void OnMessageMoveToTop();
+	afx_msg void OnMessageMoveUp();
+	afx_msg void OnMessageMoveDown();
+	afx_msg void OnMessageMoveToBottom();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 private:
 	int cur_event;
 	void update_cur_event();
+	void move_event(bool up, bool all_the_way);
+	void move_message(bool up, bool all_the_way);
+	void update_move_buttons();
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_event> m_events;
 	SCP_vector<MMessage> m_messages;
+	SexpAnnotationModel m_annotation_model;
 	int m_wave_id;
 };
 

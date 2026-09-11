@@ -17,8 +17,10 @@ void lab_init() {
 	gr_set_clear_color(0, 0, 0);
 }
 
-void lab_close() {
-	LMGR.reset();
+void lab_close(bool reset) {
+	if (reset) {
+		LMGR.reset();
+	}
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 

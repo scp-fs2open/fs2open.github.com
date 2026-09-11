@@ -57,8 +57,7 @@ std::ostream& operator<<(std::ostream& out, const scoring_struct& data) {
 	out << "score:" << data.score << "\n";
 	out << "rank:" << data.rank << "\n";
 	out << "medal_counts:" << data.medal_counts << "\n";
-	out << "kills:";
-	array_print(out, data.kills) << "\n";
+	out << "kills:" << data.kills << "\n";
 	out << "assists:" << data.assists << "\n";
 	out << "kill_count:" << data.kill_count << "\n";
 	out << "kill_count_ok:" << data.kill_count_ok << "\n";
@@ -77,10 +76,8 @@ std::ostream& operator<<(std::ostream& out, const scoring_struct& data) {
 	out << "m_badge_earned:" << data.m_badge_earned << "\n";
 	out << "m_promotion_earned:" << data.m_promotion_earned << "\n";
 	out << "m_score:" << data.m_score << "\n";
-	out << "m_kills:";
-	array_print(out, data.m_kills) << "\n";
-	out << "m_okKills:";
-	array_print(out, data.m_okKills) << "\n";
+	out << "m_kills:" << data.m_kills << "\n";
+	out << "m_okKills:" << data.m_okKills << "\n";
 	out << "m_kill_count:" << data.m_kill_count << "\n";
 	out << "m_kill_count_ok:" << data.m_kill_count_ok << "\n";
 	out << "m_assists:" << data.m_assists << "\n";

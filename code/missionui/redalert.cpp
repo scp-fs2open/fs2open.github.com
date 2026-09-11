@@ -767,8 +767,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, &shipp->weapons);
 		red_alert_store_subsys_status(&ras, shipp);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (shipp->wingnum >= 0) {
@@ -803,8 +803,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, NULL);
 		red_alert_store_subsys_status(&ras, NULL);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (exited.wingnum >= 0) {
@@ -829,7 +829,7 @@ void red_alert_store_ship_status()
 		rws.total_destroyed = wingp->total_destroyed;
 		rws.total_vanished = wingp->total_vanished;
 
-		Red_alert_wing_status.push_back( rws );
+		Red_alert_wing_status.push_back( std::move(rws) );
 		// see comments from niffiwan above
 		Assert( (Red_alert_wing_status.size() <= MAX_WINGS) );
 	}
@@ -968,10 +968,9 @@ void red_alert_bash_ship_status()
 
 					// give the ship its name from the latest wave
 					// (this will make the ship match to the correct red-alert data)
-					wing_bash_ship_name(shipp->ship_name, wingp->name, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
-					// need to update the ship registry too
-					strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
-					Ship_registry_map[shipp->ship_name] = ship_entry_index;
+					wing_bash_ship_name(shipp, wingp, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+					// need to update the ship registry too; keep the old key because the previous name was a real ship name that may still be referenced
+					ship_registry_rename(ship_entry_index, shipp->ship_name, false);
 				}
 			}
 		}
@@ -1232,7 +1231,7 @@ void red_alert_maybe_move_to_next_mission()
 			// this should handle close-out and moving to next mission
 			gameseq_post_event(GS_EVENT_DEBRIEF);
 		} else {
-			mission_campaign_store_goals_and_events_and_variables();
+			mission_campaign_store_goals_and_events_and_variables(true);
 			scoring_level_close();
 			mission_campaign_eval_next_mission();
 			mission_campaign_mission_over();

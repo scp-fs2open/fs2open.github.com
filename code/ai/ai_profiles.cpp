@@ -42,6 +42,7 @@ void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 const char *AI_path_types[] = {
 	"normal",
 	"alt1",
+	"alt2",
 };
 
 int Num_ai_path_types = sizeof(AI_path_types)/sizeof(char*);
@@ -676,6 +677,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
+				set_flag(profile, "$fix ai target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
+
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
 				if (optional_string("$standard strafe triggers under this speed:")) {
@@ -688,6 +691,14 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$strafe stops after time unhit:")) {
 					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
+				if (optional_string("$strafe retreat collide time:")) {
+					stuff_float(&profile->strafe_retreat_collide_time);
+				}
+
+				if (optional_string("$strafe retreat collide distance:")) {
+					stuff_float(&profile->strafe_retreat_collide_distance);
 				}
 
 				if (optional_string("$guard uses big-orbit for target radius above:")) {
@@ -744,6 +755,17 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$cancel future waves of any wing launched from an exited ship:", AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
 
+				set_flag(profile, "$ships intercept mines:", AI::Profile_Flags::Ships_intercept_mines);
+
+				set_flag(profile, "$fix 'ignore if dead' flag:", AI::Profile_Flags::Fix_ignore_if_dead_flag);
+
+				set_flag(profile, "$no collision avoidance for kamikaze fighters:", AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+
+				set_flag(profile, "$fix big ship waypoint completion:", AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+
+				set_flag(profile, "$fix shockwave expiring before dealing damage:", AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
+
+				set_flag(profile, "$fix fighter/bomber AI recovers after engines repaired:", AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 
 				// end of options ----------------------------------------
 
@@ -812,7 +834,7 @@ void ai_profiles_init()
 	Ai_profiles_initted = 1;
 }
 
-int ai_profile_lookup(char *name)
+int ai_profile_lookup(const char *name)
 {
 	for (int i = 0; i < Num_ai_profiles; i++)
 		if (!stricmp(name, Ai_profiles[i].profile_name))
@@ -844,6 +866,8 @@ void ai_profile_t::reset()
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
 	strafe_max_unhit_time = 20.0f;
+	strafe_retreat_collide_time = 2.0f;
+	strafe_retreat_collide_distance = 100.0f;
 
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;
@@ -966,5 +990,16 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 		flags.set(AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order);
 		flags.set(AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
+	}
+	if (mod_supports_version(26, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_ignore_if_dead_flag);
+	}
+	if (mod_supports_version(26, 2, 0)) {
+		flags.set(AI::Profile_Flags::Kamikaze_no_collision_avoidance);
+		flags.set(AI::Profile_Flags::Fix_big_ship_waypoint_completion);
+		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
+		flags.set(AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
+		flags.set(AI::Profile_Flags::Fix_standard_strafe);
+		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 	}
 }

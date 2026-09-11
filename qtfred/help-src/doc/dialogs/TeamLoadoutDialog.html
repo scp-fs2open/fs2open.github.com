@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Team Loadout - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Team Loadout</nav>
+<h1>Team Loadout</h1>
+<p>Opens via <strong>Editors &rsaquo; Team Loadout</strong>.</p>
+<p>Defines the pool of ships and weapons players can choose from at the loadout screen
+before a mission. The dialog has two tabs: <strong>Static Loadout</strong> for fixed
+class selections and <strong>Variable Loadout</strong> for runtime-dynamic
+selections driven by SEXP variables.</p>
+
+<div class="note">Team Loadout only applies to missions with the type set to
+<em>Team vs. Team</em> in <a href="MissionSpecsDialog.html">Mission Specs</a>.</div>
+
+<h2>Top controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Team selector</td><td>Switches which team's loadout is being edited.</td></tr>
+    <tr><td>Copy to other team</td><td>Copies the current team's loadout to all other
+        teams.</td></tr>
+    <tr><td>Skip FRED's Weapon Loadout Validation</td><td>Bypasses FRED's internal
+        validation of the weapon loadout across all teams. Applied globally regardless
+        of which team is selected. Required when using the Variable Loadout tab.
+        Enabling this marks the mission as requiring FSO 23.3 or
+        later.</td></tr>
+</table>
+
+<h2>Static Loadout tab</h2>
+<p>The left pane lists all player-flyable ships available in the current mod; the right
+pane lists all player-usable weapons. Both panes can be filtered by name. The
+<strong>Clear</strong>, <strong>Select All</strong>, and
+<strong>Multi-select</strong> controls are UI conveniences for selecting list entries
+and have no effect on the mission itself.</p>
+
+<h3>Per-item controls</h3>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Enabled (checkbox)</td><td>Adds or removes the ship or weapon from the
+        loadout pool. Items already present in the mission's starting wings (defined
+        in <a href="MissionSpecsDialog.html">Mission Specs</a> &rsaquo;
+        <a href="CustomWingNamesDialog.html">Custom Wing Names</a>) are automatically
+        enabled and shown with a partial check. They cannot be removed from the pool
+        since they are already committed to those wings.</td></tr>
+    <tr><td>In wings</td><td>Read-only count of how many of this ship or weapon are
+        already accounted for in the mission's starting wings.</td></tr>
+    <tr><td>Extra</td><td>Additional quantity made available beyond what is already in
+        wings.</td></tr>
+    <tr><td>Extra from variable</td><td>A number variable whose value is added to the
+        available quantity at runtime. Useful for adjusting pool sizes dynamically
+        via SEXPs during the mission.</td></tr>
+    <tr><td>Required (weapons only)</td><td>When checked, the mission requires that
+        this weapon be loaded onto a player or allied ship before the player is
+        allowed to launch.</td></tr>
+</table>
+
+<h2>Variable Loadout tab</h2>
+<p>Variable loadout entries use SEXP string variables to define which ship or weapon
+class is available, allowing the class itself to change at runtime. This is useful for
+missions where the available ships or weapons depend on earlier mission choices or
+campaign state.</p>
+<p>Each entry works as follows: a string variable's <em>value</em> is the name of the
+ship or weapon class to offer. Because SEXPs can change that variable's value during
+the mission (or in a previous mission if the variable is persistent), the class offered
+to players can vary dynamically. An additional number variable can optionally control
+the quantity available.</p>
+<h3>Variable entry controls</h3>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Enabled (checkbox)</td><td>Includes this variable entry in the
+        loadout.</td></tr>
+    <tr><td>Variable</td><td>The string variable whose value names the ship or weapon
+        class to offer.</td></tr>
+    <tr><td>Value</td><td>Shows the variable's current default value (i.e. the class
+        it resolves to at mission start).</td></tr>
+    <tr><td>Extra</td><td>Static quantity available in addition to any count
+        variable.</td></tr>
+    <tr><td>Extra variable</td><td>A number variable controlling the available quantity
+        at runtime.</td></tr>
+</table>
+</body>
+</html>

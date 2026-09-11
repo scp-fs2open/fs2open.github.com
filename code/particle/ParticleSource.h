@@ -75,6 +75,8 @@ class ParticleSource {
 
 	static float getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source);
 
+	static float getEffectRemainingLife(const std::tuple<const ParticleSource&, const size_t&>& source);
+
 	static float getEffectPixelSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source);
 
 	static float getEffectApparentSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source);

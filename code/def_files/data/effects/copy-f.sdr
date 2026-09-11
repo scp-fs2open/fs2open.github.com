@@ -1,17 +1,29 @@
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+layout(set = 1, binding = 1) uniform sampler2D tex;
+#else
 in vec4 fragTexCoord;
 out vec4 fragOut0;
-
 #ifdef COPY_ARRAY
 uniform sampler2DArray tex;
 #else
 uniform sampler2D tex;
 #endif
+#endif
 
 void main()
 {
-#ifdef COPY_ARRAY
+#if defined(COPY_ARRAY) && !defined(VULKAN)
 	fragOut0 = texture(tex, vec3(fragTexCoord.xy, 0));
 #else
 	fragOut0 = texture(tex, fragTexCoord.xy);
+#endif
+
+#ifdef CLAMP01
+	// Used to derive a [0,1]-bounded proxy from an extended-range HDR source,
+	// e.g. for FXAA/SMAA edge detection when the real output carries values
+	// above 1.0.
+	fragOut0 = min(fragOut0, vec4(1.0));
 #endif
 }

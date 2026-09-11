@@ -117,6 +117,8 @@ void FlagListWidget::rebuildModel(const QVector<std::pair<QString, int>>& flags)
 
 		auto* item = new QStandardItem(name);
 		item->setCheckable(true);
+		if (_tristate)
+			item->setUserTristate(true);
 		item->setCheckState(Qt::CheckState(checked));
 		item->setData(name, KeyRole);
 
@@ -187,6 +189,16 @@ bool FlagListWidget::toolbarVisible() const
 	return _toolbarVisible;
 }
 
+void FlagListWidget::setTristate(bool tristate)
+{
+	_tristate = tristate;
+}
+
+bool FlagListWidget::tristate() const
+{
+	return _tristate;
+}
+
 void FlagListWidget::onItemChanged(QStandardItem* item)
 {
 	if (_updating || !item)
@@ -212,11 +224,14 @@ void FlagListWidget::onSelectAll()
 {
 	_updating = true;
 	for (int r = 0; r < _model->rowCount(); ++r) {
-		if (auto* it = _model->item(r, 0)) {
+		if (auto* it = _model->item(r, 0))
 			it->setCheckState(Qt::Checked);
-		}
 	}
 	_updating = false;
+	for (int r = 0; r < _model->rowCount(); ++r) {
+		if (auto* it = _model->item(r, 0))
+			Q_EMIT flagToggled(it->data(KeyRole).toString(), Qt::Checked);
+	}
 	Q_EMIT flagsChanged(snapshot());
 }
 
@@ -224,11 +239,14 @@ void FlagListWidget::onClearAll()
 {
 	_updating = true;
 	for (int r = 0; r < _model->rowCount(); ++r) {
-		if (auto* it = _model->item(r, 0)) {
+		if (auto* it = _model->item(r, 0))
 			it->setCheckState(Qt::Unchecked);
-		}
 	}
 	_updating = false;
+	for (int r = 0; r < _model->rowCount(); ++r) {
+		if (auto* it = _model->item(r, 0))
+			Q_EMIT flagToggled(it->data(KeyRole).toString(), Qt::Unchecked);
+	}
 	Q_EMIT flagsChanged(snapshot());
 }
 

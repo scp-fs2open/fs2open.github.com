@@ -87,9 +87,8 @@ class volumetric_nebula {
 
 	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
 	friend class LabUi; //Lab
-	friend class CFred_mission_save; //FRED
+	friend class Fred_mission_save; //FRED && QtFRED
 	friend class volumetrics_dlg; //FRED
-	friend class fso::fred::CFred_mission_save; //QtFRED
 	friend class fso::fred::dialogs::VolumetricNebulaDialogModel; // QtFRED
 
   public:
@@ -100,13 +99,21 @@ class volumetric_nebula {
 
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
+	const SCP_string& getHullPof() const;
 	const std::tuple<float, float, float>& getNebulaColor() const;
 
 	int getVolumeBitmapSmoothingSteps() const;
 
 	bool getEdgeSmoothing() const;
+	bool getConfiguredEdgeSmoothing() const;
 	int getSteps() const;
+	int getConfiguredSteps() const;
 	int getGlobalLightSteps() const;
+	int getConfiguredGlobalLightSteps() const;
+	int getResolution() const;
+	int getOversampling() const;
+	int getNoiseResolution() const;
+	float getSmoothing() const;
 
 	float getOpacityDistance() const;
 	float getStepsize() const;
@@ -135,6 +142,33 @@ class volumetric_nebula {
 
 	void set_enabled(bool set_enabled);
 	bool get_enabled() const;
+
+	void set_runtime_params(
+		std::optional<vec3d> position = std::nullopt,
+		std::optional<int> renderSteps = std::nullopt,
+		std::optional<int> sunSteps = std::nullopt,
+		std::optional<float> visibilityDistance = std::nullopt,
+		std::optional<float> visibilityOpacity = std::nullopt,
+		std::optional<float> emissiveLightSpread = std::nullopt,
+		std::optional<float> emissiveLightIntensity = std::nullopt,
+		std::optional<float> emissiveLightFalloff = std::nullopt,
+		std::optional<float> henyeyGreenstein = std::nullopt,
+		std::optional<float> sunFalloffFactor = std::nullopt,
+		std::optional<bool> noiseIsActive = std::nullopt,
+		std::optional<float> noiseScaleBase = std::nullopt,
+		std::optional<float> noiseScaleSub = std::nullopt,
+		std::optional<float> noiseIntensity = std::nullopt,
+		std::optional<float> mainColorR = std::nullopt,
+		std::optional<float> mainColorG = std::nullopt,
+		std::optional<float> mainColorB = std::nullopt,
+		std::optional<float> noiseColorR = std::nullopt,
+		std::optional<float> noiseColorG = std::nullopt,
+		std::optional<float> noiseColorB = std::nullopt,
+		std::optional<int> renderResolution = std::nullopt,
+		std::optional<int> resolutionOversampling = std::nullopt,
+		std::optional<float> edgeSmoothingAmount = std::nullopt,
+		std::optional<int> noiseRes = std::nullopt
+	);
 };
 
 void volumetrics_level_close();

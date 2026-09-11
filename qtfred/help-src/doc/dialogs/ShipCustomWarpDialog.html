@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Custom Warp Params - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Custom Warp Params</nav>
+<h1>Custom Warp Params</h1>
+<p>Accessed via the <strong>Custom Warp Params</strong> button in the Arrival or Departure section of the
+<a href="ShipEditorDialog.html">Ship Editor</a> or <a href="WingEditorDialog.html">Wing Editor</a>.</p>
+<p>Overrides the warp-in or warp-out appearance and behavior for this instance. The
+dialog opens separately for arrival and departure, so each direction can have
+independent settings.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Warp type</td><td>The visual style of the warp effect. Available types
+        include the standard hyperspace portal, Knossos device, in-place animation
+        (BSG-style), sweeper (Homeworld-style), and hyperspace jump with an
+        acceleration curve. Some fields below are only active for certain
+        types.</td></tr>
+    <tr><td>Start sound</td><td>Sound played when the warp effect begins. Enter the
+        sound name as defined in the game sound tables.</td></tr>
+    <tr><td>End sound</td><td>Sound played when the warp effect finishes.</td></tr>
+    <tr><td>Warpout engage time</td><td>Seconds the ship waits after the departure cue
+        fires before the warp animation begins. Warp-out only.</td></tr>
+    <tr><td>Warping speed</td><td>Speed in game units per second at which the ship
+        translates through the warp effect during the animation. For the hyperspace
+        type, the current ship speed is used if it exceeds this value.</td></tr>
+    <tr><td>Warping time</td><td>Duration of the warp animation in seconds.</td></tr>
+    <tr><td>Acceleration / Deceleration exponent</td><td>Exponent applied to the
+        speed curve during the animation. Values above 1 produce a fast start
+        tapering to a slow finish; values below 1 do the opposite. Only available
+        when the warp type is Hyperspace.</td></tr>
+    <tr><td>Radius</td><td>Radius of the warp portal or effect in game units. For the
+        sweeper type, a value of 0 or less uses the ship's bounding box
+        dimensions.</td></tr>
+    <tr><td>Animation</td><td>Filename of the animation displayed during the effect.
+        Only available for the sweeper warp type.</td></tr>
+    <tr><td>Use supercap warp physics</td><td>Enables special physics handling
+        designed for large capital ships. During warp-out the ship decelerates after
+        clearing the effect; during warp-in it slows to match its normal maximum
+        speed.</td></tr>
+    <tr><td>Player warpout speed</td><td>Overrides the default speed used to calculate
+        the player ship's warp-out animation timing. Only available for warp-out on
+        player ships.</td></tr>
+</table>
+</body>
+</html>

@@ -27,8 +27,14 @@ SDR_FLAG(MODEL_SDR_FLAG_ALPHA_MULT    , (1 << 14), false)
 #ifndef MODEL_SDR_FLAG_MODE_GLSL
 //The following ones are used ONLY as compile-time flags, but they still need to be defined here to ensure no conflict occurs
 //But since these are checked with ifdefs even for the large shader, they must never be available in GLSL mode
-
-SDR_FLAG(MODEL_SDR_FLAG_SHADOW_MAP    ,	(1 << 15), true)
 SDR_FLAG(MODEL_SDR_FLAG_THICK_OUTLINES, (1 << 16), true)
+
+// Like MODEL_SDR_FLAG_THICK_OUTLINES above, this must stay a genuine compile-time
+// ifdef check (not the runtime flag-branch macros used for ordinary MODEL_SDR_FLAG_*
+// bits): the GL_EXT_ray_query extension and its types must not appear at all in a
+// shader compiled for hardware that doesn't support it, so the usage can't be left
+// in the code and skipped via a runtime `flags` branch the way large-shader mode
+// handles the ordinary bits.
+SDR_FLAG(MODEL_SDR_FLAG_RT_SHADOWS    , (1 << 17), true)
 
 #endif

@@ -28,7 +28,7 @@ namespace {
 const SCP_string NEW_CONTAINER_NAME = "<New Container Name>";
 } // namespace
 
-CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent /*=nullptr*/)
+CAddModifyContainerDlg::CAddModifyContainerDlg(const sexp_tree_view &s_tree, CWnd *pParent /*=nullptr*/)
 	: CDialog(CAddModifyContainerDlg::IDD, pParent), m_sexp_tree(s_tree)
 {
 }
@@ -401,7 +401,7 @@ void CAddModifyContainerDlg::OnListerSelectionChange()
 		const SCP_string &key = m_lister_keys[index];
 		update_text_edit_boxes(key, container.map_data.at(key));
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 }
 
@@ -601,7 +601,7 @@ void CAddModifyContainerDlg::OnContainerUpdate()
 		key_edit->GetWindowText(key_str);
 		container.map_data[SCP_string(key_str)] = data_str;
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 
 	update_data_lister();
@@ -755,7 +755,7 @@ void CAddModifyContainerDlg::update_data_lister()
 					return std::atoi(str1.c_str()) < std::atoi(str2.c_str());
 				});
 		} else {
-			UNREACHABLE("Unknown container type %d", (int)container.type);
+			UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 		}
 
 		for (const auto &key : m_lister_keys) {
@@ -763,7 +763,7 @@ void CAddModifyContainerDlg::update_data_lister()
 			m_container_data_lister.AddString(lister_entry.c_str());
 		}
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)container.type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(container.type));
 	}
 
 	m_container_data_lister.EnableWindow(m_container_data_lister.GetCount() > 0);
@@ -870,7 +870,7 @@ void CAddModifyContainerDlg::OnBnClickedDeleteContainer()
 	const SCP_string orig_name = orig_name_it->second;
 
 	const int times_used =
-		is_null_container_name(orig_name) ? 0 : m_sexp_tree.get_container_usage_count(orig_name);
+		is_null_container_name(orig_name) ? 0 : m_sexp_tree._model.get_container_usage_count(orig_name);
 	Assertion(times_used >= 0,
 		"Checking usage count of container name %s returned count of %d. Please report!",
 		orig_name.c_str(),

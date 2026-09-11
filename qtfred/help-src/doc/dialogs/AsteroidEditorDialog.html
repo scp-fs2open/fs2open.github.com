@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Asteroid Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Environment &rsaquo; Asteroid Editor</nav>
+<h1>Asteroid Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Asteroid Editor</strong>.</p>
+<p>Configures the single asteroid field that can exist in a mission. The field is defined
+by a rectangular outer bounding box.</p>
+
+<h2>Field type</h2>
+<table>
+    <tr><th>Option</th><th>Description</th></tr>
+    <tr><td>Active</td><td>The field actively throws asteroids at ships. New asteroids
+        are aimed directly at the ships listed in the <strong>Targets</strong>
+        section of this editor.</td></tr>
+    <tr><td>Passive</td><td>Asteroids drift freely and do not target ships.</td></tr>
+</table>
+
+<h2>Object type</h2>
+<table>
+    <tr><th>Option</th><th>Description</th></tr>
+    <tr><td>Asteroid</td><td>Spawns large asteroids that split into medium and small
+        pieces when destroyed.</td></tr>
+    <tr><td>Debris</td><td>Spawns specific debris pieces chosen from a weighted list.
+        Debris does not split when destroyed.</td></tr>
+</table>
+
+<h2>Key fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Enabled</td><td>Adds the field to the mission. Uncheck to disable
+        it.</td></tr>
+    <tr><td>Number</td><td>The number of asteroid or debris objects present in the
+        field at any one time.</td></tr>
+    <tr><td>Avg speed</td><td>Base speed of objects in the field. Each individual
+        object's speed is randomized around this value; the actual range depends on
+        the current skill level and the object's maximum speed as defined in the
+        table.</td></tr>
+</table>
+
+<h2>Outer box</h2>
+<p>The bounding box of the field. Set the <strong>Min</strong> and <strong>Max</strong>
+coordinates on each axis to size and position the box.</p>
+
+<h2>Inner box</h2>
+<p>When enabled, defines an exclusion zone inside the outer box where objects will not
+spawn. Any object that would appear inside the inner box is repositioned just outside
+it.</p>
+
+<h2>Use Enhanced</h2>
+<p>Changes how the engine decides whether to spawn a new asteroid or wrap an existing
+asteroid when it leaves the outer box. By default, the engine checks both the player's
+view cone and a maximum distance range. When Enhanced is enabled, the distance range
+check is skipped and only the view cone is used.</p>
+</body>
+</html>

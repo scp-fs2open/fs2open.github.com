@@ -27,7 +27,6 @@
 #include <functional>
 #include <memory>
 
-#include <SDL_events.h>
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -118,7 +117,8 @@ namespace os
 	enum class OpenGLProfile
 	{
 		Core,
-		Compatibility
+		Compatibility,
+		ES
 	};
 
 	/**
@@ -211,7 +211,7 @@ namespace os
 
 		flagset<ViewPortFlags> flags;
 
-		uint32_t display;
+		SDL_DisplayID display;
 	};
 
 	/**

@@ -10,6 +10,7 @@
 
 
 #include "stdafx.h"
+#include <algorithm>
 #include "FRED.h"
 #include "MainFrm.h"
 #include "FREDDoc.h"
@@ -26,6 +27,9 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "missioneditor/common.h"
+#include "missioneditor/objectduplication.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
@@ -73,12 +77,10 @@
 #include "scripting/scripting.h"
 #include "scripting/global_hooks.h"
 #include "utils/Random.h"
+#include "prop/prop.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
-
-#define SDL_MAIN_HANDLED
-#include <SDL_main.h>
 
 #define MAX_DOCKS 1000
 
@@ -97,6 +99,7 @@ int delete_flag;
 int bypass_update = 0;
 int Update_ship = 0;
 int Update_wing = 0;
+int Update_prop = 0;
 
 char Fred_exe_dir[512] = "";
 char Fred_base_dir[512] = "";
@@ -155,7 +158,8 @@ int common_object_delete(int obj);
 int create_waypoint(vec3d *pos, int waypoint_instance);
 int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
-char *reg_read_string( char *section, char *name, char *default_value );
+int query_prop_name_duplicate(int prop);
+char* reg_read_string(char* section, char* name, char* default_value);
 
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 void string_copy(char *dest, const CString &src, size_t max_len, bool modify)
@@ -263,10 +267,16 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 {
 	int i;
 
-	SDL_SetMainReady();
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("FRED2 Open", FS_VERSION_FULL, "us.indiegames.scp.FRED2Open");
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
-	init_pending_messages();
 
 	os_init(Osreg_class_name, Osreg_app_name);
 
@@ -327,7 +337,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 
-	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
+	gr_init(std::move(graphicsOps), GraphicsAPI::OpenGL, 640, 480, 32);
 	gr_set_gamma(3.0f);
 
 	io::mouse::CursorManager::get()->showCursor(false);
@@ -381,6 +391,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	weapon_init();
 	glowpoint_init();
 	ship_init();
+	prop_init();
 
 	techroom_intel_init();
 	hud_positions_init();
@@ -481,7 +492,7 @@ void set_physics_controls()
 	theApp.write_ini_file(1);
 }
 
-int create_object_on_grid(int waypoint_instance)
+int create_object_on_grid(int waypoint_instance, bool prop)
 {
 	int obj = -1;
 	float rval;
@@ -493,25 +504,68 @@ int create_object_on_grid(int waypoint_instance)
 
 	if (rval>=0.0f) {
 		unmark_all();
-		obj = create_object(&pos, waypoint_instance);
+		obj = create_object(&pos, waypoint_instance, prop);
 		if (obj >= 0) {
 			mark_object(obj);
 			FREDDoc_ptr->autosave("object create");
 
-		} else if (obj == -1)
-			Fred_main_wnd->MessageBox("Maximum ship limit reached.  Can't add any more ships.");
+		} else if (obj == -1) {
+			if (prop && Prop_info.empty()) {
+				Fred_main_wnd->MessageBox("No props defined. Can't create prop object!");
+			} else {
+				Fred_main_wnd->MessageBox("Maximum object limit reached.  Can't add any more objects.");
+			}
+		}
 	}
 
 	return obj;
 }
 
+void fix_prop_name(int prop)
+{
+	int i = 1;
+
+	do {
+		sprintf(prop_id_lookup(prop)->prop_name, "U.R.A. Dummy %d", i++);
+	} while (query_prop_name_duplicate(prop));
+}
+
 void fix_ship_name(int ship)
 {
+	char old_name[NAME_LENGTH];
+	strcpy_s(old_name, Ships[ship].ship_name);
+
 	int i = 1;
 
 	do {
 		sprintf(Ships[ship].ship_name, "U.R.A. Moron %d", i++);
 	} while (query_ship_name_duplicate(ship));
+
+	// This function is called when a newly created ship duplicates the name of an existing ship.  In
+	// that situation, ship_create() will have overwritten the existing ship's registry entry to point
+	// to the new ship, so point it back at the ship that legitimately holds the old name.
+	auto ship_it = Ship_registry_map.find(old_name);
+	if (ship_it != Ship_registry_map.end() && Ship_registry[ship_it->second].shipnum == ship)
+	{
+		int other_shipnum = ship_name_lookup(old_name, 1);
+		if (other_shipnum >= 0)
+		{
+			auto old_entry = &Ship_registry[ship_it->second];
+			old_entry->objnum = Ships[other_shipnum].objnum;
+			old_entry->shipnum = other_shipnum;
+		}
+		else
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
+	}
+
+	// add a fresh registry entry for this ship under its new name
+	ship_registry_entry entry(Ships[ship].ship_name);
+	entry.status = ShipStatus::PRESENT;
+	entry.objnum = Ships[ship].objnum;
+	entry.shipnum = ship;
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[Ships[ship].ship_name] = sz2i(Ship_registry.size() - 1);
 }
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
@@ -549,7 +603,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	// default shield setting
 	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
-	z2 = Shield_sys_types[ship_type];
+	z2 = Shield_sys_types.value_or(ship_type, 0);
     if (((z1 == 1) && z2) || (z2 == 1))
         Objects[obj].flags.set(Object::Object_Flags::No_shields);
 
@@ -596,8 +650,58 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	}
 
 	Ai_info[shipp->ai_index].kamikaze_damage = (int) std::min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	auto replacements = sip->replacement_textures;
+	for (auto& tr : replacements) {
+		if (!stricmp(tr.new_texture, "invisible")) {
+			// invisible is a special case
+			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
+		} else {
+			// try to load texture or anim as normal
+			tr.new_texture_id = bm_load_either(tr.new_texture);
+		}
+	}
+	shipp->apply_replacement_textures(replacements);
+	return obj;
+}
+
+int create_prop(matrix* orient, vec3d* pos, int prop_type)
+{
+	// Save the Current Working dir to restore in a minute - fred is being stupid
+	char pwd[MAX_PATH_LEN];
+	getcwd(pwd, MAX_PATH_LEN); // get the present working dir - probably <fs2path>[/modpath]/data/missions/
+
+	// "pop" and cfile_chdirs off the stack
+	chdir(Fred_base_dir);
+
+	int obj = prop_create(orient, pos, prop_type);
+	if (obj == -1)
+		return -1;
+
+	// ok, done with file io, restore the pwd
+	chdir(pwd);
+
+	if (query_prop_name_duplicate(Objects[obj].instance))
+		fix_prop_name(Objects[obj].instance);
 
 	return obj;
+}
+
+int query_prop_name_duplicate(int prop)
+{
+	const auto& target = prop_id_lookup(prop)->prop_name;
+
+	for (size_t i = 0; i < Props.size(); ++i) {
+		if (i == static_cast<size_t>(prop))
+			continue;
+
+		const auto& other = Props[i];
+		if (other.has_value() && other->objnum != -1) {
+			if (!stricmp(other->prop_name, target)) {
+				return 1;
+			}
+		}
+	}
+	return 0;
 }
 
 int query_ship_name_duplicate(int ship)
@@ -620,10 +724,7 @@ void copy_bits(int *dest, int src, int mask)
 
 int dup_object(object *objp)
 {
-	int i, j, n, inst, obj = -1;
-	ai_info *aip1, *aip2;
-	object *objp1, *objp2;
-	ship_subsys *subp1, *subp2;
+	int inst, obj = -1;
 	static int waypoint_instance(-1);
 
 	if (!objp) {
@@ -633,66 +734,75 @@ int dup_object(object *objp)
 
 	inst = objp->instance;
 	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		obj = create_ship(&objp->orient, &objp->pos, Ships[inst].ship_info_index);
+		bool clone_as_player_start = false;
+		bool player_start_demoted = false;
+		if (objp->type == OBJ_START && (The_mission.game_type & MISSION_TYPE_MULTI)) {
+			if (Player_starts < MAX_PLAYERS) {
+				clone_as_player_start = true;
+			} else {
+				player_start_demoted = true;
+			}
+		}
+
+		if (clone_as_player_start) {
+			obj = create_player(&objp->pos, &objp->orient, Ships[inst].ship_info_index);
+		} else {
+			obj = create_ship(&objp->orient, &objp->pos, Ships[inst].ship_info_index);
+		}
 		if (obj == -1)
 			return -1;
 
-		n = Objects[obj].instance;
-		Ships[n].team = Ships[inst].team;
-		Ships[n].arrival_cue = dup_sexp_chain(Ships[inst].arrival_cue);
-		Ships[n].departure_cue = dup_sexp_chain(Ships[inst].departure_cue);
-		Ships[n].cargo1 = Ships[inst].cargo1;
-		Ships[n].arrival_location = Ships[inst].arrival_location;
-		Ships[n].departure_location = Ships[inst].departure_location;
-		Ships[n].arrival_delay = Ships[inst].arrival_delay;
-		Ships[n].departure_delay = Ships[inst].departure_delay;
-		Ships[n].weapons = Ships[inst].weapons;
-		Ships[n].hotkey = Ships[inst].hotkey;
+		int n = Objects[obj].instance;
 
-		aip1 = &Ai_info[Ships[n].ai_index];
-		aip2 = &Ai_info[Ships[inst].ai_index];
-		aip1->ai_class = aip2->ai_class;
-		for (i=0; i<MAX_AI_GOALS; i++)
-			aip1->goals[i] = aip2->goals[i];
+		// Copy every editable per-ship field.  See clone_ship_instance_data() in
+		// code/missioneditor/objectduplication.cpp for the canonical field list.
+		clone_ship_instance_data(inst, n);
 
-		if (aip2->ai_flags[AI::AI_Flags::Kamikaze])
-			aip1->ai_flags.set(AI::AI_Flags::Kamikaze);
-		if (aip2->ai_flags[AI::AI_Flags::No_dynamic])
-			aip2->ai_flags.set(AI::AI_Flags::No_dynamic);
-
-		aip1->kamikaze_damage = aip2->kamikaze_damage;
-
-		objp1 = &Objects[obj];
-		objp2 = &Objects[Ships[inst].objnum];
-		objp1->phys_info.speed = objp2->phys_info.speed;
-		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
-		objp1->hull_strength = objp2->hull_strength;
-		objp1->shield_quadrant[0] = objp2->shield_quadrant[0];
-
-		subp1 = GET_FIRST(&Ships[n].subsys_list);
-		subp2 = GET_FIRST(&Ships[inst].subsys_list);
-		while (subp1 != END_OF_LIST(&Ships[n].subsys_list)) {
-			Assert(subp2 != END_OF_LIST(&Ships[inst].subsys_list));
-			subp1 -> current_hits = subp2 -> current_hits;
-			subp1 = GET_NEXT(subp1);
-			subp2 = GET_NEXT(subp2);
+		// Reinforcement-list propagation: if the source ship is listed as a
+		// reinforcement, add a new entry pointing at the duplicate.
+		int i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[inst].ship_name);
+		if (i >= 0) {
+			Reinforcements.push_back(Reinforcements[i]);
+			strcpy_s(Reinforcements.back().name, Ships[n].ship_name);
 		}
 
-		for (i=0; i<Num_reinforcements; i++)
-			if (!stricmp(Reinforcements[i].name, Ships[inst].ship_name)) {
-				if (Num_reinforcements < MAX_REINFORCEMENTS) {
-					j = Num_reinforcements++;
-					strcpy_s(Reinforcements[j].name, Ships[n].ship_name);
-					Reinforcements[j].type = Reinforcements[i].type;
-					Reinforcements[j].uses = Reinforcements[i].uses;
-				}
-
-				break;
-			}
+		if (player_start_demoted) {
+			CString msg;
+			msg.Format(
+				"Cannot create another player start. This mission already has the maximum of %d. "
+				"The duplicate has been created as a regular ship instead.",
+				MAX_PLAYERS);
+			AfxMessageBox(msg, MB_OK | MB_ICONINFORMATION);
+		}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
+		// waypoint_instance < 0 means waypoint_add() will create a fresh list;
+		// copy editable per-list properties from the source list in that case.
+		bool is_first_of_new_list = (waypoint_instance < 0);
+		int src_list_idx = calc_waypoint_list_index(objp->instance);
 		obj = create_waypoint(&objp->pos, waypoint_instance);
+		if (obj == -1)
+			return -1;
 		waypoint_instance = Objects[obj].instance;
+		if (is_first_of_new_list) {
+			clone_waypoint_path_instance_data(src_list_idx, calc_waypoint_list_index(waypoint_instance));
+		}
+	} else if (objp->type == OBJ_JUMP_NODE) {
+		CJumpNode* src_jnp = jumpnode_get_by_objp(objp);
+		CJumpNode jnp(&objp->pos);
+		if (src_jnp) {
+			clone_jump_node_instance_data(*src_jnp, jnp);
+		}
+		obj = jnp.GetSCPObjectNumber();
+		Jump_nodes.push_back(std::move(jnp));
+	} else if (objp->type == OBJ_PROP) {
+		prop* propp = prop_id_lookup(inst);
+		if (propp != nullptr) {
+			obj = create_prop(&objp->orient, &objp->pos, propp->prop_info_index);
+			if (obj != -1) {
+				clone_prop_instance_data(inst, Objects[obj].instance);
+			}
+		}
 	}
 
 	if (obj == -1)
@@ -704,29 +814,40 @@ int dup_object(object *objp)
 	return obj;
 }
 
-int create_object(vec3d *pos, int waypoint_instance)
+int create_object(vec3d *pos, int waypoint_instance, bool prop)
 {
 	int obj, n;
 
-	if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_waypoint)) {
-		obj = create_waypoint(pos, waypoint_instance);
-	} else if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_jump_node)) {
-		CJumpNode jnp(pos);
-		obj = jnp.GetSCPObjectNumber();
-		Jump_nodes.push_back(std::move(jnp));
-	} else {  // creating a ship
-		int ship_class = m_new_ship_type_combo_box.GetShipClass(cur_ship_type_combo_index);
-		if (ship_class < 0 || ship_class >= ship_info_size())
+	if (prop) {
+		int prop_class = m_new_prop_type_combo_box.GetPropClass(m_new_prop_type_combo_box.GetCurSel());
+		if (prop_class < 0 || prop_class >= prop_info_size())
 			return -1;
 
-		obj = create_ship(nullptr, pos, ship_class);
+		obj = create_prop(nullptr, pos, prop_class);
 		if (obj == -1)
 			return -1;
+	} else {
 
-		n = Objects[obj].instance;
-		Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-		Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-		Ships[n].cargo1 = 0;
+		if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_waypoint)) {
+			obj = create_waypoint(pos, waypoint_instance);
+		} else if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_jump_node)) {
+			CJumpNode jnp(pos);
+			obj = jnp.GetSCPObjectNumber();
+			Jump_nodes.push_back(std::move(jnp));
+		} else { // creating a ship
+			int ship_class = m_new_ship_type_combo_box.GetShipClass(cur_ship_type_combo_index);
+			if (ship_class < 0 || ship_class >= ship_info_size())
+				return -1;
+
+			obj = create_ship(nullptr, pos, ship_class);
+			if (obj == -1)
+				return -1;
+
+			n = Objects[obj].instance;
+			Ships[n].arrival_cue = alloc_sexp("true", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+			Ships[n].departure_cue = alloc_sexp("false", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+			Ships[n].cargo1 = 0;
+		}
 	}
 
 	if (obj < 0)
@@ -781,20 +902,26 @@ void create_new_mission()
 
 void reset_mission()
 {
+	// Guard against reentrant ship-editor write-back while the mission is reset.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission();
 
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
+
+	Ship_editor_dialog.bypass_all--;
 }
 
 void clear_mission(bool fast_reload)
 {
 	char *str;
-	int i, j, count;
+	int i, j;
 	CTime t;
 
 	// clean up everything we need to before we reset back to defaults.
+	clean_up_selections();
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
@@ -809,6 +936,7 @@ void clear_mission(bool fast_reload)
 		model_free_all();				// Free all existing models
 
 	ai_init();
+	props_level_init();
 	asteroid_level_init();
 	ship_level_init();
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
@@ -816,9 +944,7 @@ void clear_mission(bool fast_reload)
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), 0);
 
-	for (i=0; i<MAX_SHIP_CLASSES; i++){
-		Shield_sys_types[i] = 0;
-	}
+	Shield_sys_types.clear();
 
 	set_cur_indices(-1);
 
@@ -837,7 +963,7 @@ void clear_mission(bool fast_reload)
 	time(&currentTime);
 	auto timeinfo = localtime(&currentTime);
 
-	strcpy_s(The_mission.name, "Untitled");
+	The_mission.name = "Untitled";
 	The_mission.author = str;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
@@ -855,34 +981,24 @@ void clear_mission(bool fast_reload)
 	// set up the default ship types for all teams.  For now, this is the same class
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
-		count = 0;
+		Team_data[i].ship_choices.clear();
 		for ( j = 0; j < ship_info_size(); j++ ) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
-				Team_data[i].ship_list[count] = j;
-				strcpy_s(Team_data[i].ship_list_variables[count], "");
-				Team_data[i].ship_count[count] = 5;
-				strcpy_s(Team_data[i].ship_count_variables[count], "");
-				count++;
+				auto &entry = Team_data[i].ship_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = 5;
 			}
 		}
-		Team_data[i].num_ship_choices = count;
 
-		count = 0;
+		Team_data[i].weapon_choices.clear();
+		Team_data[i].required_weapons.clear();
 		for ( j = 0; j < weapon_info_size(); j++ ) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
-				if (Weapon_info[j].subtype == WP_LASER) {
-					Team_data[i].weaponry_count[count] = 16;
-				} else {
-					Team_data[i].weaponry_count[count] = 500;
-				}
-				Team_data[i].weaponry_pool[count] = j; 
-				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
-				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
-				count++;
+				auto &entry = Team_data[i].weapon_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = (Weapon_info[j].subtype == WP_LASER) ? 16 : 500;
 			}
-			Team_data[i].weapon_required[j] = false;
 		}
-		Team_data[i].num_weapon_choices = count; 
 	}
 
 	unmark_all();
@@ -974,7 +1090,7 @@ void set_cur_object_index(int obj)
 		mark_object(obj);
 
 	set_cur_indices(obj);  // select the new object
-	Update_ship = Update_wing = 1;
+	Update_ship = Update_wing = Update_prop = 1;
 	Waypoint_editor_dialog.initialize_data(1);
 	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
@@ -1090,6 +1206,15 @@ int update_dialog_boxes()
 		return z;
 	}
 
+	z = Prop_editor_dialog.update_data(0);
+	if (z) {
+		nprintf(("Fred routing", "prop dialog save failed\n"));
+		Prop_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
+			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
 	z = Waypoint_editor_dialog.update_data(0);
 	if (z) {
 		nprintf(("Fred routing", "waypoint dialog save failed\n"));
@@ -1099,7 +1224,7 @@ int update_dialog_boxes()
 		return z;
 	}
 
-	z = Jumpnode_editor_dialog.update_data();
+	z = Jumpnode_editor_dialog.update_data(0);
 	if (z) {
 		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
 		Jumpnode_editor_dialog
@@ -1147,8 +1272,7 @@ int common_object_delete(int obj)
 	char msg[255];
 	const char *name;
 	int i, z, r, type;
-	object *objp;
-	SCP_list<CJumpNode>::iterator jnp;
+	auto jnp = Jump_nodes.end();
 
 	type = Objects[obj].type;
 	if (type == OBJ_START) {
@@ -1183,17 +1307,7 @@ int common_object_delete(int obj)
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
-		if (Player_start_shipnum == i) {  // need a new single player start.
-			objp = GET_FIRST(&obj_used_list);
-			while (objp != END_OF_LIST(&obj_used_list)) {
-				if (objp->type == OBJ_START) {
-					Player_start_shipnum = objp->instance;
-					break;
-				}
-
-				objp = GET_NEXT(objp);
-			}
-		}
+		ensure_valid_player_start_shipnum();  // may need a new single player start
 
 		Player_starts--;
 
@@ -1201,8 +1315,7 @@ int common_object_delete(int obj)
 		waypoint *wpt = find_waypoint_with_instance(Objects[obj].instance);
 		Assert(wpt != NULL);
 		waypoint_list *wp_list = wpt->get_parent_list();
-		int index = calc_waypoint_list_index(Objects[obj].instance);
-		int count = (int) wp_list->get_waypoints().size();
+		auto count = wp_list->get_waypoints().size();
 
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
@@ -1213,7 +1326,7 @@ int common_object_delete(int obj)
 		}
 
 		// check for waypoint references
-		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
+		waypoint_stuff_name(msg, *wpt);
 		name = msg;
 		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r)
@@ -1226,8 +1339,23 @@ int common_object_delete(int obj)
 			invalidate_references(wp_list->get_name(), sexp_ref_type::WAYPOINT_PATH);
 		}
 
+		// save info needed to update shifted waypoint references after removal
+		int deleted_index = wpt->get_index();
+		char list_name[NAME_LENGTH];
+		strcpy_s(list_name, wp_list->get_name());
+
 		// the actual removal code has been moved to this function in waypoints.cpp
 		waypoint_remove(wpt);
+
+		// update SEXP and AI goal references for waypoints that shifted down
+		for (int wi = deleted_index; wi < (int)count - 1; wi++) {
+			char old_wpt_name[NAME_LENGTH];
+			char new_wpt_name[NAME_LENGTH];
+			waypoint_stuff_name(old_wpt_name, list_name, wi + 2);	// old 1-based number
+			waypoint_stuff_name(new_wpt_name, list_name, wi + 1);	// new 1-based number
+			update_sexp_references(old_wpt_name, new_wpt_name);
+			ai_update_goal_references(sexp_ref_type::WAYPOINT, old_wpt_name, new_wpt_name);
+		}
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
@@ -1250,17 +1378,15 @@ int common_object_delete(int obj)
 			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
-		for (i=0; i<Num_reinforcements; i++)
-			if (!stricmp(name, Reinforcements[i].name)) {
-				delete_reinforcement(i);
-				break;
-			}
+		delete_reinforcement(name);
 
 		// check if any ship is docked with this ship and break dock if so
-		while (object_is_docked(&Objects[obj]))
-		{
+		while (object_is_docked(&Objects[obj])) {
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
+
+	} else if (type == OBJ_PROP) {
+		// Delete briefing icons maybe?
 
 	} else if (type == OBJ_POINT) {
 		Assert(Briefing_dialog);
@@ -1269,31 +1395,21 @@ int common_object_delete(int obj)
 		return 0;
 
 	} else if (type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[obj])
-				break;
-		}
-
-		// come on, WMC, we don't want to call obj_delete twice...
-		// fool the destructor into not calling obj_delete yet
-		Objects[obj].type = OBJ_NONE;
-		
-		// now call the destructor
-		if (jnp != Jump_nodes.end())
-			Jump_nodes.erase(jnp);
-
-		// now restore the jump node type so that the below unmark and obj_delete will work
-		Objects[obj].type = OBJ_JUMP_NODE;
+		// find the jump node while the object still exists; the defunct entry is removed below
+		jnp = std::find_if(Jump_nodes.begin(), Jump_nodes.end(),
+			[obj](const CJumpNode &jn) { return jn.GetSCPObjectNumber() == obj; });
 	}
 
 	unmark_object(obj);
 
-	//we need to call obj_delete() even if obj is a jump node
-	//the statement "delete Objects[obj].jnp" deletes the jnp object
-	//obj_delete() frees up the object slot where the node used to reside.
-	//if we don't call this then the node will still show up in fred and you can try to delete it twice
-	//this causes an ugly crash.
+	//obj_delete() handles all type-specific cleanup and frees up the object slot where the object used to reside
 	obj_delete(obj);
+
+	//for jump nodes, obj_delete() frees the node's resources via jumpnode_delete(), but the
+	//editor is responsible for removing the defunct entry from the Jump_nodes vector
+	if (jnp != Jump_nodes.end())
+		Jump_nodes.erase(jnp);
+
 	set_modified();
 	Update_window = 1;
 	return 0;
@@ -1320,14 +1436,13 @@ void delete_marked()
 	Update_window = 1;
 }
 
-void delete_reinforcement(int num)
+void delete_reinforcement(const char *name)
 {
-	int i;
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i < 0)
+		return;
 
-	for (i=num; i<Num_reinforcements-1; i++)
-		Reinforcements[i] = Reinforcements[i + 1];
-
-	Num_reinforcements--;
+	Reinforcements.erase(Reinforcements.begin() + i);
 	set_modified();
 }
 
@@ -1373,16 +1488,22 @@ int delete_ship_from_wing(int ship)
 				if (Objects[wing_objects[wing][i]].type == OBJ_SHIP) {
 					wing_bash_ship_name(name, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], name);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
-			if (Wings[wing].threshold >= Wings[wing].wave_count){
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			const auto max_threshold_before = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+			if (Wings[wing].threshold > max_threshold_before){
+				Wings[wing].threshold = max_threshold_before;
 			}
 
 			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count)){
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			if (Wings[wing].wave_count){
+				const auto max_threshold_after = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+				if (Wings[wing].threshold > max_threshold_after) {
+					Wings[wing].threshold = max_threshold_after;
+				}
 			}
 		}
 	}
@@ -1414,7 +1535,7 @@ void mark_object(int obj)
 		if (cur_object_index == -1){
 			set_cur_object_index(obj);
 		}
-		Update_ship = Update_wing = 1;
+		Update_ship = Update_wing = Update_prop = 1;
 		Waypoint_editor_dialog.initialize_data(1);
 		Jumpnode_editor_dialog.initialize_data(1);
 	}
@@ -1442,7 +1563,7 @@ void unmark_object(int obj)
 
 			set_cur_object_index(-1);  // can't find one; nothing is marked.
 		}
-		Update_ship = Update_wing = 1;
+		Update_ship = Update_wing = Update_prop = 1;
 		Waypoint_editor_dialog.initialize_data(1);
 		Jumpnode_editor_dialog.initialize_data(1);
 	}
@@ -1462,6 +1583,14 @@ void unmark_all()
 		Update_window = 1;
 		set_cur_object_index(-1);
 	}
+}
+
+void clean_up_selections()
+{
+	if (Briefing_dialog)
+		Briefing_dialog->icon_select(-1);
+
+	unmark_all();
 }
 
 void clear_menu(CMenu *ptr)
@@ -1623,19 +1752,13 @@ int query_initial_orders_empty(ai_goal *ai_goals)
 	return 1;
 }
 
-int set_reinforcement(char *name, int state)
+int set_reinforcement(const char *name, int state)
 {
-	int i, index, cur = -1;
-
-	for (i=0; i<Num_reinforcements; i++){
-		if (!stricmp(Reinforcements[i].name, name)){
-			cur = i;
-		}
-	}
+	int index;
+	int cur = find_item_with_string(Reinforcements, &reinforcements::name, name);
 
 	if (!state && (cur != -1)) {
-		Num_reinforcements--;
-		Reinforcements[cur] = Reinforcements[Num_reinforcements];
+		Reinforcements.erase(Reinforcements.begin() + cur);
 
 		// clear the ship/wing flag for this reinforcement
 		index = ship_name_lookup(name);
@@ -1655,14 +1778,9 @@ int set_reinforcement(char *name, int state)
 		return -1;
 	}
 
-	if (state && (cur == -1) && (Num_reinforcements < MAX_REINFORCEMENTS)) {
+	if (state && (cur == -1)) {
 		Assert(strlen(name) < NAME_LENGTH);
-		strcpy_s(Reinforcements[Num_reinforcements].name, name);
-		Reinforcements[Num_reinforcements].uses = 1;
-		Reinforcements[Num_reinforcements].arrival_delay = 0;
-		memset( Reinforcements[Num_reinforcements].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( Reinforcements[Num_reinforcements].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		Num_reinforcements++;
+		Reinforcements.emplace_back(name);
 
 		// set the reinforcement flag on the ship or wing
 		index = ship_name_lookup(name);
@@ -1716,10 +1834,8 @@ int get_docking_list(int model_index)
 }
 
 // DA 1/7/99 These ship names are not variables
-int rename_ship(int ship, const char *name)
+int rename_ship(int ship, const char *name, bool update_display_name)
 {
-	int i;
-
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
 
@@ -1730,14 +1846,41 @@ int rename_ship(int ship, const char *name)
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
-	for (i=0; i<Num_reinforcements; i++)
-		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, name);
-		}
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, Ships[ship].ship_name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, name);
+
+	// keep the ship registry in sync
+	auto reg_it = Ship_registry_map.find(Ships[ship].ship_name);
+	if (reg_it != Ship_registry_map.end())
+		ship_registry_rename(reg_it->second, name, true);
 
 	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
 		Ship_editor_dialog.m_ship_name = _T(name);
+
+	if (update_display_name)
+	{
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+		{
+			Ships[ship].display_name = Ships[ship].ship_name;
+			end_string_at_first_hash_symbol(Ships[ship].display_name);
+			Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
+		}
+		// otherwise reset the display name
+		else
+		{
+			Ships[ship].display_name = "";
+			Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T("<none>");
+		}
+	}
 
 	return 0;
 }
@@ -1745,16 +1888,14 @@ int rename_ship(int ship, const char *name)
 int invalidate_references(const char *name, sexp_ref_type type)
 {
 	char new_name[512];
-	int i;
 
 	sprintf(new_name, "<%s>", name);
 	update_sexp_references(name, new_name);
 	ai_update_goal_references(type, name, new_name);
 	update_texture_replacements(name, new_name);
-	for (i=0; i<Num_reinforcements; i++)
-		if (!stricmp(name, Reinforcements[i].name)) {
-			strcpy_s(Reinforcements[i].name, new_name);
-		}
+	int i = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (i >= 0)
+		strcpy_s(Reinforcements[i].name, new_name);
 
 	return 0;
 }
@@ -2057,11 +2198,8 @@ int reference_handler(const char *name, sexp_ref_type type, int obj)
 	if ((type != sexp_ref_type::SHIP) && (type != sexp_ref_type::WING))
 		return 0;
 
-	for (n=0; n<Num_reinforcements; n++)
-		if (!stricmp(name, Reinforcements[n].name))
-			break;
-
-	if (n < Num_reinforcements) {
+	n = find_item_with_string(Reinforcements, &reinforcements::name, name);
+	if (n >= 0) {
 		sprintf(msg, "Ship \"%s\" is a reinforcement unit.\n"
 			"Do you want to delete it anyway?", name);
 
@@ -2194,10 +2332,15 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 		}
 
 		case sexp_src::DEBRIEFING: {
-			debriefing_editor_dlg dlg;
+			if (!Debriefing_dialog) {
+				Debriefing_dialog = new debriefing_editor_dlg;
+				Debriefing_dialog->create();
+			}
 
-			dlg.select_sexp_node = node;
-			dlg.DoModal();
+			Debriefing_dialog->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0,
+				SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+			Debriefing_dialog->ShowWindow(SW_RESTORE);
+			Debriefing_dialog->focus_sexp(node);
 			break;
 		}
 
@@ -2225,8 +2368,6 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 char *object_name(int obj)
 {
 	static char text[80];
-	waypoint_list *wp_list;
-	int waypoint_num;
 
 	if (!query_valid_object(obj))
 		return "*none*";
@@ -2237,9 +2378,7 @@ char *object_name(int obj)
 			return Ships[Objects[obj].instance].ship_name;
 
 		case OBJ_WAYPOINT:
-			wp_list = find_waypoint_list_with_instance(Objects[obj].instance, &waypoint_num);
-			Assert(wp_list != NULL);
-			sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			waypoint_stuff_name(text, Objects[obj].instance);
 			return text;
 
 		case OBJ_POINT:
@@ -2308,68 +2447,6 @@ int query_whole_wing_marked(int wing)
 	return 0;
 }
 
-void generate_ship_usage_list(int *arr, int wing) 
-{
-	int i; 
-
-	if (wing < 0) {
-		return;
-	}
-	
-	i = Wings[wing].wave_count;
-	while (i--) {
-		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
-	}
-}
-
-void generate_weaponry_usage_list(int *arr, int wing)
-{
-	int i, j;
-	ship_weapon *swp;
-
-	if (wing < 0)
-		return;
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		swp = &Ships[Wings[wing].ship_index[i]].weapons;
-		j = swp->num_primary_banks;
-		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->primary_bank_weapons[j]]++;
-			}
-		}
-
-		j = swp->num_secondary_banks;
-		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
-			}
-		}
-	}
-}
-
-void generate_weaponry_usage_list(int team, int *arr)
-{
-	int i;
-
-	for (i=0; i<MAX_WEAPON_TYPES; i++)
-		arr[i] = 0;
-	 
-    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		Assert (team >= 0 && team < MAX_TVT_TEAMS);
-
-		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
-		}
-	}
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
-		}
-	}
-}
-
 CJumpNode *jumpnode_get_by_name(const CString& name)
 {
 	CJumpNode *jnp = jumpnode_get_by_name((LPCTSTR) name);
@@ -2393,10 +2470,10 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
 
 				id = box->AddString(tmp);
-				box->SetItemData(id, get_special_anchor(tmp));
+				box->SetItemData(id, get_special_anchor(tmp).value());
 			}
 		}
 	}
@@ -2503,61 +2580,6 @@ int wing_is_player_wing(int wing)
 }
 
 // Goober5000
-// This must be done when either the wing name or the custom name is changed.
-// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-void update_custom_wing_indexes()
-{
-	int i;
-
-	for (i = 0; i < MAX_STARTING_WINGS; i++)
-	{
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++)
-	{
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++)
-	{
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
-}
-
-// Goober5000
-void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to_players, int retail_format)
-{
-	char *iff_name = Iff_info[iff_index].iff_name;
-
-	// stupid retail hack
-	if (retail_format && !stricmp(iff_name, "hostile") && !restrict_to_players)
-		iff_name = "enemy";
-
-	if (restrict_to_players)
-		sprintf(buf, "<any %s player>", iff_name);
-	else
-		sprintf(buf, "<any %s>", iff_name);
-
-	strlwr(buf);
-}
-
-// Goober5000
-void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_format)
-{
-	// filter out iff
-	int iff_index = anchor_num;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_FLAG;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
-
-	// filter players
-	int restrict_to_players = (anchor_num & SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG);
-
-	// get name
-	stuff_special_arrival_anchor_name(buf, iff_index, restrict_to_players, retail_format);
-}
-
-// Goober5000
 void update_texture_replacements(const char *old_name, const char *new_name)
 {
 	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
@@ -2567,7 +2589,64 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 	}
 }
 
-void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len)
+HBITMAP load_btnface_mapped(UINT id)
 {
-	std::strftime(dest, dest_max_len, "%x at %X", src);
+	std::array<COLORMAP, 5> cmap;
+	cmap[0].from = RGB(255, 0, 255);			// magenta (transparent background)
+	cmap[0].to = GetSysColor(COLOR_BTNFACE);
+	cmap[1].from = RGB(192, 192, 192);			// dark gray (traditional background)
+	cmap[1].to = GetSysColor(COLOR_BTNFACE);
+	cmap[2].from = RGB(128, 128, 128);
+	cmap[2].to = GetSysColor(COLOR_BTNSHADOW);
+	cmap[3].from = RGB(255, 255, 255);
+	cmap[3].to = GetSysColor(COLOR_BTNHIGHLIGHT);
+	cmap[4].from = RGB(0, 0, 0);
+	cmap[4].to = GetSysColor(COLOR_BTNTEXT);
+	return CreateMappedBitmap(AfxGetResourceHandle(), id, 0, cmap.data(), sz2i(cmap.size()));
+}
+
+HICON load_button_icon(UINT id, COLORREF transparent)
+{
+	// Load the resource bitmap as a device-dependent bitmap.
+	HBITMAP color = (HBITMAP)::LoadBitmap(AfxGetResourceHandle(), MAKEINTRESOURCE(id));
+	if (color == nullptr)
+		return nullptr;
+
+	BITMAP bm;
+	::GetObject(color, sizeof(bm), &bm);
+
+	HDC screen_dc = ::GetDC(nullptr);
+	HDC color_dc = ::CreateCompatibleDC(screen_dc);
+	HDC mask_dc = ::CreateCompatibleDC(screen_dc);
+
+	// Build a 1-bpp mask: pixels matching the transparent key become white (1),
+	// everything else black (0).  This is the AND mask of the icon.
+	HBITMAP mask = ::CreateBitmap(bm.bmWidth, bm.bmHeight, 1, 1, nullptr);
+	HBITMAP old_color = (HBITMAP)::SelectObject(color_dc, color);
+	HBITMAP old_mask = (HBITMAP)::SelectObject(mask_dc, mask);
+
+	::SetBkColor(color_dc, transparent);
+	::BitBlt(mask_dc, 0, 0, bm.bmWidth, bm.bmHeight, color_dc, 0, 0, SRCCOPY);
+
+	// Punch the transparent pixels in the color bitmap to black (D & ~S), so the
+	// icon's XOR stage leaves the background untouched where the mask is set.
+	::BitBlt(color_dc, 0, 0, bm.bmWidth, bm.bmHeight, mask_dc, 0, 0, 0x00220326 /*DSna: D & ~S*/);
+
+	::SelectObject(color_dc, old_color);
+	::SelectObject(mask_dc, old_mask);
+	::DeleteDC(color_dc);
+	::DeleteDC(mask_dc);
+	::ReleaseDC(nullptr, screen_dc);
+
+	ICONINFO ii = {};
+	ii.fIcon = TRUE;
+	ii.hbmMask = mask;
+	ii.hbmColor = color;
+	HICON icon = ::CreateIconIndirect(&ii);
+
+	// CreateIconIndirect copies the bitmaps, so the originals can be freed.
+	::DeleteObject(mask);
+	::DeleteObject(color);
+
+	return icon;
 }

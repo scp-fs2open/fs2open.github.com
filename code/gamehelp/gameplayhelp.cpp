@@ -437,7 +437,7 @@ SCP_vector<gameplay_help_section> gameplay_help_init_text()
 
 		}
 
-		complete_help_text.push_back(thisHelp);
+		complete_help_text.push_back(std::move(thisHelp));
 	}
 
 	return complete_help_text;

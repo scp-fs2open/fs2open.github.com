@@ -3,7 +3,6 @@
 #include "EditorViewport.h"
 #include "FredRenderer.h"
 
-#include <ai/aigoals.h>
 #include <globalincs/globals.h>
 #include <jumpnode/jumpnode.h>
 #include <object/waypoint.h>
@@ -11,15 +10,19 @@
 #include <ship/ship.h>
 
 #include <QObject>
+#include <QString>
+#include <QTimer>
 #include <functional>
 #include <memory>
 #include <stdexcept>
 
-#define MISSION_BACKUP_NAME     "Backup"
-#define MISSION_BACKUP_DEPTH    9
+namespace fso::fred {
 
-namespace fso {
-namespace fred {
+struct subsys_to_render {
+	bool do_render = false;
+	object* ship_obj = nullptr;
+	ship_subsys* cur_subsys = nullptr;
+};
 
 enum class WingNameError {
 	None,
@@ -58,11 +61,18 @@ class Editor : public QObject {
   public:
 	Editor();
 
+	void clean_up_selections();
+
 	void unmark_all();
 
 	void createNewMission();
 
 	void maybeUseAutosave(std::string& filepath);
+
+	void startAutosaveTimer(int intervalSeconds);
+	void stopAutosaveTimer();
+	void setCurrentMissionPath(const QString& path);
+	const QString& autosaveDirectory() const { return _autosaveDirectory; }
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -110,7 +120,22 @@ class Editor : public QObject {
 	/*! Update the game but doesn't render anything. */
 	void update();
 
+	/*! Emit layerVisibilityChanged — called by EditorViewport after toggling a layer. */
+	void notifyLayerVisibilityChanged() { layerVisibilityChanged(); }
+
+	/*! Emit layerStructureChanged — called by EditorViewport when layers are added/removed or objects move between layers. */
+	void notifyLayerStructureChanged() { layerStructureChanged(); }
+
+	/*! Emit layerListChanged — called by EditorViewport when layer names are added/removed/reloaded. */
+	void notifyLayerListChanged() { layerListChanged(); }
+
   signals:
+	/**
+	 * @brief Emitted when the autosave timer fires; receiver performs the actual file save.
+	 * @param savePath Absolute path for the autosave file
+	 */
+	void autosaveDue(const QString& savePath);
+
 	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
@@ -135,10 +160,22 @@ class Editor : public QObject {
 	 */
 	void objectMarkingChanged(int obj, bool marked);
 
-  public:
-	int Id_select_type_jump_node = 0;
-	int Id_select_type_waypoint = 0;
+	/**
+	 * @brief A signal emitted when a layer's visibility has been toggled
+	 */
+	void layerVisibilityChanged();
 
+	/**
+	 * @brief A signal emitted when the layer list changes (add/remove) or an object moves between layers
+	 */
+	void layerStructureChanged();
+
+	/**
+	 * @brief A signal emitted when the layer name list itself changes (add/remove/reload)
+	 */
+	void layerListChanged();
+
+  public:
 	// object numbers for ships in a wing.
 	int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
 
@@ -146,17 +183,10 @@ class Editor : public QObject {
 	int cur_wing = -1;
 	int cur_ship = -1;
 
-	int cur_wing_index = -1;
-
 	waypoint* cur_waypoint = nullptr;
 	waypoint_list* cur_waypoint_list = nullptr;
 
 	subsys_to_render Render_subsys;
-
-	// Goober5000
-	// This must be done when either the wing name or the custom name is changed.
-	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
-	static void update_custom_wing_indexes();
 
 	void ai_update_goal_references(sexp_ref_type type, const char* old_name, const char* new_name);
 
@@ -190,12 +220,15 @@ class Editor : public QObject {
 
 	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
+	// DA 1/7/99 These ship names are not variables
+	int rename_ship(int ship, const char* name, bool update_display_name = true);
+
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
 	 *
 	 * @param[in] wing_num Index of the wing
 	 */
-	void remove_wing(int wing_num);
+	void disband_wing(int wing_num);
 
 	void delete_marked();
 
@@ -205,27 +238,38 @@ class Editor : public QObject {
 	void select_previous_subsystem();
 	void cancel_select_subsystem();
 
-	bool global_error_check();
+	void select_next_object();
+	void select_previous_object();
 
-	SCP_vector<SCP_string> get_docking_list(int model_index);
+	static SCP_vector<SCP_string> get_docking_list(int model_index);
 
-	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
-	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
-	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types);
+	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_map<int, GlobalShieldStatus>& types) const;
+	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_map<int, GlobalShieldStatus>& types);
 	void normalizeShieldSysData();
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
-	static void lcl_fred_replace_stuff(QString& text);
 	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
-	SCP_vector<int> getStartingWingLoadoutUseCounts();
+	// per-team ship and weapon usage (class index -> count used in starting wings)
+	struct LoadoutUseCounts {
+		SCP_map<int, int> ships;
+		SCP_map<int, int> weapons;
+	};
+
+	const SCP_vector<LoadoutUseCounts> &getStartingWingLoadoutUseCounts();
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
-	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
 
-  private:
+  private slots:
+	void performTimedAutosave();
+
+  private: // NOLINT(readability-redundant-access-specifiers)
+	QTimer*  _autosaveTimer        = nullptr;
+	QString  _autosaveDirectory;
+	QString  _currentMissionPath;
+
 	void clearMission(bool fast_reload = false);
 
 	void initialSetup();
@@ -238,21 +282,12 @@ class Editor : public QObject {
 	int numMarked = 0;
 
 	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
-	SCP_vector<GlobalShieldStatus> Shield_sys_types;
-
-	int delete_flag;
+	SCP_map<int, GlobalShieldStatus> Shield_sys_types;	// ship class -> shield status; absent = HasShields
 
 	bool already_deleting_wing = false;
 
-	// used by error checker, but needed in more than just one function.
-	char* names[MAX_OBJECTS];
-	char err_flags[MAX_OBJECTS];
-	int obj_count = 0;
-	int g_err = 0;
-
-	// ship and weapon usage pools
-	int _ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int _weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	// ship and weapon usage pools, one entry per team
+	SCP_vector<LoadoutUseCounts> _loadout_usage;
 
 	int common_object_delete(int obj);
 
@@ -265,10 +300,7 @@ class Editor : public QObject {
 
 	int invalidate_references(const char* name, sexp_ref_type type);
 
-	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, const char* name);
-
-	void delete_reinforcement(int num);
+	void delete_reinforcement(const char* name);
 
 	// changes the currently selected wing.  It is assumed that cur_wing == cur_ship's wing
 	// number.  Don't call this if this won't be true, or else you'll screw things up.
@@ -301,37 +333,16 @@ class Editor : public QObject {
 	 */
 	static int find_free_wing();
 
-	void generate_wing_weaponry_usage_list(int* arr, int wing);
-
-	void generate_team_weaponry_usage_list(int team, int* arr);
-
-	void generate_ship_usage_list(int* arr, int wing);
-
 	int get_visible_sub_system_count(ship* shipp);
 
 	int get_next_visible_subsys(ship* shipp, ship_subsys** next_subsys);
 
 	int get_prev_visible_subsys(ship* shipp, ship_subsys** prev_subsys);
 
-	int global_error_check_impl();
-
-	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
-
-	int fred_check_sexp(int sexp, int type, const char* location, ...);
-
-
-	int global_error_check_mixed_player_wing(int w);
-
-	int global_error_check_player_wings(int multi);
-
-	static const char* get_order_name(ai_goal_mode order);
-
 	void updateStartingWingLoadoutUseCounts();
 };
 
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred
 
 extern char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 extern char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];

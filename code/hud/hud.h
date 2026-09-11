@@ -278,7 +278,7 @@ public:
 	HudGauge();
 	HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b);
 	// constructor for custom gauges
-	HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
+	HudGauge(int _gauge_config, bool _slew, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y);
 	virtual ~HudGauge();
 
 	void initPosition(int x, int y);
@@ -366,11 +366,14 @@ public:
 	void renderBitmap(int frame, int x, int y, float scale = 1.0f, bool config = false) const;
 	void renderBitmapColor(int frame, int x, int y, float scale = 1.0f, bool config = false) const;
 	void renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy, float scale = 1.0f, bool config = false) const;
-	void renderString(int x, int y, const char *str, float scale = 1.0f, bool config = false);
-	void renderString(int x, int y, int gauge_id, const char *str, float scale = 1.0f, bool config = false);
-	void renderStringAlignCenter(int x, int y, int area_width, const char *s, float scale = 1.0f, bool config = false);
-	void renderPrintf(int x, int y, float scale, bool config, SCP_FORMAT_STRING const char* format, ...) SCP_FORMAT_STRING_ARGS(6, 7);
-	void renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, SCP_FORMAT_STRING const char* format, ...)  SCP_FORMAT_STRING_ARGS(7, 8);
+	void renderString(int x, int y, const char *str, float scale = 1.0f, bool config = false) const;
+	void renderString(int x, int y, const char *str, size_t len, float scale = 1.0f, bool config = false) const;
+	void renderString(int x, int y, int gauge_id, const char *str, float scale = 1.0f, bool config = false) const;
+	void renderString(int x, int y, int gauge_id, const char *str, size_t len, float scale = 1.0f, bool config = false) const;
+	void renderStringAlignCenter(int x, int y, int area_width, const char *s, float scale = 1.0f, bool config = false) const;
+	void renderStringAlignCenter(int x, int y, int area_width, const char *s, size_t len, float scale = 1.0f, bool config = false) const;
+	void renderPrintf(int x, int y, float scale, bool config, SCP_FORMAT_STRING const char* format, ...) const SCP_FORMAT_STRING_ARGS(6, 7);
+	void renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, SCP_FORMAT_STRING const char* format, ...) const SCP_FORMAT_STRING_ARGS(7, 8);
 	void renderLine(int x1, int y1, int x2, int y2, bool config = false) const;
 	void renderGradientLine(int x1, int y1, int x2, int y2, bool config = false) const;
 	void renderRect(int x, int y, int w, int h, bool config = false) const;
@@ -393,8 +396,8 @@ public:
 	HudGauge3DAnchor(int _gauge_object, int _gauge_config, bool /*_slew*/, bool _message, int _disabled_views, int r, int g, int b)
 		: HudGauge(_gauge_object, _gauge_config, false, _message, _disabled_views, r, g, b) { }
 	// constructor for custom gauges
-	HudGauge3DAnchor(int _gauge_config, bool /*_slew*/, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y)
-		: HudGauge(_gauge_config, false, r, g, b, _custom_name, _custom_text, frame_fname, txtoffset_x, txtoffset_y) { }
+	HudGauge3DAnchor(int _gauge_config, bool /*_slew*/, bool _message, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y)
+		: HudGauge(_gauge_config, false, _message, r, g, b, _custom_name, _custom_text, frame_fname, txtoffset_x, txtoffset_y) { }
 
 	void initSlew(bool /*slew*/) override {};
 };

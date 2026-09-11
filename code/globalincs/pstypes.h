@@ -47,6 +47,10 @@
 #define DIR_SEPARATOR_STR  "/"
 #endif
 
+constexpr char COMMENT_CHAR =    static_cast<char>(';');
+constexpr char EOLN =            static_cast<char>(0x0a);
+constexpr char CARRIAGE_RETURN = static_cast<char>(0x0d);
+
 #ifndef NDEBUG
 constexpr bool FSO_DEBUG = true;
 #else
@@ -362,8 +366,13 @@ const float PI2			= (PI*2.0f);
 const float PI_2		= (PI/2.0f);
 const float PI_4		= (PI/4.0f);
 
+// not defined generally on Windows, no longer included in SDL
+#ifndef M_PI
+#define M_PI SDL_PI_F
+#endif
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
+extern int Qtfred_running;  // Distinguishes QtFRED from legacy Fred2; Fred_running is set in both, but Qtfred_running only in QtFRED.
 extern bool running_unittests;
 
 const size_t INVALID_SIZE = static_cast<size_t>(-1);
@@ -391,10 +400,10 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 // turn off inline asm
 #undef USE_INLINE_ASM
 
-#define INTEL_INT(x)	SDL_Swap32(x)
-#define INTEL_LONG(x)   SDL_Swap64(x)
-#define INTEL_SHORT(x)	SDL_Swap16(x)
-#define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
+#define INTEL_INT(x)	SDL_Swap32LE(x)
+#define INTEL_LONG(x)   SDL_Swap64LE(x)
+#define INTEL_SHORT(x)	SDL_Swap16LE(x)
+#define INTEL_FLOAT(x)	SDL_SwapFloatLE((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
@@ -588,6 +597,11 @@ inline void* memset_if_trivial_else_error(ImDrawListSplitter* memset_data, int c
 	}
 
 	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, void *memcpy_src, size_t count)
+	{
+		return ptr_memcpy(memcpy_dest, memcpy_src, count);
+	}
+
+	inline void *memcpy_if_trivial_else_error(void *memcpy_dest, const void *memcpy_src, size_t count)
 	{
 		return ptr_memcpy(memcpy_dest, memcpy_src, count);
 	}

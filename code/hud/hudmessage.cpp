@@ -140,7 +140,7 @@ static SCP_vector<line_node> Msg_scrollback_lines;
 
 typedef struct HUD_ft {
 	int	end_time;						//	Timestamp at which this message will go away.
-	char	text[MAX_HUD_LINE_LEN];		//	Text to display.
+	char	text[MAX_HUD_LINE_BUF];		//	Text to display.
 	int	color;							//	0rgb color, 8 bit fields.
 } HUD_ft;
 
@@ -331,15 +331,9 @@ void HudGaugeMessages::processMessageBuffer()
 
 void HudGaugeMessages::addPending(const char *text, int source, int x)
 {
-	Assert(text != NULL);
+	Assert(text != nullptr);
 
-	HUD_message_data new_message;
-
-	new_message.text = text;
-	new_message.source = source;
-	new_message.x = x;
-
-	pending_messages.push(new_message);
+	pending_messages.emplace(text, source, x);
 }
 
 void HudGaugeMessages::scrollMessages()
@@ -369,7 +363,7 @@ void HudGaugeMessages::scrollMessages()
 			new_active_msg.target_y = new_active_msg.y;
 		}
 
-		active_messages.push_back(new_active_msg);
+		active_messages.push_back(std::move(new_active_msg));
 	}
 
 	Scroll_in_progress = false;
@@ -484,11 +478,9 @@ void HudGaugeMessages::render(float  /*frametime*/, bool config)
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
-void HUD_fixed_printf(float duration, color col, const char *format, ...)
+void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list	args;
-	char		tmp[HUD_MSG_LENGTH_MAX];
-	size_t		msg_length;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state != NETGAME_STATE_IN_MISSION)){
@@ -497,22 +489,9 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(HUD_fixed_text[0].text, MAX_HUD_LINE_BUF, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
-
-	msg_length = strlen(tmp);
-
-	if ( !msg_length ) {
-		nprintf(("Warning", "HUD_fixed_printf ==> attempt to print a 0 length string in msg window\n"));
-		return;
-
-	} else if (msg_length > MAX_HUD_LINE_LEN - 1){
-		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN - 1, tmp));
-		tmp[MAX_HUD_LINE_LEN-1] = '\0';
-	}
-
-	strcpy_s(HUD_fixed_text[0].text, tmp);
+	HUD_fixed_text[0].text[MAX_HUD_LINE_BUF-1] = '\0';
 
 	if (duration == 0.0f){
 		HUD_fixed_text[0].end_time = timestamp(-1);
@@ -540,11 +519,10 @@ int HUD_source_get_team(int source)
 	return source - HUD_SOURCE_TEAM_OFFSET;
 }
 
-
-void HUD_printf(const char *format, ...)
+void HUD_printf(SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
-	char tmp[HUD_MSG_LENGTH_MAX];
+	SCP_string tmp;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -553,9 +531,8 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
@@ -567,10 +544,10 @@ void HUD_printf(const char *format, ...)
 // message on the HUD.  Text is split into multiple lines if width exceeds msg display area
 // width.  'source' is used to indicate who send the message, and is used to color code text.
 //
-void HUD_sourced_printf(int source, const char *format, ...)
+void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
-	char tmp[HUD_MSG_LENGTH_MAX];
+	SCP_string tmp;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -579,16 +556,34 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
 	hud_sourced_print(source, tmp);
 }
 
+void hud_sourced_print(int source, const SCP_string &msg)
+{
+	if ( msg.empty() ) {
+		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
+		return;
+	}
+
+	// add message to the scrollback log first
+	hud_add_msg_to_scrollback(msg.c_str(), source, Missiontime);
+
+	HUD_msg_buffer.emplace_back(msg, source, 0);
+
+	// Invoke the scripting hook
+	if (OnHudMessageReceivedHook->isActive()) {
+		OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg.c_str()),
+			scripting::hook_param("SourceType", 'i', source)));
+	}
+}
+
 void hud_sourced_print(int source, const char *msg)
 {
-	if ( !strlen(msg) ) {
+	if ( !*msg ) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
 		return;
 	}
@@ -596,13 +591,7 @@ void hud_sourced_print(int source, const char *msg)
 	// add message to the scrollback log first
 	hud_add_msg_to_scrollback(msg, source, Missiontime);
 
-	HUD_message_data new_msg;
-
-	new_msg.text = SCP_string(msg);
-	new_msg.source = source;
-	new_msg.x = 0;
-
-	HUD_msg_buffer.push_back(new_msg);
+	HUD_msg_buffer.emplace_back(msg, source, 0);
 
 	// Invoke the scripting hook
 	if (OnHudMessageReceivedHook->isActive()) {
@@ -643,28 +632,19 @@ void HUD_add_to_scrollback(const char *text, int source)
 
 void hud_add_msg_to_scrollback(const char *text, int source, int t)
 {
-	size_t msg_len = strlen(text);
-	if (msg_len == 0)
+	if (!*text)
 		return;
-	
-	Assert(msg_len < HUD_MSG_LENGTH_MAX);
-
-	char buf[HUD_MSG_LENGTH_MAX], *ptr;
-	strcpy_s(buf, text);
-	ptr = strstr(buf, NOX(": "));
 
 	int w = 0;
 
 	// determine the length of the sender's name for underlining
+	auto ptr = strstr(text, NOX(": "));
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, 1.0f, (ptr - buf));
+		gr_get_string_size(&w, nullptr, text, 1.0f, (ptr - text));
 	}
 
 	// create the new node for the vector
-	line_node newLine = {t, The_mission.HUD_timer_padding, source, 0, 1, w, ""};
-	newLine.text = text;
-
-	Msg_scrollback_vec.push_back(newLine);
+	Msg_scrollback_vec.emplace_back(t, The_mission.HUD_timer_padding, source, 0, 1, w, text);
 }
 
 // how many lines to skip
@@ -884,7 +864,7 @@ void hud_initialize_scrollback_lines()
 				}
 			} else {
 				node_msg.y = height / 3;
-				Msg_scrollback_lines.push_back(node_msg);
+				Msg_scrollback_lines.push_back(std::move(node_msg));
 			}
 		}
 	}
@@ -1360,6 +1340,18 @@ bool HudGaugeTalkingHead::canRender() const
 
 	if ((Viewer_mode & disabled_views)) {
 		return false;
+	}
+
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
+	if (render_for_cockpit_toggle > 0) {
+		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
 	}
 
 	if(pop_up) {

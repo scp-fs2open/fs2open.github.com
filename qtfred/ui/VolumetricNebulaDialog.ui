@@ -722,6 +722,39 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>enabled</tabstop>
+  <tabstop>setModelButton</tabstop>
+  <tabstop>setModelLineEdit</tabstop>
+  <tabstop>positionXSpinBox</tabstop>
+  <tabstop>positionYSpinBox</tabstop>
+  <tabstop>positionZSpinBox</tabstop>
+  <tabstop>colorRSpinBox</tabstop>
+  <tabstop>colorGSpinBox</tabstop>
+  <tabstop>colorBSpinBox</tabstop>
+  <tabstop>opacityDoubleSpinBox</tabstop>
+  <tabstop>opacityDistanceDoubleSpinBox</tabstop>
+  <tabstop>renderQualityStepsSpinBox</tabstop>
+  <tabstop>resolutionSpinBox</tabstop>
+  <tabstop>oversamplingSpinBox</tabstop>
+  <tabstop>smoothingDoubleSpinBox</tabstop>
+  <tabstop>henyeyGreensteinCoeffDoubleSpinBox</tabstop>
+  <tabstop>sunFalloffFactorDoubleSpinBox</tabstop>
+  <tabstop>sunQualityStepsSpinBox</tabstop>
+  <tabstop>emissiveLightDoubleSpinBox</tabstop>
+  <tabstop>emissiveLightIntensityDoubleSpinBox</tabstop>
+  <tabstop>emissiveLightFalloffDoubleSpinBox</tabstop>
+  <tabstop>enableNoiseCheckBox</tabstop>
+  <tabstop>noiseColorRSpinBox</tabstop>
+  <tabstop>noiseColorGSpinBox</tabstop>
+  <tabstop>noiseColorBSpinBox</tabstop>
+  <tabstop>noiseScaleBaseDoubleSpinBox</tabstop>
+  <tabstop>noiseScaleSubDoubleSpinBox</tabstop>
+  <tabstop>noiseIntensityDoubleSpinBox</tabstop>
+  <tabstop>noiseResolutionSpinBox</tabstop>
+  <tabstop>setBaseNoiseFunctionButton</tabstop>
+  <tabstop>setSubNoiseFunctionButton</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

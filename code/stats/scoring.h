@@ -97,7 +97,7 @@ public:
 	int rank;								// all time rank
 	SCP_vector<int> medal_counts;			// all time medal counts
 
-	int kills[MAX_SHIP_CLASSES];		// only valid kills (i.e. not on friendlies).
+	SCP_vector<int> kills;					// only valid kills (i.e. not on friendlies). Sized to ship_info_size() after table parse.
 	int assists;							// alltime assists
 	int kill_count;						// total alltime kills
 	int kill_count_ok;					// total valid alltime kills (no friendlies)
@@ -122,8 +122,8 @@ public:
 	int m_promotion_earned;				// was a promotion earned.  Calculated after mission is over
 
 	int m_score;
-	int m_kills[MAX_SHIP_CLASSES];		// this will represent all kills in the mission (bonehead or not)
-	int m_okKills[MAX_SHIP_CLASSES];	// this will be only the "valid" kills the player made
+	SCP_vector<int> m_kills;				// this will represent all kills in the mission (bonehead or not). Sized to ship_info_size().
+	SCP_vector<int> m_okKills;				// this will be only the "valid" kills the player made. Sized to ship_info_size().
 	int m_kill_count;						// total kills for this mission
 	int m_kill_count_ok;             // total (non-friendly) kills for this mission
 	int m_assists;							// player assits for the mission

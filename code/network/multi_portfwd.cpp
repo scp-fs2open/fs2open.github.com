@@ -98,6 +98,7 @@ void multi_port_forward_init()
 
 void multi_port_forward_do()
 {
+	static bool failed_before = false;
 	pcp_fstate_e state;
 	size_t info_count = 0;
 	int wait_ms;
@@ -117,7 +118,10 @@ void multi_port_forward_do()
 	// check progress and log if needed
 	if ( pcp_eval_flow_state(PF_pcp_flow, &state) ) {
 		if (state == pcp_state_failed) {
-			ml_string("Port forward => Mapping failed!");
+			if ( !failed_before ) {
+				ml_string("Port forward => Mapping failed!");
+				failed_before = true;	// reduce log spam
+			}
 		} else if (state == pcp_state_succeeded) {
 			pcp_flow_info_t *flow_info = pcp_flow_get_info(PF_pcp_flow, &info_count);
 
@@ -142,6 +146,8 @@ void multi_port_forward_do()
 				strftime(time_str, sizeof(time_str), "%m/%d %H:%M:%S", localtime(&info->recv_lifetime_end));
 				ml_printf("Port forward => Mapping valid until %s", time_str);
 			}
+
+			failed_before = false;
 
 			if (flow_info) {
 				free(flow_info);	// system call, allocated in lib  ** don't change! **
@@ -178,7 +184,7 @@ void multi_port_forward_close()
 #ifndef NDEBUG
 static void PF_logger_fn(pcp_loglvl_e /* lvl */, const char *msg)
 {
-	nprintf(("portfwd", "Port forward => %s", msg));
+	nprintf(("portfwd", "Port forward => %s\n", msg));
 }
 #endif
 

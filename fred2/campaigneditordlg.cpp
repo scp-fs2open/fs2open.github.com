@@ -20,7 +20,9 @@
 #include "cfile/cfile.h"
 #include "FREDDoc.h"
 #include "parse/parselo.h"
+#include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "missioneditor/common.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -38,7 +40,8 @@ IMPLEMENT_DYNCREATE(campaign_editor, CFormView)
 campaign_editor *Campaign_tree_formp;
 
 campaign_editor::campaign_editor()
-	: CFormView(campaign_editor::IDD)
+	: CFormView(campaign_editor::IDD),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
 {
 	//{{AFX_DATA_INIT(campaign_editor)
 	m_name = _T("");
@@ -51,12 +54,79 @@ campaign_editor::campaign_editor()
 	m_custom_tech_db = FALSE;
 	//}}AFX_DATA_INIT
 
-	m_tree.m_mode = MODE_CAMPAIGN;
+	m_tree._model._interface = this;
 	m_num_links = 0;
-	m_tree.link_modified(&Campaign_modified);
+	m_tree._model.modified = &Campaign_modified;
 	m_last_mission = -1;
 
 	m_current_campaign_path = _T("");
+}
+
+int campaign_editor::onRootDeleted(int formula_node)
+{
+	int i;
+	for (i = 0; i < Total_links; i++) {
+		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == formula_node)) {
+			break;
+		}
+	}
+
+	if (i < Total_links) {
+		Campaign_tree_viewp->delete_link(i);
+		m_num_links--;
+	}
+	return formula_node;
+}
+
+void campaign_editor::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
+void campaign_editor::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
+
+SCP_vector<SCP_string> campaign_editor::getMissionNames()
+{
+	SCP_vector<SCP_string> list;
+	if (Cur_campaign_mission < 0)
+		return list;
+
+	// only list missions the player could have already played: the current mission and
+	// any mission at an earlier level in the campaign tree
+	for (int i = 0; i < Campaign.num_missions; i++)
+	{
+		if ((i == Cur_campaign_mission) || (Campaign.missions[i].level < Campaign.missions[Cur_campaign_mission].level))
+			list.emplace_back(Campaign.missions[i].name);
+	}
+
+	return list;
+}
+
+bool campaign_editor::hasDefaultMissionName()
+{
+	return Cur_campaign_mission >= 0;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionGoals(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& goal : Campaign.missions[idx].goals)
+		list.emplace_back(goal.name);
+
+	return list;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionEvents(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& event : Campaign.missions[idx].events)
+		list.emplace_back(event.name);
+
+	return list;
 }
 
 campaign_editor::~campaign_editor()
@@ -73,7 +143,7 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_CAMPAIGN_TYPE, m_type);
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
-	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
+	//DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_MISSION_LOOP_DESC, m_branch_desc);
 	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
@@ -251,8 +321,8 @@ void campaign_editor::initialize( bool init_files, bool clear_path )
 	m_type = Campaign.type;
 	m_num_players.Format("%d", Campaign.num_players);
 
-	if (Campaign.desc) {
-		convert_multiline_string(m_desc, Campaign.desc);
+	if (!Campaign.description.empty()) {
+		convert_multiline_string(m_desc, Campaign.description);
 	} else {
 		m_desc = _T("");
 	}
@@ -303,8 +373,6 @@ void campaign_editor::mission_selected(int num)
 
 void campaign_editor::update()
 {
-	char buf[MISSION_DESC_LENGTH];
-
 	// get data from dlog box
 	UpdateData(TRUE);
 
@@ -317,15 +385,11 @@ void campaign_editor::update()
 	Campaign.type = m_type;
 
 	// update campaign desc
-	deconvert_multiline_string(buf, m_desc, MISSION_DESC_LENGTH - 1);
-	if (Campaign.desc) {
-		free(Campaign.desc);
-	}
+	SCP_string desc_buf;
+	deconvert_multiline_string(desc_buf, m_desc);
 
-	Campaign.desc = NULL;
-	if (strlen(buf)) {
-		Campaign.desc = strdup(buf);
-	}
+	Campaign.description.clear();
+	Campaign.description = desc_buf;
 
 	// update flags
 	Campaign.flags = CF_DEFAULT_VALUE;
@@ -390,7 +454,7 @@ void campaign_editor::load_tree(int save_first)
 
 	for (i=0; i<Total_links; i++) {
 		if (Links[i].from == Cur_campaign_mission) {
-			Links[i].node = m_tree.load_sub_tree(Links[i].sexp, true, "do-nothing");
+			Links[i].node = m_tree._model.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
 
 			if (Links[i].from == Links[i].to) {
@@ -421,7 +485,7 @@ void campaign_editor::load_tree(int save_first)
 
 void campaign_editor::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	m_tree.right_clicked(MODE_CAMPAIGN);
+	m_tree.right_clicked();
 	*pResult = 0;
 }
 
@@ -444,29 +508,6 @@ void campaign_editor::OnEndlabeleditSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
-int campaign_editor::handler(int code, int node, char *str)
-{
-	int i;
-
-	switch (code) {
-	case ROOT_DELETED:
-		for (i=0; i<Total_links; i++){
-			if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
-				break;
-			}
-		}
-
-		Campaign_tree_viewp->delete_link(i);
-		m_num_links--;
-		return node;
-
-	default:
-		Int3();
-	}
-
-	return -1;
-}
-
 void campaign_editor::save_tree(int clear)
 {
 	int i;
@@ -479,7 +520,7 @@ void campaign_editor::save_tree(int clear)
 		if (Links[i].from == m_last_mission) {
 			sexp_unmark_persistent(Links[i].sexp);
 			free_sexp2(Links[i].sexp);
-			Links[i].sexp = m_tree.save_tree(Links[i].node);
+			Links[i].sexp = m_tree._model.save_tree(Links[i].node);
 			sexp_mark_persistent(Links[i].sexp);
 		}
 	}

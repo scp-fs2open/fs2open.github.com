@@ -2,8 +2,8 @@
 #include "mission/management.h"
 
 #include "object.h"
-#include <project.h>
-#include <libs/ffmpeg/FFmpeg.h>
+
+#include "cmdline/cmdline.h"
 
 #include <asteroid/asteroid.h>
 #include <cutscene/cutscenes.h>
@@ -13,6 +13,7 @@
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
 #include <io/mouse.h>
+#include <libs/ffmpeg/FFmpeg.h>
 #include <lighting/lighting_profiles.h>
 #include <localization/fhash.h>
 #include <localization/localize.h>
@@ -24,9 +25,12 @@
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <nebula/neblightning.h>
+#include <parse/sexp.h>
 #include <parse/sexp/sexp_lookup.h>
-#include <scripting/scripting.h>
+#include <project.h>
+#include <prop/prop.h>
 #include <scripting/global_hooks.h>
+#include <scripting/scripting.h>
 #include <sound/audiostr.h>
 #include <starfield/starfield.h>
 #include <stats/medals.h>
@@ -197,6 +201,11 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::SEXPs);
 	sexp_startup();
 
+	// Regenerate sexps.html for the Help Topics dialog. Mirrors the FS2 -output_sexps
+	// behavior so QtFRED's SEXP Operator Reference always reflects the current operator
+	// table in the help dialog
+	output_sexps("sexps.html");
+
 	listener(SubSystem::Objects);
 	obj_init();
 
@@ -217,6 +226,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::Ships);
 	ship_init();
+
+	//listener(Subsystem::Props);
+	prop_init();
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();

@@ -57,8 +57,7 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 private:
-	int m_num_reinforcements;
-	reinforcements m_reinforcements[MAX_REINFORCEMENTS];
+	SCP_vector<reinforcements> m_reinforcements;
 	int cur;
 };
 

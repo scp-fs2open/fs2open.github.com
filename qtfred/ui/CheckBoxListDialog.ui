@@ -6,30 +6,22 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>217</width>
-    <height>294</height>
+    <width>300</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Select Options</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0">
    <item>
-    <widget class="QScrollArea" name="scrollArea">
-     <property name="widgetResizable">
-      <bool>true</bool>
+    <widget class="fso::fred::FlagListWidget" name="flagList" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
      </property>
-     <widget class="QWidget" name="checkboxContainer">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>197</width>
-        <height>245</height>
-       </rect>
-      </property>
-      <layout class="QVBoxLayout" name="verticalLayoutCheckboxes"/>
-     </widget>
     </widget>
    </item>
    <item>
@@ -41,7 +33,17 @@
    </item>
   </layout>
  </widget>
- <resources/>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::FlagListWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/FlagList.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>buttonBox</sender>

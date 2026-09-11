@@ -33,9 +33,9 @@ public:
 	void bitmap_data_close();
 	void bitmap_data_save_current();
 
-	void get_data_spinner(NM_UPDOWN* pUD, int id, int *var, int min, int max);
+	void get_data_spinner(NM_UPDOWN* pUD, int id, float *var, float min, float max);
 	void get_data_int(int id, int *var, int min, int max);
-	void get_data_float(int id, float *var, float max, float min);
+	void get_data_float(int id, float *var, float min, float max, int precision);
 	
 	afx_msg void OnClose();
 	
@@ -66,15 +66,15 @@ public:
 	int		m_fog_b;
 	CString	m_storm_name;
 	CString s_name;
-	int s_pitch;
-	int s_bank;
-	int s_heading;
+	float s_pitch;
+	float s_bank;
+	float s_heading;
 	float s_scale;
 	int s_index;
 	CString b_name;
-	int b_pitch;
-	int b_bank;
-	int b_heading;
+	float b_pitch;
+	float b_bank;
+	float b_heading;
 	float b_scale_x;
 	float b_scale_y;
 	int b_div_x;
@@ -88,17 +88,21 @@ public:
 	int m_sky_flag_6;
 	CString m_skybox_model;
 	CString m_envmap;
-	int m_skybox_pitch;
-	int m_skybox_bank;
-	int m_skybox_heading;
-	float m_neb_near_multi;
-	float m_neb_far_multi;
+	float m_skybox_pitch;
+	float m_skybox_bank;
+	float m_skybox_heading;
+	CString m_neb_fog_1000m_vis;
+	CString m_neb_fog_near_dist;
+	CString m_neb_fog_skybox_clip;
+	CString m_neb_fog_clip;
 	int m_light_profile_index;
 	//}}AFX_DATA
 
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(bg_bitmap_dlg)
+	public:
+	virtual BOOL DestroyWindow();
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
@@ -118,8 +122,10 @@ protected:
 	void OnOrientationChange();
 
 	CToolTipCtrl* m_CorrectedAnglesToolTip;
+	CToolTipCtrl* m_FogParamsToolTip;
 
 	virtual BOOL OnInitDialog();
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)
@@ -175,7 +181,11 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-private:	
+private:
+	float m_initial_neb_fog_1000m_vis;
+	float m_initial_neb_fog_near_dist;
+	float m_initial_neb_fog_skybox_clip;
+	float m_initial_neb_fog_clip;
 };
 
 #endif

@@ -62,7 +62,7 @@ bool RocketFileInterface::Seek(FileHandle file, long offset, int origin)
 		cf_seek_mode = CF_SEEK_END;
 		break;
 	default:
-		Assertion(false, "Invalid seek mode encountered!");
+		UNREACHABLE("Invalid seek mode %d encountered!", origin);
 		return false;
 	}
 

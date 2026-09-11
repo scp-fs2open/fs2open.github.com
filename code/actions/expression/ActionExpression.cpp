@@ -24,7 +24,7 @@ ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType, 
 
 	stuff_string(expressionText, F_NAME);
 
-	ExpressionParser parser(expressionText);
+	ExpressionParser parser(std::move(expressionText));
 
 	auto expression = parser.parse(context);
 
@@ -45,7 +45,7 @@ ActionExpression ActionExpression::parseFromTable(ValueType expectedReturnType, 
 	}
 
 	// Everything is valid
-	return ActionExpression(expression);
+	return ActionExpression(std::move(expression));
 }
 
 Value ActionExpression::execute(const ProgramVariables& variables) const

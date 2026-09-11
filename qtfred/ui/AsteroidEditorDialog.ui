@@ -429,6 +429,32 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>enabled</tabstop>
+  <tabstop>radioButtonActiveField</tabstop>
+  <tabstop>radioButtonPassiveField</tabstop>
+  <tabstop>radioButtonAsteroid</tabstop>
+  <tabstop>radioButtonDebris</tabstop>
+  <tabstop>asteroidSelectButton</tabstop>
+  <tabstop>debrisSelectButton</tabstop>
+  <tabstop>spinBoxNumber</tabstop>
+  <tabstop>lineEditAvgSpeed</tabstop>
+  <tabstop>lineEdit_obox_minX</tabstop>
+  <tabstop>lineEdit_obox_maxX</tabstop>
+  <tabstop>lineEdit_obox_minY</tabstop>
+  <tabstop>lineEdit_obox_maxY</tabstop>
+  <tabstop>lineEdit_obox_minZ</tabstop>
+  <tabstop>lineEdit_obox_maxZ</tabstop>
+  <tabstop>innerBoxEnabled</tabstop>
+  <tabstop>lineEdit_ibox_minX</tabstop>
+  <tabstop>lineEdit_ibox_maxX</tabstop>
+  <tabstop>lineEdit_ibox_minY</tabstop>
+  <tabstop>lineEdit_ibox_maxY</tabstop>
+  <tabstop>lineEdit_ibox_minZ</tabstop>
+  <tabstop>lineEdit_ibox_maxZ</tabstop>
+  <tabstop>shipSelectButton</tabstop>
+  <tabstop>enhancedFieldEnabled</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
  <buttongroups>

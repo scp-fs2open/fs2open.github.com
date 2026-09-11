@@ -19,7 +19,7 @@
  * A 0 (1) bit corresponds to the Boolean value false (true), respectively. We can look at a stream of bytes
  * as a stream of bits; each byte contains 8 bits, so any n bytes hold n*8 bits. And the operation to
  * manipulate this stream or bit array is so easy, just read or change the bit's state or make any Boolean
- * operation on the whole bits array, like ‘AND’, ‘OR’, or ‘XOR’.
+ * operation on the whole bits array, like 'AND', 'OR', or 'XOR'.
  *
  * As each byte contains 8 bits, we need to divide the bit number by 8 to reach the byte that holds the bit.
  * Then, we can seek to the right bit in the reached byte by the remainder of dividing the bit number by 8.

@@ -859,7 +859,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 		// also finds the uv's where the ray hit.
 		if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
 			Mc->hit_dist = dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
 			Mc->hit_point = hitpoint;
 			Mc->hit_normal = tri->norm;
 			Mc->hit_submodel = -1;
@@ -877,7 +877,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 			// same behavior whether face or edge
 			// normal, edge_hit, hit_point all updated thru sphereline_face
 			sphere_check_closest_shield_dist = Mc->hit_dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
 			Mc->hit_submodel = -1;
 			Mc->num_hits++;
 			return true;		// We hit, so we're done
@@ -893,22 +893,22 @@ bool mc_check_sldc(int offset)
 	if (offset > Mc_pm->sldc_size - 5) //no way is this big enough
 		return false;
 
-	int* type_p = (int*)(Mc_pm->shield_collision_tree + offset);
+	int* type_p = (int*)(Mc_pm->shield_collision_tree.get() + offset);
 
 	// not used
 	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+4);
 	// split and polygons
-	auto* minbox_p = (vec3d*)(Mc_pm->shield_collision_tree + offset + 8);
-	auto* maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree + offset + 20);
+	auto* minbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 8);
+	auto* maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 20);
 
 	// split
-	auto* front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 32);
-	auto* back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 36);
+	auto* front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
+	auto* back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
 
 	// polygons
-	auto* num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 32);
+	auto* num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
 
-	auto* shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 36);
+	auto* shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
 
 
 
@@ -1098,7 +1098,7 @@ NoHit:
 			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
 
 			blown_off = csmi->blown_off;
-			collision_checked = csmi->collision_checked;
+			collision_checked = !Mc->collision_checked.empty() && Mc->collision_checked[i];
 		}
 
 		// Don't check it or its children if it is destroyed
@@ -1148,6 +1148,11 @@ int model_collide(mc_info *mc_info_obj)
 		Mc_pmi = model_get_instance(Mc->model_instance_num);
 	} else {
 		Mc_pmi = NULL;
+	}
+
+	if (Mc_pmi && Mc->collision_checked.size() != static_cast<size_t>(Mc_pm->n_models)) {
+		Assertion(Mc->collision_checked.empty(), "model_collide was called with a dirty mc_info state! Please report to the SCP.");
+		Mc->collision_checked.resize(Mc_pm->n_models, 0);
 	}
 
 	// DA 11/19/98 - disable this check for rotating submodels

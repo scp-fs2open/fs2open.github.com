@@ -66,7 +66,7 @@ void RocketLuaSystemInterface::PrepareFunction(lua_State* L, int funcIdx, Rocket
 		static_cast<LuaTableReference*>(context->GetOwnerDocument()->GetUserValue(LuaEnvironmentIdentifier));
 
 	if (envTable == nullptr) {
-		auto reference = std::unique_ptr<LuaTableReference>(new LuaTableReference(createEnvironment(L)));
+		auto reference = std::make_unique<LuaTableReference>(createEnvironment(L));
 		envTable = reference.get();
 
 		context->GetOwnerDocument()->PutUserValue(LuaEnvironmentIdentifier, std::move(reference));

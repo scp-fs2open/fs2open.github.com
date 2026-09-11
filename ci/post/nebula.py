@@ -15,6 +15,7 @@ WIN32_SSE2_KEY = "Win32-SSE2"
 WIN64_SSE2_KEY = "Win64-SSE2"
 WIN32_AVX_KEY = "Win32-AVX"
 WIN64_AVX_KEY = "Win64-AVX"
+WINARM64_KEY = "WinARM64"
 
 metadata = {
     'type': 'engine',
@@ -42,7 +43,8 @@ platforms = {
     WIN32_SSE2_KEY: 'windows',
     WIN64_SSE2_KEY: 'windows',
     WIN32_AVX_KEY: 'windows',
-    WIN64_AVX_KEY: 'windows'
+    WIN64_AVX_KEY: 'windows',
+    WINARM64_KEY: 'windows',
 }
 
 envs = {
@@ -53,7 +55,8 @@ envs = {
     WIN32_SSE2_KEY: 'windows',
     WIN64_SSE2_KEY: 'windows && x86_64',
     WIN32_AVX_KEY: 'windows && avx',
-    WIN64_AVX_KEY: 'windows && avx && x86_64'
+    WIN64_AVX_KEY: 'windows && avx && x86_64',
+    WINARM64_KEY: 'windows && arm64'
 }
 
 subdirs = {
@@ -191,6 +194,7 @@ def render_nebula_release(version, stability, files, config):
                     "sse2": "SSE2" in fn or "AVX" in fn,  # AVX implies SSE2
                     "avx": "AVX" in fn,  # This conveniently also covers the AVX2 case since AVX2 implies AVX
                     "avx2": "AVX2" in fn,
+                    "arm64": "arm64" in fn,
                 }
 
                 pkg['executables'].append({

@@ -28,9 +28,9 @@ namespace particle {
 	public:
 	  	explicit LegacyAACuboidVolume(float normalVariance, float size, bool normalize);
 
-		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) override;
+		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction, const EffectHost& host) override;
 		void parse() override {
-			UNREACHABLE("Cannot parse Legacy Particle Volume!");
+			Assertion(false, "Cannot parse Legacy Particle Volume!");
 		};
 
 	};

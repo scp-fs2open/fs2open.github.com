@@ -784,8 +784,8 @@ void multi_ts_sync_interface()
 	
 	// item 1 - determine how many ship types are available in the ship pool
 	Multi_ts_avail_count = 0;
-	for(idx = 0; idx < ship_info_size(); idx++) {
-		if(Ss_pool[idx] > 0){
+	for(const auto &[ship_class, count] : *Ss_pool) {
+		if(count > 0){
 			Multi_ts_avail_count++;
 		}
 	}
@@ -814,7 +814,7 @@ void multi_ts_sync_interface()
 void multi_ts_assign_players_all()
 {
 	int idx,team_index,slot_index,found,player_count,shipnum;	
-	char name_lookup[100];
+	char name_lookup[NAME_LENGTH];
 	object *objp;	
 	
 	// set all player ship indices to -1
@@ -833,12 +833,10 @@ void multi_ts_assign_players_all()
 	// always assign the host to the wing leader of one of the TVT wings
 	// this is valid for coop games as well because the first starting wing
 	// and the first tvt wing must have the same name
-	memset(name_lookup,0,100);
 
 	if(Netgame.type_flags & NG_TYPE_TEAM) {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
-	}
-	else {
+		wing_bash_ship_name(name_lookup, TVT_wing_names[Netgame.host->p_info.team], 1);
+	} else {
 		// To account for cases where <Wingname> 1 is not a player ship
 		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
 			wing_bash_ship_name(name_lookup, TVT_wing_names[0], i + 1);
@@ -1309,23 +1307,23 @@ void multi_ts_blit_wing_callsigns()
 // blit the ships on the avail list
 void multi_ts_blit_avail_ships()
 {
-	int display_count,ship_count,idx;
+	int display_count,ship_count;
 	char count[6];
 
 	// blit the availability of all ship counts
 	display_count = 0;
 	ship_count = 0;
-	for(idx = 0; idx < ship_info_size(); idx++) {
-		if(Ss_pool[idx] > 0){
+	for(const auto &[ship_class, pool_count] : *Ss_pool) {
+		if(pool_count > 0){
 			// if our starting display index is after this, then skip it
 			if(ship_count < Multi_ts_avail_start){
 				ship_count++;
 			} else {
-				// blit the icon 
-				ss_blit_ship_icon(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD],Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],idx,multi_ts_avail_bmap_num(display_count));
+				// blit the icon
+				ss_blit_ship_icon(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD],Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],ship_class,multi_ts_avail_bmap_num(display_count));
 
 				// blit the ship count available
-				sprintf(count,"%d",Ss_pool[idx]);
+				sprintf(count,"%d",pool_count);
 				gr_set_color_fast(&Color_normal);
 				gr_string(Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_X_COORD] - 20,Multi_ts_avail_coords[display_count][gr_screen.res][MULTI_TS_Y_COORD],count,GR_RESIZE_MENU);
 
@@ -1725,10 +1723,10 @@ void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
 		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
-		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index);
+		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index + 1);
 	} else {
 		Assert( team == 0 );
-		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
+		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], (slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM) + 1);
 	}
 }
 
@@ -1822,7 +1820,7 @@ void multi_ts_handle_mouse()
 			if(ship_class == -1){
 				region_empty = 1;
 			} else {
-				region_empty = (Ss_pool[ship_class] > 0) ? 0 : 1;
+				region_empty = (Ss_pool->value_or(ship_class, -1) > 0) ? 0 : 1;
 			}
 			break;
 		case MULTI_TS_SLOT_LIST:
@@ -1986,7 +1984,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 	switch(op_type){
 	case TS_GRAB_FROM_LIST:
 		// if there are no more of this ship class, its no go
-		if(Ss_pool_teams[pl->p_info.team][ship_class] <= 0){
+		if(Ss_pool_teams[pl->p_info.team].value_or(ship_class, -1) <= 0){
 			return 0;
 		}
 
@@ -2003,7 +2001,7 @@ int multi_ts_can_perform(int from_type,int from_index,int to_type,int to_index,i
 
 	case TS_SWAP_LIST_SLOT:
 		// if there are no more of this ship class, its no go
-		if(Ss_pool_teams[pl->p_info.team][ship_class] <= 0){
+		if(Ss_pool_teams[pl->p_info.team].value_or(ship_class, -1) <= 0){
 			return 0;
 		}
 
@@ -2390,22 +2388,17 @@ int multi_ts_move_player(int from_index,int to_index,interface_snd_id *sound,int
 // get the ship class of the current index in the avail list or -1 if none exists
 int multi_ts_get_avail_ship_class(int index)
 {
-	int ship_count,class_index;
+	int ship_count = index + Multi_ts_avail_start;
 
-	ship_count = index + Multi_ts_avail_start;
-	class_index = 0;
-	while((ship_count >= 0) && (class_index < ship_info_size())){
-		if(Ss_pool[class_index] > 0){
+	// find the Nth class with ships still available (the map iterates in ascending class
+	// order, which is the same order the avail list is rendered in)
+	for(const auto &[ship_class, count] : *Ss_pool){
+		if(count > 0){
+			if(ship_count == 0){
+				return ship_class;
+			}
 			ship_count--;
 		}
-
-		if(ship_count >= 0){
-			class_index++;
-		}
-	}
-
-	if(ship_count < 0){
-		return class_index;
 	}
 
 	return -1;

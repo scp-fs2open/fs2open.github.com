@@ -43,7 +43,7 @@ int LuaAISEXP::getArgumentType(int argnum) const {
 
 int LuaAISEXP::execute(int /*node*/, int /*parent_node*/)
 {
-	UNREACHABLE("Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
+	Assertion(false, "Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
 	return SEXP_CANT_EVAL;
 }
 
@@ -134,7 +134,7 @@ void LuaAISEXP::parseTable() {
 
 
 	if (optional_string("$Player Order:")) {
-		playerOrder = std::unique_ptr<player_order_lua>(new player_order_lua());
+		playerOrder = std::make_unique<player_order_lua>();
 		auto &order = *playerOrder;
 		if (_arg_type != OPF_SHIP && _arg_type != -1) {
 			error_display(1, "Player orders must have either no target or a ship-type target parameter!");
@@ -153,13 +153,6 @@ void LuaAISEXP::parseTable() {
 
 				// Now get a list of all lua categories to add. Meow.
 				SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
-
-				// If we have too many categories then we have an oopsie!
-				if ((int)lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
-					Warning(LOCATION, "Too many defined Lua General Order Categories! Setting order to first available: %s", lua_cat_list[0].c_str());
-
-					order.category = lua_cat_list[0];
-				}
 
 				// General orders explicitely do not show up in FRED as sexps because they
 				// they are only meant for the comms board
@@ -265,10 +258,10 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (variable_arg_part) {
-			_varargs_type_pattern.push_back(type);
+			_varargs_type_pattern.push_back(std::move(type));
 		}
 		else {
-			_argument_types.push_back(type);
+			_argument_types.push_back(std::move(type));
 		}
 
 		if (optional_string("$Repeat")) {

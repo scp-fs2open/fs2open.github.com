@@ -12,7 +12,8 @@ endif()
 target_link_libraries(platform INTERFACE ${COCOA_LIBRARY})
 
 # To support C++17 we need to target at least 10.13. maybe 10.14 for some rare features
-SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.13")
+# bump to 10.15 for c++17 std::filesystem usage in qtFRED
+SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.15")
 
 SET(CMAKE_SKIP_RPATH FALSE)
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)

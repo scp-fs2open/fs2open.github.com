@@ -16,7 +16,6 @@
 
 #include "osapi/osapi.h"	// for multi-thread macros
 
-#include <SDL_timer.h>
 #include <climits>
 
 static Uint64 Timer_perf_counter_freq = 0;	// perf counter frequency - number of ticks per second
@@ -88,8 +87,8 @@ void timer_start_frame()
 
 fix timer_get_fixed_seconds()
 {
+	Assertion(Timer_inited, "Make sure you call timer_init before anything that uses timer functions!");
 	if (!Timer_inited) {
-		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -106,8 +105,8 @@ fix timer_get_approx_seconds()
 
 int timer_get_seconds()
 {
+	Assertion(Timer_inited, "Make sure you call timer_init before anything that uses timer functions!");
 	if (!Timer_inited) {
-		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -116,8 +115,8 @@ int timer_get_seconds()
 
 int timer_get_milliseconds()
 {
+	Assertion(Timer_inited, "Make sure you call timer_init before anything that uses timer functions!");
 	if (!Timer_inited) {
-		UNREACHABLE("Make sure you call timer_init before anything that uses timer functions!");
 		return 0;
 	}
 
@@ -489,6 +488,9 @@ bool timestamp_elapsed(int stamp) {
 	if (stamp == 0) {
 		return false;
 	}
+	if (stamp == 1) {
+		return true;
+	}
 
 	return timestamp_ms() >= stamp;
 }
@@ -539,6 +541,9 @@ bool ui_timestamp_elapsed_last_frame(UI_TIMESTAMP ui_stamp) {
 
 bool timestamp_elapsed_safe(int a, int b) {
 	if (a == 0) {
+		return false;
+	}
+	if (a == 1) {
 		return true;
 	}
 

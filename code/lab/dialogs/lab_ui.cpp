@@ -4,15 +4,54 @@
 #include "lab_ui_helpers.h"
 
 #include "asteroid/asteroid.h"
+#include "graphics/2d.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
+#include "graphics/shadows.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 #include "mission/missionload.h"
+#include "prop/prop.h"
+#include "controlconfig/controlsconfig.h"
 
 using namespace ImGui;
+
+namespace {
+SCP_string get_binding_text(int action_id)
+{
+	const auto& action = Control_config[action_id];
+
+	if (!action.first.empty() && !action.second.empty()) {
+		return action.first.textify() + " or " + action.second.textify();
+	}
+
+	if (!action.first.empty()) {
+		return action.first.textify();
+	}
+
+	if (!action.second.empty()) {
+		return action.second.textify();
+	}
+
+	return "Unbound";
+}
+
+void controls_reference_entry(const char* label, const SCP_string& description)
+{
+	Bullet();
+	SameLine();
+	TextWrapped("%s: %s", label, description.c_str());
+}
+
+void controls_reference_entry(const char* label, const char* description)
+{
+	Bullet();
+	SameLine();
+	TextWrapped("%s: %s", label, description);
+}
+} // namespace
 
 std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
 std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
@@ -87,6 +126,32 @@ void LabUi::build_weapon_subtype_list() const
 					}
 				}
 				weapon_idx++;
+			}
+		}
+	}
+}
+
+void LabUi::build_prop_subtype_list()
+{
+	for (auto& propc : Prop_categories) {
+		with_TreeNode(propc.name.c_str())
+		{
+			int prop_idx = 0;
+
+			for (auto const& class_def : Prop_info) {
+				if (lcase_equal(prop_get_category(class_def.category_index)->name, propc.name)) {
+					SCP_string node_label;
+					sprintf(node_label, "##PropClassIndex%i", prop_idx);
+					TreeNodeEx(node_label.c_str(),
+						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+						"%s",
+						class_def.name.c_str());
+
+					if (IsItemClicked() && !IsItemToggledOpen()) {
+						getLabManager()->changeDisplayedObject(LabMode::Prop, prop_idx);
+					}
+				}
+				prop_idx++;
 			}
 		}
 	}
@@ -171,7 +236,15 @@ void LabUi::build_object_list()
 	}
 }
 
-void LabUi::build_background_list() const
+void LabUi::build_prop_list()
+{
+	with_TreeNode("Prop Classes")
+	{
+		build_prop_subtype_list();
+	}
+}
+
+void LabUi::build_background_list()
 {
 	SCP_vector<SCP_string> t_missions;
 
@@ -179,9 +252,9 @@ void LabUi::build_background_list() const
 
 	// Remove any ignored missions from the list
 	SCP_vector<SCP_string> missions;
-	for (int i = 0; i < (int)t_missions.size(); i++) {
-		if (!mission_is_ignored(t_missions[i].c_str())) {
-			missions.push_back(t_missions[i]);
+	for (const auto & t_mission : t_missions) {
+		if (!mission_is_ignored(t_mission.c_str())) {
+			missions.push_back(t_mission);
 		}
 	}
 
@@ -230,10 +303,16 @@ void LabUi::build_options_menu()
 {
 	with_Menu("Options")
 	{
+		bool show_widget_menu = getLabManager()->Renderer->getShowOrientationWidget();
 		MenuItem("Render options", nullptr, &show_render_options_dialog);
 		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
 		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
+		MenuItem("Controls reference", nullptr, &show_controls_reference_dialog);
+		if (MenuItem("Show orientation cube widget", nullptr, show_widget_menu)) {
+			getLabManager()->Renderer->setShowOrientationWidget(!show_widget_menu);
+		}
+		MenuItem("Reset View", nullptr, &reset_view);
 		MenuItem("Close lab", "ESC", &close_lab);
 	}
 }
@@ -243,6 +322,11 @@ void LabUi::build_toolbar_entries()
 	with_MainMenuBar
 	{
 		build_options_menu();
+	}
+
+	if (reset_view) {
+		getLabManager()->Renderer->resetView();
+		reset_view = false;
 	}
 
 	if (close_lab) {
@@ -272,6 +356,8 @@ void LabUi::show_object_selector() const
 
 			build_weapon_list();
 
+			build_prop_list();
+
 			build_object_list();
 		}
 	}
@@ -293,10 +379,46 @@ void LabUi::create_ui()
 	if (show_object_selection_dialog)
 		show_object_selector();
 
+	if (show_controls_reference_dialog)
+		show_controls_reference();
+
 	rebuild_after_object_change = false;
 }
 
-const char* antialiasing_settings[] = {
+void LabUi::show_controls_reference()
+{
+	with_Window("Lab controls reference")
+	{
+		TextWrapped("Mouse controls");
+		controls_reference_entry("LMB + drag", "Orient the displayed object.");
+		controls_reference_entry("RMB + drag", "Rotate the camera.");
+		controls_reference_entry("Shift + RMB + drag", "Pan the camera on the X/Y plane.");
+		controls_reference_entry("Mouse wheel", "Zoom the camera in or out.");
+		TextWrapped("Rotation axis limits and rotation speed apply only to object orientation (LMB), not "
+					"camera controls (RMB).");
+
+		Separator();
+		TextWrapped("Keyboard shortcuts");
+		controls_reference_entry("R", "Cycle object orientation (LMB) axis mode (Yaw, Pitch, Roll, or Both).");
+		controls_reference_entry("S", "Cycle object orientation (LMB) speed.");
+		controls_reference_entry("V", "Reset camera view.");
+		controls_reference_entry("T / Y", "Cycle team color presets.");
+		controls_reference_entry("1-9", "Switch anti-aliasing presets.");
+		controls_reference_entry("M", "Export an environment map.");
+		controls_reference_entry("ESC", "Close the lab.");
+
+		if (getLabManager()->CurrentMode == LabMode::Ship) {
+			Separator();
+			TextWrapped("Ship-only controls (from current control bindings)");
+			// These don't work in the new lab yet
+			//controls_reference_entry("Increase throttle by 5%", get_binding_text(PLUS_5_PERCENT_THROTTLE));
+			//controls_reference_entry("Decrease throttle by 5%", get_binding_text(MINUS_5_PERCENT_THROTTLE));
+			controls_reference_entry("Afterburner", get_binding_text(AFTERBURNER));
+		}
+	}
+}
+
+static const char* antialiasing_settings[] = {
 	"None",
 	"FXAA Low",
 	"FXAA Medium",
@@ -307,7 +429,7 @@ const char* antialiasing_settings[] = {
 	"SMAA Ultra",
 };
 
-SCP_string tonemappers[] = {
+static SCP_string tonemappers[] = {
 	"Linear",
 	"Uncharted",
 	"ACES",
@@ -319,7 +441,7 @@ SCP_string tonemappers[] = {
 	"Reinhard Jodie",
 };
 
-const char* texture_quality_settings[] = {
+static const char* texture_quality_settings[] = {
 	"Minimum",
 	"Low",
 	"Medium",
@@ -370,18 +492,86 @@ void LabUi::build_antialiasing_combobox()
 			bool is_selected = static_cast<int>(Gr_aa_mode) == n;
 
 			if (Selectable(antialiasing_settings[n], is_selected))
-				getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
+				LabRenderer::setAAMode(static_cast<AntiAliasMode>(n));
 
 			if (is_selected)
 				SetItemDefaultFocus();
 		}
 	}
 }
+
+static const char* shadow_render_method_settings[] = {
+	"Shadow Maps",
+	"Raytraced",
+};
+
+void LabUi::build_shadow_method_combobox()
+{
+	// Only offer this control at all when the hardware/renderer can actually do
+	// something with it -- same gate the in-game Shadow Method option's
+	// enumerator uses.
+	if (!shadows_raytracing_supported()) {
+		return;
+	}
+
+	with_Combo("Shadow method", shadow_render_method_settings[static_cast<int>(Shadow_render_method)])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(shadow_render_method_settings); n++) {
+			bool is_selected = static_cast<int>(Shadow_render_method) == n;
+
+			if (Selectable(shadow_render_method_settings[n], is_selected))
+				LabRenderer::setShadowRenderMethod(static_cast<ShadowRenderMethod>(n));
+
+			if (is_selected)
+				SetItemDefaultFocus();
+		}
+	}
+}
+
+void LabUi::build_max_rt_shadow_lights_slider()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	int count = Max_rt_shadow_lights;
+	if (SliderInt("Max Raytraced Shadow Lights", &count, 1, 8)) {
+		LabRenderer::setMaxRtShadowLights(count);
+	}
+}
+
+void LabUi::build_rt_shadow_bias_sliders()
+{
+	// Only meaningful when raytraced shadows are actually the active method.
+	if (!shadows_raytracing_supported() || Shadow_render_method != ShadowRenderMethod::Raytraced) {
+		return;
+	}
+
+	float bias_min = Rt_shadow_bias_min;
+	if (SliderFloat("Min RT Shadow Bias", &bias_min, 0.0f, 4.0f)) {
+		LabRenderer::setRtShadowBiasMin(bias_min);
+	}
+
+	float bias_max = Rt_shadow_bias_max;
+	if (SliderFloat("Max RT Shadow Bias", &bias_max, 0.5f, 16.0f)) {
+		LabRenderer::setRtShadowBiasMax(bias_max);
+	}
+}
+
+
 namespace ltp = lighting_profiles;
 using namespace ltp;
 
 void LabUi::build_tone_mapper_combobox()
 {
+	// current_tonemapper() forces TonemapperAlgorithm::HdrScene while HDR10
+	// output is active, ignoring whatever's stored -- so there's nothing
+	// meaningful left to pick here.
+	if (Gr_hdr_output_active) {
+		return;
+	}
+
 	with_Combo("Tonemapper", ltp::tonemapper_to_name(ltp::current_tonemapper()).c_str())
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
@@ -405,6 +595,7 @@ void LabUi::show_render_options()
 	float emissive_factor = ltp::lab_get_emissive();
 	float exposure_level = ltp::current_exposure();
 	auto ppcv = ltp::lab_get_ppc();
+	show_orientation_widget = getLabManager()->Renderer->getShowOrientationWidget();
 
 	bool skip_setting_light_options_this_frame = false;
 
@@ -418,7 +609,8 @@ void LabUi::show_render_options()
 				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			}
 			Checkbox("Show full detail", &show_full_detail);
-			if (getLabManager()->CurrentMode != LabMode::Asteroid) {
+			if (getLabManager()->CurrentMode == LabMode::Ship ||
+				getLabManager()->CurrentMode == LabMode::Weapon) {
 				Checkbox("Show thrusters", &show_thrusters);
 				if (getLabManager()->CurrentMode == LabMode::Ship) {
 					Checkbox("Show afterburners", &show_afterburners);
@@ -452,6 +644,8 @@ void LabUi::show_render_options()
 			Checkbox("Hide Post Processing", &hide_post_processing);
 			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
+			Checkbox("Orthographic projection", &use_orthographic_projection);
+			Checkbox("Show orientation cube widget", &show_orientation_widget);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
 			SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
@@ -461,6 +655,12 @@ void LabUi::show_render_options()
 			SliderInt("Bloom level", &bloom_level, 0, 200);
 
 			build_antialiasing_combobox();
+
+			build_shadow_method_combobox();
+
+			build_max_rt_shadow_lights_slider();
+
+			build_rt_shadow_bias_sliders();
 
 			build_tone_mapper_combobox();
 
@@ -478,6 +678,10 @@ void LabUi::show_render_options()
 					for (const auto &s : profile_list) {
 						if (Button(s.c_str(), ImVec2(-FLT_MIN, GetTextLineHeight() * 2))) {
 							ltp::switch_to(s);
+
+							// Avoid immediately overwriting the selected profile's values with
+							// stale slider state captured before the profile switch.
+							skip_setting_light_options_this_frame = true;
 						}
 					}
 				}
@@ -562,17 +766,19 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoLighting, no_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, show_full_detail);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, show_thrusters);
-		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners || getLabManager()->Lab_thrust_afterburn);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
-		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
-		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
-		getLabManager()->Renderer->setLightFactor(light_factor);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::UseOrthographicProjection, use_orthographic_projection);
+		getLabManager()->Renderer->setShowOrientationWidget(show_orientation_widget);
+		LabRenderer::setEmissiveFactor(emissive_factor);
+		LabRenderer::setAmbientFactor(ambient_factor);
+		LabRenderer::setLightFactor(light_factor);
 		getLabManager()->Renderer->setBloomLevel(bloom_level);
 		getLabManager()->Renderer->setExposureLevel(exposure_level);
-		getLabManager()->Renderer->setPPCValues(ppcv);
+		LabRenderer::setPPCValues(ppcv);
 	}
 }
 
@@ -612,11 +818,13 @@ static void build_ship_table_info_txtbox(ship_info* sip)
 		static SCP_string table_text;
 		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass)
+		if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
 			table_text = get_ship_table_text(sip);
+			old_class = getLabManager()->CurrentClass;
+		}
 
 		InputTextMultiline("##table_text",
-			const_cast<char*>(table_text.c_str()),
+			table_text.data(),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 			ImGuiInputTextFlags_ReadOnly);
@@ -631,12 +839,13 @@ static void build_weapon_table_info_txtbox(weapon_info* wip)
 		static SCP_string table_text;
 		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+		if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
 			table_text = get_weapon_table_text(wip);
+			old_class = getLabManager()->CurrentClass;
 		}
 
 		InputTextMultiline("##weapon_table_text",
-			const_cast<char*>(table_text.c_str()),
+			table_text.data(),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 			ImGuiInputTextFlags_ReadOnly);
@@ -666,7 +875,7 @@ void LabUi::build_model_info_box(ship_info* sip, polymodel* pm) const {
 	}
 }
 
-void render_subsystem(ship_subsys* ss, object* objp)
+static void render_subsystem(ship_subsys* ss, object* objp)
 {
 	SCP_string buf;
 
@@ -721,7 +930,7 @@ void render_subsystem(ship_subsys* ss, object* objp)
 		// draw another cube around a gun for a two-part turret
 		if ((ss->system_info->turret_gun_sobj >= 0) &&
 			(ss->system_info->turret_gun_sobj != ss->system_info->subobj_num)) {
-			bsp_info* bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
+			bsp_info const* bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
 
 			front_top_left = bsp_turret->bounding_box[7];
 			front_top_right = bsp_turret->bounding_box[6];
@@ -997,16 +1206,16 @@ void LabUi::build_weapon_options(ship* shipp) const {
 
 void LabUi::build_primary_weapon_combobox(SCP_string& text,
 	weapon_info* wip,
-	int& primary_slot) const
+	int& primary_slot)
 {
 	with_Combo(text.c_str(), wip->name)
 	{
 		for (size_t i = 0; i < Weapon_info.size(); i++) {
 			if (Weapon_info[i].subtype == WP_MISSILE)
 				continue;
-			bool is_selected = i == (size_t)primary_slot;
+			bool is_selected = i == static_cast<size_t>(primary_slot);
 			if (Selectable(Weapon_info[i].name, is_selected))
-				primary_slot = (int)i;
+				primary_slot = static_cast<int>(i);
 			if (is_selected)
 				SetItemDefaultFocus();
 		}
@@ -1064,9 +1273,12 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 					case animation::ModelAnimationTriggerType::Docked:
 						button_label += "Trigger Docked Animation " + std::to_string(count++);
 						break;
+					case animation::ModelAnimationTriggerType::Scripted:
+						button_label += "Trigger Scripted Animation " + std::to_string(count++);
+						break;
 					default:
 						// We really shouldn't be here, but just in case
-						Assertion(false, "Unexpected animation trigger type %d", static_cast<int>(trigger_type));
+						UNREACHABLE("Unexpected animation trigger type %d", static_cast<int>(trigger_type));
 						button_label += "Trigger Animation " + std::to_string(count++);
 						break;
 					}
@@ -1426,7 +1638,7 @@ void LabUi::show_object_options() const
 			{
 				build_weapon_options(shipp);
 			}
-		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->isSafeForWeapons()) {
+		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->CurrentClass >= 0) {
 			auto wip = &Weapon_info[getLabManager()->CurrentClass];
 
 			with_CollapsingHeader("Weapon Info")
@@ -1458,7 +1670,7 @@ void LabUi::show_object_options() const
 				}
 
 				InputTextMultiline("##asteroid_table_text",
-					const_cast<char*>(table_text.c_str()),
+					table_text.data(),
 					table_text.length(),
 					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 					ImGuiInputTextFlags_ReadOnly);
@@ -1480,6 +1692,32 @@ void LabUi::show_object_options() const
 							}
 						}
 					}
+				}
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Prop && getLabManager()->CurrentClass >= 0) {
+			const auto& info = Prop_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Object Info")
+			{
+				static SCP_string table_text;
+				static int old_class = -1;
+
+				if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
+					table_text = get_prop_table_text(&info);
+					old_class = getLabManager()->CurrentClass;
+				}
+
+				InputTextMultiline("##prop_table_text",
+					table_text.data(),
+					table_text.length(),
+					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+					ImGuiInputTextFlags_ReadOnly);
+			}
+
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->isSafeForProps()) {
+					// No actions yet
 				}
 			}
 		}

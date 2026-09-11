@@ -27,9 +27,8 @@
 #include "playerman/player.h"				// used for the max_keyed_target stuff
 #include "IgnoreOrdersDlg.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "model/model.h"
-#include "starfield/starfield.h"
-#include "jumpnode/jumpnode.h"
 #include "ShipFlagsDlg.h"
 #include "mission/missionmessage.h"
 #include "ShipSpecialDamage.h"
@@ -338,9 +337,9 @@ BOOL CShipEditorDlg::Create()
 	m_departure_delay.setup(IDC_DEPARTURE_DELAY, this);
 
 	m_hotkey = 0;
-	m_arrival_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
+	m_arrival_tree._model.modified = &modified;  // provide way to indicate trees are modified in dialog
 	m_arrival_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
-	m_departure_tree.link_modified(&modified);
+	m_departure_tree._model.modified = &modified;
 	m_departure_tree.setup();
 	m_arrival_delay_spin.SetRange(0, 999);
 	m_departure_delay_spin.SetRange(0, 999);
@@ -566,11 +565,11 @@ void CShipEditorDlg::initialize_data(int full_update)
 								d_cue = Ships[i].departure_cue;
 								m_arrival_location = static_cast<int>(Ships[i].arrival_location);
 								m_arrival_dist.init(Ships[i].arrival_distance);
-								m_arrival_target = Ships[i].arrival_anchor;
+								m_arrival_target = anchor_to_target(Ships[i].arrival_anchor);
 								m_arrival_delay.init(Ships[i].arrival_delay);
 								m_departure_location = static_cast<int>(Ships[i].departure_location);
 								m_departure_delay.init(Ships[i].departure_delay);
-								m_departure_target = Ships[i].departure_anchor;
+								m_departure_target = anchor_to_target(Ships[i].departure_anchor);
 
 							} else {
 								cue_init++;
@@ -586,7 +585,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 								m_arrival_delay.set(Ships[i].arrival_delay);
 								m_departure_delay.set(Ships[i].departure_delay);
 
-								if (Ships[i].arrival_anchor != m_arrival_target){
+								if (Ships[i].arrival_anchor != target_to_anchor(m_arrival_target)){
 									m_arrival_target = -1;
 								}
 
@@ -600,7 +599,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 									m_update_departure = 0;
 								}
 
-								if ( Ships[i].departure_anchor != m_departure_target ){
+								if (Ships[i].departure_anchor != target_to_anchor(m_departure_target)){
 									m_departure_target = -1;
 								}
 							}
@@ -805,11 +804,11 @@ void CShipEditorDlg::initialize_data(int full_update)
 	// of the drop-down list.
 	if (m_arrival_target >= 0)
 	{
-		if (m_arrival_target & SPECIAL_ARRIVAL_ANCHOR_FLAG)
+		if (m_arrival_target & ANCHOR_SPECIAL_ARRIVAL)
 		{
 			// figure out what the box represents this as
 			char tmp[NAME_LENGTH + 15];
-			stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
+			stuff_special_arrival_anchor_name(tmp, m_arrival_target, false);
 
 			// find it in the box
 			m_arrival_target = box->FindStringExact(-1, tmp);
@@ -1064,7 +1063,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 // Once the error no longer occurs, bypass mode is cleared and data is updated.
 int CShipEditorDlg::update_data(int redraw)
 {
-	char *str, old_name[255];
+	char old_name[255];
 	object *ptr;
 	int i, z, wing;
 	CSingleLock sync(&CS_cur_object_index), sync2(&CS_update);
@@ -1091,123 +1090,18 @@ int CShipEditorDlg::update_data(int redraw)
 		update_ship(player_ship);
 
 	} else if (single_ship >= 0) {  // editing a single ship
-		m_ship_name.TrimLeft(); 
+		m_ship_name.TrimLeft();
 		m_ship_name.TrimRight();
-		if (m_ship_name.IsEmpty()) {
+
+		SCP_string conflict = check_name_conflict("ship", m_ship_name, single_ship);
+		if (!conflict.empty()) {
 			if (bypass_errors)
 				return 1;
 
 			bypass_errors = 1;
-			z = MessageBox("A ship name cannot be empty\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_ship_name = _T(Ships[single_ship].ship_name);
-			UpdateData(FALSE);
-		}
-
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
-				str = Ships[ptr->instance].ship_name;
-				if (!stricmp(m_ship_name, str)) {
-					if (bypass_errors)
-						return 1;
-
-					bypass_errors = 1;
-					z = MessageBox("This ship name is already being used by another ship\n"
-						"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-					if (z == IDCANCEL)
-						return -1;
-
-					m_ship_name = _T(Ships[single_ship].ship_name);
-					UpdateData(FALSE);
-				}
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-
-		for (i=0; i<MAX_WINGS; i++) {
-			if (Wings[i].wave_count && !stricmp(Wings[i].name, m_ship_name)) {
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This ship name is already being used by a wing\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_ship_name = _T(Ships[single_ship].ship_name);
-				UpdateData(FALSE);
-			}
-		}
-
-		// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
-
-		for ( i=0; i < (int)Ai_tp_list.size(); i++) {
-			if (!stricmp(m_ship_name, Ai_tp_list[i].name)) 
-			{
-				if (bypass_errors)
-					return 1;
-
-				bypass_errors = 1;
-				z = MessageBox("This ship name is already being used by a target priority group.\n"
-					"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-				if (z == IDCANCEL)
-					return -1;
-
-				m_ship_name = _T(Ships[single_ship].ship_name);
-				UpdateData(FALSE);
-			}
-		}
-
-		if (find_matching_waypoint_list((LPCSTR) m_ship_name) != NULL)
-		{
-			if (bypass_errors)
-				return 0;
-
-			bypass_errors = 1;
-			z = MessageBox("This ship name is already being used by a waypoint path\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-				return -1;
-
-			m_ship_name = _T(Ships[single_ship].ship_name);
-			UpdateData(FALSE);
-		}
-
-		if(jumpnode_get_by_name(m_ship_name) != NULL)
-		{
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-
-			z = MessageBox("This ship name is already being used by a jump node\n"
-			"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
-
-			if (z == IDCANCEL)
-			return -1;
-
-			m_ship_name = _T(Ships[single_ship].ship_name);
-			UpdateData(FALSE);
-		}
-		
-		if (!stricmp(m_ship_name.Left(1), "<")) {
-			if (bypass_errors)
-				return 1;
-
-			bypass_errors = 1;
-			z = MessageBox("Ship names not allowed to begin with <\n"
-				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+			CString msg;
+			msg.Format("%s\nPress OK to restore old name", conflict.c_str());
+			z = MessageBox(msg, "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
 
 			if (z == IDCANCEL)
 				return -1;
@@ -1242,34 +1136,16 @@ int CShipEditorDlg::update_data(int redraw)
 		if (z)
 			return z;
 
-		strcpy_s(old_name, Ships[single_ship].ship_name);
-		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH - 1, 1);
-		str = Ships[single_ship].ship_name;
-		if (strcmp(old_name, str)) {
-			update_sexp_references(old_name, str);
-			ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
-			update_texture_replacements(old_name, str);
-			for (i=0; i<Num_reinforcements; i++)
-				if (!strcmp(old_name, Reinforcements[i].name)) {
-					Assert(strlen(str) < NAME_LENGTH);
-					strcpy_s(Reinforcements[i].name, str);
-				}
-
+		char new_name[NAME_LENGTH];
+		string_copy(new_name, m_ship_name, NAME_LENGTH - 1, 1);
+		if (strcmp(Ships[single_ship].ship_name, new_name) != 0) {
+			// the display name was already handled in update_ship
+			rename_ship(single_ship, new_name, false);
 			Update_window = 1;
 		}
 	}
 
-	if (Player_start_shipnum < 0 || Objects[Ships[Player_start_shipnum].objnum].type != OBJ_START) {  // need a new single player start.
-		ptr = GET_FIRST(&obj_used_list);
-		while (ptr != END_OF_LIST(&obj_used_list)) {
-			if (ptr->type == OBJ_START) {
-				Player_start_shipnum = ptr->instance;
-				break;
-			}
-
-			ptr = GET_NEXT(ptr);
-		}
-	}
+	ensure_valid_player_start_shipnum();  // may need a new single player start
 
 	if (modified)
 		set_modified();
@@ -1296,14 +1172,14 @@ int CShipEditorDlg::update_ship(int ship)
 	// the display name was precalculated, so now just assign it
 	if (m_ship_display_name == m_ship_name || m_ship_display_name.CompareNoCase("<none>") == 0)
 	{
-		if (Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+		if (Ships[ship].has_display_name())
 			set_modified();
 		Ships[ship].display_name = "";
 		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
 	}
 	else
 	{
-		if (!Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+		if (!Ships[ship].has_display_name() || Ships[ship].display_name != (LPCSTR)m_ship_display_name)
 			set_modified();
 		Ships[ship].display_name = m_ship_display_name;
 		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
@@ -1392,14 +1268,14 @@ int CShipEditorDlg::update_ship(int ship)
 			if (Ships[ship].arrival_cue >= 0)
 				free_sexp2(Ships[ship].arrival_cue);
 
-			Ships[ship].arrival_cue = m_arrival_tree.save_tree();
+			Ships[ship].arrival_cue = m_arrival_tree._model.save_tree();
 		}
 
 		if (!multi_edit || m_update_departure) {
 			if (Ships[ship].departure_cue >= 0)
 				free_sexp2(Ships[ship].departure_cue);
 
-			Ships[ship].departure_cue = m_departure_tree.save_tree();
+			Ships[ship].departure_cue = m_departure_tree._model.save_tree();
 		}
 
 		m_arrival_dist.save(&Ships[ship].arrival_distance);
@@ -1407,11 +1283,11 @@ int CShipEditorDlg::update_ship(int ship)
 		m_departure_delay.save(&Ships[ship].departure_delay);
 		if (m_arrival_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
-			MODIFY(Ships[ship].arrival_anchor, z);
+			MODIFY(Ships[ship].arrival_anchor, target_to_anchor(z));
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
-			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & ANCHOR_SPECIAL_ARRIVAL)) {
 			d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"
@@ -1430,7 +1306,7 @@ int CShipEditorDlg::update_ship(int ship)
 		}
 		if (m_departure_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
-			MODIFY(Ships[ship].departure_anchor, z );
+			MODIFY(Ships[ship].departure_anchor, target_to_anchor(z));
 		}
 	}
 
@@ -1519,7 +1395,9 @@ int CShipEditorDlg::update_ship(int ship)
 
 			Objects[Ships[ship].objnum].type = OBJ_SHIP;
 			break;
-	}	
+	}
+
+	ensure_valid_player_start_shipnum();
 
 	Update_ship = 1;
 	return 0;
@@ -2440,27 +2318,22 @@ void CShipEditorDlg::OnSetAsPlayerShip()
 		return;
 	}
 
-	// since this is single player, clear all player ships and set only this one
-	object *objp = GET_FIRST(&obj_used_list);
-	while (objp != END_OF_LIST(&obj_used_list))
+	// find the selected ship; there should only be one
+	object *marked_objp = nullptr;
+	for (auto objp: list_range(&obj_used_list))
 	{
-		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))
+		if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && objp->flags[Object::Object_Flags::Marked])
 		{
-			if (objp->flags[Object::Object_Flags::Marked])	// there should only be one selected ship
-			{
-				// set as player ship
-				objp->type = OBJ_START;
-				objp->flags.set(Object::Object_Flags::Player_ship);
-			}
-			else
-			{
-				// set as regular ship
-				objp->type = OBJ_SHIP;
-				objp->flags.remove(Object::Object_Flags::Player_ship);
-			}
+			marked_objp = objp;
+			break;
 		}
-		objp = GET_NEXT(objp);
 	}
+	if (marked_objp == nullptr)
+		return;
+
+	// since this is single player, clear all player ships and set only this one
+	if (set_single_player_start(OBJ_INDEX(marked_objp)))
+		set_modified();
 
 	// finally set editor dialog
 	m_player_ship.SetCheck(1);
@@ -2495,7 +2368,7 @@ void CShipEditorDlg::OnRestrictArrival()
 
 	arrive_from_ship = (int)box->GetItemData(m_arrival_target);
 
-	if (!ship_has_dock_bay(arrive_from_ship))
+	if (!ship_has_hangar_bay(arrive_from_ship))
 	{
 		Int3();
 		return;
@@ -2539,7 +2412,7 @@ void CShipEditorDlg::OnRestrictDeparture()
 
 	depart_to_ship = (int)box->GetItemData(m_departure_target);
 
-	if (!ship_has_dock_bay(depart_to_ship))
+	if (!ship_has_hangar_bay(depart_to_ship))
 	{
 		Int3();
 		return;

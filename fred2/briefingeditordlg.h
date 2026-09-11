@@ -12,7 +12,7 @@
 #ifndef __BRIEFINGEDITORDLG_H__
 #define __BRIEFINGEDITORDLG_H__
 
-#include "sexp_tree.h"
+#include "sexp_tree_view.h"
 
 #include "parse/sexp.h"
 #include "mission/missionbriefcommon.h"
@@ -34,6 +34,8 @@ public:
 	void OnOK();
 	void OnCancel();
 	int find_icon(int id, int stage);
+	bool briefing_icon_id_used(int id);
+	int get_unused_briefing_icon_id();
 	void propagate_icon(int num);
 	void reset_editor();
 	int check_mouse_hit(int x, int y);
@@ -48,7 +50,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(briefing_editor_dlg)
 	enum { IDD = IDD_BRIEFING_EDITOR };
-	sexp_tree	m_tree;
+	sexp_tree_view	m_tree;
 	CButton	m_lines;
 	BOOL	m_hilight;
 	int		m_icon_image;
@@ -74,7 +76,7 @@ public:
 	BOOL	m_use_cargo;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
 
 	// copy view variables
 	int		m_copy_view_set;

@@ -190,14 +190,16 @@ extern int Wss_num_wings_teams[MAX_TVT_TEAMS];
 //////////////////////////////////////////////
 // Weapon pool
 //////////////////////////////////////////////
-extern int Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-extern int *Wl_pool;
+// weapon class index -> count remaining; an absent entry means the class is not in this mission's loadout
+extern SCP_map<int, int> Wl_pool_teams[MAX_TVT_TEAMS];
+extern SCP_map<int, int> *Wl_pool;
 
 //////////////////////////////////////////////
 // Ship pool
 //////////////////////////////////////////////
-extern int Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-extern int *Ss_pool;
+// ship class index -> count remaining; an absent entry means the class is not in this mission's loadout
+extern SCP_map<int, int> Ss_pool_teams[MAX_TVT_TEAMS];
+extern SCP_map<int, int> *Ss_pool;
 
 //////////////////////////////////////////////
 // Saving loadout
@@ -207,8 +209,8 @@ typedef struct loadout_data
 	char				filename[MAX_FILENAME_LEN];				// mission filename
 	char				last_modified[DATE_TIME_LENGTH];	// when mission was last modified
 	wss_unit			unit_data[MAX_WSS_SLOTS];			// ship and weapon data
-	int				weapon_pool[MAX_WEAPON_TYPES];	// available weapons
-	int				ship_pool[MAX_SHIP_CLASSES];			// available ships
+	SCP_map<int, int>	weapon_pool;					// available weapons: class index -> count; absent serialized as 0
+	SCP_map<int, int>	ship_pool;						// available ships: class index -> count; absent serialized as -1 (Ss_pool's not-in-loadout sentinel)
 } loadout_data;
 
 extern loadout_data Player_loadout;
@@ -234,8 +236,9 @@ int store_wss_data(ubyte *data, const unsigned int max_size, interface_snd_id so
 int restore_wss_data(ubyte *data);
 
 class ship_info;
-void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos=nullptr, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, uint64_t flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, select_effect_params effect_params = select_effect_params{});
+struct weapon_info;
+void draw_model_icon(int model_id, uint64_t flags, int x1, int x2, int y1, int y2, ship_info* sip = nullptr, weapon_info* wip = nullptr, float zoom_multiplier = 1.0f, int resize_mode = GR_RESIZE_FULL);
+void draw_model_rotating(model_render_params *render_info, int ship_class, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos=nullptr, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, uint64_t flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, select_effect_params effect_params = select_effect_params{});
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();

@@ -31,7 +31,7 @@ public:
 	CString	m_wave_filename;
 	//}}AFX_DATA
 
-	CBitmap m_play_bm;
+	HICON m_play_icon;
 
 // Overrides
 	// ClassWizard generated virtual function overrides

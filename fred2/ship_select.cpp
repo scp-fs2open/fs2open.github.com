@@ -162,7 +162,6 @@ BOOL ship_select::OnInitDialog()
 
 void ship_select::create_list()
 {
-	SCP_string text;
 	object *ptr;
 
 	update_status(true);
@@ -213,11 +212,9 @@ void ship_select::create_list()
 		{
 			if (ptr->type == OBJ_WAYPOINT)
 			{
-				int waypoint_num;
-				waypoint_list *wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-				Assert(wp_list != NULL);
-				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-				m_ship_list.AddString(text.c_str());
+				char text[NAME_LENGTH];
+				waypoint_stuff_name(text, ptr->instance);
+				m_ship_list.AddString(text);
 				obj_index.push_back(OBJ_INDEX(ptr));
 				if (ptr->flags[Object::Object_Flags::Temp_marked])
 					m_ship_list.SetSel((int)obj_index.size());

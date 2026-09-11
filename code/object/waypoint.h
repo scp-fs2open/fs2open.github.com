@@ -12,7 +12,6 @@ class waypoint
 	public:
 		waypoint();
 		waypoint(const vec3d *pos);
-		~waypoint();
 
 		// accessors
 		const vec3d *get_pos() const;
@@ -26,7 +25,7 @@ class waypoint
 		void set_pos(const vec3d *pos);
 
 	private:
-		vec3d m_position;
+		vec3d m_parsed_position;	// only relevant until the game object is created, after which the waypoint delegates to the object position
 		int m_objnum;
 
 	friend void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index);
@@ -37,7 +36,6 @@ class waypoint_list
 	public:
 		waypoint_list();
 		waypoint_list(const char *name);
-		~waypoint_list();
 
 		// accessors
 		const char *get_name() const;
@@ -46,10 +44,26 @@ class waypoint_list
 
 		// mutators
 		void set_name(const char *name);
+		void set_no_draw_lines(bool val);
+		void set_color(int r, int g, int b);
+		void clear_color();
+		void set_fred_layer(const SCP_string& layer) { m_fred_layer = layer; }
+
+		// display property accessors
+		bool get_no_draw_lines() const;
+		bool get_has_custom_color() const;
+		int get_color_r() const;
+		int get_color_g() const;
+		int get_color_b() const;
+		const SCP_string& get_fred_layer() const { return m_fred_layer; }
 
 	private:
 		char m_name[NAME_LENGTH];
 		SCP_vector<waypoint> m_waypoints;
+		bool m_no_draw_lines;
+		bool m_has_custom_color;
+		int m_color_r, m_color_g, m_color_b;
+		SCP_string m_fred_layer = "Default";	// FRED view layer assignment
 };
 
 //********************GLOBALS********************
@@ -91,6 +105,28 @@ int find_index_of_waypoint(const waypoint_list *wp_list, const waypoint *wpt);
 
 // Find a name that doesn't conflict with any current waypoint list
 void waypoint_find_unique_name(char *dest_name, int start_index);
+
+// Write a waypoint name to a string buffer.  Note that waypoint_num is written verbatim, i.e. not adding or subtracting 1.  The buffer size must be at least NAME_LENGTH.
+void waypoint_stuff_name(char *dest, const char *waypoint_list_name, int waypoint_num);
+
+// Write a waypoint name to a string buffer.  Note that waypoint_num is written verbatim, i.e. not adding or subtracting 1.
+void waypoint_stuff_name(SCP_string &dest, const char *waypoint_list_name, int waypoint_num);
+
+template <typename STR>
+void waypoint_stuff_name(STR &dest, const waypoint &wpt)
+{
+	waypoint_stuff_name(dest, wpt.get_parent_list()->get_name(), wpt.get_index() + 1);
+}
+
+template <typename STR>
+void waypoint_stuff_name(STR &dest, int waypoint_instance)
+{
+	int wl_index, wp_index;
+	calc_waypoint_indexes(waypoint_instance, wl_index, wp_index);
+	Assertion(Waypoint_lists.in_bounds(wl_index), "Waypoint list index must be in bounds!");
+	Assertion(Waypoint_lists[wl_index].get_waypoints().in_bounds(wp_index), "Waypoint index must be in bounds!");
+	waypoint_stuff_name(dest, Waypoint_lists[wl_index].get_name(), wp_index + 1);
+}
 
 // Add a new list of waypoints.  Called from mission parsing.
 void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list);

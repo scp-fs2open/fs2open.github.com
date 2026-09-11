@@ -27,6 +27,7 @@
 #include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
+#include "missioneditor/common.h"
 #include <vcruntime.h>
 
 #ifdef _DEBUG
@@ -58,22 +59,22 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_toggle_trails = FALSE;
 	m_corrected_angles_in_mission_file = FALSE;
 
-	s_pitch = 0;
-	s_bank = 0;
-	s_heading = 0;
+	s_pitch = 0.f;
+	s_bank = 0.f;
+	s_heading = 0.f;
 	s_scale = 1.0f;	
 	s_index = -1;
-	b_pitch = 0;
-	b_bank = 0;
-	b_heading = 0;
+	b_pitch = 0.f;
+	b_bank = 0.f;
+	b_heading = 0.f;
 	b_scale_x = 1.0f; b_scale_y = 1.0f;
 	b_div_x = 1; b_div_y = 1;
 	b_index = -1;
 
 	m_skybox_model = _T("");
-	m_skybox_pitch = 0;
-	m_skybox_bank = 0;
-	m_skybox_heading = 0;
+	m_skybox_pitch = 0.f;
+	m_skybox_bank = 0.f;
+	m_skybox_heading = 0.f;
 	m_sky_flag_1 = The_mission.skybox_flags & MR_NO_LIGHTING ? 1 : 0;
 	m_sky_flag_2 = The_mission.skybox_flags & MR_ALL_XPARENT ? 1 : 0;
 	m_sky_flag_3 = The_mission.skybox_flags & MR_NO_ZBUFFER ? 1 : 0;
@@ -108,20 +109,20 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Text(pDX, IDC_SUN1, s_name);
 	DDX_Text(pDX, IDC_SUN1_P, s_pitch);
-	DDV_MinMaxInt(pDX, s_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, s_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_B, s_bank);
-	DDV_MinMaxInt(pDX, s_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, s_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_H, s_heading);
-	DDV_MinMaxInt(pDX, s_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, s_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SUN1_SCALE, s_scale);
 	DDV_MinMaxFloat(pDX, s_scale, 0.1f, 50.0f);
 	DDX_Text(pDX, IDC_SBITMAP, b_name);
 	DDX_Text(pDX, IDC_SBITMAP_P, b_pitch);
-	DDV_MinMaxInt(pDX, b_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, b_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_B, b_bank);
-	DDV_MinMaxInt(pDX, b_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, b_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_H, b_heading);
-	DDV_MinMaxInt(pDX, b_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, b_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
 	DDV_MinMaxFloat(pDX, b_scale_x, .001f, 18.0f);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_Y, b_scale_y);
@@ -132,11 +133,11 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, b_div_y, 1, 5);
 	DDX_Text(pDX, IDC_SKYBOX_FNAME, m_skybox_model);
 	DDX_Text(pDX, IDC_SKYBOX_P, m_skybox_pitch);
-	DDV_MinMaxInt(pDX, m_skybox_pitch, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_pitch, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SKYBOX_B, m_skybox_bank);
-	DDV_MinMaxInt(pDX, m_skybox_bank, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_bank, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_SKYBOX_H, m_skybox_heading);
-	DDV_MinMaxInt(pDX, m_skybox_heading, 0, 359);
+	DDV_MinMaxFloat(pDX, m_skybox_heading, 0.f, DEGREE_UB);
 	DDX_Text(pDX, IDC_ENVMAP, m_envmap);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_LIGHTING, m_sky_flag_1);
 	DDX_Check(pDX, IDC_SKY_FLAG_XPARENT, m_sky_flag_2);
@@ -144,8 +145,10 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_CULL, m_sky_flag_4);
 	DDX_Check(pDX, IDC_SKY_FLAG_NO_GLOW, m_sky_flag_5);
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
-	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
-	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_Text(pDX, IDC_NEB2_FOG_1000M_VIS, m_neb_fog_1000m_vis);
+	DDX_Text(pDX, IDC_NEB2_FOG_NEAR_DIST, m_neb_fog_near_dist);
+	DDX_Text(pDX, IDC_NEB2_FOG_SKYBOX_CLIP, m_neb_fog_skybox_clip);
+	DDX_Text(pDX, IDC_NEB2_FOG_CLIP, m_neb_fog_clip);
 	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
@@ -209,7 +212,6 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
-const static float delta = .00001f;
 
 /////////////////////////////////////////////////////////////////////////////
 // bg_bitmap_dlg message handlers
@@ -226,8 +228,25 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
 	m_CorrectedAnglesToolTip->Activate(TRUE);
 
+	m_FogParamsToolTip = new CToolTipCtrl();
+	m_FogParamsToolTip->Create(this);
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
+	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
+	m_FogParamsToolTip->Activate(TRUE);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+BOOL bg_bitmap_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (m_CorrectedAnglesToolTip != nullptr)
+		m_CorrectedAnglesToolTip->RelayEvent(pMsg);
+	if (m_FogParamsToolTip != nullptr)
+		m_FogParamsToolTip->RelayEvent(pMsg);
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 void bg_bitmap_dlg::create()
@@ -271,9 +290,9 @@ void bg_bitmap_dlg::create()
 
 	angles skybox_angles;
 	vm_extract_angles_matrix(&skybox_angles, &The_mission.skybox_orientation);
-	m_skybox_pitch = fl2ir(fl_degrees(skybox_angles.p));
-	m_skybox_bank = fl2ir(fl_degrees(skybox_angles.b));
-	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
+	m_skybox_pitch = fl_degrees_100ths(skybox_angles.p);
+	m_skybox_bank = fl_degrees_100ths(skybox_angles.b);
+	m_skybox_heading = fl_degrees_100ths(skybox_angles.h);
 
 	//make sure angle values are in the 0-359 degree range
 	if (m_skybox_pitch < 0) m_skybox_pitch += 360;
@@ -385,8 +404,15 @@ void bg_bitmap_dlg::create()
 	sprintf(buf, "Blue: %d", m_amb_blue.GetPos());
 	GetDlgItem(IDC_AMBIENT_B_TEXT)->SetWindowText(buf);
 
-	m_neb_near_multi = Neb2_fog_near_mult;
-	m_neb_far_multi = Neb2_fog_far_mult;
+	m_neb_fog_1000m_vis.Format("%.10g", Neb2_fog_1000m_visibility);
+	m_neb_fog_near_dist.Format("%.10g", Neb2_fog_near_distance);
+	m_neb_fog_skybox_clip.Format("%.10g", Neb2_fog_skybox_clip_distance);
+	m_neb_fog_clip.Format("%.10g", Neb2_fog_clip_distance);
+
+	m_initial_neb_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	m_initial_neb_fog_near_dist = Neb2_fog_near_distance;
+	m_initial_neb_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	m_initial_neb_fog_clip = Neb2_fog_clip_distance;
 
 	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
 	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
@@ -418,7 +444,13 @@ void bg_bitmap_dlg::OnCancel()
 	OnClose();
 }
 
-void bg_bitmap_dlg::OnClose() 
+BOOL bg_bitmap_dlg::DestroyWindow()
+{
+	Bg_bitmap_dialog = nullptr;
+	return CDialog::DestroyWindow();
+}
+
+void bg_bitmap_dlg::OnClose()
 {
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
@@ -429,7 +461,7 @@ void bg_bitmap_dlg::OnClose()
 
 		// override dumb values with reasonable ones
 		if(Neb2_awacs <= 0.00000001f){
-			Neb2_awacs = 3000.0f;
+			Neb2_awacs = DEFAULT_NEBULA_RANGE;
 		}
 
 		// store poof flags
@@ -510,8 +542,29 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.skybox_flags |= MR_FORCE_CLAMP;
 	}
 
-	Neb2_fog_near_mult = m_neb_near_multi;
-	Neb2_fog_far_mult = m_neb_far_multi;
+	Neb2_fog_1000m_visibility = (float)atof((LPCSTR)m_neb_fog_1000m_vis);
+	Neb2_fog_near_distance = (float)atof((LPCSTR)m_neb_fog_near_dist);
+	Neb2_fog_skybox_clip_distance = (float)atof((LPCSTR)m_neb_fog_skybox_clip);
+	Neb2_fog_clip_distance = (float)atof((LPCSTR)m_neb_fog_clip);
+
+	// if the user set or changed any modern value, we can no longer save the legacy values
+	// (and we might not have saved them in the first place)
+	if (!fl_equal(Neb2_fog_1000m_visibility, m_initial_neb_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, m_initial_neb_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, m_initial_neb_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, m_initial_neb_fog_clip))
+	{
+		Neb2_fog_save_legacy_values = false;
+	}
+
+	extern const float Default_max_draw_distance;
+	CLAMP(Neb2_fog_1000m_visibility, 0.0f, 1.0f);
+	if (Neb2_fog_near_distance <= 0.0f)
+		Neb2_fog_near_distance = 10.0f;
+	if (Neb2_fog_skybox_clip_distance < 0.0f)
+		Neb2_fog_skybox_clip_distance = Default_max_draw_distance;
+	if (Neb2_fog_clip_distance < 0.0f)
+		Neb2_fog_clip_distance = Default_max_draw_distance;
 
 	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 	// close sun data
@@ -530,7 +583,7 @@ void bg_bitmap_dlg::OnClose()
 	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
-	Bg_bitmap_dialog = NULL;
+	Bg_bitmap_dialog = nullptr;
 
 	FREDDoc_ptr->autosave("background editor");
 }
@@ -610,8 +663,10 @@ void bg_bitmap_dlg::OnFullNeb()
 
 		GetDlgItem(IDC_NEB2_POOF_LIST)->EnableWindow(TRUE);
 
-		GetDlgItem(IDC_NEB2_NEAR_MULTIPLIER)->EnableWindow(TRUE);
-		GetDlgItem(IDC_NEB2_FAR_MULTIPLIER)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_1000M_VIS)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_NEAR_DIST)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP)->EnableWindow(TRUE);
+		GetDlgItem(IDC_NEB2_FOG_CLIP)->EnableWindow(TRUE);
 
 		GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(m_fog_color_override);
@@ -643,8 +698,10 @@ void bg_bitmap_dlg::OnFullNeb()
 
 		GetDlgItem(IDC_NEB2_POOF_LIST)->EnableWindow(FALSE);
 
-		GetDlgItem(IDC_NEB2_NEAR_MULTIPLIER)->EnableWindow(FALSE);
-		GetDlgItem(IDC_NEB2_FAR_MULTIPLIER)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_1000M_VIS)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_NEAR_DIST)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NEB2_FOG_CLIP)->EnableWindow(FALSE);
 
 		GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_FOG_R)->EnableWindow(FALSE);
@@ -760,9 +817,9 @@ void bg_bitmap_dlg::sun_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, s_name);
-		sle->ang.p = (float) fl_radians(s_pitch);
-		sle->ang.b = (float) fl_radians(s_bank);
-		sle->ang.h = (float) fl_radians(s_heading);
+		sle->ang.p = fl_radians(s_pitch);
+		sle->ang.b = fl_radians(s_bank);
+		sle->ang.h = fl_radians(s_heading);
 		sle->scale_x = (float) s_scale;
 		sle->scale_y = 1.0f;
 		sle->div_x = 1;
@@ -786,14 +843,14 @@ void bg_bitmap_dlg::OnSunChange()
 		starfield_list_entry *sle = &background->suns[s_index];
 
 		s_name = CString(sle->filename);
-		s_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
-		s_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
-		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
+		s_pitch = fl_degrees_100ths(sle->ang.p);
+		s_bank = fl_degrees_100ths(sle->ang.b);
+		s_heading = fl_degrees_100ths(sle->ang.h);
 		s_scale = sle->scale_x;
 
 		// make sure angles are in the 0-359 degree range;
 		// an angle of 6.28318310, which is less than 6.28318548,
-		// is converted to 359.999847, which is rounded to 360
+		// is converted to 359.999847, which (if converted to int) is rounded to 360
 		if (s_pitch >= 360) s_pitch -= 360;
 		if (s_bank >= 360) s_bank -= 360;
 		if (s_heading >= 360) s_heading -= 360;
@@ -931,9 +988,9 @@ void bg_bitmap_dlg::bitmap_data_save_current()
 
 		// store the data
 		strcpy_s(sle->filename, b_name);
-		sle->ang.p = (float) fl_radians(b_pitch);
-		sle->ang.b = (float) fl_radians(b_bank);
-		sle->ang.h = (float) fl_radians(b_heading);
+		sle->ang.p = fl_radians(b_pitch);
+		sle->ang.b = fl_radians(b_bank);
+		sle->ang.h = fl_radians(b_heading);
 		sle->scale_x = (float) b_scale_x;
 		sle->scale_y = (float) b_scale_y;
 		sle->div_x = b_div_x;
@@ -957,9 +1014,9 @@ void bg_bitmap_dlg::OnBitmapChange()
 		starfield_list_entry *sle = &background->bitmaps[b_index];
 
 		b_name = CString(sle->filename);
-		b_pitch = fl2ir(fl_degrees(sle->ang.p) + delta);
-		b_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
-		b_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
+		b_pitch = fl_degrees_100ths(sle->ang.p);
+		b_bank = fl_degrees_100ths(sle->ang.b);
+		b_heading = fl_degrees_100ths(sle->ang.h);
 		b_scale_x = sle->scale_x;
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;
@@ -1053,37 +1110,44 @@ void bg_bitmap_dlg::OnBitmapDropdownChange()
 	}	
 }
 
-void bg_bitmap_dlg::get_data_spinner(NM_UPDOWN* pUD, int id, int *var, int min, int max)
+void bg_bitmap_dlg::get_data_spinner(NM_UPDOWN* pUD, int id, float *var, float min, float max)
 {
+	float old_val = *var;
+
 	if (pUD->iDelta > 0)
 	{
-		(*var)--;
+		*var = std::floor(*var);
+		if (fl_equal(*var, old_val))
+			(*var)--;
 
 		//go min->max
-		if (*var == (min-1))
+		if (*var < min)
 		{
-			*var = max;
+			*var = std::floor(max);
 		}
-
-		this->SetDlgItemInt(id, *var);
 	}
-	else 
+	else
 	{
-		(*var)++;
+		*var = std::ceil(*var);
+		if (fl_equal(*var, old_val))
+			(*var)++;
 
 		//go max->min
-		if (*var == (max+1))
+		if (*var > max)
 		{
-			*var=min;
+			*var = std::ceil(min);
 		}
-
-		this->SetDlgItemInt(id, *var);
 	}
+
+	// there is no SetDlgItemFloat, so let's treat it as int
+	// (note, there will be no fractional part here, unless we later decide to use a fractional increment)
+	this->SetDlgItemInt(id, static_cast<int>(*var));
 }
 
-
-void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max)
+void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max, int precision)
 {
+	Assertion(precision >= 1 && precision <= 3, "Precision must be between 1 and 3!");
+
 	char buf[16];
 	char max_ch[16];
 	char min_ch[16];
@@ -1091,8 +1155,8 @@ void bg_bitmap_dlg::get_data_float(int id, float *var, float min, float max)
 	this->GetDlgItemText(id, buf, 16);
 
 	*var = (float)atof(buf);
-	sprintf(max_ch,"%.3f",max);
-	sprintf(min_ch,"%.3f",min);
+	sprintf(max_ch, "%.*f", precision, max);
+	sprintf(min_ch, "%.*f", precision, min);
 	CString error_msg = "Please enter a number between ";
 	error_msg += min_ch;
 	error_msg += " and ";
@@ -1148,7 +1212,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapPSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_P, &b_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_P, &b_pitch, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1158,7 +1222,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapBSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_B, &b_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_B, &b_bank, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1168,7 +1232,7 @@ void bg_bitmap_dlg::OnDeltaposSbitmapHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (b_index < 0) return;
-	get_data_spinner(pNMUpDown, IDC_SBITMAP_H, &b_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SBITMAP_H, &b_heading, 0.f, DEGREE_UB);
 	OnBitmapChange();
 	*pResult = 0;
 }
@@ -1176,14 +1240,14 @@ void bg_bitmap_dlg::OnDeltaposSbitmapHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 void bg_bitmap_dlg::OnKillfocusSbitmapScaleX() 
 {
 	if (b_index < 0) return;
-	get_data_float(IDC_SBITMAP_SCALE_X, &b_scale_x, 0.001f, 18.0f);
+	get_data_float(IDC_SBITMAP_SCALE_X, &b_scale_x, 0.001f, 18.0f, 3);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapScaleY() 
 {
 	if (b_index < 0) return;
-	get_data_float(IDC_SBITMAP_SCALE_Y, &b_scale_y, 0.001f, 18.0f);
+	get_data_float(IDC_SBITMAP_SCALE_Y, &b_scale_y, 0.001f, 18.0f, 3);
 	OnBitmapChange();
 }
 
@@ -1204,21 +1268,21 @@ void bg_bitmap_dlg::OnKillfocusSbitmapDivY()
 void bg_bitmap_dlg::OnKillfocusSbitmapP() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_P, &b_pitch, 0, 359);
+	get_data_float(IDC_SBITMAP_P, &b_pitch, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapB() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_B, &b_bank, 0, 359);
+	get_data_float(IDC_SBITMAP_B, &b_bank, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSbitmapH() 
 {
 	if (b_index < 0) return;
-	get_data_int(IDC_SBITMAP_H, &b_heading, 0, 359);
+	get_data_float(IDC_SBITMAP_H, &b_heading, 0.f, DEGREE_UB, 2);
 	OnBitmapChange();
 }
 
@@ -1227,8 +1291,7 @@ void bg_bitmap_dlg::OnDeltaposSun1PSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_P, &s_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_P, &s_pitch, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1238,8 +1301,7 @@ void bg_bitmap_dlg::OnDeltaposSun1BSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_B, &s_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_B, &s_bank, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1249,8 +1311,7 @@ void bg_bitmap_dlg::OnDeltaposSun1HSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	//G5K - why?	pNMUpDown->iDelta *= -1;
-	get_data_spinner(pNMUpDown, IDC_SUN1_H, &s_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SUN1_H, &s_heading, 0.f, DEGREE_UB);
 	OnSunChange();
 	*pResult = 0;
 }
@@ -1258,28 +1319,28 @@ void bg_bitmap_dlg::OnDeltaposSun1HSpin(NMHDR* pNMHDR, LRESULT* pResult)
 void bg_bitmap_dlg::OnKillfocusSun1P() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_P, &s_pitch, 0, 359);
+	get_data_float(IDC_SUN1_P, &s_pitch, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1H() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_H, &s_heading, 0, 359);
+	get_data_float(IDC_SUN1_H, &s_heading, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1B() 
 {
 	if (s_index < 0) return;
-	get_data_int(IDC_SUN1_B, &s_bank, 0, 359);
+	get_data_float(IDC_SUN1_B, &s_bank, 0.f, DEGREE_UB, 2);
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSun1Scale() 
 {
 	if (s_index < 0) return;
-	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f);
+	get_data_float(IDC_SUN1_SCALE, &s_scale, 0.1f, 50.0f, 3);
 	OnSunChange();
 }
 
@@ -1287,7 +1348,7 @@ void bg_bitmap_dlg::OnDeltaposSkyboxPSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_P, &m_skybox_pitch, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
@@ -1296,7 +1357,7 @@ void bg_bitmap_dlg::OnDeltaposSkyboxBSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_B, &m_skybox_bank, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
@@ -1305,26 +1366,26 @@ void bg_bitmap_dlg::OnDeltaposSkyboxHSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
-	get_data_spinner(pNMUpDown, IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	get_data_spinner(pNMUpDown, IDC_SKYBOX_H, &m_skybox_heading, 0.f, DEGREE_UB);
 	OnOrientationChange();
 	*pResult = 0;
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxP() 
 {
-	get_data_int(IDC_SKYBOX_P, &m_skybox_pitch, 0, 359);
+	get_data_float(IDC_SKYBOX_P, &m_skybox_pitch, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxB() 
 {
-	get_data_int(IDC_SKYBOX_B, &m_skybox_bank, 0, 359);
+	get_data_float(IDC_SKYBOX_B, &m_skybox_bank, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 
 void bg_bitmap_dlg::OnKillfocusSkyboxH() 
 {
-	get_data_int(IDC_SKYBOX_H, &m_skybox_heading, 0, 359);
+	get_data_float(IDC_SKYBOX_H, &m_skybox_heading, 0.f, DEGREE_UB, 2);
 	OnOrientationChange();
 }
 

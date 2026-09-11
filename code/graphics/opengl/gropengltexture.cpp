@@ -24,6 +24,10 @@
 #include "math/vecmat.h"
 #include "options/Option.h"
 #include "osapi/osregistry.h"
+#include "ktxutils/ktxutils.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 matrix4 GL_texture_matrix;
 
@@ -72,6 +76,7 @@ static void parse_texture_filtering_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
                      std::pair<const char*, int>{"Texture Filtering", 1763},
                      std::pair<const char*, int>{"Texture filtering option", 1764})
@@ -125,6 +130,7 @@ static float anisotropic_default()
 	return max;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
@@ -415,29 +421,36 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	}
 
 	// check for compressed image types
-	auto block_size = 0;
-	switch (bm_is_compressed(bitmap_handle)) {
+	auto bm_type = bm_is_compressed(bitmap_handle);
+	auto block_size = dds_block_size(bm_type);
+	switch (bm_type) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		block_size = 8;
 		break;
 
 	case DDS_DXT3:
 	case DDS_CUBEMAP_DXT3:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_DXT5:
 	case DDS_CUBEMAP_DXT5:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
-		block_size = 16;
+		break;
+
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_ETC2_SRGB:
+	case KTX_ETC2_SRGBA_EAC:
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+		intFormat = ktx_map_ktx_format_to_gl_internal(bm_type);
+		block_size = ktx_etc_block_size(intFormat);
 		break;
 	}
 
@@ -457,8 +470,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			auto mipmap_h = bmap_h;
 
 			for (auto i = 0; i < mipmap_levels + base_level; i++) {
-				// size of data block (4x4)
-				dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+				dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 				if (i >= base_level) {
 					glCompressedTexSubImage3D(tSlot->texture_target, i - base_level, 0, 0, tSlot->array_index, mipmap_w,
@@ -584,8 +596,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			// check if it's a compressed cubemap first
 			if (block_size > 0) {
 				for (auto level = 0; level < mipmap_levels + base_level; level++) {
-					// size of data block (4x4)
-					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+					dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 					if (level >= base_level) {
 						// We skipped ahead to the base level so we can start uploading frames now
@@ -737,7 +748,8 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	auto byte_mult = (bpp >> 3);
 
 	// check for compressed image types
-	switch ( bm_is_compressed(handle) ) {
+	auto bm_handle = bm_is_compressed(handle);
+	switch (bm_handle) {
 		case DDS_DXT1:
 		case DDS_CUBEMAP_DXT1:
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -753,6 +765,14 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 
 		case DDS_BC7:
 			return GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
+
+		case KTX_ETC2_RGB:
+		case KTX_ETC2_RGBA_EAC:
+		case KTX_ETC2_SRGB:
+		case KTX_ETC2_SRGBA_EAC:
+		case KTX_ETC2_RGB_A1:
+		case KTX_ETC2_SRGB_A1:
+			return ktx_map_ktx_format_to_gl_internal(bm_handle);
 
 		default:
 			// Not compressed
@@ -773,18 +793,18 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	}
 }
 
-void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& flags, int& bpp) {
-	flags = 0;
+void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, uint& bitmap_flags, int& bpp) {
+	bitmap_flags = 0;
 	bpp = 16;
 	switch (bitmap_type) {
 		case TCACHE_TYPE_AABITMAP:
-			flags |= BMP_AABITMAP;
+			bitmap_flags |= BMP_AABITMAP;
 			bpp = 8;
 			break;
 
 		case TCACHE_TYPE_CUBEMAP:
 		case TCACHE_TYPE_NORMAL:
-			flags |= BMP_TEX_OTHER;
+			bitmap_flags |= BMP_TEX_OTHER;
 			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
 				// PCX is special since the locking code only works with bpp = 16 for some reason
 				bpp = 16;
@@ -799,7 +819,7 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
-			flags |= BMP_TEX_XPARENT;
+			bitmap_flags |= BMP_TEX_XPARENT;
 			if (bm_get_type(bitmap_handle) == BM_TYPE_PCX) {
 				// PCX is special since the locking code only works with bpp = 16 for some reason
 				bpp = 16;
@@ -812,33 +832,51 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 			switch ( bm_is_compressed(bitmap_handle) ) {
 				case DDS_DXT1:				//dxt1
 					bpp = 24;
-					flags |= BMP_TEX_DXT1;
+					bitmap_flags |= BMP_TEX_DXT1;
 					break;
 
 				case DDS_DXT3:				//dxt3
 					bpp = 32;
-					flags |= BMP_TEX_DXT3;
+					bitmap_flags |= BMP_TEX_DXT3;
 					break;
 
 				case DDS_DXT5:				//dxt5
 					bpp = 32;
-					flags |= BMP_TEX_DXT5;
+					bitmap_flags |= BMP_TEX_DXT5;
 					break;
 
 				case DDS_BC7:				//bc7
 					bpp = 32;
-					flags |= BMP_TEX_BC7;
+					bitmap_flags |= BMP_TEX_BC7;
 					break;
 
 				case DDS_CUBEMAP_DXT1:
 					bpp = 24;
-					flags |= BMP_TEX_CUBEMAP;
+					bitmap_flags |= BMP_TEX_CUBEMAP;
 					break;
 
 				case DDS_CUBEMAP_DXT3:
 				case DDS_CUBEMAP_DXT5:
 					bpp = 32;
-					flags |= BMP_TEX_CUBEMAP;
+					bitmap_flags |= BMP_TEX_CUBEMAP;
+					break;
+
+				case KTX_ETC2_RGB:
+				case KTX_ETC2_SRGB:
+					bpp = 24;
+					bitmap_flags |= BMP_TEX_ETC2_RGB8;
+					break;
+
+				case KTX_ETC2_RGB_A1:
+				case KTX_ETC2_SRGB_A1:
+					bpp = 24;
+					bitmap_flags |= BMP_TEX_ETC2_RGBA1;
+					break;
+
+				case KTX_ETC2_RGBA_EAC:
+				case KTX_ETC2_SRGBA_EAC:
+					bpp = 32;
+					bitmap_flags |= BMP_TEX_ETC2_RGBA8;
 					break;
 
 				default:
@@ -934,7 +972,11 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	auto base_level = 0;
 	auto resize = false;
-	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
+	// User bitmaps are excluded from culling because they are streaming surfaces (e.g. animations and
+	// video) that are updated through gr_update_texture() with the bitmap's own dimensions each frame,
+	// which requires the texture to match the bitmap's size.
+	if ( (Detail.hardware_textures < 4) && (bm_get_type(bitmap_handle) != BM_TYPE_USER)
+		&& (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
 		&& (bitmap_type != TCACHE_TYPE_CUBEMAP) && (bitmap_type != TCACHE_TYPE_3DTEX)
 		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
@@ -1037,7 +1079,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	tslot->wrap_mode = GL_CLAMP_TO_EDGE;
 
-	ushort bitmap_flags;
+	uint bitmap_flags;
 	int bits_per_pixel;
 	opengl_determine_bpp_and_flags(animation_begin, bitmap_type, bitmap_flags, bits_per_pixel);
 
@@ -1049,7 +1091,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 #ifndef NDEBUG
         // I'm not sure if these values are consistent across the whole animation but they really should be.
 		// This should catch any instances where this assumption isn't right
-		ushort debug_flags = 0;
+		uint debug_flags = 0;
 		int debug_bpp;
 		opengl_determine_bpp_and_flags(frame, bitmap_type, debug_flags, debug_bpp);
 
@@ -1192,7 +1234,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL)
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
 		return;
 
 //	opengl_tcache_flush ();
@@ -1203,7 +1245,7 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	float u_scale, v_scale;
 	int retval;
 
-	Assert( gr_screen.mode == GR_OPENGL );
+	Assert( gr_screen.mode == GraphicsAPI::OpenGL );
 
 	if ( !GL_should_preload ) {
 		return 0;
@@ -1293,8 +1335,10 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		return 0;
 	}
 
+	#ifndef USE_OPENGL_ES
 	// use best compression quality
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
+	#endif
 
 	// alright, it should work if we are still here, now do it for real
 	glTexImage2D(GL_TEXTURE_2D, 0, intFormat, width, height, 0, glFormat, texFormat, in_data);
@@ -1326,9 +1370,9 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 		glGetCompressedTexImage(GL_TEXTURE_2D, i, out_data + compressed_size);
 		compressed_size += testing;
 	}
-
+	#ifndef USE_OPENGL_ES
 	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
-
+	#endif
 	GL_state.Texture.Delete(tex);
 	glDeleteTextures(1, &tex);
 
@@ -1367,15 +1411,20 @@ int opengl_get_texture( GLenum target, GLenum pixel_format, GLenum data_format, 
 	return m_offset;
 }
 
-void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
+ubyte* gr_opengl_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out)
 {
+	*width_out = 0;
+	*height_out = 0;
+
 	float u,v;
 
 	uint32_t array_index = 0;
-	gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index);
+	if ( !gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index) ) {
+		return nullptr;
+	}
 
 	auto *ts = bm_get_gr_info<tcache_slot_opengl>(bitmap_num, true);
-	
+
 	GLenum pixel_format = GL_RGB;
 	GLenum data_format = GL_UNSIGNED_BYTE;
 	int bytes_per_pixel = 3 * sizeof(ubyte);
@@ -1385,24 +1434,46 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
 		bytes_per_pixel = 4 * sizeof(ubyte);
 	}
 
-	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
-	int num_frames = 0;
-	bm_get_info(bitmap_num, nullptr, nullptr, nullptr, &num_frames);
-	if (!bm_is_texture_array(bitmap_num)) {
-		num_frames = 1;
+	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+
+	// The texture in graphics memory may not match the dimensions or frame count that bmpman reports for
+	// this handle, e.g. when mipmap levels are culled at lower texture detail settings, so size the
+	// readback from what OpenGL will actually write, not from the bitmap or the texture cache slot.
+	GLint gl_width = 0, gl_height = 0, gl_layers = 0;
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_WIDTH, &gl_width);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_HEIGHT, &gl_height);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_DEPTH, &gl_layers);
+
+	if ( (gl_width < 1) || (gl_height < 1) || (gl_layers < 1) || (array_index >= static_cast<uint32_t>(gl_layers)) ) {
+		mprintf(("Cannot read bitmap %d (%s) back from its texture; OpenGL reports level 0 as %dx%d with %d layer(s) but layer %u is needed.\n",
+			bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, gl_layers, array_index));
+		return nullptr;
 	}
 
-	// The size of a single frame in the array
-	auto slice_size = ts->w * ts->h * bytes_per_pixel;
-	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[num_frames * slice_size]);
+	// At maximum texture detail no culling occurs on upload, so the texture must match the dimensions
+	// recorded in the texture cache slot; if this trips, we have another slot mismatch.
+	Assertion((Detail.hardware_textures < 4) || ((gl_width == ts->w) && (gl_height == ts->h)),
+		"Texture readback size mismatch for bitmap %d (%s): OpenGL reports level 0 as %dx%d but the texture cache slot expects %dx%d.",
+		bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, ts->w, ts->h);
 
-	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+	// The size of a single layer in the array
+	size_t slice_size = static_cast<size_t>(gl_width) * gl_height * bytes_per_pixel;
+
+	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
+	// Some drivers write tiny compressed textures back in whole 4x4 block granularity, so pad each layer
+	// of the staging buffer to full blocks to keep any such overwrite within bounds.
+	size_t padded_slice_size = static_cast<size_t>((gl_width + 3) & ~3) * ((gl_height + 3) & ~3) * bytes_per_pixel;
+	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[padded_slice_size * gl_layers]);
 
 	// Copy the entire texture level into the bitmap
 	glGetTexImage(ts->texture_target, 0, pixel_format, data_format, buffer.get());
 
-	auto buffer_offset = array_index * slice_size;
-	memcpy(data_out, buffer.get() + buffer_offset, slice_size);
+	auto data_out = reinterpret_cast<ubyte*>(vm_malloc(slice_size));
+	memcpy(data_out, buffer.get() + array_index * slice_size, slice_size);
+
+	*width_out = gl_width;
+	*height_out = gl_height;
+	return data_out;
 }
 
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale)
@@ -1448,7 +1519,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 		return 0;
 	}
 
-	if ( (ts->w != width) && (ts->h != height) ) {
+	if ( (ts->w != width) || (ts->h != height) ) {
 		mprintf(("OpenGL ERROR: Passed width and height do not match values for texture!\n"));
 		return 0;
 	}
@@ -1492,6 +1563,13 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
 	if(!t->texture_id)
 		return;
+
+	// This overwrites the texture with data at the bitmap's own size, so the texture must not have been
+	// culled when it was created (user bitmaps are exempt from texture detail culling for this reason).
+	Assertion((t->w == width) && (t->h == height),
+		"gr_opengl_update_texture() called for bitmap %s with %dx%d data, but its texture is %dx%d.",
+		bm_get_filename(bitmap_handle), width, height, t->w, t->h);
+
 	int byte_mult = (bpp >> 3);
 	int true_byte_mult = (t->bpp >> 3);
 	ubyte* texmem = NULL;
@@ -1636,7 +1714,7 @@ int opengl_check_framebuffer()
 			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
 				strcpy_s(err_txt, "Missing one or more image attachments!");
 				break;
-				
+			#ifndef USE_OPENGL_ES
 			case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
 				strcpy_s(err_txt, "Draw buffer attachment point is NONE!");
 				break;
@@ -1644,7 +1722,11 @@ int opengl_check_framebuffer()
 			case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
 				strcpy_s(err_txt, "Read buffer attachment point is NONE!");
 				break;
-
+			#else
+			case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
+				strcpy_s(err_txt, "Inconsistent multisample state (samples/resolve mismatch)!");
+						break;
+			#endif
 			case GL_FRAMEBUFFER_UNSUPPORTED:
 				strcpy_s(err_txt, "Attached images violate current FBO restrictions!");
 				break;
@@ -1866,11 +1948,13 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	GL_state.Texture.Enable(0);
 
-	// render buffer
-//	glGenRenderbuffers(1, &new_fbo.renderbuffer_id);
-//	glBindRenderbuffer(GL_RENDERBUFFER, new_fbo.renderbuffer_id);
-//	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, *w, *h);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	// render buffer (depth)
+	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
+		glGenRenderbuffers(1, &new_fbo->renderbuffer_id);
+		glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, *w, *h);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	}
 
 	// frame buffer
 	glGenFramebuffers(1, &new_fbo->framebuffer_id);
@@ -1883,7 +1967,9 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 		glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ts->texture_id, 0, 0);
 	}
 
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, new_fbo.renderbuffer_id);
+	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, new_fbo->renderbuffer_id);
+	}
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
@@ -1898,7 +1984,10 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 		glDeleteFramebuffers(1, &new_fbo->framebuffer_id);
 
-	//	glDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
+		if (new_fbo->renderbuffer_id) {
+			glDeleteRenderbuffers(1, &new_fbo->renderbuffer_id);
+			new_fbo->renderbuffer_id = 0;
+		}
 
 		opengl_set_texture_target();
 		opengl_free_fbo_slot(fbo_id);

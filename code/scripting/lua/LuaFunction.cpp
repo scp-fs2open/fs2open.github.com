@@ -110,8 +110,8 @@ LuaFunction LuaFunction::createFromCode(lua_State* L, std::string const& code, s
 LuaFunction::LuaFunction() : LuaValue(), _errorFunction(nullptr) {
 }
 
-LuaFunction::LuaFunction(const LuaFunction&) = default;
-LuaFunction& LuaFunction::operator=(const LuaFunction&) = default;
+LuaFunction::LuaFunction(const LuaFunction&) noexcept = default;
+LuaFunction& LuaFunction::operator=(const LuaFunction&) noexcept = default;
 
 LuaFunction::LuaFunction(LuaFunction&&) noexcept = default;
 LuaFunction& LuaFunction::operator=(LuaFunction&&) noexcept = default;

@@ -10,6 +10,7 @@
 
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "camera/photomode.h"
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
@@ -62,6 +63,7 @@ physics_info Descent_physics;			// used when we want to control the player like 
 angles chase_slew_angles;
 
 angles Player_flight_cursor;
+float Player_flight_cursor_sensitivity;
 
 FlightMode Player_flight_mode = FlightMode::ShipLocked;
 bool Perspective_locked = false;
@@ -90,6 +92,7 @@ static void parse_flight_mode_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	std::pair<const char*, int>{"Flight Mode", 1842},
 	std::pair<const char*, int>{"Choose the flying style to use during gameplay.", 1843})
@@ -122,6 +125,7 @@ static void parse_flight_cursor_extent_func()
 	Flight_cursor_extent = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursorExtent",
 	std::pair<const char*, int>{"Flight Cursor Extent", 1846},
 	std::pair<const char*, int>{"How far from the center the cursor can go.", 1847})
@@ -145,6 +149,7 @@ static void parse_cursor_deadzone_func()
 	Flight_cursor_deadzone = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCursorDeadzone",
 	std::pair<const char*, int>{"Flight Cursor Deadzone", 1848},
 	std::pair<const char*, int>{"How far from the center the cursor needs to go before registering.", 1849})
@@ -411,6 +416,15 @@ void do_view_track_target()
 	vm_extract_angles_vector(&forward_angles,&forwardvec_rotated);
 	chase_slew_angles.h = forward_angles.h - view_angles.h;
 	chase_slew_angles.p = -(forward_angles.p - view_angles.p);
+
+	// Do over-the-top correction.
+	// Headings are extracted with atan2, so each one lies in (-PI, PI] and their difference can be
+	// nearly a full circle in either direction.  Without wrapping it back into (-PI, PI], a target just
+	// past the left shoulder reads as being almost all the way around to the right instead.
+	if (chase_slew_angles.h > PI)
+		chase_slew_angles.h -= PI2;
+	else if (chase_slew_angles.h < -PI)
+		chase_slew_angles.h += PI2;
 
 	// the gimbal limits of the player's virtual neck.
 	// These nested ifs prevent the player from looking up and 
@@ -1055,6 +1069,11 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_
 
 void read_player_controls(object *objp, float frametime)
 {
+	// Photo mode controls the camera, not the player ship
+	if (game_is_photo_mode_active()) {
+		return;
+	}
+
 	float diff;
 	float target_warpout_speed;
 
@@ -1079,8 +1098,8 @@ void read_player_controls(object *objp, float frametime)
 						if (sip->aims_at_flight_cursor)
 							max_aim_angle = sip->flight_cursor_aim_extent;
 
-						Player_flight_cursor.p += Player->ci.pitch * 0.015f;
-						Player_flight_cursor.h += Player->ci.heading * 0.015f;
+						Player_flight_cursor.p += Player->ci.pitch * 0.015f * Player_flight_cursor_sensitivity;
+						Player_flight_cursor.h += Player->ci.heading * 0.015f * Player_flight_cursor_sensitivity;
 
 						float mag = powf(powf(Player_flight_cursor.p, 2.0f) + powf(Player_flight_cursor.h, 2.0f), 0.5f);
 						if (mag > max_aim_angle) {
@@ -1410,7 +1429,6 @@ void player_restore_target_and_weapon_link_prefs()
 {
 	ship_info *player_sip;
 	player_sip = &Ship_info[Player_ship->ship_info_index];
-	polymodel *pm = model_get(player_sip->model_num);
 
 	//	Don't restores the save flags in training, as we must ensure certain things are off, such as speed matching.
 	if ( !(The_mission.game_type & MISSION_TYPE_TRAINING )) {
@@ -1423,7 +1441,9 @@ void player_restore_target_and_weapon_link_prefs()
 		}
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
+	// restore the dual fire preference regardless of whether the current bank can use it;
+	// the flag is ignored rather than cleared for banks that can't
+	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY ) {
 		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
@@ -1439,6 +1459,8 @@ void player_level_init()
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
+	reset_angles(&chase_slew_angles);
+	reset_angles(&Viewer_slew_angles_delta);
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
@@ -1446,6 +1468,7 @@ void player_level_init()
 	Viewer_external_info.current_distance = 0.0f;
 
 	Player_flight_cursor = vmd_zero_angles;
+	Player_flight_cursor_sensitivity = 1.0f;
 
 	
 	if (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view])
@@ -1456,7 +1479,10 @@ void player_level_init()
 	{
 		Viewer_mode = 0;
 	}
- 
+
+	Perspective_locked = false;
+	Slew_locked = false;
+
 	Player_obj = NULL;
 	Player_ship = NULL;
 	Player_ai = NULL;
@@ -1658,7 +1684,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 
 	outstr[0] = 0;
 
-	if ( Player_ai->target_objnum < 0 || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
+	if ( Player_ai->target_objnum < 0 || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_hide_cargo] ) {
 		return false;
 	}
 
@@ -1690,7 +1716,7 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		// scannable cargo behaves differently.  Scannable cargo is either "scanned" or "not scanned".  This flag
 		// can be set on any ship.  Any ship with this set won't have "normal" cargo behavior
 		if (!(cargo_sp->flags[Ship::Ship_Flags::Scannable])) {
-			if (!(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport])) {
+			if ((cargo_sip->class_type < 0) || !(Ship_types[cargo_sip->class_type].flags[Ship::Type_Info_Flags::Scannable_by_default])) {
 				return false;
 			}
 		}
@@ -1710,8 +1736,6 @@ bool player_inspect_cargo(float frametime, char *outstr)
 			auto cargo_name = (cargo_sp->cargo1 & CARGO_INDEX_MASK) == 0
 				? XSTR("Nothing", 1674)
 				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
-			//Why was this assert here? I'm not sure it makes much sense because any ship can be scanned and have cargo revealed...
-            //Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if (cargo_sp->cargo_title[0] != '\0') {
 				if (cargo_sp->cargo_title[0] == '#') {
@@ -1737,78 +1761,85 @@ bool player_inspect_cargo(float frametime, char *outstr)
 		return true;
 	}
 
-	// see if player is within inspection range
-	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-	float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
-	scan_dist *= player_sip->scanning_range_multiplier;
+	// if we can't do any scanning, then skip over it
+	if (!Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_show_cargo]) {
+		// see if player is within inspection range
+		ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
+		float scan_dist = MAX(player_sip->scan_range_normal, (cargo_objp->radius + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+		scan_dist *= player_sip->scanning_range_multiplier;
 
-	if ( Player_ai->current_target_distance < scan_dist ) {
-		vec3d vec_to_cargo;
+		if ( Player_ai->current_target_distance < scan_dist ) {
+			vec3d vec_to_cargo;
 
-		// check if player is facing cargo, do not proceed with inspection if not
-		vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
-		float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
-		if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
+			// check if player is facing cargo, do not proceed with inspection if not
+			vm_vec_normalized_dir(&vec_to_cargo, &cargo_objp->pos, &Player_obj->pos);
+			float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
+			if ( dot < CARGO_MIN_DOT_TO_REVEAL ) {
+				if (reveal_cargo) {
+					if (cargo_sp->cargo_title[0] != '\0') {
+						if (cargo_sp->cargo_title[0] == '#') {
+							strcpy(outstr, XSTR("<unknown>", 1852));
+						} else {
+							sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
+						}
+					} else {
+						strcpy(outstr, XSTR("cargo: <unknown>", 86));
+					}
+				} else {
+					strcpy(outstr, XSTR("not scanned", 87));
+				}
+
+				hud_targetbox_end_flash(TBOX_FLASH_CARGO);
+				Player->cargo_inspect_time = 0;
+				return true;
+			}
+
+			// player is facing the cargo, and within range, so proceed with inspection
+			if ( hud_sensors_ok(Player_ship, 0) ) {
+				Player->cargo_inspect_time += (int)std::lround(frametime*1000);
+			}
+
 			if (reveal_cargo) {
 				if (cargo_sp->cargo_title[0] != '\0') {
 					if (cargo_sp->cargo_title[0] == '#') {
-						strcpy(outstr, XSTR("<unknown>", 1852));
+						strcpy(outstr, XSTR("inspecting", 1853));
 					} else {
-						sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
+						sprintf(outstr, XSTR("%s: inspecting", 1851), cargo_sp->cargo_title);
 					}
 				} else {
-					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+					strcpy(outstr, XSTR("cargo: inspecting", 88));
 				}
 			} else {
-				strcpy(outstr, XSTR("not scanned", 87));
+				strcpy(outstr, XSTR("scanning", 89));
 			}
 
-			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
-			Player->cargo_inspect_time = 0;
+			float scan_time = i2fl(cargo_sip->scan_time);
+			scan_time *= player_sip->scanning_time_multiplier;
+
+			if ( Player->cargo_inspect_time > scan_time ) {
+				ship_do_cargo_revealed( cargo_sp );
+				snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
+				Player->cargo_inspect_time = 0;
+			}
+
 			return true;
 		}
+	}
 
-		// player is facing the cargo, and within range, so proceed with inspection
-		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
-		}
+	// the code will reach this point if we are not scanning, if we cannot scan, or if the scan is not complete
 
-		if (reveal_cargo) {
-			if (cargo_sp->cargo_title[0] != '\0') {
-				if (cargo_sp->cargo_title[0] == '#') {
-					strcpy(outstr, XSTR("inspecting", 1853));
-				} else {
-					sprintf(outstr, XSTR("%s: inspecting", 1851), cargo_sp->cargo_title);
-				}
+	if (reveal_cargo) {
+		if (cargo_sp->cargo_title[0] != '\0') {
+			if (cargo_sp->cargo_title[0] == '#') {
+				strcpy(outstr, XSTR("<unknown>", 1852));
 			} else {
-				strcpy(outstr, XSTR("cargo: inspecting", 88));
+				sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
 			}
 		} else {
-			strcpy(outstr, XSTR("scanning", 89));
-		}
-
-		float scan_time = i2fl(cargo_sip->scan_time);
-		scan_time *= player_sip->scanning_time_multiplier;
-
-		if ( Player->cargo_inspect_time > scan_time ) {
-			ship_do_cargo_revealed( cargo_sp );
-			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
-			Player->cargo_inspect_time = 0;
+			strcpy(outstr, XSTR("cargo: <unknown>", 86));
 		}
 	} else {
-		if (reveal_cargo){
-			if (cargo_sp->cargo_title[0] != '\0') {
-				if (cargo_sp->cargo_title[0] == '#') {
-					strcpy(outstr, XSTR("<unknown>", 1852));
-				} else {
-					sprintf(outstr, XSTR("%s: <unknown>", 1850), cargo_sp->cargo_title);
-				}
-			} else {
-				strcpy(outstr, XSTR("cargo: <unknown>", 86));
-			}
-		} else {
-			strcpy(outstr, XSTR("not scanned", 87));
-		}
+		strcpy(outstr, XSTR("not scanned", 87));
 	}
 
 	return true;
@@ -1827,7 +1858,7 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	outstr[0] = 0;
 	subsys = Player_ai->targeted_subsys;
 
-	if ( subsys == NULL || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
+	if ( subsys == nullptr || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_hide_cargo] ) {
 		return false;
 	}
 
@@ -1885,96 +1916,104 @@ bool player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 		return true;
 	}
 
-	// see if player is within inspection range [ok for subsys]
-	vec3d	subsys_pos;
-	float		subsys_rad;
-	int		subsys_in_view, x, y;
-	float scan_dist;
+	// if we can't do any scanning, then skip over it
+	if (!Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan_show_cargo]) {
+		// see if player is within inspection range [ok for subsys]
+		vec3d	subsys_pos;
+		float		subsys_rad;
+		int		subsys_in_view, x, y;
+		float scan_dist;
 
-	get_subsystem_world_pos(cargo_objp, Player_ai->targeted_subsys, &subsys_pos);
-	subsys_rad = subsys->system_info->radius;
+		get_subsystem_world_pos(cargo_objp, Player_ai->targeted_subsys, &subsys_pos);
+		subsys_rad = subsys->system_info->radius;
 
-	// Goober5000
-	ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
-    if (cargo_sip->is_huge_ship()) {
-		scan_dist = MAX(player_sip->scan_range_capital, (subsys_rad + player_sip->scan_range_capital - CARGO_RADIUS_REAL_DELTA));
-	} else {
-		scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
-	}
-	scan_dist *= player_sip->scanning_range_multiplier;
+		// Goober5000
+		ship_info* player_sip = &Ship_info[Player_ship->ship_info_index];
+		if (cargo_sip->is_huge_ship()) {
+			scan_dist = MAX(player_sip->scan_range_capital, (subsys_rad + player_sip->scan_range_capital - CARGO_RADIUS_REAL_DELTA));
+		} else {
+			scan_dist = MAX(player_sip->scan_range_normal, (subsys_rad + player_sip->scan_range_normal - CARGO_RADIUS_REAL_DELTA));
+		}
+		scan_dist *= player_sip->scanning_range_multiplier;
 
-	if ( Player_ai->current_target_distance < scan_dist ) {
-		vec3d vec_to_cargo;
+		if ( Player_ai->current_target_distance < scan_dist ) {
+			vec3d vec_to_cargo;
 
-		// check if player is facing cargo, do not proceed with inspection if not
-		vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
-		float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
-		int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy);
-		subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
+			// check if player is facing cargo, do not proceed with inspection if not
+			vm_vec_normalized_dir(&vec_to_cargo, &subsys_pos, &Player_obj->pos);
+			float dot = vm_vec_dot(&vec_to_cargo, &Player_obj->orient.vec.fvec);
+			subsys_in_view = hud_targetbox_subsystem_in_view(cargo_objp, &x, &y);
 
-		if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
+			if ( (dot < CARGO_MIN_DOT_TO_REVEAL) || (!subsys_in_view) ) {
+				if (reveal_cargo) {
+					if (subsys->subsys_cargo_title[0] != '\0') {
+						if (subsys->subsys_cargo_title[0] == '#') {
+							strcpy(outstr, XSTR("<unknown>", 1852));
+						} else {
+							sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
+						}
+					} else {
+						strcpy(outstr, XSTR("cargo: <unknown>", 86));
+					}
+				} else {
+					strcpy(outstr,XSTR( "not scanned", 87));
+				}
+
+				hud_targetbox_end_flash(TBOX_FLASH_CARGO);
+				Player->cargo_inspect_time = 0;
+				return true;
+			}
+
+			// player is facing the cargo, and within range, so proceed with inspection
+			if ( hud_sensors_ok(Player_ship, 0) ) {
+				Player->cargo_inspect_time += (int)std::lround(frametime*1000);
+			}
+
 			if (reveal_cargo) {
 				if (subsys->subsys_cargo_title[0] != '\0') {
 					if (subsys->subsys_cargo_title[0] == '#') {
-						strcpy(outstr, XSTR("<unknown>", 1852));
+						strcpy(outstr, XSTR("inspecting", 1853));
 					} else {
-						sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
+						sprintf(outstr, XSTR("%s: inspecting", 1851), subsys->subsys_cargo_title);
 					}
 				} else {
-					strcpy(outstr, XSTR("cargo: <unknown>", 86));
+					strcpy(outstr, XSTR("cargo: inspecting", 88));
 				}
 			} else {
-				strcpy(outstr,XSTR( "not scanned", 87));
+				strcpy(outstr,XSTR( "scanning", 89));
 			}
 
-			hud_targetbox_end_flash(TBOX_FLASH_CARGO);
-			Player->cargo_inspect_time = 0;
+			float scan_time;
+			if (subsys->system_info->scan_time > 0)
+				scan_time = i2fl(subsys->system_info->scan_time);
+			else
+				scan_time = i2fl(cargo_sip->scan_time);
+			scan_time *= player_sip->scanning_time_multiplier;
+
+			if ( Player->cargo_inspect_time > scan_time ) {
+				ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
+				snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
+				Player->cargo_inspect_time = 0;
+			}
+
 			return true;
 		}
+	}
 
-		// player is facing the cargo, and within range, so proceed with inspection
-		if ( hud_sensors_ok(Player_ship, 0) ) {
-			Player->cargo_inspect_time += (int)std::lround(frametime*1000);
-		}
+	// the code will reach this point if we are not scanning, if we cannot scan, or if the scan is not complete
 
-		if (reveal_cargo)
-			if (subsys->subsys_cargo_title[0] != '\0') {
-				if (subsys->subsys_cargo_title[0] == '#') {
-					strcpy(outstr, XSTR("inspecting", 1853));
-				} else {
-					sprintf(outstr, XSTR("%s: inspecting", 1851), subsys->subsys_cargo_title);
-				}
+	if (reveal_cargo) {
+		if (subsys->subsys_cargo_title[0] != '\0') {
+			if (subsys->subsys_cargo_title[0] == '#') {
+				strcpy(outstr, XSTR("<unknown>", 1852));
 			} else {
-				strcpy(outstr, XSTR("cargo: inspecting", 88));
+				sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
 			}
-		else
-			strcpy(outstr,XSTR( "scanning", 89));
-
-		float scan_time;
-		if (subsys->system_info->scan_time > 0)
-			scan_time = i2fl(subsys->system_info->scan_time);
-		else
-			scan_time = i2fl(cargo_sip->scan_time);
-		scan_time *= player_sip->scanning_time_multiplier;
-
-		if ( Player->cargo_inspect_time > scan_time ) {
-			ship_do_cap_subsys_cargo_revealed( cargo_sp, subsys, 0);
-			snd_play( gamesnd_get_game_sound(GameSounds::CARGO_REVEAL), 0.0f );
-			Player->cargo_inspect_time = 0;
+		} else {
+			strcpy(outstr, XSTR("cargo: <unknown>", 86));
 		}
 	} else {
-		if (reveal_cargo)
-			if (subsys->subsys_cargo_title[0] != '\0') {
-				if (subsys->subsys_cargo_title[0] == '#') {
-					strcpy(outstr, XSTR("<unknown>", 1852));
-				} else {
-					sprintf(outstr, XSTR("%s: <unknown>", 1850), subsys->subsys_cargo_title);
-				}
-			} else {
-				strcpy(outstr, XSTR("cargo: <unknown>", 86));
-			}
-		else
-			strcpy(outstr,XSTR( "not scanned", 87));
+		strcpy(outstr, XSTR("not scanned", 87));
 	}
 
 	return true;
@@ -2053,6 +2092,10 @@ void player_generate_death_message(player *player_p)
 
 		case OBJ_ASTEROID:
 			sprintf(msg, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
+			break;
+
+		case OBJ_PROP:
+			sprintf(msg, XSTR( "%s was killed by a collision with an object", -1), player_p->callsign);
 			break;
 
 		case OBJ_BEAM:

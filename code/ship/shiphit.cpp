@@ -31,6 +31,7 @@
 #include "mission/missionlog.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
+#include "network/multi_interpolate.h"
 #include "network/multi_pmsg.h"
 #include "network/multi_respawn.h"
 #include "network/multimsgs.h"
@@ -113,6 +114,28 @@ static bool is_subsys_destroyed(ship *shipp, int submodel)
 	return false;
 }
 
+void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed)
+{
+	if (!Link_special_point_subsystems_to_destroyed_submodels)
+		return;
+
+	Assertion(shipp && subsys, "the ship and subsystem must exist!");
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	Assertion(pmi, "the ship's model instance must exist!");
+
+	// check subsystem-submodel link, but only for special-point subsystems
+	// (not subsystems corresponding to a submodel)
+	auto psub = subsys->system_info;
+	if (psub->subobj_num >= 0)
+		return;
+	int j = submodel_find_destroyed_form(pmi->model_num, psub->subobj_name);
+	if (j < 0)
+		return;
+
+	// show the submodel, or not, depending on what happened to the subsystem
+	pmi->submodel[j].blown_off = !was_destroyed;
+}
+
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
@@ -156,7 +179,8 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 	}
 
 	// create fireballs when subsys destroy for large ships.
-	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished, Ship::Subsystem_Flags::No_disappear]) && !no_explosion) {
+	if (subsys->flags.none_of(Ship::Subsystem_Flags::Vanished,Ship::Subsystem_Flags::No_disappear) &&
+		!no_explosion) {
 		vec3d center_to_subsys;
 		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &ship_objp->pos);
 
@@ -180,7 +204,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 			vm_vec_normalize(&normalized_center_to_subsys);
 			// spawn particle effect
 			auto source = particle::ParticleManager::get()->createSource(death_effect);
-			source->setHost(make_unique<EffectHostObject>(ship_objp, subsys_local_pos, vmd_identity_matrix));
+			source->setHost(std::make_unique<EffectHostObject>(ship_objp, subsys_local_pos, vmd_identity_matrix));
 			source->setTriggerRadius(psub->radius);
 			source->setNormal(normalized_center_to_subsys);
 			source->finishCreation();
@@ -345,6 +369,9 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
 			subsys->submodel_instance_2->blown_off = true;
 		}
+
+		// special case for subsystems that don't correspond to a submodel
+		check_subsystem_submodel_link(ship_p, subsys, true);
 	}
 
 	if (notify && !no_explosion) {
@@ -1194,6 +1221,14 @@ static void shiphit_record_player_killer(const object *killer_objp, player *p)
 			strcpy_s(p->killer_parent_name, "");
 		}
 		break;
+
+	case OBJ_PROP:
+		p->killer_objtype = OBJ_PROP;
+		p->killer_weapon_index = -1;
+		strcpy_s(p->killer_parent_name, "");
+		p->killer_species = -1;
+		p->killer_parent_name[0] = '\0';
+		break;
 	
 	case OBJ_NONE:
 		if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1599,6 +1634,7 @@ static void player_died_start(const object *killer_objp)
 		case OBJ_SHIP:
 		case OBJ_DEBRIS:
 		case OBJ_ASTEROID:
+		case OBJ_PROP:
 		case OBJ_NONE:	//	Something that just got deleted due to also dying -- it happened to me! --MK.		
 			other_objp = killer_objp;
 			break;
@@ -1747,7 +1783,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 			delta_time = 2;
 	}
 
-	sp->death_time = sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
+	sp->final_death_time = timestamp(delta_time);	// Give him 3 secs to explode
 
 	//SUSHI: What are the chances of an instant explosion? Check the ship type (objecttypes.tbl) as well as the ship (ships.tbl)
 	float skipChance;
@@ -1909,7 +1945,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 				hitpos != nullptr));
 
 		if (scripting::hooks::OnShipDeath->isOverride(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList)) {
-			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList);
+			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, std::move(onDeathParamList));
 			return;
 		}
 	}
@@ -2144,6 +2180,11 @@ void ship_apply_whack(const vec3d *force, const vec3d *hit_pos, object *objp)
 		game_whack_apply( -test.xyz.x, -test.xyz.y );
 	}
 
+	if ((Game_mode & GM_MULTIPLAYER) && (objp->type == OBJ_SHIP)) {
+		// temporarily set this as an uninterpolated ship, to make the collision
+		// look more natural until the next update comes in.
+		Interp_info[OBJ_INDEX(objp)].force_interpolation_mode();
+	}
 
 	if (object_is_docked(objp))
 	{

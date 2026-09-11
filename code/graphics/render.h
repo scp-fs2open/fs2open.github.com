@@ -80,6 +80,25 @@ inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RES
 }
 
 /**
+ * @brief Draws outlined text at the given position
+ *
+ * @details Renders the text string with an outline by drawing the text
+ * at surrounding offsets in the outline color, then drawing the main text on top
+ * in the foreground color.
+ *
+ * @param x The x-coordinate
+ * @param y The y-coordinate
+ * @param text The text to draw
+ * @param foreground Color for the main text
+ * @param outline Color for the outline
+ * @param offset Pixel offset for the outline (default 1)
+ * @param resize_mode The mode for translating the screen positions
+ * @param scaleMultiplier The scale to use to apply scaling in addition to user settings
+ * @param length The number of bytes in the string to render. -1 will render the whole string.
+ */
+void gr_string_outlined(int x, int y, const char* text, const color* foreground, const color* outline, int offset = 1, int resize_mode = GR_RESIZE_FULL, float scaleMultiplier = 1.0f, size_t length = std::string::npos);
+
+/**
  * @brief Draws a single line segment to the screen.
  * @param x1 The starting x-coordinate
  * @param y1 The starting y-coordinate

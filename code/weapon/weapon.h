@@ -35,7 +35,12 @@
 
 #include "utils/modular_curves.h"
 
+#include <optional>
+#include <tuple>
+
 class object;
+class ship;
+class ship_weapon;
 class ship_subsys;
 
 #define WP_UNUSED    -1
@@ -75,6 +80,14 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 #define WEAPON_DEFAULT_TABLED_MAX_RANGE 999999999.9f
 
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
+
+// Bitmask filter applied during proximity detonation, evaluated relative to the launcher's team.
+// 0 = no relation filter (any relation passes).
+namespace Weapon::Proximity {
+	constexpr uint8_t Relation_Hostile  = 1 << 0;  // launcher's team attacks target's team
+	constexpr uint8_t Relation_Friendly = 1 << 1;  // same team as launcher
+	constexpr uint8_t Relation_Neutral  = 1 << 2;  // neither attacks the other and not same team
+}
 
 // homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
 // range. Check the comment in weapon_set_tracking_info() for more details
@@ -166,6 +179,9 @@ typedef struct weapon {
 	float beam_per_shot_rot; // for type 5 beams
 
 	modular_curves_entry_instance modular_curves_instance;
+
+	TIMESTAMP mine_chase_expires;          // when the active chase expires; TIMESTAMP::invalid() = not chasing
+	TIMESTAMP mine_chase_cooldown_expires; // when the post-chase cooldown ends; TIMESTAMP::invalid() = no cooldown active
 } weapon;
 
 
@@ -261,6 +277,8 @@ typedef struct spawn_weapon_info
 	float   spawn_interval_delay;               //  A delay before starting continuous spawn
 	float   spawn_chance;						//  Liklihood of spawning on every spawn interval
 	particle::ParticleEffectHandle spawn_effect; // Effect for continuous spawnings
+	bool    spawn_aimed;						//  If true, aim child toward the parent's homing_object instead of a random cone; default false
+	float   spawn_aim_lead;					//  Seconds of constant-velocity lead extrapolation for aimed spawns; 0.0 = no lead; default 0.0
 } spawn_weapon_info;
 
 // use this to extend a beam to "infinity"
@@ -355,6 +373,7 @@ struct WeaponLaunchCurveData {
 	int num_firepoints;
 	float distance_to_target;
 	float target_radius;
+	float target_forward_speed;
 };
 
 struct weapon_info;
@@ -363,7 +382,7 @@ extern SCP_vector<weapon_info> Weapon_info;
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
-	char	display_name[NAME_LENGTH];		// display name of this weapon
+	SCP_string display_name;				// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	std::unique_ptr<char[]> desc;				// weapon's description (used by tooltips)
 	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
@@ -371,7 +390,7 @@ struct weapon_info
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
-	int		external_model_num;					//the model rendered on the weapon points of a ship
+	int		external_model_num;					// modelnum of the model rendered on the weapon points of a ship; -1 if $External Model File: was not given
 
 	std::unique_ptr<char[]> tech_desc;		// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
@@ -386,6 +405,8 @@ struct weapon_info
 
 	vec3d	closeup_pos;						// position for camera to set an offset for viewing the weapon model
 	float	closeup_zoom;						// zoom when using weapon model in closeup view in loadout selection
+	std::optional<vec3d> icon_closeup_pos;		// icon-specific position for camera for viewing the weapon model
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom for viewing the weapon model
 
 	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
@@ -440,6 +461,19 @@ struct weapon_info
 	float arm_radius;
 	float det_range;
 	float det_radius;					//How far from target or target subsystem it blows up
+	float proximity_radius;				// Scan radius for proximity detonation; 0 = disabled. $MineInfo: defaults this to 50.
+	SCP_vector<int> proximity_iff;     // IFF indices that trigger detonation; empty = any IFF
+	SCP_vector<int> proximity_species; // species indices that trigger detonation; empty = any species
+	SCP_vector<int> proximity_type;    // ship type indices that trigger detonation; empty = any type
+	SCP_vector<int> proximity_class;   // ship class (ship_info) indices that trigger detonation; empty = any class
+	uint8_t proximity_relation_mask;    // bitmask of Weapon::Proximity::Relation_Flags; 0 = any relation
+	float proximity_detonate_chance;	// probability [0,1] that a proximity contact actually triggers detonation; default 1.0
+	float proximity_stealth_multiplier;	// scale factor applied to proximity_radius for stealth ships; 0.0 = undetectable, 1.0 = normal range; default 1.0
+	float mine_sensors_range;			// range at which mine shows as a distorted blip; 0.0f = never. Always finite for mines after parsing.
+	float mine_targetable_range;		// range at which mine is fully targetable; 0.0f = never. Always finite for mines after parsing.
+	float mine_chase_duration;			// seconds mine chases the triggering ship after proximity contact; 0.0 = detonate immediately (default)
+	bool  mine_detonates_on_chase_timeout;	// if true, detonate when chase timer expires; if false, give up and return to stationary; default true
+	float mine_chase_cooldown;			// seconds after a chase ends before proximity scanning re-enables; default 5.0
 	float flak_detonation_accuracy;		//How far away from a target a flak shell will blow up. Standard is 65.0f
 	float flak_targeting_accuracy;		//Determines the amount of jitter applied to flak targeting. USE WITH CAUTION!
 	float untargeted_flak_range_penalty; //Untargeted flak shells detonate after travelling max range - this parameter. Default 20.0f
@@ -459,6 +493,7 @@ struct weapon_info
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
+	bool disallow_rearm;                        // if true, support ships cannot rearm this weapon
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 	float	optimum_range;						// causes ai fighters to prefer this distance when attacking with the weapon
@@ -627,6 +662,9 @@ struct weapon_info
 	float cm_heat_effectiveness;
 	float cm_effective_rad;
 	float cm_detonation_rad;
+	vec3d cm_launch_vec;
+	float cm_launch_speed;
+	float cm_launch_variance;
 	bool  cm_kill_single;       // should the countermeasure kill just the single decoyed missile within CMEASURE_DETONATE_DISTANCE?
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
@@ -714,7 +752,8 @@ struct weapon_info
 			},
 			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
 			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}},
-			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}}
+			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}},
+			std::pair {"Target Forward Speed", modular_curves_submember_input<&WeaponLaunchCurveData::target_forward_speed>{}}
 	);
 
   public:
@@ -912,11 +951,12 @@ struct weapon_info
     inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
     inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
 
-    inline bool is_homing()             const { return wi_flags[Weapon::Info_Flags::Homing_heat, Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool is_locked_homing()      const { return wi_flags[Weapon::Info_Flags::Homing_aspect, Weapon::Info_Flags::Homing_javelin]; }
-    inline bool hurts_big_ships()       const { return wi_flags[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Beam, Weapon::Info_Flags::Huge, Weapon::Info_Flags::Big_only]; }
-    inline bool is_interceptable()      const { return wi_flags[Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Turret_Interceptable]; }
-
+    inline bool is_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_heat,Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
+	inline bool is_locked_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
+	inline bool hurts_big_ships() const { return wi_flags.any_of(Weapon::Info_Flags::Bomb,Weapon::Info_Flags::Beam,Weapon::Info_Flags::Huge,Weapon::Info_Flags::Big_only); }
+	inline bool is_interceptable() const { return wi_flags.any_of(Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Turret_Interceptable); }
+	inline bool is_mine() const { return wi_flags[Weapon::Info_Flags::Mine]; }
+	
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
@@ -940,7 +980,8 @@ extern int Default_cmeasure_index;
 
 extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, precedence list for player weapon selection
 
-#define WEAPON_INDEX(wp)			(int)(wp-Weapons)
+#define WEAPON_INDEX(wp)			(static_cast<int>((wp)-Weapons))
+#define WEAPON_INFO_INDEX(wip)		(static_cast<int>((wip)-Weapon_info.data()))
 
 typedef struct tracking_info {
 	ship_subsys *subsys;
@@ -951,7 +992,6 @@ typedef struct tracking_info {
 } tracking_info;
 
 int weapon_info_lookup(const char *name);
-int weapon_info_get_index(const weapon_info *wip);
 
 inline int weapon_info_size()
 {
@@ -959,6 +999,7 @@ inline int weapon_info_size()
 }
 
 void weapon_init();					// called at game startup
+void weapon_post_ship_init();		// called after ship_init() to resolve mine proximity ship type/class names
 void weapon_close();				// called at game shutdown
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object* obj, model_draw_list *scene);
@@ -992,10 +1033,12 @@ int weapon_create( const vec3d *pos,
 	int group_id=-1,
 	bool is_locked = false,
 	bool is_spawned = false,
-	float fof_cooldown = 0.0f,
-	ship_subsys *src_turret = nullptr,
+	ship_weapon *src_swp = nullptr,
+	int src_pbank = -1,
+	int src_sbank = -1,
 	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
+		0.f,
 		0.f,
 		0.f
 	});
@@ -1007,8 +1050,8 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 }
 
 // gets the substitution pattern pointer for a given weapon
-// src_turret may be null
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
+// returns [use_substitution, substituted_weapon_info_index]
+std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);
@@ -1082,6 +1125,16 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 
 // Return whether the weapon has a target it is currently homing on
 bool weapon_has_homing_object(weapon* wp);
+
+// Variant type for weapon stat values: numeric, boolean, or string
+using weapon_stat_value = std::variant<float, bool, SCP_string>;
+
+// Returns a map of combat stats for a single weapon (keyed by column name).
+// Works for any weapon type (primary, secondary, beam).
+SCP_map<SCP_string, weapon_stat_value> weapon_get_stats(const weapon_info &wi);
+
+// Returns MediaVP-style human-readable text block for a single weapon.
+SCP_string weapon_get_stats_text(const weapon_info &wi);
 
 
 #endif

@@ -1,5 +1,6 @@
 
 #include "graphics/software/NVGFont.h"
+#include "graphics/software/font_internal.h"
 #include "graphics/paths/PathRenderer.h"
 
 #include "mod_table/mod_table.h"
@@ -32,8 +33,8 @@ namespace font
 				return 1;
 		}
 
-		const char *nullPtr = strchr(const_cast<char*>(string), '\0');
-		const char *nextToken = strpbrk(const_cast<char*>(string), TOKEN_SEPARATORS);
+		const char *nullPtr = strchr(string, '\0');
+		const char *nextToken = strpbrk(string, TOKEN_SEPARATORS);
 
 		// WOHOO! Pointer arithmetic!!!
 		if (nullPtr != NULL && (nextToken == NULL || nullPtr < nextToken))
@@ -94,12 +95,6 @@ namespace font
 		m_letterSpacing = spacing;
 	}
 
-	void NVGFont::setTabWidth(float tabWidth)
-	{
-		Assertion(tabWidth >= 0.0f, "Invalid tab width passed!");
-		m_tabWidth = tabWidth;
-	}
-
 	void NVGFont::setSpecialCharacterFont(font* fontData)
 	{
 		Assertion(fontData != nullptr, "Invalid font data pointer passed!");
@@ -111,7 +106,6 @@ namespace font
 		return m_lineHeight;
 	}
 
-	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
 	void NVGFont::getStringSize(const char *text, size_t textLen, int resize_mode, float *width, float *height, float scaleMultiplier) const
 	{
 		using namespace graphics::paths;
@@ -140,7 +134,7 @@ namespace font
 		}
 
 		float w = 0.0f;
-		float h = this->getHeight();
+		float h = this->getHeight() * scale_factor;
 
 		size_t tokenLength;
 
@@ -163,13 +157,13 @@ namespace font
 				case '\n':
 					specialChar = true;
 
-					h += this->getHeight();
+					h += this->getHeight() * scale_factor;
 					lineWidth = 0.0f;
 					break;
 				case '\t':
 					specialChar = true;
 
-					lineWidth += this->getTabWidth();
+					lineWidth += this->getTabWidth() * scale_factor;
 					break;
 				default:
 					if (!Unicode_text_mode) {

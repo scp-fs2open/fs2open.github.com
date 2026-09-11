@@ -14,6 +14,8 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 	int current_index = static_cast<int>(_packets.size()) - 2;
 	int prev_index = static_cast<int>(_packets.size()) - 1;
 
+	const bool index_only = ( !pos || !ori || !pip );
+
 	// iterate through the packets
 	for (; current_index > -1; current_index--, prev_index--) {
 
@@ -25,7 +27,7 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 			// probably the "hackiest" thing about this.  If we were just straight simulating, 
 			// and we now need to go back, pretend that the position we were in *was* our old packet
 			// and we are now going towards our new packet's physics.
-			if (_simulation_mode) {
+			if (_simulation_mode && !index_only) {
 				replace_packet(prev_index, pos, ori, pip); // TODO, if simulation mode was forced by the collision code, this method regresses a bug where collisions instantly kill
 				_simulation_mode = false;
 			}
@@ -34,9 +36,11 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 		}
 	}
 
-	// if we didn't find indexes then we are overwhelmingly likely to have passed the server somehow
-	// and we need to make sure that we just straight simulate these ships
-	_simulation_mode = true;
+	if ( !index_only ) {
+		// if we didn't find indexes then we are overwhelmingly likely to have passed the server somehow
+		// and we need to make sure that we just straight simulate these ships
+		_simulation_mode = true;
+	}
 }
 
 void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship)
@@ -112,7 +116,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	}
 
 	// calc what the current timing should be.
-	float numerator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(Multi_Timing_Info.get_current_time());
+	float numerator = static_cast<float>(Multi_Timing_Info.get_current_time()) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
 	
 	// work around for weird situations that might cause NAN (you just never know with multi)
@@ -161,8 +165,10 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 // correct the ship record for player ships when an up to date packet comes in.
 void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity)
 {
-	// calc what the timing was previously.
-	float numerator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(stamp.value());
+	// calc what the timing was previously.  The caller hands us an absolute timestamp, 
+	// but remote_missiontime is relative to mission start, so drop the start time before comparing.
+	auto local_time = static_cast<float>(stamp.value() - Multi_Timing_Info.get_mission_start_time());
+	float numerator = local_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
 	denominator = (denominator > 0.05f) ? denominator : 0.05f;
@@ -174,7 +180,7 @@ void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_pac
 
 	physics_snapshot temp_snapshot;
 
-	physics_interpolate_snapshots(temp_snapshot, _packets[_prev_packet_index].snapshot, _packets[_upcoming_packet_index].snapshot, scale);
+	physics_interpolate_snapshots(temp_snapshot, _packets[prev_packet_index].snapshot, _packets[next_packet_index].snapshot, scale);
 	physics_apply_snapshot_manual(position, orientation, velocity, rotational_velocity, temp_snapshot);
 }
 
@@ -213,21 +219,26 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 				_prev_packet_index = 1;
 			}
 
-			if (static_cast<int>(_packets.size()) > PACKET_INFO_LIMIT) {
+			if (_packets.size() > PACKET_INFO_LIMIT) {
 				_packets.pop_back();
 			}
 
-			// whenenver the server gets a player packet, we need to update the ship record, since the old info is now stale
-			if (Objects[objnum].flags[Object::Object_Flags::Player_ship]){
+			if ((_upcoming_packet_index >= 0) && (_prev_packet_index >= 0)) {
+				// update packet indexes (ignoring simulation mode)
+				// NOTE: indexes must be valid before being reassesed!
+				reassess_packet_index();
 
-				int start_time = Multi_Timing_Info.get_mission_start_time();
+				// whenenver the server gets a player packet, we need to update the ship record, since the old info is now stale
+				if (Objects[objnum].flags[Object::Object_Flags::Player_ship]){
+					int start_time = Multi_Timing_Info.get_mission_start_time();
 
-				multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_prev_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), _prev_packet_index, _upcoming_packet_index);
+					multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_prev_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), _prev_packet_index, _upcoming_packet_index);
 
-				// if it's not the front packet, we need to update more info past the current packet, as well.  
-				// Should be rare though as it is a contingency for out of order packets.
-				if (_upcoming_packet_index != 0){
-					multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index - 1].remote_missiontime), _upcoming_packet_index, _upcoming_packet_index - 1);
+					// if it's not the front packet, we need to update more info past the current packet, as well.
+					// Should be rare though as it is a contingency for out of order packets.
+					if (_upcoming_packet_index > 0) {
+						multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index - 1].remote_missiontime), _upcoming_packet_index, _upcoming_packet_index - 1);
+					}
 				}
 			}
 
@@ -240,6 +251,11 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 // should never replace index 0
 void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient, physics_info* pip) 
 {
+	Assertion(index >= 1, "Invalid replace interpolation packet index! (%d)", index);
+	if (index < 1) {
+		return;
+	}
+
 	// the hackiest part of the hack? Setting its frame. Let FSO think that it was basically brand new.
 	// it needs to handle it this way because otherwise another packet might get placed in front of it, 
 	// and we lose our intended effect of interpolating the simulation error away.

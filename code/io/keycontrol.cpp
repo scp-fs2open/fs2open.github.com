@@ -13,6 +13,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
+#include "camera/photomode.h"
 #include "io/key.h"
 #include "io/joy.h"
 #include "io/timer.h"
@@ -328,6 +329,12 @@ int Normal_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+	TOGGLE_PHOTO_MODE,
+	PHOTO_MODE_FILTER_PREV,
+	PHOTO_MODE_FILTER_NEXT,
+	PHOTO_MODE_FILTER_RESET,
+	PHOTO_MODE_PARAM_DECREASE,
+	PHOTO_MODE_PARAM_INCREASE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -475,6 +482,12 @@ int Non_critical_key_set[] = {
 	MULTI_SELF_DESTRUCT,
 
 	TOGGLE_HUD,
+	TOGGLE_PHOTO_MODE,
+	PHOTO_MODE_FILTER_PREV,
+	PHOTO_MODE_FILTER_NEXT,
+	PHOTO_MODE_FILTER_RESET,
+	PHOTO_MODE_PARAM_DECREASE,
+	PHOTO_MODE_PARAM_INCREASE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -1536,9 +1549,13 @@ void game_do_end_mission_popup()
 			if (Game_subspace_effect) {
 				game_start_subspace_ambient_sound();
 			}
-			audiostream_unpause_all();
+
+			if (!game_is_photo_mode_active()) {
+				audiostream_unpause_all();
+				message_resume_all();
+			}
+
 			weapon_unpause_sounds();
-			message_resume_all();
 			break;
 		}
 
@@ -1914,19 +1931,22 @@ int button_function_critical(int n, net_player *p = NULL)
 				break;
 			}
 
-			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
-
-			int firepoints = pm->missile_banks[Ships[objp->instance].weapons.current_secondary_bank].num_slots;
-
-            if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire] || firepoints < 2) {
-                Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Secondary_dual_fire]) {
+				Ships[objp->instance].flags.remove(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to normal fire mode", 34));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
 					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
 				}
+			} else if (!ship_secondary_bank_can_dual_fire(&Ships[objp->instance], Ships[objp->instance].weapons.current_secondary_bank)) {
+				// leave the dual fire preference alone; it is ignored rather than cleared for banks that can't use it
+				if(at_self) {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This secondary bank cannot fire dual missiles", 1932));
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+					hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+				}
 			} else {
-                Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
+				Ships[objp->instance].flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 				if(at_self) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "Secondary weapon set to dual fire mode", 35));
 					snd_play( gamesnd_get_game_sound(ship_get_sound(Player_obj, GameSounds::SECONDARY_CYCLE)) );
@@ -2230,10 +2250,12 @@ int button_function_demo_valid(int n)
 
 	case TIME_SLOW_DOWN:
 		ret = 1;
-		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
+		if (Game_mode & GM_NORMAL && (!Time_compression_locked || game_is_photo_mode_active())) {
+			const auto min_compression = game_is_photo_mode_active() ? fl2f(0.01f) : (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER));
+
 			// Goober5000 - time dilation only available in cheat mode (see above);
 			// now you can do it with or without pressing the tilde, per Kazan's request
-			if ((Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER))))) {
+			if ((Game_time_compression > F1_0) || (Game_time_compression > min_compression && (Cheats_enabled || game_is_photo_mode_active()))) {
 				change_time_compression(0.5f);
 				break;
 			}
@@ -2243,7 +2265,7 @@ int button_function_demo_valid(int n)
 
 	case TIME_SPEED_UP:
 		ret = 1;
-		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
+		if (Game_mode & GM_NORMAL && (!Time_compression_locked || game_is_photo_mode_active())) {
 			if (Game_time_compression < (F1_0 * (Cmdline_retail_time_compression_range ? MAX_TIME_MULTIPLIER_RETAIL : MAX_TIME_MULTIPLIER))) {
 				change_time_compression(2.0f);
 				break;
@@ -2582,6 +2604,30 @@ int button_function(int n)
 			hud_toggle_draw();
 			break;
 
+		case TOGGLE_PHOTO_MODE:
+			game_toggle_photo_mode();
+			break;
+
+		case PHOTO_MODE_FILTER_PREV:
+			game_cycle_photo_mode_filter(-1);
+			break;
+
+		case PHOTO_MODE_FILTER_NEXT:
+			game_cycle_photo_mode_filter(1);
+			break;
+
+		case PHOTO_MODE_FILTER_RESET:
+			game_reset_photo_mode_filters();
+			break;
+
+		case PHOTO_MODE_PARAM_DECREASE:
+			game_adjust_photo_mode_filter_parameter(-1);
+			break;
+
+		case PHOTO_MODE_PARAM_INCREASE:
+			game_adjust_photo_mode_filter_parameter(1);
+			break;
+
 		case HUD_TARGETBOX_TOGGLE_WIREFRAME:
 			if (!Lock_targetbox_mode) {
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -2640,7 +2686,7 @@ int button_function(int n)
 
 			// target the next hostile target
 			case TARGET_NEXT_CLOSEST_HOSTILE:
-				hud_target_next_list(1,0);
+				hud_target_next_list(1,1);
 				break;
 
 			// target the previous closest hostile
@@ -2862,11 +2908,11 @@ int button_function(int n)
 			break;
 			 
 		case COMMS_MENU_MOVE_DOWN:
-			hud_squadmsg_selection_move_down();
+			hud_squadmsg_selection_move(false);
 			break;
 
 		case COMMS_MENU_MOVE_UP:
-			hud_squadmsg_selection_move_up();
+			hud_squadmsg_selection_move(true);
 			break;
 
 		case COMMS_MENU_SELECT:

@@ -94,7 +94,7 @@ int Loop_brief_bitmap;
 
 generic_anim Loop_anim;
 
-int Loop_sound;
+int Loop_sound = -1;
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION LOOP BRIEF FUNCTIONS
@@ -126,6 +126,9 @@ void loop_brief_init()
 {
 	int idx;
 	ui_button_info *b;
+
+	// init sound handle
+	Loop_sound = -1;
 
 	// load the background bitmap
 	Loop_brief_bitmap = bm_load(Loop_brief_fname[gr_screen.res]);

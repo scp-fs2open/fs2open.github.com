@@ -7,6 +7,7 @@
 #include "model.h"
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
+#include "ship/ship.h"
 
 namespace scripting {
 namespace api {
@@ -204,22 +205,13 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	if (ADE_SETTING_VAR)
 	{
 		if (newObj != nullptr && newObj->isValid())
-			ph->Get().lock()->attached_objnum = newObj->sig;
+			ph->Get().lock()->attachment = {effects::attachment_object{newObj->objnum, newObj->sig}};
 	}
 
-	return ade_set_object_with_breed(L, ph->Get().lock()->attached_objnum);
-}
-
-ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boolean", "true if valid false if not")
-{
-	particle_h *ph = NULL;
-	if (!ade_get_args(L, "o", l_Particle.GetPtr(&ph)))
-		return ADE_RETURN_FALSE;
-
-	if (ph == NULL)
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", ph->isValid());
+	if (auto obj = ph->Get().lock()->attachment.extract_object())
+		return ade_set_object_with_breed(L, obj->objnum);
+	else
+		return ade_set_object_with_breed(L, -1);
 }
 
 ADE_FUNC_DEPRECATED(setColor, l_Particle, "number r, number g, number b", "Sets the color for a particle.  If the particle does not support color, the function does nothing.  (Currently only debug particles support color.)", nullptr, nullptr, gameversion::version(25,0,0), "Debug particles are deprecated as of FSO 25.0.0! Use particles with a solid-color bitmap instead!")
@@ -397,11 +389,20 @@ ADE_FUNC(createOnTurret, l_ParticleSource, "object object, submodel submodel, nu
 	if (!(subobjh.isValid() && objh.isValid()))
 		return ade_set_args(L, "b", false);
 
+	if (objh.objp()->type != OBJ_SHIP)
+		return ade_set_args(L, "b", false);
+
+	// this submodel must be a turret
+	auto shipp = &Ships[objh.objp()->instance];
+	auto subsys = ship_get_subsys_for_submodel(shipp, subobjh.GetSubmodelIndex());
+	if (subsys == nullptr || subsys->system_info->type != SUBSYSTEM_TURRET)
+		return ade_set_args(L, "b", false);
+
 	particle::ParticleSource* psp = ps.Get();
 	if (psp == nullptr)
 		return ade_set_args(L, "b", false);
 
-	psp->setHost(std::make_unique<EffectHostTurret>(objh.objp(), subobjh.GetSubmodelIndex(), firepoint, *orientationOverride.GetMatrix(), orientationOverrideRelative));
+	psp->setHost(std::make_unique<EffectHostTurret>(objh.objp(), subobjh.GetSubmodelIndex(), firepoint, false, *orientationOverride.GetMatrix(), orientationOverrideRelative));
 	psp->finishCreation();
 
 	return ade_set_args(L, "b", true);

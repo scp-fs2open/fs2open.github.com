@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -33,13 +33,13 @@
      </property>
      <addaction name="actionFS2_Open"/>
      <addaction name="actionFS2_Retail"/>
+     <addaction name="actionFS2_Compatibility"/>
     </widget>
     <widget class="QMenu" name="menuImport">
      <property name="title">
       <string>&amp;Import</string>
      </property>
      <addaction name="actionFS1_Mission"/>
-     <addaction name="actionFS1_Weapon_Loadouts"/>
     </widget>
     <widget class="QMenu" name="menuRe_cent_Files">
      <property name="title">
@@ -52,6 +52,9 @@
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
     <addaction name="actionRevert"/>
+    <addaction name="separator"/>
+    <addaction name="actionLoad_Template"/>
+    <addaction name="actionSave_As_Template"/>
     <addaction name="separator"/>
     <addaction name="menuSave_Format"/>
     <addaction name="menuImport"/>
@@ -66,7 +69,6 @@
     <property name="title">
      <string>E&amp;dit</string>
     </property>
-    <addaction name="actionUndo"/>
     <addaction name="actionClone_Marked_Objects"/>
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
@@ -75,36 +77,26 @@
     <addaction name="actionUnlock_All_Objects"/>
     <addaction name="actionSelectionLock"/>
     <addaction name="separator"/>
-    <addaction name="actionDisable_Undo"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
      <string>&amp;View</string>
     </property>
-    <widget class="QMenu" name="menuDisplay_Filter">
-     <property name="title">
-      <string>&amp;Display Filter</string>
-     </property>
-     <addaction name="actionShow_Ships"/>
-     <addaction name="actionShow_Player_Starts"/>
-     <addaction name="actionShow_Waypoints"/>
-     <addaction name="separator"/>
-    </widget>
     <widget class="QMenu" name="menuViewpoint">
      <property name="title">
       <string>&amp;Viewpoint</string>
      </property>
      <addaction name="actionCamera"/>
      <addaction name="actionCurrent_Ship"/>
+     <addaction name="separator"/>
+     <addaction name="actionToggle_Viewpoint"/>
     </widget>
-    <addaction name="actionTool_Bar"/>
-    <addaction name="actionStatus_Bar"/>
+    <addaction name="actionSceneBrowser"/>
     <addaction name="separator"/>
-    <addaction name="menuDisplay_Filter"/>
+    <addaction name="actionVisibility_Layers"/>
     <addaction name="separator"/>
-    <addaction name="actionHide_Marked_Objects"/>
-    <addaction name="actionShow_All_Hidden_Objects"/>
-    <addaction name="separator"/>
+    <addaction name="actionShow_Background"/>
     <addaction name="actionShow_Ship_Models"/>
     <addaction name="actionShow_Outlines"/>
     <addaction name="actionDraw_Outlines_On_Selected_Ships"/>
@@ -115,20 +107,19 @@
     <addaction name="actionShow_Distances"/>
     <addaction name="actionShow_Model_Paths"/>
     <addaction name="actionShow_Model_Dock_Points"/>
+    <addaction name="actionShow_Bay_Paths"/>
     <addaction name="actionHighlight_Selectable_Subsystems"/>
     <addaction name="separator"/>
     <addaction name="actionShow_Grid"/>
     <addaction name="actionShow_Horizon"/>
-    <addaction name="actionDouble_Fine_Gridlines"/>
-    <addaction name="actionAnti_Aliased_Gridlines"/>
     <addaction name="actionShow_3D_Compass"/>
-    <addaction name="actionShow_Background"/>
     <addaction name="separator"/>
     <addaction name="menuViewpoint"/>
     <addaction name="actionSave_Camera_Pos"/>
     <addaction name="actionRestore_Camera_Pos"/>
     <addaction name="separator"/>
     <addaction name="actionLighting_from_Suns"/>
+    <addaction name="actionRender_Full_Detail"/>
    </widget>
    <widget class="QMenu" name="menuSpeed">
     <property name="title">
@@ -195,7 +186,6 @@
      <string>He&amp;lp</string>
     </property>
     <addaction name="actionHelp_Topics"/>
-    <addaction name="actionShow_SEXP_Help"/>
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
@@ -205,9 +195,10 @@
     </property>
     <addaction name="actionShips"/>
     <addaction name="actionWings"/>
-    <addaction name="actionObjects"/>
+    <addaction name="actionProps"/>
     <addaction name="actionWaypoint_Paths"/>
     <addaction name="actionJump_Nodes"/>
+    <addaction name="actionObject_Orientation"/>
     <addaction name="separator"/>
     <addaction name="actionControl_Object"/>
     <addaction name="actionNext_Object"/>
@@ -242,6 +233,8 @@
     <addaction name="actionLoadout"/>
     <addaction name="actionReinforcements"/>
     <addaction name="actionShield_System"/>
+    <addaction name="separator"/>
+    <addaction name="actionMission_Statistics"/>
    </widget>
    <widget class="QMenu" name="menuNarrative">
     <property name="title">
@@ -258,22 +251,13 @@
     <property name="title">
      <string>Tools</string>
     </property>
+    <addaction name="actionWaypointPathGenerator"/>
+    <addaction name="actionReorder_Objects"/>
     <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="actionSet_Global_Ship_Flags"/>
     <addaction name="actionCalculate_Relative_Coordinates"/>
     <addaction name="actionMusic_Player"/>
     <addaction name="actionError_Checker"/>
-   </widget>
-   <widget class="QMenu" name="menuSeetings">
-    <property name="title">
-     <string>Settings</string>
-    </property>
-    <addaction name="actionPreferences"/>
-    <addaction name="actionAdjust_Grid"/>
-    <addaction name="actionMove_Ships_When_Undocking"/>
-    <addaction name="separator"/>
-    <addaction name="actionAlways_Save_Display_Names"/>
-    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -285,7 +269,6 @@
    <addaction name="menuMission"/>
    <addaction name="menuNarrative"/>
    <addaction name="menuTools"/>
-   <addaction name="menuSeetings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -296,17 +279,21 @@
    <property name="windowTitle">
     <string>toolBar</string>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QToolButton { qproperty-autoRaise: false; }</string>
+   </property>
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
    </attribute>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
    <addaction name="actionSelect"/>
    <addaction name="actionSelectMove"/>
    <addaction name="actionSelectRotate"/>
-   <addaction name="separator"/>
-   <addaction name="actionRotateLocal"/>
    <addaction name="separator"/>
    <addaction name="actionConstrainX"/>
    <addaction name="actionConstrainY"/>
@@ -315,7 +302,7 @@
    <addaction name="actionConstrainYZ"/>
    <addaction name="actionConstrainXY"/>
    <addaction name="separator"/>
-   <addaction name="actionSelectionList"/>
+   <addaction name="actionSceneBrowser"/>
    <addaction name="actionSelectionLock"/>
    <addaction name="separator"/>
    <addaction name="actionWingForm"/>
@@ -327,14 +314,53 @@
    <addaction name="actionShowDistances"/>
    <addaction name="actionOrbitSelected"/>
    <addaction name="separator"/>
+   <addaction name="actionManage_Layers"/>
+   <addaction name="actionUnhide_Layers"/>
+   <addaction name="separator"/>
+  </widget>
+  <widget class="QToolBar" name="contextToolBar">
+   <property name="windowTitle">
+    <string>Context</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>16</width>
+     <height>16</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>true</bool>
+   </attribute>
+  </widget>
+  <widget class="QToolBar" name="transformToolBar">
+   <property name="windowTitle">
+    <string>Transform</string>
+   </property>
+   <property name="movable">
+    <bool>false</bool>
+   </property>
+   <property name="floatable">
+    <bool>false</bool>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>BottomToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
   </widget>
   <action name="actionSelect">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/select.png</normaloff>:/images/select.png</iconset>
    </property>
    <property name="text">
     <string>Select</string>
@@ -350,10 +376,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectmove.png</normaloff>:/images/selectmove.png</iconset>
-   </property>
    <property name="text">
     <string>SelectMove</string>
    </property>
@@ -368,10 +390,6 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectrot.png</normaloff>:/images/selectrot.png</iconset>
-   </property>
    <property name="text">
     <string>SelectRotate</string>
    </property>
@@ -382,124 +400,81 @@
     <string>R</string>
    </property>
   </action>
-  <action name="actionRotateLocal">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/rotlocal.png</normaloff>:/images/rotlocal.png</iconset>
-   </property>
-   <property name="text">
-    <string>RotateLocal</string>
-   </property>
-   <property name="toolTip">
-    <string>Rotate Locally (X)</string>
-   </property>
-   <property name="shortcut">
-    <string>X</string>
-   </property>
-  </action>
   <action name="actionConstrainX">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constx.png</normaloff>:/images/constx.png</iconset>
    </property>
    <property name="text">
     <string>ConstraintX</string>
    </property>
    <property name="toolTip">
-    <string>X Constraint</string>
+    <string>Constrain movement/rotation to X axis</string>
    </property>
   </action>
   <action name="actionConstrainY">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/consty.png</normaloff>:/images/consty.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintY</string>
    </property>
    <property name="toolTip">
-    <string>Y Constraint</string>
+    <string>Constrain movement/rotation to Y axis</string>
    </property>
   </action>
   <action name="actionConstrainZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constz.png</normaloff>:/images/constz.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintZ</string>
    </property>
    <property name="toolTip">
-    <string>Z Constraint</string>
+    <string>Constrain movement/rotation to Z axis</string>
    </property>
   </action>
   <action name="actionConstrainXZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constxz.png</normaloff>:/images/constxz.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintXZ</string>
    </property>
    <property name="toolTip">
-    <string>XZ Constraint</string>
+    <string>Constrain movement/rotation to XZ plane</string>
    </property>
   </action>
   <action name="actionConstrainYZ">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constyz.png</normaloff>:/images/constyz.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintYZ</string>
    </property>
    <property name="toolTip">
-    <string>YZ Constraint</string>
+    <string>Constrain movement/rotation to YZ plane</string>
    </property>
   </action>
   <action name="actionConstrainXY">
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/constxy.png</normaloff>:/images/constxy.png</iconset>
-   </property>
    <property name="text">
     <string>ConstraintXY</string>
    </property>
    <property name="toolTip">
-    <string>XY Constaint</string>
+    <string>Constrain movement/rotation to XY plane</string>
    </property>
   </action>
-  <action name="actionSelectionList">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectlist.png</normaloff>:/images/selectlist.png</iconset>
+  <action name="actionSceneBrowser">
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="text">
-    <string>SelectionList</string>
+    <string>Scene Browser</string>
    </property>
    <property name="toolTip">
-    <string>Selection List (H)</string>
+    <string>Toggle Scene Browser (H)</string>
    </property>
    <property name="shortcut">
     <string>H</string>
@@ -509,25 +484,14 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/selectlock.png</normaloff>:/images/selectlock.png</iconset>
-   </property>
    <property name="text">
     <string>SelectionLock</string>
    </property>
    <property name="toolTip">
     <string>Prevent selection from changing (Spacebar)</string>
    </property>
-   <property name="shortcut">
-    <string>Space</string>
-   </property>
   </action>
   <action name="actionWingForm">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/wingform.png</normaloff>:/images/wingform.png</iconset>
-   </property>
    <property name="text">
     <string>WingForm</string>
    </property>
@@ -539,10 +503,6 @@
    </property>
   </action>
   <action name="actionWingDisband">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/wingdisband.png</normaloff>:/images/wingdisband.png</iconset>
-   </property>
    <property name="text">
     <string>WingDisband</string>
    </property>
@@ -554,10 +514,6 @@
    </property>
   </action>
   <action name="actionZoomSelected">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/zoomsel.png</normaloff>:/images/zoomsel.png</iconset>
-   </property>
    <property name="text">
     <string>ZoomSelected</string>
    </property>
@@ -569,10 +525,6 @@
    </property>
   </action>
   <action name="actionZoomExtents">
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/zoomext.png</normaloff>:/images/zoomext.png</iconset>
-   </property>
    <property name="text">
     <string>ZoomExtents</string>
    </property>
@@ -587,27 +539,16 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/showdist.png</normaloff>:/images/showdist.png</iconset>
-   </property>
    <property name="text">
     <string>ShowDistances</string>
    </property>
    <property name="toolTip">
     <string>Show Distances (D)</string>
    </property>
-   <property name="shortcut">
-    <string>D</string>
-   </property>
   </action>
   <action name="actionOrbitSelected">
    <property name="checkable">
     <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../resources/resources.qrc">
-     <normaloff>:/images/orbitsel.png</normaloff>:/images/orbitsel.png</iconset>
    </property>
    <property name="text">
     <string>OrbitSelected</string>
@@ -647,27 +588,49 @@
   </action>
   <action name="actionRevert">
    <property name="text">
-    <string>&amp;Revert</string>
+    <string>Revert to &amp;Last Save</string>
+   </property>
+  </action>
+  <action name="actionLoad_Template">
+   <property name="text">
+    <string>Load &amp;Template...</string>
+   </property>
+  </action>
+  <action name="actionSave_As_Template">
+   <property name="text">
+    <string>Save As &amp;Template...</string>
    </property>
   </action>
   <action name="actionFS2_Open">
    <property name="text">
     <string>&amp;FS2 Open</string>
    </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
   </action>
   <action name="actionFS2_Retail">
    <property name="text">
     <string>FS2 &amp;Retail</string>
    </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionFS2_Compatibility">
+   <property name="text">
+    <string>FSO &amp;Compatibility Mode</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
   </action>
   <action name="actionFS1_Mission">
    <property name="text">
     <string>&amp;FS1 Mission</string>
-   </property>
-  </action>
-  <action name="actionFS1_Weapon_Loadouts">
-   <property name="text">
-    <string>FS1 &amp;Weapon Loadouts</string>
    </property>
   </action>
   <action name="actionRun_FreeSpace_2_Open">
@@ -681,11 +644,6 @@
   <action name="actionExit">
    <property name="text">
     <string>&amp;Exit</string>
-   </property>
-  </action>
-  <action name="actionUndo">
-   <property name="text">
-    <string>&amp;Undo</string>
    </property>
   </action>
   <action name="actionClone_Marked_Objects">
@@ -716,75 +674,9 @@
     <string>&amp;Unlock All Objects</string>
    </property>
   </action>
-  <action name="actionDisable_Undo">
+  <action name="actionVisibility_Layers">
    <property name="text">
-    <string>D&amp;isable Undo</string>
-   </property>
-  </action>
-  <action name="actionTool_Bar">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Tool Bar</string>
-   </property>
-  </action>
-  <action name="actionStatus_Bar">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="checked">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Status Bar</string>
-   </property>
-  </action>
-  <action name="actionShow_Ships">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Show Ships</string>
-   </property>
-  </action>
-  <action name="actionShow_Player_Starts">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show &amp;Player Starts</string>
-   </property>
-  </action>
-  <action name="actionShow_Waypoints">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Show &amp;Waypoints</string>
-   </property>
-  </action>
-  <action name="actionShow_Friendly">
-   <property name="text">
-    <string>Show &amp;Friendly</string>
-   </property>
-  </action>
-  <action name="actionShow_Hostile">
-   <property name="text">
-    <string>Show &amp;Hostile</string>
-   </property>
-  </action>
-  <action name="actionHide_Marked_Objects">
-   <property name="text">
-    <string>&amp;Hide Marked Objects</string>
-   </property>
-  </action>
-  <action name="actionShow_All_Hidden_Objects">
-   <property name="text">
-    <string>Sho&amp;w Hidden Objects</string>
+    <string>Visibility Layers...</string>
    </property>
   </action>
   <action name="actionShow_Ship_Models">
@@ -863,7 +755,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show &amp;Model Paths</string>
+    <string>Show Model Nav Paths</string>
    </property>
   </action>
   <action name="actionShow_Model_Dock_Points">
@@ -872,6 +764,14 @@
    </property>
    <property name="text">
     <string>Show Model Doc&amp;k Points</string>
+   </property>
+  </action>
+  <action name="actionShow_Bay_Paths">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Model Bay Paths</string>
    </property>
   </action>
   <action name="actionHighlight_Selectable_Subsystems">
@@ -902,22 +802,6 @@
    </property>
    <property name="shortcut">
     <string>Alt+Shift+H</string>
-   </property>
-  </action>
-  <action name="actionDouble_Fine_Gridlines">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Double &amp;Fine Gridlines</string>
-   </property>
-  </action>
-  <action name="actionAnti_Aliased_Gridlines">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Anti-Aliased Gridlines</string>
    </property>
   </action>
   <action name="actionShow_3D_Compass">
@@ -966,6 +850,14 @@
     <string>&amp;Lighting from Suns</string>
    </property>
   </action>
+  <action name="actionRender_Full_Detail">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Render Full Detail</string>
+   </property>
+  </action>
   <action name="actionCamera">
    <property name="checkable">
     <bool>true</bool>
@@ -980,6 +872,17 @@
    </property>
    <property name="text">
     <string>Current &amp;Ship</string>
+   </property>
+  </action>
+  <action name="actionToggle_Viewpoint">
+   <property name="text">
+    <string>&amp;Toggle Viewpoint</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle between the camera and the current ship's viewpoint (Ctrl+Shift+V)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+V</string>
    </property>
   </action>
   <action name="actionx1">
@@ -1141,12 +1044,20 @@
     <string>Shift+W</string>
    </property>
   </action>
-  <action name="actionObjects">
+  <action name="actionObject_Orientation">
    <property name="text">
-    <string>&amp;Objects</string>
+    <string>Object &amp;Orientation</string>
    </property>
    <property name="shortcut">
     <string>Shift+O</string>
+   </property>
+  </action>
+  <action name="actionProps">
+   <property name="text">
+    <string>Props</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+P</string>
    </property>
   </action>
   <action name="actionWaypoint_Paths">
@@ -1155,6 +1066,11 @@
    </property>
    <property name="shortcut">
     <string>Shift+Y</string>
+   </property>
+  </action>
+  <action name="actionReorder_Objects">
+   <property name="text">
+    <string>&amp;Reorder Objects</string>
    </property>
   </action>
   <action name="actionMission_Events">
@@ -1170,7 +1086,7 @@
     <string>&amp;Team Loadout</string>
    </property>
    <property name="shortcut">
-    <string>Shift+P</string>
+    <string>Shift+L</string>
    </property>
   </action>
   <action name="actionBackground">
@@ -1240,6 +1156,9 @@
   <action name="actionShield_System">
    <property name="text">
     <string>Shie&amp;ld System</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+M</string>
    </property>
   </action>
   <action name="actionSet_Global_Ship_Flags">
@@ -1451,41 +1370,12 @@
     <string>W</string>
    </property>
   </action>
-  <action name="actionAdjust_Grid">
-   <property name="text">
-    <string>Adjust &amp;Grid</string>
-   </property>
-  </action>
-  <action name="actionMove_Ships_When_Undocking">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Move Ships When Undocking</string>
-   </property>
-  </action>
   <action name="actionMission_Statistics">
    <property name="text">
     <string>M&amp;ission Statistics</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
-   </property>
-  </action>
-  <action name="actionAlways_Save_Display_Names">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Always save Display Names</string>
-   </property>
-  </action>
-  <action name="actionError_Checker_Checks_Potential_Issues">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Error checker checks for potential issues</string>
    </property>
   </action>
   <action name="actionError_Checker">
@@ -1499,14 +1389,6 @@
   <action name="actionHelp_Topics">
    <property name="text">
     <string>&amp;Help Topics</string>
-   </property>
-  </action>
-  <action name="actionShow_SEXP_Help">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>&amp;Show SEXP Help</string>
    </property>
   </action>
   <action name="actionAbout">
@@ -1570,14 +1452,38 @@
     <string>Music Player</string>
    </property>
   </action>
+  <action name="actionManage_Layers">
+   <property name="text">
+    <string>Manage Layers</string>
+   </property>
+   <property name="toolTip">
+    <string>Manage View Layers</string>
+   </property>
+  </action>
+  <action name="actionUnhide_Layers">
+   <property name="text">
+    <string>Unhide Layers</string>
+   </property>
+   <property name="toolTip">
+    <string>Show all view layers</string>
+   </property>
+  </action>
   <action name="actionVolumetric_Nebula">
    <property name="text">
     <string>Volumetric Nebula</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+U</string>
    </property>
   </action>
   <action name="actionCalculate_Relative_Coordinates">
    <property name="text">
     <string>Calculate Relative Coordinates</string>
+   </property>
+  </action>
+  <action name="actionWaypointPathGenerator">
+   <property name="text">
+    <string>Waypoint Path &amp;Generator</string>
    </property>
   </action>
   <action name="actionPreferences">

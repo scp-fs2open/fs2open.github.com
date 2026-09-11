@@ -7,6 +7,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/toolchain.h"
 
+inline static constexpr size_t MAX_ITEMS_SENTINEL = i2sz(-1);
 
 // Goober5000
 // A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
@@ -22,9 +23,9 @@ void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const 
 	// allocate space for the element being moved
 	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
 	current_buf = new T();
+	Assertion(current_buf != nullptr, "Malloc failed!");
 	if (current_buf == nullptr)
 	{
-		UNREACHABLE("Malloc failed!");
 		return;
 	}
 
@@ -162,11 +163,15 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str)
+size_t count_items_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int count = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	size_t count = 0;
+	for (int index = start_index; index < end; ++index)
 	{
+		const ITEM_T& item = item_vector[index];
 		if (str == nullptr && item.*field == nullptr)
 			++count;
 		else if (str == nullptr || item.*field == nullptr)
@@ -179,11 +184,15 @@ int count_items_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* fiel
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int count_items_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+size_t count_items_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int count = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	size_t count = 0;
+	for (int index = start_index; index < end; ++index)
 	{
+		const ITEM_T& item = item_vector[index];
 		if (str == nullptr && (item.*field).get() == nullptr)
 			++count;
 		else if (str == nullptr || (item.*field).get() == nullptr)
@@ -196,12 +205,15 @@ int count_items_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* f
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str)
+size_t count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int count = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	size_t count = 0;
+	for (int index = start_index; index < end; ++index)
 	{
-		if (lcase_equal(item.*field, str))
+		if (lcase_equal(item_vector[index].*field, str))
 			++count;
 	}
 
@@ -209,21 +221,26 @@ int count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field
 }
 
 template <typename VECTOR_T, typename ITEM_T>
-int count_items_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str)
+size_t count_items_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (str == nullptr)
 		return 0;
 
-	return count_items_with_string(item_vector, field, SCP_string(str));
+	return count_items_with_string(item_vector, field, SCP_string(str), start_index, num_items);
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const FIELD_T& search)
+size_t count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const FIELD_T& search, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int count = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	size_t count = 0;
+	for (int index = start_index; index < end; ++index)
 	{
-		if (item.*field == search)
+		if (item_vector[index].*field == search)
 			++count;
 	}
 
@@ -231,13 +248,15 @@ int count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field,
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T* ITEM_T::* field, const char* str)
+size_t count_items_with_string(const ITEM_T* item_array, size_t num_items, FIELD_T* ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return 0;
 
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
+	size_t count = 0;
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 	{
 		if (str == nullptr && item_array[i].*field == nullptr)
 			++count;
@@ -251,13 +270,15 @@ int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T* IT
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int count_items_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+size_t count_items_with_ptr_string(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return 0;
 
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
+	size_t count = 0;
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 	{
 		if (str == nullptr && (item_array[i].*field).get() == nullptr)
 			++count;
@@ -271,13 +292,15 @@ int count_items_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
+size_t count_items_with_string(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const SCP_string& str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return 0;
 
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
+	size_t count = 0;
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 		if (lcase_equal(item_array[i].*field, str))
 			++count;
 
@@ -285,174 +308,203 @@ int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITE
 }
 
 template <typename ITEM_T>
-int count_items_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
+size_t count_items_with_string(const ITEM_T* item_array, size_t num_items, SCP_string ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr || str == nullptr)
 		return 0;
 
-	return count_items_with_string(item_array, num_items, field, SCP_string(str));
+	return count_items_with_string(item_array, num_items, field, SCP_string(str), start_index);
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int count_items_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
+size_t count_items_with_field(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const FIELD_T& search, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return 0;
 
-	int count = 0;
-	for (int i = 0; i < num_items; ++i)
+	size_t count = 0;
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 		if (item_array[i].*field == search)
 			++count;
 
 	return count;
 }
 
-template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str)
+template <typename VECTOR_T>
+size_t count_items_with_value(const VECTOR_T& item_vector, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int index = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	auto begin_it = std::next(item_vector.begin(), start_index);
+	auto end_it = (num_items == MAX_ITEMS_SENTINEL) ? item_vector.end() : std::next(item_vector.begin(), static_cast<ptrdiff_t>(std::min(i2sz(start_index) + num_items, item_vector.size())));
+	return std::count_if(begin_it, end_it,
+		[](const typename VECTOR_T::value_type& element) { return element.has_value(); });
+}
+
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int find_item_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
+{
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	for (int index = start_index; index < end; ++index)
 	{
+		const ITEM_T& item = item_vector[index];
 		if (str == nullptr && item.*field == nullptr)
 			return index;
 		else if (str == nullptr || item.*field == nullptr)
-			++index;
+			;
 		else if (!stricmp(item.*field, str))
 			return index;
-		else
-			++index;
 	}
 
 	return -1;
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int index = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	for (int index = start_index; index < end; ++index)
 	{
+		const ITEM_T& item = item_vector[index];
 		if (str == nullptr && (item.*field).get() == nullptr)
 			return index;
 		else if (str == nullptr || (item.*field).get() == nullptr)
-			++index;
+			;
 		else if (!stricmp((item.*field).get(), str))
 			return index;
-		else
-			++index;
 	}
 
 	return -1;
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str)
+int find_item_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int index = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	for (int index = start_index; index < end; ++index)
 	{
-		if (lcase_equal(item.*field, str))
+		if (lcase_equal(item_vector[index].*field, str))
 			return index;
-		else
-			++index;
 	}
 
 	return -1;
 }
 
 template <typename VECTOR_T, typename ITEM_T>
-int find_item_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str)
+int find_item_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (str == nullptr)
 		return -1;
 
-	return find_item_with_string(item_vector, field, SCP_string(str));
+	return find_item_with_string(item_vector, field, SCP_string(str), start_index, num_items);
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const FIELD_T& search)
+int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const FIELD_T& search, int start_index = 0, size_t num_items = MAX_ITEMS_SENTINEL)
 {
-	int index = 0;
-	for (const ITEM_T& item : item_vector)
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
+	int end = (num_items == MAX_ITEMS_SENTINEL) ? sz2i(item_vector.size()) : sz2i(std::min(i2sz(start_index) + num_items, item_vector.size()));
+	for (int index = start_index; index < end; ++index)
 	{
-		if (item.*field == search)
+		if (item_vector[index].*field == search)
 			return index;
-		else
-			++index;
 	}
 
 	return -1;
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T* ITEM_T::* field, const char* str)
+int find_item_with_string(const ITEM_T* item_array, size_t num_items, FIELD_T* ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return -1;
 
-	for (int i = 0; i < num_items; ++i)
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 	{
 		if (str == nullptr && item_array[i].*field == nullptr)
-			return i;
+			return sz2i(i);
 		else if (str == nullptr || item_array[i].*field == nullptr)
 			;
 		else if (!stricmp(item_array[i].*field, str))
-			return i;
+			return sz2i(i);
 	}
 
 	return -1;
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_ptr_string(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return -1;
 
-	for (int i = 0; i < num_items; ++i)
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 	{
 		if (str == nullptr && (item_array[i].*field).get() == nullptr)
-			return i;
+			return sz2i(i);
 		else if (str == nullptr || (item_array[i].*field).get() == nullptr)
 			;
 		else if (!stricmp((item_array[i].*field).get(), str))
-			return i;
+			return sz2i(i);
 	}
 
 	return -1;
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
+int find_item_with_string(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const SCP_string& str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return -1;
 
-	for (int i = 0; i < num_items; ++i)
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 		if (lcase_equal(item_array[i].*field, str))
-			return i;
+			return sz2i(i);
 
 	return -1;
 }
 
 template <typename ITEM_T>
-int find_item_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
+int find_item_with_string(const ITEM_T* item_array, size_t num_items, SCP_string ITEM_T::* field, const char* str, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr || str == nullptr)
 		return -1;
 
-	return find_item_with_string(item_array, num_items, field, str);
+	return find_item_with_string(item_array, num_items, field, SCP_string(str), start_index);
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
+int find_item_with_field(const ITEM_T* item_array, size_t num_items, FIELD_T ITEM_T::* field, const FIELD_T& search, int start_index = 0)
 {
+	Assertion(start_index >= 0, "start_index cannot be negative!");
+
 	if (item_array == nullptr)
 		return -1;
 
-	for (int i = 0; i < num_items; ++i)
+	for (size_t i = i2sz(start_index); i < num_items; ++i)
 		if (item_array[i].*field == search)
-			return i;
+			return sz2i(i);
 
 	return -1;
 }
@@ -464,5 +516,11 @@ const T* coalesce(const T* possibly_null, const T* value_if_null)
 
 	return (possibly_null != nullptr) ? possibly_null : value_if_null;
 }
+
+template<typename... Ts>
+struct overloads : Ts... {
+	constexpr overloads(Ts... t) : Ts(t)... {}
+	using Ts::operator()...;
+};
 
 #endif

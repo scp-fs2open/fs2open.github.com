@@ -264,8 +264,7 @@ void pilot_set_short_callsign(player *p, int max_width)
 {
 	strcpy_s(p->short_callsign, p->callsign);
 	font::set_font(font::FONT1);
-	font::force_fit_string(p->short_callsign, CALLSIGN_LEN - 1, max_width);
-	gr_get_string_size( &(p->short_callsign_width), NULL, p->short_callsign );
+	p->short_callsign_width = font::force_fit_string(p->short_callsign, CALLSIGN_LEN - 1, max_width);
 }
 
 // pick a random image for the passed player

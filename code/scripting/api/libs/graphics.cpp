@@ -19,6 +19,7 @@
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
+#include <cmdline/cmdline.h>
 #include <debris/debris.h>
 #include <freespace.h>
 #include <globalincs/systemvars.h>
@@ -185,7 +186,7 @@ ADE_INDEXER(l_Graphics_Posteffects, "number index", "Gets the name of the specif
 	if (index >= (int) names.size())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", const_cast<char*>(names[index].c_str()));
+	return ade_set_args(L, "s", names[index].c_str());
 }
 
 ADE_FUNC(__len, l_Graphics_Posteffects, nullptr, "Gets the number of available post-processing effects", "number", "number of post-processing effects or 0 on error")
@@ -278,7 +279,7 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
-ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
+ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration /* GR_RESIZE_* */", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
 {
 	enum_h resize_arg;
 
@@ -1319,6 +1320,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 			int dir;
 			float tri_separation;
 
+			offscreengauge->resetClip();
 			offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation);
 
 			if (draw) {
@@ -1509,7 +1511,7 @@ ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1,
 	return drawString_sub(L, false);
 }
 
-ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode, string|boolean Message, [number X1, number Y1, number X2, number Y2]",
+ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode /* GR_RESIZE_* */, string|boolean Message, [number X1, number Y1, number X2, number Y2]",
 	"Draws a string, scaled according to the GR_RESIZE_* parameter. Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
 	"Additionally, calling drawString with only a string argument will automatically"
@@ -1662,7 +1664,7 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 			t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
 	}
 
-	int idx = bm_make_render_target(w, h, t);
+	int idx = bm_make_render_target(w, h, t | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
@@ -2045,7 +2047,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
 
-ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemode has the specified flag, see VM_* enumeration", "boolean", "true if flag is present, false otherwise")
+ADE_FUNC(hasViewmode, l_Graphics, "enumeration /* VM_* */", "Specifies if the current viewmode has the specified flag.", "boolean", "true if flag is present, false otherwise")
 {
 	enum_h *type = NULL;
 
@@ -2144,7 +2146,7 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration ResizeMode]", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration /* GR_RESIZE_* */]", "Sets the clipping region to the specified rectangle using GR_RESIZE_* enumerations. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
 	enum_h resize_arg;
@@ -2320,7 +2322,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 	// 2. we NEED the return particle ptrs for the persistent path
 	// 3. Scripting gets to set certain values at runtime which are usually encoded as a behaviour in the particle effect and thus tabled statically.
 
-	const auto& [parent, parent_sig] = host->getParentObjAndSig();
+	auto attachment = host->getParentAttachment();
 
 	particle::ParticleSource source;
 	source.setEffect(handle);
@@ -2332,7 +2334,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 		auto spawned_particles = particle::ParticleManager::get()
 									 ->getEffect(handle)
 									 .front()
-									 .processSourcePersistent(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+									 .processSourcePersistent(0, source, 0, vel, attachment, lifetime, rad, 1);
 
 		Assertion(spawned_particles.size() == 1, "Did not spawn a single particle in createPersistentParticle");
 
@@ -2344,7 +2346,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 	else {
-		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, attachment, lifetime, rad, 1);
 		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 }
@@ -2407,17 +2409,24 @@ ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and fre
 ADE_FUNC(createColor,
 	l_Graphics,
 	"number Red, number Green, number Blue, [number Alpha]",
-	"Creates a color object. Values are capped 0-255. Alpha defaults to 255.",
+	"Creates a color object. Values are capped 0-255. Alpha may be given either as 0-255 or as a "
+	"0-1 fraction (a value strictly between 0 and 1 is treated as a fraction and scaled up); it defaults to 255.",
 	"color",
 	"The color")
 {
 	int r;
 	int g;
 	int b;
-	int a = 255;
-	if (!ade_get_args(L, "iii|i", &r, &g, &b, &a)) {
+	// Read alpha as a float so callers can pass either the historical 0-255 value or a 0-1 fraction.
+	float a_in = 255.0f;
+	if (!ade_get_args(L, "iii|f", &r, &g, &b, &a_in)) {
 		return ADE_RETURN_NIL;
 	}
+
+	// A value strictly between 0 and 1 can only be a fraction: as an integer it would previously have
+	// been truncated to 0 (never rendering), so scaling it to 0-255 only fixes that broken case and
+	// leaves every existing 0-255 integer usage untouched.
+	int a = (a_in > 0.0f && a_in < 1.0f) ? static_cast<int>(a_in * 255.0f + 0.5f) : static_cast<int>(a_in);
 
 	CLAMP(r, 0, 255);
 	CLAMP(g, 0, 255);

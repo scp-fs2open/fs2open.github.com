@@ -66,12 +66,12 @@
       <string>&amp;Music</string>
      </property>
      <property name="buddy">
-      <cstring>musicComboBox</cstring>
+      <cstring>musicWidget</cstring>
      </property>
     </widget>
    </item>
    <item row="3" column="1">
-    <widget class="QComboBox" name="musicComboBox"/>
+    <widget class="fso::fred::MusicComboWidget" name="musicWidget"/>
    </item>
    <item row="4" column="1">
     <widget class="QDialogButtonBox" name="okAndCancelButtons">
@@ -82,23 +82,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::MusicComboWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/widgets/MusicComboWidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>okAndCancelButtons</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::FictionViewerDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>138</x>
-     <y>134</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>114</x>
-     <y>78</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

@@ -478,6 +478,18 @@ int hud_target_invalid_awacs(object *objp)
 	return 0;
 }
 
+// Returns true if the weapon object can currently be targeted from source_objp.
+// For mines, uses range-based detection (mine_targetable_range). For other weapons, uses flags.
+static bool weapon_is_targetable_from(object *source_objp, object *objp)
+{
+	weapon_info *wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+	if (wip->is_mine()) {
+		Assertion(source_objp != nullptr, "weapon_is_targetable_from called with null source_objp");
+		return vm_vec_dist(&source_objp->pos, &objp->pos) <= wip->mine_targetable_range;
+	}
+	return wip->wi_flags[Weapon::Info_Flags::Can_be_targeted] || wip->wi_flags[Weapon::Info_Flags::Bomb];
+}
+
 ship_subsys *advance_subsys(ship_subsys *cur, int next_flag)
 {
 	if (next_flag) {
@@ -1187,9 +1199,8 @@ void hud_target_common(int team_mask, int next_flag)
 			continue;
 
 		if (A->type == OBJ_WEAPON) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) )
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) )
-					continue;
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 
 			if (Weapons[A->instance].lssm_stage == 3)
 				continue;
@@ -1503,10 +1514,9 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 				continue;
 
 			weapon* wp = &Weapons[A->instance];
-			weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
-			// only allow targeting of bombs
-			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) && !(wip->wi_flags[Weapon::Info_Flags::Bomb]))
+			// only allow targeting of bombs/targetable weapons/mines in range
+			if (!weapon_is_targetable_from(source_obj, A))
 				continue;
 
 			if (wp->lssm_stage == 3)
@@ -1608,7 +1618,7 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 		return 1;
 	} else if (Use_new_scanning_behavior) {
 		return 0;
-	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable])) {
+	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Targetable_as_unscanned])) {
 		return 0;
 	}
 
@@ -2498,11 +2508,8 @@ void hud_target_in_reticle_new()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
-					continue;
-				}
-			}
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
 			}
@@ -2607,11 +2614,8 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ){
-				if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ){
-					continue;
-				}
-			}
+			if (!weapon_is_targetable_from(Player_obj, A))
+				continue;
 
 			if (Weapons[A->instance].lssm_stage==3){
 				continue;
@@ -3131,7 +3135,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 		unsize(&hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y);
 	}
 
-	float ang = atan2(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
+	float ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	float sin_ang=sinf(ang);
 	float cos_ang=cosf(ang);
 
@@ -4188,11 +4192,8 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget(bool config)
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
-				return;
-			}
-		}
+		if (!weapon_is_targetable_from(Player_obj, targetp))
+			return;
 	}
 
 	// If the target is out of range, then draw the correct frame for the lead indicator
@@ -4363,11 +4364,8 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 
 	// only allow bombs to have lead indicator displayed
 	if ( targetp->type == OBJ_WEAPON ) {
-		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) ) {
-				return;
-			}
-		}
+		if (!weapon_is_targetable_from(Player_obj, targetp))
+			return;
 	}
 
 	// If the target is out of range, then draw the correct frame for the lead indicator
@@ -6777,10 +6775,9 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 			renderPrintfWithGauge(x + fl2i(Weapon_sunlinked_offset_x * scale), name_y, EG_NULL, scale, config, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			// don't draw the link indicator if the fire can't be fired link.
-			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
-			if (!config && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
-					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
+			// don't draw the link indicator if this bank can't actually fire linked.
+			// the link flag is ignored rather than cleared so the player can cycle past an incapable bank or weapon without the setting being cleared
+			if (!config && Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, i)) {
 				renderPrintfWithGauge(x + fl2i(Weapon_slinked_offset_x * scale), name_y, EG_NULL, scale, config, "%c", Weapon_link_icon);
 			}
 
@@ -7734,10 +7731,9 @@ void HudGaugeSecondaryWeapons::render(float /*frametime*/, bool config)
 			renderPrintfWithGauge(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, config, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
-			// don't draw the link indicator if the fire can't be fired link.
-			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
-			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
-					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
+			// don't draw the link indicator if this bank can't actually fire linked.
+			// the link flag is ignored rather than cleared so the player can cycle past an incapable bank or weapon without the setting being cleared
+			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(Player_ship, i) ) {
 				renderPrintfWithGauge(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, config, "%c", Weapon_link_icon);
 			}
 
@@ -7907,9 +7903,13 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 		auto ship_pm = model_get(sip->model_num);
 
 		for (i = 0; i < swp->num_secondary_banks; i++) {
+			if (swp->secondary_bank_weapons[i] < 0 || !sip->draw_secondary_models[i])
+				continue;
 			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
 
-			if (wip->external_model_num == -1 || !sip->draw_secondary_models[i])
+			// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+			int display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+			if (display_model_num < 0)
 				continue;
 
 			auto bank = &ship_pm->missile_banks[i];
@@ -7921,33 +7921,35 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
+					vec3d slot_pnt;
+					matrix slot_orient;
+					ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
+
 					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
 					vec3d world_position;
-					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+					vm_vec_unrotate(&world_position, &slot_pnt, &object_orient);
 
-					// "Bank" the external model by the angle offset
-					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-					matrix model_orient = object_orient;
-					vm_rotate_matrix_by_angles(&model_orient, &angs);
+					matrix model_orient;
+					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &bank->pnt[k]);
+					model_render_immediate(&weapon_render_info, display_model_num, &model_orient, &world_position);
 				}
 			} else {
+				auto weapon_pm = model_get(display_model_num);
 				num_secondaries_rendered = 0;
 
 				for(k = 0; k < bank->num_slots; k++)
 				{
-					auto secondary_weapon_pos = bank->pnt[k];
-
 					if (num_secondaries_rendered >= sp->weapons.secondary_bank_ammo[i])
 						break;
 
-					if(sp->secondary_point_reload_pct.get(i, k) <= 0.0)
+					float reload_pct = sp->secondary_point_reload_pct.get(i, k);
+					if (reload_pct <= 0.0f)
 						continue;
 
 					model_render_params weapon_render_info;
 
-					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] ) ) ) {
+					if ( swp->current_secondary_bank == i && ( swp->secondary_next_slot[i] == k || ( swp->secondary_next_slot[i]+1 == k && sp->flags[Ship::Ship_Flags::Secondary_dual_fire] && ship_secondary_bank_can_dual_fire(sp, i) ) ) ) {
 						weapon_render_info.set_color(Color_bright_blue);
 					} else {
 						weapon_render_info.set_color(Color_bright_white);
@@ -7955,21 +7957,21 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 
 					num_secondaries_rendered++;
 
-					vm_vec_scale_add2(&secondary_weapon_pos, &vmd_z_vector, -(1.0f-sp->secondary_point_reload_pct.get(i, k)) * model_get(wip->external_model_num)->rad);
-
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 
+					vec3d slot_pnt;
+					matrix slot_orient;
+					ship_get_weapon_model_slot_transform(bank, k, (1.0f - reload_pct) * weapon_pm->rad, &slot_pnt, &slot_orient);
+
 					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
 					vec3d world_position;
-					vm_vec_unrotate(&world_position, &secondary_weapon_pos, &object_orient);
+					vm_vec_unrotate(&world_position, &slot_pnt, &object_orient);
 
-					// "Bank" the external model by the angle offset
-					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-					matrix model_orient = object_orient;
-					vm_rotate_matrix_by_angles(&model_orient, &angs);
+					matrix model_orient;
+					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, display_model_num, &model_orient, &world_position);
 				}
 			}
 		}
@@ -7984,41 +7986,46 @@ void HudGaugeHardpoints::render(float /*frametime*/, bool config)
 		auto ship_pm = model_get(sip->model_num);
 
 		for ( i = 0; i < swp->num_primary_banks; i++ ) {
-			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
 			auto bank = &ship_pm->gun_banks[i];
+			auto wip = (swp->primary_bank_weapons[i] >= 0) ? &Weapon_info[swp->primary_bank_weapons[i]] : nullptr;
 
-			for ( k = 0; k < bank->num_slots; k++ ) {
-				if ( wip->external_model_num < 0 || !sip->draw_primary_models[i] ) {
+			// if the weapon has no dedicated external model, display the weapon's own model, if it has one
+			int display_model_num = -1;
+			if ( wip != nullptr && sip->draw_primary_models[i] )
+				display_model_num = (wip->external_model_num >= 0) ? wip->external_model_num : wip->model_num;
+
+			if ( display_model_num < 0 ) {
+				// no model to draw, so just mark each firing point with a circle
+				for ( k = 0; k < bank->num_slots; k++ ) {
 					vm_vec_unrotate(&subobj_pos, &bank->pnt[k], &object_orient);
-					//vm_vec_sub(&subobj_pos, &Eye_position, &subobj_pos);
-					//g3_rotate_vertex(&draw_point, &bank->pnt[k]);
 
 					g3_rotate_vertex(&draw_point, &subobj_pos);
 					g3_project_vertex(&draw_point);
 
-					//resize(&width, &height);
-
-					//unsize(&xc, &yc);
-					//unsize(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y);
 					if (!(draw_point.flags & PF_OVERFLOW))
 						renderCircle((int)draw_point.screen.xyw.x + position[0], (int)draw_point.screen.xyw.y + position[1], 10);
-					//renderCircle(xc, yc, 25);
-				} else {
+				}
+			} else {
+				int external_model_instance = ship_get_external_weapon_model_instance(swp, i, display_model_num);
+
+				for ( k = 0; k < bank->num_slots; k++ ) {
 					model_render_params weapon_render_info;
 					weapon_render_info.set_detail_level_lock(detail_level_lock);
 					weapon_render_info.set_flags(render_flags);
 					weapon_render_info.set_alpha(alpha);
 
+					vec3d slot_pnt;
+					matrix slot_orient;
+					ship_get_weapon_model_slot_transform(bank, k, 0.0f, &slot_pnt, &slot_orient);
+
 					// We need to transform the position local to the model to be in "world" space relative to the rendered outline
 					vec3d world_position;
-					vm_vec_unrotate(&world_position, &bank->pnt[k], &object_orient);
+					vm_vec_unrotate(&world_position, &slot_pnt, &object_orient);
 
-					// "Bank" the external model by the angle offset
-					angles angs = { 0.0f, bank->external_model_angle_offset[k], 0.0f };
-					matrix model_orient = object_orient;
-					vm_rotate_matrix_by_angles(&model_orient, &angs);
+					matrix model_orient;
+					vm_matrix_x_matrix(&model_orient, &object_orient, &slot_orient);
 
-					model_render_immediate(&weapon_render_info, wip->external_model_num, swp->primary_bank_external_model_instance[i], &model_orient, &world_position);
+					model_render_immediate(&weapon_render_info, display_model_num, external_model_instance, &model_orient, &world_position);
 				}
 			}
 		}

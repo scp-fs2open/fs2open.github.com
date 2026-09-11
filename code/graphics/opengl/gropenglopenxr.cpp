@@ -11,6 +11,7 @@
 // the other platforms do not go before the #includes because this will cause conflicts from symbols defined in XLib,
 // specifically None and Always; see https://stackoverflow.com/questions/22476110/c-compiling-error-including-x11-x-h-x11-xlib-h
 
+#include "cmdline/cmdline.h"
 #include "io/cursor.h"
 #include "io/mouse.h"
 #include "graphics/matrix.h"
@@ -20,6 +21,9 @@
 #include "graphics/opengl/gropenglstate.h"
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #ifndef FS_OPENXR
 
@@ -35,8 +39,6 @@
 
 #define XR_USE_GRAPHICS_API_OPENGL
 #include "graphics/openxr_internal.h"
-
-#include <SDL_syswm.h>
 
 #ifdef FS_OPENXR
 
@@ -60,7 +62,7 @@ bool gr_opengl_openxr_test_capabilities() {
 	}
 
 	if (requirements.minApiVersionSupported > XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)) {
-		mprintf(("System doesn't meet OpenXR graphics requirements (min %" PRIu64 ", available %" PRIu64 ")!\n", requirements.minApiVersionSupported, static_cast<XrVersion>(XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0))));
+		mprintf(("System doesn't meet OpenXR graphics requirements (min " UINT64_T_ARG ", available " UINT64_T_ARG ")!\n", requirements.minApiVersionSupported, static_cast<XrVersion>(XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0))));
 		return false;
 	}
 
@@ -69,14 +71,14 @@ bool gr_opengl_openxr_test_capabilities() {
 
 #ifdef WIN32
 bool gr_opengl_openxr_create_session() {
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
+	auto hdc = static_cast<HDC>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+													   SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+													   nullptr));
 
 	XrGraphicsBindingOpenGLWin32KHR graphicsBinding{
 		XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR,
 		nullptr,
-		wmInfo.info.win.hdc,
+		hdc,
 		(HGLRC) SDL_GL_GetCurrentContext() //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the hGLRC on Win32
 	};
 	
@@ -97,40 +99,65 @@ bool gr_opengl_openxr_create_session() {
 }
 #elif defined SCP_UNIX
 bool gr_opengl_openxr_create_session() {
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
+	std::variant<std::monostate, XrGraphicsBindingOpenGLXlibKHR> drawingSurface{};
 
-	XWindowAttributes wa;
-	XGetWindowAttributes(wmInfo.info.x11.display, wmInfo.info.x11.window, &wa);
+	// for X11 version
+	if (!SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11")) {
+		auto xdisplay = reinterpret_cast<Display *>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+																	  SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
+																	  nullptr));
+		auto xwindow = static_cast<Window>(SDL_GetNumberProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+																 SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
+																 0));
 
-	GLXContext glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
+		XWindowAttributes wa;
+		XGetWindowAttributes(xdisplay, xwindow, &wa);
 
-	int glxfbconfigid, glxscreenid, nfbconfigs;
-	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
-	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_SCREEN, &glxscreenid);
+		auto glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
 
-	const int fbconfigattrs[] = {GLX_FBCONFIG_ID, glxfbconfigid, None};
-	GLXFBConfig* fbconfigs = glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, fbconfigattrs, &nfbconfigs);
+		int glxfbconfigid, glxscreenid, nfbconfigs;
+		glXQueryContext(xdisplay, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
+		glXQueryContext(xdisplay, glxcontext, GLX_SCREEN, &glxscreenid);
 
-	if (nfbconfigs < 1) {
-		mprintf(("Unable to find Linux FBConfig for OpenXR!\n"));
+		const int fbconfigattrs[] = {GLX_FBCONFIG_ID, glxfbconfigid, None};
+		GLXFBConfig* fbconfigs = glXChooseFBConfig(xdisplay, glxscreenid, fbconfigattrs, &nfbconfigs);
+
+		if (nfbconfigs < 1) {
+			mprintf(("Unable to find Linux FBConfig for OpenXR!\n"));
+			return false;
+		}
+
+		drawingSurface = XrGraphicsBindingOpenGLXlibKHR {
+			XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
+			nullptr,
+			xdisplay,
+			static_cast<uint32_t>(XVisualIDFromVisual(wa.visual)),
+			fbconfigs[0],
+			glXGetCurrentDrawable(),
+			glxcontext
+		};
+	}
+	else if (!SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland")) {
+		//Unfortunately, XrGraphicsBindingOpenGLWaylandKHR is deprecated and effectively not implemented anywhere, so we are limited to X11 on OpenGL
+		Error("VR with OpenGL cannot use wayland! Use X11 (SDL_VIDEO_DRIVER=x11) or the Vulkan renderer.");
+		return false;
+	}
+	else {
+		Error("Unsupported video driver for OpenXR on Linux! Must be X11 or wayland!");
 		return false;
 	}
 
-	XrGraphicsBindingOpenGLXlibKHR graphicsBinding {
-		XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
-		nullptr,
-		wmInfo.info.x11.display,
-		static_cast<uint32_t>(XVisualIDFromVisual(wa.visual)),
-		fbconfigs[0],
-		glXGetCurrentDrawable(),
-		glxcontext
-	};
-
 	XrSessionCreateInfo sessionCreateInfo {
 		XR_TYPE_SESSION_CREATE_INFO,
-		&graphicsBinding,
+		std::visit([] (auto& surface) -> void* {
+			if constexpr(std::is_same_v<std::decay_t<decltype(surface)>, std::monostate>) {
+				Assertion(false, "No drawing surface found!");
+				return nullptr;
+			}
+			else {
+				return &surface;
+			}
+		}, drawingSurface),
 		0,
 		xr_system
 	};
@@ -467,7 +494,7 @@ bool gr_opengl_openxr_test_capabilities() { return false; }
 
 bool gr_opengl_openxr_create_session() { return false; }
 
-int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& allowed) { return 0; }
+int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/) { return 0; }
 
 bool gr_opengl_openxr_acquire_swapchain_buffers() { return false; }
 

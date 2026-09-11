@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Waypoint Path Generator - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Tools &rsaquo; Waypoint Path Generator</nav>
+<h1>Waypoint Path Generator</h1>
+<p>Opens via <strong>Tools &rsaquo; Waypoint Path Generator</strong>.</p>
+<p>Automatically generates a <a href="WaypointEditorDialog.html">waypoint path</a> whose
+points are arranged in a geometric shape around a center point. Useful for creating
+patrol circuits, orbit paths, and similar regular formations without placing each
+point by hand.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Name assigned to the generated waypoint path.</td></tr>
+    <tr><td>Center point</td><td>The origin around which all points are placed. Enter
+        coordinates manually, or select an object from the drop-down to use its
+        current position as the center.</td></tr>
+    <tr><td>Axis</td><td>The axis the shape revolves around. For example, choosing the
+        Y axis produces a flat horizontal ring; choosing X or Z tilts it
+        upright.</td></tr>
+    <tr><td>Number of points</td><td>How many waypoints to place per loop around the
+        center. Total waypoints created equals points &times; loops.</td></tr>
+    <tr><td>Loops</td><td>How many full revolutions around the center point the path
+        makes. Combined with Number of points, this produces a helix or spiral
+        when Drift is also set.</td></tr>
+    <tr><td>Radius</td><td>Distance from the center point to each generated
+        waypoint.</td></tr>
+    <tr><td>Drift</td><td>Offsets each successive point by this amount along the chosen
+        axis, perpendicular to the revolution plane. A non-zero drift turns a flat
+        ring into a helix.</td></tr>
+    <tr><td>Variance (X, Y, Z)</td><td>Adds a random offset to each point's
+        coordinates. The X, Y, Z values set the approximate maximum displacement in
+        each axis; the actual offset applied to each point is randomized within that
+        range. Use this to break up overly regular paths.</td></tr>
+</table>
+</body>
+</html>

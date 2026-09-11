@@ -18,6 +18,7 @@
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
 #include "scripting/api/objs/weaponclass.h"
+#include "scripting/lua/LuaTable.h"
 #include "model/modelrender.h"
 #include "utils/string_utils.h"
 
@@ -27,6 +28,7 @@ namespace api {
 
 //**********HANDLE: default primary
 ADE_OBJ(l_Default_Primary, int, "default_primary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Primary, ship_info_size());
 
 ADE_INDEXER(l_Default_Primary,
 	"number idx",
@@ -69,6 +71,7 @@ ADE_FUNC(__len,
 
 //**********HANDLE: default secondary
 ADE_OBJ(l_Default_Secondary, int, "default_secondary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Secondary, ship_info_size());
 
 ADE_INDEXER(l_Default_Secondary,
 	"number idx",
@@ -111,6 +114,7 @@ ADE_FUNC(__len,
 	
 //**********HANDLE: Shipclass
 ADE_OBJ(l_Shipclass, int, "shipclass", "Ship class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Shipclass, ship_info_size());
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
@@ -582,6 +586,38 @@ ADE_VIRTVAR(Model, l_Shipclass, "model", "Model", "model", "Ship class model, or
 	return ade_set_args(L, "o", l_Model.Set(model_h(sip->model_num)));
 }
 
+ADE_VIRTVAR(CloseupPosition, l_Shipclass, nullptr, "Ship class closeup position", "vector", "closeup position, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Ship_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Position is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].closeup_pos));
+}
+
+ADE_VIRTVAR(CloseupZoom, l_Shipclass, nullptr, "Ship class closeup zoom", "number", "closeup zoom, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Ship_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Zoom is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].closeup_zoom);
+}
+
 ADE_VIRTVAR(CockpitModel, l_Shipclass, "model", "Model used for first-person cockpit", "model", "Cockpit model")
 {
 	int ship_info_idx=-1;
@@ -697,17 +733,17 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 	if(idx < 0 || idx >= ship_info_size())
 		return ade_set_error(L, "s", "");
 
-	if(ADE_SETTING_VAR && newName != NULL) {
-		if (strlen(newName) >= NAME_LENGTH)
-		{
-			LuaError(L, "Cannot set alternate name value to '%s' because it is too long, maximum length is %d!", newName, NAME_LENGTH - 1);
-			return ade_set_error(L, "s", "");
+	if(ADE_SETTING_VAR && newName != nullptr) {
+		if (newName == Ship_info[idx].name) {
+			Ship_info[idx].display_name = "";
+			Ship_info[idx].flags.remove(Ship::Info_Flags::Has_display_name);
+		} else {
+			Ship_info[idx].display_name = newName;
+			Ship_info[idx].flags.set(Ship::Info_Flags::Has_display_name);
 		}
-
-		strcpy_s(Ship_info[idx].display_name, newName);
 	}
 
-	return ade_set_args(L, "s", Ship_info[idx].display_name);
+	return ade_set_args(L, "s", Ship_info[idx].display_name.c_str());
 }
 
 ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward speeds", "vector", "Maximum velocity, or null vector if handle is invalid")
@@ -929,10 +965,14 @@ ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether thi
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR) {
-		Campaign.ships_allowed[idx] = new_value;
+		if (new_value) {
+			Campaign.ships_allowed.insert(idx);
+		} else {
+			Campaign.ships_allowed.erase(idx);
+		}
 	}
 
-	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Campaign.ships_allowed.contains(idx) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")
@@ -1080,18 +1120,6 @@ ADE_FUNC(hasCustomStrings,
 	return ade_set_args(L, "b", result);
 }
 
-ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is available in the techroom", "boolean", "Whether ship has been revealed in the techroom, false if handle is invalid")
 {
 	int idx;
@@ -1114,7 +1142,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, teamcolor TeamColor=nil]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, teamcolor TeamColor=nil, string[] DestroyedSubsystems=nil]",
 	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
@@ -1125,7 +1153,8 @@ ADE_FUNC(renderTechModel,
 	float zoom = 1.3f;
 	bool lighting = true;
 	int tc_idx = -1;
-	if(!ade_get_args(L, "oiiii|ffffbo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, l_TeamColor.Get(&tc_idx)))
+	auto destroyed_subsystems_table = luacpp::LuaTable::create(L);
+	if(!ade_get_args(L, "oiiii|ffffbot", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, l_TeamColor.Get(&tc_idx), &destroyed_subsystems_table))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1158,18 +1187,35 @@ ADE_FUNC(renderTechModel,
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, tcolor));
+	SCP_vector<SCP_string> destroyed_subsystems;
+	if (destroyed_subsystems_table.isValid()) {
+		for (const auto& item : destroyed_subsystems_table) {
+			if (!item.second.is(luacpp::ValueType::STRING)) {
+				LuaError(L, "DestroyedSubsystems must be a table of strings.");
+				return ade_set_args(L, "b", false);
+			}
+
+			try {
+				destroyed_subsystems.emplace_back(item.second.getValue<SCP_string>());
+			} catch (const luacpp::LuaException& /*e*/) {
+				return ade_set_args(L, "b", false);
+			}
+		}
+	}
+
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, "", 0.0f, &vmd_zero_vector, tcolor, destroyed_subsystems));
 }
 
 // Nuke's alternate tech model rendering function
-ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil, string[] DestroyedSubsystems=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	int idx;
 	float zoom = 1.3f;
 	matrix_h *mh = nullptr;
 	int tc_idx = -1;
-	if(!ade_get_args(L, "oiiiio|fo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, l_TeamColor.Get(&tc_idx)))
+	auto destroyed_subsystems_table = luacpp::LuaTable::create(L);
+	if(!ade_get_args(L, "oiiiio|fot", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, l_TeamColor.Get(&tc_idx), &destroyed_subsystems_table))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1191,7 +1237,23 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 		}
 	}
 
-	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, tcolor));
+	SCP_vector<SCP_string> destroyed_subsystems;
+	if (destroyed_subsystems_table.isValid()) {
+		for (const auto& item : destroyed_subsystems_table) {
+			if (!item.second.is(luacpp::ValueType::STRING)) {
+				LuaError(L, "DestroyedSubsystems must be a table of strings.");
+				return ade_set_args(L, "b", false);
+			}
+
+			try {
+				destroyed_subsystems.emplace_back(item.second.getValue<SCP_string>());
+			} catch (const luacpp::LuaException& /*e*/) {
+				return ade_set_args(L, "b", false);
+			}
+		}
+	}
+
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, "", 0, &vmd_zero_vector, tcolor, destroyed_subsystems));
 }
 
 ADE_FUNC(renderSelectModel,
@@ -1270,6 +1332,7 @@ ADE_FUNC(renderSelectModel,
 	params.fs2_wireframe_color = sip->fs2_effect_wireframe_color;
 
 	draw_model_rotating(&render_info,
+		idx,
 		modelNum,
 		x1,
 		y1,

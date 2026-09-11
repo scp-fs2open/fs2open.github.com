@@ -6,6 +6,7 @@ namespace scripting::api {
 
 //**********HANDLE: mission goals
 ADE_OBJ_NO_MULTI(l_Comm_Item, int, "comm_item", "Comm Item handle");
+ADE_OBJ_VALIDATOR(l_Comm_Item, idx, MsgItems.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "The comm item name")
 {
@@ -17,8 +18,11 @@ ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
-
-	return ade_set_args(L, "s", MsgItems[current].text.c_str());
+	SCP_string message = "Invalid comm item!";
+	if (MsgItems.in_bounds(current)) {
+		message = MsgItems[current].text;
+	}
+	return ade_set_args(L, "s", message.c_str());
 }
 
 ADE_VIRTVAR(Active, l_Comm_Item, nullptr, "Whether or not the item is active", "boolean", "The active status")
@@ -32,7 +36,7 @@ ADE_VIRTVAR(Active, l_Comm_Item, nullptr, "Whether or not the item is active", "
 		LuaError(L, "This property is read only.");
 	}
 
-	if (MsgItems[current].active > 0) {
+	if (MsgItems.in_bounds(current) && MsgItems[current].active > 0) {
 		return ADE_RETURN_TRUE;
 	}
 
@@ -60,7 +64,7 @@ ADE_FUNC(selectItem, l_Comm_Item, nullptr, "Selects the item and either proceeds
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
 		return ADE_RETURN_FALSE;
 
-	if (current < 0 || current >= Num_menu_items) {
+	if (!MsgItems.in_bounds(current)) {
 		LuaError(L, "Lua tried to select squad message that is not valid!");
 		return ADE_RETURN_FALSE;
 	}
@@ -68,16 +72,6 @@ ADE_FUNC(selectItem, l_Comm_Item, nullptr, "Selects the item and either proceeds
 	Hud_set_lua_key(current);
 
 	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(isValid, l_Comm_Item, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
-{
-	int current = -1;
-
-	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", (current >= 0) && (current < Num_menu_items));
 }
 
 } // namespace scripting::api

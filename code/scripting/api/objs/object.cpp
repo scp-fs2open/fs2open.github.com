@@ -18,6 +18,7 @@
 #include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
+#include "prop/prop.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
@@ -105,6 +106,9 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 		case OBJ_BEAM:
 			sprintf(buf, "%s beam", Weapon_info[Beams[objh->objp()->instance].weapon_info_index].name);
 			break;
+		case OBJ_PROP:
+			sprintf(buf, "%s prop", Props[Objects[objh->objnum].instance]->prop_name);
+			break;
 		default:
 			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
 			break;
@@ -171,10 +175,11 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp()->pos = *v3;
 		if (objh->objp()->type == OBJ_WAYPOINT) {
 			waypoint *wpt = find_waypoint_with_instance(objh->objp()->instance);
 			wpt->set_pos(v3);
+		} else {
+			objh->objp()->pos = *v3;
 		}
 
 		if (objh->objp()->flags[Object::Object_Flags::Collides])
@@ -346,15 +351,6 @@ ADE_FUNC(getSignature, l_Object, NULL, "Gets the object's unique signature", "nu
 		return ade_set_error(L, "i", -1);
 
 	return ade_set_args(L, "i", oh->sig);
-}
-
-ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", "true if handle is valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", oh->isValid());
 }
 
 ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
@@ -540,6 +536,12 @@ ADE_FUNC(
 			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].subtypes[temp].model_number;
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
+		case OBJ_PROP:
+			if (Props[obj->instance].has_value()) {
+				model_num = Prop_info[Props[obj->instance].value().prop_info_index].model_num;
+				flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
+			}
+			break;
 		default:
 			return ADE_RETURN_NIL;
 	}
@@ -566,6 +568,8 @@ ADE_FUNC(
 		model_instance_num = Weapons[obj->instance].model_instance_num;
 	} else if (obj->type == OBJ_ASTEROID) {
 		model_instance_num = Asteroids[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_PROP) {
+		model_instance_num = Props[obj->instance].value().model_instance_num;
 	}
 
 	mc_info hull_check;
@@ -637,7 +641,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 }
 
 ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=OS_NONE, subsystem Subsys=nil]",
-	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
+	"Assigns a sound to this object, with optional offset, sound flags (OS_*), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
 {
@@ -751,6 +755,38 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(*cur));
 	}
+}
+
+ADE_FUNC(findWorldPoint, l_Object, "vector", "Calculates the world coordinates of a point in the object's frame of reference", "vector", "Point, or empty vector if handle is not valid")
+{
+	object_h *objh;
+	vec3d pnt, outpnt;
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto objp = objh->objp();
+	vm_vec_unrotate(&outpnt, &pnt, &objp->orient);
+	outpnt += objp->pos;
+	return ade_set_args(L, "o", l_Vector.Set(outpnt));
+}
+
+ADE_FUNC(findObjectPoint, l_Object, "vector", "Calculates the coordinates in an object's frame of reference, of a point in world coordinates", "vector", "Point, or empty vector if handle is not valid")
+{
+	object_h *objh;
+	vec3d pnt, outpnt;
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.Get(&pnt)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto objp = objh->objp();
+	pnt -= objp->pos;
+	vm_vec_rotate(&outpnt, &pnt, &objp->orient);
+	return ade_set_args(L, "o", l_Vector.Set(outpnt));
 }
 
 } // namespace api

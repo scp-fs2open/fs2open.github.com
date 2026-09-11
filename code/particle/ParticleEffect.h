@@ -69,12 +69,17 @@ public:
 		SCREEN_ALIGNED
 	};
 
+	enum class DecalOrientationMode : uint8_t {
+		TOWARDS_CENTER
+	};
+
 	enum class ParticleCurvesOutput : uint8_t {
 		PARTICLE_NUM_MULT,
 		PARTICLE_FREQ_MULT,
 		RADIUS_MULT,
 		LENGTH_MULT,
 		LIFETIME_MULT,
+		SOURCE_DURATION_MULT,
 		VOLUME_VELOCITY_MULT,
 		INHERIT_VELOCITY_MULT,
 		POSITION_INHERIT_VELOCITY_MULT,
@@ -124,11 +129,13 @@ public:
 	};
 
  private:
+	friend struct effects::EffectAttachment;
 	friend struct ParticleParse;
 	friend class ParticleManager;
 	friend int ::parse_weapon(int, bool, const char*);
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 	friend bool move_particle(float frametime, particle* part);
+	friend bool render_particle(particle* part);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -138,6 +145,7 @@ public:
 	RotationType m_rotation_type;
 	ShapeDirection m_direction;
 	VelocityScaling m_velocity_directional_scaling;
+	DecalOrientationMode m_decalOrientationMode;
 
 	bool m_affectedByDetail; //Kinda deprecated. Only used by the oldest of legacy effects.
 	bool m_parentLifetime;
@@ -149,6 +157,9 @@ public:
 	bool m_vel_inherit_from_position_absolute;
 	bool m_reverseAnimation;
 	bool m_ignore_velocity_inherit_if_has_parent;
+	bool m_renderAsDecal;
+	bool m_decalEmissive;
+	bool m_parent_is_transitive;
 
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;
@@ -167,6 +178,7 @@ public:
 
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
+	std::optional<::util::ParsedRandomFloatRange> m_local_position_scaling;
 
 	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
@@ -180,14 +192,16 @@ public:
 	std::optional<LightInformation> m_light_source;
 
 	ParticleEffectHandle m_particleTrail;
+	ParticleEffectHandle m_deathEffect;
 
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
 	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
+	vec3d adaptPosition(const vec3d& pos, const effects::EffectAttachment& attachment) const;
 
 	template<bool isPersistent>
-	auto processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+	auto processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const;
   public:
 	/**
 	 * @brief Initializes the base ParticleEffect
@@ -229,14 +243,14 @@ public:
 							int bitmap
 	);
 
-	float processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
-	SCP_vector<WeakParticlePtr> processSourcePersistent(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+	float processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const;
+	SCP_vector<WeakParticlePtr> processSourcePersistent(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, const effects::EffectAttachment& attachment, float parentLifetime, float parentRadius, float particle_percent) const;
 
 	void pageIn();
 
 	const SCP_string& getName() const { return m_name; }
 
-	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration() const;
+	std::pair<TIMESTAMP, TIMESTAMP> getEffectDuration(float interp, const ParticleSource& source, size_t effectNumber) const;
 
 	float getNextSpawnDelay() const;
 
@@ -251,6 +265,7 @@ public:
 			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
 			std::pair {"Length Mult", ParticleCurvesOutput::LENGTH_MULT},
 			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
+			std::pair {"Source Duration Mult", ParticleCurvesOutput::SOURCE_DURATION_MULT},
 			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_MULT},
 			std::pair {"Velocity Inherit Mult", ParticleCurvesOutput::INHERIT_VELOCITY_MULT},
 			std::pair {"Velocity Position Inherit Mult", ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT},
@@ -271,34 +286,37 @@ public:
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Total Particle Count", modular_curves_global_submember_input<get_particle_count>{}},
+		std::pair {"Particle Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::num_particles>{}},
 		std::pair {"Particle Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
 			ModularCurvesMathOperators::division>{}},
+		std::pair {"Nebula Detail Level", modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>{}},
 		std::pair {"Nebula Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
 			ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Object Hitpoints", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>{}},
+		std::pair {"Host Object Hitpoints", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &object::hull_strength>{}},
 		std::pair {"Host Ship Hitpoints Fraction", modular_curves_math_input<
-		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>,
-			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
+		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &object::hull_strength>,
+			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
 			ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>{}},
+		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &shield_get_strength>{}},
 		std::pair {"Host Ship Shield Fraction", modular_curves_math_input<
-		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>,
-			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
+		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &shield_get_strength>,
+			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
 			ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Ship AB Fuel Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
-		std::pair {"Host Ship Countermeasures Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
-		std::pair {"Host Ship Weapon Energy Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
-		std::pair {"Host Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Host Ship EMP Intensity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
-		std::pair {"Host Ship Time Until Explosion", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
+		std::pair {"Host Ship AB Fuel Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
+		std::pair {"Host Ship Countermeasures Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
+		std::pair {"Host Ship Weapon Energy Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
+		std::pair {"Host Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship EMP Intensity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
+		std::pair {"Host Ship Time Until Explosion", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentAttachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
+		std::pair {"Life Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingLife>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
 		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},
@@ -338,24 +356,24 @@ public:
 			modular_curves_global_submember_input<gr_screen, &screen::max_w>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}},
-		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>{}},
+		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &object::hull_strength>{}},
 		std::pair {"Parent Ship Hitpoints Fraction", modular_curves_math_input<
-			modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>,
-			modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
+			modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &object::hull_strength>,
+			modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
 			ModularCurvesMathOperators::division>{}},
-		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>{}},
+		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &shield_get_strength>{}},
 		std::pair {"Parent Ship Shield Fraction", modular_curves_math_input<
-			modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>,
-			modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
+			modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &shield_get_strength>,
+			modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
 			ModularCurvesMathOperators::division>{}},
-		std::pair {"Parent Ship AB Fuel Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
-		std::pair {"Parent Ship Countermeasures Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
-		std::pair {"Parent Ship Weapon Energy Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
-		std::pair {"Parent Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Parent Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Parent Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
-		std::pair {"Parent Ship EMP Intensity",	modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
-		std::pair {"Parent Ship Time Until Explosion", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
+		std::pair {"Parent Ship AB Fuel Left", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
+		std::pair {"Parent Ship Countermeasures Left", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
+		std::pair {"Parent Ship Weapon Energy Left", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
+		std::pair {"Parent Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship EMP Intensity",	modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
+		std::pair {"Parent Ship Time Until Explosion", modular_curves_submember_input<&particle::attachment, &effects::EffectAttachment::extract_object, &effects::attachment_object::objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<float>(
 		std::pair {"Post-Curves Velocity", modular_curves_self_input{}}
 		);

@@ -40,7 +40,7 @@ ADE_FUNC(schedule,
 	}
 
 	// Post the function onto the executor with a wrapper to convert the Lua value to the proper enum
-	executor->getExecutor()->post([L, func]() {
+	executor->getExecutor()->post([L, func = std::move(func)]() {
 		const auto ret = func(L);
 
 		if (ret.empty()) {
@@ -57,24 +57,6 @@ ADE_FUNC(schedule,
 		return executor::Executor::CallbackResult::Done;
 	});
 
-	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(isValid,
-	l_Executor,
-	nullptr,
-	"Determined if this handle is valid",
-	"boolean",
-	"true if valid, false otherwise.")
-{
-	executor_h* executor = nullptr;
-	if (!ade_get_args(L, "o", l_Executor.GetPtr(&executor))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	if (executor == nullptr || !executor->isValid()) {
-		return ADE_RETURN_FALSE;
-	}
 	return ADE_RETURN_TRUE;
 }
 

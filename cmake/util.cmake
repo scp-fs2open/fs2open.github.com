@@ -66,33 +66,37 @@ ENDIF(EXISTS \"${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${FILE}\")
 	SET(${OUTVAR} "${CMAKE_COMMAND}" -P ${CMAKE_CURRENT_BINARY_DIR}/${TARGET}/${NAME} PARENT_SCOPE)
 ENDFUNCTION(EP_CHECK_FILE_EXISTS)
 
+# Use rsync if possible for COPY_FILE_TO_TARGET macro in order to preserve
+# symlinks as copy_if_different follows them which results in multiple copies
+if(PLATFORM_UNIX AND NOT DEFINED RSYNC_BIN)
+	find_program(RSYNC_BIN rsync)
+endif()
+
 MACRO(COPY_FILE_TO_TARGET _target _file)
-	if (IS_DIRECTORY "${_file}")
-		get_filename_component(_dirName "${_file}" NAME)
-		if (PLATFORM_MAC AND ("${_file}" MATCHES ".framework$"))
-			# This is stupid, but it preserves symlinks, unlike copy_directory_if_different.
-			# Otherwise we end up creating duplicate files in the copied framework.
-			ADD_CUSTOM_COMMAND(
-					TARGET ${_target} POST_BUILD
-					COMMAND rsync -rlq "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}"
-					COMMENT "copying '${_file}'..."
-					VERBATIM
-			)
-		else()
+	if(RSYNC_BIN)
+		ADD_CUSTOM_COMMAND(
+				TARGET ${_target} POST_BUILD
+				COMMAND ${RSYNC_BIN} -rlq "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}"
+				COMMENT "copying '${_file}'..."
+				VERBATIM
+		)
+	else()
+		if (IS_DIRECTORY "${_file}")
+			get_filename_component(_dirName "${_file}" NAME)
 			ADD_CUSTOM_COMMAND(
 					TARGET ${_target} POST_BUILD
 					COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/${_dirName}"
 					COMMENT "copying '${_file}'..."
 					VERBATIM
 			)
+		else()
+			ADD_CUSTOM_COMMAND(
+					TARGET ${_target} POST_BUILD
+					COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
+					COMMENT "copying '${_file}'..."
+					VERBATIM
+			)
 		endif()
-	else()
-		ADD_CUSTOM_COMMAND(
-				TARGET ${_target} POST_BUILD
-				COMMAND ${CMAKE_COMMAND} -E copy_if_different "${_file}" "$<TARGET_FILE_DIR:${_target}>/${LIBRAY_DESTINATION}/"
-				COMMENT "copying '${_file}'..."
-				VERBATIM
-		)
 	endif()
 endmacro(COPY_FILE_TO_TARGET)
 

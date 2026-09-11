@@ -132,6 +132,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turret_tagged_only_targeting,
+		Ships_intercept_mines,				// all AI-controlled ships autonomously engage hostile mines within mine_targetable_range of themselves
 		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in https://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
@@ -175,6 +176,10 @@ namespace AI {
 		Dont_limit_change_in_speed_due_to_physics_whack,
 		Guards_ignore_protected_attackers,
 		Fix_standard_strafe,
+		Fix_ai_target_recovery,	// a) strafing ships that lose their target re-process their orders, like chasing ships already do
+								// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
+								// c) target selection skips ships outside the attacker's actively-pursues list, and self-chosen targets
+								//    outside that list are dropped rather than held forever
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Fix_AI_shield_management_bug,
@@ -189,6 +194,12 @@ namespace AI {
 		Do_not_set_override_when_assigning_form_on_wing,
 		Purge_player_issued_form_on_wing_after_subsequent_order,
 		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
+		Fix_ignore_if_dead_flag,
+		Kamikaze_no_collision_avoidance,
+		Fix_big_ship_waypoint_completion,	// a) big ships complete a waypoint within their radius rather than sqrt(radius);
+											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
+		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
+		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 
 		NUM_VALUES
 	};

@@ -13,7 +13,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "TextViewDlg.h"
-#include "cfile/cfile.h"
+#include "utils/table_viewer.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -74,181 +74,18 @@ void TextViewDlg::OnClose()
 
 void TextViewDlg::LoadShipsTblText(const ship_info *sip)
 {
-	char line[256], line2[256], file_text[82];
-	int i, j, n, found = 0, comment = 0, num_files = 0;
-	SCP_vector<SCP_string> tbl_file_names;
-	CFILE *fp;
-
 	SetCaption("Ship Table Data");
 
 	if (!sip)
 		return;
 
-	fp = cfopen("ships.tbl", "r");
-	Assert(fp);
-
-	
-	while (cfgets(line, 255, fp)) {
-		while (line[strlen(line) - 1] == '\n')
-			line[strlen(line) - 1] = 0;
-
-		for (i=j=0; line[i]; i++) {
-			if (line[i] == '/' && line[i+1] == '/')
-				break;
-
-			if (line[i] == '/' && line[i+1] == '*') {
-				comment = 1;
-				i++;
-				continue;
-			}
-
-			if (line[i] == '*' && line[i+1] == '/') {
-				comment = 0;
-				i++;
-				continue;
-			}
-
-			if (!comment)
-				line2[j++] = line[i];
-		}
-
-		line2[j] = 0;
-		if (!strnicmp(line2, "$Name:", 6)) {
-			drop_trailing_white_space(line2);
-			found = 0;
-			i = 6;
-
-			while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
-				i++;
-
-			if (!stricmp(line2 + i, sip->name)) {
-				m_edit += "-- ships.tbl  -------------------------------\r\n";
-				found = 1;
-			}
-		}
-
-		if (found) {
-			m_edit += line;
-			m_edit += "\r\n";
-		}
-	}
-
-	cfclose(fp);
-
-
-	// done with ships.tbl, so now check all modular ship tables...
-	num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-shp.tbm"), CF_SORT_REVERSE);
-
-	for (n = 0; n < num_files; n++){
-		tbl_file_names[n] += ".tbm";
-
-		fp = cfopen(tbl_file_names[n].c_str(), "r");
-		Assert(fp);
-
-		memset( line, 0, sizeof(line) );
-		memset( line2, 0, sizeof(line2) );
-		found = 0;
-		comment = 0;
-
-		while (cfgets(line, 255, fp)) {
-			while (line[strlen(line) - 1] == '\n')
-				line[strlen(line) - 1] = 0;
-
-			for (i=j=0; line[i]; i++) {
-				if (line[i] == '/' && line[i+1] == '/')
-					break;
-
-				if (line[i] == '/' && line[i+1] == '*') {
-					comment = 1;
-					i++;
-					continue;
-				}
-
-				if (line[i] == '*' && line[i+1] == '/') {
-					comment = 0;
-					i++;
-					continue;
-				}
-
-				if (!comment)
-					line2[j++] = line[i];
-			}
-
-			line2[j] = 0;
-			if (!strnicmp(line2, "$Name:", 6)) {
-				drop_trailing_white_space(line2);
-				found = 0;
-				i = 6;
-
-				while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
-					i++;
-
-				if (!stricmp(line2 + i, sip->name)) {
-					memset( file_text, 0, sizeof(file_text) );
-					snprintf(file_text, sizeof(file_text)-1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
-					m_edit += file_text;
-					found = 1;
-				}
-			}
-
-			if (found) {
-				m_edit += line;
-				m_edit += "\r\n";
-			}
-		}
-
-		cfclose(fp);
-	}
+	m_edit += table_viewer::get_table_entry_text("ships.tbl", "*-shp.tbm", sip->name).c_str();
 }
 
 void TextViewDlg::LoadMusicTblText()
 {
-	char line[256];
-	CFILE* fp;
-
 	SetCaption("Music Table Data");
-
-	fp = cfopen("music.tbl", "r");
-	Assert(fp);
-
-	// print the header
-	m_edit += "-- music.tbl  -------------------------------\r\n";
-
-	// now get the file content
-	while (cfgets(line, 255, fp)) {
-		m_edit += line;
-		m_edit += "\r\n";
-	}
-
-	cfclose(fp);
-
-	SCP_vector<SCP_string> tbl_file_names;
-
-	// done with music.tbl, so now check all modular music tables...
-	int num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-mus.tbm"), CF_SORT_REVERSE);
-
-	for (int n = 0; n < num_files; n++) {
-		tbl_file_names[n] += ".tbm";
-
-		fp = cfopen(tbl_file_names[n].c_str(), "r");
-		Assert(fp);
-
-		memset(line, 0, sizeof(line));
-
-		// get the name of the current file and print it
-		char file_text[82];
-		memset(file_text, 0, sizeof(file_text));
-		snprintf(file_text, sizeof(file_text) - 1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
-		m_edit += file_text;
-
-		// now get the file content
-		while (cfgets(line, 255, fp)) {
-			m_edit += line;
-			m_edit += "\r\n";
-		}
-
-		cfclose(fp);
-	}
+	m_edit += table_viewer::get_complete_table_text("music.tbl", "*-mus.tbm").c_str();
 }
 
 void TextViewDlg::OnSetfocusEdit1()

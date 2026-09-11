@@ -1,7 +1,7 @@
 #include "ImageRenderer.h"
 
-#include <bmpman/bmpman.h> // bm_load, bm_get_info, bm_has_alpha_channel
-#include <graphics/2d.h>
+#include <bmpman/bmpman.h> // bm_load, bm_get_info, bm_lock, bm_unlock
+#include <ddsutils/ddsutils.h>
 
 #include <QtGlobal>
 
@@ -13,6 +13,24 @@ static void setError(QString* outError, const QString& text)
 		*outError = text;
 }
 
+// bm_lock_dds keeps compressed data as-is when the renderer reports s3tc/BPTC
+// support, which would crash the regular 32-bpp QImage path. For the picker
+// preview, ask ddsutils to decompress the top mip directly.
+static bool decompressDdsToQImage(const char* bm_filename, QImage& outImage, QString* outError)
+{
+	int w = 0, h = 0;
+	SCP_vector<ubyte> pixels;
+	const int err = dds_decompress_top_mip_bgra(bm_filename, CF_TYPE_ANY, &w, &h, pixels);
+	if (err != DDS_ERROR_NONE) {
+		setError(outError, QStringLiteral("DDS decompress failed (%1).").arg(err));
+		return false;
+	}
+
+	QImage tmp(pixels.data(), w, h, w * 4, QImage::Format_ARGB32);
+	outImage = tmp.copy(); // detach before `pixels` goes out of scope
+	return !outImage.isNull();
+}
+
 bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 {
 	outImage = QImage(); // clear
@@ -22,45 +40,52 @@ bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 		return false;
 	}
 
-	int w = 0, h = 0;
-	ushort flags = 0;
-	int nframes = 0, fps = 0;
+	if (bm_is_compressed(bmHandle)) {
+		const char* fname = bm_get_filename(bmHandle);
+		if (fname && *fname)
+			return decompressDdsToQImage(fname, outImage, outError);
+		setError(outError, QStringLiteral("Compressed DDS with no filename; cannot preview."));
+		return false;
+	}
 
-	// Use the returned handle (first frame if this is an animation.. TODO: Handle animations. Will be useful for Heads)
-	int srcHandle = bm_get_info(bmHandle, &w, &h, &flags, &nframes, &fps);
-	if (srcHandle < 0 || w <= 0 || h <= 0) {
+	int w = 0, h = 0;
+	if (bm_get_info(bmHandle, &w, &h) < 0 || w <= 0 || h <= 0) {
 		setError(outError, QStringLiteral("Bitmap has invalid info."));
 		return false;
 	}
 
-	if (w <= 0 || h <= 0) {
-		setError(outError, QStringLiteral("Bitmap has invalid dimensions."));
+	// All FSO animation types (ANI, APNG, EFF) produce BGRA byte-order data
+	// at 32 bpp, which matches QImage::Format_ARGB32 on little-endian.
+	auto* bmp = bm_lock(bmHandle, 32, BMP_TEX_XPARENT);
+	if (bmp == nullptr) {
+		setError(outError, QStringLiteral("bm_lock failed."));
+		return false;
+	}
+	if (bmp->data == 0) {
+		// bm_lock incremented the refcount before populating data; release it.
+		bm_unlock(bmHandle);
+		setError(outError, QStringLiteral("bm_lock failed."));
 		return false;
 	}
 
-	const bool hasAlpha = bm_has_alpha_channel(bmHandle);
-	const int channels = hasAlpha ? 4 : 3;
-	const size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h) * channels;
-
-	// Allocate a temporary buffer and let the renderer copy pixels into it
-	QByteArray buffer;
-	buffer.resize(static_cast<int>(bufSize));
-	if (buffer.size() != static_cast<int>(bufSize)) {
-		setError(outError, QStringLiteral("Out of memory allocating pixel buffer."));
-		return false;
-	}
-
-	// Copy RGBA pixels into the buffer
-	gr_get_bitmap_from_texture(buffer.data(), bmHandle);
-
-	// Build QImage by copying to own memory
-	if (hasAlpha) {
-		QImage tmp(reinterpret_cast<const uchar*>(buffer.constData()), w, h, QImage::Format_RGBA8888);
-		outImage = tmp.copy();
+	// bm_lock ignores the requested bpp for JPG (always 24, BGR) and for
+	// uncompressed DDS (whatever the file uses). Handle the two common
+	// cases (32-bpp BGRA and 24-bpp BGR) and reject anything else.
+	if (bmp->bpp == 32) {
+		const int bytesPerLine = bmp->w * 4;
+		QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_ARGB32);
+		outImage = tmp.copy(); // detach from bmpman memory before unlock
+	} else if (bmp->bpp == 24) {
+		const int bytesPerLine = bmp->w * 3;
+		QImage tmp(reinterpret_cast<const uchar*>(bmp->data), bmp->w, bmp->h, bytesPerLine, QImage::Format_RGB888);
+		// FSO stores 24-bpp as BGR; swap to RGB and promote to ARGB32 (also detaches).
+		outImage = tmp.rgbSwapped().convertToFormat(QImage::Format_ARGB32);
 	} else {
-		QImage tmp(reinterpret_cast<const uchar*>(buffer.constData()), w, h, QImage::Format_RGB888);
-		outImage = tmp.copy();
+		bm_unlock(bmHandle);
+		setError(outError, QStringLiteral("Unsupported bitmap bpp (%1) for QImage preview.").arg(bmp->bpp));
+		return false;
 	}
+	bm_unlock(bmHandle);
 
 	if (outImage.isNull()) {
 		setError(outError, QStringLiteral("Failed to construct QImage."));
@@ -88,8 +113,9 @@ bool loadImageToQImage(const std::string& filename, QImage& outImage, QString* o
 
 	const bool ok = loadHandleToQImage(handle, outImage, outError);
 
-
-	// bm_unload(handle); TODO test unloading
+	// bm_unload is load_count aware, so if another
+	// part of qtfred is sharing the handle it stays alive for them.
+	bm_unload(handle);
 
 	return ok;
 }

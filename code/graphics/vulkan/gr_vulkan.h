@@ -2,8 +2,7 @@
 
 #include "osapi/osapi.h"
 
-namespace graphics {
-namespace vulkan {
+namespace graphics::vulkan {
 
 class VulkanRenderer;
 
@@ -14,5 +13,4 @@ VulkanRenderer* getRendererInstance();
 
 void cleanup();
 
-} // namespace vulkan
-} // namespace graphics
+} // namespace graphics::vulkan

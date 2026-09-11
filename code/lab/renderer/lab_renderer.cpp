@@ -3,6 +3,7 @@
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
+#include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
 #include "lab/renderer/lab_renderer.h"
 #include "lighting/lighting_profiles.h"
@@ -13,6 +14,7 @@
 #include "particle/particle.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
+#include "prop/prop.h"
 
 #include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
@@ -58,6 +60,12 @@ void LabRenderer::resetGraphicsSettings(gfx_options settings) {
 	ltp::lab_set_tonemapper(settings.tonemapper);
 	gr_set_bloom_intensity(settings.bloom_level);
 	Gr_aa_mode = settings.aa_mode;
+}
+
+void LabRenderer::resetView()
+{
+	getLabManager()->CurrentOrientation = vmd_identity_matrix;
+	labCamera->resetView();
 }
 
 void LabRenderer::renderModel(float frametime) {
@@ -112,6 +120,21 @@ void LabRenderer::renderModel(float frametime) {
 		else {
 			obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
 		}
+	}
+
+	if (obj->type == OBJ_PROP) {
+		prop* propp = prop_id_lookup(obj->instance);
+		propp->flags.set(Prop::Prop_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		propp->flags.set(Prop::Prop_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		propp->flags.set(Prop::Prop_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
 	}
 
 	if (obj->type == OBJ_WEAPON) {
@@ -215,9 +238,17 @@ void LabRenderer::renderModel(float frametime) {
 	}
 	shockwave_move_all(frametime);
 
+	if (renderFlags[LabRenderFlag::UseOrthographicProjection]) {
+		float dist = labCamera->getCameraDistance();
+		if (dist > 0.0f)
+			gr_activate_ortho_proj_override(dist);
+	}
+
 	Trail_render_override = true;
 	game_render_frame(labCamera->FS_camera);
 	Trail_render_override = false;
+
+	gr_deactivate_ortho_proj_override();
 
 	Motion_debris_enabled = lab_debris_override_save;
 	Envmap_override = lab_envmap_override_save;
@@ -236,13 +267,13 @@ SCP_string get_rot_mode_string(LabRotationMode rotmode)
 {
 	switch (rotmode) {
 	case LabRotationMode::Both:
-		return "Manual rotation mode: Pitch and Yaw";
+		return "Pitch and Yaw";
 	case LabRotationMode::Pitch:
-		return "Manual rotation mode: Pitch";
+		return "Pitch";
 	case LabRotationMode::Yaw:
-		return "Manual rotation mode: Yaw";
+		return "Yaw";
 	case LabRotationMode::Roll:
-		return "Manual rotation mode: Roll";
+		return "Roll";
 	default:
 		return "HOW DID THIS HAPPEN? Ask a coder!";
 	}
@@ -319,27 +350,28 @@ void LabRenderer::renderHud(float) {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2, gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 2) - 3, "AA Preset: %s", aa_mode);
 	}
 
-	//Print current Team Color setting, if any
+	// Controls info
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 7) - 3,
+		"Open Options -> Controls reference for the full object and camera controls list.");
+
+	// Rotation mode
+	gr_printf_no_resize(gr_screen.center_offset_x + 2,
+		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
+		"Model rotation axis limit: %s, Rotation speed: %s", get_rot_mode_string(getLabManager()->RotationMode).c_str(),
+		get_rot_speed_string(getLabManager()->RotationSpeedDivisor).c_str());
+
+	// Print current Team Color setting, if any
 	if (currentTeamColor != LAB_TEAM_COLOR_NONE) {
 		gr_printf_no_resize(gr_screen.center_offset_x + 2,
-			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 3) - 3,
-			"Use T and Y to cycle through available Team Color settings. Current: %s",
+			gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
+			"Current Team Color: %s",
 			currentTeamColor.c_str());
 	}
 
-	// Camera usage info
-	gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 4) - 3,
-		"%s Use number keys to switch between AA presets. R to cycle model rotation "
-		"modes, S to cycle model rotation speeds, V to reset view, "
-		"M to export environment map.", labCamera->getUsageInfo().c_str());
-
-	// Rotation mode
-	SCP_string text = get_rot_mode_string(getLabManager()->RotationMode);
-	gr_printf_no_resize(gr_screen.center_offset_x + 2,
-		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 5) - 3,
-		"%s Rotation speed: %s", get_rot_mode_string(getLabManager()->RotationMode).c_str(),
-		get_rot_speed_string(getLabManager()->RotationSpeedDivisor).c_str());
+	if (showOrientationWidget) {
+		labCamera->renderOverlay();
+	}
 }
 
 void LabRenderer::useBackground(const SCP_string& mission_name) {
@@ -406,10 +438,16 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		ltp_name = ltp::default_name();
 		if(optional_string("$Lighting Profile:")){
 			stuff_string(ltp_name,F_NAME);
+			if (ltp_name.empty())
+				ltp_name = ltp::default_name();
 		}
 		if (ltp_name != ltp::current()->name) {
 				ltp::switch_to(ltp_name);
 		}
+
+		// Mission headers include additional fields between lighting profile and the
+		// background section. If we stopped at the lighting profile, we need to seek again.
+		skip_to_start_of_string("#Background bitmaps");
 
 		if (optional_string("#Background bitmaps")) {
 			required_string("$Num stars:");

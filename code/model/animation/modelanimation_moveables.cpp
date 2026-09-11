@@ -32,9 +32,9 @@ namespace animation {
 	void ModelAnimationMoveableOrientation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
 		auto& anim = m_instances[pmi->id].animation;
 
-		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+		anim = std::make_shared<ModelAnimation>(false, false, true, parentSet);
 
-		anim->setAnimation(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(parentSet->getSubmodel(m_submodel), m_defaultPosOrient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
+		anim->setAnimation(std::make_shared<ModelAnimationSegmentSetOrientation>(parentSet->getSubmodel(m_submodel), m_defaultPosOrient, ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 
 		anim->start(pmi,ModelAnimationDirection::FWD);
 	}
@@ -48,7 +48,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Orientation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableOrientation>(new ModelAnimationMoveableOrientation(submodel, angle));
+		return std::make_shared<ModelAnimationMoveableOrientation>(std::move(submodel), angle);
 	}
 
 
@@ -92,16 +92,16 @@ namespace animation {
 	void ModelAnimationMoveableRotation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
 		auto& anim = m_instances[pmi->id].animation;
 
-		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+		anim = std::make_shared<ModelAnimation>(false, false, true, parentSet);
 
 		matrix orient;
 		vm_angles_2_matrix(&orient, &m_defaultPosOrient);
 		
 		auto submodel = parentSet->getSubmodel(m_submodel);
 		
-		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, orient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, std::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		auto sequence = std::make_shared<ModelAnimationSegmentSerial>();
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentSetOrientation>(submodel, orient, ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentRotation>(std::move(submodel), m_defaultPosOrient, m_velocity, std::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 		
 		anim->setAnimation(sequence);
 
@@ -128,7 +128,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Rotation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableRotation>(new ModelAnimationMoveableRotation(submodel, angle, velocity, acceleration));
+		return std::make_shared<ModelAnimationMoveableRotation>(std::move(submodel), angle, velocity, acceleration);
 	}
 
 
@@ -172,13 +172,13 @@ namespace animation {
 	void ModelAnimationMoveableTranslation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
 		auto& anim = m_instances[pmi->id].animation;
 
-		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+		anim = std::make_shared<ModelAnimation>(false, false, true, parentSet);
 
 		auto submodel = parentSet->getSubmodel(m_submodel);
 
-		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOffset(submodel, m_defaultOffset, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(std::move(submodel), m_defaultOffset, m_velocity, std::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		auto sequence = std::make_shared<ModelAnimationSegmentSerial>();
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentSetOffset>(submodel, m_defaultOffset, ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentTranslation>(std::move(submodel), m_defaultOffset, m_velocity, std::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 
 		anim->setAnimation(sequence);
 
@@ -205,7 +205,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Translation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableTranslation>(new ModelAnimationMoveableTranslation(submodel, angle, velocity, acceleration));
+		return std::make_shared<ModelAnimationMoveableTranslation>(std::move(submodel), angle, velocity, acceleration);
 	}
 
 
@@ -258,13 +258,13 @@ namespace animation {
 	void ModelAnimationMoveableAxisRotation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
 		auto& anim = m_instances[pmi->id].animation;
 
-		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+		anim = std::make_shared<ModelAnimation>(false, false, true, parentSet);
 
 		auto submodel = parentSet->getSubmodel(m_submodel);
 
-		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0.0f, m_velocity, std::nullopt, m_acceleration, m_axis)));
+		auto sequence = std::make_shared<ModelAnimationSegmentSerial>();
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentSetOrientation>(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+		sequence->addSegment(std::make_shared<ModelAnimationSegmentAxisRotation>(std::move(submodel), 0.0f, m_velocity, std::nullopt, m_acceleration, m_axis));
 
 		anim->setAnimation(sequence);
 
@@ -292,7 +292,7 @@ namespace animation {
 		if(submodel == nullptr)
 			error_display(1, "Could not create moveable! Moveable Axis Rotation has no target submodel!");
 
-		return std::shared_ptr<ModelAnimationMoveableAxisRotation>(new ModelAnimationMoveableAxisRotation(submodel, velocity, acceleration, axis));
+		return std::make_shared<ModelAnimationMoveableAxisRotation>(std::move(submodel), velocity, acceleration, axis);
 	}
 
 
@@ -353,17 +353,17 @@ namespace animation {
 	void ModelAnimationMoveableIK::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
 		auto& anim = m_instances[pmi->id].animation;
 
-		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+		anim = std::make_shared<ModelAnimation>(false, false, true, parentSet);
 
-		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		auto parallelSetOrient = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto sequence = std::make_shared<ModelAnimationSegmentSerial>();
+		auto parallelSetOrient = std::make_shared<ModelAnimationSegmentParallel>();
 		for(const auto& link : m_chain) {
 			auto submodel = parentSet->getSubmodel(link.submodel);
-			parallelSetOrient->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
+			parallelSetOrient->addSegment(std::make_shared<ModelAnimationSegmentSetOrientation>(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 		}
 		sequence->addSegment(parallelSetOrient);
 		
-		auto parallelIK = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
+		auto parallelIK = std::make_shared<ModelAnimationSegmentParallel>();
 		vec3d startPos = ZERO_VECTOR;
 		
 		for(size_t i = 1; i < m_chain.size(); ++i) {
@@ -413,7 +413,7 @@ namespace animation {
 						required_string("Window");
 						required_string("+Window Size:");
 						stuff_angles_deg_phb(&window);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_window(window));
+						constraint = std::make_shared<ik_constraint_window>(window);
 						break;
 					}
 					case 1: { //Hinge
@@ -422,7 +422,7 @@ namespace animation {
 						required_string("+Axis:");
 						stuff_vec3d(&axis);
 						vm_vec_normalize(&axis);
-						constraint = std::shared_ptr<ik_constraint>(new ik_constraint_hinge(axis));
+						constraint = std::make_shared<ik_constraint_hinge>(axis);
 						break;
 					}
 					default:
@@ -430,11 +430,11 @@ namespace animation {
 						break;
 				}
 			} else
-				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
+				constraint = std::make_shared<ik_constraint>();
 
-			chain.push_back({std::move(submodel), constraint, acceleration});
+			chain.push_back({std::move(submodel), std::move(constraint), acceleration});
 		}
 		
-		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(chain, time));
+		return std::make_shared<ModelAnimationMoveableIK>(std::move(chain), time);
 	}
 }

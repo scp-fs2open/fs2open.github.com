@@ -27,6 +27,7 @@
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamesequence/gamesequence.h"
@@ -81,10 +82,9 @@ const char *campaign_types[MAX_CAMPAIGN_TYPES] =
 //XSTR:ON
 };
 
-// modules local variables to deal with getting new ships/weapons available to the player
-int Num_granted_ships, Num_granted_weapons;		// per mission counts of new ships and weapons
-int Granted_ships[MAX_SHIP_CLASSES];
-int Granted_weapons[MAX_WEAPON_TYPES];
+// module-local sets of new ships/weapons granted to the player during the current mission
+static SCP_set<int> Granted_ships;
+static SCP_set<int> Granted_weapons;
 
 // variables to control the UI stuff for loading campaigns
 LOCAL UI_WINDOW Campaign_window;
@@ -392,39 +392,37 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
  */
 void mission_campaign_get_sw_info()
 {
-    int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
+	if (optional_string("+Starting Ships:")) {
+		SCP_vector<int> ship_list;
+		stuff_int_list(ship_list, ParseLookupType::SHIP_INFO_TYPE);
 
-    if (optional_string("+Starting Ships:")) {
-        count = sz2i(stuff_int_list(ship_list, MAX_SHIP_CLASSES, ParseLookupType::SHIP_INFO_TYPE));
-
-        // now set the array elements stating which ships we are allowed
-        for (i = 0; i < count; i++) {
-            if (Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship])
-                Campaign.ships_allowed[ship_list[i]] = 1;
-        }
-	}
-	else {
+		// now note which ships we are allowed
+		for (int idx : ship_list) {
+			if (Ship_info[idx].flags[Ship::Info_Flags::Player_ship])
+				Campaign.ships_allowed.insert(idx);
+		}
+	} else {
 		// set allowable ships to the SIF_PLAYER_SHIPs
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if (it->flags[Ship::Info_Flags::Player_ship])
-				Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
+				Campaign.ships_allowed.insert(static_cast<int>(std::distance(Ship_info.cbegin(), it)));
 		}
 	}
 
-    if (optional_string("+Starting Weapons:")) {
-        count = sz2i(stuff_int_list(weapon_list, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_POOL_TYPE));
+	if (optional_string("+Starting Weapons:")) {
+		SCP_vector<int> weapon_list;
+		stuff_int_list(weapon_list, ParseLookupType::WEAPON_POOL_TYPE);
 
-        // now set the array elements stating which ships we are allowed
-		for (i = 0; i < count; i++) {
-			if (Weapon_info[weapon_list[i]].wi_flags[Weapon::Info_Flags::Player_allowed])
-				Campaign.weapons_allowed[weapon_list[i]] = 1;
+		// now note which weapons we are allowed
+		for (int idx : weapon_list) {
+			if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Player_allowed])
+				Campaign.weapons_allowed.insert(idx);
 		}
-    }
-	else {
+	} else {
 		// set allowable weapons to the player-allowed ones
 		for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it) {
 			if (it->wi_flags[Weapon::Info_Flags::Player_allowed])
-				Campaign.weapons_allowed[std::distance(Weapon_info.cbegin(), it)] = 1;
+				Campaign.weapons_allowed.insert(static_cast<int>(std::distance(Weapon_info.cbegin(), it)));
 		}
 	}
 }
@@ -504,7 +502,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			Error(LOCATION, "Unknown campaign type %s!", type);
 
 		if (optional_string("+Description:"))
-			Campaign.desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+			stuff_string(Campaign.description, F_MULTITEXT);
 
 		// if the type is multiplayer -- get the number of players
 		if ( Campaign.type != CAMPAIGN_TYPE_SINGLE) {
@@ -549,6 +547,9 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			if (cm->flags & CMISSION_FLAG_BASTION) {
 				cm->main_hall = "1";
 			}
+
+			// clear any other flag bits to prevent bogus values causing surprises
+			cm->flags &= CMISSION_EXTERNAL_FLAG_MASK;
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
@@ -610,12 +611,16 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 			cm->mission_branch_brief_anim = NULL;
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
-				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				ignore_white_space();						// it might be on the next line
+				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
 			cm->mission_branch_brief_sound = NULL;
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
-				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				ignore_white_space();						// it might be on the next line
+				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
 			cm->mission_loop_formula = -1;
@@ -725,13 +730,8 @@ void player_loadout_init()
 	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
 	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
 
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Player_loadout.ship_pool[i] = 0;
-	}
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Player_loadout.weapon_pool[i] = 0;
-	}
+	Player_loadout.ship_pool.clear();
+	Player_loadout.weapon_pool.clear();
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Player_loadout.unit_data[i].ship_class = -1;
@@ -836,9 +836,9 @@ int mission_campaign_next_mission()
 		Campaign.loop_enabled = 0;
 	}
 
-	// reset the number of persistent ships and weapons for the next campaign mission
-	Num_granted_ships = 0;
-	Num_granted_weapons = 0;
+	// reset the persistent ships and weapons for the next campaign mission
+	Granted_ships.clear();
+	Granted_weapons.clear();
 	return 0;
 }
 
@@ -875,8 +875,8 @@ int mission_campaign_previous_mission()
 	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
 	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
-	Num_granted_ships = 0;
-	Num_granted_weapons = 0;
+	Granted_ships.clear();
+	Granted_weapons.clear();
 
 	return 1;
 }
@@ -928,15 +928,11 @@ void mission_campaign_eval_next_mission()
  */
 void mission_campaign_store_goals_and_events()
 {
-	int cur;
-	cmission *mission_obj;
-
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	cur = Campaign.current_mission;
-
-	mission_obj = &Campaign.missions[cur];
+	int cur = Campaign.current_mission;
+	auto mission_obj = &Campaign.missions[cur];
 
 	// first we must save the status of the current missions goals in the campaign mission structure.
 	// After that, we can determine which mission is tagged as the next mission.  Finally, we
@@ -986,72 +982,60 @@ void mission_campaign_store_goals_and_events()
 			else
 				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
+			Assertion(false, "Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 
 void mission_campaign_store_variables(int persistence_type, bool store_red_alert)
 {
-	int cur, i, j;
-	cmission *mission_obj;
-
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	cur = Campaign.current_mission;
-	mission_obj = &Campaign.missions[cur];
+	int cur = Campaign.current_mission;
+	auto mission_obj = &Campaign.missions[cur];
 
-	// handle variables that are saved on mission victory -------------------------------------
 	mission_obj->variables.clear();
 
-	int num_mission_variables = sexp_campaign_file_variable_count();
-
-	if (num_mission_variables > 0) {
-		
-		if (store_red_alert) {
-			for (auto& current_rav : Campaign.red_alert_variables) {
-				Campaign.persistent_variables.push_back(current_rav);
-			}
+	int num_sexp_variables = sexp_variable_count();
+	for (int i = 0; i < num_sexp_variables; i++) {
+		if (!(Sexp_variables[i].type & persistence_type)) {
+			continue;
 		}
 
-		for (i = 0; i < sexp_variable_count(); i++) {
-			if (!(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-				if (Sexp_variables[i].type & persistence_type) {
-					bool add_it = true;
-
-					// see if we already have a variable with this name
-					for (j = 0; j < (int)Campaign.persistent_variables.size(); j++) {
-						if (!(stricmp(Sexp_variables[i].variable_name, Campaign.persistent_variables[j].variable_name))) {
-							add_it = false;
-							Campaign.persistent_variables[j].type = Sexp_variables[i].type;
-							strcpy_s(Campaign.persistent_variables[j].text, Sexp_variables[i].text);
-							break;
-						}
-					}
-
-					// new variable
-					if (add_it) {
-						Campaign.persistent_variables.push_back(Sexp_variables[i]);
-					}
-				}
+		// player-persistent (aka "eternal")
+		if (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE) {
+			// see if we already have a variable with this name
+			int j = find_item_with_string(Player->variables, &sexp_variable::variable_name, Sexp_variables[i].variable_name);
+			if (j >= 0) {
+				Player->variables[j].type = Sexp_variables[i].type;
+				strcpy_s(Player->variables[j].text, Sexp_variables[i].text);
 			}
-			// we might need to save some eternal variables
-			else if ((persistence_type & SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS) && (Sexp_variables[i].type & persistence_type) && (Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-				bool add_it = true;
+			// new variable
+			else {
+				Player->variables.push_back(Sexp_variables[i]);
+			}
+		}
+		// campaign-persistent
+		else {
+			// see if we already have a variable with this name
+			int j = find_item_with_string(Campaign.persistent_variables, &sexp_variable::variable_name, Sexp_variables[i].variable_name);
+			if (j >= 0) {
+				Campaign.persistent_variables[j].type = Sexp_variables[i].type;
+				strcpy_s(Campaign.persistent_variables[j].text, Sexp_variables[i].text);
+			}
+			// new variable
+			else {
+				Campaign.persistent_variables.push_back(Sexp_variables[i]);
+			}
+		}
+	}
 
-				for (j = 0; j < (int)Player->variables.size(); j++) {
-					if (!(stricmp(Sexp_variables[i].variable_name, Player->variables[j].variable_name))) {
-						Player->variables[j] = Sexp_variables[i];
-
-						add_it = false;
-						break;
-					}
-				}
-
-				// if not found then add new entry
-				if (add_it) {
-					Player->variables.push_back(Sexp_variables[i]);
-				}
+	if (store_red_alert) {
+		for (const auto& current_rav : Campaign.red_alert_variables) {
+			if (find_item_with_string(Campaign.persistent_variables, &sexp_variable::variable_name, current_rav.variable_name) < 0) {
+				Campaign.persistent_variables.push_back(current_rav);
+			} else {
+				Warning(LOCATION, "A red alert variable has the same name as a persistent variable!");
 			}
 		}
 	}
@@ -1063,40 +1047,17 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
-	if (!sexp_container_has_persistent_non_eternal_containers()) {
-		// nothing to do
-		return;
-	}
-
-	if (store_red_alert) {
-		for (const auto& current_con : Campaign.red_alert_containers) {
-			Campaign.persistent_containers.emplace_back(current_con);
-		}
-	}
-
 	for (const auto &container : get_all_sexp_containers()) {
-		if (!container.is_eternal()) {
-			if (any(container.type & persistence_type)) {
-				// see if we already have a container with this name
-				auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
-					Campaign.persistent_containers.end(),
-					[container](const sexp_container &cpc) {
-						return cpc.name_matches(container);
-					});
+		if (none(container.type & persistence_type)) {
+			continue;
+		}
 
-				if (cpc_it != Campaign.persistent_containers.end()) {
-					*cpc_it = container;
-				} else {
-					// new container
-					Campaign.persistent_containers.emplace_back(container);
-				}
-			}
-		} else if (any(persistence_type & ContainerType::SAVE_ON_MISSION_PROGRESS) &&
-				   any(container.type & persistence_type) && container.is_eternal()) {
-			// we might need to save some eternal player-persistent containers
+		// player-persistent (aka "eternal")
+		if (container.is_eternal()) {
+			// see if we already have a container with this name
 			auto ppc_it = std::find_if(Player->containers.begin(),
 				Player->containers.end(),
-				[container](const sexp_container &ppc) {
+				[&container](const sexp_container& ppc) {
 					return ppc.name_matches(container);
 				});
 
@@ -1104,17 +1065,50 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 				*ppc_it = container;
 			} else {
 				// new player-persistent container
-				Player->containers.emplace_back(container);
+				Player->containers.push_back(container);
+			}
+		}
+		// campaign-persistent
+		else {
+			// see if we already have a container with this name
+			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+				Campaign.persistent_containers.end(),
+				[&container](const sexp_container& cpc) {
+					return cpc.name_matches(container);
+				});
+
+			if (cpc_it != Campaign.persistent_containers.end()) {
+				*cpc_it = container;
+			} else {
+				// new container
+				Campaign.persistent_containers.push_back(container);
+			}
+		}
+	}
+
+	if (store_red_alert) {
+		for (const auto& container : Campaign.red_alert_containers) {
+			// see if we already have a container with this name
+			auto cpc_it = std::find_if(Campaign.persistent_containers.begin(),
+				Campaign.persistent_containers.end(),
+				[&container](const sexp_container& cpc) {
+					return cpc.name_matches(container);
+				});
+
+			if (cpc_it == Campaign.persistent_containers.end()) {
+				Campaign.persistent_containers.push_back(container);
+			} else {
+				Warning(LOCATION, "A red alert container has the same name as a persistent container!");
 			}
 		}
 	}
 }
 
-void mission_campaign_store_goals_and_events_and_variables()
+void mission_campaign_store_goals_and_events_and_variables(bool store_red_alert_data)
 {
 	mission_campaign_store_goals_and_events();
-	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS);
-	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS);
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, store_red_alert_data);
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, store_red_alert_data);
 }
 
 /**
@@ -1124,7 +1118,7 @@ void mission_campaign_store_goals_and_events_and_variables()
  */
 void mission_campaign_mission_over(bool do_next_mission)
 {
-	int mission_num, i;
+	int mission_num;
 	cmission *mission_obj;
 
 	// I don't think that we should have a record for these -- maybe we might??????  If we do,
@@ -1138,16 +1132,8 @@ void mission_campaign_mission_over(bool do_next_mission)
 	mission_obj = &Campaign.missions[mission_num];
 
 	// determine if any ships/weapons were granted this mission
-	for ( i=0; i<Num_granted_ships; i++ ){
-		Campaign.ships_allowed[Granted_ships[i]] = 1;
-	}
-
-	for ( i=0; i<Num_granted_weapons; i++ ){
-		Campaign.weapons_allowed[Granted_weapons[i]] = 1;	
-	}
-
-	// Goober5000 - player-persistent variables are handled when the mission is
-	// over, not necessarily when the mission is accepted
+	Campaign.ships_allowed.insert(Granted_ships.begin(), Granted_ships.end());
+	Campaign.weapons_allowed.insert(Granted_weapons.begin(), Granted_weapons.end());
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
@@ -1196,6 +1182,35 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
+void mission_campaign_free_mission_strings(cmission &cm)
+{
+	if (cm.name != nullptr) {
+		vm_free(cm.name);
+		cm.name = nullptr;
+	}
+
+	if (cm.notes != nullptr) {
+		vm_free(cm.notes);
+		cm.notes = nullptr;
+	}
+
+	// the next three are strdup'd return values from parselo.cpp - taylor
+	if (cm.mission_branch_desc != nullptr) {
+		vm_free(cm.mission_branch_desc);
+		cm.mission_branch_desc = nullptr;
+	}
+
+	if (cm.mission_branch_brief_anim != nullptr) {
+		vm_free(cm.mission_branch_brief_anim);
+		cm.mission_branch_brief_anim = nullptr;
+	}
+
+	if (cm.mission_branch_brief_sound != nullptr) {
+		vm_free(cm.mission_branch_brief_sound);
+		cm.mission_branch_brief_sound = nullptr;
+	}
+}
+
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  * also called at campaign init and campaign load
@@ -1204,43 +1219,16 @@ void mission_campaign_clear()
 {
 	int i;
 
-	if (Campaign.desc != NULL) {
-		vm_free(Campaign.desc);
-		Campaign.desc = NULL;
-	}
+	Campaign.description.clear();
 
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
 	for ( i=0; i<Campaign.num_missions; i++ ) {
-		if ( Campaign.missions[i].name != NULL ) {
-			vm_free(Campaign.missions[i].name);
-			Campaign.missions[i].name = NULL;
-		}
-
-		if (Campaign.missions[i].notes != NULL) {
-			vm_free(Campaign.missions[i].notes);
-			Campaign.missions[i].notes = NULL;
-		}
+		mission_campaign_free_mission_strings(Campaign.missions[i]);
 
 		Campaign.missions[i].goals.clear();
 		Campaign.missions[i].events.clear();
 		Campaign.missions[i].variables.clear();
-
-		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_branch_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_desc);
-			Campaign.missions[i].mission_branch_desc = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_anim);
-			Campaign.missions[i].mission_branch_brief_anim = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_sound);
-			Campaign.missions[i].mission_branch_brief_sound = NULL;
-		}
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
@@ -1275,8 +1263,8 @@ void mission_campaign_clear()
 	Campaign.loop_reentry = 0;
 	Campaign.realign_required = 0;
 	Campaign.num_players = 0;
-	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
+	Campaign.ships_allowed.clear();
+	Campaign.weapons_allowed.clear();
 	Campaign.persistent_variables.clear(); 
 	Campaign.red_alert_variables.clear();
 	Campaign.persistent_containers.clear();
@@ -1547,13 +1535,9 @@ void mission_campaign_save_persistent( int type, int sindex )
 	// based on the type of information, save it off for possible saving into the campsign
 	// savefile when the mission is over
 	if ( type == CAMPAIGN_PERSISTENT_SHIP ) {
-		Assert( Num_granted_ships < MAX_SHIP_CLASSES );
-		Granted_ships[Num_granted_ships] = sindex;
-		Num_granted_ships++;
+		Granted_ships.insert(sindex);
 	} else if ( type == CAMPAIGN_PERSISTENT_WEAPON ) {
-		Assert( Num_granted_weapons < MAX_WEAPON_TYPES );
-		Granted_weapons[Num_granted_weapons] = sindex;
-		Num_granted_weapons++;
+		Granted_weapons.insert(sindex);
 	} else
 		Int3();
 }
@@ -1682,6 +1666,9 @@ void mission_campaign_end_init()
 
 void mission_campaign_end_do()
 {
+	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_PROGRESS, false);
+	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_PROGRESS, false);
+
 	// close out the mission
 	event_music_level_close();
 	mission_goal_fail_incomplete();
@@ -1728,7 +1715,7 @@ void mission_campaign_skip_to_next()
 	mission_goal_mark_events_complete();
 
 	// store
-	mission_campaign_store_goals_and_events_and_variables();
+	mission_campaign_store_goals_and_events_and_variables(false);
 
 	// now set the next mission
 	mission_campaign_eval_next_mission();
@@ -1794,7 +1781,7 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool preserve_loadout)
 {
 	int i = 0, mission_num = -1;
 	constexpr size_t dest_filename_size = 64;
@@ -1827,12 +1814,13 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 		// based on player feedback, let's NOT restart the campaign but rather fail gracefully
 		return false;
 	} else {
-		for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
-			i = static_cast<int>(std::distance(Ship_info.begin(), it));
-			Campaign.ships_allowed[i] = 1;
-		}
-		for (i = 0; i < weapon_info_size(); i++) {
-			Campaign.weapons_allowed[i] = 1;
+		if (!preserve_loadout) {
+			for (i = 0; i < ship_info_size(); i++) {
+				Campaign.ships_allowed.insert(i);
+			}
+			for (i = 0; i < weapon_info_size(); i++) {
+				Campaign.weapons_allowed.insert(i);
+			}
 		}
 
 		Campaign.next_mission = mission_num;
@@ -1845,82 +1833,85 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 	}
 }
 
-// Goober5000
-void mission_campaign_save_on_close_variables()
+SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 {
-	int i;
+	SCP_vector<SCP_string> valid_missions;
 
-	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
-		return;
+	// This can be queried from UI states outside active mission gameplay
+	// where GM_CAMPAIGN_MODE may not be set even though a campaign is loaded.
+	if (Campaign.name[0] == '\0' || Campaign.num_missions <= 0) {
+		return valid_missions;
+	}
 
-	// now save variables
-	for (i = 0; i < sexp_variable_count(); i++) {
-		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
-		if ( !(Sexp_variables[i].type & SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE) ) {
+	// During normal campaign flow, current_mission is set to -1 after accepting a mission
+	// and before the next mission actually starts. In that window, prev_mission is the
+	// mission whose branching formula produced the current next_mission.
+	// Prefer prev_mission when available since branch selection outside missions is
+	// generally based on the mission just completed.
+	int branch_source_mission = Campaign.prev_mission;
+	if (branch_source_mission < 0) {
+		branch_source_mission = Campaign.current_mission;
+	}
+
+	if (branch_source_mission < 0 || branch_source_mission >= Campaign.num_missions) {
+		// Campaigns that haven't started yet can have both current_mission and prev_mission
+		// unset. In that case, next_mission is the only available entry point.
+		if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions) {
+			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name);
+		}
+		return valid_missions;
+	}
+
+	auto& current = Campaign.missions[branch_source_mission];
+	if (current.formula < 0) {
+		return valid_missions;
+	}
+
+	// This helper is intended to enumerate all valid branches from a cond formula.
+	// If the formula is not cond, return an empty list.
+	if (get_operator_const(CTEXT(current.formula)) != OP_COND) {
+		return valid_missions;
+	}
+
+	const int saved_next = Campaign.next_mission;
+	int clauses = CDR(current.formula);
+
+	while (clauses >= 0) {
+		const int clause = CAR(clauses);
+		if (clause < 0) {
+			clauses = CDR(clauses);
 			continue;
 		}
 
-		bool found = false;
+		flush_sexp_tree(current.formula);
 
-		// deal with eternals 
-		if ((Sexp_variables[i].type & SEXP_VARIABLE_SAVE_TO_PLAYER_FILE)) {
-			// check if variable already exists and updated it
-			for (auto& current_variable : Player->variables) {
-				if (!(stricmp(Sexp_variables[i].variable_name, current_variable.variable_name))) {
-					current_variable = Sexp_variables[i];
+		const int condition = CAR(clause);
+		const int condition_result = eval_sexp(condition);
+		if (condition_result == SEXP_TRUE) {
+			Campaign.next_mission = -1;
+			int actions = CDR(clause);
 
-					found = true;
-					break;
+			while (actions >= 0) {
+				const int exp = CAR(actions);
+				if (exp >= 0) {
+					eval_sexp(exp);
+				}
+				actions = CDR(actions);
+			}
+
+			if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions && Campaign.next_mission != branch_source_mission) {
+				const auto& mission_name = Campaign.missions[Campaign.next_mission].name;
+				if (std::find(valid_missions.begin(), valid_missions.end(), mission_name) == valid_missions.end()) {
+					valid_missions.emplace_back(mission_name);
 				}
 			}
-
-			// if not found then add new entry
-			if (!found) {
-				Player->variables.push_back(Sexp_variables[i]);
-			}
 		}
 
+		clauses = CDR(clauses);
 	}
 
-	// store any non-eternal on mission close variables
-	mission_campaign_store_variables(SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE, false);
-}
-
-// jg18 - adapted from mission_campaign_save_on_close_variables()
-void mission_campaign_save_on_close_containers()
-{
-	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
-		return;
-
-	// now save containers
-	for (const auto &container : get_all_sexp_containers()) {
-		// we only want the on mission close type. On campaign progress type are dealt with elsewhere
-		if (none(container.type & ContainerType::SAVE_ON_MISSION_CLOSE)) {
-			continue;
-		}
-
-		// deal with eternals
-		if (container.is_eternal()) {
-			// check if container already exists and update it
-			auto ppc_it = std::find_if(Player->containers.begin(),
-				Player->containers.end(),
-				[container](const sexp_container &ppc) {
-					return ppc.name_matches(container);
-				});
-
-			if (ppc_it != Player->containers.end()) {
-				*ppc_it = container;
-			} else {
-				// if not found then add new entry
-				Player->containers.emplace_back(container);
-			}
-		}
-	}
-
-	// store any non-eternal on mission close containers
-	mission_campaign_store_containers(ContainerType::SAVE_ON_MISSION_CLOSE, false);
+	Campaign.next_mission = saved_next;
+	return valid_missions;
 }
 
 void mission_campaign_load_failure_popup()

@@ -10,6 +10,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
+#include <array>
 #include <csetjmp>
 #include <set>
 
@@ -23,8 +24,10 @@
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
+#include "utils/reset_on_move.h"
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
+#include "ship/anchor_t.h"
 #include "stats/scoring.h"
 
 //WMC - This should be here
@@ -40,16 +43,11 @@ enum class DepartureLocation;
 
 #define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
 
-// arrival anchor types
-// mask should be high enough to avoid conflicting with ship anchors
-#define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
-#define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
-
 #define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
 #define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
 
-int get_special_anchor(const char *name);
-void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchor_shipnums_checked, int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival);
+anchor_t get_special_anchor(const char *name);
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t> &anchors_checked, anchor_t anchor, const char *other_name, bool other_is_ship, bool is_arrival);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
 // requiring version-specific comments.  It should be updated whenever the format changes, but it should
@@ -62,6 +60,7 @@ extern const gameversion::version LEGACY_MISSION_VERSION;
 extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
+extern bool check_for_25_1_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -69,6 +68,7 @@ extern bool check_for_24_3_data();
 #define MPF_ONLY_MISSION_INFO	(1 << 0)
 #define MPF_IMPORT_FSM			(1 << 1)
 #define MPF_FAST_RELOAD			(1 << 2)	// skip clearing some stuff so we can load the mission faster (usually since it's the same mission)
+#define MPF_IS_TEMPLATE			(1 << 3)	// loading a .fst mission template; post-load reset of name, author, timestamps, notes, description, and camera
 
 // bitfield definitions for missions game types
 #define OLD_MAX_GAME_TYPES				4					// needed for compatibility
@@ -101,19 +101,33 @@ inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [
 }();
 
 // Goober5000
-typedef struct support_ship_info {
-	ArrivalLocation		arrival_location;				// arrival location
-	int		arrival_anchor;					// arrival anchor
-	DepartureLocation	departure_location;				// departure location
-	int		departure_anchor;				// departure anchor
-	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
-	float	max_subsys_repair_val;			// same thing, except for subsystems -C
-	int		max_support_ships;				// max number of consecutive support ships
-	int		max_concurrent_ships;			// max number of concurrent support ships in mission per team
-	int		ship_class;						// ship class of support ship
-	int		tally;							// number of support ships so far
-	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
-} support_ship_info;
+struct support_ship_info
+{
+	ArrivalLocation     arrival_location;   // arrival location
+	anchor_t            arrival_anchor;     // arrival anchor
+	DepartureLocation   departure_location; // departure location
+	anchor_t            departure_anchor;   // departure anchor
+	float   max_hull_repair_val;            // % of a ship's hull that can be repaired -C
+	float   max_subsys_repair_val;          // same thing, except for subsystems -C
+	int     max_support_ships;              // max number of consecutive support ships
+	int     max_concurrent_ships;           // max number of concurrent support ships in mission per team
+	int     ship_class;                     // ship class of support ship
+	int     tally;                          // number of support ships so far
+	int     support_available_for_species;  // whether support is available for a given species (this is a bitfield)
+	bool	disallow_rearm;                      // if true, support ships can only repair and will not rearm weapons
+	bool	allow_rearm_weapon_precedence;       // if true, support ships may swap to precedence weapons when rearm pool is empty
+	bool	rearm_pool_from_loadout;             // initialize rearm pool from mission loadout after filling starting loadout ships
+
+	// mission stockpile used to limit support ship rearming: weapon class -> amount remaining
+	// (-1 = unlimited, 0 = not rearmable, >0 = limited); an absent entry means rearm_pool_default()
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> rearm_weapon_pool;
+
+	// the default for weapon classes without a pool entry: normally unlimited, but when the pool
+	// is seeded from the mission loadout, any weapon not in the loadout cannot be rearmed
+	int rearm_pool_default() const { return rearm_pool_from_loadout ? 0 : -1; }
+
+	void reset();
+};
 
 // movie type defines
 // If you add one here, you must also add a description to missioncutscenedlg.cpp for FRED
@@ -184,7 +198,7 @@ struct parse_object_flag_description {
 };
 
 typedef struct mission {
-	char	name[NAME_LENGTH];
+	SCP_string	name;
 	SCP_string	author;
 	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
@@ -206,9 +220,8 @@ typedef struct mission {
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
 	int		contrail_threshold;
+	int		large_ship_no_collide_collision_group;
 	int		ambient_light_level;
-	float	neb_far_multi;
-	float	neb_near_multi;
 	std::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
@@ -236,6 +249,7 @@ typedef struct mission {
 	SCP_map<SCP_string, SCP_string> custom_data;
 
 	SCP_vector<custom_string> custom_strings;
+	SCP_vector<SCP_string> fred_layers;
 
 	void Reset( );
 
@@ -303,7 +317,6 @@ typedef struct path_restriction_t {
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
-extern const char *Ship_class_names[MAX_SHIP_CLASSES];
 extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
@@ -313,6 +326,7 @@ extern const char *Reinforcement_type_names[];
 extern flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[];
 extern parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[];
 extern const size_t Num_parse_mission_flags;
+extern const size_t Num_parse_mission_flag_descriptions;
 extern char *Object_flags[];
 extern flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[];
 extern const size_t Num_Parse_ship_flags;
@@ -326,6 +340,11 @@ extern const size_t Num_parse_object_flags;
 extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
 extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
 extern const size_t Num_parse_wing_flags;
+extern const size_t Num_parse_wing_flag_descriptions;
+extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[];
+extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[];
+extern const size_t Num_parse_prop_flags;
+extern const size_t Num_parse_prop_flag_descriptions;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
@@ -349,6 +368,7 @@ extern fix	Entry_delay_time;
 extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
+extern int Num_unknown_prop_classes;
 extern int Num_unknown_weapon_classes;
 extern int Num_unknown_loadout_classes;
 
@@ -443,13 +463,13 @@ public:
 
 	ArrivalLocation arrival_location = ArrivalLocation::AT_LOCATION;
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
-	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
+	anchor_t arrival_anchor = anchor_t::invalid();	// ship registry entry used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
 	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
 	DepartureLocation departure_location = DepartureLocation::AT_LOCATION;
-	int	departure_anchor = -1;
+	anchor_t departure_anchor = anchor_t::invalid();
 	int departure_path_mask = 0;				// Goober5000
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
@@ -468,10 +488,11 @@ public:
 	int	score = 0;
 	float assist_score_pct = 0.0f;					// percentage of the score which players who gain an assist will get when this ship is killed
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
-	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
+	util::reset_on_move<p_dock_instance *> dock_list;	// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
 	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
+	SCP_string fred_layer = "Default";
 	int	persona_index = -1;
 	int	kamikaze_damage = 0;					// base damage for a kamikaze attack
 
@@ -511,36 +532,50 @@ public:
 
 	~p_object();
 
+	// The destructor frees dock_list, and a user-declared destructor suppresses
+	// the implicit move operations, so define them here.  Shallow copies are safe
+	// because parse code only copies p_objects before dock lists are built.
+	p_object() = default;
+	p_object(const p_object &) = default;
+	p_object &operator=(const p_object &) = default;
+	p_object(p_object &&) = default;
+
+	// not defaulted, because a memberwise move would overwrite (and leak) any
+	// dock list the assigned-to object owns; defined in missionparse.cpp
+	p_object &operator=(p_object &&other) noexcept;
+
 	const char* get_display_name();
 	bool has_display_name();
 };
 
 // Goober5000 - this is now dynamic
 extern SCP_vector<p_object> Parse_objects;
-#define POBJ_INDEX(pobjp) (int)(pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
+#define POBJ_INDEX(pobjp) (static_cast<int>((pobjp)-Parse_objects.data()))
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
-typedef struct team_data {
+// one line of a team loadout: a ship or weapon class (given literally or via a sexp variable)
+// and how many of it are available (likewise literal or via a variable)
+struct loadout_entry
+{
+	int class_index = -1;       // resolved ship or weapon class
+	int count = 0;
+	SCP_string class_variable;  // sexp variable name; empty = class was given literally
+	SCP_string count_variable;  // sexp variable name; empty = count was given literally
+};
+
+struct team_data
+{
 	// ships
-	int		default_ship;  // default ship type for player start point (recommended choice)
-	int		num_ship_choices; // number of ship choices inside ship_list 
-	int		loadout_total;	// Total number of ships available of all classes 
-	int		ship_list[MAX_SHIP_CLASSES];
-	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
-	int		ship_count[MAX_SHIP_CLASSES];
-	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
+	int		default_ship = -1;						// default ship type for player start point (recommended choice)
+	SCP_vector<loadout_entry> ship_choices;			// ship classes (and counts) available in the loadout
 
 	// weapons
-	int		num_weapon_choices;
-	bool    do_not_validate;
-	int		weaponry_pool[MAX_WEAPON_TYPES];
-	int		weaponry_count[MAX_WEAPON_TYPES];
-	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	char	weaponry_amount_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];
-	bool	weapon_required[MAX_WEAPON_TYPES];
-} team_data;
+	bool	do_not_validate = false;
+	SCP_vector<loadout_entry> weapon_choices;		// weapon classes (and counts) available in the loadout
+	SCP_set<int> required_weapons;					// weapon classes that cannot be removed in weapon select
+};
 
 #define MAX_P_WINGS		16
 #define MAX_SHIP_LIST	16
@@ -558,6 +593,14 @@ extern fix Mission_end_time;
 
 extern SCP_vector<SCP_string> Parse_names;
 
+// Populated when Qtfred_running and a parse-time auto-correction fires. Drained by
+// QtFRED's ErrorChecker so the corrections are visible to the designer instead of
+// silently buried. Outside of QtFRED these sites still call Warning(LOCATION, ...).
+extern SCP_vector<SCP_string> Mission_parse_warnings;
+
+// true while a mission is being parsed and post-processed
+extern bool Parsing_mission;
+
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
 extern p_object	*Player_start_pobject;
@@ -571,7 +614,7 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
-void mission_init(mission *pm);
+void mission_init(mission *pm, bool quick_init = false);
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);

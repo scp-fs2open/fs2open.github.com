@@ -136,6 +136,7 @@ sound_load_id snd_load(game_snd_entry* entry, int* flags, int allow_hardware_loa
 
 int snd_unload(sound_load_id sndnum);
 void	snd_unload_all();
+void snd_unload_cleanup();
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.

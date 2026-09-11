@@ -1,14 +1,28 @@
 
 #include "lighting.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec4 vertPosition;
+#else
 in vec4 vertPosition;
+#endif
 
-layout (std140) uniform matrixData {
+#ifdef VULKAN
+layout(set = 2, binding = 1, std140)
+#else
+layout(std140)
+#endif
+uniform matrixData {
 	mat4 modelViewMatrix;
 	mat4 projMatrix;
 };
 
-layout (std140) uniform lightData {
+#ifdef VULKAN
+layout(set = 0, binding = 0, std140)
+#else
+layout(std140)
+#endif
+uniform lightData {
 	vec3 diffuseLightColor;
 	float coneAngle;
 
@@ -16,13 +30,13 @@ layout (std140) uniform lightData {
 	float coneInnerAngle;
 
 	vec3 coneDir;
-	bool dualCone;
+	int dualCone;
 
 	vec3 scale;
 	float lightRadius;
 
 	int lightType;
-	bool enable_shadows;
+	int enable_shadows;
 
 	float sourceRadius;
 };
@@ -30,7 +44,13 @@ layout (std140) uniform lightData {
 void main()
 {
 	if (lightType == LT_DIRECTIONAL || lightType == LT_AMBIENT) {
+#ifdef VULKAN
+		// Fullscreen triangle from gl_VertexIndex (no vertex buffer)
+		vec2 pos = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
+		gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
+#else
 		gl_Position = vec4(vertPosition.xyz, 1.0);
+#endif
 	} else {
 		gl_Position = projMatrix * modelViewMatrix * vec4(vertPosition.xyz * scale, 1.0);
 	}

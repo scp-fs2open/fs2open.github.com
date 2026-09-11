@@ -1,12 +1,14 @@
-#include <unordered_map>
-#include <memory>
-#include <functional>
+#include "cmdline/cmdline.h"
 
 #include <QApplication>
 #include <QDir>
 #include <QSplashScreen>
+#include <QStyleFactory>
 #include <QTimer>
 #include <QtCore/QLoggingCategory>
+#include <functional>
+#include <memory>
+#include <unordered_map>
 
 #ifdef _WIN32
 #include "globalincs/mspdb_callstack.h"
@@ -18,13 +20,18 @@
 #include "globalincs/pstypes.h"
 
 #include "ui/FredView.h"
+#include "ui/dialogs/HelpTopicsDialog.h"
+#include "ui/Theme.h"
 #include "FredApplication.h"
 
 #include <csignal>
 #include <project.h>
 
+
+
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
+int Qtfred_running = 1;
 int Show_cpu = 0;
 
 // Empty functions to make fred link with the sexp_mission_set_subspace
@@ -59,11 +66,6 @@ void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const Q
 	}
 }
 
-// SDL defines this on windows which causes problems
-#ifdef main
-#undef main
-#endif
-
 void handler(int signal) {
 	auto stacktrace = dump_stacktrace();
 
@@ -79,6 +81,14 @@ void game_busy_callback(int  /*count*/) {
 int main(int argc, char* argv[]) {
 	signal( SIGSEGV, handler );
 
+	// Metadata must to be set as early as possible, before the first SDL_Init().
+	// This is global info and cannot be changed later (i.e., it can't be set per mod)
+	SDL_SetAppMetadata("qtFRED", FS_VERSION_FULL, "us.indiegames.scp.qtFRED");
+
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_TYPE_STRING, "application");
+	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
+							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
+
 	using namespace fso::fred;
 
 #ifdef WIN32
@@ -91,13 +101,16 @@ int main(int argc, char* argv[]) {
 
 	qInstallMessageHandler(fsoMessageOutput);
 
-	SDL_SetMainReady();
-
 	QCoreApplication::setOrganizationName("HardLightProductions");
 	QCoreApplication::setOrganizationDomain("hard-light.net");
 	QCoreApplication::setApplicationName("qtFRED");
 
 	QApplication app(argc, argv);
+	//QApplication::setAttribute(Qt::AA_DisableWindowContextHelpButton); //No longer needed set by default
+
+	// Use Fusion style unconditionally — required for reliable dynamic palette switching
+	QApplication::setStyle(QStyleFactory::create("Fusion"));
+	fso::fred::applyEditorTheme(fso::fred::readThemeModeSetting());
 
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
@@ -202,6 +215,10 @@ int main(int argc, char* argv[]) {
 
 	// Allow other parts of the code to execute code that needs to run after everything has been set up
 	fredApp->initializeComplete();
+
+	// Initialize the help engine and kick off search indexing in the background
+	// so the Search tab is ready before the user first opens Help Topics.
+	QTimer::singleShot(0, [] { fso::fred::dialogs::HelpTopicsDialog::prewarm(); });
 
 	if (Cmdline_start_mission) {
 		// Automatically load a mission if specified on the command line

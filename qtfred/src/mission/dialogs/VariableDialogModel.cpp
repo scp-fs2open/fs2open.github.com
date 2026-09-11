@@ -167,6 +167,7 @@ void VariableDialogModel::initializeData()
 			}
 		}
 	}
+	_modified = false;
 }
 
 void VariableDialogModel::sortMap(int containerIndex)

@@ -8,6 +8,7 @@
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/2d.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "osapi/dialogs.h"
@@ -25,10 +26,16 @@ typedef int profile_index;
 profile _current;
 SCP_unordered_map<SCP_string, profile> Profiles;
 SCP_string default_profile_name;
+SCP_string non_mission_profile_name;
 
 const SCP_string &default_name()
 {
 	return default_profile_name;
+}
+
+const SCP_string& non_mission_name()
+{
+	return non_mission_profile_name;
 }
 
 const profile* current()
@@ -54,6 +61,11 @@ void switch_to(const SCP_string& name)
 	_current = Profiles[name];
 }
 
+void switch_to_non_mission()
+{
+	switch_to(non_mission_profile_name);
+}
+
 void update_current_profile()
 {
 	// processes any change-overs and transitions
@@ -64,6 +76,14 @@ void update_current_profile()
 //*************************************************
 TonemapperAlgorithm current_tonemapper()
 {
+	// HDR10 output has no use for the SDR tone curves -- the shader's HdrScene
+	// case is the only one that produces valid extended-range output for it.
+	// Enforce that here, at the single point everything (Vulkan, OpenGL, the
+	// Lab UI) reads the active tonemapper from, rather than mutating the
+	// stored profile value.
+	if (Gr_hdr_output_active) {
+		return TonemapperAlgorithm::HdrScene;
+	}
 	return _current.tonemapper;
 }
 
@@ -175,6 +195,8 @@ SCP_string tonemapper_to_name(TonemapperAlgorithm tnm)
 		return "Reinhard Jodie";
 	case TonemapperAlgorithm::Uncharted:
 		return "Uncharted 2";
+	case TonemapperAlgorithm::HdrScene:
+		return "HDR (Display-referred)";
 	default:
 		return "<unknown algorithm>";
 	}
@@ -250,7 +272,14 @@ void parse_all();
 void load_profiles()
 {
 	default_profile_name = "Default Profile";
+	non_mission_profile_name = default_profile_name;
 	parse_all();
+	if (Profiles.find(non_mission_profile_name) == Profiles.end()) {
+		mprintf(("Unknown non-mission lighting profile '%s'; using '%s' instead.\n",
+			non_mission_profile_name.c_str(),
+			default_profile_name.c_str()));
+		non_mission_profile_name = default_profile_name;
+	}
 	switch_to(default_profile_name);
 }
 // The logic for grabbing all the parseable files
@@ -339,6 +368,10 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 			stuff_string(buffer, F_NAME);
 			TonemapperAlgorithm tn = name_to_tonemapper(buffer);
 			tonemapper = tn;
+			parsed = true;
+		}
+		if (optional_string("$Non-mission lighting profile:")) {
+			stuff_string(non_mission_profile_name, F_NAME);
 			parsed = true;
 		}
 		parsed |= parse_optional_float_into("$PPC Toe Strength:", &ppc_values.toe_strength);

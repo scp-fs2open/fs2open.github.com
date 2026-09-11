@@ -32,10 +32,16 @@ void ParticleSource::finishCreation() {
 	if (Is_standalone)
 		return;
 
+	Assertion(isValid(), "Cannot create a ParticleSource that is not valid!");
+	if (!isValid())
+		return;
+
 	m_host->setupProcessing();
 
-	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
-		const auto& [begin, end] = effect.getEffectDuration();
+	const auto& effectList = ParticleManager::get()->getEffect(m_effect);
+	for (size_t i = 0; i < effectList.size(); i++) {
+		const auto& effect = effectList[i];
+		const auto& [begin, end] = effect.getEffectDuration(0.0, *this, i);
 		m_timing.emplace_back(SourceTiming{timestamp_delta(begin, 0), begin, end});
 	}
 }
@@ -49,7 +55,7 @@ bool ParticleSource::process() {
 	const auto& effectList = getEffect();
 
 	const vec3d& vel = m_host->getVelocity();
-	const auto& [parent, parent_sig] = m_host->getParentObjAndSig();
+	const auto& attachment = m_host->getParentAttachment();
 	float parent_radius = m_host->getScale();
 	float parent_lifetime = m_host->getLifetime();
 	float particleMultiplier = m_host->getParticleMultiplier();
@@ -66,7 +72,7 @@ bool ParticleSource::process() {
 				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
 
 				// Some of these
-				float freqMult = effect.processSource(interp, *this, i, vel, parent, parent_sig, parent_lifetime, parent_radius, particleMultiplier);
+				float freqMult = effect.processSource(interp, *this, i, vel, attachment, parent_lifetime, parent_radius, particleMultiplier);
 
 				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
 				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() / freqMult * MILLISECONDS_PER_SECOND), 1);
@@ -109,6 +115,11 @@ float ParticleSource::getEffectRemainingTime(const std::tuple<const ParticleSour
 float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
 	const auto& timing = std::get<0>(source).m_timing[std::get<1>(source)];
 	return i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_nextCreation)) / i2fl(MILLISECONDS_PER_SECOND);
+}
+
+float ParticleSource::getEffectRemainingLife(const std::tuple<const ParticleSource&, const size_t&>& source) {
+	const auto& timing = std::get<0>(source).m_timing[std::get<1>(source)];
+	return i2fl(timestamp_get_delta(timing.m_nextCreation, timing.m_endTimestamp)) / i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_endTimestamp)) ;
 }
 
 float ParticleSource::getEffectPixelSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {

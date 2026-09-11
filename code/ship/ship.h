@@ -7,12 +7,8 @@
  *
 */
 
-
-
 #ifndef _SHIP_H
 #define _SHIP_H
-
-
 
 #include "ai/ai.h"
 #include "fireball/fireballs.h"
@@ -29,13 +25,16 @@
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
+#include "ship/anchor_t.h"
 #include "ship/ship_flags.h"
+#include "utils/reset_on_move.h"
 #include "weapon/weapon_flags.h"
 #include "weapon/weapon.h"
 #include "ai/ai.h"
 
 #include <string>
 #include <set>
+#include <optional>
 #include <particle/ParticleManager.h>
 
 class object;
@@ -43,7 +42,6 @@ class WarpEffect;
 
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
-
 //	States for player death sequence, stuffed in Player_died_state.
 #define	PDS_NONE		1
 #define	PDS_DIED		2
@@ -59,7 +57,6 @@ extern vec3d	Original_vec_to_deader;
 
 #define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
-#define	MAX_REINFORCEMENTS		32
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
@@ -82,7 +79,7 @@ enum class CycleDirection { NEXT, PREV };
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-typedef struct {
+struct reinforcements {
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
 	int	uses;						// number of times reinforcemnt unit can be used
@@ -91,7 +88,21 @@ typedef struct {
 	int	flags;
 	char	no_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];		// list of messages to possibly send when calling for reinforcement not available
 	char	yes_messages[MAX_REINFORCEMENT_MESSAGES][NAME_LENGTH];	// list of messages to acknowledge reinforcement on the way
-} reinforcements;
+
+	reinforcements(const char *reinforcement_name = nullptr);
+};
+
+// Per-bank state for a weapon's external model - the model rendered at the bank's firing
+// points when the ship enables $Show Primary Models: / $Show Secondary Models:.
+struct external_weapon_state
+{
+	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
+	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
+	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
+	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
+	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
+	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
+};
 
 class ship_weapon {
 public:
@@ -102,8 +113,8 @@ public:
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
 
-	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
-	bool primary_bank_model_instance_check[MAX_SHIP_PRIMARY_BANKS];
+	external_weapon_state primary_bank_external_weapon[MAX_SHIP_PRIMARY_BANKS];
+	external_weapon_state secondary_bank_external_weapon[MAX_SHIP_SECONDARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -162,7 +173,6 @@ public:
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
-	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
 	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
@@ -255,6 +265,8 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
+void set_guard_range_ship(float range, const int target_ship_index, ship* shipp);
+
 //**************************************************************
 //WMC - Damage type handling code
 
@@ -337,7 +349,11 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
-
+struct guard_range_entry {
+	float range;
+	int shipnum;
+	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
+};
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -450,6 +466,64 @@ public:
 	void clear();
 };
 
+// The head sentinel of a ship's intrusive subsystem list.  The sentinel's
+// address is meaningful: the first node's prev and the last node's next point
+// back at it, and an empty list is self-referential (after list_init) or
+// null-linked (after construction or ship::clear).  Moving a ship would
+// otherwise leave the bookend nodes pointing at the old sentinel address, so
+// the move operations re-link them.  Copying is deleted: a copied sentinel
+// would alias another list's nodes.
+struct ship_subsys_sentinel : public ship_subsys
+{
+	ship_subsys_sentinel() = default;
+
+	ship_subsys_sentinel(const ship_subsys_sentinel &) = delete;
+	ship_subsys_sentinel &operator=(const ship_subsys_sentinel &) = delete;
+
+	ship_subsys_sentinel(ship_subsys_sentinel &&other) noexcept
+	{
+		take_links_from(other);
+	}
+
+	ship_subsys_sentinel &operator=(ship_subsys_sentinel &&other) noexcept
+	{
+		if (this != &other)
+		{
+			Assertion(next == nullptr || next == this, "Move-assigning over a sentinel whose subsystem list is not empty!  The destination's subsystems would be orphaned.");
+			take_links_from(other);
+		}
+		return *this;
+	}
+
+private:
+	void take_links_from(ship_subsys_sentinel &other) noexcept
+	{
+		if (other.next == nullptr)
+		{
+			// other was never list_init'd; match that state
+			next = nullptr;
+			prev = nullptr;
+		}
+		else if (other.next == &other)
+		{
+			// other is an initialized empty list
+			next = this;
+			prev = this;
+		}
+		else
+		{
+			// take ownership of the chain and re-point the bookends
+			next = other.next;
+			prev = other.prev;
+			next->prev = this;
+			prev->next = this;
+		}
+		// leave other as an initialized empty list, which is safe to iterate
+		other.next = &other;
+		other.prev = &other;
+	}
+};
+
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
 // we might have 3 engines), and the relative strength of the subsystem.  The #defines in model.h
 // for SUBSYSTEM_xxx will be used as indices into this array.
@@ -473,6 +547,7 @@ typedef struct ship_flag_description {
 extern ship_flag_name Ship_flag_names[];
 extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
+extern const size_t Num_ship_flag_descriptions;
 
 typedef struct wing_flag_name {
 	Ship::Wing_Flags flag;
@@ -487,6 +562,7 @@ typedef struct wing_flag_description {
 extern wing_flag_name Wing_flag_names[];
 extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
+extern const size_t Num_wing_flag_descriptions;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
@@ -587,13 +663,11 @@ public:
 	// END PACK
 
 	int	final_death_time;				// Time until big fireball starts
-	int	death_time;				// Time until big fireball starts
-	int	end_death_time;				// Time until big fireball starts
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
-	WarpEffect *warpin_effect;
-	WarpEffect *warpout_effect;
+	std::unique_ptr<WarpEffect> warpin_effect;
+	std::unique_ptr<WarpEffect> warpout_effect;
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -624,6 +698,9 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
+	
+	SCP_vector<guard_range_entry>
+		max_guard_ranges; // Optional clamp for guard engagement/resume ranges;
 
 
 	char	ship_name[NAME_LENGTH];
@@ -635,13 +712,13 @@ public:
 
 	ArrivalLocation arrival_location;
 	int	arrival_distance;		// how far away this ship should arrive
-	int	arrival_anchor;			// name of object this ship arrives near (or in front of)
+	anchor_t arrival_anchor;		// ship registry index of object this ship arrives near (or in front of)
 	int	arrival_path_mask;		// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;	// depart to hyperspace or someplace else (like docking bay)
-	int	departure_anchor;		// when docking bay -- index of ship to use
+	anchor_t departure_anchor;		// when docking bay -- ship registry index of ship to use
 	int departure_path_mask;	// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;			// sexpression to eval when departing
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
@@ -654,7 +731,7 @@ public:
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
-	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
+	ship_subsys_sentinel	subsys_list;						//	linked list of subsystems for this ship.
 	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
@@ -701,6 +778,7 @@ public:
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
 	int	group;								// group ship is in, or -1 if none.  Fred thing
+	SCP_string fred_layer = "Default";		// FRED view layer assignment
 	sound_handle death_roll_snd;            // id of death roll sound, may need to be stopped early
 	int	ship_list_index;					// index of ship in Ship_objs[] array
 
@@ -803,8 +881,6 @@ public:
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
-	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
 	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
 																//Sound index for thrusters
@@ -849,13 +925,35 @@ public:
 		BOTH,
 	};
 
+	// Ships support moving but not copying.  The defaulted moves are correct
+	// because the members carry the smarts: the subsys_list sentinel re-links
+	// its bookend nodes, and the owning pointers are unique_ptrs.  Callers must
+	// still fix up external back-references (Objects[].instance,
+	// Ai_info[].shipnum, etc.) -- see reassign_ship_slot in
+	// missioneditor/common.cpp.
+	// All the defaulted special member functions are defaulted in ship.cpp
+	// rather than here because they need the complete WarpEffect type.
+	// The moves are not declared noexcept because the implicit exception
+	// specification differs by standard library: MSVC and clang compute
+	// nothrow, but libstdc++ computes potentially-throwing for some members,
+	// making an explicit noexcept ill-formed there (a defaulted redeclaration
+	// may not strengthen the implicit specification).  The NOLINTs suppress
+	// clang-tidy's performance-noexcept-move-constructor, which only sees
+	// clang's computation.
+	ship();
+	~ship();
+	ship(const ship &) = delete;
+	ship &operator=(const ship &) = delete;
+	ship(ship &&);				// NOLINT(performance-noexcept-move-constructor)
+	ship &operator=(ship &&);	// NOLINT(performance-noexcept-move-constructor)
+
 	// reset to a completely blank ship
 	void clear();
 
     //Helper functions
 	bool is_arriving(ship::warpstage stage = ship::warpstage::BOTH, bool dock_leader_or_single = false) const;
-	inline bool is_departing() const { return flags[Ship::Ship_Flags::Depart_warp, Ship::Ship_Flags::Depart_dockbay]; }
-	inline bool cannot_warp_flags() const { return flags[Ship::Ship_Flags::Warp_broken, Ship::Ship_Flags::Warp_never, Ship::Ship_Flags::Disabled, Ship::Ship_Flags::No_subspace_drive]; }
+	inline bool is_departing() const { return flags.any_of(Ship::Ship_Flags::Depart_warp,Ship::Ship_Flags::Depart_dockbay); }
+	inline bool cannot_warp_flags() const { return flags.any_of(Ship::Ship_Flags::Warp_broken,Ship::Ship_Flags::Warp_never,Ship::Ship_Flags::Disabled,Ship::Ship_Flags::No_subspace_drive); }
 	inline bool is_dying_or_departing() const { return is_departing() || flags[Ship::Ship_Flags::Dying]; }
 
 	const char* get_display_name() const;
@@ -876,7 +974,6 @@ struct ai_target_priority {
     flagset<Ship::Info_Flags> sif_flags;
 	flagset<Weapon::Info_Flags> wif_flags;
 };
-
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
@@ -956,6 +1053,9 @@ struct ship_registry_entry
 	p_object* p_objp_or_null() const;
 	object* objp_or_null() const;
 	ship* shipp_or_null() const;
+
+	ship_info* sip() const;
+	int ship_class_index() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -965,8 +1065,12 @@ extern int ship_registry_get_index(const char *name);
 extern int ship_registry_get_index(const SCP_string &name);
 extern bool ship_registry_exists(const char *name);
 extern bool ship_registry_exists(const SCP_string &name);
+extern bool ship_registry_exists(int index);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
+extern const ship_registry_entry *ship_registry_get(int index);
+extern const ship_registry_entry *ship_registry_get(anchor_t anchor);
+extern void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_key);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1146,7 +1250,7 @@ class ship_info
 {
 public:
 	char		name[NAME_LENGTH];				// name for the ship
-	char		display_name[NAME_LENGTH];		// display another name for the ship
+	SCP_string	display_name;					// display another name for the ship
 	char		short_name[NAME_LENGTH];		// short name, for use in the editor?
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
@@ -1264,8 +1368,10 @@ public:
 	int			    generic_debris_spew_num;
 
 	// subsystem information
-	int		n_subsystems;						// this number comes from ships.tbl
-    model_subsystem *subsystems;				// see model.h for structure definition
+	// (n_subsystems describes the subsystems array; the wrapper keeps it
+	// consistent with the array by resetting it to 0 in a moved-from ship_info)
+	util::reset_on_move<int> n_subsystems;			// this number comes from ships.tbl
+	std::unique_ptr<model_subsystem[]> subsystems;	// see model.h for structure definition
 	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
@@ -1344,6 +1450,8 @@ public:
 
 	vec3d	closeup_pos;					// position for camera when using ship in closeup view (eg briefing and techroom)
 	float	closeup_zoom;					// zoom when using ship in closeup view (eg briefing and techroom)
+	std::optional<vec3d> icon_closeup_pos;	// icon-specific position for camera when using ship in closeup view
+	std::optional<float> icon_closeup_zoom;	// icon-specific zoom when using ship in closeup view
 
 	vec3d	closeup_pos_targetbox;			// position for camera when using ship in closeup view for hud target monitor
 	float	closeup_zoom_targetbox;			// zoom when using ship in closeup view for hud target monitor
@@ -1430,9 +1538,6 @@ public:
 
 	bool		draw_distortion;
 
-	int splodeing_texture;
-	char splodeing_texture_name[MAX_FILENAME_LEN];
-
 	// Goober5000
 	SCP_vector<texture_replace> replacement_textures;
 
@@ -1500,7 +1605,7 @@ public:
 
 	SCP_map<SCP_string, path_metadata> pathMetadata;
 
-	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
+	SCP_unordered_map<int, int> glowpoint_bank_override_map;	// key: glowpoint bank (-1 = all banks); value: index into the growable global glowpoint_bank_overrides vector
 
 	animation::ModelAnimationSet animations;
 	animation::ModelAnimationSet cockpit_animations;
@@ -1508,34 +1613,31 @@ public:
 	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
 	ship_info();
-	~ship_info();
+	~ship_info() = default;
 	void clone(const ship_info& other);
 
-	ship_info(ship_info&& other) noexcept;
+	ship_info(ship_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
+	ship_info &operator=(ship_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
 
-	ship_info &operator=(ship_info&& other) noexcept;
+	// Deleted so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
+	ship_info(const ship_info& other) = delete;
+	ship_info &operator=(const ship_info& other) = delete;
 
     //Helper functions
     
-    inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber, Ship::Info_Flags::Support, Ship::Info_Flags::Escapepod]; }
-    inline bool is_big_ship() const { return flags[Ship::Info_Flags::Cruiser, Ship::Info_Flags::Freighter, Ship::Info_Flags::Transport, Ship::Info_Flags::Corvette, Ship::Info_Flags::Gas_miner, Ship::Info_Flags::Awacs]; }
-    inline bool is_huge_ship() const  { return flags[Ship::Info_Flags::Capital, Ship::Info_Flags::Supercap, Ship::Info_Flags::Drydock, Ship::Info_Flags::Knossos_device]; }
-    inline bool is_flyable() const { return !(flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Sentrygun]); }	// AL 11-24-97: this useful to know for targeting reasons
-// note: code that previously used is_harmless() / SIF_HARMLESS now uses several flags defined in objecttypes.tbl
+    inline bool is_small_ship() const { return flags.any_of(Ship::Info_Flags::Fighter,Ship::Info_Flags::Bomber,Ship::Info_Flags::Support,Ship::Info_Flags::Escapepod); }
+	inline bool is_big_ship() const { return flags.any_of(Ship::Info_Flags::Cruiser,Ship::Info_Flags::Freighter,Ship::Info_Flags::Transport,Ship::Info_Flags::Corvette,Ship::Info_Flags::Gas_miner,Ship::Info_Flags::Awacs); }
+	inline bool is_huge_ship() const { return flags.any_of(Ship::Info_Flags::Capital,Ship::Info_Flags::Supercap,Ship::Info_Flags::Drydock,Ship::Info_Flags::Knossos_device); }
+	inline bool is_flyable() const { return flags.none_of(Ship::Info_Flags::Cargo,Ship::Info_Flags::Navbuoy,Ship::Info_Flags::Sentrygun); } // AL 11-24-97: this useful to know for targeting reasons
+	  // note: code that previously used is_harmless() / SIF_HARMLESS now uses several flags defined in objecttypes.tbl
 //	inline bool is_harmless() const { return flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Escapepod]; }		// AL 12-3-97: ships that are not a threat
-    inline bool is_fighter_bomber() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber]; }
+	inline bool is_fighter_bomber() const { return flags.any_of(Ship::Info_Flags::Fighter,Ship::Info_Flags::Bomber); }
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }
 
 	const char* get_display_name() const;
 	bool has_display_name() const;
 
-private:
-	void move(ship_info&& other);
-
-	// Private and unimplemented so nobody tries to use them by accident.
-	ship_info(const ship_info& other);
-	const ship_info &operator=(const ship_info& other);
 };
 
 extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
@@ -1572,6 +1674,8 @@ extern SCP_vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
+	SCP_string display_name;
+
 	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
@@ -1598,13 +1702,13 @@ typedef struct wing {
 
 	ArrivalLocation arrival_location;			// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
-	int	arrival_anchor;						// name of object this ship arrives near (or in front of)
+	anchor_t arrival_anchor;						// ship registry index of object this wing arrives near (or in front of)
 	int	arrival_path_mask;					// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	DepartureLocation departure_location;
-	int	departure_anchor;						// name of object that we depart to (in case of dock bays)
+	anchor_t departure_anchor;						// ship registry index of object that we depart to (in case of dock bays)
 	int departure_path_mask;				// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;
 	int	departure_delay;
@@ -1631,6 +1735,9 @@ typedef struct wing {
 
 	// reset to a completely blank wing
 	void clear();
+
+	const char *get_display_name() const;
+	bool has_display_name() const;
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1645,9 +1752,10 @@ extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
 
-extern int Num_reinforcements;
 extern SCP_vector<ship_info> Ship_info;
-extern reinforcements Reinforcements[MAX_REINFORCEMENTS];
+extern SCP_vector<const char *> Ship_class_names;
+
+extern SCP_vector<reinforcements> Reinforcements;
 
 // structure definition for ship type counts.  Used to give a count of the number of ships
 // of a particular type, and the number of times that a ship of that particular type has been
@@ -1673,13 +1781,14 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
-#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
-#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
+#define WING_INDEX(wingp) (static_cast<int>((wingp)-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>((shipp)-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>((ship_entry)-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
+extern void ship_level_close();		// called after the end of each level
 
 //returns -1 if failed
 extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
@@ -1687,18 +1796,21 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
+extern bool ship_render_player_ship_casts_shadow_on_cockpit();
+extern bool ship_render_player_has_closeup_visuals();
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
 
-#define SHIP_VANISHED			(1<<0)
-#define SHIP_DESTROYED			(1<<1)
-#define SHIP_DEPARTED_WARP		(1<<2)
-#define SHIP_DEPARTED_BAY		(1<<3)
-#define SHIP_DEPARTED			( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
-#define SHIP_DESTROYED_REDALERT	(1<<4)
-#define SHIP_DEPARTED_REDALERT	(1<<5)
+#define SHIP_VANISHED               (1<<0)
+#define SHIP_DESTROYED              (1<<1)
+#define SHIP_DEPARTED_WARP          (1<<2)
+#define SHIP_DEPARTED_BAY           (1<<3)
+#define SHIP_DEPARTED               ( SHIP_DEPARTED_BAY | SHIP_DEPARTED_WARP )
+#define SHIP_DESTROYED_REDALERT     (1<<4)
+#define SHIP_DEPARTED_REDALERT      (1<<5)
+#define SHIP_PRESENT_AT_MISSION_END (1<<6)
 
 /**
  * @brief Deletes and de-inits a ship.
@@ -1721,7 +1833,11 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
+extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
+extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
+extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
+extern bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank);
 bool ship_start_secondary_fire(object* objp);
 bool ship_stop_secondary_fire(object* objp);
 extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
@@ -1767,8 +1883,13 @@ extern int wing_name_lookup(const char *name, int ignore_count = 0);
 
 extern bool wing_has_yet_to_arrive(const wing *wingp);
 
-// for generating a ship name for arbitrary waves/indexes of that wing... correctly handles the # character
-extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int index, bool *needs_display_name = nullptr);
+// for generating a ship name for arbitrary waves/indexes of that wing
+extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
+extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src);
+
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.
@@ -1973,7 +2094,7 @@ int ship_get_turret_type(ship_subsys *subsys);
 int ship_get_by_signature(int sig);
 
 // get the team of a reinforcement item
-int ship_get_reinforcement_team(int r_index);
+int ship_get_reinforcement_team(const reinforcements &reinforcement);
 
 // page in bitmaps for all ships on a given level
 void ship_page_in();
@@ -2019,7 +2140,7 @@ extern void ship_subsystem_set_new_ai_class(ship_subsys *ss, int new_ai_class);
 extern void wing_load_squad_bitmap(wing *w);
 
 // Goober5000 - needed by new hangar depart code
-extern bool ship_has_dock_bay(int shipnum);
+extern bool ship_has_hangar_bay(int shipnum);
 extern bool ship_useful_for_departure(int shipnum, int path_mask = 0);
 extern int ship_get_ship_for_departure(int team);
 

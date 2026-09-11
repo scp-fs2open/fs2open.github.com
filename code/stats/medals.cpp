@@ -315,9 +315,9 @@ void parse_medals_table(const char* filename)
 					continue;
 				}
 
-				Medals.push_back(medal_t);
+				Medals.push_back(std::move(medal_t));
 				medal_p = &Medals[Medals.size() - 1];
-				Medal_display_info.push_back(display_t);
+				Medal_display_info.push_back(std::move(display_t));
 				display_p = &Medal_display_info[Medal_display_info.size() - 1];
 			}
 

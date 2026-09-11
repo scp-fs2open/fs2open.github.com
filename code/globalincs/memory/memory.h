@@ -4,8 +4,6 @@
 #include <cstddef>
 #include <cstdlib>
 
-#include "globalincs/pstypes.h"
-
 namespace memory
 {
 	struct quiet_alloc_t { quiet_alloc_t(){} };

@@ -4,6 +4,8 @@
 #include <globalincs/linklist.h>
 #include <ship/ship.h>
 #include <math/bitarray.h>
+#include <jumpnode/jumpnode.h>
+#include <prop/prop.h>
 
 namespace fso::fred::dialogs {
 
@@ -40,19 +42,22 @@ void ObjectOrientEditorDialogModel::initializeData()
 					_pointToObjectList.emplace_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
 					break;
 				case OBJ_WAYPOINT: {
-					int waypoint_num;
-					waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-					Assertion(wp_list != nullptr, "Waypoint list was nullptr!");
-					sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-
+					waypoint_stuff_name(text, ptr->instance);
 					_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
 					break;
 				}
-				case OBJ_POINT:
-				case OBJ_JUMP_NODE:
+				case OBJ_JUMP_NODE: {
+					CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(ptr));
+					if (jnp)
+						_pointToObjectList.emplace_back(ObjectEntry(jnp->GetName(), OBJ_INDEX(ptr)));
+					break;
+				}
+				case OBJ_PROP:
+					if (Props[ptr->instance].has_value())
+						_pointToObjectList.emplace_back(ObjectEntry(Props[ptr->instance]->prop_name, OBJ_INDEX(ptr)));
 					break;
 				default:
-					Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
+					UNREACHABLE("Unknown object type %d in Object Orient Dialog!", ptr->type); // unknown object type
 			}
 		}
 
@@ -68,6 +73,7 @@ void ObjectOrientEditorDialogModel::initializeData()
 	}
 
 	modelChanged();
+	_modified = false;
 }
 
 void ObjectOrientEditorDialogModel::updateObject(object* ptr)
@@ -95,19 +101,6 @@ void ObjectOrientEditorDialogModel::updateObject(object* ptr)
 		vm_vector_2_matrix(&m, &v, nullptr, nullptr);
 		ptr->orient = m;
 	}
-}
-
-// Also in objectorient.cpp in FRED. TODO Would be nice if this were somewhere common
-float ObjectOrientEditorDialogModel::normalize_degrees(float deg)
-{
-	while (deg < -180.0f)
-		deg += 360.0f;
-	while (deg > 180.0f)
-		deg -= 360.0f;
-	// collapse negative zero
-	if (deg == -0.0f)
-		deg = 0.0f;
-	return deg;
 }
 
 float ObjectOrientEditorDialogModel::round1(float v)
@@ -179,7 +172,7 @@ bool ObjectOrientEditorDialogModel::apply()
 
 	// ----- Transform mode -----
 	// If multiple marked and using Relative to Origin, move/rotate the origin first, then
-	// bring everyone else along by the origin’s delta rotation and position.
+	// bring everyone else along by the origin's delta rotation and position.
 	matrix origin_rotation = vmd_identity_matrix;
 	vec3d origin_prev_pos = vmd_zero_vector;
 

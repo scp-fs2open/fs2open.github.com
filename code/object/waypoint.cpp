@@ -20,9 +20,9 @@ const int INVALID_WAYPOINT_POSITION = INT_MAX;
 //********************CLASS MEMBERS********************
 waypoint::waypoint()
 {
-	this->m_position.xyz.x = 0.0f;
-	this->m_position.xyz.y = 0.0f;
-	this->m_position.xyz.z = 0.0f;
+	this->m_parsed_position.xyz.x = 0.0f;
+	this->m_parsed_position.xyz.y = 0.0f;
+	this->m_parsed_position.xyz.z = 0.0f;
 
 	this->m_objnum = -1;
 }
@@ -31,21 +31,19 @@ waypoint::waypoint(const vec3d *position)
 {
 	Assert(position != NULL);
 
-	this->m_position.xyz.x = position->xyz.x;
-	this->m_position.xyz.y = position->xyz.y;
-	this->m_position.xyz.z = position->xyz.z;
+	this->m_parsed_position.xyz.x = position->xyz.x;
+	this->m_parsed_position.xyz.y = position->xyz.y;
+	this->m_parsed_position.xyz.z = position->xyz.z;
 
 	this->m_objnum = -1;
 }
 
-waypoint::~waypoint()
-{
-	// nothing to do
-}
-
 const vec3d *waypoint::get_pos() const
 {
-	return &m_position;
+	if (m_objnum >= 0)
+		return &Objects[m_objnum].pos;
+
+	return &m_parsed_position;
 }
 
 int waypoint::get_objnum() const
@@ -90,12 +88,19 @@ int waypoint::get_index() const
 void waypoint::set_pos(const vec3d *pos)
 {
 	Assert(pos != NULL);
-	this->m_position = *pos;
+
+	if (m_objnum >= 0)
+		Objects[m_objnum].pos = *pos;
+	else
+		this->m_parsed_position = *pos;
 }
 
 waypoint_list::waypoint_list()
 {
 	this->m_name[0] = '\0';
+	this->m_no_draw_lines = false;
+	this->m_has_custom_color = false;
+	this->m_color_r = this->m_color_g = this->m_color_b = 255;
 }
 
 waypoint_list::waypoint_list(const char *name)
@@ -103,11 +108,9 @@ waypoint_list::waypoint_list(const char *name)
 	Assert(name != NULL);
 	Assert(find_matching_waypoint_list(name) == NULL);
 	strcpy_s(this->m_name, name);
-}
-
-waypoint_list::~waypoint_list()
-{
-	// nothing to do
+	this->m_no_draw_lines = false;
+	this->m_has_custom_color = false;
+	this->m_color_r = this->m_color_g = this->m_color_b = 255;
 }
 
 const char *waypoint_list::get_name() const
@@ -137,9 +140,53 @@ void waypoint_list::set_name(const char *name)
 	this->m_name[len] = '\0';
 }
 
+void waypoint_list::set_no_draw_lines(bool val)
+{
+	m_no_draw_lines = val;
+}
+
+void waypoint_list::set_color(int r, int g, int b)
+{
+	m_color_r = r;
+	m_color_g = g;
+	m_color_b = b;
+	m_has_custom_color = true;
+}
+
+void waypoint_list::clear_color()
+{
+	m_has_custom_color = false;
+}
+
+bool waypoint_list::get_no_draw_lines() const
+{
+	return m_no_draw_lines;
+}
+
+bool waypoint_list::get_has_custom_color() const
+{
+	return m_has_custom_color;
+}
+
+int waypoint_list::get_color_r() const
+{
+	return m_color_r;
+}
+
+int waypoint_list::get_color_g() const
+{
+	return m_color_g;
+}
+
+int waypoint_list::get_color_b() const
+{
+	return m_color_b;
+}
+
 //********************FUNCTIONS********************
 void waypoint_level_close()
 {
+	// Clear all waypoint lists and all their waypoints.  Note that this can happen either before or after objects are cleaned up.
 	Waypoint_lists.clear();
 }
 
@@ -391,6 +438,50 @@ void waypoint_find_unique_name(char *dest_name, int start_index)
 		// valid name if no collision
 		collision = find_matching_waypoint_list(dest_name);
 	} while (collision != NULL);
+}
+
+void waypoint_stuff_name(char *dest, const char *waypoint_list_name, int waypoint_num)
+{
+	constexpr size_t name_max_len = NAME_LENGTH - 3 - 1 - 1;	// a colon, three digits, and a null terminator
+
+	if (waypoint_num < 1)
+	{
+		Error(LOCATION, "A waypoint number must be at least 1!");
+		*dest = 0;
+		return;
+	}
+	if (waypoint_num >= 1000)
+	{
+		Error(LOCATION, "This waypoint number has more than three digits!  If you actually need this, first convince a coder that you are sane and then ask for the limit to be increased.");
+		*dest = 0;
+		return;
+	}
+
+	auto name_len = std::min(strlen(waypoint_list_name), name_max_len);
+	strncpy(dest, waypoint_list_name, name_len);
+	sprintf(dest + name_len, ":%d", waypoint_num);
+}
+
+void waypoint_stuff_name(SCP_string &dest, const char *waypoint_list_name, int waypoint_num)
+{
+	constexpr size_t name_max_len = NAME_LENGTH - 3 - 1 - 1;	// a colon, three digits, and a null terminator
+
+	if (waypoint_num < 1)
+	{
+		Error(LOCATION, "A waypoint number must be at least 1!");
+		dest = "";
+		return;
+	}
+	if (waypoint_num >= 1000)
+	{
+		Error(LOCATION, "This waypoint number has more than three digits!  If you actually need this, first convince a coder that you are sane and then ask for the limit to be increased.");
+		dest = "";
+		return;
+	}
+
+	dest.assign(waypoint_list_name, std::min(strlen(waypoint_list_name), name_max_len));
+	dest += ":";
+	dest.append(std::to_string(waypoint_num));
 }
 
 void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)

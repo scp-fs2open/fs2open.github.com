@@ -1,0 +1,633 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::PreferencesDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::PreferencesDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>500</width>
+    <height>420</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Preferences</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="generalTab">
+      <attribute name="title">
+       <string>General</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="generalLayout">
+       <item>
+        <widget class="QGroupBox" name="appearanceGroup">
+         <property name="title">
+          <string>Appearance</string>
+         </property>
+         <layout class="QFormLayout" name="appearanceLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="themeLabel">
+            <property name="text">
+             <string>Theme:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="themeCombo">
+            <property name="toolTip">
+             <string>Overall color theme for the QtFRED interface. Follow system tracks your operating system's light/dark setting and switches automatically when it changes.</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Follow system</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Light</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Dark</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="toolbarIconSizeLabel">
+            <property name="text">
+             <string>Toolbar icon size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QComboBox" name="toolbarIconSizeCombo">
+            <property name="toolTip">
+             <string>Size of the icons shown on the editor toolbars.</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Small (16px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Medium (24px)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Large (32px)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="outlineLodLabel">
+            <property name="text">
+             <string>Outline detail:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QComboBox" name="outlineLodCombo">
+            <property name="toolTip">
+             <string>Level of detail used when drawing model outlines in the viewport. Lower detail draws faster.</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>LOD 0 (highest detail)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>LOD 1</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>LOD 2</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>LOD 3</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>LOD 4 (lowest detail)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="dataMenuStyleLabel">
+            <property name="text">
+             <string>Long list menu style:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QComboBox" name="dataMenuStyleCombo">
+            <property name="toolTip">
+             <string>Controls how menus with long lists are presented: SEXP &quot;Add Data&quot; / &quot;Replace Data&quot; submenus, object Select menus, and the Create Ship/Prop submenus. Auto uses Columns for short lists and Searchable once a list would fill more than half the screen.</string>
+            </property>
+            <item>
+             <property name="text">
+              <string>Auto</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Columns</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Searchable</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QLabel" name="labelFontScaleLabel">
+            <property name="text">
+             <string>Viewport label size:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QDoubleSpinBox" name="labelFontScaleSpin">
+            <property name="toolTip">
+             <string>Scale factor applied to text labels drawn in the viewport (ship names, ship classes, coordinates, distances, and subsystem labels). 1.0 is the default size.</string>
+            </property>
+            <property name="decimals">
+             <number>1</number>
+            </property>
+            <property name="minimum">
+             <double>0.500000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>4.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.100000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.000000000000000</double>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="missionEditingGroup">
+         <property name="title">
+          <string>Mission Editing</string>
+         </property>
+         <layout class="QFormLayout" name="missionEditingLayout">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="offerAutosaveRecovery">
+            <property name="toolTip">
+             <string>When opening a mission, offer to restore a newer autosave if one is found.</string>
+            </property>
+            <property name="text">
+             <string>Offer to load autosave on mission open</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="autosaveIntervalLabel">
+            <property name="text">
+             <string>Autosave interval (seconds, 0 = disabled):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="autosaveIntervalSeconds">
+            <property name="toolTip">
+             <string>Time between automatic mission saves, in seconds. Set to 0 to disable autosave.</string>
+            </property>
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>3600</number>
+            </property>
+            <property name="singleStep">
+             <number>30</number>
+            </property>
+            <property name="value">
+             <number>300</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QCheckBox" name="moveShipsWhenUndocking">
+            <property name="toolTip">
+             <string>When undocking ships, automatically move them apart so they no longer overlap.</string>
+            </property>
+            <property name="text">
+             <string>Move Ships When Undocking</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QCheckBox" name="alwaysSaveDisplayNames">
+            <property name="toolTip">
+             <string>Always write each object's $Display Name to the mission file, even when it matches the object's name.</string>
+            </property>
+            <property name="text">
+             <string>Always save Display Names</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QCheckBox" name="createBakOnSave">
+            <property name="toolTip">
+             <string>Keep a .bak backup copy of the previous mission file each time you save.</string>
+            </property>
+            <property name="text">
+             <string>Create .bak file when saving a mission</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="sexpNumberEveryNLabel">
+            <property name="text">
+             <string>Number every Nth argument in SEXP trees (0 = disabled):</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QSpinBox" name="sexpNumberEveryN">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>999</number>
+            </property>
+            <property name="singleStep">
+             <number>1</number>
+            </property>
+            <property name="value">
+             <number>5</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="errorCheckerGroup">
+         <property name="title">
+          <string>Error Checker</string>
+         </property>
+         <layout class="QVBoxLayout" name="errorCheckerLayout">
+          <item>
+           <widget class="QCheckBox" name="checkPotentialIssues">
+            <property name="toolTip">
+             <string>Include non-fatal potential issues (warnings) when running the mission error checker.</string>
+            </property>
+            <property name="text">
+             <string>Check potential issues</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="applyAutoCorrections">
+            <property name="toolTip">
+             <string>Let the error checker automatically fix problems it is able to correct on its own.</string>
+            </property>
+            <property name="text">
+             <string>Apply auto-corrections</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="sexpHelpGroup">
+         <property name="title">
+          <string>Show SEXP Help in</string>
+         </property>
+         <layout class="QVBoxLayout" name="sexpHelpLayout">
+          <item>
+           <widget class="QCheckBox" name="showSexpHelpMissionEvents">
+            <property name="toolTip">
+             <string>Show the SEXP operator help panel in the Mission Events editor.</string>
+            </property>
+            <property name="text">
+             <string>Mission Events</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showSexpHelpMissionGoals">
+            <property name="toolTip">
+             <string>Show the SEXP operator help panel in the Mission Goals editor.</string>
+            </property>
+            <property name="text">
+             <string>Mission Goals</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showSexpHelpMissionCutscenes">
+            <property name="toolTip">
+             <string>Show the SEXP operator help panel in the Mission Cutscenes editor.</string>
+            </property>
+            <property name="text">
+             <string>Mission Cutscenes</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showSexpHelpShipEditor">
+            <property name="toolTip">
+             <string>Show the SEXP operator help panel in the Ship editor.</string>
+            </property>
+            <property name="text">
+             <string>Ship Editor</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="showSexpHelpWingEditor">
+            <property name="toolTip">
+             <string>Show the SEXP operator help panel in the Wing editor.</string>
+            </property>
+            <property name="text">
+             <string>Wing Editor</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="generalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="gridTab">
+      <attribute name="title">
+       <string>Grid</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="gridLayout">
+       <item>
+        <layout class="QHBoxLayout" name="planeLayout">
+         <item>
+          <widget class="QRadioButton" name="xyPlaneRadio">
+           <property name="toolTip">
+            <string>Orient the reference grid on the world XY plane.</string>
+           </property>
+           <property name="text">
+            <string>XY Plane</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="xzPlaneRadio">
+           <property name="toolTip">
+            <string>Orient the reference grid on the world XZ plane (the default).</string>
+           </property>
+           <property name="text">
+            <string>XZ Plane</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="yzPlaneRadio">
+           <property name="toolTip">
+            <string>Orient the reference grid on the world YZ plane.</string>
+           </property>
+           <property name="text">
+            <string>YZ Plane</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="planeSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="gridCenterGroup">
+         <property name="title">
+          <string>Grid Center</string>
+         </property>
+         <layout class="QFormLayout" name="gridCenterLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelX">
+            <property name="text">
+             <string>X:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="gridCenterX">
+            <property name="toolTip">
+             <string>X coordinate of the grid's center point in the world.</string>
+            </property>
+            <property name="minimum">
+             <number>-32768</number>
+            </property>
+            <property name="maximum">
+             <number>32767</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="labelY">
+            <property name="text">
+             <string>Y:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="gridCenterY">
+            <property name="toolTip">
+             <string>Y coordinate of the grid's center point in the world.</string>
+            </property>
+            <property name="minimum">
+             <number>-32768</number>
+            </property>
+            <property name="maximum">
+             <number>32767</number>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelZ">
+            <property name="text">
+             <string>Z:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QSpinBox" name="gridCenterZ">
+            <property name="toolTip">
+             <string>Z coordinate of the grid's center point in the world.</string>
+            </property>
+            <property name="minimum">
+             <number>-32768</number>
+            </property>
+            <property name="maximum">
+             <number>32767</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="resetGridButton">
+         <property name="toolTip">
+          <string>Reset the grid plane and center back to their defaults.</string>
+         </property>
+         <property name="text">
+          <string>Reset to Default</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="gridSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="controlsTab">
+      <attribute name="title">
+       <string>Controls</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="controlsLayout">
+       <item>
+        <widget class="QGroupBox" name="mouseOrbitGroup">
+         <property name="title">
+          <string>Mouse Orbit Camera</string>
+         </property>
+         <layout class="QVBoxLayout" name="mouseOrbitLayout">
+          <item>
+           <widget class="QCheckBox" name="invertOrbitX">
+            <property name="toolTip">
+             <string>Invert the horizontal direction of mouse orbit rotation.</string>
+            </property>
+            <property name="text">
+             <string>Invert X axis (horizontal)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="invertOrbitY">
+            <property name="toolTip">
+             <string>Invert the vertical direction of mouse orbit rotation.</string>
+            </property>
+            <property name="text">
+             <string>Invert Y axis (vertical)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QWidget" name="controlsFormWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="resetDefaultsButton">
+         <property name="toolTip">
+          <string>Reset all control key bindings back to their defaults.</string>
+         </property>
+         <property name="text">
+          <string>Reset to Defaults</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="controlsSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Close</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>fso::fred::dialogs::PreferencesDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>316</x>
+     <y>390</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>286</x>
+     <y>410</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

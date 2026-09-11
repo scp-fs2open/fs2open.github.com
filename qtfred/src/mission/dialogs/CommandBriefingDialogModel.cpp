@@ -39,6 +39,7 @@ void CommandBriefingDialogModel::initializeData()
 
 	_currentTeam = 0;  // default to the first team
 	_currentStage = 0; // default to the first stage
+	_modified = false;
 }
 
 void CommandBriefingDialogModel::gotoPreviousStage()
@@ -179,7 +180,7 @@ bool CommandBriefingDialogModel::getMissionIsMultiTeam()
 
 void CommandBriefingDialogModel::stopSpeech()
 {
-	if (_waveId >= -1) {
+	if (_waveId >= 0) {
 		audiostream_close_file(_waveId, false);
 		_waveId = -1;
 	}
