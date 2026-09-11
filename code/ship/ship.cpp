@@ -9791,31 +9791,31 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipp->really_final_death_time = timestamp(0);
 				polymodel *pm = model_get(sip->model_num);
 				shipp->end_death_time = timestamp((int) pm->core_radius);
+			} else if (sip->disable_main_fireball) {
+				shipp->end_death_time = shipp->really_final_death_time = timestamp( 0 );
 			} else {
 				float explosion_life = 0.0f;
-				if (!sip->disable_main_fireball) {
-					// else, just a single big fireball
-					float big_rad;
-					int fireball_objnum, fireball_type, default_fireball_type;
-					big_rad = objp->radius*1.75f;
-	
-					default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
-					if (knossos_ship) {
-						big_rad = objp->radius * 1.2f;
-						default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
-					}
-					//SUSHI: Option to override radius of big fireball
-					if (Ship_info[shipp->ship_info_index].big_exp_visual_rad >= 0)
-						big_rad = Ship_info[shipp->ship_info_index].big_exp_visual_rad;
-	
-					fireball_type = fireball_ship_explosion_type(sip);
-					if(fireball_type < 0) {
-						fireball_type = default_fireball_type;
-					}
-					fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), big_rad, false, &objp->phys_info.vel );
-					if ( fireball_objnum >= 0 )	{
-						explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
-					}
+				// else, just a single big fireball
+				float big_rad;
+				int fireball_objnum, fireball_type, default_fireball_type;
+				big_rad = objp->radius*1.75f;
+
+				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+				if (knossos_ship) {
+					big_rad = objp->radius * 1.2f;
+					default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
+				}
+				//SUSHI: Option to override radius of big fireball
+				if (Ship_info[shipp->ship_info_index].big_exp_visual_rad >= 0)
+					big_rad = Ship_info[shipp->ship_info_index].big_exp_visual_rad;
+
+				fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = default_fireball_type;
+				}
+				fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), big_rad, false, &objp->phys_info.vel );
+				if ( fireball_objnum >= 0 )	{
+					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 				}
 
 				// JAS:  I put in all this code because of an item on my todo list that
