@@ -63,6 +63,14 @@ namespace io
 			@returns A pointer to the shared SpaceMouse instance, or nullptr if no supported device is present.
 			*/
 			static SpaceMouse* getSharedSpaceMouse(int pollingFrequency = 10);
+
+			/*
+			@brief Closes the shared SpaceMouse instance, if one was opened.
+
+			Must be called before HIDAPI is shut down, since the device handle may not outlive it.
+			Safe to call repeatedly and when no device was ever opened.
+			*/
+			static void shutdownSharedSpaceMouse();
 		};
 	}
 }
