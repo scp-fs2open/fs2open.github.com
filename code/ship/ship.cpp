@@ -15622,18 +15622,13 @@ int ship_find_num_turrets(object *objp)
 bool turret_has_weapon(const ship_subsys *ssp, int wi_index)
 {
 	const ship_weapon *swp = &ssp->weapons;
-	for ( auto& i : swp->primary_bank_weapons ) {
-		if (i == wi_index) {
-			return true;
-		}
+	if ( std::any_of(std::begin(swp->primary_bank_weapons), std::end(swp->primary_bank_weapons), [wi_index](int i) { return i == wi_index; } ) ) {
+		return true;
+	} else if ( std::any_of(std::begin(swp->secondary_bank_weapons), std::end(swp->secondary_bank_weapons), [wi_index](int i) { return i == wi_index; } ) ) {
+		return true;
+	} else {
+		return false;
 	}
-	for ( auto& i : swp->secondary_bank_weapons ) {
-		if (i == wi_index) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 float ship_get_turret_type_aggregate_hits(const ship *shipp, int wi_index)
