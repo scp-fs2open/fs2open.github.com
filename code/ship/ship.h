@@ -1630,6 +1630,8 @@ public:
 	inline bool is_flyable() const { return flags.none_of(Ship::Info_Flags::Cargo,Ship::Info_Flags::Navbuoy,Ship::Info_Flags::Sentrygun); } // AL 11-24-97: this useful to know for targeting reasons
 	  // note: code that previously used is_harmless() / SIF_HARMLESS now uses several flags defined in objecttypes.tbl
 //	inline bool is_harmless() const { return flags[Ship::Info_Flags::Cargo, Ship::Info_Flags::Navbuoy, Ship::Info_Flags::Escapepod]; }		// AL 12-3-97: ships that are not a threat
+	inline bool is_fighter() const { return flags[Ship::Info_Flags::Fighter]; }
+	inline bool is_bomber() const { return flags[Ship::Info_Flags::Bomber]; }
 	inline bool is_fighter_bomber() const { return flags.any_of(Ship::Info_Flags::Fighter,Ship::Info_Flags::Bomber); }
     inline bool is_big_or_huge() const { return is_big_ship() || is_huge_ship(); }
     inline bool avoids_shockwaves() const { return is_small_ship(); }

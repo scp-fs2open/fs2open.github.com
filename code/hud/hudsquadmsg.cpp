@@ -123,8 +123,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define ID1		1
 #define ID2		2
 
-
-SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
+SCP_vector<std::pair<CommOrderType, SCP_string>> Comm_order_types;
 
 int player_order::orderingCounter = 0;
 
@@ -158,25 +157,47 @@ const SCP_set<size_t> target_messages = []() {
 	return setunion;
 }();
 
+bool is_smallcraft_flavor(ship_info *sinfop, SmallCraftFlavor flavor) {
+	switch (flavor) {
+		case SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS:
+			return sinfop->is_fighter_bomber();
+			break;
+		case SmallCraftFlavor::ALL_FIGHTERS:
+			return sinfop->is_fighter();
+			break;
+		case SmallCraftFlavor::ALL_BOMBERS:
+			return sinfop->is_bomber();
+			break;
+	}
+	UNREACHABLE("Invalid SmallCraftFlavor of %i in 'is_smallcraft_flavor()'", flavor);
+	return false;
+}
+
 
 void hud_init_comm_orders()
 {
 	int i;
 
-	const char *temp_comm_order_types[] =
-	{
-		XSTR("Ships", 293),
-		XSTR("Wings", 294),
-		XSTR("All Fighters", 295),
-		XSTR("Reinforcements", 296),
-		XSTR("Rearm/Repair Subsys", 297),
-		XSTR("Abort Rearm", 298)
-	};
-
-	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
-	{
-		Comm_order_types[i] = temp_comm_order_types[i];
+	if (!Parsed_comm_orders.empty()) {
+		for (i = 0; i < sz2i(Parsed_comm_orders.size()); i++)	{
+			Comm_order_types.emplace_back(static_cast<CommOrderType>(Parsed_comm_orders[i].first), Parsed_comm_orders[i].second);
+		}
+	} else {
+		std::array<std::pair<CommOrderType, SCP_string>, NUM_DEFAULT_COMM_ORDER_TYPES> Default_comm_order_types =
+		{
+			std::pair(CommOrderType::MSG_SHIPS, XSTR("Ships", 293)),
+			std::pair(CommOrderType::MSG_WINGS, XSTR("Wings", 294)),
+			std::pair(CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, XSTR("All Fighters", 295)),
+			std::pair(CommOrderType::REINFORCEMENTS, XSTR("Reinforcements", 296)),
+			std::pair(CommOrderType::REARM_REPAIR, XSTR("Rearm/Repair Subsys", 297)),
+			std::pair(CommOrderType::ABORT_REARM, XSTR("Abort Rearm", 298)),
+		};
+		for (i = 0; i < sz2i(Default_comm_order_types.size()); i++)	{
+			Comm_order_types.emplace_back(Default_comm_order_types[i]);
+		}
 	}
+
+
 
 	for (auto& order : Player_orders)
 		order.localize();
@@ -269,7 +290,7 @@ void hud_squadmsg_end()
 
 // function which returns true if there are fighters/bombers on the players team in the mission
 // In debug versions, we will allow messaging to enemies
-bool hud_squadmsg_exist_fighters( )
+bool hud_squadmsg_exist_fighters_bombers(SmallCraftFlavor flavor)
 {
 	ship_obj *so;
 	object *objp;
@@ -282,11 +303,12 @@ bool hud_squadmsg_exist_fighters( )
 			continue;
 
 		shipp = &Ships[objp->instance];
-		Assertion(shipp->objnum != -1, "hud_squadmsg_exist_fighters() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
+		Assertion(shipp->objnum != -1, "hud_squadmsg_exist_fighters_bombers() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
 		// ship must be a fighter/bomber
-		if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
+		if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 			continue;
+		}
 
 		// this ship satisfies everything
 		if (hud_squadmsg_ship_valid(shipp, objp))
@@ -986,7 +1008,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 }
 
 // function to send an order to all fighters/bombers.
-void hud_squadmsg_send_to_all_fighters( int command, int player_num )
+void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftFlavor flavor )
 {
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
@@ -1019,7 +1041,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	if ( command == IGNORE_TARGET_ITEM ) {
 		// if we were messaging a ship directly, set flag to send no messages.  We will send one
 		// specifically from the ship player is ordering
-		if ( (Msg_instance != MESSAGE_ALL_FIGHTERS) && (Squad_msg_mode == SM_MODE_SHIP_COMMAND) ) {
+		if ( (Msg_instance != MESSAGE_ALL_FIGHTERS_BOMBERS) && (Squad_msg_mode == SM_MODE_SHIP_COMMAND) ) {
 			do_ship = 1;
 			send_message = 0;
 		}
@@ -1049,8 +1071,9 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[Wings[i].special_ship_ship_info_index].is_fighter_bomber()) )
+		if (!is_smallcraft_flavor(&Ship_info[Wings[i].special_ship_ship_info_index], flavor)) {
 			continue;
+		}
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
 		// the set of orders accepted for the wing leader
@@ -1085,8 +1108,9 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// don't send message to non fighter wings
-		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
+		if (!is_smallcraft_flavor(&Ship_info[shipp->ship_info_index], flavor)) {
 			continue;
+		}
 
 		// skip departing/dying ships
 		if ( shipp->is_dying_or_departing() )
@@ -1112,7 +1136,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	// guy we orders
 	/* Goober5000 - yet again with the weird logic
 	if ( do_ship ) {
-		Assert( Msg_instance != MESSAGE_ALL_FIGHTERS );
+		Assert( Msg_instance != MESSAGE_ALL_FIGHTERS_BOMBERS );
 		hud_squadmsg_send_ship_command( Msg_instance, command, 1 );
 	}
 	*/
@@ -1737,7 +1761,7 @@ void hud_squadmsg_type_select( )
 {
 	int k, i;
 
-	int num_order_types = NUM_COMM_ORDER_TYPES;
+	int num_order_types = sz2i(Comm_order_types.size());
 
 	int lua_order_count = 0;
 
@@ -1753,10 +1777,10 @@ void hud_squadmsg_type_select( )
 	for (i = 0; i < num_order_types; i++)
 	{
 
-		if (i < NUM_COMM_ORDER_TYPES) {
-			MsgItems.push_back({0, 1, Comm_order_types[i]}); // assume active
+		if (i < sz2i(Comm_order_types.size())) {
+			MsgItems.push_back({Comm_order_types[i].first, 1, Comm_order_types[i].second}); // assume active
 		} else {
-			MsgItems.push_back({0, 1, lua_cat_list[i - NUM_COMM_ORDER_TYPES]}); // assume active
+			MsgItems.push_back({0, 1, lua_cat_list[i - sz2i(Comm_order_types.size())]}); // assume active
 		}
 	}
 
@@ -1769,77 +1793,62 @@ void hud_squadmsg_type_select( )
 		goto do_main_menu;
 	}
 
-	// based on ship counts, wing counts, shortcut active, grey out possible menu choices
-	if ( !hud_squadmsg_count_ships(0) )
-		MsgItems[TYPE_SHIP_ITEM].active = 0;
-
-	if ( !hud_squadmsg_count_wings(0) )
-		MsgItems[TYPE_WING_ITEM].active = 0;
-
-	// check to be sure that we have some fighters/bombers on the players team that we
-	// can message
-	if ( !hud_squadmsg_exist_fighters() ){
-		MsgItems[TYPE_ALL_FIGHTERS_ITEM].active = 0;
+	for ( auto item : MsgItems ) {
+		if (((hud_communications_state(Player_ship) != COMM_OK)
+			|| ((Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player)))
+			&& (item.instance != CommOrderType::REARM_REPAIR)
+			&& (item.instance != CommOrderType::ABORT_REARM)) {
+			item.active = 0;
+			continue;
+		}
+		switch (item.instance) {
+			case CommOrderType::MSG_SHIPS:
+				item.active = hud_squadmsg_count_ships(0);
+				break;
+			case CommOrderType::MSG_WINGS:
+				item.active = hud_squadmsg_count_wings(0);
+				break;
+			case CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS:
+				item.active = hud_squadmsg_exist_fighters_bombers(SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
+				break;
+			case CommOrderType::MSG_ALL_FIGHTERS:
+				item.active = hud_squadmsg_exist_fighters_bombers(SmallCraftFlavor::ALL_FIGHTERS);
+				break;
+			case CommOrderType::MSG_ALL_BOMBERS:
+				item.active = hud_squadmsg_exist_fighters_bombers(SmallCraftFlavor::ALL_BOMBERS);
+				break;
+			case CommOrderType::REINFORCEMENTS:
+				item.active = (Player_ship != nullptr) && !hud_squadmsg_reinforcements_available(Player_ship->team) && Msg_shortcut_command == -1;
+				break;
+			case CommOrderType::REARM_REPAIR:
+				if (Hide_main_rearm_items_in_comms_gauge) {
+					item.active = -1;
+				} else {
+					item.active = (!(Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)
+						|| mission_is_repair_scheduled(Player_obj)))
+						&& is_support_allowed(Player_obj)
+						&& hud_squadmsg_can_rearm(Player_ship)
+						&& Msg_shortcut_command == -1;
+				}
+				break;
+			case CommOrderType::ABORT_REARM:
+				if (Hide_main_rearm_items_in_comms_gauge) {
+					item.active = -1;
+				} else {
+					item.active = (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)
+						|| mission_is_repair_scheduled(Player_obj))
+						&& is_support_allowed(Player_obj)
+						&& Msg_shortcut_command == -1;
+				}
+				break;
+		}
 	}
-
-	if ((Player_ship != NULL) && !hud_squadmsg_reinforcements_available(Player_ship->team)) {
-		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
-	}
-
-	MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
-	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 
 	for(const auto& cat : lua_cat_list){
 		if (ai_lua_get_general_orders(false, false, cat).size() == 0) {
-			MsgItems[NUM_COMM_ORDER_TYPES + lua_order_count].active = 0;
+			MsgItems[sz2i(Comm_order_types.size()) + lua_order_count].active = 0;
 		}
 		lua_order_count++;
-	}
-
-	// AL: 10/13/97
-	// If the player ship communications are severely damaged, then the player
-	// will only be able to call for repair/rearm ships
-	//
-	// also, only allow support ship if this player is not allowed to messaage. 
-	if ( (hud_communications_state(Player_ship) != COMM_OK) || ((Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player)) ) {
-		for (auto &item : MsgItems){
-			item.active = 0;
-		}
-
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
-	}
-
-	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
-	// check to see if the player is scheduled to be repaired by incoming ship
-	if (Ai_info[Ships[Player_obj->instance].ai_index].ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	}
-	else if ( mission_is_repair_scheduled(Player_obj) ) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 1;
-	}
-	// if no support available, can't call one in
-	else if ( !is_support_allowed(Player_obj) ) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
-	}
-
-	// de-activate the rearm/repair item if the player has a full load of missiles and
-	// all subsystems at full strength.  We will only check if this item hasn't been marked
-	// inactive because of some other reason
-	if ( MsgItems[TYPE_REPAIR_REARM_ITEM].active > 0 ) {
-
-		if ( !hud_squadmsg_can_rearm(Player_ship) ){
-			MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
-		}
-	}
-
-	// if using keyboard shortcut, these items are always inactive or hidden
-	if ( Msg_shortcut_command != -1 ) {
-		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 	}
 
 do_main_menu:
@@ -1847,24 +1856,26 @@ do_main_menu:
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {							// when k != -1, we have a key that associates with menu item
 		Assert ( k < sz2i(MsgItems.size()) );
-		if ( k == TYPE_SHIP_ITEM ){
+		if ( MsgItems[k].instance == CommOrderType::MSG_SHIPS ){
 			hud_squadmsg_do_mode( SM_MODE_SHIP_SELECT );
-		} else if ( k == TYPE_WING_ITEM ) {
+		} else if ( MsgItems[k].instance == CommOrderType::MSG_WINGS ) {
 			hud_squadmsg_do_mode( SM_MODE_WING_SELECT );
-		} else if ( k == TYPE_ALL_FIGHTERS_ITEM ) {
+		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS ) {
+			hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS_BOMBERS );
+		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_FIGHTERS ) {
 			hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS );
-		}
-		
-		if ( Msg_shortcut_command == -1 ) {
-			if ( k == TYPE_REINFORCEMENT_ITEM ) {
+		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_BOMBERS) {
+			hud_squadmsg_do_mode( SM_MODE_ALL_BOMBERS );
+		} else if ( Msg_shortcut_command == -1 ) {
+			if ( MsgItems[k].instance == CommOrderType::REINFORCEMENTS ) {
 				hud_squadmsg_do_mode( SM_MODE_REINFORCEMENTS );
 				player_set_next_all_alone_msg_timestamp();
-			} else if (k == TYPE_REPAIR_REARM_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
+			} else if (MsgItems[k].instance == CommOrderType::REARM_REPAIR && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
-			} else if (k == TYPE_REPAIR_REARM_ABORT_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
+			} else if (MsgItems[k].instance == CommOrderType::ABORT_REARM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
-			} else if (k >= NUM_COMM_ORDER_TYPES) {
-				Lua_sqd_msg_cat = lua_cat_list[k - NUM_COMM_ORDER_TYPES];
+			} else if (k >= sz2i(Comm_order_types.size())) {
+				Lua_sqd_msg_cat = lua_cat_list[k - sz2i(Comm_order_types.size())];
 				hud_squadmsg_do_mode( SM_MODE_GENERAL );
 			}
 		}
@@ -1927,13 +1938,23 @@ void hud_squadmsg_wing_select()
 
 // code which gives an order to all fighters/bombers.  If there is a message shortcut active, then
 // make that order apply to all fighters/bombers.  Otherwise, move to the ship_command menu
-void hud_squadmsg_msg_all_fighters()
+void hud_squadmsg_msg_all_fighters(SmallCraftFlavor flavor)
 {
 	if ( Msg_shortcut_command == -1 ) {
-		Msg_instance = MESSAGE_ALL_FIGHTERS;
+		switch (flavor) {
+			case SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS:
+				Msg_instance = MESSAGE_ALL_FIGHTERS_BOMBERS;
+				break;
+			case SmallCraftFlavor::ALL_FIGHTERS:
+				Msg_instance = MESSAGE_ALL_FIGHTERS;
+				break;
+			case SmallCraftFlavor::ALL_BOMBERS:
+				Msg_instance = MESSAGE_ALL_BOMBERS;
+				break;
+		}
 		hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );
 	} else {
-		hud_squadmsg_send_to_all_fighters( Msg_shortcut_command );
+		hud_squadmsg_send_to_all_fighters( Msg_shortcut_command, -1, flavor );
 		hud_squadmsg_toggle();
 	}
 }
@@ -2112,7 +2133,7 @@ void hud_squadmsg_ship_command()
 
 	// see if messaging all ships or just one.  Messaging all ships will mean all default orders
 	// show on comm menu.
-	if ( Msg_instance != MESSAGE_ALL_FIGHTERS ) {
+	if ( Msg_instance != MESSAGE_ALL_FIGHTERS_BOMBERS && Msg_instance != MESSAGE_ALL_FIGHTERS && Msg_instance != MESSAGE_ALL_BOMBERS ) {
 		orders = Ships[Msg_instance].orders_accepted;
 		const auto& default_orders_accepted = ship_get_default_orders_accepted(&Ship_info[Ships[Msg_instance].ship_info_index]);
 		default_orders.insert(default_orders_accepted.cbegin(), default_orders_accepted.cend());
@@ -2131,7 +2152,7 @@ void hud_squadmsg_ship_command()
 			MsgItems.back().active = 1;
 
 		// if the order cannot be carried out by the ship, then item should be inactive
-		if ((Msg_instance != MESSAGE_ALL_FIGHTERS) && !hud_squadmsg_ship_order_valid(Msg_instance, (int)order_id))
+		if ((Msg_instance != MESSAGE_ALL_FIGHTERS_BOMBERS && Msg_instance != MESSAGE_ALL_FIGHTERS && Msg_instance != MESSAGE_ALL_BOMBERS) && !hud_squadmsg_ship_order_valid(Msg_instance, (int)order_id))
 			MsgItems.back().active = 0;
 
 		// do some other checks to possibly gray out other items.
@@ -2141,7 +2162,7 @@ void hud_squadmsg_ship_command()
 
 		// if messaging all fighters, see if we should gray out the order if no one will accept it,
 		// or modify the text if only some of the ships will accept it
-		if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
+		if (Msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS || Msg_instance == MESSAGE_ALL_FIGHTERS || Msg_instance == MESSAGE_ALL_BOMBERS) {
 			ship_obj* so;
 			ship* shipp;
 			bool partial_accept, all_accept;            // value which tells us what to do with menu item
@@ -2157,9 +2178,22 @@ void hud_squadmsg_ship_command()
 				if (shipp->team != Player_ship->team)
 					continue;
 
-				// don't send message to non fighter wings
-				if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
+				// don't send message to non fighter or bomber wings
+				bool is_valid = true;
+				switch (Msg_instance) {
+					case MESSAGE_ALL_FIGHTERS_BOMBERS:
+						is_valid = Ship_info[shipp->ship_info_index].is_fighter_bomber();
+						break;
+					case MESSAGE_ALL_FIGHTERS:
+						is_valid = Ship_info[shipp->ship_info_index].is_fighter();
+						break;
+					case MESSAGE_ALL_BOMBERS:
+						is_valid = Ship_info[shipp->ship_info_index].is_bomber();
+						break;
+				} 
+				if (!is_valid) {
 					continue;
+				}
 
 				bool local_accepted = shipp->orders_accepted.contains(order_id);
 				all_accept &= local_accepted;        // 'and'ing will either keep this bit set or zero it properly
@@ -2188,9 +2222,13 @@ void hud_squadmsg_ship_command()
 		Assert ( k < sz2i(MsgItems.size()) );
 		// when messaging all fighters or ignoring target, call the send_to_all_fighters routine
 		// Goober5000 - ignore no longer sends to all fighters
-		if (Msg_instance == MESSAGE_ALL_FIGHTERS)
-			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance);
-		else
+		if (Msg_instance == MESSAGE_ALL_FIGHTERS_BOMBERS) {
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
+		} else if (Msg_instance == MESSAGE_ALL_FIGHTERS) {
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_FIGHTERS);
+		} else if (Msg_instance == MESSAGE_ALL_BOMBERS) {
+			hud_squadmsg_send_to_all_fighters(MsgItems[k].instance, -1, SmallCraftFlavor::ALL_BOMBERS);
+		} else
 			hud_squadmsg_send_ship_command(Msg_instance, MsgItems[k].instance, 1, SQUADMSG_HISTORY_ADD_ENTRY);
 
 		hud_squadmsg_toggle();
@@ -2536,8 +2574,16 @@ int hud_squadmsg_do_frame( )
         hud_squadmsg_repair_rearm_abort(1);		// note we return right away.  repair/rearm code handles messaging, etc
 		break;
 
+	case SM_MODE_ALL_FIGHTERS_BOMBERS:
+		hud_squadmsg_msg_all_fighters(SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS);
+		break;
+
 	case SM_MODE_ALL_FIGHTERS:
-		hud_squadmsg_msg_all_fighters();
+		hud_squadmsg_msg_all_fighters(SmallCraftFlavor::ALL_FIGHTERS);
+		break;
+
+	case SM_MODE_ALL_BOMBERS:
+		hud_squadmsg_msg_all_fighters(SmallCraftFlavor::ALL_BOMBERS);
 		break;
 
 	case SM_MODE_GENERAL:
@@ -2891,9 +2937,10 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		int item_num;
 		bool isSelectedItem = (i == Selected_menu_item);
 		char text[256];
+		mmode_item item = MsgItems[First_menu_item + i];
 
 		if (!config) {
-			strcpy_s(text, MsgItems[First_menu_item + i].text.c_str());
+			strcpy_s(text, item.text.c_str());
 		} else {
 			// in config mode, so create just the first page of the Comms Menu
 			// as other functions, such as hud_squadmsg_type_select() will not be run in config mode
@@ -2926,7 +2973,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		}
 
 		bool item_visible = config
-			? (!Hide_main_rearm_items_in_comms_gauge) || ((i != TYPE_REPAIR_REARM_ITEM) && (i != TYPE_REPAIR_REARM_ABORT_ITEM))
+			? (!Hide_main_rearm_items_in_comms_gauge) || ((item.instance != CommOrderType::REARM_REPAIR) && (item.instance != CommOrderType::ABORT_REARM))
 			: (MsgItems[First_menu_item + i].active >= 0);
 		if (item_visible) {
 			// first print an icon to indicate selected item
