@@ -1168,6 +1168,7 @@ void ship_info::clone(const ship_info& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	explosion_bitmap_anims = other.explosion_bitmap_anims;
+	disable_main_fireball = other.disable_main_fireball;
 	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	impact_spew = other.impact_spew;
@@ -1530,6 +1531,7 @@ ship_info::ship_info()
 	death_fx_count = 6;
 	shockwave_count = 1;
 	explosion_bitmap_anims.clear();
+	disable_main_fireball = false;
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
@@ -3668,7 +3670,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	}
-
+	if (optional_string("$Disable Main Fireball:"))
+	{
+		stuff_boolean(&sip->disable_main_fireball);
+	}
+	
 	if(optional_string("$Debris Flame Effect:"))
 	{
 		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
@@ -9625,11 +9631,13 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipfx_large_blowup_init(shipp);
 				// need to timeout immediately to keep physics in sync
 				shipp->really_final_death_time = timestamp(0);
+			} else if (sip->disable_main_fireball) {
+				shipp->really_final_death_time = timestamp( 0 );
 			} else {
 				// else, just a single big fireball
 				float big_rad;
 				int fireball_objnum, fireball_type, default_fireball_type;
-				float explosion_life;
+				float explosion_life = 0.0f;
 				big_rad = objp->radius*1.75f;
 
 				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
@@ -9653,8 +9661,6 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				if ( fireball_objnum >= 0 )	{
 					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
-				} else {
-					explosion_life = 0.0f;
 				}
 
 				// JAS:  I put in all this code because of an item on my todo list that
