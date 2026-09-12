@@ -3661,7 +3661,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		sip->regular_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2, 1.f);
 	}
-	
+
 	if(optional_string("$Alternate Death Effect:"))
 	{
 		sip->knossos_end_particles = particle::util::parseEffect(sip->name);
