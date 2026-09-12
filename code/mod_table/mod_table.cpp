@@ -25,6 +25,7 @@
 #include "sound/sound.h"
 #include "starfield/supernova.h"
 #include "playerman/player.h"
+#include "hud/hudsquadmsg.h"
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
@@ -502,6 +503,38 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Always show selected item in Comms Gauge:")) {
 				stuff_boolean(&Always_show_selected_item_in_comms_gauge);
+			}
+
+			if (optional_string("$Available squad orders:")) {
+				// this list replaces any list from a previously parsed table, rather than adding to it
+				Parsed_comm_orders.clear();
+
+				SCP_string order_type;
+				SCP_string text;
+				while (optional_string("+Order Type:")) {
+					stuff_string(order_type, F_NAME);
+					required_string("+Text:");
+					stuff_string(text, F_NAME);
+					if (!stricmp(order_type.c_str(), "MESSAGE SHIPS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_SHIPS, text);
+					} else if (!stricmp(order_type.c_str(), "MESSAGE WINGS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_WINGS, text);
+					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL FIGHTERS AND BOMBERS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS, text);
+					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL FIGHTERS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_FIGHTERS, text);
+					} else if (!stricmp(order_type.c_str(), "MESSAGE ALL BOMBERS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::MSG_ALL_BOMBERS, text);
+					} else if (!stricmp(order_type.c_str(), "REINFORCEMENTS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::REINFORCEMENTS, text);
+					} else if (!stricmp(order_type.c_str(), "REARM/REPAIR SUBSYSTEMS")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::REARM_REPAIR, text);
+					} else if (!stricmp(order_type.c_str(), "ABORT REARM")) {
+						Parsed_comm_orders.emplace_back(CommOrderType::ABORT_REARM, text);
+					} else {
+						error_display(0, "Game Settings Table: Invalid squad order type %s found!  Skipping this entry.", order_type.c_str());
+					}
+				}
 			}
 
 			optional_string("#SEXP SETTINGS");
@@ -1968,6 +2001,7 @@ void mod_table_reset()
 	Zero_radius_explosions_skip_fireballs = false;
 	Render_insignias_as_decals = false;
 	Link_special_point_subsystems_to_destroyed_submodels = false;
+	Parsed_comm_orders.clear();
 }
 
 void mod_table_set_version_flags()

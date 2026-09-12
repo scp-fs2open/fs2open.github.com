@@ -2545,7 +2545,9 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				}
 
 				if (desired_argument_type == OPF_ORDER_RECIPIENT) {
-					if (!strcmp ("<all fighters>", CTEXT(node))) {
+					if (!strcmp (SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS, CTEXT(node))
+						|| !strcmp (SEXP_ORDER_TO_ALL_FIGHTERS, CTEXT(node))
+						|| !strcmp (SEXP_ORDER_TO_ALL_BOMBERS, CTEXT(node))) {
 						break;
 					}
 				}
@@ -32516,10 +32518,12 @@ int query_operator_argument_type(int op_index, int argnum)
 			}
 
 		case OP_ORDER:
-			if (argnum == 1)
+			if (argnum == 0)
+				return OPF_ORDER_RECIPIENT;
+			else if (argnum == 1)
 				return OPF_AI_ORDER;
 			else
-				return OPF_SHIP_WING;	// arg 0 or 2
+				return OPF_SHIP_WING;	// arg 2
 
 		case OP_QUERY_ORDERS:
 			if (argnum == 0)
@@ -40068,14 +40072,18 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDeprecated - Use Query-Orders in any new mission.\r\n\r\n"
 		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or 3 arguments...\r\n"
-		"\t1:\tName of ship or wing to check if given order to.\r\n"
+		"\t1:\tName of ship or wing to check if given order to.  This can also be <all fighters> for an\r\n"
+		"\t\torder sent to all fighters and bombers, <all fighters only> for an order sent to all\r\n"
+		"\t\tfighters, or <all bombers> for an order sent to all bombers.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tName of the target of the order (optional)." },
 
 	{ OP_QUERY_ORDERS, "Query-Orders (Boolean training operator)\r\n"
 		"\tBecomes true when the player had given the specified ship or wing the specified order.\r\n\r\n"
 		"Returns a boolean value.  Takes 2 or more arguments...\r\n"
-		"\t1:\tName of ship or wing to check if given order to.\r\n"
+		"\t1:\tName of ship or wing to check if given order to.  This can also be <all fighters> for an\r\n"
+		"\t\torder sent to all fighters and bombers, <all fighters only> for an order sent to all\r\n"
+		"\t\tfighters, or <all bombers> for an order sent to all bombers.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tMaximum length of time since order was given. Use 0 for any time in the mission.\r\n"
 		"\t4:\tName of the target of the order (optional).\r\n"

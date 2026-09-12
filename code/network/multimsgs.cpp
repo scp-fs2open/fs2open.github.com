@@ -4422,10 +4422,9 @@ void send_player_order_packet(int type, int index, int cmd)
 	val = (ubyte)type;
 	ADD_DATA(val);         // ship order or wing order, or message all fighters
 
-	// if we are not messaging all ships or wings, add the index, which is the shipnum or wingnum
-	if ( val != SQUAD_MSG_ALL ){
-		ADD_INT(index);  // net signature of target ship
-	}
+	// for ship and wing orders the index is the shipnum or wingnum; for SQUAD_MSG_ALL it is the
+	// SmallCraftFlavor, so that all-fighters and all-bombers don't degrade to fighters-and-bombers
+	ADD_INT(index);
 
 	ADD_INT(cmd);         // the command itself
 
@@ -4469,10 +4468,7 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	
 	GET_DATA( type );
-	if ( type != SQUAD_MSG_ALL ){
-		GET_INT( index );
-	}
-
+	GET_INT( index );	// shipnum or wingnum, or the SmallCraftFlavor for SQUAD_MSG_ALL
 	GET_INT( command );
 	GET_USHORT( target_net_signature );
 	GET_SHORT( t_subsys );
@@ -4550,7 +4546,15 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	} else if ( type == SQUAD_MSG_WING ) {
 		hud_squadmsg_send_wing_command(index, command, 1, SQUADMSG_HISTORY_ADD_ENTRY, player_num);
 	} else if ( type == SQUAD_MSG_ALL ) {
-		hud_squadmsg_send_to_all_fighters( command, player_num );
+		// here the index is the SmallCraftFlavor; validate it, since it came off the wire
+		auto flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
+		if ( (index >= SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) && (index <= SmallCraftFlavor::ALL_BOMBERS) ) {
+			flavor = static_cast<SmallCraftFlavor>(index);
+		} else {
+			mprintf(("Received player order packet with invalid small craft flavor %d; assuming all fighters and bombers\n", index));
+		}
+
+		hud_squadmsg_send_to_all_fighters( command, player_num, flavor );
 	}
 
 	Assert(tobjnum_save != Ships[aip->shipnum].objnum);	//	make sure not targeting self
