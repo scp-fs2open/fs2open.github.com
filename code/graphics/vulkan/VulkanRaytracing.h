@@ -192,23 +192,41 @@ private:
 
 	// Shared by walkSubmodelTree/addSingleSubmodelInstance: appends one TLAS
 	// instance referencing blasAddress, placed at the given world orient/pos.
+	// `mask` is the instance's ray-cull mask (vk::AccelerationStructureInstanceKHR::mask,
+	// see TLAS_MASK_VIEWER_HULL in shadows.h); defaults to 0xFF (visible to every ray).
 	static void pushInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		vk::DeviceAddress blasAddress,
 		const matrix& orient,
-		const vec3d& pos);
+		const vec3d& pos,
+		uint8_t mask = 0xFF);
 
 	void gatherShadowCasterInstances(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances);
+	// Adds one instance walk for Viewer_obj's cockpit polymodel (sip->cockpit_model_num),
+	// which -- unlike ships/asteroids/debris -- has no backing `object` for
+	// gatherShadowCasterInstances() to discover it through. Mirrors the gating
+	// render_viewer_shadow()'s cockpit block uses (shadows.cpp) so the cockpit only
+	// gets a TLAS instance when it would also get a rasterized shadow-map pass.
+	void gatherCockpitShadowCasterInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances);
+	// `skipDetailBoxCheck`: the detail-box gate (submodelPassesDetailBox()) compares
+	// against the global `Eye_position`, which isn't correct for the cockpit model (its
+	// rasterized detail-box checks use a cockpit-relative eye position instead -- see
+	// shadows.cpp). gatherCockpitShadowCasterInstance() passes true to skip the check
+	// rather than derive that; cockpit models are small and sit right against the camera,
+	// so detail-box culling is unlikely to matter there. Every other caller defaults false.
 	void walkSubmodelTree(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		transform_stack& stack,
 		const polymodel* pm,
 		const polymodel_instance* pmi,
-		int submodel_num);
+		int submodel_num,
+		uint8_t mask = 0xFF,
+		bool skipDetailBoxCheck = false);
 	void addSingleSubmodelInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		const polymodel* pm,
 		const polymodel_instance* pmi,
 		int submodel_num,
 		const matrix& orient,
-		const vec3d& pos);
+		const vec3d& pos,
+		uint8_t mask = 0xFF);
 
 	// One full set of grow-only TLAS resources per frame-in-flight slot, indexed
 	// by currentFrameIndex() -- NOT a single shared instance. buildTlas()

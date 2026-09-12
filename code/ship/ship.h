@@ -1797,6 +1797,19 @@ extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
 extern bool ship_render_player_ship_casts_shadow_on_cockpit();
 extern bool ship_render_player_has_closeup_visuals();
+// True if the player ship's cockpit model would be rendered right now (viewer mode,
+// cockpit-model presence, and the Disable_cockpits override). Shared by every path that
+// needs to know whether a cockpit is currently on-screen: ship_render_player_ship(),
+// render_viewer_shadow() (shadows.cpp), and gatherCockpitShadowCasterInstance()
+// (VulkanRaytracingTlas.cpp).
+extern bool ship_player_cockpit_model_would_render(const ship_info* sip);
+// The cockpit model's render offset: sip->cockpit_offset rotated into world orientation,
+// plus acceleration-driven sway (unless Disable_cockpit_sway). This is the camera-relative
+// offset used to draw the cockpit model, NOT combined with objp->pos -- callers that need
+// a world-space position must add objp->pos themselves. Shared by every path that draws or
+// otherwise anchors the cockpit model: ship_render_player_ship(), render_viewer_shadow()
+// (shadows.cpp), and gatherCockpitShadowCasterInstance() (VulkanRaytracingTlas.cpp).
+extern vec3d ship_cockpit_render_offset(const ship_info* sip, const object* objp);
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );

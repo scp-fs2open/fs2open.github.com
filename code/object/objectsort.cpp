@@ -371,7 +371,7 @@ void obj_render_queue_all()
 	scene.init_render();
 
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades, vmd_zero_vector);
 	}
 
 	scene.render_all(ZBUFFER_TYPE_FULL);
