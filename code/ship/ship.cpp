@@ -9634,10 +9634,10 @@ static void ship_dying_frame(object *objp, int ship_num)
 			} else if (sip->disable_main_fireball) {
 				shipp->really_final_death_time = timestamp( 0 );
 			} else {
-				float explosion_life = 0.0f;
 				// else, just a single big fireball
 				float big_rad;
 				int fireball_objnum, fireball_type, default_fireball_type;
+				float explosion_life = 0.0f;
 				big_rad = objp->radius*1.75f;
 
 				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
