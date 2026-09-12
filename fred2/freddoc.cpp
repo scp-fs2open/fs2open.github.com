@@ -38,6 +38,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "render/3d.h"
 #include "ship/ship.h"
@@ -228,7 +229,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	char name[512], *old_name;
 	int i, j, ob;
-	int used_pool[MAX_WEAPON_TYPES];
+	SCP_map<int, int> used_pool;
 	object *objp;
 
 	Parse_viewer_pos = view_pos;
@@ -340,30 +341,31 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	}
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_weaponry_usage_list(i, used_pool);
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+		generate_weaponry_usage_list_team(i, used_pool);
+		for (auto &entry : Team_data[i].weapon_choices) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
-			if ((!strlen(Team_data[i].weaponry_pool_variable[j])) && (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
-				// convert weaponry_pool to be extras available beyond the current ships weapons
-				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
-				if (Team_data[i].weaponry_count[j] < 0) {
-					Team_data[i].weaponry_count[j] = 0;
+			if (entry.class_variable.empty() && entry.count_variable.empty()) {
+				// convert weaponry pool to be extras available beyond the current ships weapons
+				entry.count -= used_pool.value_or(entry.class_index, 0);
+				if (entry.count < 0) {
+					entry.count = 0;
 				}
 
 				// zero the used pool entry
-				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+				used_pool.erase(entry.class_index);
 			}
 		}
 		// double check the used pool is empty
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
-				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name, i + 1);
+		if (!Team_data[i].do_not_validate) {
+			for (const auto &[weapon_class, count] : used_pool) {
+				if (count != 0) {
+					Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[weapon_class].name, i + 1);
 
-				// add the weapon as a new entry
-				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
-				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j];
-				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
-				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");
+					// add the weapon as a new entry
+					auto &entry = Team_data[i].weapon_choices.emplace_back();
+					entry.class_index = weapon_class;
+					entry.count = count;
+				}
 			}
 		}
 	}

@@ -38,7 +38,7 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	SCP_vector<SCP_string> _shipTypeOptions;
 	SCP_vector<SCP_string> _teamOptions;
 	SCP_vector<GlobalShieldStatus> _teams;
-	SCP_vector<GlobalShieldStatus> _types;
+	SCP_map<int, GlobalShieldStatus> _types;	// ship class -> shield status; absent = HasShields
 	int	_currTeam;
 	int	_currType;
 };

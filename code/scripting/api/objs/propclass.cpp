@@ -7,6 +7,7 @@ namespace scripting::api {
 
 //**********HANDLE: Propclass
 ADE_OBJ(l_Propclass, int, "propclass", "Prop class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Propclass, prop_info_size());
 
 ADE_FUNC(__tostring,
 	l_Propclass,
@@ -195,23 +196,6 @@ ADE_FUNC(hasCustomStrings,
 
 	bool result = !pip->custom_strings.empty();
 	return ade_set_args(L, "b", result);
-}
-
-ADE_FUNC(isValid,
-	l_Propclass,
-	nullptr,
-	"Detects whether handle is valid",
-	"boolean",
-	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if (!ade_get_args(L, "o", l_Propclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (idx < 0 || idx >= prop_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(renderTechModel,

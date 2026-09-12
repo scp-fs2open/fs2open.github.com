@@ -2383,15 +2383,15 @@ void game_show_framerate()
 		MEMORYSTATUSEX mem_stats;
 		mem_stats.dwLength = sizeof(mem_stats);
 		if (GlobalMemoryStatusEx(&mem_stats)) {
-			sprintf(mem_buffer, "Physical Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
+			sprintf(mem_buffer, "Physical Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Pagefile Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
+			sprintf(mem_buffer, "Pagefile Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Virtual Free:  %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
+			sprintf(mem_buffer, "Virtual Free:  " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 		}
 	}

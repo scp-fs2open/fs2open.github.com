@@ -130,15 +130,6 @@ ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "nu
 	return ade_set_error(L, "f", pm->submodel[db->submodel_num].rad);
 }
 
-ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "boolean", "true if valid false otherwise")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", oh != NULL && oh->isValid());
-}
-
 ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic debris model, not a model subobject", "boolean", "true if Debris_model")
 {
 	object_h *oh;

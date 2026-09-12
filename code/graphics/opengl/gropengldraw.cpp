@@ -776,6 +776,16 @@ void gr_opengl_scene_texture_begin()
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBuffer(Scene_framebuffer);
 
+	// The cockpit depth mask is only written when the cockpit is actually rendered (see
+	// gr_opengl_post_process_save_zbuffer), and the views that skip it -- external, chase,
+	// topdown, warp chase -- would otherwise leave the lightshaft pass masking against the
+	// silhouette left over from the last cockpit-view frame.  Clear it every frame; when a
+	// cockpit does render, save_zbuffer clears it again anyway.
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Cockpit_depth_texture, 0);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
+
 	if (GL_rendering_to_texture)
 	{
 		Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);

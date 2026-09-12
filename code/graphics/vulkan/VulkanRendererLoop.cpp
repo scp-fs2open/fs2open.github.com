@@ -152,7 +152,7 @@ void VulkanRenderer::setupFrame()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
@@ -173,7 +173,9 @@ void VulkanRenderer::flip()
 	// End the composition render pass (composition image is now in
 	// eShaderReadOnlyOptimal) and run the final output-encode pass that writes
 	// the actual swap chain image (SDR passthrough or HDR10 PQ/BT.2020).
-	m_currentCommandBuffer.endRenderPass();
+	// Tolerates the pass having already been ended: the OpenXR flip has to end
+	// it itself to record its swapchain blit before handing off to us.
+	endCurrentRenderPass();
 
 #ifdef __APPLE__
 	// MoltenVK: the encode render pass's VK_SUBPASS_EXTERNAL dependency (see
@@ -345,7 +347,7 @@ void VulkanRenderer::endSceneRendering()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -355,9 +357,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_swapChainExtent.height),
-		static_cast<float>(m_swapChainExtent.width),
-		-static_cast<float>(m_swapChainExtent.height));
+		static_cast<float>(m_renderExtent.height),
+		static_cast<float>(m_renderExtent.width),
+		-static_cast<float>(m_renderExtent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -539,9 +541,33 @@ void VulkanRenderer::resumeSwapChainPass()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::restartCompositionPass()
+{
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+	PassBeginDesc pass;
+	pass.renderPass = m_renderPass.get();
+	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
+	pass.extent = m_renderExtent;
+	pass.clearValues = clearValues;
+	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::endCurrentRenderPass()
+{
+	if (!m_stateTracker->getCurrentRenderPass()) {
+		return;
+	}
+
+	m_currentCommandBuffer.endRenderPass();
+	m_stateTracker->setRenderPass(vk::RenderPass());
 }
 
 void VulkanRenderer::resumeRenderTargetPass(tcache_slot_vulkan* ts)

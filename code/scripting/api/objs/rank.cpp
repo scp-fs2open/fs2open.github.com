@@ -24,15 +24,6 @@ bool rank_h::isValid() const
 //**********HANDLE: rank
 ADE_OBJ(l_Rank, rank_h, "rank", "Rank handle");
 
-ADE_FUNC(isValid, l_Rank, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	rank_h current;
-	if (!ade_get_args(L, "o", l_Rank.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Name, l_Rank, nullptr, "The name of the rank", "string", "The name")
 {
 	rank_h current;

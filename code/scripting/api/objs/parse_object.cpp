@@ -90,15 +90,6 @@ ADE_VIRTVAR(
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
-ADE_FUNC(isValid, l_ParseObject, nullptr, "Detect whether the parsed ship handle is valid", "boolean", "true if valid false otherwise")
-{
-	parse_object_h* poh = nullptr;
-	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", poh->isValid());
-}
-
 ADE_FUNC(getBreedName, l_ParseObject, nullptr, "Gets the FreeSpace type name", "string", "'Parse Object', or empty string if handle is invalid")
 {
 	parse_object_h* poh = nullptr;

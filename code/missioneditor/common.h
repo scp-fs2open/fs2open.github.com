@@ -46,13 +46,14 @@ int anchor_to_target(anchor_t anchor);
 anchor_t target_to_anchor(int target);
 
 // Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
-// name arrays via wing_name_lookup.  Consolidated from FRED's and qtFRED's
-// previously-duplicated copies.
+// name arrays via wing_name_lookup.
 void update_custom_wing_indexes();
 
-void generate_weaponry_usage_list_team(int team, int* arr);
-
-void generate_weaponry_usage_list_wing(int wing_num, int* arr);
+// The _team variant clears the map first; the two _wing variants accumulate into it
+// (so callers that build a total across several wings must clear the map themselves).
+void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
 
 // If Player_start_shipnum no longer refers to a valid player start ship, repoint it to the
 // first remaining player start in the mission (or -1 if there are none).  Call this after

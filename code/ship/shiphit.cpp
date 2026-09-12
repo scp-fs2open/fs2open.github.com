@@ -1223,6 +1223,8 @@ static void shiphit_record_player_killer(const object *killer_objp, player *p)
 		break;
 
 	case OBJ_PROP:
+		p->killer_objtype = OBJ_PROP;
+		p->killer_weapon_index = -1;
 		strcpy_s(p->killer_parent_name, "");
 		p->killer_species = -1;
 		p->killer_parent_name[0] = '\0';

@@ -31,6 +31,8 @@ class SupportRearmDialogModel final : public AbstractDialogModel {
 	const SCP_vector<int>& visibleWeaponClasses() const;
 
   private:
+	void storeWeaponPoolEntry(int team, int weaponClass, int amount);
+
 	SupportRearmSettings _working;
 	SCP_vector<int> _visibleWeaponClasses;
 };

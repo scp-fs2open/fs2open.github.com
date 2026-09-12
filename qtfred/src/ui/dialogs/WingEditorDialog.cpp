@@ -7,6 +7,7 @@
 #include "ui_WingEditorDialog.h"
 
 #include <globalincs/globals.h>
+#include <mission/missionparse.h>
 #include <ship/ship.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/ImageRenderer.h>
@@ -218,36 +219,39 @@ void WingEditorDialog::enableOrDisableControls()
 	const bool containsPlayerStart = _model->containsPlayerStart();
 	const bool allFighterBombers = _model->wingAllFighterBombers();
 
-	// Waves / Threshold: enabled only if NOT a player wing and all members are fighter/bombers
-	const bool wavesEnabled = (!isPlayerWing) && allFighterBombers;
+	// Waves / Threshold: locked for multiplayer starting/TVT wings, which must have exactly one
+	// wave; single-player wings, including the player wing, can have multiple waves.  Also
+	// requires all members to be fighter/bombers.
+	const bool wavesEnabled = !(isPlayerWing && (The_mission.game_type & MISSION_TYPE_MULTI)) && allFighterBombers;
 	ui->numWavesSpinBox->setEnabled(wavesEnabled);
 	ui->waveThresholdSpinBox->setEnabled(wavesEnabled);
 
-	// Arrival section: disabled for starting wings (SP player wing or MP starting wing)
-	const bool arrivalEditable = !isPlayerWing;
-	ui->arrivalLocationCombo->setEnabled(arrivalEditable);
-	ui->arrivalDelaySpinBox->setEnabled(arrivalEditable);
-	ui->minDelaySpinBox->setEnabled(arrivalEditable);
-	ui->maxDelaySpinBox->setEnabled(arrivalEditable);
-	if (!arrivalEditable) {
-		clearArrivalFields();
-	}
+	// Arrival delay is locked for starting wings (SP player wing or MP starting wing), since
+	// they must be present at mission start; the arrival location remains editable because it
+	// governs where subsequent waves arrive from
+	const bool arrivalDelayEditable = !isPlayerWing;
+	ui->arrivalDelaySpinBox->setEnabled(arrivalDelayEditable);
+	ui->minDelaySpinBox->setEnabled(arrivalDelayEditable);
+	ui->maxDelaySpinBox->setEnabled(arrivalDelayEditable);
 
-	// Arrival target/distance and path/custom buttons
+	// Arrival location, target/distance, and path/custom buttons
 	const bool arrivalIsDockBay = _model->arrivalIsDockBay();
 	const bool arrivalNeedsTarget = _model->arrivalNeedsTarget();
 
-	ui->arrivalTargetCombo->setEnabled(arrivalEditable && arrivalNeedsTarget);
-	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && _model->arrivalNeedsDistance());
-	ui->restrictArrivalPathsButton->setEnabled(arrivalEditable && arrivalIsDockBay);
-	ui->customWarpinButton->setEnabled(arrivalEditable && !arrivalIsDockBay);
+	ui->arrivalLocationCombo->setEnabled(true);
+	ui->arrivalTargetCombo->setEnabled(arrivalNeedsTarget);
+	ui->arrivalDistanceSpinBox->setEnabled(_model->arrivalNeedsDistance());
+	ui->restrictArrivalPathsButton->setEnabled(arrivalIsDockBay);
+	ui->customWarpinButton->setEnabled(!arrivalIsDockBay);
 
-	// Arrival cue tree: lock when the wing actually contains Player-1 start (retail behavior)
-	ui->arrivalTree->setEnabled(!containsPlayerStart);
+	// Arrival cue tree: the wing containing the Player-1 start must be present at mission
+	// start, so its cue is only editable if it has multiple waves (where the cue governs
+	// the arrival of subsequent waves)
+	ui->arrivalTree->setEnabled(!containsPlayerStart || _model->getNumberOfWaves() > 1);
 
-	// Also tie the "no arrival warp" checkboxes to whether arrival is editable
-	ui->noArrivalWarpCheckBox->setEnabled(arrivalEditable);
-	ui->noArrivalWarpAdjustCheckbox->setEnabled(arrivalEditable);
+	// The "no arrival warp" checkboxes are always editable
+	ui->noArrivalWarpCheckBox->setEnabled(true);
+	ui->noArrivalWarpAdjustCheckbox->setEnabled(true);
 
 	// Departure side: never gated by starting-wing rule
 	ui->departureLocationCombo->setEnabled(true);

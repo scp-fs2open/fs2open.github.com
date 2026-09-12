@@ -1459,6 +1459,8 @@ void player_level_init()
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
+	reset_angles(&chase_slew_angles);
+	reset_angles(&Viewer_slew_angles_delta);
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
@@ -1477,7 +1479,10 @@ void player_level_init()
 	{
 		Viewer_mode = 0;
 	}
- 
+
+	Perspective_locked = false;
+	Slew_locked = false;
+
 	Player_obj = NULL;
 	Player_ship = NULL;
 	Player_ai = NULL;
@@ -2087,6 +2092,10 @@ void player_generate_death_message(player *player_p)
 
 		case OBJ_ASTEROID:
 			sprintf(msg, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
+			break;
+
+		case OBJ_PROP:
+			sprintf(msg, XSTR( "%s was killed by a collision with an object", -1), player_p->callsign);
 			break;
 
 		case OBJ_BEAM:

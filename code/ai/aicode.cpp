@@ -6508,7 +6508,7 @@ int num_nearby_fighters(int enemy_team_mask, const vec3d *pos, float threshold)
 bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
 {
 	int	num_weapon_types;
-	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
+	int	weapon_id_list[MAX_SHIP_SECONDARY_BANKS], weapon_bank_list[MAX_SHIP_SECONDARY_BANKS];
 	int	i;
 	flagset<Weapon::Info_Flags>	ignore_mask, ignore_mask_without_huge, prio1, prio2;
 	int	initial_bank;
@@ -6547,7 +6547,7 @@ bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	}
 
 #ifndef NDEBUG
-	for (i=0; i<MAX_WEAPON_TYPES; i++) {
+	for (i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
 		weapon_id_list[i] = -1;
 		weapon_bank_list[i] = -1;
 	}
@@ -6801,20 +6801,26 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		bool is_primary = secondary_bank == -1;
 		ship *shipp = &Ships[firing_ship->instance];
 		ship_weapon *swp = &shipp->weapons;
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
 		weapon_info *wip = &Weapon_info[is_primary ? swp->primary_bank_weapons[primary_bank] : swp->secondary_bank_weapons[secondary_bank]];
-		polymodel* pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-		
+		polymodel* pm = model_get(sip->model_num);
+
 		vec3d pnt = is_primary ? pm->gun_banks[primary_bank].pnt[swp->primary_next_slot[primary_bank]] : pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
 		vec3d firing_point;
 
+		// external model firing points only apply when the external models are actually drawn
+		// (matching ship_fire_primary and ship_fire_secondary)
+		bool draw_models = is_primary ? sip->draw_primary_models[primary_bank] : sip->draw_secondary_models[secondary_bank];
 		polymodel* weapon_model = nullptr;
-		if (wip->external_model_num >= 0) {
+		if (draw_models && wip->external_model_num >= 0) {
 			weapon_model = model_get(wip->external_model_num);
 		}
 
 		// use the same firing point the next shot will use
-		int external_bank = is_primary ? primary_bank : secondary_bank + MAX_SHIP_PRIMARY_BANKS;
-		vec3d external_fp_offset = ship_get_external_model_fp_offset(swp, wip, weapon_model, external_bank, false);
+		auto ext = is_primary ? &swp->primary_bank_external_weapon[primary_bank] : &swp->secondary_bank_external_weapon[secondary_bank];
+		auto ship_bank = is_primary ? &pm->gun_banks[primary_bank] : &pm->missile_banks[secondary_bank];
+		int slot = is_primary ? swp->primary_next_slot[primary_bank] : swp->secondary_next_slot[secondary_bank];
+		vec3d external_fp_offset = ship_get_external_model_fp_offset(ext, wip, weapon_model, ship_bank, slot, false);
 		vm_vec_add2(&pnt, &external_fp_offset);
 
 		vm_vec_unrotate(&firing_point, &pnt, &firing_ship->orient);
@@ -7834,7 +7840,7 @@ bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_ag
 	ship* shipp = &Ships[pl_objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	if ((flag_to_check) && sip->is_small_ship()) {
+	if ((flag_to_check) && sip->is_small_ship() && pl_objp->phys_info.speed > 0.0f) {
 		vec3d collide_vec = pl_objp->phys_info.vel * (avoidance_aggression / (PI2 / sip->srotation_time));
 		float radius_contribution = (pl_objp->phys_info.speed + pl_objp->radius) / pl_objp->phys_info.speed;
 		collide_vec *= radius_contribution;
@@ -8410,7 +8416,7 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 {
 	float	dot_to_enemy;
 	int	num_weapon_types;
-	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
+	int	weapon_id_list[MAX_SHIP_SECONDARY_BANKS], weapon_bank_list[MAX_SHIP_SECONDARY_BANKS];
 	ship	*shipp;
 	ship	*tshpp;
 	ship_weapon	*swp;
