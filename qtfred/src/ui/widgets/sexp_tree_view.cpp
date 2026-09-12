@@ -312,6 +312,13 @@ void sexp_tree_view::ui_set_item_image(void* handle, NodeImage image)
 	applyNodeIcon(static_cast<QTreeWidgetItem*>(handle), image);
 }
 
+// Keep Qt inline editing consistent with the shared model after node type changes.
+void sexp_tree_view::ui_set_item_editable(void* handle, bool editable)
+{
+	auto* item = static_cast<QTreeWidgetItem*>(handle);
+	item->setFlags(item->flags().setFlag(Qt::ItemIsEditable, editable));
+}
+
 // Returns the first child QTreeWidgetItem, or nullptr. Called by _actions to traverse the tree.
 void* sexp_tree_view::ui_get_child_item(void* handle) const
 {
@@ -587,6 +594,7 @@ QTreeWidgetItem* sexp_tree_view::move_branch(QTreeWidgetItem* source, QTreeWidge
 	// Create the destination item
 	const auto icon = source->icon(0);
 	QTreeWidgetItem* h = insertWithIcon(source->text(0), icon, parent, after);
+	h->setFlags(source->flags());
 	if (idx < tree_nodes.size()) {
 		tree_nodes[idx].handle = h;
 	}
@@ -630,6 +638,7 @@ void sexp_tree_view::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* paren
 
 	const auto icon = source->icon(0);
 	QTreeWidgetItem* h = insertWithIcon(source->text(0), icon, parent, after);
+	h->setFlags(source->flags());
 	size_t idx = 0;
 	for (; idx < tree_nodes.size(); ++idx) {
 		if (tree_nodes[idx].handle == source) {
@@ -1815,9 +1824,10 @@ void sexp_tree_view::insertOperatorAction(int op) {
 	auto* old_item = tree_item_handle(tree_nodes[item_index]);
 	auto* root_parent = old_item ? old_item->parent() : nullptr;
 	const int old_item_index = item_index;
+	const bool is_formula_root = tree_nodes[old_item_index].parent == -1;
 	const int node = _actions.insert_operator(op, root_parent);
 
-	if (_interface->getFlags()[TreeFlags::LabeledRoot] && root_parent != nullptr) {
+	if (is_formula_root && _interface->getFlags()[TreeFlags::LabeledRoot] && root_parent != nullptr) {
 		rootNodeFormulaChanged(old_item_index, node);
 		root_parent->setData(0, FormulaDataRole, node);
 	}
@@ -1882,6 +1892,10 @@ void sexp_tree_view::replaceStringDataHandler() {
 // Sets the _currently_editing flag and calls Qt's editItem() to start inline text editing.
 // The flag ensures that handleItemChange() only processes intentional edits, not programmatic changes.
 void sexp_tree_view::beginItemEdit(QTreeWidgetItem* item) {
+	if (item == nullptr || !item->flags().testFlag(Qt::ItemIsEditable)) {
+		return;
+	}
+
 	_currently_editing = true;
 	
 	editItem(item);
