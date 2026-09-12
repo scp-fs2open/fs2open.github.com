@@ -948,7 +948,7 @@ int get_quadrant(const vec3d *hit_pnt, const object *shipobjp)
 		float closest_dist = FLT_MAX;
 
 		for (unsigned int i=0; i<Ships[shipobjp->instance].shield_points.size(); i++) {
-			float dist = vm_vec_dist(hit_pnt, &Ships[shipobjp->instance].shield_points.at(i));
+			float dist = vm_vec_dist_squared(hit_pnt, &Ships[shipobjp->instance].shield_points.at(i));
 
 			if (dist < closest_dist) {
 				closest = i;

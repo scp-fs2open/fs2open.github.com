@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "gamesnd/gamesnd.h"
+#include "ship/ship.h"
 
 class object;
 struct CFILE;
