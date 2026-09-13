@@ -44,7 +44,6 @@
 extern int Model_texturing;
 extern int Model_polys;
 extern int tiling;
-extern float model_radius;
 
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
@@ -2892,8 +2891,6 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 		i = pm->submodel[i].next_sibling;
 	}
-
-	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
 	//*************************** draw the hull of the ship *********************************************
 	vec3d view_pos = scene->get_view_position();
