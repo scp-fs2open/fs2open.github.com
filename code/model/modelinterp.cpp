@@ -238,16 +238,12 @@ void model_deallocate_interp_data()
 	Num_interp_norms_allocated = 0;
 }
 
-extern void model_collide_allocate_point_list(int n_points);
-extern void model_collide_free_point_list();
-
 void model_allocate_interp_data(uint n_verts, uint n_norms)
 {
 	static ubyte dealloc = 0;
 
 	if (!dealloc) {
 		atexit(model_deallocate_interp_data);
-		atexit(model_collide_free_point_list);
 		dealloc = 1;
 	}
 
@@ -264,9 +260,6 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
 
 		Num_interp_verts_allocated = n_verts;
-
-		// model collide needs a similar size to resize it based on this new value
-		model_collide_allocate_point_list( n_verts );
 	}
 
 	if (n_norms > Num_interp_norms_allocated) {
