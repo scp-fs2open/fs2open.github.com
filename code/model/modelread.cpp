@@ -5522,6 +5522,19 @@ void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
 {
 	uint i, nv;
 	model_tmap_vert* verts;
+	vec3d* bmin = vp(p + TMAP2_BBOX_MIN);
+	vec3d* bmax = vp(p + TMAP2_BBOX_MAX);
+	vec3d* normal = vp(p + TMAP2_NORMAL);
+
+	bmin->xyz.x = INTEL_FLOAT(&bmin->xyz.x);
+	bmin->xyz.y = INTEL_FLOAT(&bmin->xyz.y);
+	bmin->xyz.z = INTEL_FLOAT(&bmin->xyz.z);
+	bmax->xyz.x = INTEL_FLOAT(&bmax->xyz.x);
+	bmax->xyz.y = INTEL_FLOAT(&bmax->xyz.y);
+	bmax->xyz.z = INTEL_FLOAT(&bmax->xyz.z);
+	normal->xyz.x = INTEL_FLOAT(&normal->xyz.x);
+	normal->xyz.y = INTEL_FLOAT(&normal->xyz.y);
+	normal->xyz.z = INTEL_FLOAT(&normal->xyz.z);
 
 	nv = INTEL_INT(uw(p + TMAP2_NVERTS)); // tigital
 	uw(p + TMAP2_NVERTS) = nv;
@@ -5601,8 +5614,8 @@ void swap_bsp_sortnorm2(polymodel* pm, ubyte* p, SCP_vector<vec3d>* vertex_list)
 	w(p + 8) = frontlist;
 	w(p + 12) = backlist;
 
-	vec3d* bmin = vp(p + 8);	//tigital
-	vec3d* bmax = vp(p + 20);
+	vec3d* bmin = vp(p + 16);	//tigital
+	vec3d* bmax = vp(p + 28);
 
 	bmin->xyz.x = INTEL_FLOAT(&bmin->xyz.x);
 	bmin->xyz.y = INTEL_FLOAT(&bmin->xyz.y);
