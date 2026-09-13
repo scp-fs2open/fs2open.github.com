@@ -18,7 +18,8 @@
 #include "ship/ship.h"
 
 
-SCP_vector<char *> Goal_target_names;
+// heap-allocated rather than SCP_string, so that the pointers held by ai goals stay valid when the vector grows
+SCP_vector<SCP_vm_unique_ptr<char>> Goal_target_names;
 ai_info Ai_info[MAX_AI_INFO];
 ai_info *Player_ai;
 
@@ -57,20 +58,13 @@ const char *ai_get_goal_target_name(const char *name, int *index)
 	Assertion(name != nullptr && index != nullptr, "Arguments cannot be null!");
 
 	for (int i = 0; i < static_cast<int>(Goal_target_names.size()); ++i) {
-		if (!stricmp(name, Goal_target_names[i])) {
+		if (!stricmp(name, Goal_target_names[i].get())) {
 			*index = i;
-			return Goal_target_names[i];
+			return Goal_target_names[i].get();
 		}
 	}
 
 	*index = static_cast<int>(Goal_target_names.size());
-	Goal_target_names.push_back(vm_strdup(name));
-	return Goal_target_names[*index];
-}
-
-void ai_clear_goal_target_names()
-{
-	for (auto ptr : Goal_target_names)
-		vm_free(ptr);
-	Goal_target_names.clear();
+	Goal_target_names.emplace_back(vm_strdup(name));
+	return Goal_target_names[*index].get();
 }
