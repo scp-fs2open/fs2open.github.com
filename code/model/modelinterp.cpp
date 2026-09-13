@@ -42,8 +42,6 @@
 #include <climits>
 
 
-float model_radius = 0;
-
 // Some debug variables used externally for displaying stats
 #ifndef NDEBUG
 int modelstats_num_polys = 0;
@@ -159,15 +157,11 @@ static uint Num_interp_norms_allocated = 0;
 static vec3d **Interp_norms = NULL;
 static ubyte *Interp_light_applied = NULL;
 static uint Interp_num_norms = 0;
-static ubyte *Interp_lights;
 
 // Stuff to control rendering parameters
 static color Interp_outline_color;
 static int Interp_detail_level_locked = -1;
-static uint Interp_flags = 0;
 
-// If non-zero, then the subobject gets scaled by Interp_thrust_scale.
-int Interp_thrust_scale_subobj = 0;
 float Interp_thrust_scale = 0.1f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
@@ -189,11 +183,6 @@ static float Interp_distortion_thrust_length_factor = 1.0f;
 static float Interp_thrust_glow_len_factor = 1.0f;
 static vec3d Interp_thrust_rotvel = ZERO_VECTOR;
 static bool Interp_draw_distortion = true;
-
-// Bobboau's warp stuff
-static float Interp_warp_scale_x = 1.0f;
-static float Interp_warp_scale_y = 1.0f;
-static float Interp_warp_scale_z = 1.0f;
 
 // if != -1, use this bitmap when rendering ship insignias
 static int Interp_insignia_bitmap = -1;
@@ -368,148 +357,6 @@ void model_set_thrust(int  /*model_num*/, mst_info *mst)
 	Interp_distortion_thrust_length_factor = mst->distortion_length_factor;
 
 	Interp_draw_distortion = mst->draw_distortion;
-}
-
-float GEOMETRY_NOISE = 0.0f;
-
-// Point list
-// +0      int         id
-// +4      int         size
-// +8      int         n_verts
-// +12     int         n_norms
-// +16     int         offset from start of chunk to vertex data
-// +20     n_verts*char    norm_counts
-// +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
-void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
-{
-	SCP_UNUSED(pm);
-	SCP_UNUSED(sm);
-
-	uint i, n;
-	uint nverts = uw(p+8);	
-	uint offset = uw(p+16);
-	uint next_norm = 0;
-	uint nnorms = 0;
-
-	ubyte * normcount = p+20;
-	vertex *dest = NULL;
-	vec3d *src = vp(p+offset);
-
-	// Get pointer to lights
-	Interp_lights = p+20+nverts;
-
-	for (i = 0; i < nverts; i++) {
-		nnorms += normcount[i];
-	}
-
-	// allocate new Interp data if size is greater than we already have ready to use
-	model_allocate_interp_data(nverts, nnorms);
-
-	dest = Interp_points;
-
-	Assert( dest != NULL );
-
-	#ifndef NDEBUG
-	modelstats_num_verts += nverts;
-	#endif
-
-
-	if (Interp_thrust_scale_subobj)	{
-
-		// Only scale vertices that aren't on the "base" of 
-		// the effect.  Base is something Adam decided to be
-		// anything under 1.5 meters, hence the 1.5f.
-		float min_thruster_dist = -1.5f;
-
-		if ( Interp_flags & MR_IS_MISSILE )	{
-			min_thruster_dist = 0.5f;
-		}
-
-		for (n=0; n<nverts; n++ )	{
-			vec3d tmp;
-
-			Interp_verts[n] = src;
-
-			// Only scale vertices that aren't on the "base" of 
-			// the effect.  Base is something Adam decided to be
-			// anything under 1.5 meters, hence the 1.5f.
-			if ( src->xyz.z < min_thruster_dist )	{
-				tmp.xyz.x = src->xyz.x * 1.0f;
-				tmp.xyz.y = src->xyz.y * 1.0f;
-				tmp.xyz.z = src->xyz.z * Interp_thrust_scale;
-			} else {
-				tmp = *src;
-			}
-			
-			g3_rotate_vertex(dest,&tmp);
-		
-			src++;		// move to normal
-
-			for (i=0; i<normcount[n]; i++ )	{
-				Interp_light_applied[next_norm] = 0;
-				Interp_norms[next_norm] = src;
-
-				next_norm++;
-				src++;
-			}
-			dest++;
-		} 
-	} else if ( (Interp_warp_scale_x != 1.0f) || (Interp_warp_scale_y != 1.0f) || (Interp_warp_scale_z != 1.0f)) {
-		for (n=0; n<nverts; n++ )	{
-			vec3d tmp;
-
-			Interp_verts[n] = src;
-
-			tmp.xyz.x = (src->xyz.x) * Interp_warp_scale_x;
-			tmp.xyz.y = (src->xyz.y) * Interp_warp_scale_y;
-			tmp.xyz.z = (src->xyz.z) * Interp_warp_scale_z;
-			
-			g3_rotate_vertex(dest,&tmp);
-		
-			src++;		// move to normal
-
-			for (i=0; i<normcount[n]; i++ )	{
-				Interp_light_applied[next_norm] = 0;
-				Interp_norms[next_norm] = src;
-
-				next_norm++;
-				src++;
-			}
-			dest++;
-		} 
-	} else {
-		vec3d point;
-
-		for (n=0; n<nverts; n++ )	{	
-
-			if(GEOMETRY_NOISE!=0.0f){
-				GEOMETRY_NOISE = model_radius / 50;
-
-				Interp_verts[n] = src;	
-				point.xyz.x = src->xyz.x + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-				point.xyz.y = src->xyz.y + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-				point.xyz.z = src->xyz.z + frand_range(GEOMETRY_NOISE,-GEOMETRY_NOISE);
-						
-				g3_rotate_vertex(dest, &point);
-			}else{
-				Interp_verts[n] = src;	
-				g3_rotate_vertex(dest, src);
-			}
-
-			src++;		// move to normal
-
-			for (i=0; i<normcount[n]; i++ )	{
-				Interp_light_applied[next_norm] = 0;
-				Interp_norms[next_norm] = src;
-
-				next_norm++;
-				src++;
-			}
-			dest++;
-		}
-	}
-
-	Interp_num_norms = next_norm;
 }
 
 void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false)
@@ -1475,38 +1322,7 @@ void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& sk
 
 
 //**********vertex buffer stuff**********//
-int tri_count[MAX_MODEL_TEXTURES];
 poly_list polygon_list[MAX_MODEL_TEXTURES];
-
-void parse_defpoint(int off, ubyte *bsp_data)
-{
-	uint i, n;
-	uint nverts = uw(off+bsp_data+8);	
-	uint offset = uw(off+bsp_data+16);
-	uint next_norm = 0;
-
-	ubyte *normcount = off+bsp_data+20;
-	vec3d *src = vp(off+bsp_data+offset);
-
-	// Get pointer to lights
-	Interp_lights = off+bsp_data+20+nverts;
-
-#ifndef NDEBUG
-	modelstats_num_verts += nverts;
-#endif
-
-	for (n = 0; n < nverts; n++) {
-		Interp_verts[n] = src;
-		src++; // move to normal
-
-		for (i = 0; i < normcount[n]; i++) {
-			Interp_norms[next_norm] = src;
-
-			next_norm++;
-			src++;
-		}
-	}
-}
 
 int check_values(vec3d *N)
 {
@@ -1523,357 +1339,6 @@ int check_values(vec3d *N)
 }
 
 int Parse_normal_problem_count = 0;
-
-void parse_tmap(int offset, ubyte *bsp_data)
-{
-	int pof_tex = w(bsp_data+offset+TMAP_TEXNUM);
-	uint n_vert = uw(bsp_data+offset+TMAP_NVERTS);
-	ubyte *p = &bsp_data[offset+TMAP_NORMAL];
-	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
-
-	vertex *V;
-	vec3d *v;
-	vec3d *N;
-
-	int problem_count = 0;
-
-	for (uint i = 1; i < (n_vert-1); i++) {
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-		v = Interp_verts[tverts[0].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[0].u;
-		V->texture_position.v = tverts[0].v;
-
-		*N = *Interp_norms[tverts[0].normnum];
-
-		if ( IS_VEC_NULL(N) )
-			*N = *vp(p);
-
-	  	problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
-		v = Interp_verts[tverts[i].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[i].u;
-		V->texture_position.v = tverts[i].v;
-
-		*N = *Interp_norms[tverts[i].normnum];
-
-		if ( IS_VEC_NULL(N) )
-			*N = *vp(p);
-
-	 	problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
-		v = Interp_verts[tverts[i+1].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[i+1].u;
-		V->texture_position.v = tverts[i+1].v;
-
-		*N = *Interp_norms[tverts[i+1].normnum];
-
-		if ( IS_VEC_NULL(N) )
-			*N = *vp(p);
-
-		problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		polygon_list[pof_tex].n_verts += 3;
-	}
-
-	Parse_normal_problem_count += problem_count;
-}
-
-/**
-* @brief Parses a TMAP2POLY chunk into a list of polygons.
-* 
-* @param offset The byte offset to the current TMAP2POLY chunk within bsp_data.
-* @param[in] bsp_data The byte buffer containing the BSP information for the current model.
-*/
-void parse_tmap2(int offset, ubyte* bsp_data)
-{
-	int pof_tex = w(bsp_data + offset + TMAP2_TEXNUM);
-	uint n_vert = uw(bsp_data + offset + TMAP2_NVERTS);
-
-	ubyte* p = &bsp_data[offset + TMAP2_NORMAL];
-	model_tmap_vert* tverts;
-
-	vertex* V;
-	vec3d* v;
-	vec3d* N;
-
-	int problem_count = 0;
-
-	tverts = reinterpret_cast<model_tmap_vert*>(&bsp_data[offset + TMAP2_VERTS]);
-
-	for (uint i = 1; i < (n_vert - 1); i++) {
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
-		v = Interp_verts[tverts[0].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[0].u;
-		V->texture_position.v = tverts[0].v;
-
-		*N = *Interp_norms[tverts[0].normnum];
-
-		if (IS_VEC_NULL(N))
-			*N = *vp(p);
-
-		problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 1];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 1];
-		v = Interp_verts[tverts[i].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[i].u;
-		V->texture_position.v = tverts[i].v;
-
-		*N = *Interp_norms[tverts[i].normnum];
-
-		if (IS_VEC_NULL(N))
-			*N = *vp(p);
-
-		problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts) + 2];
-		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts) + 2];
-		v = Interp_verts[tverts[i + 1].vertnum];
-		V->world.xyz.x = v->xyz.x;
-		V->world.xyz.y = v->xyz.y;
-		V->world.xyz.z = v->xyz.z;
-		V->texture_position.u = tverts[i + 1].u;
-		V->texture_position.v = tverts[i + 1].v;
-
-		*N = *Interp_norms[tverts[i + 1].normnum];
-
-		if (IS_VEC_NULL(N))
-			*N = *vp(p);
-
-		problem_count += check_values(N);
-		vm_vec_normalize_safe(N);
-
-		polygon_list[pof_tex].n_verts += 3;
-	}
-
-	Parse_normal_problem_count += problem_count;
-}
-
-void parse_bsp(int offset, ubyte* bsp_data);
-
-void parse_sortnorm(int offset, ubyte* bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data + offset + 36);
-	backlist = w(bsp_data + offset + 40);
-	prelist = w(bsp_data + offset + 44);
-	postlist = w(bsp_data + offset + 48);
-	onlist = w(bsp_data + offset + 52);
-
-	if (prelist) parse_bsp(offset + prelist, bsp_data);
-	if (backlist) parse_bsp(offset + backlist, bsp_data);
-	if (onlist) parse_bsp(offset + onlist, bsp_data);
-	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
-	if (postlist) parse_bsp(offset + postlist, bsp_data);
-}
-
-/**
-* @brief Parses a SORTNORM2 by recursively parsing into the two pointers it contains.
-*
-* @param offset The byte offset to the current SORT2NORM chunk within bsp_data.
-* @param bsp_data The byte buffer containing the BSP information for the current model.
-*/
-void parse_sortnorm2(int offset, ubyte* bsp_data)
-{
-	int frontlist, backlist;
-
-	frontlist = w(bsp_data + offset + 8);
-	backlist = w(bsp_data + offset + 12);
-
-	if (backlist) parse_bsp(offset + backlist, bsp_data);
-	if (frontlist) parse_bsp(offset + frontlist, bsp_data);
-}
-
-void parse_bsp(int offset, ubyte *bsp_data)
-{
-	int id = w(bsp_data+offset);
-	int size = w(bsp_data+offset+4);
-
-	bool end = id == OP_EOF;
-	while (!end) {
-		switch (id)
-		{
-			case OP_DEFPOINTS:
-				parse_defpoint(offset, bsp_data);
-				break;
-
-			case OP_SORTNORM:
-				parse_sortnorm(offset, bsp_data);
-				break;
-
-			case OP_SORTNORM2:
-				parse_sortnorm2(offset, bsp_data);
-				end = true; // should not continue after this chunk
-				break;
-
-			case OP_FLATPOLY:
-				break;
-
-			case OP_TMAPPOLY:
-				parse_tmap(offset, bsp_data);
-				break;
-
-			case OP_BOUNDBOX:
-				break;
-
-			case OP_TMAP2POLY:
-				parse_tmap2(offset, bsp_data);
-				end = true; // should not continue after this chunk
-				break;
-
-			default:
-				return;
-		}
-		if (end) break;
-
-		offset += size;
-		id = w(bsp_data+offset);
-		size = w(bsp_data+offset+4);
-
-		if (size < 1 || id == OP_EOF)
-			end = true;
-	}
-}
-
-void find_tmap(int offset, const ubyte *bsp_data, int id)
-{
-	int pof_tex = cw(bsp_data+offset+(id == OP_TMAP2POLY ? TMAP2_TEXNUM : TMAP_TEXNUM));
-	uint n_vert = cuw(bsp_data+offset+ (id == OP_TMAP2POLY ? TMAP2_NVERTS : TMAP_NVERTS));
-
-	tri_count[pof_tex] += n_vert-2;	
-}
-
-void find_defpoint(int off, ubyte *bsp_data)
-{
-	uint n;
-	uint nverts = uw(off+bsp_data+8);	
-
-	ubyte * normcount = off+bsp_data+20;
-
-	// Get pointer to lights
-	Interp_lights = off+bsp_data+20+nverts;
-
-#ifndef NDEBUG
-	modelstats_num_verts += nverts;
-#endif
-
-	int norm_num = 0;
-
-	for (n = 0; n < nverts; n++) {	
-		norm_num += normcount[n];
-	}
-
-	Interp_num_verts = nverts;
-	Interp_num_norms = norm_num;
-}
-
-void find_tri_counts(int offset, ubyte* bsp_data);
-
-void find_sortnorm(int offset, ubyte* bsp_data)
-{
-	int frontlist, backlist, prelist, postlist, onlist;
-
-	frontlist = w(bsp_data + offset + 36);
-	backlist = w(bsp_data + offset + 40);
-	prelist = w(bsp_data + offset + 44);
-	postlist = w(bsp_data + offset + 48);
-	onlist = w(bsp_data + offset + 52);
-
-	if (prelist) find_tri_counts(offset + prelist, bsp_data);
-	if (backlist) find_tri_counts(offset + backlist, bsp_data);
-	if (onlist) find_tri_counts(offset + onlist, bsp_data);
-	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
-	if (postlist) find_tri_counts(offset + postlist, bsp_data);
-}
-
-void find_sortnorm2(int offset, ubyte* bsp_data)
-{
-	int frontlist, backlist;
-
-	frontlist = w(bsp_data + offset + 8);
-	backlist = w(bsp_data + offset + 12);
-
-	if (backlist) find_tri_counts(offset + backlist, bsp_data);
-	if (frontlist) find_tri_counts(offset + frontlist, bsp_data);
-}
-
-// tri_count
-void find_tri_counts(int offset, ubyte *bsp_data)
-{
-	int id = w(bsp_data+offset);
-	int size = w(bsp_data+offset+4);
-
-	bool end = id == OP_EOF;
-	while (!end) {
-		switch (id)
-		{
-			case OP_DEFPOINTS:
-				find_defpoint(offset, bsp_data);
-				break;
-
-			case OP_SORTNORM:
-				find_sortnorm(offset, bsp_data);
-				break;
-
-			case OP_SORTNORM2:
-				find_sortnorm2(offset, bsp_data);
-				end = true; // should not continue after this chunk
-				break;
-
-			case OP_FLATPOLY:
-				break;
-
-			case OP_TMAPPOLY:
-				find_tmap(offset, bsp_data, id);
-				break;
-			case OP_TMAP2POLY:
-				find_tmap(offset, bsp_data, id);
-				end = true; // should not continue after this chunk
-				break;
-
-			case OP_BOUNDBOX:
-				break;
-
-			default:
-				return;
-		}
-		if (end) break;
-
-		offset += size;
-		id = w(bsp_data+offset);
-		size = w(bsp_data+offset+4);
-
-		if (size < 1 || id == OP_EOF)
-			end = true;
-	}
-}
 
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride)
 {
@@ -2105,7 +1570,6 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		polygon_list[i].n_verts = 0;
-		tri_count[i] = 0;
 	}
 
 	int milliseconds = timer_get_milliseconds();
@@ -2118,7 +1582,6 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
-		tri_count[i] = vert_count / 3;
 		total_verts += vert_count;
 
 		polygon_list[i].allocate(vert_count);
@@ -2887,6 +2350,14 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 	}
 }
 
+// Point list
+// +0      int         id
+// +4      int         size
+// +8      int         n_verts
+// +12     int         n_norms
+// +16     int         offset from start of chunk to vertex data
+// +20     n_verts*char    norm_counts
+// +offset             vertex data. Each vertex n is a point followed by norm_counts[n] normals.
 void bsp_polygon_data::process_defpoints(int off, ubyte* bsp_data)
 {
 	uint i, n;
