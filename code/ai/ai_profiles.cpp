@@ -767,6 +767,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighter/bomber AI recovers after engines repaired:", AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 
+				set_flag(profile, "$player wing orders have same priority as ship orders:", AI::Profile_Flags::Player_wing_orders_same_priority_as_ship_orders);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
