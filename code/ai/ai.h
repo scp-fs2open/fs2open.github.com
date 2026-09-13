@@ -525,7 +525,6 @@ void ai_object_init(object * obj, int ai_index);
 void ai_process( object * obj, int ai_index, float frametime );
 
 const char *ai_get_goal_target_name(const char *name, int *index);
-void ai_clear_goal_target_names();
 
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, int ship_info_index = -1, int class_type = -1);
