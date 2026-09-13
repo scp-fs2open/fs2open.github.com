@@ -41,7 +41,7 @@ void ObjectComboBox::initForOther() {
 }
 
 void ObjectComboBox::buildShipsModel() {
-	auto model = new QStandardItemModel();
+	auto model = new QStandardItemModel(this);
 
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 		if (it->flags[Ship::Info_Flags::No_fred]) {
@@ -59,7 +59,7 @@ void ObjectComboBox::buildShipsModel() {
 }
 
 void ObjectComboBox::buildOtherModel() {
-	auto model = new QStandardItemModel();
+	auto model = new QStandardItemModel(this);
 
 	auto waypoint = new QStandardItem("Waypoint");
 	waypoint->setData(static_cast<int>(OtherKind::Waypoint), Qt::UserRole);
@@ -73,7 +73,7 @@ void ObjectComboBox::buildOtherModel() {
 }
 
 void ObjectComboBox::buildPropsModel() {
-	auto model = new QStandardItemModel();
+	auto model = new QStandardItemModel(this);
 
 	for (int i = 0; i < prop_info_size(); ++i) {
 		if (Prop_info[i].flags[Prop::Info_Flags::No_fred]) {

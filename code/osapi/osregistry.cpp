@@ -40,10 +40,6 @@ namespace
 	// os registry functions -------------------------------------------------------------
 
 	// This code is needed for compatibility with the old windows registry
-	bool userSIDInitialized = false;
-	bool userSIDValid = false;
-	SCP_string userSID;
-
 	bool get_user_sid(SCP_string& outStr)
 	{
 		HANDLE hToken = nullptr;
@@ -117,7 +113,11 @@ namespace
 			}
 			return HKEY_LOCAL_MACHINE;
 		}
-		
+
+		static bool userSIDInitialized = false;
+		static bool userSIDValid = false;
+		static SCP_string userSID;
+
 		// Every compiler from Visual Studio 2008 onward should have support for UAC
 		if (!userSIDInitialized)
 		{

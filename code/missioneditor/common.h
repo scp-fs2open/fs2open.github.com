@@ -72,6 +72,10 @@ bool set_single_player_start(int objnum);
 // against the entity currently being renamed.
 SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
 
+// Free the engine data that the editors keep for their whole session.  Call at shutdown, while the graphics
+// system is still up, since models own GPU buffers and cursors own bitmaps.
+void editor_free_engine_data();
+
 // Resolve a mission filename to its index in Campaign.missions[], lazy-loading the mission's goal/event name lists from disk if the
 // FRED_LOAD_PENDING flag is still set.  Returns -1 if the mission isn't in the campaign.
 int load_and_find_campaign_mission(const char *mission_filename);
