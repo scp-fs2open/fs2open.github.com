@@ -1522,7 +1522,6 @@ void model_draw_dock_points_htl(int model_num);
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
-void model_allocate_interp_data(uint n_verts = 0, uint n_norms = 0);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

@@ -44,7 +44,6 @@
 extern int Model_texturing;
 extern int Model_polys;
 extern int tiling;
-extern float model_radius;
 
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
@@ -485,31 +484,14 @@ size_t model_batch_buffer::get_buffer_offset() const
 	return Current_offset;
 }
 
-void model_batch_buffer::allocate_memory()
-{
-	auto size = Submodel_matrices.size() * sizeof(matrix4);
-
-	if ( Mem_alloc == NULL || Mem_alloc_size < size ) {
-		if ( Mem_alloc != NULL ) {
-			vm_free(Mem_alloc);
-		}
-
-		Mem_alloc = vm_malloc(size);
-	}
-
-	Mem_alloc_size = size;
-	memcpy(Mem_alloc, &Submodel_matrices[0], size);
-}
-
 void model_batch_buffer::submit_buffer_data()
 {
 	if ( Submodel_matrices.empty() ) {
 		return;
 	}
 
-	allocate_memory();
-
-	gr_update_transform_buffer(Mem_alloc, Mem_alloc_size);
+	// the graphics backends copy the data before returning, so it can be passed directly
+	gr_update_transform_buffer(Submodel_matrices.data(), Submodel_matrices.size() * sizeof(matrix4));
 }
 
 model_draw_list::model_draw_list()
@@ -2909,8 +2891,6 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 		i = pm->submodel[i].next_sibling;
 	}
-
-	model_radius = pm->submodel[pm->detail[detail_level]].rad;
 
 	//*************************** draw the hull of the ship *********************************************
 	vec3d view_pos = scene->get_view_position();
