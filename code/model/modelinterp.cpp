@@ -51,19 +51,6 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-typedef struct model_light {
-	ubyte r, g, b;
-} model_light;
-
-// a lighting object
-typedef struct model_light_object {
-	model_light *lights;
-
-	int		objnum;
-	int		skip;
-	int		skip_max;
-} model_light_object;
-
 struct bsp_vertex
 {
 	vec3d position;
@@ -133,30 +120,7 @@ struct interp_vertex {
 // Local variables
 //
 
-static uint Num_interp_verts_allocated = 0;
-vec3d **Interp_verts = NULL;
-static vertex *Interp_points = NULL;
-static uint Interp_num_verts = 0;
-
 static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
-
-// -------------------------------------------------------------------
-// lighting save stuff 
-//
-
-model_light_object Interp_lighting_temp;
-model_light_object *Interp_lighting = &Interp_lighting_temp;
-int Interp_use_saved_lighting = 0;
-int Interp_saved_lighting_full = 0;
-//
-// lighting save stuff 
-// -------------------------------------------------------------------
-
-
-static uint Num_interp_norms_allocated = 0;
-static vec3d **Interp_norms = NULL;
-static ubyte *Interp_light_applied = NULL;
-static uint Interp_num_norms = 0;
 
 // Stuff to control rendering parameters
 static color Interp_outline_color;
@@ -195,99 +159,6 @@ int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-
-void model_deallocate_interp_data()
-{
-	if (Interp_verts != nullptr) {
-		vm_free(Interp_verts);
-		Interp_verts = nullptr;
-	}
-
-	if (Interp_points != nullptr) {
-		vm_free(Interp_points);
-		Interp_points = nullptr;
-	}
-
-	if (Interp_norms != nullptr) {
-		vm_free(Interp_norms);
-		Interp_norms = nullptr;
-	}
-
-	if (Interp_light_applied != nullptr) {
-		vm_free(Interp_light_applied);
-		Interp_light_applied = nullptr;
-	}
-
-	if (Interp_lighting_temp.lights != nullptr) {
-		vm_free(Interp_lighting_temp.lights);
-		Interp_lighting_temp.lights = nullptr;
-	}
-
-	Num_interp_verts_allocated = 0;
-	Num_interp_norms_allocated = 0;
-}
-
-void model_allocate_interp_data(uint n_verts, uint n_norms)
-{
-	static ubyte dealloc = 0;
-
-	if (!dealloc) {
-		atexit(model_deallocate_interp_data);
-		dealloc = 1;
-	}
-
-	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
-
-	if (n_verts > Num_interp_verts_allocated) {
-		if (Interp_verts != NULL) {
-			vm_free(Interp_verts);
-			Interp_verts = NULL;
-		}
-		// Interp_verts can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_verts = (vec3d**) vm_malloc( n_verts * sizeof(vec3d *) );
-
-		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
-
-		Num_interp_verts_allocated = n_verts;
-	}
-
-	if (n_norms > Num_interp_norms_allocated) {
-		if (Interp_norms != NULL) {
-			vm_free(Interp_norms);
-			Interp_norms = NULL;
-		}
-		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
-		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d *) );
-
-		// these next two lighting things aren't values that need to be carried over, but we need to make sure they are 0 by default
-		if (Interp_light_applied != NULL) {
-			vm_free(Interp_light_applied);
-			Interp_light_applied = NULL;
-		}
-
-		if (Interp_lighting_temp.lights != NULL) {
-			vm_free(Interp_lighting_temp.lights);
-			Interp_lighting_temp.lights = NULL;
-		}
-
-		Interp_light_applied = (ubyte*) vm_malloc( n_norms * sizeof(ubyte) );
-		Interp_lighting_temp.lights = (model_light*) vm_malloc( n_norms * sizeof(model_light) );
-
-		memset( Interp_light_applied, 0, n_norms * sizeof(ubyte) );
-		memset( Interp_lighting_temp.lights, 0, n_norms * sizeof(model_light) );
-
-		Num_interp_norms_allocated = n_norms;
-	}
-
-	Interp_num_verts = n_verts;
-	Interp_num_norms = n_norms;
-
-	// check that everything is still usable (works in release and debug builds)
-	Verify( Interp_points != NULL );
-	Verify( Interp_verts != NULL );
-	Verify( Interp_norms != NULL );
-	Verify( Interp_light_applied != NULL );
-}
 
 void interp_clear_instance()
 {
