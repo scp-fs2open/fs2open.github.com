@@ -6797,7 +6797,13 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 		weapon_info *wip = &Weapon_info[is_primary ? swp->primary_bank_weapons[primary_bank] : swp->secondary_bank_weapons[secondary_bank]];
 		polymodel* pm = model_get(sip->model_num);
 
-		vec3d pnt = is_primary ? pm->gun_banks[primary_bank].pnt[swp->primary_next_slot[primary_bank]] : pm->missile_banks[secondary_bank].pnt[swp->secondary_next_slot[secondary_bank]];
+		// use the firing point that will fire next
+		FiringPattern firing_pattern = ship_get_firing_pattern(sip, swp, wip, is_primary ? primary_bank : secondary_bank);
+		auto ship_bank = is_primary ? &pm->gun_banks[primary_bank] : &pm->missile_banks[secondary_bank];
+		int slot = is_primary
+			? swp->primary_firepoint_state[primary_bank].peek(firing_pattern, 0, ship_bank->num_slots)
+			: swp->secondary_firepoint_state[secondary_bank].peek(firing_pattern, 0, ship_bank->num_slots);
+		vec3d pnt = ship_bank->pnt[slot];
 		vec3d firing_point;
 
 		// external model firing points only apply when the external models are actually drawn
@@ -6810,8 +6816,6 @@ bool check_los(int objnum, int target_objnum, float threshold, int primary_bank,
 
 		// use the same firing point the next shot will use
 		auto ext = is_primary ? &swp->primary_bank_external_weapon[primary_bank] : &swp->secondary_bank_external_weapon[secondary_bank];
-		auto ship_bank = is_primary ? &pm->gun_banks[primary_bank] : &pm->missile_banks[secondary_bank];
-		int slot = is_primary ? swp->primary_next_slot[primary_bank] : swp->secondary_next_slot[secondary_bank];
 		vec3d external_fp_offset = ship_get_external_model_fp_offset(ext, wip, weapon_model, ship_bank, slot, false);
 		vm_vec_add2(&pnt, &external_fp_offset);
 
