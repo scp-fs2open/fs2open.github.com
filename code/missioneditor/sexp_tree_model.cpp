@@ -694,6 +694,7 @@ int SexpTreeModel::save_branch(int cur, int at_root) const
 			start = node;
 		} else if (last >= 0) {
 			Sexp_nodes[last].rest = node;
+			Sexp_nodes[node].parent = Sexp_nodes[last].parent;
 		}
 
 		last = node;
@@ -767,8 +768,9 @@ int SexpTreeModel::find_ancestral_argument_number(int parent_op, int child_node)
 // which makes the special <argument> string a valid value at this position.
 bool SexpTreeModel::is_node_eligible_for_special_argument(int parent_node) const
 {
-	Assertion(parent_node != -1,
-		"Attempt to access invalid parent node for special arg eligibility check. Please report!");
+	// if there's no parent, it's certainly not eligible
+	if (parent_node < 0)
+		return false;
 
 	const int w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
 	const int e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
