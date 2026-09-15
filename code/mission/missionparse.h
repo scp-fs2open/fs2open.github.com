@@ -625,6 +625,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 void mission_parse_close();
 
+// Frees the mission parsing resources that are only needed while a mission is being played; called from game_level_close()
+void mission_parse_level_close();
+
 // used in fred management.cpp when creating a new mission
 void apply_default_custom_data(mission* pm);
 

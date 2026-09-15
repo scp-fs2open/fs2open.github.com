@@ -977,6 +977,7 @@ void game_level_close()
 		ct_level_close();
 		beam_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
+		mission_parse_level_close();		// let go of the replacement textures the parse objects were holding
 		photo_mode_set_active(false);
 		cam_close();
 		subtitles_close();
