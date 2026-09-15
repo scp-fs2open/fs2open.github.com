@@ -1019,9 +1019,6 @@ void game_level_close()
 			// of letting it use a bunch of memory
 			extern void model_deallocate_interp_data();
 			model_deallocate_interp_data();
-
-			extern void model_collide_free_point_list();
-			model_collide_free_point_list();
 		}
 	}
 	else
@@ -8168,6 +8165,12 @@ int main(int argc, char *argv[])
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
+#ifndef __MINGW32__
+	// Report leaks when the CRT shuts down, i.e. after static destructors have run.  Calling
+	// _CrtDumpMemoryLeaks() at the end of main() would report every global container as a leak.
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
 	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), nullptr);
 	if (hwnd)	{
@@ -8247,10 +8250,6 @@ int main(int argc, char *argv[])
 	SCP_mspdbcs_Cleanup();
 
 	::CoUninitialize();
-
-#ifndef __MINGW32__
-	_CrtDumpMemoryLeaks();
-#endif
 #endif
 
 	return result;
