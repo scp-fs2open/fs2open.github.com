@@ -862,7 +862,7 @@ void ShipEditorDialog::on_noArrivalWarpCheckBox_stateChanged(int state)
 }
 void ShipEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalTreeDirty(ui->arrivalTree->_model.save_tree());
+	_model->setArrivalTreeDirty(ui->arrivalTree->_model);
 }
 void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
 {
@@ -898,7 +898,7 @@ void ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
 }
 void fred::dialogs::ShipEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureTreeDirty(ui->departureTree->_model.save_tree());
+	_model->setDepartureTreeDirty(ui->departureTree->_model);
 }
 void ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {
