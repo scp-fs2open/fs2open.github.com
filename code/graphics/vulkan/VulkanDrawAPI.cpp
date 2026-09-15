@@ -315,7 +315,12 @@ void vulkan_render_shield_impact(shield_material* material_info,
 	data->hitNormal             = impact_orient.vec.fvec;
 	data->shieldProjMatrix      = impact_projection;
 	data->shieldModelViewMatrix = impact_transform;
-	data->shieldMapIndex        = 0; // Vulkan binds textures individually, always layer 0
+
+	// Get array index for the animated shield hit texture, same as the default material path.
+	int shield_map = material_info->get_texture_map(TM_BASE_TYPE);
+	auto* texSlot = getTextureManager()->getTextureSlot(shield_map);
+	data->shieldMapIndex = texSlot ? static_cast<int>(texSlot->arrayIndex) : 0;
+
 	data->srgb                  = High_dynamic_range ? 1 : 0;
 	data->color                 = material_info->get_color();
 	buffer.submitData();
