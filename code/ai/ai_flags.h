@@ -200,6 +200,7 @@ namespace AI {
 											// b) completion no longer requires moving 0.1m in a single frame (framerate-dependent)
 		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
+		Player_wing_orders_same_priority_as_ship_orders,	// player orders to a wing get the same goal priority as orders to an individual ship, rather than a lower one
 
 		NUM_VALUES
 	};
