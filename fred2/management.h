@@ -62,6 +62,7 @@ void lcl_fred_replace_stuff(CString& text);
 CString get_display_name_for_text_box(const char *orig_name);
 
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
+void fred_shutdown();
 void set_physics_controls();
 int dup_object(object* objp);
 int create_object_on_grid(int waypoint_instance = -1, bool prop = false);

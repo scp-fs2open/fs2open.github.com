@@ -35,8 +35,6 @@ namespace
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
 
-	SCP_string preferencesPath;
-
 	bool checkedLegacyMode = false;
 	bool legacyMode = false;
 
@@ -46,6 +44,8 @@ namespace
 
 	SCP_string getPreferencesPath()
 	{
+		static SCP_string preferencesPath;
+
 		// Lazily initialize the preferences path
 		if (preferencesPath.empty()) {
 			//Check for a custom path set by env variable

@@ -5,11 +5,11 @@
 namespace fso::fred {
 PersonaColorComboBox::PersonaColorComboBox(QWidget* parent) : QComboBox(parent)
 {
-	fredApp->runAfterInit([this]() { setModel(getPersonaModel()); });
+	fredApp->runAfterInit([this]() { setModel(getPersonaModel(this)); });
 }
-QStandardItemModel* PersonaColorComboBox::getPersonaModel()
+QStandardItemModel* PersonaColorComboBox::getPersonaModel(QObject* parent)
 {
-	auto itemModel = new QStandardItemModel();
+	auto itemModel = new QStandardItemModel(parent);
 	auto topitem = new QStandardItem("<none>");
 	topitem->setData(-1, Qt::UserRole);
 	itemModel->appendRow(topitem);

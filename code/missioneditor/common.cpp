@@ -1,15 +1,24 @@
 // methods and members common to any mission editor FSO may have
 #include "common.h"
 #include "ai/ai.h"
+#include "cmdline/cmdline.h"
+#include "controlconfig/controlsconfig.h"
 #include "globalincs/linklist.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "io/cursor.h"
 #include "jumpnode/jumpnode.h"
+#include "localization/fhash.h"
+#include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "object/waypoint.h"
+#include "parse/sexp.h"
 #include "prop/prop.h"
+#include "render/batching.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #include <algorithm>
 
@@ -326,6 +335,36 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 	}
 
 	return "";	// no error
+}
+
+void editor_free_engine_data()
+{
+	// models, model instances, and collision trees; done before ship_close() because model_unload() walks Ship_info
+	model_free_all();
+
+	// weapon and ship table data, and ship subsystems
+	weapon_close();
+	ship_close();
+
+	// the editors hold strdup'd media names in every message, including the builtin ones
+	for (auto &msg : Messages)
+		message_free_media_names(msg);
+
+	mission_parse_close();
+	mission_brief_common_close();
+	fhash_flush();
+	control_config_common_close();
+	sexp_shutdown();
+	batching_shutdown();
+
+	// the cursors hold bitmaps, so this must happen before the graphics system shuts down
+	io::mouse::CursorManager::shutdown();
+
+	if (Cmdline_mod != nullptr)
+	{
+		delete[] Cmdline_mod;
+		Cmdline_mod = nullptr;
+	}
 }
 
 int load_and_find_campaign_mission(const char *mission_filename)
