@@ -46,33 +46,6 @@ thread_local static vec3d		Mc_p1;			// The ray end rotated into the current subm
 thread_local static float		Mc_mag;			// The length of the ray
 thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
-
-
-
-void model_collide_free_point_list()
-{
-	if (Mc_point_list != NULL) {
-		vm_free(Mc_point_list);
-		Mc_point_list = NULL;
-	}
-}
-
-// allocate the point list
-// NOTE: SHOULD ONLY EVER BE CALLED FROM model_allocate_interp_data()!!!
-void model_collide_allocate_point_list(int n_points)
-{
-	Assert( n_points > 0 );
-
-	if (Mc_point_list != NULL) {
-		vm_free(Mc_point_list);
-		Mc_point_list = NULL;
-	}
-
-	Mc_point_list = (vec3d**) vm_malloc( sizeof(vec3d *) * n_points );
-
-	Verify( Mc_point_list != NULL );
-}
 
 // Returns non-zero if vector from p0 to pdir 
 // intersects the bounding box.
@@ -359,26 +332,30 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 }
 
-int model_collide_parse_bsp_defpoints(ubyte * p)
+// copies each vertex in the submodel's BSP data into the tree's point list
+void model_collide_parse_bsp_defpoints(bsp_collision_tree *tree, ubyte *p)
 {
 	uint n;
-	uint nverts = uw(p+8);	
-	uint offset = uw(p+16);	
+	uint nverts = uw(p+8);
+	uint offset = uw(p+16);
 
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_collide_allocate_point_list(nverts);
+	tree->n_verts = (int)nverts;
 
-	Assert( Mc_point_list != NULL );
+	if (nverts == 0) {
+		tree->point_list = nullptr;
+		return;
+	}
+
+	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * nverts);
 
 	for (n=0; n<nverts; n++ ) {
-		Mc_point_list[n] = src;
+		tree->point_list[n] = *src;
 
 		src += normcount[n]+1;
-	} 
-
-	return nverts;
+	}
 }
 
 void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
@@ -592,12 +569,9 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 
 	Assert(chunk_type == OP_DEFPOINTS);
 
-	int n_verts = model_collide_parse_bsp_defpoints(p);
+	model_collide_parse_bsp_defpoints(tree, p);
 
-	if ( n_verts <= 0) {
-		tree->point_list = NULL;
-		tree->n_verts = 0;
-
+	if (tree->n_verts == 0) {
 		tree->n_nodes = 0;
 		tree->node_list = NULL;
 
@@ -749,7 +723,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 					// add another polygon center
 					vec3d center = vmd_zero_vector;
 					for (int j = 0; j < new_leaf.num_verts; j++) {
-						center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
+						center += tree->point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
 					}
 					tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
 
@@ -785,7 +759,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			// add another polygon center
 			vec3d center = vmd_zero_vector;
 			for (int j = 0; j < new_leaf.num_verts; j++) {
-				center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];				
+				center += tree->point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
 			}
 			tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
 
@@ -797,17 +771,6 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			break;
 		}
 	}
-
-	// copy point list
-	Assert(n_verts != -1);
-
-	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * n_verts);
-
-	for ( i = 0; i < (size_t)n_verts; ++i ) {
-		tree->point_list[i] = *Mc_point_list[i];
-	}
-
-	tree->n_verts = n_verts;
 
 	// copy node info. this might be a good time to organize the nodes into a cache efficient tree layout.
 	tree->n_nodes = (int)node_buffer.size();

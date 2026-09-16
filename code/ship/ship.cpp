@@ -135,7 +135,6 @@ std::shared_ptr<model_texture_replace> Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
 bool Disable_cockpits = false;
 bool Disable_cockpit_sway = false;
-bool Cockpit_active = false;
 
 wing	Wings[MAX_WINGS];
 bool	Ships_inited = false;
@@ -1168,6 +1167,7 @@ void ship_info::clone(const ship_info& other)
 	death_fx_count = other.death_fx_count;
 	shockwave_count = other.shockwave_count;
 	explosion_bitmap_anims = other.explosion_bitmap_anims;
+	disable_main_fireball = other.disable_main_fireball;
 	skip_deathroll_chance = other.skip_deathroll_chance;
 
 	impact_spew = other.impact_spew;
@@ -1530,6 +1530,7 @@ ship_info::ship_info()
 	death_fx_count = 6;
 	shockwave_count = 1;
 	explosion_bitmap_anims.clear();
+	disable_main_fireball = false;
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
@@ -3668,7 +3669,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	{
 		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	}
-
+	if (optional_string("$Disable Main Fireball:"))
+	{
+		stuff_boolean(&sip->disable_main_fireball);
+	}
+	
 	if(optional_string("$Debris Flame Effect:"))
 	{
 		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
@@ -8158,9 +8163,27 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 	}
 }
 
+bool ship_cockpit_enabled(const ship_info* sip)
+{
+	return sip->cockpit_model_num >= 0 && !Disable_cockpits;
+}
+
+bool ship_render_player_cockpit(const ship_info* sip)
+{
+	return (Viewer_mode != VM_TOPDOWN) && ship_cockpit_enabled(sip);
+}
+
+bool ship_render_player_cockpit_active()
+{
+	if (Viewer_obj == nullptr || Viewer_obj->type != OBJ_SHIP || Viewer_obj->instance < 0)
+		return false;
+
+	return ship_render_player_cockpit(&Ship_info[Ships[Viewer_obj->instance].ship_info_index]);
+}
+
 static bool ship_render_player_renderShipModel(const ship_info* sip) {
 	return sip->flags[Ship::Info_Flags::Show_ship_model]
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
+		&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(sip))
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
 }
 
@@ -8191,9 +8214,7 @@ bool ship_render_player_has_closeup_visuals() {
 	ship* shipp = &Ships[Viewer_obj->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
-
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
+	const bool renderCockpitModel = ship_render_player_cockpit(sip);
 	const bool renderShipModel = ship_render_player_renderShipModel(sip);
 
 	return renderCockpitModel || renderShipModel;
@@ -8206,9 +8227,8 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
+	const bool renderCockpitModel = ship_render_player_cockpit(sip);
 	const bool renderShipModel = ship_render_player_renderShipModel(sip);
-	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
 	if (!(renderCockpitModel || renderShipModel)) {
@@ -9625,11 +9645,13 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipfx_large_blowup_init(shipp);
 				// need to timeout immediately to keep physics in sync
 				shipp->really_final_death_time = timestamp(0);
+			} else if (sip->disable_main_fireball) {
+				shipp->really_final_death_time = timestamp( 0 );
 			} else {
 				// else, just a single big fireball
 				float big_rad;
 				int fireball_objnum, fireball_type, default_fireball_type;
-				float explosion_life;
+				float explosion_life = 0.0f;
 				big_rad = objp->radius*1.75f;
 
 				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
@@ -9653,8 +9675,6 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				if ( fireball_objnum >= 0 )	{
 					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
-				} else {
-					explosion_life = 0.0f;
 				}
 
 				// JAS:  I put in all this code because of an item on my todo list that

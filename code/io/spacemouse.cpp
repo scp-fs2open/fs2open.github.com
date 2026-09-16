@@ -165,10 +165,19 @@ std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMice(int pollingFrequency) {
 	return mouse;
 }
 
+static std::unique_ptr<SpaceMouse> sharedMouse = nullptr;
 SpaceMouse* SpaceMouse::getSharedSpaceMouse(int pollingFrequency)
 {
-	static std::unique_ptr<SpaceMouse> sharedMouse = SpaceMouse::searchSpaceMice(pollingFrequency);
+	if (!sharedMouse) {
+		sharedMouse = searchSpaceMice(pollingFrequency);
+	}
+
 	return sharedMouse.get();
+}
+
+void SpaceMouse::shutdownSharedSpaceMouse()
+{
+	sharedMouse = nullptr;
 }
 
 #define HANDLE_NONLINEARITY(field, idx) field = copysignf(powf(field, std::get<0>(spacemouse_nonlinearity[idx])) * std::get<1>(spacemouse_nonlinearity[idx]), field)

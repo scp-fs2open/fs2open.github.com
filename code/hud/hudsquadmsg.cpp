@@ -2807,9 +2807,10 @@ bool HudGaugeSquadMessage::canRender() const
 	}
 
 	if (render_for_cockpit_toggle > 0) {
-		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}

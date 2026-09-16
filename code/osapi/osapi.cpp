@@ -21,6 +21,7 @@
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl3.h"
+#include "io/spacemouse.h"
 
 #ifdef SCP_UNIX
 #include <sys/stat.h>
@@ -634,10 +635,12 @@ void os_deinit()
 	// Free the view ports
 	os::closeAllViewports();
 
-	SDL_Quit();
+	//If we have an open space mouse, close it
+	io::spacemouse::SpaceMouse::shutdownSharedSpaceMouse();
 
-	// Balance the SDL_hid_init() from os_init().
 	SDL_hid_exit();
+
+	SDL_Quit();
 }
 
 void debug_int3(const char *file, int line)
