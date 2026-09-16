@@ -46,13 +46,14 @@ int anchor_to_target(anchor_t anchor);
 anchor_t target_to_anchor(int target);
 
 // Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
-// name arrays via wing_name_lookup.  Consolidated from FRED's and qtFRED's
-// previously-duplicated copies.
+// name arrays via wing_name_lookup.
 void update_custom_wing_indexes();
 
-void generate_weaponry_usage_list_team(int team, int* arr);
-
-void generate_weaponry_usage_list_wing(int wing_num, int* arr);
+// The _team variant clears the map first; the two _wing variants accumulate into it
+// (so callers that build a total across several wings must clear the map themselves).
+void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage);
+void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
 
 // If Player_start_shipnum no longer refers to a valid player start ship, repoint it to the
 // first remaining player start in the mission (or -1 if there are none).  Call this after
@@ -70,6 +71,10 @@ bool set_single_player_start(int objnum);
 // (e.g. "The name is already being used by a wing").  The exclude parameters prevent matching
 // against the entity currently being renamed.
 SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
+
+// Resolve a mission filename to its index in Campaign.missions[], lazy-loading the mission's goal/event name lists from disk if the
+// FRED_LOAD_PENDING flag is still set.  Returns -1 if the mission isn't in the campaign.
+int load_and_find_campaign_mission(const char *mission_filename);
 
 struct FredShipSlotConfig
 {

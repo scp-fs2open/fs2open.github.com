@@ -730,8 +730,8 @@ void player_loadout_init()
 	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
 	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
 
-	Player_loadout.ship_pool.assign(ship_info_size(), 0);
-	Player_loadout.weapon_pool.assign(weapon_info_size(), 0);
+	Player_loadout.ship_pool.clear();
+	Player_loadout.weapon_pool.clear();
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Player_loadout.unit_data[i].ship_class = -1;

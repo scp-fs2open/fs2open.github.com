@@ -80,7 +80,12 @@ auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shado
                      .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
-                     .default_func([]() { return ShadowQuality::Disabled; } )
+                     // Return the global, like Graphics.VSync and Graphics.AAMode do, rather than a constant.
+                     // By the time the options manager reads this, Shadow_quality already holds whatever
+                     // -enable_shadows and game_settings.tbl's "$Shadow Quality Default:" put there, so a
+                     // constant here would discard both. A value the player saved still wins over this
+                     // default, and -shadow_quality still wins over that as a registered override.
+                     .default_func([]() { return Shadow_quality; } )
                      .importance(80)
                      .parser(parse_shadow_quality_func)
                      .finish();
@@ -124,7 +129,11 @@ auto ShadowRenderMethodOption = options::OptionBuilder<ShadowRenderMethod>("Grap
                      .flags({options::OptionFlags::ForceMultiValueSelection})
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
-                     .default_func([]() { return ShadowRenderMethod::ShadowMap; })
+                     // Return the global, for the same reason Graphics.Shadows above does: a constant here
+                     // would discard the value parse_shadow_render_method_func() reads from the mod's
+                     // "$Shadow Render Method:" table entry, because bind_to() writes this back to the
+                     // global on the initial load.
+                     .default_func([]() { return Shadow_render_method; })
                      .importance(79)
                      .parser(parse_shadow_render_method_func)
                      .finish();
@@ -173,7 +182,10 @@ auto RTShadowQualityOption = options::OptionBuilder<RTShadowQuality>("Graphics.R
                      .importance(77)
                      .finish();
 
-int Max_rt_shadow_local_lights = 3;
+// 4 is both the option's default and the smallest value its enumerator offers, so start there. The
+// in-game-options path already set 4 through the option's default_func; this makes the legacy path,
+// which never loads the option, agree instead of leaving an out-of-range 3 in place.
+int Max_rt_shadow_local_lights = 4;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto MaxRtShadowLocalLightsOption = options::OptionBuilder<int>("Graphics.MaxRtShadowLocalLights",
@@ -782,7 +794,7 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		viewer_list.render_all();
 	}
 
-	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && sip->cockpit_model_num >= 0 && !Disable_cockpits;
+	const bool renderCockpitModel = ship_render_player_cockpit(sip);
 
 	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
 		matrix4 dummy_view;
@@ -904,6 +916,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		case OBJ_RAW_POF:
 		case OBJ_PROP: {
 			int model_num = object_get_model_num(objp);
+			if (model_num < 0)
+				break;
 			auto pm = model_get(model_num);
 			model_clear_instance(model_num);
 

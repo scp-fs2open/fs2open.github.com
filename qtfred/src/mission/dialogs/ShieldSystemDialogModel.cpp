@@ -6,7 +6,7 @@
 namespace fso::fred::dialogs {
 
 ShieldSystemDialogModel::ShieldSystemDialogModel(QObject* parent, EditorViewport* viewport) :
-	AbstractDialogModel(parent, viewport), _teams(Iff_info.size(), GlobalShieldStatus::HasShields), _types(MAX_SHIP_CLASSES, GlobalShieldStatus::HasShields) {
+	AbstractDialogModel(parent, viewport), _teams(Iff_info.size(), GlobalShieldStatus::HasShields) {
 
 	initializeData();
 }
@@ -51,12 +51,12 @@ int ShieldSystemDialogModel::getCurrentShipType() const
 }
 void ShieldSystemDialogModel::setCurrentTeam(int team)
 {
-	Assertion(SCP_vector_inbounds(Iff_info, team), "Team index %d out of bounds (size: %d)", team, static_cast<int>(Iff_info.size()));
+	Assertion(Iff_info.in_bounds(team), "Team index %d out of bounds (size: %d)", team, static_cast<int>(Iff_info.size()));
 	_currTeam = team;
 }
 void ShieldSystemDialogModel::setCurrentShipType(int type)
 {
-	Assertion(type >= 0 && type < MAX_SHIP_CLASSES, "Ship class index %d is invalid!", type); // NOLINT(readability-simplify-boolean-expr)
+	Assertion(Ship_info.in_bounds(type), "Ship class index %d is invalid!", type);
 	_currType = type;
 }
 
@@ -66,7 +66,7 @@ GlobalShieldStatus ShieldSystemDialogModel::getCurrentTeamShieldSys() const
 }
 GlobalShieldStatus ShieldSystemDialogModel::getCurrentTypeShieldSys() const
 {
-	return _types[_currType];
+	return _types.value_or(_currType, GlobalShieldStatus::HasShields);
 }
 
 void ShieldSystemDialogModel::applyTeam(bool hasShields)

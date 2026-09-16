@@ -108,8 +108,6 @@ private:
 	SCP_vector<alt_class> alt_class_pool;
 
 	int num_string_variables;                           //!< Number of string variables in the mission
-	int string_variable_indices[MAX_SEXP_VARIABLES];    //!< maps string variables to their index in Sexp_variables
-	int ship_class_indices[MAX_SHIP_CLASSES];           //!< maps ships in the ships combobox to their index in Ship_info
 
 	//!@
 	//! Multi-edit member.

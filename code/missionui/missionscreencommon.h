@@ -190,14 +190,16 @@ extern int Wss_num_wings_teams[MAX_TVT_TEAMS];
 //////////////////////////////////////////////
 // Weapon pool
 //////////////////////////////////////////////
-extern int Wl_pool_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-extern int *Wl_pool;
+// weapon class index -> count remaining; an absent entry means the class is not in this mission's loadout
+extern SCP_map<int, int> Wl_pool_teams[MAX_TVT_TEAMS];
+extern SCP_map<int, int> *Wl_pool;
 
 //////////////////////////////////////////////
 // Ship pool
 //////////////////////////////////////////////
-extern int Ss_pool_teams[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-extern int *Ss_pool;
+// ship class index -> count remaining; an absent entry means the class is not in this mission's loadout
+extern SCP_map<int, int> Ss_pool_teams[MAX_TVT_TEAMS];
+extern SCP_map<int, int> *Ss_pool;
 
 //////////////////////////////////////////////
 // Saving loadout
@@ -207,8 +209,8 @@ typedef struct loadout_data
 	char				filename[MAX_FILENAME_LEN];				// mission filename
 	char				last_modified[DATE_TIME_LENGTH];	// when mission was last modified
 	wss_unit			unit_data[MAX_WSS_SLOTS];			// ship and weapon data
-	SCP_vector<int>	weapon_pool;						// available weapons
-	SCP_vector<int>	ship_pool;							// available ships
+	SCP_map<int, int>	weapon_pool;					// available weapons: class index -> count; absent serialized as 0
+	SCP_map<int, int>	ship_pool;						// available ships: class index -> count; absent serialized as -1 (Ss_pool's not-in-loadout sentinel)
 } loadout_data;
 
 extern loadout_data Player_loadout;

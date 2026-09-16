@@ -772,21 +772,9 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	}
 
 	// All validation passed — write the new name
-	char old_name[NAME_LENGTH];
-	strcpy_s(old_name, Ships[_singleShip].ship_name);
-	strcpy_s(Ships[_singleShip].ship_name, new_name.c_str());
+	// (the display name is handled separately in setShipDisplayName)
+	_editor->rename_ship(_singleShip, new_name.c_str(), false);
 	_shipName = new_name;
-
-	if (strcmp(old_name, Ships[_singleShip].ship_name)) {
-		update_sexp_references(old_name, Ships[_singleShip].ship_name);
-		_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, Ships[_singleShip].ship_name);
-		_editor->update_texture_replacements(old_name, Ships[_singleShip].ship_name);
-		int j = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-		if (j >= 0) {
-			Assert(strlen(Ships[_singleShip].ship_name) < NAME_LENGTH);
-			strcpy_s(Reinforcements[j].name, Ships[_singleShip].ship_name);
-		}
-	}
 
 	setModified();
 	_editor->missionChanged();

@@ -42,7 +42,7 @@ int Shockwave_inited = 0;
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
-#define SW_INDEX(sw) (sw-Shockwaves)
+#define SW_INDEX(sw) (static_cast<int>((sw)-Shockwaves))
 	
 // -----------------------------------------------------------
 // Externals

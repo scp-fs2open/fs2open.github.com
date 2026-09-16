@@ -532,11 +532,40 @@ void fix_prop_name(int prop)
 
 void fix_ship_name(int ship)
 {
+	char old_name[NAME_LENGTH];
+	strcpy_s(old_name, Ships[ship].ship_name);
+
 	int i = 1;
 
 	do {
 		sprintf(Ships[ship].ship_name, "U.R.A. Moron %d", i++);
 	} while (query_ship_name_duplicate(ship));
+
+	// This function is called when a newly created ship duplicates the name of an existing ship.  In
+	// that situation, ship_create() will have overwritten the existing ship's registry entry to point
+	// to the new ship, so point it back at the ship that legitimately holds the old name.
+	auto ship_it = Ship_registry_map.find(old_name);
+	if (ship_it != Ship_registry_map.end() && Ship_registry[ship_it->second].shipnum == ship)
+	{
+		int other_shipnum = ship_name_lookup(old_name, 1);
+		if (other_shipnum >= 0)
+		{
+			auto old_entry = &Ship_registry[ship_it->second];
+			old_entry->objnum = Ships[other_shipnum].objnum;
+			old_entry->shipnum = other_shipnum;
+		}
+		else
+			Ship_registry_map.erase(ship_it);	// don't erase the vector entry to avoid clobbering other indexes
+	}
+
+	// add a fresh registry entry for this ship under its new name
+	ship_registry_entry entry(Ships[ship].ship_name);
+	entry.status = ShipStatus::PRESENT;
+	entry.objnum = Ships[ship].objnum;
+	entry.shipnum = ship;
+
+	Ship_registry.push_back(entry);
+	Ship_registry_map[Ships[ship].ship_name] = sz2i(Ship_registry.size() - 1);
 }
 
 int create_ship(matrix *orient, vec3d *pos, int ship_type)
@@ -574,7 +603,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	// default shield setting
 	shipp->special_shield = -1;
 	z1 = Shield_sys_teams[shipp->team];
-	z2 = Shield_sys_types[ship_type];
+	z2 = Shield_sys_types.value_or(ship_type, 0);
     if (((z1 == 1) && z2) || (z2 == 1))
         Objects[obj].flags.set(Object::Object_Flags::No_shields);
 
@@ -873,17 +902,22 @@ void create_new_mission()
 
 void reset_mission()
 {
+	// Guard against reentrant ship-editor write-back while the mission is reset.
+	Ship_editor_dialog.bypass_all++;
+
 	clear_mission();
 
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
+
+	Ship_editor_dialog.bypass_all--;
 }
 
 void clear_mission(bool fast_reload)
 {
 	char *str;
-	int i, j, count;
+	int i, j;
 	CTime t;
 
 	// clean up everything we need to before we reset back to defaults.
@@ -910,9 +944,7 @@ void clear_mission(bool fast_reload)
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), 0);
 
-	for (i=0; i<MAX_SHIP_CLASSES; i++){
-		Shield_sys_types[i] = 0;
-	}
+	Shield_sys_types.clear();
 
 	set_cur_indices(-1);
 
@@ -949,34 +981,24 @@ void clear_mission(bool fast_reload)
 	// set up the default ship types for all teams.  For now, this is the same class
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
-		count = 0;
+		Team_data[i].ship_choices.clear();
 		for ( j = 0; j < ship_info_size(); j++ ) {
 			if (Ship_info[j].flags[Ship::Info_Flags::Default_player_ship]) {
-				Team_data[i].ship_list[count] = j;
-				strcpy_s(Team_data[i].ship_list_variables[count], "");
-				Team_data[i].ship_count[count] = 5;
-				strcpy_s(Team_data[i].ship_count_variables[count], "");
-				count++;
+				auto &entry = Team_data[i].ship_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = 5;
 			}
 		}
-		Team_data[i].num_ship_choices = count;
 
-		count = 0;
+		Team_data[i].weapon_choices.clear();
+		Team_data[i].required_weapons.clear();
 		for ( j = 0; j < weapon_info_size(); j++ ) {
 			if (Weapon_info[j].wi_flags[Weapon::Info_Flags::Default_player_weapon]) {
-				if (Weapon_info[j].subtype == WP_LASER) {
-					Team_data[i].weaponry_count[count] = 16;
-				} else {
-					Team_data[i].weaponry_count[count] = 500;
-				}
-				Team_data[i].weaponry_pool[count] = j; 
-				strcpy_s(Team_data[i].weaponry_pool_variable[count], "");
-				strcpy_s(Team_data[i].weaponry_amount_variable[count], "");
-				count++;
+				auto &entry = Team_data[i].weapon_choices.emplace_back();
+				entry.class_index = j;
+				entry.count = (Weapon_info[j].subtype == WP_LASER) ? 16 : 500;
 			}
-			Team_data[i].weapon_required[j] = false;
 		}
-		Team_data[i].num_weapon_choices = count; 
 	}
 
 	unmark_all();
@@ -1812,7 +1834,7 @@ int get_docking_list(int model_index)
 }
 
 // DA 1/7/99 These ship names are not variables
-int rename_ship(int ship, const char *name)
+int rename_ship(int ship, const char *name, bool update_display_name)
 {
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
@@ -1830,35 +1852,34 @@ int rename_ship(int ship, const char *name)
 
 	// keep the ship registry in sync
 	auto reg_it = Ship_registry_map.find(Ships[ship].ship_name);
-	if (reg_it != Ship_registry_map.end()) {
-		int reg_idx = reg_it->second;
-		Ship_registry_map.erase(reg_it);
-		strcpy_s(Ship_registry[reg_idx].name, name);
-		Ship_registry_map[name] = reg_idx;
-	}
+	if (reg_it != Ship_registry_map.end())
+		ship_registry_rename(reg_it->second, name, true);
 
 	strcpy_s(Ships[ship].ship_name, name);
 	if (ship == cur_ship)
 		Ship_editor_dialog.m_ship_name = _T(name);
 
-	// if this name has a hash, create a default display name
-	if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+	if (update_display_name)
 	{
-		Ships[ship].display_name = Ships[ship].ship_name;
-		end_string_at_first_hash_symbol(Ships[ship].display_name);
-		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Ships[ship].ship_name))
+		{
+			Ships[ship].display_name = Ships[ship].ship_name;
+			end_string_at_first_hash_symbol(Ships[ship].display_name);
+			Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
 
-		if (ship == cur_ship)
-			Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
-	}
-	// otherwise reset the display name
-	else
-	{
-		Ships[ship].display_name = "";
-		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T(Ships[ship].display_name.c_str());
+		}
+		// otherwise reset the display name
+		else
+		{
+			Ships[ship].display_name = "";
+			Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
 
-		if (ship == cur_ship)
-			Ship_editor_dialog.m_ship_display_name = _T("<none>");
+			if (ship == cur_ship)
+				Ship_editor_dialog.m_ship_display_name = _T("<none>");
+		}
 	}
 
 	return 0;
@@ -2424,68 +2445,6 @@ int query_whole_wing_marked(int wing)
 		return 1;
 
 	return 0;
-}
-
-void generate_ship_usage_list(int *arr, int wing) 
-{
-	int i; 
-
-	if (wing < 0) {
-		return;
-	}
-	
-	i = Wings[wing].wave_count;
-	while (i--) {
-		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
-	}
-}
-
-void generate_weaponry_usage_list(int *arr, int wing)
-{
-	int i, j;
-	ship_weapon *swp;
-
-	if (wing < 0)
-		return;
-
-	i = Wings[wing].wave_count;
-	while (i--) {
-		swp = &Ships[Wings[wing].ship_index[i]].weapons;
-		j = swp->num_primary_banks;
-		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 && swp->primary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->primary_bank_weapons[j]]++;
-			}
-		}
-
-		j = swp->num_secondary_banks;
-		while (j--) {
-			if (swp->secondary_bank_weapons[j] >=0 && swp->secondary_bank_weapons[j] < weapon_info_size()) {
-				arr[swp->secondary_bank_weapons[j]] += (int) floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f / Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f);
-			}
-		}
-	}
-}
-
-void generate_weaponry_usage_list(int team, int *arr)
-{
-	int i;
-
-	for (i=0; i<MAX_WEAPON_TYPES; i++)
-		arr[i] = 0;
-	 
-    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		Assert (team >= 0 && team < MAX_TVT_TEAMS);
-
-		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
-		}
-	}
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
-		}
-	}
 }
 
 CJumpNode *jumpnode_get_by_name(const CString& name)

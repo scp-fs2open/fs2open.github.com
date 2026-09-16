@@ -329,7 +329,7 @@ QString ShipAltShipClass::generateName(int classid, int variable)
 		classname = Sexp_variables[variable].variable_name;
 		classname = classname + '[' + Sexp_variables[variable].text + ']';
 	} else {
-		if (classid >= 0 && classid < MAX_SHIP_CLASSES) {
+		if (classid >= 0 && classid < ship_info_size()) {
 			classname = Ship_info[classid].name;
 		} else {
 			classname = "Invalid Ship Class";

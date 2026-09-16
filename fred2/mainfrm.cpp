@@ -306,6 +306,26 @@ void CMainFrame::OnDestroy() {
 	CFrameWnd::OnDestroy();
 }
 
+void CMainFrame::apply_menu_layout(bool classic)
+{
+	CMenu menu;
+	if (!menu.LoadMenu(classic ? IDR_MAINMENU_CLASSIC : IDR_MAINMENU))
+		return;
+
+	// grab the menu currently on the frame so we can free it after the swap
+	CMenu *old_menu = GetMenu();
+
+	SetMenu(&menu);
+	m_hMenuDefault = menu.GetSafeHmenu();	// keep MFC's fallback handle in sync so the bar isn't reverted later
+	menu.Detach();							// the frame now owns the new menu
+
+	// destroy the menu we just replaced to avoid a GDI leak
+	if (old_menu != nullptr && old_menu->GetSafeHmenu() != nullptr)
+		old_menu->DestroyMenu();
+
+	DrawMenuBar();
+}
+
 void CMainFrame::OnFileMissionnotes() {
 	CMissionNotesDlg	dlg;
 

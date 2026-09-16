@@ -45,6 +45,11 @@ namespace font
 		font();
 		~font();
 	} font_data;
+
+	// Looks up the width and spacing of character c1 in the given bitmap font, taking
+	// kerning against the following character c2 into account.  Returns the glyph index,
+	// or -1 if c1 is not present in the font.
+	int get_char_width_old(const font* fnt, ubyte c1, ubyte c2, int* width, int* spacing);
 }
 
 #endif // FONT_INTERNAL_H

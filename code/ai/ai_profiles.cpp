@@ -677,7 +677,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
-				set_flag(profile, "$fix target updating with strafe:", AI::Profile_Flags::Fix_target_updating_with_strafe);
+				set_flag(profile, "$fix ai target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
 
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
@@ -691,6 +691,14 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$strafe stops after time unhit:")) {
 					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
+				if (optional_string("$strafe retreat collide time:")) {
+					stuff_float(&profile->strafe_retreat_collide_time);
+				}
+
+				if (optional_string("$strafe retreat collide distance:")) {
+					stuff_float(&profile->strafe_retreat_collide_distance);
 				}
 
 				if (optional_string("$guard uses big-orbit for target radius above:")) {
@@ -858,6 +866,8 @@ void ai_profile_t::reset()
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
 	strafe_max_unhit_time = 20.0f;
+	strafe_retreat_collide_time = 2.0f;
+	strafe_retreat_collide_distance = 100.0f;
 
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;
@@ -990,6 +1000,6 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_shockwave_expire_before_do_damage);
 		flags.set(AI::Profile_Flags::Fix_small_ai_recover_after_engines_repaired);
 		flags.set(AI::Profile_Flags::Fix_standard_strafe);
-		flags.set(AI::Profile_Flags::Fix_target_updating_with_strafe);
+		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 	}
 }

@@ -1332,7 +1332,12 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// kind of stupid, but bash the name since it won't get recreated properly from
 				// the parse_wing_create_ships call.
 				shipp = &Ships[shipnum];
+				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+				Assertion(ship_entry_index >= 0, "Ship %s must be in the ship registry!", shipp->ship_name);
 				wing_bash_ship_name(shipp, wingp, which_one + 1);
+				// need to update the ship registry too
+				if (ship_entry_index >= 0)
+					ship_registry_rename(ship_entry_index, shipp->ship_name, true);
 				nprintf(("Network", "Created %s\n", shipp->ship_name));
 
 				objp = &Objects[shipp->objnum];

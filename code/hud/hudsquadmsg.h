@@ -62,7 +62,6 @@ struct reinforcements;
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
-#define MAX_MENU_ITEMS 50   // max number of items in the menu
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 
 // following are defines and character strings that are used as part of messaging mode
@@ -83,8 +82,7 @@ typedef struct mmode_item {
 } mmode_item;
 
 extern char Squad_msg_title[256];
-extern mmode_item MsgItems[MAX_MENU_ITEMS];
-extern int Num_menu_items; // number of items for a message menu
+extern SCP_vector<mmode_item> MsgItems;
 
 typedef struct player_order {
 private:
@@ -192,8 +190,7 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 void hud_squadmsg_do_mode( int mode );
 
 // functions for menu item selection with simple up/down/select buttons
-void hud_squadmsg_selection_move_down();
-void hud_squadmsg_selection_move_up();
+void hud_squadmsg_selection_move( bool up );
 void hud_squadmsg_selection_select();
 
 // Added for checking message validity - Mjn

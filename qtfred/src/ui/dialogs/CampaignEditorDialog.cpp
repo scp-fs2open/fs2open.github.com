@@ -4,6 +4,7 @@
 
 #include <globalincs/globals.h>
 #include "mission/missioncampaign.h"
+#include "missioneditor/common.h"
 #include "ui/widgets/sexp_tree_view.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/default_dir.h"
@@ -180,31 +181,10 @@ bool CampaignEditorDialog::hasDefaultMissionName()
 	return _model && !_model->getCampaignMissions().empty();
 }
 
-// Resolve a mission filename (as it appears in the sexp tree) to its index in the
-// global Campaign.missions[] table that syncCampaignMissionList() mirrors from
-// _model->getCampaignMissions(). Lazy-loads the goal/event list from disk if the
-// FRED_LOAD_PENDING flag is still set. Returns -1 if the mission isn't in the
-// campaign yet (e.g. the user is typing the name from scratch).
-static int loadAndFindCampaignMission(const SCP_string& reference_name)
-{
-	if (reference_name.empty()) {
-		return -1;
-	}
-	int idx = mission_campaign_find_mission(reference_name.c_str());
-	if (idx < 0) {
-		return -1;
-	}
-	if (Campaign.missions[idx].flags & CMISSION_FLAG_FRED_LOAD_PENDING) {
-		read_mission_goal_list(idx);
-		Campaign.missions[idx].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
-	}
-	return idx;
-}
-
 SCP_vector<SCP_string> CampaignEditorDialog::getMissionGoals(const SCP_string& reference_name)
 {
 	SCP_vector<SCP_string> list;
-	const int idx = loadAndFindCampaignMission(reference_name);
+	const int idx = load_and_find_campaign_mission(reference_name.c_str());
 	if (idx < 0) {
 		return list;
 	}
@@ -217,7 +197,7 @@ SCP_vector<SCP_string> CampaignEditorDialog::getMissionGoals(const SCP_string& r
 SCP_vector<SCP_string> CampaignEditorDialog::getMissionEvents(const SCP_string& reference_name)
 {
 	SCP_vector<SCP_string> list;
-	const int idx = loadAndFindCampaignMission(reference_name);
+	const int idx = load_and_find_campaign_mission(reference_name.c_str());
 	if (idx < 0) {
 		return list;
 	}

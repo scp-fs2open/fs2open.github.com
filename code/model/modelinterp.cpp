@@ -25,6 +25,7 @@
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "model/modelinterp.h"
 #include "model/modelrender.h"
 #include "model/modelsinc.h"
 #include "nebula/neb.h"
@@ -1245,19 +1246,19 @@ int submodel_get_num_polys_sub( ubyte *p )
 			int prelist = w(p+44);
 			int postlist = w(p+48);
 			int onlist = w(p+52);
-			n += submodel_get_num_polys_sub(p+frontlist);
-			n += submodel_get_num_polys_sub(p+backlist);
-			n += submodel_get_num_polys_sub(p+prelist);
-			n += submodel_get_num_polys_sub(p+postlist );
-			n += submodel_get_num_polys_sub(p+onlist );
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
+			if (prelist) n += submodel_get_num_polys_sub(p + prelist);
+			if (postlist) n += submodel_get_num_polys_sub(p + postlist);
+			if (onlist) n += submodel_get_num_polys_sub(p + onlist);
 			}
 			break;
 
 		case OP_SORTNORM2: {
 			int frontlist = w(p + 8);
 			int backlist = w(p + 12);
-			n += submodel_get_num_polys_sub(p + frontlist);
-			n += submodel_get_num_polys_sub(p + backlist);
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
 			}
 			end = true; // should not continue after this chunk
 			break;
@@ -1286,13 +1287,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 /**
  * Returns number of tmaps & flat polys in a submodel
  */
-int submodel_get_num_polys(int model_num, int submodel_num )
+int submodel_get_num_polys(int model_num, int submodel_num)
 {
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data.get() );
+	return model_get(model_num)->submodel[submodel_num].num_polys;
 }
 
 /**

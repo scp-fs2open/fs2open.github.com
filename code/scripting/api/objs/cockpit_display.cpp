@@ -168,16 +168,6 @@ ADE_FUNC(getOffset,
 	return ade_set_args(L, "ii", cdi->offset[0], cdi->offset[1]);
 }
 
-ADE_FUNC(isValid, l_DisplayInfo, NULL, "Detects whether this handle is valid", "boolean", "true if valid false otherwise")
-{
-	cockpit_disp_info_h *cdh = NULL;
-
-	if (!ade_get_args(L, "o", l_DisplayInfo.GetPtr(&cdh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", cdh->isValid());
-}
-
 
 cockpit_display_h::cockpit_display_h()
 	: m_obj_num( -1 ), m_display_num( INVALID_ID ) {}
@@ -354,16 +344,6 @@ ADE_FUNC(getOffset,
 	return ade_set_args(L, "ii", cd->offset[0], cd->offset[1]);
 }
 
-ADE_FUNC(isValid, l_CockpitDisplay, NULL, "Detects whether this handle is valid or not", "boolean", "true if valid, false otherwise")
-{
-	cockpit_display_h *cdh = NULL;
-
-	if (!ade_get_args(L, "o", l_CockpitDisplay.GetPtr(&cdh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", cdh->isValid());
-}
-
 
 cockpit_displays_info_h::cockpit_displays_info_h() : m_ship_info_idx( -1 ) {}
 cockpit_displays_info_h::cockpit_displays_info_h(int ship_info_idx) {
@@ -485,15 +465,6 @@ ADE_INDEXER(l_CockpitDisplayInfos, "number/string",
 	}
 }
 
-ADE_FUNC(isValid, l_CockpitDisplayInfos, NULL, "Detects whether this handle is valid", "boolean", "true if valid, false otehrwise")
-{
-	cockpit_displays_info_h *cdih = NULL;
-	if (!ade_get_args(L, "o", l_CockpitDisplayInfos.GetPtr(&cdih)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", cdih->isValid());
-}
-
 
 cockpit_displays_h::cockpit_displays_h() : m_obj_num( -1 ) {}
 cockpit_displays_h::cockpit_displays_h(int obj_num) : m_obj_num( obj_num ) {}
@@ -598,15 +569,6 @@ ADE_INDEXER(l_CockpitDisplays, "number/string", "Gets a cockpit display from the
 
 		return ade_set_args(L, "o", l_CockpitDisplay.Set(cockpit_display_h(OBJ_INDEX(Player_obj), index)));
 	}
-}
-
-ADE_FUNC(isValid, l_CockpitDisplays, NULL, "Detects whether this handle is valid or not", "boolean", "true if valid, false otherwise")
-{
-	cockpit_displays_h *cdh = NULL;
-	if(!ade_get_args(L, "o", l_CockpitDisplays.GetPtr(&cdh)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", cdh->isValid());
 }
 
 }

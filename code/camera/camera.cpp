@@ -116,11 +116,9 @@ auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					 .category(std::make_pair("Graphics", 1825))
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
-					      if (Use_cockpit_fov){
-					           COCKPIT_ZOOM_DEFAULT = val;
-						  } else {
-							  COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-						  }
+					      // Graphics.CockpitFOVToggle has its own listener that re-applies this value, so the
+					      // result is the same whichever of the two options the manager happens to load first.
+					      COCKPIT_ZOOM_DEFAULT = Use_cockpit_fov ? fov_t(val) : VIEWER_ZOOM_DEFAULT;
 					      return true;
 					 })
 					 .display(fov_display)
@@ -136,14 +134,15 @@ auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVT
 					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
 					 .category(std::make_pair("Graphics", 1825))
 					 .default_func([]() {return cockpit_fov_toggle_default;})
+					 // This does the work of bind_to(&Use_cockpit_fov) and then re-applies Graphics.CockpitFOV,
+					 // because that option's listener needs Use_cockpit_fov to already hold its final value.
+					 // Doing it here makes the pair of options independent of the order the manager loads them in.
 					 .change_listener([](bool val, bool) {
-					      if (!val) {
-					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-					      }
+					      Use_cockpit_fov = val;
+					      COCKPIT_ZOOM_DEFAULT = val ? fov_t(CockpitFovOption->getValue()) : VIEWER_ZOOM_DEFAULT;
 					      return true; // This option will always persist so we never return false
 					 })
 					 .level(options::ExpertLevel::Advanced)
-					 .bind_to(&Use_cockpit_fov)
 					 .importance(61)
 					 .parser(parse_cockpit_fov_toggle_func)
 					 .finish();

@@ -20,7 +20,12 @@ struct SupportRearmSettings {
 	bool limitRearmToPool = false;
 	bool rearmPoolFromLoadout = false;
 	bool allowWeaponPrecedence = false;
-	std::array<std::array<int, MAX_WEAPON_TYPES>, MAX_TVT_TEAMS> rearmWeaponPool{};
+
+	// weapon class -> amount; absent = rearmPoolDefault(), mirroring the mission struct
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> rearmWeaponPool;
+
+	// the default for weapon classes without a pool entry (see support_ship_info::rearm_pool_default)
+	int rearmPoolDefault() const { return rearmPoolFromLoadout ? 0 : -1; }
 
 	bool operator==(const SupportRearmSettings& rhs) const
 	{

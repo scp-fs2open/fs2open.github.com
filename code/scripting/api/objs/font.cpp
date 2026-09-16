@@ -186,14 +186,5 @@ ADE_FUNC(hasCanScale, l_Font, nullptr, "True if this font is allowed to scale ba
 	return ade_set_args(L, "b", fh != nullptr && fh->Get()->getScaleBehavior());
 }
 
-ADE_FUNC(isValid, l_Font, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	font_h *fh = nullptr;
-	if (!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", fh != nullptr && fh->isValid());
-}
-
 }
 } // namespace scripting

@@ -280,6 +280,19 @@ BEGIN
             MENUITEM "LOD 3",                       33110
             MENUITEM "LOD 4 (lowest detail)",       33111
         END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
+        END
         MENUITEM SEPARATOR
         MENUITEM "Hide Marked Objects",         33002
         MENUITEM "Show Hidden Objects",         33003
@@ -426,6 +439,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "Classic menu layout",         ID_CLASSIC_MENU_LAYOUT
     END
     POPUP "&Help"
     BEGIN
@@ -433,6 +448,237 @@ BEGIN
         MENUITEM "Show Sexp Help",              33010
         MENUITEM SEPARATOR
         MENUITEM "&About FRED2",                57664
+    END
+END
+
+IDR_MAINMENU_CLASSIC MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                57600
+        MENUITEM "&Open...\tCtrl+O",            57601
+        MENUITEM "&Save\tCtrl+S",               57603
+        MENUITEM "Save &As...\tCtrl+Shift+S",   57604
+        MENUITEM "Re&vert",                     33000
+        MENUITEM SEPARATOR
+        POPUP "Save &Format"
+        BEGIN
+            MENUITEM "FS2 Open",                    33069, CHECKED
+            MENUITEM "FS2 Retail",                  33070
+            MENUITEM "Here Be Dragons",             33092
+        END
+        POPUP "&Import"
+        BEGIN
+            MENUITEM "&FreeSpace 1 mission...",     33074
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Run FreeSpace",              32985
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 57616, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       57665
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "Undo\tCtrl+Z",                57643
+        MENUITEM "Clone Marked Objects",        33099
+        MENUITEM "Delete\tDel",                 32789
+        MENUITEM "Delete Wing\tCtrl+Del",       33035
+        MENUITEM SEPARATOR
+        MENUITEM "Lock Marked Objects",         ID_EDIT_LOCK_MARKED_OBJECTS
+        MENUITEM "Unlock All Objects",          ID_EDIT_UNLOCK_ALL_OBJECTS
+        MENUITEM "Selection Lock",              ID_SELECTION_LOCK
+        MENUITEM SEPARATOR
+        MENUITEM "Disable Undo",                33055
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Toolbar",                    59392, CHECKED
+        MENUITEM "&Status Bar",                 59393, CHECKED
+        MENUITEM SEPARATOR
+        POPUP "Display Filter"
+        BEGIN
+            MENUITEM "Show Ships",                  32990
+            MENUITEM "Show Player Starts",          32991
+            MENUITEM "Show Waypoints",              1075
+            MENUITEM SEPARATOR
+            MENUITEM "Show IFF 0",                  33081
+            MENUITEM "Show IFF 1",                  33082
+            MENUITEM "Show IFF 2",                  33083
+            MENUITEM "Show IFF 3",                  33084
+            MENUITEM "Show IFF 4",                  33085
+            MENUITEM "Show IFF 5",                  33086
+            MENUITEM "Show IFF 6",                  33087
+            MENUITEM "Show IFF 7",                  33088
+            MENUITEM "Show IFF 8",                  33089
+            MENUITEM "Show IFF 9",                  32988
+        END
+        POPUP "Outline LOD"
+        BEGIN
+            MENUITEM "LOD 0 (highest detail)",      33107
+            MENUITEM "LOD 1",                       33108, CHECKED
+            MENUITEM "LOD 2",                       33109
+            MENUITEM "LOD 3",                       33110
+            MENUITEM "LOD 4 (lowest detail)",       33111
+        END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Hide Marked Objects",         33002
+        MENUITEM "Show Hidden Objects",         33003
+        MENUITEM SEPARATOR
+        MENUITEM "Show Ship Models\tShift+Alt+M", 32820, CHECKED
+        MENUITEM "Show Outlines\tShift+Alt+O",  32980
+        MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
+        MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
+        MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
+        MENUITEM "Show Coordinates\tShift+Alt+C", 32915
+        MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
+        MENUITEM "Show Distances\tD",           32941
+        MENUITEM "Show Model Paths",            33066
+        MENUITEM "Show Model Dock Points",      33065
+        MENUITEM "Highlight Selectable Subsystems", 33062
+        MENUITEM SEPARATOR
+        MENUITEM "Show &Grid\tShift+Alt+G",     32808
+        MENUITEM "Show Horizon\tShift+Alt+H",   32954
+        MENUITEM "Double Fine Gridlines",       32939
+        MENUITEM "Anti-Aliased Gridlines",      33048
+        MENUITEM "Show 3D Compass\tShift+Alt+3", 32832, CHECKED
+        MENUITEM "Show Background\tShift+Alt+B", 32983
+        MENUITEM SEPARATOR
+        POPUP "Viewpoint\tShift+V"
+        BEGIN
+            MENUITEM "Camera",                      32835, CHECKED
+            MENUITEM "Current Ship",                32837
+        END
+        MENUITEM "Save Camera Pos\tCtrl+P",     33008
+        MENUITEM "Restore Camera Pos\tCtrl+R",  33009
+        MENUITEM SEPARATOR
+        MENUITEM "Lighting from Suns",          33079
+        MENUITEM "Render full detail",          33090
+    END
+    POPUP "&Speed"
+    BEGIN
+        POPUP "Movement"
+        BEGIN
+            MENUITEM "x1\t1",                       32898, CHECKED
+            MENUITEM "x2\t2",                       32899
+            MENUITEM "x3\t3",                       32902
+            MENUITEM "x5\t4",                       32900
+            MENUITEM "x8\t5",                       32908
+            MENUITEM "x10\t6",                      32901
+            MENUITEM "x50\t7",                      32917
+            MENUITEM "x100\t8",                     32918
+            MENUITEM "x500",                        32920
+            MENUITEM "x1000",                       32922
+        END
+        POPUP "Rotation"
+        BEGIN
+            MENUITEM "x1\tShift+1",                 32903, CHECKED
+            MENUITEM "x5\tShift+2",                 32904
+            MENUITEM "x12\tShift+3",                32905
+            MENUITEM "x25\tShift+4",                32906
+            MENUITEM "x50\tShift+5",                32907
+        END
+    END
+    POPUP "E&ditors"
+    BEGIN
+        MENUITEM "&Ships\tShift+S",             32799
+        MENUITEM "&Wings\tShift+W",             32955
+        MENUITEM "&Objects\tShift+O",           32973
+        MENUITEM "Waypoint Paths\tShift+Y",     32979
+        MENUITEM "Jump Nodes\tShift+J",         ID_EDITORS_JUMPNODE
+        MENUITEM SEPARATOR
+        MENUITEM "&Mission Specs\tShift+N",     32771
+        MENUITEM "Mission &Goals\tShift+G",     32800
+        MENUITEM "Mission &Events\tShift+E",    32974
+        MENUITEM "Mission Cutscenes",           ID_EDITORS_CUTSCENES
+        MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
+        MENUITEM SEPARATOR
+        MENUITEM "&Fiction Viewer\tShift+F",    ID_EDITORS_FICTION
+        MENUITEM "&Command Briefing\tShift+C",  33054
+        MENUITEM "Team &Loadout\tShift+P",      32972
+        MENUITEM "&Briefing\tShift+B",          33006
+        MENUITEM "&Debriefing\tShift+D",        33007
+        MENUITEM SEPARATOR
+        MENUITEM "Background\tShift+I",         32976
+        MENUITEM "Asteroid Field\tShift+A",     32984
+        MENUITEM "Volumetric Nebula",           ID_EDITORS_VOLUMETRICS
+        MENUITEM SEPARATOR
+        MENUITEM "Reinforcements\tShift+R",     32977
+        MENUITEM "Shield System",               33033
+        MENUITEM "Set Global Ship Flags",       33073
+        MENUITEM "Reorder Ships and Wings",     ID_REORDER
+        MENUITEM SEPARATOR
+        MENUITEM "Campaign",                    32986
+    END
+    POPUP "&Groups"
+    BEGIN
+        MENUITEM "Group 1\tCtrl+1",             33012
+        MENUITEM "Group 2\tCtrl+2",             33013
+        MENUITEM "Group 3\tCtrl+3",             33014
+        MENUITEM "Group 4\tCtrl+4",             33015
+        MENUITEM "Group 5\tCtrl+5",             33016
+        MENUITEM "Group 6\tCtrl+6",             33017
+        MENUITEM "Group 7\tCtrl+7",             33018
+        MENUITEM "Group 8\tCtrl+8",             33019
+        MENUITEM "Group 9\tCtrl+9",             33020
+        POPUP "Set Group"
+        BEGIN
+            MENUITEM "Group 1",                     33021
+            MENUITEM "Group 2",                     33022
+            MENUITEM "Group 3",                     33023
+            MENUITEM "Group 4",                     33024
+            MENUITEM "Group 5",                     33025
+            MENUITEM "Group 6",                     33026
+            MENUITEM "Group 7",                     33027
+            MENUITEM "Group 8",                     33028
+            MENUITEM "Group 9",                     33029
+        END
+    END
+    POPUP "&Misc"
+    BEGIN
+        MENUITEM "Next Object\tTab",            33039
+        MENUITEM "Previous Object\tCtrl+Tab",   33040
+        MENUITEM "Control Object\tT",           33041
+        MENUITEM "Level Object\tL",             33037
+        MENUITEM "Align Object\tCtrl+L",        33036
+        MENUITEM SEPARATOR
+        MENUITEM "Next Subsystem\tK",           33059
+        MENUITEM "Prev Subsystem\tShift+K",     33060
+        MENUITEM "Cancel Subsystem\tAlt+K",     33061
+        MENUITEM SEPARATOR
+        MENUITEM "Mark Wing\tW",                33038
+        MENUITEM "Adjust Grid",                 33032
+        MENUITEM "Calculate Relative Coordinates", 33030
+        MENUITEM "Point Ships Using UVec",      33101
+        MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
+        MENUITEM "Music Player",                ID_MUSIC_PLAYER
+        MENUITEM SEPARATOR
+        MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
+        MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
+        MENUITEM "Error checker\tShift+H",      32978
+        MENUITEM SEPARATOR
+        MENUITEM "Classic menu layout",         ID_CLASSIC_MENU_LAYOUT
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Help Topics",                57667
+        MENUITEM SEPARATOR
+        MENUITEM "&About FRED2",                57664
+        MENUITEM "Show Sexp Help",              33010
     END
 END
 
@@ -3827,6 +4073,7 @@ BEGIN
     ID_ALWAYS_SAVE_DISPLAY_NAMES "When saving a mission, always write display names to the mission file even if the display name is not set"
     ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES "If checked, error checker will check for things that are not necessarily errors but may cause unexpected behavior"
     ID_ERROR_CHECKER        "Checks mission for FRED-detectable errors"
+    ID_CLASSIC_MENU_LAYOUT  "Switch between the QtFRED menu layout and the classic FRED menu layout"
 END
 
 STRINGTABLE

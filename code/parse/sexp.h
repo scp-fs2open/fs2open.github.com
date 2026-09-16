@@ -699,7 +699,7 @@ enum : int {
 	OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
 	OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
-	OP_SET_GUARD_RANGE, //MjnMixael
+	OP_SET_GUARD_RANGE, //MjnMixael + The Force
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
 	OP_PROP_CREATE,     // MjnMixael
@@ -1203,6 +1203,7 @@ enum sexp_error_check
 
 	SEXP_CHECK_NONOP_ARGS,              // non-operator has arguments
 	SEXP_CHECK_OP_EXPECTED,             // operator expected, but found data instead
+	SEXP_CHECK_DATA_EXPECTED,           // data expected, but found operator instead
 	SEXP_CHECK_UNKNOWN_OP,              // unrecognized operator
 	SEXP_CHECK_TYPE_MISMATCH,           // return type or data type mismatch
 	SEXP_CHECK_BAD_ARG_COUNT,           // argument count is incorrect
@@ -1388,7 +1389,8 @@ struct sexp_cached_data
 	}
 };
 
-typedef struct sexp_node {
+struct sexp_node
+{
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
@@ -1398,11 +1400,11 @@ typedef struct sexp_node {
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
 
-	sexp_cached_data *cache;	// Goober5000
+	std::unique_ptr<sexp_cached_data> cache;	// Goober5000
 	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
 
 	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
-} sexp_node;
+};
 
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)

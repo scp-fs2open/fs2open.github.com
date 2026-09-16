@@ -97,15 +97,6 @@ ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Ar
 		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
 }
 
-ADE_FUNC(isValid, l_ModelInstanceTextures, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	modelinstance_h *mih;
-	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", mih->isValid());
-}
-
 
 ADE_OBJ(l_ModelInstance, modelinstance_h, "model_instance", "Model instance handle");
 
@@ -276,15 +267,6 @@ ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "
 		LuaError(L, "Attempt to use Incomplete Feature: submodel instance copy");
 
 	return ade_set_args(L, "o", l_ModelSubmodelInstances.Set(modelsubmodelinstances_h(pmi)));
-}
-
-ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	modelinstance_h *mih;
-	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", mih->isValid());
 }
 
 ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
@@ -473,15 +455,6 @@ ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation,
 	return ade_set_args(L, "oo", l_Vector.Set(local_pnt), l_Matrix.Set(matrix_h(&local_orient)));
 }
 
-ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	submodelinstance_h *smih;
-	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", smih->isValid());
-}
-
 
 ADE_OBJ(l_ModelSubmodelInstances, modelsubmodelinstances_h, "submodel_instances", "Array of submodel instances");
 
@@ -554,15 +527,6 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 	return ade_set_args(L, "o", l_SubmodelInstance.Set(submodelinstance_h(pmi, index)));
-}
-
-ADE_FUNC(isValid, l_ModelSubmodelInstances, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if invalid, nil if a syntax/type error occurs")
-{
-	modelsubmodelinstances_h *msih;
-	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", msih->isValid());
 }
 
 }

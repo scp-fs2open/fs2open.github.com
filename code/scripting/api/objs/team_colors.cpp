@@ -9,6 +9,7 @@ namespace scripting::api {
 
 //**********HANDLE: TeamColor
 ADE_OBJ(l_TeamColor, int, "teamcolor", "Team color handle");
+ADE_OBJ_VALIDATOR(l_TeamColor, idx, Team_Names.in_bounds(idx) && Team_Colors.find(Team_Names[idx]) != Team_Colors.end());
 
 ADE_FUNC(__tostring, l_TeamColor, nullptr, "Team color name", "string", "Team color name, or an empty string if handle is invalid")
 {
@@ -110,23 +111,6 @@ ADE_VIRTVAR(StripeColor, l_TeamColor, nullptr, "Team color stripe color", "color
 	gr_init_alphacolor(&cur, static_cast<int>(color_values.r), static_cast<int>(color_values.g), static_cast<int>(color_values.b), 255);
 
 	return ade_set_args(L, "o", l_Color.Set(cur));
-}
-
-ADE_FUNC(isValid, l_TeamColor, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if (!ade_get_args(L, "o", l_TeamColor.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (!SCP_vector_inbounds(Team_Names, idx))
-		return ADE_RETURN_FALSE;
-
-	const auto& it = Team_Colors.find(Team_Names[idx]);
-	if (it == Team_Colors.end()) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ADE_RETURN_TRUE;
 }
 
 }

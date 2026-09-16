@@ -10,6 +10,7 @@
 #include "VulkanState.h"
 #include "VulkanDraw.h"
 #include "VulkanDeferred.h"
+#include "VulkanOpenXR.h"
 #include "VulkanPostProcessing.h"
 
 #include "backends/imgui_impl_sdl3.h"
@@ -406,12 +407,6 @@ std::unique_ptr<os::Viewport> stub_create_viewport(const os::ViewPortProperties&
 	return {};
 }
 void stub_use_viewport(os::Viewport* /*view*/) {}
-SCP_vector<const char*> stub_openxr_get_extensions() { return {}; }
-bool stub_openxr_test_capabilities() { return false; }
-bool stub_openxr_create_session() { return false; }
-int64_t stub_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/) { return 0; }
-bool stub_openxr_acquire_swapchain_buffers() { return false; }
-bool stub_openxr_flip() { return false; }
 
 // ========== Function pointer table ==========
 // Implementations are defined in their respective files:
@@ -555,12 +550,12 @@ void init_function_pointers()
 
 	gr_screen.gf_set_viewport = vulkan_set_viewport;
 
-	gr_screen.gf_openxr_get_extensions = stub_openxr_get_extensions;
-	gr_screen.gf_openxr_test_capabilities = stub_openxr_test_capabilities;
-	gr_screen.gf_openxr_create_session = stub_openxr_create_session;
-	gr_screen.gf_openxr_get_swapchain_format = stub_openxr_get_swapchain_format;
-	gr_screen.gf_openxr_acquire_swapchain_buffers = stub_openxr_acquire_swapchain_buffers;
-	gr_screen.gf_openxr_flip = stub_openxr_flip;
+	gr_screen.gf_openxr_get_extensions = vulkan_openxr_get_extensions;
+	gr_screen.gf_openxr_test_capabilities = vulkan_openxr_test_capabilities;
+	gr_screen.gf_openxr_create_session = vulkan_openxr_create_session;
+	gr_screen.gf_openxr_get_swapchain_format = vulkan_openxr_get_swapchain_format;
+	gr_screen.gf_openxr_acquire_swapchain_buffers = vulkan_openxr_acquire_swapchain_buffers;
+	gr_screen.gf_openxr_flip = vulkan_openxr_flip;
 }
 
 } // anonymous namespace

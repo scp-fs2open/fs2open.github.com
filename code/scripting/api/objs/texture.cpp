@@ -101,15 +101,6 @@ ADE_INDEXER(l_Texture, "number",
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame, true, first)));
 }
 
-ADE_FUNC(isValid, l_Texture, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	texture_h* th;
-	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", th->isValid());
-}
-
 ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 {
 	texture_h* th;

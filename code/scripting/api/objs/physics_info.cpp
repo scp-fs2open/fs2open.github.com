@@ -413,15 +413,6 @@ ADE_VIRTVAR(GravityConst, l_Physics, "number", "Multiplier for the effect of gra
 	return ade_set_args(L, "f", pih->pi->gravity_const);
 }
 
-ADE_FUNC(isValid, l_Physics, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
-{
-	physics_info_h *pih;
-	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", pih->isValid());
-}
-
 ADE_FUNC(getSpeed, l_Physics, NULL, "Gets total speed as of last frame", "number", "Total speed, or 0 if handle is invalid")
 {
 	physics_info_h *pih;

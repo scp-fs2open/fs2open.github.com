@@ -40,9 +40,6 @@ AltShipClassDlg::AltShipClassDlg(CWnd* pParent /*=NULL*/)
 	multi_edit = false;
 	player_ships_only = true;
 	num_string_variables = 0;
-
-	memset(string_variable_indices, -1, sizeof (int)*MAX_SEXP_VARIABLES); 
-	memset(ship_class_indices, -1, sizeof (int)*MAX_SHIP_CLASSES);
 }
 
 void AltShipClassDlg::alt_class_list_rebuild() {
@@ -70,7 +67,7 @@ void AltShipClassDlg::alt_class_list_rebuild() {
 			// add it to the list
 			m_alt_class_list.AddString(buff);
 		} else {
-			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < MAX_SHIP_CLASSES) {
+			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < ship_info_size()) {
 				m_alt_class_list.AddString(Ship_info[alt_class_pool[i].ship_class].name);
 			} else {
 				m_alt_class_list.AddString("Invalid Ship Class");
@@ -85,7 +82,7 @@ void AltShipClassDlg::alt_class_update_entry(alt_class &list_item) {
 
 	// Add a string variable to the list
 	if (num_string_variables && m_set_from_variables.GetCurSel() > 0) {
-		index = string_variable_indices[m_set_from_variables.GetCurSel() - 1];
+		index = static_cast<int>(m_set_from_variables.GetItemData(m_set_from_variables.GetCurSel()));
 
 		Assert(index >= 0);
 		list_item.variable_index = index;
@@ -93,16 +90,8 @@ void AltShipClassDlg::alt_class_update_entry(alt_class &list_item) {
 	}
 	// Add a ship class to the list
 	else {
-		index = m_set_from_ship_class.GetCurSel();
-
-		// Correct the index if the first entry isn't actually a ship class
-		if (num_string_variables) {
-			Assert(index > 0);
-			index--;
-		}
-
 		list_item.variable_index = -1;
-		list_item.ship_class = ship_class_indices[index];
+		list_item.ship_class = static_cast<int>(m_set_from_ship_class.GetItemData(m_set_from_ship_class.GetCurSel()));
 	}
 
 	// check the default tickbox
@@ -185,9 +174,9 @@ void AltShipClassDlg::OnDefaultToClass() {
 	alt_class_pool[index].default_to_this_class = m_default_to_class.GetCheck() ? true : false;
 }
 
-BOOL AltShipClassDlg::OnInitDialog() 
+BOOL AltShipClassDlg::OnInitDialog()
 {
-	int i, count;
+	int i;
 	char buff[TOKEN_LENGTH + TOKEN_LENGTH + 2];  // VariableName[VariableValue]
 
 	CDialog::OnInitDialog();
@@ -214,16 +203,20 @@ BOOL AltShipClassDlg::OnInitDialog()
 		multi_edit = true;
 	}
 
-	// Fill the variable combo box	
+	// Fill the variable combo box
 	m_set_from_variables.ResetContent();
-	m_set_from_variables.AddString("Set From Ship Class");
-	for (i=0; i < MAX_SEXP_VARIABLES; i++) 
 	{
-		if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) 
+		int row = m_set_from_variables.AddString("Set From Ship Class");
+		m_set_from_variables.SetItemData(row, static_cast<DWORD_PTR>(-1));
+	}
+	for (i=0; i < MAX_SEXP_VARIABLES; i++)
+	{
+		if (Sexp_variables[i].type & SEXP_VARIABLE_STRING)
 		{
 			sprintf(buff, "%s[%s]", Sexp_variables[i].variable_name, Sexp_variables[i].text);
-			m_set_from_variables.AddString(buff);
-			string_variable_indices[num_string_variables++] = i;
+			int row = m_set_from_variables.AddString(buff);
+			m_set_from_variables.SetItemData(row, i);
+			num_string_variables++;
 		}
 	}
 	m_set_from_variables.SetCurSel(0);
@@ -235,17 +228,17 @@ BOOL AltShipClassDlg::OnInitDialog()
 	m_set_from_ship_class.ResetContent();
 	// Add the default entry if we need one followed by all the ship classes
 	if (num_string_variables) {
-		m_set_from_ship_class.AddString("Set From Variable");
+		int row = m_set_from_ship_class.AddString("Set From Variable");
+		m_set_from_ship_class.SetItemData(row, static_cast<DWORD_PTR>(-1));
 	}
-	count = 0; 
     for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
     {
         if (player_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
             continue;
         }
 
-        ship_class_indices[count++] = (int)std::distance(Ship_info.cbegin(), it);
-        m_set_from_ship_class.AddString(it->name);
+        int row = m_set_from_ship_class.AddString(it->name);
+        m_set_from_ship_class.SetItemData(row, static_cast<DWORD_PTR>(std::distance(Ship_info.cbegin(), it)));
     }
 	m_set_from_ship_class.SetCurSel(num_string_variables?1:0); // Set to the first ship class
 
@@ -300,7 +293,8 @@ void AltShipClassDlg::OnOK() {
 void AltShipClassDlg::OnSelchangeAltClassList() {
 	int i;
 	int variable_selection = 0;
-	int ship_selection = 0;
+	// if we have string variables in the mission the first entry in the ship combo isn't a ship
+	int ship_selection = num_string_variables ? 1 : 0;
 	int index = m_alt_class_list.GetCurSel();
 
 	// Selected nothing
@@ -310,25 +304,20 @@ void AltShipClassDlg::OnSelchangeAltClassList() {
 
 	// If we have a variable selected
 	if (alt_class_pool[index].variable_index != -1) {
-		for (i = 0; i < MAX_SEXP_VARIABLES; i++) {
-			if (string_variable_indices[i] == alt_class_pool[index].variable_index) {
-				variable_selection = i + 1;
+		for (i = 0; i < m_set_from_variables.GetCount(); i++) {
+			if (static_cast<int>(m_set_from_variables.GetItemData(i)) == alt_class_pool[index].variable_index) {
+				variable_selection = i;
 				break;
 			}
 		}
 	}
 	// Ship selected
 	else {
-		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
-			if (ship_class_indices[i] == alt_class_pool[index].ship_class) {
+		for (i = 0; i < m_set_from_ship_class.GetCount(); i++) {
+			if (static_cast<int>(m_set_from_ship_class.GetItemData(i)) == alt_class_pool[index].ship_class) {
 				ship_selection = i;
 				break;
 			}
-		}
-
-		// if we have string variables in the mission the first entry on the list won't be a ship
-		if (num_string_variables) {
-			ship_selection++;
 		}
 	}
 

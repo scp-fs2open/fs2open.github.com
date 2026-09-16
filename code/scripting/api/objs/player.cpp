@@ -205,18 +205,6 @@ ADE_VIRTVAR(ShowSkipPopup,
 	return ade_set_args(L, "b", plr->get()->show_skip_popup != 0);
 }
 
-ADE_FUNC(isValid, l_Player, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	player_h* plr;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plr)))
-		return ADE_RETURN_NIL;
-
-	if (!plr->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(getName, l_Player, NULL, "Gets current player name", "string", "Player name, or empty string if handle is invalid")
 {
 	player_h* plr;

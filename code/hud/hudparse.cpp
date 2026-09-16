@@ -1799,6 +1799,10 @@ void load_gauge_custom(gauge_settings* settings)
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
 	hud_gauge->initVisible_in_config(visible_in_config);
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		hud_gauge->initSlew(true);
+	}
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -3366,6 +3370,10 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		hud_gauge->initSlew(true);
+	}
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
