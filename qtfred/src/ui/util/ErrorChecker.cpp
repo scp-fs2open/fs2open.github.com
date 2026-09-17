@@ -1517,6 +1517,7 @@ int ErrorChecker::checkInitialOrders(ai_goal* goals, int ship, int wing) {
 		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DISABLE_SHIP:
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
+		case AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP:
 			if (team == team2)
 				potential("Initial orders error for %s \"%s\"\n\n%s assigned to attack same team",
 						  entity, source, ship >= 0 ? "Ship" : "Wing");
