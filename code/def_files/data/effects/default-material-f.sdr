@@ -1,3 +1,10 @@
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance : enable
+precision highp float;
+precision highp int;
+precision highp sampler2DArray;
+#endif
+
 #ifdef VULKAN
 layout(set = 2, binding = 0, std140)
 #else
@@ -20,22 +27,28 @@ uniform genericData {
 	uint clipEnabled;
 };
 
+layout(location = 0) out vec4 fragOut0;
+
 #ifdef VULKAN
 
 layout(set = 1, binding = 1) uniform sampler2DArray baseMap;
 
 layout(location = 0) in vec4 fragTexCoord;
 layout(location = 1) in vec4 fragColor;
-
-layout(location = 0) out vec4 fragOut0;
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+layout(location = 2) in float vClipDist;
+#endif
 
 #else
+
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+in float vClipDist;
+#endif
 
 uniform sampler2DArray baseMap;
 
 in vec4 fragTexCoord;
 in vec4 fragColor;
-out vec4 fragOut0;
 
 #endif
 
@@ -43,6 +56,11 @@ out vec4 fragOut0;
 
 void main()
 {
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+	if (clipEnabled != 0u && vClipDist < 0.0) {
+		discard;
+	}
+#endif
 	vec4 baseColor = texture(baseMap, vec3(fragTexCoord.xy, float(baseMapIndex)));
 	if(alphaThreshold > baseColor.a) discard;
 	baseColor.rgb = (srgb == 1) ? srgb_to_linear(baseColor.rgb) : baseColor.rgb;
