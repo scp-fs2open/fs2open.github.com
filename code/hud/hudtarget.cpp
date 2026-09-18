@@ -6989,13 +6989,15 @@ void HudGaugeOffscreen::render(float /*frametime*/, bool config)
 				}
 			}
 
-			calculatePosition(&target_display_list[i].target_point, &target_display_list[i].target_pos, &coords, &dir, &half_triangle_sep);
-			renderOffscreenIndicator(&coords, dir, dist, half_triangle_sep, true);
+			if (calculatePosition(&target_display_list[i].target_point, &target_display_list[i].target_pos, &coords, &dir, &half_triangle_sep)) {
+				renderOffscreenIndicator(&coords, dir, dist, half_triangle_sep, true);
+			}
 		}
 	}
 }
 
-void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep)
+// Returns false if no screen position could be found, in which case outcoords and dir are not set.
+bool HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep)
 {
 	float xpos,ypos;
 	vec3d targ_to_player;
@@ -7058,18 +7060,19 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	g3_project_vertex(eye_vertex);
 
-	if (eye_vertex->flags&PF_OVERFLOW) {
-		//	This is unlikely to happen, but can if a clip goes through the player's eye.
-		if (!in_frame)
-			g3_end_frame();
-		return;
-	}
-
 	if (target_point->flags & PF_TEMP_POINT)
 		free_temp_point(target_point);
 
 	if (eye_vertex->flags & PF_TEMP_POINT)
 		free_temp_point(eye_vertex);
+
+	if (eye_vertex->flags&PF_OVERFLOW) {
+		//	This is unlikely to happen, but can if a clip goes through the player's eye.
+		gr_reset_screen_scale();
+		if (!in_frame)
+			g3_end_frame();
+		return false;
+	}
 
 	xpos = eye_vertex->screen.xyw.x;
 	ypos = eye_vertex->screen.xyw.y;
@@ -7080,50 +7083,49 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	xpos = (xpos<1) ? 0 : xpos;
 	ypos = (ypos<1) ? 0 : ypos;
 
+	// The clipped point should lie on a screen edge, but at long range the clip loses enough precision
+	// that it can land a pixel or two inside.  The target is known to be off screen, so fall back to
+	// the nearest edge rather than not drawing anything.
 	if ( xpos >= gr_screen.clip_right_unscaled) {
-		xpos = i2fl(gr_screen.clip_right_unscaled);
 		*dir = 0;
-
-		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
-			ypos = half_gauge_length;
-
-		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) )
-			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
-
 	} else if ( xpos <= gr_screen.clip_left_unscaled ) {
-		xpos = i2fl(gr_screen.clip_left_unscaled);
 		*dir = 1;
+	} else if ( ypos <= gr_screen.clip_top_unscaled ) {
+		*dir = 2;
+	} else if ( ypos >= gr_screen.clip_bottom_unscaled ) {
+		*dir = 3;
+	} else {
+		float edge_dist[4] = {
+			gr_screen.clip_right_unscaled - xpos,
+			xpos - gr_screen.clip_left_unscaled,
+			ypos - gr_screen.clip_top_unscaled,
+			gr_screen.clip_bottom_unscaled - ypos
+		};
+
+		*dir = 0;
+		for (int i = 1; i < 4; i++) {
+			if (edge_dist[i] < edge_dist[*dir])
+				*dir = i;
+		}
+	}
+
+	if (*dir == 0 || *dir == 1) {
+		xpos = i2fl((*dir == 0) ? gr_screen.clip_right_unscaled : gr_screen.clip_left_unscaled);
 
 		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
 			ypos = half_gauge_length;
 
 		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) )
 			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
-
-	} else if ( ypos <= gr_screen.clip_top_unscaled ) {
-		ypos = i2fl(gr_screen.clip_top_unscaled);
-		*dir = 2;
-
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
-			xpos = half_gauge_length;
-
-		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) )
-			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
-
-	} else if ( ypos >= gr_screen.clip_bottom_unscaled ) {
-		ypos = i2fl(gr_screen.clip_bottom_unscaled);
-		*dir = 3;
-
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
-			xpos = half_gauge_length;
-
-		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) )
-			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
 
 	} else {
-		if (!in_frame)
-			g3_end_frame();
-		return;
+		ypos = i2fl((*dir == 2) ? gr_screen.clip_top_unscaled : gr_screen.clip_bottom_unscaled);
+
+		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
+			xpos = half_gauge_length;
+
+		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) )
+			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
 	}
 
 	// The offscreen target triangles are drawn according the the diagram below
@@ -7156,6 +7158,8 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	if(!in_frame)
 		g3_end_frame();
+
+	return true;
 }
 
 void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid, bool config)
