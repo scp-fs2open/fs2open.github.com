@@ -3662,7 +3662,7 @@ void hud_show_targeting_gauges(float frametime)
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS;
 			}
 
-			hud_target_add_display_list(targetp, &target_point, &targetp->pos, 0, NULL, NULL, target_display_flags);
+			hud_target_add_display_list(targetp, &target_point, &target_pos, 0, nullptr, nullptr, target_display_flags);
 		}
 	} else {
 		Hud_target_w = 0;
@@ -3686,7 +3686,7 @@ void hud_show_targeting_gauges(float frametime)
 		// AL 11-11-97:	don't draw the indicator if the ship is messaging, the indicator is drawn
 		// in the message sending color in hud_show_message_sender()
 		if ( Message_shipnum != Objects[Player_ai->target_objnum].instance ) {
-			hud_target_add_display_list(targetp, &target_point, &targetp->pos, 0, NULL, NULL, 0);
+			hud_target_add_display_list(targetp, &target_point, &target_pos, 0, nullptr, nullptr, 0);
 		}
 	}
 }
