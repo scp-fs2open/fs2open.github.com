@@ -423,6 +423,9 @@ static void opengl_set_default_uniforms(const opengl_shader_t& sdr) {
 		Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 2);
 		Current_shader->program->Uniforms.setTextureUniform("SpecBuffer", 3);
 		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 4);
+		// Unit 7 is free in the deferred pass (0-3 are the G-buffer, 5/6 are env/irradiance
+		// maps) and is reserved for this -- see the raw-sampler bind in gropengldeferred.cpp.
+		Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", 7);
 		break;
 
 	case SDR_TYPE_PASSTHROUGH_RENDER:

@@ -1429,6 +1429,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			bindPendingUBOs(DescriptorSetIndex::Global);
 			if (shadowReady) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
+				writer.setImage(GlobalBinding::ShadowMapRaw, pp->getShadowRawTextureInfo());
 			}
 			m_cachedGlobalHadShadow = shadowReady;
 			m_globalSetDirty = false;
