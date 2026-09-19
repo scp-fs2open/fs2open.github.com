@@ -57,6 +57,15 @@ void gr_opengl_render_shield_impact(shield_material* material_info,
 
 void opengl_setup_scene_textures();
 void opengl_scene_texture_shutdown();
+
+/**
+ * @brief Gives the bytes that the scene, backbuffer, and distortion textures hold
+ *
+ * The profiler overlay's memory panel adds this value to the "render targets" group. The function
+ * counts only the textures that exist at the moment of the call, thus it gives 0 before
+ * opengl_setup_scene_textures() runs and after opengl_scene_texture_shutdown() runs.
+ */
+size_t opengl_get_scene_render_target_bytes();
 void gr_opengl_scene_texture_begin();
 void gr_opengl_scene_texture_end();
 void gr_opengl_copy_effect_texture();
