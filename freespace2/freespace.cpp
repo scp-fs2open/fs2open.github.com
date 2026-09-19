@@ -257,6 +257,7 @@ struct big_expl_flash {
 #define FRAME_FILTER 16
 
 #define DEFAULT_SKILL_LEVEL	1
+static int Default_skill_level = DEFAULT_SKILL_LEVEL; // can be overridden by default_settings.tbl
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
 static SCP_string skill_level_display(int value)
@@ -272,6 +273,7 @@ static void parse_skill_func()
 	value -= 1; // Parse 1-5 for the skill levels but convert to our internal 0-4
 	CLAMP(value, 0, 4);
 
+	Default_skill_level = value;
 	Game_skill_level = value;
 }
 
@@ -282,7 +284,7 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
-                     .default_func([]() { return DEFAULT_SKILL_LEVEL; })
+                     .default_func([]() { return Default_skill_level; })
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
@@ -620,7 +622,7 @@ const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 
 int game_get_default_skill_level()
 {
-	return DEFAULT_SKILL_LEVEL;
+	return Default_skill_level;
 }
 
 // Resets the flash
