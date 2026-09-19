@@ -190,6 +190,7 @@ float Min_radius_for_persistent_debris;
 bool Zero_radius_explosions_skip_fireballs;
 bool Render_insignias_as_decals;
 bool Link_special_point_subsystems_to_destroyed_submodels;
+bool Negate_warpout_jostle;
 
 
 #ifdef WITH_DISCORD
@@ -1686,6 +1687,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Link_special_point_subsystems_to_destroyed_submodels);
 			}
 
+			if (optional_string("$Negate warpout jostle:")) {
+				stuff_boolean(&Negate_warpout_jostle);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1968,6 +1973,7 @@ void mod_table_reset()
 	Zero_radius_explosions_skip_fireballs = false;
 	Render_insignias_as_decals = false;
 	Link_special_point_subsystems_to_destroyed_submodels = false;
+	Negate_warpout_jostle = false;
 }
 
 void mod_table_set_version_flags()
@@ -1999,5 +2005,6 @@ void mod_table_set_version_flags()
 	if (mod_supports_version(26, 0, 0)) {
 		Zero_radius_explosions_skip_fireballs = true;
 		Render_insignias_as_decals = true;
+		Negate_warpout_jostle = true;
 	}
 }
