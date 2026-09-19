@@ -10,7 +10,9 @@
 <h1>Preferences</h1>
 <p>Opens via <strong>File &rsaquo; Preferences</strong>.</p>
 <p>Controls QtFRED editor settings. Changes take effect immediately; there is no
-Apply button.</p>
+Apply button. The exception is a handful of graphics settings that the renderer
+can only read while it is starting up - those are marked below, and QtFRED
+applies them the next time it is launched.</p>
 
 <h2>General</h2>
 <p>Miscellaneous editor options. Hover over each setting for a tooltip
@@ -29,6 +31,50 @@ autosave folder and never overwrite the mission file you are working on.</p>
         autosave instead. Disable this to always open the on-disk mission without
         being asked.</li>
 </ul>
+
+<h2>Graphics</h2>
+<p>Controls how the 3D viewport is rendered. These settings affect the editor
+only - they are stored separately from the game's own graphics options and
+never change them.</p>
+
+<h3>Post-processing</h3>
+<p><strong>Enable post-processing in the viewport</strong> routes the viewport
+through the same HDR rendering pipeline the game uses, adding bloom,
+tonemapping, and lightshafts. It is off by default, so missions look the way
+they always have until you opt in. The same switch is available as
+<strong>View &rsaquo; Enable Post Processing</strong>.</p>
+<p>Every other setting in this section only changes what you see while
+post-processing is on, because they are all consumed by that pipeline.</p>
+
+<h3>Shadows &amp; anti-aliasing</h3>
+<ul>
+    <li><strong>Shadow quality</strong> - detail level of the shadows cast by the
+        mission's sun. Higher settings cost more performance. Shadows are off
+        until you raise this above <em>Disabled</em>, so enabling post-processing
+        alone will not produce any. <em>Requires a restart</em> - including the
+        first time you turn it on.</li>
+    <li><strong>Anti-aliasing</strong> - post-process anti-aliasing mode (FXAA or
+        SMAA, in increasing quality). Applies immediately.</li>
+    <li><strong>MSAA</strong> - multisample anti-aliasing for the 3D scene, off
+        or 4x/8x. More expensive than the post-process modes above but higher
+        quality. <em>Requires a restart.</em></li>
+</ul>
+
+<h3>Textures</h3>
+<ul>
+    <li><strong>Texture filtering</strong> - bilinear or trilinear mipmap
+        filtering. Left alone, QtFRED uses the same default the game does.
+        <em>Requires a restart.</em></li>
+    <li><strong>Anisotropic filtering</strong> - sharpens textures viewed at a
+        steep angle. The list is limited to the levels your GPU reports, and the
+        control is greyed out if it reports nothing worth offering. Left alone,
+        QtFRED uses your hardware's maximum. <em>Requires a restart.</em></li>
+</ul>
+
+<h3>Gamma</h3>
+<p>Brightness of the viewport, from 0.10 to 5.00. QtFRED defaults this to 3.00,
+higher than the game, because the viewport is not tonemapped unless
+post-processing is enabled. Applies immediately.</p>
 
 <h2>Grid</h2>
 <p>Configures the reference grid shown in the main viewport. You can set which
