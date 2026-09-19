@@ -942,6 +942,9 @@ void FredView::syncViewOptions() {
 
 	connectActionToViewSetting(ui->actionLighting_from_Suns, &_viewport->view.Lighting_on);
 	connectActionToViewSetting(ui->actionRender_Full_Detail, &_viewport->view.FullDetail);
+	// The one Preferences > Graphics setting that is also a View menu toggle. Safe to write directly:
+	// nothing has to be pushed into the engine for it (render_frame() reads it each frame), and it
+	// cannot fight the Preferences copy -- see the note on GraphicsSettings.
 	connectActionToViewSetting(ui->actionEnable_Post_Processing, &_viewport->view.Graphics.enablePostProcessing);
 
 	connectActionToViewSetting(ui->actionShowDistances, &_viewport->view.Show_distances);

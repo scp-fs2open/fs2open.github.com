@@ -1361,6 +1361,9 @@ static float sun_measured_disc_fraction(starfield_bitmap *bm)
  * tangent of the angular radius, so the penumbra widens with occluder distance the way a real
  * area light's would. 0 means a point source, i.e. hard shadows.
  *
+ * Only a size that was *asked for* can be 0. A sun whose bitmap simply has no measurable disc
+ * falls back to Sol instead -- see below.
+ *
  * @param scale_x the mission's +Scale: for this sun instance
  * @param mission_angular_size this sun instance's +AngularSize: from the mission file
  */
@@ -1369,10 +1372,24 @@ static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, flo
 	const float specified = sun_explicit_angular_size(bm, mission_angular_size);
 
 	if (specified >= 0.0f) {
+		// Explicit, including an explicit 0: a mod that asks for a sizeless source gets the
+		// hard edge it asked for.
 		return sun_disc_tangent_from_diameter(specified);
 	}
 
-	return sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);
+	const float measured = sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);
+	if (measured > 0.0f) {
+		return measured;
+	}
+
+	// Nothing specified a size and the bitmap has no disc we could measure (a planet or
+	// nebula bitmap used as a sun, or one we failed to read). Falling back to 0 here would
+	// hand that sun a single hard ray, and in a multi-sun mission one such sun is enough to
+	// lay a razor-sharp shadow over every soft one -- with no clue in the editor as to which
+	// sun is responsible, since the control that would fix it sits on a different sun.
+	// Sol is the same default the editors and the lab start from, so an unmeasurable sun now
+	// behaves like an ordinary one; hard shadows remain available by asking for 0 outright.
+	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
 }
 
 // draw sun
