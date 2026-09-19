@@ -5,6 +5,7 @@
 #include "VulkanMemory.h"
 #include "VulkanConstants.h"
 #include "VulkanPerFrameUbo.h"
+#include "graphics/post_processing.h"
 
 #include <array>
 #include <vulkan/vulkan.hpp>
@@ -226,8 +227,6 @@ private:
  */
 class VulkanBloom {
 public:
-	static constexpr int MAX_MIP_BLUR_LEVELS = 4;
-
 	/**
 	 * @brief Create bloom resources (sized to half the scene extent)
 	 * @param sceneColor Scene HDR color target to composite into (must outlive this)
@@ -255,21 +254,24 @@ private:
 	bool createTargets();
 	void destroyTargets();
 
-	struct BloomTarget {
-		vk::Image image;
-		VulkanAllocation allocation;
-		vk::ImageView fullView;                                          // All mips (textureLod sampling)
-		std::array<vk::ImageView, MAX_MIP_BLUR_LEVELS> mipViews = {};    // Per-mip views (framebuffer attachment)
-		std::array<vk::Framebuffer, MAX_MIP_BLUR_LEVELS> mipFramebuffers = {};
-	};
-
 	PostProcessContext* m_ctx = nullptr;
 	const RenderTarget* m_sceneColor = nullptr;
-	std::array<BloomTarget, 2> m_tex;          // Half-res RGBA16F, 4 mip levels
+
+	// Half-res RGBA16F mip chain. Every mip is both a color attachment (the
+	// pass that writes it) and a sampled image (the pass that reads it), thus
+	// each mip needs its own view. A view of the full chain is not usable,
+	// because the mips are in different layouts while the chain runs.
+	vk::Image m_image;
+	VulkanAllocation m_allocation;
+	std::array<vk::ImageView, Bloom_max_mip_levels> m_mipViews = {};
+	std::array<vk::Framebuffer, Bloom_max_mip_levels> m_mipFramebuffers = {};
+
 	uint32_t m_width = 0;                       // Half of scene width
 	uint32_t m_height = 0;                      // Half of scene height
-	vk::RenderPass m_renderPass;               // Color-only RGBA16F, loadOp=eDontCare
-	vk::RenderPass m_compositeRenderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
+	int m_mipCount = 0;                         // Mip levels the current extent holds
+	vk::RenderPass m_renderPass;               // Color-only RGBA16F, loadOp=eDontCare (downsample)
+	vk::RenderPass m_upsampleRenderPass;       // Color-only RGBA16F, loadOp=eLoad (additive to the mip)
+	vk::RenderPass m_compositeRenderPass;      // Color-only RGBA16F, loadOp=eLoad (blend into the scene)
 	vk::Framebuffer m_sceneColorFB;            // Scene color as attachment for bloom composite
 	bool m_initialized = false;
 };
