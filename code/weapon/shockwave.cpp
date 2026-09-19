@@ -16,6 +16,7 @@
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "object/object.h"
+#include "playerman/player.h"
 #include "options/Option.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -402,13 +403,19 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			// its warp-out point (AIM_WARP_OUT) but hasn't yet triggered the
 			// warp effect (Depart_warp).
 			// Note: AIS_DEPART_TO_BAY is excluded because it is a bay depart, not a warp.
-			if (Negate_warpout_jostle && !is_warping && shipp->ai_index >= 0) {
-				ai_info* aip = &Ai_info[shipp->ai_index];
-				if (aip->mode == AIM_WARP_OUT && aip->submode != AIS_DEPART_TO_BAY) {
+			if (Negate_warpout_jostle && !is_warping) {
+				if (shipp->ai_index >= 0) {
+					ai_info* aip = &Ai_info[shipp->ai_index];
+					if (aip->mode == AIM_WARP_OUT && aip->submode != AIS_DEPART_TO_BAY) {
+						is_warping = true;
+					}
+				}
+
+				if (!is_warping && objp == Player_obj && Player->control_mode == PCM_WARPOUT_STAGE1) {
 					is_warping = true;
 				}
 			}
-			
+
 			// Don't jostle the ship during warpout
 			if (!is_warping) {
 				weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
