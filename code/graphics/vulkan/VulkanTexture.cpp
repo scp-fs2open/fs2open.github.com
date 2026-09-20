@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
+#include "VulkanConstants.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanRenderer.h"
 #include "gr_vulkan.h"
@@ -245,6 +246,9 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	                           m_fallback3DView, ImageViewType::Volume3D, 1, false, vk::ImageType::e3D)) {
 		return false;
 	}
+	if (!createFallbackShadowTexture()) {
+		return false;
+	}
 
 	// Check BCx and ETC2 Support
 	auto features = m_physicalDevice.getFeatures();
@@ -347,11 +351,26 @@ void VulkanTextureManager::shutdown()
 	if (m_fallback2DArrayAllocation.isValid()) {
 		m_memoryManager->freeAllocation(m_fallback2DArrayAllocation);
 	}
+	if (m_fallbackShadowView) {
+		m_device.destroyImageView(m_fallbackShadowView);
+		m_fallbackShadowView = nullptr;
+	}
+	if (m_fallbackShadowTexture) {
+		m_device.destroyImage(m_fallbackShadowTexture);
+		m_fallbackShadowTexture = nullptr;
+	}
+	if (m_fallbackShadowAllocation.isValid()) {
+		m_memoryManager->freeAllocation(m_fallbackShadowAllocation);
+	}
 
 	// Destroy samplers
 	if (m_defaultSampler) {
 		m_device.destroySampler(m_defaultSampler);
 		m_defaultSampler = nullptr;
+	}
+	if (m_shadowCompareSampler) {
+		m_device.destroySampler(m_shadowCompareSampler);
+		m_shadowCompareSampler = nullptr;
 	}
 
 	for (auto& pair : m_samplerCache) {
@@ -2164,6 +2183,12 @@ vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo3D()
 	                               vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackShadowMapInfo()
+{
+	return {m_shadowCompareSampler, m_fallbackShadowView,
+	                               vk::ImageLayout::eShaderReadOnlyOptimal};
+}
+
 tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
 {
 	(void)this;
@@ -2473,6 +2498,74 @@ vk::ImageView VulkanTextureManager::createImageView(vk::Image image, vk::Format 
 		nprintf(("vulkan", "Failed to create image view: %s\n", e.what()));
 		return nullptr;
 	}
+}
+
+bool VulkanTextureManager::createFallbackShadowTexture()
+{
+	// One layer is enough: sampling clamps the array coordinate to [0, layerCount - 1],
+	// so a cascade index past the end is well defined. The real cascade count is not
+	// known this early anyway -- it follows Shadow_quality, which the renderer applies later.
+	if (!createImage(1, 1, 1, SHADOW_DEPTH_FORMAT, vk::ImageTiling::eOptimal,
+	                 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+	                 MemoryUsage::GpuOnly, m_fallbackShadowTexture, m_fallbackShadowAllocation)) {
+		nprintf(("vulkan", "Failed to create fallback shadow map image!\n"));
+		return false;
+	}
+
+	m_fallbackShadowView = createImageView(m_fallbackShadowTexture, SHADOW_DEPTH_FORMAT,
+	                                       vk::ImageAspectFlagBits::eDepth, 1, ImageViewType::Array2D);
+	if (!m_fallbackShadowView) {
+		nprintf(("vulkan", "Failed to create fallback shadow map view!\n"));
+		m_device.destroyImage(m_fallbackShadowTexture);
+		m_fallbackShadowTexture = nullptr;
+		m_memoryManager->freeAllocation(m_fallbackShadowAllocation);
+		return false;
+	}
+
+	// Clear to the far plane so a shader that does sample this reads "nothing occluding".
+	// The clear also gets the image out of eUndefined, which the descriptor's declared
+	// eShaderReadOnlyOptimal layout requires.
+	transitionImageLayout(m_fallbackShadowTexture, SHADOW_DEPTH_FORMAT,
+	                      vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+
+	{
+		vk::ImageSubresourceRange range;
+		range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+		range.baseMipLevel = 0;
+		range.levelCount = 1;
+		range.baseArrayLayer = 0;
+		range.layerCount = 1;
+
+		vk::CommandBuffer cmd = beginSingleTimeCommands();
+		cmd.clearDepthStencilImage(m_fallbackShadowTexture, vk::ImageLayout::eTransferDstOptimal,
+		                           vk::ClearDepthStencilValue(1.0f, 0), range);
+		endSingleTimeCommands(cmd);
+	}
+
+	transitionImageLayout(m_fallbackShadowTexture, SHADOW_DEPTH_FORMAT,
+	                      vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
+
+	// The renderer's own compare sampler belongs to VulkanShadowMap, which never
+	// initializes while shadows are off. So this fallback needs its own.
+	vk::SamplerCreateInfo samplerInfo;
+	samplerInfo.magFilter = vk::Filter::eNearest;
+	samplerInfo.minFilter = vk::Filter::eNearest;
+	samplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+	samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.compareEnable = VK_TRUE;
+	samplerInfo.compareOp = vk::CompareOp::eLessOrEqual;
+	samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+
+	try {
+		m_shadowCompareSampler = m_device.createSampler(samplerInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "Failed to create fallback shadow compare sampler: %s\n", e.what()));
+		return false;
+	}
+
+	return true;
 }
 
 bool VulkanTextureManager::createFallbackTexture(vk::Image& outImage, VulkanAllocation& outAlloc,

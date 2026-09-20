@@ -187,6 +187,14 @@ public:
 	 */
 	vk::DescriptorImageInfo getFallbackTextureInfo3D();
 
+	/**
+	 * @brief Get a ready-to-use DescriptorImageInfo for the shadow map fallback
+	 *
+	 * A depth-format 2D array view plus a compare-enabled sampler, for the
+	 * sampler2DArrayShadow binding when no real shadow map is bound.
+	 */
+	vk::DescriptorImageInfo getFallbackShadowMapInfo();
+
 	// Texture access
 
 	/**
@@ -260,6 +268,14 @@ private:
 	/**
 	 * @brief Create a 1x1 white fallback texture (image + view + upload)
 	 */
+	/**
+	 * @brief Create the 1x1 depth fallback for shadow sampler bindings (image + view + clear)
+	 *
+	 * Cleared to depth 1.0 (the far plane), so a shader that does sample it reads
+	 * "nothing occluding" rather than undefined memory.
+	 */
+	bool createFallbackShadowTexture();
+
 	bool createFallbackTexture(vk::Image& outImage, VulkanAllocation& outAlloc,
 	                           vk::ImageView& outView, ImageViewType viewType,
 	                           uint32_t arrayLayers = 1, bool cubemap = false,
@@ -405,6 +421,13 @@ private:
 	VulkanAllocation m_fallbackCubeAllocation;
 
 	// Fallback 1x1x1 white 3D texture for unbound sampler3D slots
+	// Depth fallback for the sampler2DArrayShadow binding. Sampled through
+	// m_shadowCompareSampler, not m_defaultSampler.
+	vk::Image m_fallbackShadowTexture;
+	vk::ImageView m_fallbackShadowView;       // 2D_ARRAY depth view (for sampler2DArrayShadow)
+	VulkanAllocation m_fallbackShadowAllocation;
+	vk::Sampler m_shadowCompareSampler;
+
 	vk::Image m_fallback3DTexture;
 	vk::ImageView m_fallback3DView;           // 3D view (for sampler3D)
 	VulkanAllocation m_fallback3DAllocation;

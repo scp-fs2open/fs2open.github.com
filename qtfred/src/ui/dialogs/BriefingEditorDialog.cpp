@@ -110,6 +110,8 @@ void BriefingEditorDialog::accept()
 	if (_model->apply()) {
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
+		// Must run before QDialog::accept() hides us -- see BriefingMapWidget::releaseRenderTarget().
+		_mapWidget->releaseRenderTarget();
 		QDialog::accept();
 		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
@@ -125,6 +127,8 @@ void BriefingEditorDialog::reject()
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
+		// Must run before QDialog::reject() hides us -- see BriefingMapWidget::releaseRenderTarget().
+		_mapWidget->releaseRenderTarget();
 		QDialog::reject(); // actually close
 		_viewportLock.reset(); // unlock before restoring the grid so the viewport can process controls again
 		create_default_grid(); // restore the grid back to the normal version
