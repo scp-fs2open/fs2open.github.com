@@ -37,6 +37,7 @@ void opengl_texture_state::init(GLuint n_units)
 
 	for (unsigned int unit = 0; unit < num_texture_units; unit++) {
 		units[unit].enabled = GL_FALSE;
+		units[unit].bound_sampler = 0;
 
 		default_values(unit);
 
@@ -111,6 +112,18 @@ void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id)
 	SetActiveUnit(unit);
 	SetTarget(tex_target);
 	Enable(tex_id);
+}
+
+void opengl_texture_state::BindSampler(GLuint unit, GLuint sampler)
+{
+	Assertion(unit < num_texture_units, "Invalid texture unit value!");
+
+	if (units[unit].bound_sampler == sampler) {
+		return;
+	}
+
+	glBindSampler(unit, sampler);
+	units[unit].bound_sampler = sampler;
 }
 
 void opengl_texture_state::Delete(GLuint tex_id)

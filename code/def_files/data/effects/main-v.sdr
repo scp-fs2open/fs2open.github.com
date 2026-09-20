@@ -115,11 +115,16 @@ uniform shadowCascadeParams {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	int rtaoSampleCount;
+	float rtaoRadius;
+	float rtaoStrength;
 
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
+	vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
 
 #ifdef VULKAN
