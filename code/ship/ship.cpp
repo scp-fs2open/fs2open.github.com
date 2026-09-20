@@ -6922,6 +6922,7 @@ void ship::clear()
 
 	ship_guardian_threshold = 0;
 	max_guard_ranges.clear();
+	max_guard_radius = -1.0f;
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -21591,33 +21592,46 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 
 	return inside;
 }
-void set_guard_range_ship(float range, const int target_ship_index, ship* shipp)
+
+void set_guard_range_ship(float range, int guarded_shipnum, ship* guarder_shipp)
 {
-	bool done = false;
-	if (range > 0) {
-		for (auto& exist : shipp->max_guard_ranges) {
-			if (exist.shipnum == target_ship_index) {
-				if (range > 0) {
-					exist.range = range;
-				} else {
-					exist.range = -1.0f;
-				}
-				done = true;
-				break;
-			}
-		}
-		if (!done) {
-			auto item = guard_range_entry(range, target_ship_index);
-			shipp->max_guard_ranges.push_back(item);
-		}
-	} else {
-		for (auto& exist : shipp->max_guard_ranges) {
-			if (exist.shipnum == target_ship_index) {
-				exist.range = -1.0f;
-			}
-		}
+	auto& ranges = guarder_shipp->max_guard_ranges;
+	auto it = std::find_if(ranges.begin(), ranges.end(), [guarded_shipnum](const guard_range_entry& entry) { return entry.shipnum == guarded_shipnum; });
+
+	if (range > 0.0f)
+	{
+		if (it != ranges.end())
+			it->range = range;
+		else
+			ranges.emplace_back(range, guarded_shipnum);
+	}
+	else if (it != ranges.end())
+		ranges.erase(it);
+}
+
+float get_guard_range_ship(int guarded_shipnum, const ship* guarder_shipp)
+{
+	for (const auto& entry : guarder_shipp->max_guard_ranges)
+	{
+		if (entry.shipnum == guarded_shipnum)
+			return entry.range;
+	}
+
+	return -1.0f;
+}
+
+void clear_guard_ranges_for_ship(int guarded_shipnum)
+{
+	for (auto so: list_range(&Ship_obj_list))
+	{
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		auto& ranges = Ships[Objects[so->objnum].instance].max_guard_ranges;
+		ranges.erase(std::remove_if(ranges.begin(), ranges.end(), [guarded_shipnum](const guard_range_entry& entry) { return entry.shipnum == guarded_shipnum; }), ranges.end());
 	}
 }
+
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
 	mst->length = obj->phys_info.linear_thrust;

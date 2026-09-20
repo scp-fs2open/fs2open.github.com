@@ -325,13 +325,12 @@ object *Autopilot_flight_leader = NULL;
 static inline float ai_guard_threshold(const object* guarded_objp, float threshold, const ship* guarder_ship)
 {
 	if (guarded_objp != nullptr && guarded_objp->type == OBJ_SHIP && guarded_objp->instance >= 0) {
-		for (const auto& range_entry : guarder_ship->max_guard_ranges) {
-			if (guarded_objp->instance == range_entry.shipnum) {
-				const float configured = range_entry.range;
-				if (configured > 0.0f) {
-					return configured;
-				}
-			}
+		float configured = get_guard_range_ship(guarded_objp->instance, guarder_ship);
+		if (configured <= 0.0f) {
+			configured = Ships[guarded_objp->instance].max_guard_radius;
+		}
+		if (configured > 0.0f) {
+			return configured;
 		}
 	}
 
@@ -16782,13 +16781,9 @@ void ai_ship_destroy(int shipnum)
 
 		if (other_aip->hitter_objnum == dead_shipp->objnum)
 			other_aip->hitter_objnum = -1;
-
-		other_shipp->max_guard_ranges.erase(
-			std::remove_if(other_shipp->max_guard_ranges.begin(),
-				other_shipp->max_guard_ranges.end(),
-				[shipnum](const guard_range_entry& entry) { return entry.shipnum == shipnum; }),
-			other_shipp->max_guard_ranges.end());
 	}
+
+	clear_guard_ranges_for_ship(shipnum);
 
 	if (dead_aip->ai_flags[AI::AI_Flags::Formation_object] && dead_aip->goal_objnum >= 0)
 		ai_formation_object_recalculate_slotnums(dead_aip->goal_objnum, dead_shipp->objnum);

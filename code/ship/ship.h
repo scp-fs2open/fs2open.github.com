@@ -42,6 +42,7 @@ class WarpEffect;
 
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
+
 //	States for player death sequence, stuffed in Player_died_state.
 #define	PDS_NONE		1
 #define	PDS_DIED		2
@@ -265,7 +266,12 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
-void set_guard_range_ship(float range, const int target_ship_index, ship* shipp);
+// Caps how far the guarder will stray from the guarded ship while guarding it; range <= 0 removes the cap
+void set_guard_range_ship(float range, int guarded_shipnum, ship* guarder_shipp);
+// Returns the guarder's cap for the guarded ship, or -1 if there is none
+float get_guard_range_ship(int guarded_shipnum, const ship* guarder_shipp);
+// Removes the caps that all ships have for the guarded ship
+void clear_guard_ranges_for_ship(int guarded_shipnum);
 
 //**************************************************************
 //WMC - Damage type handling code
@@ -348,11 +354,13 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
+
 struct guard_range_entry {
 	float range;
 	int shipnum;
 	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
 };
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -697,9 +705,8 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
-	
-	SCP_vector<guard_range_entry>
-		max_guard_ranges; // Optional clamp for guard engagement/resume ranges;
+	SCP_vector<guard_range_entry> max_guard_ranges;	// per-guarded-ship caps on this ship's guard engagement/resume range
+	float max_guard_radius;	// cap for every ship guarding this one, used when the guarder has no cap of its own; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
@@ -973,6 +980,7 @@ struct ai_target_priority {
     flagset<Ship::Info_Flags> sif_flags;
 	flagset<Weapon::Info_Flags> wif_flags;
 };
+
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
