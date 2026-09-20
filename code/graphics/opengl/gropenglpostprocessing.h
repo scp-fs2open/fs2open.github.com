@@ -8,6 +8,10 @@
 void opengl_post_process_init();
 void opengl_post_process_shutdown();
 
+// Rebuild the resolution-dependent subset of the above for the current scene texture size, without
+// re-parsing post_processing.tbl or recompiling shaders. No-op if post-processing isn't active.
+void opengl_post_resize_render_targets();
+
 /**
  * @brief Gives the bytes that the bloom and SMAA render textures hold
  *

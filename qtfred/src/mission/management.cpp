@@ -3,6 +3,8 @@
 
 #include "object.h"
 
+#include "mission/GraphicsSettings.h"
+
 #include "cmdline/cmdline.h"
 
 #include <asteroid/asteroid.h>
@@ -125,9 +127,16 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	// 	Cmdline_noglow = 1;
 	Cmdline_window = 1;
 
+	// These have to be in place before gr_init() bakes them into GPU resources, which is well
+	// before EditorViewport (and its copy of the settings) exists.
+	const GraphicsSettings graphicsSettings = GraphicsSettings::applyBeforeGrInit();
+
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 	gr_init(std::move(graphicsOps));
-	gr_set_gamma(3.0f);
+
+	// The rest needs a live renderer. EditorViewport re-applies these once it exists, but the
+	// startup screens render before that.
+	graphicsSettings.applyLive();
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
