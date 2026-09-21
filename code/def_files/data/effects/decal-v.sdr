@@ -1,3 +1,7 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+#endif
 
 #ifdef VULKAN
 // Binding 0: box vertex positions

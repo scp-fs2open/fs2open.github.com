@@ -32,6 +32,7 @@
 #define GL_CLAMP_VERTEX_COLOR					0x891A
 #define GL_CLAMP_FRAGMENT_COLOR					0x891B
 #define GL_FIXED_ONLY							0x891D
+#define GLAD_GL_ARB_shader_viewport_layer_array 0 // Disabled, no gl_layer in vertex shader //0x8DAE
 
 //Enums Redefinitions
 #define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance
@@ -48,6 +49,7 @@
 #define GLAD_GL_ARB_texture_storage				GL_TRUE // ES 3.2
 #define GLAD_GL_ARB_draw_buffers_blend			GL_TRUE // ES 3.2 (glBlendFunci and glBlendEquationi)
 #define GLAD_GL_ARB_vertex_attrib_binding		GL_TRUE // ES 3.1
+#define GL_DEPTH_CLAMP							GL_DEPTH_CLAMP_EXT
 
 //Functions Redefinitions
 #define glBlendFunciARB					glBlendFunci // ES 3.2
@@ -234,11 +236,6 @@ inline void glDrawBuffer(GLenum buf)
 	}
 }
 
-// does not exist on ES, ES uses layout(location=) directly on shader
-// Notes: 
-// -This function is not required to run.
-#define glBindFragDataLocation(program, colorNumber, name) ((void)0)
-
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
 // Notes: 
 // -This function is not required to run.
@@ -254,6 +251,7 @@ static inline void glQueryCounter(GLuint id, GLenum target)
 	#else
 		(void)id;
 	#endif
+		(void)target;
 }
 
 // glGetCompressedTexImage not present on GLES and no equivalent
