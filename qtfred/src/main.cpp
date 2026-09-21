@@ -14,6 +14,10 @@
 #include "globalincs/mspdb_callstack.h"
 #endif
 
+#ifdef _MSC_VER
+#include <crtdbg.h>
+#endif
+
 #include "mission/Editor.h"
 #include "mission/management.h"
 #include "ui/widgets/renderwidget.h"
@@ -80,6 +84,11 @@ void game_busy_callback(int  /*count*/) {
 
 int main(int argc, char* argv[]) {
 	signal( SIGSEGV, handler );
+
+#ifdef _MSC_VER
+	// Report leaks when the CRT shuts down, i.e. after static destructors have run.
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
 	// Metadata must to be set as early as possible, before the first SDL_Init().
 	// This is global info and cannot be changed later (i.e., it can't be set per mod)

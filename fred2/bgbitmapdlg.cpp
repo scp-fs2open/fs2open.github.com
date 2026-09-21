@@ -221,20 +221,18 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	//create tool tip controls
-	m_CorrectedAnglesToolTip = new CToolTipCtrl();
-	m_CorrectedAnglesToolTip->Create(this);
+	m_CorrectedAnglesToolTip.Create(this);
 
 	CWnd* pWnd = GetDlgItem(IDC_CORRECTED_ANGLES_IN_MISSION_FILE);
-	m_CorrectedAnglesToolTip->AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
-	m_CorrectedAnglesToolTip->Activate(TRUE);
+	m_CorrectedAnglesToolTip.AddTool(pWnd, "Mission files saved in 22.0 and earlier versions of FRED use incorrect math for calculating the background angles");
+	m_CorrectedAnglesToolTip.Activate(TRUE);
 
-	m_FogParamsToolTip = new CToolTipCtrl();
-	m_FogParamsToolTip->Create(this);
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
-	m_FogParamsToolTip->AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
-	m_FogParamsToolTip->Activate(TRUE);
+	m_FogParamsToolTip.Create(this);
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_1000M_VIS), "Fraction of light that survives 1000 meters of fog (smaller = thicker fog).");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_NEAR_DIST), "Distance from the camera where fog starts (in meters).");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_SKYBOX_CLIP), "Maximum render distance for the skybox in fog (in meters).  0 disables skybox fog.");
+	m_FogParamsToolTip.AddTool(GetDlgItem(IDC_NEB2_FOG_CLIP), "Maximum render distance for the scene in fog (in meters).  0 disables scene fog.");
+	m_FogParamsToolTip.Activate(TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -242,10 +240,10 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 
 BOOL bg_bitmap_dlg::PreTranslateMessage(MSG* pMsg)
 {
-	if (m_CorrectedAnglesToolTip != nullptr)
-		m_CorrectedAnglesToolTip->RelayEvent(pMsg);
-	if (m_FogParamsToolTip != nullptr)
-		m_FogParamsToolTip->RelayEvent(pMsg);
+	if (m_CorrectedAnglesToolTip.GetSafeHwnd() != nullptr)
+		m_CorrectedAnglesToolTip.RelayEvent(pMsg);
+	if (m_FogParamsToolTip.GetSafeHwnd() != nullptr)
+		m_FogParamsToolTip.RelayEvent(pMsg);
 	return CDialog::PreTranslateMessage(pMsg);
 }
 

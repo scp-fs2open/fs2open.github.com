@@ -121,8 +121,8 @@ protected:
 
 	void OnOrientationChange();
 
-	CToolTipCtrl* m_CorrectedAnglesToolTip;
-	CToolTipCtrl* m_FogParamsToolTip;
+	CToolTipCtrl m_CorrectedAnglesToolTip;
+	CToolTipCtrl m_FogParamsToolTip;
 
 	virtual BOOL OnInitDialog();
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
