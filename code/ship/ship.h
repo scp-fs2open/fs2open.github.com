@@ -1811,6 +1811,13 @@ extern bool ship_render_player_cockpit(const ship_info* sip);
 extern bool ship_render_player_cockpit_active();
 extern bool ship_render_player_ship_casts_shadow_on_cockpit();
 extern bool ship_render_player_has_closeup_visuals();
+// The cockpit model's render offset: sip->cockpit_offset rotated into world orientation,
+// plus acceleration-driven sway (unless Disable_cockpit_sway). This is the camera-relative
+// offset used to draw the cockpit model, NOT combined with objp->pos -- callers that need
+// a world-space position must add objp->pos themselves. Shared by every path that draws or
+// otherwise anchors the cockpit model: ship_render_player_ship(), render_viewer_shadow()
+// (shadows.cpp), and gatherCockpitShadowCasterInstance() (VulkanRaytracingTlas.cpp).
+extern vec3d ship_cockpit_render_offset(const ship_info* sip, const object* objp);
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
