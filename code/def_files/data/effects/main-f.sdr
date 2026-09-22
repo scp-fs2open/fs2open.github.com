@@ -335,6 +335,11 @@ void main()
 			baseColor.rgb = srgb_to_linear(baseColor.rgb);
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_HDR
 
+		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
+			// unlit draws carry their fade in the material colour, see model_render_determine_color()
+			if (desaturate == 0) baseColor.rgb *= color.rgb;
+		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
+
 		#prereplace IF_FLAG MODEL_SDR_FLAG_ALPHA_MULT
 			baseColor.a *= alphaMult;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ALPHA_MULT

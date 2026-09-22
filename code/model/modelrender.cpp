@@ -1399,7 +1399,8 @@ bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, in
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate)
 {
-	clr->alpha = static_cast<ubyte>((alpha * 255.0f));
+	CLAMP(alpha, 0.0f, 1.0f);
+	clr->alpha = static_cast<ubyte>(alpha * 255.0f);
 
 	if ( no_texturing || desaturate ) {
 		// don't override the given color if we're not texturing or we're desaturating
