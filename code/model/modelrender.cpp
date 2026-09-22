@@ -1082,6 +1082,9 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				// an underlying texture is replaced with a real new texture
 				tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
+			} else if ( (obj_num >= 0) && (Objects[obj_num].type == OBJ_SHOCKWAVE) && (tmap->textures[TM_BASE_TYPE].GetNumFrames() > 1) ) {
+				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
+				texture_maps[TM_BASE_TYPE] = tmap->textures[TM_BASE_TYPE].GetTexture() + shockwave_get_framenum(Objects[obj_num].instance, tmap->textures[TM_BASE_TYPE].GetTexture());
 			} else {
 				// we just use the underlying texture
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
