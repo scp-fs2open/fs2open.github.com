@@ -11,7 +11,7 @@
 #include "ddsutils/ddsutils.h"
 #include "ddsutils/bcdec.h"
 #include "globalincs/systemvars.h"
-
+#include "ktxutils/ktxutils.h"  
 
 namespace graphics::vulkan {
 
@@ -32,7 +32,7 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	// raw compressed data with all pre-baked mipmap levels.
 	int compType = bm_is_compressed(bitmap_num);
 	int lockBpp = 32;
-	ubyte lockFlags = BMP_TEX_XPARENT;
+	uint lockFlags = BMP_TEX_XPARENT;
 
 	switch (compType) {
 	case DDS_DXT1:
@@ -59,6 +59,21 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	case DDS_CUBEMAP_DXT5:
 		lockBpp = 32;
 		lockFlags = BMP_TEX_CUBEMAP;
+		break;
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_SRGB:
+		lockBpp = 24;
+		lockFlags = BMP_TEX_ETC2_RGB8;
+		break;
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_ETC2_SRGBA_EAC:
+		lockBpp = 32;
+		lockFlags = BMP_TEX_ETC2_RGBA8;
+		break;
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+		lockBpp = 24;
+		lockFlags = BMP_TEX_ETC2_RGBA1;
 		break;
 	default:
 		// Uncompressed — use 32bpp decompressed
