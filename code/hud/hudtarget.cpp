@@ -7060,22 +7060,24 @@ bool HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 
 	g3_project_vertex(eye_vertex);
 
+	// grab what we need before the temp points go back to the pool
+	ubyte eye_flags = eye_vertex->flags;
+	xpos = eye_vertex->screen.xyw.x;
+	ypos = eye_vertex->screen.xyw.y;
+
 	if (target_point->flags & PF_TEMP_POINT)
 		free_temp_point(target_point);
 
 	if (eye_vertex->flags & PF_TEMP_POINT)
 		free_temp_point(eye_vertex);
 
-	if (eye_vertex->flags&PF_OVERFLOW) {
+	if (eye_flags & PF_OVERFLOW) {
 		//	This is unlikely to happen, but can if a clip goes through the player's eye.
 		gr_reset_screen_scale();
 		if (!in_frame)
 			g3_end_frame();
 		return false;
 	}
-
-	xpos = eye_vertex->screen.xyw.x;
-	ypos = eye_vertex->screen.xyw.y;
 
 	// we need it unsized here and it will be fixed when things are acutally drawn
 	gr_unsize_screen_posf(&xpos, &ypos);
@@ -7112,8 +7114,8 @@ bool HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	if (*dir == 0 || *dir == 1) {
 		xpos = i2fl((*dir == 0) ? gr_screen.clip_right_unscaled : gr_screen.clip_left_unscaled);
 
-		if ( ypos < (half_gauge_length - gr_screen.clip_top_unscaled) )
-			ypos = half_gauge_length;
+		if ( ypos < (gr_screen.clip_top_unscaled + half_gauge_length) )
+			ypos = gr_screen.clip_top_unscaled + half_gauge_length;
 
 		if ( ypos > (gr_screen.clip_bottom_unscaled - half_gauge_length) )
 			ypos = gr_screen.clip_bottom_unscaled - half_gauge_length;
@@ -7121,8 +7123,8 @@ bool HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	} else {
 		ypos = i2fl((*dir == 2) ? gr_screen.clip_top_unscaled : gr_screen.clip_bottom_unscaled);
 
-		if ( xpos < ( half_gauge_length - gr_screen.clip_left_unscaled) )
-			xpos = half_gauge_length;
+		if ( xpos < (gr_screen.clip_left_unscaled + half_gauge_length) )
+			xpos = gr_screen.clip_left_unscaled + half_gauge_length;
 
 		if ( xpos > (gr_screen.clip_right_unscaled - half_gauge_length) )
 			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
