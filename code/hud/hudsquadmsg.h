@@ -23,11 +23,15 @@
 #define SM_MODE_REINFORCEMENTS		6		//call for reinforcements
 #define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
 #define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
-#define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
+#define SM_MODE_ALL_FIGHTERS_BOMBERS			9		//message all fighters/bombers
 #define SM_MODE_GENERAL             10		//general orders, usually luaAI
+#define SM_MODE_ALL_FIGHTERS		11
+#define SM_MODE_ALL_BOMBERS			12
 
 // define for trapping messages send to "all fighters"
-#define MESSAGE_ALL_FIGHTERS		-999
+#define MESSAGE_ALL_FIGHTERS				-997
+#define MESSAGE_ALL_BOMBERS					-998
+#define MESSAGE_ALL_FIGHTERS_BOMBERS		-999
 
 class object;
 struct reinforcements;
@@ -64,16 +68,25 @@ struct reinforcements;
 
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 
-// following are defines and character strings that are used as part of messaging mode
+#define NUM_DEFAULT_COMM_ORDER_TYPES 6
 
-#define NUM_COMM_ORDER_TYPES 6
+enum SmallCraftFlavor {
+	ALL_FIGHTERS_AND_BOMBERS,
+	ALL_FIGHTERS,
+	ALL_BOMBERS,
+};
 
-#define TYPE_SHIP_ITEM 0
-#define TYPE_WING_ITEM 1
-#define TYPE_ALL_FIGHTERS_ITEM 2
-#define TYPE_REINFORCEMENT_ITEM 3
-#define TYPE_REPAIR_REARM_ITEM 4
-#define TYPE_REPAIR_REARM_ABORT_ITEM 5
+enum CommOrderType {
+	MSG_SHIPS,
+	MSG_WINGS,
+	MSG_ALL_FIGHTERS_AND_BOMBERS,
+	MSG_ALL_FIGHTERS,
+	MSG_ALL_BOMBERS,
+	REINFORCEMENTS,
+	REARM_REPAIR,
+	ABORT_REARM,
+	MAX_COMM_ORDER_TYPES,
+};
 
 typedef struct mmode_item {
 	int instance;    // instance in Ships/Wings array of this menu item
@@ -179,7 +192,7 @@ extern void hud_squadmsg_rearm_shortcut();
 
 extern int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
 extern int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history = SQUADMSG_HISTORY_ADD_ENTRY, int player_num = -1 );
-extern void hud_squadmsg_send_to_all_fighters( int command, int player_num = -1 );
+extern void hud_squadmsg_send_to_all_fighters( int command, int player_num = -1, SmallCraftFlavor flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS );
 extern void hud_squadmsg_call_reinforcement(reinforcements &reinforcement, int player_num = -1);
 
 extern int hud_squadmsg_reinforcements_available(int team);
