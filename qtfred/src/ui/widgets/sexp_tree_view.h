@@ -195,6 +195,7 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	void ui_delete_item(void* handle) override;                  //!< Deletes a QTreeWidgetItem
 	void ui_set_item_text(void* handle, const char* text) override;   //!< Sets display text via setText()
 	void ui_set_item_image(void* handle, NodeImage image) override;   //!< Sets icon via setIcon()
+	void ui_set_item_editable(void* handle, bool editable) override; //!< Syncs Qt::ItemIsEditable with model flags
 	void* ui_get_child_item(void* handle) const override;        //!< Returns first child item, or nullptr
 	bool ui_has_children(void* handle) const override;           //!< Returns true if childCount() > 0
 	void ui_expand_item(void* handle) override;                  //!< Expands a single item via setExpanded()
