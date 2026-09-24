@@ -514,6 +514,9 @@ void main()
 			// If there is no lighting then we copy the color data so far into the emissive.
 			emissiveColor.rgb += baseColor.rgb;
 			aoFactors.x = 0;
+			// and leave nothing for the light pass to add on top of it
+			baseColor.rgb = vec3(0.0);
+			specColor = vec4(0.0);
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
