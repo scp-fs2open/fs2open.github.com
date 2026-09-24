@@ -441,6 +441,11 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 	submode = remove_goalp->ai_submode;
 	priority = remove_goalp->priority;
 	name = remove_goalp->target_name;
+	auto type = remove_goalp->type;
+
+	// if player wing orders share the priority of ship orders, priority alone can no longer tell a wing's copy
+	// of a goal apart from an identical order given to one of its ships, so compare the goal type as well
+	bool match_type = The_mission.ai_profile->flags[AI::Profile_Flags::Player_wing_orders_same_priority_as_ship_orders];
 
 	Assert ( name );			// should not be NULL!!!!
 
@@ -459,7 +464,7 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 			if ( (aigp->ai_mode == AI_GOAL_NONE) || !aigp->target_name )
 				continue;
 
-			if ( (aigp->ai_mode == mode) && (aigp->ai_submode == submode) && (aigp->priority == priority) && !stricmp(name, aigp->target_name) ) {
+			if ( (aigp->ai_mode == mode) && (aigp->ai_submode == submode) && (aigp->priority == priority) && (!match_type || aigp->type == type) && !stricmp(name, aigp->target_name) ) {
 				ai_remove_ship_goal( aip, j );
 				ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 				break;			// we are all done
@@ -473,7 +478,7 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 		if ( (aigp->ai_mode == AI_GOAL_NONE) || !aigp->target_name )
 			continue;
 
-		if ( (aigp->ai_mode == mode) && (aigp->ai_submode == submode) && (aigp->priority == priority) && !stricmp(name, aigp->target_name) ) {
+		if ( (aigp->ai_mode == mode) && (aigp->ai_submode == submode) && (aigp->priority == priority) && (!match_type || aigp->type == type) && !stricmp(name, aigp->target_name) ) {
 			ai_goal_reset(aigp);
 			break;
 		}
@@ -813,7 +818,7 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 	if ( (mode == AI_GOAL_STAY_NEAR_SHIP) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) )
 		aigp->priority = PLAYER_PRIORITY_SUPPORT_LOW;
 
-	else if ( aigp->type == ai_goal_type::PLAYER_WING )	// NOLINT(readability-braces-around-statements)
+	else if ( aigp->type == ai_goal_type::PLAYER_WING && !The_mission.ai_profile->flags[AI::Profile_Flags::Player_wing_orders_same_priority_as_ship_orders] )	// NOLINT(readability-braces-around-statements)
 		aigp->priority = PLAYER_PRIORITY_WING;			// player wing goals not as high as ship goals
 	else
 		aigp->priority = PLAYER_PRIORITY_SHIP;

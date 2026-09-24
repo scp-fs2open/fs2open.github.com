@@ -802,7 +802,9 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_order_recipient() const
 {
 	sexp_list_item head;
 
-	head.add_data("<all fighters>");
+	head.add_data(SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS);
+	head.add_data(SEXP_ORDER_TO_ALL_FIGHTERS);
+	head.add_data(SEXP_ORDER_TO_ALL_BOMBERS);
 
 	head.add_list(get_listing_opf_ship());
 	head.add_list(get_listing_opf_wing());
@@ -2623,6 +2625,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 		case OPF_SHIP_WING_POINT:
 		case OPF_SHIP_WING_WHOLETEAM:
 		case OPF_SHIP_WING_SHIPONTEAM_POINT:
+		case OPF_ORDER_RECIPIENT:	// a recipient is a ship, a wing, or one of the "<all ...>" tokens
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
@@ -2655,7 +2658,6 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 			return 0;
 
 		case OPF_SHIP_NOT_PLAYER:
-		case OPF_ORDER_RECIPIENT:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
 				if (ptr->type == OBJ_SHIP)
@@ -3108,7 +3110,7 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i) const
 			break;
 
 		case OPF_ORDER_RECIPIENT:
-			str = "<all fighters>";
+			str = SEXP_ORDER_TO_ALL_FIGHTERS_BOMBERS;
 			break;
 
 		case OPF_SHIP_OR_NONE:
