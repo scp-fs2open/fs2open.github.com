@@ -2141,6 +2141,23 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
 	}
 }
 
+// whether a variable reference node's format (quoted or not) contradicts the variable's declared type
+static bool is_variable_node_type_mismatched(int node)
+{
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		return false;
+
+	if (Sexp_nodes[node].flags & SNF_VARIABLE_TYPE_MISMATCH)
+		return true;
+
+	int var_index = sexp_get_variable_index(node);
+	if (var_index < 0)
+		return false;	// handled by SEXP_CHECK_INVALID_VARIABLE
+
+	bool is_number = (Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER) != 0;
+	return (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) != is_number;
+}
+
 bool is_special_sender(const char* name) {
 	return name[0] == '#';
 }
@@ -2224,6 +2241,12 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 		if (bad_node)
 			*bad_node = node;
 		node_subtype = Sexp_nodes[node].subtype;
+
+		// check a node's variable type, but if there's a mismatch, defer it so that the rest of the tree is still checked
+		if (deferred_error == SEXP_CHECK_NO_ERROR && is_variable_node_type_mismatched(node)) {
+			deferred_error = SEXP_CHECK_VARIABLE_TYPE_MISMATCH;
+			deferred_bad_node = node;
+		}
 
 		if (node_subtype == SEXP_ATOM_LIST) {
 			i = Sexp_nodes[node].first;
@@ -2340,6 +2363,14 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					argnum,
 					p_container)) {
 				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
+
+			// the modifiers are not visited as arguments, so check any variables among them here
+			for (int mod_node = modifier_node; mod_node != -1; mod_node = CDR(mod_node)) {
+				if (deferred_error == SEXP_CHECK_NO_ERROR && is_variable_node_type_mismatched(mod_node)) {
+					deferred_error = SEXP_CHECK_VARIABLE_TYPE_MISMATCH;
+					deferred_bad_node = mod_node;
+				}
 			}
 
 			// ignore nested "Replace" uses
@@ -4535,6 +4566,24 @@ void skip_sexp(bool within_quotes = false)
 }
 
 /**
+ * Allocates a variable reference node whose subtype comes from the variable's declared type.
+ * If the reference was quoted contrary to that type, the node is flagged so check_sexp_syntax can report it.
+ */
+static int alloc_sexp_variable_node(int sexp_var_index, bool quoted)
+{
+	char token[TOKEN_LENGTH];
+	get_sexp_text_for_variable(token, sexp_var_index);
+
+	bool is_number = (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) != 0;
+	int node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), is_number ? SEXP_ATOM_NUMBER : SEXP_ATOM_STRING, -1, -1);
+
+	if (quoted == is_number)
+		Sexp_nodes[node].flags |= SNF_VARIABLE_TYPE_MISMATCH;
+
+	return node;
+}
+
+/**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
  * NOTE: On entry into this function, Mp points to the first character past the opening parenthesis.
@@ -4584,11 +4633,10 @@ int get_sexp()
 			// bump past closing quote
 			Mp += (len + 2);
 
-			// it could be a string variable
+			// it could be a variable
 			int sexp_var_index = check_string_for_sexp_variable(startp + 1, len);
 			if (sexp_var_index >= 0) {
-				get_sexp_text_for_variable(token, sexp_var_index);
-				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
+				node = alloc_sexp_variable_node(sexp_var_index, true);
 			}
 			// it's a regular string
 			else {
@@ -4688,11 +4736,10 @@ int get_sexp()
 				len++;
 			}
 
-			// it could be a numeric variable
+			// it could be a variable
 			int sexp_var_index = check_string_for_sexp_variable(startp, len);
 			if (sexp_var_index >= 0) {
-				get_sexp_text_for_variable(token, sexp_var_index);
-				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
+				node = alloc_sexp_variable_node(sexp_var_index, false);
 			}
 			// it could be an operator
 			else {
@@ -35381,6 +35428,10 @@ bool sexp_recoverable_error(int num)
 		case SEXP_CHECK_BAD_ARG_COUNT_BENIGN:
 			return true;
 
+		// The node type was taken from the variable's declared type when parsed, so the reference still works
+		case SEXP_CHECK_VARIABLE_TYPE_MISMATCH:
+			return true;
+
 		// most errors will halt mission loading
 		default:
 			return false;
@@ -35699,6 +35750,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_MESSAGE_TYPE:
 			return "Invalid message type";
+
+		case SEXP_CHECK_VARIABLE_TYPE_MISMATCH:
+			return "Variable's parsed type does not match its declared type (string variables must be in quotes; number variables must not be)";
 
 		case SEXP_CHECK_POTENTIAL_ISSUE:
 			return "This particular SEXP_CHECK_ code is handled differently from the others.  You shouldn't actually see this message; if you do, report it to a SCP coder.";
