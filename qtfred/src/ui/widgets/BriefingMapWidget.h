@@ -105,6 +105,8 @@ private:
 	static vec3d orbitPivot();
 	void beginOrbit(const QPoint& pos);
 	void handleOrbitDrag(const QPoint& pos, Qt::KeyboardModifiers modifiers);
+	// Open the icon or empty-map context menu for the given logical widget position.
+	void showContextMenuAt(const QPointF& logicalPos, const QPoint& globalPos);
 	// Unproject a mouse position (in render-target/reference-resolution pixels) onto the briefing grid
 	// plane, giving the world position under the cursor for placing a new icon.
 	vec3d worldPosAtMouse(float mouseRefX, float mouseRefY) const;

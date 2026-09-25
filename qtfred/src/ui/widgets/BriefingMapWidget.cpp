@@ -26,6 +26,7 @@
 #include "mission/missiongrid.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
 
 namespace fso::fred {
@@ -53,6 +54,16 @@ void ensure_highlight_anim_loaded(brief_icon& icon) {
 	if (sourceAnim.first_frame >= 0) {
 		icon.highlight_anim = sourceAnim;
 	}
+}
+
+// Intersect a ray with the grid plane, returning the ray parameter (negative = behind the origin).
+// A near-parallel ray is treated as a miss, matching EditorViewport::orbitCameraGetPivot(): fvi_ray_plane
+// only rejects an exactly-parallel ray, so a grazing one would otherwise land absurdly far away.
+float ray_grid_intersect(vec3d* hit, const vec3d& origin, const vec3d& dir) {
+	if (fl_abs(vm_vec_dot(&The_grid->gmatrix.vec.uvec, &dir)) <= 0.0001f) {
+		return -FLT_MAX;
+	}
+	return fvi_ray_plane(hit, &The_grid->center, &The_grid->gmatrix.vec.uvec, &origin, &dir, 0.0f);
 }
 }
 
@@ -770,7 +781,7 @@ vec3d BriefingMapWidget::orbitPivot() {
 	const matrix camOrient = brief_get_current_cam_orient();
 	if (The_grid != nullptr) {
 		vec3d hit;
-		const float d = fvi_ray_plane(&hit, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camPos, &camOrient.vec.fvec, 0.0f);
+		const float d = ray_grid_intersect(&hit, camPos, camOrient.vec.fvec);
 		if (d > 0.0f) {
 			return hit;
 		}
@@ -853,7 +864,7 @@ vec3d BriefingMapWidget::worldPosAtMouse(float mouseRefX, float mouseRefY) const
 
 	if (The_grid != nullptr) {
 		vec3d hit;
-		const float d = fvi_ray_plane(&hit, &The_grid->center, &The_grid->gmatrix.vec.uvec, &camPos, &dir, 0.0f);
+		const float d = ray_grid_intersect(&hit, camPos, dir);
 		if (d >= 0.0f) {
 			return hit;
 		}
@@ -1075,9 +1086,13 @@ void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {
 		return;
 	}
 	if (event->button() == Qt::RightButton) {
+		// Same as RenderWidget: the menu opens on release, and only if the right button didn't orbit.
+		const bool wasDragging = _rbuttonMoved;
 		_rbuttonDown = false;
-		// _rbuttonMoved stays set so contextMenuEvent can tell an orbit drag (suppress the menu) from a
-		// plain right-click (show it); it is reset there and on the next right-press.
+		_rbuttonMoved = false;
+		if (!wasDragging) {
+			showContextMenuAt(event->position(), event->globalPosition().toPoint());
+		}
 		return;
 	}
 
@@ -1146,16 +1161,19 @@ SCP_vector<int> BriefingMapWidget::iconsUnderReference(float refX, float refY) c
 }
 
 void BriefingMapWidget::contextMenuEvent(QContextMenuEvent* event) {
-	// A right-drag that orbited the camera should not also pop the menu.
-	if (_rbuttonMoved) {
-		_rbuttonMoved = false;
-		event->accept();
-		return;
+	// Mouse right-clicks are handled in mouseReleaseEvent. Depending on the platform, Qt sends this
+	// event on press or on release, so a menu opened here on press would block the right-drag orbit.
+	// Only the keyboard Menu key is handled here.
+	if (event->reason() == QContextMenuEvent::Keyboard) {
+		showContextMenuAt(event->pos(), event->globalPos());
 	}
+	event->accept();
+}
 
+void BriefingMapWidget::showContextMenuAt(const QPointF& logicalPos, const QPoint& globalPos) {
 	float refX = 0.0f;
 	float refY = 0.0f;
-	if (!_initialized || !mouseToReference(event->pos(), refX, refY)) {
+	if (!_initialized || !mouseToReference(logicalPos, refX, refY)) {
 		return;
 	}
 
@@ -1168,11 +1186,10 @@ void BriefingMapWidget::contextMenuEvent(QContextMenuEvent* event) {
 		if (std::find(selection.begin(), selection.end(), top) == selection.end()) {
 			Q_EMIT iconSelected(top, false);
 		}
-		Q_EMIT iconContextMenuRequested(event->globalPos());
+		Q_EMIT iconContextMenuRequested(globalPos);
 	} else {
-		Q_EMIT mapContextMenuRequested(event->globalPos(), worldPosAtMouse(refX, refY));
+		Q_EMIT mapContextMenuRequested(globalPos, worldPosAtMouse(refX, refY));
 	}
-	event->accept();
 }
 
 } // namespace fso::fred
