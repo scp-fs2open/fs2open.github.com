@@ -985,6 +985,15 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 		}
 		anchorIndex = pickedIndex;
 		Q_EMIT iconSelected(pickedIndex, shiftHeld);
+
+		// A Shift+click that toggled the icon out of the selection is a deselect, not a drag; otherwise
+		// the drag would move the rest of the selection while anchored to the icon just removed.
+		const auto& selection = _model->getLineSelection();
+		if (std::find(selection.begin(), selection.end(), pickedIndex) == selection.end()) {
+			_draggingIcon = false;
+			_dragIconIndex = -1;
+			return;
+		}
 	}
 
 	_draggingIcon = true;
