@@ -6,7 +6,7 @@
 #include <direct.h>
 #endif
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 //Required because X defines none and always, which is used later
 #undef None
@@ -1394,7 +1394,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
 		Error(LOCATION, "Failed to load GLX!");
 	}
