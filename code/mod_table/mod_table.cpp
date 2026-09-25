@@ -153,6 +153,8 @@ bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
+float Primary_thruster_glow_depth_factor;
+float Tertiary_thruster_glow_depth_factor;
 bool Always_use_distant_firepoints;
 bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
@@ -996,6 +998,14 @@ void parse_mod_table(const char *filename)
 					Warning(LOCATION, "A \'Thruster easing value\' less than or equal to 0 will not be used.\n");
 				}
 
+			}
+
+			if (optional_string("$Primary Thruster Glow Depth Factor:")) {
+				stuff_float(&Primary_thruster_glow_depth_factor);
+			}
+
+			if (optional_string("$Tertiary Thruster Glow Depth Factor:")) {
+				stuff_float(&Tertiary_thruster_glow_depth_factor);
 			}
 
 			if (optional_string("$SCPUI attempts to load hires animations:")) {
@@ -1919,6 +1929,8 @@ void mod_table_reset()
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
+	Primary_thruster_glow_depth_factor = 0.325f;
+	Tertiary_thruster_glow_depth_factor = -0.5f;
 	Always_use_distant_firepoints = false;
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
