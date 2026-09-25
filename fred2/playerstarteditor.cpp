@@ -90,7 +90,7 @@ END_MESSAGE_MAP()
 
 BOOL player_start_editor::OnInitDialog()
 {
-	int i, j;
+	int i;
 
 	// initialize ship pool data
 	for(i=0; i<MAX_TVT_TEAMS; i++){
@@ -159,25 +159,16 @@ BOOL player_start_editor::OnInitDialog()
 		validation_toggle[i] = Team_data[i].do_not_validate;
 	}
 
-	// initialise the ship and weapon usage list
+	// initialise the ship and weapon usage list; the usage generators only fill the teams
+	// that this mission actually has, so clear the rest here
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		ship_usage[i].clear();
 		weapon_usage[i].clear();
 	}
 
-	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		for (i=0; i<MAX_TVT_TEAMS; i++) {
-			for (j=0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
-				generate_ship_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], ship_usage[i]);
-				generate_weaponry_usage_list_wing(TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j], weapon_usage[i]);
-			}
-		}
-	}
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_ship_usage_list_wing(Starting_wings[i], ship_usage[0]);
-			generate_weaponry_usage_list_wing(Starting_wings[i], weapon_usage[0]);
-		}
+	for (i=0; i<Num_teams; i++) {
+		generate_ship_usage_list_team(i, ship_usage[i]);
+		generate_weaponry_usage_list_team(i, weapon_usage[i]);
 	}
 
 	// initialize weapon required flags
