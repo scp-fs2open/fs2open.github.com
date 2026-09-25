@@ -2126,7 +2126,8 @@ bool check_container_data_type(int type, ContainerType con_type, int op, int arg
 	}
 }
 
-bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container) {
+bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container)
+{
 	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
 	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
 	if (type == OPF_CONTAINER_VALUE) {
@@ -2158,7 +2159,8 @@ static bool is_variable_node_type_mismatched(int node)
 	return (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) != is_number;
 }
 
-bool is_special_sender(const char* name) {
+static bool is_special_sender(const char* name)
+{
 	return name[0] == '#';
 }
 
