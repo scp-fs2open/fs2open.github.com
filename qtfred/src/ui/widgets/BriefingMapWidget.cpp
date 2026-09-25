@@ -251,6 +251,12 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Briefing = briefPtr;
 
 	auto& stage = briefPtr->stages[stageNum];
+	// An instant change (a cut, a multi-stage jump, or a zero camera time) must not build icon movers:
+	// brief_set_move_list() divides by the move time, so a zero time puts every moved icon at NaN and
+	// it stays invisible until something clears the movers. Match the game's quick-transition path.
+	if (transitionTime <= 0) {
+		brief_reset_last_new_stage();
+	}
 	brief_set_new_stage(&stage.camera_pos, &stage.camera_orient, transitionTime, stageNum);
 	// Editor behavior: start highlights as soon as the camera reaches its target
 	// instead of waiting for briefing text wipe timing.
