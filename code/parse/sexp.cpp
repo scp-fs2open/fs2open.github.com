@@ -4839,7 +4839,9 @@ int get_sexp()
 
 	Mp++;  // skip past the ')'
 
-	
+	if (start == -1)
+		return -1;
+
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
 	if (get_operator_const(start) == OP_AI_CHASE_ANY && prune_extra_args)
 	{
