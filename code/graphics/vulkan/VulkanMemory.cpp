@@ -140,7 +140,8 @@ VmaMemoryUsage VulkanMemoryManager::toVmaUsage(MemoryUsage usage)
 	}
 }
 
-bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage usage, VulkanAllocation& allocation)
+bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage usage, VulkanAllocation& allocation,
+	MemoryPurpose purpose)
 {
 	if (!m_initialized) {
 		nprintf(("vulkan", "VulkanMemoryManager::allocateBufferMemory called before initialization!\n"));
@@ -176,14 +177,17 @@ bool VulkanMemoryManager::allocateBufferMemory(vk::Buffer buffer, MemoryUsage us
 
 	allocation.size = allocInfo.size;
 	allocation.mappedPtr = allocInfo.pMappedData;
+	allocation.purpose = purpose;
 
 	++m_allocationCount;
 	m_totalAllocatedBytes += static_cast<size_t>(allocation.size);
+	m_bytesByPurpose[static_cast<size_t>(purpose)] += static_cast<size_t>(allocation.size);
 
 	return true;
 }
 
-bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage, VulkanAllocation& allocation)
+bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage, VulkanAllocation& allocation,
+	MemoryPurpose purpose)
 {
 	if (!m_initialized) {
 		nprintf(("vulkan", "VulkanMemoryManager::allocateImageMemory called before initialization!\n"));
@@ -219,9 +223,11 @@ bool VulkanMemoryManager::allocateImageMemory(vk::Image image, MemoryUsage usage
 
 	allocation.size = allocInfo.size;
 	allocation.mappedPtr = allocInfo.pMappedData;
+	allocation.purpose = purpose;
 
 	++m_allocationCount;
 	m_totalAllocatedBytes += static_cast<size_t>(allocation.size);
+	m_bytesByPurpose[static_cast<size_t>(purpose)] += static_cast<size_t>(allocation.size);
 
 	return true;
 }
@@ -242,10 +248,12 @@ void VulkanMemoryManager::freeAllocation(VulkanAllocation& allocation)
 
 	--m_allocationCount;
 	m_totalAllocatedBytes -= static_cast<size_t>(allocation.size);
+	m_bytesByPurpose[static_cast<size_t>(allocation.purpose)] -= static_cast<size_t>(allocation.size);
 
 	allocation.vmaAlloc = VK_NULL_HANDLE;
 	allocation.size = 0;
 	allocation.mappedPtr = nullptr;
+	allocation.purpose = MemoryPurpose::Unknown;
 }
 
 void* VulkanMemoryManager::mapMemory(VulkanAllocation& allocation)
