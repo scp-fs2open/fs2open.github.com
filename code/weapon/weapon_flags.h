@@ -98,6 +98,7 @@ namespace Weapon {
 		Freespace_1_missile_behavior,		// Bundles several observed behaviors missiles had in the freespace 1 release
 		Dogfight_weapon,                    // Dogfight weapons are intended as balanced variants for multiplayer. This flag can be used to filter them out when necessary.
 		Mine,								// weapon is a stationary proximity mine (subset of secondary): zero velocity, infinite lifetime
+		Firing_pattern_specified,			// $Firing Pattern: was tabled rather than defaulted
 
         NUM_VALUES
 	};
