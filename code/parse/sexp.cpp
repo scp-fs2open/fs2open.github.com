@@ -15782,13 +15782,7 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		if (ss->submodel_instance_1)
-			ss->submodel_instance_1->blown_off = false;
-		if (ss->submodel_instance_2)
-			ss->submodel_instance_2->blown_off = false;
-
-		// special case for subsystems that don't correspond to a submodel
-		check_subsystem_submodel_link(shipp, ss, false);
+		restore_subsystem_submodels(shipp, ss);
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -21724,6 +21718,16 @@ void ship_copy_damage(const ship_registry_entry *target, const ship_registry_ent
 			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
 		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
 			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
+
+		// special case for subsystems that don't correspond to a submodel;
+		// copy what the source shows if it can show anything, since its hitpoints don't say whether it was blown off
+		bool show_destroyed;
+		if (source_ss->submodel_instance_1 || submodel_find_destroyed_form(Ship_info[source_shipp->ship_info_index].model_num, source_ss->system_info->subobj_name) >= 0)
+			show_destroyed = subsystem_submodels_blown_off(source_shipp, source_ss);
+		else
+			show_destroyed = (source_ss->max_hits > 0.0f) && (source_ss->current_hits <= 0.0f);
+		show_destroyed = show_destroyed && !(target_ss->flags[Ship::Subsystem_Flags::No_disappear]);
+		check_subsystem_submodel_link(target_shipp, target_ss, show_destroyed);
 	}
 }
 

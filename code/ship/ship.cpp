@@ -10127,6 +10127,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 			// check for overflow of current_hits
 			float repaired_delta = ssp->max_hits * real_repair_rate * frametime;
 			float repair_threshold_hits = ssp->max_hits * sip->subsys_repair_max;
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 
 			if ((ssp->current_hits + repaired_delta) < repair_threshold_hits) {
 				ssp->current_hits += repaired_delta;
@@ -10136,6 +10137,9 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 				if (repaired_delta != 0.0f)
 					ssp->current_hits += repaired_delta;
 			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f)
+				restore_subsystem_submodels(sp, ssp);
 
 			// aggregate repair
 			if (!(ssp->flags[Ship::Subsystem_Flags::No_aggregate])) {
@@ -11946,6 +11950,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	int num_saved_subsystems = 0;
 	char **subsys_names = new char *[sip_orig->n_subsystems];
 	float *subsys_pcts = new float[sip_orig->n_subsystems];
+	SCP_vector<bool> subsys_blown_off(sip_orig->n_subsystems, false);
 
 	// prevent crashes in the event of a subsystem mismatch
 	for (i = 0; i < sip_orig->n_subsystems; ++i)
@@ -12043,6 +12048,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
 		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
+
+		subsys_blown_off[num_saved_subsystems] = subsystem_submodels_blown_off(sp, ss);
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
@@ -12157,6 +12164,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
 			{
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
+				if (subsys_blown_off[i])
+					blow_off_subsystem_submodels(sp, ss);
 
 				// MageKing17 - Every AI doing something with this subsystem must transfer to the new one.
 				{
@@ -16017,11 +16026,14 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
 		if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits = strength * ssp->max_hits;
 
 			// maybe blow up subsys
 			if (ssp->current_hits <= 0) {
 				do_subobj_destroyed_stuff(shipp, ssp, nullptr);
+			} else if (was_destroyed) {
+				restore_subsystem_submodels(shipp, ssp);
 			}
 		}
 		ssp = GET_NEXT( ssp );
@@ -16404,10 +16416,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			Assert(repair_allocated >= 0.0f);
 
 			// add repair to current strength of single subsystem
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits += repair_delta;
 			if ( ssp->current_hits > max_subsys_repair ) {
 				ssp->current_hits = max_subsys_repair;
 			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f)
+				restore_subsystem_submodels(shipp, ssp);
 
 			// add repair to aggregate strength of subsystems of that type
 			if (!(ssp->flags[Ship::Subsystem_Flags::No_aggregate])) {
