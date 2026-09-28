@@ -276,8 +276,6 @@ void parse_mod_table(const char *filename)
 		
 			if (optional_string("$Unicode mode:")) {
 				stuff_boolean(&Unicode_text_mode);
-
-				mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
 			}
 
 			if (optional_string("$Splash screens:")) {
@@ -346,27 +344,20 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Lua API returns nil instead of invalid object:")) {
 				stuff_boolean(&Lua_API_returns_nil_instead_of_invalid_object);
-				mprintf(("Game Settings Table: Lua API returns nil instead of invalid object: %s\n", Lua_API_returns_nil_instead_of_invalid_object ? "yes" : "no"));
 			}
 
 			optional_string("#LOCALIZATION SETTINGS");
 
 			if (optional_string("$Use tabled strings for the default language:")) {
 				stuff_boolean(&Use_tabled_strings_for_default_language);
-
-				mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
 			}
 
 			if (optional_string("$Don't initalize built-in languages by default:")) {
 				stuff_boolean(&No_built_in_languages);
-
-				mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
 			}
 
 			if (optional_string("$Don't pre-empt training message voice:")) {
 				stuff_boolean(&Dont_preempt_training_voice);
-
-				mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
 			}
 
 			optional_string("#CAMPAIGN SETTINGS");
@@ -430,12 +421,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Red-alert applies to delayed ships:")) {
 				stuff_boolean(&Red_alert_applies_to_delayed_ships);
-				if (Red_alert_applies_to_delayed_ships) {
-					mprintf(("Game Settings Table: Red-alert stats will be loaded for ships that arrive later in missions\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: Red-alert stats will NOT be loaded for ships that arrive later in missions (this is retail behavior)\n"));
-				}
 			}
 
 			optional_string("#HUD SETTINGS");
@@ -477,11 +462,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Supernova hits at zero:")) {
 				stuff_boolean(&Supernova_hits_at_zero);
-				if (Supernova_hits_at_zero) {
-					mprintf(("Game Settings Table: HUD timer will reach 0 when the supernova shockwave hits the player\n"));
-				} else {
-					mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
-				}
 			}
 
 			if (optional_string("$Always warn player about unbound keys used in Directives Gauge:")) {
@@ -512,66 +492,32 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Loop SEXPs Then Arguments:")) {
 				stuff_boolean(&True_loop_argument_sexps);
-				if (True_loop_argument_sexps) {
-					mprintf(("Game Settings Table: Using Reversed Loops For SEXP Arguments\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: Using Standard Loops For SEXP Arguments\n"));
-				}
 			}
 
 			if (optional_string("$Use Alternate Chaining Behavior:")) {
 				stuff_boolean(&Alternate_chaining_behavior);
-				if (Alternate_chaining_behavior) {
-					mprintf(("Game Settings Table: Using alternate event chaining behavior\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
-				}
 			}
 
 			if (optional_string("$Fixed Chaining To Repeating Events:")) {
 				stuff_boolean(&Fixed_chaining_to_repeat);
-				if (Fixed_chaining_to_repeat) {
-					mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
-				}
 			}
 
 			if (optional_string("$Use host orientation for set-camera-facing:")) {
 				stuff_boolean(&Use_host_orientation_for_set_camera_facing);
-				if (Use_host_orientation_for_set_camera_facing) {
-					mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
-				} else {
-					mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
-				}
 			}
 
 			if (optional_string("$Use model eyepoint for set-camera-host:")) 
 			{
 				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
-				if (Use_model_eyepoint_for_set_camera_host)
-					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));
 			}
 
 			if (optional_string("$Use model eyepoint normals:"))
 			{
 				stuff_boolean(&Use_model_eyepoint_normals);
-				if (Use_model_eyepoint_normals)
-					mprintf(("Game Settings Table: Model eyepoints will respect eyepoint normals\n"));
-				else
-					mprintf(("Game Settings Table: Model eyepoints will use the model's orientation\n"));
 			}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
 				stuff_boolean(&Show_subtitle_uses_pixels);
-				if (Show_subtitle_uses_pixels) {
-					mprintf(("Game Settings Table: Show-subtitle uses pixels\n"));
-				} else {
-					mprintf(("Game Settings Table: Show-subtitle uses percentages\n"));
-				}
 			}
 
 			if (optional_string("$Show-subtitle base resolution:")) {
@@ -580,7 +526,6 @@ void parse_mod_table(const char *filename)
 					if (base_res[0] >= 640 && base_res[1] >= 480) {
 						Show_subtitle_screen_base_res[0] = base_res[0];
 						Show_subtitle_screen_base_res[1] = base_res[1];
-						mprintf(("Game Settings Table: Show-subtitle base resolution is (%d, %d)\n", base_res[0], base_res[1]));
 					} else {
 						Warning(LOCATION, "$Show-subtitle base resolution: arguments must be at least 640x480!");
 					}
@@ -595,7 +540,6 @@ void parse_mod_table(const char *filename)
 					if (base_res[0] >= 640 && base_res[1] >= 480) {
 						HUD_set_coords_screen_base_res[0] = base_res[0];
 						HUD_set_coords_screen_base_res[1] = base_res[1];
-						mprintf(("Game Settings Table: HUD-set-coords base resolution is (%d, %d)\n", base_res[0], base_res[1]));
 					} else {
 						Warning(LOCATION, "$HUD-set-coords base resolution: arguments must be at least 640x480!");
 					}
@@ -606,28 +550,18 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Always Show Directive Value Count:")) {
 				stuff_boolean(&Always_show_directive_value_count);
-				if (Always_show_directive_value_count) {
-					mprintf(("Game Settings Table: Always Showing Directive Value Count\n"));
-				}
 			}
 
 			optional_string("#GRAPHICS SETTINGS");
 
 			if (optional_string("$Enable External Shaders:")) {
 				stuff_boolean(&Enable_external_shaders);
-				if (Enable_external_shaders) {
-					mprintf(("Game Settings Table: External shaders are enabled\n"));
-				} else {
-					mprintf(("Game Settings Table: External shaders are DISABLED\n"));
-				}
 			}
 
 			if (optional_string_either("$Default Detail Level:", "$Default Detail Preset:") != -1) {
 				int detail_preset;
 
 				stuff_int(&detail_preset);
-
-				mprintf(("Game Settings Table: Setting default detail preset to %i of %i-%i\n", detail_preset, 0, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1));
 
 				if (detail_preset < 0 || detail_preset > static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1) {
 					error_display(0, "Invalid detail preset: %i, setting to %i", detail_preset, static_cast<int>(Default_detail_preset));
@@ -638,20 +572,13 @@ void parse_mod_table(const char *filename)
 			}
 
 			if (optional_string("$Briefing Window FOV:")) {
-				float fov;
-
-				stuff_float(&fov);
-
-				mprintf(("Game Settings Table: Setting briefing window FOV from %f to %f\n", Briefing_window_FOV, fov));
-
-				Briefing_window_FOV = fov;
+				stuff_float(&Briefing_window_FOV);
 			}
 
 			if (optional_string("$Generic Pain Flash Factor:")) {
 				float temp;
 				stuff_float(&temp);
 				if (temp >= 0.0f) {
-					mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
 					Generic_pain_flash_factor = temp;
 				}
 			}
@@ -660,7 +587,6 @@ void parse_mod_table(const char *filename)
 				float temp;
 				stuff_float(&temp);
 				if (temp >= 0.0f) {
-					mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
 					Shield_pain_flash_factor = temp;
 				}
 			}
@@ -669,7 +595,6 @@ void parse_mod_table(const char *filename)
 				float temp;
 				stuff_float(&temp);
 				if (temp >= 0.0f) {
-					mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
 					Emp_pain_flash_factor = temp;
 				}
 			}
@@ -1058,8 +983,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$FS2NetD port:")) {
 				stuff_int(&FS2NetD_port);
-				if (FS2NetD_port)
-					mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
 			}
 
 			if (optional_string("$Default object update level for multiplayer:")) {
@@ -1124,13 +1047,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
 				stuff_boolean(&Disable_hc_message_ani);
-				if (Disable_hc_message_ani) {
-					mprintf(("Game Settings Table: FRED - Disabling Hard Coded Message Ani Files\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: FRED - Using Hard Coded Message Ani Files\n"));
-
-				}
 			}
 
 			if (optional_string("$Add Message Head Ani Files:")) {
@@ -1149,23 +1065,11 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Enable scripting in FRED:")) {
 				stuff_boolean(&Enable_scripts_in_fred);
-				if (Enable_scripts_in_fred) {
-					mprintf(("Game Settings Table: FRED - Scripts will be executed when running FRED.\n"));
-				}
-				else {
-					mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
-				}
 			}
 
 			if (optional_string("$FRED Briefing window resolution:")) {
 				int res[2];
 				if (stuff_int_list(res, 2) == 2) {
-					mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
-						Briefing_window_resolution[0],
-						Briefing_window_resolution[1],
-						res[0],
-						res[1]));
-
 					Briefing_window_resolution[0] = res[0];
 					Briefing_window_resolution[1] = res[1];
 				} else {
@@ -1209,35 +1113,18 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Fixed Turret Collisions:")) {
 				stuff_boolean(&Fixed_turret_collisions);
-				if (Fixed_turret_collisions) {
-					mprintf(("Game Settings Table: Using fixed turret collisions (shooting a turret barrel will always register)\n"));
-				} else {
-					mprintf(("Game Settings Table: Using retail turret collisions (shooting a turret barrel will register if it is within the radius of the base)\n"));
-				}
 			}
 
 			if (optional_string("$Fixed Missile Detonation:")) {
 				stuff_boolean(&Fixed_missile_detonation);
-				if (Fixed_missile_detonation) {
-					mprintf(("Game Settings Table: Using fixed missile detonation (missiles will cross an entire subsystem before detonating)\n"));
-				} else {
-					mprintf(("Game Settings Table: Using retail missile detonation (missiles will detonate when they reach the center coordinates of a subsystem)\n"));
-				}
 			}
 
 			if (optional_string("$Damage Impacted Subsystem First:")) {
 				stuff_boolean(&Damage_impacted_subsystem_first);
-				if (Damage_impacted_subsystem_first) {
-					mprintf(("Game Settings Table: Damage Impacted Subsystem First set to TRUE (weapons will damage the subsystem they impact before any others)\n"));
-				} else {
-					mprintf(("Game Settings Table: Damage Impacted Subsystem First set to FALSE (weapons will damage the closest subsystem before any others)\n"));
-				}
 			}
 
 			if (optional_string("$Use 3d ship select:")) {
 				stuff_boolean(&Use_3d_ship_select);
-				if (Use_3d_ship_select)
-					mprintf(("Game Settings Table: Using 3D ship select\n"));
 			}
 
 			if (optional_string("$Default ship select effect:")) {
@@ -1253,14 +1140,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Use 3d ship icons:")) {
 				stuff_boolean(&Use_3d_ship_icons);
-				if (Use_3d_ship_icons)
-					mprintf(("Game Settings Table: Using 3D ship icons\n"));
 			}
 
 			if (optional_string("$Use 3d weapon select:")) {
 				stuff_boolean(&Use_3d_weapon_select);
-				if (Use_3d_weapon_select)
-					mprintf(("Game Settings Table: Using 3D weapon select\n"));
 			}
 
 			if (optional_string("$Default weapon select effect:")) {
@@ -1276,8 +1159,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Use 3d weapon icons:")) {
 				stuff_boolean(&Use_3d_weapon_icons);
-				if (Use_3d_weapon_icons)
-					mprintf(("Game Settings Table: Using 3D weapon icons\n"));
 			}
 
 			if (optional_string_either("$FS2 effect grid color:", "$FS2 effect grid colour:") >= 0) {
@@ -1320,8 +1201,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Use 3d overhead ship:")) {
 				stuff_boolean(&Use_3d_overhead_ship);
-				if (Use_3d_overhead_ship)
-					mprintf(("Game Settings Table: Using 3D overhead ship\n"));
 			}
 
 			if (optional_string("$Default overhead ship style:")) {
@@ -1366,23 +1245,14 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Weapons inherit parent collision group:")) {
 				stuff_boolean(&Weapons_inherit_parent_collision_group);
-				if (Weapons_inherit_parent_collision_group)
-					mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
 			}
 
 			if (optional_string("$Flight controls follow eyepoint orientation:")) {
 				stuff_boolean(&Flight_controls_follow_eyepoint_orientation);
-				if (Flight_controls_follow_eyepoint_orientation)
-					mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
 			}
 
 			if (optional_string("$Beams Use Damage Factors:")) {
 				stuff_boolean(&Beams_use_damage_factors);
-				if (Beams_use_damage_factors) {
-					mprintf(("Game Settings Table: Beams will use Damage Factors\n"));
-				} else {
-					mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
-				}
 			}
 
 			if (optional_string("$Default fiction viewer UI:")) {
@@ -1430,12 +1300,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Enable external default scripts:")) {
 				stuff_boolean(&Enable_external_default_scripts);
-
-				if (Enable_external_default_scripts) {
-					mprintf(("Game Settings Table: Enabled external default scripts.\n"));
-				} else {
-					mprintf(("Game Settings Table: Disabled external default scripts.\n"));
-				}
 			}
 
 			if (optional_string("$Player warpout speed:")) {
@@ -1452,37 +1316,22 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Enable in-game options:")) {
 				stuff_boolean(&Using_in_game_options);
-
-				if (Using_in_game_options) {
-					mprintf(("Game Settings Table: Using in-game options system.\n"));
-				} else {
-					mprintf(("Game Settings Table: Not using in-game options system.\n"));
-				}
 			}
 
 			if (optional_string("$Dinky Shockwave Default Multiplier:")) {
 				stuff_float(&Dinky_shockwave_default_multiplier);
-				if (Dinky_shockwave_default_multiplier != 1.0f) {
-					mprintf(("Game Settings Table: Setting default dinky shockwave multiplier to %.2f.\n", Dinky_shockwave_default_multiplier));
-				}
 			}
 
 			if (optional_string("$Shockwaves Always Damage Bombs:")) {
 				stuff_boolean(&Shockwaves_always_damage_bombs);
-				if (Shockwaves_always_damage_bombs)
-					mprintf(("Game Settings Table: Shockwaves always damage bombs\n"));
 			}
 
 			if (optional_string("$Shockwaves Damage All Object Types Once:")) {
 				stuff_boolean(&Shockwaves_damage_all_obj_types_once);
-				if (Shockwaves_damage_all_obj_types_once)
-					mprintf(("Game Settings Table: Shockwaves damage all object types once\n"));
 			}
 
 			if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
 				stuff_boolean(&Shockwaves_inherit_parent_damage_type);
-				if (Shockwaves_inherit_parent_damage_type)
-					mprintf(("Game Settings Table: Shockwaves inherit parent damage type\n"));
 			}
 
 			if (optional_string("$Inherited Shockwave Damage Type Added Suffix:")) {
@@ -1514,8 +1363,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Swarmers Lead Targets:")) {
 				stuff_boolean(&Swarmers_lead_targets);
-				if (Swarmers_lead_targets)
-					mprintf(("Game Settings Table: Swarmers lead targets\n"));
 			}
 
 			if (optional_string("$Damage Threshold for Weapons Subsystems to Trigger Turret Inaccuracy:")) {
@@ -1593,10 +1440,6 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Calculate subsystem hitpoints after parsing:")) {
 				stuff_boolean(&Calculate_subsystem_hitpoints_after_parsing);
-				if (Calculate_subsystem_hitpoints_after_parsing)
-					mprintf(("Game Settings Table: Subsystem hitpoints will be calculated after parsing\n"));
-				else
-					mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
 			}
 
 			if (optional_string("$Contrails use absolute speed:")) {
@@ -1700,20 +1543,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Fix density moment of inertia:")) {
 				stuff_boolean(&Fix_density_moment_of_inertia);
-				if (Fix_density_moment_of_inertia) {
-					mprintf(("Game Settings Table: Using fixed density moment of inertia (higher density makes a ship harder to rotate)\n"));
-				} else {
-					mprintf(("Game Settings Table: Using retail density moment of inertia (higher density makes a ship easier to rotate)\n"));
-				}
 			}
 
 			if (optional_string("$Fix collision moment of inertia:")) {
 				stuff_boolean(&Fix_collision_moment_of_inertia);
-				if (Fix_collision_moment_of_inertia) {
-					mprintf(("Game Settings Table: Using fixed collision moment of inertia (collision rotation will use the object's actual orientation)\n"));
-				} else {
-					mprintf(("Game Settings Table: Using retail collision moment of inertia (collision rotation will use the inverse of the object's orientation)\n"));
-				}
 			}
 
 			// end of options ----------------------------------------
@@ -1742,6 +1575,206 @@ void parse_mod_table(const char *filename)
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", (filename) ? filename : "<default game_settings.tbl>", e.what()));
 		return;
 	}
+}
+
+// Settings are logged here, not as they are parsed, so that the log shows the values actually in effect,
+// including those set by $Target Version and those overridden by a later table
+static void mod_table_log_settings()
+{
+	mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+	mprintf(("Game Settings Table: Lua API returns nil instead of invalid object: %s\n", Lua_API_returns_nil_instead_of_invalid_object ? "yes" : "no"));
+
+	mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
+	mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
+	mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
+
+	if (Red_alert_applies_to_delayed_ships)
+		mprintf(("Game Settings Table: Red-alert stats will be loaded for ships that arrive later in missions\n"));
+	else
+		mprintf(("Game Settings Table: Red-alert stats will NOT be loaded for ships that arrive later in missions (this is retail behavior)\n"));
+
+	if (Supernova_hits_at_zero)
+		mprintf(("Game Settings Table: HUD timer will reach 0 when the supernova shockwave hits the player\n"));
+	else
+		mprintf(("Game Settings Table: HUD timer will reach %.2f when the supernova shockwave hits the player\n", SUPERNOVA_HIT_TIME));
+
+	if (True_loop_argument_sexps)
+		mprintf(("Game Settings Table: Using Reversed Loops For SEXP Arguments\n"));
+	else
+		mprintf(("Game Settings Table: Using Standard Loops For SEXP Arguments\n"));
+
+	if (Alternate_chaining_behavior)
+		mprintf(("Game Settings Table: Using alternate event chaining behavior\n"));
+	else
+		mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+
+	if (Fixed_chaining_to_repeat)
+		mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
+	else
+		mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
+
+	if (Use_host_orientation_for_set_camera_facing)
+		mprintf(("Game Settings Table: Using host orientation for set-camera-facing\n"));
+	else
+		mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
+
+	if (Use_model_eyepoint_for_set_camera_host)
+		mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));
+
+	if (Use_model_eyepoint_normals)
+		mprintf(("Game Settings Table: Model eyepoints will respect eyepoint normals\n"));
+	else
+		mprintf(("Game Settings Table: Model eyepoints will use the model's orientation\n"));
+
+	if (Show_subtitle_uses_pixels)
+		mprintf(("Game Settings Table: Show-subtitle uses pixels\n"));
+	else
+		mprintf(("Game Settings Table: Show-subtitle uses percentages\n"));
+
+	// a base resolution of -1 means that none was specified
+	if (Show_subtitle_screen_base_res[0] > 0)
+		mprintf(("Game Settings Table: Show-subtitle base resolution is (%d, %d)\n", Show_subtitle_screen_base_res[0], Show_subtitle_screen_base_res[1]));
+	if (HUD_set_coords_screen_base_res[0] > 0)
+		mprintf(("Game Settings Table: HUD-set-coords base resolution is (%d, %d)\n", HUD_set_coords_screen_base_res[0], HUD_set_coords_screen_base_res[1]));
+
+	if (Always_show_directive_value_count)
+		mprintf(("Game Settings Table: Always Showing Directive Value Count\n"));
+
+	if (Enable_external_shaders)
+		mprintf(("Game Settings Table: External shaders are enabled\n"));
+	else
+		mprintf(("Game Settings Table: External shaders are DISABLED\n"));
+
+	mprintf(("Game Settings Table: Default detail preset is %i of %i-%i\n", static_cast<int>(Default_detail_preset), 0, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1));
+	mprintf(("Game Settings Table: Briefing window FOV is %f\n", Briefing_window_FOV));
+	mprintf(("Game Settings Table: Generic pain flash factor is %.2f\n", Generic_pain_flash_factor));
+	mprintf(("Game Settings Table: Shield pain flash factor is %.2f\n", Shield_pain_flash_factor));
+	mprintf(("Game Settings Table: EMP pain flash factor is %.2f\n", Emp_pain_flash_factor));
+
+	if (Render_insignias_as_decals)
+		mprintf(("Game Settings Table: Insignias will be rendered as decals\n"));
+	else
+		mprintf(("Game Settings Table: Insignias will be rendered as polygons (retail behavior)\n"));
+
+	// a port of 0 means that the default will be used
+	if (FS2NetD_port)
+		mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+
+	if (Disable_hc_message_ani)
+		mprintf(("Game Settings Table: FRED - Disabling Hard Coded Message Ani Files\n"));
+	else
+		mprintf(("Game Settings Table: FRED - Using Hard Coded Message Ani Files\n"));
+
+	if (Enable_scripts_in_fred)
+		mprintf(("Game Settings Table: FRED - Scripts will be executed when running FRED.\n"));
+	else
+		mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
+
+	mprintf(("Game Settings Table: FRED briefing window resolution is (%ix%i)\n", Briefing_window_resolution[0], Briefing_window_resolution[1]));
+
+	if (Skybox_internal_depth_consistency)
+		mprintf(("Game Settings Table: Skybox submodels will use internal depth consistency\n"));
+	else
+		mprintf(("Game Settings Table: Skybox submodels will not use internal depth consistency (retail behavior)\n"));
+
+	if (Fixed_turret_collisions)
+		mprintf(("Game Settings Table: Using fixed turret collisions (shooting a turret barrel will always register)\n"));
+	else
+		mprintf(("Game Settings Table: Using retail turret collisions (shooting a turret barrel will register if it is within the radius of the base)\n"));
+
+	if (Fixed_missile_detonation)
+		mprintf(("Game Settings Table: Using fixed missile detonation (missiles will cross an entire subsystem before detonating)\n"));
+	else
+		mprintf(("Game Settings Table: Using retail missile detonation (missiles will detonate when they reach the center coordinates of a subsystem)\n"));
+
+	if (Damage_impacted_subsystem_first)
+		mprintf(("Game Settings Table: Damage Impacted Subsystem First set to TRUE (weapons will damage the subsystem they impact before any others)\n"));
+	else
+		mprintf(("Game Settings Table: Damage Impacted Subsystem First set to FALSE (weapons will damage the closest subsystem before any others)\n"));
+
+	if (Use_3d_ship_select)
+		mprintf(("Game Settings Table: Using 3D ship select\n"));
+	if (Use_3d_ship_icons)
+		mprintf(("Game Settings Table: Using 3D ship icons\n"));
+	if (Use_3d_weapon_select)
+		mprintf(("Game Settings Table: Using 3D weapon select\n"));
+	if (Use_3d_weapon_icons)
+		mprintf(("Game Settings Table: Using 3D weapon icons\n"));
+	if (Use_3d_overhead_ship)
+		mprintf(("Game Settings Table: Using 3D overhead ship\n"));
+
+	if (Weapons_inherit_parent_collision_group)
+		mprintf(("Game Settings Table: Weapons inherit parent collision group\n"));
+
+	if (Flight_controls_follow_eyepoint_orientation)
+		mprintf(("Game Settings Table: Flight controls follow eyepoint orientation\n"));
+
+	if (Beams_use_damage_factors)
+		mprintf(("Game Settings Table: Beams will use Damage Factors\n"));
+	else
+		mprintf(("Game Settings Table: Beams will ignore Damage Factors (retail behavior)\n"));
+
+	if (Enable_external_default_scripts)
+		mprintf(("Game Settings Table: Enabled external default scripts.\n"));
+	else
+		mprintf(("Game Settings Table: Disabled external default scripts.\n"));
+
+	if (Using_in_game_options)
+		mprintf(("Game Settings Table: Using in-game options system.\n"));
+	else
+		mprintf(("Game Settings Table: Not using in-game options system.\n"));
+
+	mprintf(("Game Settings Table: Default dinky shockwave multiplier is %.2f\n", Dinky_shockwave_default_multiplier));
+
+	if (Shockwaves_always_damage_bombs)
+		mprintf(("Game Settings Table: Shockwaves always damage bombs\n"));
+	if (Shockwaves_damage_all_obj_types_once)
+		mprintf(("Game Settings Table: Shockwaves damage all object types once\n"));
+	if (Shockwaves_inherit_parent_damage_type)
+		mprintf(("Game Settings Table: Shockwaves inherit parent damage type\n"));
+
+	if (Swarmers_lead_targets)
+		mprintf(("Game Settings Table: Swarmers lead targets\n"));
+
+	if (Framerate_independent_turning)
+		mprintf(("Game Settings Table: AI will use framerate independent turning\n"));
+	else
+		mprintf(("Game Settings Table: AI will use framerate dependent turning (retail behavior)\n"));
+
+	if (Calculate_subsystem_hitpoints_after_parsing)
+		mprintf(("Game Settings Table: Subsystem hitpoints will be calculated after parsing\n"));
+	else
+		mprintf(("Game Settings Table: Subsystem hitpoints will be calculated as they are parsed\n"));
+
+	if (Fix_scripted_velocity)
+		mprintf(("Game Settings Table: Using fixed scripted velocity (physics will respect a velocity set by a script)\n"));
+	else
+		mprintf(("Game Settings Table: Using legacy scripted velocity (physics may override a velocity set by a script)\n"));
+
+	if (Fix_asteroid_bounding_box_check)
+		mprintf(("Game Settings Table: Using fixed asteroid/debris field bounding box checks\n"));
+	else
+		mprintf(("Game Settings Table: Using retail asteroid/debris field bounding box checks\n"));
+
+	if (Disable_expensive_turret_target_check)
+		mprintf(("Game Settings Table: Expensive turret target check is disabled\n"));
+	else
+		mprintf(("Game Settings Table: Expensive turret target check is enabled\n"));
+
+	if (Zero_radius_explosions_skip_fireballs)
+		mprintf(("Game Settings Table: Zero-radius explosions will skip fireballs\n"));
+	else
+		mprintf(("Game Settings Table: Zero-radius explosions will create fireballs\n"));
+
+	if (Fix_density_moment_of_inertia)
+		mprintf(("Game Settings Table: Using fixed density moment of inertia (higher density makes a ship harder to rotate)\n"));
+	else
+		mprintf(("Game Settings Table: Using retail density moment of inertia (higher density makes a ship easier to rotate)\n"));
+
+	if (Fix_collision_moment_of_inertia)
+		mprintf(("Game Settings Table: Using fixed collision moment of inertia (collision rotation will use the object's actual orientation)\n"));
+	else
+		mprintf(("Game Settings Table: Using retail collision moment of inertia (collision rotation will use the inverse of the object's orientation)\n"));
 }
 
 void mod_table_init()
@@ -1795,6 +1828,8 @@ void mod_table_init()
 		//Stale data
 		Shadow_distances_cockpit.clear();
 	}
+
+	mod_table_log_settings();
 }
 
 // game_settings.tbl is parsed before graphics are actually initialized, so we can't calculate the resolution at that time
