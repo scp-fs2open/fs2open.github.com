@@ -1322,7 +1322,7 @@ bool control_config_accept(bool API_Access)
 
 			// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 			auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [str](CC_preset& p) {
-				return ((p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)));
+				return ((p.name == str) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode)));
 			});
 
 			if (it != Control_config_presets.end()) {
@@ -1778,7 +1778,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
-		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+		return (p.name == newName) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode));
 	});
 
 	if (it != Control_config_presets.end()) {
@@ -1791,9 +1791,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 	}
 
 	// Pack the current bindings into a preset, then save the file
-	CC_preset preset;
-	preset.name = newName;
-	preset.type = Preset_t::pst;
+	CC_preset preset(newName, Preset_t::pst);
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 
 	// Done with the file
@@ -1813,10 +1811,9 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 
 		return true;
 
-	} else if ((clone->name != preset.name) || (clone->type != Preset_t::pst)) {
+	} else if ((clone->name != preset.name) || (clone->get_type() != Preset_t::pst)) {
 		// Complain and ignore if the preset names or the type differs
 		return false;
-
 	}
 
 	return false; //should be unreachable, but just in case
@@ -1826,7 +1823,7 @@ bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newN
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
-		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+		return (p.name == newName) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode));
 	});
 
 	if (it != Control_config_presets.end()) {
