@@ -192,6 +192,8 @@ float Min_radius_for_persistent_debris;
 bool Zero_radius_explosions_skip_fireballs;
 bool Render_insignias_as_decals;
 bool Link_special_point_subsystems_to_destroyed_submodels;
+bool Fix_density_moment_of_inertia;
+bool Fix_collision_moment_of_inertia;
 
 
 #ifdef WITH_DISCORD
@@ -1696,6 +1698,24 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Link_special_point_subsystems_to_destroyed_submodels);
 			}
 
+			if (optional_string("$Fix density moment of inertia:")) {
+				stuff_boolean(&Fix_density_moment_of_inertia);
+				if (Fix_density_moment_of_inertia) {
+					mprintf(("Game Settings Table: Using fixed density moment of inertia (higher density makes a ship harder to rotate)\n"));
+				} else {
+					mprintf(("Game Settings Table: Using retail density moment of inertia (higher density makes a ship easier to rotate)\n"));
+				}
+			}
+
+			if (optional_string("$Fix collision moment of inertia:")) {
+				stuff_boolean(&Fix_collision_moment_of_inertia);
+				if (Fix_collision_moment_of_inertia) {
+					mprintf(("Game Settings Table: Using fixed collision moment of inertia (collision rotation will use the object's actual orientation)\n"));
+				} else {
+					mprintf(("Game Settings Table: Using retail collision moment of inertia (collision rotation will use the inverse of the object's orientation)\n"));
+				}
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1980,10 +2000,15 @@ void mod_table_reset()
 	Zero_radius_explosions_skip_fireballs = false;
 	Render_insignias_as_decals = false;
 	Link_special_point_subsystems_to_destroyed_submodels = false;
+	Fix_density_moment_of_inertia = false;
+	Fix_collision_moment_of_inertia = false;
 }
 
 void mod_table_set_version_flags()
 {
+	if (mod_supports_version(21, 0, 0)) {
+		Fix_density_moment_of_inertia = true;
+	}
 	if (mod_supports_version(22, 0, 0)) {
 		Fixed_turret_collisions = true;
 		Fixed_missile_detonation = true;
@@ -2011,5 +2036,8 @@ void mod_table_set_version_flags()
 	if (mod_supports_version(26, 0, 0)) {
 		Zero_radius_explosions_skip_fireballs = true;
 		Render_insignias_as_decals = true;
+	}
+	if (mod_supports_version(26, 2, 0)) {
+		Fix_collision_moment_of_inertia = true;
 	}
 }

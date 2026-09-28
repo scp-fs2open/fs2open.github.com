@@ -6734,9 +6734,10 @@ void physics_ship_init(object *objp)
 		pi->I_body_inv = pm->moment_of_inertia;
 
 	// scale inverse moment of inertia value by inverse density
-	vm_vec_scale( &pi->I_body_inv.vec.rvec, 1/sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.uvec, 1/sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.fvec, 1/sinfo->density );
+	float moi_scale = Fix_density_moment_of_inertia ? 1/sinfo->density : sinfo->density;	// retail scaled by density, not inverse density
+	vm_vec_scale( &pi->I_body_inv.vec.rvec, moi_scale );
+	vm_vec_scale( &pi->I_body_inv.vec.uvec, moi_scale );
+	vm_vec_scale( &pi->I_body_inv.vec.fvec, moi_scale );
 
 	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
