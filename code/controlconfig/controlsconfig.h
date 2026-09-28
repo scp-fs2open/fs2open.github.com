@@ -600,12 +600,6 @@ class CC_preset {
 	}
 
 	bool is_duplicate_of(const CC_preset& other) const;
-
-	// Factory method for creating player duplicates
-	static CC_preset create_player_duplicate(const CC_preset& source, const SCP_string& new_name)
-	{
-		return {new_name, source.bindings, Preset_t::pst};
-	}
 };
 
 /*!
