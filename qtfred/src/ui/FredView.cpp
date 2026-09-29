@@ -2560,6 +2560,20 @@ void FredView::closeEvent(QCloseEvent* event) {
 	disconnect();
 	QMainWindow::closeEvent(event);
 
+	// shutdown() frees the engine data (sexp nodes, models, ship data) before
+	// gr_close() destroys this window. Open editor dialogs and undo commands free
+	// sexp nodes they own in their destructors, so release them now while that
+	// data still exists; otherwise exiting crashes in free_sexp2.
+	for (auto* dialog : findChildren<QDialog*>(QString(), Qt::FindDirectChildrenOnly)) {
+		delete dialog;
+	}
+	_shipEditorDialog = nullptr;
+	_wingEditorDialog = nullptr;
+	_propEditorDialog = nullptr;
+	for (auto* stack : findChildren<QUndoStack*>()) {
+		stack->clear();
+	}
+
 	// gr_close() destroys this window, so this must be the last thing we do here
 	shutdown();
 }
