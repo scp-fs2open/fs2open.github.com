@@ -17561,8 +17561,8 @@ int ship_return_subsys_path_normal(const ship *shipp, const ship_subsys *ss, con
 		Assert( pm != NULL );
 
 		// possibly a bad model?
-		Assertion(ss->system_info->path_num <= pm->n_paths, "Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name);
-		if (ss->system_info->path_num > pm->n_paths) 
+		Assertion(ss->system_info->path_num < pm->n_paths, "Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths - 1, ss->system_info->path_num, ss->system_info->subobj_name);
+		if (ss->system_info->path_num >= pm->n_paths)
 			return 1;
 
 		mp = &pm->paths[ss->system_info->path_num];
