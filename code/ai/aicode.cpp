@@ -4040,7 +4040,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 		if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
 			ship_info *gsip = &Ship_info[Ships[gobjp->instance].ship_info_index];
 			polymodel *pm = model_get(gsip->model_num);
-			SCP_string pathName(pm->paths[Path_points[aip->path_start].path_num].name);
+			SCP_string pathName(pm->paths[aip->mp_index].name);
 			float speed_mult = FLT_MIN;
 
 			if (aip->mode == AIM_BAY_EMERGE) { // Arriving
