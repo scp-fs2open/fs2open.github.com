@@ -4044,11 +4044,17 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 		ai_afterburn_hard(Pl_objp, aip);
 	} else {
 		float max_bay_speed = sip->max_speed;
+		bool fix_bay_speed_ramp = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_bay_speed_ramp];
+		ship_info *gsip = &Ship_info[Ships[gobjp->instance].ship_info_index];
+		polymodel *pm = model_get(gsip->model_num);
+
+		// a departure path can begin with points that route the ship around the carrier, ahead of the bay path itself
+		int ramp_start = aip->path_start;
+		if (aip->mode == AIM_BAY_DEPART && fix_bay_speed_ramp)
+			ramp_start = MAX(aip->path_start, aip->path_start + aip->path_length - pm->paths[aip->mp_index].nverts);
 
 		// Maybe gradually ramp up/down the speed of a ship flying a fighterbay path
-		if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur != aip->path_start)) {
-			ship_info *gsip = &Ship_info[Ships[gobjp->instance].ship_info_index];
-			polymodel *pm = model_get(gsip->model_num);
+		if (aip->mode == AIM_BAY_EMERGE || (aip->mode == AIM_BAY_DEPART && aip->path_cur > ramp_start)) {
 			SCP_string pathName(pm->paths[aip->mp_index].name);
 			float speed_mult = FLT_MIN;
 
@@ -4073,7 +4079,7 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 			if (speed_mult != FLT_MIN && speed_mult != 1.0f) {
 				// We use the distance between the first and last point on the path here; it's not accurate
 				// if the path is not straight, but should be good enough usually; can be changed if necessary.
-				float total_path_length = vm_vec_dist_quick(&Path_points[aip->path_start].pos, &Path_points[aip->path_start + aip->path_length - 1].pos);
+				float total_path_length = vm_vec_dist_quick(&Path_points[ramp_start].pos, &Path_points[aip->path_start + aip->path_length - 1].pos);
 				float dist_to_end;
 
 				if (aip->mode == AIM_BAY_EMERGE) { // Arriving
@@ -4082,8 +4088,12 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 					dist_to_end = vm_vec_dist_quick(&Pl_objp->pos, &Path_points[aip->path_start + aip->path_length - 1].pos);
 				}
 
+				float ramp_fraction = dist_to_end / total_path_length;
+				if (fix_bay_speed_ramp)
+					CLAMP(ramp_fraction, 0.0f, 1.0f);
+
 				// Calculate max speed, but respect the waypoint speed cap if it's lower
-				max_bay_speed = sip->max_speed * (speed_mult + (1.0f - speed_mult) * (dist_to_end / total_path_length));
+				max_bay_speed = sip->max_speed * (speed_mult + (1.0f - speed_mult) * ramp_fraction);
 			}
 		}
 
