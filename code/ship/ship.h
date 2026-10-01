@@ -1873,6 +1873,9 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
+
+// switch a subsystem's looping sounds between its alive and dead sets, according to its hitpoints
+extern void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.

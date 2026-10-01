@@ -136,6 +136,54 @@ void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys,
 	pmi->submodel[j].blown_off = !was_destroyed;
 }
 
+void restore_subsystem_submodels(const ship *shipp, const ship_subsys *subsys)
+{
+	Assertion(shipp && subsys, "the ship and subsystem must exist!");
+
+	// any -destroyed form will be hidden when the submodels are next replicated
+	if (subsys->submodel_instance_1)
+		subsys->submodel_instance_1->blown_off = false;
+	if (subsys->submodel_instance_2)
+		subsys->submodel_instance_2->blown_off = false;
+
+	// special case for subsystems that don't correspond to a submodel
+	check_subsystem_submodel_link(shipp, subsys, false);
+}
+
+void blow_off_subsystem_submodels(const ship *shipp, const ship_subsys *subsys)
+{
+	Assertion(shipp && subsys, "the ship and subsystem must exist!");
+
+	if (subsys->flags[Ship::Subsystem_Flags::No_disappear])
+		return;
+
+	// any -destroyed form will be shown when the submodels are next replicated
+	if (subsys->submodel_instance_1)
+		subsys->submodel_instance_1->blown_off = true;
+	if (subsys->submodel_instance_2)
+		subsys->submodel_instance_2->blown_off = true;
+
+	// special case for subsystems that don't correspond to a submodel
+	check_subsystem_submodel_link(shipp, subsys, true);
+}
+
+bool subsystem_submodels_blown_off(const ship *shipp, const ship_subsys *subsys)
+{
+	Assertion(shipp && subsys, "the ship and subsystem must exist!");
+
+	if (subsys->submodel_instance_1)
+		return subsys->submodel_instance_1->blown_off;
+
+	// special case for subsystems that don't correspond to a submodel
+	if (!Link_special_point_subsystems_to_destroyed_submodels)
+		return false;
+
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	Assertion(pmi, "the ship's model instance must exist!");
+	int j = submodel_find_destroyed_form(pmi->model_num, subsys->system_info->subobj_name);
+	return (j >= 0) && !pmi->submodel[j].blown_off;
+}
+
 // do_subobj_destroyed_stuff is called when a subobject for a ship is killed.  Separated out
 // to separate function on 10/15/97 by MWA for easy multiplayer access.  It does all of the
 // cool things like blowing off the model (if applicable, writing the logs, etc)
@@ -360,19 +408,10 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 
 	bool no_fireballs = psub->death_effect.isValid() || sip->default_subsys_death_effect.isValid();
 
-	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
-		if (psub->subobj_num > -1) {
-			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion, no_fireballs);
-			subsys->submodel_instance_1->blown_off = true;
-		}
-
-		if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
-			subsys->submodel_instance_2->blown_off = true;
-		}
-
-		// special case for subsystems that don't correspond to a submodel
-		check_subsystem_submodel_link(ship_p, subsys, true);
+	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear]) && (psub->subobj_num > -1)) {
+		shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion, no_fireballs);
 	}
+	blow_off_subsystem_submodels(ship_p, subsys);
 
 	if (notify && !no_explosion) {
 		// play sound effect when subsys gets blown up
@@ -411,7 +450,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 	if((subsys->system_info->dead_snd.isValid()) && !(subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
 	{
 		obj_snd_assign(ship_p->objnum, subsys->system_info->dead_snd, &subsys->system_info->pnt, OS_SUBSYS_DEAD, subsys);
-		subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
+		subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
 	}
 }
 

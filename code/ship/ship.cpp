@@ -7528,6 +7528,68 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->passive_arc_next_times.push_back(TIMESTAMP::immediate());
 }
 
+void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss)
+{
+	//Get rid of any persistent sounds on the subsystem
+	//This is inefficient + sloppy but there's not really an easy way to handle things
+	//if a subsystem is brought back from the dead, other than this
+	if (ss->current_hits > 0.0f)
+	{
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->dead_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
+		}
+		if ((ss->system_info->alive_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->alive_snd, &ss->system_info->pnt, OS_SUBSYS_ALIVE, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
+		}
+		if (!(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
+		{
+			if (ss->system_info->turret_base_rotation_snd.isValid())
+			{
+				obj_snd_assign(shipp->objnum, ss->system_info->turret_base_rotation_snd, &ss->system_info->pnt, OS_TURRET_BASE_ROTATION, ss);
+				ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+			}
+			if (ss->system_info->turret_gun_rotation_snd.isValid())
+			{
+				obj_snd_assign(shipp->objnum, ss->system_info->turret_gun_rotation_snd, &ss->system_info->pnt, OS_TURRET_GUN_ROTATION, ss);
+				ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+			}
+		}
+		if ((ss->flags[Ship::Subsystem_Flags::Rotates]) && (ss->system_info->rotation_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->rotation_snd, &ss->system_info->pnt, OS_SUBSYS_ROTATION, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
+		}
+	}
+	else
+	{
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->alive_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Alive);
+		}
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->turret_base_rotation_snd, ss);
+			obj_snd_delete_type(shipp->objnum, ss->system_info->turret_gun_rotation_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Turret_rotation);
+		}
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->rotation_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
+		}
+		if ((ss->system_info->dead_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->dead_snd, &ss->system_info->pnt, OS_SUBSYS_DEAD, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
+		}
+	}
+}
+
 /**
  * Recalculates the overall strength of subsystems.
  *
@@ -7561,64 +7623,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 			shipp->subsys_info[type].aggregate_current_hits += ship_system->current_hits;
 		}
 
-		//Get rid of any persistent sounds on the subsystem
-		//This is inefficient + sloppy but there's not really an easy way to handle things
-		//if a subsystem is brought back from the dead, other than this
-		if(ship_system->current_hits > 0.0f)
-		{
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
-            }
-            if ((ship_system->system_info->alive_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, OS_SUBSYS_ALIVE, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
-            }
-            if (!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
-            {
-                if (ship_system->system_info->turret_base_rotation_snd.isValid())
-                {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_BASE_ROTATION, ship_system);
-                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
-                }
-                if (ship_system->system_info->turret_gun_rotation_snd.isValid())
-                {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_GUN_ROTATION, ship_system);
-                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
-                }
-            }
-            if ((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, OS_SUBSYS_ROTATION, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
-            }
-		}
-		else
-		{
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive, false);;
-            }
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation, false);
-            }
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
-            }
-            if ((ship_system->system_info->dead_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, OS_SUBSYS_DEAD, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
-            }
-		}
+		ship_update_subsys_sounds(shipp, ship_system);
 	}
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
@@ -10127,6 +10132,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 			// check for overflow of current_hits
 			float repaired_delta = ssp->max_hits * real_repair_rate * frametime;
 			float repair_threshold_hits = ssp->max_hits * sip->subsys_repair_max;
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 
 			if ((ssp->current_hits + repaired_delta) < repair_threshold_hits) {
 				ssp->current_hits += repaired_delta;
@@ -10135,6 +10141,11 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 				CLAMP(repaired_delta, 0.0f, repair_threshold_hits); // this will be negative if it is already way above the threshold
 				if (repaired_delta != 0.0f)
 					ssp->current_hits += repaired_delta;
+			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f) {
+				restore_subsystem_submodels(sp, ssp);
+				ship_update_subsys_sounds(sp, ssp);
 			}
 
 			// aggregate repair
@@ -11946,6 +11957,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	int num_saved_subsystems = 0;
 	char **subsys_names = new char *[sip_orig->n_subsystems];
 	float *subsys_pcts = new float[sip_orig->n_subsystems];
+	SCP_vector<bool> subsys_blown_off(sip_orig->n_subsystems, false);
 
 	// prevent crashes in the event of a subsystem mismatch
 	for (i = 0; i < sip_orig->n_subsystems; ++i)
@@ -12043,6 +12055,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
 		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
+
+		subsys_blown_off[num_saved_subsystems] = subsystem_submodels_blown_off(sp, ss);
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
@@ -12157,6 +12171,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
 			{
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
+				if (subsys_blown_off[i])
+					blow_off_subsystem_submodels(sp, ss);
 
 				// MageKing17 - Every AI doing something with this subsystem must transfer to the new one.
 				{
@@ -16017,11 +16033,14 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
 		if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits = strength * ssp->max_hits;
 
 			// maybe blow up subsys
 			if (ssp->current_hits <= 0) {
 				do_subobj_destroyed_stuff(shipp, ssp, nullptr);
+			} else if (was_destroyed) {
+				restore_subsystem_submodels(shipp, ssp);
 			}
 		}
 		ssp = GET_NEXT( ssp );
@@ -16404,9 +16423,15 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			Assert(repair_allocated >= 0.0f);
 
 			// add repair to current strength of single subsystem
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits += repair_delta;
 			if ( ssp->current_hits > max_subsys_repair ) {
 				ssp->current_hits = max_subsys_repair;
+			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f) {
+				restore_subsystem_submodels(shipp, ssp);
+				ship_update_subsys_sounds(shipp, ssp);
 			}
 
 			// add repair to aggregate strength of subsystems of that type

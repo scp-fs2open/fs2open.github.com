@@ -35,6 +35,7 @@
 #include "object/deadobjectdock.h"
 #include "object/objectdock.h"
 #include "ship/ship.h"
+#include "ship/shiphit.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "weapon/weapon.h"
@@ -626,6 +627,8 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 	if (!ras->subsys_current_hits.empty()) {
 		ss = GET_FIRST(&shipp->subsys_list);
 		while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
+			bool was_destroyed = (ss->current_hits <= 0.0f);
+
 			// using at() here for the bounds check, although out-of-bounds should
 			// probably never happen here
 			try {
@@ -634,8 +637,13 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 				break;
 			}
 
-			if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
-				ss->submodel_instance_1->blown_off = true;
+			if (ss->current_hits <= 0) {
+				// subsystems with no hitpoints at all are never destroyed
+				if (ss->max_hits > 0.0f)
+					blow_off_subsystem_submodels(shipp, ss);
+			} else if (was_destroyed) {
+				// the mission file may have started this subsystem destroyed
+				restore_subsystem_submodels(shipp, ss);
 			}
 
 			ss = GET_NEXT( ss );
