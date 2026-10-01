@@ -85,8 +85,8 @@ void TeamLoadoutDialog::initializeUi()
 		ui->currentTeamComboBox->addItem(QString::fromStdString(team.first), team.second);
 	}
 
-	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
-	if (The_mission.game_type & MISSION_TYPE_MULTI) {
+	// quickly enable or disable the team spin box
+	if (Num_teams > 1) {
 		ui->currentTeamComboBox->setEnabled(true); // TODO make an enable/disable function for all the controls
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(true);
 	} else {

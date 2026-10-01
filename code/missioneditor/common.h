@@ -49,8 +49,9 @@ anchor_t target_to_anchor(int target);
 // name arrays via wing_name_lookup.
 void update_custom_wing_indexes();
 
-// The _team variant clears the map first; the two _wing variants accumulate into it
+// The _team variants clear the map first; the _wing variants accumulate into it
 // (so callers that build a total across several wings must clear the map themselves).
+void generate_ship_usage_list_team(int team, SCP_map<int, int>& usage);
 void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
 void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage);
 void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage);
