@@ -81,6 +81,13 @@ SCP_vector<std::array<bitmap_slot, BM_BLOCK_SIZE>> bm_blocks;
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of private variables at file scope (static).
 static bool bm_inited = false;
+
+// Some objects with static storage duration (e.g. model_texture_replace held by a global shared_ptr) release bitmaps
+// in their destructors.  If the program exits without bm_close(), bm_blocks may be destroyed before they are, so this
+// guard, which is destroyed before bm_blocks because it is defined after it, marks bmpman as uninitialized first.
+static struct bm_static_destruction_guard {
+	~bm_static_destruction_guard() { bm_inited = false; }
+} Bm_static_destruction_guard;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
@@ -2920,6 +2927,9 @@ void bm_print_bitmaps() {
 int bm_release(int handle, int clear_render_targets) {
 	Assert(handle >= 0);
 
+	if (!bm_inited)
+		return 0;
+
 	bitmap_entry *be;
 
 	be = bm_get_entry(handle);
@@ -3017,6 +3027,45 @@ int bm_release(int handle, int clear_render_targets) {
 	}
 
 	return 1;
+}
+
+int bm_add_ref(int handle) {
+	if (!bm_is_valid(handle))
+		return -1;
+
+	// render targets are not counted, because bm_release() will not release them anyway
+	if (bm_is_render_target(handle))
+		return handle;
+
+	// animations are counted on their first frame
+	int first_frame = bm_get_info(handle);
+	if (first_frame < 0)
+		return -1;
+
+	bm_get_entry(first_frame)->load_count++;
+
+	return first_frame;
+}
+
+int bm_release_ref(int handle) {
+	if (!bm_is_valid(handle))
+		return 0;
+
+	// animations are counted on their first frame
+	int first_frame = bm_get_info(handle);
+	if (first_frame < 0)
+		return 0;
+
+	// a locked bitmap can't be freed right now, but our reference can still be given up; the data is then freed by a
+	// later release (render targets are never counted, see bm_add_ref())
+	auto be = bm_get_entry(first_frame);
+	if (be->ref_count != 0 && !bm_is_render_target(first_frame)) {
+		if (be->load_count > 0)
+			be->load_count--;
+		return 0;
+	}
+
+	return bm_release(first_frame);
 }
 
 bool bm_release_rendertarget(int handle) {
@@ -3202,13 +3251,16 @@ bool bm_set_render_target(int handle, int face) {
 	return false;
 }
 
-int bm_unload(int handle, int clear_render_targets, bool nodebug) {
+int bm_unload(int handle, int clear_render_targets, bool nodebug, bool keep_reference) {
 	bitmap_entry *be;
 	bitmap *bmp;
 
 	if (handle == -1) {
 		return -1;
 	}
+
+	if (!bm_inited)
+		return -1;
 
 	be = bm_get_entry(handle);
 	bmp = &be->bm;
@@ -3232,7 +3284,7 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 	// kind of like ref_count except it gets around the lock/unlock usage problem
 	// this gets set for each bm_load() call so we can make sure and not unload it
 	// from memory, even if we *can*, until it's really not needed anymore
-	if (!Bm_ignore_load_count) {
+	if (!Bm_ignore_load_count && !keep_reference) {
 		if (be->load_count > 0)
 			be->load_count--;
 
@@ -3241,6 +3293,9 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 			return 0;
 		}
 	}
+
+	// freeing the data resets the load count, but paging out gives up no references, so remember it
+	int saved_load_count = be->load_count;
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if (bm_is_anim(be) == true) {
@@ -3264,7 +3319,22 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 		bm_free_data(bm_get_slot(handle));		// clears flags, bbp, data, etc
 	}
 
+	if (keep_reference)
+		be->load_count = saved_load_count;
+
 	return 1;
+}
+
+int bm_page_out(int handle) {
+	if (!bm_is_valid(handle))
+		return 0;
+
+	// animations are counted on their first frame
+	int first_frame = bm_get_info(handle);
+	if (first_frame < 0)
+		return 0;
+
+	return (bm_unload(first_frame, 0, false, true) == 1) ? 1 : 0;
 }
 
 void bm_unload_all() {

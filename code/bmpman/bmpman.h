@@ -257,11 +257,17 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data = nullptr);
  * @param handle                The index number of the bitmap to free
  * @param clear_render_targets  If true, release a render target
  * @param nodebug               If true, exclude certain debug messages
+ * @param keep_reference        If true, no load-count reference is given up: the data is freed, but every reference to
+ *                              the bitmap is preserved, so it is simply reloaded the next time it is locked.  For
+ *                              animations, pass the first frame, since that is where the references are counted.
+ *                              See bm_page_out()
  *
- * @returns 0 if not successful,
- * @returns 1 if successful
+ * @returns 1 if the data was freed,
+ * @returns 0 if it was not (e.g. the bitmap is locked, or another holder still needs it), or
+ * @returns -1 if the handle is invalid, bmpman is not initialized, or the bitmap is a render target and
+ *   clear_render_targets is not set
  */
-int bm_unload(int handle, int clear_render_targets = 0, bool nodebug = false);
+int bm_unload(int handle, int clear_render_targets = 0, bool nodebug = false, bool keep_reference = false);
 
 /**
  * @brief Quickly unloads a bitmap's data, ignoring the load_count
@@ -275,6 +281,20 @@ int bm_unload(int handle, int clear_render_targets = 0, bool nodebug = false);
  * @note bm_free_data_fast() is used here and NOT bm_free_data()
  */
 int bm_unload_fast(int handle, int clear_render_targets = 0);
+
+/**
+ * @brief Frees a bitmap's data without giving up the caller's load-count reference
+ *
+ * @details Use this to page out a bitmap that will be needed again later: the slot and every reference to the bitmap are
+ *   kept, and the data is reloaded the next time it is locked.  Unlike bm_unload(), this never consumes a reference, so
+ *   it works no matter how many holders the bitmap has.  A bitmap that is currently locked is left alone.
+ *
+ * @param handle  The bitmap handle.  For animations, any frame may be passed; the whole animation is paged out.
+ *
+ * @returns 1 if the data was freed,
+ * @returns 0 otherwise
+ */
+int bm_page_out(int handle);
 
 /**
  * @brief Frees both a bitmap's data and it's associated slot.
@@ -292,6 +312,36 @@ int bm_unload_fast(int handle, int clear_render_targets = 0);
  * @todo upgrade return type and clear_render_targets type to bools
  */
 int bm_release(int handle, int clear_render_targets = 0);
+
+/**
+ * @brief Takes an additional load-count reference on a bitmap that is already loaded
+ *
+ * @details This is the equivalent of loading the bitmap a second time: the bitmap will not be freed until every
+ *   reference has been released.  Use it when storing a handle that was loaded by someone else, so that the stored
+ *   handle stays valid even after the original loader releases it.  Every call must be balanced by a call to
+ *   bm_release_ref().
+ *
+ * @param handle  The bitmap handle.  For animations, any frame may be passed; the reference is taken on the first frame.
+ *   Render targets are not counted, since bm_release() will not release them without being explicitly asked to.
+ *
+ * @returns the handle the reference was taken on (the first frame for animations), or the handle itself for a render
+ *   target, on which no reference is taken, or
+ * @returns -1 if the handle is not a valid bitmap
+ */
+int bm_add_ref(int handle);
+
+/**
+ * @brief Releases a load-count reference taken by bm_add_ref() or by loading the bitmap
+ *
+ * @details Same as bm_release(), except that any frame of an animation may be passed, and that if the bitmap is
+ *   currently locked the reference is still given up; the bitmap is then freed by a later release, or at shutdown.
+ *
+ * @param handle  The bitmap handle.  For animations, any frame may be passed; the reference is released on the first frame.
+ *
+ * @returns 1 if the bitmap was freed,
+ * @returns 0 otherwise
+ */
+int bm_release_ref(int handle);
 
 /**
  * @brief Detaches the render target of a bitmap if it exists

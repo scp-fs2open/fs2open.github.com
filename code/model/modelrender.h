@@ -127,7 +127,6 @@ public:
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
 	void set_replacement_textures(std::shared_ptr<const model_texture_replace> textures);
-	void set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures);
 	void set_team_color(const team_color &clr);
 	void set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
 	void set_clip_plane(const vec3d &pos, const vec3d &normal);
@@ -317,7 +316,10 @@ int model_render_determine_detail(float depth, int model_num, int detail_level_l
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "", const SCP_vector<SCP_string>& destroyed_subsystems = SCP_vector<SCP_string>());
 
 size_t model_hash_subsystem_name_list_for_cache(const SCP_vector<SCP_string>& subsystem_names);
-TriStateBool model_get_cached_ui_render_instance(int model_num, int* model_instance_out, size_t instance_data_hash = 0);
+// Fetches the cached model instance used to render a ship class (or a bare model, if sip is null) without an object: the
+// cache key includes the class, the instance is set up for the class when it is freshly created, and render_info is
+// pointed at the instance's replacement textures.
+TriStateBool model_get_cached_ui_render_instance_for_class(model_render_params& render_info, int model_num, ship_info* sip, int* model_instance_out, size_t instance_data_hash = 0);
 void model_clear_cached_ui_render_instances();
 void model_process_cached_ui_render_instances();
 

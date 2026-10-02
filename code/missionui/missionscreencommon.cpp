@@ -1657,19 +1657,10 @@ void draw_model_icon(int model_id, uint64_t flags, int x, int y, int w, int h, s
 		common_setup_room_lights();
 	}
 
-	if (sip != NULL && sip->replacement_textures.size() > 0) 
-	{
-		render_info.set_replacement_textures(model_id, sip->replacement_textures);
-	}
-
 	Glowpoint_override = true;
 	model_clear_instance(model_id);
 	int model_instance = -1;
-	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
-	// Only set up the instance when it was freshly created; the cached instance persists across frames.
-	if (sip != nullptr && cache_result == TriStateBool::TRUE_) {
-		model_set_up_techroom_instance(sip, model_instance);
-	}
+	model_get_cached_ui_render_instance_for_class(render_info, model_id, sip, &model_instance);
 
 	render_info.set_flags(flags);
 	model_render_immediate(&render_info, model_id, model_instance, &object_orient, &vmd_zero_vector);
@@ -1688,12 +1679,10 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 	if (model_id < 0)
 		return;
 
+	bool is_ship = !(flags & MR_IS_MISSILE) && Ship_info.in_bounds(ship_class);
+
 	int model_instance = -1;
-	auto cache_result = model_get_cached_ui_render_instance(model_id, &model_instance);
-	// Only set up the instance when it was freshly created; the cached instance persists across frames.
-	if (!(flags & MR_IS_MISSILE) && SCP_vector_inbounds(Ship_info, ship_class) && cache_result == TriStateBool::TRUE_) {
-		model_set_up_techroom_instance(&Ship_info[ship_class], model_instance);
-	}
+	model_get_cached_ui_render_instance_for_class(*render_info, model_id, is_ship ? &Ship_info[ship_class] : nullptr, &model_instance);
 
 	lighting_profiles::set_non_mission_profile non_mission_lighting_profile;
 
