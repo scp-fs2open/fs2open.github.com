@@ -1,0 +1,82 @@
+//? #version 150
+
+// This shader does the downsampling of one bloom mip into the next, smaller
+// mip. It uses the Call Of Duty method, presented at ACM Siggraph 2014. The
+// method was designed to remove pulsating artifacts and temporal instability.
+
+// The source texture must use a bilinear minification filter, a
+// floating-point (HDR) format, and edge clamping.
+
+#ifdef VULKAN
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+layout(set = 1, binding = 1) uniform sampler2D srcTexture;
+#else
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+uniform sampler2D srcTexture;
+#endif
+
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
+	float xSize;
+	float ySize;
+	float mip;
+	float intensity;
+};
+
+void main()
+{
+	// xSize and ySize are one texel of the source mip, which is twice the size
+	// of the mip that this pass writes.
+	float x = xSize;
+	float y = ySize;
+
+	// Take 13 samples around the current texel:
+	// a - b - c
+	// - j - k -
+	// d - e - f
+	// - l - m -
+	// g - h - i
+	// === ('e' is the current texel) ===
+	vec3 a = textureLod(srcTexture, vec2(fragTexCoord.x - 2*x, fragTexCoord.y + 2*y), mip).rgb;
+	vec3 b = textureLod(srcTexture, vec2(fragTexCoord.x,       fragTexCoord.y + 2*y), mip).rgb;
+	vec3 c = textureLod(srcTexture, vec2(fragTexCoord.x + 2*x, fragTexCoord.y + 2*y), mip).rgb;
+
+	vec3 d = textureLod(srcTexture, vec2(fragTexCoord.x - 2*x, fragTexCoord.y), mip).rgb;
+	vec3 e = textureLod(srcTexture, vec2(fragTexCoord.x,       fragTexCoord.y), mip).rgb;
+	vec3 f = textureLod(srcTexture, vec2(fragTexCoord.x + 2*x, fragTexCoord.y), mip).rgb;
+
+	vec3 g = textureLod(srcTexture, vec2(fragTexCoord.x - 2*x, fragTexCoord.y - 2*y), mip).rgb;
+	vec3 h = textureLod(srcTexture, vec2(fragTexCoord.x,       fragTexCoord.y - 2*y), mip).rgb;
+	vec3 i = textureLod(srcTexture, vec2(fragTexCoord.x + 2*x, fragTexCoord.y - 2*y), mip).rgb;
+
+	vec3 j = textureLod(srcTexture, vec2(fragTexCoord.x - x, fragTexCoord.y + y), mip).rgb;
+	vec3 k = textureLod(srcTexture, vec2(fragTexCoord.x + x, fragTexCoord.y + y), mip).rgb;
+	vec3 l = textureLod(srcTexture, vec2(fragTexCoord.x - x, fragTexCoord.y - y), mip).rgb;
+	vec3 m = textureLod(srcTexture, vec2(fragTexCoord.x + x, fragTexCoord.y - y), mip).rgb;
+
+	// Apply a weighted distribution:
+	// 0.5 + 0.125 + 0.125 + 0.125 + 0.125 = 1
+	// a,b,d,e * 0.125
+	// b,c,e,f * 0.125
+	// d,e,g,h * 0.125
+	// e,f,h,i * 0.125
+	// j,k,l,m * 0.5
+	// This gives 5 square areas that the shader samples. Some of them overlap,
+	// thus the weights must change to keep the energy of the downsample. The
+	// weights are distributed, so that the sum of j,k,l,m (for example) adds
+	// 0.5 to the final color. The code below gives this sum:
+	// 0.125*5 + 0.03125*4 + 0.0625*4 = 1
+	vec3 downsample = e * 0.125;
+	downsample += (a + c + g + i) * 0.03125;
+	downsample += (b + d + f + h) * 0.0625;
+	downsample += (j + k + l + m) * 0.125;
+
+	fragOut0.rgb = downsample;
+	fragOut0.a = 1.0;
+}

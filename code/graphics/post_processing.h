@@ -77,3 +77,18 @@ bool gr_sunglare_enabled();
 int gr_bloom_intensity();
 // used by lab
 void gr_set_bloom_intensity(int intensity);
+
+float gr_bloom_width();
+// used by lab
+void gr_set_bloom_width(float width);
+
+// The maximum number of mip levels in the bloom chain. A small render target
+// can hold fewer levels, thus use gr_bloom_mip_levels() for the real count.
+constexpr int Bloom_max_mip_levels = 8;
+
+// Gives the number of mip levels that a bloom target of this size can hold.
+int gr_bloom_mip_levels(int width, int height);
+
+// Gives the relative contribution of one bloom mip level to the composited
+// bloom. The graphics backends sum these values to normalize the result.
+float gr_bloom_layer_contribution(int mip);
