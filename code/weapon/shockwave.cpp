@@ -398,20 +398,25 @@ void shockwave_move(object *shockwave_objp, float frametime)
 
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx);
 
-			bool is_warping = shipp->flags[Ship::Ship_Flags::Depart_warp];
+			// Only ever treat a ship as warping out when the option is enabled,
+			// so retail and older mods keep the original behavior.
+			bool is_warping = false;
 
-			// This covers the period when the ship is aligning and flying toward
-			// its warp-out point (AIM_WARP_OUT) but hasn't yet triggered the
-			// warp effect (Depart_warp).
-			// Note: AIS_DEPART_TO_BAY is excluded because it is a bay depart, not a warp.
-			if (Negate_warpout_jostle && !is_warping) {
-				if (shipp->ai_index >= 0) {
-					ai_info* aip = &Ai_info[shipp->ai_index];
-					if (aip->mode == AIM_WARP_OUT && aip->submode != AIS_DEPART_TO_BAY) {
+			if (Negate_warpout_jostle) {
+				// Warp effect is active (also covers player warpout stages 2 and 3)
+				if (shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+					is_warping = true;
+				}
+
+				// AI ship has committed to the warp (flying straight toward the warp point)
+				if (!is_warping && shipp->ai_index >= 0) {
+					const ai_info* aip = &Ai_info[shipp->ai_index];
+					if (aip->mode == AIM_WARP_OUT && aip->submode >= AIS_WARP_3 && aip->submode <= AIS_WARP_5) {
 						is_warping = true;
 					}
 				}
 
+				// Player warpout stage 1 (controls already taken over)
 				if (!is_warping && objp == Player_obj && Player->control_mode == PCM_WARPOUT_STAGE1) {
 					is_warping = true;
 				}
@@ -421,7 +426,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (!is_warping) {
 				weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			}
-		} break;
+
+			break;
+		}
 		case OBJ_ASTEROID:
 			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
