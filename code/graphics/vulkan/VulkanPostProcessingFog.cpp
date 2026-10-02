@@ -304,7 +304,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -316,7 +316,7 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	// Set 2: PerDraw — fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	{
 		vk::DeviceSize slotOffset =
 			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &fogData, sizeof(fogData));
@@ -326,9 +326,8 @@ void VulkanFog::renderScene(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();
@@ -420,7 +419,8 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 			return;
 		}
 
-		Verification(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly, m_emissiveMipmapped.allocation),
+		Verification(m_ctx->memoryManager->allocateImageMemory(m_emissiveMipmapped.image, MemoryUsage::GpuOnly,
+			m_emissiveMipmapped.allocation, MemoryPurpose::RenderTarget),
 			"Failed to allocate memory for mipmapped emissive image");
 
 		// Create full-mip-chain view for LOD sampling
@@ -614,7 +614,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 	{
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
@@ -638,7 +638,7 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	// Set 2: PerDraw — volumetric fog UBO (from the per-frame scratch ring)
 	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	{
 		vk::DeviceSize slotOffset =
 			m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &volData, sizeof(volData));
@@ -648,9 +648,8 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	writer.flush();
 
 	// Bind descriptor sets and draw
-	cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-		static_cast<uint32_t>(DescriptorSetIndex::Material),
-		{materialSet, perDrawSet}, {});
+	const vk::DescriptorSet sets[] = {materialSet, perDrawSet};
+	writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Material, sets);
 
 	cmd.draw(3, 1, 0, 0);
 	cmd.endRenderPass();

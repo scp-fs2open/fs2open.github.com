@@ -13,6 +13,24 @@
 
 namespace tracing {
 
+/**
+ * Computes per-category exclusive (self) time for a frame's trace events in a single pass.
+ *
+ * @c events must already be sorted into transition order (by @c event_id, i.e. call order), as a
+ * stream of Begin/End events. A stack of currently-open scopes is maintained; the time between two
+ * consecutive transitions is attributed to the innermost open scope.
+ *
+ * @c self_time_by_id is resized and zeroed to @c Category::getCount() entries and filled with each
+ * category's self time, indexed by @c Category::getId() (recover the category with
+ * @c Category::getNameById()). Pass the same vector every frame to reuse its allocation.
+ *
+ * @return the sum of all self-times, i.e. the total traced frame time.
+ *
+ * This is O(events) with no tree building or string comparisons. Declared here (rather than kept
+ * file-local) so it can be unit-tested directly.
+ */
+uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id);
+
 struct profile_sample_history {
 	bool valid;
 	//char name[256];
@@ -39,6 +57,11 @@ class FrameProfiler {
 	SCP_vector<trace_event> _bufferedEvents;
 
 	SCP_vector<profile_sample_history> history;
+
+	frame_overlay_snapshot overlaySnapshot;
+
+	// Reused across frames by accumulate_self_times() so the per-frame walk allocates nothing.
+	SCP_vector<uint64_t> _selfTimeScratch;
 
 	std::int64_t _mainThreadID = -1;
 
@@ -69,6 +92,12 @@ class FrameProfiler {
 					 uint64_t end_profile_time,
 					 SCP_vector<profile_sample>& samples);
 
+	/**
+	 * Builds the structured overlay snapshot (see frame_overlay_snapshot) from this frame's
+	 * per-category self-time. self_time_by_id is indexed by Category::getId(); total is the sum of
+	 * all self-times (i.e. total traced frame time). Called once per processFrame().
+	 */
+	void build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total);
 
  public:
 	FrameProfiler();
@@ -79,6 +108,8 @@ class FrameProfiler {
 	void processFrame();
 
 	SCP_string getContent();
+
+	const frame_overlay_snapshot& getOverlaySnapshot() const { return overlaySnapshot; }
 };
 
 }

@@ -760,6 +760,66 @@ void opengl_scene_texture_shutdown()
 	Scene_framebuffer_in_frame = false;
 }
 
+size_t opengl_get_scene_render_target_bytes()
+{
+	// The bytes for each pixel come from the internal formats that opengl_setup_scene_textures()
+	// gives to these textures: GL_RGBA16F holds 8 bytes, GL_RGBA8 and GL_DEPTH24_STENCIL8 hold 4.
+	// Keep the values below equal to the formats at the creation sites in that function.
+	constexpr size_t RGBA16F_BYTES = 8;
+	constexpr size_t RGBA8_BYTES = 4;
+	constexpr size_t DEPTH24_STENCIL8_BYTES = 4;
+
+	size_t bytes = 0;
+
+	auto add_texture = [&bytes](GLuint texture_id, size_t width, size_t height, size_t bytes_per_pixel,
+							 size_t samples = 1) {
+		if (texture_id == 0) {
+			return;
+		}
+		bytes += width * height * bytes_per_pixel * samples;
+	};
+
+	const auto scene_w = static_cast<size_t>(Scene_texture_width);
+	const auto scene_h = static_cast<size_t>(Scene_texture_height);
+
+	add_texture(Scene_color_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Scene_ldr_texture, scene_w, scene_h, RGBA8_BYTES);
+	add_texture(Scene_position_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Scene_normal_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Scene_specular_texture, scene_w, scene_h, RGBA8_BYTES);
+	add_texture(Scene_emissive_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Scene_composite_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Scene_luminance_texture, scene_w, scene_h, RGBA16F_BYTES);
+	add_texture(Cockpit_depth_texture, scene_w, scene_h, DEPTH24_STENCIL8_BYTES);
+	add_texture(Scene_depth_texture, scene_w, scene_h, DEPTH24_STENCIL8_BYTES);
+
+	// The multisample textures hold one value for each sample, thus their bytes go up with the
+	// MSAA level. Cmdline_msaa_enabled holds the number of samples and is 0 when MSAA is off.
+	const auto samples = static_cast<size_t>(std::max(1, Cmdline_msaa_enabled));
+
+	add_texture(Scene_color_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
+	add_texture(Scene_position_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
+	add_texture(Scene_normal_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
+	add_texture(Scene_specular_texture_ms, scene_w, scene_h, RGBA8_BYTES, samples);
+	add_texture(Scene_emissive_texture_ms, scene_w, scene_h, RGBA16F_BYTES, samples);
+	add_texture(Scene_depth_texture_ms, scene_w, scene_h, DEPTH24_STENCIL8_BYTES, samples);
+
+	// The back buffer and gamma blit textures use the size of the screen, not the (clamped) size
+	// of the scene textures.
+	const auto screen_w = static_cast<size_t>(gr_screen.max_w);
+	const auto screen_h = static_cast<size_t>(gr_screen.max_h);
+
+	add_texture(Back_texture, screen_w, screen_h, RGBA16F_BYTES);
+	add_texture(Back_depth_texture, screen_w, screen_h, DEPTH24_STENCIL8_BYTES);
+	add_texture(GammaBlit_texture, screen_w, screen_h, RGBA8_BYTES);
+
+	// The two distortion textures always have the size 32x32.
+	add_texture(Distortion_texture[0], 32, 32, RGBA8_BYTES);
+	add_texture(Distortion_texture[1], 32, 32, RGBA8_BYTES);
+
+	return bytes;
+}
+
 void gr_opengl_scene_texture_begin()
 {
 	if ( !Scene_texture_initialized ) {

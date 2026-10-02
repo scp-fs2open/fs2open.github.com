@@ -88,6 +88,18 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime, bool doKeys);
 
+/**
+ * @brief Lua heap usage snapshot, for the profiler overlay's memory panel
+ *
+ * @details Reports Lua's own GC byte count for the main script state (see lua_gc(),
+ * LUA_GCCOUNT/LUA_GCCOUNTB). Invalid before the Lua state is created or after it is torn down.
+ */
+struct scripting_memory_stats {
+	bool valid = false;
+	size_t lua_heap_bytes = 0;
+};
+scripting_memory_stats scripting_get_memory_stats();
+
 const scripting::HookBase* scripting_string_to_action(const char* action);
 ConditionalType scripting_string_to_condition(const char* condition);
 

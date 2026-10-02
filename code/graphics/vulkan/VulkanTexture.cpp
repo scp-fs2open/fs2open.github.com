@@ -2427,7 +2427,7 @@ bool VulkanTextureManager::createImage(uint32_t width, uint32_t height, uint32_t
 		return false;
 	}
 
-	if (!m_memoryManager->allocateImageMemory(image, memUsage, allocation)) {
+	if (!m_memoryManager->allocateImageMemory(image, memUsage, allocation, MemoryPurpose::Texture)) {
 		m_device.destroyImage(image);
 		image = nullptr;
 		return false;

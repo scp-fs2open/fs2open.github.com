@@ -394,9 +394,26 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 	}
 
 	// Input assembly
+	//
+	// Primitive restart is enabled for every topology that permits it, rather than disabled
+	// outright. Metal always performs primitive restart on indexed draws and cannot turn it off, so
+	// MoltenVK rejects a strip/fan pipeline that asks to disable it -- vkCreateGraphicsPipelines
+	// fails with VK_ERROR_FEATURE_NOT_PRESENT ("Metal does not support disabling primitive
+	// restart"). getPipeline() then returns a null pipeline and the draw is skipped, which on macOS
+	// silently dropped the entire 2D/UI/HUD path (gr_bitmap and friends render quads as
+	// PRIM_TYPE_TRISTRIP; see graphics/render.cpp) while leaving ImGui -- which builds its own
+	// TRIANGLE_LIST pipeline -- as the only thing still on screen.
+	//
+	// Enabling it changes nothing for FSO's geometry: an index buffer is promoted to 32-bit as soon
+	// as a mesh reaches USHRT_MAX vertices (VB_FLAG_LARGE_INDEX, see modelinterp.cpp), so 0xFFFF is
+	// never a real 16-bit index, and 0xFFFFFFFF is unreachable for 32-bit ones. Neither restart
+	// sentinel can collide with live index data.
+	//
+	// List topologies must keep it disabled: the spec only allows primitiveRestartEnable on them
+	// with VK_EXT_primitive_topology_list_restart, which FSO does not request.
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 	inputAssembly.topology = convertPrimitiveType(config.primitiveType);
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	inputAssembly.primitiveRestartEnable = topologySupportsPrimitiveRestart(inputAssembly.topology);
 
 	// Viewport state (dynamic)
 	vk::PipelineViewportStateCreateInfo viewportState;
