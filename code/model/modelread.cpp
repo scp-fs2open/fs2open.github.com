@@ -2415,7 +2415,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 							if (bank->glow_neb_bitmap < 0)
 							{
-								bank->glow_neb_bitmap = bank->glow_bitmap;
+								// leave it invalid; the renderer falls back to the normal glowpoint texture.  (Aliasing the
+								// two handles here would mean one bitmap owned by two fields, which the paging code can't tell
+								// apart from two separate textures.)
 								nprintf(( "Model", "Glow point bank nebula texture not found for '%s', using normal glowpoint texture instead\n", pm->filename));
 							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 							}
@@ -3841,6 +3843,11 @@ int num_model_instances()
 	return static_cast<int>(Polygon_model_instances.size());
 }
 
+bool model_instance_exists(int model_instance_num)
+{
+	return (model_instance_num >= 0) && (model_instance_num < num_model_instances()) && (Polygon_model_instances[model_instance_num] != nullptr);
+}
+
 polymodel_instance* model_get_instance(int model_instance_num)
 {
 	Assert( model_instance_num >= 0 );
@@ -5018,6 +5025,50 @@ void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *sm
 	smi->shift_accel = sm->default_shift_accel;
 }
 
+void model_instance_load_replacement_textures(polymodel_instance *pmi, const SCP_vector<texture_replace> &replacements)
+{
+	// discard whatever the instance had, because the new positions may be different
+	pmi->texture_replace = nullptr;
+
+	if (replacements.empty())
+		return;
+
+	auto pm = model_get(pmi->model_num);
+	pmi->texture_replace = std::make_shared<model_texture_replace>();
+
+	// now fill them in according to texture name
+	for (const auto &tr : replacements)
+	{
+		int new_tex = -1;
+
+		// look for textures
+		for (int j = 0; j < pm->n_textures; j++)
+		{
+			int tnum = pm->maps[j].FindTexture(tr.old_texture);
+			if (tnum < 0)
+				continue;
+
+			// load the replacement the first time it is actually needed, and only once; each slot takes its own reference
+			if (new_tex == -1)
+			{
+				if (!stricmp(tr.new_texture, "invisible"))
+					new_tex = REPLACE_WITH_INVISIBLE;
+				else
+					new_tex = bm_load_either(tr.new_texture);
+
+				if (new_tex == -1)
+					break;
+			}
+
+			pmi->texture_replace->reference(j * TM_NUM_TYPES + tnum, new_tex);
+		}
+
+		// and the reference from loading is no longer needed (the check skips REPLACE_WITH_INVISIBLE)
+		if (new_tex >= 0)
+			bm_release_ref(new_tex);
+	}
+}
+
 // Sets the submodel instance data when a tech room model instance is created.
 // This only needs to be done at creation, not every frame.
 void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
@@ -5025,6 +5076,9 @@ void model_set_up_techroom_instance(ship_info *sip, int model_instance_num)
 	auto pmi = model_get_instance(model_instance_num);
 	auto pm = model_get(pmi->model_num);
 	flagset<Ship::Subsystem_Flags> empty;
+
+	// the instance carries the class's replacement textures, so that screens rendering it don't have to load them themselves
+	model_instance_load_replacement_textures(pmi, sip->replacement_textures);
 
 	sip->animations.clearShipData(pmi);
 	sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(animation::ModelAnimationDirection::FWD, true, true);

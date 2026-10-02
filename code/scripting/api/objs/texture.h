@@ -9,10 +9,9 @@ namespace api {
 
 struct texture_h {
 	int handle = -1;
-	int parent_handle = -1;
 
 	texture_h();
-	explicit texture_h(int bm, bool refcount = true, int parent_handle = -1);
+	explicit texture_h(int bm, bool refcount = true);
 
 	~texture_h();
 
