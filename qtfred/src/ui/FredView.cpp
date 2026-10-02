@@ -523,6 +523,9 @@ bool FredView::saveMissionAs() {
 	if (saveName.isEmpty())
 		return false;
 
+	if (!saveName.endsWith(".fs2", Qt::CaseInsensitive))
+		saveName += ".fs2";
+		
 	fso::fred::util::saveLastDir("missions/saveMission", saveName);
 
 	Fred_mission_save save;

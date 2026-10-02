@@ -479,6 +479,9 @@ void CampaignEditorDialog::on_actionSave_As_triggered()
 		return; // User cancelled the file dialog.
 	}
 
+	if (!pathName.endsWith(".fc2", Qt::CaseInsensitive))
+		pathName += ".fc2";
+
 	util::saveLastDir("campaign/saveCampaign", pathName);
 
 	// The model will handle the actual save operation.
