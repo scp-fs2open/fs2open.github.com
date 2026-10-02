@@ -920,7 +920,95 @@ namespace animation {
 
 		return segment;
 	}
-	
+
+
+	ModelAnimationSegmentSpinUp::ModelAnimationSegmentSpinUp(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& velocity, const angles& acceleration) :
+		m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration) { }
+
+	ModelAnimationSegment* ModelAnimationSegmentSpinUp::copy() const {
+		return new ModelAnimationSegmentSpinUp(*this);
+	}
+
+	void ModelAnimationSegmentSpinUp::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
+		instance_data& instanceData = m_instances[pmi->id];	//NOLINT(misc-const-correctness) - clang-tidy does not recognize the pointer-to-member writes below as mutations
+		auto submodel_info = m_submodel->findSubmodel(pmi).second;
+		if (submodel_info == nullptr) {
+			m_duration[pmi->id] = 0.0f;
+			return;
+		}
+
+		float duration = 0.0f;
+
+		for (float angles::* i : pbh) {
+			if (m_velocity.*i != 0.0f && m_acceleration.*i != 0.0f) {
+				instanceData.m_actualAccel.*i = copysignf(m_acceleration.*i, m_velocity.*i);
+				instanceData.m_accelTime.*i = m_velocity.*i / instanceData.m_actualAccel.*i;
+				duration = fmaxf(duration, instanceData.m_accelTime.*i);
+			}
+			else {
+				//no acceleration: rotate at constant velocity from the start
+				instanceData.m_actualAccel.*i = 0.0f;
+				instanceData.m_accelTime.*i = 0.0f;
+			}
+		}
+
+		m_duration[pmi->id] = duration;
+	}
+
+	void ModelAnimationSegmentSpinUp::calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const {
+		const instance_data& instanceData = m_instances.at(pmi_id);
+
+		angles currentRot{ 0, 0, 0 };
+
+		for (float angles::* i : pbh) {
+			float accelTime = fminf(time, instanceData.m_accelTime.*i);
+			currentRot.*i = 0.5f * instanceData.m_actualAccel.*i * accelTime * accelTime;
+
+			//once this axis has reached its target velocity, it continues at that velocity for the rest of the segment
+			float linearTime = time - instanceData.m_accelTime.*i;
+			if (linearTime > 0.0f)
+				currentRot.*i += m_velocity.*i * linearTime;
+		}
+
+		matrix orient;
+		vm_angles_2_matrix(&orient, &currentRot);
+
+		ModelAnimationData<true> delta;
+		delta.orientation = orient;
+
+		base[m_submodel].data.applyDelta(delta);
+		base[m_submodel].modified = true;
+	}
+
+	void ModelAnimationSegmentSpinUp::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_submodel = replaceWith.getSubmodel(m_submodel);
+	}
+
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSpinUp::parser(ModelAnimationParseHelper* data) {
+		angles velocity, acceleration;
+
+		required_string("+Velocity:");
+		stuff_angles_deg_phb(&velocity);
+
+		required_string("+Acceleration:");
+		stuff_angles_deg_phb(&acceleration);
+
+		for (float angles::* i : pbh) {
+			if (velocity.*i != 0.0f && acceleration.*i == 0.0f)
+				error_display(0, "Spin up segment has zero acceleration on an axis with nonzero velocity; that axis will rotate at constant velocity from the start.");
+		}
+
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+			else
+				error_display(1, "Spin up segment has no target submodel!");
+		}
+
+		return std::make_shared<ModelAnimationSegmentSpinUp>(std::move(submodel), velocity, acceleration);
+	}
+
 
 	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> target, std::optional<vec3d> velocity, std::optional<float> time, std::optional<vec3d> acceleration, CoordinateSystem coordType, ModelAnimationCoordinateRelation relationType) :
 		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType), m_relationType(relationType) { }
