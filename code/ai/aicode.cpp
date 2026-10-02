@@ -3126,6 +3126,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	aip->path_dir = PD_FORWARD;
 	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
+	aip->mp_randomized_vert = subsys_path ? mp->nverts-2 : -1;
 	aip->path_length = (int)(Ppfp - ppfp_start);
 	aip->path_next_check_time = timestamp(1);
 
@@ -3185,6 +3186,7 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 	aip->path_dir = PD_FORWARD;
 	aip->path_objnum = OBJ_INDEX(mobjp);
 	aip->mp_index = path_num;
+	aip->mp_randomized_vert = -1;
 	aip->path_length = (int)(Ppfp - ppfp_start);
 	aip->path_next_check_time = timestamp(1);
 
@@ -3880,14 +3882,14 @@ void ai_afterburn_hard(object* objp, ai_info* aip) {
 	accelerate_ship(aip, 1.0f);
 };
 
-//	Given an ai_info struct, by reading current goal and path information,
-//	extract base path information and return in pmp and pmpv.
+//	Given an ai_info struct, by reading global path information,
+//	extract model path information and return in pmp and pmpv.
 //	Return true if found, else return false.
 //	false means the current point is not on the original path.
-int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert **pmpv)
+int get_base_path_info(int path_cur, int path_objnum, model_path **pmp, mp_vert **pmpv)
 {
 	pnode			*pn = &Path_points[path_cur];
-	ship *shipp = &Ships[Objects[goal_objnum].instance];
+	ship *shipp = &Ships[Objects[path_objnum].instance];
 	polymodel	*pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	
 	*pmpv = NULL;
@@ -3932,7 +3934,14 @@ void modify_model_path_points(object *objp)
 		dir = -1;
 	}
 
-	copy_xlate_model_path_points(mobjp, &pm->paths[path_num], dir, pm->paths[path_num].nverts, path_num, pnp);
+	// an exit path may have been created with fewer than nverts points, so don't write past its end
+	int count = aip->path_length - static_cast<int>(pnp - &Path_points[aip->path_start]);
+
+	int randomize_pnt = -1;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_model_path_refresh_randomization])
+		randomize_pnt = aip->mp_randomized_vert;
+
+	copy_xlate_model_path_points(mobjp, &pm->paths[path_num], dir, count, path_num, pnp, randomize_pnt);
 }
 
 //	Return an indication of the distance between two matrices.
@@ -15881,6 +15890,7 @@ void init_ai_object(int objnum)
 	aip->path_start = -1;
 	aip->path_goal_dist = -1;
 	aip->path_length = 0;
+	aip->mp_randomized_vert = -1;
 	aip->path_subsystem_next_check = 1;
 
 	aip->support_ship_objnum = -1;

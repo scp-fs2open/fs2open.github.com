@@ -295,6 +295,7 @@ typedef struct ai_info {
 	vec3d	path_create_pos;		//	Object's position at time of global path creation.
 	matrix	path_create_orient;	//	Object's orientation at time of global path creation.
 	int		mp_index;				//	Model path index.  Index in polymodel:model_paths
+	int		mp_randomized_vert;		//	Vertex of the model path that was given a random offset, or -1
 	fix		path_next_check_time;	//	Last time checked to see if would collide with model.
 	int		path_goal_dist;		// minimum distance to first path point to consider path reached
 	int		path_subsystem_next_check;	// timestamp to next check if subsystem is still visible
