@@ -34,6 +34,17 @@ namespace font
 	int force_fit_string(char *str, size_t max_str_len, int max_width, float scale = 1.0f);
 
 	/**
+	* Crops a string if required to force it to not exceed max_width pixels when printed.
+	* Does this by dropping characters at the end of the string and adding '...' to the end.
+	*
+	* @param str		string to crop.  Modifies this string directly
+	* @param max_str_len	max characters allowed in str (not including \0)
+	* @param max_width number of pixels to limit string to (less than or equal to).
+	* @return			The width of the string
+	*/
+	int force_fit_string(SCP_string &str, size_t max_str_len, int max_width, float scale = 1.0f);
+
+	/**
 	* @brief Inites the font system
 	*
 	* Initializes the font system by setting up the FontManager, parse the font table(s) and
