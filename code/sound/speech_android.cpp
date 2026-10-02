@@ -4,8 +4,8 @@
 #include "utils/unicode.h"
 #include "speech.h"
 #include <jni.h>
-#include "SDL.h"
-#include "SDL_system.h"
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL.h>
 
 bool Speech_init = false;
 static jclass j_game_class = nullptr;
@@ -41,8 +41,8 @@ bool speech_init()
 	mprintf(("Speech : Try to init TTSManager on GameActivity...\n"));
 
 	// Get the JNI Environment pointer and current Activity instance via SDL
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
-	jobject activity = (jobject)SDL_AndroidGetActivity();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
+	jobject activity = (jobject)SDL_GetAndroidActivity();
 
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
@@ -101,7 +101,7 @@ bool speech_play(const SCP_string& text)
 		return false;
 	}
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -123,7 +123,7 @@ bool speech_stop()
 	if (!Speech_init)
 		return false;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -137,7 +137,7 @@ bool speech_pause()
 	if (!Speech_init)
 		return false;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -151,7 +151,7 @@ bool speech_resume()
 	if (!Speech_init)
 		return false;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -165,7 +165,7 @@ bool speech_is_speaking()
 	if (!Speech_init)
 		return false;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -179,7 +179,7 @@ void speech_deinit()
 	if (!Speech_init)
 		return;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env != nullptr) {
 		env->CallStaticVoidMethod(j_game_class, tts_shutdown);
 		env->DeleteGlobalRef(j_game_class);
@@ -217,7 +217,7 @@ bool speech_set_rate(float rate_percent)
 	else if(rate_percent < 50.0)
 		rate_percent = 50.0;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -233,7 +233,7 @@ bool speech_set_voice(int voice)
 	if (!Speech_init)
 		return false;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
@@ -263,7 +263,7 @@ SCP_vector<std::pair<int, SCP_string>> speech_enumerate_voices()
 	if (!Speech_init)
 		return voices;
 	
-	JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return voices;

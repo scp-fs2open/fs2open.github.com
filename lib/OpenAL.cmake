@@ -58,7 +58,7 @@ ELSE(WIN32)
         message(STATUS "Using pre-built OpenAL library.")
 
         unset(OpenAL_LOCATION CACHE)
-        find_library(OpenAL_LOCATION openal PATHS "${OpenAL_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+        find_library(OpenAL_LOCATION openal PATHS "${OpenAL_ROOT_DIR}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 
         get_filename_component(FULL_LIB_PATH "${OpenAL_LOCATION}" REALPATH)
         ADD_IMPORTED_LIB(openal "${OpenAL_ROOT_DIR}/include" "${FULL_LIB_PATH}")

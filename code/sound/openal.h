@@ -3,7 +3,7 @@
 #define _AL_H
 
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__ANDROID__)
 #include "al.h"
 #include "alc.h"
 #else

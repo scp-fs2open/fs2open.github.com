@@ -289,7 +289,11 @@ GraphicsAPI gr_get_configured_render_api()
 
 #endif
 
+#ifndef __ANDROID__
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
+#else
+os::ViewportState Gr_configured_window_state = os::ViewportState::Borderless;
+#endif
 
 static bool mode_change_func(os::ViewportState state, bool initial)
 {
