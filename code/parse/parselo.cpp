@@ -2377,6 +2377,11 @@ void allocate_parse_text(size_t size)
 {
 	Assert( size > 0 );
 
+	// while parsing is paused, the shared buffers are referenced by the bookmark
+	// stack (and Parse_text may not even point at them), so clearing or
+	// reallocating them would corrupt the paused parse
+	Assertion( Bookmarks.empty(), "allocate_parse_text() must not be called while parsing is paused!" );
+
 	// Make sure that there is space for the terminating null character
 	size += 1;
 
@@ -3712,29 +3717,54 @@ void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *strlist[
 	}
 }
 
-// pause current parsing so that some else can be parsed without interfering
-// with the currently parsing file
-void pause_parse()
+PauseParseGuard::PauseParseGuard(char *text, const char *filename)
 {
-	Bookmark Mark;
+	// text may be null when nothing is being parsed, but a filename is always needed for error reporting
+	Assertion(filename != nullptr, "PauseParseGuard filename must not be null!");
 
+	// pause current parsing so that the supplied text can be parsed without interfering with the currently parsing file
+	Bookmark Mark;
 	Mark.filename = Current_filename;
+	Mark.Parse_text = Parse_text;
 	Mark.Mp = Mp;
 	Mark.Warning_count = Warning_count;
 	Mark.Error_count = Error_count;
-
 	Bookmarks.push_back(std::move(Mark));
+	m_depth = Bookmarks.size();
+
+	// point the parser at the new text.  Parse_text must track the start of the buffer containing Mp so that get_line_num() walks the right buffer.
+	// If text is the parser's current position (the lookahead idiom), the position is still within the current buffer, so the buffer start is
+	// unchanged; otherwise the supplied text becomes the new buffer.
+	if (text != Mp)
+		Parse_text = text;
+	Mp = text;
+	Warning_count = 0;
+	Error_count = 0;
+
+	// install the new filename, truncating if necessary; skip the copy when the caller passes Current_filename itself to bookmark the current position
+	if (filename != Current_filename)
+		snprintf(Current_filename, sizeof(Current_filename), "%s", filename);
 }
 
-// unpause parsing to continue with previously parsing file
-void unpause_parse()
+PauseParseGuard::~PauseParseGuard()
 {
-	Assert( !Bookmarks.empty() );
+	unpause();
+}
+
+// unpause parsing to continue with the previously parsing file
+void PauseParseGuard::unpause()
+{
+	if (!m_active)
+		return;
+	m_active = false;
+
+	Assertion(Bookmarks.size() == m_depth, "Bookmark stack mismatch: expected depth " SIZE_T_ARG " but found " SIZE_T_ARG ".  Something between pausing and unpausing left the stack unbalanced.", m_depth, Bookmarks.size());
 	if (Bookmarks.empty())
 		return;
 
-	Bookmark Mark = Bookmarks.back();
+	const Bookmark &Mark = Bookmarks.back();
 
+	Parse_text = Mark.Parse_text;
 	Mp = Mark.Mp;
 	Warning_count = Mark.Warning_count;
 	Error_count = Mark.Error_count;
@@ -3744,13 +3774,10 @@ void unpause_parse()
 	Bookmarks.pop_back();
 }
 
-void reset_parse(char *text)
+// restart parsing at the beginning of the parse text; to parse some other text, use PauseParseGuard
+void reset_parse()
 {
-	if (text != NULL) {
-		Mp = text;
-	} else {
-		Mp = Parse_text;
-	}
+	Mp = Parse_text;
 
 	Warning_count = 0;
 	Error_count = 0;

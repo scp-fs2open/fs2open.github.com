@@ -51,7 +51,7 @@ bool LuaAISEXP::parseCheckEndOfDescription() {
 	// Since we're stuffing strings, this is the best way to "unstuff" a string
 	// if we determine we're finished with the description - and we also want
 	// to preserve whitespace (which the parser eats) while building the description
-	pause_parse();
+	PauseParseGuard guard(Mp, Current_filename);	// bookmark the current position for lookahead; rewinds when the guard goes out of scope
 
 	// look for any token that can follow $Description
 	auto possible_tokens =
@@ -76,7 +76,6 @@ bool LuaAISEXP::parseCheckEndOfDescription() {
 		}
 	}
 
-	unpause_parse();
 	return found;
 }
 
