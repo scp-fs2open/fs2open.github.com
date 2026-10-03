@@ -201,6 +201,7 @@ namespace AI {
 		Fix_shockwave_expire_before_do_damage,	// shockwaves whose lifetime is shorter than one frame apply their area damage at least once before expiring
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
+		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
 
 		NUM_VALUES
 	};
