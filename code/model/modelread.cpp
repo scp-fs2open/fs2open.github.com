@@ -1526,6 +1526,38 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
+/**
+ * Reads an element count from the current POF chunk, sanitizing it before it is stored in the model.
+ *
+ * @param what a plural noun naming what is being counted, for the warning text
+ * @param max_count the capacity of the destination, if it is a fixed-size array
+ * @param num_in_file if not null, receives the count as it appears in the file, so that a caller which
+ *                    is clamping can still consume the entries past max_count -- necessary whenever
+ *                    more fields follow in the same chunk
+ * @return the count clamped to [0, max_count]
+ */
+static int pof_read_count(CFILE *fp, const char *filename, const char *what, int max_count = INT_MAX, int *num_in_file = nullptr)
+{
+	int count = cfread_int(fp);
+
+	if (count < 0)
+	{
+		Warning(LOCATION, "Model '%s' specifies a negative number of %s (%d)!  Treating it as 0.", filename, what, count);
+		count = 0;
+	}
+
+	if (num_in_file != nullptr)
+		*num_in_file = count;
+
+	if (count > max_count)
+	{
+		Warning(LOCATION, "Model '%s' specifies %d %s, but only %d are supported!  The rest will be ignored.", filename, count, what, max_count);
+		count = max_count;
+	}
+
+	return count;
+}
+
 modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
@@ -1630,7 +1662,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
 				if (id == ID_OHDR) {
-					pm->n_models = cfread_int(fp);
+					pm->n_models = pof_read_count(fp, filename, "submodels");
 //					mprintf(( "Num models = %d\n", pm->n_models ));
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
@@ -1638,7 +1670,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if (id == ID_HDR2) {
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
-					pm->n_models = cfread_int(fp);
+					pm->n_models = pof_read_count(fp, filename, "submodels");
 //					mprintf(( "Num models = %d\n", pm->n_models ));
 				}
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
@@ -1662,24 +1694,27 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 				model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
 				
-				pm->n_detail_levels = cfread_int(fp);
+				int n_detail_levels_in_file = 0;
+				pm->n_detail_levels = pof_read_count(fp, filename, "detail levels", MAX_MODEL_DETAIL_LEVELS, &n_detail_levels_in_file);
 			//	mprintf(( "There are %d detail levels\n", pm->n_detail_levels ));
-				for (i=0; i<pm->n_detail_levels;i++ )	{
-					pm->detail[i] = cfread_int(fp);
-					pm->detail_depth[i] = 0.0f;
-			///		mprintf(( "Detail level %d is model %d.\n", i, pm->detail[i] ));
+				// (read past any levels we had to clamp, so that the rest of the chunk stays aligned)
+				for (i=0; i<n_detail_levels_in_file;i++ )	{
+					int detail_model = cfread_int(fp);
+					if (i < pm->n_detail_levels) {
+						pm->detail[i] = detail_model;
+						pm->detail_depth[i] = 0.0f;
+			///			mprintf(( "Detail level %d is model %d.\n", i, pm->detail[i] ));
+					}
 				}
 
-				pm->num_debris_objects = cfread_int(fp);
-			    if (pm->num_debris_objects > MAX_DEBRIS_OBJECTS) {
-				    Error(LOCATION,
-				          "Model %s specified that it contains %d debris objects but only %d are supported by the "
-				          "engine.",
-				          filename, pm->num_debris_objects, MAX_DEBRIS_OBJECTS);
-			    }
+				int num_debris_objects_in_file = 0;
+				pm->num_debris_objects = pof_read_count(fp, filename, "debris objects", MAX_DEBRIS_OBJECTS, &num_debris_objects_in_file);
 				// mprintf(( "There are %d debris objects\n", pm->num_debris_objects ));
-				for (i=0; i<pm->num_debris_objects;i++ )	{
-					pm->debris_objects[i] = cfread_int(fp);
+				// (read past any we had to clamp, so that the rest of the chunk stays aligned)
+				for (i=0; i<num_debris_objects_in_file;i++ )	{
+					int debris_model = cfread_int(fp);
+					if (i < pm->num_debris_objects)
+						pm->debris_objects[i] = debris_model;
 					// mprintf(( "Debris object %d is model %d.\n", i, pm->debris_objects[i] ));
 				}
 
@@ -1744,7 +1779,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				// read in cross section info
 				pm->xc = nullptr;
 				if ( pm->version >= 2014 ) {
-					pm->num_xc = cfread_int(fp);
+					pm->num_xc = pof_read_count(fp, filename, "cross sections");
 					if (pm->num_xc > 0) {
 						pm->xc = make_shared<cross_section[]>(pm->num_xc);
 						for (i=0; i<pm->num_xc; i++) {
@@ -1757,7 +1792,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				if ( pm->version >= 2007 )	{
-					pm->num_lights = cfread_int(fp);
+					pm->num_lights = pof_read_count(fp, filename, "lights");
 					//mprintf(( "Found %d lights!\n", pm->num_lights ));
 
 					if (pm->num_lights > 0) {
@@ -1785,7 +1820,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 				n = cfread_int(fp);
 				//mprintf(("SOBJ IDed itself as %d\n", n));
-				Assert(n < pm->n_models );
+				if (n < 0 || n >= pm->n_models) {
+					// we can't store this subobject anywhere, so skip the chunk; the seek at the bottom
+					// of the loop will put us at the start of the next one
+					Warning(LOCATION, "Model '%s' has a subobject numbered %d, but the model only has %d subobjects!  Skipping it.", filename, n, pm->n_models);
+					break;
+				}
 				auto sm = &pm->submodel[n];
 
 				if (id == ID_OBJ2) {
@@ -1793,6 +1833,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				parent = cfread_int(fp);
+				if (parent >= pm->n_models) {
+					Warning(LOCATION, "Model '%s' subobject %d claims subobject %d as its parent, but the model only has %d subobjects!  Treating it as parentless.", filename, n, parent, pm->n_models);
+					parent = -1;
+				}
 				sm->parent = parent;
 				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
 				sm->depth = 1;
@@ -2051,7 +2095,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//ShivanSpS - if pof version is 2200 or higher load bsp_data as it is, otherwise, align it
 				if (pm->version >= 2200)
 				{
-					sm->bsp_data_size = cfread_int(fp);
+					sm->bsp_data_size = pof_read_count(fp, filename, "BSP data bytes");
 					if (sm->bsp_data_size > 0) {
 						sm->bsp_data = make_shared<ubyte[]>(sm->bsp_data_size);
 						cfread(sm->bsp_data.get(), 1, sm->bsp_data_size, fp);
@@ -2063,7 +2107,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 				else
 				{
-					sm->bsp_data_size = cfread_int(fp);
+					sm->bsp_data_size = pof_read_count(fp, filename, "BSP data bytes");
 
 					if (sm->bsp_data_size > 0) {
 						auto bsp_data = make_shared<ubyte[]>(sm->bsp_data_size);
@@ -2122,7 +2166,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
 				if (pm->version < 2200) {
 					//mprintf(("SLDC data is being converted to SLC2.\n"));
-					pm->sldc_size = cfread_int(fp);
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
 
 					std::unique_ptr<ubyte[]> sldc_tree(new ubyte[pm->sldc_size]);
 					std::unique_ptr<ubyte[]> slc2_tree(new ubyte[pm->sldc_size * 2]);
@@ -2141,7 +2185,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
 			{
 				if (pm->version >= 2200) {
-					pm->sldc_size = cfread_int(fp);
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
 					pm->shield_collision_tree = make_shared<ubyte[]>(pm->sldc_size);
 					cfread(pm->shield_collision_tree.get(), 1, pm->sldc_size, fp);
 					swap_sldc_data(pm->shield_collision_tree.get());
@@ -2152,7 +2196,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			case ID_SHLD:
 				{
-					pm->shield.nverts = cfread_int( fp );		// get the number of vertices in the list
+					pm->shield.nverts = pof_read_count( fp, filename, "shield vertices" );		// get the number of vertices in the list
 
 					if (pm->shield.nverts > 0) {
 						pm->shield.verts = make_shared<shield_vertex[]>(pm->shield.nverts);
@@ -2162,7 +2206,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 					}
 
-					pm->shield.ntris = cfread_int( fp );		// get the number of triangles that compose the shield
+					pm->shield.ntris = pof_read_count( fp, filename, "shield triangles" );		// get the number of triangles that compose the shield
 
 					if (pm->shield.ntris > 0) {
 						pm->shield.tris = make_shared<shield_tri[]>(pm->shield.ntris);
@@ -2197,7 +2241,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			case ID_GPNT:
 			case ID_MPNT:
 			{
-				int n_weps = cfread_int(fp);
+				int max_banks = (id == ID_GPNT) ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
+				int n_weps = pof_read_count(fp, filename, id == ID_GPNT ? "gun banks" : "missile banks", max_banks);
 				std::shared_ptr<w_bank[]> wep_banks = nullptr;
 
 				if (n_weps > 0)
@@ -2207,7 +2252,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					{
 						w_bank *bank = &wep_banks[i];
 
-						bank->num_slots = cfread_int(fp);
+						bank->num_slots = pof_read_count(fp, filename, "weapon bank firing points");
 						if (bank->num_slots > 0)
 						{
 							bank->pnt = new vec3d[bank->num_slots];
@@ -2248,7 +2293,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			case ID_DOCK: {
 				char props[MAX_PROP_LEN];
 
-				pm->n_docks = cfread_int(fp);
+				pm->n_docks = pof_read_count(fp, filename, "docking bays");
 
 				if (pm->n_docks > 0) {
 					pm->docking_bays = make_shared<dock_bay[]>(pm->n_docks);
@@ -2278,7 +2323,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 #endif
 
-						bay->num_spline_paths = cfread_int( fp );
+						bay->num_spline_paths = pof_read_count( fp, filename, "docking bay spline paths" );
 						if ( bay->num_spline_paths > 0 ) {
 							bay->splines = make_shared<int[]>(bay->num_spline_paths);
 							for ( j = 0; j < bay->num_spline_paths; j++ )
@@ -2305,15 +2350,25 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						else
 							bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
 
-						bay->num_slots = cfread_int(fp);
+						int num_slots_in_file = 0;
+						bay->num_slots = pof_read_count(fp, filename, "docking bay slots", MAX_DOCK_SLOTS, &num_slots_in_file);
 
-						if(bay->num_slots != 2) {
-							Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, bay->num_slots, bay->name, 2);
+						// (the too-many case is already reported by pof_read_count)
+						if(num_slots_in_file < MAX_DOCK_SLOTS) {
+							Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, num_slots_in_file, bay->name, MAX_DOCK_SLOTS);
 						}
 
-						for (j = 0; j < bay->num_slots; j++) {
-							cfread_vector( &(bay->pnt[j]), fp );
-							cfread_vector( &(bay->norm[j]), fp );
+						// (read past any slots we had to clamp, so that the rest of the chunk stays aligned)
+						for (j = 0; j < num_slots_in_file; j++) {
+							vec3d slot_pnt, slot_norm;
+							cfread_vector( &slot_pnt, fp );
+							cfread_vector( &slot_norm, fp );
+
+							if (j >= bay->num_slots)
+								continue;
+
+							bay->pnt[j] = slot_pnt;
+							bay->norm[j] = slot_norm;
 
 							if (vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
 								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal.  Generating a normal in the forward Z direction.", filename, bay->name);
@@ -2354,7 +2409,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			{
 				char props[MAX_PROP_LEN];
 
-				int gpb_num = cfread_int(fp);
+				int gpb_num = pof_read_count(fp, filename, "glow point banks");
 
 				pm->n_glow_point_banks = gpb_num;
 				pm->glow_point_banks = nullptr;
@@ -2374,7 +2429,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					bank->submodel_parent = cfread_int(fp);
 					bank->LOD = cfread_int(fp);
 					bank->type = cfread_int(fp);
-					bank->num_points = cfread_int(fp);
+					bank->num_points = pof_read_count(fp, filename, "glow points");
 					bank->points = nullptr;
 					bank->glow_bitmap = -1;
 					bank->glow_neb_bitmap = -1;
@@ -2451,7 +2506,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			case ID_FUEL:
 				char props[MAX_PROP_LEN];
-				pm->n_thrusters = cfread_int(fp);
+				pm->n_thrusters = pof_read_count(fp, filename, "thruster banks");
 
 				if (pm->n_thrusters > 0) {
 					pm->thrusters = make_shared<thruster_bank[]>(pm->n_thrusters);
@@ -2459,7 +2514,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					for (i = 0; i < pm->n_thrusters; i++ ) {
 						thruster_bank *bank = &pm->thrusters[i];
 
-						bank->num_points = cfread_int(fp);
+						bank->num_points = pof_read_count(fp, filename, "thruster points");
 						bank->points = nullptr;
 
 						if (bank->num_points > 0)
@@ -2511,35 +2566,40 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			case ID_TGUN:
 			case ID_TMIS: {
-				int n_banks = cfread_int(fp);			// Number of turrets
+				int n_banks = pof_read_count(fp, filename, id == ID_TGUN ? "gun turrets" : "missile turrets");			// Number of turrets
 
 				for ( i = 0; i < n_banks; i++ ) {
 					int n_slots;						// How many firepoints the turret has
 
 					int base_obj = cfread_int(fp);		// The parent subobj of the turret (the gun base)
 					int gun_obj = cfread_int(fp);       // The subobj that the firepoints are physically attached to (the gun barrel)
-					
-					if (base_obj != gun_obj && pm->submodel[gun_obj].parent != base_obj) {
+
+					// both of these index into the submodel list, so make sure they are in range before we use them
+					bool turret_is_valid = (base_obj >= 0 && base_obj < pm->n_models && gun_obj >= 0 && gun_obj < pm->n_models);
+
+					if (!turret_is_valid) {
+						// keep reading, since the remaining turrets in this chunk still need to be parsed
+						Warning(LOCATION, "Model '%s' turret %d references subobjects %d and %d, but the model only has %d subobjects!  Skipping the turret.", filename, i, base_obj, gun_obj, pm->n_models);
+					} else if (base_obj != gun_obj && pm->submodel[gun_obj].parent != base_obj) {
 						Warning(LOCATION, "Model %s turret %s has a gun submodel that is not an immediate child object of the base", pm->filename, pm->submodel[base_obj].name);
 						gun_obj = base_obj; // fall back to singlepart handling
 					}
 
 					cfread_vector(&temp_vec, fp);
 					vm_vec_normalize_safe(&temp_vec);
-					n_slots = cfread_int(fp);
+					int n_slots_in_file = 0;
+					n_slots = pof_read_count(fp, filename, "turret firing points", MAX_TFP, &n_slots_in_file);
 					SCP_vector<vec3d> firingpoints;
-					for (j = 0; j < n_slots; j++) {
-						if (j < MAX_TFP) {
-							vec3d firepoint;
-							cfread_vector(&firepoint, fp);
-							firingpoints.emplace_back(std::move(firepoint));
-						}
-						else
-						{
-							vec3d bogus;
-							cfread_vector(&bogus, fp);
-						}
+					// (read past any firing points we had to clamp, so that the rest of the chunk stays aligned)
+					for (j = 0; j < n_slots_in_file; j++) {
+						vec3d firepoint;
+						cfread_vector(&firepoint, fp);
+						if (j < n_slots)
+							firingpoints.emplace_back(firepoint);
 					}
+					if (!turret_is_valid)
+						continue;
+
 					Assertion(n_slots > 0, "Turret %s in model %s has no firing points.\n", pm->submodel[gun_obj].name, pm->filename);
 
 					subsystemParseList.weapons_subsystems.emplace(base_obj, model_read_deferred_tasks::weapon_subsystem_parse{ i, gun_obj, temp_vec, n_slots, std::move(firingpoints) });
@@ -2553,7 +2613,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				float radius;
 				vec3d pnt;
 
-				n_specials = cfread_int(fp);		// get the number of special subobjects we have
+				n_specials = pof_read_count(fp, filename, "special subobjects");		// get the number of special subobjects we have
 				for (i = 0; i < n_specials; i++) {
 
 					// get the next free object of the subobject list.  Flag error if no more room
@@ -2566,9 +2626,13 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 					// check if $Split
 					if (in(name, "$split")) {
-						pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
-						pm->num_split_plane++;
-						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
+						// check before writing, not after
+						if (pm->num_split_plane >= MAX_SPLIT_PLANE) {
+							Warning(LOCATION, "Model '%s' has more than %d split planes!  The rest will be ignored.", filename, MAX_SPLIT_PLANE);
+						} else {
+							pm->split_plane[pm->num_split_plane] = pnt.xyz.z;
+							pm->num_split_plane++;
+						}
 					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
 						SCP_string type_desc;
@@ -2600,12 +2664,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
 
 
-				n = cfread_int(fp);
+				// Don't overwrite memory!!  (the model will misrender if we have to drop any textures,
+				// since texture indices are baked into the BSP data, but that beats writing past maps[])
+				int n_textures_in_file = 0;
+				n = pof_read_count(fp, filename, "textures", MAX_MODEL_TEXTURES, &n_textures_in_file);
 				pm->n_textures = n;
-				// Don't overwrite memory!!
-				Verify(pm->n_textures <= MAX_MODEL_TEXTURES);
 				//mprintf(0,"  num textures = %d\n",n);
-				for (i=0; i<n; i++ )
+				// (read past any we had to clamp, so that the rest of the chunk stays aligned)
+				for (i=0; i<n_textures_in_file; i++ )
 				{
 					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
@@ -2615,7 +2681,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, static_cast<int>(max_buffer_size - 1));
 						tmp_name[max_buffer_size - 1] = '\0';
 					}
-					model_load_texture(pm, i, tmp_name);
+					if (i < n)
+						model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
 
@@ -2648,7 +2715,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				break;
 
 			case ID_PATH:
-				pm->n_paths = cfread_int( fp );
+				pm->n_paths = pof_read_count( fp, filename, "paths" );
 
 				if (pm->n_paths <= 0) {
 					break;
@@ -2687,7 +2754,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						pm->paths[i].parent_submodel = -1;
 					}
 
-					pm->paths[i].nverts = cfread_int( fp );
+					pm->paths[i].nverts = pof_read_count( fp, filename, "path vertices" );
 					pm->paths[i].verts = make_shared<mp_vert[]>(pm->paths[i].nverts);
 					pm->paths[i].goal = pm->paths[i].nverts - 1;
 					pm->paths[i].type = MP_TYPE_UNUSED;
@@ -2700,7 +2767,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						{					// version 1802 added turret stuff
 							int nturrets, k;
 
-							nturrets = cfread_int( fp );
+							nturrets = pof_read_count( fp, filename, "path vertex turrets" );
 							pm->paths[i].verts[j].nturrets = nturrets;
 
 							if (nturrets > 0) {
@@ -2721,16 +2788,21 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					// all eyes points are stored simply as vectors and their normals.
 					// 0th element is used as usual player view position.
 
-					num_eyes = cfread_int( fp );
+					int num_eyes_in_file = 0;
+					num_eyes = pof_read_count( fp, filename, "eye points", MAX_EYES, &num_eyes_in_file );
 					pm->n_view_positions = num_eyes;
-					Assert ( num_eyes < MAX_EYES );
-					for (i = 0; i < num_eyes; i++ ) {
-						pm->view_positions[i].parent = cfread_int( fp );
-						cfread_vector( &pm->view_positions[i].pnt, fp );
-						cfread_vector( &pm->view_positions[i].norm, fp );
+					// (read past any eye points we had to clamp, so that the rest of the chunk stays aligned)
+					for (i = 0; i < num_eyes_in_file; i++ ) {
+						eye position;
+						position.parent = cfread_int( fp );
+						cfread_vector( &position.pnt, fp );
+						cfread_vector( &position.norm, fp );
 						// normalize, and just point it forward if this fails
-						if (!vm_maybe_normalize(&pm->view_positions[i].norm, &pm->view_positions[i].norm))
-							pm->view_positions[i].norm = vmd_z_vector;
+						if (!vm_maybe_normalize(&position.norm, &position.norm))
+							position.norm = vmd_z_vector;
+
+						if (i < num_eyes)
+							pm->view_positions[i] = position;
 					}
 				}
 				break;			
@@ -2739,7 +2811,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				int num_ins, num_verts, num_faces, idx, idx2, idx3;
 
 				// get the # of insignias
-				num_ins = cfread_int(fp);
+				// (any insignias past the clamp are simply not read, since nothing else follows in this chunk)
+				num_ins = pof_read_count(fp, filename, "insignias", MAX_MODEL_INSIGNIAS);
 				pm->num_ins = num_ins;
 
 				// read in the insignias
@@ -2751,17 +2824,22 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					}
 
 					// # of faces
-					num_faces = cfread_int(fp);
-					pm->ins[idx].num_faces = num_faces;
-					Assert(num_faces <= MAX_INS_FACES);
+					int num_faces_in_file = 0;
+					num_faces = pof_read_count(fp, filename, "insignia faces", MAX_INS_FACES, &num_faces_in_file);
+					// (num_faces is the most we can keep; pm->ins[idx].num_faces is set once we know
+					// how many of them actually turned out to be usable)
 
 					// # of vertices
-					num_verts = cfread_int(fp);
-					Assert(num_verts <= MAX_INS_VECS);
+					int num_verts_in_file = 0;
+					num_verts = pof_read_count(fp, filename, "insignia vertices", MAX_INS_VECS, &num_verts_in_file);
 
 					// read in all the vertices
-					for(idx2=0; idx2<num_verts; idx2++){
-						cfread_vector(&pm->ins[idx].vecs[idx2], fp);
+					// (read past any we had to clamp, so that the rest of the chunk stays aligned)
+					for(idx2=0; idx2<num_verts_in_file; idx2++){
+						vec3d vert;
+						cfread_vector(&vert, fp);
+						if (idx2 < num_verts)
+							pm->ins[idx].vecs[idx2] = vert;
 					}
 
 					// read in world offset
@@ -2773,19 +2851,43 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					vec3d avg_normal = ZERO_VECTOR;
 
 					// read in all the faces
-					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){
+					// (read past any we had to clamp, so that the rest of the chunk stays aligned)
+					int num_good_faces = 0;
+					for(idx2=0; idx2<num_faces_in_file; idx2++){
+						int face_verts[3];
+						float face_u[3], face_v[3];
+
 						// read in 3 vertices
 						for(idx3=0; idx3<3; idx3++){
-							pm->ins[idx].faces[idx2][idx3] = cfread_int(fp);
-							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
-							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
+							face_verts[idx3] = cfread_int(fp);
+							face_u[idx3] = cfread_float(fp);
+							face_v[idx3] = cfread_float(fp);
+						}
+
+						if (num_good_faces >= num_faces)
+							continue;
+
+						// the face indexes into the vertex list we just read, so make sure it is in range
+						if (face_verts[0] < 0 || face_verts[0] >= num_verts
+							|| face_verts[1] < 0 || face_verts[1] >= num_verts
+							|| face_verts[2] < 0 || face_verts[2] >= num_verts) {
+							Warning(LOCATION, "Model '%s': insignia face %d references a vertex outside the insignia's %d vertices!  Skipping the face.", filename, idx2, num_verts);
+							continue;
+						}
+
+						int face = num_good_faces++;
+
+						for(idx3=0; idx3<3; idx3++){
+							pm->ins[idx].faces[face][idx3] = face_verts[idx3];
+							pm->ins[idx].u[face][idx3] = face_u[idx3];
+							pm->ins[idx].v[face][idx3] = face_v[idx3];
 						}
 						vec3d tempv;
 
 						//get three points (rotated) and compute normal
-						const vec3d& v1 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]];
-						const vec3d& v2 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]];
-						const vec3d& v3 = pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]];
+						const vec3d& v1 = pm->ins[idx].vecs[pm->ins[idx].faces[face][0]];
+						const vec3d& v2 = pm->ins[idx].vecs[pm->ins[idx].faces[face][1]];
+						const vec3d& v3 = pm->ins[idx].vecs[pm->ins[idx].faces[face][2]];
 
 						vm_vec_perp(&tempv,
 							&v1,
@@ -2794,8 +2896,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 						vm_vec_normalize_safe(&tempv);
 
-						pm->ins[idx].norm[idx2] = tempv;
-	//					mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
+						pm->ins[idx].norm[face] = tempv;
+	//					mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[face].xyz.x, pm->ins[idx].norm[face].xyz.y, pm->ins[idx].norm[face].xyz.z));
 
 
 						vm_vec_min(&min, &min, &v1);
@@ -2810,7 +2912,18 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						avg_normal += tempv;
 					}
 
-					pm->ins[idx].position = avg_total / static_cast<float>(num_faces) + pm->ins[idx].offset;
+					// only the faces we actually kept are valid
+					pm->ins[idx].num_faces = num_good_faces;
+
+					if (num_good_faces == 0) {
+						Warning(LOCATION, "Model '%s': insignia %d has no usable faces!", filename, idx);
+						pm->ins[idx].position = pm->ins[idx].offset;
+						pm->ins[idx].diameter = 0.0f;
+						pm->ins[idx].orientation = vmd_identity_matrix;
+						continue;
+					}
+
+					pm->ins[idx].position = avg_total / static_cast<float>(num_good_faces) + pm->ins[idx].offset;
 					vec3d bb = max - min;
 					pm->ins[idx].diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
 					vm_vector_2_matrix(&pm->ins[idx].orientation, &avg_normal, &vmd_z_vector);
@@ -3066,13 +3179,9 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 					subsystemp->turret_norm = subsystem.second.turretNorm;
 					subsystemp->turret_gun_sobj = subsystem.second.gun_subobj_nr;
 
-					if (subsystem.second.n_slots > MAX_TFP) {
-						Warning(LOCATION, "Model %s has %i turret firing points on subsystem %s, maximum is %i", pm->filename, subsystem.second.n_slots, subsystemp->name, MAX_TFP);
-					}
-
+					// n_slots was already clamped to MAX_TFP when the model was read
 					for (int j = 0; j < subsystem.second.n_slots; j++) {
-						if (j < MAX_TFP)
-							subsystemp->turret_firing_point[j] = subsystem.second.firingpoints[j];
+						subsystemp->turret_firing_point[j] = subsystem.second.firingpoints[j];
 					}
 					Assertion(subsystem.second.n_slots > 0, "Turret %s in model %s has no firing points.\n", subsystemp->name, pm->filename);
 
