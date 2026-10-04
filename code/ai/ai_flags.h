@@ -178,7 +178,8 @@ namespace AI {
 		Fix_standard_strafe,
 		Fix_ai_target_recovery,	// a) strafing ships that lose their target re-process their orders, like chasing ships already do
 								// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
-								// c) target selection skips ships outside the attacker's actively-pursues list, and self-chosen targets
+								// c) target selection for pursuit (chasing, guard reactions, retaliation) skips ships outside the attacker's
+								//    actively-pursues list; targets held while not chasing, and explicitly ordered targets, are unaffected
 								//    outside that list are dropped rather than held forever
 								// d) enemy_wing is reset when a new order takes over (shared with Fix_stale_ai_order_state)
 		Standard_strafe_used_more,
