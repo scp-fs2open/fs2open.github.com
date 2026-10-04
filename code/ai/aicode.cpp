@@ -2215,16 +2215,33 @@ static bool ai_class_type_actively_pursues(int attacker_class_type, int target_c
 	return std::any_of(pursues.begin(), pursues.end(), [target_class_type](int pursued_type) { return pursued_type == target_class_type; });
 }
 
+//	Returns true if a target this ship picks for itself will be used for pursuit, and therefore applicable to the "actively_pursues" check.
+//	In other modes a ship's target is held for its turrets, and is also read by other ships (guard reactions, attacker counts).
+bool ai_targets_for_pursuit(const ai_info *aip)
+{
+	return aip->mode == AIM_CHASE || aip->mode == AIM_STRAFE;
+}
+
+//	Returns true if attacker_objp should not pick target_objp as a target to pursue.
+bool ai_declines_pursuit(const object *attacker_objp, const object *target_objp)
+{
+	if (!The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery] || target_objp->type != OBJ_SHIP)
+		return false;
+
+	return !ai_class_type_actively_pursues(Ship_info[Ships[attacker_objp->instance].ship_info_index].class_type,
+	                                       Ship_info[Ships[target_objp->instance].ship_info_index].class_type);
+}
+
 typedef struct eval_nearest_objnum {
 	int	objnum;
 	object *trial_objp;
 	int	enemy_team_mask;
 	int enemy_ship_info_index;
 	int enemy_class_type;
-	int	attacker_class_type;
 	int	enemy_wing;
 	float	range;
 	int	max_attackers;
+	bool	for_pursuit;
 	int	nearest_objnum;
 	float	nearest_dist;
 	int	check_danger_weapon_objnum;
@@ -2280,11 +2297,10 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				float	dist;
 				int	num_attacking;
 
-				// Don't pick a target that this ship's type refuses to chase, or it will park in AIM_NONE holding a target it never attacks.
+				// If pursuing, don't pick a target that this ship's type refuses to pursue, or it will park in AIM_NONE holding a target it never attacks.
 				// Only for unconstrained searches: an explicit chase-ship-class/type order should still produce a target even if ai_chase() doesn't chase it.
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]
-					&& eno->enemy_ship_info_index < 0 && eno->enemy_class_type < 0
-					&& !ai_class_type_actively_pursues(eno->attacker_class_type, Ship_info[shipp->ship_info_index].class_type))
+				if (eno->for_pursuit && eno->enemy_ship_info_index < 0 && eno->enemy_class_type < 0
+					&& ai_declines_pursuit(&Objects[eno->objnum], eno->trial_objp))
 					return;
 
 				// Allow targeting of stealth in nebula by his firing at me
@@ -2352,10 +2368,11 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
  * @param enemy_wing		Enemy wing chosen
  * @param range				Ship must be within range "range".
  * @param max_attackers		Don't attack a ship that already has at least max_attackers attacking it.
+ * @param for_pursuit		True if the ship will chase the enemy found; false if the target is only held (e.g. for turrets)
  * @param ship_info_index	If >=0, the enemy object must be of the specified ship class
  * @param class_type		If >=0, the enemy object must be of the specified ship type
  */
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index, int class_type)
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type)
 {
 	object	*danger_weapon_objp;
 	ai_info	*aip;
@@ -2366,9 +2383,9 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	eno.enemy_team_mask = enemy_team_mask;
 	eno.enemy_ship_info_index = ship_info_index;
 	eno.enemy_class_type = class_type;
-	eno.attacker_class_type = Ship_info[Ships[Objects[objnum].instance].ship_info_index].class_type;
 	eno.enemy_wing = enemy_wing;
 	eno.max_attackers = max_attackers;
+	eno.for_pursuit = for_pursuit;
 	eno.objnum = objnum;
 	eno.range = range;
 	eno.nearest_dist = range;
@@ -2409,10 +2426,17 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 		}
 	}
 
+	//	If no wing member can be pursued, hold one anyway rather than leave the wing, as an explicit order to attack an unpursued ship does
+	if ((eno.nearest_objnum == -1) && (enemy_wing != -1) && for_pursuit && The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]) {
+		int held_objnum = get_nearest_objnum(objnum, enemy_team_mask, enemy_wing, range, max_attackers, false, ship_info_index, class_type);
+		if (held_objnum >= 0 && Objects[held_objnum].type == OBJ_SHIP && Ships[Objects[held_objnum].instance].wingnum == enemy_wing)
+			return held_objnum;
+	}
+
 	//	If only looking for target in certain wing and couldn't find anything in
 	//	that wing, look for any object.
 	if ((eno.nearest_objnum == -1) && (enemy_wing != -1)) {
-		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, -1, range, max_attackers, for_pursuit, ship_info_index, class_type);
 	}
 
 	return eno.nearest_objnum;
@@ -2519,10 +2543,11 @@ int get_enemy_timestamp()
  * @param objnum         Object number
  * @param range          Range within which to look
  * @param max_attackers  Don't attack a ship that already has at least max_attackers attacking it.
+ * @param for_pursuit    True if the ship will chase the enemy found; false if the target is only held (e.g. for turrets)
  * @param ship_info_index  If specified, restrict the search to enemies with this ship class
  * @param class_type     If specified, restrict the search to enemies with this ship type
  */
-int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, int class_type)
+int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type)
 {
 	int enemy_team_mask;
 
@@ -2552,10 +2577,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 						if (class_type < 0 || class_type == Ship_info[target_shipp->ship_info_index].class_type) {
 							if (!(target_objp->flags[Object::Object_Flags::Protected])) {
 								// same as get_nearest_objnum: only skip an unpursued target for unconstrained searches
-								if (!The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]
-										|| ship_info_index >= 0 || class_type >= 0
-										|| ai_class_type_actively_pursues(Ship_info[shipp->ship_info_index].class_type,
-										                                  Ship_info[target_shipp->ship_info_index].class_type)) {
+								if (!for_pursuit || ship_info_index >= 0 || class_type >= 0 || !ai_declines_pursuit(objp, target_objp)) {
 									return target_objnum;
 								}
 							}
@@ -2568,7 +2590,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 			}
 		}
 
-		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, for_pursuit, ship_info_index, class_type);
 	} else {
 		aip->target_objnum = -1;
 		aip->target_signature = -1;
@@ -2642,7 +2664,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index, i
 	if (attacked == nullptr) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
-		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, ship_info_index, class_type));
+		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, true, ship_info_index, class_type));
 	} else {
 		// check if we can see attacked in nebula
 		if (aip->target_objnum != OBJ_INDEX(attacked)) {
@@ -2703,10 +2725,24 @@ void ai_attack_wing(object *attacker, int wingnum)
 	if (count > 0) {
 		int	index;
 
-		index = (int) (frand() * count);
+		// prefer wing members we will pursue; if there are none, hold any member, as an explicit order to attack an unpursued ship does
+		SCP_vector<int> pursued_indexes;
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]) {
+			for (int i = 0; i < count; i++) {
+				auto member_shipp = &Ships[Wings[wingnum].ship_index[i]];
+				if (!member_shipp->flags[Ship::Ship_Flags::Dying] && !ai_declines_pursuit(attacker, &Objects[member_shipp->objnum]))
+					pursued_indexes.push_back(i);
+			}
+		}
 
-		if (index >= count)
-			index = 0;
+		if (!pursued_indexes.empty()) {
+			index = pursued_indexes[Random::next(sz2i(pursued_indexes.size()))];
+		} else {
+			index = (int) (frand() * count);
+
+			if (index >= count)
+				index = 0;
+		}
 
 		set_target_objnum(aip, Ships[Wings[wingnum].ship_index[index]].objnum);
 
@@ -9048,15 +9084,6 @@ void ai_chase()
 
 	//WMC - Guess we do need this
 	if (!go_after_it) {
-		// If we picked this target ourselves -- through auto-attack, dynamic chase, or a standing chase order --
-		// drop it, so that the retargeting logic in ai_frame() can find something we are willing to chase.
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery]) {
-			if (aip->active_goal < 0 || aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC
-				|| (aip->active_goal < MAX_AI_GOALS && ai_goal_is_standing_chase(aip->goals[aip->active_goal].ai_mode))) {
-				aip->target_objnum = -1;
-				aip->target_signature = -1;
-			}
-		}
 		aip->mode = AIM_NONE;
 		return;
 	}
@@ -10453,6 +10480,10 @@ void guard_object_was_hit(object *guard_objp, object *hitter_objp)
 
 		//	If hitter is on same team as me, don't attack him.
 		if (Ships[guard_objp->instance].team == Ships[hitter_objp->instance].team)
+			return;
+
+		//	Keep guarding rather than chase a ship we won't pursue
+		if (ai_declines_pursuit(guard_objp, hitter_objp))
 			return;
 
 		// limit the number of ships attacking hitter_objnum (for now, only if hitter_objnum is player)
@@ -15496,7 +15527,7 @@ void ai_frame(int objnum)
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
 			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) ) {
-				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]);		//	Attack up to 2.5K units away.
+				target_objnum = find_enemy(objnum, MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level], ai_targets_for_pursuit(aip));		//	Attack up to 2.5K units away.
 				if (target_objnum != -1) {
 					if (aip->target_objnum != target_objnum)
 						aip->aspect_locked_time = 0.0f;
@@ -15580,7 +15611,7 @@ void ai_frame(int objnum)
 	if ((aip->resume_goal_time > 0) && (aip->resume_goal_time < Missiontime)) {
 		aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		aip->resume_goal_time = -1;
-		target_objnum = find_enemy(objnum, 2000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
+		target_objnum = find_enemy(objnum, 2000.0f, The_mission.ai_profile->max_attackers[Game_skill_level], ai_targets_for_pursuit(aip));
 		if (target_objnum != -1) {
 			if (aip->target_objnum != target_objnum) {
 				aip->aspect_locked_time = 0.0f;
@@ -16079,7 +16110,7 @@ void ai_do_default_behavior(object *obj)
         // fighters automatically chase things
         if (!is_instructor(obj) && (sip->is_fighter_bomber()))
         {
-            int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
+            int enemy_objnum = find_enemy(OBJ_INDEX(obj), 1000.0f, The_mission.ai_profile->max_attackers[Game_skill_level], true);
             set_target_objnum(aip, enemy_objnum);
             aip->mode = AIM_CHASE;
             aip->submode = SM_ATTACK;
@@ -16298,6 +16329,10 @@ void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 
 	// only set as target if can be targeted.
 	if (awacs_get_level(&Objects[hitter_objnum], &Ships[aip->shipnum], true) < 1.0f) {
+		return;
+	}
+
+	if (ai_declines_pursuit(&Objects[Ships[aip->shipnum].objnum], &Objects[hitter_objnum])) {
 		return;
 	}
 
