@@ -379,6 +379,26 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		}
 
 		if (!has_name_collision) {
+			//Assign new texture indices before changing anything, so that running out of textures leaves the model intact
+			SCP_vector<SCP_set<int>> texturesUsed;
+			SCP_map<int, int> textureIDReplace;
+			int new_n_textures = pm->n_textures;
+			for (int submodel : to_copy_submodels) {
+				texturesUsed.emplace_back(model_get_textures_used(appendingPM, submodel));
+				for (int textureID : texturesUsed.back()) {
+					//Flat polygons are untextured
+					if (textureID < 0)
+						continue;
+					if (textureIDReplace.find(textureID) == textureIDReplace.end())
+						textureIDReplace.emplace(textureID, new_n_textures++);
+				}
+			}
+			if (new_n_textures > MAX_MODEL_TEXTURES) {
+				Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, combined POF has too many (over %d) textures.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str(), MAX_MODEL_TEXTURES);
+				return;
+			}
+			pm->n_textures = new_n_textures;
+
 			int old_n_submodel = reallocate_and_copy_array(pm->submodel, pm->n_models, to_copy_submodels.size());
 
 			SCP_unordered_map<int, int> replaceSubobjNo;
@@ -397,8 +417,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			
 			int deltaDepth = (pm->submodel[dest_subobj_no].depth + 1) - appendingPM->submodel[src_subobj_no].depth;
 
-			SCP_map<int, int> textureIDReplace;
-
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				auto& newSubmodel = pm->submodel[i + old_n_submodel];
@@ -408,18 +426,10 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				newSubmodel.depth += deltaDepth;
 
 				//Store texture replacement indices
-				const auto& textureIDs = model_get_textures_used(appendingPM, to_copy_submodels[i]);
-				for (const auto& textureID : textureIDs) {
-					auto it = textureIDReplace.find(textureID);
-					if (it == textureIDReplace.end()) {
-						int newID = pm->n_textures++;
-						if (pm->n_textures > MAX_MODEL_TEXTURES) {
-							Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, combined POF has too many (over %d) textures.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str(), MAX_MODEL_TEXTURES);
-							return;
-						}
-						it = textureIDReplace.emplace(textureID, newID).first;
-					}
-					deferredTasks.texture_replacements[i + old_n_submodel].replacementIds[textureID] = it->second;
+				for (int textureID : texturesUsed[i]) {
+					if (textureID < 0)
+						continue;
+					deferredTasks.texture_replacements[i + old_n_submodel].replacementIds[textureID] = textureIDReplace.at(textureID);
 				}
 
 				//Clear old pointer to data
