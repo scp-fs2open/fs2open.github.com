@@ -1837,16 +1837,23 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					Warning(LOCATION, "Model '%s' subobject %d claims subobject %d as its parent, but the model only has %d subobjects!  Treating it as parentless.", filename, n, parent, pm->n_models);
 					parent = -1;
 				}
-				sm->parent = parent;
-				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
 				sm->depth = 1;
 				{
+					// the only link being added is n -> parent, so any cycle would have to lead back to n
 					int parent_sm_id = parent;
 					while (parent_sm_id >= 0) {
+						if (parent_sm_id == n) {
+							Warning(LOCATION, "Model '%s' subobject %d is its own ancestor!  Treating it as parentless.", filename, n);
+							parent = -1;
+							sm->depth = 1;
+							break;
+						}
 						sm->depth++;
 						parent_sm_id = pm->submodel[parent_sm_id].parent;
 					}
 				}
+				sm->parent = parent;
+				auto parent_sm = parent < 0 ? nullptr : &pm->submodel[parent];
 
 
 
