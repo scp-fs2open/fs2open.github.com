@@ -235,7 +235,7 @@ void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float
 
 	Num_lights++;
 
-	light l;
+	light l{};
 
 	l.type = Light_Type::Directional;
 	l.flags = no_glare ? (LF_DEFAULT | LF_NO_GLARE) : LF_DEFAULT;
@@ -278,7 +278,7 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 	l.type = Light_Type::Point;
@@ -318,7 +318,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 
@@ -341,8 +341,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.instance = Num_lights-1;
 
 	l.source_radius = MAX(0.0f,source_radius);
-	l.local_vec = vmd_zero_vector;
-	l.local_vec2 = vmd_zero_vector;
 
 	Lights.push_back(l);
 }
@@ -557,7 +555,7 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 
