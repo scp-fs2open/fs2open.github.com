@@ -1771,7 +1771,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				// read in cross section info
 				pm->xc = nullptr;
 				if ( pm->version >= 2014 ) {
-					pm->num_xc = pof_read_count(fp, filename, "cross sections");
+					// retail models use -1 to mean there are no cross sections
+					pm->num_xc = std::max(cfread_int(fp), 0);
 					if (pm->num_xc > 0) {
 						pm->xc = make_shared<cross_section[]>(pm->num_xc);
 						for (i=0; i<pm->num_xc; i++) {
