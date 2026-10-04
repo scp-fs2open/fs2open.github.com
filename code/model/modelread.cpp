@@ -1604,6 +1604,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	
 	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
+		cfclose(fp);
 		return modelread_status::FAIL;
 	}
 	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) {
@@ -2944,6 +2945,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		next_chunk = cftell(fp) + len;
 	}
 
+	cfclose(fp);
+
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
 	// first do some sanity checking to detect model errors
@@ -3071,8 +3074,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
-
-	cfclose(fp);
 
 	// mprintf(("Done processing chunks\n"));
 	return modelread_status::SUCCESS_REAL;
