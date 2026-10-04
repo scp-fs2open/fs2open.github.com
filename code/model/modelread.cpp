@@ -1637,6 +1637,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	SCP_vector<SCP_string> look_at_submodel_names;
 	SCP_vector<SCP_string> dock_parent_submodel_names;
 
+	// the texture count is clamped while parsing, so remember the real one in order to reject the model afterward
+	int n_textures_in_file = 0;
+
 	while (!cfeof(fp)) {
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
@@ -2660,10 +2663,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
 
 
-				// Don't overwrite memory!!  (the model will misrender if we have to drop any textures,
-				// since texture indices are baked into the BSP data, but that beats writing past maps[])
-				int n_textures_in_file = 0;
-				n = pof_read_count(fp, filename, "textures", MAX_MODEL_TEXTURES, &n_textures_in_file);
+				// Don't overwrite memory!!  (texture indices are baked into the BSP data, so a model with
+				// too many textures is rejected once parsing is finished)
+				pof_read_count(fp, filename, "textures", INT_MAX, &n_textures_in_file);
+				n = std::min(n_textures_in_file, MAX_MODEL_TEXTURES);
 				pm->n_textures = n;
 				//mprintf(0,"  num textures = %d\n",n);
 				// (read past any we had to clamp, so that the rest of the chunk stays aligned)
@@ -2950,6 +2953,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
 	// first do some sanity checking to detect model errors
+	if (n_textures_in_file > MAX_MODEL_TEXTURES) {
+		Warning(LOCATION, "Model %s has %d textures, but only %d are supported!", filename, n_textures_in_file, MAX_MODEL_TEXTURES);
+		return modelread_status::FAIL;
+	}
 	for (i = 0; i < pm->n_detail_levels; i++) {
 		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
 			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
