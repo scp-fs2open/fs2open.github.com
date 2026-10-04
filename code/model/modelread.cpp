@@ -82,9 +82,7 @@ bool Model_load_clear_CPU_buffers = true;
 static int model_initted = 0;
 
 #ifndef NDEBUG
-CFILE *ss_fp = NULL;			// file pointer used to dump subsystem information
-char  model_filename[_MAX_PATH];		// temp used to store filename
-char	debug_name[_MAX_PATH];
+static CFILE *ss_fp = nullptr;			// file pointer used to dump subsystem information
 static bool ss_warning_shown_null = false;		// have we shown the warning dialog concerning the subsystems?
 static bool ss_warning_shown_mismatch = false;	// ditto but for a different warning
 #endif
@@ -1067,10 +1065,20 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 	mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 
 #ifndef NDEBUG
-	if ( ss_fp )	{
+	// open the dump file on the first unmatched subsystem; read_and_process_model_file closes it
+	if ( ss_fp == nullptr )	{
+		const char *model_filename = model_get(model_num)->filename;
 		char bname[FILESPEC_LENGTH];
-		_splitpath(model_filename, NULL, NULL, bname, NULL);
-		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
+		char dump_name[_MAX_PATH];
+		_splitpath(model_filename, nullptr, nullptr, bname, nullptr);
+		sprintf(dump_name, "%s.subsystems", bname);
+		ss_fp = cfopen(dump_name, "wb", CF_TYPE_TABLES);
+		if ( ss_fp == nullptr )
+			mprintf(("Can't open debug file for writing subsystems for %s\n", model_filename));
+		else
+			mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, dump_name));
+	}
+	if ( ss_fp )	{
 		char tmp_buffer[128];
 		sprintf(tmp_buffer, "$Subsystem:\t\t\t%s,1,0.0\n", subobj_name);
 		cfputs(tmp_buffer, ss_fp);
@@ -1581,26 +1589,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	TRACE_SCOPE(tracing::ReadModelFile);
 
 	cfseek(fp, 0, SEEK_SET);
-
-	// code to get a filename to write out subsystem information for each model that
-	// is read.  This info is essentially debug stuff that is used to help get models
-	// into the game quicker
-#ifndef NDEBUG
-	{
-		char bname[FILESPEC_LENGTH];
-
-		_splitpath(filename, NULL, NULL, bname, NULL);
-		sprintf(debug_name, "%s.subsystems", bname);
-		ss_fp = cfopen(debug_name, "wb", CF_TYPE_TABLES );
-		if ( !ss_fp )	{
-			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
-		} else {
-			strcpy_s(model_filename, filename);
-			ss_warning_shown_null = false;
-			ss_warning_shown_mismatch = false;
-		}
-	}
-#endif
 
 	id = cfread_int(fp);
 
@@ -3084,22 +3072,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-#ifndef NDEBUG
-	if ( ss_fp) {
-		int size;
-		
-		cfclose(ss_fp);
-		ss_fp = cfopen(debug_name, "rb", CF_TYPE_TABLES);
-		if ( ss_fp )	{
-			size = cfilelength(ss_fp);
-			cfclose(ss_fp);
-			if ( size <= 0 )	{
-				cf_delete(debug_name, CF_TYPE_TABLES);
-			}
-		}
-	}
-#endif
-
 	cfclose(fp);
 
 	// mprintf(("Done processing chunks\n"));
@@ -3136,12 +3108,24 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 		virtual_pof_purge_cache();
 	}
 
+#ifndef NDEBUG
+	ss_warning_shown_null = false;
+	ss_warning_shown_mismatch = false;
+#endif
+
 	for (const auto& subsystem : deferredTasks.model_subsystems) {
 		auto propBuffer = make_unique<char[]>(subsystem.second.props.size() + 1);
 		strncpy(propBuffer.get(), subsystem.second.props.c_str(), subsystem.second.props.size() + 1);
 
 		do_new_subsystem(n_subsystems, subsystems, subsystem.second.subobj_nr, subsystem.second.rad, &subsystem.second.pnt, propBuffer.get(), subsystem.first.c_str(), pm->id);		
 	}
+
+#ifndef NDEBUG
+	if (ss_fp != nullptr) {
+		cfclose(ss_fp);
+		ss_fp = nullptr;
+	}
+#endif
 
 	for (const auto& subsystem : deferredTasks.engine_subsystems) {
 		// start off assuming the subsys is invalid
