@@ -2158,6 +2158,155 @@ static bool is_variable_node_type_mismatched(int node)
 	return (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) != is_number;
 }
 
+// Find the first mismatched variable in a modifier chain, including nested container lookups.
+static int find_mismatched_variable_node(int node)
+{
+	for (; node != -1; node = CDR(node))
+	{
+		if (is_variable_node_type_mismatched(node))
+			return node;
+
+		int bad_node = find_mismatched_variable_node(CAR(node));
+		if (bad_node != -1)
+			return bad_node;
+	}
+
+	return -1;
+}
+
+// whether a container lookup has modifiers left over after its first container, i.e. it may be a multidimensional chain
+static bool is_multidimensional_lookup(int node)
+{
+	const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+	const int modifier_node = CAR(node);
+	if (!p_container || modifier_node == -1)
+		return false;
+
+	int next_modifier = CDR(modifier_node);
+	// a literal At uses an index as well as the modifier name
+	if (p_container->is_list() && !is_node_value_dynamic(modifier_node) &&
+		get_list_modifier(Sexp_nodes[modifier_node].text) == ListModifier::AT_INDEX && next_modifier != -1)
+		next_modifier = CDR(next_modifier);
+
+	return next_modifier != -1;
+}
+
+// Check a modifier's type without evaluating dynamic values or multidimensional lookups.
+static bool modifier_node_matches_type(int node, bool wants_number)
+{
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_CONTAINER_DATA)
+	{
+		// the final container of a multidimensional chain is only known at runtime
+		if (is_multidimensional_lookup(node))
+			return true;
+
+		const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+		return p_container && any(p_container->type & (wants_number ? ContainerType::NUMBER_DATA : ContainerType::STRING_DATA));
+	}
+
+	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE)
+	{
+		int var_index = sexp_get_variable_index(node);
+		if (var_index >= 0)
+			return (Sexp_variables[var_index].type & (wants_number ? SEXP_VARIABLE_NUMBER : SEXP_VARIABLE_STRING)) != 0;
+	}
+
+	return Sexp_nodes[node].subtype == (wants_number ? SEXP_ATOM_NUMBER : SEXP_ATOM_STRING);
+}
+
+// Validate a container data node's modifiers, including those of nested container lookups.
+static int check_container_modifiers(int node, int *bad_node)
+{
+	const int modifier_node = Sexp_nodes[node].first;
+	if (modifier_node == -1)
+	{
+		if (bad_node)
+			*bad_node = node;
+		return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
+	}
+
+	const auto *p_container = get_sexp_container(Sexp_nodes[node].text);
+	// name should have already been checked in get_sexp()
+	Assertion(p_container,
+		"Attempt to check modifiers of non-existent container %s. Please report!",
+		Sexp_nodes[node].text);
+	Assertion(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_NAME,
+		"Attempt to use container name %s as modifier for container %s. Please report!",
+		Sexp_nodes[modifier_node].text,
+		Sexp_nodes[node].text);
+
+	const bool is_dynamic = is_node_value_dynamic(modifier_node);
+
+	if (p_container->is_list())
+	{
+		if (is_dynamic)
+		{
+			// the modifier name isn't known until runtime, but it must at least be a string
+			if (!modifier_node_matches_type(modifier_node, false))
+			{
+				if (bad_node)
+					*bad_node = modifier_node;
+				return SEXP_CHECK_INVALID_LIST_MODIFIER;
+			}
+		}
+		else
+		{
+			const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
+			if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) || (modifier == ListModifier::INVALID))
+			{
+				if (bad_node)
+					*bad_node = modifier_node;
+				return SEXP_CHECK_INVALID_LIST_MODIFIER;
+			}
+			if (modifier == ListModifier::AT_INDEX)
+			{
+				const int list_index_node = CDR(modifier_node);
+				if (list_index_node == -1)
+				{
+					if (bad_node)
+						*bad_node = modifier_node;
+					return SEXP_CHECK_INVALID_LIST_MODIFIER;
+				}
+				// we can't check that index < length because we don't know what the length will be then
+				if (!modifier_node_matches_type(list_index_node, true) ||
+					(!is_node_value_dynamic(list_index_node) && atoi(Sexp_nodes[list_index_node].text) < 0))
+				{
+					if (bad_node)
+						*bad_node = list_index_node;
+					return SEXP_CHECK_INVALID_LIST_MODIFIER;
+				}
+			}
+		}
+	}
+	else if (p_container->is_map())
+	{
+		const bool wants_number = any(p_container->type & ContainerType::NUMBER_KEYS);
+		if (!modifier_node_matches_type(modifier_node, wants_number))
+		{
+			if (bad_node)
+				*bad_node = modifier_node;
+			return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
+		}
+	}
+	else
+	{
+		UNREACHABLE("Unknown container type %d", static_cast<int>(p_container->type));
+	}
+
+	// later modifiers in a multidimensional chain apply to containers only known at runtime, but nested lookups can still be checked
+	for (int mod_node = modifier_node; mod_node != -1; mod_node = CDR(mod_node))
+	{
+		if (Sexp_nodes[mod_node].subtype == SEXP_ATOM_CONTAINER_DATA)
+		{
+			int error = check_container_modifiers(mod_node, bad_node);
+			if (error != SEXP_CHECK_NO_ERROR)
+				return error;
+		}
+	}
+
+	return SEXP_CHECK_NO_ERROR;
+}
+
 bool is_special_sender(const char* name) {
 	return name[0] == '#';
 }
@@ -2342,11 +2491,6 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 				return SEXP_CHECK_TYPE_MISMATCH;
 			}
 
-			const int modifier_node = Sexp_nodes[node].first;
-			if (modifier_node == -1) {
-				return SEXP_CHECK_MISSING_CONTAINER_MODIFIER;
-			}
-
 			const auto *p_data_container = get_sexp_container(Sexp_nodes[node].text);
 			// name should have already been checked in get_sexp()
 			Assertion(p_data_container,
@@ -2362,59 +2506,29 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					op_const,
 					argnum,
 					p_container)) {
-				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				// the final container of a multidimensional chain is only known at runtime, so it could have either data type
+				if (!is_multidimensional_lookup(node) ||
+					!check_container_data_type(desired_argument_type,
+						data_container.type ^ (ContainerType::NUMBER_DATA | ContainerType::STRING_DATA),
+						op_const,
+						argnum,
+						p_container)) {
+					return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+				}
 			}
 
-			// the modifiers are not visited as arguments, so check any variables among them here
-			for (int mod_node = modifier_node; mod_node != -1; mod_node = CDR(mod_node)) {
-				if (deferred_error == SEXP_CHECK_NO_ERROR && is_variable_node_type_mismatched(mod_node)) {
+			// the modifiers are not visited as arguments, so check their entire subtree here
+			if (deferred_error == SEXP_CHECK_NO_ERROR) {
+				int mod_node = find_mismatched_variable_node(Sexp_nodes[node].first);
+				if (mod_node != -1) {
 					deferred_error = SEXP_CHECK_VARIABLE_TYPE_MISMATCH;
 					deferred_bad_node = mod_node;
 				}
 			}
 
-			// ignore nested "Replace" uses
-			if (!(Sexp_nodes[modifier_node].type & SEXP_FLAG_VARIABLE) &&
-					(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_DATA)) {
-				Assertion(Sexp_nodes[modifier_node].subtype != SEXP_ATOM_CONTAINER_NAME,
-					"Attempt to use container name %s as modifier for container %s. Please report!",
-					Sexp_nodes[modifier_node].text,
-					Sexp_nodes[node].text);
-				if (data_container.is_list()) {
-					const auto modifier = get_list_modifier(Sexp_nodes[modifier_node].text);
-					if ((Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING) ||
-							(modifier == ListModifier::INVALID)) {
-						if (bad_node)
-							*bad_node = modifier_node;
-						return SEXP_CHECK_INVALID_LIST_MODIFIER;
-					}
-					if (modifier == ListModifier::AT_INDEX) {
-						const int list_index_node = CDR(modifier_node);
-						if (list_index_node == -1) {
-							if (bad_node)
-								*bad_node = modifier_node;
-							return SEXP_CHECK_INVALID_LIST_MODIFIER;
-						}
-						// we can't check that index < length because we don't know what the length will be then
-						if (Sexp_nodes[list_index_node].subtype != SEXP_ATOM_NUMBER ||
-								atoi(Sexp_nodes[list_index_node].text) < 0) {
-							if (bad_node)
-								*bad_node = list_index_node;
-							return SEXP_CHECK_INVALID_LIST_MODIFIER;
-						}
-					}
-				} else if (data_container.is_map()) {
-					if ((any(data_container.type & ContainerType::NUMBER_KEYS) &&
-							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_NUMBER) ||
-						(any(data_container.type & ContainerType::STRING_KEYS) &&
-							Sexp_nodes[modifier_node].subtype != SEXP_ATOM_STRING)) {
-						if (bad_node)
-							*bad_node = modifier_node;
-						return SEXP_CHECK_WRONG_MAP_KEY_TYPE;
-					}
-				} else {
-					UNREACHABLE("Unknown container type %d", static_cast<int>(data_container.type));
-				}
+			int modifier_error = check_container_modifiers(node, bad_node);
+			if (modifier_error != SEXP_CHECK_NO_ERROR) {
+				return modifier_error;
 			}
 
 			// not much else we can check here, since validity depends on runtime values, so continue
