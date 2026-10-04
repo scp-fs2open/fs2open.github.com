@@ -3088,17 +3088,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
-	modelread_status status;
-
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks)) {
-		status = modelread_status::SUCCESS_VIRTUAL;
-	}
-	else {
-		status = read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
-	}
+	auto virtual_status = read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks);
+	if (virtual_status)
+		return *virtual_status;
 
-	return status;
+	return read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
 }
 
 //reads a binary file containing a 3d model

@@ -50,6 +50,7 @@ public:
 		model_read_deferred_tasks _deferred;
 		SCP_set<int> keepTextures{}, keepGlowbanks{}, keepSM{};
 		bool needs_emplace = false;
+		bool _loaded = false;
 		friend class VirtualPOFBuildCache;
 
 	public:
@@ -58,6 +59,7 @@ public:
 			create_family_tree(_pm);
 			if (status == modelread_status::SUCCESS_REAL)
 				needs_emplace = true;
+			_loaded = (status != modelread_status::FAIL);
 		}
 
 		//Don't copy, just move
@@ -75,6 +77,7 @@ public:
 
 		inline const model_read_deferred_tasks& deferred() const { return _deferred; }
 		inline const polymodel* pm() const { return _pm; }
+		inline bool loaded() const { return _loaded; }
 		inline void keepTexture(int texture) { keepTextures.emplace(texture); }
 		inline void keepGlowbank(int gb) { keepGlowbanks.emplace(gb); }
 		inline void keepBSPData(int sm) { keepSM.emplace(sm); }
@@ -101,6 +104,16 @@ public:
 
 } virtual_pof_build_cache;
 
+// Returns nullptr, with a warning, if the POF could not be loaded
+static std::shared_ptr<VirtualPOFBuildCache::polymodel_holder> load_source_pof(const SCP_string& pof_name, model_parse_depth& depth, const VirtualPOFDefinition& virtualPof) {
+	auto pmh = virtual_pof_build_cache(pof_name, depth);
+	if (!pmh->loaded()) {
+		Warning(LOCATION, "Could not load POF %s for virtual POF %s. Returning original POF.", pof_name.c_str(), virtualPof.name.c_str());
+		return nullptr;
+	}
+	return pmh;
+}
+
 // General Functions and external code paths
 
 bool model_exists(const SCP_string& filename) {
@@ -112,28 +125,29 @@ bool model_exists(const SCP_string& filename) {
 	return cf_exists_full(filename.c_str(), CF_TYPE_MODELS);
 }
 
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, ErrorType error_type, model_read_deferred_tasks& deferredTasks) {
+std::optional<modelread_status> read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, ErrorType error_type, model_read_deferred_tasks& deferredTasks) {
 	auto virtual_pof_it = virtual_pofs.find(filename);
 
 	//We don't have a virtual pof
 	if(virtual_pof_it == virtual_pofs.end())
-		return false;
+		return std::nullopt;
 
 	//We have one, but we're already past it and are processing whatever it overwrote
 	int& depthLocal = depth[filename];
 
 	if ((int)virtual_pof_it->second.size() <= depthLocal)
-		return false;
+		return std::nullopt;
 
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
 	depthLocal++;
 
-	read_model_file(pm, virtual_pof.basePOF.c_str(), error_type, deferredTasks, depth);
+	if (read_model_file(pm, virtual_pof.basePOF.c_str(), error_type, deferredTasks, depth) == modelread_status::FAIL)
+		return modelread_status::FAIL;
 
 	for (const auto& operation : virtual_pof.operationList)
 		operation->process(pm, deferredTasks, depth, virtual_pof);
 
-	return true;
+	return modelread_status::SUCCESS_VIRTUAL;
 }
 
 void virtual_pof_purge_cache() {
@@ -349,7 +363,9 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 }
 
 void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPMholder = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPMholder = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPMholder == nullptr)
+		return;
 	const model_read_deferred_tasks& appendingSubsys = appendingPMholder->deferred();
 	const polymodel* appendingPM = appendingPMholder->pm();
 
@@ -524,7 +540,9 @@ VirtualPOFOperationAddTurret::VirtualPOFOperationAddTurret() {
 }
 
 void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPM = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPM == nullptr)
+		return;
 
 	SCP_unordered_map<int, int> replaceSubmodelNo;
 
@@ -588,7 +606,9 @@ VirtualPOFOperationAddEngine::VirtualPOFOperationAddEngine() {
 }
 
 void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPM = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPM == nullptr)
+		return;
 	const auto& engineSubsysMap = appendingPM->deferred().engine_subsystems;
 
 	int engineNumber;
@@ -665,7 +685,9 @@ VirtualPOFOperationAddGlowpoint::VirtualPOFOperationAddGlowpoint() {
 }
 
 void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPM = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPM == nullptr)
+		return;
 
 	int dest_subobj_no = model_find_submodel_index(pm, renameSubmodel.c_str());
 
@@ -702,7 +724,9 @@ VirtualPOFOperationAddSpecialSubsystem::VirtualPOFOperationAddSpecialSubsystem()
 }
 
 void VirtualPOFOperationAddSpecialSubsystem::process(polymodel* /*pm*/, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPM = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPM == nullptr)
+		return;
 	const auto& subsystems = appendingPM->deferred().model_subsystems;
 
 	auto it = subsystems.find(sourceSubsystem);
@@ -744,7 +768,9 @@ VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
 }
 
 void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+	auto appendingPM = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPM == nullptr)
+		return;
 
 	auto& banks = primary ? pm->gun_banks : pm->missile_banks;
 	int& n_banks = primary ? pm->n_guns : pm->n_missiles;
@@ -812,7 +838,10 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 }
 	
 void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+	auto appendingPMholder = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPMholder == nullptr)
+		return;
+	const polymodel* appendingPM = appendingPMholder->pm();
 
 	int dockpoint = model_find_dock_name_index(appendingPM, sourcedock.c_str());
 	if (dockpoint < 0) {
@@ -912,7 +941,10 @@ VirtualPOFOperationAddPath::VirtualPOFOperationAddPath() {
 }
 
 void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+	auto appendingPMholder = load_source_pof(appendingPOF, depth, virtualPof);
+	if (appendingPMholder == nullptr)
+		return;
+	const polymodel* appendingPM = appendingPMholder->pm();
 
 	int sourcePathNr = -1;
 	for (int i = 0; i < appendingPM->n_paths; i++) {
