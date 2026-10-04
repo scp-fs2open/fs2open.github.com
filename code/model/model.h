@@ -769,7 +769,7 @@ typedef struct insignia {
 	float v[MAX_INS_FACES][MAX_INS_FACE_VECS];		// v tex coords on a per-face-per-vertex bases
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
-	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+	vec3d norm[MAX_INS_FACES];					// normal of each face
 
 	// Computed fields for decal rendering
 	vec3d position;
