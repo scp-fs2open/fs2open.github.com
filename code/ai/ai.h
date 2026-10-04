@@ -597,7 +597,9 @@ extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 
 extern int is_instructor(object *objp);
-extern int find_enemy(int objnum, float range, int max_attackers, int ship_info_index = -1, int class_type = -1);
+extern int find_enemy(int objnum, float range, int max_attackers, bool for_pursuit, int ship_info_index = -1, int class_type = -1);
+extern bool ai_targets_for_pursuit(const ai_info *aip);
+extern bool ai_declines_pursuit(const object *attacker_objp, const object *target_objp);
 
 float ai_get_weapon_speed(const ship_weapon *swp);
 void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, const vec3d *gun_pos, const object *pobjp, const vec3d *enemy_pos, const vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range);
@@ -618,7 +620,7 @@ extern float dock_orient_and_approach(object *docker_objp, int docker_index, obj
 void ai_set_mode_warp_out(object *objp, ai_info *aip);
 
 // prototyped by Goober5000
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index, int class_type = -1);
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, bool for_pursuit, int ship_info_index, int class_type = -1);
 
 // moved to header file by Goober5000
 void ai_announce_ship_dying(object *dying_objp);
