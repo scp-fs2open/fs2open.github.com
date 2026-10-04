@@ -354,6 +354,10 @@ void light_rotate_all()
 
 	for (auto& l : Lights)
 		light_rotate(&l);
+
+	// the sun lights are separate copies, and light_apply_rgb reads these
+	for (auto& l : Static_light)
+		light_rotate(&l);
 }
 
 /**

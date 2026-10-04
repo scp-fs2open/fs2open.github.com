@@ -2419,6 +2419,9 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 	material insignia_material;
 	insignia_material.set_depth_bias(1);
 
+	// light_apply_rgb needs the lights in this insignia's frame of reference, which the caller's instance has set up
+	light_rotate_all();
+
 	// set the proper texture
 	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
 
@@ -2458,9 +2461,9 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
 			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
 
-			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[s_idx], 1.5f );
-			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[s_idx], 1.5f );
-			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[s_idx], 1.5f );
+			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &t1, &pm->ins[idx].norm[s_idx], 1.5f );
+			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &t2, &pm->ins[idx].norm[s_idx], 1.5f );
+			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &t3, &pm->ins[idx].norm[s_idx], 1.5f );
 			vecs[0].a = vecs[1].a = vecs[2].a = 255;
 
 			// draw the polygon

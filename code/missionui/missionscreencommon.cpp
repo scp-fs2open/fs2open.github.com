@@ -1979,7 +1979,7 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 }
 
 /**
- * @brief add and rotate lights for all the non-gameplay ship rendering instances
+ * @brief add lights for all the non-gameplay ship rendering instances
  */
 void common_setup_room_lights()
 {
@@ -1994,7 +1994,6 @@ void common_setup_room_lights()
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
 	light_add_directional(&tempv,-1,false,&tempc);
 	gr_set_ambient_light(53, 53, 53);
-	light_rotate_all();
 }
 
 // NEWSTUFF END
