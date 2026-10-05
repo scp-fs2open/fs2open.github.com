@@ -159,7 +159,7 @@ UI_LISTBOX campaign_filter;
 UI_BUTTON mlm_ok, mlm_cancel;
 char * mlm_missions[MLM_MAX_MISSIONS];
 char * recent_missions[MAX_RECENT_MISSIONS];
-char * campaign_names[MAX_CAMPAIGNS+2];
+SCP_vector<char*> campaign_names;
 SCP_vector<char*> campaign_missions;
 int mlm_nfiles = 0;
 static int	last_recent_current = -1;
@@ -193,7 +193,7 @@ void ml_change_listbox()
 }
 
 static SCP_vector<SCP_string> Campaign_missions;
-static char Campaign_name_list[MAX_CAMPAIGNS+2][NAME_LENGTH];
+static SCP_vector<SCP_string> Campaign_name_list;
 
 // get the mission filenames that make up a campaign
 extern int mission_campaign_get_filenames(const char *filename, SCP_vector<SCP_string> &dest);
@@ -231,17 +231,18 @@ void mission_load_menu_init()
 
 
 	mission_campaign_build_list(0);
-	for ( i = 0; i < Num_campaigns; i++ ) {
-		strcpy_s(Campaign_name_list[i+1], Campaign_names[i]);
-	}
-	strcpy_s(Campaign_name_list[0], NOX("All campaigns"));
-	strcpy_s(Campaign_name_list[1], NOX("Player Missions"));
+	Campaign_name_list.clear();
+	Campaign_name_list.emplace_back(NOX("All campaigns"));
+	Campaign_name_list.emplace_back(NOX("Player Missions"));
+	Campaign_name_list.insert(Campaign_name_list.end(), Campaign_names.begin(), Campaign_names.end());
 
-	for ( i = 0; i < Num_campaigns+2; i++ ) {
-		campaign_names[i] = Campaign_name_list[i];
+	campaign_names.clear();
+	campaign_names.reserve(Campaign_name_list.size());
+	for (auto& name : Campaign_name_list) {
+		campaign_names.push_back(name.data());
 	}
 
-	campaign_filter.create( &mlm_window, 50, 150, 150, 200, Num_campaigns+2, campaign_names );
+	campaign_filter.create( &mlm_window, 50, 150, 150, 200, sz2i(campaign_names.size()), campaign_names.data() );
 	Campaign_filter_index = 0;
 	campaign_filter.set_current(Campaign_filter_index);
 }
@@ -288,7 +289,7 @@ void mission_load_menu_do()
 		Campaign_filter_index = campaign_filter.current();
 
 		if ( Campaign_filter_index > 1 ) {
-			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2], Campaign_missions);
+			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2].c_str(), Campaign_missions);
 
 			campaign_missions.clear();
 			campaign_missions.reserve(Campaign_missions.size());

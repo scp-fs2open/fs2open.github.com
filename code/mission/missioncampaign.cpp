@@ -58,10 +58,9 @@ int Campaign_ending_via_supernova = 0;
 
 // stuff for selecting campaigns.  We need to keep both arrays around since we display the
 // list of campaigns by name, but must load campaigns by filename
-char *Campaign_names[MAX_CAMPAIGNS] = { NULL };
-char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
-char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
-int	Num_campaigns;
+SCP_vector<SCP_string> Campaign_names;
+SCP_vector<SCP_string> Campaign_file_names;
+SCP_vector<SCP_string> Campaign_descs;
 bool Campaign_file_missing = false;
 int Campaign_load_failure = 0;
 int Campaign_names_inited = 0;
@@ -96,11 +95,11 @@ campaign Campaign;
 
 
 /**
- * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
- * In the type field, we return if the campaign is a single player or multiplayer campaign.  
- * The type field will only be valid if the name returned is non-NULL
+ * Gets the name and type (single or multiplayer) of the given campaign file, and optionally its
+ * max players, description, and (for multiplayer campaigns) first mission.
+ * Returns false on failure.
  */
-bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc, char **first_mission)
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, SCP_string *desc, SCP_string *first_mission)
 {
 	int i, success = false;
 	SCP_string campaign_type;
@@ -117,11 +116,11 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 	}
 
 	if (desc) {
-		*desc = nullptr;
+		desc->clear();
 	}
 
 	if (first_mission) {
-		*first_mission = nullptr;
+		first_mission->clear();
 	}
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
@@ -161,10 +160,11 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 
 			if (desc) {
 				if (optional_string("+Description:")) {
-					*desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+					stuff_string(*desc, F_MULTITEXT);
+					drop_white_space(*desc);
 				}
 				else {
-					*desc = NULL;
+					desc->clear();
 				}
 			}
 
@@ -175,7 +175,8 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 				// Cyborg17 - and the first mission name if we want it, too
 				if (first_mission) {
 					skip_to_string("$Mission:");
-					*first_mission = stuff_and_malloc_string(F_NAME, nullptr);
+					stuff_string(*first_mission, F_NAME);
+					drop_white_space(*first_mission);
 				}
 			}
 
@@ -234,36 +235,20 @@ int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_strin
 
 void mission_campaign_free_list()
 {
-	int i;
-
 	if ( !Campaign_names_inited )
 		return;
 
-	for (i = 0; i < Num_campaigns; i++) {
-		if (Campaign_names[i] != NULL) {
-			vm_free(Campaign_names[i]);
-			Campaign_names[i] = NULL;
-		}
+	Campaign_names.clear();
+	Campaign_file_names.clear();
+	Campaign_descs.clear();
 
-		if (Campaign_file_names[i] != NULL) {
-			vm_free(Campaign_file_names[i]);
-			Campaign_file_names[i] = NULL;
-		}
-
-		if (Campaign_descs[i] != NULL) {
-			vm_free(Campaign_descs[i]);
-			Campaign_descs[i] = NULL;
-		}
-	}
-
-	Num_campaigns = 0;
 	Campaign_names_inited = 0;
 }
 
 int mission_campaign_maybe_add(const char *filename)
 {
 	SCP_string name;
-	char *desc = NULL;
+	SCP_string desc;
 	int type, max_players;
 
 	// don't add ignored campaigns
@@ -273,36 +258,29 @@ int mission_campaign_maybe_add(const char *filename)
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name.c_str());
+			Campaign_names.push_back(std::move(name));
 
 			if (MC_desc)
-				Campaign_descs[Num_campaigns] = desc;
-
-			Num_campaigns++;
-
-			// Note that we're not freeing desc here because the pointer is getting copied to Campaign_descs which is freed later.
+				Campaign_descs.push_back(std::move(desc));
+			else
+				Campaign_descs.emplace_back();
 
 			return 1;
 		}
 	}
 
-	if (desc != NULL)
-		vm_free(desc);
- 
 	return 0;
 }
 
 /**
  * Builds up the list of campaigns that the user might be able to pick from.
  * It uses the multiplayer flag to tell if we should display a list of single or multiplayer campaigns.
- * This routine sets the Num_campaigns and Campaign_names global variables
+ * This routine sets the Campaign_names, Campaign_file_names, and Campaign_descs global variables
  */
 void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 {
 	char wild_card[10];
 	int i, j, incr = 0;
-	char *t = NULL;
-	int rc = 0;
 
 	if (Campaign_names_inited)
 		return;
@@ -315,35 +293,42 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 	strcat_s(wild_card, FS_CAMPAIGN_FILE_EXT);
 
 	// if we have already been loaded then free everything and reload
-	if (Num_campaigns != 0)
-		mission_campaign_free_list();
+	Campaign_names.clear();
+	Campaign_file_names.clear();
+	Campaign_descs.clear();
 
 	// set filter for cf_get_file_list() if there isn't one set already (the simroom has a special one)
-	if (Get_file_list_filter == NULL)
+	if (Get_file_list_filter == nullptr)
 		Get_file_list_filter = mission_campaign_maybe_add;
 
 	// now get the list of all mission names
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
-	rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
-	Assert( rc == Num_campaigns );
+	cf_get_file_list(Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+
+	// the simroom filter doesn't add names or descriptions
+	Assert(Campaign_names.size() <= Campaign_file_names.size() && Campaign_descs.size() <= Campaign_file_names.size());
+	Campaign_names.resize(Campaign_file_names.size());
+	Campaign_descs.resize(Campaign_file_names.size());
+
+	int num_campaigns = sz2i(Campaign_file_names.size());
 
 	// now sort everything, if we are supposed to
 	if (sort) {
-		incr = Num_campaigns / 2;
+		incr = num_campaigns / 2;
 
 		while (incr > 0) {
-			for (i = incr; i < Num_campaigns; i++) {
+			for (i = incr; i < num_campaigns; i++) {
 				j = i - incr;
 	
 				while (j >= 0) {
-					char *name1 = Campaign_names[j];
-					char *name2 = Campaign_names[j + incr];
-
 					// if we hit this then a coder probably did something dumb (like not needing to sort)
-					if ( (name1 == NULL) || (name2 == NULL) ) {
+					if ( Campaign_names[j].empty() || Campaign_names[j + incr].empty() ) {
 						Int3();
 						break;
 					}
+
+					const char *name1 = Campaign_names[j].c_str();
+					const char *name2 = Campaign_names[j + incr].c_str();
 
 					if ( !strnicmp(name1, "the ", 4) )
 						name1 += 4;
@@ -353,21 +338,13 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 
 					if (stricmp(name1, name2) > 0) {
 						// first, do filenames
-						t = Campaign_file_names[j];
-						Campaign_file_names[j] = Campaign_file_names[j + incr];
-						Campaign_file_names[j + incr] = t;
+						std::swap(Campaign_file_names[j], Campaign_file_names[j + incr]);
 
 						// next, actual names
-						t = Campaign_names[j];
-						Campaign_names[j] = Campaign_names[j + incr];
-						Campaign_names[j + incr] = t;
+						std::swap(Campaign_names[j], Campaign_names[j + incr]);
 
 						// finally, do descriptions
-						if (desc) {
-							t = Campaign_descs[j];
-							Campaign_descs[j] = Campaign_descs[j + incr];
-							Campaign_descs[j + incr] = t;
-						}
+						std::swap(Campaign_descs[j], Campaign_descs[j + incr]);
 
 						j -= incr;
 					} else {
@@ -1601,22 +1578,22 @@ int mission_load_up_campaign(bool fall_back_from_current)
 		// no descriptions, no sorting
 		mission_campaign_build_list(false, false);
 
-		for (idx = 0; (idx < Num_campaigns) && (rc < 0); idx++) {
-			if ( (Campaign_file_names[idx] == NULL) || !strlen(Campaign_file_names[idx]) ) {
+		for (idx = 0; (idx < sz2i(Campaign_file_names.size())) && (rc < 0); idx++) {
+			if ( Campaign_file_names[idx].empty() ) {
 				continue;
 			}
 
 			// skip current and builtin since they already didn't work
-			if ( !stricmp(Campaign_file_names[idx], pl->current_campaign) ) {
+			if ( !stricmp(Campaign_file_names[idx].c_str(), pl->current_campaign) ) {
 				continue;
 			}
 
-			if ( !stricmp(Campaign_file_names[idx], BUILTIN_CAMPAIGN) ) {
+			if ( !stricmp(Campaign_file_names[idx].c_str(), BUILTIN_CAMPAIGN) ) {
 				continue;
 			}
 
 			// try to load it, whatever "it" is
-			rc = mission_campaign_load(Campaign_file_names[idx], nullptr, pl);
+			rc = mission_campaign_load(Campaign_file_names[idx].c_str(), nullptr, pl);
 		}
 
 		mission_campaign_free_list();
