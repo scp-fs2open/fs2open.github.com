@@ -29,7 +29,7 @@ CampaignEditorDialogModel::~CampaignEditorDialogModel()
 
 void CampaignEditorDialogModel::syncCampaignMissionList()
 {
-	// The shared sexp tree code (sexp_tree_opf.cpp) reads Campaign.num_missions and
+	// The shared sexp tree code (sexp_tree_opf.cpp) checks whether Campaign.missions is empty and reads
 	// Campaign.missions[].name to decide whether is-previous-event-* /
 	// is-previous-goal-* operators are usable. The OPF_GOAL_NAME / OPF_EVENT_NAME
 	// data-list paths additionally need each referenced mission's goals/events
@@ -40,19 +40,16 @@ void CampaignEditorDialogModel::syncCampaignMissionList()
 	const int new_count = static_cast<int>(m_missions.size());
 
 	// Free entries that fall outside the new range (e.g. user removed missions).
-	for (int i = new_count; i < Campaign.num_missions; i++) {
+	for (int i = new_count; i < sz2i(Campaign.missions.size()); i++) {
 		if (Campaign.missions[i].name) {
 			vm_free(Campaign.missions[i].name);
 			Campaign.missions[i].name = nullptr;
 		}
-		Campaign.missions[i].events.clear();
-		Campaign.missions[i].goals.clear();
-		Campaign.missions[i].flags = 0;
 	}
 
-	Campaign.num_missions = new_count;
+	Campaign.missions.resize(new_count);
 
-	for (int i = 0; i < new_count && i < MAX_CAMPAIGN_MISSIONS; i++) {
+	for (int i = 0; i < new_count; i++) {
 		const char* new_name = m_missions[i].filename.c_str();
 		const bool name_changed = (Campaign.missions[i].name == nullptr)
 			|| (strcmp(Campaign.missions[i].name, new_name) != 0);
@@ -109,9 +106,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		m_custom_data = Campaign.custom_data;
 
 		// Copy mission data from the global Campaign struct
-		m_missions.reserve(Campaign.num_missions);
-		for (int i = 0; i < Campaign.num_missions; ++i) {
-			const auto& source_mission = Campaign.missions[i];
+		m_missions.reserve(Campaign.missions.size());
+		for (const auto& source_mission : Campaign.missions) {
 			auto& dest_mission = m_missions.emplace_back();
 
 			dest_mission.filename = source_mission.name;
@@ -173,7 +169,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 	m_current_mission_index = -1;
 	m_current_branch_index = -1;
 
-	// Keep Campaign.num_missions in sync so the sexp tree's OPF_MISSION_NAME gate
+	// Keep Campaign.missions in sync so the sexp tree's OPF_MISSION_NAME gate
 	// (used by is-previous-event-*/is-previous-goal-*) sees the loaded campaign.
 	syncCampaignMissionList();
 
@@ -213,9 +209,9 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 	// If this was a loop, find the original cmission to copy the descriptive text.
 	if (is_loop) {
 		const cmission* source_cmission = nullptr;
-		for (int i = 0; i < Campaign.num_missions; ++i) {
-			if (mission.filename == Campaign.missions[i].name) {
-				source_cmission = &Campaign.missions[i];
+		for (const auto& candidate : Campaign.missions) {
+			if (mission.filename == candidate.name) {
+				source_cmission = &candidate;
 				break;
 			}
 		}
@@ -312,7 +308,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.type = m_campaign_type;
 	Campaign.num_players = m_num_players;
 	Campaign.flags = m_flags;
-	Campaign.num_missions = static_cast<int>(m_missions.size());
+	Campaign.missions.resize(m_missions.size());
 	Campaign.custom_data = m_custom_data;
 
 	// Copy ship and weapon permissions
@@ -320,7 +316,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.weapons_allowed = m_weapons_allowed;
 
 	// Copy mission data
-	for (int i = 0; i < Campaign.num_missions; ++i) {
+	for (int i = 0; i < sz2i(Campaign.missions.size()); ++i) {
 		const auto& source_mission = m_missions[i];
 		auto& dest_mission = Campaign.missions[i];
 
@@ -485,8 +481,8 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 	// Immediately clear the global struct again now that we have our safe working copy.
 	clearCampaignGlobal();
 
-	// clearCampaignGlobal() also zeroed Campaign.num_missions, but the sexp tree's
-	// OPF_MISSION_NAME gate needs that count to be non-zero for is-previous-event-* /
+	// clearCampaignGlobal() also emptied Campaign.missions, but the sexp tree's
+	// OPF_MISSION_NAME gate needs it to be non-empty for is-previous-event-* /
 	// is-previous-goal-* to be usable. Restore it from the WIP list.
 	syncCampaignMissionList();
 }
@@ -587,7 +583,7 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 		// Clean up the global struct now that the save is complete.
 		clearCampaignGlobal();
 
-		// clearCampaignGlobal() zeroed Campaign.num_missions, but the dialog is still
+		// clearCampaignGlobal() emptied Campaign.missions, but the dialog is still
 		// open and the sexp tree relies on that count for is-previous-event-*/
 		// is-previous-goal-* operator availability.
 		syncCampaignMissionList();
