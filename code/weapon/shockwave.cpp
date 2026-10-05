@@ -17,6 +17,7 @@
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "object/object.h"
+#include "playerman/player.h"
 #include "options/Option.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -396,9 +397,38 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			}
 
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx);
-			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
-			break;
+
+			// Only ever treat a ship as warping out when the option is enabled,
+			// so retail and older mods keep the original behavior.
+			bool is_warping = false;
+
+			if (Negate_warpout_jostle) {
+				// Warp effect is active (also covers player warpout stages 2 and 3)
+				if (shipp->flags[Ship::Ship_Flags::Depart_warp]) {
+					is_warping = true;
+				}
+
+				// AI ship has committed to the warp (flying straight toward the warp point)
+				if (!is_warping && shipp->ai_index >= 0) {
+					const ai_info* aip = &Ai_info[shipp->ai_index];
+					if (aip->mode == AIM_WARP_OUT && aip->submode >= AIS_WARP_3 && aip->submode <= AIS_WARP_5) {
+						is_warping = true;
+					}
+				}
+
+				// Player warpout stage 1 (controls already taken over)
+				if (!is_warping && objp == Player_obj && Player->control_mode == PCM_WARPOUT_STAGE1) {
+					is_warping = true;
+				}
 			}
+
+			// Don't jostle the ship during warpout
+			if (!is_warping) {
+				weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			}
+
+			break;
+		}
 		case OBJ_ASTEROID:
 			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
