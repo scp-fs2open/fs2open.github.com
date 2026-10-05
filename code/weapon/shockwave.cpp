@@ -834,6 +834,56 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 }
 
 /**
+ * Copies every field that isn't in specified_fields (SCI_* bits) from the parent
+ */
+void shockwave_create_info_inherit(shockwave_create_info *sci, const shockwave_create_info *parent, int specified_fields)
+{
+	if (!(specified_fields & SCI_DAMAGE))
+		sci->damage = parent->damage;
+	sci->damage_overridden = (specified_fields & SCI_DAMAGE) != 0;
+
+	if (!(specified_fields & SCI_DAMAGE_TYPE)) {
+		sci->damage_type_idx = parent->damage_type_idx;
+		sci->damage_type_idx_sav = parent->damage_type_idx_sav;
+	}
+
+	if (!(specified_fields & SCI_BLAST))
+		sci->blast = parent->blast;
+
+	if (!(specified_fields & SCI_INNER_RAD))
+		sci->inner_rad = parent->inner_rad;
+
+	if (!(specified_fields & SCI_OUTER_RAD))
+		sci->outer_rad = parent->outer_rad;
+
+	if (sci->outer_rad < sci->inner_rad)
+		sci->outer_rad = sci->inner_rad;
+
+	if (!(specified_fields & SCI_RADIUS_CURVE))
+		sci->radius_curve_idx = parent->radius_curve_idx;
+
+	if (!(specified_fields & SCI_SPEED))
+		sci->speed = parent->speed;
+
+	if (!(specified_fields & SCI_ROTATION)) {
+		sci->rot_angles = parent->rot_angles;
+		sci->rot_defined = parent->rot_defined;
+	}
+
+	if (!(specified_fields & SCI_ROT_RELATIVE))
+		sci->rot_parent_relative = parent->rot_parent_relative;
+
+	if (!(specified_fields & SCI_MODEL))
+		strcpy_s(sci->pof_name, parent->pof_name);
+
+	if (!(specified_fields & SCI_NAME))
+		strcpy_s(sci->name, parent->name);
+
+	if (!(specified_fields & SCI_SOUND))
+		sci->blast_sound_id = parent->blast_sound_id;
+}
+
+/**
  * Loads a shockwave in preparation for a mission
  */
 void shockwave_create_info_load(const shockwave_create_info *sci)

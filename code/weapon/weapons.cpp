@@ -526,9 +526,10 @@ void parse_wi_flags(weapon_info *weaponp)
     }
 }
 
-void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
+void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char, int *specified_fields = nullptr)
 {
 	SCP_string buf;
+	int fields = 0;
 
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf.c_str())) {
@@ -536,6 +537,7 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		if (sci->damage < 0.0f)
 			sci->damage = 0.0f;
 		sci->damage_overridden = true;
+		fields |= SCI_DAMAGE;
 	}
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
@@ -543,21 +545,25 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		stuff_string(buf, F_NAME);
 		sci->damage_type_idx_sav = damage_type_add(buf.c_str());
 		sci->damage_type_idx = sci->damage_type_idx_sav;
+		fields |= SCI_DAMAGE_TYPE;
 	}
 
 	sprintf(buf, "%sBlast Force:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->blast);
+		fields |= SCI_BLAST;
 	}
 
 	sprintf(buf, "%sInner Radius:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->inner_rad);
+		fields |= SCI_INNER_RAD;
 	}
 
 	sprintf(buf, "%sOuter Radius:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->outer_rad);
+		fields |= SCI_OUTER_RAD;
 	}
 
 	if (sci->outer_rad < sci->inner_rad) {
@@ -568,11 +574,13 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave Radius Multiplier over Lifetime Curve:", pre_char);
 	if (optional_string(buf.c_str())) {
 		sci->radius_curve_idx = curve_parse(" Shockwave will not use a curve.");
+		fields |= SCI_RADIUS_CURVE;
 	}
 
 	sprintf(buf, "%sShockwave Speed:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->speed);
+		fields |= SCI_SPEED;
 	}
 
 	sprintf(buf, "%sShockwave Rotation:", pre_char);
@@ -596,25 +604,33 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		sci->rot_angles.h = angs[2];
 
 		sci->rot_defined = true;
+		fields |= SCI_ROTATION;
 	}
 
 	sprintf(buf, "%sShockwave Rotation Is Relative To Parent:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_boolean(&sci->rot_parent_relative);
+		fields |= SCI_ROT_RELATIVE;
 	}
 
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_string(sci->pof_name, F_NAME, MAX_FILENAME_LEN);
+		fields |= SCI_MODEL;
 	}
 
 	sprintf(buf, "%sShockwave Name:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
+		fields |= SCI_NAME;
 	}
 
 	sprintf(buf, "%sShockwave Sound:", pre_char);
-	parse_game_sound(buf.c_str(), &sci->blast_sound_id);
+	if (parse_game_sound(buf.c_str(), &sci->blast_sound_id))
+		fields |= SCI_SOUND;
+
+	if (specified_fields != nullptr)
+		*specified_fields |= fields;
 }
 
 static SCP_vector<SCP_string> Removed_weapons;
@@ -1494,16 +1510,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	parse_shockwave_info(&wip->shockwave, "$");
 
-	//Retain compatibility
+	// unspecified dinky fields are inherited again after all tables are parsed, but copy now so that
+	// the fields below are checked against something sensible
 	if(first_time)
 	{
 		wip->dinky_shockwave = wip->shockwave;
-		wip->dinky_shockwave.damage *= Dinky_shockwave_default_multiplier;
 	}
 
 	if(optional_string("$Dinky shockwave:"))
 	{
-		parse_shockwave_info(&wip->dinky_shockwave, "+");
+		parse_shockwave_info(&wip->dinky_shockwave, "+", &wip->dinky_shockwave_specified_fields);
 	}
 
 	if(optional_string("$Armor Factor:")) {
@@ -2000,7 +2016,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
 	//Disarmed impact sound
-	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
+	if (parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd))
+		wip->disarmed_impact_snd_specified = true;
 
 	//Shield Impact sound --wookieejedi
 	parse_game_sound("$Shield ImpactSnd:", &wip->shield_impact_snd);
@@ -5060,6 +5077,11 @@ void weapon_do_post_parse()
 	weapon_post_process_entries();
 	weapon_generate_indexes_for_substitution();
 	weapon_generate_indexes_for_precedence();
+
+	// this must happen before the damage types are finalized
+	for (auto &wi : Weapon_info)
+		shockwave_create_info_inherit(&wi.dinky_shockwave, &wi.shockwave, wi.dinky_shockwave_specified_fields);
+
 	weapon_finalize_shockwave_damage_types();
 
 	Default_cmeasure_index = -1;
@@ -5078,6 +5100,9 @@ void weapon_do_post_parse()
 		// catch a fall back cmeasure index, just in case
 		if ( (first_cmeasure_index < 0) && (wip->wi_flags[Weapon::Info_Flags::Cmeasure]) )
 			first_cmeasure_index = i;
+
+		if (!wip->disarmed_impact_snd_specified)
+			wip->disarmed_impact_snd = wip->impact_snd;
 	}
 
 	// catch cmeasure fallback
@@ -8140,14 +8165,17 @@ void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, co
  * @param sci		Shockwave info
  * @param pos		World pos of explosion center
  * @param impacted_obj	Object pointer to ship that weapon impacted on (can be NULL)
+ * @param regular_damage_to_huge	Whether huge ships take the regular shockwave's damage rather than sci's
  */
-void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, const vec3d *pos, const object *impacted_obj)
+void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, const vec3d *pos, const object *impacted_obj, bool regular_damage_to_huge)
 {
 	weapon_info	*wip;
 	object		*objp;
 	float			damage, blast;
 
 	wip = &Weapon_info[Weapons[wobjp->instance].weapon_info_index];	
+
+	int damage_type_idx = The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves] ? sci->damage_type_idx : wip->shockwave.damage_type_idx;
 
 	// only blast ships and asteroids
 	// And (some) weapons
@@ -8172,7 +8200,11 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 			continue;
 		}
 
-		if ( weapon_area_calc_damage(objp, pos, sci->inner_rad, sci->outer_rad, sci->blast, sci->damage, &blast, &damage, sci->outer_rad) == -1 ){
+		float max_damage = sci->damage;
+		if (regular_damage_to_huge && objp->type == OBJ_SHIP && Ship_info[Ships[objp->instance].ship_info_index].is_huge_ship())
+			max_damage = wip->shockwave.damage;
+
+		if ( weapon_area_calc_damage(objp, pos, sci->inner_rad, sci->outer_rad, sci->blast, max_damage, &blast, &damage, sci->outer_rad) == -1 ){
 			continue;
 		}
 
@@ -8203,7 +8235,7 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 				}
 			}
 
-			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
+			ship_apply_global_damage(objp, wobjp, pos, damage, damage_type_idx);
 			weapon_area_apply_blast(nullptr, objp, pos, blast, false);
 			break;
 			}
@@ -8215,7 +8247,7 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 		
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
-				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
+				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, damage_type_idx, 1.0f, false);
 
 			weapon* wp = &Weapons[wobjp->instance];
 			weapon* target_wp = &Weapons[objp->instance];
@@ -8252,44 +8284,59 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 //1: weapon is destroyed before arm time
 //2: weapon is destroyed before arm distance from ship
 //3: weapon is outside arm radius from target ship
+
+// retail beams detonated a bomb at full strength, so a beam kill only counts with the flag
+static bool weapon_shot_down(const weapon *wp)
+{
+	if (!wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
+		return false;
+
+	return The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves]
+		|| !wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_beam];
+}
+
+static bool weapon_failed_to_arm(weapon *wp, bool hit_target)
+{
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+	object *wobj = &Objects[wp->objnum];
+	object *pobj;
+
+	if(wobj->parent > -1) {
+		pobj = &Objects[wobj->parent];
+	} else {
+		pobj = nullptr;
+	}
+
+	if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
+		|| ((wip->arm_dist) && (pobj != nullptr && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist))))
+	{
+		return true;
+	}
+	if(wip->arm_radius && (!hit_target)) {
+		if(!weapon_has_homing_object(wp))
+			return true;
+		if(IS_VEC_NULL(&wp->homing_pos) || vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
+			return true;
+	}
+
+	return false;
+}
+
 bool weapon_armed(weapon *wp, bool hit_target)
 {
-	Assert(wp != NULL);
+	Assert(wp != nullptr);
 
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-	if((wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
-		&& !wip->arm_time
-		&& wip->arm_dist == 0.0f
-		&& wip->arm_radius == 0.0f)
+	// without the flag, a shot-down weapon that has any arm parameter is only checked against those
+	if (weapon_shot_down(wp)
+		&& (The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves]
+			|| (!wip->arm_time && wip->arm_dist == 0.0f && wip->arm_radius == 0.0f)))
 	{
 		return false;
 	}
-	else
-	{
-		object *wobj = &Objects[wp->objnum];
-		object *pobj;
 
-		if(wobj->parent > -1) {
-			pobj = &Objects[wobj->parent];
-		} else {
-			pobj = NULL;
-		}
-
-		if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
-			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist))))
-		{
-			return false;
-		}
-		if(wip->arm_radius && (!hit_target)) {
-			if(!weapon_has_homing_object(wp))
-				return false;
-			if(IS_VEC_NULL(&wp->homing_pos) || vm_vec_dist(&wobj->pos, &wp->homing_pos) > wip->arm_radius)
-				return false;
-		}
-	}
-
-	return true;
+	return !weapon_failed_to_arm(wp, hit_target);
 }
 
 static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* weapon_obj, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
@@ -8608,17 +8655,40 @@ bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 		weapon_hit_do_sound(impacted_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
+	bool consistent_dinky = The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves];
+	bool shot_down = weapon_shot_down(wp);
+
+	//Which shockwave?
+	const shockwave_create_info *sci = &wip->shockwave;
+	shockwave_create_info dinky_sci;
+	bool regular_damage_to_huge = false;
+	if(!armed_weapon) {
+		dinky_sci = wip->dinky_shockwave;
+		sci = &dinky_sci;
+
+		if (!dinky_sci.damage_overridden) {
+			bool only_shot_down = shot_down && !weapon_failed_to_arm(wp, hit_target);
+
+			// retail did not reduce the damage of a shot-down weapon that has no shockwave
+			if (consistent_dinky || !only_shot_down || dinky_sci.speed > 0.0f)
+				dinky_sci.damage = wip->shockwave.damage * The_mission.ai_profile()->dinky_shockwave_multiplier;
+			else
+				dinky_sci.damage = wip->shockwave.damage;
+
+			regular_damage_to_huge = consistent_dinky && only_shot_down;
+		}
+	}
+
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
+	// with the flag, SW_WEAPON_KILL means huge ships take the regular shockwave's damage;
+	// without it, they take four times this shockwave's damage
+	if (consistent_dinky) {
+		if (regular_damage_to_huge)
+			sw_flag |= SW_WEAPON_KILL;
+	} else if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || shot_down) {
 		sw_flag |= SW_WEAPON_KILL;
-	}
-
-	//Which shockwave?
-	shockwave_create_info *sci = &wip->shockwave;
-	if(!armed_weapon) {
-		sci = &wip->dinky_shockwave;
 	}
 
 	// check if this is an area effect weapon (i.e. has a blast radius)
@@ -8628,7 +8698,7 @@ bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
-			weapon_do_area_effect(weapon_obj, sci, hitpos, impacted_obj);
+			weapon_do_area_effect(weapon_obj, sci, hitpos, impacted_obj, regular_damage_to_huge);
 		}
 	}
 
@@ -9831,6 +9901,7 @@ void weapon_info::reset()
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
+	this->dinky_shockwave_specified_fields = 0;
 
 	this->arm_time = 0;
 	this->arm_dist = 0.0f;
@@ -9936,6 +10007,7 @@ void weapon_info::reset()
 	this->cockpit_launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
+	this->disarmed_impact_snd_specified = false;
 	this->shield_impact_snd = gamesnd_id();
 	this->flyby_snd = gamesnd_id();
 

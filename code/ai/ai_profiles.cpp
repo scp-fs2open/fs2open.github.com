@@ -762,6 +762,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
 
+				set_flag(profile, "$consistent dinky shockwaves:", AI::Profile_Flags::Consistent_dinky_shockwaves);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -869,6 +871,8 @@ void ai_profile_t::reset()
 	attack_any_idle_circle_distance = 100.0f;
 
 	default_form_on_wing_priority = 99;	// as originally assigned in ai_add_goal_sub_sexp()
+
+	dinky_shockwave_multiplier = Dinky_shockwave_default_multiplier;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -998,5 +1002,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
 		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
+	}
+	if (mod_supports_version(27, 0, 0)) {
+		flags.set(AI::Profile_Flags::Consistent_dinky_shockwaves);
 	}
 }

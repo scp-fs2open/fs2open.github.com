@@ -2335,15 +2335,19 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 	}
 
 	// get max damage and adjust if needed to account for shockwave created from destroyed weapon
+	int wp_index = shockwave_get_weapon_index(other_obj->instance);
 	max_damage = shockwave_get_damage(other_obj->instance);
 	if (shockwave_get_flags(other_obj->instance) & SW_WEAPON_KILL) {
-		max_damage *= 4.0f;
+		if ((wp_index >= 0) && The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves]) {
+			max_damage = Weapon_info[wp_index].shockwave.damage;
+		} else {
+			max_damage *= 4.0f;
+		}
 	}
 
 	// If the shockwave was caused by a weapon, then check if the weapon can deal lethal damage to the ship.
 	// If it cannot, then neither should the shockwave caused by the weapon be able to do the same.
 	// The code for this is copied from part of weapon_get_damage_scale.
-	int wp_index = shockwave_get_weapon_index(other_obj->instance);
 	if ((wp_index >= 0) && Weapon_shockwaves_respect_huge) {
 		wip = &Weapon_info[wp_index];
 

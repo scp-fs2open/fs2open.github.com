@@ -153,6 +153,8 @@ public:
 
 	int default_form_on_wing_priority;	// the priority used if not specified in the sexp
 
+	float dinky_shockwave_multiplier;	// damage multiplier for a dinky shockwave that doesn't specify its own damage
+
     void reset();
 };
 
