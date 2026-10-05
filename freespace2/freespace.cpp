@@ -5918,7 +5918,7 @@ void game_enter_state( int old_state, int new_state )
 			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
-			if (result != 0) {
+			if (result != 0 || Campaign.missions.empty()) {
 				main_hall_init("");
 			}
 			// if we're coming from the end of a campaign, we want to load the first mainhall of the campaign
