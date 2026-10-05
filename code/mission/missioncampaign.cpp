@@ -195,13 +195,14 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 }
 
 /**
- * Parses campaign and returns a list of missions in it.  
- * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
+ * Parses campaign and appends the missions in it to 'list'.
+ * @return Number of missions added to the 'list'.
  * @return Negative on error.
  */
-int mission_campaign_get_mission_list(const char *filename, char **list, int max)
+int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_string> &list)
 {
-	int i, num = 0;
+	int num = 0;
+	const size_t original_size = list.size();
 	char name[MAX_FILENAME_LEN];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
@@ -214,19 +215,16 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 
 		while (skip_to_string("$Mission:") > 0) {
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			if (num < max)
-				list[num++] = vm_strdup(name);
-			else
-				Warning(LOCATION, "Maximum number of missions exceeded (%d)!", max);
+			list.emplace_back(name);
+			num++;
 		}
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 
-		// since we can't return count of allocated elements, free them instead
-		for (i = 0; i<num; i++)
-			vm_free(list[i]);
+		// since we can't return count of added elements, remove them instead
+		list.resize(original_size);
 
 		num = -1;
 	}

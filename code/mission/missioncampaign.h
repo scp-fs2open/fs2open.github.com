@@ -217,7 +217,7 @@ extern void mission_campaign_save_persistent( int type, int index );
 bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
 
 // get a listing of missions in a campaign
-int mission_campaign_get_mission_list(const char *filename, char **list, int max);
+int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_string> &list);
 
 // load up a campaign for the current player.
 int mission_load_up_campaign(bool fall_back_from_current = false);
