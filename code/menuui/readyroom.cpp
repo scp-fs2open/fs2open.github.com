@@ -501,7 +501,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 			// determine some extra information
 			int flags = 0;
 			auto fb = game_find_builtin_mission(filename);
-			if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
+			if((fb != nullptr) && (fb->flags & FSB_FROM_VOLITION)){
 				flags |= READYROOM_FLAG_FROM_VOLITION;
 			}
 
@@ -538,7 +538,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	}
 
 	// change popup
-	sprintf(popup_str, XSTR("Campaign Mission\n\n%s", 990), Campaign.missions[Num_campaign_missions_with_info].name);
+	sprintf(popup_str, XSTR("Campaign Mission\n\n%s", 990), Campaign.missions[Num_campaign_missions_with_info].name.get());
 	popup_change_text(popup_str.c_str());
 
 	// Ensure storage matches the number of missions we are about to process
@@ -551,12 +551,12 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	Campaign_mission_names[Num_campaign_missions_with_info].reset();
 
 	// Only allow missions already completed
-	if (Campaign.missions[Num_campaign_missions_with_info].completed || (Simroom_show_all || API_Access)) 
+	if (Campaign.missions[Num_campaign_missions_with_info].completed || (Simroom_show_all || API_Access))
 	{
-		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
+		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name.get()))
 		{
-			auto filename = Campaign.missions[Num_campaign_missions_with_info].name;
-			
+			auto filename = Campaign.missions[Num_campaign_missions_with_info].name.get();
+
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info].reset(vm_strdup(The_mission.name.c_str()));
 			int y = valid_missions_with_info * (font_height + 2);
@@ -575,13 +575,13 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 
 			// determine some extra information
 			int flags = 0;
-			auto fb = game_find_builtin_mission(Campaign.missions[Num_campaign_missions_with_info].name);
+			auto fb = game_find_builtin_mission(Campaign.missions[Num_campaign_missions_with_info].name.get());
 			if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION))
 			{
 				flags |= READYROOM_FLAG_FROM_VOLITION;
 			}				
 	
-			sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[Num_campaign_missions_with_info].get(), Campaign.missions[Num_campaign_missions_with_info].name, list_x1 + C_SUBTEXT_X, y, flags);
+			sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[Num_campaign_missions_with_info].get(), Campaign.missions[Num_campaign_missions_with_info].name.get(), list_x1 + C_SUBTEXT_X, y, flags);
 			valid_missions_with_info++;
 		}
 	}
@@ -648,13 +648,13 @@ void sim_room_build_listing()
 				if (Campaign_mission_names[i]) {
 					// determine some extra information
 					int flags = 0;
-					auto full_filename = cf_add_ext(Campaign.missions[i].name, FS_MISSION_FILE_EXT);
+					auto full_filename = cf_add_ext(Campaign.missions[i].name.get(), FS_MISSION_FILE_EXT);
 					auto fb = game_find_builtin_mission(full_filename);
 					if((fb != NULL) && (fb->flags & FSB_FROM_VOLITION)){
 						flags |= READYROOM_FLAG_FROM_VOLITION;
 					}					
 
-					sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[i].get(), Campaign.missions[i].name, list_x1 + C_SUBTEXT_X, y, flags);
+					sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[i].get(), Campaign.missions[i].name.get(), list_x1 + C_SUBTEXT_X, y, flags);
 					y += font_height + 2;	// Goober5000 - added +2 to conform with above
 				}
 			}
@@ -826,7 +826,7 @@ int readyroom_continue_campaign()
 			// this isn't the same thing that is done in mission_campaign_next_mission(), but it's
 			// cleaner to do this here than it is to hack that function to do the same thing
 			Campaign.current_mission = Campaign.prev_mission;
-			strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
+			strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get() );
 
 			// set the bit for campaign mode
 			Game_mode |= GM_CAMPAIGN_MODE;

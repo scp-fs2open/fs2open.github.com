@@ -901,7 +901,7 @@ int debrief_find_persona_index()
 				for (j = 0; j < Volition_campaigns[i].num_missions; j++)
 				{
 					// found it!
-					if (!stricmp(Campaign.missions[Campaign.current_mission].name, Debrief_promotion_voice_mapping[i][j].mission_file))
+					if (!stricmp(Campaign.missions[Campaign.current_mission].name.get(), Debrief_promotion_voice_mapping[i][j].mission_file))
 					{
 						return Debrief_promotion_voice_mapping[i][j].persona_index;
 					}

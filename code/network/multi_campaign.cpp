@@ -83,7 +83,7 @@ void multi_campaign_start(char *filename)
 		mission_campaign_next_mission();
 			
 		// setup various filenames and mission names
-		strcpy_s(Netgame.mission_name,Campaign.missions[Campaign.current_mission].name);
+		strcpy_s(Netgame.mission_name,Campaign.missions[Campaign.current_mission].name.get());
 		strcpy_s(Netgame.campaign_name,filename);
 		strcpy_s(Game_current_mission_filename,Netgame.mission_name);
 
@@ -138,7 +138,7 @@ void multi_campaign_next_mission()
 	// now we should be sequencing through the next stage (mission load, etc)
 	// this will eventually be replaced with the real filename of the next mission
 	if(Campaign.current_mission != -1){
-		strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name);
+		strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get());
 		strcpy_s(Netgame.mission_name,Game_current_mission_filename);			
 
 		// if we're the standalone server, set the mission and campaign names
@@ -314,7 +314,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 
 		// add the filename		
 		GET_STRING(fname);
-		Campaign.missions[cur_mission].name = vm_strdup(fname);
+		Campaign.missions[cur_mission].name.reset(vm_strdup(fname));
 	
 		// add the # of goals and events
 		GET_DATA(val);
@@ -366,7 +366,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		Assert(starting_num + item_count <= sz2i(Campaign.missions.size()));
 		for (idx = starting_num; idx < (starting_num + item_count); ++idx) {
 			GET_STRING(fname);
-			Campaign.missions[idx].name = vm_strdup(fname);
+			Campaign.missions[idx].name.reset(vm_strdup(fname));
 		}
 		break;
 	}
@@ -414,8 +414,8 @@ void multi_campaign_send_debrief_info()
 	ADD_DATA(val);
 
 	// add the filename
-	Assert(Campaign.missions[Campaign.current_mission].name != NULL);
-	ADD_STRING(Campaign.missions[Campaign.current_mission].name);
+	Assert(Campaign.missions[Campaign.current_mission].name != nullptr);
+	ADD_STRING(Campaign.missions[Campaign.current_mission].name.get());
 
 	// add the # of goals and events
 	val = static_cast<ubyte>(Campaign.missions[Campaign.current_mission].goals.size());
@@ -540,8 +540,8 @@ void multi_campaign_send_start(net_player *pl)
 	ADD_DATA(starting_num);
 
 	for (idx = 0; idx < sz2i(Campaign.missions.size()); idx++) {
-		Assert(Campaign.missions[idx].name != NULL);
-		ADD_STRING(Campaign.missions[idx].name);
+		Assert(Campaign.missions[idx].name != nullptr);
+		ADD_STRING(Campaign.missions[idx].name.get());
 		++item_count;
 
 		if ( (packet_size + MC_INGAME_DATA_SLOP) > MAX_PACKET_SIZE ) {
@@ -617,8 +617,8 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		ADD_DATA(starting_num);
 
 		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
-			Assert(Campaign.missions[i].name != NULL);
-			ADD_STRING(Campaign.missions[i].name);
+			Assert(Campaign.missions[i].name != nullptr);
+			ADD_STRING(Campaign.missions[i].name.get());
 			++item_count;
 
 			if ( (packet_size + MC_INGAME_DATA_SLOP) > MAX_PACKET_SIZE ) {
@@ -863,7 +863,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		Assert(starting_num + num_missions <= sz2i(Campaign.missions.size()));
 		for (i = starting_num; i < (starting_num + num_missions); ++i) {
 			GET_STRING(fname);
-			Campaign.missions[i].name = vm_strdup(fname);
+			Campaign.missions[i].name.reset(vm_strdup(fname));
 		}
 		break;
 

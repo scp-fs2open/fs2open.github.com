@@ -88,8 +88,8 @@ typedef struct mevent {
 class cmission
 {
 public:
-	char				*name = nullptr;		// name of the mission
-	char				*notes = nullptr;		// mission notes for mission (used by Fred)
+	SCP_vm_unique_ptr<char>	name;		// name of the mission
+	SCP_vm_unique_ptr<char>	notes;		// mission notes for mission (used by Fred)
 	char				briefing_cutscene[NAME_LENGTH] = {};	// name of the cutscene to be played before this mission
 	int				formula = -1;				// sexpression used to determine mission branching.
 	int				completed = 0;			// has the player completed this mission
@@ -97,9 +97,9 @@ public:
 	SCP_vector<mevent> events;				// vector of mevents which has the event completion status
 	SCP_vector<sexp_variable> variables;	// vector of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
 	int				mission_loop_formula = -1;	// formula to determine whether to allow a side loop
-	char			*mission_branch_desc = nullptr;	// message in popup
-	char			*mission_branch_brief_anim = nullptr;
-	char			*mission_branch_brief_sound = nullptr;
+	SCP_vm_unique_ptr<char>	mission_branch_desc;	// message in popup
+	SCP_vm_unique_ptr<char>	mission_branch_brief_anim;
+	SCP_vm_unique_ptr<char>	mission_branch_brief_sound;
 	int				level = 0;				// what level of the tree it's on (Fred)
 	int				pos = 0;				// what x position on level it's on (Fred)
 	int				flags = 0;
@@ -188,10 +188,6 @@ extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
 extern void mission_campaign_clear( void );
-
-// frees and nulls a mission's five vm_strdup'd strings (name, notes, and the
-// three mission-branch strings)
-extern void mission_campaign_free_mission_strings(cmission &cm);
 
 // used by Fred to get a mission's list of goals.
 void read_mission_goal_list(int num);

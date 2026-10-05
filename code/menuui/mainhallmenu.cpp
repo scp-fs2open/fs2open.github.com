@@ -979,7 +979,7 @@ void main_hall_do(float frametime)
 							main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
 							break;
 						}
-						strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
+						strcpy_s(Game_current_mission_filename, Campaign.missions[0].name.get());
 					}
 					Campaign.current_mission = -1;
 					gameseq_post_event(GS_EVENT_START_GAME_QUICK);

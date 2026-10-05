@@ -112,7 +112,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 		required_string_either_fred("$Mission:", "#End");
 		required_string_fred("$Mission:");
 		parse_comments(2);
-		fout(" %s", cm.name);
+		fout(" %s", cm.name.get());
 
 		if (strlen(cm.briefing_cutscene) > 0) {
 			if (optional_string_fred("+Briefing Cutscene:", "$Mission"))
@@ -266,7 +266,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 						fout(")");
 					}
 					if (mission_fork) {
-						fout("\n+Option: %s", Campaign.missions[link.to].name);
+						fout("\n+Option: %s", Campaign.missions[link.to].name.get());
 					}
 				}
 			}
@@ -275,7 +275,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 				sprintf(buffer,
 					"Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each "
 					"mission.",
-					cm.name);
+					cm.name.get());
 				Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 			}
 		}
@@ -324,9 +324,9 @@ void Fred_campaign_save::save_campaign_sexp(int node, int link_num)
 		if (build_sexp_string(sexp_out, node, 2, SEXP_SAVE_MODE)) {
 			fout("   (\n      %s\n      ( next-mission \"%s\" )\n   )\n",
 				sexp_out.c_str(),
-				Campaign.missions[link_num].name);
+				Campaign.missions[link_num].name.get());
 		} else {
-			fout("   ( %s( next-mission \"%s\" ) )\n", sexp_out.c_str(), Campaign.missions[link_num].name);
+			fout("   ( %s( next-mission \"%s\" ) )\n", sexp_out.c_str(), Campaign.missions[link_num].name.get());
 		}
 	} else {
 		if (build_sexp_string(sexp_out, node, 2, SEXP_SAVE_MODE)) {

@@ -98,7 +98,7 @@ void campaign_filelist_box::initialize(const CString &path)
 	
 
 	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
-		z = FindString(-1, Campaign.missions[i].name);
+		z = FindString(-1, Campaign.missions[i].name.get());
 		if (z != LB_ERR) {
 			DeleteString(z);  // take out all missions already in the campaign
 			i--;  // recheck for name just in case there are two (should be impossible but can't be sure)

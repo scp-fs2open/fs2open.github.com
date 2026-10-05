@@ -39,26 +39,15 @@ void CampaignEditorDialogModel::syncCampaignMissionList()
 	// changed since the last sync.
 	const int new_count = static_cast<int>(m_missions.size());
 
-	// Free entries that fall outside the new range (e.g. user removed missions).
-	for (int i = new_count; i < sz2i(Campaign.missions.size()); i++) {
-		if (Campaign.missions[i].name) {
-			vm_free(Campaign.missions[i].name);
-			Campaign.missions[i].name = nullptr;
-		}
-	}
-
 	Campaign.missions.resize(new_count);
 
 	for (int i = 0; i < new_count; i++) {
 		const char* new_name = m_missions[i].filename.c_str();
 		const bool name_changed = (Campaign.missions[i].name == nullptr)
-			|| (strcmp(Campaign.missions[i].name, new_name) != 0);
+			|| (strcmp(Campaign.missions[i].name.get(), new_name) != 0);
 
 		if (name_changed) {
-			if (Campaign.missions[i].name) {
-				vm_free(Campaign.missions[i].name);
-			}
-			Campaign.missions[i].name = vm_strdup(new_name);
+			Campaign.missions[i].name.reset(vm_strdup(new_name));
 			// New filename — invalidate any cached goal/event list and mark for lazy reload.
 			Campaign.missions[i].events.clear();
 			Campaign.missions[i].goals.clear();
@@ -110,7 +99,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		for (const auto& source_mission : Campaign.missions) {
 			auto& dest_mission = m_missions.emplace_back();
 
-			dest_mission.filename = source_mission.name;
+			dest_mission.filename = source_mission.name ? source_mission.name.get() : "";
 			dest_mission.level = source_mission.level;
 			dest_mission.position = source_mission.pos;
 			dest_mission.briefing_cutscene = source_mission.briefing_cutscene;
@@ -210,7 +199,7 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 	if (is_loop) {
 		const cmission* source_cmission = nullptr;
 		for (const auto& candidate : Campaign.missions) {
-			if (mission.filename == candidate.name) {
+			if (candidate.name && mission.filename == candidate.name.get()) {
 				source_cmission = &candidate;
 				break;
 			}
@@ -222,11 +211,11 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 			for (auto& branch : mission.branches) {
 				if (branch.is_loop) {
 					branch.loop_description =
-						source_cmission->mission_branch_desc ? source_cmission->mission_branch_desc : "";
+						source_cmission->mission_branch_desc ? source_cmission->mission_branch_desc.get() : "";
 					branch.loop_briefing_anim =
-						source_cmission->mission_branch_brief_anim ? source_cmission->mission_branch_brief_anim : "";
+						source_cmission->mission_branch_brief_anim ? source_cmission->mission_branch_brief_anim.get() : "";
 					branch.loop_briefing_sound =
-						source_cmission->mission_branch_brief_sound ? source_cmission->mission_branch_brief_sound : "";
+						source_cmission->mission_branch_brief_sound ? source_cmission->mission_branch_brief_sound.get() : "";
 				}
 			}
 		}
@@ -320,7 +309,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		const auto& source_mission = m_missions[i];
 		auto& dest_mission = Campaign.missions[i];
 
-		dest_mission.name = strdup(source_mission.filename.c_str());
+		dest_mission.name.reset(vm_strdup(source_mission.filename.c_str()));
 		dest_mission.level = source_mission.level;
 		dest_mission.pos = source_mission.position;
 		SCP_string cutscene = source_mission.briefing_cutscene;
@@ -396,9 +385,9 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 
 					// Set the single loop properties on the cmission from the first loop branch we find
 					dest_mission.flags |= CMISSION_FLAG_HAS_LOOP;
-					dest_mission.mission_branch_desc = branch.loop_description.empty() ? nullptr : strdup(branch.loop_description.c_str());
-					dest_mission.mission_branch_brief_anim = branch.loop_briefing_anim.empty() ? nullptr : strdup(branch.loop_briefing_anim.c_str());
-					dest_mission.mission_branch_brief_sound = branch.loop_briefing_sound.empty() ? nullptr : strdup(branch.loop_briefing_sound.c_str());
+					dest_mission.mission_branch_desc.reset(branch.loop_description.empty() ? nullptr : vm_strdup(branch.loop_description.c_str()));
+					dest_mission.mission_branch_brief_anim.reset(branch.loop_briefing_anim.empty() ? nullptr : vm_strdup(branch.loop_briefing_anim.c_str()));
+					dest_mission.mission_branch_brief_sound.reset(branch.loop_briefing_sound.empty() ? nullptr : vm_strdup(branch.loop_briefing_sound.c_str()));
 				}
 				*loop_branch_ptr = cond_arm;
 				loop_branch_ptr = &Sexp_nodes[*loop_branch_ptr].rest;

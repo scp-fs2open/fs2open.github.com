@@ -215,9 +215,9 @@ void campaign_tree_wnd::OnCpgnFileSave()
 			src.node,
 			src.is_mission_loop,
 			src.is_mission_fork,
-			src.mission_branch_txt,
-			src.mission_branch_brief_anim,
-			src.mission_branch_brief_sound
+			src.mission_branch_txt.get(),
+			src.mission_branch_brief_anim.get(),
+			src.mission_branch_brief_sound.get()
 		});
 	}
 
@@ -282,9 +282,9 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 				src.node,
 				src.is_mission_loop,
 				src.is_mission_fork,
-				src.mission_branch_txt,
-				src.mission_branch_brief_anim,
-				src.mission_branch_brief_sound
+				src.mission_branch_txt.get(),
+				src.mission_branch_brief_anim.get(),
+				src.mission_branch_brief_sound.get()
 			});
 		}
 
@@ -388,7 +388,7 @@ int campaign_tree_wnd::error_checker()
 		// #4 check: always true loop
 		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
 			if (Links[i].sexp == Locked_sexp_true) {
-				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
+				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name.get()))
 					return 1;
 			}
 			// no further checking for loop links - in particular, a loop link isn't a regular link
@@ -400,14 +400,14 @@ int campaign_tree_wnd::error_checker()
 
 		// #5 check: always false branch
 		if (Links[i].sexp == Locked_sexp_false) {
-			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
+			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name.get(), mcount[z]))
 				return 1;
 		}
 
 		// #6 check: true middle branch
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
-				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name, true_at[z]))
+				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name.get(), true_at[z]))
 					return 1;
 
 			true_at[z] = mcount[z];
@@ -417,14 +417,14 @@ int campaign_tree_wnd::error_checker()
 	// #7 check: not always true last branch
 	for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 		if (mcount[i] && true_at[i] < mcount[i])
-			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
+			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name.get()))
 				return 1;
 
 	// #8 check: duplicate mission
 	for (i = z = 0; i < sz2i(Campaign.missions.size()); i++) {
 		for (j = 0; j < sz2i(Campaign.missions.size()); j++)
-			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
-				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
+			if ((i != j) && !stricmp(Campaign.missions[i].name.get(), Campaign.missions[j].name.get()))
+				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name.get());
 
 		if (!Campaign.missions[i].level)
 			z++;
@@ -445,9 +445,9 @@ int campaign_tree_wnd::error_checker()
 		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			mission a_mission;
 
-			get_mission_info(Campaign.missions[i].name, &a_mission);
+			get_mission_info(Campaign.missions[i].name.get(), &a_mission);
 			if ( a_mission.num_players != Campaign.num_players ) {
-				if ( error("Mission \"%s\" has %d players.  Multiplayer campaign allows %d", Campaign.missions[i].name, a_mission.num_players, Campaign.num_players) )
+				if ( error("Mission \"%s\" has %d players.  Multiplayer campaign allows %d", Campaign.missions[i].name.get(), a_mission.num_players, Campaign.num_players) )
 					return 1;
 			}
 		}

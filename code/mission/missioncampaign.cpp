@@ -505,9 +505,9 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 			const int this_mission_idx = sz2i(Campaign.missions.size());
 			cmission& cm = Campaign.missions.emplace_back();
-			cm.name = vm_strdup(name);
+			cm.name.reset(vm_strdup(name));
 
-			cm.notes = nullptr;
+			cm.notes.reset();
 
 			cm.briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
@@ -579,22 +579,22 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 				cm.flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm.mission_branch_desc = nullptr;
+			cm.mission_branch_desc.reset();
 			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
-				cm.mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, nullptr);
+				cm.mission_branch_desc.reset(stuff_and_malloc_string(F_MULTITEXT, nullptr));
 			}
 
-			cm.mission_branch_brief_anim = nullptr;
+			cm.mission_branch_brief_anim.reset();
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm.mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_anim.reset(stuff_and_malloc_string(F_FILESPEC, nullptr));
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
-			cm.mission_branch_brief_sound = nullptr;
+			cm.mission_branch_brief_sound.reset();
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm.mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_sound.reset(stuff_and_malloc_string(F_FILESPEC, nullptr));
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
@@ -802,7 +802,7 @@ int mission_campaign_next_mission()
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;
-	strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name);
+	strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get());
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -847,7 +847,7 @@ int mission_campaign_previous_mission()
 	// reset the player stats to be the stats from this level
 	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
-	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get() );
 	Granted_ships.clear();
 	Granted_weapons.clear();
 
@@ -891,7 +891,7 @@ void mission_campaign_eval_next_mission()
 	if (Campaign.next_mission == -1) {
 		nprintf(("allender", "No next mission to proceed to.\n"));
 	} else {
-		nprintf(("allender", "Next mission is number %d [%s]\n", Campaign.next_mission, Campaign.missions[Campaign.next_mission].name));
+		nprintf(("allender", "Next mission is number %d [%s]\n", Campaign.next_mission, Campaign.missions[Campaign.next_mission].name.get()));
 	}
 
 }
@@ -938,7 +938,7 @@ void mission_campaign_store_goals_and_events()
 
 		if (event.name.empty()) {
 			sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &event - &Mission_events[0] + 1);
-			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, stored_event.name));
+			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name.get(), stored_event.name));
 		} else
 			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
 
@@ -1138,7 +1138,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
 		scripting::hooks::OnCampaignMissionAccept->run(
-			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name)
+			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name.get())
 		));
 		
 	} else {
@@ -1155,35 +1155,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
-void mission_campaign_free_mission_strings(cmission &cm)
-{
-	if (cm.name != nullptr) {
-		vm_free(cm.name);
-		cm.name = nullptr;
-	}
-
-	if (cm.notes != nullptr) {
-		vm_free(cm.notes);
-		cm.notes = nullptr;
-	}
-
-	// the next three are strdup'd return values from parselo.cpp - taylor
-	if (cm.mission_branch_desc != nullptr) {
-		vm_free(cm.mission_branch_desc);
-		cm.mission_branch_desc = nullptr;
-	}
-
-	if (cm.mission_branch_brief_anim != nullptr) {
-		vm_free(cm.mission_branch_brief_anim);
-		cm.mission_branch_brief_anim = nullptr;
-	}
-
-	if (cm.mission_branch_brief_sound != nullptr) {
-		vm_free(cm.mission_branch_brief_sound);
-		cm.mission_branch_brief_sound = nullptr;
-	}
-}
-
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  * also called at campaign init and campaign load
@@ -1192,11 +1163,7 @@ void mission_campaign_clear()
 {
 	Campaign.description.clear();
 
-	// be sure to remove all old malloced strings of Mission_names
-	// we must also free any goal stuff that was from a previous campaign
 	for (auto& cm : Campaign.missions) {
-		mission_campaign_free_mission_strings(cm);
-
 		if ( !Fred_running ){
 			sexp_unmark_persistent(cm.formula);		// free any sexpression nodes used by campaign.
 		}
@@ -1293,16 +1260,14 @@ SCP_string mission_campaign_get_name(const char* filename)
  */
 void read_mission_goal_list(int num)
 {
-	char *filename, notes[NOTES_LENGTH];
+	const char *filename;
+	char notes[NOTES_LENGTH];
 	int z;
 
 	Assertion(Campaign.missions.in_bounds(num), "mission number out of range!");
-	filename = Campaign.missions[num].name;
+	filename = Campaign.missions[num].name.get();
 
-	if (Campaign.missions[num].notes) {
-		vm_free(Campaign.missions[num].notes);
-		Campaign.missions[num].notes = nullptr;
-	}
+	Campaign.missions[num].notes.reset();
 	Campaign.missions[num].events.clear();
 	Campaign.missions[num].goals.clear();
 	Campaign.missions[num].variables.clear();
@@ -1317,8 +1282,7 @@ void read_mission_goal_list(int num)
 		if (skip_to_string("#Mission Info")) {
 			if (skip_to_string("$Notes:")) {
 				stuff_string(notes, F_NOTES, NOTES_LENGTH);
-				Campaign.missions[num].notes = (char *)vm_malloc(strlen(notes) + 1);
-				strcpy(Campaign.missions[num].notes, notes);
+				Campaign.missions[num].notes.reset(vm_strdup(notes));
 			}
 		}
 
@@ -1399,7 +1363,7 @@ int mission_campaign_find_mission( const char *name )
 	}
 
 	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
-		if ( !stricmp(realname, Campaign.missions[i].name) ){
+		if ( !stricmp(realname, Campaign.missions[i].name.get()) ){
 			return i;
 		}
 	}
@@ -1751,7 +1715,7 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool p
 
 	// search for our mission
 	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
-		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name, dest_filename)) {
+		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name.get(), dest_filename)) {
 			mission_num = i;
 			break;
 		} else if (!no_skip) {
@@ -1809,7 +1773,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 		// Campaigns that haven't started yet can have both current_mission and prev_mission
 		// unset. In that case, next_mission is the only available entry point.
 		if (Campaign.missions.in_bounds(Campaign.next_mission)) {
-			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name);
+			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name.get());
 		}
 		return valid_missions;
 	}
@@ -1852,7 +1816,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 			}
 
 			if (Campaign.missions.in_bounds(Campaign.next_mission) && Campaign.next_mission != branch_source_mission) {
-				const auto& mission_name = Campaign.missions[Campaign.next_mission].name;
+				const char *mission_name = Campaign.missions[Campaign.next_mission].name.get();
 				if (std::find(valid_missions.begin(), valid_missions.end(), mission_name) == valid_missions.end()) {
 					valid_missions.emplace_back(mission_name);
 				}
