@@ -9,7 +9,7 @@ cmission_h::cmission_h(int stage) : l_stage(stage) {}
 
 bool cmission_h::isValid() const
 {
-	return l_stage >= 0;
+	return Campaign.missions.in_bounds(l_stage);
 }
 
 cmission* cmission_h::getStage() const
