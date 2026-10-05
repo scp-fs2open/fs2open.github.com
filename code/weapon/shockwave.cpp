@@ -143,6 +143,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	sw->inner_radius = sci->inner_rad;
 	sw->outer_radius = sci->outer_rad;
 	sw->damage = sci->damage;
+	sw->radius_curve_idx = sci->radius_curve_idx;
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
@@ -299,8 +300,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	if (sw->weapon_info_index >= 0)
 		wip = &Weapon_info[sw->weapon_info_index];
 	
-	if (wip && wip->shockwave.radius_curve_idx >= 0) {
-		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+	if (sw->radius_curve_idx >= 0) {
+		float val = Curves[sw->radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
 		sw->radius = val * sw->outer_radius;
 		if (sw->radius < 0.0f)
 			sw->radius = 0.0f;
