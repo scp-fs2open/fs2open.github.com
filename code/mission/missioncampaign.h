@@ -149,11 +149,9 @@ extern int Campaign_ending_via_supernova;
 
 // extern'ed so the mission loading can get a list of campains.  Only use this
 // data after mission_campaign_build_list() is called
-#define MAX_CAMPAIGNS	128
-extern char *Campaign_names[MAX_CAMPAIGNS];
-extern char *Campaign_file_names[MAX_CAMPAIGNS];
-extern char *Campaign_descs[MAX_CAMPAIGNS];
-extern int	Num_campaigns;
+extern SCP_vector<SCP_string> Campaign_names;
+extern SCP_vector<SCP_string> Campaign_file_names;
+extern SCP_vector<SCP_string> Campaign_descs;
 extern int	Campaign_names_inited;
 extern SCP_vector<SCP_string> Ignored_campaigns;
 
@@ -214,7 +212,7 @@ extern void mission_campaign_save_persistent( int type, int index );
 // execute the corresponding mission_campaign_savefile functions.
 
 // get name and type of specified campaign file
-bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, SCP_string *desc = nullptr, SCP_string *first_mission = nullptr);
 
 // get a listing of missions in a campaign
 int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_string> &list);

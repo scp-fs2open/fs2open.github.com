@@ -627,12 +627,10 @@ ADE_FUNC(getCampaignList,
 	luacpp::LuaTable fileNameTable    = luacpp::LuaTable::create(L);
 	luacpp::LuaTable descriptionTable = luacpp::LuaTable::create(L);
 
-	for (int i = 0; i < Num_campaigns; ++i) {
-		nameTable.addValue(i + 1, Campaign_names[i]);
-		fileNameTable.addValue(i + 1, Campaign_file_names[i]);
-
-		auto description = Campaign_descs[i];
-		descriptionTable.addValue(i + 1, description ? description : "");
+	for (int i = 0; i < sz2i(Campaign_file_names.size()); ++i) {
+		nameTable.addValue(i + 1, Campaign_names[i].c_str());
+		fileNameTable.addValue(i + 1, Campaign_file_names[i].c_str());
+		descriptionTable.addValue(i + 1, Campaign_descs[i].c_str());
 	}
 
 	// We actually do not need this anymore now so free it immediately

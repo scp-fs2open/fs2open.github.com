@@ -419,7 +419,6 @@ int sim_room_campaign_mission_filter(const char *filename)
 	if (num < 0)
 		return 0;
 
-	Num_campaigns++;
 	return 1;
 }
 
@@ -1462,18 +1461,18 @@ void campaign_room_build_listing()
 
 	Num_lines = y = 0;
 
-	for (i = 0; i < Num_campaigns; i++) {
-		if (Campaign_names[i] != NULL) {
+	for (i = 0; i < sz2i(Campaign_file_names.size()); i++) {
+		if (!Campaign_names[i].empty()) {
 			// determine some extra information
 			int flags = 0;
-			auto fb = game_find_builtin_mission(Campaign_file_names[i]);
+			auto fb = game_find_builtin_mission(Campaign_file_names[i].c_str());
 			if (fb != NULL) {
 				if (fb->flags & FSB_FROM_VOLITION) {
 					flags |= READYROOM_FLAG_FROM_VOLITION;
 				}
 			}
 
-			sim_room_line_add(READYROOM_LINE_CAMPAIGN, Campaign_names[i], Campaign_file_names[i], Cr_list_coords[gr_screen.res][0], y, flags);
+			sim_room_line_add(READYROOM_LINE_CAMPAIGN, Campaign_names[i].c_str(), Campaign_file_names[i].c_str(), Cr_list_coords[gr_screen.res][0], y, flags);
 			y += font_height + 2;
 		}
 	}
@@ -1481,13 +1480,11 @@ void campaign_room_build_listing()
 
 void set_new_campaign_line(int n)
 {
-	char *str;
-
 	Selected_campaign_index = n;
-	str = Campaign_descs[Selected_campaign_index];
+	const auto &desc = Campaign_descs[Selected_campaign_index];
 	Num_info_lines = 0;
-	if (str) {
-		Num_info_lines = split_str(str, Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES, MAX_INFO_LINE_LEN);
+	if (!desc.empty()) {
+		Num_info_lines = split_str(desc.c_str(), Cr_info_coords[gr_screen.res][2], Info_text_line_size, Info_text_ptrs, MAX_INFO_LINES, MAX_INFO_LINE_LEN);
 		Assert(Num_info_lines >= 0);
 	}
 
@@ -1602,7 +1599,7 @@ int campaign_room_button_pressed(int n)
 		*/
 
 		case CR_RESET_BUTTON:
-			if ( (Active_campaign_index < 0) || (Active_campaign_index >= Num_campaigns) )
+			if ( !Campaign_file_names.in_bounds(Active_campaign_index) )
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			else if (campaign_room_reset_campaign(Active_campaign_index))
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1725,12 +1722,13 @@ void campaign_room_init()
 
 	Selected_campaign_index = Active_campaign_index = -1;
 	if (!load_failed) {
-		for (i=0; i<Num_campaigns; i++)
-			if (!stricmp(Campaign_file_names[i], Campaign.filename)) {
+		for (i=0; i<sz2i(Campaign_file_names.size()); i++) {
+			if (!stricmp(Campaign_file_names[i].c_str(), Campaign.filename)) {
 				set_new_campaign_line(i);
 				Active_campaign_index = i;
 				break;
 			}
+		}
 	}
 
 	Campaign_room_no_campaigns = false;
@@ -1768,9 +1766,9 @@ void campaign_room_do_frame(float  /*frametime*/)
 
 	// If we don't have a mask, we don't have enough data to do anything with this screen.
 	if (Campaign_background_bitmap_mask == -1) {
-		if ((Active_campaign_index < 0) || (Active_campaign_index >= Num_campaigns)) {
+		if (!Campaign_file_names.in_bounds(Active_campaign_index)) {
 			// Player is trying to use a regular pilot in the demo.
-			if (Num_campaigns < 1) {
+			if (Campaign_file_names.empty()) {
 				// If there are no campaigns loaded, there's really nothing left to do.
 				popup_game_feature_not_in_demo();
 				return;
@@ -1811,7 +1809,7 @@ void campaign_room_do_frame(float  /*frametime*/)
 
 	switch (k) {
 		case KEY_DOWN:  // scroll list down
-			if (Selected_campaign_index < Num_campaigns - 1) {
+			if (Selected_campaign_index < sz2i(Campaign_file_names.size()) - 1) {
 				set_new_campaign_line(Selected_campaign_index + 1);
 				gamesnd_play_iface(InterfaceSounds::SCROLL);
 
@@ -1920,7 +1918,7 @@ void campaign_room_do_frame(float  /*frametime*/)
 		i++;
 	}
 
-	if (Num_campaigns < 1) {
+	if (Campaign_file_names.empty()) {
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "No campaigns are available!", 1613));
 		Campaign_room_no_campaigns = true;
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
