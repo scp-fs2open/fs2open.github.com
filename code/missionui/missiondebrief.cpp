@@ -403,8 +403,8 @@ typedef struct voice_map {
 	int	persona_index;
 } voice_map;
 
-voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][MAX_CAMPAIGN_MISSIONS] = {
-	{		// FreeSpace2 campaign 
+voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][35] = {
+	{		// FreeSpace2 campaign
 		{ "SM1-01.fs2",			1 },
 		{ "SM1-02.fs2",			1 },
 		{ "SM1-03.fs2",			1 },
@@ -437,7 +437,7 @@ voice_map Debrief_promotion_voice_mapping[NUM_VOLITION_CAMPAIGNS][MAX_CAMPAIGN_M
 		{ "SM3-08.fs2",			9 },
 		{ "SM3-09.fs2",			9 },
 		{ "SM3-10.fs2",			9 },			// no debriefing for 3-10
-		
+
 		{ "loop1-1.fs2",			4 },
 		{ "loop1-2.fs2",			4 },
 		{ "loop1-3.fs2",			5 },
@@ -885,7 +885,7 @@ int debrief_find_persona_index()
 {
 	int i, j;
 
-	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name))
+	if (Campaign.missions.in_bounds(Campaign.current_mission) && (Campaign.missions[Campaign.current_mission].name))
 	{
 		// Goober5000 - first see if the campaign supplied a persona index
 		// (0 means use the Volition default)
