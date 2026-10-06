@@ -152,7 +152,7 @@ jobs:
     strategy:
       matrix:
         configuration: [FastDebug, Release]
-        os: [windows-2022, windows-11-arm]
+        os: [windows-2025, windows-11-arm]
         arch: [Win32, x64, ARM64]
         simd: [SSE2, AVX, ""]
         exclude:
@@ -161,8 +161,8 @@ jobs:
           - arch: x64
             os: windows-11-arm
           - arch: ARM64
-            os: windows-2022
-          - os: windows-2022
+            os: windows-2025
+          - os: windows-2025
             simd: ""
           - os: windows-11-arm
             simd: SSE2
@@ -194,7 +194,7 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=ON -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
-            -DFSO_BUILD_QTFRED=OFF -G "Visual Studio 17 2022" -T "v143" \
+            -DFSO_BUILD_QTFRED=OFF -G "Visual Studio 18 2026" -T "v143" \
             -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile (static CRT)
         working-directory: ./build-mt
@@ -223,7 +223,7 @@ jobs:
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=OFF -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
             -DFSO_BUILD_QTFRED=ON -DFSO_BUILD_FRED2=OFF -DQT_USE_PRECOMPILED=ON \
-            -G "Visual Studio 17 2022" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
+            -G "Visual Studio 18 2026" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile (dynamic CRT)
         if: matrix.arch != 'Win32'
         working-directory: ./build-md
