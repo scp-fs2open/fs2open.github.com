@@ -211,6 +211,10 @@ namespace AI {
 									// d) a ship ordered to guard itself, or to guard a wing it leads (including one that becomes leader mid-mission), treats that goal as unachievable instead of holding it forever
 		Consistent_dinky_shockwaves,	// any shot-down weapon (including area-effect weapons and beam kills) uses its dinky shockwave; huge ships take full damage only if the dinky damage is defaulted
 
+		// internal flags set by mission_apply_era_adjustments(); not parsed from tables, and only consulted when Consistent_dinky_shockwaves is off
+		Era_reduce_shot_down_area_effects,	// a shot-down weapon without a shockwave has its area damage multiplied like a shockwave would be
+		Era_beam_kills_count_as_shot_down,	// a weapon destroyed by a beam uses its dinky shockwave
+
 		NUM_VALUES
 	};
 }

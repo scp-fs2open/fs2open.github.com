@@ -27,6 +27,7 @@ public:
 	char profile_name[NAME_LENGTH];
 
     flagset<AI::Profile_Flags> flags;
+	flagset<AI::Profile_Flags> explicit_flags;	// flags that a table specified, whether true or false
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
