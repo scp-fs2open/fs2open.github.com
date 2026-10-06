@@ -1441,42 +1441,22 @@ void control_enable_hook(IoActionId id, bool enable) {
 }
 
 /**
- * Stuffs the CCF flags into the given char.  Needs item_id for validation.
- * @details Unknown, unrecognized, or excessive flags are silently ignored on Release builds.  Debug builds complain.
+ * Extracts the CCF flags named in the given string, erasing each flag name from the string as it is found.
  */
-void stuff_CCF(char& flags, size_t item_id) {
-	Assert(item_id < Control_config.size());
+static char extract_CCF(SCP_string& str)
+{
+	char flags = 0;
 
-	SCP_string szTempBuffer;
-	flags = 0;
-
-	stuff_string(szTempBuffer, F_NAME);
-
-#ifndef NDEBUG
-	SCP_string flag_str;
-	size_t pos = 0;
-	size_t len = 0;
-	
-	// Lambda to add flags.
-	// Debug version Eats the substring as it is found.
 	auto ADD_FLAG = [&](char id) {
-		flag_str = ValToCCF(id);
-		pos = szTempBuffer.find(flag_str);
-		len = flag_str.length();
+		auto flag_str = ValToCCF(id);
+		auto pos = str.find(flag_str);
 		if (pos != SCP_string::npos) {
 			flags |= id;
-			szTempBuffer.erase(pos, len);
+			str.erase(pos, flag_str.length());
 		}
 	};
-#else
-	// Lambda to add flags.
-	// Release version doesn't modify szTempBuffer as it searches for substrings.
-	auto ADD_FLAG = [&](char id) {
-		if (szTempBuffer.find(ValToCCF(id)) != SCP_string::npos)
-			flags |= id;
-	};
-#endif
 
+	// AXIS_BTN must be extracted before AXIS, since "AXIS" is a substring of "AXIS_BTN"
 	ADD_FLAG(CCF_AXIS_BTN);
 	ADD_FLAG(CCF_RELATIVE);
 	ADD_FLAG(CCF_INVERTED);
@@ -1484,8 +1464,27 @@ void stuff_CCF(char& flags, size_t item_id) {
 	ADD_FLAG(CCF_HAT);
 	ADD_FLAG(CCF_BALL);
 
+	return flags;
+}
+
+/**
+ * Stuffs the CCF flags into the given char.  Needs item_id for validation.
+ * @details Unknown, unrecognized, or excessive flags are silently ignored on Release builds.  Debug builds complain.
+ */
+void stuff_CCF(char& flags, size_t item_id)
+{
+	Assert(item_id < Control_config.size());
+
+	SCP_string szTempBuffer;
+
+	stuff_string(szTempBuffer, F_NAME);
+
+	flags = extract_CCF(szTempBuffer);
 
 #ifndef NDEBUG
+	size_t pos = 0;
+	size_t len = 0;
+
 	// Eat the "CCF_NONE" and "NONE" substrings
 	auto EAT_FLAG = [&](SCP_string str) {
 		pos = szTempBuffer.find(str);
@@ -2092,28 +2091,9 @@ int ActionToVal(const char * str) {
 
 char CCFToVal(const char * str) {
 	Assert(str != nullptr);
-	char val = 0;
-	// Keep up to date with ValToCCF
-	if (strstr(str, "AXIS_BTN") != nullptr) {
-		val |= CCF_AXIS_BTN;
-	}
-	if (strstr(str, "RELATIVE") != nullptr) {
-		val |= CCF_RELATIVE;
-	}
-	if (strstr(str, "INVERTED") != nullptr) {
-		val |= CCF_INVERTED;
-	}
-	if (strstr(str, "AXIS") != nullptr) {
-		val |= CCF_AXIS;
-	}
-	if (strstr(str, "HAT") != nullptr) {
-		val |= CCF_HAT;
-	}
-	if (strstr(str, "BALL") != nullptr) {
-		val |= CCF_BALL;
-	}
+	SCP_string buffer(str);
 
-	return val;
+	return extract_CCF(buffer);
 }
 
 char CCTabToVal(const char *str) {
@@ -2291,7 +2271,7 @@ const char * ValToAction(IoActionId id) {
 }
 
 const char * ValToAction(int id) {
-	if ((id < 0) && (static_cast<size_t>(id) >= Control_config.size())) {
+	if ((id < 0) || (static_cast<size_t>(id) >= Control_config.size())) {
 		return "NONE";
 	}
 

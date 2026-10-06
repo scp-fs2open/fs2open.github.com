@@ -276,37 +276,34 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 	if (n == 0)
 		return ade_set_error(L, "b", false);	// no arguments passed
 
-	if ((joy < CID_JOY0) || (CID_JOY_MAX <= joy) || (joy != CID_MOUSE))
+	if (((joy < CID_JOY0) || (CID_JOY_MAX <= joy)) && (joy != CID_MOUSE))
 		return ade_set_error(L, "b", false);	// Invalid cid
 
-	if ((axis < 0) || (axis > JOY_NUM_AXES))
+	if ((axis < 0) || (axis >= ((joy == CID_MOUSE) ? MOUSE_NUM_AXES : static_cast<int>(JOY_NUM_AXES))))
 		return ade_set_error(L, "b", false);	// invalid axis
 
-	// Find the binding that has the given joy.
+	// Find the bindings that have the given joy.
 	// This is a bit obtuse since inversion is on the config side instead of on the joystick side
 	CC_bind *A = nullptr;
 	for (int i = JOY_HEADING_AXIS; i <= JOY_REL_THROTTLE_AXIS; ++i)
 	{
-		CC_bind B(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS);
-		A = Control_config[i].find(B);
-		if (A != nullptr)
-			break;
+		for (auto bind : { &Control_config[i].first, &Control_config[i].second })
+		{
+			// match on the axis itself, regardless of any other flags (such as INVERTED or RELATIVE)
+			if ((bind->get_cid() != joy) || (bind->get_btn() != axis) || !(bind->get_flags() & CCF_AXIS))
+				continue;
 
-		// the binding we're looking for could be inverted
-		CC_bind C(static_cast<CID>(joy), static_cast<short>(axis), CCF_AXIS | CCF_INVERTED);
-		A = Control_config[i].find(C);
-		if (A != nullptr)
-			break;
+			if (n > 2)
+				bind->invert(inverted);
+
+			if (A == nullptr)
+				A = bind;
+		}
 	}
 
 	// TODO Should this be an error or silent false?
 	if (A == nullptr)
 		return ade_set_error(L, "b", false);	// Axis not bound
-
-	if (n > 2)
-	{
-		A->invert(inverted);
-	}
 
 	if (A->is_inverted())
 		return ADE_RETURN_TRUE;
