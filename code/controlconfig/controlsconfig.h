@@ -344,6 +344,47 @@ enum {
 }
 
 /*!
+ * @brief Current value of an absolute axis action, combined from all of its inputs
+ *
+ * @details Joystick axes report positions and mouse axes report deltas, so they can't simply be summed.  Instead, the
+ * input that moved last wins: a joystick sets the value outright, and the mouse nudges it from wherever it is.  A
+ * joystick that has lost control must move past TAKEOVER_THRESHOLD to regain it, so that an idle lever's jitter
+ * doesn't fight the other inputs.  A joystick's first reading only takes control if no input has set the value since
+ * the last reset.
+ */
+struct abs_axis_state
+{
+	static constexpr int NUM_POSITION_SOURCES = 2;	// first and second binding
+	static constexpr int TAKEOVER_THRESHOLD = F1_0 / 80;	// 1.25%, matching the analog throttle's keyboard override, which is 1.5% of its 120% throttle range
+
+	int value;		// 0 to F1_0
+	bool established;	// whether any input has set the value since the last reset
+	int active;		// position source in control, or -1
+	int anchor[NUM_POSITION_SOURCES];
+	bool anchored[NUM_POSITION_SOURCES];
+
+	abs_axis_state();
+
+	void reset();
+
+	/*!
+	 * @brief Makes every joystick report again, keeping the value and the input in control.  For when the bindings change.
+	 */
+	void clear_anchors();
+
+	/*!
+	 * @param[in] source    0 for the first binding, 1 for the second
+	 * @param[in] pos       position from 0 to F1_0, already inverted if necessary
+	 */
+	void update_position(int source, int pos);
+
+	/*!
+	 * @param[in] delta     change in value, already scaled and inverted if necessary
+	 */
+	void update_delta(float delta);
+};
+
+/*!
  * Where the preset is located in memory
  */
 enum class Preset_t {
