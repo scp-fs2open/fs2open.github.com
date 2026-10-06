@@ -2603,7 +2603,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			// Unless the backwards compatible flag is on, remove difficulty scaling as well
 			// The hull/subsystem code below will re-add it where necessary
 			if (!The_mission.ai_profile()->flags[AI::Profile_Flags::Carry_shield_difficulty_scaling_bug])
-			remaining_damage /= difficulty_scale_factor;
+				remaining_damage /= difficulty_scale_factor;
 			
 			// the rest of the damage is what overflowed from the shield damage and pierced
 			damage = remaining_damage + (damage * piercing_pct);

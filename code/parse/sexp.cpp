@@ -13938,7 +13938,7 @@ void sexp_player_use_ai(bool use_ai)
 void sexp_set_friendly_damage_caps(int n) {
 	bool is_nan;
 	bool is_nan_forever;
-	ai_profile_t& aip = Ai_profiles[The_mission.ai_profile_index];
+	ai_profile_t& aip = *mission_get_transient_ai_profile();
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	if (!is_nan && !is_nan_forever) {

@@ -616,6 +616,13 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
 void mission_init(mission *pm, bool quick_init = false);
+
+// returns a copy of the mission's AI profile that can be modified for the rest of the mission
+ai_profile_t *mission_get_transient_ai_profile();
+
+// removes flags that are inactive or meaningful only at runtime
+void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags);
+
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);

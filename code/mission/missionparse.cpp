@@ -427,7 +427,8 @@ flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
 	{"Full Nebula Background Bitmaps",            Mission::Mission_Flags::Fullneb_background_bitmaps, true, true},
 	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false},
 	{"Large Ships Do Not Collide By Default",    Mission::Mission_Flags::Large_ships_no_collide_by_default, true, false},
-	{"Limit Support Rearm to Mission Pool",       Mission::Mission_Flags::Limited_support_rearm_pool, true, true}
+	{"Limit Support Rearm to Mission Pool",       Mission::Mission_Flags::Limited_support_rearm_pool, true, true},
+	{"Has Transient AI Profile",                  Mission::Mission_Flags::Has_transient_ai_profile,   false, false}
 };
 
 parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[] = {
@@ -463,6 +464,7 @@ parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descrip
 	{Mission::Mission_Flags::Preload_subspace,         "Preload the subspace tunnel for both the sexp and specs checkbox"},
 	{Mission::Mission_Flags::Large_ships_no_collide_by_default, "Automatically places all large ships in the configured collision group, preventing large ships from colliding with each other"},
 	{Mission::Mission_Flags::Limited_support_rearm_pool, "Support ships can only rearm from the mission weapon pool"},
+	{Mission::Mission_Flags::Has_transient_ai_profile,   "The mission is using a temporary copy of its AI profile"},
 };
 
 const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
@@ -852,6 +854,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 	if (optional_string("+Flags:")){
         stuff_flagset(&pm->flags);
+		mission_clear_inactive_flags(pm->flags);
 	}
 
 	// nebula mission stuff
@@ -7320,6 +7323,13 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 
 void mission::Reset()
 {
+	// must happen before flags are cleared
+	if (flags[Mission::Mission_Flags::Has_transient_ai_profile])
+	{
+		Assertion(ai_profile_index == sz2i(Ai_profiles.size()) - 1, "The transient AI profile must be the last profile in the list!");
+		Ai_profiles.pop_back();
+	}
+
 	name.clear();
 	author.clear();
 	required_fso_version = LEGACY_MISSION_VERSION;
@@ -7375,6 +7385,31 @@ void mission::Reset()
 	custom_strings.clear();
 	fred_layers.clear();
 	fred_layers.emplace_back("Default");
+}
+
+ai_profile_t *mission_get_transient_ai_profile()
+{
+	Assertion(!Fred_running, "Transient AI profiles should only be created in-game!");
+
+	if (!The_mission.flags[Mission::Mission_Flags::Has_transient_ai_profile])
+	{
+		Ai_profiles.emplace_back();
+		Ai_profiles.back() = Ai_profiles[The_mission.ai_profile_index];
+
+		The_mission.ai_profile_index = sz2i(Ai_profiles.size()) - 1;
+		The_mission.flags.set(Mission::Mission_Flags::Has_transient_ai_profile);
+	}
+
+	return &Ai_profiles[The_mission.ai_profile_index];
+}
+
+void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags)
+{
+	for (const auto &parse_mission_flag : Parse_mission_flags)
+	{
+		if (!parse_mission_flag.in_use)
+			flags.remove(parse_mission_flag.def);
+	}
 }
 
 void support_ship_info::reset()
