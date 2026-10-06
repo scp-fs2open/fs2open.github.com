@@ -58,6 +58,9 @@ int Mouse_dz = 0;
 int Mouse_wheel_dx = 0;
 int Mouse_wheel_dy = 0;
 
+// Incremented whenever the deltas are reset
+static uint Mouse_delta_serial = 0;
+
 int Mouse_sensitivity = 4;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -550,6 +553,12 @@ void mouse_reset_deltas()
 {
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 	Mouse_wheel_dx = Mouse_wheel_dy = 0;
+	++Mouse_delta_serial;
+}
+
+uint mouse_get_delta_serial()
+{
+	return Mouse_delta_serial;
 }
 
 void mouse_event(float x, float y, float dx, float dy)
