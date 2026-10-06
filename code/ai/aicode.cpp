@@ -7225,7 +7225,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 	wip = ai_get_weapon(&shipp->weapons);
 	target_moving_direction = *enemy_vel;
 
-	if (wip != NULL && The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
+	if (wip != nullptr && The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 		vm_vec_scale_sub2(&target_moving_direction, &pobjp->phys_info.vel, wip->vel_inherit_amount);
 
 	if (wip != NULL)
@@ -7257,7 +7257,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *e
 
 		//	Compute position of gun in absolute space and use that as fire position 
 		//  ...unless we want to just use the ship center
-		if(pm->gun_banks != NULL && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Ai_aims_from_ship_center])){
+		if(pm->gun_banks != nullptr && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Ai_aims_from_ship_center])){
 			pnt = pm->gun_banks[0].pnt[0];
 		} else {
 			//Use the convergence offset, if there is one

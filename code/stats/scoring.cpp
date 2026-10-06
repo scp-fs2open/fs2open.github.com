@@ -1102,7 +1102,7 @@ int scoring_eval_kill(const object *ship_objp)
 						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].is_big_or_huge())) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
-									assist_score = (int)(dead_ship->score * The_mission.ai_profile()->assist_award_percentage_scale[Game_skill_level]);
+									assist_score = fl2i(dead_ship->score * The_mission.ai_profile()->assist_award_percentage_scale[Game_skill_level]);
 									Net_players[idx].m_player->stats.m_score += assist_score;
 
 #ifdef SCORING_DEBUG

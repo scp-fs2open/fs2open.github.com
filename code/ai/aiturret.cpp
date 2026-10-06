@@ -2566,9 +2566,9 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, &global_gun_pos, lep, &dot);
 			}
 			// recheck in 2-3 seconds
-			ss->turret_next_enemy_check_stamp = timestamp((int)((MAX(dot, 0.5f) * The_mission.ai_profile()->turret_target_recheck_time) + (The_mission.ai_profile()->turret_target_recheck_time / 2.0f)));
+			ss->turret_next_enemy_check_stamp = timestamp(fl2i((MAX(dot, 0.5f) * The_mission.ai_profile()->turret_target_recheck_time) + (The_mission.ai_profile()->turret_target_recheck_time / 2.0f)));
 		} else {
-			ss->turret_next_enemy_check_stamp = timestamp((int)(The_mission.ai_profile()->turret_target_recheck_time * frand_range(0.9f, 1.1f)));	//	Check every two seconds
+			ss->turret_next_enemy_check_stamp = timestamp(fl2i(The_mission.ai_profile()->turret_target_recheck_time * frand_range(0.9f, 1.1f)));	//	Check every two seconds
 		}
 	}
 
