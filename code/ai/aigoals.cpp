@@ -72,8 +72,8 @@ constexpr int MIN_GOAL_PRIORITY = 1;
 // ai_add_goal_sub_sexp(), the goal clearing is integrated into the logic of the relevant sexp operators
 [[nodiscard]] bool causes_goal_clearing(ai_goal_mode ai_mode)
 {
-	return ((ai_mode == AI_GOAL_STAY_STILL && !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_stay_still])
-	     || (ai_mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing])
+	return ((ai_mode == AI_GOAL_STAY_STILL && !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_stay_still])
+	     || (ai_mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing])
 	     || (ai_mode == AI_GOAL_PLAY_DEAD));
 }
 
@@ -213,7 +213,7 @@ void ai_maybe_add_form_goal(wing* wingp)
 	}
 
 	// we may simply not want the mission to do this
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Dont_form_on_wing_at_mission_start]) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Dont_form_on_wing_at_mission_start]) {
 		return;
 	}
 
@@ -795,14 +795,14 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 
 	// also set up the override, since it's no longer done automatically in ai_mission_goal_achievable
-	if (mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing])
+	if (mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing])
 		aigp->flags.set(AI::Goal_Flags::Want_override);
 
 	// generally, players want ships to form-on-wing only until they need to do something else
-	if (mode == AI_GOAL_FORM_ON_WING && The_mission.ai_profile->flags[AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order])
+	if (mode == AI_GOAL_FORM_ON_WING && The_mission.ai_profile()->flags[AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order])
 		aigp->flags.set(AI::Goal_Flags::Purge_when_new_goal_added);
 
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
 		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 
 
@@ -894,7 +894,7 @@ void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode
 		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 
 	// also set up the override, since it's no longer done automatically in ai_mission_goal_achievable
-	if (mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing])
+	if (mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing])
 		aigp->flags.set(AI::Goal_Flags::Want_override);
 
 	aigp->priority = priority;
@@ -1135,7 +1135,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		aigp->priority = eval_num(n, priority_is_nan, priority_is_nan_forever);
 		n = CDR(n);
 
-		bool clear_goals = !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_stay_still];
+		bool clear_goals = !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_stay_still];
 		if (n >= 0)
 		{
 			clear_goals = is_sexp_true(n);
@@ -1217,9 +1217,9 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 			n = CDR(n);
 		}
 		else
-			aigp->priority = The_mission.ai_profile->default_form_on_wing_priority;
+			aigp->priority = The_mission.ai_profile()->default_form_on_wing_priority;
 
-		bool clear_goals = !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing];
+		bool clear_goals = !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing];
 		if (n >= 0)
 		{
 			clear_goals = is_sexp_true(n);
@@ -1228,7 +1228,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		if (clear_goals)
 			aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 
-		bool set_override = !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing];
+		bool set_override = !The_mission.ai_profile()->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing];
 		if (n >= 0)
 		{
 			set_override = is_sexp_true(n);
@@ -1564,7 +1564,7 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 		goalmode = (op == OP_AI_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 		break;
 	case OP_AI_FORM_ON_WING:
-		priority = eval_priority_et_seq(CDDR(node), The_mission.ai_profile->default_form_on_wing_priority);
+		priority = eval_priority_et_seq(CDDR(node), The_mission.ai_profile()->default_form_on_wing_priority);
 		goalmode = AI_GOAL_FORM_ON_WING;
 		break;
 	case OP_AI_FLY_TO_SHIP:

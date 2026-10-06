@@ -2566,7 +2566,9 @@ int Fred_mission_save::save_mission_info()
 		fout("\n+Flags:");
 	}
 
-	fout(" " UINT64_T_ARG, The_mission.flags.to_u64());
+	auto mission_flags = The_mission.flags;
+	mission_clear_inactive_flags(mission_flags);
+	fout(" " UINT64_T_ARG, mission_flags.to_u64());
 
 	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
@@ -3102,15 +3104,14 @@ int Fred_mission_save::save_mission_info()
 	}
 
 	// Goober5000's AI profile stuff
-	int profile_index = AI_PROFILES_INDEX(The_mission.ai_profile);
-	Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
+	Assertion(Ai_profiles.in_bounds(The_mission.ai_profile_index), "Mission AI profile index %d is out of range!", The_mission.ai_profile_index);
 
 	fso_comment_push(";;FSO 3.6.9;;");
 	if (optional_string_fred("$AI Profile:")) {
 		parse_comments(2);
-		fout(" %s", The_mission.ai_profile->profile_name);
+		fout(" %s", The_mission.ai_profile()->profile_name);
 	} else {
-		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
+		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile()->profile_name);
 	}
 	fso_comment_pop();
 

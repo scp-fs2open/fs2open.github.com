@@ -3899,7 +3899,7 @@ int beam_collide_early_out(object *a, object *b)
 /*		if(bwi->b_info.beam_type == BEAM_TYPE_C){
 			return 1;
 		}*/
-		if(The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
+		if(The_mission.ai_profile()->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 			if((Weapon_info[Weapons[b->instance].weapon_info_index].weapon_hitpoints <= 0) && (Weapon_info[Weapons[b->instance].weapon_info_index].subtype == WP_LASER)) {
 				return 1;
 			}
@@ -4215,7 +4215,7 @@ void beam_handle_collisions(beam *b)
 			}
 
 			case OBJ_WEAPON:
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
+				if (The_mission.ai_profile()->flags[AI::Profile_Flags::Beams_damage_weapons]) {
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 						object *trgt = &Objects[target];
 
@@ -4374,7 +4374,7 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_normalize(&aim_dir);
 
 		if (!(b->flags & BF_IS_FIGHTER_BEAM)) {
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
 				vec3d turret_normal;
 				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 
@@ -4503,9 +4503,9 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 
 	// same team. yikes
 	if ( (b->team == Ships[objp->instance].team)
-			&& (The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
-			&& (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
-		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
+			&& (The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
+			&& (damage > The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level]) ) {
+		damage = The_mission.ai_profile()->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
 		damage *= attenuation;
