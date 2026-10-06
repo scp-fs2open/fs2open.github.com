@@ -1107,7 +1107,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		index = ai_profile_lookup(temp);
 
 		if (index >= 0)
-			The_mission.ai_profile = &Ai_profiles[index];
+			pm->ai_profile_index = index;
 		else
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name.c_str(), temp );
 	}
@@ -2442,7 +2442,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	aip->ai_class = p_objp->ai_class;
 	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 	//Fixes a bug where the AI class attributes were not copied if the AI class was set in the mission.
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_ai_class_bug])
 		ship_set_new_ai_class(shipp, p_objp->ai_class);
 
 	aip->mode = AIM_NONE;
@@ -7362,7 +7362,7 @@ void mission::Reset()
 	substitute_event_music_name[ 0 ] = '\0';
 	substitute_briefing_music_name[ 0 ] = '\0';
 
-	ai_profile = &Ai_profiles[Default_ai_profile];
+	ai_profile_index = Default_ai_profile;
 	lighting_profile_name = lighting_profiles::default_name();
 
 	cutscenes.clear( );

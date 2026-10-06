@@ -240,7 +240,8 @@ typedef struct mission {
 	char substitute_briefing_music_name[NAME_LENGTH];
 
 	// Goober5000
-	ai_profile_t *ai_profile;
+	int ai_profile_index;
+	const ai_profile_t *ai_profile() const { return &Ai_profiles[ai_profile_index]; }
 
 	SCP_string lighting_profile_name;
 

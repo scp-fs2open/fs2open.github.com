@@ -79,7 +79,7 @@ float ets_power_factor(object *objp, bool include_power_output)
 	auto shipp = &Ships[objp->instance];
 	int properties = ets_properties(objp);
 
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence] && (properties != (HAS_WEAPONS | HAS_SHIELDS | HAS_ENGINES)))
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence] && (properties != (HAS_WEAPONS | HAS_SHIELDS | HAS_ENGINES)))
 	{
 		// in retail, the effect of having a missing system (e.g. an unshielded ship) is as if all that energy were redirected to other systems, so take the inverse of that
 		constexpr float missing_single_factor = 2.0f/3;
@@ -88,14 +88,14 @@ float ets_power_factor(object *objp, bool include_power_output)
 		// if the properties are *equal* to just one, then it's missing double; otherwise we ruled out the all-three case so it has two and it's missing single
 		float missing_factor = (properties == HAS_WEAPONS || properties == HAS_SHIELDS || properties == HAS_ENGINES) ? missing_double_factor : missing_single_factor;
 
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
 			return Ship_info[shipp->ship_info_index].power_output * missing_factor;
 		else
 			return missing_factor;
 	}
 	else
 	{
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
 			return Ship_info[shipp->ship_info_index].power_output;
 		else
 			return 1.0f;
@@ -137,7 +137,7 @@ void update_ets(object* objp, float fl_frametime)
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
-		ship_p->weapon_energy += ets_power_factor(objp) * Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
+		ship_p->weapon_energy += ets_power_factor(objp) * Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile()->weapon_energy_scale[Game_skill_level];
 	} else {
 		ship_p->weapon_energy += ets_power_factor(objp) * Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy;
 	}
@@ -149,7 +149,7 @@ void update_ets(object* objp, float fl_frametime)
 	float shield_delta;
 	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(ship_p, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
-		shield_delta = ets_power_factor(objp) * Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
+		shield_delta = ets_power_factor(objp) * Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile()->shield_energy_scale[Game_skill_level];
 	} else {
 		shield_delta = ets_power_factor(objp) * Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}
@@ -230,7 +230,7 @@ float ets_get_max_speed(object* objp, float engine_energy)
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 	float initial_engine_recharge_energy_level;
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence])
 	{
 		int properties = ets_properties(objp);
 		if (properties == (HAS_WEAPONS | HAS_SHIELDS | HAS_ENGINES))
@@ -357,7 +357,7 @@ void ai_manage_ets(object* obj)
 	// emergency check for ships with shields
 	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		float shield_left_percent = get_shield_pct(obj);
-		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_transferring_energy])) {
+		if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Disable_ai_transferring_energy])) {
 			if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
 				if (ship_p->target_shields_delta == 0.0f)
 					transfer_energy_to_shields(obj);

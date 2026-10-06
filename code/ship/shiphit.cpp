@@ -799,7 +799,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
-		if ((Ship_info[ship_p->ship_info_index].is_small_ship()) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Shockwaves_damage_small_ship_subsystems]))
+		if ((Ship_info[ship_p->ship_info_index].is_small_ship()) && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Shockwaves_damage_small_ship_subsystems]))
 			return std::make_pair(subsys_impact, damage);
 		else {
 			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
@@ -1040,13 +1040,13 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 		{
 			//	Decrease damage to subsystems to player ships.
 			if (ship_objp->flags[Object::Object_Flags::Player_ship]){
-				ss_dif_scale = The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
+				ss_dif_scale = The_mission.ai_profile()->subsys_damage_scale[Game_skill_level];
 			}
 
 			// maybe modify damage FROM player ships
 			if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
 				if (Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
-					ss_dif_scale *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+					ss_dif_scale *= The_mission.ai_profile()->player_damage_inflicted_scale[Game_skill_level];
 			}
 		
 			// Goober5000 - subsys guardian
@@ -2462,7 +2462,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 	if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
 		if(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
-			difficulty_scale_factor *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+			difficulty_scale_factor *= The_mission.ai_profile()->player_damage_inflicted_scale[Game_skill_level];
 	}
 
 	MONITOR_INC( ShipHits, 1 );
@@ -2487,7 +2487,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			// Do a little "skill" balancing for the player in single player and coop multiplayer
 			if (ship_objp->flags[Object::Object_Flags::Player_ship])	{
 				// Nuke - store it in a couple factor and we will apply it where needed
-				difficulty_scale_factor *= The_mission.ai_profile->player_damage_scale[Game_skill_level];
+				difficulty_scale_factor *= The_mission.ai_profile()->player_damage_scale[Game_skill_level];
 			}		
 		}
 	}
@@ -2602,7 +2602,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			
 			// Unless the backwards compatible flag is on, remove difficulty scaling as well
 			// The hull/subsystem code below will re-add it where necessary
-			if (!The_mission.ai_profile->flags[AI::Profile_Flags::Carry_shield_difficulty_scaling_bug])
+			if (!The_mission.ai_profile()->flags[AI::Profile_Flags::Carry_shield_difficulty_scaling_bug])
 			remaining_damage /= difficulty_scale_factor;
 			
 			// the rest of the damage is what overflowed from the shield damage and pierced
@@ -2738,7 +2738,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 						// Goober5000 - only count beams fired by fighters or bombers unless the ai profile says different
 						if (bobjn >= 0)
 						{
-							if ( !(The_mission.ai_profile->flags[AI::Profile_Flags::Include_beams_in_stat_calcs]) && 
+							if ( !(The_mission.ai_profile()->flags[AI::Profile_Flags::Include_beams_in_stat_calcs]) && 
 								 !(Ship_info[Ships[Objects[bobjn].instance].ship_info_index].is_fighter_bomber()) &&
 								 !(Objects[bobjn].flags[Object::Object_Flags::Player_ship]) ) {
 								bobjn = -1;

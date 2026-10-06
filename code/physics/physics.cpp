@@ -755,7 +755,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 			// Only do the glide cap if we have one and are actively thrusting in some direction.
 			// Unless AIPF2_GLIDE_DECAY_REQUIRES_THRUST isn't set. -MageKing17
-			if ( curGlideCap >= 0.0f && (!(The_mission.ai_profile->flags[AI::Profile_Flags::Glide_decay_requires_thrust]) || ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
+			if ( curGlideCap >= 0.0f && (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Glide_decay_requires_thrust]) || ci->forward != 0.0f || ci->sideways != 0.0f || ci->vertical != 0.0f) ) {
 				float currentmag = vm_vec_mag(&pi->desired_vel);
 				if ( currentmag > curGlideCap ) {
 					vm_vec_scale( &pi->desired_vel, curGlideCap / currentmag );
@@ -783,7 +783,7 @@ void physics_maybe_reset_speed_after_whack(physics_info *pi, const vec3d *previo
 	// for release builds
 	SCP_UNUSED(source);
 
-	if (pi->flags & PF_USE_VEL || The_mission.ai_profile->flags[AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack])
+	if (pi->flags & PF_USE_VEL || The_mission.ai_profile()->flags[AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack])
 		return;
 
 	vec3d delta_vel = pi->vel - *previous_vel;
