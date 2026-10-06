@@ -4232,7 +4232,7 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 			case OP_IS_DESTROYED:
 			case OP_TIME_WING_DESTROYED:
 			{
-				if (!The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship])
+				if (!The_mission.ai_profile()->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship])
 				{
 					for (int n = first_arg_node; n >= 0; n = CDR(n))
 					{
@@ -13938,7 +13938,7 @@ void sexp_player_use_ai(bool use_ai)
 void sexp_set_friendly_damage_caps(int n) {
 	bool is_nan;
 	bool is_nan_forever;
-	ai_profile_t& aip = *The_mission.ai_profile;
+	ai_profile_t& aip = Ai_profiles[The_mission.ai_profile_index];
 
 	float beam_friendly_cap = i2fl(eval_num(n, is_nan, is_nan_forever));
 	if (!is_nan && !is_nan_forever) {

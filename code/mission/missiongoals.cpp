@@ -700,7 +700,7 @@ void multi_player_maybe_add_score (int score, int team)
 		return;
 	}
 
-	if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Allow_multi_event_scoring])) {
+	if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Allow_multi_event_scoring])) {
 		return;
 	}				
 

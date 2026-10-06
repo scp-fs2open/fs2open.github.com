@@ -592,7 +592,7 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		// however if this is removed turrets still track targets but don't fire at them (which looks silly)
 		if (eeo->eeo_flags & EEOF_TAGGED_ONLY) {
 			if (!ship_is_tagged(objp) &&
-					( (The_mission.ai_profile->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting]) ||
+					( (The_mission.ai_profile()->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting]) ||
 					( !(objp->type == OBJ_WEAPON) && !(turret_weapon_has_flags(&eeo->turret_subsys->weapons, Weapon::Info_Flags::Spawn))) )) {
 				return;
 			}
@@ -704,9 +704,9 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 
 		// return if we're over the cap
 //		int max_turrets = 3 + Game_skill_level * Game_skill_level;
-		int max_turrets = The_mission.ai_profile->max_turret_ownage_target[Game_skill_level];
+		int max_turrets = The_mission.ai_profile()->max_turret_ownage_target[Game_skill_level];
 		if (objp->flags[Object::Object_Flags::Player_ship]) {
-			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
+			max_turrets = The_mission.ai_profile()->max_turret_ownage_player[Game_skill_level];
 		}
 		// Apply the per-turret limit for small targets, if there is one and this is a small target
 		if (ss->turret_max_target_ownage != -1 && (Ship_info[shipp->ship_info_index].is_small_ship())) {
@@ -1317,7 +1317,7 @@ void aifft_update_predicted_enemy_pos(const object *objp, const ship *shipp, shi
 		target_vel = ss->last_aim_enemy_vel;
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
 			vm_vec_scale_sub2(&target_vel, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
@@ -1621,7 +1621,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				if (aip->ai_class_autoscale)
 				{
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
 						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
 					else
 						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
@@ -1630,7 +1630,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
 				{
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
 						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
 					else
 						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
@@ -1646,7 +1646,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				}	
 				if (aip->ai_class_autoscale)
 				{
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
 						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
 					else
 						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
@@ -1657,7 +1657,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
 				{
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
 						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
 					else
 						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
@@ -1671,7 +1671,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				}	
 				if (aip->ai_class_autoscale)
 				{
-					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					if (The_mission.ai_profile()->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
 						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
 					else
 						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
@@ -1923,7 +1923,7 @@ bool turret_fire_weapon(int weapon_num,
 
 						if (swp->primary_bank_ammo[turret_pbank] >= points) {
 							swp->primary_bank_ammo[turret_pbank] -= points;
-						} else if ((swp->primary_bank_ammo[turret_pbank] >= 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
+						} else if ((swp->primary_bank_ammo[turret_pbank] >= 0) && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
 							// default behavior allowed ammo to be negative
 							swp->primary_bank_ammo[turret_pbank] -= points;
 						} else {
@@ -1934,7 +1934,7 @@ bool turret_fire_weapon(int weapon_num,
 						if (!no_ammo_needed) {
 							if (swp->secondary_bank_ammo[turret_sbank] > 0) {
 								swp->secondary_bank_ammo[turret_sbank]--;
-							} else if ((swp->secondary_bank_ammo[turret_sbank] == 0) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
+							} else if ((swp->secondary_bank_ammo[turret_sbank] == 0) && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Prevent_negative_turret_ammo])) {
 								// default behavior allowed ammo to be negative
 								swp->secondary_bank_ammo[turret_sbank]--;
 							} else {
@@ -2078,7 +2078,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if ( (Weapon_info[tsi->weapon_class].subtype == WP_LASER) || ((The_mission.ai_profile->flags[AI::Profile_Flags::Hack_improve_non_homing_swarm_turret_fire_accuracy]) 
+	if ( (Weapon_info[tsi->weapon_class].subtype == WP_LASER) || ((The_mission.ai_profile()->flags[AI::Profile_Flags::Hack_improve_non_homing_swarm_turret_fire_accuracy]) 
 																	&& !(Weapon_info[tsi->weapon_class].is_homing())) )
 	{
 		turret_fvec = tsi->turret->turret_last_fire_direction;
@@ -2295,7 +2295,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	if (lep) {
 		base_dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
 		dist_to_enemy = base_dist_to_enemy;
-		if (!The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
+		if (!The_mission.ai_profile()->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
 			dist_to_enemy -= lep->radius;
 		}
 		base_dist_to_enemy = MAX(0.0f, base_dist_to_enemy);
@@ -2501,7 +2501,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 			}
 			else {
 				// check tagged-only for bombs only if the flag is set; see Mantis #3114
-				if (tagged_only && ((lep->type != OBJ_WEAPON) || The_mission.ai_profile->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting])) {
+				if (tagged_only && ((lep->type != OBJ_WEAPON) || The_mission.ai_profile()->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting])) {
 					tentative_return = true;
 					continue;
 				}
@@ -2566,9 +2566,9 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 				ss->targeted_subsys = aifft_find_turret_subsys(objp, ss, &global_gun_pos, lep, &dot);
 			}
 			// recheck in 2-3 seconds
-			ss->turret_next_enemy_check_stamp = timestamp((int)((MAX(dot, 0.5f) * The_mission.ai_profile->turret_target_recheck_time) + (The_mission.ai_profile->turret_target_recheck_time / 2.0f)));
+			ss->turret_next_enemy_check_stamp = timestamp((int)((MAX(dot, 0.5f) * The_mission.ai_profile()->turret_target_recheck_time) + (The_mission.ai_profile()->turret_target_recheck_time / 2.0f)));
 		} else {
-			ss->turret_next_enemy_check_stamp = timestamp((int)(The_mission.ai_profile->turret_target_recheck_time * frand_range(0.9f, 1.1f)));	//	Check every two seconds
+			ss->turret_next_enemy_check_stamp = timestamp((int)(The_mission.ai_profile()->turret_target_recheck_time * frand_range(0.9f, 1.1f)));	//	Check every two seconds
 		}
 	}
 
@@ -2684,7 +2684,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 			//		aspect seeking and target is locked.
 			bool in_sight = false;
 			
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_only_single_fov_for_turrets]) {
+			if (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_only_single_fov_for_turrets]) {
 				// we have already passed the FOV test of the turret so...
 				in_sight = true;
 			} else {
