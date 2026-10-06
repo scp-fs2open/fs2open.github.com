@@ -2566,7 +2566,9 @@ int Fred_mission_save::save_mission_info()
 		fout("\n+Flags:");
 	}
 
-	fout(" " UINT64_T_ARG, The_mission.flags.to_u64());
+	auto mission_flags = The_mission.flags;
+	mission_clear_inactive_flags(mission_flags);
+	fout(" " UINT64_T_ARG, mission_flags.to_u64());
 
 	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
