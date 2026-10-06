@@ -8285,13 +8285,14 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 //2: weapon is destroyed before arm distance from ship
 //3: weapon is outside arm radius from target ship
 
-// retail beams detonated a bomb at full strength, so a beam kill only counts with the flag
+// retail beams detonated a bomb at full strength, so a beam kill only counts with one of the flags
 static bool weapon_shot_down(const weapon *wp)
 {
 	if (!wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])
 		return false;
 
 	return The_mission.ai_profile()->flags[AI::Profile_Flags::Consistent_dinky_shockwaves]
+		|| The_mission.ai_profile()->flags[AI::Profile_Flags::Era_beam_kills_count_as_shot_down]
 		|| !wp->weapon_flags[Weapon::Weapon_Flags::Destroyed_by_beam];
 }
 
@@ -8670,7 +8671,8 @@ bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 			bool only_shot_down = shot_down && !weapon_failed_to_arm(wp, hit_target);
 
 			// retail did not reduce the damage of a shot-down weapon that has no shockwave
-			if (consistent_dinky || !only_shot_down || dinky_sci.speed > 0.0f)
+			if (consistent_dinky || !only_shot_down || dinky_sci.speed > 0.0f
+				|| The_mission.ai_profile()->flags[AI::Profile_Flags::Era_reduce_shot_down_area_effects])
 				dinky_sci.damage = wip->shockwave.damage * The_mission.ai_profile()->dinky_shockwave_multiplier;
 			else
 				dinky_sci.damage = wip->shockwave.damage;

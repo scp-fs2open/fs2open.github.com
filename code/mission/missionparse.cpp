@@ -6850,6 +6850,51 @@ void apply_default_custom_data(mission* pm)
 	}
 }
 
+// dates (YYYYMMDD) of the commits that changed how shot-down weapons explode, and of the commit that restored
+// the retail rules behind the "consistent dinky shockwaves" flag
+constexpr int ERA_DINKY_AREA_EFFECTS_START = 20051108;	// area-effect weapons without a shockwave were reduced too
+constexpr int ERA_BEAM_KILLS_START = 20161128;			// weapons destroyed by beams began using the dinky shockwave
+constexpr int ERA_MULTIPLIER_START = 20191217;			// PR 2201 changed the default dinky multiplier to 1.0
+constexpr int ERA_DINKY_END = 20270201;					// TODO: set to the merge date of the fix
+
+// missions balanced under earlier rules get a per-mission copy of their AI profile adjusted to match
+static void mission_apply_era_adjustments()
+{
+	// a profile that mentions the flag knows the current rules
+	if (The_mission.ai_profile()->explicit_flags[AI::Profile_Flags::Consistent_dinky_shockwaves])
+		return;
+
+	int modified = mission_parse_date(The_mission.modified);
+	if (modified < 0)
+	{
+		mprintf(("Unable to parse modification date '%s'; no era adjustments will be applied\n", The_mission.modified));
+		return;
+	}
+
+	if (modified >= ERA_DINKY_END)
+		return;
+
+	bool reduce_area_effects = (modified >= ERA_DINKY_AREA_EFFECTS_START);
+	bool beam_kills_shot_down = (modified >= ERA_BEAM_KILLS_START);
+	bool buggy_multiplier = (modified >= ERA_MULTIPLIER_START) && !Dinky_shockwave_default_multiplier_specified;
+
+	if (!reduce_area_effects && !beam_kills_shot_down && !buggy_multiplier)
+		return;
+
+	auto profile = mission_get_transient_ai_profile();
+	if (reduce_area_effects)
+		profile->flags.set(AI::Profile_Flags::Era_reduce_shot_down_area_effects);
+	if (beam_kills_shot_down)
+		profile->flags.set(AI::Profile_Flags::Era_beam_kills_count_as_shot_down);
+	if (buggy_multiplier)
+		profile->dinky_shockwave_multiplier = 1.0f;
+
+	mprintf(("Mission modified %s; applying era adjustments:%s%s%s\n", The_mission.modified,
+		reduce_area_effects ? " reduce-area-effects" : "",
+		beam_kills_shot_down ? " beam-kills-count-as-shot-down" : "",
+		buggy_multiplier ? " multiplier-1.0" : ""));
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -6875,6 +6920,10 @@ bool parse_mission(mission *pm, int flags)
 
 	if (flags & MPF_ONLY_MISSION_INFO)
 		return true;
+
+	// must happen before anything copies values from the AI profile
+	if (!Fred_running)
+		mission_apply_era_adjustments();
 
 	parse_plot_info(pm);
 	parse_variables();
@@ -7401,6 +7450,25 @@ ai_profile_t *mission_get_transient_ai_profile()
 	}
 
 	return &Ai_profiles[The_mission.ai_profile_index];
+}
+
+int mission_parse_date(const char *date)
+{
+	int month, day, year;
+
+	// FRED writes dates with strftime's %x, which in the C locale is MM/DD/YY
+	if (sscanf(date, "%d/%d/%d", &month, &day, &year) != 3)
+		return -1;
+
+	if (month < 1 || month > 12 || day < 1 || day > 31 || year < 0)
+		return -1;
+
+	if (year < 70)
+		year += 2000;
+	else if (year < 100)
+		year += 1900;
+
+	return year * 10000 + month * 100 + day;
 }
 
 void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags)

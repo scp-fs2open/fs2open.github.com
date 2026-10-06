@@ -35,6 +35,7 @@ void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 		bool val;
 		stuff_boolean(&val);
         profile->flags.set(flag, val);
+		profile->explicit_flags.set(flag);
 	}
 }
 
@@ -845,6 +846,7 @@ void ai_profile_t::reset()
     memset(profile_name, 0, sizeof(profile_name));
 
     flags.reset();
+    explicit_flags.reset();
 
     los_min_detection_radius = 10.0f;
     ai_path_mode = AI_PATH_MODE_NORMAL;
