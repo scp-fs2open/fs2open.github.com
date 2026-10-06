@@ -1009,13 +1009,20 @@ int check_control(int id, int key = -1);
  *
  * @param[in]   frametime   Frametime used to scale the mouse axes
  * @param[out]  axis_v      Output array of all control axes, must have size of JOY_NUM_AXIS_ACTIONS
+ * @param[in]   update_abs_axes     Whether the inputs should change the absolute controls, or only report them
  *
  * @details
  * * Clamps output to stay within +/-JOY_AXIS_RANGE.
- * * Should multiple axes be bound to a control, their values are blended with a simple sum.  This is to save a bit of
- *   processing for speed.
+ * * Should multiple axes be bound to a relative control, their values are blended with a simple sum.  This is to save a
+ *   bit of processing for speed.
+ * * Absolute controls are combined by ::abs_axis_state instead.
  */
-void control_get_axes_readings(int *axis_v, float frame_time);
+void control_get_axes_readings(int *axis_v, float frame_time, bool update_abs_axes = true);
+
+/**
+ * @brief Resets the state of the absolute axis actions.  Called at mission start.
+ */
+void control_reset_axes();
 
 /**
  * @brief Marks the given control (by IoActionId) as used
