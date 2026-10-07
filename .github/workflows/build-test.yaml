@@ -151,7 +151,7 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=ON -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
-            -DQT_USE_PRECOMPILED=ON -G "Visual Studio 18 2026" -T "v143" \
+            -DQT_USE_PRECOMPILED=ON -G "Visual Studio 18 2026" -T "v145" \
             -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile
         working-directory: ./build
