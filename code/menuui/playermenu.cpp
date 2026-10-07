@@ -156,7 +156,7 @@ SCP_string Player_select_force_main_hall = "";
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
 
-static bool Player_select_pilot_committed = false;	// whether a pilot has been loaded as the active Player
+bool Player_select_pilot_just_committed = false;
 
 int Player_select_screen_active = 0;	// for pilot savefile loading - taylor
 
@@ -198,6 +198,7 @@ void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
 bool player_select_commit_pilot(const char* callsign, bool is_multi);
+void player_select_show_startup_warnings();
 
 
 bool valid_pilot(const char* callsign, bool no_popup) {
@@ -380,8 +381,8 @@ void player_select_init()
 		player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
 	}
 
-	if (Cmdline_benchmark_mode || ((Player_select_num_pilots == 1) && Player_select_input_mode)) {
-		// When benchmarking, just accept automatically
+	if ((Player_select_num_pilots == 1) && Player_select_input_mode) {
+		// accept automatically once the very first pilot is created
 		Player_select_autoaccept = 1;
 	}
 }
@@ -390,10 +391,8 @@ void player_select_init()
 static bool Startup_warning_dialog_displayed = false;
 static bool Save_file_warning_displayed = false;
 
-void player_select_do()
+void player_select_show_startup_warnings()
 {
-	int k;
-
 	// Goober5000 - display a popup warning about problems in the mod
 	if ((Global_warning_count > 10 || Global_error_count > 0) && !Startup_warning_dialog_displayed) {
 		char text[512];
@@ -406,7 +405,14 @@ void player_select_do()
 		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A new settings file has been created for the current game or mod. You may want to check the options menu to ensure everything is set to your liking.", 1854));
 		Save_file_warning_displayed = true;
 	}
-		
+}
+
+void player_select_do()
+{
+	int k;
+
+	player_select_show_startup_warnings();
+
 	// set the input box at the "virtual" line 0 to be active so the player can enter a callsign
 	if (Player_select_input_mode) {
 		Player_select_input_box.set_focus();
@@ -463,12 +469,6 @@ void player_select_do()
 	gr_set_bitmap(Player_select_background_bitmap);
 	gr_bitmap(0,0,GR_RESIZE_MENU);
 
-	//skip this if pilot is given through cmdline, assuming single-player
-	if (Cmdline_pilot) {
-		player_finish_select(Cmdline_pilot, false);
-		return;
-	}
-
 	// press the accept button
 	if (Player_select_autoaccept) {
 		Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button.press_button();
@@ -519,7 +519,7 @@ void player_select_close()
 	}
 
 	// a pilot may already have been selected some other way, e.g. by a script
-	if (!Player_select_pilot_committed) {
+	if (!Player_select_pilot_just_committed) {
 		// actually set up the Player struct here
 		if ( (Player_select_pilot == -1) || (Player_select_num_pilots == 0) ) {
 			nprintf(("General","WARNING! No pilot selected! We should be exiting the game now!\n"));
@@ -873,56 +873,45 @@ int player_select_get_last_pilot_info()
 	return 1;
 }
 
-int player_select_get_last_pilot()
+bool player_select_auto_select_requested()
 {
-	// if the player has the Cmdline_use_last_pilot command line option set, try and drop out quickly
-	if (Cmdline_use_last_pilot) {
-		int idx;
+	return Cmdline_pilot || Cmdline_use_last_pilot || Cmdline_benchmark_mode;
+}
 
-		if ( !player_select_get_last_pilot_info() ) {
-			return 0;
-		}
+bool player_select_try_auto_select()
+{
+	if (!player_select_auto_select_requested())
+		return false;
 
+	SCP_string callsign;
+	if (Cmdline_pilot)
+		callsign = Cmdline_pilot;
+	else
+	{
+		// pilots are sorted by file time, so if the last pilot isn't available, this picks the most recently saved one
 		auto pilots = player_select_enumerate_pilots();
-		// Copy the enumerated pilots into the appropriate local variables
-		Player_select_num_pilots = static_cast<int>(pilots.size());
-		for (auto i = 0; i < MAX_PILOTS; ++i) {
-			if (i < static_cast<int>(pilots.size())) {
-				strcpy_s(Pilots_arr[i], pilots[i].c_str());
-			}
-			Pilots[i] = Pilots_arr[i];
-		}
+		if (pilots.empty())
+			return false;
 
-		Player_select_pilot = -1;
-		idx = 0;
-		// pick the last player
-		for (idx=0;idx<Player_select_num_pilots;idx++) {
-			if (strcmp(Player_select_last_pilot,Pilots_arr[idx])==0) {
-				Player_select_pilot = idx;
+		callsign = pilots.front();
+
+		auto last_pilot = player_select_read_last_pilot();
+		for (const auto &pilot : pilots)
+		{
+			if (!stricmp(pilot.c_str(), last_pilot.c_str()))
+			{
+				callsign = pilot;
 				break;
 			}
 		}
-
-		// set this so that we don't incorrectly create a "blank" pilot - .plr
-		// in the player_select_close() function
-		Player_select_num_pilots = 0;
-
-		// if we've actually found a valid pilot, load him up
-		if (Player_select_pilot != -1) {
-			Player = &Players[0];
-			Pilot.load_player(Pilots_arr[idx], Player);
-			Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
-
-			// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
-			if (Player->player_was_multi) {
-				Player->flags |= PLAYER_FLAGS_IS_MULTI;
-			}
-
-			return 1;
-		}
 	}
 
-	return 0;
+	player_select_show_startup_warnings();
+
+	if (!valid_pilot(callsign.c_str()))
+		return false;
+
+	return player_select_commit_pilot(callsign.c_str(), Cmdline_start_netgame || (Cmdline_connect_addr != nullptr));
 }
 
 void player_select_init_player_stuff(int mode)
@@ -1548,7 +1537,7 @@ bool player_select_commit_pilot(const char* callsign, bool is_multi)
 	// Update the LastPlayer key in the registry
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
-	Player_select_pilot_committed = true;
+	Player_select_pilot_just_committed = true;
 	return true;
 }
 
