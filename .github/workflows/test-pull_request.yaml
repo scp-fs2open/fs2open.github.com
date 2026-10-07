@@ -89,6 +89,10 @@ jobs:
       - name: Set workspace as safe
         # This appears to be broken in current actions, so do it manually
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install v143 ATL/MFC
+        if: matrix.compiler == 'MSVC'
+        shell: pwsh
+        run: ci/windows/install_v143_atlmfc.ps1
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -104,7 +108,7 @@ jobs:
                   -DFSO_BUILD_FRED2=OFF -DQT_USE_PRECOMPILED=ON -DCMAKE_BUILD_TYPE=$CONFIGURATION -G "Ninja" ..
           else
               cmake -DFSO_USE_SPEECH=ON -DFSO_FATAL_WARNINGS=ON -DFSO_USE_VOICEREC=OFF -DFSO_BUILD_TESTS=ON \
-                  -DFORCED_SIMD_INSTRUCTIONS=SSE2 -G "Visual Studio 18 2026" -T "v145"  -A "$ARCHITECTURE" \
+                  -DFORCED_SIMD_INSTRUCTIONS=SSE2 -G "Visual Studio 18 2026" -T "v143"  -A "$ARCHITECTURE" \
                   -DQT_USE_PRECOMPILED=ON -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
           fi
       - name: Compile

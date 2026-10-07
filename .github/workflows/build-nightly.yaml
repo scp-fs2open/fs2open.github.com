@@ -126,6 +126,9 @@ jobs:
       - name: Set workspace as safe
         # This appears to be broken in current actions, so do it manually
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Install v143 ATL/MFC
+        shell: pwsh
+        run: ci/windows/install_v143_atlmfc.ps1
       # Tree A: static CRT (/MT) for FSO + FRED2 (no Qt dependency needed)
       - name: Configure CMake (static CRT /MT - FSO + FRED2)
         env:
@@ -139,7 +142,7 @@ jobs:
           cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH=ON \
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=ON -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
-            -DFSO_BUILD_QTFRED=OFF -G "Visual Studio 18 2026" -T "v145" \
+            -DFSO_BUILD_QTFRED=OFF -G "Visual Studio 18 2026" -T "v143" \
             -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile (static CRT)
         working-directory: ./build-mt
@@ -168,7 +171,7 @@ jobs:
             -DFSO_USE_VOICEREC=ON -DFORCED_SIMD_INSTRUCTIONS="$SIMD" \
             -DFSO_BUILD_TESTS=OFF -DFSO_INSTALL_DEBUG_FILES=ON -A "$ARCHITECTURE" \
             -DFSO_BUILD_QTFRED=ON -DFSO_BUILD_FRED2=OFF -DQT_USE_PRECOMPILED=ON \
-            -G "Visual Studio 18 2026" -T "v145" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
+            -G "Visual Studio 18 2026" -T "v143" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
       - name: Compile (dynamic CRT)
         if: matrix.arch != 'Win32'
         working-directory: ./build-md
