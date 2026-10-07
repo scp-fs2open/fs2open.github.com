@@ -16860,6 +16860,8 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
+
+	Ships_inited = false;
 }	
 
 /**
