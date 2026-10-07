@@ -58,10 +58,9 @@ int Campaign_ending_via_supernova = 0;
 
 // stuff for selecting campaigns.  We need to keep both arrays around since we display the
 // list of campaigns by name, but must load campaigns by filename
-char *Campaign_names[MAX_CAMPAIGNS] = { NULL };
-char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
-char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
-int	Num_campaigns;
+SCP_vector<SCP_string> Campaign_names;
+SCP_vector<SCP_string> Campaign_file_names;
+SCP_vector<SCP_string> Campaign_descs;
 bool Campaign_file_missing = false;
 int Campaign_load_failure = 0;
 int Campaign_names_inited = 0;
@@ -96,11 +95,11 @@ campaign Campaign;
 
 
 /**
- * Returns a string (which is malloced in this routine) of the name of the given freespace campaign file.  
- * In the type field, we return if the campaign is a single player or multiplayer campaign.  
- * The type field will only be valid if the name returned is non-NULL
+ * Gets the name and type (single or multiplayer) of the given campaign file, and optionally its
+ * max players, description, and (for multiplayer campaigns) first mission.
+ * Returns false on failure.
  */
-bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc, char **first_mission)
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, SCP_string *desc, SCP_string *first_mission)
 {
 	int i, success = false;
 	SCP_string campaign_type;
@@ -117,11 +116,11 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 	}
 
 	if (desc) {
-		*desc = nullptr;
+		desc->clear();
 	}
 
 	if (first_mission) {
-		*first_mission = nullptr;
+		first_mission->clear();
 	}
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
@@ -161,10 +160,11 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 
 			if (desc) {
 				if (optional_string("+Description:")) {
-					*desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+					stuff_string(*desc, F_MULTITEXT);
+					drop_white_space(*desc);
 				}
 				else {
-					*desc = NULL;
+					desc->clear();
 				}
 			}
 
@@ -175,7 +175,8 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 				// Cyborg17 - and the first mission name if we want it, too
 				if (first_mission) {
 					skip_to_string("$Mission:");
-					*first_mission = stuff_and_malloc_string(F_NAME, nullptr);
+					stuff_string(*first_mission, F_NAME);
+					drop_white_space(*first_mission);
 				}
 			}
 
@@ -195,13 +196,14 @@ bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type
 }
 
 /**
- * Parses campaign and returns a list of missions in it.  
- * @return Number of missions added to the 'list', and up to 'max' missions may be added to 'list'.  
+ * Parses campaign and appends the missions in it to 'list'.
+ * @return Number of missions added to the 'list'.
  * @return Negative on error.
  */
-int mission_campaign_get_mission_list(const char *filename, char **list, int max)
+int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_string> &list)
 {
-	int i, num = 0;
+	int num = 0;
+	const size_t original_size = list.size();
 	char name[MAX_FILENAME_LEN];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
@@ -214,19 +216,16 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 
 		while (skip_to_string("$Mission:") > 0) {
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
-			if (num < max)
-				list[num++] = vm_strdup(name);
-			else
-				Warning(LOCATION, "Maximum number of missions exceeded (%d)!", max);
+			list.emplace_back(name);
+			num++;
 		}
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 
-		// since we can't return count of allocated elements, free them instead
-		for (i = 0; i<num; i++)
-			vm_free(list[i]);
+		// since we can't return count of added elements, remove them instead
+		list.resize(original_size);
 
 		num = -1;
 	}
@@ -236,36 +235,20 @@ int mission_campaign_get_mission_list(const char *filename, char **list, int max
 
 void mission_campaign_free_list()
 {
-	int i;
-
 	if ( !Campaign_names_inited )
 		return;
 
-	for (i = 0; i < Num_campaigns; i++) {
-		if (Campaign_names[i] != NULL) {
-			vm_free(Campaign_names[i]);
-			Campaign_names[i] = NULL;
-		}
+	Campaign_names.clear();
+	Campaign_file_names.clear();
+	Campaign_descs.clear();
 
-		if (Campaign_file_names[i] != NULL) {
-			vm_free(Campaign_file_names[i]);
-			Campaign_file_names[i] = NULL;
-		}
-
-		if (Campaign_descs[i] != NULL) {
-			vm_free(Campaign_descs[i]);
-			Campaign_descs[i] = NULL;
-		}
-	}
-
-	Num_campaigns = 0;
 	Campaign_names_inited = 0;
 }
 
 int mission_campaign_maybe_add(const char *filename)
 {
 	SCP_string name;
-	char *desc = NULL;
+	SCP_string desc;
 	int type, max_players;
 
 	// don't add ignored campaigns
@@ -275,36 +258,29 @@ int mission_campaign_maybe_add(const char *filename)
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name.c_str());
+			Campaign_names.push_back(std::move(name));
 
 			if (MC_desc)
-				Campaign_descs[Num_campaigns] = desc;
-
-			Num_campaigns++;
-
-			// Note that we're not freeing desc here because the pointer is getting copied to Campaign_descs which is freed later.
+				Campaign_descs.push_back(std::move(desc));
+			else
+				Campaign_descs.emplace_back();
 
 			return 1;
 		}
 	}
 
-	if (desc != NULL)
-		vm_free(desc);
- 
 	return 0;
 }
 
 /**
  * Builds up the list of campaigns that the user might be able to pick from.
  * It uses the multiplayer flag to tell if we should display a list of single or multiplayer campaigns.
- * This routine sets the Num_campaigns and Campaign_names global variables
+ * This routine sets the Campaign_names, Campaign_file_names, and Campaign_descs global variables
  */
 void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 {
 	char wild_card[10];
 	int i, j, incr = 0;
-	char *t = NULL;
-	int rc = 0;
 
 	if (Campaign_names_inited)
 		return;
@@ -317,35 +293,42 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 	strcat_s(wild_card, FS_CAMPAIGN_FILE_EXT);
 
 	// if we have already been loaded then free everything and reload
-	if (Num_campaigns != 0)
-		mission_campaign_free_list();
+	Campaign_names.clear();
+	Campaign_file_names.clear();
+	Campaign_descs.clear();
 
 	// set filter for cf_get_file_list() if there isn't one set already (the simroom has a special one)
-	if (Get_file_list_filter == NULL)
+	if (Get_file_list_filter == nullptr)
 		Get_file_list_filter = mission_campaign_maybe_add;
 
 	// now get the list of all mission names
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
-	rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
-	Assert( rc == Num_campaigns );
+	cf_get_file_list(Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+
+	// the simroom filter doesn't add names or descriptions
+	Assert(Campaign_names.size() <= Campaign_file_names.size() && Campaign_descs.size() <= Campaign_file_names.size());
+	Campaign_names.resize(Campaign_file_names.size());
+	Campaign_descs.resize(Campaign_file_names.size());
+
+	int num_campaigns = sz2i(Campaign_file_names.size());
 
 	// now sort everything, if we are supposed to
 	if (sort) {
-		incr = Num_campaigns / 2;
+		incr = num_campaigns / 2;
 
 		while (incr > 0) {
-			for (i = incr; i < Num_campaigns; i++) {
+			for (i = incr; i < num_campaigns; i++) {
 				j = i - incr;
 	
 				while (j >= 0) {
-					char *name1 = Campaign_names[j];
-					char *name2 = Campaign_names[j + incr];
-
 					// if we hit this then a coder probably did something dumb (like not needing to sort)
-					if ( (name1 == NULL) || (name2 == NULL) ) {
+					if ( Campaign_names[j].empty() || Campaign_names[j + incr].empty() ) {
 						Int3();
 						break;
 					}
+
+					const char *name1 = Campaign_names[j].c_str();
+					const char *name2 = Campaign_names[j + incr].c_str();
 
 					if ( !strnicmp(name1, "the ", 4) )
 						name1 += 4;
@@ -355,21 +338,13 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 
 					if (stricmp(name1, name2) > 0) {
 						// first, do filenames
-						t = Campaign_file_names[j];
-						Campaign_file_names[j] = Campaign_file_names[j + incr];
-						Campaign_file_names[j + incr] = t;
+						std::swap(Campaign_file_names[j], Campaign_file_names[j + incr]);
 
 						// next, actual names
-						t = Campaign_names[j];
-						Campaign_names[j] = Campaign_names[j + incr];
-						Campaign_names[j + incr] = t;
+						std::swap(Campaign_names[j], Campaign_names[j + incr]);
 
 						// finally, do descriptions
-						if (desc) {
-							t = Campaign_descs[j];
-							Campaign_descs[j] = Campaign_descs[j + incr];
-							Campaign_descs[j + incr] = t;
-						}
+						std::swap(Campaign_descs[j], Campaign_descs[j + incr]);
 
 						j -= incr;
 					} else {
@@ -525,44 +500,44 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 		// parse the mission file and actually read in the mission stuff
 		while ( required_string_either("#End", "$Mission:") ) {
-			cmission *cm;
-
 			required_string("$Mission:");
 			stuff_string(name, F_NAME, NAME_LENGTH);
-			cm = &Campaign.missions[Campaign.num_missions];
-			cm->name = vm_strdup(name);
 
-			cm->notes = NULL;
+			const int this_mission_idx = sz2i(Campaign.missions.size());
+			cmission& cm = Campaign.missions.emplace_back();
+			cm.name.reset(vm_strdup(name));
 
-			cm->briefing_cutscene[0] = 0;
+			cm.notes.reset();
+
+			cm.briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
-				stuff_string( cm->briefing_cutscene, F_NAME, NAME_LENGTH );
+				stuff_string( cm.briefing_cutscene, F_NAME, NAME_LENGTH );
 
-			cm->flags = 0;
+			cm.flags = 0;
 			if (optional_string("+Flags:"))
-				stuff_int(&cm->flags);
+				stuff_int(&cm.flags);
 
-			cm->main_hall = "0";
+			cm.main_hall = "0";
 			// deal with previous campaign versions
-			if (cm->flags & CMISSION_FLAG_BASTION) {
-				cm->main_hall = "1";
+			if (cm.flags & CMISSION_FLAG_BASTION) {
+				cm.main_hall = "1";
 			}
 
 			// clear any other flag bits to prevent bogus values causing surprises
-			cm->flags &= CMISSION_EXTERNAL_FLAG_MASK;
+			cm.flags &= CMISSION_EXTERNAL_FLAG_MASK;
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
-				cm->main_hall = temp;
+				cm.main_hall = temp;
 			}
 
 			// Goober5000 - substitute main hall (like substitute music)
-			cm->substitute_main_hall = "";
+			cm.substitute_main_hall = "";
 			if (optional_string("+Substitute Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
-				cm->substitute_main_hall = temp;
+				cm.substitute_main_hall = temp;
 
 				// if we're running FRED, keep the halls separate (so we can save the campaign file),
 				// but if we're running FS, replace the main hall with the substitute right now
@@ -570,7 +545,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 					// see if this main hall exists
 					main_hall_defines* mhd = main_hall_get_pointer(temp);
 					if (mhd != nullptr) {
-						cm->main_hall = temp;
+						cm.main_hall = temp;
 					} else {
 						mprintf(("Substitute main hall '%s' not found\n", temp));
 					}
@@ -578,19 +553,19 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			}
 
 			// Goober5000 - new debriefing persona stuff!
-			cm->debrief_persona_index = 0;
+			cm.debrief_persona_index = 0;
 			if (optional_string("+Debriefing Persona Index:"))
-				stuff_ubyte(&cm->debrief_persona_index);
+				stuff_ubyte(&cm.debrief_persona_index);
 
-			cm->formula = -1;
+			cm.formula = -1;
 			if ( optional_string("+Formula:") ) {
-				cm->formula = get_sexp_main();
+				cm.formula = get_sexp_main();
 				if ( !Fred_running ) {
-					Assert ( cm->formula != -1 );
-					sexp_mark_persistent( cm->formula );
+					Assert ( cm.formula != -1 );
+					sexp_mark_persistent( cm.formula );
 
 				} else {
-					if ( cm->formula == -1 ){
+					if ( cm.formula == -1 ){
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -599,69 +574,67 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 			// Do mission branching stuff
 			if ( optional_string("+Mission Loop:") ) {
-				cm->flags |= CMISSION_FLAG_HAS_LOOP;
+				cm.flags |= CMISSION_FLAG_HAS_LOOP;
 			} else if ( optional_string("+Mission Fork:") ) {
-				cm->flags |= CMISSION_FLAG_HAS_FORK;
+				cm.flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm->mission_branch_desc = NULL;
+			cm.mission_branch_desc.reset();
 			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
-				cm->mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				cm.mission_branch_desc.reset(stuff_and_malloc_string(F_MULTITEXT, nullptr));
 			}
 
-			cm->mission_branch_brief_anim = NULL;
+			cm.mission_branch_brief_anim.reset();
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_anim.reset(stuff_and_malloc_string(F_FILESPEC, nullptr));
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
-			cm->mission_branch_brief_sound = NULL;
+			cm.mission_branch_brief_sound.reset();
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_sound.reset(stuff_and_malloc_string(F_FILESPEC, nullptr));
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
-			cm->mission_loop_formula = -1;
+			cm.mission_loop_formula = -1;
 			if ( optional_string("+Formula:") ) {
-				cm->mission_loop_formula = get_sexp_main();
+				cm.mission_loop_formula = get_sexp_main();
 				if ( !Fred_running ) {
-					Assert ( cm->mission_loop_formula != -1 );
-					sexp_mark_persistent( cm->mission_loop_formula );
+					Assert ( cm.mission_loop_formula != -1 );
+					sexp_mark_persistent( cm.mission_loop_formula );
 
 				} else {
-					if ( cm->mission_loop_formula == -1 ){
+					if ( cm.mission_loop_formula == -1 ){
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
 				}
 			}
 
-			cm->level = 0;
+			cm.level = 0;
 			if (optional_string("+Level:")) {
-				stuff_int( &cm->level );
-				if ( cm->level == 0 )  // check if the top (root) of the whole tree
-					Campaign.next_mission = Campaign.num_missions;
+				stuff_int( &cm.level );
+				if ( cm.level == 0 )  // check if the top (root) of the whole tree
+					Campaign.next_mission = this_mission_idx;
 
 			} else
 				Campaign.realign_required = 1;
 
-			cm->pos = 0;
+			cm.pos = 0;
 			if (optional_string("+Position:"))
-				stuff_int( &cm->pos );
+				stuff_int( &cm.pos );
 			else
 				Campaign.realign_required = 1;
 
-			cm->goals.clear();
-			cm->events.clear();
-			cm->variables.clear();
-			cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-
-			Campaign.num_missions++;
+			cm.goals.clear();
+			cm.events.clear();
+			cm.variables.clear();
+			cm.flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 		}
 
-		if ((Game_mode & GM_MULTIPLAYER) && Campaign.num_missions > UINT8_MAX)
+		if ((Game_mode & GM_MULTIPLAYER) && Campaign.missions.size() > UINT8_MAX)
 			throw parse::ParseException("Number of campaign missions is too high and breaks multi!");
 	}
 	catch (const parse::FileOpenException& foe)
@@ -669,7 +642,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		mprintf(("Error opening '%s'\r\nError message = %s.\r\n", filename, foe.what()));
 
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
@@ -680,7 +653,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, pe.what()));
 
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
@@ -701,7 +674,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			// but if the data is invalid for the savefile then it is fatal
 			if ( Pilot.is_invalid() ) {
 				Campaign.filename[0] = 0;
-				Campaign.num_missions = 0;
+				Campaign.missions.clear();
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
 			}
@@ -825,11 +798,11 @@ int mission_campaign_next_mission()
 	if ((Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
 		return -1;
 
-	if (Campaign.num_missions < 1)
+	if (Campaign.missions.empty())
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;
-	strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name);
+	strcpy_s(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get());
 
 	// check for end of loop.
 	if (Campaign.current_mission == Campaign.loop_reentry) {
@@ -874,7 +847,7 @@ int mission_campaign_previous_mission()
 	// reset the player stats to be the stats from this level
 	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
-	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
+	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name.get() );
 	Granted_ships.clear();
 	Granted_weapons.clear();
 
@@ -918,7 +891,7 @@ void mission_campaign_eval_next_mission()
 	if (Campaign.next_mission == -1) {
 		nprintf(("allender", "No next mission to proceed to.\n"));
 	} else {
-		nprintf(("allender", "Next mission is number %d [%s]\n", Campaign.next_mission, Campaign.missions[Campaign.next_mission].name));
+		nprintf(("allender", "Next mission is number %d [%s]\n", Campaign.next_mission, Campaign.missions[Campaign.next_mission].name.get()));
 	}
 
 }
@@ -965,7 +938,7 @@ void mission_campaign_store_goals_and_events()
 
 		if (event.name.empty()) {
 			sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &event - &Mission_events[0] + 1);
-			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, stored_event.name));
+			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name.get(), stored_event.name));
 		} else
 			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
 
@@ -1165,7 +1138,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
 		scripting::hooks::OnCampaignMissionAccept->run(
-			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name)
+			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name.get())
 		));
 		
 	} else {
@@ -1182,78 +1155,26 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
-void mission_campaign_free_mission_strings(cmission &cm)
-{
-	if (cm.name != nullptr) {
-		vm_free(cm.name);
-		cm.name = nullptr;
-	}
-
-	if (cm.notes != nullptr) {
-		vm_free(cm.notes);
-		cm.notes = nullptr;
-	}
-
-	// the next three are strdup'd return values from parselo.cpp - taylor
-	if (cm.mission_branch_desc != nullptr) {
-		vm_free(cm.mission_branch_desc);
-		cm.mission_branch_desc = nullptr;
-	}
-
-	if (cm.mission_branch_brief_anim != nullptr) {
-		vm_free(cm.mission_branch_brief_anim);
-		cm.mission_branch_brief_anim = nullptr;
-	}
-
-	if (cm.mission_branch_brief_sound != nullptr) {
-		vm_free(cm.mission_branch_brief_sound);
-		cm.mission_branch_brief_sound = nullptr;
-	}
-}
-
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  * also called at campaign init and campaign load
  */
 void mission_campaign_clear()
 {
-	int i;
-
 	Campaign.description.clear();
 
-	// be sure to remove all old malloced strings of Mission_names
-	// we must also free any goal stuff that was from a previous campaign
-	for ( i=0; i<Campaign.num_missions; i++ ) {
-		mission_campaign_free_mission_strings(Campaign.missions[i]);
-
-		Campaign.missions[i].goals.clear();
-		Campaign.missions[i].events.clear();
-		Campaign.missions[i].variables.clear();
-
+	for (auto& cm : Campaign.missions) {
 		if ( !Fred_running ){
-			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
+			sexp_unmark_persistent(cm.formula);		// free any sexpression nodes used by campaign.
 		}
-
-		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
-		Campaign.missions[i].formula = 0;
-		Campaign.missions[i].completed = 0;
-		Campaign.missions[i].mission_loop_formula = 0;
-		Campaign.missions[i].level = 0;
-		Campaign.missions[i].pos = 0;
-		Campaign.missions[i].flags = 0;
-		Campaign.missions[i].main_hall = "";
-		Campaign.missions[i].substitute_main_hall = "";
-		Campaign.missions[i].debrief_persona_index = 0;
-
-		Campaign.missions[i].stats.init();
 	}
+	Campaign.missions.clear();
 
 	memset(Campaign.name, 0, NAME_LENGTH);
 	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
 	Campaign.type = 0;
 	Campaign.custom_data.clear();
 	Campaign.flags = CF_DEFAULT_VALUE;
-	Campaign.num_missions = 0;
 	Campaign.num_missions_completed = 0;
 	Campaign.current_mission = -1;
 	Campaign.next_mission = 0;
@@ -1272,15 +1193,12 @@ void mission_campaign_clear()
 }
 
 /**
- * Extract the mission filenames for a campaign.  
+ * Extract the mission filenames for a campaign.
  *
  * @param filename	Name of campaign file
- * @param dest		Storage for the mission filename, must be already allocated
- * @param num		Output parameter for the number of mission filenames in the campaign
- *
- * note that dest should allocate at least dest[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH]
+ * @param dest		Mission filenames will be appended here; cleared at entry
  */
-int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num)
+int mission_campaign_get_filenames(const char *filename, SCP_vector<SCP_string> &dest)
 {
 	// read the mission file and get the list of mission filenames
 	try
@@ -1296,10 +1214,11 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 		advance_to_eoln(NULL);
 
 		// parse the mission file and actually read in the mission stuff
-		*num = 0;
+		dest.clear();
 		while ( skip_to_string("$Mission:") == 1 ) {
-			stuff_string(dest[*num], F_NAME, NAME_LENGTH);
-			(*num)++;
+			char name_buf[NAME_LENGTH];
+			stuff_string(name_buf, F_NAME, NAME_LENGTH);
+			dest.emplace_back(name_buf);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1341,16 +1260,14 @@ SCP_string mission_campaign_get_name(const char* filename)
  */
 void read_mission_goal_list(int num)
 {
-	char *filename, notes[NOTES_LENGTH];
+	const char *filename;
+	char notes[NOTES_LENGTH];
 	int z;
 
-	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
-	filename = Campaign.missions[num].name;
+	Assertion(Campaign.missions.in_bounds(num), "mission number out of range!");
+	filename = Campaign.missions[num].name.get();
 
-	if (Campaign.missions[num].notes) {
-		vm_free(Campaign.missions[num].notes);
-		Campaign.missions[num].notes = nullptr;
-	}
+	Campaign.missions[num].notes.reset();
 	Campaign.missions[num].events.clear();
 	Campaign.missions[num].goals.clear();
 	Campaign.missions[num].variables.clear();
@@ -1365,8 +1282,7 @@ void read_mission_goal_list(int num)
 		if (skip_to_string("#Mission Info")) {
 			if (skip_to_string("$Notes:")) {
 				stuff_string(notes, F_NOTES, NOTES_LENGTH);
-				Campaign.missions[num].notes = (char *)vm_malloc(strlen(notes) + 1);
-				strcpy(Campaign.missions[num].notes, notes);
+				Campaign.missions[num].notes.reset(vm_strdup(notes));
 			}
 		}
 
@@ -1446,8 +1362,8 @@ int mission_campaign_find_mission( const char *name )
 		sprintf(realname, NOX("%s%s"), name, FS_MISSION_FILE_EXT );
 	}
 
-	for (i = 0; i < Campaign.num_missions; i++ ) {
-		if ( !stricmp(realname, Campaign.missions[i].name) ){
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
+		if ( !stricmp(realname, Campaign.missions[i].name.get()) ){
 			return i;
 		}
 	}
@@ -1626,22 +1542,22 @@ int mission_load_up_campaign(bool fall_back_from_current)
 		// no descriptions, no sorting
 		mission_campaign_build_list(false, false);
 
-		for (idx = 0; (idx < Num_campaigns) && (rc < 0); idx++) {
-			if ( (Campaign_file_names[idx] == NULL) || !strlen(Campaign_file_names[idx]) ) {
+		for (idx = 0; (idx < sz2i(Campaign_file_names.size())) && (rc < 0); idx++) {
+			if ( Campaign_file_names[idx].empty() ) {
 				continue;
 			}
 
 			// skip current and builtin since they already didn't work
-			if ( !stricmp(Campaign_file_names[idx], pl->current_campaign) ) {
+			if ( !stricmp(Campaign_file_names[idx].c_str(), pl->current_campaign) ) {
 				continue;
 			}
 
-			if ( !stricmp(Campaign_file_names[idx], BUILTIN_CAMPAIGN) ) {
+			if ( !stricmp(Campaign_file_names[idx].c_str(), BUILTIN_CAMPAIGN) ) {
 				continue;
 			}
 
 			// try to load it, whatever "it" is
-			rc = mission_campaign_load(Campaign_file_names[idx], nullptr, pl);
+			rc = mission_campaign_load(Campaign_file_names[idx].c_str(), nullptr, pl);
 		}
 
 		mission_campaign_free_list();
@@ -1724,7 +1640,7 @@ void mission_campaign_skip_to_next()
 	// (e.g. if is-previous-goal-false or is-previous-event-false is used without the optional argument), so this is a failsafe
 	if (Campaign.next_mission == Campaign.current_mission) {
 		Campaign.next_mission++;
-		if (Campaign.next_mission < Campaign.num_missions) {
+		if (Campaign.next_mission < sz2i(Campaign.missions.size())) {
 			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!  Choosing the next-in-sequence mission as a failsafe...");
 		} else {
 			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!");
@@ -1798,8 +1714,8 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool p
 		strcat_s(dest_filename, ".fs2");
 
 	// search for our mission
-	for (i = 0; i < Campaign.num_missions; i++) {
-		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name, dest_filename)) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
+		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name.get(), dest_filename)) {
 			mission_num = i;
 			break;
 		} else if (!no_skip) {
@@ -1839,7 +1755,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 
 	// This can be queried from UI states outside active mission gameplay
 	// where GM_CAMPAIGN_MODE may not be set even though a campaign is loaded.
-	if (Campaign.name[0] == '\0' || Campaign.num_missions <= 0) {
+	if (Campaign.name[0] == '\0' || Campaign.missions.empty()) {
 		return valid_missions;
 	}
 
@@ -1853,11 +1769,11 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 		branch_source_mission = Campaign.current_mission;
 	}
 
-	if (branch_source_mission < 0 || branch_source_mission >= Campaign.num_missions) {
+	if (!Campaign.missions.in_bounds(branch_source_mission)) {
 		// Campaigns that haven't started yet can have both current_mission and prev_mission
 		// unset. In that case, next_mission is the only available entry point.
-		if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions) {
-			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name);
+		if (Campaign.missions.in_bounds(Campaign.next_mission)) {
+			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name.get());
 		}
 		return valid_missions;
 	}
@@ -1899,8 +1815,8 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 				actions = CDR(actions);
 			}
 
-			if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions && Campaign.next_mission != branch_source_mission) {
-				const auto& mission_name = Campaign.missions[Campaign.next_mission].name;
+			if (Campaign.missions.in_bounds(Campaign.next_mission) && Campaign.next_mission != branch_source_mission) {
+				const char *mission_name = Campaign.missions[Campaign.next_mission].name.get();
 				if (std::find(valid_missions.begin(), valid_missions.end(), mission_name) == valid_missions.end()) {
 					valid_missions.emplace_back(mission_name);
 				}

@@ -38,6 +38,10 @@ enum class TechroomState : ubyte
 	REMOVED = 2
 };
 
+// set when the campaign data in memory was loaded from a savefile for a different campaign than the one loaded;
+// file-level because every pilotfile instance shares Campaign, and a save through Pilot must see a load through any other instance
+static bool Csg_campaign_mismatch = false;
+
 void pilotfile::csg_read_flags()
 {
 	// tips?
@@ -144,7 +148,7 @@ void pilotfile::csg_read_info()
 
 	// check that the next mission won't be greater than the total number of missions
 	// though ensure we only flag if campaign exists and has been loaded
-	if (Campaign.num_missions > 0 && Campaign.next_mission >= Campaign.num_missions) {
+	if (!Csg_campaign_mismatch && !Campaign.missions.empty() && !Campaign.missions.in_bounds(Campaign.next_mission) && (Campaign.next_mission != -1)) {
 		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
 		m_data_invalid = true; // Causes a warning popup to be displayed
 	}
@@ -266,6 +270,7 @@ void pilotfile::csg_read_missions()
 {
 	int i, j, idx, list_size;
 	cmission *missionp;
+	cmission discarded_mission;
 
 	if ( !m_have_info ) {
 		throw "Missions before Info!";
@@ -273,7 +278,14 @@ void pilotfile::csg_read_missions()
 
 	for (i = 0; i < Campaign.num_missions_completed; i++) {
 		idx = cfread_int(cfp);
-		missionp = &Campaign.missions[idx];
+		if (Csg_campaign_mismatch) {
+			missionp = &discarded_mission;
+		} else if (Campaign.missions.in_bounds(idx)) {
+			missionp = &Campaign.missions[idx];
+		} else {
+			mprintf(("CSG => Discarding data for invalid mission index %d\n", idx));
+			missionp = &discarded_mission;
+		}
 
 		missionp->completed = 1;
 
@@ -362,7 +374,7 @@ void pilotfile::csg_write_missions()
 
 	startSection(Section::Missions);
 
-	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
+	for (idx = 0; idx < sz2i(Campaign.missions.size()); idx++) {
 		if (Campaign.missions[idx].completed) {
 			missionp = &Campaign.missions[idx];
 
@@ -1600,9 +1612,6 @@ void pilotfile::csg_write_container(const sexp_container &container)
 
 void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 {
-	int idx;
-	cmission *missionp;
-
 	// internals
 	m_have_flags = false;
 	m_have_info = false;
@@ -1639,14 +1648,14 @@ void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 	Red_alert_wing_status.clear();
 
 	// clear out mission stuff
-	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
-		missionp = &Campaign.missions[idx];
+	if (!Csg_campaign_mismatch) {
+		for (auto& cm : Campaign.missions) {
+			cm.goals.clear();
+			cm.events.clear();
+			cm.variables.clear();
 
-		missionp->goals.clear();
-		missionp->events.clear();
-		missionp->variables.clear();
-
-		missionp->stats.init();
+			cm.stats.init();
+		}
 	}
 }
 
@@ -1726,6 +1735,12 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 	csg_ver = cfread_ubyte(cfp);
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
+
+	// mission data is stored by index, so it only applies to the campaign it was saved from
+	Csg_campaign_mismatch = (stricmp(base, util::get_file_part(Campaign.filename)) != 0);
+	if (Csg_campaign_mismatch) {
+		mprintf(("CSG => '%s' does not match the loaded campaign; discarding its mission data\n", filename.c_str()));
+	}
 
 	csg_reset_data(true);
 
@@ -1886,6 +1901,10 @@ bool pilotfile::save_savefile()
 		mprintf(("CSG => Skipping save of '%s' due to invalid data check!\n", filename.c_str()));
 		return false;
 	}
+	if (Csg_campaign_mismatch) {
+		mprintf(("CSG => Skipping save of '%s' because the last savefile loaded was for a different campaign!\n", filename.c_str()));
+		return false;
+	}
 
 	// validate the number of red alert entries
 	// assertion before writing so that we don't corrupt the .csg by asserting halfway through writing
@@ -1962,6 +1981,7 @@ void pilotfile::clear_savefile(bool reset_ships_and_weapons)
 	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 	p = &Players[Player_num];
 
+	Csg_campaign_mismatch = false;
 	csg_reset_data(reset_ships_and_weapons);
 }
 

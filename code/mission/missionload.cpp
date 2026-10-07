@@ -159,8 +159,8 @@ UI_LISTBOX campaign_filter;
 UI_BUTTON mlm_ok, mlm_cancel;
 char * mlm_missions[MLM_MAX_MISSIONS];
 char * recent_missions[MAX_RECENT_MISSIONS];
-char * campaign_names[MAX_CAMPAIGNS+2];
-char * campaign_missions[MAX_CAMPAIGN_MISSIONS];
+SCP_vector<char*> campaign_names;
+SCP_vector<char*> campaign_missions;
 int mlm_nfiles = 0;
 static int	last_recent_current = -1;
 static int	last_mlm_current = -1;
@@ -192,12 +192,11 @@ void ml_change_listbox()
 	}
 }
 
-static char Campaign_missions[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH];
-static char Campaign_name_list[MAX_CAMPAIGNS+2][NAME_LENGTH];
-static int	Num_campaign_missions;
+static SCP_vector<SCP_string> Campaign_missions;
+static SCP_vector<SCP_string> Campaign_name_list;
 
 // get the mission filenames that make up a campaign
-extern int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num);
+extern int mission_campaign_get_filenames(const char *filename, SCP_vector<SCP_string> &dest);
 
 void mission_load_menu_init()
 {
@@ -232,25 +231,26 @@ void mission_load_menu_init()
 
 
 	mission_campaign_build_list(0);
-	for ( i = 0; i < Num_campaigns; i++ ) {
-		strcpy_s(Campaign_name_list[i+1], Campaign_names[i]);
-	}
-	strcpy_s(Campaign_name_list[0], NOX("All campaigns"));
-	strcpy_s(Campaign_name_list[1], NOX("Player Missions"));
+	Campaign_name_list.clear();
+	Campaign_name_list.emplace_back(NOX("All campaigns"));
+	Campaign_name_list.emplace_back(NOX("Player Missions"));
+	Campaign_name_list.insert(Campaign_name_list.end(), Campaign_names.begin(), Campaign_names.end());
 
-	for ( i = 0; i < Num_campaigns+2; i++ ) {
-		campaign_names[i] = Campaign_name_list[i];
+	campaign_names.clear();
+	campaign_names.reserve(Campaign_name_list.size());
+	for (auto& name : Campaign_name_list) {
+		campaign_names.push_back(name.data());
 	}
 
-	campaign_filter.create( &mlm_window, 50, 150, 150, 200, Num_campaigns+2, campaign_names );
+	campaign_filter.create( &mlm_window, 50, 150, 150, 200, sz2i(campaign_names.size()), campaign_names.data() );
 	Campaign_filter_index = 0;
 	campaign_filter.set_current(Campaign_filter_index);
 }
 
 void mission_load_menu_do()
 {
-	int	selected, key_in, recent_current, mlm_current, use_recent_flag, i;
-	
+	int	selected, key_in, recent_current, mlm_current, use_recent_flag;
+
 
 	Assert( mlm_active == 1 );
 
@@ -289,16 +289,18 @@ void mission_load_menu_do()
 		Campaign_filter_index = campaign_filter.current();
 
 		if ( Campaign_filter_index > 1 ) {
-			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2], Campaign_missions, &Num_campaign_missions);
+			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2].c_str(), Campaign_missions);
 
- 			for ( i = 0; i < Num_campaign_missions; i++ ) {
-				campaign_missions[i] = Campaign_missions[i];
+			campaign_missions.clear();
+			campaign_missions.reserve(Campaign_missions.size());
+			for (auto& name : Campaign_missions) {
+				campaign_missions.push_back(name.data());
 			}
-			mlm_mission_list.set_new_list(Num_campaign_missions, campaign_missions);
+			mlm_mission_list.set_new_list(sz2i(campaign_missions.size()), campaign_missions.data());
 		} else if ( Campaign_filter_index == 0 ) {
 			mlm_mission_list.set_new_list(mlm_nfiles, mlm_missions);
 		} else if ( Campaign_filter_index == 1 ) {
-			mlm_mission_list.set_new_list(jtmp_nfiles, jtmp_missions); 
+			mlm_mission_list.set_new_list(jtmp_nfiles, jtmp_missions);
 		}
 	}
 
@@ -353,7 +355,7 @@ void mission_load_menu_do()
 			} else if (Campaign_filter_index == 1 )	{
 				strcpy_s( mission_name, jtmp_missions[selected]);
 			} else {
-				strcpy_s(mission_name, Campaign_missions[selected]);
+				strcpy_s(mission_name, Campaign_missions[selected].c_str());
 			}
 			strncpy( mission_name_final, mission_name, MAX_FILENAME_LEN );
 		}
