@@ -344,6 +344,40 @@ enum {
 }
 
 /*!
+ * @brief Current value of an absolute axis action, combined from all of its inputs
+ *
+ * @details Joystick axes report positions and mouse axes report deltas, so they can't simply be summed.  Instead, the
+ * input that moved last wins: a joystick sets the value outright, and the mouse nudges it from wherever it is.  A
+ * joystick that has lost control must move past TAKEOVER_THRESHOLD to regain it, so that an idle lever's jitter
+ * doesn't fight the other inputs.  A joystick's first reading only takes control if no other joystick has reported.
+ */
+struct abs_axis_state
+{
+	static constexpr int NUM_POSITION_SOURCES = 2;	// first and second binding
+	static constexpr int TAKEOVER_THRESHOLD = F1_0 * 3 / 200;	// 1.5%, matching the analog throttle's keyboard override
+
+	int value;		// 0 to F1_0
+	int active;		// position source in control, or -1
+	int anchor[NUM_POSITION_SOURCES];
+	bool anchored[NUM_POSITION_SOURCES];
+
+	abs_axis_state();
+
+	void reset();
+
+	/*!
+	 * @param[in] source    0 for the first binding, 1 for the second
+	 * @param[in] pos       position from 0 to F1_0, already inverted if necessary
+	 */
+	void update_position(int source, int pos);
+
+	/*!
+	 * @param[in] delta     change in value, already scaled and inverted if necessary
+	 */
+	void update_delta(float delta);
+};
+
+/*!
  * Where the preset is located in memory
  */
 enum class Preset_t {
@@ -975,13 +1009,20 @@ int check_control(int id, int key = -1);
  *
  * @param[in]   frametime   Frametime used to scale the mouse axes
  * @param[out]  axis_v      Output array of all control axes, must have size of JOY_NUM_AXIS_ACTIONS
+ * @param[in]   update_abs_axes     Whether the inputs should change the absolute controls, or only report them
  *
  * @details
  * * Clamps output to stay within +/-JOY_AXIS_RANGE.
- * * Should multiple axes be bound to a control, their values are blended with a simple sum.  This is to save a bit of
- *   processing for speed.
+ * * Should multiple axes be bound to a relative control, their values are blended with a simple sum.  This is to save a
+ *   bit of processing for speed.
+ * * Absolute controls are combined by ::abs_axis_state instead.
  */
-void control_get_axes_readings(int *axis_v, float frame_time);
+void control_get_axes_readings(int *axis_v, float frame_time, bool update_abs_axes = true);
+
+/**
+ * @brief Resets the state of the absolute axis actions.  Called at mission start.
+ */
+void control_reset_axes();
 
 /**
  * @brief Marks the given control (by IoActionId) as used

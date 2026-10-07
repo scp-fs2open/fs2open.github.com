@@ -2965,10 +2965,11 @@ int check_control(int id, int key)
 }
 
 /**
- * Inverts the given raw axis value according to the action type
+ * Inverts the given raw axis value according to the input type
  *
  * @param[in]       inv     True for invert, False for noram
- * @param[in]       type    Type of the axis value to invert, determines method of inversion
+ * @param[in]       type    Type of the input value (not of the action), determines method of inversion.  Mouse deltas
+ *                          are always CC_TYPE_AXIS_REL
  * @param[in,out]   val     raw axis value in, maybe inverted axis value out
  */
 inline
@@ -2996,7 +2997,16 @@ void maybe_invert(bool inv, CC_type type, int &val)
 }
 
 /*!
- * Scales, and maybe inverts, the input axis values
+ * Scale applied to mouse deltas, in fix units per mouse count
+ */
+static float mouse_axis_scale()
+{
+	float scale = i2fl(Mouse_sensitivity) + 1.77f;
+	return scale * scale / 0.6f;
+}
+
+/*!
+ * Scales, and maybe inverts, the input axis values of a relative action
  *
  * @param[in]   bind        The control's binding to check
  * @param[in]   action      index into axis_out of the action
@@ -3020,15 +3030,15 @@ void scale_invert(const CC_bind &bind,
 	const auto cid = bind.get_cid();
 	const auto btn = bind.get_btn();
 
-	factor = (float)Mouse_sensitivity + 1.77f;
-	factor = factor * factor / frame_time / 0.6f;
+	// mouse deltas become a rate, like the joystick's deflection
+	factor = mouse_axis_scale() / frame_time;
 
 	switch (cid) {
 	case CID_MOUSE:
 		if (!Use_mouse_to_fly) {
 			// Mouse is treated as mouse, get the axis values
 			dx = axis_in[MOUSE_ID][btn];
-			maybe_invert(bind.is_inverted(), type, dx);
+			maybe_invert(bind.is_inverted(), CC_TYPE_AXIS_REL, dx);
 			axis_out[action] += (int)((float)dx * factor);
 
 		} // else, Mouse is treated as joy, ignore and let CID_JOY0 case handle it on next call
@@ -3038,7 +3048,7 @@ void scale_invert(const CC_bind &bind,
 		if (Use_mouse_to_fly) {
 			// Mouse is treated as Joy0
 			dx = axis_in[MOUSE_ID][btn];
-			maybe_invert(bind.is_inverted(), type, dx);
+			maybe_invert(bind.is_inverted(), CC_TYPE_AXIS_REL, dx);
 			axis_out[action] += (int)((float)dx * factor);
 		}
 		FALLTHROUGH;
@@ -3046,19 +3056,7 @@ void scale_invert(const CC_bind &bind,
 	case CID_JOY1:
 	case CID_JOY2:
 	case CID_JOY3:
-		switch (type) {
-		case CC_TYPE_AXIS_ABS:
-			dx = joy_get_unscaled_reading(axis_in[cid][btn]);
-			break;
-
-		case CC_TYPE_AXIS_REL:
-		case CC_TYPE_AXIS_BTN_NEG:
-		case CC_TYPE_AXIS_BTN_POS:
-		default:
-			dx = joy_get_scaled_reading(axis_in[cid][btn]);
-			break;
-		}
-		
+		dx = joy_get_scaled_reading(axis_in[cid][btn]);
 		maybe_invert(bind.is_inverted(), type, dx);
 		axis_out[action] += dx;
 		break;
@@ -3069,9 +3067,76 @@ void scale_invert(const CC_bind &bind,
 	}
 }
 
-void control_get_axes_readings(int *axis_v, float frame_time)
+static abs_axis_state Abs_axis_state[Action::NUM_VALUES];
+static uint Abs_axis_delta_serial = 0;
+static bool Abs_axis_delta_serial_valid = false;
+
+void control_reset_axes()
+{
+	for (auto &state : Abs_axis_state)
+		state.reset();
+
+	Abs_axis_delta_serial_valid = false;
+}
+
+/*!
+ * Feeds the input of one binding of an absolute action into the action's state
+ *
+ * @param[in]       bind                The control's binding to check
+ * @param[in]       source              0 for the first binding, 1 for the second
+ * @param[in]       accumulate_mouse    Whether the current mouse deltas have yet to be accumulated
+ * @param[in]       joy_connected[]     Whether each joystick is connected
+ * @param[in]       axis_in[][]         Array of raw axis values
+ * @param[in,out]   state               The action's state
+ */
+static void update_abs_axis(const CC_bind &bind,
+				int source,
+				bool accumulate_mouse,
+				const bool (&joy_connected)[CID_JOY_MAX],
+				int (&axis_in)[CID_JOY_MAX + 1][JOY_NUM_AXES],
+				abs_axis_state &state)
+{
+	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
+	const auto cid = bind.get_cid();
+	const auto btn = bind.get_btn();
+	int dx = 0;
+
+	// The mouse reports deltas, so it nudges the value.  Mouse is treated as Joy0 when flying with the mouse
+	if (accumulate_mouse && (cid == (Use_mouse_to_fly ? CID_JOY0 : CID_MOUSE)))
+	{
+		dx = axis_in[MOUSE_ID][btn];
+		maybe_invert(bind.is_inverted(), CC_TYPE_AXIS_REL, dx);
+
+		if (dx != 0)
+			state.update_delta(i2fl(dx) * mouse_axis_scale());
+	}
+
+	// Joysticks report positions, so they set the value
+	switch (cid)
+	{
+		case CID_JOY0:
+		case CID_JOY1:
+		case CID_JOY2:
+		case CID_JOY3:
+			// a missing joystick reads as centered, which would look like a lever position
+			if (!joy_connected[cid])
+				break;
+
+			dx = joy_get_unscaled_reading(axis_in[cid][btn]);
+			maybe_invert(bind.is_inverted(), CC_TYPE_AXIS_ABS, dx);
+			state.update_position(source, dx);
+			break;
+
+		default:
+			// All others, ignore
+			break;
+	}
+}
+
+void control_get_axes_readings(int *axis_v, float frame_time, bool update_abs_axes)
 {
 	int axe[CID_JOY_MAX + 1][JOY_NUM_AXES] = {{0}};
+	bool joy_connected[CID_JOY_MAX];
 	const int MOUSE_ID = CID_JOY_MAX;	// Joy axes go in front here, mouse gets tacked on the end
 
 	Assert(axis_v != nullptr);
@@ -3083,11 +3148,20 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 
 	// Read raw sticks.
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
-		joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]);
+		joy_connected[j] = joystick_read_raw_axis(j, JOY_NUM_AXES, axe[j]) != 0;
 	}
 
 	// Read raw mouse
 	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
+
+	// This can be called more than once per frame, but each set of mouse deltas must only be accumulated once
+	bool accumulate_mouse = false;
+	if (update_abs_axes) {
+		const auto delta_serial = mouse_get_delta_serial();
+		accumulate_mouse = !Abs_axis_delta_serial_valid || (delta_serial != Abs_axis_delta_serial);
+		Abs_axis_delta_serial = delta_serial;
+		Abs_axis_delta_serial_valid = true;
+	}
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
 		const auto action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
@@ -3095,14 +3169,31 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 
 		// Assume actions are all axis actions, no need to check
 		// Assumes all axes are uniquely bound to an action
-		// Process first
-		if (!item.first.empty()) {
-			scale_invert(item.first, action, item.type, frame_time, axe, axis_v);
-		}
+		if (item.type == CC_TYPE_AXIS_ABS) {
+			auto &state = Abs_axis_state[action];
 
-		// Process second.
-		if (!item.second.empty()) {
-			scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
+			if (update_abs_axes) {
+				if (!item.first.empty()) {
+					update_abs_axis(item.first, 0, accumulate_mouse, joy_connected, axe, state);
+				}
+
+				if (!item.second.empty()) {
+					update_abs_axis(item.second, 1, accumulate_mouse, joy_connected, axe, state);
+				}
+			}
+
+			axis_v[action] = state.value;
+
+		} else {
+			// Process first
+			if (!item.first.empty()) {
+				scale_invert(item.first, action, item.type, frame_time, axe, axis_v);
+			}
+
+			// Process second.
+			if (!item.second.empty()) {
+				scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
+			}
 		}
 
 		//Call Lua hooks

@@ -141,6 +141,7 @@ bool mission_load(const char* filename_ext)
 	ml_update_recent_missions(filename_ext);  // update recently played missions list (save the csg later)
 
 	control_reset_hook();
+	control_reset_axes();
 
 	init_hud();
 
