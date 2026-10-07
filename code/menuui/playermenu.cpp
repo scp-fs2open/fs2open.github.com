@@ -128,7 +128,7 @@ UI_BUTTON Player_select_list_region;		// button for detecting mouse clicks on th
 UI_INPUTBOX Player_select_input_box;		// input box for adding new pilot names
 
 // #define PLAYER_SELECT_PALETTE_FNAME		NOX("InterfacePalette")
-int Player_select_background_bitmap;		// bitmap for this screen
+int Player_select_background_bitmap = -1;		// bitmap for this screen
 // int Player_select_palette;				// palette bitmap for this screen
 int Player_select_autoaccept = 0;
 // int Player_select_palette_set = 0;
@@ -155,6 +155,8 @@ int Player_select_last_is_multi;
 SCP_string Player_select_force_main_hall = "";
 
 static int Player_select_no_save_pilot = 0;		// to skip save of pilot in pilot_select_close()
+
+static bool Player_select_pilot_committed = false;	// whether a pilot has been loaded as the active Player
 
 int Player_select_screen_active = 0;	// for pilot savefile loading - taylor
 
@@ -195,6 +197,7 @@ int player_select_get_last_pilot_info();
 void player_select_eval_very_first_pilot();
 void player_select_commit();
 void player_select_cancel_create();
+bool player_select_commit_pilot(const char* callsign, bool is_multi);
 
 
 bool valid_pilot(const char* callsign, bool no_popup) {
@@ -515,65 +518,28 @@ void player_select_close()
 		return;
 	}
 
-	// actually set up the Player struct here
-	if ( (Player_select_pilot == -1) || (Player_select_num_pilots == 0) ) {
-		nprintf(("General","WARNING! No pilot selected! We should be exiting the game now!\n"));
-		return;
+	// a pilot may already have been selected some other way, e.g. by a script
+	if (!Player_select_pilot_committed) {
+		// actually set up the Player struct here
+		if ( (Player_select_pilot == -1) || (Player_select_num_pilots == 0) ) {
+			nprintf(("General","WARNING! No pilot selected! We should be exiting the game now!\n"));
+			return;
+		}
+
+		if (!player_select_commit_pilot(Pilots[Player_select_pilot], Player_select_mode == PLAYER_SELECT_MODE_MULTI)) {
+			return;
+		}
 	}
 
 	// unload all bitmaps
 	if(Player_select_background_bitmap >= 0) {
 		bm_release(Player_select_background_bitmap);
 		Player_select_background_bitmap = -1;
-	} 
+	}
 	// if(Player_select_palette >= 0){
 	// 	bm_release(Player_select_palette);
 		//Player_select_palette = -1;GS_EVENT_MAIN_MENU
 	// }
-
-	// setup the player  struct
-	Player_num = 0;
-	Player = &Players[0];
-	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
-
-	// New pilot file makes no distinction between multi pilots and regular ones, so let's do this here.
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->flags |= PLAYER_FLAGS_IS_MULTI;
-	}
-
-	// WMC - Set appropriate game mode
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
-
-	// now read in a the pilot data
-	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
-		Error(LOCATION,"Couldn't load pilot file, bailing");
-		Player = NULL;
-		return;
-	}
-
-	// set the local multi options from the player flags
-	multi_options_init_globals();
-	
-	// read in the current campaign
-	// NOTE: this may fail if there is no current campaign, it's not fatal
-	Pilot.load_savefile(Player, Player->current_campaign);
-
-	// Set singleplayer/multiplayer mode in Player
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->player_was_multi = 1;
-	} else {
-		Player->player_was_multi = 0;
-	}
-
-	// save the pilot file to a version that we work with
-	Pilot.save_player(Player);
-
-	// Update the LastPlayer key in the registry
-	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
 	// Maybe use a different main hall (debug console)
 	if (Player_select_force_main_hall != "") {
@@ -1540,7 +1506,9 @@ SCP_string player_get_last_player()
 	return SCP_string(last_player);
 }
 
-void player_finish_select(const char* callsign, bool is_multi) {
+bool player_select_commit_pilot(const char* callsign, bool is_multi)
+{
+	// setup the player  struct
 	Player_num = 0;
 	Player = &Players[0];
 	Player->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
@@ -1561,23 +1529,33 @@ void player_finish_select(const char* callsign, bool is_multi) {
 	if ( !Pilot.load_player(callsign, Player) ) {
 		Error(LOCATION,"Couldn't load pilot file for pilot \"%s\", bailing", callsign);
 		Player = nullptr;
-	} else {
-		// NOTE: this may fail if there is no current campaign, it's not fatal
-		Pilot.load_savefile(Player, Player->current_campaign);
-	}
-
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->player_was_multi = 1;
-	} else {
-		Player->player_was_multi = 0;
+		return false;
 	}
 
 	// set the local multi options from the player flags
 	multi_options_init_globals();
 
+	// read in the current campaign
+	// NOTE: this may fail if there is no current campaign, it's not fatal
+	Pilot.load_savefile(Player, Player->current_campaign);
+
+	// Set singleplayer/multiplayer mode in Player
+	Player->player_was_multi = is_multi ? 1 : 0;
+
+	// save the pilot file to a version that we work with
+	Pilot.save_player(Player);
+
+	// Update the LastPlayer key in the registry
 	os_config_write_string(nullptr, "LastPlayer", Player->callsign);
 
-	gameseq_post_event(GS_EVENT_MAIN_MENU);
+	Player_select_pilot_committed = true;
+	return true;
+}
+
+void player_finish_select(const char* callsign, bool is_multi) {
+	if (player_select_commit_pilot(callsign, is_multi)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
 }
 bool player_create_new_pilot(const char* callsign, bool is_multi, const char* copy_from_callsign) {
 	SCP_string buf = callsign;
