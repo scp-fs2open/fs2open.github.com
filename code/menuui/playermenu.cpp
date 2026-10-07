@@ -870,20 +870,32 @@ void player_select_scroll_list_down()
 	}
 }
 
+// callsign of the last played pilot, or an empty string if there wasn't one
+static SCP_string player_select_read_last_pilot()
+{
+	auto callsign = player_get_last_player();
+
+	// handle changing from pre-pilot code to post-pilot code, which appended M or S to the callsign;
+	// but only chop it off if the callsign isn't a valid pilot as-is
+	if (!callsign.empty() && (callsign.back() == 'M' || callsign.back() == 'S') && !Pilot.verify((callsign + ".json").c_str()))
+	{
+		auto chopped = callsign.substr(0, callsign.size() - 1);
+		if (Pilot.verify((chopped + ".json").c_str()))
+			callsign = chopped;
+	}
+
+	return callsign;
+}
+
 // fill in the data on the last played pilot (callsign and is_multi or not)
 int player_select_get_last_pilot_info()
 {
-	const char *last_player = os_config_read_string( NULL, "LastPlayer", NULL);
+	auto last_pilot = player_select_read_last_pilot();
 
-	if (last_player == NULL) {
+	if (last_pilot.empty()) {
 		return 0;
 	} else {
-		strcpy_s(Player_select_last_pilot, last_player);
-	}
-
-	// handle changing from pre-pilot code to post-pilot code
-	if (Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'M' || Player_select_last_pilot[strlen(Player_select_last_pilot)-1] == 'S') {
-		Player_select_last_pilot[strlen(Player_select_last_pilot)-1]='\0';	// chop off last char, M|P
+		strcpy_s(Player_select_last_pilot, last_pilot.c_str());
 	}
 
 	if ( !Pilot.load_player(Player_select_last_pilot, Player) ) {
