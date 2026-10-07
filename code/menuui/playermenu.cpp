@@ -875,7 +875,7 @@ int player_select_get_last_pilot_info()
 
 bool player_select_auto_select_requested()
 {
-	return Cmdline_pilot || Cmdline_use_last_pilot || Cmdline_benchmark_mode;
+	return Cmdline_pilot || Cmdline_use_last_pilot || Cmdline_benchmark_mode || Cmdline_start_mission;
 }
 
 bool player_select_try_auto_select()
