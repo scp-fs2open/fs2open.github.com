@@ -13,6 +13,7 @@
 #include "ddsutils/bcdec.h"
 #include "globalincs/systemvars.h"
 #include "ktxutils/ktxutils.h"
+#include "ktxutils/etcdec.h"
 
 namespace graphics::vulkan {
 
@@ -1857,7 +1858,13 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 		ts->format == vk::Format::eBc1RgbaUnormBlock ||
 		ts->format == vk::Format::eBc2UnormBlock ||
 		ts->format == vk::Format::eBc3UnormBlock ||
-		ts->format == vk::Format::eBc7UnormBlock,
+		ts->format == vk::Format::eBc7UnormBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8UnormBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8SrgbBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8A1UnormBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8A1SrgbBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8A8UnormBlock ||
+		ts->format == vk::Format::eEtc2R8G8B8A8SrgbBlock,
 		"get_bitmap_from_texture: unsupported format %d on bitmap %d"
 		" — may be a render target or dynamic texture",
 		static_cast<int>(ts->format), bitmap_num);
@@ -1868,7 +1875,13 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 	const bool isCompressed = (ts->format == vk::Format::eBc1RgbaUnormBlock ||
 	                           ts->format == vk::Format::eBc2UnormBlock ||
 	                           ts->format == vk::Format::eBc3UnormBlock ||
-	                           ts->format == vk::Format::eBc7UnormBlock);
+	                           ts->format == vk::Format::eBc7UnormBlock || 
+							   ts->format == vk::Format::eEtc2R8G8B8UnormBlock ||
+							   ts->format == vk::Format::eEtc2R8G8B8SrgbBlock ||
+							   ts->format == vk::Format::eEtc2R8G8B8A1UnormBlock ||
+							   ts->format == vk::Format::eEtc2R8G8B8A1SrgbBlock ||
+							   ts->format == vk::Format::eEtc2R8G8B8A8UnormBlock ||
+							   ts->format == vk::Format::eEtc2R8G8B8A8SrgbBlock);
 	const bool hasAlpha = bm_has_alpha_channel(bitmap_num);
 	const int outChannels = hasAlpha ? 4 : 3;
 
@@ -1885,6 +1898,12 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 		case vk::Format::eBc2UnormBlock: blockSize = BCDEC_BC2_BLOCK_SIZE; break;
 		case vk::Format::eBc3UnormBlock: blockSize = BCDEC_BC3_BLOCK_SIZE; break;
 		case vk::Format::eBc7UnormBlock: blockSize = BCDEC_BC7_BLOCK_SIZE; break;
+		case vk::Format::eEtc2R8G8B8UnormBlock:
+		case vk::Format::eEtc2R8G8B8SrgbBlock:     blockSize = ETCDEC_ETC_RGB_BLOCK_SIZE;    break;
+		case vk::Format::eEtc2R8G8B8A1UnormBlock:
+		case vk::Format::eEtc2R8G8B8A1SrgbBlock:   blockSize = ETCDEC_ETC_RGB_A1_BLOCK_SIZE; break;
+		case vk::Format::eEtc2R8G8B8A8UnormBlock:
+		case vk::Format::eEtc2R8G8B8A8SrgbBlock:   blockSize = ETCDEC_EAC_RGBA_BLOCK_SIZE;   break;
 		default: return nullptr;
 		}
 		blockW = (w + 3) / 4;
@@ -2037,6 +2056,18 @@ void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format f
 					break;
 				case vk::Format::eBc7UnormBlock:
 					bcdec_bc7(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eEtc2R8G8B8UnormBlock:
+				case vk::Format::eEtc2R8G8B8SrgbBlock:
+					etcdec_etc_rgb(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eEtc2R8G8B8A1UnormBlock:
+				case vk::Format::eEtc2R8G8B8A1SrgbBlock:
+					etcdec_etc_rgb_a1(srcBlock, blockColBase, static_cast<int>(copyW * 4));
+					break;
+				case vk::Format::eEtc2R8G8B8A8UnormBlock:
+				case vk::Format::eEtc2R8G8B8A8SrgbBlock:
+					etcdec_eac_rgba(srcBlock, blockColBase, static_cast<int>(copyW * 4));
 					break;
 				default: break;
 				}
