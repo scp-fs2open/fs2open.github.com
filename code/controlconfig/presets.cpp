@@ -171,7 +171,7 @@ bool delete_preset_file(CC_preset preset) {
 	cf_delete(filename.c_str(), CF_TYPE_PLAYER_BINDS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// Reload the presets from file.
-	Control_config_presets.resize(1);
+	Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 	load_preset_files();
 
 	return true;

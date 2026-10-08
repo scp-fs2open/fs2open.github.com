@@ -1353,7 +1353,7 @@ bool control_config_accept(bool API_Access)
 			}
 
 			// Pack the current bindings into a preset, then save the file
-			CC_preset preset;
+			CC_preset preset(std::move(str), Preset_t::pst);
 			preset.name = std::move(str);
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
@@ -1361,7 +1361,7 @@ bool control_config_accept(bool API_Access)
 
 			// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get
 			// consistant ordering
-			Control_config_presets.resize(1);
+			Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 			load_preset_files();
 
 			// finally, save the new preset so that changes will get saved to this preset
@@ -1803,7 +1803,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 		save_preset_file(preset, true);
 
 		// Reload the presets from file.
-		Control_config_presets.resize(1);
+		Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 		load_preset_files(newName);
 
 		// use the newly created preset
@@ -1835,13 +1835,13 @@ bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newN
 		return false;
 	}
 
-	CC_preset newPreset = preset;
-	newPreset.name = newName;
+	CC_preset newPreset(newName, Preset_t::pst);
+	newPreset.bindings = preset.bindings;
 
 	bool success = save_preset_file(newPreset, false);
 
 	// Reload the presets from file.
-	Control_config_presets.resize(1);
+	Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 	load_preset_files(newName);
 
 	// use the newly cloned preset

@@ -577,17 +577,11 @@ class CC_preset {
 	SCP_string name;
 
   private:
-	Preset_t type = Preset_t::hardcode;
-
-	// Private constructor enforcing explicit type creation
-	CC_preset(SCP_string preset_name, SCP_vector<CCB> preset_bindings, Preset_t preset_type)
-		: bindings(std::move(preset_bindings)), name(std::move(preset_name)), type(preset_type)
-	{
-	}
+	// No default value: the type is always set explicitly by the constructor
+	Preset_t type;
 
   public:
-	CC_preset() = default;
-
+	// No default constructor: every preset must be created with an explicit type
 	CC_preset(SCP_string preset_name, Preset_t preset_type) : name(std::move(preset_name)), type(preset_type) {}
 	CC_preset(const CC_preset&) = default;
 
