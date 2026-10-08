@@ -1604,6 +1604,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	
 	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
+		cfclose(fp);
 		return modelread_status::FAIL;
 	}
 	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) {
@@ -1635,6 +1636,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// keep track of any submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
 	SCP_vector<SCP_string> dock_parent_submodel_names;
+
+	// the texture count is clamped while parsing, so remember the real one in order to reject the model afterward
+	int n_textures_in_file = 0;
 
 	while (!cfeof(fp)) {
 
@@ -1767,7 +1771,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				// read in cross section info
 				pm->xc = nullptr;
 				if ( pm->version >= 2014 ) {
-					pm->num_xc = pof_read_count(fp, filename, "cross sections");
+					// retail models use -1 to mean there are no cross sections
+					pm->num_xc = std::max(cfread_int(fp), 0);
 					if (pm->num_xc > 0) {
 						pm->xc = make_shared<cross_section[]>(pm->num_xc);
 						for (i=0; i<pm->num_xc; i++) {
@@ -2659,10 +2664,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"Got chunk TXTR, len=%d\n",len);
 
 
-				// Don't overwrite memory!!  (the model will misrender if we have to drop any textures,
-				// since texture indices are baked into the BSP data, but that beats writing past maps[])
-				int n_textures_in_file = 0;
-				n = pof_read_count(fp, filename, "textures", MAX_MODEL_TEXTURES, &n_textures_in_file);
+				// Don't overwrite memory!!  (texture indices are baked into the BSP data, so a model with
+				// too many textures is rejected once parsing is finished)
+				pof_read_count(fp, filename, "textures", INT_MAX, &n_textures_in_file);
+				n = std::min(n_textures_in_file, MAX_MODEL_TEXTURES);
 				pm->n_textures = n;
 				//mprintf(0,"  num textures = %d\n",n);
 				// (read past any we had to clamp, so that the rest of the chunk stays aligned)
@@ -2944,9 +2949,15 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		next_chunk = cftell(fp) + len;
 	}
 
+	cfclose(fp);
+
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
 	// first do some sanity checking to detect model errors
+	if (n_textures_in_file > MAX_MODEL_TEXTURES) {
+		Warning(LOCATION, "Model %s has %d textures, but only %d are supported!", filename, n_textures_in_file, MAX_MODEL_TEXTURES);
+		return modelread_status::FAIL;
+	}
 	for (i = 0; i < pm->n_detail_levels; i++) {
 		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
 			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
@@ -3072,25 +3083,18 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	cfclose(fp);
-
 	// mprintf(("Done processing chunks\n"));
 	return modelread_status::SUCCESS_REAL;
 }
 
 modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
-	modelread_status status;
-
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks)) {
-		status = modelread_status::SUCCESS_VIRTUAL;
-	}
-	else {
-		status = read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
-	}
+	auto virtual_status = read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks);
+	if (virtual_status)
+		return *virtual_status;
 
-	return status;
+	return read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
 }
 
 //reads a binary file containing a 3d model
@@ -3432,10 +3436,12 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_read_deferred_tasks deferredTasks;
 
 	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, error_type, deferredTasks) == modelread_status::FAIL)	{
-		if (pm != NULL) {
-			delete pm;
+		if (pm != nullptr) {
+			// the load can fail after textures have been loaded and memory allocated
+			model_page_out_textures(pm, true);
+			model_free(pm);
 		}
-		Polygon_models[num] = NULL;
+		Polygon_models[num] = nullptr;
 
 		unpause_parse();
 		return -1;
