@@ -3436,10 +3436,12 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_read_deferred_tasks deferredTasks;
 
 	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, error_type, deferredTasks) == modelread_status::FAIL)	{
-		if (pm != NULL) {
-			delete pm;
+		if (pm != nullptr) {
+			// the load can fail after textures have been loaded and memory allocated
+			model_page_out_textures(pm, true);
+			model_free(pm);
 		}
-		Polygon_models[num] = NULL;
+		Polygon_models[num] = nullptr;
 
 		unpause_parse();
 		return -1;
