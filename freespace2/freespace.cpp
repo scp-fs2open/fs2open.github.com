@@ -5259,8 +5259,8 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act accordingly
-			if( player_select_get_last_pilot() ) {	
+			// see if the command line has been set to select a pilot automatically, and act accordingly
+			if( player_select_try_auto_select() ) {
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
@@ -5886,6 +5886,13 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
+	// consume the flag before any script override, so that it can't remain set for a later main hall entry
+	bool pilot_just_committed = false;
+	if (new_state == GS_STATE_MAIN_MENU) {
+		pilot_just_committed = Player_select_pilot_just_committed;
+		Player_select_pilot_just_committed = false;
+	}
+
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
 			scripting::hooks::OnStateStart->run(std::move(script_param_list));
@@ -5914,8 +5921,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
-			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
+			// if we have just selected a pilot, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(pilot_just_committed);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
@@ -7020,7 +7027,7 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !skip_intro && !player_select_auto_select_requested()) {
 		movie::play("intro.mve");
 	}
 
