@@ -7166,7 +7166,7 @@ void game_shutdown(void)
 		Cmdline_mod = nullptr;
 	}
 
-	lcl_xstr_close();
+	lcl_close();
 
 	threading::shut_down_task_pool();
 }
