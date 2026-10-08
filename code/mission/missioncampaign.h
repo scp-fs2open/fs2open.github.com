@@ -22,8 +22,6 @@ struct sexp_variable;
 // name of the builtin campaign.
 #define BUILTIN_CAMPAIGN		"FreeSpace2"
 
-#define MAX_CAMPAIGN_MISSIONS	100			// maximum number of missions in a campaign
-
 #define CAMPAIGN_ERROR_CORRUPT			-1
 #define CAMPAIGN_ERROR_SEXP_EXHAUSTED	-2
 #define CAMPAIGN_ERROR_MISSING			-3
@@ -90,24 +88,24 @@ typedef struct mevent {
 class cmission
 {
 public:
-	char				*name;					// name of the mission
-	char				*notes;					// mission notes for mission (used by Fred)
-	char				briefing_cutscene[NAME_LENGTH];	// name of the cutscene to be played before this mission
-	int				formula;					// sexpression used to determine mission branching.
-	int				completed;				// has the player completed this mission
+	char				*name = nullptr;		// name of the mission
+	char				*notes = nullptr;		// mission notes for mission (used by Fred)
+	char				briefing_cutscene[NAME_LENGTH] = {};	// name of the cutscene to be played before this mission
+	int				formula = -1;				// sexpression used to determine mission branching.
+	int				completed = 0;			// has the player completed this mission
 	SCP_vector<mgoal> goals;				// vector of mgoals which has the goal completion status
 	SCP_vector<mevent> events;				// vector of mevents which has the event completion status
 	SCP_vector<sexp_variable> variables;	// vector of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
-	int				mission_loop_formula;	// formula to determine whether to allow a side loop
-	char			*mission_branch_desc;	// message in popup
-	char			*mission_branch_brief_anim;
-	char			*mission_branch_brief_sound;
-	int				level;					// what level of the tree it's on (Fred)
-	int				pos;					// what x position on level it's on (Fred)
-	int				flags;
+	int				mission_loop_formula = -1;	// formula to determine whether to allow a side loop
+	char			*mission_branch_desc = nullptr;	// message in popup
+	char			*mission_branch_brief_anim = nullptr;
+	char			*mission_branch_brief_sound = nullptr;
+	int				level = 0;				// what level of the tree it's on (Fred)
+	int				pos = 0;				// what x position on level it's on (Fred)
+	int				flags = 0;
 	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
 	SCP_string		substitute_main_hall;	// really only needed for FRED
-	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
+	ubyte			debrief_persona_index = 0;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 };
 
@@ -119,7 +117,6 @@ public:
 	SCP_string description;                         // unlimited length description of campaign
 	int		type;									// type of campaign
 	int		flags;									// flags - Goober5000
-	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
 	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
 	int		next_mission;							// number of the next mission to fly when continuing the campaign.  Always valid
@@ -131,7 +128,7 @@ public:
 	int		num_players;							// valid in multiplayer campaigns -- number of players campaign supports.
 	SCP_set<int>	ships_allowed;						// class indices of ships the player can use; absent = not allowed
 	SCP_set<int>	weapons_allowed;					// class indices of weapons the player can use; absent = not allowed
-	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
+	SCP_vector<cmission>	missions;				// decription of the missions
 	SCP_vector<sexp_variable> persistent_variables;		// These variables will be saved at the end of a mission
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
 	SCP_vector<sexp_container> persistent_containers;	// These containers will be saved at the end of a mission
@@ -139,7 +136,6 @@ public:
 	SCP_map<SCP_string, SCP_string> custom_data;        // Custom data for the campaign
 
 	campaign()
-		: num_missions(0)
 	{
 		name[0] = 0;
 		filename[0] = 0;
@@ -153,11 +149,9 @@ extern int Campaign_ending_via_supernova;
 
 // extern'ed so the mission loading can get a list of campains.  Only use this
 // data after mission_campaign_build_list() is called
-#define MAX_CAMPAIGNS	128
-extern char *Campaign_names[MAX_CAMPAIGNS];
-extern char *Campaign_file_names[MAX_CAMPAIGNS];
-extern char *Campaign_descs[MAX_CAMPAIGNS];
-extern int	Num_campaigns;
+extern SCP_vector<SCP_string> Campaign_names;
+extern SCP_vector<SCP_string> Campaign_file_names;
+extern SCP_vector<SCP_string> Campaign_descs;
 extern int	Campaign_names_inited;
 extern SCP_vector<SCP_string> Ignored_campaigns;
 
@@ -218,10 +212,10 @@ extern void mission_campaign_save_persistent( int type, int index );
 // execute the corresponding mission_campaign_savefile functions.
 
 // get name and type of specified campaign file
-bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, SCP_string *desc = nullptr, SCP_string *first_mission = nullptr);
 
 // get a listing of missions in a campaign
-int mission_campaign_get_mission_list(const char *filename, char **list, int max);
+int mission_campaign_get_mission_list(const char *filename, SCP_vector<SCP_string> &list);
 
 // load up a campaign for the current player.
 int mission_load_up_campaign(bool fall_back_from_current = false);
