@@ -19,9 +19,8 @@
 
 
 // global stuff
-int Num_ai_profiles;
 int Default_ai_profile;
-ai_profile_t Ai_profiles[MAX_AI_PROFILES];
+SCP_vector<ai_profile_t> Ai_profiles;
 
 // local to this file
 static int Ai_profiles_initted = 0;
@@ -36,6 +35,7 @@ void set_flag(ai_profile_t *profile, const char *name, AI::Profile_Flags flag)
 		bool val;
 		stuff_boolean(&val);
         profile->flags.set(flag, val);
+		profile->explicit_flags.set(flag);
 	}
 }
 
@@ -116,7 +116,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			stuff_string(profile_name, F_NAME, NAME_LENGTH);
 
 			// see if it exists
-			for (i = 0; i < Num_ai_profiles; i++)
+			for (i = 0; i < sz2i(Ai_profiles.size()); i++)
 			{
 				if (!stricmp(Ai_profiles[i].profile_name, profile_name))
 				{
@@ -144,16 +144,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 				else
 				{
-					// make sure we're under the limit
-					if (Num_ai_profiles >= MAX_AI_PROFILES)
-					{
-						Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES - 1);	// -1 because one is built-in
-						skip_to_string("#End", NULL);
-						break;
-					}
-
-					profile = &Ai_profiles[Num_ai_profiles];
-					Num_ai_profiles++;
+					Ai_profiles.emplace_back();
+					profile = &Ai_profiles.back();
 				}
 			}
 
@@ -161,7 +153,7 @@ void parse_ai_profiles_tbl(const char *filename)
 			if (!no_create)
 			{
 				// base profile, so zero it out
-				if (profile == &Ai_profiles[0])
+				if (profile == &Ai_profiles.front())
 				{
                     profile->reset();
 				}
@@ -771,6 +763,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
 
+				set_flag(profile, "$consistent dinky shockwaves:", AI::Profile_Flags::Consistent_dinky_shockwaves);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -807,7 +801,7 @@ void ai_profiles_init()
 	if (Ai_profiles_initted)
 		return;
 
-	Num_ai_profiles = 0;
+	Ai_profiles.clear();
 	Default_ai_profile = 0;
 	Default_profile_name[0] = '\0';
 
@@ -840,7 +834,7 @@ void ai_profiles_init()
 
 int ai_profile_lookup(const char *name)
 {
-	for (int i = 0; i < Num_ai_profiles; i++)
+	for (int i = 0; i < sz2i(Ai_profiles.size()); i++)
 		if (!stricmp(name, Ai_profiles[i].profile_name))
 			return i;
 
@@ -852,6 +846,7 @@ void ai_profile_t::reset()
     memset(profile_name, 0, sizeof(profile_name));
 
     flags.reset();
+    explicit_flags.reset();
 
     los_min_detection_radius = 10.0f;
     ai_path_mode = AI_PATH_MODE_NORMAL;
@@ -878,6 +873,8 @@ void ai_profile_t::reset()
 	attack_any_idle_circle_distance = 100.0f;
 
 	default_form_on_wing_priority = 99;	// as originally assigned in ai_add_goal_sub_sexp()
+
+	dinky_shockwave_multiplier = Dinky_shockwave_default_multiplier;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -1007,5 +1004,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
 		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
+	}
+	if (mod_supports_version(27, 0, 0)) {
+		flags.set(AI::Profile_Flags::Consistent_dinky_shockwaves);
 	}
 }

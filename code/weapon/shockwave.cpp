@@ -142,6 +142,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	sw->inner_radius = sci->inner_rad;
 	sw->outer_radius = sci->outer_rad;
 	sw->damage = sci->damage;
+	sw->radius_curve_idx = sci->radius_curve_idx;
 	sw->blast = sci->blast;
 	sw->radius = 1.0f;
 	sw->pos = *pos;
@@ -298,8 +299,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	if (sw->weapon_info_index >= 0)
 		wip = &Weapon_info[sw->weapon_info_index];
 	
-	if (wip && wip->shockwave.radius_curve_idx >= 0) {
-		float val = Curves[wip->shockwave.radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
+	if (sw->radius_curve_idx >= 0) {
+		float val = Curves[sw->radius_curve_idx].GetValue(sw->time_elapsed / sw->total_time);
 		sw->radius = val * sw->outer_radius;
 		if (sw->radius < 0.0f)
 			sw->radius = 0.0f;
@@ -312,7 +313,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// which by default results in shockwave applying no damage.
 	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
 	bool sw_expired = sw->time_elapsed > sw->total_time;
-	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+	bool sw_expire_fix = The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
 
 	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -385,12 +386,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				&& Objects[shockwave_objp->parent].type == OBJ_SHIP
 				&& Ships[Objects[shockwave_objp->parent].instance].team == shipp->team) {
 				if (&Objects[shockwave_objp->parent] == objp
-					&& The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					&& The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 					// if this is a ship shooting itself, we use the self damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
-				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					damage = MIN(damage, The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 					// otherwise we use the friendly damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+					damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 				}
 			}
 
@@ -414,8 +415,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (shockwave_objp->parent >= 0 && sw->weapon_info_index >= 0 &&
 				Objects[shockwave_objp->parent].type == OBJ_SHIP &&
 				Ships[Objects[shockwave_objp->parent].instance].team == Weapons[objp->instance].team &&
-				The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
-				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+				The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 			}
 
 			objp->hull_strength -= damage;
@@ -818,6 +819,56 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->damage_overridden = false;
 
 	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
+}
+
+/**
+ * Copies every field that isn't in specified_fields (SCI_* bits) from the parent
+ */
+void shockwave_create_info_inherit(shockwave_create_info *sci, const shockwave_create_info *parent, int specified_fields)
+{
+	if (!(specified_fields & SCI_DAMAGE))
+		sci->damage = parent->damage;
+	sci->damage_overridden = (specified_fields & SCI_DAMAGE) != 0;
+
+	if (!(specified_fields & SCI_DAMAGE_TYPE)) {
+		sci->damage_type_idx = parent->damage_type_idx;
+		sci->damage_type_idx_sav = parent->damage_type_idx_sav;
+	}
+
+	if (!(specified_fields & SCI_BLAST))
+		sci->blast = parent->blast;
+
+	if (!(specified_fields & SCI_INNER_RAD))
+		sci->inner_rad = parent->inner_rad;
+
+	if (!(specified_fields & SCI_OUTER_RAD))
+		sci->outer_rad = parent->outer_rad;
+
+	if (sci->outer_rad < sci->inner_rad)
+		sci->outer_rad = sci->inner_rad;
+
+	if (!(specified_fields & SCI_RADIUS_CURVE))
+		sci->radius_curve_idx = parent->radius_curve_idx;
+
+	if (!(specified_fields & SCI_SPEED))
+		sci->speed = parent->speed;
+
+	if (!(specified_fields & SCI_ROTATION)) {
+		sci->rot_angles = parent->rot_angles;
+		sci->rot_defined = parent->rot_defined;
+	}
+
+	if (!(specified_fields & SCI_ROT_RELATIVE))
+		sci->rot_parent_relative = parent->rot_parent_relative;
+
+	if (!(specified_fields & SCI_MODEL))
+		strcpy_s(sci->pof_name, parent->pof_name);
+
+	if (!(specified_fields & SCI_NAME))
+		strcpy_s(sci->name, parent->name);
+
+	if (!(specified_fields & SCI_SOUND))
+		sci->blast_sound_id = parent->blast_sound_id;
 }
 
 /**

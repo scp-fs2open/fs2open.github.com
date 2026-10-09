@@ -41,6 +41,10 @@ add_file_folder("menuui"
     menuui/test_intel_parse.cpp
 )
 
+add_file_folder("Mission"
+    mission/test_missionparse.cpp
+)
+
 add_file_folder("mod"
     mod/test_mod_table.cpp
 )

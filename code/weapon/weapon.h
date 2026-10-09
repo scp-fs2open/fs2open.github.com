@@ -455,6 +455,7 @@ struct weapon_info
 
 	shockwave_create_info shockwave;
 	shockwave_create_info dinky_shockwave;
+	int dinky_shockwave_specified_fields;		// SCI_* bits; everything else is inherited from the regular shockwave
 
 	fix arm_time;
 	float arm_dist;
@@ -551,6 +552,7 @@ struct weapon_info
 	gamesnd_id	cockpit_launch_snd;
 	gamesnd_id	impact_snd;
 	gamesnd_id  disarmed_impact_snd;
+	bool disarmed_impact_snd_specified;			// if not, the regular impact sound is used
 	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;

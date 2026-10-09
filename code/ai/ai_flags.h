@@ -202,6 +202,11 @@ namespace AI {
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
 		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
+		Consistent_dinky_shockwaves,	// any shot-down weapon (including area-effect weapons and beam kills) uses its dinky shockwave; huge ships take full damage only if the dinky damage is defaulted
+
+		// internal flags set by mission_apply_era_adjustments(); not parsed from tables, and only consulted when Consistent_dinky_shockwaves is off
+		Era_reduce_shot_down_area_effects,	// a shot-down weapon without a shockwave has its area damage multiplied like a shockwave would be
+		Era_beam_kills_count_as_shot_down,	// a weapon destroyed by a beam uses its dinky shockwave
 
 		NUM_VALUES
 	};

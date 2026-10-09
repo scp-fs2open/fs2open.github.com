@@ -241,8 +241,8 @@ void MissionSpecDialog::updateMusic() {
 void MissionSpecDialog::updateAIProfiles() {
 	int idx = _model->getAIProfileIndex();
 	ui->aiProfileCombo->clear();
-	for (int i = 0; i < Num_ai_profiles; i++) {
-		ui->aiProfileCombo->addItem(Ai_profiles[i].profile_name, QVariant(AI_PROFILES_INDEX(&Ai_profiles[i])));
+	for (int i = 0; i < sz2i(Ai_profiles.size()); i++) {
+		ui->aiProfileCombo->addItem(Ai_profiles[i].profile_name, QVariant(i));
 	}
 	ui->aiProfileCombo->setCurrentIndex(ui->aiProfileCombo->findData(idx));
 }
