@@ -140,7 +140,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				// don't create multiple profiles with the same name
 				if (previous_profile != NULL)
 				{
-					Warning(LOCATION, "An ai profile named '%s' already exists!  The new one will not be created.\n", profile_name);
+					Warning(LOCATION, "An AI profile named '%s' already exists!  The new one will not be created.\n", profile_name);
 				}
 				else
 				{
@@ -412,7 +412,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$disable player secondary doublefire:", AI::Profile_Flags::Disable_player_secondary_doublefire);
 
-				set_flag(profile, "$disable ai secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
+				set_flag(profile, "$disable AI secondary doublefire:", AI::Profile_Flags::Disable_ai_secondary_doublefire);
 
 				set_flag(profile, "$disable weapon damage scaling:", AI::Profile_Flags::Disable_weapon_damage_scaling);
 
@@ -450,7 +450,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$force beam turrets to use normal fov:", AI::Profile_Flags::Force_beam_turret_fov);
 
-				set_flag(profile, "$fix ai class bug:", AI::Profile_Flags::Fix_ai_class_bug);
+				set_flag(profile, "$fix AI class bug:", AI::Profile_Flags::Fix_ai_class_bug);
 
 				set_flag(profile, "$turrets ignore targets radius in range checks:", AI::Profile_Flags::Turrets_ignore_target_radius);
 
@@ -505,13 +505,13 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->ai_path_mode = j;
 					}
 					else {
-						Warning(LOCATION, "Invalid ai path mode '%s' specified", buf);
+						Warning(LOCATION, "Invalid AI path mode '%s' specified", buf);
 					}
 				}
 
 				set_flag(profile, "$no warp camera:", AI::Profile_Flags::No_warp_camera);
 
-				set_flag(profile, "$fix ai path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
+				set_flag(profile, "$fix AI path order bug:", AI::Profile_Flags::Fix_ai_path_order_bug);
 
 				set_flag(profile, "$strict turret-tagged-only targeting:", AI::Profile_Flags::Strict_turret_tagged_only_targeting);
 
@@ -622,7 +622,7 @@ void parse_ai_profiles_tbl(const char *filename)
 						profile->ai_range_aware_secondary_select_mode = j;
 					}
 					else {
-						Warning(LOCATION, "Invalid ai secondary range awareness mode '%s' specified", buf);
+						Warning(LOCATION, "Invalid AI secondary range awareness mode '%s' specified", buf);
 					}
 				}
 
@@ -677,7 +677,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
-				set_flag(profile, "$fix ai target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
+				set_flag(profile, "$fix AI target recovery:", AI::Profile_Flags::Fix_ai_target_recovery);
 
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
@@ -771,7 +771,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
 
-				set_flag(profile, "$fix stale ai order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
+				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
 
 				// end of options ----------------------------------------
 
