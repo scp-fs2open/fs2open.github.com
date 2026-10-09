@@ -771,6 +771,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix fighterbay speed ramp:", AI::Profile_Flags::Fix_bay_speed_ramp);
 
+				set_flag(profile, "$fix stale ai order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -1007,5 +1009,6 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_target_recovery);
 		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
 		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
+		flags.set(AI::Profile_Flags::Fix_stale_ai_order_state);
 	}
 }
