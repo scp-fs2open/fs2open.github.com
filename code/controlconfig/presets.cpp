@@ -74,9 +74,7 @@ void load_preset_files(SCP_string clone) {
 
 
 		// Start reading in data
-		CC_preset preset;
-		preset.name = file;
-		preset.type = Preset_t::pst;
+		CC_preset preset(file, Preset_t::pst);
 		preset.bindings.resize(Control_config.size());
 
 		size_t size;
@@ -134,7 +132,7 @@ void load_preset_files(SCP_string clone) {
 		if ((clone == preset.name) || (it == Control_config_presets.end())) {
 			Control_config_presets.push_back(preset);
 
-		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {
+		} else if ((it->name != preset.name) || ((it->get_type() != Preset_t::pst))) {
 			if (gameseq_get_state() == GS_STATE_CONTROL_CONFIG) {
 				popup(PF_TITLE_WHITE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
 			} else {
@@ -173,7 +171,7 @@ bool delete_preset_file(CC_preset preset) {
 	cf_delete(filename.c_str(), CF_TYPE_PLAYER_BINDS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	// Reload the presets from file.
-	Control_config_presets.resize(1);
+	Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 	load_preset_files();
 
 	return true;
