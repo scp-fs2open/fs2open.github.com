@@ -66,6 +66,16 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 extern void compute_desired_rvec(vec3d *rvec, const vec3d *goal_pos, const vec3d *cur_pos);
 extern void big_ship_collide_recover_start(const object *objp, const object *big_objp, const vec3d *collision_normal);
 
+// Record the mode being left as the one to return to, unless a dynamic goal is already in progress
+// (in which case previous_mode still refers to the mode that goal interrupted).
+static void ai_big_save_previous_mode(ai_info *aip)
+{
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state] && aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)
+		return;
+
+	aip->previous_mode = aip->mode;
+}
+
 
 //	Called by ai_big_pick_attack_point.
 //	Generates a random attack point.
@@ -727,7 +737,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		// including ai_profile flag and if enemy fighters are near
 		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed && 
 			(The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
-			aip->previous_mode = aip->mode;
+			ai_big_save_previous_mode(aip);
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			ai_big_strafe_position();
@@ -736,7 +746,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
 		if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
-			aip->previous_mode = aip->mode;
+			ai_big_save_previous_mode(aip);
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_GLIDE_ATTACK;
@@ -1008,7 +1018,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 // switch ai ship into chase mode
 void ai_big_switch_to_chase_mode(ai_info *aip)
 {
-	aip->previous_mode = aip->mode;
+	ai_big_save_previous_mode(aip);
 	aip->mode = AIM_CHASE;
 	aip->submode = SM_ATTACK;
 	aip->submode_start_time = Missiontime;
@@ -1987,7 +1997,7 @@ int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 
 	// if we've got this far, the weapon must have come from the player's target, and it is a 
 	// big/capital ship... so enter strafe mode
-	aip->previous_mode = aip->mode;
+	ai_big_save_previous_mode(aip);
 	aip->mode = AIM_STRAFE;
 	aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 	aip->submode = AIS_STRAFE_AVOID;
