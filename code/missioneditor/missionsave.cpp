@@ -599,6 +599,12 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 		} else if (goalp[i].ai_mode == AI_GOAL_WARP) {
 			fout("( ai-warp-out %d ) ", goalp[i].priority);
 
+		} else if (goalp[i].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE) {
+			fout( " ( ai-destroy-turret-type %i %d ) ", goalp[i].int_data, goalp[i].priority );
+
+		} else if (goalp[i].ai_mode == AI_GOAL_DESTROY_TURRET_TYPE_ON_SHIP) {
+			fout( " ( ai-destroy-turret-type %i %s %d ) ", goalp[i].int_data, goalp[i].target_name, goalp[i].priority );
+
 		} else {
 			valid = 1;
 			if (!goalp[i].target_name) {
