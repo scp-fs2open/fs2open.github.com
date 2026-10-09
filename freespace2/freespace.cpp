@@ -208,6 +208,7 @@
 
 #include <SDL3/SDL_main.h>
 
+#include <algorithm>
 #include <cinttypes>
 #include <stdexcept>
 
@@ -367,7 +368,9 @@ fix FrametimeOverall = 0;
 	int	Show_framerate = 0;
 #endif
 
-int	Framerate_cap = 120;
+static constexpr int MIN_FRAMERATE_CAP = 15;
+static constexpr int MAX_FRAMERATE_CAP = 120;
+int	Framerate_cap = 120; // Default value
 
 // for the model page in system
 extern void model_page_in_start();
@@ -1911,6 +1914,34 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
+	// Keep the old MaxFPS setting as the default when no Graphics.FramerateCap value is saved.
+	const auto max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0);
+	if (max_fps >= MIN_FRAMERATE_CAP && max_fps <= MAX_FRAMERATE_CAP) {
+		Framerate_cap = static_cast<int>(max_fps);
+	}
+
+	static auto FramerateCapOption __UNUSED = options::OptionBuilder<int>("Graphics.FramerateCap",
+					 std::pair<const char*, int>{"Frame Rate Limit", 1936},
+					 std::pair<const char*, int>{"Maximum frames per second. Vertical sync may lower the actual frame rate.", 1937})
+					 .category(std::make_pair("Graphics", 1825))
+					 .level(options::ExpertLevel::Advanced)
+					 .range(MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP)
+					 .default_func([]() { return Framerate_cap; })
+					 .deserializer([](const json_t* value) {
+						int saved;
+						json_error_t err;
+						if (json_unpack_ex(const_cast<json_t*>(value), &err, 0, "i", &saved) != 0) {
+							throw json_exception(err);
+						}
+						// Clamp saved out-of-range values
+						return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+					 })
+					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string("Unlimited") : std::to_string(value); })
+					 .bind_to(&Framerate_cap)
+					 .importance(71)
+					 .flags({options::OptionFlags::RangeTypeInteger})
+					 .finish();
+
 	// Must be run after mod table is parsed so we know the value of Using_in_game_options
 	// Must be run before everything else inits so we can init those with the correct
 	// default values or user preferences
@@ -1945,6 +1976,11 @@ void game_init()
 		std_init_standalone();
 	}
 
+	if (Cmdline_NoFPSCap) {
+		options::OptionsManager::instance()->setOverride("Graphics.FramerateCap",
+			std::unique_ptr<json_t>(json_integer(Framerate_cap)), "-no_fps_capping");
+	}
+
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
 	verify_ships_tbl();
 
@@ -1959,15 +1995,7 @@ void game_init()
 	Use_fullscreen_at_startup = os_config_read_uint( nullptr, NOX("ForceFullscreen"), 1 );
 #endif
 
-	// change FPS cap if told to do so (for those who can't use vsync or where vsync isn't enough)
-	uint max_fps = 0;
-	if ( (max_fps = os_config_read_uint(nullptr, NOX("MaxFPS"), 0)) != 0 ) {
-		if ( (max_fps > 15) && (max_fps < 120) ) {
-			Framerate_cap = (int)max_fps;
-		}
-	}
-
-	Asteroids_enabled = 1;		
+	Asteroids_enabled = 1;
 
 /////////////////////////////
 // SOUND INIT START
@@ -3004,7 +3032,7 @@ DCF(framerate_cap, "Sets the framerate cap")
 	if (dc_optional_string_either("help", "--help")) {
 		dc_printf("Usage: framerate_cap [n]\nwhere n is the frames per second to cap framerate at.\n");
 		dc_printf("If n is 0 or omitted, then the framerate cap is removed\n");
-		dc_printf("[n] must be from 1 to 120.\n");
+		dc_printf("[n] must be from 1 to %d.\n", MAX_FRAMERATE_CAP);
 		process = false;
 	}
 
@@ -3026,8 +3054,8 @@ DCF(framerate_cap, "Sets the framerate cap")
 		Framerate_cap = 0;
 	}
 
-	if ((Framerate_cap < 0) || (Framerate_cap > 120)) {
-		dc_printf( "Illegal value for framerate cap. (Must be from 1-120) \n");
+	if ((Framerate_cap < 0) || (Framerate_cap > MAX_FRAMERATE_CAP)) {
+		dc_printf("Illegal value for framerate cap. (Must be from 1-%d) \n", MAX_FRAMERATE_CAP);
 		Framerate_cap = 0;
 	}
 
