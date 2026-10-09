@@ -16059,6 +16059,24 @@ void init_aip_from_class_and_profile(ai_info *aip, ai_class *aicp, ai_profile_t 
     aip->ai_profile_flags = profile->flags | (aicp->ai_profile_flags & aicp->ai_profile_flags_set);
 }
 
+// Clear the fields that remember which order set them up or which order a dynamic goal interrupted.
+// Call when a new order takes over; the order's own setup repopulates whatever it needs.
+void ai_reset_order_state(ai_info *aip)
+{
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state]
+		|| The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_target_recovery])
+		aip->enemy_wing = -1;
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state])
+	{
+		aip->guard_objnum = -1;
+		aip->guard_signature = -1;
+		aip->guard_wingnum = -1;
+		aip->previous_mode = AIM_NONE;
+		aip->resume_goal_time = -1;
+	}
+}
+
 void ai_do_default_behavior(object *obj)
 {
     Assertion(obj != nullptr, "Ai_do_default_behavior() was given a bad information.  Specifically obj is a nullptr. This is a coder error, please report!");
@@ -16072,6 +16090,7 @@ void ai_do_default_behavior(object *obj)
     aip->mode = AIM_NONE;
     aip->submode_start_time = Missiontime;
     aip->active_goal = AI_ACTIVE_GOAL_NONE;
+    ai_reset_order_state(aip);
 
     // if we're not docked, we may modify the behavior a bit
     if (!object_is_docked(obj))
@@ -16304,12 +16323,22 @@ void maybe_set_dynamic_chase(ai_info *aip, int hitter_objnum)
 	if (aip->target_objnum != hitter_objnum)
 		aip->aspect_locked_time = 0.0f;
 	set_target_objnum(aip, hitter_objnum);
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state]) {
+		// don't bash the mode we're returning to if this is a dynamic goal interrupting another one
+		if (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+			aip->previous_mode = aip->mode;
+			aip->previous_submode = aip->submode;
+		}
+	} else {
+		aip->previous_submode = aip->mode;	// retail typo, almost certainly meant to be previous_mode
+	}
+
 	aip->resume_goal_time = Missiontime + i2f(20);	//	Only chase up to 20 seconds.
 	aip->active_goal = AI_ACTIVE_GOAL_DYNAMIC;
 
 	set_targeted_subsys(aip, NULL, -1);		//	Say not attacking any particular subsystem.
 
-	aip->previous_submode = aip->mode;
 	aip->mode = AIM_CHASE;
 	aip->submode = SM_ATTACK;
 	aip->submode_start_time = Missiontime;

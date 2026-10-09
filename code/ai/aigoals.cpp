@@ -2510,6 +2510,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	//	Kind of a hack for now.  active_goal means the goal currently being pursued.
 	//	It will always be #0 since the list is prioritized.
 	aip->active_goal = 0;
+	ai_reset_order_state(aip);
 
 	//nprintf(("AI", "New goal for %s = %i\n", Ships[objp->instance].ship_name, aip->goals[0].ai_mode));
 
