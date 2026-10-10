@@ -13,6 +13,7 @@
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "math/curve.h"
+#include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "object/object.h"
@@ -28,8 +29,6 @@
 // -----------------------------------------------------------
 
 extern int Game_skill_level;
-static const char *Default_shockwave_2D_filename = "shockwave01";
-static const char *Default_shockwave_3D_filename = "shockwave.pof";
 static int Default_2D_shockwave_index = -1;
 static int Default_shockwave_loaded = 0;
 
@@ -137,6 +136,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	sw = &Shockwaves[i];
 
 	sw->model_id = model_id;
+	sw->glow_factor = sci->glow_factor;
 	sw->flags = (SW_USED | flag);
 	sw->speed = sci->speed;
 	sw->inner_radius = sci->inner_rad;
@@ -506,6 +506,7 @@ void shockwave_render(const object *objp, model_draw_list *scene)
 
 		float warp_alpha = shockwave_model_base_is_animated(sw->model_id) ? 1.0f : 1.0f - (sw->radius/sw->outer_radius);
 		render_info.set_warp_params(-1, warp_alpha, scale);
+		render_info.set_glow_params(sw->glow_factor, !Shockwave_glow_ignores_hdr_boost);
 
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 
@@ -606,10 +607,10 @@ void shockwave_level_init()
 		// chief1983 - Spicious added this check for the command line option.  I've modified the hardcoded "shockwave.pof" that existed in the check 
 		// 	to use the static name instead, and added a check to override the command line if a 2d default filename is not found
 		//  Note - The 3d shockwave flag is forced on by TBP's flag as of rev 4983
-		if (shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
+		if (shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename.c_str(), CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model... \n"));
 
-			i = shockwave_load( Default_shockwave_3D_filename, true );
+			i = shockwave_load( Default_shockwave_3D_filename.c_str(), true );
 
 			if (i >= 0)
 				mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
@@ -623,7 +624,7 @@ void shockwave_level_init()
 		if (i < 0 || Gr_framebuffer_effects[FramebufferEffects::Shockwaves]) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave animation... \n"));
 
-			i = shockwave_load( Default_shockwave_2D_filename );
+			i = shockwave_load( Default_shockwave_2D_filename.c_str() );
 
 			if (i >= 0)
 				mprintf(("SHOCKWAVE =>  Default animation load: SUCCEEDED!!\n"));
@@ -636,10 +637,10 @@ void shockwave_level_init()
 		// chief1983 - The first patch broke mods that don't provide a 2d shockwave or define a specific shockwave for each model/weapon (shame on them)
 		// The next patch involved a direct copy of the attempt above, with an i < 0 check in place of the command line check.  I've taken that and modified it to 
 		// spit out a more meaningful message.  Might as well not bother trying again if the command line option was checked as it should have tried the first time through
-		if (i < 0 && !shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename, CF_TYPE_MODELS)) {
+		if (i < 0 && !shockwaveStyle3d && cf_exists_full(Default_shockwave_3D_filename.c_str(), CF_TYPE_MODELS)) {
 			mprintf(("SHOCKWAVE =>  Loading default shockwave model as last resort... \n"));
 
-			i = shockwave_load( Default_shockwave_3D_filename, true );
+			i = shockwave_load( Default_shockwave_3D_filename.c_str(), true );
 
 			if (i >= 0)
 				mprintf(("SHOCKWAVE =>  Default model load: SUCCEEDED!!\n"));
@@ -656,8 +657,8 @@ void shockwave_level_init()
 		// have to make sure that the default 3D model is still valid and usable
 		// the 2D shockwave shouldn't need anything like this
 		if (Shockwave_info[0].model_id >= 0) {
-			Assertion(!strcmp(Shockwave_info[0].filename, Default_shockwave_3D_filename), "Shockwave_info[0] should be the default shockwave, but somehow isn't.\nShockwave_info[0].filename = \"%s\"\nDefault_shockwave_3D_filename = \"%s\"\nGet a coder!\n", Shockwave_info[0].filename, Default_shockwave_3D_filename);
-			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename );
+			Assertion(!strcmp(Shockwave_info[0].filename, Default_shockwave_3D_filename.c_str()), "Shockwave_info[0] should be the default shockwave, but somehow isn't.\nShockwave_info[0].filename = \"%s\"\nDefault_shockwave_3D_filename = \"%s\"\nGet a coder!\n", Shockwave_info[0].filename, Default_shockwave_3D_filename.c_str());
+			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename.c_str() );
 		}
 	}
 
@@ -816,6 +817,7 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
 	sci->damage_overridden = false;
+	sci->glow_factor = 1.0f;
 
 	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }

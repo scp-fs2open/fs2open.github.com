@@ -203,6 +203,9 @@ class model_material : public material
 	bool Use_alpha_mult = false;
 	float Alpha_mult = 1.0f;
 
+	float Glow_factor = 1.0f;
+	bool Glow_hdr_boost = true;
+
 public:
 	model_material();
 
@@ -262,6 +265,12 @@ public:
 	bool is_alpha_mult_active() const;
 	void set_alpha_mult(float alpha);
 	void reset_alpha_mult();
+
+	// the glow map multiplier, and whether HDR rendering applies its extra glow boost
+	void set_glow_factor(float factor);
+	float get_glow_factor() const;
+	void set_glow_hdr_boost(bool enabled);
+	bool get_glow_hdr_boost() const;
 
 };
 

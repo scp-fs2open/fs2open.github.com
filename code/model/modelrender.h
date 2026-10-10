@@ -109,6 +109,9 @@ class model_render_params
 	bool Use_alpha_mult;
 	float Alpha_mult;
 
+	float Glow_factor;
+	bool Glow_hdr_boost;
+
 	model_render_params(const model_render_params&) = delete;
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
@@ -135,6 +138,7 @@ public:
 	void set_thruster_info(const mst_info &info);
 	void set_outline_thickness(float thick);
 	void set_alpha_mult(float alpha);
+	void set_glow_params(float factor, bool hdr_boost);
 
 	bool is_clip_plane_set() const;
 	bool is_team_color_set() const;
@@ -163,6 +167,8 @@ public:
 	const mst_info& get_thruster_info() const;
 	float get_outline_thickness() const;
 	float get_alpha_mult() const;
+	float get_glow_factor() const;
+	bool get_glow_hdr_boost() const;
 };
 
 struct cached_ui_render_instance_key {

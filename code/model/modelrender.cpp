@@ -175,7 +175,9 @@ model_render_params::model_render_params() :
 	Animated_timer(0.0f),
 	Thruster_info(),
 	Use_alpha_mult(false),
-	Alpha_mult(1.0f)
+	Alpha_mult(1.0f),
+	Glow_factor(1.0f),
+	Glow_hdr_boost(true)
 {
 	Warp_scale.xyz.x = 1.0f;
 	Warp_scale.xyz.y = 1.0f;
@@ -448,6 +450,22 @@ bool model_render_params::is_alpha_mult_set() const
 float model_render_params::get_alpha_mult() const
 {
 	return Alpha_mult;
+}
+
+void model_render_params::set_glow_params(float factor, bool hdr_boost)
+{
+	Glow_factor = factor;
+	Glow_hdr_boost = hdr_boost;
+}
+
+float model_render_params::get_glow_factor() const
+{
+	return Glow_factor;
+}
+
+bool model_render_params::get_glow_hdr_boost() const
+{
+	return Glow_hdr_boost;
 }
 
 void model_batch_buffer::reset()
@@ -2813,6 +2831,9 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	if (interp->is_alpha_mult_set()) {
 		rendering_material.set_alpha_mult(interp->get_alpha_mult());
 	}
+
+	rendering_material.set_glow_factor(interp->get_glow_factor());
+	rendering_material.set_glow_hdr_boost(interp->get_glow_hdr_boost());
 
 	if ( is_outlines_only_htl ) {
 		rendering_material.set_fill_mode(GR_FILL_MODE_WIRE);

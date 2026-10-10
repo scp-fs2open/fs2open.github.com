@@ -67,6 +67,7 @@ typedef struct shockwave {
 	int			delay_stamp;			// for delayed shockwaves
 	angles		rot_angles;
 	int			model_id;
+	float		glow_factor;
 	gamesnd_id  blast_sound_id;
 } shockwave;
 
@@ -85,6 +86,7 @@ typedef struct shockwave_create_info {
 	bool rot_defined;		// if the modder specified rot_angles
 	bool rot_parent_relative = false;
 	bool damage_overridden;  // did this have shockwave damage specifically set or not
+	float glow_factor;		// multiplier on a 3D shockwave's glow map
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
