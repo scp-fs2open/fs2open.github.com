@@ -123,7 +123,10 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
-	float pad;
+	float glowFactor;
+
+	int glowHdrBoost;
+	float pad[3];
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);

@@ -83,6 +83,10 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	int flags;
+
+	float glowFactor;
+
+	int glowHdrBoost;
 };
 
 in VertexOutput {

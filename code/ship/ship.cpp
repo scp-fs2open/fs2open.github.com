@@ -3732,6 +3732,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string( sci->name, F_NAME, NAME_LENGTH);
 	}
 
+	if(optional_string("$Shockwave Glow Multiplier:")) {
+		stuff_float(&sci->glow_factor);
+		if (sci->glow_factor < 0.0f) {
+			Warning(LOCATION, "$Shockwave Glow Multiplier must not be negative for ship class '%s'; using 0.", sip->name);
+			sci->glow_factor = 0.0f;
+		}
+	}
+
 	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
 
 	if(optional_string("$Explosion Animations:")){

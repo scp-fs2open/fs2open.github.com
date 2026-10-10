@@ -613,6 +613,15 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	sprintf(buf, "%sShockwave Glow Multiplier:", pre_char);
+	if(optional_string(buf.c_str())) {
+		stuff_float(&sci->glow_factor);
+		if (sci->glow_factor < 0.0f) {
+			Warning(LOCATION, "%s must not be negative; using 0.", buf.c_str());
+			sci->glow_factor = 0.0f;
+		}
+	}
+
 	sprintf(buf, "%sShockwave Sound:", pre_char);
 	parse_game_sound(buf.c_str(), &sci->blast_sound_id);
 }

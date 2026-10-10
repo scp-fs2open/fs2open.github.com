@@ -7,6 +7,7 @@
  * as the "mod table", and contains many misc FSO specific settings.
  */
 
+#include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
@@ -101,6 +102,9 @@ SCP_string Inherited_shockwave_damage_type_suffix;
 SCP_string Inherited_dinky_shockwave_damage_type_suffix;
 SCP_string Default_shockwave_damage_type;
 SCP_string Default_dinky_shockwave_damage_type;
+SCP_string Default_shockwave_2D_filename;
+SCP_string Default_shockwave_3D_filename;
+bool Shockwave_glow_ignores_hdr_boost;
 color Arc_color_damage_p1;
 color Arc_color_damage_p2;
 color Arc_color_damage_s1;
@@ -1353,6 +1357,26 @@ void parse_mod_table(const char *filename)
 				stuff_string(Default_dinky_shockwave_damage_type, F_NAME);
 			}
 
+			if (optional_string("$Default 2D Shockwave Animation:")) {
+				char temp[MAX_FILENAME_LEN];
+				stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+				Default_shockwave_2D_filename = temp;
+			}
+
+			if (optional_string("$Default 3D Shockwave Model:")) {
+				char temp[MAX_FILENAME_LEN];
+				stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+				Default_shockwave_3D_filename = temp;
+
+				// shockwave_level_init() silently falls back to the 2D default when the model is missing
+				if (VALID_FNAME(temp) && !cf_exists_full(temp, CF_TYPE_MODELS))
+					Warning(LOCATION, "$Default 3D Shockwave Model: '%s' was not found; 3D shockwaves will fall back to the 2D default.", temp);
+			}
+
+			if (optional_string("$Shockwave Glow Ignores HDR Boost:")) {
+				stuff_boolean(&Shockwave_glow_ignores_hdr_boost);
+			}
+
 			if (optional_string("$Use Engine Wash Intensity:")) {
 				stuff_boolean(&Use_engine_wash_intensity);
 			}
@@ -1930,6 +1954,9 @@ void mod_table_reset()
 	Inherited_dinky_shockwave_damage_type_suffix = "";
 	Default_shockwave_damage_type = "";
 	Default_dinky_shockwave_damage_type = "";
+	Default_shockwave_2D_filename = "shockwave01";
+	Default_shockwave_3D_filename = "shockwave.pof";
+	Shockwave_glow_ignores_hdr_boost = false;
 	gr_init_color(&Arc_color_damage_p1, 64, 64, 255);
 	gr_init_color(&Arc_color_damage_p2, 128, 128, 255);
 	gr_init_color(&Arc_color_damage_s1, 200, 200, 255);
