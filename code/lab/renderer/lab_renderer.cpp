@@ -256,8 +256,9 @@ void LabRenderer::renderModel(float frametime) {
 
 	gr_reset_clip();
 	gr_set_color_fast(&HUD_color_debug);
-	if (Cmdline_frame_profile) {
-		tracing::frame_profile_process_frame();
+	// The legacy -profile_frame_time text dump. gr_flip() drains the profiler, so this only
+	// renders what the previous frame produced.
+	if (Cmdline_frame_profile && tracing::frame_profiling_active()) {
 		gr_string(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 100 + gr_get_font_height() + 1,
 			tracing::get_frame_profile_output().c_str(), GR_RESIZE_NONE);
 	}

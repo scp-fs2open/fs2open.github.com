@@ -371,13 +371,13 @@ void vulkan_deferred_lighting_msaa()
 			// Global set (fallback — resolve shader doesn't use global bindings)
 			vk::DescriptorSet globalSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Global);
 			Assert(globalSet);
-			writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+			writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 			// Material set: All 6 MSAA textures in binding 1 array (elements 0-5)
 			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
 			vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 			Assert(materialSet);
-			writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+			writer.writeSet(DescriptorSetIndex::Material, materialSet);
 
 			// Build texture array: elements 0-5 are MSAA textures, 6-15 are fallback
 			vk::Sampler nearestSampler = texMgr->getSampler(
@@ -399,7 +399,7 @@ void vulkan_deferred_lighting_msaa()
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
 			vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
 			Assert(perDrawSet);
-			writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+			writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 
 			struct MsaaResolveData {
 				int samples;
@@ -413,15 +413,8 @@ void vulkan_deferred_lighting_msaa()
 				ring.alloc(descriptorMgr->getCurrentFrame(), &resolveData, sizeof(resolveData));
 			writer.setBuffer(PerDrawBinding::GenericData, {ring.buffer(), slotOffset, ring.slotSize()});
 			writer.flush();
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Global), globalSet, {});
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::Material), materialSet, {});
-			cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
-				pipelineMgr->getPipelineLayout(),
-				static_cast<uint32_t>(DescriptorSetIndex::PerDraw), perDrawSet, {});
+			const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+			writer.bindSets(cmd, pipelineMgr->getPipelineLayout(), DescriptorSetIndex::Global, sets);
 
 			cmd.draw(3, 1, 0, 0);
 		}
@@ -1010,12 +1003,12 @@ void vulkan_render_decals(decal_material* material_info,
 	// Set 0: Global (all fallback)
 	vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 	Assert(globalSet);
-	writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+	writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 	// Set 1: Material
 	vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+	writer.writeSet(DescriptorSetIndex::Material, materialSet);
 
 	// Binding 2: DecalGlobals UBO
 	writer.setBuffer(MaterialBinding::DecalGlobals,
@@ -1049,15 +1042,19 @@ void vulkan_render_decals(decal_material* material_info,
 	// Set 2: PerDraw
 	vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+	writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 	writer.setBuffer(PerDrawBinding::Matrices,
 		getPendingBufInfo(static_cast<size_t>(uniform_block_type::Matrices)));
 	writer.setBuffer(PerDrawBinding::DecalInfo,
 		getPendingBufInfo(static_cast<size_t>(uniform_block_type::DecalInfo)));
 	writer.flush();
 	stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material,
+		materialSet,
+		writer.dynamicOffsets(DescriptorSetIndex::Material));
+	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw,
+		perDrawSet,
+		writer.dynamicOffsets(DescriptorSetIndex::PerDraw));
 
 	// Bind vertex buffers: binding 0 = box VBO, binding 1 = instance buffer
 	vk::Buffer boxVBO = bufferManager->getVkBuffer(buffers.Vbuffer_handle);
