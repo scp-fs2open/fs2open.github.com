@@ -663,7 +663,7 @@ void EditorViewport::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
-vec3d EditorViewport::selectionCenter(int cur_object_index)
+vec3d EditorViewport::selectionCenter(int cur_object_index) const
 {
 	// Average the positions of every marked object. Marked objects live on the global
 	// obj_used_list with the Marked flag (Editor::markObject), so walk that list rather
