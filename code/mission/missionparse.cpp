@@ -25,6 +25,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
@@ -7488,6 +7489,7 @@ void mission_init(mission *pm, bool quick_init)
 
 	// This could be set with a sexp, so we should reset it here
 	Motion_debris_override = false;
+	Lightshafts_override = false;
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();

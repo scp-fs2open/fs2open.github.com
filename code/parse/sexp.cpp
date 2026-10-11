@@ -44,6 +44,7 @@
 #include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
+#include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
 #include "hud/hudescort.h"
@@ -770,6 +771,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap-new",				OP_ADD_SUN_BITMAP_NEW,					5,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "set-lightshafts-override",		OP_SET_LIGHTSHAFTS_OVERRIDE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Dustinspace217
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -27948,6 +27950,14 @@ void sexp_set_motion_debris(int node)
 		Motion_debris_override = is_sexp_true(node);
 }
 
+// Dustinspace217 - mirrors sexp_set_motion_debris: a true argument suppresses lightshafts
+// for the rest of the mission regardless of the user's option; missionparse clears the flag
+// on the next mission load.
+void sexp_set_lightshafts_override(int node)
+{
+	Lightshafts_override = is_sexp_true(node);
+}
+
 /**
  * Returns the subsystem type if the name of a subsystem is actually a generic type (e.g \<all engines\> or \<all turrets\>
  * NOTE: this can return SUBSYSTEM_ALL which is not in the normal range of subsystem types
@@ -30153,6 +30163,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_motion_debris(node);
 				break;
 
+			case OP_SET_LIGHTSHAFTS_OVERRIDE:
+				sexp_val = SEXP_TRUE;
+				sexp_set_lightshafts_override(node);
+				break;
+
 			case OP_WEAPON_RECHARGE_PCT:
 			case OP_SHIELD_RECHARGE_PCT:
 			case OP_ENGINE_RECHARGE_PCT:
@@ -32090,6 +32105,7 @@ int query_operator_return_type(int op)
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 		case OP_TURRET_SET_FORCED_TARGET:
@@ -34988,6 +35004,7 @@ int query_operator_argument_type(int op_index, int argnum)
 				return OPF_SHIP;
 
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 			return OPF_BOOL;
 
 		case OP_REPLACE_TEXTURE:
@@ -37293,6 +37310,7 @@ int get_category(int op_id)
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_OVERRIDE_MOTION_DEBRIS:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_SCRIPT_EVAL_STRING:
@@ -37794,6 +37812,7 @@ int get_subcategory(int op_id)
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SET_SKYBOX_ORIENT:
 		case OP_SET_SKYBOX_ALPHA:
+		case OP_SET_LIGHTSHAFTS_OVERRIDE:
 		case OP_MISSION_SET_NEBULA:
 		case OP_MISSION_SET_SUBSPACE:
 		case OP_CHANGE_BACKGROUND:
@@ -42549,6 +42568,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_SKYBOX_ALPHA, "set-skybox-alpha\r\n"
 		"\tSets the current skybox transparency.  Takes 1 argument...\r\n"
 		"\t1:\tAlpha value x1000 (so 1.0 is represented as 1000)\r\n"
+	},
+
+	// Dustinspace217
+	{ OP_SET_LIGHTSHAFTS_OVERRIDE, "set-lightshafts-override\r\n"
+		"\tControls whether or not lightshafts (sun god rays) are drawn for the rest of the mission, the same way "
+		"set-motion-debris-override works for motion debris.  True hides lightshafts even for players who have them enabled; "
+		"False removes the override and restores the player's own setting.  This cannot turn lightshafts on for a player who "
+		"has them disabled.  The override is cleared when the next mission loads.  Like set-motion-debris-override, this runs "
+		"where mission events are evaluated, so in multiplayer it affects the host only.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tBoolean: True will disable lightshafts, False restores the player's setting.\r\n"
 	},
 
 	// Goober5000
