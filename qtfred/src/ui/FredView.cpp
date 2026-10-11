@@ -2879,7 +2879,8 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 		vec3d v, loc;
 		matrix m;
 
-		loc = Objects[fred->currentObject].pos;
+		// turn the camera toward the selection centre (one object, or the centroid of several)
+		loc = _viewport->selectionCenter(fred->currentObject);
 		vm_vec_sub(&v, &loc, &_viewport->camera.view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {

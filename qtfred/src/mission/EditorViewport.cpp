@@ -498,10 +498,10 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 	}
 
 	if (camera.getLookatMode() && query_valid_object(cur_object_index)) {
-		float dist;
-
-		dist = vm_vec_dist(&camera.view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&camera.view_pos, &Objects[cur_object_index].pos, &camera.view_orient.vec.fvec, -dist);
+		// keep the camera the same distance from the selection centre, looking at it
+		vec3d center = selectionCenter(cur_object_index);
+		float dist = vm_vec_dist(&camera.view_pos, &center);
+		vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
 	}
 
 	switch (camera.getViewpoint()) {
@@ -663,13 +663,45 @@ void EditorViewport::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
+vec3d EditorViewport::selectionCenter(int cur_object_index)
+{
+	// Average the positions of every marked object. Marked objects live on the global
+	// obj_used_list with the Marked flag (Editor::markObject), so walk that list rather
+	// than keeping a separate selection container in sync. Every marked type counts at
+	// full weight on purpose (ships, waypoints, jump nodes, starts, props): the pivot is
+	// the centre of what the user selected, not of the ships alone. With one object
+	// marked this reduces to that object's own position, the behaviour FRED has always had.
+	if (editor->getNumMarked() > 1) {
+		vec3d sum = ZERO_VECTOR;
+		int count = 0;
+
+		for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (!objp->flags[Object::Object_Flags::Marked]) {
+				continue;
+			}
+			vm_vec_add2(&sum, &objp->pos);
+			++count;
+		}
+
+		// the three writers of the Marked flag keep numMarked in step with it; say so loudly if that ever changes
+		Assertion(count == editor->getNumMarked(), "Marked object count %d does not match numMarked %d", count, editor->getNumMarked());
+
+		if (count > 0) {
+			vm_vec_scale(&sum, 1.0f / i2fl(count));
+			return sum;
+		}
+	}
+
+	return Objects[cur_object_index].pos;
+}
+
 vec3d EditorViewport::orbitCameraGetPivot()
 {
 	vec3d pivot;
 
 	if (query_valid_object(editor->currentObject)) {
-		// Pivot on current object
-		pivot = Objects[editor->currentObject].pos;
+		// Pivot on the current object, or on the centre of a multi-selection
+		pivot = selectionCenter(editor->currentObject);
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;
