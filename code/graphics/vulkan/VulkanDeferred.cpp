@@ -271,6 +271,9 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 
 void vulkan_deferred_lighting_msaa()
 {
+	if (!Deferred_lighting) {
+		return;
+	}
 	if (Cmdline_msaa_enabled <= 0) {
 		return;
 	}
