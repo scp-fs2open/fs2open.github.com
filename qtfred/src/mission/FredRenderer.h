@@ -44,9 +44,7 @@ class FredRenderer: public QObject {
 
 	ViewSettings& view();
 
-	// Device pixel ratio of the frame being rendered, taken from the scale passed to
-	// render_frame(). Viewport labels are drawn by the engine in physical pixels, so
-	// under OS scaling they need this on top of the user's label font scale (#7727).
+	// the engine draws viewport labels in physical pixels
 	float _devicePixelRatio = 1.0f;
 	float labelFontScale();
 

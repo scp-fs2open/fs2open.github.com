@@ -1141,8 +1141,6 @@ ViewSettings& FredRenderer::view() {
 	return _viewport->view;
 }
 
-// The user's label font scale (Preferences) times the window's device pixel ratio, so a
-// 100% label stays the same size on screen whether or not the OS is scaling the UI.
 float FredRenderer::labelFontScale() {
 	return view().Label_font_scale * _devicePixelRatio;
 }
