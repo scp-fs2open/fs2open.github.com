@@ -1937,6 +1937,11 @@ void game_init()
 						return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
 					 })
 					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string("Unlimited") : std::to_string(value); })
+					 .parser([]() {
+						int value;
+						stuff_int(&value);
+						Framerate_cap = std::clamp(value, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
+					 })
 					 .bind_to(&Framerate_cap)
 					 .importance(71)
 					 .flags({options::OptionFlags::RangeTypeInteger})
