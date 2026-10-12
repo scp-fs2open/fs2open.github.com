@@ -83,7 +83,11 @@ public:
 	void setInvertOrbitY(bool invert) { _invertOrbitY = invert; }
 
 	bool getOrbitSelectionCenter() const { return _orbitSelectionCenter; }
-	void setOrbitSelectionCenter(bool enabled) { _orbitSelectionCenter = enabled; }
+	void setOrbitSelectionCenter(bool enabled)
+	{
+		_orbitSelectionCenter = enabled;
+		_orbitActive = false;
+	}
 
 	void orbitCameraInitFromCurrentView(const vec3d* pivot, const matrix* grid_orient);
 	void orbitCameraRotate(int dx, int dy);

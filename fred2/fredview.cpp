@@ -4067,6 +4067,7 @@ void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 void CFREDView::OnViewOrbitSelectionCenter()
 {
 	Orbit_selection_center = !Orbit_selection_center;
+	Orbit_active = false;
 	theApp.write_ini_file();
 	Update_window = 1;
 }
