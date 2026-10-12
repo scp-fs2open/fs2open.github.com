@@ -10166,31 +10166,38 @@ void weapon_info::clone(const weapon_info& other)
 	strcpy_s(title, other.title);
 	CLONE_UNIQUE_PTR(desc);
 	strcpy_s(altSubsysName, other.altSubsysName);
+
 	strcpy_s(pofbitmap_name, other.pofbitmap_name);
 	model_num = other.model_num;
 	strcpy_s(external_model_name, other.external_model_name);
 	external_model_num = other.external_model_num;
+
 	CLONE_UNIQUE_PTR(tech_desc);
 	strcpy_s(tech_anim_filename, other.tech_anim_filename);
 	strcpy_s(tech_title, other.tech_title);
 	strcpy_s(tech_model, other.tech_model);
+
 	hud_target_lod = other.hud_target_lod;
 	num_detail_levels = other.num_detail_levels;
 	memcpy(detail_distance, other.detail_distance, sizeof(detail_distance));
 	subtype = other.subtype;
 	render_type = other.render_type;
+
 	closeup_pos = other.closeup_pos;
 	closeup_zoom = other.closeup_zoom;
 	icon_closeup_pos = other.icon_closeup_pos;
 	icon_closeup_zoom = other.icon_closeup_zoom;
+
 	strcpy_s(hud_filename, other.hud_filename);
 	hud_image_index = other.hud_image_index;
+
 	laser_bitmap = other.laser_bitmap;
 	laser_headon_bitmap = other.laser_headon_bitmap;
 	laser_glow_bitmap = other.laser_glow_bitmap;
 	laser_glow_headon_bitmap = other.laser_glow_headon_bitmap;
 	laser_headon_switch_rate = other.laser_headon_switch_rate;
 	laser_headon_switch_ang = other.laser_headon_switch_ang;
+
 	laser_length = other.laser_length;
 	laser_length_by_frametime = other.laser_length_by_frametime;
 	bitmap_color = other.bitmap_color;
@@ -10203,10 +10210,13 @@ void weapon_info::clone(const weapon_info& other)
 	laser_glow_tail_scale = other.laser_glow_tail_scale;
 	laser_min_pixel_size = other.laser_min_pixel_size;
 	laser_pos_offset = other.laser_pos_offset;
+
 	collision_radius_override = other.collision_radius_override;
+
 	light_color_set = other.light_color_set;
 	light_color = other.light_color;
 	light_radius = other.light_radius;
+
 	max_speed = other.max_speed;
 	acceleration_time = other.acceleration_time;
 	vel_inherit_amount = other.vel_inherit_amount;
@@ -10217,13 +10227,16 @@ void weapon_info::clone(const weapon_info& other)
 	fire_wait = other.fire_wait;
 	max_delay = other.max_delay;
 	min_delay = other.min_delay;
+
 	damage = other.damage;
 	damage_time = other.damage_time;
 	atten_damage = other.atten_damage;
 	damage_incidence_max = other.damage_incidence_max;
 	damage_incidence_min = other.damage_incidence_min;
+
 	shockwave = other.shockwave;
 	dinky_shockwave = other.dinky_shockwave;
+
 	arm_time = other.arm_time;
 	arm_dist = other.arm_dist;
 	arm_radius = other.arm_radius;
@@ -10245,14 +10258,19 @@ void weapon_info::clone(const weapon_info& other)
 	flak_detonation_accuracy = other.flak_detonation_accuracy;
 	flak_targeting_accuracy = other.flak_targeting_accuracy;
 	untargeted_flak_range_penalty = other.untargeted_flak_range_penalty;
+
 	armor_factor = other.armor_factor;
 	shield_factor = other.shield_factor;
 	subsystem_factor = other.subsystem_factor;
+
 	life_min = other.life_min;
 	life_max = other.life_max;
 	lifetime = other.lifetime;
+
 	energy_consumed = other.energy_consumed;
+
 	wi_flags = other.wi_flags;
+
 	turn_time = other.turn_time;
 	turn_accel_time = other.turn_accel_time;
 	cargo_size = other.cargo_size;
@@ -10263,35 +10281,48 @@ void weapon_info::clone(const weapon_info& other)
 	weapon_range = other.weapon_range;
 	optimum_range = other.optimum_range;
 	weapon_min_range = other.weapon_min_range;
+
 	aiming_flags = other.aiming_flags;
 	minimum_convergence_distance = other.minimum_convergence_distance;
 	convergence_distance = other.convergence_distance;
+
 	pierce_objects = other.pierce_objects;
 	spawn_children_on_pierce = other.spawn_children_on_pierce;
+
 	num_spawn_weapons_defined = other.num_spawn_weapons_defined;
 	maximum_children_spawned = other.maximum_children_spawned;
 	memcpy(spawn_info, other.spawn_info, sizeof(spawn_info));
+
 	lifetime_variation_factor_when_child = other.lifetime_variation_factor_when_child;
+
 	swarm_count = other.swarm_count;
 	SwarmWait = other.SwarmWait;
+
 	target_restrict = other.target_restrict;
 	target_restrict_objecttypes = other.target_restrict_objecttypes;
 	multi_lock = other.multi_lock;
 	max_seeking = other.max_seeking;
 	max_seekers_per_target = other.max_seekers_per_target;
+
 	ship_restrict = other.ship_restrict;
 	ship_restrict_strings = other.ship_restrict_strings;
+
 	trigger_lock = other.trigger_lock;
 	launch_reset_locks = other.launch_reset_locks;
+
 	auto_target_method = other.auto_target_method;
+
 	acquire_method = other.acquire_method;
 	min_lock_time = other.min_lock_time;
 	lock_pixels_per_sec = other.lock_pixels_per_sec;
 	catchup_pixels_per_sec = other.catchup_pixels_per_sec;
 	catchup_pixel_penalty = other.catchup_pixel_penalty;
 	lock_fov = other.lock_fov;
+
 	fov = other.fov;
+
 	seeker_strength = other.seeker_strength;
+
 	pre_launch_snd = other.pre_launch_snd;
 	pre_launch_snd_min_interval = other.pre_launch_snd_min_interval;
 	launch_snd = other.launch_snd;
@@ -10305,11 +10336,14 @@ void weapon_info::clone(const weapon_info& other)
 	loop_firing_snd = other.loop_firing_snd;
 	linked_loop_firing_snd = other.linked_loop_firing_snd;
 	end_firing_snd = other.end_firing_snd;
+
 	hud_tracking_snd = other.hud_tracking_snd;
 	hud_locked_snd = other.hud_locked_snd;
 	hud_in_flight_snd = other.hud_in_flight_snd;
 	in_flight_play_type = other.in_flight_play_type;
+
 	tr_info = other.tr_info;
+
 	strcpy_s(icon_filename, other.icon_filename);
 	strcpy_s(anim_filename, other.anim_filename);
 	selection_effect = other.selection_effect;
@@ -10317,25 +10351,38 @@ void weapon_info::clone(const weapon_info& other)
 	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
 	fs2_effect_grid_density = other.fs2_effect_grid_density;
 	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
+
 	shield_impact_effect_radius = other.shield_impact_effect_radius;
 	shield_impact_explosion_radius = other.shield_impact_explosion_radius;
+
 	impact_weapon_expl_effect = other.impact_weapon_expl_effect;
 	dinky_impact_weapon_expl_effect = other.dinky_impact_weapon_expl_effect;
 	flash_impact_weapon_expl_effect = other.flash_impact_weapon_expl_effect;
+
 	piercing_impact_effect = other.piercing_impact_effect;
 	piercing_impact_secondary_effect = other.piercing_impact_secondary_effect;
+
 	conditional_impacts = other.conditional_impacts;
+
 	muzzle_effect = other.muzzle_effect;
+
 	state_effects = other.state_effects;
+
 	emp_intensity = other.emp_intensity;
 	emp_time = other.emp_time;
+
 	recoil_modifier = other.recoil_modifier;
+
 	shudder_modifier = other.shudder_modifier;
+
 	weapon_reduce = other.weapon_reduce;
 	afterburner_reduce = other.afterburner_reduce;
+
 	vamp_regen = other.vamp_regen;
+
 	tag_time = other.tag_time;
 	tag_level = other.tag_level;
+
 	field_of_fire = other.field_of_fire;
 	fof_spread_rate = other.fof_spread_rate;
 	fof_reset_rate = other.fof_reset_rate;
@@ -10343,6 +10390,7 @@ void weapon_info::clone(const weapon_info& other)
 	firing_pattern = other.firing_pattern;
 	shots = other.shots;
 	cycle_multishot = other.cycle_multishot;
+
 	cs_num_fired = other.cs_num_fired;
 	cs_radius = other.cs_radius;
 	cs_twist = other.cs_twist;
@@ -10350,6 +10398,7 @@ void weapon_info::clone(const weapon_info& other)
 	cs_delay = other.cs_delay;
 	cs_random_angle = other.cs_random_angle;
 	cs_angle = other.cs_angle;
+
 	elec_time = other.elec_time;
 	elec_eng_mult = other.elec_eng_mult;
 	elec_weap_mult = other.elec_weap_mult;
@@ -10357,15 +10406,20 @@ void weapon_info::clone(const weapon_info& other)
 	elec_sensors_mult = other.elec_sensors_mult;
 	elec_randomness = other.elec_randomness;
 	elec_use_new_style = other.elec_use_new_style;
+
 	SSM_index = other.SSM_index;
+
 	lssm_warpout_delay = other.lssm_warpout_delay;
 	lssm_warpin_delay = other.lssm_warpin_delay;
 	lssm_stage5_vel = other.lssm_stage5_vel;
 	lssm_warpin_radius = other.lssm_warpin_radius;
 	lssm_lock_range = other.lssm_lock_range;
 	lssm_warpeffect = other.lssm_warpeffect;
+
 	b_info = other.b_info;
+
 	particle_spewers = other.particle_spewers;
+
 	cm_aspect_effectiveness = other.cm_aspect_effectiveness;
 	cm_heat_effectiveness = other.cm_heat_effectiveness;
 	cm_effective_rad = other.cm_effective_rad;
@@ -10379,38 +10433,55 @@ void weapon_info::clone(const weapon_info& other)
 	cmeasure_use_firewait = other.cmeasure_use_firewait;
 	cmeasure_failure_delay_multiplier_ai = other.cmeasure_failure_delay_multiplier_ai;
 	cmeasure_success_delay_multiplier_ai = other.cmeasure_success_delay_multiplier_ai;
+
 	weapon_submodel_rotate_accell = other.weapon_submodel_rotate_accell;
 	weapon_submodel_rotate_vel = other.weapon_submodel_rotate_vel;
+
 	damage_type_idx = other.damage_type_idx;
 	damage_type_idx_sav = other.damage_type_idx_sav;
+
 	armor_type_idx = other.armor_type_idx;
+
 	alpha_max = other.alpha_max;
 	alpha_min = other.alpha_min;
 	alpha_cycle = other.alpha_cycle;
+
 	weapon_hitpoints = other.weapon_hitpoints;
+
 	burst_shots = other.burst_shots;
 	burst_delay = other.burst_delay;
 	burst_flags = other.burst_flags;
+
 	thruster_flame = other.thruster_flame;
 	thruster_glow = other.thruster_glow;
 	thruster_glow_factor = other.thruster_glow_factor;
+
 	target_lead_scaler = other.target_lead_scaler;
 	num_targeting_priorities = other.num_targeting_priorities;
 	memcpy(targeting_priorities, other.targeting_priorities, sizeof(targeting_priorities));
+
 	failure_rate = other.failure_rate;
 	CLONE_UNIQUE_PTR(failure_sub_name);
 	failure_sub = other.failure_sub;
+
 	num_substitution_patterns = other.num_substitution_patterns;
 	memcpy(weapon_substitution_pattern, other.weapon_substitution_pattern, sizeof(weapon_substitution_pattern));
 	memcpy(weapon_substitution_pattern_names,
 		other.weapon_substitution_pattern_names,
 		sizeof(weapon_substitution_pattern_names));
+
 	score = other.score;
+
 	custom_data = other.custom_data;
+
 	custom_strings = other.custom_strings;
+
 	impact_decal = other.impact_decal;
+
 	on_create_program = other.on_create_program;
+
 	animations = other.animations;
+
 	weapon_launch_curves = other.weapon_launch_curves;
 	weapon_curves = other.weapon_curves;
 	weapon_hit_curves = other.weapon_hit_curves;
