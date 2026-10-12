@@ -94,6 +94,7 @@ bool Disable_built_in_translations;
 bool Weapon_shockwaves_respect_huge;
 bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
+bool Dinky_shockwave_default_multiplier_specified;
 bool Shockwaves_always_damage_bombs;
 bool Shockwaves_damage_all_obj_types_once;
 bool Shockwaves_inherit_parent_damage_type;
@@ -1320,6 +1321,7 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Dinky Shockwave Default Multiplier:")) {
 				stuff_float(&Dinky_shockwave_default_multiplier);
+				Dinky_shockwave_default_multiplier_specified = true;
 			}
 
 			if (optional_string("$Shockwaves Always Damage Bombs:")) {
@@ -1724,7 +1726,7 @@ static void mod_table_log_settings()
 	else
 		mprintf(("Game Settings Table: Not using in-game options system.\n"));
 
-	mprintf(("Game Settings Table: Default dinky shockwave multiplier is %.2f\n", Dinky_shockwave_default_multiplier));
+	mprintf(("Game Settings Table: Default dinky shockwave multiplier is %.2f (%s)\n", Dinky_shockwave_default_multiplier, Dinky_shockwave_default_multiplier_specified ? "from table" : "engine default"));
 
 	if (Shockwaves_always_damage_bombs)
 		mprintf(("Game Settings Table: Shockwaves always damage bombs\n"));
@@ -1922,7 +1924,8 @@ void mod_table_reset()
 	Disable_built_in_translations = false;
 	Weapon_shockwaves_respect_huge = false;
 	Using_in_game_options = true;
-	Dinky_shockwave_default_multiplier = 1.0f;
+	Dinky_shockwave_default_multiplier = 0.25f;
+	Dinky_shockwave_default_multiplier_specified = false;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;
 	Shockwaves_inherit_parent_damage_type = false;

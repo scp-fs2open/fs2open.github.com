@@ -113,6 +113,7 @@ extern bool Disable_built_in_translations;
 extern bool Weapon_shockwaves_respect_huge;
 extern bool Using_in_game_options;
 extern float Dinky_shockwave_default_multiplier;
+extern bool Dinky_shockwave_default_multiplier_specified;
 extern bool Shockwaves_always_damage_bombs;
 extern bool Shockwaves_damage_all_obj_types_once;
 extern bool Shockwaves_inherit_parent_damage_type;

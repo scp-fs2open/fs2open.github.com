@@ -240,7 +240,8 @@ typedef struct mission {
 	char substitute_briefing_music_name[NAME_LENGTH];
 
 	// Goober5000
-	ai_profile_t *ai_profile;
+	int ai_profile_index;
+	const ai_profile_t *ai_profile() const { return &Ai_profiles[ai_profile_index]; }
 
 	SCP_string lighting_profile_name;
 
@@ -615,6 +616,16 @@ extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
 void mission_init(mission *pm, bool quick_init = false);
+
+// returns a copy of the mission's AI profile that can be modified for the rest of the mission
+ai_profile_t *mission_get_transient_ai_profile();
+
+// returns a mission's $Created: or $Modified: date as YYYYMMDD, or -1 if it can't be parsed
+int mission_parse_date(const char *date);
+
+// removes flags that are inactive or meaningful only at runtime
+void mission_clear_inactive_flags(flagset<Mission::Mission_Flags> &flags);
+
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);

@@ -55,7 +55,7 @@ void MissionSpecDialogModel::initializeData() {
 	}
 
 	_m_type = The_mission.game_type;
-	_m_ai_profile = AI_PROFILES_INDEX(The_mission.ai_profile);
+	_m_ai_profile = The_mission.ai_profile_index;
 
 	_m_event_music = Current_soundtrack_num + 1;
 	_m_substitute_event_music = The_mission.substitute_event_music_name;
@@ -181,7 +181,7 @@ bool MissionSpecDialogModel::apply() {
 		strncpy(The_mission.squad_filename, _m_squad_filename.c_str(), MAX_FILENAME_LEN);
 	}
 
-	The_mission.ai_profile = &Ai_profiles[_m_ai_profile];
+	The_mission.ai_profile_index = _m_ai_profile;
 
 	Current_soundtrack_num = _m_event_music - 1;
 	strcpy_s(The_mission.substitute_event_music_name, _m_substitute_event_music.c_str());

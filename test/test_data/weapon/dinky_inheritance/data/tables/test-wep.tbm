@@ -1,0 +1,51 @@
+
+#Primary Weapons
+
+#End
+
+#Secondary Weapons
+
+$Name:                                 		Test weapon
++Title:                                 	XSTR("A test!", -1)
++Description:	XSTR("A test weapon", -1)
+$end_multi_text
+$Model File:								<none>
+$Mass:										0.1
+$Velocity:									5000.0
+$Fire Wait:									6.0
+$Damage:									100.0
+$Blast Force:								1.0
+$Inner Radius:								10.0
+$Outer Radius:								20.0
+$Shockwave Speed:							50.0
+$Dinky shockwave:
+	+Inner Radius:							5.0
+$Armor Factor:								0.0
+$Shield Factor:								0.0
+$Subsystem Factor:							0.0
+$Lifetime:									0.5
+$Energy Consumed:							0.0
+$Cargo Size:								1.0
+$Homing:									YES
+	+Type:					ASPECT
+	+Turn Time:				0.1
+	+View Cone:				360.0
+	+Min Lock Time:			2.0
+	+Lock Pixels/Sec:		110
+	+Catch-up Pixels/Sec:	100
+	+Catch-up Penalty:		30
+	+Seeker Strength:		999
+$LaunchSnd:									-1
+$ImpactSnd:									-1
+$FlyBySnd:									-1
+$Rearm Rate:								1.0
+$Flags:										( "player allowed" "no homing speed ramp" "no dumbfire")
+
+;; a later change to the regular shockwave must carry through to the dinky fields that weren't specified
+$Name:                                 		Test weapon
++nocreate
+$Damage:									200.0
+$Outer Radius:								40.0
+$Shockwave Speed:							80.0
+
+#End
