@@ -29,6 +29,7 @@ void weapon_select_common_init(bool API_Access = false);
 void weapon_select_do(float frametime);
 void weapon_select_close();
 void weapon_select_close_team();
+void wl_free_ship_class_data();
 
 void draw_3d_overhead_view(int model_num,
 	int ship_class,

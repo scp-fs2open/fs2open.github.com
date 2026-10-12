@@ -1015,6 +1015,16 @@ void common_select_close()
 	Common_select_inited = 0;
 }
 
+// Release the model and bitmap handles held by the select screens.  common_select_close() does this on
+// a state change, but a scripted UI that overrides the state hooks never gets there, and by the next
+// mission the model slots those handles name may belong to other models.
+void common_select_level_close()
+{
+	weapon_select_close_team();
+	wl_free_ship_class_data();
+	ship_select_common_close();
+}
+
 // ------------------------------------------------------------------------
 //	load_wing_icons() creates the bitmaps for wing icons 
 //
