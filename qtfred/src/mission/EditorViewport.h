@@ -127,9 +127,6 @@ class EditorViewport {
 
 	vec3d orbitCameraGetPivot();
 
-	// The point the camera orbits or looks at: the centroid of the marked objects when more
-	// than one is marked, otherwise the position of the given object (#7724). Callers have
-	// already checked that cur_object_index is a valid object.
 	vec3d selectionCenter(int cur_object_index) const;
 
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);

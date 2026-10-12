@@ -498,7 +498,6 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 	}
 
 	if (camera.getLookatMode() && query_valid_object(cur_object_index)) {
-		// keep the camera the same distance from the selection centre, looking at it
 		vec3d center = selectionCenter(cur_object_index);
 		float dist = vm_vec_dist(&camera.view_pos, &center);
 		vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
@@ -665,12 +664,6 @@ void EditorViewport::level_object(matrix* orient) {
 
 vec3d EditorViewport::selectionCenter(int cur_object_index) const
 {
-	// Average the positions of every marked object. Marked objects live on the global
-	// obj_used_list with the Marked flag (Editor::markObject), so walk that list rather
-	// than keeping a separate selection container in sync. Every marked type counts at
-	// full weight on purpose (ships, waypoints, jump nodes, starts, props): the pivot is
-	// the centre of what the user selected, not of the ships alone. With one object
-	// marked this reduces to that object's own position, the behaviour FRED has always had.
 	if (editor->getNumMarked() > 1) {
 		vec3d sum = ZERO_VECTOR;
 		int count = 0;
@@ -683,7 +676,6 @@ vec3d EditorViewport::selectionCenter(int cur_object_index) const
 			++count;
 		}
 
-		// the three writers of the Marked flag keep numMarked in step with it; say so loudly if that ever changes
 		Assertion(count == editor->getNumMarked(), "Marked object count %d does not match numMarked %d", count, editor->getNumMarked());
 
 		if (count > 0) {
@@ -700,7 +692,7 @@ vec3d EditorViewport::orbitCameraGetPivot()
 	vec3d pivot;
 
 	if (query_valid_object(editor->currentObject)) {
-		// Pivot on the current object, or on the centre of a multi-selection
+		// Pivot on the selection
 		pivot = selectionCenter(editor->currentObject);
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid

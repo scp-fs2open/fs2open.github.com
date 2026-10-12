@@ -4502,7 +4502,7 @@ void CFREDView::OnLookatObj()
 		vec3d v, loc;
 		matrix m;
 
-		loc = Objects[cur_object_index].pos;
+		loc = selection_center();
 		vm_vec_sub(&v, &loc, &view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {

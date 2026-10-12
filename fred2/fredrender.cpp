@@ -1055,10 +1055,9 @@ void game_do_frame() {
 	}
 
 	if (Lookat_mode && query_valid_object()) {
-		float dist;
-
-		dist = vm_vec_dist(&view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&view_pos, &Objects[cur_object_index].pos, &view_orient.vec.fvec, -dist);
+		vec3d center = selection_center();
+		float dist = vm_vec_dist(&view_pos, &center);
+		vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	}
 
 	switch (viewpoint) {
@@ -1288,6 +1287,31 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
+vec3d selection_center()
+{
+	if (Marked > 1) {
+		vec3d sum = ZERO_VECTOR;
+		int count = 0;
+
+		for (object *objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (!objp->flags[Object::Object_Flags::Marked]) {
+				continue;
+			}
+			vm_vec_add2(&sum, &objp->pos);
+			++count;
+		}
+
+		Assertion(count == Marked, "Marked object count %d does not match Marked count %d", count, Marked);
+
+		if (count > 0) {
+			vm_vec_scale(&sum, 1.0f / i2fl(count));
+			return sum;
+		}
+	}
+
+	return Objects[cur_object_index].pos;
+}
+
 // ---------- Orbit camera functions ----------
 
 vec3d orbit_camera_get_pivot()
@@ -1295,8 +1319,8 @@ vec3d orbit_camera_get_pivot()
 	vec3d pivot;
 
 	if (query_valid_object()) {
-		// Pivot on current object
-		pivot = Objects[cur_object_index].pos;
+		// Pivot on the selection
+		pivot = selection_center();
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;

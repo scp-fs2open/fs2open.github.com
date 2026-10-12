@@ -105,6 +105,8 @@ void verticalize_controlled();
  */
 int select_object(int cx, int cy);
 
+vec3d selection_center();
+
 // Orbit camera functions
 vec3d orbit_camera_get_pivot();
 void orbit_camera_init_from_current_view(const vec3d *pivot, const matrix *grid_orient);
