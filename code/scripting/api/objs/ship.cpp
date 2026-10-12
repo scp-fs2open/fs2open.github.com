@@ -1891,7 +1891,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 				ai_submode = 0;
 
 				if (omitted_priority)
-					priority = The_mission.ai_profile->default_form_on_wing_priority / 100.0f;
+					priority = The_mission.ai_profile()->default_form_on_wing_priority / 100.0f;
 			}
 			break;
 		}

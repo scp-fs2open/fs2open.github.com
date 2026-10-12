@@ -476,8 +476,8 @@ bool ai_big_maybe_follow_subsys_path(bool do_dot_check)
 					}
 				}
 				// 2. use radii value in ai_profiles table if specified and no valid point found
-				if (!found_point && The_mission.ai_profile->subsystem_path_radii) {
-					aip->path_goal_dist = The_mission.ai_profile->subsystem_path_radii;
+				if (!found_point && The_mission.ai_profile()->subsystem_path_radii) {
+					aip->path_goal_dist = The_mission.ai_profile()->subsystem_path_radii;
 				}
 				// 3. use default radii value if no valid point or specified radii
 				else {
@@ -725,8 +725,8 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		// if moving slowly and attacking a large ship, 
 		// check if need to enter standard strafe mode
 		// including ai_profile flag and if enemy fighters are near
-		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed && 
-			(The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
+		if (Pl_objp->phys_info.speed < The_mission.ai_profile()->standard_strafe_when_below_speed && 
+			(The_mission.ai_profile()->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
 			aip->previous_mode = aip->mode;
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
@@ -1108,7 +1108,7 @@ void ai_big_chase()
 	} else if (En_objp->flags[Object::Object_Flags::Protected]) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
-		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
+		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile()->max_attackers[Game_skill_level]) == -1) {
 			ai_do_default_behavior(Pl_objp);
 			return;
 		}
@@ -1195,7 +1195,7 @@ void ai_big_chase()
 		}
 
 		//	If a collision is expected, pull out!
-		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Kamikaze_no_collision_avoidance] && aip->ai_flags[AI::AI_Flags::Kamikaze])) {
+		if (!(The_mission.ai_profile()->flags[AI::Profile_Flags::Kamikaze_no_collision_avoidance] && aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 
 			float dist_normal_to_enemy;
 
@@ -1403,7 +1403,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		if (po->n_guns > 0 && !(The_mission.ai_profile->flags[AI::Profile_Flags::Ai_aims_from_ship_center])) {
+		if (po->n_guns > 0 && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Ai_aims_from_ship_center])) {
 			pnt = po->gun_banks[0].pnt[0];
 			vm_vec_unrotate(&gun_pos, &pnt, &Pl_objp->orient);
 			vm_vec_add2(&gun_pos, &Pl_objp->pos);
@@ -1440,7 +1440,7 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 
 	bool collide_time;
 	bool collide_distance;
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_standard_strafe]) {
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_standard_strafe]) {
 		// check if ship facing target, as likely will only collide if facing
 		vec3d vec_to_tpos;
 		vm_vec_normalized_dir(&vec_to_tpos, target_pos, &Pl_objp->pos);
@@ -1449,8 +1449,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 			collide_time = false;
 			collide_distance = false;
 		} else {
-			collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
-			collide_distance = dist_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
+			collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile()->strafe_retreat_collide_time);
+			collide_distance = dist_to_target < ((The_mission.ai_profile()->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 		}
 	} else {
 		float dist_normal_to_target;
@@ -1460,8 +1460,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		} else {
 			dist_normal_to_target = 0.2f * dist_to_target;
 		}
-		collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
-		collide_distance = dist_normal_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
+		collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile()->strafe_retreat_collide_time);
+		collide_distance = dist_normal_to_target < ((The_mission.ai_profile()->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 	}
 
 	//if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f))
@@ -1480,7 +1480,7 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 
 			int is_inside;
 			vec3d goal_point;
-			get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, The_mission.ai_profile->strafe_retreat_box_dist);
+			get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, The_mission.ai_profile()->strafe_retreat_box_dist);
 
 			// set goal point
 			aip->goal_point = goal_point;
@@ -1595,7 +1595,7 @@ void ai_big_strafe_attack()
 	accelerate_ship(aip, accel);
 
 	// if haven't been hit in quite a while, leave strafe mode
-	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
+	fix long_enough = fl2f(The_mission.ai_profile()->strafe_max_unhit_time);
 	if ( (last_hit > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1667,7 +1667,7 @@ void ai_big_strafe_glide_attack()
 		//Keep going until we are too far away.
 		//If we are still on approach but too far away, this will still trigger. This will allow us to reposition the target
 		//point and allow for a "jinking" effect.
-		if (target_ship_dist > (The_mission.ai_profile->strafe_retreat_box_dist + target_objp->radius) &&
+		if (target_ship_dist > (The_mission.ai_profile()->strafe_retreat_box_dist + target_objp->radius) &&
 			Missiontime - aip->submode_start_time > i2f(GLIDE_STRAFE_MIN_TIME)) {
 			//This checks whether we are moving toward the target or away from it.  If moving towards, we reset the stage so that we
 			//pick a new attack vector (jinking). If moving away, we're at the end of a run so do a full reset (possibly allowing a 
@@ -1717,7 +1717,7 @@ void ai_big_strafe_glide_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	// (same as ai_big_strafe_attack)
-	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
+	fix long_enough = fl2f(The_mission.ai_profile()->strafe_max_unhit_time);
 	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}

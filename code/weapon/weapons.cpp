@@ -5456,7 +5456,7 @@ void find_homing_object(object *weapon_objp, int num)
 
 					// Goober5000: if missiles can't home on sensor-ghosted ships,
 					// they definitely shouldn't home on stealth ships
-					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_heat_seeker_stealth_bug]) ) {
+					if ( sp->flags[Ship::Ship_Flags::Stealth] && (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_heat_seeker_stealth_bug]) ) {
 						continue;
 					}
 
@@ -5474,7 +5474,7 @@ void find_homing_object(object *weapon_objp, int num)
 					//	For co-op, it's probably also OK.
 					if (!( Game_mode & GM_MULTIPLAYER ) && objp == Player_obj) {
 						int	num_homers = compute_num_homing_objects(objp);
-						if (The_mission.ai_profile->max_allowed_player_homers[Game_skill_level] < num_homers)
+						if (The_mission.ai_profile()->max_allowed_player_homers[Game_skill_level] < num_homers)
 							continue;
 					}
 				}
@@ -5671,7 +5671,7 @@ bool aspect_should_lose_target(weapon* wp)
 			if (target_info->wi_flags[Weapon::Info_Flags::Cmeasure])
 			{
 				// Check if we can home on this countermeasure
-				bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
+				bool home_on_cmeasure = The_mission.ai_profile()->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 					|| target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 				if (!home_on_cmeasure)
@@ -5715,7 +5715,7 @@ void weapon_home(object *obj, int num, float frame_time)
 	else
 		max_speed=wip->max_speed;
 
-	bool fs1_behavior = The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior] || wip->wi_flags[Weapon::Info_Flags::Freespace_1_missile_behavior];
+	bool fs1_behavior = The_mission.ai_profile()->flags[AI::Profile_Flags::Freespace_1_missile_behavior] || wip->wi_flags[Weapon::Info_Flags::Freespace_1_missile_behavior];
 
 	float free_flight_time = wip->free_flight_time / 2.0f;
 	if (fs1_behavior) {
@@ -5804,7 +5804,7 @@ void weapon_home(object *obj, int num, float frame_time)
 	if (wp->homing_subsys != NULL) {
 		if (wp->homing_subsys->flags[Ship::Subsystem_Flags::Missiles_ignore_if_dead]) {
 			if ((wp->homing_subsys->max_hits > 0) && (wp->homing_subsys->current_hits <= 0)) {
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
+				if (The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_ignore_if_dead_flag]) {
 					// fixed way: clear dead subsys so the missile picks a hull attack point 
 					// or, for Javelins, re-acquire another engine
 					wp->homing_subsys = nullptr;
@@ -5874,7 +5874,7 @@ void weapon_home(object *obj, int num, float frame_time)
 	{
 		weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
 
-		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
+		bool home_on_cmeasure = The_mission.ai_profile()->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
 			|| hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
 
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
@@ -5914,7 +5914,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			// add this missile to nearest_locked_object if its the closest
 			// with the flag, only do it if its also mostly pointed at its target
 			if (((aip->nearest_locked_object == -1) || (dist < aip->nearest_locked_distance)) && 
-				(!(The_mission.ai_profile->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
+				(!(The_mission.ai_profile()->flags[AI::Profile_Flags::Improved_missile_avoidance]) || vm_vec_dot(&target_vector, &obj->orient.vec.fvec) > 0.5f)) {
 				aip->nearest_locked_object = OBJ_INDEX(obj);
 				aip->nearest_locked_distance = dist;
 			}
@@ -7349,7 +7349,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	} else {
 		wp->lifeleft = (((rand_val) * (wip->life_max - wip->life_min)) + wip->life_min) * life_mult;
 		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags[Object::Object_Flags::Player_ship])) {
-			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
+			wp->lifeleft *= The_mission.ai_profile()->cmeasure_life_scale[Game_skill_level];
 		}
 	}
 
@@ -7443,7 +7443,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
-	if ((parent_objp != nullptr) && (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) && !(already_inherited_parent_speed)) {
+	if ((parent_objp != nullptr) && (The_mission.ai_profile()->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) && !(already_inherited_parent_speed)) {
 		float pspeed = vm_vec_mag( &parent_objp->phys_info.vel );
 		vm_vec_scale_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel, wip->vel_inherit_amount );
 		wp->weapon_max_vel += pspeed * wip->vel_inherit_amount;
@@ -8194,12 +8194,12 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 
 			// if this is friendly fire, we check for the friendly fire cap values
 			if (wp->team == shipp->team) {
-				if (wobjp->parent > -1 && &Objects[wobjp->parent] == objp && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+				if (wobjp->parent > -1 && &Objects[wobjp->parent] == objp && The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 					// if this is a ship damaging itself, we use the self damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
-				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					damage = MIN(damage, The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 					// otherwise we use the friendly damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+					damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 				}
 			}
 
@@ -8221,8 +8221,8 @@ void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, cons
 			weapon* target_wp = &Weapons[objp->instance];
 		
 			// if this is friendly fire, we check for the friendly fire cap value
-			if (wp->team == target_wp->team && The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
-				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+			if (wp->team == target_wp->team && The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 			}
 
 			objp->hull_strength -= damage;
@@ -9096,7 +9096,7 @@ float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const o
 	
 	// if the hit object was a ship and we're doing damage scaling
 	if ( (target->type == OBJ_SHIP) &&
-		!(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_weapon_damage_scaling]) &&
+		!(The_mission.ai_profile()->flags[AI::Profile_Flags::Disable_weapon_damage_scaling]) &&
 		!(Ship_info[Ships[target->instance].ship_info_index].flags[Ship::Info_Flags::Disable_weapon_damage_scaling])
 	) {
 		ship_info *sip;
@@ -9133,7 +9133,7 @@ float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const o
 		if( is_big_damage_ship && !(wip->hurts_big_ships()) ){
 
 			// if the player is firing it
-			if ( from_player && !(The_mission.ai_profile->flags[AI::Profile_Flags::Player_weapon_scale_fix])) {
+			if ( from_player && !(The_mission.ai_profile()->flags[AI::Profile_Flags::Player_weapon_scale_fix])) {
 				// if it's a laser weapon
 				if(wip->subtype == WP_LASER){
 					total_scale *= 0.01f;
