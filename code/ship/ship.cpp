@@ -1083,8 +1083,6 @@ const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which shi
 const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
 
-#define CLONE_UNIQUE_PTR(attribute) attribute = util::unique_copy(other.attribute.get(), true)
-
 void ship_info::clone(const ship_info& other)
 {
 	strcpy_s(name, other.name);
