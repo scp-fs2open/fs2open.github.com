@@ -1481,8 +1481,6 @@ void ship_select_close()
 {
 	key_flush();
 
-	ship_select_common_close();
-
 	if ( !Ship_select_open ) {
 		nprintf(("Alan","ship_select_close() returning without doing anything\n"));
 		return;
@@ -1497,8 +1495,6 @@ void ship_select_close()
 	bm_release(ShipSelectMaskBitmap);
 
 	Ship_select_ui_window.destroy();
-
-	ss_unload_select_model();
 
 	Ship_anim_class = -1;
 	Ship_select_open = 0;	// This game-wide global flag is set to 0 to indicate that the ship
@@ -3150,6 +3146,8 @@ void ship_select_common_close()
 		ss_unload_team_icons(team_icons);
 		team_icons.clear();
 	}
+
+	ss_unload_select_model();
 }
 
 // change any interface data based on updated Wss_slots[] and Ss_pool[]
