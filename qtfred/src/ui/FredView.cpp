@@ -51,6 +51,7 @@
 #include <ui/dialogs/GlobalShipFlagsDialog.h>
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
+#include <missioneditor/common.h>
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/DebriefingDialog.h>
@@ -1461,28 +1462,10 @@ void FredView::onUpdateTransformBar() {
 	if (valid && numMarked <= 1) {
 		_transformRadiusLabel->setText(QString::number(static_cast<double>(Objects[curObj].radius), 'f', 1));
 	} else if (numMarked > 1 && obj_used_list.next != nullptr) {
-		// Bounding radius of the selection: distance from centroid to the farthest object.
-		float cx = 0.0f, cy = 0.0f, cz = 0.0f;
-		int   cnt = 0;
-		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			cx += p->pos.xyz.x;
-			cy += p->pos.xyz.y;
-			cz += p->pos.xyz.z;
-			++cnt;
-		}
-		if (cnt > 0) {
-			cx /= cnt; cy /= cnt; cz /= cnt;
-			float maxDist = 0.0f;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				float dx = p->pos.xyz.x - cx;
-				float dy = p->pos.xyz.y - cy;
-				float dz = p->pos.xyz.z - cz;
-				float d  = sqrtf(dx*dx + dy*dy + dz*dz);
-				if (d > maxDist) maxDist = d;
-			}
-			_transformRadiusLabel->setText(QString::number(static_cast<double>(maxDist), 'f', 1));
+		vec3d center;
+		float radius;
+		if (get_object_bounds(true, &center, &radius)) {
+			_transformRadiusLabel->setText(QString::number(static_cast<double>(radius), 'f', 1));
 		} else {
 			_transformRadiusLabel->setText(tr("--"));
 		}

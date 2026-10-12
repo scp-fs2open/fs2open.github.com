@@ -301,6 +301,7 @@ BEGIN
         MENUITEM "Show Outlines\tShift+Alt+O",  32980
         MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
         MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
+        MENUITEM "Look At and Orbit Around Selection Center", ID_VIEW_ORBIT_SELECTION_CENTER
         MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
         MENUITEM "Show Coordinates\tShift+Alt+C", 32915
         MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
@@ -542,6 +543,7 @@ BEGIN
         MENUITEM "Show Outlines\tShift+Alt+O",  32980
         MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
         MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
+        MENUITEM "Look At and Orbit Around Selection Center", ID_VIEW_ORBIT_SELECTION_CENTER
         MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
         MENUITEM "Show Coordinates\tShift+Alt+C", 32915
         MENUITEM "Show Grid Positions\tShift+Alt+P", 32914

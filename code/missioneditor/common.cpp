@@ -752,3 +752,41 @@ void rotate_jump_nodes(const SCP_vector<int>& slots, int from_pos, int to_pos)
 		Jump_nodes[slots[j]] = std::move(Jump_nodes[slots[j + step]]);
 	Jump_nodes[slots[to_pos]] = std::move(moving);
 }
+
+bool get_object_bounds(bool marked_only, vec3d* center, float* radius)
+{
+	vec3d mins = ZERO_VECTOR, maxs = ZERO_VECTOR;
+	bool found = false;
+
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		if (!found) {
+			mins = maxs = objp->pos;
+			found = true;
+			continue;
+		}
+		mins.xyz.x = std::min(mins.xyz.x, objp->pos.xyz.x);
+		mins.xyz.y = std::min(mins.xyz.y, objp->pos.xyz.y);
+		mins.xyz.z = std::min(mins.xyz.z, objp->pos.xyz.z);
+		maxs.xyz.x = std::max(maxs.xyz.x, objp->pos.xyz.x);
+		maxs.xyz.y = std::max(maxs.xyz.y, objp->pos.xyz.y);
+		maxs.xyz.z = std::max(maxs.xyz.z, objp->pos.xyz.z);
+	}
+
+	if (!found) {
+		return false;
+	}
+
+	vm_vec_avg(center, &mins, &maxs);
+	*radius = 0.0f;
+	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
+			continue;
+		}
+		*radius = std::max(*radius, vm_vec_dist(center, &objp->pos));
+	}
+
+	return true;
+}

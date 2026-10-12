@@ -566,6 +566,16 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QCheckBox" name="orbitSelectionCenter">
+            <property name="toolTip">
+             <string>When several objects are selected, look at and orbit around the center of the selection instead of the current object.</string>
+            </property>
+            <property name="text">
+             <string>Look at and orbit around the center of a multi-selection</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>

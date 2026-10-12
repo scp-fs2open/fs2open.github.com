@@ -32,6 +32,7 @@ class CameraController {
 	// Default to inverted, matching the engine's F3 lab and POF Tools.
 	bool _invertOrbitX = true;
 	bool _invertOrbitY = true;
+	bool _orbitSelectionCenter = false;
 
 	void orbitCameraApply();
 
@@ -80,6 +81,9 @@ public:
 
 	bool getInvertOrbitY() const { return _invertOrbitY; }
 	void setInvertOrbitY(bool invert) { _invertOrbitY = invert; }
+
+	bool getOrbitSelectionCenter() const { return _orbitSelectionCenter; }
+	void setOrbitSelectionCenter(bool enabled) { _orbitSelectionCenter = enabled; }
 
 	void orbitCameraInitFromCurrentView(const vec3d* pivot, const matrix* grid_orient);
 	void orbitCameraRotate(int dx, int dy);

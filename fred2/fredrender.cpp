@@ -43,6 +43,7 @@
 #include "model/model.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "physics/physics.h"
 #include "prop/prop.h"
@@ -115,6 +116,7 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
+bool Orbit_selection_center = false;
 int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
@@ -1289,24 +1291,11 @@ void move_mouse(int btn, int mdx, int mdy) {
 
 vec3d selection_center()
 {
-	if (Marked > 1) {
-		vec3d sum = ZERO_VECTOR;
-		int count = 0;
+	vec3d center;
+	float radius;
 
-		for (object *objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-			if (!objp->flags[Object::Object_Flags::Marked]) {
-				continue;
-			}
-			vm_vec_add2(&sum, &objp->pos);
-			++count;
-		}
-
-		Assertion(count == Marked, "Marked object count %d does not match Marked count %d", count, Marked);
-
-		if (count > 0) {
-			vm_vec_scale(&sum, 1.0f / i2fl(count));
-			return sum;
-		}
+	if (Orbit_selection_center && Marked > 1 && get_object_bounds(true, &center, &radius)) {
+		return center;
 	}
 
 	return Objects[cur_object_index].pos;

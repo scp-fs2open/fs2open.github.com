@@ -150,6 +150,7 @@ void PreferencesDialog::updateUi() {
 	// Controls
 	ui->invertOrbitX->setChecked(_model->getInvertOrbitX());
 	ui->invertOrbitY->setChecked(_model->getInvertOrbitY());
+	ui->orbitSelectionCenter->setChecked(_model->getOrbitSelectionCenter());
 	for (const auto& entry : _controlEditors) {
 		entry.second->setKeySequence(_model->getControlKey(entry.first));
 	}
@@ -267,6 +268,10 @@ void PreferencesDialog::on_invertOrbitX_toggled(bool checked) {
 
 void PreferencesDialog::on_invertOrbitY_toggled(bool checked) {
 	_model->setInvertOrbitY(checked);
+}
+
+void PreferencesDialog::on_orbitSelectionCenter_toggled(bool checked) {
+	_model->setOrbitSelectionCenter(checked);
 }
 
 void PreferencesDialog::on_resetDefaultsButton_clicked() {
