@@ -89,8 +89,8 @@ SCP_vector<SCP_string> Delayed_SSM_indices;
 
 // Temporary storage for proximity type/class names pending resolution after ship_init().
 // Keyed by weapon_info_index (not name) so a duplicate-named entry can't clobber another's pending list.
-static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_type_names;
-static SCP_unordered_map<int, SCP_vector<SCP_string>> Pending_proximity_class_names;
+static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_proximity_type_names;
+static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_proximity_class_names;
 
 
 #ifndef NDEBUG
@@ -102,6 +102,7 @@ static TIMESTAMP Weapon_flyby_sound_timer;
 
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
+static SCP_vector<weapon_info> Weapon_templates;
 
 #define		MISSILE_OBJ_USED	(1<<0)			// flag used in missile_obj struct
 #define		MAX_MISSILE_OBJS	MAX_WEAPONS		// max number of missiles tracked in missile list
@@ -382,6 +383,17 @@ int weapon_info_lookup(const char *name)
 	return -1;
 }
 
+static int weapon_template_lookup(const char *name)
+{
+	Assertion(name != nullptr, "NULL name passed to weapon_template_lookup");
+
+	for (auto it = Weapon_templates.cbegin(); it != Weapon_templates.cend(); ++it)
+		if (!stricmp(name, it->name))
+			return (int)std::distance(Weapon_templates.cbegin(), it);
+
+	return -1;
+}
+
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp)
 {
@@ -500,7 +512,7 @@ void parse_wi_flags(weapon_info *weaponp)
     }
 
     if (weaponp->wi_flags[Weapon::Info_Flags::Local_ssm]) {
-        if (!weaponp->is_homing() || weaponp->subtype != WP_MISSILE) {
+        if (!weaponp->is_homing() || (weaponp->subtype != WP_MISSILE && weaponp->subtype != WP_UNUSED)) {
             Warning(LOCATION, "local ssm must be guided missile: %s", weaponp->name);
         }
     }
@@ -645,8 +657,54 @@ struct pspew_legacy_parse_data {
        SCP_string particle_spew_anim;
 };
 
-static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
+static SCP_unordered_map<SCP_string, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
 static bool pspew_do_warning = false;
+
+// templates and weapons may share a name, so their parse-time side data must not share a key
+static SCP_string weapon_parse_key(const char *name, bool is_template)
+{
+	return is_template ? SCP_string("$Template:") + name : SCP_string(name);
+}
+
+static void weapon_copy_delayed_parse_data(const SCP_string& from, const SCP_string& to)
+{
+	auto ssm = Delayed_SSM_data.find(from);
+	if (ssm != Delayed_SSM_data.end()) {
+		if (Delayed_SSM_data.find(to) == Delayed_SSM_data.end())
+			Delayed_SSM_names.emplace_back(to);
+		Delayed_SSM_data[to] = ssm->second;
+	}
+
+	auto ssm_index = Delayed_SSM_indices_data.find(from);
+	if (ssm_index != Delayed_SSM_indices_data.end()) {
+		if (Delayed_SSM_indices_data.find(to) == Delayed_SSM_indices_data.end())
+			Delayed_SSM_indices.emplace_back(to);
+		Delayed_SSM_indices_data[to] = ssm_index->second;
+	}
+
+	auto pspew = pspew_legacy_parse_data_buffer.find(from);
+	if (pspew != pspew_legacy_parse_data_buffer.end())
+		pspew_legacy_parse_data_buffer[to] = pspew->second;
+
+	auto prox_type = Pending_proximity_type_names.find(from);
+	if (prox_type != Pending_proximity_type_names.end())
+		Pending_proximity_type_names[to] = prox_type->second;
+
+	auto prox_class = Pending_proximity_class_names.find(from);
+	if (prox_class != Pending_proximity_class_names.end())
+		Pending_proximity_class_names[to] = prox_class->second;
+}
+
+static void weapon_remove_delayed_parse_data(const SCP_string& name)
+{
+	Delayed_SSM_data.erase(name);
+	Delayed_SSM_names.erase(std::remove(Delayed_SSM_names.begin(), Delayed_SSM_names.end(), name), Delayed_SSM_names.end());
+	Delayed_SSM_indices_data.erase(name);
+	Delayed_SSM_indices.erase(std::remove(Delayed_SSM_indices.begin(), Delayed_SSM_indices.end(), name), Delayed_SSM_indices.end());
+	pspew_legacy_parse_data_buffer.erase(name);
+	Pending_proximity_type_names.erase(name);
+	Pending_proximity_class_names.erase(name);
+}
 
 static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
 	auto particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
@@ -767,18 +825,26 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
  * Parse the information for a specific ship type.
  * Return weapon index if successful, otherwise return -1
  */
-int parse_weapon(int subtype, bool replace, const char *filename)
+int parse_weapon(int subtype, bool replace, const char *filename, bool is_template)
 {
 	char buf[NAME_LENGTH];
 	char fname[NAME_LENGTH];
+	char template_name[NAME_LENGTH];
 	weapon_info *wip = nullptr;
 	int iff, idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found = true;
 	bool remove_weapon = false;
+	bool new_entry = false;
+	bool use_template = false;
+	bool use_weapon = false;
+	bool subtype_defaults = false;
+	bool untyped_template = false;
+	bool from_template = false;
+	SCP_string parse_key;
 
-	required_string("$Name:");
+	required_string(is_template ? "$Template:" : "$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
 
 	// Remove @ symbol -- these used to denote weapons that would only be parsed in demo builds
@@ -789,81 +855,186 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	diag_printf("Weapon name -- %s\n", fname);
 
 	if(optional_string("+nocreate")) {
-		if(!replace) {
-			Warning(LOCATION, "+nocreate flag used for weapon in non-modular table");
+		if (is_template) {
+			Warning(LOCATION, "+nocreate flag used on weapon template '%s'. Weapon templates can not be modified. Ignoring +nocreate.", fname);
+		} else {
+			if(!replace) {
+				Warning(LOCATION, "+nocreate flag used for weapon in non-modular table");
+			}
+			create_if_not_found = false;
 		}
-		create_if_not_found = false;
 	}
 
 	// check first if this is on the remove blacklist
 	auto it = std::find(Removed_weapons.begin(), Removed_weapons.end(), fname);
-	if (it != Removed_weapons.end()) {
+	if (!is_template && it != Removed_weapons.end()) {
 		remove_weapon = true;
 	}
-	
+
 	// we might have a remove tag
 	if (optional_string("+remove")) {
-		if (!replace) {
-			Warning(LOCATION, "+remove flag used for weapon in non-modular table");
-		}
-		if (!remove_weapon) {
-			Removed_weapons.push_back(fname);
-			remove_weapon = true;
+		if (is_template) {
+			Warning(LOCATION, "+remove flag used on weapon template '%s'. Weapon templates can not be removed. Ignoring +remove.", fname);
+		} else {
+			if (!replace) {
+				Warning(LOCATION, "+remove flag used for weapon in non-modular table");
+			}
+			if (!remove_weapon) {
+				Removed_weapons.emplace_back(fname);
+				remove_weapon = true;
+			}
 		}
 	}
 
-	//Check if weapon exists already
-	int w_id = weapon_info_lookup(fname);
-
-	// maybe remove it
-	if (remove_weapon)
-	{
-		if (w_id >= 0) {
-			mprintf(("Removing previously parsed weapon '%s'\n", fname));
-			Weapon_info.erase(Weapon_info.begin() + w_id);
-		}
-
-		if (!skip_to_start_of_string_either("$Name:", "#End")) {
-			error_display(1, "Missing [#End] or [$Name] after weapon class %s", fname);
-		}
-		return -1;
+	if (optional_string("+Use Template:")) {
+		stuff_string(template_name, F_NAME, NAME_LENGTH);
+		use_template = true;
 	}
 
-	// an entry for this weapon exists
-	if (w_id >= 0)
+	if (optional_string("+Use Weapon as Template:")) {
+		if (is_template) {
+			Warning(LOCATION, "'+Use Weapon as Template:' is not supported on weapon template '%s', ignoring it", fname);
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+		} else if (use_template) {
+			Warning(LOCATION, "Both '+Use Template:' and '+Use Weapon as Template:' were specified for weapon '%s', ignoring '+Use Weapon as Template:'", fname);
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+		} else {
+			stuff_string(template_name, F_NAME, NAME_LENGTH);
+			use_weapon = true;
+		}
+	}
+
+	int w_id = -1;
+
+	if (is_template)
 	{
-		wip = &Weapon_info[w_id];
-		if (!replace)
-		{
-			Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", fname);
-			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", fname);
+		if (weapon_template_lookup(fname) >= 0) {
+			Warning(LOCATION, "Weapon template %s already exists.  All weapon template names must be unique; the second entry has been skipped", fname);
+			if (!skip_to_start_of_string_either("$Template:", "#End")) {
+				error_display(1, "Missing [#End] or [$Template] after duplicate weapon template %s", fname);
 			}
 			return -1;
 		}
-	}
-	// an entry does not exist
-	else
-	{
-		// Don't create weapon if it has +nocreate and is in a modular table.
-		if (!create_if_not_found && replace)
-		{
-			if (!skip_to_start_of_string_either("$Name:", "#End")) {
-				error_display(1, "Missing [#End] or [$Name] after weapon %s", fname);
-			}
 
-			return -1;
-		}
-
-		w_id = weapon_info_size();
-		Weapon_info.push_back(weapon_info());
-		wip = &Weapon_info.back();
+		w_id = static_cast<int>(Weapon_templates.size());
+		Weapon_templates.emplace_back();
+		wip = &Weapon_templates.back();
 		first_time = true;
+		new_entry = true;
 
 		strcpy_s(wip->name, fname);
+	}
+	else
+	{
+		w_id = weapon_info_lookup(fname);
 
+		// maybe remove it
+		if (remove_weapon)
+		{
+			if (w_id >= 0) {
+				mprintf(("Removing previously parsed weapon '%s'\n", fname));
+				Weapon_info.erase(Weapon_info.begin() + w_id);
+			}
+
+			if (!skip_to_start_of_string_either("$Name:", "#End")) {
+				error_display(1, "Missing [#End] or [$Name] after weapon class %s", fname);
+			}
+			return -1;
+		}
+
+		// an entry for this weapon exists
+		if (w_id >= 0)
+		{
+			wip = &Weapon_info[w_id];
+			if (!replace)
+			{
+				Warning(LOCATION, "Weapon name %s already exists in weapons.tbl.  All weapon names must be unique; the second entry has been skipped", fname);
+				if (!skip_to_start_of_string_either("$Name:", "#End")) {
+					error_display(1, "Missing [#End] or [$Name] after duplicate weapon %s", fname);
+				}
+				return -1;
+			}
+
+			if (use_template || use_weapon) {
+				Warning(LOCATION, "A template was specified for weapon '%s', which already exists.  Templates can only be used when a weapon is first defined; ignoring template request...", fname);
+				use_template = false;
+				use_weapon = false;
+			}
+		}
+		// an entry does not exist
+		else
+		{
+			// Don't create weapon if it has +nocreate and is in a modular table.
+			if (!create_if_not_found && replace)
+			{
+				if (use_template || use_weapon) {
+					Warning(LOCATION, "Both '+nocreate' and a template were specified for weapon '%s', ignoring template request...", fname);
+				}
+
+				if (!skip_to_start_of_string_either("$Name:", "#End")) {
+					error_display(1, "Missing [#End] or [$Name] after weapon %s", fname);
+				}
+
+				return -1;
+			}
+
+			w_id = weapon_info_size();
+			Weapon_info.emplace_back();
+			wip = &Weapon_info.back();
+			first_time = true;
+			new_entry = true;
+
+			strcpy_s(wip->name, fname);
+		}
+	}
+
+	if (use_template || use_weapon)
+	{
+		const weapon_info *source = nullptr;
+
+		if (use_template) {
+			int template_id = weapon_template_lookup(template_name);
+			if (template_id < 0) {
+				Warning(LOCATION, "Unable to find weapon template '%s' requested by %s '%s', ignoring template request...", template_name, is_template ? "weapon template" : "weapon", fname);
+			} else if (is_template && template_id == w_id) {
+				Warning(LOCATION, "Weapon template '%s' requested itself as a template, ignoring template request...", fname);
+			} else {
+				source = &Weapon_templates[template_id];
+			}
+		} else {
+			int source_id = weapon_info_lookup(template_name);
+			if (source_id < 0) {
+				Warning(LOCATION, "Unable to find weapon '%s' requested as a template by weapon '%s', ignoring template request...", template_name, fname);
+			} else if (source_id == w_id) {
+				Warning(LOCATION, "Weapon '%s' requested itself as a template, ignoring template request...", fname);
+			} else {
+				source = &Weapon_info[source_id];
+			}
+		}
+
+		if (source != nullptr) {
+			// a template with no $Subtype: carries no section defaults; the derived weapon's section adds the missile flag and warns about the rest
+			subtype_defaults = !is_template && (source->subtype == WP_UNUSED);
+			wip->clone(*source);
+			first_time = false;
+			strcpy_s(wip->name, fname);
+			for (size_t j = 0; j < wip->num_substitution_patterns; ++j) {
+				if (!stricmp(wip->weapon_substitution_pattern_names[j], source->name)) {
+					strcpy_s(wip->weapon_substitution_pattern_names[j], wip->name);
+				}
+			}
+			wip->animations.changeShipName(wip->name);
+			weapon_copy_delayed_parse_data(weapon_parse_key(source->name, use_template), weapon_parse_key(wip->name, is_template));
+			from_template = true;
+		}
+	}
+
+	parse_key = weapon_parse_key(wip->name, is_template);
+
+	if (new_entry && !is_template)
+	{
 		// if this name has a hash, create a default display name
-		if (get_pointer_to_first_hash_symbol(wip->name)) {
+		if (!wip->has_display_name() && get_pointer_to_first_hash_symbol(wip->name)) {
 			wip->display_name = wip->name;
 			end_string_at_first_hash_symbol(wip->display_name, true);
 			consolidate_double_characters(wip->display_name, '#');
@@ -899,19 +1070,24 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Warning(LOCATION, "Unknown subtype on weapon '%s'", wip->name);
 		}
 	}
-	else if(wip->subtype != WP_UNUSED && !first_time)
+	else if(!is_template && wip->subtype != WP_UNUSED && !first_time)
 	{
 		if(wip->subtype != subtype) {
 			Warning(LOCATION, "Type of weapon %s entry does not agree with original entry type.", wip->name);
 		}
 	}
-	else
+	else if (!is_template)
 	{
 		wip->subtype = subtype;
 	}
 
+	if (is_template) {
+		subtype = wip->subtype;
+		untyped_template = (subtype == WP_UNUSED);
+	}
+
 	// assign subtype-specific flags
-	if (first_time)
+	if (first_time || subtype_defaults)
 	{
 		if (wip->subtype == WP_MISSILE)
 			wip->wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
@@ -1375,14 +1551,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 		}
 
-		const int wi_index = static_cast<int>(wip - Weapon_info.data());
-
 		if (optional_string("+Proximity Type:")) {
-			stuff_string_list(Pending_proximity_type_names[wi_index]);
+			stuff_string_list(Pending_proximity_type_names[parse_key]);
 		}
 
 		if (optional_string("+Proximity Class:")) {
-			stuff_string_list(Pending_proximity_class_names[wi_index]);
+			stuff_string_list(Pending_proximity_class_names[parse_key]);
 		}
 
 		// Launcher-relative filter: hostile/friendly/neutral, combinable. Default (no entry) = any relation.
@@ -1952,13 +2126,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
-	} else if(first_time && wip->is_homing()) {
+	} else if(first_time && !untyped_template && wip->is_homing()) {
 		if (subtype == WP_LASER) {
 			wip->free_flight_time = HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME;
 		}
 		else {
 			wip->free_flight_time = HOMING_DEFAULT_FREE_FLIGHT_TIME;
 		}
+	} else if (subtype_defaults && wip->is_homing() && wip->free_flight_time == 0.0f) {
+		Warning(LOCATION, "Weapon '%s' was built from a template with no $Subtype: and sets no $Free Flight Time:; keeping %.2f from the template", wip->name, wip->free_flight_time);
 	}
 
 	if (optional_string("$Free Flight Speed:")) {
@@ -2100,7 +2276,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 	// This setting requires a default if not specified, otherwise, rearming will break. - Cyborg17
-	if (wip->reloaded_per_batch == -1) {
+	if (wip->reloaded_per_batch == -1 && !untyped_template) {
 		if (subtype == WP_MISSILE) {
 			wip->reloaded_per_batch = REARM_NUM_MISSILES_PER_BATCH;
 		} else {
@@ -2182,6 +2358,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				Warning(LOCATION, "$Rearm Rate for ballistic primary %s not specified.  Defaulting to 100...\n", wip->name);
 				wip->rearm_rate = 100.0f;
 			}
+			else if (!primary_rearm_rate_specified && subtype_defaults && wip->rearm_rate == 1.0f)
+			{
+				Warning(LOCATION, "Ballistic primary %s was built from a template with no $Subtype: and sets no $Rearm Rate; keeping %.2f from the template\n", wip->name, wip->rearm_rate);
+			}
 		}
 		// not ballistic
 		else
@@ -2195,7 +2375,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	}
 	// secondary
-	else
+	else if (!untyped_template)
 	{
 		// ballistic
 		if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
@@ -2215,7 +2395,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	// also make sure secondaries and ballistic primaries do not have 0 cargo size
-	if (subtype == WP_MISSILE || wip->wi_flags[Weapon::Info_Flags::Ballistic])
+	if ((subtype == WP_MISSILE || wip->wi_flags[Weapon::Info_Flags::Ballistic]) && !untyped_template)
 	{
 		if (wip->cargo_size == 0.0f)
 		{
@@ -2654,7 +2834,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->state_effects[WeaponState::NORMAL] = effetIdx;
 	}
 
-	if (wip->subtype == WP_MISSILE)
+	if (wip->subtype == WP_MISSILE || untyped_template)
 	{
 		if (optional_string("$Freeflight Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
@@ -3870,7 +4050,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->particle_spewers[spew_index] = particle::util::parseEffect(wip->name);
 			}
 			else { // we have a valid index, now parse the spewer already
-				auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][spew_index];
+				auto& pspew_buffer = pspew_legacy_parse_data_buffer[parse_key][spew_index];
 				if (pspew_buffer.particle_spew_type == PSPEW_NONE) {
 					//This must be an uninitialized effect, store defaults.
 					pspew_buffer.particle_spew_count = 1;
@@ -3973,7 +4153,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (wip->particle_spewers.empty()) {
 				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
 			}
-			auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][0];
+			auto& pspew_buffer = pspew_legacy_parse_data_buffer[parse_key][0];
 			pspew_buffer.particle_spew_count = 1;
 			pspew_buffer.particle_spew_time = 25;
 			pspew_buffer.particle_spew_vel = 0.4f;
@@ -4004,17 +4184,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			temp_data.filename = filename;
 			temp_data.linenum = get_line_num();
 			temp_data.ssm_entry = fname;
-			if (Delayed_SSM_data.find(wip->name) == Delayed_SSM_data.end())
-				Delayed_SSM_names.push_back(wip->name);
-			Delayed_SSM_data[wip->name] = std::move(temp_data);
+			if (Delayed_SSM_data.find(parse_key) == Delayed_SSM_data.end())
+				Delayed_SSM_names.push_back(parse_key);
+			Delayed_SSM_data[parse_key] = std::move(temp_data);
+			Delayed_SSM_indices_data.erase(parse_key);
+			Delayed_SSM_indices.erase(std::remove(Delayed_SSM_indices.begin(), Delayed_SSM_indices.end(), parse_key), Delayed_SSM_indices.end());
 		} else {
 			// We'll still want to validate the index later. -MageKing17
 			delayed_ssm_index_data temp_data;
 			temp_data.filename = filename;
 			temp_data.linenum = get_line_num();
-			if (Delayed_SSM_indices_data.find(wip->name) == Delayed_SSM_indices_data.end())
-				Delayed_SSM_indices.push_back(wip->name);
-			Delayed_SSM_indices_data[wip->name] = std::move(temp_data);
+			if (Delayed_SSM_indices_data.find(parse_key) == Delayed_SSM_indices_data.end())
+				Delayed_SSM_indices.push_back(parse_key);
+			Delayed_SSM_indices_data[parse_key] = std::move(temp_data);
+			Delayed_SSM_data.erase(parse_key);
+			Delayed_SSM_names.erase(std::remove(Delayed_SSM_names.begin(), Delayed_SSM_names.end(), parse_key), Delayed_SSM_names.end());
 		}
 	}// SSM index -Bobboau
 
@@ -4208,7 +4392,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	// This only works with lasters and missiles for now
-	if (wip->subtype == WP_MISSILE || wip->subtype == WP_LASER) {
+	if (wip->subtype == WP_MISSILE || wip->subtype == WP_LASER || untyped_template) {
 		// We always have an object we are attached to
 		flagset<actions::ProgramContextFlags> contexts{actions::ProgramContextFlags::HasObject};
 
@@ -4217,14 +4401,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			contexts.set(actions::ProgramContextFlags::HasSubobject, true);
 		}
 
-		wip->on_create_program = actions::ProgramSet::parseProgramSet("$On Create:", contexts);
+		if (!from_template || check_for_string("$On Create:")) {
+			wip->on_create_program = actions::ProgramSet::parseProgramSet("$On Create:", contexts);
+		}
 	}
 
 	if (optional_string("$Animations:")) {
+		wip->animations.changeShipName(wip->name);
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
 	}
 
 	if (optional_string("$Driven Animations:")) {
+		wip->animations.changeShipName(wip->name);
 		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(wip->animations, 'w', wip->name, animation::parse_object_property_driver_source);
 	}
 	
@@ -4395,11 +4583,21 @@ void parse_weaponstbl(const char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		if (optional_string("#Weapon Templates"))
+		{
+			while (required_string_either("#End", "$Template:")) {
+				if (parse_weapon(WP_UNUSED, Parsing_modular_table, filename, true) < 0) {
+					continue;
+				}
+			}
+			required_string("#End");
+		}
+
 		if (optional_string("#Primary Weapons"))
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_LASER, Parsing_modular_table, filename) < 0) {
+				if (parse_weapon(WP_LASER, Parsing_modular_table, filename, false) < 0) {
 					continue;
 				}
 			}
@@ -4410,7 +4608,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_MISSILE, Parsing_modular_table, filename) < 0) {
+				if (parse_weapon(WP_MISSILE, Parsing_modular_table, filename, false) < 0) {
 					continue;
 				}
 			}
@@ -4421,7 +4619,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:")) {
 				// AL 28-3-98: If parse_weapon() fails, try next .tbl weapon
-				if (parse_weapon(WP_BEAM, Parsing_modular_table, filename) < 0) {
+				if (parse_weapon(WP_BEAM, Parsing_modular_table, filename, false) < 0) {
 					continue;
 				}
 			}
@@ -4432,7 +4630,7 @@ void parse_weaponstbl(const char *filename)
 		{
 			while (required_string_either("#End", "$Name:"))
 			{
-				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table, filename);
+				int idx = parse_weapon(WP_MISSILE, Parsing_modular_table, filename, false);
 
 				if (idx < 0) {
 					continue;
@@ -5107,16 +5305,22 @@ void weapon_do_post_parse()
 
 	// translate all spawn type weapons to referrnce the appropriate spawned weapon entry
 	translate_spawn_types();
+
+	for (const auto& wt : Weapon_templates) {
+		weapon_remove_delayed_parse_data(weapon_parse_key(wt.name, true));
+	}
+	Weapon_templates.clear();
 }
 
 // Called after ship_init() to resolve proximity ship type/class names into indices.
 void weapon_post_ship_init()
 {
-	const int num_weapons = static_cast<int>(Weapon_info.size());
-
 	for (const auto& entry : Pending_proximity_type_names) {
-		const int wi_index = entry.first;
-		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity type entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
+		const int wi_index = weapon_info_lookup(entry.first.c_str());
+		if (wi_index < 0) {
+			Warning(LOCATION, "Weapon '%s' has pending +Proximity Type entries but no weapon_info entry.\n", entry.first.c_str());
+			continue;
+		}
 		weapon_info& wip = Weapon_info[wi_index];
 		for (const SCP_string& type_name : entry.second) {
 			int idx = ship_type_name_lookup(type_name.c_str());
@@ -5128,8 +5332,11 @@ void weapon_post_ship_init()
 	}
 
 	for (const auto& entry : Pending_proximity_class_names) {
-		const int wi_index = entry.first;
-		Assertion(wi_index >= 0 && wi_index < num_weapons, "Pending proximity class entry has out-of-range weapon_info index %d (num_weapons=%d).", wi_index, num_weapons);
+		const int wi_index = weapon_info_lookup(entry.first.c_str());
+		if (wi_index < 0) {
+			Warning(LOCATION, "Weapon '%s' has pending +Proximity Class entries but no weapon_info entry.\n", entry.first.c_str());
+			continue;
+		}
 		weapon_info& wip = Weapon_info[wi_index];
 		for (const SCP_string& class_name : entry.second) {
 			int idx = ship_info_lookup(class_name.c_str());
@@ -5155,6 +5362,7 @@ void weapon_init()
 		// parse weapons.tbl
 		Removed_weapons.clear();
 		Weapon_info.clear();
+		Weapon_templates.clear();
 		parse_weaponstbl("weapons.tbl");
 
 		parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
@@ -5192,6 +5400,10 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
+	Pending_proximity_type_names.clear();
+	Pending_proximity_class_names.clear();
+
+	Weapons_inited = false;
 }
 
 /**

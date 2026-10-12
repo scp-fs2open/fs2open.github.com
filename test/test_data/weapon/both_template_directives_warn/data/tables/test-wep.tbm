@@ -1,0 +1,15 @@
+#Weapon Templates
+
+$Template:	Base Laser
+
+#End
+
+#Primary Weapons
+
+$Name:	Alpha
+
+$Name:	Beta
++Use Template:	Base Laser
++Use Weapon as Template:	Alpha
+
+#End

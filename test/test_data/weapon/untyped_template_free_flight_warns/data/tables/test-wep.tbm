@@ -1,0 +1,24 @@
+#Weapon Templates
+
+$Template:	Seeker Base
+$Velocity:	300.0
+$Homing:	YES
+	+Type:	HEAT
+	+Turn Time:	1.0
+	+View Cone:	180.0
+
+#End
+
+#Primary Weapons
+
+$Name:	Seeker Primary
++Use Template:	Seeker Base
+
+#End
+
+#Secondary Weapons
+
+$Name:	Seeker Secondary
++Use Template:	Seeker Base
+
+#End
