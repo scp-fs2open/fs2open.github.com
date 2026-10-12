@@ -27950,9 +27950,6 @@ void sexp_set_motion_debris(int node)
 		Motion_debris_override = is_sexp_true(node);
 }
 
-// Dustinspace217 - mirrors sexp_set_motion_debris: a true argument suppresses lightshafts
-// for the rest of the mission regardless of the user's option; missionparse clears the flag
-// on the next mission load.
 void sexp_set_lightshafts_override(int node)
 {
 	Lightshafts_override = is_sexp_true(node);

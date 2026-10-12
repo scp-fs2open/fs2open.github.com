@@ -72,7 +72,6 @@ class PostProcessingManager {
 
 } // namespace graphics
 
-// mission-scoped switch set by the set-lightshafts-override sexp (see post_processing.cpp)
 extern bool Lightshafts_override;
 
 bool gr_lightshafts_enabled();

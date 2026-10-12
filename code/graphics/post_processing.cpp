@@ -258,10 +258,6 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 }
 } // namespace graphics
 
-// set by the set-lightshafts-override sexp; true means a mission has switched lightshafts off
-// regardless of the user's option. Reset to false in missionparse at every mission load so it
-// can never leak into the next mission (same lifetime as Motion_debris_override). Global scope
-// on purpose: it is declared extern in post_processing.h for sexp.cpp, missionparse.cpp and the lab.
 bool Lightshafts_override = false;
 
 bool gr_lightshafts_enabled()
@@ -279,7 +275,6 @@ bool gr_lightshafts_enabled()
 		return false;
 	}
 
-	// a mission can switch lightshafts off with the set-lightshafts-override sexp
 	if (Lightshafts_override) {
 		return false;
 	}
