@@ -12,6 +12,9 @@ enum tex_cache_type {
 // Clear the transcode cache if the total file size is over the limit
 void tex_cache_prune();
 
+// Disable the transcode cache option from the configuration menu
+void tex_cache_disable_option();
+
 // Get the MD5 key hash for the dds texture
 SCP_string tex_cache_make_key(CFILE *dds, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size);
 

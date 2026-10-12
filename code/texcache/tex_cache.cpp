@@ -1,6 +1,7 @@
 #include "texcache/tex_cache.h"
 #include "cfile/cfile.h"
 #include "options/Option.h"
+#include "cmdline/cmdline.h"
 
 #include "lz4.h"
 #include <md5.h>
@@ -13,6 +14,12 @@ static constexpr uint TEX_CACHE_MAGIC = 0x32435445u;
 static constexpr uint TEX_CACHE_VERSION = 1u;
 static constexpr uint TEX_CACHE_FLAG_LZ4 = 0x1u;
 static constexpr int TEX_CACHE_CHKSUM_WINDOW = 65536;
+
+//Option values
+float tex_cache_size = 3.0f; // Default value
+static constexpr float TEX_CACHE_OPTION_MAX_SIZE = 30.0f; // Unlimited cache
+static constexpr float TEX_CACHE_OPTION_MIN_SIZE = 0.0f;  // Disabled cache
+//
 
 static const uint32_t CACHE_LOCATION_FLAGS = CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
 
@@ -60,6 +67,9 @@ SCP_string tex_cache_make_key(CFILE *dds, tex_cache_type cache_type, uint src_fo
 
 bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expected_height, uint expected_mips, int expected_format, size_t expected_size, ubyte *out_data)
 {
+	if (tex_cache_size <= TEX_CACHE_OPTION_MIN_SIZE || Cmdline_no_transcode_cache) //Cache disabled
+		return false;
+
 	const SCP_string name = tex_cache_filename(key);
 
 	CFILE *fp = cfopen(name.c_str(), "rb", CF_TYPE_CACHE, false, CACHE_LOCATION_FLAGS);
@@ -132,6 +142,9 @@ bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expecte
 
 void tex_cache_store(const SCP_string &key, uint width, uint height, uint mips, int format, const ubyte *payload, size_t payload_size)
 {
+	if (tex_cache_size <= TEX_CACHE_OPTION_MIN_SIZE || Cmdline_no_transcode_cache) //Cache disabled
+		return;
+
 	if (payload == nullptr || payload_size == 0) {
 		return;
 	}
@@ -189,12 +202,27 @@ void tex_cache_store(const SCP_string &key, uint width, uint height, uint mips, 
 }
 
 auto CacheSizeLimit = options::OptionBuilder<float>("Graphics.TexCacheSize",
-	std::pair<const char*, int>{"Texture Transcode Cache", 1936},
-	std::pair<const char*, int>{"Texture transcode cache size in GBs. 0 for unlimited. Mostly relevant for mobile GPUs lacking S3TC / BC7 support.", 1937})
+	std::pair<const char*, int>{"Texture Transcode Cache", -1}, // TODO: Set localize id after approval
+	std::pair<const char*, int>{"Texture transcode cache size. Mostly relevant for mobile GPUs lacking S3TC / BC7 support.", -1}) // TODO: Set localize id after approval
 	.category(std::make_pair("Graphics", 1825))
 	.level(options::ExpertLevel::Advanced)
-	.range(0.0f, 20.0f)
-	.default_val(3.0f)
+	.range(TEX_CACHE_OPTION_MIN_SIZE, TEX_CACHE_OPTION_MAX_SIZE)
+	.default_func([]() { return tex_cache_size; })
+	.display([](float value) {
+		if (Cmdline_no_transcode_cache || value <= TEX_CACHE_OPTION_MIN_SIZE)
+			return SCP_string(XSTR("Disabled", 413));
+		if (value >= TEX_CACHE_OPTION_MAX_SIZE)
+			return SCP_string(XSTR("Unlimited", -1)); // TODO: Set localize id after approval
+		SCP_string out;
+		sprintf(out, "%.1f GB", value);
+		return out;
+	})
+	.parser([]() {
+		float value;
+		stuff_float(&value);
+		tex_cache_size = std::clamp(value, TEX_CACHE_OPTION_MIN_SIZE, TEX_CACHE_OPTION_MAX_SIZE);
+	})
+	.bind_to(&tex_cache_size)
 	.importance(0)
 	.finish();
 
@@ -210,11 +238,11 @@ void tex_cache_prune()
 		cf_delete(tname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 	}
 
-	auto max_bytes = (size_t)(CacheSizeLimit->getValue() * 1000000000);
-
 	// unlimited cache
-	if (max_bytes <= 0)
+	if (tex_cache_size >= TEX_CACHE_OPTION_MAX_SIZE)
 		return;
+
+	auto max_bytes = (size_t)(tex_cache_size * 1000000000);
 
 	// Check and clear cache
 	SCP_vector<SCP_string> names;
@@ -237,8 +265,8 @@ void tex_cache_prune()
 		return;
 	}
 
-	// Free a minimum of 20%, not the entire cache.
-	const size_t target = (max_bytes / 5) * 4;
+	// Free a minimum of 20%, not the entire cache. If the cache is disabled clear it completely
+	const size_t target = max_bytes > 0 ? (max_bytes / 5) * 4 : 0;
 
 	SCP_vector<size_t> order(count);
 	for (size_t i = 0; i < count; ++i) {
@@ -257,4 +285,10 @@ void tex_cache_prune()
 			total -= info[idx].size;
 		}
 	}
+}
+
+void tex_cache_disable_option()
+{
+	options::OptionsManager::instance()->setOverride("Graphics.TexCacheSize",
+		std::unique_ptr<json_t>(json_real(tex_cache_size)), "-no_transcode_cache");
 }
