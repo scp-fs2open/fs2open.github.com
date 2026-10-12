@@ -1936,7 +1936,7 @@ void game_init()
 						// Clamp saved out-of-range values
 						return std::clamp(saved, MIN_FRAMERATE_CAP, MAX_FRAMERATE_CAP);
 					 })
-					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string("Unlimited") : std::to_string(value); })
+					 .display([](int value) { return Cmdline_NoFPSCap ? SCP_string(XSTR("Unlimited", 1938)) : std::to_string(value); })
 					 .parser([]() {
 						int value;
 						stuff_int(&value);
