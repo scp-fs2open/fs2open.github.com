@@ -11651,6 +11651,48 @@ void ai_cleanup_dock_mode_objective(object *objp)
 		ai_cleanup_dock_mode_subjective(ptr->docked_objp);
 }
 
+void ai_release_queued_rearm_target(const ai_goal *goal, int how)
+{
+	// clients mirror only part of the goal list; the server's release reaches them by packet
+	if (MULTIPLAYER_CLIENT)
+		return;
+
+	if (goal->ai_mode != AI_GOAL_REARM_REPAIR || goal->target_name == nullptr)
+		return;
+
+	auto entry = ship_registry_get(goal->target_name);
+	if (entry == nullptr || !entry->has_objp())
+		return;
+
+	auto target_objp = entry->objp();
+	auto target_aip = &Ai_info[Ships[target_objp->instance].ai_index];
+
+	if (!target_aip->ai_flags[AI::AI_Flags::Awaiting_repair])
+		return;
+
+	if (target_aip->support_ship_objnum != -1 || mission_is_repair_scheduled(target_objp))
+		return;
+
+	// a request placed again elsewhere leaves this goal as a stale copy; the live one owns it
+	for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+		auto sup_objp = &Objects[so->objnum];
+		if (sup_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		auto sup_shipp = &Ships[sup_objp->instance];
+		if (!Ship_info[sup_shipp->ship_info_index].flags[Ship::Info_Flags::Support] || sup_shipp->is_dying_or_departing())
+			continue;
+
+		for (const auto &other : Ai_info[sup_shipp->ai_index].goals) {
+			if (&other != goal && other.ai_mode == AI_GOAL_REARM_REPAIR && other.target_name != nullptr && !stricmp(other.target_name, goal->target_name))
+				return;
+		}
+	}
+
+	nprintf(("AI", "Releasing %s from a dropped support ship queue entry\n", Ships[target_objp->instance].ship_name));
+	ai_do_objects_repairing_stuff(target_objp, nullptr, how);
+}
+
 // Goober5000
 // (This function should ONLY need to be called from a ship doing a deathroll.  [Addendum - or ai_ship_destroy().]
 // It ensures that any support ship stuff will be wrapped up gracefully.)
@@ -11680,6 +11722,10 @@ void ai_cleanup_rearm_mode(object *objp, bool deathroll)
 				ai_do_objects_repairing_stuff( objp, NULL, how );
 		}
 	}
+
+	// the branches above release only the ship being serviced
+	for (const auto &goal : aip->goals)
+		ai_release_queued_rearm_target(&goal, deathroll ? REPAIR_INFO_KILLED : REPAIR_INFO_END);
 }
 
 //	Make Pl_objp point at aip->goal_point.
