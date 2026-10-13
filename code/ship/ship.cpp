@@ -11669,15 +11669,12 @@ static void ship_model_change(int n, int ship_type)
 	objp = &Objects[sp->objnum];
 	pmi = model_get_instance(sp->model_instance_num);
 
-	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip);
-	}
+	// get new model; as in ship_create(), load even if the class already has one, so that this ship holds
+	// its own reference and the model survives a UI preview releasing the one it loaded
+	sip->model_num = model_load(sip->pof_file, sip);
 
-	if ( sip->cockpit_model_num == -1 ) {
-		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-		}
+	if ( VALID_FNAME(sip->cockpit_pof_file) ) {
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	pm = model_get(sip->model_num);
