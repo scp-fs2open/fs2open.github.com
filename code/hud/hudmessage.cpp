@@ -104,7 +104,6 @@ static int Hud_mission_log_time2_coords[GR_NUM_RESOLUTIONS][2] = {
 #define SHOW_OBJS_BUTTON	4
 #define ACCEPT_BUTTON		5
 
-#define HUD_MSG_LENGTH_MAX		2048
 //#define HUD_MSG_MAX_PIXEL_W	439	// maximum number of pixels wide message display area is
 //#define HUD_MSG_MAX_PIXEL_W	619	// maximum number of pixels wide message display area is
 
@@ -293,47 +292,30 @@ void HudGaugeMessages::pageIn()
 
 void HudGaugeMessages::processMessageBuffer()
 {
-	int x, offset = 0;
-	size_t i;
-	char *msg;
-	char *split_str, *ptr;
+	for (auto &hud_msg: HUD_msg_buffer)
+	{
+		auto msg = hud_msg.text.c_str();
 
-	for ( i = 0; i < HUD_msg_buffer.size(); i++ ) {
-		msg = new char [HUD_msg_buffer[i].text.size()+1];
-		strcpy(msg, HUD_msg_buffer[i].text.c_str());
+		int x = 0, offset = 0;
+		auto ptr = strstr(msg, NOX(": "));
+		if (ptr)
+			gr_get_string_size(&offset, nullptr, msg, 1.0f, static_cast<size_t>(ptr + 2 - msg));
 
-		ptr = strstr(msg, NOX(": "));
-		if ( ptr ) {
-			int sw;
-			gr_get_string_size(&sw, nullptr, msg, 1.0f, (ptr + 2 - msg));
-			offset = sw;
-		}
-
-		x = 0;
-		split_str = msg;
-
-		while ((ptr = split_str_once(split_str, Max_width - x - 7)) != nullptr) {		// the 7 is a fudge hack
-			// make sure that split went ok, if not then bail
-			if (ptr == split_str) {
-				break;
-			}
-
-			addPending(split_str, HUD_msg_buffer[i].source, x);
-			split_str = ptr;
+		size_t split_len, split_next_pos;
+		do {
+			std::tie(split_len, split_next_pos, std::ignore) = split_str_once(msg, Max_width - x - 7);		// the 7 is a fudge hack
+			addPending(msg, split_len, hud_msg.source, x);
+			msg += split_next_pos;
 			x = offset;
-		}
-
-		addPending(split_str, HUD_msg_buffer[i].source, x);
-
-		delete[] msg;
+		} while (split_next_pos > 0);
 	}
 }
 
-void HudGaugeMessages::addPending(const char *text, int source, int x)
+void HudGaugeMessages::addPending(const char *text, size_t len, int source, int x)
 {
 	Assert(text != nullptr);
 
-	pending_messages.emplace(text, source, x);
+	pending_messages.emplace(SCP_string(text, len), source, x);
 }
 
 void HudGaugeMessages::scrollMessages()
@@ -829,50 +811,43 @@ void hud_scrollback_button_pressed(int n)
 // scroll height of the scrollback UI.
 void hud_initialize_scrollback_lines()
 {
-
 	Msg_scrollback_lines.clear();
 
-	if ((Msg_scrollback_vec.size() > 0) && HUD_msg_inited) {
+	if (!Msg_scrollback_vec.empty() && HUD_msg_inited) {
 
-		for (int j = 0; j < (int)Msg_scrollback_vec.size(); j++) {
-			line_node node_msg = Msg_scrollback_vec[j];
+		for (auto &node_msg: Msg_scrollback_vec) {
+			auto text = node_msg.text.c_str();
+			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), 1.0f, node_msg.text.length());
+			bool first = true;
+			size_t start_pos = 0;
+			size_t split_len, split_next_pos;
 
-			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
-			if (width > max_width) {
-				char c_text[HUD_MSG_LENGTH_MAX];
-				strcpy_s(c_text, node_msg.text.c_str());
+			do {
+				std::tie(split_len, split_next_pos, std::ignore) = split_str_once(text, max_width, std::string::npos, 1.0f, &width, &height);
 
-				char* text = c_text;
+				Msg_scrollback_lines.emplace_back(
+					first ? node_msg.time : 0,
+					first ? node_msg.timer_padding : 0,
+					node_msg.source,
+					node_msg.x,
+					split_next_pos > 0 ? 1 : height / 3,		// y coordinate is 1 for every line except the last one
+					first ? node_msg.underline_width : 0,
+					node_msg.text.substr(start_pos, split_len)
+				);
 
-				char* split = split_str_once(text, max_width);
-				Msg_scrollback_lines.push_back({node_msg.time, The_mission.HUD_timer_padding, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
-
-				while (split != nullptr) {
-					text = split;
-					split = nullptr;
-					split = split_str_once(text, max_width);
-
-					int offset = 1;
-					if (split == nullptr)
-						offset = height / 3;
-
-					Msg_scrollback_lines.push_back({0, 0, node_msg.source, node_msg.x, offset, 0, text});
-				}
-			} else {
-				node_msg.y = height / 3;
-				Msg_scrollback_lines.push_back(std::move(node_msg));
-			}
+				text += split_next_pos;
+				start_pos += split_next_pos;
+				first = false;
+			} while (split_next_pos > 0);
 		}
 	}
 }
 
 void hud_scrollback_init()
 {
-
 	// pause all game sounds
 	weapon_pause_sounds();
 	audiostream_pause_all();
@@ -1050,8 +1025,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		int y = 0;
 		if (!Msg_scrollback_lines.empty() && HUD_msg_inited) {
 			int i = 0;
-			for (int j = 0; j < (int)Msg_scrollback_lines.size(); j++) {
-				line_node node_msg = Msg_scrollback_lines[j];
+			for (auto &node_msg: Msg_scrollback_lines) {
 				if ((node_msg.source == HUD_SOURCE_HIDDEN) || (i++ < Scroll_offset)) {
 					continue;
 
