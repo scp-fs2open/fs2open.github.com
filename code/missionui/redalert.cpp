@@ -368,7 +368,7 @@ void red_alert_close()
 		red_alert_voice_stop();
 		red_alert_voice_unload();
 
-		weapon_select_close_team();
+		weapon_select_common_close();
 
 		if (Background_bitmap >= 0) {
 			bm_release(Background_bitmap);

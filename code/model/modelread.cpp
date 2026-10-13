@@ -264,6 +264,13 @@ void model_unload(int modelnum, int force)
 		return;
 	}
 
+	// a full id that doesn't match the slot's occupant is a stale handle to a model that has already been
+	// freed; the slot has since been reused, so unloading it would take out an unrelated model
+	if ( modelnum >= MAX_POLYGON_MODELS && pm->id != modelnum )	{
+		Warning(LOCATION, "Ignoring unload of stale model id %d: slot %d now holds '%s' (id %d). Please backtrace and investigate.\n", modelnum, num, pm->filename, pm->id);
+		return;
+	}
+
 	Assert( pm->used_this_mission >= 0 );
 
 	if (!force && (--pm->used_this_mission > 0))

@@ -979,10 +979,6 @@ void common_select_close()
 
 	nprintf(("Alan","entering common_select_close()\n"));
 
-	// catch open anims that weapon_select_init_team() opened when not in weapon_select - taylor
-	// *** not the same as weapon_select_close() ***
-	weapon_select_close_team();
-
 	weapon_select_close();
 
 	if(Game_mode & GM_MULTIPLAYER){
@@ -990,6 +986,7 @@ void common_select_close()
 	} 
 
 	ship_select_close();
+	common_select_level_close();
 	brief_close();	
 
 	common_free_interface_palette();
@@ -1013,6 +1010,16 @@ void common_select_close()
 	common_reset_team_pointers();
 
 	Common_select_inited = 0;
+}
+
+// Release the model and bitmap handles held by the select screens, whether or not the screens themselves
+// were ever opened.  Called from common_select_close() on a state change and from game_level_close(),
+// because a scripted UI that overrides the state hooks never reaches the former, and by the next mission
+// the model slots those handles name may belong to other models.
+void common_select_level_close()
+{
+	weapon_select_common_close();
+	ship_select_common_close();
 }
 
 // ------------------------------------------------------------------------

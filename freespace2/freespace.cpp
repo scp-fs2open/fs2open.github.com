@@ -989,6 +989,7 @@ void game_level_close()
 		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
+		common_select_level_close();	// usually already done on the state change, but not under a scripted UI
 		model_instance_free_all();
 		batch_render_close();
 
