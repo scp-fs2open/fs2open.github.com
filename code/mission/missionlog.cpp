@@ -12,6 +12,7 @@
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
+#include "mission/missionjournal.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
@@ -376,6 +377,8 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			break;
 	}
 #endif
+
+	mission_journal_log_entry(entry);
 
 	// delivered later from a quiet point; callers log before they finish handling the event
 	if (scripting::hooks::OnMissionLogEntry->isActive()) {

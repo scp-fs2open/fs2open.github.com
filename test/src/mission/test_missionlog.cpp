@@ -1,3 +1,6 @@
+#include "iff_defs/iff_defs.h"
+#include "libs/jansson.h"
+#include "mission/missionjournal.h"
 #include "mission/missionlog.h"
 #include "scripting/scripting.h"
 #include "util/FSTestFixture.h"
@@ -98,4 +101,64 @@ TEST_F(MissionLogHookTest, NewMissionDropsUndeliveredEntries)
 	mission_log_init();
 	mission_log_run_entry_hooks();
 	EXPECT_EQ(delivered(), 0);
+}
+
+namespace {
+log_entry journal_test_entry(const char* primary)
+{
+	log_entry entry{};
+	entry.type = LOG_SHIP_DESTROYED;
+	strcpy_s(entry.pname, primary);
+	strcpy_s(entry.sname, "Alpha 1");
+	entry.index = -1;
+	entry.timestamp = fl2f(81.25f);
+	entry.primary_team = -1;
+	entry.secondary_team = -1;
+	return entry;
+}
+} // namespace
+
+TEST(MissionJournal, EntryIsOneJsonLine)
+{
+	ASSERT_EQ(mission_journal_format_entry(journal_test_entry("Leo 1"), "SM1-01", "2026-10-13T15:00:00Z"),
+		"{\"timestamp\":\"2026-10-13T15:00:00Z\",\"event\":\"ShipDestroyed\",\"Mission\":\"SM1-01\","
+		"\"MissionTime\":81.25,\"Primary\":\"Leo 1\",\"Secondary\":\"Alpha 1\",\"Index\":-1,\"Hidden\":false}");
+}
+
+TEST(MissionJournal, NonUtf8NamesBecomeUtf8)
+{
+	const auto line = mission_journal_format_entry(journal_test_entry("Z\xfcrich"), "SM1-01", "2026-10-13T15:00:00Z");
+	json_error_t error;
+	std::unique_ptr<json_t> parsed(json_loads(line.c_str(), 0, &error));
+	ASSERT_NE(parsed, nullptr) << error.text;
+	ASSERT_STREQ(json_string_value(json_object_get(parsed.get(), "Primary")), "Z\xc3\xbcrich");
+}
+
+TEST(MissionJournal, TeamsHiddenAndNamesAreWritten)
+{
+	Iff_info.emplace_back();
+	strcpy_s(Iff_info.back().iff_name, "Friendly");
+	const int team = static_cast<int>(Iff_info.size()) - 1;
+
+	auto entry = journal_test_entry("Leo 1");
+	strcpy_s(entry.sname, "Z\xfcrich");
+	entry.primary_team = team;
+	entry.secondary_team = team;
+	entry.flags = MLF_HIDDEN;
+	entry.timestamp = fl2f(68.8364f);
+	// "Entee" with a Latin-1 e-acute, and the same word in UTF-8
+	const char latin1_mission[] = {'E', 'n', 't', static_cast<char>(0xe9), 'e', '\0'};
+	const char utf8_mission[] = {'E', 'n', 't', static_cast<char>(0xc3), static_cast<char>(0xa9), 'e', '\0'};
+	const auto line = mission_journal_format_entry(entry, latin1_mission, "2026-10-13T15:00:00Z");
+	Iff_info.pop_back();
+
+	json_error_t error;
+	std::unique_ptr<json_t> parsed(json_loads(line.c_str(), 0, &error));
+	ASSERT_NE(parsed, nullptr) << error.text;
+	EXPECT_STREQ(json_string_value(json_object_get(parsed.get(), "PrimaryTeam")), "Friendly");
+	EXPECT_STREQ(json_string_value(json_object_get(parsed.get(), "SecondaryTeam")), "Friendly");
+	EXPECT_TRUE(json_is_true(json_object_get(parsed.get(), "Hidden")));
+	EXPECT_STREQ(json_string_value(json_object_get(parsed.get(), "Secondary")), "Z\xc3\xbcrich");
+	EXPECT_STREQ(json_string_value(json_object_get(parsed.get(), "Mission")), utf8_mission);
+	EXPECT_NE(line.find("\"MissionTime\":68.8364,"), SCP_string::npos) << line;
 }
