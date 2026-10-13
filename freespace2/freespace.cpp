@@ -946,6 +946,9 @@ void game_level_close()
 		scripting::hooks::OnMissionAboutToEndHook->run();
 	}
 
+	// after On Mission About To End, so entries its scripts log are delivered too
+	mission_log_run_entry_hooks();
+
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
 	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
@@ -3943,6 +3946,8 @@ void game_simulation_frame()
 			}
 		}
 	}
+
+	mission_log_run_entry_hooks();
 
 	// Kick off externally injected operations after the simulation step has finished
 	executor::OnSimulationExecutor->process();
