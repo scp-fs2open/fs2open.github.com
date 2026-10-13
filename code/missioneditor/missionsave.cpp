@@ -954,17 +954,27 @@ int Fred_mission_save::save_bitmaps()
 	}
 	// neb 1 stuff
 	else {
-		if (Nebula_index >= 0) {
+		// a name the tables don't know is written back as it was loaded
+		if (Nebula_index >= 0 || !Nebula_unknown_pattern.empty()) {
 			if (optional_string_fred("+Nebula:")) {
 				parse_comments();
 			} else {
 				fout("\n+Nebula:");
 			}
-			fout(" %s", Nebula_filenames[Nebula_index]);
+			fout(" %s", Nebula_index >= 0 ? generated_nebula_pattern_name(Nebula_index) : Nebula_unknown_pattern.c_str());
+
+			// +Color: is required, so never write it empty
+			const char* color_name = generated_nebula_color_name(Mission_palette);
+			if (!Nebula_unknown_color.empty())
+				color_name = Nebula_unknown_color.c_str();
+			else if (*color_name == '\0')
+				color_name = generated_nebula_color_name(generated_nebula_default_color());
+			if (*color_name == '\0')
+				color_name = "Blue";
 
 			required_string_fred("+Color:");
 			parse_comments();
-			fout(" %s", Nebula_colors[Mission_palette]);
+			fout(" %s", color_name);
 
 			required_string_fred("+Pitch:");
 			parse_comments();
@@ -977,6 +987,14 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Heading:");
 			parse_comments();
 			fout(" %d", Nebula_heading);
+
+			if (save_config.save_format != MissionFormat::RETAIL && generated_nebula_enabled) {
+				if (optional_string_fred("+Generated Nebula:", "$Bitmap List:"))
+					parse_comments();
+				else
+					fout("\n+Generated Nebula:");
+				fout(" true");
+			}
 		}
 	}
 

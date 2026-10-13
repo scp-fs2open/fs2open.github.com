@@ -1,0 +1,144 @@
+;; Generated background nebula (the modern FS1-style nebula a mission picks with +Nebula: and
+;; +Color:). Mods replace this whole table with their own generated_nebula.tbl, or add to and
+;; override it by name with *-gneb.tbm files.
+
+#Generated Nebula Colors
+
+;; +RGB: the color of the brightest parts; dimmer parts fade evenly toward black.
+;; The built-in colors are FS1's: each FS1 mission palette held a 20-step ramp from black
+;; to one color, and +RGB is that ramp's brightest entry.
+
+$Name: Red
++RGB: 151 0 0
+
+$Name: Blue
++RGB: 0 55 183
+
+$Name: Gold
++RGB: 107 91 27
+
+$Name: Purple
++RGB: 107 0 95
+
+$Name: Maroon
++RGB: 107 0 39
+
+$Name: Green
++RGB: 0 95 0
+
+$Name: Grey blue
++RGB: 0 67 91
+
+$Name: Violet
++RGB: 63 51 79
+
+$Name: Grey Green
++RGB: 0 87 63
+
+#End
+
+#Generated Nebula Patterns
+
+;; A pattern has two layers, combined so the clouds brighten the background without clipping:
+;;   - a procedural background made from noise (+Density through +Seed), unless +Clouds Only
+;;   - placed clouds (+Cloud), broken up by the same noise according to +Cloud Detail
+;;
+;; Fields, all optional, in this order:
+;;   +Clouds Only:   YES for no procedural background, only the placed clouds
+;;   +Cloud Detail:  how much the noise breaks up the clouds, 0 (smooth) to 1 (ragged)
+;;   +Cloud:         lon lat width height angle brightness, repeated for each cloud
+;;                   lon/lat: center in degrees (lon 0..360 wraps, lat -90..90)
+;;                   width/height: size in degrees of longitude, across and along the cloud
+;;                   (full width at half brightness); angle: rotation in degrees
+;;                   brightness: peak, 0..1 (overlapping clouds add up, capped at 1)
+;;   +Density:       background: fraction of the sky with bright patches
+;;   +Frequency:     noise frequency around and along the sphere (unequal values give streaks)
+;;   +Octaves:       noise detail layers; fewer gives broader, smoother masses
+;;   +Warp:          how much the noise is swirled, stretching it into wisps
+;;   +Contrast:      background falloff curve for the bright patches
+;;   +Intensity:     overall brightness multiplier
+;;   +Seed:          noise seed, giving each pattern its own variation
+;;   +Resolution:    sphere mesh resolution (around, along)
+;;   +Band:          range of the sphere covered, 0..1 from pole to pole
+;;
+;; The built-in patterns are clouds only, laid out to match the FS1 originals.
+
+$Name: Nebula01
++Clouds Only: YES
++Cloud Detail: 0.35
++Cloud: 222.7 -14.5 70.8 11.0 164 0.73
++Cloud: 136.6 -48.5 41.1 8.7 4 0.55
++Cloud: 217.5 36.7 60.6 10.4 6 0.46
++Cloud: 255.5 -4.0 44.3 22.1 155 0.87
++Cloud: 291.1 4.2 56.7 9.3 2 0.53
++Cloud: 160.1 -2.3 36.2 18.5 176 0.75
++Cloud: 93.4 2.4 53.0 18.7 8 0.42
++Cloud: 313.9 -8.7 46.5 8.7 13 0.39
++Cloud: 288.0 42.2 33.6 12.4 175 0.54
++Cloud: 188.6 -13.5 37.5 8.7 159 0.53
++Cloud: 110.0 -9.7 48.1 13.5 167 0.72
++Cloud: 109.6 -47.1 22.5 11.3 14 0.35
++Cloud: 274.3 -23.7 35.8 17.3 13 0.26
++Cloud: 152.6 -42.3 9.1 10.7 126 0.27
++Cloud: 228.5 2.6 36.6 14.0 10 0.29
++Cloud: 153.5 -9.2 34.0 10.4 4 0.37
++Cloud: 83.0 -11.5 33.6 10.0 8 0.31
++Cloud: 163.0 -47.2 34.9 6.0 14 0.24
++Frequency: 5 6
++Warp: 0.40
++Seed: 1
++Resolution: 48 20
+
+$Name: Nebula02
++Clouds Only: YES
++Cloud Detail: 0.35
++Cloud: 319.0 16.8 37.5 21.3 16 0.41
++Cloud: 85.4 -29.5 70.4 15.3 18 0.74
++Cloud: 54.1 11.0 36.4 8.0 5 0.36
++Cloud: 282.6 35.4 87.2 13.1 7 0.63
++Cloud: 253.5 23.9 34.4 19.1 167 0.88
++Cloud: 106.4 -15.1 46.4 12.7 1 0.61
++Cloud: 253.3 -37.9 101.6 9.1 3 0.44
++Cloud: 104.9 13.7 43.3 8.2 15 0.55
++Cloud: 212.1 3.1 43.0 19.9 14 0.50
++Cloud: 215.3 32.6 40.2 7.8 170 0.44
++Cloud: 67.4 16.9 24.7 18.8 7 0.47
++Cloud: 173.1 -2.7 40.2 11.8 34 0.64
++Cloud: 316.3 -30.5 27.2 14.9 15 0.28
++Cloud: 260.4 5.1 70.9 12.7 170 0.59
++Cloud: 284.0 12.2 41.7 8.5 171 0.61
++Cloud: 176.9 -7.1 51.9 4.7 27 0.39
++Cloud: 50.3 24.9 25.2 7.8 127 0.33
++Cloud: 98.1 -32.5 11.7 20.8 85 0.29
++Frequency: 6 5
++Warp: 0.50
++Seed: 2
++Resolution: 48 20
+
+$Name: Nebula03
++Clouds Only: YES
++Cloud Detail: 0.35
++Cloud: 257.6 31.6 33.8 18.2 14 0.85
++Cloud: 123.8 -11.5 62.7 10.9 13 0.67
++Cloud: 106.1 14.6 42.9 9.0 1 0.63
++Cloud: 323.7 13.7 34.7 19.6 9 0.54
++Cloud: 121.3 39.9 45.5 12.7 1 0.47
++Cloud: 72.6 -46.4 55.4 12.2 177 0.86
++Cloud: 100.6 -17.8 67.1 15.0 173 0.48
++Cloud: 239.8 -38.1 64.7 9.3 2 0.38
++Cloud: 301.4 35.2 56.2 11.4 5 0.73
++Cloud: 98.4 -37.4 32.0 18.2 145 0.57
++Cloud: 126.0 -53.5 37.8 6.9 4 0.31
++Cloud: 52.9 17.8 37.1 7.4 174 0.52
++Cloud: 259.1 22.1 42.8 10.0 1 0.65
++Cloud: 67.1 17.5 33.8 8.5 16 0.37
++Cloud: 172.0 40.6 39.5 12.9 6 0.64
++Cloud: 126.4 -24.3 57.2 10.9 9 0.31
++Cloud: 306.4 6.7 35.8 10.7 0 0.43
++Cloud: 301.1 -33.1 38.6 8.9 1 0.28
++Frequency: 5 7
++Warp: 0.60
++Seed: 3
++Resolution: 48 20
+
+#End
