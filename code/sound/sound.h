@@ -138,16 +138,30 @@ int snd_unload(sound_load_id sndnum);
 void	snd_unload_all();
 void snd_unload_cleanup();
 
+/**
+ * @brief Whether the player has turned on the Radio Voice Filter option
+ */
+bool snd_radio_voice_filter_enabled();
+
+/**
+ * @brief The volume scale that makes a looping sound follow the voice volume instead of the effects volume
+ *
+ * @return The scale to pass to snd_play_looping(), or 0 if effects are muted
+ */
+float snd_voice_volume_scale_for_looping();
+
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.
 // Pan goes from -1.0 all the way left to 0.0 in center to 1.0 all the way right.
+// radio_message: play through the radio filter when the player has turned on Radio Voice Filter
 sound_handle snd_play(game_snd* gs, float pan = 0.0f, float vol_scale = 1.0f,
-                      int priority = SND_PRIORITY_SINGLE_INSTANCE, bool voice_message = false);
+                      int priority = SND_PRIORITY_SINGLE_INSTANCE, bool voice_message = false,
+                      bool radio_message = false);
 
 // Play a sound directly from index returned from snd_load().  Bypasses
 // the sound management process of using game_snd.
 sound_handle snd_play_raw(sound_load_id soundnum, float pan, float vol_scale = 1.0f,
-                          int priority = SND_PRIORITY_MUST_PLAY, bool is_voice = true);
+                          int priority = SND_PRIORITY_MUST_PLAY, bool is_voice = true, bool radio_message = false);
 
 // Plays a sound with volume between 0 and 1.0, where 0 is the
 // inaudible and 1.0 is the loudest sound in the game.  It scales
