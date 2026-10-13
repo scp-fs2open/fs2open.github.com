@@ -102,9 +102,7 @@ int generated_nebula_default_color();
 // PBH = Pitch, Bank, Heading (in degrees).  index < 0 disables the nebula.
 void nebula_init( int index, int pitch, int bank, int heading );
 void nebula_close();
-void nebula_render();
-
-// Renders the procedural background nebula (no-op if none is active).
+// Renders the background nebula (no-op if none is active).
 void nebula_render();
 
 #endif	//_NEBULA_H
