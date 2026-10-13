@@ -601,6 +601,7 @@ void bg_bitmap_dlg::OnSelchangeNebcolor()
 
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 	
 	Update_window = 1;
 }

@@ -1928,7 +1928,7 @@ void stars_draw_motion_debris()
 		refresh_motion_debris = false;
 }
 
-void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
@@ -1964,6 +1964,10 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	else if ( !show_subspace ) // don't render the background pof when rendering subspace
 	{
 		stars_draw_background();
+	}
+
+	if ( show_nebulas && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
+		nebula_render();
 	}
 
 	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) ) {

@@ -1028,6 +1028,7 @@ void BackgroundEditorDialogModel::setOldNebulaPattern(const SCP_string& name)
 	}
 
 	modify(Nebula_index, newIndex);
+	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 }
 
 SCP_string BackgroundEditorDialogModel::getOldNebulaColorName()
@@ -1045,6 +1046,7 @@ void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
 	for (int i = 0; i < NUM_NEBULA_COLORS; ++i) {
 		if (!stricmp(Nebula_colors[i], name.c_str())) {
 			modify(Mission_palette, i);
+			nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 			return;
 		}
 	}
@@ -1062,6 +1064,7 @@ void BackgroundEditorDialogModel::setOldNebulaPitch(int deg)
 	if (Nebula_pitch != deg) {
 		Nebula_pitch = deg;
 		modify(Nebula_pitch, deg);
+		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 	}
 }
 
@@ -1076,6 +1079,7 @@ void BackgroundEditorDialogModel::setOldNebulaBank(int deg)
 	if (Nebula_bank != deg) {
 		Nebula_bank = deg;
 		modify(Nebula_bank, deg);
+		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 	}
 }
 
@@ -1090,6 +1094,7 @@ void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
 	if (Nebula_heading != deg) {
 		Nebula_heading = deg;
 		modify(Nebula_heading, deg);
+		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 	}
 }
 

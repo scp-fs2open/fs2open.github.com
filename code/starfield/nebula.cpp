@@ -9,12 +9,16 @@
 
 
 
+#include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "debugconsole/console.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
+#include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "graphics/material.h"
+#include "graphics/matrix.h"
+#include "pcxutils/pcxutils.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
 
@@ -32,6 +36,13 @@ static int num_tris = 0;
 static int tri[MAX_TRIS][3];
 
 static int Nebula_loaded = 0;
+
+constexpr int NEBULA_RAMP_SIZE = 20;
+
+static int Nebula_ramp_bitmap = -1;
+static ubyte Nebula_ramp_pixels[NEBULA_RAMP_SIZE * 4];
+// too large for the stack; the immediate primitive path copies it at call time
+static vertex Nebula_tri_verts[MAX_TRIS * 3];
 static angles Nebula_pbh;
 static matrix Nebula_orient;
 
@@ -41,6 +52,11 @@ int Nebula_heading;
 
 void nebula_close()
 {
+	if (Nebula_ramp_bitmap >= 0) {
+		bm_release(Nebula_ramp_bitmap);
+		Nebula_ramp_bitmap = -1;
+	}
+
 	if (!Nebula_loaded) return;
 
 	Nebula_loaded = 0;
@@ -82,6 +98,7 @@ int load_nebula_sub(const char *filename)
 	fp = cfopen(filename, "rb");
 
 	if ( !fp )	{
+		mprintf(( "Nebula file %s could not be opened.\n", filename ));
 		return 0;
 	}
 
@@ -89,6 +106,7 @@ int load_nebula_sub(const char *filename)
 	cfread( id, 4, 1, fp );	
 	if ( strncmp( id, NEBULA_FILE_ID, 4) != 0)	{
 		mprintf(( "Not a valid nebula file.\n" ));
+		cfclose(fp);
 		return 0;
 	} 
 	cfread( &version, sizeof(int), 1, fp );
@@ -96,6 +114,7 @@ int load_nebula_sub(const char *filename)
 
 	if ( major != NEBULA_MAJOR_VERSION )	{
 		mprintf(( "An out of date nebula file.\n" ));
+		cfclose(fp);
 		return 0;
 	}	
 
@@ -105,8 +124,10 @@ int load_nebula_sub(const char *filename)
 	Assert( num_tris < MAX_TRIS );
 
 	// Cyborg - can't load nonsense.
-	if (num_pts <= 0 || num_pts >= MAX_POINTS || num_tris <= 0 || num_tris >= MAX_TRIS)
+	if (num_pts <= 0 || num_pts >= MAX_POINTS || num_tris <= 0 || num_tris >= MAX_TRIS) {
+		cfclose(fp);
 		return 0;
+	}
 
 	int i;
 	for (i=0; i<num_pts; i++ )	{
@@ -117,7 +138,8 @@ int load_nebula_sub(const char *filename)
 		cfread( &yf, sizeof(float), 1, fp );
 		cfread( &l, sizeof(int), 1, fp );
 		project_2d_onto_sphere( &nebula_vecs[i], 1.0f - xf, yf );
-		vm_vec_scale( &nebula_vecs[i], 10.0f );
+		// same radius as the background bitmap sphere, so a mod's $Min draw distance: cannot clip it
+		vm_vec_scale( &nebula_vecs[i], 1000.0f );
 		nebula_verts[i].b = ubyte((l*255)/31);
 
 		// throw in some randomness to the nebula vertices depth
@@ -127,11 +149,46 @@ int load_nebula_sub(const char *filename)
 		cfread( &tri[i][0], sizeof(int), 1, fp );
 		cfread( &tri[i][1], sizeof(int), 1, fp );
 		cfread( &tri[i][2], sizeof(int), 1, fp );
+		for (int k = 0; k < 3; k++) {
+			if (tri[i][k] < 0 || tri[i][k] >= num_pts) {
+				mprintf(( "Nebula file %s has a triangle index out of range.\n", filename ));
+				cfclose(fp);
+				return 0;
+			}
+		}
 	}
 
 	cfclose(fp);
 
 	return 1;
+}
+
+// one-row texture of the FS1 palette's first NEBULA_RAMP_SIZE entries, so the GPU interpolates in ramp
+// space rather than in RGB between vertex colours
+static void nebula_load_ramp(int nebula_index, int palette_index)
+{
+	if (Nebula_ramp_bitmap >= 0) {
+		bm_release(Nebula_ramp_bitmap);
+		Nebula_ramp_bitmap = -1;
+	}
+
+	char filename[MAX_FILENAME_LEN];
+	sprintf_safe(filename, "gamepalette%d-%02d", nebula_index + 1, palette_index + 1);
+
+	ubyte palette[768] = {};
+	if (pcx_read_header(filename, nullptr, nullptr, nullptr, nullptr, palette) != PCX_ERROR_NONE) {
+		mprintf(( "FS1 nebula palette %s.pcx could not be read; the nebula will not be drawn.\n", filename ));
+		return;
+	}
+
+	for (int i = 0; i < NEBULA_RAMP_SIZE; i++) {
+		Nebula_ramp_pixels[i * 4 + 0] = palette[i * 3 + 2];
+		Nebula_ramp_pixels[i * 4 + 1] = palette[i * 3 + 1];
+		Nebula_ramp_pixels[i * 4 + 2] = palette[i * 3 + 0];
+		Nebula_ramp_pixels[i * 4 + 3] = 255;
+	}
+
+	Nebula_ramp_bitmap = bm_create(32, NEBULA_RAMP_SIZE, 1, Nebula_ramp_pixels, 0);
 }
 
 void nebula_init( int index, int pitch, int bank, int heading )
@@ -143,6 +200,10 @@ void nebula_init( int index, int pitch, int bank, int heading )
 	a.h = fl_radians(heading);
 
 	nebula_init(index < 0 ? nullptr : Nebula_filenames[index], &a);
+
+	if (index >= 0 && Nebula_loaded && Fs1_nebula_backgrounds) {
+		nebula_load_ramp(index, Mission_palette);
+	}
 }
 
 void nebula_init( const char *filename, angles * pbh )
@@ -165,6 +226,39 @@ void nebula_init( const char *filename, angles * pbh )
 		Nebula_pbh.h = 0.0f;
 		Nebula_orient = vmd_identity_matrix;
 	}
+}
+
+void nebula_render()
+{
+	if (!Fs1_nebula_backgrounds || !Nebula_loaded || Nebula_ramp_bitmap < 0) {
+		return;
+	}
+	if (!Detail.planets_suns) {
+		return;
+	}
+
+	// g3_rotate_faraway_vertex would give eye-space points, which this primitive path would transform again
+	gr_start_instance_matrix(&Eye_position, &Nebula_orient);
+
+	for (int i = 0; i < num_pts; i++) {
+		nebula_verts[i].world = nebula_vecs[i];
+		// map the brightness onto texel centres so the extremes land on the first and last ramp colours
+		nebula_verts[i].texture_position.u =
+			(0.5f + (NEBULA_RAMP_SIZE - 1) * (nebula_verts[i].b / 255.0f)) / NEBULA_RAMP_SIZE;
+		nebula_verts[i].texture_position.v = 0.5f;
+	}
+
+	for (int i = 0; i < num_tris; i++) {
+		Nebula_tri_verts[i * 3 + 0] = nebula_verts[tri[i][0]];
+		Nebula_tri_verts[i * 3 + 1] = nebula_verts[tri[i][1]];
+		Nebula_tri_verts[i * 3 + 2] = nebula_verts[tri[i][2]];
+	}
+
+	material mat;
+	material_set_unlit(&mat, Nebula_ramp_bitmap, 1.0f, true, false);
+	g3_render_primitives_textured(&mat, Nebula_tri_verts, num_tris * 3, PRIM_TYPE_TRIS, false);
+
+	gr_end_instance_matrix();
 }
 
 DCF(nebula,"Loads a different nebula")

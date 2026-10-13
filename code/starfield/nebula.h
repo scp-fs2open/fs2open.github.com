@@ -24,5 +24,6 @@ struct angles;
 void nebula_init( int index, int pitch, int bank, int heading );
 void nebula_init( const char *filename, angles *pbh = /*NULL*/ 0 );
 void nebula_close();
+void nebula_render();
 
 #endif	//_NEBULA_H
