@@ -736,13 +736,13 @@ static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vect
 	int k = 0;
 	for (int t = 0; t < num_tris; t++) {
 		vec3d corner[3];
-		const ubyte *color[3];
+		const ubyte *rgb[3];
 		for (int c = 0; c < 3; c++) {
 			const int p = tris[t * 3 + c];
 			corner[c] = pts[p];
 			vm_vec_scale(&corner[c], NEBULA_RADIUS);
 			vm_vec_unrotate(&corner[c], &corner[c], orient);
-			color[c] = &Nebula_tex_data[((levels[p] * (NEBULA_RAMP_SIZE - 1)) / 255) * 4];
+			rgb[c] = &Nebula_tex_data[((levels[p] * (NEBULA_RAMP_SIZE - 1)) / 255) * 4];
 		}
 		// grid point (i, j) is corner 0 plus i/N of the way to corner 1 and j/N of the way to corner 2
 		auto emit = [&](int i, int j) {
@@ -758,7 +758,7 @@ static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vect
 			vt->a = 255;
 			for (int ch = 0; ch < 3; ch++)
 				Nebula_mesh_colors[k * 3 + ch] =
-					static_cast<ubyte>(w * color[0][ch] + a * color[1][ch] + b * color[2][ch] + 0.5f);
+					static_cast<ubyte>(w * rgb[0][ch] + a * rgb[1][ch] + b * rgb[2][ch] + 0.5f);
 			k++;
 		};
 		for (int i = 0; i < N; i++) {
