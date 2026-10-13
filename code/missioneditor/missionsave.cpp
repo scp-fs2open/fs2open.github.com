@@ -988,13 +988,6 @@ int Fred_mission_save::save_bitmaps()
 			parse_comments();
 			fout(" %d", Nebula_heading);
 
-			if (save_config.save_format != MissionFormat::RETAIL && generated_nebula_enabled) {
-				if (optional_string_fred("+Generated Nebula:", "$Bitmap List:"))
-					parse_comments();
-				else
-					fout("\n+Generated Nebula:");
-				fout(" true");
-			}
 		}
 	}
 
@@ -1105,6 +1098,17 @@ int Fred_mission_save::save_bitmaps()
 		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.9;; $Environment Map:");
+	}
+
+	if (Nebula_mission_switch >= 0 && (Nebula_index >= 0 || !Nebula_unknown_pattern.empty())) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$FS1 Nebula:")) {
+			parse_comments(2);
+			fout(" %s", Nebula_mission_switch == 1 ? "YES" : "NO");
+		} else {
+			fout_version("\n\n$FS1 Nebula: %s", Nebula_mission_switch == 1 ? "YES" : "NO");
+		}
+		fso_comment_pop();
 	}
 
 	fso_comment_pop(true);

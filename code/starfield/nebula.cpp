@@ -21,6 +21,7 @@
 #include "graphics/matrix.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
+#include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
 #include "render/3d.h"
@@ -274,7 +275,14 @@ int Nebula_pitch;
 int Nebula_bank;
 int Nebula_heading;
 
-bool generated_nebula_enabled = false;
+int Nebula_mission_switch = -1;
+
+bool nebula_backgrounds_enabled()
+{
+	if (Nebula_mission_switch >= 0)
+		return Nebula_mission_switch == 1;
+	return Fs1_nebula_backgrounds;
+}
 SCP_string Nebula_unknown_pattern;
 SCP_string Nebula_unknown_color;
 
@@ -713,7 +721,7 @@ static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vect
 
 void nebula_init(int index, int pitch, int bank, int heading)
 {
-	const bool valid = generated_nebula_enabled && index >= 0 && index < static_cast<int>(Generated_nebula_patterns.size()) &&
+	const bool valid = index >= 0 && index < static_cast<int>(Generated_nebula_patterns.size()) &&
 		!Is_standalone;
 
 	// Only the sphere depends on the orientation, so a change of pitch, bank or heading alone (the
@@ -766,7 +774,7 @@ void nebula_init(int index, int pitch, int bank, int heading)
 
 void nebula_render()
 {
-	if (Nebula_verts == nullptr || Nebula_n_verts <= 0 || Nebula_bitmap < 0)
+	if (!nebula_backgrounds_enabled() || Nebula_verts == nullptr || Nebula_n_verts <= 0 || Nebula_bitmap < 0)
 		return;
 
 	// additive textured sphere (no depth), instanced around the eye

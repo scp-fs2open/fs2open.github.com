@@ -6420,10 +6420,6 @@ void parse_bitmaps(mission *pm)
 			} else {
 				Nebula_heading = 0;
 			}
-
-			// the backdrop is only drawn when the mission turns it on (26.1)
-			if (optional_string("+Generated Nebula:"))
-				stuff_boolean(&generated_nebula_enabled);
 		}
 
 		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
@@ -6438,6 +6434,12 @@ void parse_bitmaps(mission *pm)
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if (optional_string("$FS1 Nebula:")) {
+		bool on = false;
+		stuff_boolean(&on);
+		Nebula_mission_switch = on ? 1 : 0;
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions
@@ -7474,7 +7476,7 @@ void mission_init(mission *pm, bool quick_init)
 	Nebula_heading = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Nebula_index = -1;
 	Mission_palette = std::max(generated_nebula_default_color(), 0);
-	generated_nebula_enabled = false;
+	Nebula_mission_switch = -1;
 	Nebula_unknown_pattern.clear();
 	Nebula_unknown_color.clear();
 }

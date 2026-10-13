@@ -86,10 +86,9 @@ int generated_nebula_color_lookup(const char *name);
 const char *generated_nebula_pattern_name(int index);
 const char *generated_nebula_color_name(int index);
 
-// The mission's +Generated Nebula: field.  The backdrop is only drawn when a mission turns it on,
-// so missions that merely carry +Nebula: / +Color: (many older FRED-saved ones do, unchosen) are
-// unchanged.  nebula_init() draws nothing while this is false.
-extern bool generated_nebula_enabled;
+extern int Nebula_mission_switch;
+// true when the background nebula should be drawn: the mission line when present, else the mod switch
+bool nebula_backgrounds_enabled();
 
 // +Nebula: / +Color: names that matched no table entry, kept so saving writes them back unchanged
 // instead of dropping the pattern or switching the color
@@ -100,7 +99,7 @@ extern SCP_string Nebula_unknown_color;
 // else -1 when there are no colors at all
 int generated_nebula_default_color();
 
-// PBH = Pitch, Bank, Heading (in degrees).  index < 0, or generated_nebula_enabled false, disables the nebula.
+// PBH = Pitch, Bank, Heading (in degrees).  index < 0 disables the nebula.
 void nebula_init( int index, int pitch, int bank, int heading );
 void nebula_close();
 void nebula_render();

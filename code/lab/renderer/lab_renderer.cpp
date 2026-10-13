@@ -507,7 +507,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			else {
 				Nebula_index = -1;
 				Mission_palette = std::max(generated_nebula_default_color(), 0);
-				generated_nebula_enabled = false;
+				Nebula_mission_switch = -1;
 				if (optional_string("+Nebula:")) {
 					char str[MAX_FILENAME_LEN];
 					stuff_string(str, F_NAME, MAX_FILENAME_LEN);
@@ -547,8 +547,6 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 						Nebula_heading = 0;
 					}
 
-					if (optional_string("+Generated Nebula:"))
-						stuff_boolean(&generated_nebula_enabled);
 				}
 
 				nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
@@ -567,6 +565,12 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			if (optional_string("$Environment Map:")) {
 				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
+			}
+
+			if (optional_string("$FS1 Nebula:")) {
+				bool on = false;
+				stuff_boolean(&on);
+				Nebula_mission_switch = on ? 1 : 0;
 			}
 
 			const int size = 512;
