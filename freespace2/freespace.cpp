@@ -1208,6 +1208,8 @@ void game_do_networking()
 
 int Game_loading_callback_inited = 0;
 int Game_loading_background = -1;
+int Game_loading_default_bground_w = 0;
+int Game_loading_default_bground_h = 0;
 generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -1250,14 +1252,36 @@ void game_loading_callback(int count)
 		framenum = new_framenum;
 
 	if ( Game_loading_ani.num_frames > 0 )	{
+		int ani_x = Game_loading_ani_coords[gr_screen.res][0];
+		int ani_y = Game_loading_ani_coords[gr_screen.res][1];
+		float ani_scale = 1.0f;
+
 		GR_MAYBE_CLEAR_RES(Game_loading_background);
 		if ( Game_loading_background > -1 )	{
+			int bg_w, bg_h;
+			bm_get_info(Game_loading_background, &bg_w, &bg_h);
+
+			// the animation is assumed to match the default background, or the default layout if there is none
+			bool have_default = (Game_loading_default_bground_w > 0) && (Game_loading_default_bground_h > 0);
+			float ref_w = i2fl(have_default ? Game_loading_default_bground_w : gr_screen.max_w_unscaled);
+			float ref_h = i2fl(have_default ? Game_loading_default_bground_h : gr_screen.max_h_unscaled);
+
+			// fit the reference into the background the way menus are fit into the screen:
+			// scaled by the limiting dimension and centered in the other
+			ani_scale = MIN(i2fl(bg_w) / ref_w, i2fl(bg_h) / ref_h);
+			ani_x = fl2i(i2fl(ani_x) * ref_w / i2fl(gr_screen.max_w_unscaled) * ani_scale + (i2fl(bg_w) - ref_w * ani_scale) / 2.0f);
+			ani_y = fl2i(i2fl(ani_y) * ref_h / i2fl(gr_screen.max_h_unscaled) * ani_scale + (i2fl(bg_h) - ref_h * ani_scale) / 2.0f);
+
+			// set the screen scale to the background's dimensions
+			gr_set_screen_scale(bg_w, bg_h);
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
-		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1], GR_RESIZE_MENU);
+		gr_bitmap(ani_x, ani_y, GR_RESIZE_MENU, false, ani_scale);
+
+		gr_reset_screen_scale();
 
 		do_flip = 1;
 	}
@@ -1303,9 +1327,17 @@ void game_loading_callback_init()
 	Assert( Game_loading_callback_inited==0 );
 
 	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
-	
+
 	if (Game_loading_background < 0)
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+
+	Game_loading_default_bground_w = 0;
+	Game_loading_default_bground_h = 0;
+	int default_bground = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	if (default_bground >= 0) {
+		bm_get_info(default_bground, &Game_loading_default_bground_w, &Game_loading_default_bground_h);
+		bm_release(default_bground);
+	}
 
 	generic_anim_init(&Game_loading_ani, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_load(&Game_loading_ani);
