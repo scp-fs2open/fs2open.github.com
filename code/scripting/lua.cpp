@@ -62,6 +62,7 @@ extern "C" {
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/texture_replacement.h"
 #include "scripting/api/objs/texturemap.h"
 #include "scripting/api/objs/time_obj.h"
 #include "scripting/api/objs/vecmath.h"

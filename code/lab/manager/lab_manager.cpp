@@ -856,22 +856,7 @@ void LabManager::changeShipInternal() {
 	ship_objp->special_exp_damage = -1;
 
 	// If the ship class defines replacement textures, load them and apply them to the ship
-	// load the texture
-	auto replacements = ship_infop->replacement_textures;
-	for (auto& tr : replacements) {
-		if (!stricmp(tr.new_texture, "invisible"))
-		{
-			// invisible is a special case
-			tr.new_texture_id = REPLACE_WITH_INVISIBLE;
-		}
-		else
-		{
-			// try to load texture or anim as normal
-			tr.new_texture_id = bm_load_either(tr.new_texture);
-		}
-	}
-
-	ship_objp->apply_replacement_textures(replacements);
+	ship_objp->load_and_apply_replacement_textures(ship_infop->replacement_textures);
 	ship_page_in_textures(ship_objp->ship_info_index);
 
 	if (!ship_infop->default_team_name.empty())

@@ -9,6 +9,7 @@
 #include "species.h"
 #include "shiptype.h"
 #include "team_colors.h"
+#include "texture_replacement.h"
 #include "vecmath.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
@@ -654,6 +655,21 @@ ADE_VIRTVAR(CockpitDisplays, l_Shipclass, "cockpitdisplays", "Gets the cockpit d
 	}
 
 	return ade_set_args(L, "o", l_CockpitDisplayInfos.Set(cockpit_displays_info_h(ship_info_idx)));
+}
+
+ADE_VIRTVAR(ReplacementTextures, l_Shipclass, nullptr, "Gets the replacement textures defined in the table entry of this ship class", "texture_replacements", "Array handle, or invalid texture_replacements handle if the shipclass handle is invalid")
+{
+	int ship_info_idx = -1;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&ship_info_idx)))
+		return ade_set_error(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h()));
+
+	if (ship_info_idx < 0 || ship_info_idx >= ship_info_size())
+		return ade_set_error(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "This property is read only.");
+
+	return ade_set_args(L, "o", l_ShipclassTextureReplacements.Set(shipclass_texture_replacements_h(ship_info_idx)));
 }
 
 ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number", "Hitpoints, or 0 if handle is invalid")
@@ -1318,10 +1334,6 @@ ADE_FUNC(renderSelectModel,
 			}
 		}
 		render_info.set_team_color(tcolor, "none", 0, 0);
-	}
-
-	if (sip->replacement_textures.size() > 0) {
-		render_info.set_replacement_textures(modelNum, sip->replacement_textures);
 	}
 
 	select_effect_params params;
