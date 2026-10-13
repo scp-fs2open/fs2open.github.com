@@ -22,6 +22,7 @@
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
+#include "pcxutils/pcxutils.h"
 #include "render/3d.h"
 #include "starfield/nebula.h"
 
@@ -107,6 +108,8 @@ void parse_generated_nebula_colors()
 			c->g = static_cast<ubyte>(rgb[1]);
 			c->b = static_cast<ubyte>(rgb[2]);
 		}
+		if (optional_string("+Palette Suffix:"))
+			stuff_string(c->palette_suffix, F_NAME);
 	}
 }
 
@@ -127,6 +130,10 @@ void parse_generated_nebula_patterns()
 			p = &Generated_nebula_patterns[idx];
 		}
 
+		if (optional_string("+Mesh:"))
+			stuff_string(p->mesh, F_NAME);
+		if (optional_string("+Palette Prefix:"))
+			stuff_string(p->palette_prefix, F_NAME);
 		if (optional_string("+Clouds Only:"))
 			stuff_boolean(&p->clouds_only);
 		if (optional_string("+Cloud Detail:")) {
@@ -603,6 +610,107 @@ static void nebula_generate_sphere(const generated_nebula_pattern &p, const matr
 	Assertion(k == Nebula_n_verts, "generated nebula sphere vertex count mismatch (%d != %d)", k, Nebula_n_verts);
 }
 
+// The FS1 mesh path.  A .neb file (NEBU, version 1xx) holds points on the same flat map the
+// generated clouds use, each with a brightness level, and a triangle list; nebula01-03.neb ship in
+// sparky_fs2.vp.  Vertex brightness is carried as the u coordinate into a 20-texel ramp so the GPU
+// interpolates in ramp space between vertices, which is what the original palette renderer did.
+constexpr int NEBULA_RAMP_SIZE = 20;
+constexpr int NEBULA_MESH_MAX_POINTS = 300;
+constexpr int NEBULA_MESH_MAX_TRIS = 200;
+
+static bool nebula_load_mesh(const char *name, SCP_vector<vec3d> &pts, SCP_vector<ubyte> &levels, SCP_vector<int> &tris)
+{
+	CFILE *fp = cfopen(cf_add_ext(name, NOX(".neb")), "rb");
+	if (fp == nullptr) {
+		mprintf(("Background nebula mesh %s.neb could not be opened; drawing the generated pattern instead.\n", name));
+		return false;
+	}
+	char id[4];
+	int version = 0, num_pts = 0, num_tris = 0;
+	cfread(id, 4, 1, fp);
+	cfread(&version, sizeof(int), 1, fp);
+	cfread(&num_pts, sizeof(int), 1, fp);
+	cfread(&num_tris, sizeof(int), 1, fp);
+	if (strncmp(id, NOX("NEBU"), 4) != 0 || version / 100 != 1 || num_pts <= 0 || num_pts >= NEBULA_MESH_MAX_POINTS ||
+		num_tris <= 0 || num_tris >= NEBULA_MESH_MAX_TRIS) {
+		mprintf(("Background nebula mesh %s.neb is not a valid version 1 nebula file.\n", name));
+		cfclose(fp);
+		return false;
+	}
+	pts.resize(num_pts);
+	levels.resize(num_pts);
+	for (int i = 0; i < num_pts; i++) {
+		float xf = 0.0f, yf = 0.0f;
+		int l = 0;
+		cfread(&xf, sizeof(float), 1, fp);
+		cfread(&yf, sizeof(float), 1, fp);
+		cfread(&l, sizeof(int), 1, fp);
+		project_2d_onto_sphere(&pts[i], 1.0f - xf, yf);
+		CLAMP(l, 0, 31);
+		levels[i] = static_cast<ubyte>((l * 255) / 31);
+	}
+	tris.resize(num_tris * 3);
+	for (int i = 0; i < num_tris * 3; i++) {
+		cfread(&tris[i], sizeof(int), 1, fp);
+		if (tris[i] < 0 || tris[i] >= num_pts) {
+			mprintf(("Background nebula mesh %s.neb has a triangle index out of range.\n", name));
+			cfclose(fp);
+			return false;
+		}
+	}
+	cfclose(fp);
+	return true;
+}
+
+// one row of NEBULA_RAMP_SIZE texels: the FS1 palette's first entries when the file exists, else an
+// even fade from black to the color.  Stored BGRA, as 32-bit user bitmaps upload.
+static void nebula_make_ramp(const generated_nebula_pattern &p, const generated_nebula_color &col)
+{
+	Nebula_tex_data = new ubyte[NEBULA_RAMP_SIZE * 4];
+	ubyte palette[768] = {};
+	bool from_file = false;
+	if (!p.palette_prefix.empty() && !col.palette_suffix.empty()) {
+		SCP_string filename = p.palette_prefix + "-" + col.palette_suffix;
+		from_file = pcx_read_header(filename.c_str(), nullptr, nullptr, nullptr, nullptr, palette) == PCX_ERROR_NONE;
+		if (!from_file)
+			mprintf(("Background nebula palette %s.pcx could not be read; fading %s to black instead.\n", filename.c_str(), col.name.c_str()));
+	}
+	for (int i = 0; i < NEBULA_RAMP_SIZE; i++) {
+		ubyte *px = &Nebula_tex_data[i * 4];
+		if (from_file) {
+			px[0] = palette[i * 3 + 2];
+			px[1] = palette[i * 3 + 1];
+			px[2] = palette[i * 3 + 0];
+		} else {
+			float f = static_cast<float>(i) / static_cast<float>(NEBULA_RAMP_SIZE - 1);
+			px[0] = nebula_chan(col.b, f);
+			px[1] = nebula_chan(col.g, f);
+			px[2] = nebula_chan(col.r, f);
+		}
+		px[3] = 255;
+	}
+	Nebula_bitmap = bm_create(32, NEBULA_RAMP_SIZE, 1, Nebula_tex_data, 0);
+}
+
+// build Nebula_verts from the mesh: one vertex per triangle corner, brightness mapped onto texel
+// centres so the extremes land on the first and last ramp entries
+static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vector<ubyte> &levels, const SCP_vector<int> &tris, const matrix *orient)
+{
+	delete[] Nebula_verts;
+	Nebula_n_verts = static_cast<int>(tris.size());
+	Nebula_verts = new vertex[Nebula_n_verts];
+	for (int i = 0; i < Nebula_n_verts; i++) {
+		vec3d pt = pts[tris[i]];
+		vm_vec_scale(&pt, NEBULA_RADIUS);
+		vm_vec_unrotate(&pt, &pt, orient);
+		vertex *vt = &Nebula_verts[i];
+		g3_transfer_vertex(vt, &pt);
+		vt->texture_position.u = (0.5f + (NEBULA_RAMP_SIZE - 1) * (levels[tris[i]] / 255.0f)) / NEBULA_RAMP_SIZE;
+		vt->texture_position.v = 0.5f;
+		vt->r = vt->g = vt->b = vt->a = 255;
+	}
+}
+
 void nebula_init(int index, int pitch, int bank, int heading)
 {
 	const bool valid = generated_nebula_enabled && index >= 0 && index < static_cast<int>(Generated_nebula_patterns.size()) &&
@@ -629,18 +737,31 @@ void nebula_init(int index, int pitch, int bank, int heading)
 	if (!valid)
 		return;
 
-	if (!same_texture) {
-		// pick the tint color (fall back to white if the palette index is out of range)
-		generated_nebula_color col;
-		if (Mission_palette >= 0 && Mission_palette < static_cast<int>(Generated_nebula_colors.size()))
-			col = Generated_nebula_colors[Mission_palette];
+	const generated_nebula_pattern &pattern = Generated_nebula_patterns[index];
+	// pick the tint color (fall back to white if the palette index is out of range)
+	generated_nebula_color col;
+	if (Mission_palette >= 0 && Mission_palette < static_cast<int>(Generated_nebula_colors.size()))
+		col = Generated_nebula_colors[Mission_palette];
 
-		nebula_bake_texture(Generated_nebula_patterns[index], col);
+	SCP_vector<vec3d> mesh_pts;
+	SCP_vector<ubyte> mesh_levels;
+	SCP_vector<int> mesh_tris;
+	if (!pattern.mesh.empty() && nebula_load_mesh(pattern.mesh.c_str(), mesh_pts, mesh_levels, mesh_tris)) {
+		if (!same_texture) {
+			nebula_make_ramp(pattern, col);
+			Nebula_baked_pattern = index;
+			Nebula_baked_color = Mission_palette;
+		}
+		nebula_build_mesh_verts(mesh_pts, mesh_levels, mesh_tris, &Nebula_orient);
+		return;
+	}
+
+	if (!same_texture) {
+		nebula_bake_texture(pattern, col);
 		Nebula_baked_pattern = index;
 		Nebula_baked_color = Mission_palette;
 	}
-
-	nebula_generate_sphere(Generated_nebula_patterns[index], &Nebula_orient);
+	nebula_generate_sphere(pattern, &Nebula_orient);
 }
 
 void nebula_render()
@@ -651,6 +772,8 @@ void nebula_render()
 	// additive textured sphere (no depth), instanced around the eye
 	material mat;
 	material_set_unlit(&mat, Nebula_bitmap, 1.0f, true, false);
+	// the ramp's dark end is black, so adding leaves the stars and any skybox where the nebula is faint
+	mat.set_blend_mode(ALPHA_BLEND_ADDITIVE);
 
 	gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 	g3_render_primitives_textured(&mat, Nebula_verts, Nebula_n_verts, PRIM_TYPE_TRIS, false);

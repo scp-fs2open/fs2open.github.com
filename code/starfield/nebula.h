@@ -43,6 +43,8 @@ struct generated_nebula_cloud {
 // name; an entry that lists any +Cloud replaces the pattern's whole cloud list.
 struct generated_nebula_pattern {
 	SCP_string name;
+	SCP_string mesh;           // +Mesh: an FS1 .neb mesh drawn instead of the generated clouds when the file exists
+	SCP_string palette_prefix; // +Palette Prefix: with a color's +Palette Suffix: names the FS1 palette file (<prefix>-<suffix>.pcx)
 	SCP_vector<generated_nebula_cloud> clouds;
 	bool  clouds_only  = false;    // no procedural background, only the placed clouds
 	float cloud_detail = 0.35f;    // how much the noise breaks up the clouds: 0 = smooth, 1 = ragged
@@ -63,6 +65,7 @@ struct generated_nebula_pattern {
 // A named tint color for the generated nebula (generated_nebula.tbl #Generated Nebula Colors).
 struct generated_nebula_color {
 	SCP_string name;
+	SCP_string palette_suffix; // +Palette Suffix: see generated_nebula_pattern::palette_prefix; the file's 20-entry ramp replaces the RGB fade when it exists
 	ubyte r = 255;
 	ubyte g = 255;
 	ubyte b = 255;
