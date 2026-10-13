@@ -44,6 +44,10 @@ class FredRenderer: public QObject {
 
 	ViewSettings& view();
 
+	// the engine draws viewport labels in physical pixels
+	float _devicePixelRatio = 1.0f;
+	float labelFontScale();
+
  public:
 	explicit FredRenderer(os::Viewport* targetView);
 	~FredRenderer() override;
