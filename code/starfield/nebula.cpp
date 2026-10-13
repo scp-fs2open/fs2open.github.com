@@ -241,6 +241,7 @@ void parse_generated_nebula_table(const char *filename)
 
 void generated_nebula_init()
 {
+	nebula_close();
 	Generated_nebula_patterns.clear();
 	Generated_nebula_colors.clear();
 
@@ -268,6 +269,7 @@ static int Nebula_bitmap = -1;
 // the pattern and color index the texture was baked from, so an orientation change can keep it
 static int Nebula_baked_pattern = -1;
 static int Nebula_baked_color = -1;
+static bool Nebula_baked_mesh = false;
 
 static matrix Nebula_orient;
 
@@ -300,6 +302,7 @@ void nebula_close()
 	Nebula_tex_data = nullptr;
 	Nebula_baked_pattern = -1;
 	Nebula_baked_color = -1;
+	Nebula_baked_mesh = false;
 }
 
 // classic 2d -> sphere projection.  u,v in range 0..1.
@@ -633,14 +636,12 @@ static bool nebula_load_mesh(const char *name, SCP_vector<vec3d> &pts, SCP_vecto
 		mprintf(("Background nebula mesh %s.neb could not be opened; drawing the generated pattern instead.\n", name));
 		return false;
 	}
-	char id[4];
+	char id[4] = {};
 	int version = 0, num_pts = 0, num_tris = 0;
-	cfread(id, 4, 1, fp);
-	cfread(&version, sizeof(int), 1, fp);
-	cfread(&num_pts, sizeof(int), 1, fp);
-	cfread(&num_tris, sizeof(int), 1, fp);
-	if (strncmp(id, NOX("NEBU"), 4) != 0 || version / 100 != 1 || num_pts <= 0 || num_pts >= NEBULA_MESH_MAX_POINTS ||
-		num_tris <= 0 || num_tris >= NEBULA_MESH_MAX_TRIS) {
+	const int header_reads = cfread(id, 4, 1, fp) + cfread(&version, sizeof(int), 1, fp) +
+							 cfread(&num_pts, sizeof(int), 1, fp) + cfread(&num_tris, sizeof(int), 1, fp);
+	if (header_reads != 4 || strncmp(id, NOX("NEBU"), 4) != 0 || version / 100 != 1 || num_pts <= 0 ||
+		num_pts >= NEBULA_MESH_MAX_POINTS || num_tris <= 0 || num_tris >= NEBULA_MESH_MAX_TRIS) {
 		mprintf(("Background nebula mesh %s.neb is not a valid version 1 nebula file.\n", name));
 		cfclose(fp);
 		return false;
@@ -650,18 +651,21 @@ static bool nebula_load_mesh(const char *name, SCP_vector<vec3d> &pts, SCP_vecto
 	for (int i = 0; i < num_pts; i++) {
 		float xf = 0.0f, yf = 0.0f;
 		int l = 0;
-		cfread(&xf, sizeof(float), 1, fp);
-		cfread(&yf, sizeof(float), 1, fp);
-		cfread(&l, sizeof(int), 1, fp);
+		const int point_reads =
+			cfread(&xf, sizeof(float), 1, fp) + cfread(&yf, sizeof(float), 1, fp) + cfread(&l, sizeof(int), 1, fp);
+		if (point_reads != 3 || fl_is_nan(xf) || fl_is_nan(yf) || xf < 0.0f || xf > 1.0f || yf < 0.0f || yf > 1.0f) {
+			mprintf(("Background nebula mesh %s.neb is truncated or has a point off the map.\n", name));
+			cfclose(fp);
+			return false;
+		}
 		project_2d_onto_sphere(&pts[i], 1.0f - xf, yf);
 		CLAMP(l, 0, 31);
 		levels[i] = static_cast<ubyte>((l * 255) / 31);
 	}
 	tris.resize(num_tris * 3);
 	for (int i = 0; i < num_tris * 3; i++) {
-		cfread(&tris[i], sizeof(int), 1, fp);
-		if (tris[i] < 0 || tris[i] >= num_pts) {
-			mprintf(("Background nebula mesh %s.neb has a triangle index out of range.\n", name));
+		if (cfread(&tris[i], sizeof(int), 1, fp) != 1 || tris[i] < 0 || tris[i] >= num_pts) {
+			mprintf(("Background nebula mesh %s.neb is truncated or has a triangle index out of range.\n", name));
 			cfclose(fp);
 			return false;
 		}
@@ -754,20 +758,25 @@ void nebula_init(int index, int pitch, int bank, int heading)
 	SCP_vector<vec3d> mesh_pts;
 	SCP_vector<ubyte> mesh_levels;
 	SCP_vector<int> mesh_tris;
+	// the ramp and the equirect bake differ, so a change of path needs a fresh texture
 	if (!pattern.mesh.empty() && nebula_load_mesh(pattern.mesh.c_str(), mesh_pts, mesh_levels, mesh_tris)) {
-		if (!same_texture) {
+		if (!same_texture || !Nebula_baked_mesh) {
+			nebula_close();
 			nebula_make_ramp(pattern, col);
 			Nebula_baked_pattern = index;
 			Nebula_baked_color = Mission_palette;
+			Nebula_baked_mesh = true;
 		}
 		nebula_build_mesh_verts(mesh_pts, mesh_levels, mesh_tris, &Nebula_orient);
 		return;
 	}
 
-	if (!same_texture) {
+	if (!same_texture || Nebula_baked_mesh) {
+		nebula_close();
 		nebula_bake_texture(pattern, col);
 		Nebula_baked_pattern = index;
 		Nebula_baked_color = Mission_palette;
+		Nebula_baked_mesh = false;
 	}
 	nebula_generate_sphere(pattern, &Nebula_orient);
 }
@@ -775,6 +784,8 @@ void nebula_init(int index, int pitch, int bank, int heading)
 void nebula_render()
 {
 	if (!nebula_backgrounds_enabled() || Nebula_verts == nullptr || Nebula_n_verts <= 0 || Nebula_bitmap < 0)
+		return;
+	if (!Detail.planets_suns)
 		return;
 
 	// additive textured sphere (no depth), instanced around the eye

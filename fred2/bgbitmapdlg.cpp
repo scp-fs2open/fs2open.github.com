@@ -166,6 +166,7 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_WM_CLOSE()	
 	ON_CBN_SELCHANGE(IDC_NEBCOLOR, OnSelchangeNebcolor)
 	ON_CBN_SELCHANGE(IDC_NEBPATTERN, OnSelchangeNebpattern)
+	ON_CBN_SELCHANGE(IDC_FS1_NEB_MISSION, OnSelchangeFs1NebMission)
 	ON_BN_CLICKED(IDC_FULLNEB, OnFullNeb)
 	ON_BN_CLICKED(IDC_NEB2_PALETTE_OVERRIDE, OnNeb2PaletteOverride)
 	ON_CBN_SELCHANGE(IDC_NEB2_TEXTURE, OnSelchangeNeb2Texture)
@@ -346,9 +347,8 @@ void bg_bitmap_dlg::create()
 		m_nebula_index = Nebula_index + 1;		
 	
 		m_nebula_color = Mission_palette;
-		// combo rows: 0 default, 1 on, 2 off; the engine's -1/1/0
 		m_fs1_neb_mission = Nebula_mission_switch < 0 ? 0 : (Nebula_mission_switch == 1 ? 1 : 2);
-		if (Nebula_index < 0){
+		if (Nebula_index < 0 && Nebula_unknown_pattern.empty()){
 			GetDlgItem(IDC_NEBCOLOR)->EnableWindow(FALSE);
 			GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(FALSE);
 		}
@@ -633,6 +633,12 @@ void bg_bitmap_dlg::OnSelchangeNebpattern()
 	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
 	Update_window = 1;
+}
+
+void bg_bitmap_dlg::OnSelchangeFs1NebMission()
+{
+	UpdateData(TRUE);
+	Nebula_mission_switch = m_fs1_neb_mission == 0 ? -1 : (m_fs1_neb_mission == 1 ? 1 : 0);
 }
 
 void bg_bitmap_dlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar) 

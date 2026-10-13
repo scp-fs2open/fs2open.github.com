@@ -19,8 +19,6 @@ extern int Nebula_pitch;
 extern int Nebula_bank;
 extern int Nebula_heading;
 
-struct angles;
-
 // A placed cloud in a generated nebula pattern: a soft ellipse on the nebula's flat map, the same
 // map the FS1 nebula meshes were drawn on.  Longitude wraps, so a cloud can cross the seam.
 //   +Cloud: lon lat width height angle brightness

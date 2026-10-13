@@ -134,6 +134,7 @@ protected:
 	afx_msg void OnOK();	
 	afx_msg void OnSelchangeNebcolor();
 	afx_msg void OnSelchangeNebpattern();
+	afx_msg void OnSelchangeFs1NebMission();
 	afx_msg void OnFullNeb();
 	afx_msg void OnNeb2PaletteOverride();
 	afx_msg void OnSelchangeNeb2Texture();

@@ -1100,15 +1100,19 @@ int Fred_mission_save::save_bitmaps()
 		bypass_comment(";;FSO 3.6.9;; $Environment Map:");
 	}
 
-	if (Nebula_mission_switch >= 0 && (Nebula_index >= 0 || !Nebula_unknown_pattern.empty())) {
+	if (Nebula_mission_switch >= 0 && (Nebula_index >= 0 || !Nebula_unknown_pattern.empty()) &&
+		!The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 		fso_comment_push(";;FSO 26.1.0;;");
-		if (optional_string_fred("$FS1 Nebula:")) {
+		// bypass_comment() edits only the raw text, so the parsed text can still hold a line the raw text lost
+		if (strstr(raw_ptr, "$FS1 Nebula:") != nullptr && optional_string_fred("$FS1 Nebula:")) {
 			parse_comments(2);
 			fout(" %s", Nebula_mission_switch == 1 ? "YES" : "NO");
 		} else {
 			fout_version("\n\n$FS1 Nebula: %s", Nebula_mission_switch == 1 ? "YES" : "NO");
 		}
 		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $FS1 Nebula:", "#Asteroid Fields");
 	}
 
 	fso_comment_pop(true);

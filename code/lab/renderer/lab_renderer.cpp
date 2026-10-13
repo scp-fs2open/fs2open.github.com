@@ -386,6 +386,9 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
+	nebula_close();
+	Nebula_index = -1;
+	Nebula_mission_switch = -1;
 	vm_set_identity(&skybox_orientation);
 
 	// (DahBlount) - Remember to load the debris anims

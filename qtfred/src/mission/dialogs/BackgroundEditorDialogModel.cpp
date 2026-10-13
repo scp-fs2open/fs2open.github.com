@@ -1028,8 +1028,10 @@ void BackgroundEditorDialogModel::setOldNebulaPattern(const SCP_string& name)
 		newIndex = generated_nebula_pattern_lookup(name.c_str());
 	}
 
-	if (newIndex >= 0 || stricmp(name.c_str(), "<None>") == 0) {
+	if (newIndex >= 0 || name.empty() || stricmp(name.c_str(), "<None>") == 0) {
 		Nebula_unknown_pattern.clear();
+	} else {
+		Nebula_unknown_pattern = name;
 	}
 	modify(Nebula_index, newIndex);
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
@@ -1048,8 +1050,10 @@ void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
 	if (name.empty())
 		return;
 	const int idx = generated_nebula_color_lookup(name.c_str());
-	if (idx < 0)
+	if (idx < 0) {
+		Nebula_unknown_color = name;
 		return;
+	}
 	Nebula_unknown_color.clear();
 	modify(Mission_palette, idx);
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
