@@ -232,6 +232,12 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
 
+	#ifdef __ANDROID__
+	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	os_android_touch_overlay_init();
+	#endif
+
 	SDL_Rect bounds;
 	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
 		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
