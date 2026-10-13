@@ -6468,6 +6468,10 @@ void parse_bitmaps(mission *pm)
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
 	}
 
+	if (optional_string("$FS1 Nebula Over Skybox:")) {
+		stuff_boolean(&Nebula_over_skybox);
+	}
+
 	// bypass spurious stuff from e.g. FS1 missions
 	skip_to_start_of_string("#");
 }
@@ -7501,6 +7505,7 @@ void mission_init(mission *pm, bool quick_init)
 	Nebula_bank = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Nebula_heading = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Nebula_index = -1;
+	Nebula_over_skybox = false;
 	Mission_palette = 1;
 }
 

@@ -56,6 +56,7 @@ public:
 	CSliderCtrl			m_slider;
 	int		m_neb2_texture;
 	BOOL		m_subspace;
+	BOOL		m_nebula_over_skybox;
 	BOOL		m_fullneb;
 	BOOL		m_fog_color_override;
 	BOOL		m_fullneb_background_bitmaps;

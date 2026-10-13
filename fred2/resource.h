@@ -563,6 +563,7 @@
 #define IDC_SET_FROM_SHIP_CLASS         1203
 #define IDC_CURRENT_CONTAINER_NAME      1203
 #define IDC_NEBCOLOR                    1204
+#define IDC_NEB_OVER_SKYBOX             1747
 #define IDC_SUBSTITUTE_EVENT_MUSIC      1205
 #define IDC_OPEN_CUSTOM_DATA            1206
 #define IDC_AI_PROFILE                  1207
@@ -1638,7 +1639,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
-#define _APS_NEXT_CONTROL_VALUE         1747
+#define _APS_NEXT_CONTROL_VALUE         1748
 #define _APS_NEXT_COMMAND_VALUE         33124
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

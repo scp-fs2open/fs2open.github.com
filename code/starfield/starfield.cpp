@@ -1966,8 +1966,8 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( show_nebulas && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
-		nebula_render();
+	if ( show_nebulas && (Nmodel_num < 0 || Nebula_over_skybox) && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) ) {
+		nebula_render(Nmodel_num >= 0);
 	}
 
 	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) ) {

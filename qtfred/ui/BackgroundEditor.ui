@@ -731,6 +731,16 @@
             <item row="1" column="1">
              <widget class="QComboBox" name="oldNebulaColorCombo"/>
             </item>
+            <item row="2" column="1">
+             <widget class="QCheckBox" name="oldNebulaOverSkyboxCheck">
+              <property name="toolTip">
+               <string>Draw the FS1 nebula over the skybox model with additive blending; without this a skybox hides it</string>
+              </property>
+              <property name="text">
+               <string>Draw over skybox</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>
@@ -1190,6 +1200,7 @@
   <tabstop>lightingProfileCombo</tabstop>
   <tabstop>oldNebulaPatternCombo</tabstop>
   <tabstop>oldNebulaColorCombo</tabstop>
+  <tabstop>oldNebulaOverSkyboxCheck</tabstop>
   <tabstop>oldNebulaPitchSpinBox</tabstop>
   <tabstop>oldNebulaBankSpinBox</tabstop>
   <tabstop>oldNebulaHeadingSpinBox</tabstop>

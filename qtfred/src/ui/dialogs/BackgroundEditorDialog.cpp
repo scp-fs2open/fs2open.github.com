@@ -334,12 +334,14 @@ void BackgroundEditorDialog::updateOldNebulaControls()
 
 	ui->oldNebulaPatternCombo->setEnabled(enabled);
 	ui->oldNebulaColorCombo->setEnabled(enabled && old_enabled);
+	ui->oldNebulaOverSkyboxCheck->setEnabled(enabled && old_enabled);
 	ui->oldNebulaPitchSpinBox->setEnabled(enabled && old_enabled);
 	ui->oldNebulaBankSpinBox->setEnabled(enabled && old_enabled);
 	ui->oldNebulaHeadingSpinBox->setEnabled(enabled && old_enabled);
 
 	ui->oldNebulaPatternCombo->setCurrentIndex(ui->oldNebulaPatternCombo->findText(QString::fromStdString(_model->getOldNebulaPattern())));
 	ui->oldNebulaColorCombo->setCurrentIndex(ui->oldNebulaColorCombo->findText(QString::fromStdString(_model->getOldNebulaColorName())));
+	ui->oldNebulaOverSkyboxCheck->setChecked(_model->getOldNebulaOverSkybox());
 	ui->oldNebulaPitchSpinBox->setValue(_model->getOldNebulaPitch());
 	ui->oldNebulaBankSpinBox->setValue(_model->getOldNebulaBank());
 	ui->oldNebulaHeadingSpinBox->setValue(_model->getOldNebulaHeading());
@@ -811,6 +813,11 @@ void BackgroundEditorDialog::on_oldNebulaColorCombo_currentIndexChanged(int inde
 		return;
 	const QString text = ui->oldNebulaColorCombo->itemText(index);
 	_model->setOldNebulaColorName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_oldNebulaOverSkyboxCheck_toggled(bool checked)
+{
+	_model->setOldNebulaOverSkybox(checked);
 }
 
 void BackgroundEditorDialog::on_oldNebulaPitchSpinBox_valueChanged(int arg1)

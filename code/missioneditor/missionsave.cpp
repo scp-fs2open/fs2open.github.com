@@ -1089,6 +1089,17 @@ int Fred_mission_save::save_bitmaps()
 		bypass_comment(";;FSO 3.6.9;; $Environment Map:");
 	}
 
+	if (Nebula_over_skybox && Nebula_index >= 0 && !The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$FS1 Nebula Over Skybox:")) {
+			parse_comments(2);
+			fout(" YES");
+		} else {
+			fout_version("\n\n$FS1 Nebula Over Skybox: YES");
+		}
+		fso_comment_pop();
+	}
+
 	fso_comment_pop(true);
 
 	return err;

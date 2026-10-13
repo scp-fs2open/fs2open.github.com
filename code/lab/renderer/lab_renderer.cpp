@@ -387,6 +387,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
+	Nebula_over_skybox = false;
 	vm_set_identity(&skybox_orientation);
 
 	// (DahBlount) - Remember to load the debris anims
@@ -582,6 +583,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			if (optional_string("$Environment Map:")) {
 				stuff_string(envmap_name, F_NAME, MAX_FILENAME_LEN);
+			}
+
+			if (optional_string("$FS1 Nebula Over Skybox:")) {
+				stuff_boolean(&Nebula_over_skybox);
 			}
 
 			const int size = 512;

@@ -49,6 +49,7 @@ static matrix Nebula_orient;
 int Nebula_pitch;
 int Nebula_bank;
 int Nebula_heading;
+bool Nebula_over_skybox = false;
 
 void nebula_close()
 {
@@ -228,7 +229,7 @@ void nebula_init( const char *filename, angles * pbh )
 	}
 }
 
-void nebula_render()
+void nebula_render(bool over_skybox)
 {
 	if (!Fs1_nebula_backgrounds || !Nebula_loaded || Nebula_ramp_bitmap < 0) {
 		return;
@@ -256,6 +257,10 @@ void nebula_render()
 
 	material mat;
 	material_set_unlit(&mat, Nebula_ramp_bitmap, 1.0f, true, false);
+	if (over_skybox) {
+		// the ramp's dark end is black, so adding leaves the skybox and its stars where the nebula is faint
+		mat.set_blend_mode(ALPHA_BLEND_ADDITIVE);
+	}
 	g3_render_primitives_textured(&mat, Nebula_tri_verts, num_tris * 3, PRIM_TYPE_TRIS, false);
 
 	gr_end_instance_matrix();

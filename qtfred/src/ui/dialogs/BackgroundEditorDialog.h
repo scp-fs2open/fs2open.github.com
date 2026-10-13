@@ -73,6 +73,7 @@ private slots:
 	// Old Nebula
 	void on_oldNebulaPatternCombo_currentIndexChanged(int index);
 	void on_oldNebulaColorCombo_currentIndexChanged(int index);
+	void on_oldNebulaOverSkyboxCheck_toggled(bool checked);
 	void on_oldNebulaPitchSpinBox_valueChanged(int arg1);
 	void on_oldNebulaBankSpinBox_valueChanged(int arg1);
 	void on_oldNebulaHeadingSpinBox_valueChanged(int arg1);

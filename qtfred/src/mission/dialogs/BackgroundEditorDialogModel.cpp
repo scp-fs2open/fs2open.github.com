@@ -1053,6 +1053,16 @@ void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
 	// name not found: ignore
 }
 
+bool BackgroundEditorDialogModel::getOldNebulaOverSkybox()
+{
+	return Nebula_over_skybox;
+}
+
+void BackgroundEditorDialogModel::setOldNebulaOverSkybox(bool over)
+{
+	modify(Nebula_over_skybox, over);
+}
+
 int BackgroundEditorDialogModel::getOldNebulaPitch()
 {
 	return Nebula_pitch;

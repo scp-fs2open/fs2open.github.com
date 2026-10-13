@@ -125,6 +125,8 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static SCP_vector<SCP_string> getOldNebulaColorOptions();
 	static SCP_string getOldNebulaColorName();
 	void setOldNebulaColorName(const SCP_string& name);
+	static bool getOldNebulaOverSkybox();
+	void setOldNebulaOverSkybox(bool over);
 	static SCP_string getOldNebulaPattern();
 	void setOldNebulaPattern(const SCP_string& name);
 	static int getOldNebulaPitch();
