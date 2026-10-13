@@ -623,8 +623,9 @@ static void nebula_generate_sphere(const generated_nebula_pattern &p, const matr
 
 // The FS1 mesh path.  A .neb file (NEBU, version 1xx) holds points on the same flat map the
 // generated clouds use, each with a brightness level, and a triangle list; nebula01-03.neb ship in
-// sparky_fs2.vp.  Vertex brightness is carried as the u coordinate into a 20-texel ramp so the GPU
-// interpolates in ramp space between vertices, which is what the original palette renderer did.
+// sparky_fs2.vp.  Each corner takes the ramp entry its brightness rounds down to and the GPU blends
+// those colors across the triangle, as the retail Glide and Direct3D renderers did (they blended in
+// screen space; this blends with perspective).
 constexpr int NEBULA_RAMP_SIZE = 20;
 constexpr int NEBULA_MESH_MAX_POINTS = 300;
 constexpr int NEBULA_MESH_MAX_TRIS = 200;
@@ -704,8 +705,8 @@ static void nebula_make_ramp(const generated_nebula_pattern &p, const generated_
 	Nebula_bitmap = bm_create(32, NEBULA_RAMP_SIZE, 1, Nebula_tex_data, 0);
 }
 
-// build Nebula_verts from the mesh: one vertex per triangle corner, brightness mapped onto texel
-// centres so the extremes land on the first and last ramp entries
+// build Nebula_verts from the mesh: one vertex per triangle corner, colored from the ramp in
+// Nebula_tex_data, so nebula_make_ramp must have run first
 static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vector<ubyte> &levels, const SCP_vector<int> &tris, const matrix *orient)
 {
 	delete[] Nebula_verts;
@@ -717,9 +718,11 @@ static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vect
 		vm_vec_unrotate(&pt, &pt, orient);
 		vertex *vt = &Nebula_verts[i];
 		g3_transfer_vertex(vt, &pt);
-		vt->texture_position.u = (0.5f + (NEBULA_RAMP_SIZE - 1) * (levels[tris[i]] / 255.0f)) / NEBULA_RAMP_SIZE;
-		vt->texture_position.v = 0.5f;
-		vt->r = vt->g = vt->b = vt->a = 255;
+		const ubyte *px = &Nebula_tex_data[((levels[tris[i]] * (NEBULA_RAMP_SIZE - 1)) / 255) * 4];
+		vt->b = px[0];
+		vt->g = px[1];
+		vt->r = px[2];
+		vt->a = 255;
 	}
 }
 
@@ -788,13 +791,16 @@ void nebula_render()
 	if (!Detail.planets_suns)
 		return;
 
-	// additive textured sphere (no depth), instanced around the eye
+	// additive sphere (no depth), instanced around the eye
 	material mat;
-	material_set_unlit(&mat, Nebula_bitmap, 1.0f, true, false);
+	material_set_unlit(&mat, Nebula_baked_mesh ? -1 : Nebula_bitmap, 1.0f, true, false);
 	// the ramp's dark end is black, so adding leaves the stars and any skybox where the nebula is faint
 	mat.set_blend_mode(ALPHA_BLEND_ADDITIVE);
 
 	gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
-	g3_render_primitives_textured(&mat, Nebula_verts, Nebula_n_verts, PRIM_TYPE_TRIS, false);
+	if (Nebula_baked_mesh)
+		g3_render_primitives_colored(&mat, Nebula_verts, Nebula_n_verts, PRIM_TYPE_TRIS, false);
+	else
+		g3_render_primitives_textured(&mat, Nebula_verts, Nebula_n_verts, PRIM_TYPE_TRIS, false);
 	gr_end_instance_matrix();
 }
