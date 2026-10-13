@@ -71,7 +71,7 @@ $Name: Grey Green
 ;;   +Octaves:       noise detail layers; fewer gives broader, smoother masses
 ;;   +Warp:          how much the noise is swirled, stretching it into wisps
 ;;   +Contrast:      background falloff curve for the bright patches
-;;   +Intensity:     overall brightness multiplier
+;;   +Intensity:     overall brightness multiplier (through a palette file, colors stop at its last entry)
 ;;   +Seed:          noise seed, giving each pattern its own variation
 ;;   +Resolution:    sphere mesh resolution (around, along)
 ;;   +Band:          range of the sphere covered, 0..1 from pole to pole

@@ -525,6 +525,8 @@ static float nebula_brightness(float lon, float lat, const generated_nebula_patt
 constexpr int NEBULA_TEX_W = 1024;
 constexpr int NEBULA_TEX_H = 512;
 
+constexpr int NEBULA_RAMP_SIZE = 20;
+
 static ubyte nebula_chan(float c, float b)
 {
 	int v = static_cast<int>(c * b);
@@ -532,7 +534,21 @@ static ubyte nebula_chan(float c, float b)
 	return static_cast<ubyte>(v);
 }
 
-// bake the procedural pattern into an equirectangular RGB texture, tinted by the mission color.
+// the FS1 palette named by the pattern's prefix and the color's suffix, if both are set and it loads
+static bool nebula_read_palette(const generated_nebula_pattern &p, const generated_nebula_color &col,
+	ubyte palette[768])
+{
+	if (p.palette_prefix.empty() || col.palette_suffix.empty())
+		return false;
+	SCP_string filename = p.palette_prefix + "-" + col.palette_suffix;
+	if (pcx_read_header(filename.c_str(), nullptr, nullptr, nullptr, nullptr, palette) == PCX_ERROR_NONE)
+		return true;
+	mprintf(("Background nebula palette %s.pcx could not be read; fading %s to black instead.\n", filename.c_str(), col.name.c_str()));
+	return false;
+}
+
+// bake the procedural pattern into an equirectangular RGB texture, colored through the palette ramp
+// when one is named, else tinted by the mission color.
 // sampling per-texel here (rather than per-vertex on a coarse mesh) is what removes the triangle
 // facets; the smooth brightness field + bilinear filtering give the soft, feathered FS1 look.
 static void nebula_bake_texture(const generated_nebula_pattern &p, const generated_nebula_color &col)
@@ -542,6 +558,8 @@ static void nebula_bake_texture(const generated_nebula_pattern &p, const generat
 
 	const float intensity = std::max(p.intensity, 0.0f);
 	const auto clouds = nebula_prepare_clouds(p);
+	ubyte palette[768] = {};
+	const bool from_file = nebula_read_palette(p, col, palette);
 
 	ubyte *px = Nebula_tex_data;
 	for (int j = 0; j < NEBULA_TEX_H; j++) {
@@ -550,9 +568,20 @@ static void nebula_bake_texture(const generated_nebula_pattern &p, const generat
 			float u = (static_cast<float>(i) + 0.5f) / static_cast<float>(NEBULA_TEX_W); // longitude 0..1
 			float b = nebula_brightness(u, v, p, clouds) * intensity;
 			// 24-bit user bitmaps upload as GL_BGR, so store blue-green-red
-			*px++ = nebula_chan(col.b, b);
-			*px++ = nebula_chan(col.g, b);
-			*px++ = nebula_chan(col.r, b);
+			if (from_file) {
+				// blended between ramp entries rather than rounded down as on the mesh path, which would band
+				const float pos = (b > 0.0f ? std::min(b, 1.0f) : 0.0f) * static_cast<float>(NEBULA_RAMP_SIZE - 1);
+				const int lo = std::min(static_cast<int>(pos), NEBULA_RAMP_SIZE - 2);
+				const float f = pos - static_cast<float>(lo);
+				for (int c = 2; c >= 0; c--) {
+					*px++ = static_cast<ubyte>(
+						palette[lo * 3 + c] + (palette[(lo + 1) * 3 + c] - palette[lo * 3 + c]) * f + 0.5f);
+				}
+			} else {
+				*px++ = nebula_chan(col.b, b);
+				*px++ = nebula_chan(col.g, b);
+				*px++ = nebula_chan(col.r, b);
+			}
 		}
 	}
 
@@ -637,7 +666,6 @@ static void nebula_generate_sphere(const generated_nebula_pattern &p, const matr
 // sparky_fs2.vp.  Each corner takes the ramp entry its brightness rounds down to and those colors blend
 // across the triangle (drawn in pieces, see NEBULA_MESH_SUBDIV), as the retail Glide and Direct3D
 // renderers did (they blended in screen space; this blends with perspective).
-constexpr int NEBULA_RAMP_SIZE = 20;
 constexpr int NEBULA_MESH_MAX_POINTS = 300;
 constexpr int NEBULA_MESH_MAX_TRIS = 200;
 
@@ -692,13 +720,7 @@ static void nebula_make_ramp(const generated_nebula_pattern &p, const generated_
 {
 	Nebula_tex_data = new ubyte[NEBULA_RAMP_SIZE * 4];
 	ubyte palette[768] = {};
-	bool from_file = false;
-	if (!p.palette_prefix.empty() && !col.palette_suffix.empty()) {
-		SCP_string filename = p.palette_prefix + "-" + col.palette_suffix;
-		from_file = pcx_read_header(filename.c_str(), nullptr, nullptr, nullptr, nullptr, palette) == PCX_ERROR_NONE;
-		if (!from_file)
-			mprintf(("Background nebula palette %s.pcx could not be read; fading %s to black instead.\n", filename.c_str(), col.name.c_str()));
-	}
+	const bool from_file = nebula_read_palette(p, col, palette);
 	for (int i = 0; i < NEBULA_RAMP_SIZE; i++) {
 		ubyte *px = &Nebula_tex_data[i * 4];
 		if (from_file) {
