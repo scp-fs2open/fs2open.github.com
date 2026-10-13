@@ -39,7 +39,7 @@ SDL_DisplayID get_debug_display() {
 namespace osapi {
 
 DebugWindow::DebugWindow() {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	uint32_t display = get_debug_display();
 	attrs.display = display;
 
