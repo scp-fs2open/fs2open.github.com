@@ -716,7 +716,8 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 						if (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.0f) {
 							dist = vm_vec_normalize(&in_vec);
 							if ((dist < 200.0f) && (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.95f)) {
-								if ((Objects[objp->parent].signature == objp->parent_sig) && (vm_vec_dist_quick(&objp->pos, &Objects[objp->parent].pos) < 300.0f)) {
+								if ((Objects[objp->parent].signature == objp->parent_sig) && (vm_vec_dist_quick(&objp->pos, &Objects[objp->parent].pos) < 300.0f)
+									&& !ai_declines_pursuit(Pl_objp, &Objects[objp->parent])) {
 									set_target_objnum(aip, objp->parent);
 									aip->submode = SM_ATTACK;
 									aip->submode_start_time = Missiontime;
@@ -1118,7 +1119,7 @@ void ai_big_chase()
 	} else if (En_objp->flags[Object::Object_Flags::Protected]) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
-		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
+		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level], ai_targets_for_pursuit(aip)) == -1) {
 			ai_do_default_behavior(Pl_objp);
 			return;
 		}
@@ -1978,19 +1979,18 @@ int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 		return 0;
 	}
 
+	if (ai_declines_pursuit(pl_objp, parent_objp)) {
+		return 0;
+	}
+
 	// Maybe the ship which fired the weapon isn't the current target
 	if ( OBJ_INDEX(parent_objp) != aip->target_objnum ) {
-
-//JAS IMPOSSIBLE		if (1) { // consider_target_only ) {
-//JAS IMPOSSIBLE			return 0;
-//JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
 			if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));
-//JAS IMPOSSIBLE		}
 	}
 
 	ai_big_strafe_maybe_attack_turret(pl_objp, weapon_objp);
