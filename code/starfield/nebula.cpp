@@ -19,6 +19,7 @@
 #include "graphics/2d.h"
 #include "graphics/material.h"
 #include "graphics/matrix.h"
+#include "lighting/lighting_profiles.h"
 #include "math/vecmat.h"
 #include "mission/missionparse.h"
 #include "mod_table/mod_table.h"
@@ -262,14 +263,21 @@ void generated_nebula_init()
 static vertex *Nebula_verts = nullptr;
 static int Nebula_n_verts = 0;
 
-// baked equirectangular brightness texture (procedural path).  Nebula_tex_data is our own buffer;
-// bm_create() keeps the pointer without copying, so we hold it until bm_release + delete[].
+// the generated path's equirectangular bake, or the mesh path's 20-entry ramp (which the vertex colors
+// are read from).  Nebula_tex_data is our own buffer; bm_create() keeps the pointer without copying,
+// so we hold it until bm_release + delete[].
 static ubyte *Nebula_tex_data = nullptr;
 static int Nebula_bitmap = -1;
 // the pattern and color index the texture was baked from, so an orientation change can keep it
 static int Nebula_baked_pattern = -1;
 static int Nebula_baked_color = -1;
 static bool Nebula_baked_mesh = false;
+// the mesh path's palette color per vertex (BGR), and the post-processing state the vertex colors were
+// made for
+static SCP_vector<ubyte> Nebula_mesh_colors;
+static int Nebula_mesh_colors_tonemapper = -2;
+static float Nebula_mesh_colors_exposure = 0.0f;
+static int Nebula_mesh_warned_tonemapper = -1;
 
 static matrix Nebula_orient;
 
@@ -303,6 +311,9 @@ void nebula_close()
 	Nebula_baked_pattern = -1;
 	Nebula_baked_color = -1;
 	Nebula_baked_mesh = false;
+	Nebula_mesh_colors.clear();
+	Nebula_mesh_colors_tonemapper = -2;
+	Nebula_mesh_warned_tonemapper = -1;
 }
 
 // classic 2d -> sphere projection.  u,v in range 0..1.
@@ -623,9 +634,9 @@ static void nebula_generate_sphere(const generated_nebula_pattern &p, const matr
 
 // The FS1 mesh path.  A .neb file (NEBU, version 1xx) holds points on the same flat map the
 // generated clouds use, each with a brightness level, and a triangle list; nebula01-03.neb ship in
-// sparky_fs2.vp.  Each corner takes the ramp entry its brightness rounds down to and the GPU blends
-// those colors across the triangle, as the retail Glide and Direct3D renderers did (they blended in
-// screen space; this blends with perspective).
+// sparky_fs2.vp.  Each corner takes the ramp entry its brightness rounds down to and those colors blend
+// across the triangle (drawn in pieces, see NEBULA_MESH_SUBDIV), as the retail Glide and Direct3D
+// renderers did (they blended in screen space; this blends with perspective).
 constexpr int NEBULA_RAMP_SIZE = 20;
 constexpr int NEBULA_MESH_MAX_POINTS = 300;
 constexpr int NEBULA_MESH_MAX_TRIS = 200;
@@ -705,24 +716,127 @@ static void nebula_make_ramp(const generated_nebula_pattern &p, const generated_
 	Nebula_bitmap = bm_create(32, NEBULA_RAMP_SIZE, 1, Nebula_tex_data, 0);
 }
 
-// build Nebula_verts from the mesh: one vertex per triangle corner, colored from the ramp in
-// Nebula_tex_data, so nebula_make_ramp must have run first
+// Each mesh triangle is drawn as NEBULA_MESH_SUBDIV^2 flat pieces whose corners carry the blend of the
+// triangle's corner colors at that point.  Without post-processing that draws the same picture to
+// within byte rounding; with it, the compensation below holds at every piece's corners, and the
+// curve's bend between them stays within about one step (it reached 15 across a whole triangle).
+constexpr int NEBULA_MESH_SUBDIV = 8;
+
+// build Nebula_verts from the mesh, keeping each vertex's palette color for nebula_update_mesh_colors()
 static void nebula_build_mesh_verts(const SCP_vector<vec3d> &pts, const SCP_vector<ubyte> &levels, const SCP_vector<int> &tris, const matrix *orient)
 {
+	Assertion(Nebula_baked_mesh && Nebula_tex_data != nullptr, "the mesh path needs the palette ramp");
+	constexpr int N = NEBULA_MESH_SUBDIV;
+	const int num_tris = static_cast<int>(tris.size()) / 3;
 	delete[] Nebula_verts;
-	Nebula_n_verts = static_cast<int>(tris.size());
+	Nebula_n_verts = num_tris * N * N * 3;
 	Nebula_verts = new vertex[Nebula_n_verts];
+	Nebula_mesh_colors.resize(Nebula_n_verts * 3);
+
+	int k = 0;
+	for (int t = 0; t < num_tris; t++) {
+		vec3d corner[3];
+		const ubyte *color[3];
+		for (int c = 0; c < 3; c++) {
+			const int p = tris[t * 3 + c];
+			corner[c] = pts[p];
+			vm_vec_scale(&corner[c], NEBULA_RADIUS);
+			vm_vec_unrotate(&corner[c], &corner[c], orient);
+			color[c] = &Nebula_tex_data[((levels[p] * (NEBULA_RAMP_SIZE - 1)) / 255) * 4];
+		}
+		// grid point (i, j) is corner 0 plus i/N of the way to corner 1 and j/N of the way to corner 2
+		auto emit = [&](int i, int j) {
+			const float a = static_cast<float>(i) / N;
+			const float b = static_cast<float>(j) / N;
+			const float w = 1.0f - a - b;
+			vec3d pt;
+			pt.xyz.x = w * corner[0].xyz.x + a * corner[1].xyz.x + b * corner[2].xyz.x;
+			pt.xyz.y = w * corner[0].xyz.y + a * corner[1].xyz.y + b * corner[2].xyz.y;
+			pt.xyz.z = w * corner[0].xyz.z + a * corner[1].xyz.z + b * corner[2].xyz.z;
+			vertex *vt = &Nebula_verts[k];
+			g3_transfer_vertex(vt, &pt);
+			vt->a = 255;
+			for (int ch = 0; ch < 3; ch++)
+				Nebula_mesh_colors[k * 3 + ch] =
+					static_cast<ubyte>(w * color[0][ch] + a * color[1][ch] + b * color[2][ch] + 0.5f);
+			k++;
+		};
+		for (int i = 0; i < N; i++) {
+			for (int j = 0; j < N - i; j++) {
+				emit(i, j);
+				emit(i + 1, j);
+				emit(i, j + 1);
+				if (i + j < N - 1) {
+					emit(i + 1, j);
+					emit(i + 1, j + 1);
+					emit(i, j + 1);
+				}
+			}
+		}
+	}
+	Assertion(k == Nebula_n_verts, "background nebula mesh vertex count mismatch (%d != %d)", k, Nebula_n_verts);
+	Nebula_mesh_colors_tonemapper = -2;
+}
+
+// How bright the scene must be, before the exposure, for post-processing to show `target`: the scene
+// pass linearizes colors (gamma 2.2, gamma.sdr); the tonemap pass applies the exposure, the curve
+// (tonemapping-f.sdr) and gamma 1/2.2.  Uncharted inverts as a quadratic; Linear is only a clamp.
+static float nebula_scene_value(ubyte target, lighting_profiles::TonemapperAlgorithm tonemapper)
+{
+	const float out = std::pow(target / 255.0f, 2.2f);
+	if (tonemapper != lighting_profiles::TonemapperAlgorithm::Uncharted)
+		return out;
+	constexpr float A = 0.15f, B = 0.50f, C = 0.10f, D = 0.20f, E = 0.02f, F = 0.30f, W = 11.2f;
+	const float white = ((W * (A * W + C * B) + D * E) / (W * (A * W + B) + D * F)) - E / F;
+	const float k = out * white + E / F;
+	const float qa = A * (1.0f - k);
+	const float qb = B * (C - k);
+	const float qc = D * (E - k * F);
+	return (-qb + std::sqrt(qb * qb - 4.0f * qa * qc)) / (2.0f * qa);
+}
+
+// Color the mesh vertices for the current post-processing, so the palette colors reach the screen as
+// FS1 drew them over a black sky (bloom and the other effects still apply on top, and over a lit
+// background the sum is tonemapped together); only redone when post-processing is switched or its
+// curve or exposure changes.  A color brighter than the curve can show clips, as it would on any
+// other background; scene values above 1 would also bloom where the rest of the background cannot.
+static void nebula_update_mesh_colors()
+{
+	Assertion(Nebula_tex_data != nullptr && Nebula_mesh_colors.size() == static_cast<size_t>(Nebula_n_verts) * 3,
+		"the background nebula mesh colors do not match its vertices");
+	namespace ltp = lighting_profiles;
+	const auto tn = ltp::current_tonemapper();
+	const float exposure = ltp::current_exposure();
+	const bool exact = (tn == ltp::TonemapperAlgorithm::Uncharted || tn == ltp::TonemapperAlgorithm::Linear) &&
+		exposure > 0.0f && std::isfinite(exposure);
+	if (High_dynamic_range && !exact && static_cast<int>(tn) != Nebula_mesh_warned_tonemapper) {
+		mprintf(("Background nebula: no color compensation for the %s tonemapper at exposure %f.\n",
+			ltp::tonemapper_to_name(tn).c_str(), exposure));
+		Nebula_mesh_warned_tonemapper = static_cast<int>(tn);
+	}
+	const int tonemapper = (High_dynamic_range && exact) ? static_cast<int>(tn) : -1;
+	const float key_exposure = (tonemapper >= 0) ? exposure : 1.0f;
+	if (tonemapper == Nebula_mesh_colors_tonemapper && key_exposure == Nebula_mesh_colors_exposure)
+		return;
+	Nebula_mesh_colors_tonemapper = tonemapper;
+	Nebula_mesh_colors_exposure = key_exposure;
+
+	ubyte lut[256];
+	for (int v = 0; v < 256; v++) {
+		if (tonemapper < 0) {
+			lut[v] = static_cast<ubyte>(v);
+			continue;
+		}
+		const float scene = nebula_scene_value(static_cast<ubyte>(v), tn) / exposure;
+		float b = std::pow(std::min(scene, 1.0f), 1.0f / 2.2f) * 255.0f + 0.5f;
+		CLAMP(b, 0.0f, 255.0f);
+		lut[v] = static_cast<ubyte>(b);
+	}
 	for (int i = 0; i < Nebula_n_verts; i++) {
-		vec3d pt = pts[tris[i]];
-		vm_vec_scale(&pt, NEBULA_RADIUS);
-		vm_vec_unrotate(&pt, &pt, orient);
 		vertex *vt = &Nebula_verts[i];
-		g3_transfer_vertex(vt, &pt);
-		const ubyte *px = &Nebula_tex_data[((levels[tris[i]] * (NEBULA_RAMP_SIZE - 1)) / 255) * 4];
-		vt->b = px[0];
-		vt->g = px[1];
-		vt->r = px[2];
-		vt->a = 255;
+		vt->b = lut[Nebula_mesh_colors[i * 3 + 0]];
+		vt->g = lut[Nebula_mesh_colors[i * 3 + 1]];
+		vt->r = lut[Nebula_mesh_colors[i * 3 + 2]];
 	}
 }
 
@@ -786,6 +900,7 @@ void nebula_init(int index, int pitch, int bank, int heading)
 
 void nebula_render()
 {
+	// the mesh path does not sample Nebula_bitmap, but it still marks a finished bake on both paths
 	if (!nebula_backgrounds_enabled() || Nebula_verts == nullptr || Nebula_n_verts <= 0 || Nebula_bitmap < 0)
 		return;
 	if (!Detail.planets_suns)
@@ -796,6 +911,9 @@ void nebula_render()
 	material_set_unlit(&mat, Nebula_baked_mesh ? -1 : Nebula_bitmap, 1.0f, true, false);
 	// the ramp's dark end is black, so adding leaves the stars and any skybox where the nebula is faint
 	mat.set_blend_mode(ALPHA_BLEND_ADDITIVE);
+
+	if (Nebula_baked_mesh)
+		nebula_update_mesh_colors();
 
 	gr_start_instance_matrix(&Eye_position, &vmd_identity_matrix);
 	if (Nebula_baked_mesh)
