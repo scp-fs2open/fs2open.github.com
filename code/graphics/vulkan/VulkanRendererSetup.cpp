@@ -353,6 +353,12 @@ bool VulkanRenderer::initialize()
 	// Load the RenderDoc API if available before doing anything with OpenGL
 	renderdoc::loadApi();
 
+	// Vulkan's depth range is already [0, 1], so reversed depth needs nothing from the device
+	Gr_reversed_depth_active = Gr_enable_reversed_depth;
+	if (Gr_reversed_depth_active) {
+		mprintf(("  Using reversed depth\n"));
+	}
+
 	// Capture the render resolution BEFORE the window exists. Creating it can
 	// queue an SDL resize event, and osapi's handler answers those with an
 	// unconditional gr_screen_resize() to the *window* size -- which would

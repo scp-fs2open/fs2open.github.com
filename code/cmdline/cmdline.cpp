@@ -173,6 +173,7 @@ Flag exe_params[] =
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enable_shadows"},
+	{ "-reversed_depth",	"Reversed depth (less distant flicker)",	true,	0,									EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-reversed_depth"},
 	{ "-deferred_cockpit",	"Enable Deferred Lighting for Cockpits",	true,	EASY_ALL_ON	 | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-deferred_cockpit"},
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
@@ -357,6 +358,7 @@ cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
+cmdline_parm reversed_depth_arg("-reversed_depth", nullptr, AT_NONE); // Gr_enable_reversed_depth
 cmdline_parm rt_shadows_arg("-rt_shadows", nullptr, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
@@ -2272,6 +2274,14 @@ bool SetCmdlineParams()
 	if( reparse_mainhall_arg.found() )
 	{
 		Cmdline_reparse_mainhall = 1;
+	}
+
+	if (reversed_depth_arg.found()) {
+		Gr_enable_reversed_depth = true;
+		// in-game options are only read in mods that turn them on; the flag works everywhere
+		options::OptionsManager::instance()->setOverride("Graphics.ReversedDepth",
+			std::unique_ptr<json_t>(json_true()),
+			"-reversed_depth");
 	}
 
 	if( enable_shadows_arg.found() )

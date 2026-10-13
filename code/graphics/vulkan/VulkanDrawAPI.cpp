@@ -231,7 +231,7 @@ void vulkan_scene_texture_begin()
 		clearAttachments[0].clearValue.color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 
 		clearAttachments[1].aspectMask = vk::ImageAspectFlagBits::eDepth;
-		clearAttachments[1].clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearAttachments[1].clearValue.depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 		vk::ClearRect clearRect;
 		clearRect.rect.offset = vk::Offset2D(0, 0);

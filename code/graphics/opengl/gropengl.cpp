@@ -863,15 +863,48 @@ void gr_opengl_set_fill_mode(int mode)
 	GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+// Reversed depth needs the depth range set to [0, 1] with glClipControl (core in GL 4.5, or ARB_clip_control).
+// The bundled GL loader does not include it, so it is fetched by name. Without it the option is ignored.
+static void opengl_enable_reversed_depth()
+{
+#ifndef USE_OPENGL_ES
+	bool supported = GL_version >= 45;
+	if (!supported) {
+		GLint count = 0;
+		glGetIntegerv(GL_NUM_EXTENSIONS, &count);
+		for (GLint i = 0; i < count && !supported; ++i) {
+			const auto ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, static_cast<GLuint>(i)));
+			supported = ext != nullptr && strcmp(ext, "GL_ARB_clip_control") == 0;
+		}
+	}
+
+	using clip_control_func = void(APIENTRYP)(GLenum origin, GLenum depth);
+	const auto clip_control =
+		supported ? reinterpret_cast<clip_control_func>(GL_context->getLoaderFunction()("glClipControl")) : nullptr;
+	if (clip_control == nullptr) {
+		mprintf(("  Reversed depth needs OpenGL 4.5 or ARB_clip_control; using normal depth\n"));
+		return;
+	}
+
+	const GLenum zero_to_one = 0x935F; // GL_ZERO_TO_ONE, missing from the bundled loader header
+	clip_control(GL_LOWER_LEFT, zero_to_one);
+	glClearDepth(0.0);
+	Gr_reversed_depth_active = true;
+	mprintf(("  Using reversed depth\n"));
+#endif
+}
+
 void gr_opengl_zbias(int bias)
 {
 	if (bias) {
+		// with reversed depth, closer means larger depth, so the offset changes sign
+		const float sign = Gr_reversed_depth_active ? -1.0f : 1.0f;
 		GL_state.PolygonOffsetFill(GL_TRUE);
 		if(bias < 0) {
-			GL_state.SetPolygonOffset(1.0, -i2fl(bias));
+			GL_state.SetPolygonOffset(sign * 1.0f, sign * -i2fl(bias));
 		}
 		else {
-			GL_state.SetPolygonOffset(0.0, -i2fl(bias));
+			GL_state.SetPolygonOffset(0.0, sign * -i2fl(bias));
 		}
 	} else {
 		GL_state.PolygonOffsetFill(GL_FALSE);
@@ -1414,6 +1447,10 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	}
 
 	GL_initted = true;
+
+	if (Gr_enable_reversed_depth) {
+		opengl_enable_reversed_depth();
+	}
 
 #ifndef NDEBUG
 	// Set up the debug extension if present
