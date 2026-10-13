@@ -1369,12 +1369,13 @@ void pilotfile::csg_read_controls()
 		auto it = control_config_get_current_preset(true);
 		if (it == Control_config_presets.end()) {
 			// Not a preset, create one and its file
-			CC_preset preset;
-			preset.name = filename;
+			SCP_string preset_name = filename;
 
 			// strip off extension
-			auto n = preset.name.find_last_of('.');
-			preset.name.resize(n);
+			auto n = preset_name.find_last_of('.');
+			preset_name.resize(n);
+
+			CC_preset preset(std::move(preset_name), Preset_t::pst);
 
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);

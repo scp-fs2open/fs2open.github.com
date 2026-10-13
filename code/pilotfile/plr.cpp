@@ -738,13 +738,15 @@ void pilotfile::plr_read_controls()
 		int axi, inv;
 
 		// Set up preset name, we'll populate the rest of the preset's data later
-		CC_preset preset;
-		preset.name = filename;
+		SCP_string preset_name = filename;
 
 		// strip off extension
-		auto n = preset.name.find_last_of('.');
-		preset.name.resize(n);
-		
+		auto n = preset_name.find_last_of('.');
+		preset_name.resize(n);
+
+		// Old pilot files only carry bindings, so this is always a user preset
+		CC_preset preset(std::move(preset_name), Preset_t::pst);
+
 		// Load in the bindings to Control_config
 		// ...First the digital controls
 		auto list_size = handler->startArrayRead("controls", true);
