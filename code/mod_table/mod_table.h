@@ -12,7 +12,9 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "hud/hudtarget.h"
+#include "globalincs/version.h"
+
+enum class leadIndicatorBehavior;
 
 // Typedef for Overhead View styles
 typedef enum {
