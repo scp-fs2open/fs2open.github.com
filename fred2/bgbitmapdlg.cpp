@@ -45,6 +45,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_envmap = _T("");
 	m_nebula_color = -1;
 	m_nebula_index = -1;
+	m_fs1_neb_mission = 0;
 	m_bank = 0;
 	m_heading = 0;
 	m_pitch = 0;
@@ -95,6 +96,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NEB2_INTENSITY, m_neb_intensity);
 	DDX_CBIndex(pDX, IDC_NEBCOLOR, m_nebula_color);
 	DDX_CBIndex(pDX, IDC_NEBPATTERN, m_nebula_index);
+	DDX_CBIndex(pDX, IDC_FS1_NEB_MISSION, m_fs1_neb_mission);
 	DDX_Text(pDX, IDC_BANK, m_bank);
 	DDX_Text(pDX, IDC_HEADING, m_heading);
 	DDX_Text(pDX, IDC_PITCH, m_pitch);
@@ -264,6 +266,11 @@ void bg_bitmap_dlg::create()
 		box->AddString(Generated_nebula_colors[i].name.c_str());
 	}
 
+	box = (CComboBox *) GetDlgItem(IDC_FS1_NEB_MISSION);
+	box->AddString("Default");
+	box->AddString("On");
+	box->AddString("Off");
+
 	m_slider.SetRange(0, MAX_STARS);
 	m_slider.SetPos(Num_stars);
 	sprintf(buf, "%d", Num_stars);
@@ -339,8 +346,11 @@ void bg_bitmap_dlg::create()
 		m_nebula_index = Nebula_index + 1;		
 	
 		m_nebula_color = Mission_palette;
+		// combo rows: 0 default, 1 on, 2 off; the engine's -1/1/0
+		m_fs1_neb_mission = Nebula_mission_switch < 0 ? 0 : (Nebula_mission_switch == 1 ? 1 : 2);
 		if (Nebula_index < 0){
 			GetDlgItem(IDC_NEBCOLOR)->EnableWindow(FALSE);
+			GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(FALSE);
 		}
 
 		m_pitch = Nebula_pitch;
@@ -452,6 +462,7 @@ void bg_bitmap_dlg::OnClose()
 {
 	UpdateData(TRUE);
 	Mission_palette = m_nebula_color;
+	Nebula_mission_switch = m_fs1_neb_mission == 0 ? -1 : (m_fs1_neb_mission == 1 ? 1 : 0);
 	
 	if(m_fullneb){		
 		The_mission.flags.set(Mission::Mission_Flags::Fullneb);
@@ -618,6 +629,7 @@ void bg_bitmap_dlg::OnSelchangeNebpattern()
 	Nebula_unknown_pattern.clear();
 
 	GetDlgItem(IDC_NEBCOLOR)->EnableWindow(m_nebula_index ? TRUE : FALSE);
+	GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(m_nebula_index ? TRUE : FALSE);
 	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
 	Update_window = 1;
@@ -681,6 +693,7 @@ void bg_bitmap_dlg::OnFullNeb()
 		// disable non-fullneb controls
 		GetDlgItem(IDC_NEBPATTERN)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEBCOLOR)->EnableWindow(FALSE);
+		GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(FALSE);
 		GetDlgItem(IDC_PITCH)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BANK)->EnableWindow(FALSE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(FALSE);
@@ -688,6 +701,7 @@ void bg_bitmap_dlg::OnFullNeb()
 		// enable all non-fullneb controls
 		GetDlgItem(IDC_NEBPATTERN)->EnableWindow(TRUE);
 		GetDlgItem(IDC_NEBCOLOR)->EnableWindow(TRUE);
+		GetDlgItem(IDC_FS1_NEB_MISSION)->EnableWindow(m_nebula_index ? TRUE : FALSE);
 		GetDlgItem(IDC_PITCH)->EnableWindow(TRUE);
 		GetDlgItem(IDC_BANK)->EnableWindow(TRUE);
 		GetDlgItem(IDC_HEADING)->EnableWindow(TRUE);		

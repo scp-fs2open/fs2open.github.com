@@ -50,6 +50,7 @@ public:
 	CString	m_neb_intensity;	
 	int		m_nebula_color;
 	int		m_nebula_index;
+	int		m_fs1_neb_mission;
 	int		m_bank;
 	int		m_heading;
 	int		m_pitch;

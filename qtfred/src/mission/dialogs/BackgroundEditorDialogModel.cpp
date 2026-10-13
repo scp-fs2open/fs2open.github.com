@@ -987,8 +987,12 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions()
 {
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>");
-	for (auto& neb : Nebula_filenames) {
-		out.emplace_back(neb);
+	for (const auto& p : Generated_nebula_patterns) {
+		out.emplace_back(p.name);
+	}
+	// a name the table does not know is kept so the mission saves it back unchanged
+	if (!Nebula_unknown_pattern.empty()) {
+		out.emplace_back(Nebula_unknown_pattern);
 	}
 	return out;
 }
@@ -996,61 +1000,69 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions()
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaColorOptions()
 {
 	SCP_vector<SCP_string> out;
-	out.reserve(NUM_NEBULA_COLORS);
-	for (auto& color : Nebula_colors) {
-		out.emplace_back(color);
+	out.reserve(Generated_nebula_colors.size() + 1);
+	for (const auto& c : Generated_nebula_colors) {
+		out.emplace_back(c.name);
+	}
+	if (!Nebula_unknown_color.empty()) {
+		out.emplace_back(Nebula_unknown_color);
 	}
 	return out;
 }
 
 SCP_string BackgroundEditorDialogModel::getOldNebulaPattern()
 {
+	if (!Nebula_unknown_pattern.empty())
+		return Nebula_unknown_pattern;
+
 	if (Nebula_index < 0)
 		return "<None>";
 
-	if (Nebula_index >= 0 && Nebula_index < NUM_NEBULAS) {
-		return Nebula_filenames[Nebula_index];
-	}
-
-	return SCP_string{};
+	return generated_nebula_pattern_name(Nebula_index);
 }
 
 void BackgroundEditorDialogModel::setOldNebulaPattern(const SCP_string& name)
 {
 	int newIndex = -1;
 	if (!name.empty() && stricmp(name.c_str(), "<None>") != 0) {
-		for (int i = 0; i < NUM_NEBULAS; ++i) {
-			if (!stricmp(Nebula_filenames[i], name.c_str())) {
-				newIndex = i;
-				break;
-			}
-		}
+		newIndex = generated_nebula_pattern_lookup(name.c_str());
 	}
 
+	if (newIndex >= 0 || stricmp(name.c_str(), "<None>") == 0) {
+		Nebula_unknown_pattern.clear();
+	}
 	modify(Nebula_index, newIndex);
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 }
 
 SCP_string BackgroundEditorDialogModel::getOldNebulaColorName()
 {
-	if (Mission_palette >= 0 && Mission_palette < NUM_NEBULA_COLORS) {
-		return Nebula_colors[Mission_palette];
-	}
-	return SCP_string{};
+	if (!Nebula_unknown_color.empty())
+		return Nebula_unknown_color;
+
+	return generated_nebula_color_name(Mission_palette);
 }
 
 void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
 {
 	if (name.empty())
 		return;
-	for (int i = 0; i < NUM_NEBULA_COLORS; ++i) {
-		if (!stricmp(Nebula_colors[i], name.c_str())) {
-			modify(Mission_palette, i);
-			nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
-			return;
-		}
-	}
-	// name not found: ignore
+	const int idx = generated_nebula_color_lookup(name.c_str());
+	if (idx < 0)
+		return;
+	Nebula_unknown_color.clear();
+	modify(Mission_palette, idx);
+	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
+}
+
+int BackgroundEditorDialogModel::getFs1NebulaMissionSwitch()
+{
+	return Nebula_mission_switch;
+}
+
+void BackgroundEditorDialogModel::setFs1NebulaMissionSwitch(int value)
+{
+	modify(Nebula_mission_switch, value);
 }
 
 int BackgroundEditorDialogModel::getOldNebulaPitch()
