@@ -6056,6 +6056,8 @@ void game_enter_state( int old_state, int new_state )
 
 		case GS_STATE_DEBRIEF:
 			game_stop_looped_sounds();
+			// a message still playing finishes on its own, but its looping radio static would not
+			message_stop_all_radio_static();
 			mission_goal_fail_incomplete();				// fail all incomplete goals before entering debriefing
 			hud_config_as_player();
 			if ( (old_state != GS_STATE_VIEW_MEDALS) && (old_state != GS_STATE_OPTIONS_MENU) ){
@@ -6065,6 +6067,7 @@ void game_enter_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_MULTI_DOGFIGHT_DEBRIEF:
+			message_stop_all_radio_static();
 			multi_df_debrief_init();
 			break;
 

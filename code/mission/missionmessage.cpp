@@ -991,6 +991,7 @@ void messages_init()
 		Playing_messages[i].start_frame = -1;
 		Playing_messages[i].play_anim = false;
 		Playing_messages[i].wave         = sound_handle::invalid();
+		Playing_messages[i].radio_static = sound_handle::invalid();
 		Playing_messages[i].id = -1;
 		Playing_messages[i].priority = -1;
 		Playing_messages[i].shipnum = -1;
@@ -1095,12 +1096,50 @@ int message_queue_priority_compare(const message_q *ma, const message_q *mb)
 	}
 }
 
+// Starts the radio static under a recorded message, if the player turned on Radio Voice Filter.
+// Full nebula missions get it louder, since the nebula interferes with comms.
+// It is part of the voice, so it follows the voice volume.
+static sound_handle message_start_radio_static()
+{
+	if (!snd_radio_voice_filter_enabled()) {
+		return sound_handle::invalid();
+	}
+
+	// relative to the voice; at the default voice volume of 0.7 these play at 0.3 and 0.75
+	const float level = The_mission.flags[Mission::Mission_Flags::Fullneb] ? 1.07f : 0.43f;
+	const float volume = level * snd_voice_volume_scale_for_looping();
+	if (volume <= 0.0f) {
+		return sound_handle::invalid();
+	}
+	// left out of the effects-volume refresh (last argument 0): an effects fade doesn't change the voice wave
+	// it plays under, so it doesn't change the static either
+	return snd_play_looping(gamesnd_get_game_sound(GameSounds::STATIC), 0.0f, -1, -1, volume, 0);
+}
+
+static void message_stop_radio_static(pmessage& msg)
+{
+	if (msg.radio_static.isValid()) {
+		snd_stop(msg.radio_static);
+		msg.radio_static = sound_handle::invalid();
+	}
+}
+
+void message_stop_all_radio_static()
+{
+	for (int i = 0; i < Num_messages_playing; i++) {
+		message_stop_radio_static(Playing_messages[i]);
+	}
+}
+
 //	Pauses all currently playing messages in the message queue
 void message_pause_all()
 {
 	for (int i = 0; i < Num_messages_playing; i++) {
 		if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
 			snd_pause(Playing_messages[i].wave);
+		}
+		if (Playing_messages[i].radio_static.isValid() && snd_is_playing(Playing_messages[i].radio_static)) {
+			snd_pause(Playing_messages[i].radio_static);
 		}
 	}
 }
@@ -1111,6 +1150,9 @@ void message_resume_all()
 	for (int i = 0; i < Num_messages_playing; i++) {
 		if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
 			snd_resume(Playing_messages[i].wave);
+		}
+		if (Playing_messages[i].radio_static.isValid() && snd_is_paused(Playing_messages[i].radio_static)) {
+			snd_resume(Playing_messages[i].radio_static);
 		}
 	}
 }
@@ -1137,6 +1179,7 @@ void message_kill_all( bool kill_all )
 			if ((Playing_messages[i].wave.isValid()) && snd_is_playing(Playing_messages[i].wave)) {
 				snd_stop( Playing_messages[i].wave );
 			}
+			message_stop_radio_static(Playing_messages[i]);
 
 			Playing_messages[i].shipnum = -1;
 		}
@@ -1163,6 +1206,7 @@ void message_kill_playing( int message_num )
 
 	if ((Playing_messages[message_num].wave.isValid()) && snd_is_playing(Playing_messages[message_num].wave))
 		snd_stop( Playing_messages[message_num].wave );
+	message_stop_radio_static(Playing_messages[message_num]);
 
 	Playing_messages[message_num].shipnum = -1;
 
@@ -1379,7 +1423,11 @@ bool message_play_wave( message_q *q )
 		if ( m->wave_info.index >= 0 ) {
 			// this call relies on the fact that snd_play returns -1 if the sound cannot be played
 			Message_wave_duration = snd_get_duration(Message_waves[index].num);
-			Playing_messages[Num_messages_playing].wave = snd_play_raw( Message_waves[index].num, 0.0f );
+			Playing_messages[Num_messages_playing].wave =
+				snd_play_raw(Message_waves[index].num, 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY, true, true);
+			if (Playing_messages[Num_messages_playing].wave.isValid()) {
+				Playing_messages[Num_messages_playing].radio_static = message_start_radio_static();
+			}
 
 			return Playing_messages[Num_messages_playing].wave.isValid();
 		}
@@ -1685,6 +1733,7 @@ void message_queue_process()
 			    (timestamp_elapsed(Message_expire) || (Playing_messages[i].wave.isValid()) ||
 			     (Playing_messages[i].shipnum == -1))) {
 				nprintf(("messaging", "Message %d is done playing\n", i));
+				message_stop_radio_static(Playing_messages[i]);
 				Message_shipnum = -1;
 				Num_messages_playing--;
 				if ( Num_messages_playing == 0 )
@@ -1695,6 +1744,8 @@ void message_queue_process()
 				for ( j = i+1; j < Num_messages_playing + 1; j++ ) {
 					Playing_messages[j-1] = Playing_messages[j];
 				}
+				// the vacated slot still holds a copy of a static that is now playing for another slot
+				Playing_messages[Num_messages_playing].radio_static = sound_handle::invalid();
 			} else {
 				// messages is not done playing -- move to next message
 				i++;
@@ -1885,6 +1936,7 @@ void message_queue_process()
 	m = &Messages[q->message_num];
 	Playing_messages[Num_messages_playing].anim_data = NULL;
 	Playing_messages[Num_messages_playing].wave = sound_handle::invalid();
+	Playing_messages[Num_messages_playing].radio_static = sound_handle::invalid();
 	Playing_messages[Num_messages_playing].id  = q->message_num;
 	Playing_messages[Num_messages_playing].priority = q->priority;
 	Playing_messages[Num_messages_playing].shipnum = Message_shipnum;

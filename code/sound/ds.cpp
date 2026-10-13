@@ -129,6 +129,7 @@ SCP_vector<EFXREVERBPROPERTIES> EFX_presets;
 typedef ALvoid (AL_APIENTRY * ALGENFILTERS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALDELETEFILTERS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALFILTERI) (ALuint, ALenum, ALint);
+typedef ALvoid (AL_APIENTRY * ALFILTERF) (ALuint, ALenum, ALfloat);
 typedef ALvoid (AL_APIENTRY * ALGENEFFECTS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALDELETEEFFECTS) (ALsizei, ALuint*);
 typedef ALvoid (AL_APIENTRY * ALEFFECTI) (ALuint, ALenum, ALint);
@@ -148,6 +149,7 @@ ALGENFILTERS v_alGenFilters = NULL;
 ALDELETEFILTERS v_alDeleteFilters = NULL;
 
 ALFILTERI v_alFilteri = NULL;
+ALFILTERF v_alFilterf = nullptr;
 
 ALGENEFFECTS v_alGenEffecs = NULL;
 ALDELETEEFFECTS v_alDeleteEffects = NULL;
@@ -172,6 +174,7 @@ ALCcontext *ds_sound_context = NULL;
 ALuint AL_EFX_aux_id = 0;
 
 static ALuint AL_EFX_effect_id = 0;
+static ALuint Ds_radio_filter_id = 0;
 static bool Ds_active_env = false;
 static size_t Ds_active_env_idx = 0;
 
@@ -384,6 +387,36 @@ bool ds_check_for_openal_soft()
 	}
 }
 
+// Needs only the EFX filter functions, so it does not depend on the EFX reverb option
+static void ds_radio_filter_init()
+{
+	try {
+		v_alGenFilters = (ALGENFILTERS) al_load_function("alGenFilters");
+		v_alDeleteFilters = (ALDELETEFILTERS) al_load_function("alDeleteFilters");
+		v_alFilteri = (ALFILTERI) al_load_function("alFilteri");
+		v_alFilterf = (ALFILTERF) al_load_function("alFilterf");
+	} catch (const std::exception& err) {
+		mprintf(("  EFX:  Unable to load function: %s(), no radio voice filter\n", err.what()));
+		return;
+	}
+
+	// clear any earlier error so the check below sees only these calls
+	alGetError();
+	v_alGenFilters(1, &Ds_radio_filter_id);
+	v_alFilteri(Ds_radio_filter_id, AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+	v_alFilterf(Ds_radio_filter_id, AL_BANDPASS_GAIN, 1.0f);
+	v_alFilterf(Ds_radio_filter_id, AL_BANDPASS_GAINLF, 0.1f);
+	v_alFilterf(Ds_radio_filter_id, AL_BANDPASS_GAINHF, 0.25f);
+
+	if (alGetError() != AL_NO_ERROR) {
+		mprintf(("  EFX:  Unable to create the radio voice filter\n"));
+		if (Ds_radio_filter_id != 0) {
+			v_alDeleteFilters(1, &Ds_radio_filter_id);
+			Ds_radio_filter_id = 0;
+		}
+	}
+}
+
 /**
  * Sound initialisation
  * @return -1 if init failed, 0 if init success
@@ -470,6 +503,7 @@ int ds_init()
 
 	if ( alcIsExtensionPresent(ds_sound_device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
 		mprintf(("  Found extension \"ALC_EXT_EFX\".\n"));
+		ds_radio_filter_init();
 		if (Using_in_game_options) {
 			if (Fred_running) {
 				Ds_use_eax = Fred_running;
@@ -686,6 +720,11 @@ void ds_close()
 	ds_close_all_channels();
 	ds_close_buffers();
 	ds_eax_close();
+
+	if (Ds_radio_filter_id != 0) {
+		v_alDeleteFilters(1, &Ds_radio_filter_id);
+		Ds_radio_filter_id = 0;
+	}
 
 	// free the Channels[] array, since it was dynamically allocated
 	delete [] Channels;
@@ -1081,11 +1120,12 @@ void ds_stop_easy(int sid)
  * @param pan Pan of sound in sound units
  * @param looping Whether the sound effect is looping or not
  * @param is_voice_msg If a voice message
+ * @param radio_filter Play through the radio voice filter, if the device has one
  * 
  * @return 1 if sound effect could not be started, >=0 sig for sound effect successfully started
  */
 ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundData* enhanced_sound_data, float volume,
-                        float pan, int looping, bool is_voice_msg)
+                        float pan, int looping, bool is_voice_msg, bool radio_filter)
 {
 	int ch_idx;
 	int enhanced_priority = SND_ENHANCED_PRIORITY_INVALID;
@@ -1135,6 +1175,12 @@ ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundDa
 	if (Ds_eax_inited) {
 		OpenAL_ErrorPrint( alSource3i(Channels[ch_idx].source_id, AL_AUXILIARY_SEND_FILTER,
 								is_voice_msg ? AL_EFFECTSLOT_NULL : AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+	}
+
+	// set on every play, since sources are reused and would otherwise keep the previous sound's filter
+	if (Ds_radio_filter_id != 0) {
+		const ALint direct_filter = radio_filter ? static_cast<ALint>(Ds_radio_filter_id) : AL_FILTER_NULL;
+		OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_DIRECT_FILTER, direct_filter) );
 	}
 
 	OpenAL_ErrorPrint( alSourcePlay(Channels[ch_idx].source_id) );
@@ -1408,6 +1454,10 @@ ds_sound_handle ds3d_play(int sid, int snd_id, const vec3d* pos, const vec3d* ve
 
 	if (Ds_eax_inited) {
 		OpenAL_ErrorPrint( alSource3i(Channels[channel_id].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+	}
+
+	if (Ds_radio_filter_id != 0) {
+		OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_DIRECT_FILTER, AL_FILTER_NULL) );
 	}
 
 	OpenAL_ErrorPrint( alSourcei(Channels[channel_id].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
