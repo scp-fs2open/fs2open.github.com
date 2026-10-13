@@ -12,6 +12,7 @@
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
+#include "mission/missionjournal.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
@@ -19,7 +20,9 @@
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "scripting/global_hooks.h"
 #include "ship/ship.h"
+#include "utils/finally.h"
 
 
 #define EMPTY_LOG_NAME		""
@@ -35,11 +38,93 @@ static int X, Line_offset, P_width;
 
 SCP_vector<log_line_complete> Log_scrollback_vec;
 SCP_vector<log_entry> Log_entries;
+static SCP_vector<log_entry> Log_entries_awaiting_hook;
 
 void mission_log_init()
 {
 	// zero out all the memory so we don't get bogus information when playing across missions!
 	Log_entries.clear();
+	if (!Log_entries_awaiting_hook.empty()) {
+		mprintf(("Mission log: %d entries never reached the On Mission Log Entry hook\n",
+			static_cast<int>(Log_entries_awaiting_hook.size())));
+		Log_entries_awaiting_hook.clear();
+	}
+}
+
+void mission_log_run_entry_hooks()
+{
+	// a hook script can reach another drain (failing the remaining goals from the debriefing API); that call leaves
+	// its entries to this one, so the hook never runs inside itself
+	static bool draining = false;
+	if (draining) {
+		return;
+	}
+	draining = true;
+	auto stop_draining = util::finally([]() { draining = false; });
+
+	// entries that the hooks add go in a later batch, which caps how far a hook can feed itself; any left over
+	// wait for the next call
+	const int max_batches = 4;
+	for (int batch = 0; batch < max_batches && !Log_entries_awaiting_hook.empty(); ++batch) {
+		SCP_vector<log_entry> entries;
+		entries.swap(Log_entries_awaiting_hook);
+
+		for (const auto& entry : entries) {
+			scripting::hooks::OnMissionLogEntry->run(
+				scripting::hook_param_list(scripting::hook_param("Type", 's', mission_log_type_name(entry.type)),
+					scripting::hook_param("Primary", 's', entry.pname),
+					scripting::hook_param("Secondary", 's', entry.sname),
+					scripting::hook_param("Index", 'i', entry.index),
+					scripting::hook_param("Hidden", 'b', (entry.flags & MLF_HIDDEN) != 0)));
+		}
+	}
+}
+
+const char* mission_log_type_name(LogType type)
+{
+	switch (type) {
+	case LOG_SHIP_DESTROYED:
+		return "ShipDestroyed";
+	case LOG_WING_DESTROYED:
+		return "WingDestroyed";
+	case LOG_SHIP_ARRIVED:
+		return "ShipArrived";
+	case LOG_WING_ARRIVED:
+		return "WingArrived";
+	case LOG_SHIP_DEPARTED:
+		return "ShipDeparted";
+	case LOG_WING_DEPARTED:
+		return "WingDeparted";
+	case LOG_SHIP_DOCKED:
+		return "ShipDocked";
+	case LOG_SHIP_SUBSYS_DESTROYED:
+		return "SubsystemDestroyed";
+	case LOG_SHIP_UNDOCKED:
+		return "ShipUndocked";
+	case LOG_SHIP_DISABLED:
+		return "ShipDisabled";
+	case LOG_SHIP_DISARMED:
+		return "ShipDisarmed";
+	case LOG_PLAYER_CALLED_FOR_REARM:
+		return "PlayerCalledForRearm";
+	case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
+		return "PlayerCalledForReinforcement";
+	case LOG_GOAL_SATISFIED:
+		return "GoalSatisfied";
+	case LOG_GOAL_FAILED:
+		return "GoalFailed";
+	case LOG_PLAYER_ABORTED_REARM:
+		return "PlayerAbortedRearm";
+	case LOG_WAYPOINTS_DONE:
+		return "WaypointsDone";
+	case LOG_CARGO_REVEALED:
+		return "CargoRevealed";
+	case LOG_CAP_SUBSYS_CARGO_REVEALED:
+		return "CapSubsystemCargoRevealed";
+	case LOG_SELF_DESTRUCTED:
+		return "SelfDestructed";
+	}
+	return "Unknown";
 }
 
 // following function adds an entry into the mission log.
@@ -292,6 +377,13 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			break;
 	}
 #endif
+
+	mission_journal_log_entry(entry);
+
+	// delivered later from a quiet point; callers log before they finish handling the event
+	if (scripting::hooks::OnMissionLogEntry->isActive()) {
+		Log_entries_awaiting_hook.push_back(entry);
+	}
 }
 
 // function, used in multiplayer only, which adds an entry sent by the host of the game, into

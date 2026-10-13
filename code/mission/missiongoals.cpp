@@ -1292,6 +1292,8 @@ void mission_goal_fail_incomplete()
 			Mission_events[i].result = 0;
 		}
 	}
+
+	mission_log_run_entry_hooks();
 }
 
 // small function used to mark all objectives as true.  Used as a debug function and as a way
