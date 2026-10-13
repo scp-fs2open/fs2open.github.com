@@ -73,6 +73,90 @@ auto SensitivityOption = options::OptionBuilder<int>("Input.JoystickSensitivity"
                      .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
+// -1 means "use the global setting above"
+static_assert(Action::NUM_VALUES == 5, "give every axis action a -1 entry below");
+int Joy_axis_dead_zone_size[Action::NUM_VALUES] = {-1, -1, -1, -1, -1};
+int Joy_axis_sensitivity[Action::NUM_VALUES] = {-1, -1, -1, -1, -1};
+
+static SCP_string axis_setting_display(const int& val)
+{
+	return val < 0 ? SCP_string("Use Global") : std::to_string(val);
+}
+
+static std::shared_ptr<const options::Option<int>>
+make_axis_option(const char* key, const char* title, const char* description, int max, int* dest, int importance)
+{
+	return options::OptionBuilder<int>(key,
+		std::pair<const char*, int>{title, -1},
+		std::pair<const char*, int>{description, -1})
+		.category(std::make_pair("Input", 1827))
+		.range(-1, max)
+		.level(options::ExpertLevel::Advanced)
+		.default_val(-1)
+		.display(axis_setting_display)
+		.flags({options::OptionFlags::RangeTypeInteger})
+		.bind_to(dest)
+		.importance(importance)
+		.finish();
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HeadingDeadZoneOption __UNUSED = make_axis_option("Input.HeadingDeadZone",
+	"Heading Deadzone",
+	"The deadzone for the axis bound to heading; Use Global follows Deadzone",
+	45,
+	&Joy_axis_dead_zone_size[Action::HEADING],
+	3);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto PitchDeadZoneOption __UNUSED = make_axis_option("Input.PitchDeadZone",
+	"Pitch Deadzone",
+	"The deadzone for the axis bound to pitch; Use Global follows Deadzone",
+	45,
+	&Joy_axis_dead_zone_size[Action::PITCH],
+	4);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto BankDeadZoneOption __UNUSED = make_axis_option("Input.BankDeadZone",
+	"Bank Deadzone",
+	"The deadzone for the axis bound to bank; Use Global follows Deadzone",
+	45,
+	&Joy_axis_dead_zone_size[Action::BANK],
+	5);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RelThrottleDeadZoneOption __UNUSED = make_axis_option("Input.RelThrottleDeadZone",
+	"Relative Throttle Deadzone",
+	"The deadzone for the axis bound to relative throttle; Use Global follows Deadzone",
+	45,
+	&Joy_axis_dead_zone_size[Action::REL_THROTTLE],
+	6);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HeadingSensitivityOption __UNUSED = make_axis_option("Input.HeadingSensitivity",
+	"Heading Sensitivity",
+	"The sensitivity for the axis bound to heading; Use Global follows Sensitivity",
+	9,
+	&Joy_axis_sensitivity[Action::HEADING],
+	7);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto PitchSensitivityOption __UNUSED = make_axis_option("Input.PitchSensitivity",
+	"Pitch Sensitivity",
+	"The sensitivity for the axis bound to pitch; Use Global follows Sensitivity",
+	9,
+	&Joy_axis_sensitivity[Action::PITCH],
+	8);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto BankSensitivityOption __UNUSED = make_axis_option("Input.BankSensitivity",
+	"Bank Sensitivity",
+	"The sensitivity for the axis bound to bank; Use Global follows Sensitivity",
+	9,
+	&Joy_axis_sensitivity[Action::BANK],
+	9);
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RelThrottleSensitivityOption __UNUSED = make_axis_option("Input.RelThrottleSensitivity",
+	"Relative Throttle Sensitivity",
+	"The sensitivity for the axis bound to relative throttle; Use Global follows Sensitivity",
+	9,
+	&Joy_axis_sensitivity[Action::REL_THROTTLE],
+	10);
+
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array
 //! When adding new controls, order that they show up is dependant on their location in IoActionId, not on their hardcoded locations here
