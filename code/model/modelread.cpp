@@ -2937,6 +2937,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 				break;
 
+			case ID_TXPR: {
+				int n = pof_read_count(fp, filename, "texture properties", MAX_MODEL_TEXTURES);
+				pm->texture_properties.clear();
+				for (i = 0; i < n && cftell(fp) < next_chunk; i++) {
+					auto tex_props = cfread_string_len(fp);
+					if (cftell(fp) > next_chunk) {
+						Warning(LOCATION,
+							"Model %s has a texture properties string that runs past the end of its chunk!",
+							filename);
+						break;
+					}
+					// POF writers pad strings with zero bytes for alignment
+					tex_props.resize(strlen(tex_props.c_str()));
+					pm->texture_properties.push_back(std::move(tex_props));
+				}
+				break;
+			}
+
 			// autocentering info
 			case ID_ACEN:
 				cfread_vector(&pm->autocenter, fp);
@@ -2965,6 +2983,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		Warning(LOCATION, "Model %s has %d textures, but only %d are supported!", filename, n_textures_in_file, MAX_MODEL_TEXTURES);
 		return modelread_status::FAIL;
 	}
+	if (!pm->texture_properties.empty() && static_cast<int>(pm->texture_properties.size()) != pm->n_textures) {
+		Warning(LOCATION,
+			"Model %s has texture properties for %d textures, but it has %d textures!",
+			filename,
+			static_cast<int>(pm->texture_properties.size()),
+			pm->n_textures);
+	}
+	pm->texture_properties.resize(pm->n_textures);
 	for (i = 0; i < pm->n_detail_levels; i++) {
 		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
 			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);

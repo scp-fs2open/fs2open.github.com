@@ -41,6 +41,7 @@ class polymodel;
 #define ID_OBJ2 0x324a424f			// 2JBO (OBJ2): Subobject header
 
 #define ID_TXTR 0x52545854				// RTXT (TXTR): Texture filename list
+#define ID_TXPR 0x52505854				// RPXT (TXPR): Per-texture properties, one string per TXTR entry
 #define ID_INFO 0x464e4950				// FNIP (PINF): POF file information, like command line, etc
 #define ID_GRID 0x44495247				// DIRG (GRID): Grid information
 #define ID_SPCL 0x4c435053				// LCPS (SPCL): Special object -- like a gun, missile, docking point, etc.

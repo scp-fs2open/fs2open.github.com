@@ -414,6 +414,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				return;
 			}
 			pm->n_textures = new_n_textures;
+			pm->texture_properties.resize(new_n_textures);
 
 			int old_n_submodel = reallocate_and_copy_array(pm->submodel, pm->n_models, to_copy_submodels.size());
 
@@ -477,6 +478,9 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			//Actually copy textures
 			for (const auto& usedTexture : textureIDReplace) {
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
+				// polygons can name a texture index the source POF never listed
+				if (usedTexture.first < static_cast<int>(appendingPM->texture_properties.size()))
+					pm->texture_properties[usedTexture.second] = appendingPM->texture_properties[usedTexture.first];
 				appendingPMholder->keepTexture(usedTexture.first);
 			}
 

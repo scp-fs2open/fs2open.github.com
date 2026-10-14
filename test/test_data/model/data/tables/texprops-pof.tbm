@@ -1,0 +1,13 @@
+#Virtual POFs
+
+$POF: vp_texprops.pof
+	+Base POF: no_txpr_cube.pof
+	$Add Subobject:
+		+POF to Add: txpr_cube.pof
+		+Source Subobject: detail0
+		$Rename Subobjects:
+			+Replace: detail0
+			+With: grafted
+		+Destination Subobject: detail0
+
+#End

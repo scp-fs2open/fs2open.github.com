@@ -904,6 +904,7 @@ public:
 	// texture maps for model
 	int n_textures;
 	texture_map	maps[MAX_MODEL_TEXTURES];
+	SCP_vector<SCP_string> texture_properties;
 	
 	std::shared_ptr<bsp_info[]> submodel;							// an array of size n_models of submodel info.
 
