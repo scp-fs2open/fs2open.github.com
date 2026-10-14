@@ -1,4 +1,5 @@
 
+#include <cfile/cfile.h>
 #include <cfile/cfilesystem.h>
 #include <graphics/font.h>
 #include <gtest/gtest.h>
@@ -211,4 +212,120 @@ TEST_F(CFileTest, subfolder_list)
 	table_files.clear();
 	ASSERT_EQ(2, cf_get_file_list(table_files, CF_TYPE_TABLES, "*\\*.tbl", CF_SORT_NAME));
 	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
+}
+
+namespace {
+// Builds the bytes cfwrite_string_len writes (a little-endian length, then the characters) as an in-memory file.
+// The file reads from this object's buffer, so the object has to outlive the CFILE.
+class StringLenFile {
+  public:
+	StringLenFile& add_int(int value)
+	{
+		for (int i = 0; i < 4; ++i) {
+			_bytes.push_back(static_cast<char>((value >> (8 * i)) & 0xFF));
+		}
+		return *this;
+	}
+
+	StringLenFile& add_chars(const char* chars, size_t count)
+	{
+		_bytes.insert(_bytes.end(), chars, chars + count);
+		return *this;
+	}
+
+	CFILE* open() const
+	{
+		CFileLocation res(true);
+		res.name_ext = "string_len.bin";
+		res.full_name = "string_len.bin";
+		res.data_ptr = _bytes.data();
+		res.size = _bytes.size();
+		return cfopen_special(res, "rb");
+	}
+
+  private:
+	SCP_vector<char> _bytes;
+};
+} // namespace
+
+TEST_F(CFileTest, string_len_fits)
+{
+	StringLenFile file;
+	file.add_int(3).add_chars("abc", 3).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8];
+	cfread_string_len(buf, sizeof(buf), fp);
+	EXPECT_STREQ(buf, "abc");
+	EXPECT_EQ(cfread_int(fp), 42);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_exact_fit_with_stored_terminator)
+{
+	StringLenFile file;
+	file.add_int(4).add_chars("abc\0", 4).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[4];
+	cfread_string_len(buf, sizeof(buf), fp);
+	EXPECT_STREQ(buf, "abc");
+	EXPECT_EQ(cfread_int(fp), 42);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_longer_than_buffer)
+{
+	StringLenFile file;
+	file.add_int(10).add_chars("0123456789", 10).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	cfread_string_len(buf, 4, fp);
+	EXPECT_STREQ(buf, "012");
+	for (int i = 4; i < 8; ++i) {
+		EXPECT_EQ(buf[i], 'X') << "wrote past the buffer at " << i;
+	}
+	EXPECT_EQ(cfread_int(fp), 42);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_zero_and_negative)
+{
+	StringLenFile file;
+	file.add_int(0).add_int(-5).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8] = "old";
+	cfread_string_len(buf, sizeof(buf), fp);
+	EXPECT_STREQ(buf, "");
+
+	strcpy_s(buf, "old");
+	cfread_string_len(buf, sizeof(buf), fp);
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cfread_int(fp), 42);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_scp_string)
+{
+	StringLenFile file;
+	file.add_int(3).add_chars("abc", 3).add_int(-5).add_int(1000000).add_chars("de", 2);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	EXPECT_EQ(cfread_string_len(fp), "abc");
+	EXPECT_EQ(cfread_string_len(fp), "");
+	EXPECT_EQ(cfread_string_len(fp), "de");
+
+	cfclose(fp);
 }
