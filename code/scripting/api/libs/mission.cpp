@@ -3268,7 +3268,7 @@ ADE_LIB(l_Campaign, "Campaign", "ca", "Campaign Library");
 
 ADE_FUNC(getNextMissionFilename, l_Campaign, NULL, "Gets next mission filename", "string", "Next mission filename, or nil if the next mission is invalid")
 {
-	if (Campaign.next_mission < 0 || Campaign.next_mission >= MAX_CAMPAIGN_MISSIONS) {
+	if (!Campaign.missions.in_bounds(Campaign.next_mission)) {
 		return ADE_RETURN_NIL;
 	}
 	return ade_set_args(L, "s", Campaign.missions[Campaign.next_mission].name);
@@ -3276,7 +3276,7 @@ ADE_FUNC(getNextMissionFilename, l_Campaign, NULL, "Gets next mission filename",
 
 ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filename", "string", "Previous mission filename, or nil if the previous mission is invalid")
 {
-	if (Campaign.prev_mission < 0 || Campaign.prev_mission >= MAX_CAMPAIGN_MISSIONS) {
+	if (!Campaign.missions.in_bounds(Campaign.prev_mission)) {
 		return ADE_RETURN_NIL;
 	}
 	return ade_set_args(L, "s", Campaign.missions[Campaign.prev_mission].name);

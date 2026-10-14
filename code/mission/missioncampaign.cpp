@@ -525,44 +525,44 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 		// parse the mission file and actually read in the mission stuff
 		while ( required_string_either("#End", "$Mission:") ) {
-			cmission *cm;
-
 			required_string("$Mission:");
 			stuff_string(name, F_NAME, NAME_LENGTH);
-			cm = &Campaign.missions[Campaign.num_missions];
-			cm->name = vm_strdup(name);
 
-			cm->notes = NULL;
+			const int this_mission_idx = sz2i(Campaign.missions.size());
+			cmission& cm = Campaign.missions.emplace_back();
+			cm.name = vm_strdup(name);
 
-			cm->briefing_cutscene[0] = 0;
+			cm.notes = nullptr;
+
+			cm.briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
-				stuff_string( cm->briefing_cutscene, F_NAME, NAME_LENGTH );
+				stuff_string( cm.briefing_cutscene, F_NAME, NAME_LENGTH );
 
-			cm->flags = 0;
+			cm.flags = 0;
 			if (optional_string("+Flags:"))
-				stuff_int(&cm->flags);
+				stuff_int(&cm.flags);
 
-			cm->main_hall = "0";
+			cm.main_hall = "0";
 			// deal with previous campaign versions
-			if (cm->flags & CMISSION_FLAG_BASTION) {
-				cm->main_hall = "1";
+			if (cm.flags & CMISSION_FLAG_BASTION) {
+				cm.main_hall = "1";
 			}
 
 			// clear any other flag bits to prevent bogus values causing surprises
-			cm->flags &= CMISSION_EXTERNAL_FLAG_MASK;
+			cm.flags &= CMISSION_EXTERNAL_FLAG_MASK;
 
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
 			if (optional_string("+Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
-				cm->main_hall = temp;
+				cm.main_hall = temp;
 			}
 
 			// Goober5000 - substitute main hall (like substitute music)
-			cm->substitute_main_hall = "";
+			cm.substitute_main_hall = "";
 			if (optional_string("+Substitute Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
-				cm->substitute_main_hall = temp;
+				cm.substitute_main_hall = temp;
 
 				// if we're running FRED, keep the halls separate (so we can save the campaign file),
 				// but if we're running FS, replace the main hall with the substitute right now
@@ -570,7 +570,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 					// see if this main hall exists
 					main_hall_defines* mhd = main_hall_get_pointer(temp);
 					if (mhd != nullptr) {
-						cm->main_hall = temp;
+						cm.main_hall = temp;
 					} else {
 						mprintf(("Substitute main hall '%s' not found\n", temp));
 					}
@@ -578,19 +578,19 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			}
 
 			// Goober5000 - new debriefing persona stuff!
-			cm->debrief_persona_index = 0;
+			cm.debrief_persona_index = 0;
 			if (optional_string("+Debriefing Persona Index:"))
-				stuff_ubyte(&cm->debrief_persona_index);
+				stuff_ubyte(&cm.debrief_persona_index);
 
-			cm->formula = -1;
+			cm.formula = -1;
 			if ( optional_string("+Formula:") ) {
-				cm->formula = get_sexp_main();
+				cm.formula = get_sexp_main();
 				if ( !Fred_running ) {
-					Assert ( cm->formula != -1 );
-					sexp_mark_persistent( cm->formula );
+					Assert ( cm.formula != -1 );
+					sexp_mark_persistent( cm.formula );
 
 				} else {
-					if ( cm->formula == -1 ){
+					if ( cm.formula == -1 ){
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
@@ -599,69 +599,67 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 			// Do mission branching stuff
 			if ( optional_string("+Mission Loop:") ) {
-				cm->flags |= CMISSION_FLAG_HAS_LOOP;
+				cm.flags |= CMISSION_FLAG_HAS_LOOP;
 			} else if ( optional_string("+Mission Fork:") ) {
-				cm->flags |= CMISSION_FLAG_HAS_FORK;
+				cm.flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm->mission_branch_desc = NULL;
+			cm.mission_branch_desc = nullptr;
 			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
-				cm->mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				cm.mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, nullptr);
 			}
 
-			cm->mission_branch_brief_anim = NULL;
+			cm.mission_branch_brief_anim = nullptr;
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_anim = stuff_and_malloc_string(F_FILESPEC, nullptr);
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
-			cm->mission_branch_brief_sound = NULL;
+			cm.mission_branch_brief_sound = nullptr;
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
 				ignore_white_space();						// it might be on the next line
-				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
+				cm.mission_branch_brief_sound = stuff_and_malloc_string(F_FILESPEC, nullptr);
 				(void)optional_string("$end_multi_text");	// consume the unneeded ending token
 			}
 
-			cm->mission_loop_formula = -1;
+			cm.mission_loop_formula = -1;
 			if ( optional_string("+Formula:") ) {
-				cm->mission_loop_formula = get_sexp_main();
+				cm.mission_loop_formula = get_sexp_main();
 				if ( !Fred_running ) {
-					Assert ( cm->mission_loop_formula != -1 );
-					sexp_mark_persistent( cm->mission_loop_formula );
+					Assert ( cm.mission_loop_formula != -1 );
+					sexp_mark_persistent( cm.mission_loop_formula );
 
 				} else {
-					if ( cm->mission_loop_formula == -1 ){
+					if ( cm.mission_loop_formula == -1 ){
 						Campaign_load_failure = CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 						return CAMPAIGN_ERROR_SEXP_EXHAUSTED;
 					}
 				}
 			}
 
-			cm->level = 0;
+			cm.level = 0;
 			if (optional_string("+Level:")) {
-				stuff_int( &cm->level );
-				if ( cm->level == 0 )  // check if the top (root) of the whole tree
-					Campaign.next_mission = Campaign.num_missions;
+				stuff_int( &cm.level );
+				if ( cm.level == 0 )  // check if the top (root) of the whole tree
+					Campaign.next_mission = this_mission_idx;
 
 			} else
 				Campaign.realign_required = 1;
 
-			cm->pos = 0;
+			cm.pos = 0;
 			if (optional_string("+Position:"))
-				stuff_int( &cm->pos );
+				stuff_int( &cm.pos );
 			else
 				Campaign.realign_required = 1;
 
-			cm->goals.clear();
-			cm->events.clear();
-			cm->variables.clear();
-			cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-
-			Campaign.num_missions++;
+			cm.goals.clear();
+			cm.events.clear();
+			cm.variables.clear();
+			cm.flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 		}
 
-		if ((Game_mode & GM_MULTIPLAYER) && Campaign.num_missions > UINT8_MAX)
+		if ((Game_mode & GM_MULTIPLAYER) && Campaign.missions.size() > UINT8_MAX)
 			throw parse::ParseException("Number of campaign missions is too high and breaks multi!");
 	}
 	catch (const parse::FileOpenException& foe)
@@ -669,7 +667,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		mprintf(("Error opening '%s'\r\nError message = %s.\r\n", filename, foe.what()));
 
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_MISSING;
@@ -680,7 +678,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 		mprintf(("Error parsing '%s'\r\nError message = %s.\r\n", filename, pe.what()));
 
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		Campaign_file_missing = true;
 		Campaign_load_failure = CAMPAIGN_ERROR_CORRUPT;
@@ -701,7 +699,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			// but if the data is invalid for the savefile then it is fatal
 			if ( Pilot.is_invalid() ) {
 				Campaign.filename[0] = 0;
-				Campaign.num_missions = 0;
+				Campaign.missions.clear();
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
 			}
@@ -825,7 +823,7 @@ int mission_campaign_next_mission()
 	if ((Campaign.next_mission == -1) || (Campaign.name[0] == '\0')) // will be set to -1 when there is no next mission
 		return -1;
 
-	if (Campaign.num_missions < 1)
+	if (Campaign.missions.empty())
 		return -2;
 
 	Campaign.current_mission = Campaign.next_mission;
@@ -1217,43 +1215,24 @@ void mission_campaign_free_mission_strings(cmission &cm)
  */
 void mission_campaign_clear()
 {
-	int i;
-
 	Campaign.description.clear();
 
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
-	for ( i=0; i<Campaign.num_missions; i++ ) {
-		mission_campaign_free_mission_strings(Campaign.missions[i]);
-
-		Campaign.missions[i].goals.clear();
-		Campaign.missions[i].events.clear();
-		Campaign.missions[i].variables.clear();
+	for (auto& cm : Campaign.missions) {
+		mission_campaign_free_mission_strings(cm);
 
 		if ( !Fred_running ){
-			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
+			sexp_unmark_persistent(cm.formula);		// free any sexpression nodes used by campaign.
 		}
-
-		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
-		Campaign.missions[i].formula = 0;
-		Campaign.missions[i].completed = 0;
-		Campaign.missions[i].mission_loop_formula = 0;
-		Campaign.missions[i].level = 0;
-		Campaign.missions[i].pos = 0;
-		Campaign.missions[i].flags = 0;
-		Campaign.missions[i].main_hall = "";
-		Campaign.missions[i].substitute_main_hall = "";
-		Campaign.missions[i].debrief_persona_index = 0;
-
-		Campaign.missions[i].stats.init();
 	}
+	Campaign.missions.clear();
 
 	memset(Campaign.name, 0, NAME_LENGTH);
 	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
 	Campaign.type = 0;
 	Campaign.custom_data.clear();
 	Campaign.flags = CF_DEFAULT_VALUE;
-	Campaign.num_missions = 0;
 	Campaign.num_missions_completed = 0;
 	Campaign.current_mission = -1;
 	Campaign.next_mission = 0;
@@ -1272,15 +1251,12 @@ void mission_campaign_clear()
 }
 
 /**
- * Extract the mission filenames for a campaign.  
+ * Extract the mission filenames for a campaign.
  *
  * @param filename	Name of campaign file
- * @param dest		Storage for the mission filename, must be already allocated
- * @param num		Output parameter for the number of mission filenames in the campaign
- *
- * note that dest should allocate at least dest[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH]
+ * @param dest		Mission filenames will be appended here; cleared at entry
  */
-int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num)
+int mission_campaign_get_filenames(const char *filename, SCP_vector<SCP_string> &dest)
 {
 	// read the mission file and get the list of mission filenames
 	try
@@ -1296,10 +1272,11 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 		advance_to_eoln(NULL);
 
 		// parse the mission file and actually read in the mission stuff
-		*num = 0;
+		dest.clear();
 		while ( skip_to_string("$Mission:") == 1 ) {
-			stuff_string(dest[*num], F_NAME, NAME_LENGTH);
-			(*num)++;
+			char name_buf[NAME_LENGTH];
+			stuff_string(name_buf, F_NAME, NAME_LENGTH);
+			dest.emplace_back(name_buf);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1344,7 +1321,7 @@ void read_mission_goal_list(int num)
 	char *filename, notes[NOTES_LENGTH];
 	int z;
 
-	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
+	Assertion(Campaign.missions.in_bounds(num), "mission number out of range!");
 	filename = Campaign.missions[num].name;
 
 	if (Campaign.missions[num].notes) {
@@ -1446,7 +1423,7 @@ int mission_campaign_find_mission( const char *name )
 		sprintf(realname, NOX("%s%s"), name, FS_MISSION_FILE_EXT );
 	}
 
-	for (i = 0; i < Campaign.num_missions; i++ ) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		if ( !stricmp(realname, Campaign.missions[i].name) ){
 			return i;
 		}
@@ -1724,7 +1701,7 @@ void mission_campaign_skip_to_next()
 	// (e.g. if is-previous-goal-false or is-previous-event-false is used without the optional argument), so this is a failsafe
 	if (Campaign.next_mission == Campaign.current_mission) {
 		Campaign.next_mission++;
-		if (Campaign.next_mission < Campaign.num_missions) {
+		if (Campaign.next_mission < sz2i(Campaign.missions.size())) {
 			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!  Choosing the next-in-sequence mission as a failsafe...");
 		} else {
 			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!");
@@ -1798,7 +1775,7 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool p
 		strcat_s(dest_filename, ".fs2");
 
 	// search for our mission
-	for (i = 0; i < Campaign.num_missions; i++) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name, dest_filename)) {
 			mission_num = i;
 			break;
@@ -1839,7 +1816,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 
 	// This can be queried from UI states outside active mission gameplay
 	// where GM_CAMPAIGN_MODE may not be set even though a campaign is loaded.
-	if (Campaign.name[0] == '\0' || Campaign.num_missions <= 0) {
+	if (Campaign.name[0] == '\0' || Campaign.missions.empty()) {
 		return valid_missions;
 	}
 
@@ -1853,10 +1830,10 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 		branch_source_mission = Campaign.current_mission;
 	}
 
-	if (branch_source_mission < 0 || branch_source_mission >= Campaign.num_missions) {
+	if (!Campaign.missions.in_bounds(branch_source_mission)) {
 		// Campaigns that haven't started yet can have both current_mission and prev_mission
 		// unset. In that case, next_mission is the only available entry point.
-		if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions) {
+		if (Campaign.missions.in_bounds(Campaign.next_mission)) {
 			valid_missions.emplace_back(Campaign.missions[Campaign.next_mission].name);
 		}
 		return valid_missions;
@@ -1899,7 +1876,7 @@ SCP_vector<SCP_string> mission_campaign_get_valid_next_missions()
 				actions = CDR(actions);
 			}
 
-			if (Campaign.next_mission >= 0 && Campaign.next_mission < Campaign.num_missions && Campaign.next_mission != branch_source_mission) {
+			if (Campaign.missions.in_bounds(Campaign.next_mission) && Campaign.next_mission != branch_source_mission) {
 				const auto& mission_name = Campaign.missions[Campaign.next_mission].name;
 				if (std::find(valid_missions.begin(), valid_missions.end(), mission_name) == valid_missions.end()) {
 					valid_missions.emplace_back(mission_name);

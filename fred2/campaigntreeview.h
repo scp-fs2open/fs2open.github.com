@@ -12,9 +12,6 @@
 
 #include "mission/missioncampaign.h"
 
-#define MAX_LEVELS	100
-#define MAX_CAMPAIGN_TREE_LINKS	300
-
 typedef struct campaign_tree_element {
 	int from_links;	// total branches from this mission
 	int to_links;		// total branches that lead to this mission
@@ -37,11 +34,10 @@ typedef struct campaign_tree_link {
 	CPoint p2;
 } campaign_tree_link;
 
-extern int Total_links;
-extern int Level_counts[MAX_LEVELS];
-extern int Sorted[MAX_CAMPAIGN_MISSIONS];
-extern campaign_tree_element Elements[MAX_CAMPAIGN_MISSIONS];
-extern campaign_tree_link Links[MAX_CAMPAIGN_TREE_LINKS];
+extern SCP_vector<int> Level_counts;
+extern SCP_vector<int> Sorted;
+extern SCP_vector<campaign_tree_element> Elements;
+extern SCP_vector<campaign_tree_link> Links;
 
 extern void init_link(campaign_tree_link &link, int from = -1, int to = -1);
 extern void init_element(campaign_tree_element &element);

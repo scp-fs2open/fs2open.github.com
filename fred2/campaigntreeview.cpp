@@ -24,12 +24,11 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 LOCAL int Bx, By, Mission_dragging = -1, Mission_dropping = -1, Context_mission;
-int Total_links = 0;
 int CTV_button_down = 0;
-int Level_counts[MAX_LEVELS];
-int Sorted[MAX_CAMPAIGN_MISSIONS];
-campaign_tree_element Elements[MAX_CAMPAIGN_MISSIONS];
-campaign_tree_link Links[MAX_CAMPAIGN_TREE_LINKS];
+SCP_vector<int> Level_counts;
+SCP_vector<int> Sorted;
+SCP_vector<campaign_tree_element> Elements;
+SCP_vector<campaign_tree_link> Links;
 LOCAL CRect Dragging_rect;
 LOCAL CSize Rect_offset, Last_draw_size;
 
@@ -164,7 +163,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 
 	// draw text boxes and text
 
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		x = (Campaign.missions[i].pos + 1) * CELL_WIDTH / 2;
 		y = Campaign.missions[i].level * LEVEL_HEIGHT + LEVEL_HEIGHT / 2;
 		Elements[i].box.left = x - Bx / 2;
@@ -196,7 +195,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 		pDC->TextOut(x, y - By / 2 + 2, str, (int)strlen(str));
 	}
 
-	for (i=0; i<Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		f = Links[i].from;
 		t = Links[i].to;
 
@@ -260,10 +259,10 @@ void campaign_tree_view::OnInitialUpdate()
 	SetScrollSizes(MM_TEXT, CSize(320, 320));
 }
 
-void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
+void stuff_link_with_formula(int formula, int mission_num)
 {
 	int j, node, node2, node3;
-	Assert(mission_num >= 0 && mission_num < Campaign.num_missions);
+	Assert(Campaign.missions.in_bounds(mission_num));
 
 	if (formula >= 0) {
 		if (!stricmp(CTEXT(formula), "cond")) {
@@ -272,30 +271,34 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 			node = CDR(formula);
 			free_one_sexp(formula);
 			while (node != -1) {
-				init_link(Links[*link_idx], mission_num);
+				Links.emplace_back();
+				init_link(Links.back(), mission_num);
 				node2 = CAR(node);
-				Links[*link_idx].sexp = CAR(node2);
+				Links.back().sexp = CAR(node2);
 				sexp_mark_persistent(CAR(node2));
 				free_one_sexp(node2);
 				node3 = CADR(node2);
 				if ( !stricmp( CTEXT(node3), "next-mission") ) {
 					node3 = CDR(node3);
-					for (j=0; j<Campaign.num_missions; j++)
+					for (j=0; j<sz2i(Campaign.missions.size()); j++)
 						if (!stricmp(CTEXT(node3), Campaign.missions[j].name))
 							break;
 
-					if (j < Campaign.num_missions) {  // mission is in campaign (you never know..)
-						Links[(*link_idx)++].to = j;
+					if (j < sz2i(Campaign.missions.size())) {  // mission is in campaign (you never know..)
+						Links.back().to = j;
 						Elements[mission_num].from_links++;
 						Elements[j].to_links++;
+					} else {
+						Links.pop_back();  // discard unresolved link
 					}
 
 				} else if ( !stricmp( CTEXT(node3), "end-of-campaign") ) {
-					(*link_idx)++;
 					Elements[mission_num].from_links++;
 
-				} else
+				} else {
 					Int3();			// bogus operator in campaign file
+					Links.pop_back();
+				}
 
 				free_sexp(Sexp_nodes[node2].rest, node2);
 				free_one_sexp(node);
@@ -309,43 +312,43 @@ void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 // time without having loaded a campaign again will result in undefined behavior.
 void campaign_tree_view::construct_tree()
 {
-	int i;
 	free_links();
 
 	// initialize mission link counts
-	for (i=0; i<Campaign.num_missions; i++) {
-		init_element(Elements[i]);
+	Elements.clear();
+	Elements.resize(Campaign.missions.size());
+	for (auto& element : Elements) {
+		init_element(element);
 	}
 
 	// analyze branching sexps and build links from them.
-	int link_idx = 0;
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++) {
 
 		// do main campaign path
-		stuff_link_with_formula(&link_idx, Campaign.missions[i].formula, i);
+		stuff_link_with_formula(Campaign.missions[i].formula, i);
 
 		// do special mission path
 		if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_LOOP ) {
-			stuff_link_with_formula(&link_idx, Campaign.missions[i].mission_loop_formula, i);
-			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
-			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
-			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
-			Links[link_idx-1].is_mission_loop = true;
+			stuff_link_with_formula(Campaign.missions[i].mission_loop_formula, i);
+			Links.back().mission_branch_txt = Campaign.missions[i].mission_branch_desc;
+			Links.back().mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
+			Links.back().mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links.back().is_mission_loop = true;
 		}
 		else if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_FORK ) {
 			Campaign.missions[i].mission_loop_formula = -1;
-			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
-			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
-			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
-			Links[link_idx-1].is_mission_fork = true;
+			Links.back().mission_branch_txt = Campaign.missions[i].mission_branch_desc;
+			Links.back().mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
+			Links.back().mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links.back().is_mission_fork = true;
 		}
 	}
 
-	for (i=0; i<Campaign.num_missions; i++) {
+	Sorted.resize(Campaign.missions.size());
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		Sorted[i] = i;
 	}
 
-	Total_links = link_idx;
 	if (Campaign.realign_required) {
 		realign_tree();
 		Campaign.realign_required = 0;
@@ -354,18 +357,19 @@ void campaign_tree_view::construct_tree()
 
 void campaign_tree_view::initialize()
 {
-	int i, z;
+	int z;
 
 	total_levels = total_width = 1;
-	for (i=0; i<MAX_LEVELS; i++)
-		Level_counts[i] = 0;
+	Level_counts.assign(Campaign.missions.size(), 0);
 
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		z = Campaign.missions[i].level;
 		if (z + 2 > total_levels)
 			total_levels = z + 2;
 
-		Level_counts[z]++;
+		if (Level_counts.in_bounds(z)) {
+			Level_counts[z]++;
+		}
 		z = (Campaign.missions[i].pos + 3) / 2;
 		if (z > total_width)
 			total_width = z;
@@ -378,14 +382,12 @@ void campaign_tree_view::initialize()
 
 void campaign_tree_view::free_links()
 {
-	int i;
-
-	for (i=0; i<Total_links; i++) {
-		sexp_unmark_persistent(Links[i].sexp);
-		free_sexp2(Links[i].sexp);
+	for (auto& link : Links) {
+		sexp_unmark_persistent(link.sexp);
+		free_sexp2(link.sexp);
 	}
 
-	Total_links = 0;
+	Links.clear();
 }
 
 void campaign_tree_view::realign_tree()
@@ -394,9 +396,10 @@ void campaign_tree_view::realign_tree()
 
 	// figure out what level each mission lies on and an initial position on that level
 	level = pos = total_width = 0;
-	for (i=0; i<Campaign.num_missions; i++) {
+	Level_counts.assign(Campaign.missions.size() + 1, 0);
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		z = Sorted[i];
-		for (j=0; j<Total_links; j++)
+		for (j = 0; j < sz2i(Links.size()); j++)
 			if (Links[j].to == z) {
 				Assert(Campaign.missions[Links[j].from].level <= Campaign.missions[z].level);  // links can't go up the tree, only down
 				if (Campaign.missions[Links[j].from].level == level) {
@@ -419,7 +422,7 @@ void campaign_tree_view::realign_tree()
 	}
 
 	// now calculate the true x position of each mission
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		offset = total_width - Level_counts[Campaign.missions[i].level];
 		Campaign.missions[i].pos = Campaign.missions[i].pos * 2 + offset;
 	}
@@ -428,19 +431,24 @@ void campaign_tree_view::realign_tree()
 void campaign_tree_view::sort_links()
 {
 	int i, j, k, z, to_count, from_count, swap;
-	int to_list[MAX_CAMPAIGN_TREE_LINKS];
-	int from_list[MAX_CAMPAIGN_TREE_LINKS];
+	SCP_vector<int> to_list, from_list;
 
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		// build list of all to and from links for one mission at a time
+		to_list.clear();
+		from_list.clear();
 		to_count = from_count = 0;
-		for (j=0; j<Total_links; j++) {
+		for (j = 0; j < sz2i(Links.size()); j++) {
 			if ((Links[j].to == i) && (Links[j].from == i))
 				continue;  // ignore 'repeat mission' links
-			if (Links[j].to == i)
-				to_list[to_count++] = j;
-			if (Links[j].from == i)
-				from_list[from_count++] = j;
+			if (Links[j].to == i) {
+				to_list.push_back(j);
+				to_count++;
+			}
+			if (Links[j].from == i) {
+				from_list.push_back(j);
+				from_count++;
+			}
 		}
 
 		// sort to links, left to right and top to bottom
@@ -583,7 +591,7 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 			}
 		}
 		Mission_dragging = Cur_campaign_mission = Cur_campaign_link = -1;
-		for (i=0; i<Campaign.num_missions; i++)
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 			if (Elements[i].box.PtInRect(point)) {
 				SetCapture();
 
@@ -639,11 +647,11 @@ void campaign_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 			Mission_dragging = Mission_dropping = -1;
 
 		} else {
-			for (i=0; i<Campaign.num_missions; i++)
+			for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 				if (Elements[i].box.PtInRect(point))
 					break;
 
-			if ((i < Campaign.num_missions) && (Mission_dropping < 0)) {  // on a mission box?
+			if ((i < sz2i(Campaign.missions.size())) && (Mission_dropping < 0)) {  // on a mission box?
 				draw_size = CSize(4, 4);
 				rect = Elements[i].box;
 
@@ -656,7 +664,7 @@ void campaign_tree_view::OnMouseMove(UINT nFlags, CPoint point)
 
 				} else {
 					draw_size = CSize(2, 2);
-					for (i=0; i<Campaign.num_missions; i++)
+					for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 						if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 							pos = query_alternate_pos(point);
 							break;
@@ -706,19 +714,14 @@ void campaign_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 			ReleaseCapture();
 			dc.LPtoDP(&Dragging_rect);
 			dc.DrawDragRect(Dragging_rect, CSize(0, 0), Dragging_rect, Last_draw_size);
-			for (i=0; i<Campaign.num_missions; i++)
+			for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 				if (Elements[i].box.PtInRect(point)) {  // see if released on another mission
 					if (i == z)  // released on the same mission?
 						return;
 
-					for (j=0; j<Total_links; j++)
+					for (j = 0; j < sz2i(Links.size()); j++)
 						if ((Links[j].from == z) && (Links[j].to == i))
 							return;  // already linked
-
-					if (Total_links >= MAX_CAMPAIGN_TREE_LINKS) {
-						MessageBox("Too many links exist.  Can't add any more.");
-						return;
-					}
 
 					if (Campaign.missions[z].level >= Campaign.missions[i].level) {
 						MessageBox("A branch can only be set to a mission on a lower level");
@@ -740,13 +743,13 @@ void campaign_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 				return;
 			}
 
-			for (i=0; i<Campaign.num_missions; i++)
+			for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 				if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 					pos = query_alternate_pos(point);
 					break;
 				}
 
-			for (i=0; i<Total_links; i++)
+			for (i = 0; i < sz2i(Links.size()); i++)
 				if (Links[i].to == z)
 					if (level <= Campaign.missions[Links[i].from].level) {
 						MessageBox("Can't move mission to that level, as it would be\n"
@@ -771,12 +774,9 @@ void campaign_tree_view::OnLButtonUp(UINT nFlags, CPoint point)
 
 int campaign_tree_view::add_link(int from, int to)
 {
-	if (Total_links >= MAX_CAMPAIGN_TREE_LINKS)
-		return -1;
-
 	Campaign_tree_formp->load_tree(1);
-	init_link(Links[Total_links], from, to);
-	Total_links++;
+	Links.emplace_back();
+	init_link(Links.back(), from, to);
 	if (from != to) {
 		if (from >= 0)
 			Elements[from].from_links++;
@@ -884,7 +884,7 @@ DROPEFFECT campaign_tree_view::OnDragOver(COleDataObject* pDataObject, DWORD dwK
 
 	} else {
 		draw_size = CSize(2, 2);
-		for (i=0; i<Campaign.num_missions; i++)
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 			if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 				pos = query_alternate_pos(point);
 				break;
@@ -939,12 +939,6 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 	pData = (LPCSTR) GlobalLock(hGlobal);
 	ASSERT(pData);
 
-	if (Campaign.num_missions >= MAX_CAMPAIGN_MISSIONS) {  // Can't add any more
-		GlobalUnlock(hGlobal);
-		MessageBox("Too many missions.  Can't add more to Campaign.", "Error");
-		return FALSE;
-	}
-
 	level = query_level(point);
 	pos = query_pos(point);
 	Assert((level >= 0) && (pos >= 0));  // this should be impossible
@@ -979,14 +973,16 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 		}
 	}
 
-	init_element(Elements[Campaign.num_missions]);
-	cm = &(Campaign.missions[Campaign.num_missions++]);
+	Elements.emplace_back();
+	init_element(Elements.back());
+	cm = &Campaign.missions.emplace_back();
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
-	for (i=0; i<Campaign.num_missions - 1; i++)
+	const int new_mission_idx = sz2i(Campaign.missions.size()) - 1;
+	for (i = 0; i < new_mission_idx; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
 			break;
@@ -994,7 +990,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 
 	cm->level = level;
 	cm->pos = pos - 1;
-	correct_position(Campaign.num_missions - 1);
+	correct_position(new_mission_idx);
 	sort_links();
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));
 	Invalidate();
@@ -1042,11 +1038,6 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	// grab the filename selected from the listbox
 	listbox->GetText(item, name);
 
-	if (Campaign.num_missions >= MAX_CAMPAIGN_MISSIONS) {  // Can't add any more
-		MessageBox("Too many missions.  Can't add more to Campaign.", "Error");
-		return;
-	}
-
 	if (!level && (get_root_mission() >= 0)) {
 		MessageBox("Only 1 mission may be in the top level");
 		return;
@@ -1077,14 +1068,16 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 		}
 	}
 
-	init_element(Elements[Campaign.num_missions]);
-	cm = &(Campaign.missions[Campaign.num_missions++]);
+	Elements.emplace_back();
+	init_element(Elements.back());
+	cm = &Campaign.missions.emplace_back();
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
-	for (i=0; i<Campaign.num_missions - 1; i++)
+	const int new_mission_idx = sz2i(Campaign.missions.size()) - 1;
+	for (i = 0; i < new_mission_idx; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
 			break;
@@ -1092,7 +1085,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 
 	cm->level = level;
 	cm->pos = pos - 1;
-	correct_position(Campaign.num_missions - 1);
+	correct_position(new_mission_idx);
 	sort_links();
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));
 	Invalidate();
@@ -1112,11 +1105,12 @@ void campaign_tree_view::sort_elements()
 {
 	int i, j, s1, s2;
 
-	for (i=0; i<Campaign.num_missions; i++)
+	Sorted.resize(Campaign.missions.size());
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 		Sorted[i] = i;
 
 	// sort the tree, so realignment will work property
-	for (i=1; i<Campaign.num_missions; i++) {
+	for (i = 1; i < sz2i(Campaign.missions.size()); i++) {
 		s1 = Sorted[i];
 		for (j=i-1; j>=0; j--) {
 			s2 = Sorted[j];
@@ -1140,7 +1134,7 @@ void campaign_tree_view::correct_position(int num)
 	if (Campaign.missions[num].level + 2 > total_levels)
 		total_levels = Campaign.missions[num].level + 2;
 
-	for (i=0; i<Total_links; i++)
+	for (i = 0; i < sz2i(Links.size()); i++)
 		if (Links[i].from == num) {
 			z = Links[i].to;
 			if ( (num != z) && (Campaign.missions[num].level >= Campaign.missions[z].level) ) {
@@ -1159,13 +1153,13 @@ void campaign_tree_view::horizontally_align_mission(int num, int dir)
 	int i, z;
 
 	if ((Campaign.missions[num].pos == -1) || (Campaign.missions[num].pos + 1 == total_width * 2)) {  // need to expand total_width
-		for (i=0; i<Campaign.num_missions; i++)
-			Campaign.missions[i].pos++;
+		for (auto& mission : Campaign.missions)
+			mission.pos++;
 
 		total_width++;
 	}
 
-	for (i=0; i<Campaign.num_missions; i++) {
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 		if (i == num)
 			continue;
 
@@ -1189,7 +1183,7 @@ void campaign_tree_view::horizontally_align_mission(int num, int dir)
 
 void campaign_tree_view::delete_link(int num)
 {
-	Assert((num >= 0) && (num < Total_links));
+	Assert(Links.in_bounds(num));
 
 	int from = Links[num].from;
 	int to = Links[num].to;
@@ -1202,12 +1196,8 @@ void campaign_tree_view::delete_link(int num)
 
 	sexp_unmark_persistent(Links[num].sexp);
 	free_sexp2(Links[num].sexp);
-	while (num < Total_links - 1) {
-		Links[num] = Links[num + 1];
-		num++;
-	}
+	Links.erase(Links.begin() + num);
 
-	Total_links--;
 	sort_links();
 	Invalidate();
 	Campaign_modified = 1;
@@ -1216,9 +1206,7 @@ void campaign_tree_view::delete_link(int num)
 
 int campaign_tree_view::get_root_mission()
 {
-	int i;
-
-	for (i=0; i<Campaign.num_missions; i++)
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++)
 		if (!Campaign.missions[i].level)
 			return i;
 
@@ -1236,11 +1224,11 @@ void campaign_tree_view::OnContextMenu(CWnd* pWnd, CPoint point)
 	dc.DPtoLP(&p);
 
 	ScreenToClient(&p);
-	for (i=0; i<Campaign.num_missions; i++)
+	for (i = 0; i < sz2i(Campaign.missions.size()); i++)
 		if (Elements[i].box.PtInRect(p))
 			break;
 
-	if (i < Campaign.num_missions) {  // clicked on a mission
+	if (i < sz2i(Campaign.missions.size())) {  // clicked on a mission
 		Context_mission = i;
 		if (menu.LoadMenu(IDR_CPGN_VIEW_ON)) {
 			popup = menu.GetSubMenu(0);
@@ -1278,14 +1266,16 @@ void campaign_tree_view::remove_mission(int m)
 	int i, z;
 	CEdit *box;
 
-	Assert(m >= 0);
+	Assert(Campaign.missions.in_bounds(m));
 	Campaign_tree_formp->m_filelist.AddString(Campaign.missions[m].name);
 
-	z = --Campaign.num_missions;
-	i = Total_links;
+	z = sz2i(Campaign.missions.size()) - 1;	// index of the slot that will be swapped into m's place
+	i = sz2i(Links.size());
 	while (i--) {
-		if ((Links[i].from == m) || (Links[i].to == m))
+		if ((Links[i].from == m) || (Links[i].to == m)) {
 			delete_link(i);
+			continue;
+		}
 		if (Links[i].from == z)
 			Links[i].from = m;
 		if (Links[i].to == z)
@@ -1294,18 +1284,12 @@ void campaign_tree_view::remove_mission(int m)
 
 	Elements[m] = Elements[z];
 
-	// free the removed mission's strings before its slot is overwritten, then
-	// null the vacated slot's pointers, which now alias slot m's strings.  (If
-	// m == z, the assignment is a self-assign of freed pointers, and the
-	// nulling below leaves the slot clean.)
+	// free the removed mission's strings before its slot is overwritten; the
+	// vacated last slot, whose pointers now alias slot m's strings, is then popped
 	mission_campaign_free_mission_strings(Campaign.missions[m]);
 	Campaign.missions[m] = Campaign.missions[z];
-	Campaign.missions[z].name = nullptr;
-	Campaign.missions[z].notes = nullptr;
-	Campaign.missions[z].mission_branch_desc = nullptr;
-	Campaign.missions[z].mission_branch_brief_anim = nullptr;
-	Campaign.missions[z].mission_branch_brief_sound = nullptr;
-
+	Elements.pop_back();
+	Campaign.missions.pop_back();
 	if (m == Cur_campaign_mission) {
 		Cur_campaign_mission = -1;
 		box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);
@@ -1327,7 +1311,7 @@ void campaign_tree_view::OnDeleteRow()
 		return;
 	}
 
-	for (i=z=0; i<Campaign.num_missions; i++)
+	for (i = z = 0; i < sz2i(Campaign.missions.size()); i++)
 		if (Campaign.missions[i].level == Context_mission)
 			z++;
 
@@ -1341,9 +1325,9 @@ void campaign_tree_view::OnDeleteRow()
 		if (Campaign.missions[i].level == Context_mission)
 			remove_mission(i);
 
-	for (i=0; i<Campaign.num_missions; i++)
-		if (Campaign.missions[i].level > Context_mission)
-			Campaign.missions[i].level--;
+	for (auto& mission : Campaign.missions)
+		if (mission.level > Context_mission)
+			mission.level--;
 
 	total_levels--;
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));
@@ -1352,13 +1336,11 @@ void campaign_tree_view::OnDeleteRow()
 	Campaign_modified = 1;
 }
 
-void campaign_tree_view::OnInsertRow() 
+void campaign_tree_view::OnInsertRow()
 {
-	int i;
-
-	for (i=0; i<Campaign.num_missions; i++)
-		if (Campaign.missions[i].level >= Context_mission)
-			Campaign.missions[i].level++;
+	for (auto& mission : Campaign.missions)
+		if (mission.level >= Context_mission)
+			mission.level++;
 
 	total_levels++;
 	SetScrollSizes(MM_TEXT, CSize(total_width * CELL_WIDTH, total_levels * LEVEL_HEIGHT));

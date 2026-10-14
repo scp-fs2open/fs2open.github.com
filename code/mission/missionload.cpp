@@ -160,7 +160,7 @@ UI_BUTTON mlm_ok, mlm_cancel;
 char * mlm_missions[MLM_MAX_MISSIONS];
 char * recent_missions[MAX_RECENT_MISSIONS];
 char * campaign_names[MAX_CAMPAIGNS+2];
-char * campaign_missions[MAX_CAMPAIGN_MISSIONS];
+SCP_vector<char*> campaign_missions;
 int mlm_nfiles = 0;
 static int	last_recent_current = -1;
 static int	last_mlm_current = -1;
@@ -192,12 +192,11 @@ void ml_change_listbox()
 	}
 }
 
-static char Campaign_missions[MAX_CAMPAIGN_MISSIONS][NAME_LENGTH];
+static SCP_vector<SCP_string> Campaign_missions;
 static char Campaign_name_list[MAX_CAMPAIGNS+2][NAME_LENGTH];
-static int	Num_campaign_missions;
 
 // get the mission filenames that make up a campaign
-extern int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int *num);
+extern int mission_campaign_get_filenames(const char *filename, SCP_vector<SCP_string> &dest);
 
 void mission_load_menu_init()
 {
@@ -249,8 +248,8 @@ void mission_load_menu_init()
 
 void mission_load_menu_do()
 {
-	int	selected, key_in, recent_current, mlm_current, use_recent_flag, i;
-	
+	int	selected, key_in, recent_current, mlm_current, use_recent_flag;
+
 
 	Assert( mlm_active == 1 );
 
@@ -289,16 +288,18 @@ void mission_load_menu_do()
 		Campaign_filter_index = campaign_filter.current();
 
 		if ( Campaign_filter_index > 1 ) {
-			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2], Campaign_missions, &Num_campaign_missions);
+			mission_campaign_get_filenames(Campaign_file_names[Campaign_filter_index-2], Campaign_missions);
 
- 			for ( i = 0; i < Num_campaign_missions; i++ ) {
-				campaign_missions[i] = Campaign_missions[i];
+			campaign_missions.clear();
+			campaign_missions.reserve(Campaign_missions.size());
+			for (auto& name : Campaign_missions) {
+				campaign_missions.push_back(name.data());
 			}
-			mlm_mission_list.set_new_list(Num_campaign_missions, campaign_missions);
+			mlm_mission_list.set_new_list(sz2i(campaign_missions.size()), campaign_missions.data());
 		} else if ( Campaign_filter_index == 0 ) {
 			mlm_mission_list.set_new_list(mlm_nfiles, mlm_missions);
 		} else if ( Campaign_filter_index == 1 ) {
-			mlm_mission_list.set_new_list(jtmp_nfiles, jtmp_missions); 
+			mlm_mission_list.set_new_list(jtmp_nfiles, jtmp_missions);
 		}
 	}
 
@@ -353,7 +354,7 @@ void mission_load_menu_do()
 			} else if (Campaign_filter_index == 1 )	{
 				strcpy_s( mission_name, jtmp_missions[selected]);
 			} else {
-				strcpy_s(mission_name, Campaign_missions[selected]);
+				strcpy_s(mission_name, Campaign_missions[selected].c_str());
 			}
 			strncpy( mission_name_final, mission_name, MAX_FILENAME_LEN );
 		}
