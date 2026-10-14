@@ -7,14 +7,11 @@
 class ObjectBoundsTest : public ::testing::Test {
  protected:
 	void SetUp() override {
-		list_init(&obj_used_list);
+		obj_init();
 	}
 
 	void TearDown() override {
-		for (int i = 0; i < _count; ++i) {
-			Objects[i].clear();
-		}
-		list_init(&obj_used_list);
+		obj_init();
 	}
 
 	void add(float x, bool marked) {
@@ -24,6 +21,7 @@ class ObjectBoundsTest : public ::testing::Test {
 		if (marked) {
 			objp->flags.set(Object::Object_Flags::Marked);
 		}
+		list_remove(&obj_free_list, objp);
 		list_append(&obj_used_list, objp);
 	}
 

@@ -85,8 +85,10 @@ public:
 	bool getOrbitSelectionCenter() const { return _orbitSelectionCenter; }
 	void setOrbitSelectionCenter(bool enabled)
 	{
-		_orbitSelectionCenter = enabled;
-		_orbitActive = false;
+		if (_orbitSelectionCenter != enabled) {
+			_orbitSelectionCenter = enabled;
+			_orbitActive = false;
+		}
 	}
 
 	void orbitCameraInitFromCurrentView(const vec3d* pivot, const matrix* grid_orient);

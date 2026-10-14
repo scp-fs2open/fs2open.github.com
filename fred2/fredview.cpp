@@ -308,8 +308,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
-	ON_COMMAND(ID_VIEW_ORBIT_SELECTION_CENTER, OnViewOrbitSelectionCenter)
-	ON_UPDATE_COMMAND_UI(ID_VIEW_ORBIT_SELECTION_CENTER, OnUpdateViewOrbitSelectionCenter)
+	ON_COMMAND(ID_MISC_ROTATE_SELECTION_CENTROID, OnMiscRotateSelectionCentroid)
+	ON_UPDATE_COMMAND_UI(ID_MISC_ROTATE_SELECTION_CENTROID, OnUpdateMiscRotateSelectionCentroid)
 	ON_COMMAND(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnAlwaysSaveDisplayNames)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
@@ -4064,7 +4064,7 @@ void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
-void CFREDView::OnViewOrbitSelectionCenter()
+void CFREDView::OnMiscRotateSelectionCentroid()
 {
 	Orbit_selection_center = !Orbit_selection_center;
 	Orbit_active = false;
@@ -4072,7 +4072,7 @@ void CFREDView::OnViewOrbitSelectionCenter()
 	Update_window = 1;
 }
 
-void CFREDView::OnUpdateViewOrbitSelectionCenter(CCmdUI* pCmdUI)
+void CFREDView::OnUpdateMiscRotateSelectionCentroid(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(Orbit_selection_center);
 }

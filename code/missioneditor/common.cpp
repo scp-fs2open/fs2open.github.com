@@ -758,7 +758,7 @@ bool get_object_bounds(bool marked_only, vec3d* center, float* radius)
 	vec3d mins = ZERO_VECTOR, maxs = ZERO_VECTOR;
 	bool found = false;
 
-	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+	for (auto* objp : list_range(&obj_used_list)) {
 		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
 			continue;
 		}
@@ -781,7 +781,7 @@ bool get_object_bounds(bool marked_only, vec3d* center, float* radius)
 
 	vm_vec_avg(center, &mins, &maxs);
 	*radius = 0.0f;
-	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+	for (auto* objp : list_range(&obj_used_list)) {
 		if (marked_only && !objp->flags[Object::Object_Flags::Marked]) {
 			continue;
 		}
