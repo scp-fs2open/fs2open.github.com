@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+#include <utf8.h>
+
 namespace {
 
 // Misses are stored as nullopt so each name is read once; node-based, so bitmap entries can keep pointers into it
@@ -89,17 +91,19 @@ void parse_texture_material(const char* filename, char* text, texture_material& 
 		warnings.push_back(SCP_string(filename) + ": " + std::to_string(unknown - 1) + " more unrecognized entries ignored.");
 }
 
-// Plain ASCII only: the shared table reader would decrypt or re-encode the text and could outgrow any fixed buffer
-bool is_plain_text(const SCP_vector<char>& bytes, size_t start, size_t len)
+// A NUL (as in UTF-16 without a byte order mark) is valid UTF-8 but would end the parse without a warning
+bool is_utf8_text(const SCP_vector<char>& bytes, size_t start, size_t len)
 {
 	for (size_t i = start; i < len; i++) {
 		const auto c = static_cast<unsigned char>(bytes[i]);
-		if (c != '\t' && c != '\n' && c != '\r' && (c < 0x20 || c > 0x7e))
+		if (c != '\t' && c != '\n' && c != '\r' && (c < 0x20 || c == 0x7f))
 			return false;
 	}
-	return true;
+	return utf8::find_invalid(bytes.begin() + start, bytes.begin() + len) == bytes.begin() + len;
 }
 
+// Read as-is rather than through the shared table reader, which would decrypt or re-encode the text and could
+// outgrow any fixed buffer
 bool read_texture_material(const char* filename, int dir_type, texture_material& mat)
 {
 	CFILE* cfp = cfopen(filename, "rb", dir_type);
@@ -123,8 +127,8 @@ bool read_texture_material(const char* filename, int dir_type, texture_material&
 	}
 
 	const size_t start = (file_len >= 3 && memcmp(text.data(), "\xEF\xBB\xBF", 3) == 0) ? 3 : 0;
-	if (!is_plain_text(text, start, static_cast<size_t>(file_len))) {
-		mat_warning(SCP_string(filename) + " is not a plain-text .mat file.  Ignoring it.");
+	if (!is_utf8_text(text, start, static_cast<size_t>(file_len))) {
+		mat_warning(SCP_string(filename) + " is not UTF-8 text.  Ignoring it; save it as UTF-8 to use it.");
 		return false;
 	}
 

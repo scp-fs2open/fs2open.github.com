@@ -100,6 +100,18 @@ TEST_F(TextureMaterialTest, crlf_and_utf8_bom_are_read) {
 	EXPECT_FLOAT_EQ(*bom->glow.intensity, 1.75f);
 }
 
+TEST_F(TextureMaterialTest, utf8_comments_and_tabs_are_read) {
+	int warnings = Global_warning_count;
+	auto mat = texture_material_find("mat_utf8", CF_TYPE_MAPS);
+	ASSERT_NE(mat, nullptr);
+	EXPECT_FLOAT_EQ(*mat->glow.intensity, 3.5f);
+
+	auto tab = texture_material_find("mat_tab", CF_TYPE_MAPS);
+	ASSERT_NE(tab, nullptr);
+	EXPECT_FLOAT_EQ(*tab->glow.intensity, 1.5f);
+	EXPECT_EQ(Global_warning_count, warnings);
+}
+
 TEST_F(TextureMaterialTest, texture_without_a_mat_file) {
 	EXPECT_EQ(texture_material_find("mat_plain", CF_TYPE_MAPS), nullptr);
 	EXPECT_EQ(texture_material_find("", CF_TYPE_MAPS), nullptr);
@@ -122,18 +134,23 @@ TEST_F(TextureMaterialTest, directory_type_is_part_of_the_lookup) {
 }
 
 TEST_F(TextureMaterialTest, non_text_files_are_rejected) {
-	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not a plain-text");
-	expect_warning("mat_utf16", CF_TYPE_MAPS, "not a plain-text");
-	expect_warning("mat_encrypted", CF_TYPE_MAPS, "not a plain-text");
+	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_utf16", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_utf16_nobom", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_encrypted", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_ctrl", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_del", CF_TYPE_MAPS, "not UTF-8 text");
+	expect_warning("mat_truncated", CF_TYPE_MAPS, "not UTF-8 text");
 	expect_warning("mat_empty", CF_TYPE_MAPS, "is empty");
 #ifdef NDEBUG
-	EXPECT_EQ(texture_material_find("mat_sharp_s", CF_TYPE_MAPS), nullptr);
-	EXPECT_EQ(texture_material_find("mat_empty", CF_TYPE_MAPS), nullptr);
+	for (const char* name : {"mat_sharp_s", "mat_utf16", "mat_utf16_nobom", "mat_encrypted", "mat_ctrl", "mat_del",
+		 "mat_truncated", "mat_empty"})
+		EXPECT_EQ(texture_material_find(name, CF_TYPE_MAPS), nullptr) << name;
 #endif
 }
 
 TEST_F(TextureMaterialTest, a_rejected_file_warns_once) {
-	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not a plain-text");
+	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not UTF-8 text");
 #ifdef NDEBUG
 	int warnings = Global_warning_count;
 	EXPECT_EQ(texture_material_find("mat_sharp_s", CF_TYPE_MAPS), nullptr);
