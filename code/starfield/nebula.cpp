@@ -331,7 +331,8 @@ static void project_2d_onto_sphere(vec3d *pnt, float u, float v)
 	pnt->xyz.z = z;
 }
 
-// --- small, deterministic value-noise field (no general noise utility exists in the engine) ---
+// value noise of its own rather than ANL (nebula/volumetrics.cpp): the bake wants an exact period across the longitude
+// seam and seed-stable output, which this gives in a few lines without building a kernel
 
 static uint32_t neb_hash(uint32_t x)
 {

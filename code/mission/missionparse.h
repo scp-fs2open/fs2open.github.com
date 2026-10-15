@@ -38,8 +38,6 @@ struct p_dock_instance;
 enum class ArrivalLocation;
 enum class DepartureLocation;
 
-#define NUM_NEBULAS			3				// how many full (neb2) background nebulas we have altogether
-
 #define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
 
 #define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math

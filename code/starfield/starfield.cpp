@@ -1079,6 +1079,8 @@ void stars_level_close() {
 		Mission_env_map = -1;
 	}
 
+	nebula_close();
+
 	ENVMAP = Default_env_map;
 }
 

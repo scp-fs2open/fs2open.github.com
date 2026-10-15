@@ -222,12 +222,6 @@ static bool mission_has_layer_name(const mission* pm, const SCP_string& layerNam
 
 //XSTR:OFF
 
-const char *Neb2_filenames[NUM_NEBULAS] = {
-	"Nebfull01",
-	"Nebfull02",
-	"Nebfull03"
-};
-
 const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Chase",
 	"Evade",
