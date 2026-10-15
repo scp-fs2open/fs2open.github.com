@@ -863,31 +863,16 @@ void gr_opengl_set_fill_mode(int mode)
 	GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-// Reversed depth needs the depth range set to [0, 1] with glClipControl (core in GL 4.5, or ARB_clip_control).
-// The bundled GL loader does not include it, so it is fetched by name. Without it the option is ignored.
+// GL 4.5 drivers advertise ARB_clip_control too, so one check covers both
 static void opengl_enable_reversed_depth()
 {
 #ifndef USE_OPENGL_ES
-	bool supported = GL_version >= 45;
-	if (!supported) {
-		GLint count = 0;
-		glGetIntegerv(GL_NUM_EXTENSIONS, &count);
-		for (GLint i = 0; i < count && !supported; ++i) {
-			const auto ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, static_cast<GLuint>(i)));
-			supported = ext != nullptr && strcmp(ext, "GL_ARB_clip_control") == 0;
-		}
-	}
-
-	using clip_control_func = void(APIENTRYP)(GLenum origin, GLenum depth);
-	const auto clip_control =
-		supported ? reinterpret_cast<clip_control_func>(GL_context->getLoaderFunction()("glClipControl")) : nullptr;
-	if (clip_control == nullptr) {
-		mprintf(("  Reversed depth needs OpenGL 4.5 or ARB_clip_control; using normal depth\n"));
+	if (!GLAD_GL_ARB_clip_control) {
+		mprintf(("  Reversed depth needs ARB_clip_control; using normal depth\n"));
 		return;
 	}
 
-	const GLenum zero_to_one = 0x935F; // GL_ZERO_TO_ONE, missing from the bundled loader header
-	clip_control(GL_LOWER_LEFT, zero_to_one);
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
 	glClearDepth(0.0);
 	Gr_reversed_depth_active = true;
 	mprintf(("  Using reversed depth\n"));
@@ -1479,6 +1464,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(("  Layered viewport support : %s\n", GLAD_GL_ARB_shader_viewport_layer_array ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
+	mprintf(("  Clip control support : %s\n", GLAD_GL_ARB_clip_control ? NOX("YES") : NOX("NO")));
 
 	#ifdef USE_OPENGL_ES
 	GLint maxBuffers;
