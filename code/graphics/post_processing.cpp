@@ -89,13 +89,13 @@ auto SunglareOption = options::OptionBuilder<bool>("Graphics.Sunglare",
 			.parser(parse_sunglare_func)
 			.finish();
 
-int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
+int Post_processing_bloom_intensity = 10;
 
 void parse_bloom_intensity_func()
 {
 	int value;
 	stuff_int(&value);
-	CLAMP(value, 0, 200);
+	CLAMP(value, 0, 100);
 	Post_processing_bloom_intensity = value;
 }
 
@@ -104,13 +104,38 @@ static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphic
                      std::pair<const char*, int>{"Bloom intensity", 1701},
                      std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
                      .category(std::make_pair("Graphics", 1825))
-                     .range(0, 200)
+                     .range(0, 100)
                      .level(options::ExpertLevel::Advanced)
                      .default_func([](){return Post_processing_bloom_intensity;})
                      .bind_to(&Post_processing_bloom_intensity)
                      .importance(55)
                      .flags({options::OptionFlags::RangeTypeInteger})
                      .parser(parse_bloom_intensity_func)
+                     .finish();
+
+// The relative width of the bloom kernel. 0 keeps the bloom tight around bright
+// pixels, 1 spreads it across the whole frame.
+float Post_processing_bloom_width = 0.1f;
+
+void parse_bloom_width_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.0f, 1.0f);
+	Post_processing_bloom_width = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto BloomWidthOption __UNUSED = options::OptionBuilder<float>("Graphics.BloomWidth",
+                     std::pair<const char*, int>{"Bloom width", -1},
+                     std::pair<const char*, int>{"Sets the bloom width (requires post-processing)", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .range(0.0f, 1.0f)
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([](){return Post_processing_bloom_width;})
+                     .bind_to(&Post_processing_bloom_width)
+                     .importance(54)
+                     .parser(parse_bloom_width_func)
                      .finish();
 } // namespace
 
@@ -311,4 +336,54 @@ void gr_set_bloom_intensity(int intensity)
 
 	graphics::Post_processing_bloom_intensity = intensity;
 	options::OptionsManager::instance()->set_ingame_range_option("Graphics.BloomIntensity", intensity);
+}
+
+float gr_bloom_width()
+{
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		return 0.0f;
+	}
+
+	if (graphics::Post_processing_manager == nullptr || !graphics::Post_processing_manager->bloomShadersOk()) {
+		return 0.0f;
+	}
+
+	return graphics::BloomWidthOption->getValue();
+}
+
+void gr_set_bloom_width(float width)
+{
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		return;
+	}
+
+	graphics::Post_processing_bloom_width = width;
+	options::OptionsManager::instance()->set_ingame_range_option("Graphics.BloomWidth", width);
+}
+
+int gr_bloom_mip_levels(int width, int height)
+{
+	int size = MAX(width, height);
+	int levels = 1;
+
+	while (size > 1 && levels < Bloom_max_mip_levels) {
+		size >>= 1;
+		++levels;
+	}
+
+	return levels;
+}
+
+float gr_bloom_layer_contribution(int mip)
+{
+	// A mip is half the resolution of the mip above it, thus its bloom is twice
+	// as wide. The reciprocal of that width is a measure of spatial frequency.
+	const float mip_freq = exp2f(-i2fl(mip));
+	// A first-order high-pass filter gives the contribution of this layer. The
+	// cutoff is not hard, because very bright pixels must bloom a little at
+	// every width. The cutoff uses the maximum level count, not the real one,
+	// so that the bloom width does not change with the screen resolution.
+	const float cutoff_freq = exp2f(-(i2fl(Bloom_max_mip_levels) * gr_bloom_width()));
+
+	return mip_freq / (mip_freq + cutoff_freq);
 }
