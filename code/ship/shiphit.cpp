@@ -2426,6 +2426,16 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 	Assertion(ship_objp->instance >= 0 && ship_objp->type == OBJ_SHIP, "invalid ship target in ship_do_damage");
 	shipp = &Ships[ship_objp->instance];
+	const bool damage_hook_active = scripting::hooks::OnShipDamage->isActive();
+	bool damage_hook_emitted = false;
+	float hull_strength_before_damage = 0.0f;
+	float shield_strength_before_damage = 0.0f;
+	if (damage_hook_active) {
+		hull_strength_before_damage = ship_objp->hull_strength;
+		for (float shield_strength : ship_objp->shield_quadrant) {
+			shield_strength_before_damage += shield_strength;
+		}
+	}
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_objp, other_obj, &damage);
@@ -2559,6 +2569,81 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	}
 
 	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
+	auto emit_damage_hook = [&]() {
+		if (!damage_hook_active || damage_hook_emitted) {
+			return;
+		}
+
+		float shield_strength_after_damage = 0.0f;
+		for (float shield_strength : ship_objp->shield_quadrant) {
+			shield_strength_after_damage += shield_strength;
+		}
+		const float shield_damage = MAX(0.0f, shield_strength_before_damage - shield_strength_after_damage);
+		const float hull_damage = MAX(0.0f, MAX(0.0f, hull_strength_before_damage) - MAX(0.0f, ship_objp->hull_strength));
+		if (shield_damage <= 0.0f && hull_damage <= 0.0f) {
+			return;
+		}
+		const bool lethal_hit = hull_strength_before_damage > 0.0f && ship_objp->hull_strength <= 0.0f;
+
+		const weapon_info* wip = (weapon_info_index >= 0 && weapon_info_index < weapon_info_size())
+			? &Weapon_info[weapon_info_index]
+			: nullptr;
+		const char* weapon_class = wip != nullptr ? wip->name : "NON_WEAPON";
+		const char* weapon_subtype = wip != nullptr && wip->subtype >= 0 && wip->subtype < Num_weapon_subtypes
+			? Weapon_subtype_names[wip->subtype]
+			: "UNKNOWN";
+		const bool ballistic = wip != nullptr && wip->wi_flags[Weapon::Info_Flags::Ballistic];
+		const bool beam_weapon = wip != nullptr && wip->is_beam();
+
+		const char* source_kind = "OTHER";
+		if (other_obj_is_weapon) {
+			source_kind = "PROJECTILE";
+		} else if (other_obj_is_beam) {
+			source_kind = "BEAM";
+		} else if (other_obj_is_shockwave) {
+			source_kind = "SHOCKWAVE";
+		} else if (other_obj != nullptr && (other_obj->type == OBJ_SHIP || other_obj->type == OBJ_ASTEROID || other_obj->type == OBJ_DEBRIS)) {
+			source_kind = "COLLISION";
+		}
+
+		int resolved_damage_type = damage_type_idx;
+		if ((resolved_damage_type < 0 || resolved_damage_type >= static_cast<int>(Damage_types.size())) && wip != nullptr) {
+			resolved_damage_type = wip->damage_type_idx;
+		}
+		const char* damage_type = resolved_damage_type >= 0 && resolved_damage_type < static_cast<int>(Damage_types.size())
+			? Damage_types[resolved_damage_type].name
+			: "UNKNOWN";
+
+		object* attacker_objp = nullptr;
+		if (other_obj_is_beam) {
+			const int parent_objnum = beam_get_parent(other_obj);
+			if (parent_objnum >= 0 && parent_objnum < MAX_OBJECTS) {
+				attacker_objp = &Objects[parent_objnum];
+			}
+		} else if (other_obj != nullptr && other_obj->type == OBJ_SHIP) {
+			attacker_objp = other_obj;
+		} else if (other_obj != nullptr && other_obj->parent >= 0 && other_obj->parent < MAX_OBJECTS &&
+			Objects[other_obj->parent].signature == other_obj->parent_sig) {
+			attacker_objp = &Objects[other_obj->parent];
+		}
+
+		damage_hook_emitted = true;
+		scripting::hooks::OnShipDamage->run(scripting::hooks::ShipDamageConditions{ shipp },
+			scripting::hook_param_list(
+				scripting::hook_param("Target", 'o', ship_objp),
+				scripting::hook_param("Source", 'o', other_obj, other_obj != nullptr),
+				scripting::hook_param("Attacker", 'o', attacker_objp, attacker_objp != nullptr),
+				scripting::hook_param("WeaponClass", 's', weapon_class),
+				scripting::hook_param("WeaponSubtype", 's', weapon_subtype),
+				scripting::hook_param("SourceKind", 's', source_kind),
+				scripting::hook_param("DamageType", 's', damage_type),
+				scripting::hook_param("ShieldDamage", 'f', shield_damage),
+				scripting::hook_param("HullDamage", 'f', hull_damage),
+				scripting::hook_param("Quadrant", 'i', quadrant),
+				scripting::hook_param("Ballistic", 'b', ballistic),
+				scripting::hook_param("BeamWeapon", 'b', beam_weapon),
+				scripting::hook_param("LethalHit", 'b', lethal_hit)));
+	};
 
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
@@ -2697,10 +2782,14 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );
 						ship_objp->sim_hull_strength -= damage;
 						ship_objp->sim_hull_strength = MAX(0.0f, ship_objp->sim_hull_strength);
+						emit_damage_hook();
 						return;
 					}
 				}
 				ship_objp->hull_strength -= damage;
+				if (ship_objp->hull_strength <= 0.0f) {
+					emit_damage_hook();
+				}
 			}
 
 			// let damage gauge know that player ship just took damage
@@ -2799,6 +2888,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			}
 		}
 	}
+	emit_damage_hook();
 
 	if (!global_damage) {
 		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);

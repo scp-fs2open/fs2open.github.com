@@ -63,6 +63,11 @@ struct ShipDeathConditions {
 	const ship* dying_shipp;
 };
 
+struct ShipDamageConditions {
+	HOOK_DEFINE_CONDITIONS;
+	const ship* target_shipp;
+};
+
 struct SubsystemDeathConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* affected_shipp;
