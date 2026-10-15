@@ -80,7 +80,7 @@ static void openxr_check_api_layers() {
 	if (xrEnumerateApiLayerProperties(0, &layerCount, nullptr) != XR_SUCCESS || layerCount == 0)
 		return;
 
-	SCP_vector<XrApiLayerProperties> layers(layerCount, { XR_TYPE_API_LAYER_PROPERTIES, nullptr, "", 0, 0, "" });
+	SCP_vector<XrApiLayerProperties> layers(layerCount, XrApiLayerProperties { XR_TYPE_API_LAYER_PROPERTIES, nullptr, "", 0, 0, "" });
 	if (xrEnumerateApiLayerProperties(layerCount, &layerCount, layers.data()) != XR_SUCCESS)
 		return;
 
