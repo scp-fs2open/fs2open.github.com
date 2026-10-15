@@ -2,6 +2,7 @@
 #define _MATERIAL_H
 
 #include "graphics/grinternal.h"
+#include "graphics/texture_material.h"
 #include "model/model.h"
 
 #include <array>
@@ -203,6 +204,8 @@ class model_material : public material
 	bool Use_alpha_mult = false;
 	float Alpha_mult = 1.0f;
 
+	texture_glow_settings Glow;
+
 public:
 	model_material();
 
@@ -262,6 +265,10 @@ public:
 	bool is_alpha_mult_active() const;
 	void set_alpha_mult(float alpha);
 	void reset_alpha_mult();
+
+	void set_glow(const texture_glow_settings& glow);
+	float get_glow_intensity() const;
+	float get_glow_hdr_multiplier() const;
 
 };
 

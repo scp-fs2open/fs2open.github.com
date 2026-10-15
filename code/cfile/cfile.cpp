@@ -53,7 +53,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// Root must be index 1!!
 	{ CF_TYPE_ROOT,					"",																			".mve .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																		".cfg .txt",						CF_TYPE_ROOT	},
-	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds .ktx",	CF_TYPE_DATA	},
+	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds .ktx .mat",	CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",											".txt .net",						CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,				"data" DIR_SEPARATOR_STR "models",											".pof",								CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,				"data" DIR_SEPARATOR_STR "tables",											".tbl .tbm .lua",						CF_TYPE_DATA	},
@@ -69,7 +69,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt .webm .png",CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg .rml .rcss .ktx",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .ktx .sdr .vert .frag .glsl",	CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .ktx .sdr .vert .frag .glsl .mat",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds .ktx",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf", /* DON'T add pilot files here!! */	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds .ktx",						CF_TYPE_PLAYERS	},

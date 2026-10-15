@@ -89,6 +89,8 @@ uniform modelData {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
+	float glowIntensity;
+	float glowHdrMultiplier;
 };
 
 #ifdef VULKAN
@@ -444,9 +446,9 @@ void main()
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_TEAMCOLOR
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_MISC
 		#prereplace IF_FLAG MODEL_SDR_FLAG_HDR
-			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
+			glowColor = srgb_to_linear(glowColor) * glowHdrMultiplier;
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_HDR
-		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+		emissiveColor.rgb += glowColor * glowIntensity;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_GLOW
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_ALPHA_MULT

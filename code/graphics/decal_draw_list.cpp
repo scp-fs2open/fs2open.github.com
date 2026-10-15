@@ -5,6 +5,7 @@
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #include "light.h"
+#include "graphics/texture_material.h"
 
 namespace {
 
@@ -96,6 +97,11 @@ void decal_draw_list::prepare_global_data() {
 						   bm_get_base_frame(batch_info.normal));
 		info->diffuse_blend_mode = draw_info.first.material.get_blend_mode(0) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
 		info->glow_blend_mode = draw_info.first.material.get_blend_mode(2) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
+		// glow-only decals have no diffuse texture to name the .mat after
+		const auto mat = bm_get_texture_material(batch_info.diffuse >= 0 ? batch_info.diffuse : batch_info.glow);
+		const auto glow = mat != nullptr ? mat->glow : texture_glow_settings();
+		info->glow_intensity = texture_glow_intensity(glow);
+		info->glow_hdr_multiplier = texture_glow_hdr_multiplier(glow);
 	}
 }
 

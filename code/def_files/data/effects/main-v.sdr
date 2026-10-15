@@ -103,6 +103,8 @@ uniform modelData {
 	float alphaMult;
 
 	int flags;
+	float glowIntensity;
+	float glowHdrMultiplier;
 };
 
 #ifdef VULKAN
