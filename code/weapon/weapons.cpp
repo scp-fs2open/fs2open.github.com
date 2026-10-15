@@ -88,7 +88,8 @@ SCP_unordered_map<SCP_string, delayed_ssm_index_data> Delayed_SSM_indices_data;
 SCP_vector<SCP_string> Delayed_SSM_indices;
 
 // Temporary storage for proximity type/class names pending resolution after ship_init().
-// Keyed by weapon_info_index (not name) so a duplicate-named entry can't clobber another's pending list.
+// Keyed by the parse key (the name, prefixed with $Template: for templates) so a duplicate-named entry can't clobber
+// another's pending list.
 static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_proximity_type_names;
 static SCP_unordered_map<SCP_string, SCP_vector<SCP_string>> Pending_proximity_class_names;
 
