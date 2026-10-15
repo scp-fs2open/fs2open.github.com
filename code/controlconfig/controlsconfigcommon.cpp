@@ -54,7 +54,7 @@ auto DeadZoneOption = options::OptionBuilder<int>("Input.JoystickDeadZone",
                      .level(options::ExpertLevel::Beginner)
                      .default_val(10)
                      .bind_to(&Joy_dead_zone_size)
-                     .importance(1)
+                     .importance(11)
                      .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
@@ -69,7 +69,7 @@ auto SensitivityOption = options::OptionBuilder<int>("Input.JoystickSensitivity"
                      .level(options::ExpertLevel::Beginner)
                      .default_val(9)
                      .bind_to(&Joy_sensitivity)
-                     .importance(2)
+                     .importance(12)
                      .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
@@ -106,56 +106,56 @@ static auto HeadingDeadZoneOption __UNUSED = make_axis_option("Input.HeadingDead
 	"The deadzone for the axis bound to heading; Use Global follows Deadzone",
 	45,
 	&Joy_axis_dead_zone_size[Action::HEADING],
-	3);
+	10);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto PitchDeadZoneOption __UNUSED = make_axis_option("Input.PitchDeadZone",
 	"Pitch Deadzone",
 	"The deadzone for the axis bound to pitch; Use Global follows Deadzone",
 	45,
 	&Joy_axis_dead_zone_size[Action::PITCH],
-	4);
+	9);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto BankDeadZoneOption __UNUSED = make_axis_option("Input.BankDeadZone",
 	"Bank Deadzone",
 	"The deadzone for the axis bound to bank; Use Global follows Deadzone",
 	45,
 	&Joy_axis_dead_zone_size[Action::BANK],
-	5);
+	8);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto RelThrottleDeadZoneOption __UNUSED = make_axis_option("Input.RelThrottleDeadZone",
 	"Relative Throttle Deadzone",
 	"The deadzone for the axis bound to relative throttle; Use Global follows Deadzone",
 	45,
 	&Joy_axis_dead_zone_size[Action::REL_THROTTLE],
-	6);
+	7);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto HeadingSensitivityOption __UNUSED = make_axis_option("Input.HeadingSensitivity",
 	"Heading Sensitivity",
 	"The sensitivity for the axis bound to heading; Use Global follows Sensitivity",
 	9,
 	&Joy_axis_sensitivity[Action::HEADING],
-	7);
+	6);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto PitchSensitivityOption __UNUSED = make_axis_option("Input.PitchSensitivity",
 	"Pitch Sensitivity",
 	"The sensitivity for the axis bound to pitch; Use Global follows Sensitivity",
 	9,
 	&Joy_axis_sensitivity[Action::PITCH],
-	8);
+	5);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto BankSensitivityOption __UNUSED = make_axis_option("Input.BankSensitivity",
 	"Bank Sensitivity",
 	"The sensitivity for the axis bound to bank; Use Global follows Sensitivity",
 	9,
 	&Joy_axis_sensitivity[Action::BANK],
-	9);
+	4);
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto RelThrottleSensitivityOption __UNUSED = make_axis_option("Input.RelThrottleSensitivity",
 	"Relative Throttle Sensitivity",
 	"The sensitivity for the axis bound to relative throttle; Use Global follows Sensitivity",
 	9,
 	&Joy_axis_sensitivity[Action::REL_THROTTLE],
-	10);
+	3);
 
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array
