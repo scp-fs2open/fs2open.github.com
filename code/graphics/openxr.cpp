@@ -75,7 +75,27 @@ void openxr_prepare(float hudscale) {
 	openxr_req = true;
 }
 
+static void openxr_check_api_layers() {
+	uint32_t layerCount = 0;
+	if (xrEnumerateApiLayerProperties(0, &layerCount, nullptr) != XR_SUCCESS || layerCount == 0)
+		return;
+
+	SCP_vector<XrApiLayerProperties> layers(layerCount, XrApiLayerProperties { XR_TYPE_API_LAYER_PROPERTIES, nullptr, "", 0, 0, "" });
+	if (xrEnumerateApiLayerProperties(layerCount, &layerCount, layers.data()) != XR_SUCCESS)
+		return;
+
+	for (const auto& layer : layers) {
+		mprintf(("OpenXR API layer: %s (version %u)\n", layer.layerName, layer.layerVersion));
+
+		if (!strcmp(layer.layerName, "XR_APILAYER_NOVENDOR_toolkit")) {
+			ReleaseWarning(LOCATION, "OpenXR Toolkit is installed and active. There are known compatibility issues with FSO that will likely crash the game.\nPlease disable or uninstall OpenXR Toolkit to use VR with FSO.");
+		}
+	}
+}
+
 static bool openxr_init_instance() {
+	openxr_check_api_layers();
+
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
