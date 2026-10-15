@@ -19,10 +19,6 @@ constexpr int MAX_MAT_FILE_LEN = 1024 * 1024;
 void mat_warning(const SCP_string& text)
 {
 	Warning(LOCATION, "%s", text.c_str());
-	// Warning() only reaches the log in debug builds
-#ifdef NDEBUG
-	mprintf(("TEXTURE MATERIAL: %s\n", text.c_str()));
-#endif
 }
 
 bool at_line_end()
