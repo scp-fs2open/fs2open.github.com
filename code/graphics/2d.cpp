@@ -2184,7 +2184,30 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		//
 		// As such, window_res is effectively no longer optional, part of the core render path and must always be enabled.
 		// The only reason it is not yet refactored into an always-on thing is due to issues with FRED integration.
-		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
+		int window_width = width;
+		int window_height = height;
+
+		// In exclusive fullscreen, the window must match the monitor. Using the render resolution instead would require a
+		// video mode switch to that resolution, which may not exist as a display mode (leaving the window at a different
+		// size than window_res) and is repeated on every alt-tab.
+		if (!gr_is_viewport_window()) {
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+				auto displayMode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+				if (displayMode) {
+					window_width = displayMode->w;
+					window_height = displayMode->h;
+				} else {
+					mprintf(("Could not query desktop display mode for fullscreen window size: %s\n", SDL_GetError()));
+				}
+
+				SDL_QuitSubSystem(SDL_INIT_VIDEO);
+			} else {
+				mprintf(("Could not initialize SDL video for fullscreen window size: %s\n", SDL_GetError()));
+			}
+		}
+
+		mprintf(("Forcing window_res to %dx%d (render resolution %dx%d)\n", window_width, window_height, width, height));
+		Cmdline_window_res.emplace(static_cast<uint16_t>(window_width), static_cast<uint16_t>(window_height));
 	}
 
 	if (d_mode == GraphicsAPI::Default) {
