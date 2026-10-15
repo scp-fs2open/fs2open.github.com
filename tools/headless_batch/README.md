@@ -2,7 +2,7 @@
 
 Run many FreeSpace Open missions as fast as the CPU allows, with no window, no rendering and no audio, then
 collect one result per run. Each run is a separate engine process with its own workspace, seed and UDP port,
-so runs cannot affect each other and the batch scales with the number of cores.
+so runs share no in-process state and the batch scales with the number of cores.
 
 This directory has the runner (`run_batch.py`), its tests (`test_run_batch.py`) and a starting plan
 (`example.plan.json`). The engine side of the feature is the set of `-headless` command-line options described
@@ -12,12 +12,12 @@ below.
 
 | Option | Effect |
 |---|---|
-| `-headless` | No window, renderer, audio, speech, joystick, HUD/radar presentation or movies. Graphics runs on the stub backend. Implies `-unthrottled`. |
-| `-unthrottled` | Run frames as fast as possible. Mission time comes from a virtual clock that advances only by simulated time, so results do not depend on how fast the machine is. Wall-clock timers (profiling, UI deadlines) keep real time. |
-| `-fixed-dt <seconds>` | Length of one simulation step. Default 1/30; must be in (0, 0.25]. It sets the step, it does not enlarge the engine's integration step. |
-| `-max-sim-time <seconds>` | End the run once this much mission time has been simulated. Must be above 0. |
+| `-headless` | No window, renderer, audio, speech, joystick, HUD/radar presentation or movies. Graphics runs on the stub backend. Implies `-unthrottled`, `-nomovies` and `-noninteractive` (warnings are only logged; an error or a Lua error ends the process instead of opening a dialog). |
+| `-unthrottled` | Run frames as fast as possible. Mission time comes from a virtual clock that advances only by simulated time, which removes the main dependence of results on machine speed (see Reproducibility for what remains). Wall-clock timers (profiling, UI deadlines) keep real time. |
+| `-fixed-dt <seconds>` | Length of one simulation step. Default 1/30; must be in [1/65536, 0.25]. It sets the step, it does not enlarge the engine's integration step. |
+| `-max-sim-time <seconds>` | End the run once this much mission time has been simulated. Must be above 0 and at most 32767 (the range of the engine's fixed-point mission clock). |
 | `-sim-result <path>` | When the engine shuts down, write a JSON file describing the run (below). |
-| `-seed <n>` | Existing option. With this change it seeds every game RNG: the main generator, the generator that `RandomRange` instances use, and the ship firepoint, asteroid-split and random-message-sender shuffles. |
+| `-seed <n>` | Existing option. With this change it seeds the generators the simulation uses: the main generator, the generator that `RandomRange` instances use, and the ship firepoint, asteroid-split and random-message-sender shuffles. |
 
 `-sim-result` file:
 
@@ -27,8 +27,8 @@ below.
   "time_limit_reached": true, "termination": "time_limit" }
 ```
 
-`termination` is `time_limit` when `-max-sim-time` ended the run and `mission_exit` when the mission or the game
-ended it first.
+`termination` is `time_limit` when `-max-sim-time` ended the run, `start_failed` when the default loadout could not
+be committed so the mission never started, and `mission_exit` when the mission or the game ended it first.
 
 ## What runs and what does not
 
@@ -40,11 +40,13 @@ engine therefore runs them once per simulated frame through `gr_process_frame_ca
 rendered path uses. A mod that runs its game logic from `On Frame` behaves as usual.
 
 Screens that wait for a person are passed automatically. `-start_mission` normally stops at the fiction, command
-briefing, red alert and briefing screens and at the debriefing. In a headless single-player run the engine goes
-straight to the briefing state, takes the default loadout through the same `commit_pressed()` call it uses for
-missions flagged no-briefing, and enters the mission. When the mission ends it leaves the debriefing by quitting,
-so the result file is written. If the default loadout cannot be committed (for example a required weapon is not
-on any ship) the run ends with a warning in the engine log.
+briefing, red alert and briefing screens and at the debriefing. In a headless single-player run the engine skips
+the fiction and command briefing. At the briefing it takes the default loadout through the same `commit_pressed()`
+call it uses for missions flagged no-briefing; at the red alert screen it continues into the mission as that
+screen's button does. When the mission ends it leaves the debriefing by quitting, so the result file is written.
+If the default loadout cannot be committed (for example a required weapon is not on any ship) the run ends with a
+warning in the engine log and `start_failed` in the result. Any other modal popup is logged and answered as if
+cancelled, unless a script handles `On Dialog Frame`.
 
 Skipped: renderer setup and frame rendering, sound and speech, input devices, HUD and radar, camera and photo
 mode interpolation, the intro movie, and real-time frame pacing. Particle, trail, shockwave, asteroid and nebula
@@ -94,7 +96,8 @@ Unknown keys are rejected, so a misspelt option fails instead of being ignored.
 For run *i* with seed *s* the runner:
 
 1. creates `output_dir/runs/r000i/w`, hardlinks the root `.vp` files and every `.vp` inside the mod folders,
-   and copies the rest, so a run can never write through to the base workspace;
+   and copies the rest, so a run does not write through to the base workspace (the engine only reads `.vp` files;
+   a run that rewrote one in place would change the base too);
 2. starts `engine -portable_mode -parse_cmdline_only -port <base_port+i> -start_mission <mission> -pilot <pilot>
    -headless -fixed-dt <dt> -max-sim-time <t> -sim-result <path> -noninteractive -nomovies -seed <s>`, then
    `-mod` if any, then `extra_args`, with the workspace as the working directory;
@@ -103,8 +106,8 @@ For run *i* with seed *s* the runner:
 
 A run is `ok` only if the engine exited with code 0 and wrote a readable result file whose `termination` is
 `time_limit` or `mission_exit`. A nonzero exit, a missing or unreadable result, a mission that never started, or a
-timeout is a failure and is recorded with the reason; the batch never reports success for
-a run it could not verify. On Windows the runner turns off crash and missing-file dialogs for its children so a
+timeout is a failure and is recorded with the reason; a run whose result could not be read is not
+reported as a success. On Windows the runner turns off crash and missing-file dialogs for its children so a
 crashing engine exits instead of blocking an unattended batch (this changes no registry or machine setting).
 
 ## Output
@@ -136,7 +139,8 @@ fs2_open_x64.exe -portable_mode -parse_cmdline_only -mod mymod -start_mission my
 A script that draws its own random numbers (for example Lua `math.random()`, which uses a separate generator)
 must seed itself from the run seed. In our tests two short same-seed runs of one scenario were identical, while
 two same-seed runs of a long scenario with many AI-driven ships diverged (24 versus 25 losses), and the cause was
-not found. Treat same-seed runs as correlated, not identical, and use several seeds for any comparison. The
+not found (a real-clock afterburner cooldown, since fixed for `-unthrottled`, is a possible but unconfirmed
+cause). Treat same-seed runs as correlated, not identical, and use several seeds for any comparison. The
 engine has no fixed-step mode outside this feature, so rendered and headless runs of one mission are not
 expected to match frame for frame either.
 

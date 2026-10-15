@@ -63,6 +63,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -210,6 +211,7 @@
 
 #include <cinttypes>
 #include <stdexcept>
+#include <jansson.h>
 
 #include "imgui.h"
 
@@ -353,6 +355,8 @@ int Show_area_effect = 0;
 object	*Last_view_target = nullptr;
 
 int dogfight_blown = 0;
+static uint64_t Sim_run_wall_start_us = 0;
+static bool Sim_run_start_failed = false;
 
 int	frame_int = -1;
 float frametimes[FRAME_FILTER];
@@ -1905,6 +1909,7 @@ void game_init()
 
 	// Initialize the timer before the os
 	timer_init();
+	timer_set_simulation_clock_enabled(Cmdline_unthrottled);
 
 	if (LoggingEnabled) {
 		outwnd_init();
@@ -2013,11 +2018,11 @@ void game_init()
 // SOUND INIT START
 /////////////////////////////
 
-	if ( !Is_standalone ) {
+	if ( !Is_standalone && !Cmdline_headless ) {
 		snd_init();
 	}
 
-	if(!fsspeech_init()) {
+	if (!Cmdline_headless && !fsspeech_init()) {
 		mprintf(("Failed to init speech\n"));
 	}
 
@@ -2026,7 +2031,7 @@ void game_init()
 /////////////////////////////
 
 	std::unique_ptr<SDLGraphicsOperations> sdlGraphicsOperations;
-	if (!Is_standalone) {
+	if (!Is_standalone && !Cmdline_headless) {
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
@@ -2146,7 +2151,7 @@ void game_init()
 	log_string(LOGFILE_EVENT_LOG,"FS2_Open Mission Log - Opened \n\n", 1);
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
-	if(!Is_standalone){
+	if(!Is_standalone && !Cmdline_headless){
 		io::joystick::init();
 	}
 
@@ -2210,7 +2215,7 @@ void game_init()
 	pilot_load_pic_list();	
 	pilot_load_squad_pic_list();
 
-	if (!Is_standalone) {
+	if (!Is_standalone && !Cmdline_headless) {
 		// Load the default cursor and enable it
 		io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
 		if (cursor) {
@@ -2255,7 +2260,7 @@ void game_init()
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
 
-	if ( !Is_standalone ) {
+	if ( !Is_standalone && !Cmdline_headless ) {
 #ifdef WITH_FFMPEG
 		libs::ffmpeg::initialize();
 #endif
@@ -3771,22 +3776,19 @@ void game_simulation_frame()
 {
 	TRACE_SCOPE(tracing::Simulation);
 
-	//Do camera stuff
-	//This is for the warpout cam
-	if ( Player->control_mode != PCM_NORMAL )
-		Warp_camera.do_frame(flFrametime);
+	if (!Cmdline_headless) {
+		// Camera and photo-mode interpolation are presentation-only.
+		if (Player->control_mode != PCM_NORMAL)
+			Warp_camera.do_frame(flFrametime);
 
-	//Do ingame cutscenes stuff
-	if(!Time_compression_locked)
-	{
-		cam_do_frame(flFrametime);
-	}
-	else
-	{
-		cam_do_frame(flRealframetime);
-	}
+		if (!Time_compression_locked) {
+			cam_do_frame(flFrametime);
+		} else {
+			cam_do_frame(flRealframetime);
+		}
 
-	photo_mode_do_frame(flRealframetime);
+		photo_mode_do_frame(flRealframetime);
+	}
 
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
@@ -4370,14 +4372,14 @@ void game_frame(bool paused)
 		}
 
 		//	Note: These are done even before the player enters, else buffers can overflow.
-		if (! (Game_mode & GM_STANDALONE_SERVER)){
+		if (! (Game_mode & GM_STANDALONE_SERVER) && !Cmdline_headless){
 			radar_frame_init();
 		}
 
 		shield_frame_init();
 
 		if ( !Pre_player_entry && actually_playing ) {
-			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
+			if (! (Game_mode & GM_STANDALONE_SERVER) && !Cmdline_headless ) {
 
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
 					game_process_keys();
@@ -4411,9 +4413,16 @@ void game_frame(bool paused)
 			return;
 		}
 
+		if (Cmdline_headless && !Pre_player_entry && !(Game_mode & GM_STANDALONE_SERVER)) {
+			// gr_flip normally dispatches these callbacks after simulation. Mods
+			// commonly run authoritative game logic (AI, economy, objectives) from
+			// OnFrame, so preserve that work while omitting presentation in headless runs.
+			gr_process_frame_callbacks();
+		}
+
 	}
 
-	if (!Pre_player_entry) {
+	if (!Pre_player_entry && !Cmdline_headless) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			DEBUG_GET_TIME( clear_time1 )
 			if (!openxr_enabled()) {
@@ -4568,6 +4577,42 @@ void game_set_frametime(int state)
 	fix thistime;
 	float frame_cap_diff;
 	bool do_pre_player_skip = false;
+	if (Cmdline_unthrottled && state == GS_STATE_GAME_PLAY) {
+		// Keep the engine's normal authoritative frame/update path, but make its
+		// clock independent of wall time. Gameplay timestamps advance once after
+		// each simulation frame in game_do_frame().
+		timer_start_frame();
+
+		const fix real_frametime = Pre_player_entry ? (F1_0 / 4) : fl2f(Cmdline_fixed_dt);
+
+		if (Game_time_compression != Desired_time_compression) {
+			if (Time_compression_change_rate == 0) {
+				Game_time_compression = Desired_time_compression;
+			} else {
+				const bool ascending = Desired_time_compression > Game_time_compression;
+				Game_time_compression += fixmul(Time_compression_change_rate, real_frametime);
+				if ((ascending && Game_time_compression > Desired_time_compression)
+					|| (!ascending && Game_time_compression < Desired_time_compression)) {
+					Game_time_compression = Desired_time_compression;
+				}
+			}
+		}
+
+		Frametime = fixmul(real_frametime, Game_time_compression);
+		if (Frametime <= 0) {
+			Frametime = 1;
+		}
+		flRealframetime = f2fl(real_frametime);
+		flFrametime = f2fl(Frametime);
+		Last_time = timer_get_fixed_seconds();
+		Last_frame_timestamp = _timestamp();
+
+		if (FrametimeOverall > (INT_MAX - Frametime)) {
+			FrametimeOverall = 0;
+		}
+		FrametimeOverall += Frametime;
+		return;
+	}
 
 	// sync all timestamps across the entire frame
 	timer_start_frame();
@@ -4716,6 +4761,15 @@ void game_do_frame(bool set_frametime)
 	last_single_step = game_single_step;
 
 	game_frame();
+
+	if (Cmdline_unthrottled) {
+		timer_advance_simulation_clock(Frametime);
+	}
+
+	if (Cmdline_max_sim_time > 0.0f && timestamp_get_mission_time() >= fl2f(Cmdline_max_sim_time)) {
+		Cmdline_sim_time_limit_reached = true;
+		gameseq_post_event(GS_EVENT_QUIT_GAME);
+	}
 }
 
 void multi_maybe_do_frame()
@@ -6010,9 +6064,10 @@ void game_enter_state( int old_state, int new_state )
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
 			// determine where to go next
-			if (mission_has_fiction()) {
+			// a headless run has nobody to read the fiction or command briefing
+			if (!Cmdline_headless && mission_has_fiction()) {
 				gameseq_post_event(GS_EVENT_FICTION_VIEWER);
-			} else if (mission_has_cmd_brief()) {
+			} else if (!Cmdline_headless && mission_has_cmd_brief()) {
 				gameseq_post_event(GS_EVENT_CMD_BRIEF);
 			} else if (red_alert_mission()) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
@@ -6155,13 +6210,13 @@ void game_enter_state( int old_state, int new_state )
 			// Goober5000 - people may not have realized that pausing causes this state to be re-entered
 			if ((old_state != GS_STATE_GAME_PAUSED) && (old_state != GS_STATE_MULTI_PAUSED) && (old_state != GS_STATE_MAIN_MENU))
 			{
-				if ( !Is_standalone )
+				if ( !Is_standalone && !Cmdline_headless )
 					radar_mission_init();
 
 				//Set the current hud
 				set_current_hud();
 
-				if ( !Is_standalone ) {
+				if ( !Is_standalone && !Cmdline_headless ) {
 					ship_init_cockpit_displays(Player_ship);
 				}
 			}
@@ -6613,11 +6668,27 @@ void game_do_state(int state)
 		
 		case GS_STATE_BRIEFING:
 			game_set_frametime(GS_STATE_BRIEFING);
+			if (Cmdline_headless && !(Game_mode & GM_MULTIPLAYER)) {
+				// Same as the engine does for missions flagged no-briefing: take the default loadout and enter.
+				const auto commit_status = commit_pressed(true);
+				if (commit_status != commit_pressed_status::SUCCESS) {
+					Warning(LOCATION, "Headless run could not commit the default loadout (status %d); ending the run.",
+						static_cast<int>(commit_status));
+					Sim_run_start_failed = true;
+					gameseq_post_event(GS_EVENT_QUIT_GAME);
+				}
+				break;
+			}
 			brief_do_frame(flFrametime);
 			break;
 
 		case GS_STATE_DEBRIEF:
 			game_set_frametime(GS_STATE_DEBRIEF);
+			if (Cmdline_headless && !(Game_mode & GM_MULTIPLAYER)) {
+				// The mission is over and nobody will dismiss the debriefing; the run ends with its result.
+				gameseq_post_event(GS_EVENT_QUIT_GAME);
+				break;
+			}
 			debrief_do_frame(flFrametime);
 			break;
 
@@ -6696,6 +6767,11 @@ void game_do_state(int state)
 
 		case GS_STATE_RED_ALERT:
 			game_set_frametime(GS_STATE_RED_ALERT);
+			if (Cmdline_headless && !(Game_mode & GM_MULTIPLAYER)) {
+				// What the screen's Continue button does in single player: enter the mission.
+				gameseq_post_event(GS_EVENT_ENTER_GAME);
+				break;
+			}
 			red_alert_do_frame(flFrametime);
 			break;
 
@@ -7027,7 +7103,7 @@ int game_main(int argc, char *argv[])
 		return 1;
 	}
 
-	if (!Is_standalone && !headtracking::init())
+	if (!Is_standalone && !Cmdline_headless && !headtracking::init())
 	{
 		mprintf(("Headtracking is not enabled...\n"));
 	}
@@ -7060,11 +7136,12 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !Cmdline_headless && !skip_intro) {
 		movie::play("intro.mve");
 	}
 
 	game_start_time();
+	Sim_run_wall_start_us = timer_get_microseconds();
 
 	if (Is_standalone) {
 		gameseq_post_event(GS_EVENT_STANDALONE_MAIN);
@@ -7098,6 +7175,29 @@ int game_main(int argc, char *argv[])
 //
 void game_shutdown(void)
 {
+	if (Cmdline_sim_result != nullptr) {
+		const auto sim_time = f2fl(timestamp_get_mission_time());
+		const auto wall_time = Sim_run_wall_start_us > 0
+			? (timer_get_microseconds() - Sim_run_wall_start_us) / static_cast<double>(MICROSECONDS_PER_SECOND)
+			: 0.0;
+		json_t* result = json_pack("{s:i,s:s,s:i,s:f,s:f,s:f,s:b,s:s}",
+			"schema", 1,
+			"mission", Game_current_mission_filename,
+			"seed", static_cast<int>(Cmdline_rng_seed),
+			"fixed_dt", Cmdline_fixed_dt,
+			"max_sim_time", Cmdline_max_sim_time,
+			"simulated_seconds", sim_time,
+			"time_limit_reached", Cmdline_sim_time_limit_reached ? 1 : 0,
+			"termination", Cmdline_sim_time_limit_reached ? "time_limit" : Sim_run_start_failed ? "start_failed" : "mission_exit");
+		if (result != nullptr) {
+			json_object_set_new(result, "wall_seconds", json_real(wall_time));
+			if (json_dump_file(result, Cmdline_sim_result, JSON_INDENT(2) | JSON_SORT_KEYS) != 0) {
+				Warning(LOCATION, "Failed to write simulation result to '%s'.", Cmdline_sim_result);
+			}
+			json_decref(result);
+		}
+	}
+
 	events::EngineShutdown();
 
 	headtracking::shutdown();
@@ -7111,7 +7211,7 @@ void game_shutdown(void)
 #endif
 
 	// don't ever flip a page on the standalone!
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
+	if(!(Game_mode & GM_STANDALONE_SERVER) && !Cmdline_headless){
 		gr_reset_clip();
 		gr_clear();
 		gr_flip();
@@ -7924,7 +8024,7 @@ void game_title_screen_display()
 {
 	// anything that shares code between standalone and normal cannot make
 	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
-	if (Is_standalone) {
+	if (Is_standalone || Cmdline_headless) {
 		return;
 	}
 	
@@ -8003,7 +8103,7 @@ void game_title_screen_close()
 {
 	// anything that shares code between standalone and normal cannot make
 	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
-	if (Is_standalone) {
+	if (Is_standalone || Cmdline_headless) {
 		return;
 	}
 

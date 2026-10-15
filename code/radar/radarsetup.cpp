@@ -10,6 +10,7 @@
 
 
 #include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
@@ -174,6 +175,10 @@ void radar_stuff_blip_info(object *objp, int is_bright, color **blip_color, int 
 
 void radar_plot_object( object *objp )
 {
+	if (Cmdline_headless) {
+		return;
+	}
+
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;

@@ -523,6 +523,11 @@ cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // 
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
+cmdline_parm headless_arg("-headless", NULL, AT_NONE);
+cmdline_parm unthrottled_arg("-unthrottled", NULL, AT_NONE);
+cmdline_parm fixed_dt_arg("-fixed-dt", "Authoritative simulation step in seconds", AT_FLOAT);
+cmdline_parm max_sim_time_arg("-max-sim-time", "End after this many simulated seconds", AT_FLOAT);
+cmdline_parm sim_result_arg("-sim-result", "Write the simulation result JSON to this path", AT_STRING);
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
@@ -565,6 +570,12 @@ bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
 bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
+bool Cmdline_headless = false;
+bool Cmdline_unthrottled = false;
+float Cmdline_fixed_dt = 1.0f / 30.0f;
+float Cmdline_max_sim_time = 0.0f;
+char *Cmdline_sim_result = nullptr;
+bool Cmdline_sim_time_limit_reached = false;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
 bool Cmdline_json_profiling = false;
@@ -2376,6 +2387,57 @@ bool SetCmdlineParams()
 	if (benchmark_mode_arg.found())
 	{
 		Cmdline_benchmark_mode = true;
+	}
+
+	if (headless_arg.found())
+	{
+		Cmdline_headless = true;
+		Cmdline_unthrottled = true;
+		Cmdline_freespace_no_sound = 1;
+		Cmdline_freespace_no_music = 1;
+		Cmdline_nomovies = 1;
+		// nobody can dismiss an error or warning dialog, so report and exit instead (as -standalone does)
+		Cmdline_noninteractive = true;
+	}
+
+	if (unthrottled_arg.found())
+	{
+		Cmdline_unthrottled = true;
+	}
+
+	if (fixed_dt_arg.found())
+	{
+		const float dt = fixed_dt_arg.get_float();
+		// a step below the fixed-point resolution (1/65536 s) would round to zero; written as a positive range
+		// test so that NaN is rejected too
+		if (!(dt >= 1.0f / 65536.0f && dt <= 0.25f))
+		{
+			Error(LOCATION, "-fixed-dt must be finite and in the range [1/65536, 0.25] seconds.");
+			return false;
+		}
+		Cmdline_fixed_dt = dt;
+	}
+
+	if (max_sim_time_arg.found())
+	{
+		const float max_sim_time = max_sim_time_arg.get_float();
+		// mission time is 16.16 fixed point, so it cannot count past 32767 seconds
+		if (!(max_sim_time > 0.0f && max_sim_time <= 32767.0f))
+		{
+			Error(LOCATION, "-max-sim-time must be finite, greater than zero and at most 32767 seconds.");
+			return false;
+		}
+		Cmdline_max_sim_time = max_sim_time;
+	}
+
+	if (sim_result_arg.found())
+	{
+		Cmdline_sim_result = sim_result_arg.str();
+	}
+
+	if (Cmdline_unthrottled)
+	{
+		Cmdline_NoFPSCap = 1;
 	}
 
 	if (pilot_arg.found())
