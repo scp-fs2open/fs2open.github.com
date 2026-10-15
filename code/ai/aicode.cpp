@@ -11653,6 +11653,9 @@ void ai_cleanup_dock_mode_objective(object *objp)
 
 void ai_release_queued_rearm_target(const ai_goal *goal, int how)
 {
+	if (!The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stranded_rearm_queue])
+		return;
+
 	// clients mirror only part of the goal list; the server's release reaches them by packet
 	if (MULTIPLAYER_CLIENT)
 		return;

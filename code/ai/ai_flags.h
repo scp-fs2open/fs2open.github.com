@@ -202,6 +202,7 @@ namespace AI {
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
 		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
+		Fix_stranded_rearm_queue,	// a ship waiting in a support ship's rearm queue is released when that queue entry is dropped, instead of waiting forever
 
 		NUM_VALUES
 	};
