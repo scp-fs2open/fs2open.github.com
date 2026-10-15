@@ -6,7 +6,7 @@
 
 namespace particle {
 	class ConeVolume : public ParticleVolume {
-		friend int ::parse_weapon(int, bool, const char*);
+		friend int ::parse_weapon(int, bool, const char*, bool);
 
 		::util::ParsedRandomFloatRange m_deviation;
 		::util::ParsedRandomFloatRange m_length;
