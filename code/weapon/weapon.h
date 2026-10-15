@@ -961,6 +961,7 @@ struct weapon_info
 	bool has_display_name() const;
 
 	void reset();
+	void clone(const weapon_info& other);
 };
 
 extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];
