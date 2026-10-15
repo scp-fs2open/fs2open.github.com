@@ -133,6 +133,9 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setOldNebulaBank(int deg);
 	static int getOldNebulaHeading();
 	void setOldNebulaHeading(int deg);
+	// the mission's $FS1 Nebula: line: -1 follows the game_settings.tbl switch, 1 draws, 0 does not
+	static int getFs1NebulaMissionSwitch();
+	void setFs1NebulaMissionSwitch(int value);
 
 	// ambient light group
 	static int getAmbientR();

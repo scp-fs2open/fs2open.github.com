@@ -50,6 +50,7 @@ public:
 	CString	m_neb_intensity;	
 	int		m_nebula_color;
 	int		m_nebula_index;
+	int		m_fs1_neb_mission;
 	int		m_bank;
 	int		m_heading;
 	int		m_pitch;
@@ -133,6 +134,7 @@ protected:
 	afx_msg void OnOK();	
 	afx_msg void OnSelchangeNebcolor();
 	afx_msg void OnSelchangeNebpattern();
+	afx_msg void OnSelchangeFs1NebMission();
 	afx_msg void OnFullNeb();
 	afx_msg void OnNeb2PaletteOverride();
 	afx_msg void OnSelchangeNeb2Texture();

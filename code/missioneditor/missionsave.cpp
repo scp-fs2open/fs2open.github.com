@@ -954,17 +954,27 @@ int Fred_mission_save::save_bitmaps()
 	}
 	// neb 1 stuff
 	else {
-		if (Nebula_index >= 0) {
+		// a name the tables don't know is written back as it was loaded
+		if (Nebula_index >= 0 || !Nebula_unknown_pattern.empty()) {
 			if (optional_string_fred("+Nebula:")) {
 				parse_comments();
 			} else {
 				fout("\n+Nebula:");
 			}
-			fout(" %s", Nebula_filenames[Nebula_index]);
+			fout(" %s", Nebula_index >= 0 ? generated_nebula_pattern_name(Nebula_index) : Nebula_unknown_pattern.c_str());
+
+			// +Color: is required, so never write it empty
+			const char* color_name = generated_nebula_color_name(Mission_palette);
+			if (!Nebula_unknown_color.empty())
+				color_name = Nebula_unknown_color.c_str();
+			else if (*color_name == '\0')
+				color_name = generated_nebula_color_name(generated_nebula_default_color());
+			if (*color_name == '\0')
+				color_name = "Blue";
 
 			required_string_fred("+Color:");
 			parse_comments();
-			fout(" %s", Nebula_colors[Mission_palette]);
+			fout(" %s", color_name);
 
 			required_string_fred("+Pitch:");
 			parse_comments();
@@ -977,6 +987,7 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Heading:");
 			parse_comments();
 			fout(" %d", Nebula_heading);
+
 		}
 	}
 
@@ -1087,6 +1098,21 @@ int Fred_mission_save::save_bitmaps()
 		fso_comment_pop();
 	} else {
 		bypass_comment(";;FSO 3.6.9;; $Environment Map:");
+	}
+
+	if (Nebula_mission_switch >= 0 && (Nebula_index >= 0 || !Nebula_unknown_pattern.empty()) &&
+		!The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		// bypass_comment() edits only the raw text, so the parsed text can still hold a line the raw text lost
+		if (strstr(raw_ptr, "$FS1 Nebula:") != nullptr && optional_string_fred("$FS1 Nebula:")) {
+			parse_comments(2);
+			fout(" %s", Nebula_mission_switch == 1 ? "YES" : "NO");
+		} else {
+			fout_version("\n\n$FS1 Nebula: %s", Nebula_mission_switch == 1 ? "YES" : "NO");
+		}
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $FS1 Nebula:", "#Asteroid Fields");
 	}
 
 	fso_comment_pop(true);

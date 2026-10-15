@@ -370,8 +370,6 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		}
 	}
 
-	Assert(Mission_palette >= 0);
-	Assert(Mission_palette <= 98);
 	
 	// go through all ships and translate their callsign and alternate name indices	
 	objp = GET_FIRST(&obj_used_list);
