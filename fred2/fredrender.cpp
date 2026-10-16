@@ -116,7 +116,7 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
-bool Orbit_selection_center = false;
+bool Orbit_selection_midpoint = false;
 int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
@@ -1057,7 +1057,7 @@ void game_do_frame() {
 	}
 
 	if (Lookat_mode && query_valid_object()) {
-		vec3d center = selection_center();
+		vec3d center = selection_midpoint();
 		float dist = vm_vec_dist(&view_pos, &center);
 		vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	}
@@ -1289,12 +1289,12 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
-vec3d selection_center()
+vec3d selection_midpoint()
 {
 	vec3d center;
 	float radius;
 
-	if (Orbit_selection_center && Marked > 1 && get_object_bounds(true, &center, &radius)) {
+	if (Orbit_selection_midpoint && Marked > 1 && get_object_bounds(true, &center, &radius)) {
 		return center;
 	}
 
@@ -1309,7 +1309,7 @@ vec3d orbit_camera_get_pivot()
 
 	if (query_valid_object()) {
 		// Pivot on the selection
-		pivot = selection_center();
+		pivot = selection_midpoint();
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;

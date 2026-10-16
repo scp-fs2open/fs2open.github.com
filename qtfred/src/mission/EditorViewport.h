@@ -127,7 +127,7 @@ class EditorViewport {
 
 	vec3d orbitCameraGetPivot();
 
-	vec3d selectionCenter(int cur_object_index) const;
+	vec3d selectionMidpoint(int cur_object_index) const;
 
 	int object_check_collision(object* objp, vec3d* p0, vec3d* p1, vec3d* hitpos);
 

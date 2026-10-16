@@ -181,7 +181,7 @@ void EditorViewport::loadSettings() {
 	view.Label_font_scale                  = settings.value("view_label_font_scale",                  view.Label_font_scale).toFloat();
 	camera.setInvertOrbitX(settings.value("camera_invert_orbit_x", camera.getInvertOrbitX()).toBool());
 	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
-	camera.setOrbitSelectionCenter(settings.value("camera_orbit_selection_center", camera.getOrbitSelectionCenter()).toBool());
+	camera.setOrbitSelectionMidpoint(settings.value("camera_orbit_selection_midpoint", camera.getOrbitSelectionMidpoint()).toBool());
 	settings.endGroup();
 }
 
@@ -231,7 +231,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_label_font_scale",                  view.Label_font_scale);
 	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
 	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
-	settings.setValue("camera_orbit_selection_center",          camera.getOrbitSelectionCenter());
+	settings.setValue("camera_orbit_selection_midpoint",          camera.getOrbitSelectionMidpoint());
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
@@ -501,7 +501,7 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 	}
 
 	if (camera.getLookatMode() && query_valid_object(cur_object_index)) {
-		vec3d center = selectionCenter(cur_object_index);
+		vec3d center = selectionMidpoint(cur_object_index);
 		float dist = vm_vec_dist(&camera.view_pos, &center);
 		vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
 	}
@@ -665,12 +665,12 @@ void EditorViewport::level_object(matrix* orient) {
 	vm_fix_matrix(orient);
 }
 
-vec3d EditorViewport::selectionCenter(int cur_object_index) const
+vec3d EditorViewport::selectionMidpoint(int cur_object_index) const
 {
 	vec3d center;
 	float radius;
 
-	if (camera.getOrbitSelectionCenter() && editor->getNumMarked() > 1 && get_object_bounds(true, &center, &radius)) {
+	if (camera.getOrbitSelectionMidpoint() && editor->getNumMarked() > 1 && get_object_bounds(true, &center, &radius)) {
 		return center;
 	}
 
@@ -683,7 +683,7 @@ vec3d EditorViewport::orbitCameraGetPivot()
 
 	if (query_valid_object(editor->currentObject)) {
 		// Pivot on the selection
-		pivot = selectionCenter(editor->currentObject);
+		pivot = selectionMidpoint(editor->currentObject);
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;

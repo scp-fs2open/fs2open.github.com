@@ -2862,7 +2862,7 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 		vec3d v, loc;
 		matrix m;
 
-		loc = _viewport->selectionCenter(fred->currentObject);
+		loc = _viewport->selectionMidpoint(fred->currentObject);
 		vm_vec_sub(&v, &loc, &_viewport->camera.view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {

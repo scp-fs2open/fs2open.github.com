@@ -234,7 +234,7 @@ BOOL CFREDApp::InitInstance() {
 	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
-	Orbit_selection_center = GetProfileInt("Preferences", "Orbit selection center", 0) != 0;
+	Orbit_selection_midpoint = GetProfileInt("Preferences", "Orbit selection midpoint", 0) != 0;
 	Outline_lod = GetProfileInt("Preferences", "Outline LOD", 1);
 	Fred_label_font_scale = GetProfileInt("Preferences", "Label font scale percent", 100) / 100.0f;
 	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
@@ -540,7 +540,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
-	WriteProfileInt("Preferences", "Orbit selection center", Orbit_selection_center ? 1 : 0);
+	WriteProfileInt("Preferences", "Orbit selection midpoint", Orbit_selection_midpoint ? 1 : 0);
 	WriteProfileInt("Preferences", "Outline LOD", Outline_lod);
 	WriteProfileInt("Preferences", "Label font scale percent", fl2ir(Fred_label_font_scale * 100.0f));
 	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);

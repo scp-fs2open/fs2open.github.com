@@ -32,7 +32,7 @@ class CameraController {
 	// Default to inverted, matching the engine's F3 lab and POF Tools.
 	bool _invertOrbitX = true;
 	bool _invertOrbitY = true;
-	bool _orbitSelectionCenter = false;
+	bool _orbitSelectionMidpoint = false;
 
 	void orbitCameraApply();
 
@@ -82,11 +82,11 @@ public:
 	bool getInvertOrbitY() const { return _invertOrbitY; }
 	void setInvertOrbitY(bool invert) { _invertOrbitY = invert; }
 
-	bool getOrbitSelectionCenter() const { return _orbitSelectionCenter; }
-	void setOrbitSelectionCenter(bool enabled)
+	bool getOrbitSelectionMidpoint() const { return _orbitSelectionMidpoint; }
+	void setOrbitSelectionMidpoint(bool enabled)
 	{
-		if (_orbitSelectionCenter != enabled) {
-			_orbitSelectionCenter = enabled;
+		if (_orbitSelectionMidpoint != enabled) {
+			_orbitSelectionMidpoint = enabled;
 			_orbitActive = false;
 		}
 	}

@@ -22,7 +22,7 @@ extern int Show_coordinates;        //!< Bool. If nonzero, draw the coordinates 
 extern int Show_outlines;           //!< Bool. If nonzero, draw each object's mesh. If models are shown, highlight them in white.
 extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh lines
 extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
-extern bool Orbit_selection_center;
+extern bool Orbit_selection_midpoint;
 extern int Outline_lod;				// The LOD to use for wireframe outlines (0 = highest detail, default 1)
 extern float Fred_label_font_scale;	// Multiplier applied to viewport text labels
 extern bool Always_save_display_names;	// When saving a mission, always write display names to the mission file even if the display name is not set.
@@ -106,7 +106,7 @@ void verticalize_controlled();
  */
 int select_object(int cx, int cy);
 
-vec3d selection_center();
+vec3d selection_midpoint();
 
 // Orbit camera functions
 vec3d orbit_camera_get_pivot();

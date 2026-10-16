@@ -56,7 +56,7 @@ private slots:
 	// Controls
 	void on_invertOrbitX_toggled(bool checked);
 	void on_invertOrbitY_toggled(bool checked);
-	void on_orbitSelectionCenter_toggled(bool checked);
+	void on_orbitSelectionMidpoint_toggled(bool checked);
 	void on_resetDefaultsButton_clicked();
 
 private: // NOLINT(readability-redundant-access-specifiers)
