@@ -232,6 +232,10 @@ HOOK_CONDITIONS_START(ShipDeathConditions)
 	HOOK_CONDITION_SHIPP(ShipDeathConditions, "", "that died.", dying_shipp);
 HOOK_CONDITIONS_END
 
+HOOK_CONDITIONS_START(ShipDamageConditions)
+	HOOK_CONDITION_SHIPP(ShipDamageConditions, "Target ", "that took resolved damage.", target_shipp);
+HOOK_CONDITIONS_END
+
 HOOK_CONDITIONS_START(SubsystemDeathConditions)
 	HOOK_CONDITION_SHIPP(SubsystemDeathConditions, "", "whose subsystem got destroyed.", affected_shipp);
 HOOK_CONDITIONS_END

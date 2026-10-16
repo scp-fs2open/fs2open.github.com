@@ -8,6 +8,8 @@
 
 #include "globalincs/pstypes.h"
 
+extern bool Cmdline_reuse_rng_seed;
+
 namespace util {
 
 thread_local std::mt19937 seeder {std::random_device()()};
@@ -52,6 +54,22 @@ void Random::seed(unsigned int val)
 {
 	Assert(val > 0);
 	SCP_rng.seed(val);
+}
+
+void Random::seed_ranges(unsigned int val)
+{
+	Assert(val > 0);
+	seeder.seed(val);
+}
+
+unsigned int Random::shuffle_seed()
+{
+	if (Cmdline_reuse_rng_seed) {
+		return static_cast<unsigned int>(next());
+	}
+
+	std::random_device rd;
+	return rd();
 }
 
 int Random::next()

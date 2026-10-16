@@ -9,6 +9,7 @@
 
 
 
+#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "hud/hudets.h"
@@ -43,6 +44,13 @@ static int		Player_afterburner_start_time;
 #define AFTERBURNER_LOOP_DELAY					200	// ms after engage, to start looping sound
 
 #define DISENGAGE_TIME								1500	// time in ms to play faded loop sound when afterburner disengages
+
+// Cooldowns run on the real clock, which an unthrottled run's simulated time does not follow; there they use
+// the mission clock instead, or they would last longer the faster the machine simulates.
+static int afterburner_clock_ms()
+{
+	return Cmdline_unthrottled ? timestamp() : timer_get_milliseconds();
+}
 
 
 /**
@@ -88,7 +96,7 @@ void afterburners_start(object *objp)
 
 	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
-	int now = timer_get_milliseconds();
+	int now = afterburner_clock_ms();
 
 	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
 
@@ -143,7 +151,7 @@ void afterburners_start(object *objp)
 	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::FWD);
 
 	if ( objp == Player_obj ) {
-		Player_afterburner_start_time = timer_get_milliseconds();
+		Player_afterburner_start_time = afterburner_clock_ms();
 		Player_disengage_timer = 1;
 		Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 
@@ -330,7 +338,7 @@ void afterburners_stop(object *objp, int key_released)
 		return;
 	}
 
-	shipp->afterburner_last_end_time = timer_get_milliseconds();
+	shipp->afterburner_last_end_time = afterburner_clock_ms();
 
 	if (scripting::hooks::OnAfterburnerEnd->isActive()) {
 		scripting::hooks::OnAfterburnerEnd->run(scripting::hooks::ShipSourceConditions{ shipp },
