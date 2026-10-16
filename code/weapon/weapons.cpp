@@ -5629,6 +5629,23 @@ void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
 }
 
 /**
+ * Make weapon stop homing and forget its target.
+ */
+static void weapon_lose_target(object *weapon_objp)
+{
+	weapon *wp = &Weapons[weapon_objp->instance];
+	bool had_homing_object = weapon_has_homing_object(wp);
+
+	wp->homing_object = &obj_used_list;
+	wp->homing_subsys = nullptr;
+	wp->target_num = -1;
+	wp->target_sig = -1;
+
+	if (MULTIPLAYER_MASTER && had_homing_object)
+		send_homing_weapon_info(weapon_objp->instance);
+}
+
+/**
  * Find object with signature "sig" and make weapon home on it.
  */
 void find_homing_object_by_sig(object *weapon_objp, int sig)
@@ -5638,20 +5655,16 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 
 	wp = &Weapons[weapon_objp->instance];
 
+	int shipnum = ship_get_by_signature(sig);
+	if (shipnum < 0) {
+		weapon_lose_target(weapon_objp);
+		return;
+	}
+
 	// save the old object so that multiplayer masters know whether to send a homing update packet
 	old_homing_objp = wp->homing_object;
 
-	for (auto sop: list_range(&Ship_obj_list)) {
-		auto objp = &Objects[sop->objnum];
-		if (objp->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
-		if (objp->signature == sig) {
-			wp->homing_object = objp;
-			wp->target_sig = objp->signature;
-			break;
-		}
-	}
+	wp->homing_object = &Objects[Ships[shipnum].objnum];
 
 	// if the old homing object is different that the new one, send a packet to clients
 	if ( MULTIPLAYER_MASTER && (old_homing_objp != wp->homing_object) ) {
@@ -5659,30 +5672,15 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 	}
 }
 
-bool aspect_should_lose_target(weapon* wp)
+static bool aspect_can_home_on_cmeasure(const object* objp)
 {
-	Assert(wp != NULL);
-	
-	if (wp->homing_object->signature != wp->target_sig) {
-		if (wp->homing_object->type == OBJ_WEAPON)
-		{
-			weapon_info* target_info = &Weapon_info[Weapons[wp->homing_object->instance].weapon_info_index];
+	if (objp->type != OBJ_WEAPON)
+		return false;
 
-			if (target_info->wi_flags[Weapon::Info_Flags::Cmeasure])
-			{
-				// Check if we can home on this countermeasure
-				bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
-					|| target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
+	auto target_info = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 
-				if (!home_on_cmeasure)
-				{
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
+	return target_info->wi_flags[Weapon::Info_Flags::Cmeasure]
+		&& (The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure] || target_info->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on]);
 }
 
 /**
@@ -5781,14 +5779,15 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	// AL 4-8-98: If original target for aspect lock missile is lost, stop homing
 	// WCS - or javelin
-	if (wip->is_locked_homing()) {
-		if ( wp->target_sig > 0 ) {
-			if (aspect_should_lose_target(wp))
-			{ 
-				wp->homing_object = &obj_used_list;
-				return;
-			}
-		}
+	// If the target dies, its object slot is freed and may be reused by an unrelated object;
+	// a countermeasure that decoyed this weapon is the only other object it may home on
+	if (wip->is_locked_homing() && (hobjp->signature != wp->target_sig) && !aspect_can_home_on_cmeasure(hobjp)) {
+		// a countermeasure this weapon can't home on breaks its lock
+		if ((hobjp->type == OBJ_WEAPON) && Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Cmeasure])
+			weapon_lose_target(obj);
+		else
+			find_homing_object_by_sig(obj, wp->target_sig);
+		return;
 	}
 
   	// AL 4-13-98: Stop homing on a subsystem if parent ship has changed
@@ -5847,38 +5846,27 @@ void weapon_home(object *obj, int num, float frame_time)
 			return;
 	}
 
-	// TODO maybe add flag to allow WF_LOCKED_HOMING to lose target when target is dead
-
+	// a locked-homing weapon that reaches here is homing on its target or a decoy
 	switch (hobjp->type) {
 	case OBJ_NONE:
-		if (wip->is_locked_homing()) {
-			find_homing_object_by_sig(obj, wp->target_sig);
-		}
-		else {
-			find_homing_object(obj, num);
-		}
+		find_homing_object(obj, num);
 		return;
 		break;
 	case OBJ_SHIP:
 		if (hobjp->signature != wp->target_sig) {
-			if (wip->is_locked_homing()) {
-				find_homing_object_by_sig(obj, wp->target_sig);
-			}
-			else {
-				find_homing_object(obj, num);
-			}
+			find_homing_object(obj, num);
 			return;
 		}
 		break;
 	case OBJ_WEAPON:
 	{
+		if (wip->is_locked_homing())
+			break;
+
 		weapon_info* hobj_infop = &Weapon_info[Weapons[hobjp->instance].weapon_info_index];
 
-		bool home_on_cmeasure = The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_lock_countermeasure]
-			|| hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure_aspect_home_on];
-
 		// don't home on countermeasures or non-bombs, that's handled elsewhere
-		if (((hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure]) && !home_on_cmeasure))
+		if (((hobj_infop->wi_flags[Weapon::Info_Flags::Cmeasure]) && !aspect_can_home_on_cmeasure(hobjp)))
 		{
 			break;
 		}
@@ -5887,12 +5875,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			break;
 		}
 
-		if (wip->is_locked_homing()) {
-			find_homing_object_by_sig(obj, wp->target_sig);
-		}
-		else {
-			find_homing_object(obj, num);
-		}
+		find_homing_object(obj, num);
 		break;
 	}
 	default:
