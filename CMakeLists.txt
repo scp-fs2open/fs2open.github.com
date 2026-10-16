@@ -36,10 +36,10 @@ set(FSO_BUILD_TYPES Debug Release FastDebug)
 
 if(is_multi_config)
 	set(CMAKE_CONFIGURATION_TYPES "${FSO_BUILD_TYPES}" CACHE STRING "Configuration types" FORCE)
-elseif(NOT DEFINED CMAKE_BUILD_TYPE)
+elseif(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
 	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
-	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${FS_BUILD_TYPES}")
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${FSO_BUILD_TYPES}")
 endif()
 
 set(FSO_LANGUAGES C CXX)
