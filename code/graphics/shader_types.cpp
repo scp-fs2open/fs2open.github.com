@@ -162,12 +162,13 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 	{SDR_TYPE_SHADOW_MAP_GEN, true, SDR_FLAG_SHADOW_FALLBACK, "GEOMETRY_FALLBACK", {}, "Use a geometry shader to select the cascade layer instead of writing gl_Layer from the vertex shader"}
 };
 
+static_assert(VATTRIB_MODEL_MATRIX + 4 <= 32, "vertex input mask is 32 bits wide");
+
 uint32_t shader_vertex_input_mask(const ShaderTypeInfo& info)
 {
 	uint32_t mask = 0;
 	for (auto attr : info.attributes) {
-		// A mat4 input spans four consecutive locations; a single bit here would
-		// make the Vulkan pipeline drop columns 1-3 as unused.
+		// The Vulkan pipeline drops every location the mask omits, so a mat4 needs all four of its bits.
 		const uint32_t locations = (attr == VATTRIB_MODEL_MATRIX) ? 4u : 1u;
 		mask |= ((1u << locations) - 1u) << attr;
 	}
