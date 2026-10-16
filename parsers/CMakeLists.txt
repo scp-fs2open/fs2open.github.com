@@ -50,3 +50,10 @@ add_parser(action_expression/ActionExpression.g4)
 target_include_directories(parsers PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 suppress_warnings(parsers)
+
+# Prevent warnings on files with no symbols in Xcode
+if(XCODE)
+	set_target_properties(parsers PROPERTIES
+		STATIC_LIBRARY_OPTIONS "-no_warning_for_no_symbols"
+	)
+endif()
