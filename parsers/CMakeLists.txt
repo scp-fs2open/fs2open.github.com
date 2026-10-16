@@ -51,9 +51,5 @@ target_include_directories(parsers PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
 suppress_warnings(parsers)
 
-# Prevent warnings on files with no symbols in Xcode
-if(XCODE)
-	set_target_properties(parsers PROPERTIES
-		STATIC_LIBRARY_OPTIONS "-no_warning_for_no_symbols"
-	)
-endif()
+# Prevent warnings on files with no symbols on Mac
+suppress_no_symbol_warnings(parsers)
