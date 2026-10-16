@@ -55,6 +55,14 @@ const ShaderTypeInfo* shader_get_type_info(shader_type type);
 // Lookup helper: find variant info by (type, flag). Returns nullptr if not found.
 const ShaderVariantInfo* shader_get_variant_info(shader_type type, int flag);
 
+/**
+ * @brief Bitmask of the vertex attribute locations a shader type reads.
+ *
+ * One bit per location; VATTRIB_MODEL_MATRIX contributes bits 8-11 because a
+ * mat4 input occupies four consecutive locations.
+ */
+uint32_t shader_vertex_input_mask(const ShaderTypeInfo& info);
+
 // Iterate all variants matching type whose flag bit is set in flags.
 void shader_for_each_active_variant(shader_type type, unsigned int flags, const std::function<void(const ShaderVariantInfo&)>& fn);
 
