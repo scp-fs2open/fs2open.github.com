@@ -33,7 +33,6 @@
 #include "parse/encrypt.h"
 #include "cfilesystem.h"
 
-
 #include <algorithm>
 #include <limits>
 
@@ -1106,70 +1105,90 @@ void cfread_string(char *buf, int n, CFILE *file)
 	} while (c != 0 );
 }
 
-// cfseek ignores the read limit, so it is checked here as cfread would have; a negative length counts as reaching the
-// end of the file, so a corrupt length inside a limited section throws
-static int string_len_to_read(int len, CFILE* file)
+struct string_len_header {
+	int len = 0;
+	int stored = 0;
+	int start = 0;
+	bool length_cut = false;
+};
+
+// cfseek ignores the read limit, so it is checked here as cfread would have; inside a limited section any length
+// that does not fit the file is corrupt and throws, so the loader drops the section
+static string_len_header read_string_len_header(CFILE* file)
 {
-	int remaining = std::max(cfilelength(file) - cftell(file), 0);
-	if (file->max_read_len != 0 &&
-		(file->raw_position + (len < 0 ? remaining : std::min(len, remaining))) > file->max_read_len) {
+	string_len_header h;
+	h.length_cut = cfread(&h.len, sizeof(h.len), 1, file) != 1;
+	h.len = INTEL_INT(h.len);
+	h.start = cftell(file);
+	int remaining = std::max(cfilelength(file) - h.start, 0);
+	if ((file->max_read_len != 0) &&
+		(h.length_cut || (h.len < 0) || (file->raw_position + h.len > file->max_read_len))) {
 		throw cfile::max_read_length(
-			"Attempted to read a string of length " + std::to_string(len) + " beyond length limit");
+			"Attempted to read a string of length " + std::to_string(h.len) + " beyond length limit");
 	}
-	return std::clamp(len, 0, remaining);
+	h.stored = h.length_cut ? 0 : std::clamp(h.len, 0, remaining);
+	return h;
 }
 
-void cfread_string_len(char *buf, int buffer_size, CFILE *file)
+// reads count of the stored characters and leaves the file just past the whole string; false if the read failed
+static bool read_string_len_body(const string_len_header& h, char* dest, int count, CFILE* file)
+{
+	bool ok = (count <= 0) || (cfread(dest, count, 1, file) == 1);
+	if (!ok || (h.stored > count)) {
+		cfseek(file, h.start + h.stored, CF_SEEK_SET);
+	}
+	return ok;
+}
+
+// warned last, so the file position is right even if a debug build stops here
+static void warn_string_len(const string_len_header& h, bool read_ok, CFILE* file)
+{
+	if (h.length_cut) {
+		Warning(LOCATION, "cfread_string_len: cut-off string length field in %s", cf_get_filename(file));
+	} else if (!read_ok) {
+		Warning(LOCATION,
+			"cfread_string_len: could not read a string of %d characters in %s",
+			h.stored,
+			cf_get_filename(file));
+	} else if (h.len != h.stored) {
+		Warning(LOCATION, "cfread_string_len: corrupt string length %d in %s", h.len, cf_get_filename(file));
+	}
+}
+
+void cfread_string_len(char* buf, int buffer_size, CFILE* file)
 {
 	Assertion(buffer_size > 0, "cfread_string_len needs room for at least the terminator, buffer: %i", buffer_size);
-	int len = cfread_int(file);
-	int stored = string_len_to_read(len, file);
-	int start = cftell(file);
-	if (buffer_size <= 0) {
-		cfseek(file, start + stored, CF_SEEK_SET);
+	string_len_header h = read_string_len_header(file);
+	int count = std::min(h.stored, std::max(buffer_size, 0));
+	bool read_ok = read_string_len_body(h, buf, count, file);
+	if (buffer_size > 0) {
+		int kept = read_ok ? count : 0;
+		bool cut = (kept == buffer_size) && (memchr(buf, 0, buffer_size) == nullptr);
+		buf[std::min(kept, buffer_size - 1)] = 0;
+		warn_string_len(h, read_ok, file);
+		if (read_ok && (h.len == h.stored) && cut) {
+			Warning(LOCATION,
+				"cfread_string_len: a string of %d characters was cut to fit a buffer of %d in %s",
+				h.len,
+				buffer_size,
+				cf_get_filename(file));
+		}
 		return;
 	}
-
-	int to_read = std::min(stored, buffer_size);
-	bool read_failed = (to_read > 0) && (cfread(buf, to_read, 1, file) != 1);
-	if (read_failed) {
-		to_read = 0;
-	}
-	bool cut = (to_read == buffer_size) && (memchr(buf, 0, buffer_size) == nullptr);
-	buf[std::min(to_read, buffer_size - 1)] = 0;
-
-	if (read_failed || stored > to_read) {
-		cfseek(file, start + stored, CF_SEEK_SET);
-	}
-
-	// warned last, so the file position is right even if a debug build stops here
-	if (read_failed) {
-		Warning(LOCATION, "cfread_string_len: could not read a string of %d characters in %s", stored, cf_get_filename(file));
-	} else if (len != stored) {
-		Warning(LOCATION, "cfread_string_len: corrupt string length %d in %s", len, cf_get_filename(file));
-	} else if (cut) {
-		Warning(LOCATION, "cfread_string_len: a string of %d characters was cut to fit a buffer of %d in %s", len,
-			buffer_size, cf_get_filename(file));
-	}
+	warn_string_len(h, read_ok, file);
 }
 
 SCP_string cfread_string_len(CFILE *file)
 {
-	int len = cfread_int(file);
-	int stored = string_len_to_read(len, file);
-	int start = cftell(file);
+	string_len_header h = read_string_len_header(file);
 
 	SCP_string str;
-	str.resize(stored);
-
-	bool read_failed = (stored > 0) && (cfread(str.data(), stored, 1, file) != 1);
-	if (read_failed) {
+	str.resize(h.stored);
+	bool read_ok = read_string_len_body(h, str.data(), h.stored, file);
+	if (!read_ok) {
 		str.clear();
-		cfseek(file, start + stored, CF_SEEK_SET);
-		Warning(LOCATION, "cfread_string_len: could not read a string of %d characters in %s", stored, cf_get_filename(file));
-	} else if (len != stored) {
-		Warning(LOCATION, "cfread_string_len: corrupt string length %d in %s", len, cf_get_filename(file));
 	}
+	warn_string_len(h, read_ok, file);
 
 	return str;
 }

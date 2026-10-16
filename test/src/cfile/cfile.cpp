@@ -585,3 +585,76 @@ TEST_F(CFileTest, string_len_zero_buffer_writes_nothing)
 	cfclose(fp);
 }
 #endif
+
+TEST_F(CFileTest, string_len_corrupt_length_in_last_section_throws)
+{
+	StringLenFile file;
+	file.add_int(-5);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, cfilelength(fp));
+	char buf[8];
+	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
+	cfclose(fp);
+
+	StringLenFile past_end;
+	past_end.add_int(1000000).add_chars("hi", 2);
+	fp = past_end.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, cfilelength(fp));
+	EXPECT_THROW(cfread_string_len(fp), cfile::max_read_length);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_cut_off_length_field_warns)
+{
+	StringLenFile file;
+	file.add_chars("\x05\x00", 2);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8] = "old";
+	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cftell(fp), cfilelength(fp));
+	cfclose(fp);
+
+	fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	SCP_string str;
+	expect_warning("length field", [&] { str = cfread_string_len(fp); });
+	EXPECT_EQ(str, "");
+	EXPECT_EQ(cftell(fp), cfilelength(fp));
+	cfclose(fp);
+}
+
+#ifdef NDEBUG
+TEST_F(CFileTest, string_len_zero_buffer_still_warns_on_corrupt_length)
+{
+	StringLenFile file;
+	file.add_int(-5);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[2] = {'X', 'X'};
+	expect_warning("corrupt string length -5", [&] { cfread_string_len(buf + 1, 0, fp); });
+	EXPECT_EQ(buf[0], 'X');
+	EXPECT_EQ(buf[1], 'X');
+	cfclose(fp);
+}
+#endif
+
+TEST_F(CFileTest, string_len_cut_off_length_field_inside_max_read_len_throws)
+{
+	StringLenFile file;
+	file.add_chars("\x00\x00", 2);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, cfilelength(fp));
+	char buf[8];
+	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
+	cfclose(fp);
+}
