@@ -18,3 +18,8 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 
 bool add_rpc(scripting::api::rpc_h_ref ref);
 void clean_rpc_refs();
+
+//True if an ordered packet stamped newRemote is older than the last accepted packet (stamped lastRemote) on its channel
+bool multi_lua_packet_is_stale(ushort lastRemote, ushort newRemote, int localDeltaMs);
+void multi_lua_reset_packet_order();
+void multi_lua_forget_player(short player_id);
