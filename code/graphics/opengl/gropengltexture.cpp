@@ -1164,6 +1164,8 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle, true);
 
+	bm_mark_used(bitmap_handle);
+
 	if (!bm_is_render_target(bitmap_handle) && t->bitmap_handle < 0)
 	{
 		GL_state.Texture.SetActiveUnit(tex_unit);

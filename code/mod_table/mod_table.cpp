@@ -55,6 +55,7 @@ int Default_fiction_viewer_ui;
 bool Enable_external_shaders;
 bool Enable_external_default_scripts;
 DefaultDetailPreset Default_detail_preset;
+int Gpu_texture_evict_after_missions;
 bool Full_color_head_anis;
 bool Dont_automatically_select_turret_when_targeting_ship;
 bool Automatically_select_subsystem_under_reticle_when_targeting_same_ship;
@@ -568,6 +569,18 @@ void parse_mod_table(const char *filename)
 				}
 				else {
 					Default_detail_preset = static_cast<DefaultDetailPreset>(detail_preset);
+				}
+			}
+
+			if (optional_string("$Evict Unused GPU Textures After Missions:")) {
+				stuff_int(&Gpu_texture_evict_after_missions);
+
+				if (Gpu_texture_evict_after_missions > 255) {
+					// clamp before the warning: under unit tests a warning throws and would skip the assignment
+					int requested = Gpu_texture_evict_after_missions;
+					Gpu_texture_evict_after_missions = 255;
+					error_display(0, "$Evict Unused GPU Textures After Missions: %i is above the limit of 255, using 255",
+						requested);
 				}
 			}
 
@@ -1646,6 +1659,10 @@ static void mod_table_log_settings()
 		mprintf(("Game Settings Table: External shaders are DISABLED\n"));
 
 	mprintf(("Game Settings Table: Default detail preset is %i of %i-%i\n", static_cast<int>(Default_detail_preset), 0, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1));
+	if (Gpu_texture_evict_after_missions > 0)
+		mprintf(("Game Settings Table: Unused GPU textures are evicted after %i mission(s) (OpenGL only; Vulkan drops them every mission)\n", Gpu_texture_evict_after_missions));
+	else
+		mprintf(("Game Settings Table: Unused GPU textures are kept until exit (OpenGL only; Vulkan drops them every mission)\n"));
 	mprintf(("Game Settings Table: Briefing window FOV is %f\n", Briefing_window_FOV));
 	mprintf(("Game Settings Table: Generic pain flash factor is %.2f\n", Generic_pain_flash_factor));
 	mprintf(("Game Settings Table: Shield pain flash factor is %.2f\n", Shield_pain_flash_factor));
@@ -1886,6 +1903,7 @@ void mod_table_reset()
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
 	Default_detail_preset = DefaultDetailPreset::VeryHigh; // "very high" seems a reasonable default in 2012 -zookeeper
+	Gpu_texture_evict_after_missions = 1;
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
 	Automatically_select_subsystem_under_reticle_when_targeting_same_ship = false;

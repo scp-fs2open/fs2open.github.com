@@ -34,6 +34,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "ktxutils/ktxutils.h"
+#include "mod_table/mod_table.h"
 
 #include <cctype>
 #include <climits>
@@ -296,6 +297,8 @@ static void allocate_new_block() {
 		entry.used_this_frame = 0;
 #endif
 		entry.load_count = 0;
+		entry.used_since_page_in = 0;
+		entry.unused_page_ins = 0;
 
 		gr_bm_init(&slot);
 
@@ -2029,6 +2032,7 @@ bitmap * bm_lock(int handle, int bpp, uint flags, bool nodebug) {
 	// Increment ref count for bitmap since lock was made on it.
 	Assert(be->ref_count >= 0);
 	be->ref_count++;					// Lock it before we page in data; this prevents a callback from freeing this
+	bm_mark_used(handle);
 	// as it gets read in
 
 	// Mark this bitmap as used this frame
@@ -2660,6 +2664,61 @@ void bm_page_in_aabitmap(int handle, int nframes) {
 	}
 }
 
+void bm_mark_used(int handle) {
+	if (handle < 0)
+		return;
+
+	// first frame of an animation, whether or not the frames share a texture array: that is where the decision reads
+	bm_get_entry(handle, false)->used_since_page_in = 1;
+}
+
+/**
+ * Frees the GPU copy of a bitmap (whole animations only: freeing one frame of a shared texture array would leave the
+ * others pointing at a dead array) once it has gone the tabled number of page-ins without preload, draw or lock.
+ * @returns true if the GPU copy was freed
+ */
+static bool bm_maybe_evict_gpu(bitmap_entry& entry) {
+	if (Gpu_texture_evict_after_missions <= 0)
+		return false;
+
+	// Vulkan already drops every texture at page-in start and its free deletes the slot's backend object
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
+		return false;
+
+	if (entry.type == BM_TYPE_USER || entry.type == BM_TYPE_3D)
+		return false;
+
+	if (bm_is_anim(&entry) && entry.info.ani.first_frame != entry.handle)
+		return false;
+
+	int num_frames = bm_is_anim(&entry) ? entry.info.ani.num_frames : 1;
+
+	bool locked = false;
+	for (int i = 0; i < num_frames; i++) {
+		if (bm_get_entry(entry.handle + i)->ref_count != 0)
+			locked = true;
+	}
+
+	if (entry.used_since_page_in || locked) {
+		entry.unused_page_ins = 0;
+		return false;
+	}
+
+	if (entry.unused_page_ins < 255)
+		entry.unused_page_ins++;
+
+	if (entry.unused_page_ins < Gpu_texture_evict_after_missions)
+		return false;
+
+	nprintf(("BmpMan", "Evicting GPU copy of %s (%d frames)\n", entry.filename, num_frames));
+
+	for (int i = 0; i < num_frames; i++)
+		gr_bm_free_data(bm_get_slot(entry.handle + i), true);
+
+	entry.unused_page_ins = 0;
+	return true;
+}
+
 void bm_page_in_start() {
 	Bm_paging = 1;
 
@@ -2691,6 +2750,7 @@ void bm_page_in_stop() {
 
 	// Load all the ones that are supposed to be loaded for this level.
 	int n = 0;
+	int n_evicted = 0;
 
 	int bm_preloading = 1;
 
@@ -2702,6 +2762,7 @@ void bm_page_in_stop() {
 				&& (entry.type != BM_TYPE_RENDER_TARGET_STATIC)) {
 				if (entry.preloaded) {
 					TRACE_SCOPE(tracing::PageInSingleBitmap);
+					entry.unused_page_ins = 0;
 					if (bm_preloading) {
 						if (!gr_preload(entry.handle, (entry.preloaded == 2))) {
 							mprintf(("Out of VRAM.  Done preloading.\n"));
@@ -2733,12 +2794,21 @@ void bm_page_in_stop() {
 					}
 				} else {
 					bm_unload_fast(entry.handle);
+					if (bm_maybe_evict_gpu(entry))
+						n_evicted++;
 				}
 			}
 		}
 	}
 
+	// after the loop: preloading a later frame binds it, which marks a first frame the loop has already cleared
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block)
+			slot.entry.used_since_page_in = 0;
+	}
+
 	nprintf(("BmpInfo", "BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n));
+	nprintf(("BmpInfo", "BMPMAN: Evicted the GPU copies of %d unused bitmaps or animations.\n", n_evicted));
 
 #ifndef NDEBUG
 	int total_bitmaps = 0;

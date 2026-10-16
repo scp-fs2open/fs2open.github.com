@@ -72,6 +72,8 @@ struct bitmap_entry {
 	int   preload_count;    //!< how many times this gets used in game, for unlocking
 	uint  used_flags;       //!< What flags it was accessed thru
 	int   load_count;
+	ubyte used_since_page_in; //!< set when the renderer binds the bitmap (or it is locked) after the last page-in
+	ubyte unused_page_ins;    //!< page-ins in a row with neither preload nor use; GPU copy freed at the table limit
 
 	bitmap bm;              //!< Bitmap info
 
