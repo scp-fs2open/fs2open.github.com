@@ -35,8 +35,14 @@ void player_select_do();
  */
 void player_select_close();
 
-// function to check whether we found a "last pilot". loads this pilot in if possible and returns true, or false otherwise
-int player_select_get_last_pilot();
+// set when a pilot is loaded as the active Player; cleared when the main menu state is entered
+extern bool Player_select_pilot_just_committed;
+
+// whether the command line asks for a pilot to be selected without showing the pilot select screen
+bool player_select_auto_select_requested();
+
+// if requested by the command line, selects a pilot without the pilot select screen; returns true if a pilot was selected
+bool player_select_try_auto_select();
 
 // tooltips
 extern int Player_tips_start_index;
