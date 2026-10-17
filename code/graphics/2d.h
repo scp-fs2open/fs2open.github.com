@@ -1160,6 +1160,9 @@ bool gr_is_screenshot_requested();
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)
 void gr_flip(bool execute_scripting = true);
+// Run per-frame scripting work without performing presentation. Headless
+// simulation calls this once after each authoritative gameplay frame.
+void gr_process_frame_callbacks(bool execute_scripting = true);
 
 inline void gr_setup_frame() {
 	gr_screen.gf_setup_frame();

@@ -2076,7 +2076,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		if (d_mode == GraphicsAPI::Default) {
 			d_mode = gr_get_configured_render_api();
 		}
-	} else if ( !Is_standalone ) {
+	} else if ( !Is_standalone && !Cmdline_headless ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
 
@@ -2228,7 +2228,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	}
 
 	// if we are in standalone mode then just use special defaults
-	if (Is_standalone) {
+	if (Is_standalone || Cmdline_headless) {
 		mode = GraphicsAPI::Stub;
 		width = 640;
 		height = 480;
@@ -2334,17 +2334,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	         gr_is_capable(gr_capability::CAPABILITY_PERSISTENT_BUFFER_MAPPING) ? "Enabled" : "Disabled"));
 
 	mprintf(("Checking mod required rendering features...\n"));
-	for (gr_capability ext : Required_render_ext) {
-		if (!gr_is_capable(ext)) {
-			Error(LOCATION, "Feature %s required by mod not supported by system.\n",
-				gr_capability_to_human_readable_string(ext).c_str());
+	if (!Cmdline_headless) {
+		for (gr_capability ext : Required_render_ext) {
+			if (!gr_is_capable(ext)) {
+				Error(LOCATION, "Feature %s required by mod not supported by system.\n",
+					gr_capability_to_human_readable_string(ext).c_str());
+			}
 		}
 	}
 	mprintf(("  All required features are supported.\n"));
 
 	bool missing_installation = false;
 	if (!running_unittests && Web_cursor == nullptr) {
-		if (Is_standalone) {
+		if (Is_standalone || Cmdline_headless) {
 			// Cursors don't work in standalone mode, just check if the animation exists.
 			auto handle = bm_load_animation("cursorweb");
 			if (handle < 0) {
@@ -2372,7 +2374,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 
 	gr_set_shader(NULL);
 
-	if (!Is_standalone) {
+	if (!Is_standalone && !Cmdline_headless) {
 		if (Using_in_game_options) {
 			// The value should have been loaded into the variable already so we can use that here
 			gr_set_gamma(Gr_gamma);
@@ -3296,7 +3298,7 @@ void gr_imgui_begin_frame()
 	ImGui::NewFrame();
 }
 
-void gr_flip(bool execute_scripting)
+void gr_process_frame_callbacks(bool execute_scripting)
 {
 	// Execute external "On Frame" work items
 	executor::OnFrameExecutor->process();
@@ -3311,6 +3313,11 @@ void gr_flip(bool execute_scripting)
 			OnFrameHook->run();
 		}
 	}
+}
+
+void gr_flip(bool execute_scripting)
+{
+	gr_process_frame_callbacks(execute_scripting);
 
 	model_process_cached_ui_render_instances();
 
@@ -3569,6 +3576,13 @@ static graphics::util::GPUMemoryHeap* get_gpu_heap(GpuHeap heap_type) {
 
 void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset_out, gr_buffer_handle& handle_out) {
 	TRACE_SCOPE(tracing::GpuHeapAllocate);
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		// The stub renderer has no GPU heaps. Model geometry is not rendered in
+		// this mode, while authoritative model and collision data remain loaded.
+		offset_out = 0;
+		handle_out = gr_buffer_handle::invalid();
+		return;
+	}
 
 	auto gpuHeap = get_gpu_heap(heap_type);
 
@@ -3579,6 +3593,9 @@ void gr_heap_allocate(GpuHeap heap_type, size_t size, void* data, size_t& offset
 void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 {
 	TRACE_SCOPE(tracing::GpuHeapDeallocate);
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		return;
+	}
 
 	auto gpuHeap = get_gpu_heap(heap_type);
 
