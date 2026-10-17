@@ -241,10 +241,16 @@ elseif(PLATFORM_MAC)
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "qtFRED")
-    set_target_properties(qtfred PROPERTIES MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
     set_target_properties(qtfred PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "us.indiegames.scp.qtFRED")
+
+    set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "us.indiegames.scp.qtFRED")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual")
     set_target_properties(qtfred PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+    set_target_properties(qtfred PROPERTIES XCODE_SCHEME_ARGUMENTS "${FSO_RUN_ARGUMENTS}")
+
+    if(FSO_FREESPACE_PATH AND NOT "${FSO_FREESPACE_PATH}" STREQUAL "${CMAKE_INSTALL_PREFIX}")
+        set_target_properties(qtfred PROPERTIES XCODE_SCHEME_WORKING_DIRECTORY "${FSO_FREESPACE_PATH}")
+    endif()
 
     # Copy everything from the Resources directory
     add_custom_command(TARGET qtfred POST_BUILD

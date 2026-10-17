@@ -23,6 +23,9 @@ add_subdirectory(antlr4-cpp-runtime EXCLUDE_FROM_ALL)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/cmake" PARENT_SCOPE)
 suppress_warnings(antlr4_static)
 
+# Prevent warnings on files with no symbols on Mac
+suppress_no_symbol_warnings(antlr4_static)
+
 target_include_directories(antlr4_static PUBLIC "${CMAKE_CURRENT_LIST_DIR}/antlr4-cpp-runtime/runtime/src")
 
 set_target_properties(antlr4_static
