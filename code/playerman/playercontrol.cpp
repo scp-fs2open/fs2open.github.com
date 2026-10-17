@@ -319,7 +319,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		control_get_axes_readings(axis, flRealframetime);
+		control_get_axes_readings(axis, flRealframetime, false);
 
 		// Does the same thing as t and u but for the joystick input 
 		h = f2fl(axis[Action::HEADING]);

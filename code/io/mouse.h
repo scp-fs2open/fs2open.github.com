@@ -107,6 +107,11 @@ int mouse_down(int btn, bool must_be_wheel = false);
 
 void mouse_reset_deltas();
 void mouse_get_delta(int* dx = nullptr, int* dy = nullptr, int* dz = nullptr);
+
+/**
+ * Returns a value that changes each time the deltas are reset, so callers can tell whether they have already consumed the current deltas
+ */
+uint mouse_get_delta_serial();
 void mouse_get_wheel_delta(int* dx = nullptr, int* dy = nullptr);
 
 void mouse_event(float x, float y, float dx, float dy);
