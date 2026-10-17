@@ -196,11 +196,18 @@ void multi_options_read_config()
 		nprintf(("Network","Failed to open network config file, using default settings\n"));		
 	} else {
 		Multi_cfg_missing = false;
+		bool first_line = true;
 
 		while ( !cfeof(in) ) {
 			// read in the game info
 			memset(str, 0, 512);
 			cfgets(str, 512, in);
+
+			// some editors save a UTF-8 byte order mark, which would hide the first option
+			if (first_line && !strncmp(str, "\xEF\xBB\xBF", 3)) {
+				memmove(str, str + 3, strlen(str + 3) + 1);
+			}
+			first_line = false;
 
 			// parse the first line
 			tok = strtok(str, " \t");
