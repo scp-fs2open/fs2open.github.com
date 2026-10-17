@@ -204,11 +204,10 @@ endif()
 
 include(clang-tidy)
 
-set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_AVAILABLE)
 if (FSO_USE_LTO AND LTO_AVAILABLE)
+	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 	message("Enabled LTO for Release builds")
 	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif (FSO_USE_LTO AND LTO_AVAILABLE)
