@@ -282,11 +282,11 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 	if (vflag) {
 		_velocity = BLANKFIELD;
 	}
-	if (vflag) {
-		_velocity = BLANKFIELD;
+	if (sflag) {
+		_shields = BLANKFIELD;
 	}
-	if (vflag) {
-		_velocity = BLANKFIELD;
+	if (hflag) {
+		_hull = BLANKFIELD;
 	}
 	_modified = false;
 	modelChanged();
@@ -295,6 +295,10 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 
 void ShipInitialStatusDialogModel::updateDockingInfo()
 {
+	if (!_dockpointArray || _numDockPoints <= 0) {
+		return;
+	}
+
 	int i;
 	object* objp = &Objects[Ships[_ship].objnum];
 	for (i = 0; i < _numDockPoints; i++) {
@@ -632,7 +636,9 @@ bool ShipInitialStatusDialogModel::apply()
 		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
 		Ships[_ship].team_name = _teamColorSetting;
 	}
-	updateDockingInfo();
+	if (!_multiEdit) {
+		updateDockingInfo();
+	}
 	_editor->missionChanged();
 	return true;
 }
