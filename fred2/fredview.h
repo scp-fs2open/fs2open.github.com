@@ -268,6 +268,8 @@ protected:
 	afx_msg void OnUpdateViewOutlinesOnSelected(CCmdUI* pCmdUI);
 	afx_msg void OnViewOutlineAtWarpin();
 	afx_msg void OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI);
+	afx_msg void OnMiscRotateSelectionMidpoint();
+	afx_msg void OnUpdateMiscRotateSelectionMidpoint(CCmdUI* pCmdUI);
 	afx_msg void OnAlwaysSaveDisplayNames();
 	afx_msg void OnUpdateAlwaysSaveDisplayNames(CCmdUI* pCmdUI);
 	afx_msg void OnErrorCheckerChecksPotentialIssues();

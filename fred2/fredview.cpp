@@ -308,6 +308,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_MISC_ROTATE_SELECTION_MIDPOINT, OnMiscRotateSelectionMidpoint)
+	ON_UPDATE_COMMAND_UI(ID_MISC_ROTATE_SELECTION_MIDPOINT, OnUpdateMiscRotateSelectionMidpoint)
 	ON_COMMAND(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnAlwaysSaveDisplayNames)
 	ON_UPDATE_COMMAND_UI(ID_ALWAYS_SAVE_DISPLAY_NAMES, OnUpdateAlwaysSaveDisplayNames)
 	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
@@ -2305,62 +2307,15 @@ void CFREDView::OnSelectList()
 // position camera to view all objects on the screen at once.  Doesn't change orientation.
 void view_universe(int just_marked)
 {
-	int i, max = 0, obj_flags[MAX_OBJECTS];
-	float dist, largest = 20.0f;
-	vec3d center, p1, p2;		// center of all the objects collectively
+	float dist, radius;
+	vec3d center;
 	vertex v;
 	object *ptr;
 
-	for (i=0; i<MAX_OBJECTS; i++)
-		obj_flags[i] = 0;
+	if (!get_object_bounds(just_marked != 0, &center, &radius))
+		return;
 
-	if (just_marked)
-		ptr = &Objects[cur_object_index];
-	else
-		ptr = GET_FIRST(&obj_used_list);
-
-	p1.xyz.x = p2.xyz.x = ptr->pos.xyz.x;
-	p1.xyz.y = p2.xyz.y = ptr->pos.xyz.y;
-	p1.xyz.z = p2.xyz.z = ptr->pos.xyz.z;
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
-			center = ptr->pos;
-			if (center.xyz.x < p1.xyz.x)
-				p1.xyz.x = center.xyz.x;
-			if (center.xyz.x > p2.xyz.x)
-				p2.xyz.x = center.xyz.x;
-			if (center.xyz.y < p1.xyz.y)
-				p1.xyz.y = center.xyz.y;
-			if (center.xyz.y > p2.xyz.y)
-				p2.xyz.y = center.xyz.y;
-			if (center.xyz.z < p1.xyz.z)
-				p1.xyz.z = center.xyz.z;
-			if (center.xyz.z > p2.xyz.z)
-				p2.xyz.z = center.xyz.z;
-		}
-		
-		ptr = GET_NEXT(ptr);
-	}
-
-	vm_vec_avg(&center, &p1, &p2);
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (!just_marked || (ptr->flags[Object::Object_Flags::Marked])) {
-			dist = vm_vec_dist_squared(&center, &ptr->pos);
-			if (dist > largest)
-				largest = dist;
-
-			obj_flags[OBJ_INDEX(ptr)] = 1;  // flag object as needing on-screen check
-			if (OBJ_INDEX(ptr) > max)
-				max = OBJ_INDEX(ptr);
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	dist = fl_sqrt(largest) + 1.0f;
+	dist = std::max(radius, fl_sqrt(20.0f)) + 1.0f;
 	vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	g3_set_view_matrix(&view_pos, &view_orient, 0.5f);
 
@@ -4109,6 +4064,19 @@ void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
+void CFREDView::OnMiscRotateSelectionMidpoint()
+{
+	Orbit_selection_midpoint = !Orbit_selection_midpoint;
+	Orbit_active = false;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateMiscRotateSelectionMidpoint(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Orbit_selection_midpoint);
+}
+
 void CFREDView::OnAlwaysSaveDisplayNames()
 {
 	Always_save_display_names = !Always_save_display_names;
@@ -4502,7 +4470,7 @@ void CFREDView::OnLookatObj()
 		vec3d v, loc;
 		matrix m;
 
-		loc = Objects[cur_object_index].pos;
+		loc = selection_midpoint();
 		vm_vec_sub(&v, &loc, &view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {
