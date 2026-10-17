@@ -187,6 +187,11 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		_afterburnerLocked = Qt::Unchecked;
 	}
 
+	if (Ship_info[Ships[_ship].ship_info_index].uses_team_colors) {
+		_useTeams = true;
+		_teamColorSetting = Ships[_ship].team_name;
+	}
+
 	if (_multiEdit) {
 		objp = GET_FIRST(&obj_used_list);
 		while (objp != END_OF_LIST(&obj_used_list)) {
@@ -198,6 +203,10 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 					sflag = 1;
 				if (static_cast<int>(objp->hull_strength) != _hull)
 					hflag = 1;
+				if (Ships[get_ship_from_obj(objp)].ship_guardian_threshold != _guardianThreshold)
+					_guardianInconsistent = true;
+				if (_useTeams && Ships[get_ship_from_obj(objp)].team_name != _teamColorSetting)
+					_teamColorInconsistent = true;
 				if (objp->flags[Object::Object_Flags::No_shields]) {
 					if (_hasShields)
 						_hasShields = Qt::PartiallyChecked;
@@ -273,10 +282,6 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		}
 	}
 
-	if (Ship_info[Ships[_ship].ship_info_index].uses_team_colors) {
-		_useTeams = true;
-		_teamColorSetting = Ships[_ship].team_name;
-	}
 	changeSubsys(0);
 
 	if (vflag) {
@@ -591,11 +596,12 @@ bool ShipInitialStatusDialogModel::apply()
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				modify(objp->phys_info.speed, (float)_velocity);
-
-				modify(objp->shield_quadrant[0], (float)_shields);
-
-				modify(objp->hull_strength, (float)_hull);
+				if (_velocity != BLANKFIELD)
+					modify(objp->phys_info.speed, (float)_velocity);
+				if (_shields != BLANKFIELD)
+					modify(objp->shield_quadrant[0], (float)_shields);
+				if (_hull != BLANKFIELD)
+					modify(objp->hull_strength, (float)_hull);
 
 				if (_hasShields == Qt::Checked) {
 					objp->flags.remove(Object::Object_Flags::No_shields);
@@ -603,7 +609,8 @@ bool ShipInitialStatusDialogModel::apply()
 					objp->flags.set(Object::Object_Flags::No_shields);
 				}
 				auto shipp = &Ships[get_ship_from_obj(objp)];
-				shipp->ship_guardian_threshold = _guardianThreshold;
+				if (!_guardianInconsistent)
+					shipp->ship_guardian_threshold = _guardianThreshold;
 				// We need to ensure that we handle the inconsistent "boolean" value correctly
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, _forceShields);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, _shipLocked);
@@ -612,7 +619,8 @@ bool ShipInitialStatusDialogModel::apply()
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, _secondariesLocked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, _turretsLocked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
-				shipp->team_name = _teamColorSetting;
+				if (!_teamColorInconsistent)
+					shipp->team_name = _teamColorSetting;
 			}
 
 			objp = GET_NEXT(objp);
@@ -802,6 +810,7 @@ SCP_string ShipInitialStatusDialogModel::getColor() const
 
 void ShipInitialStatusDialogModel::setColor(const SCP_string& color)
 {
+	_teamColorInconsistent = false;
 	modify(_teamColorSetting, color);
 }
 
@@ -922,6 +931,7 @@ int ShipInitialStatusDialogModel::getGuardian() const
 
 void ShipInitialStatusDialogModel::setGuardian(int guardian)
 {
+	_guardianInconsistent = false;
 	modify(_guardianThreshold, guardian);
 }
 

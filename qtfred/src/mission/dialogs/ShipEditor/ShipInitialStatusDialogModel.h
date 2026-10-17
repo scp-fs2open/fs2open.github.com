@@ -132,6 +132,8 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	bool _multiEdit = false;
 	bool _useTeams = false;
 	bool _moveShipsWhenUndocking = true;
+	bool _guardianInconsistent = false;
+	bool _teamColorInconsistent = false;
 };
 
 template <typename T>
