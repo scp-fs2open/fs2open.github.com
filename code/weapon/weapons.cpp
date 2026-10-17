@@ -5191,6 +5191,8 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
+
+	Weapons_inited = false;
 }
 
 /**
