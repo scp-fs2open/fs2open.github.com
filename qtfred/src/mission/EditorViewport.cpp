@@ -231,7 +231,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("view_label_font_scale",                  view.Label_font_scale);
 	settings.setValue("camera_invert_orbit_x",                  camera.getInvertOrbitX());
 	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
-	settings.setValue("camera_orbit_selection_midpoint",          camera.getOrbitSelectionMidpoint());
+	settings.setValue("camera_orbit_selection_midpoint",        camera.getOrbitSelectionMidpoint());
 	settings.endGroup();
 }
 void EditorViewport::needsUpdate() {
