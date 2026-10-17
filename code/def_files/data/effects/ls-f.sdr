@@ -37,14 +37,27 @@ void main()
 	float decay = 1.0;
 	vec4 sum = vec4(0.0);
 	vec4 mask = texture(cockpit, fragTexCoord.st);
-	if (mask.r < 1.0) {
+#if defined(REVERSED_Z) && defined(VULKAN)
+	// Vulkan binds no cockpit depth here; its placeholder texture is white, which reads as the near plane
+	bool cockpit_covers = false;
+#elif defined(REVERSED_Z)
+	bool cockpit_covers = mask.r > 0.0;
+#else
+	bool cockpit_covers = mask.r < 1.0;
+#endif
+	if (cockpit_covers) {
 		fragOut0 = vec4(cp_intensity);
 		return;
 	}
+#ifdef REVERSED_Z
+	const float sky_depth = 0.0;
+#else
+	const float sky_depth = 1.0;
+#endif
 	for(int i=0; i < SAMPLE_NUM ; i++) {
 		pos.st -= step;
 		vec4 tex_sample = texture(scene, pos);
-		if (tex_sample.r == 1.0)
+		if (tex_sample.r == sky_depth)
 			sum += decay * weight;
 		decay *= falloff;
 	}

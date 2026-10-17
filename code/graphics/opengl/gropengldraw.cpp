@@ -290,12 +290,12 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
-		GL_DEPTH24_STENCIL8,
+		Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 		Scene_texture_width,
 		Scene_texture_height,
 		0,
-		GL_DEPTH_COMPONENT,
-		GL_FLOAT,
+		Gr_reversed_depth_active ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
+		Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_FLOAT,
 		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Cockpit_depth_texture, "Cockpit depth texture");
 
@@ -319,12 +319,12 @@ void opengl_setup_scene_textures()
 
 	glTexImage2D(GL_TEXTURE_2D,
 		0,
-		GL_DEPTH24_STENCIL8,
+		Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 		Scene_texture_width,
 		Scene_texture_height,
 		0,
-		GL_DEPTH_COMPONENT,
-		GL_FLOAT,
+		Gr_reversed_depth_active ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
+		Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_FLOAT,
 		nullptr);
 	opengl_set_object_label(GL_TEXTURE, Scene_depth_texture, "Scene depth texture");
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
@@ -513,7 +513,7 @@ void opengl_setup_scene_textures()
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
 			Cmdline_msaa_enabled,
-			GL_DEPTH24_STENCIL8,
+			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 			Scene_texture_width,
 			Scene_texture_height,
 			GL_TRUE);
@@ -569,12 +569,12 @@ void opengl_setup_scene_textures()
 
 		glTexImage2D(GL_TEXTURE_2D,
 			0,
-			GL_DEPTH24_STENCIL8,
+			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
 			gr_screen.max_w,
 			gr_screen.max_h,
 			0,
 			GL_DEPTH_STENCIL,
-			GL_UNSIGNED_INT_24_8,
+			Gr_reversed_depth_active ? GL_FLOAT_32_UNSIGNED_INT_24_8_REV : GL_UNSIGNED_INT_24_8,
 			nullptr);
 		opengl_set_object_label(GL_TEXTURE, Back_depth_texture, "Backbuffer depth texture");
 

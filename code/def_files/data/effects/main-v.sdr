@@ -231,7 +231,12 @@ void main()
 
 	// Fog distance
 	#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
+#ifdef REVERSED_Z
+		// clip z no longer grows with distance; w is the view depth
+		vertOut.fogDist = gl_Position.w - fogNear;
+#else
 		vertOut.fogDist = gl_Position.z - fogNear;
+#endif
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_FOG
 #ifdef VULKAN
 	#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_FOG
