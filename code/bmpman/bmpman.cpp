@@ -2660,6 +2660,37 @@ void bm_page_in_aabitmap(int handle, int nframes) {
 	}
 }
 
+/**
+ * Frees the GPU copy of a bitmap the new mission did not preload. Whole animations only: freeing one frame of a shared
+ * texture array would leave the others pointing at a dead array.
+ * @returns true if the GPU copy was freed
+ */
+static bool bm_free_gpu_copy(bitmap_entry& entry) {
+	// Vulkan drops every texture at page-in start and its free deletes the slot's backend object
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
+		return false;
+
+	if (entry.type == BM_TYPE_USER || entry.type == BM_TYPE_3D)
+		return false;
+
+	if (bm_is_anim(&entry) && entry.info.ani.first_frame != entry.handle)
+		return false;
+
+	int num_frames = bm_is_anim(&entry) ? entry.info.ani.num_frames : 1;
+
+	for (int i = 0; i < num_frames; i++) {
+		if (bm_get_entry(entry.handle + i)->ref_count != 0)
+			return false;
+	}
+
+	nprintf(("BmpMan", "Freeing the GPU copy of %s (%d frames)\n", entry.filename, num_frames));
+
+	for (int i = 0; i < num_frames; i++)
+		gr_bm_free_data(bm_get_slot(entry.handle + i), true);
+
+	return true;
+}
+
 void bm_page_in_start() {
 	Bm_paging = 1;
 
@@ -2691,6 +2722,7 @@ void bm_page_in_stop() {
 
 	// Load all the ones that are supposed to be loaded for this level.
 	int n = 0;
+	int n_freed = 0;
 
 	int bm_preloading = 1;
 
@@ -2733,12 +2765,15 @@ void bm_page_in_stop() {
 					}
 				} else {
 					bm_unload_fast(entry.handle);
+					if (bm_free_gpu_copy(entry))
+						n_freed++;
 				}
 			}
 		}
 	}
 
 	nprintf(("BmpInfo", "BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n));
+	nprintf(("BmpInfo", "BMPMAN: Freed the GPU copies of %d bitmaps the level does not preload.\n", n_freed));
 
 #ifndef NDEBUG
 	int total_bitmaps = 0;
