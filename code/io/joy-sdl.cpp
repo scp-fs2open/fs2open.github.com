@@ -119,7 +119,7 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 		return true;
 	}
 
-	// Multiple sticks of the same model. If only one of them is plugged in right now, that's the one
+	// Multiple sticks of the same model -> use the only one that's plugged in
 	return num_attached == 1 && testStick->isAttached();
 }
 
@@ -479,14 +479,12 @@ bool device_event_handler(const SDL_Event &evt)
 		// A new joystick has been added, add it to our list and check if it's the configured joystick
 		if (getJoystickForID(joyDeviceEvent.which) != nullptr)
 		{
-			// SDL also sends this event for sticks that were already plugged in when it started, and init() has
-			// already set those up. Instance IDs are never reused, so a known ID is never a new connection.
+			// SDL also sends this at startup for sticks init() already set up; instance IDs are never reused
 			return true;
 		}
 
 		Joystick *addedStick = nullptr;
-		// When a known stick comes back, this keeps its old device handles open until the stick has been given its
-		// slot again below, so force feedback on the old handle is shut down before that handle is closed
+		// keeps a returning stick's old handles open until it is rebound, so force feedback is shut down first
 		JoystickPtr oldHandles;
 		{
 			auto device = SDL_OpenJoystick(joyDeviceEvent.which);
@@ -499,17 +497,15 @@ bool device_event_handler(const SDL_Event &evt)
 
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
-			// The Joystick holds its own handle, this one was only needed to check that the device opens
+			// the Joystick opened its own handle
 			SDL_CloseJoystick(device);
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				// must use GUID here as joystick IDs are never reused. Only an unplugged entry can be this stick
-				// coming back: two sticks of the same model share a GUID, and taking over a stick that is still
-				// plugged in would leave that one dead.
+				// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID
 				if (!(*iter)->isAttached() && (*iter)->getGUID() == added->getGUID())
 				{
-					// A known stick that was unplugged and plugged back in: refresh it, then give it its slot back below.
+					// Already have this stick
 					*(*iter) = std::move(*added);
 					oldHandles = std::move(added);
 					addedStick = iter->get();
@@ -530,8 +526,7 @@ bool device_event_handler(const SDL_Event &evt)
 			}
 		}
 
-		// Bind the added stick, if we want it. This runs even when all slots are already filled: a stick that came
-		// back may still be in its slot, and binding it again restarts force feedback (Joy-0 only) on its new handle.
+		// Bind the added stick, if we want it (also when all slots are full: a returning stick may still hold its slot)
 		if (Using_in_game_options)
 		{
 			// New menu system lets players select joysticks in-game
