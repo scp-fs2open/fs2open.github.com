@@ -3058,6 +3058,43 @@ int bm_reload(int bitmap_handle, const char* filename) {
 		return -1;
 	}
 
+	// locking fills a buffer sized for the slot's current image, so a file that differs from it is refused
+	int type_idx = -1;
+	for (int i = 0; i < BM_NUM_TYPES; i++) {
+		if (bm_type_list[i] == entry->type) {
+			type_idx = i;
+			break;
+		}
+	}
+	if (type_idx < 0 || strlen(filename) > MAX_FILENAME_LEN - 5) {
+		return -1;
+	}
+
+	char full_name[MAX_FILENAME_LEN];
+	strcpy_s(full_name, filename);
+	strcat_s(full_name, bm_ext_list[type_idx]);
+
+	CFILE* img_cfp = cfopen(full_name, "rb", entry->dir_type);
+	if (img_cfp == nullptr) {
+		return -1;
+	}
+
+	int w = 0, h = 0, bpp = 0, mm_lvl = 0;
+	BM_TYPE c_type = BM_TYPE_NONE;
+	size_t size = 0;
+	const int rc = bm_load_info(entry->type, full_name, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &size);
+	cfclose(img_cfp);
+	if (rc != 0) {
+		return -1;
+	}
+
+	// compared instead of mem_taken, which bm_lock_pcx rewrites to the size it locked at
+	if (w != entry->bm.w || h != entry->bm.h || bpp != entry->bm.true_bpp || c_type != entry->comp_type ||
+		mm_lvl != entry->num_mipmaps) {
+		mprintf(("BMPMAN: '%s' differs in size or format from '%s', not reloading\n", full_name, entry->filename));
+		return -1;
+	}
+
 	strcpy_s(entry->filename, filename);
 	return bitmap_handle;
 }
