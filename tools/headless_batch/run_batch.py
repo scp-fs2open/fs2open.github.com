@@ -253,6 +253,18 @@ def kill_tree(process: subprocess.Popen[bytes]) -> None:
     process.wait()
 
 
+def engine_reason(stderr_text: str) -> str | None:
+    """Why the engine stopped, from its stderr: with -noninteractive, Error() prints "Error: <message>", and a Lua
+    error prints its message followed by a dashed separator and the traceback. Warnings are skipped."""
+    lines = [line.strip() for line in stderr_text.splitlines()]
+    errors = [line for line in lines if line.startswith("Error: ")]
+    if errors:
+        return errors[-1]
+    separator = next((i for i, line in enumerate(lines) if len(line) > 10 and set(line) == {"-"}), len(lines))
+    candidates = [line for line in lines[:separator] if line and not line.startswith("WARNING:")]
+    return candidates[-1] if candidates else None
+
+
 def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ...] = ()) -> dict[str, Any]:
     """Stage a workspace, run one engine process to completion or timeout, and return its result record."""
     run_dir = plan["output_dir"] / "runs" / f"r{index:04d}"
@@ -291,6 +303,9 @@ def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ..
             record["problems"].append(f"killed after {plan['timeout_seconds']} s")
         if record["exit_code"] not in (0, None) and not record["timed_out"]:
             record["problems"].append(f"engine exit code {record['exit_code']}")
+        reason = engine_reason((run_dir / "stderr.txt").read_text(encoding="utf-8", errors="replace"))
+        if record["problems"] and reason:
+            record["problems"].append(f"engine said: {reason[:300]}")
         if not record["problems"]:
             record["status"] = "ok"
     except (OSError, RuntimeError) as exc:

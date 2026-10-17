@@ -115,7 +115,9 @@ A run is `ok` only if the engine exited with code 0 and wrote a readable result 
 `time_limit`, `player_died` or `mission_exit` (a player death is an outcome of the mission, not a failure of the
 run). A nonzero exit, a missing or unreadable result, a mission that never started, or a
 timeout is a failure and is recorded with the reason; a run whose result could not be read is not
-reported as a success. On Windows the runner turns off crash and missing-file dialogs for its children so a
+reported as a success. With `-noninteractive` the engine prints an error, or a Lua error and its traceback, to
+stderr before it exits, so a failed run's problems quote that message (`engine said: ...`) and `stderr.txt` has it
+in full. Release builds write no `fs2_open.log`, so stderr is often the only record of why a run stopped. On Windows the runner turns off crash and missing-file dialogs for its children so a
 crashing engine exits instead of blocking an unattended batch (this changes no registry or machine setting).
 
 ## Output

@@ -26,6 +26,12 @@ STUB_START_FAILED = STUB_OK.replace('"time_limit"', '"start_failed"')
 STUB_PLAYER_DIED = STUB_OK.replace('"time_limit"', '"player_died"')
 STUB_SLEEP = "import time; time.sleep(60)"
 STUB_CRASH = "import sys; sys.exit(3)"
+# What the engine prints to stderr under -noninteractive for a warning, then a Lua error (message, separator, traceback)
+LUA_ERROR_STDERR = ('WARNING: "a warning" at ship.cpp:10\n\n'
+                    'LUA ERROR: [string "hbtest-sct.tbm - On Frame"]:22: \'end\' expected near \'<eof>\'\n\n'
+                    + "-" * 66 + "\nstack traceback:\n\t[C]: ?\n" + "-" * 66 + "\n")
+ERROR_STDERR = 'WARNING: "a warning" at ship.cpp:10\n\nError: Mission sm9-99 not found\nFile: missionparse.cpp\nLine: 42\n\n'
+STUB_LUA_ERROR = f"import sys; sys.stderr.write({LUA_ERROR_STDERR!r}); sys.exit(1)"
 
 
 class Fixture(unittest.TestCase):
@@ -154,6 +160,15 @@ class RunTests(Fixture):
         self.assertEqual(record["sim_result"]["seed"], 501)
         self.assertEqual(record["port"], 40001)
         self.assertTrue((plan["output_dir"] / "runs" / "r0001" / "result.json").is_file())
+
+    def test_the_engines_own_error_text_is_reported(self):
+        self.assertEqual(run_batch.engine_reason(ERROR_STDERR), "Error: Mission sm9-99 not found")
+        self.assertTrue((run_batch.engine_reason(LUA_ERROR_STDERR) or "").startswith("LUA ERROR: [string"))
+        self.assertIsNone(run_batch.engine_reason('WARNING: "only a warning" at a.cpp:1\n'))
+        plan = run_batch.load_plan(self.plan_file())
+        record = run_batch.run_one(plan, 0, 500, launcher=self.stub(STUB_LUA_ERROR))
+        self.assertEqual(record["status"], "failed")
+        self.assertTrue(any(p.startswith("engine said: LUA ERROR") for p in record["problems"]), record["problems"])
 
     def test_crash_and_missing_sidecar_are_failures_not_silent(self):
         plan = run_batch.load_plan(self.plan_file())
