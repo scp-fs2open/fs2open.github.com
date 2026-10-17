@@ -362,12 +362,6 @@ int bm_load_either(const char *filename, int *nframes = NULL, int *fps = NULL, i
 bitmap* bm_lock(int handle, int bpp, uint flags, bool nodebug = false);
 
 /**
- * @brief Records that the bitmap (or any frame of its animation) was drawn or locked since the last page-in, which
- * keeps its GPU copy from being evicted at the next page-in (see bm_page_in_stop())
- */
-void bm_mark_used(int handle);
-
-/**
  * @brief Returns the image type of the given bitmap handle
  */
 BM_TYPE bm_get_type(int handle);
