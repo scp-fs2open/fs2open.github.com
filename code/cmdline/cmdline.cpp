@@ -523,7 +523,7 @@ cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // 
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
 cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
-cmdline_parm headless_arg("-headless", NULL, AT_NONE);
+cmdline_parm headless_arg("-headless", nullptr, AT_NONE);
 cmdline_parm fixed_dt_arg("-fixed-dt", "Authoritative simulation step in seconds", AT_FLOAT);
 cmdline_parm max_sim_time_arg("-max-sim-time", "End after this many simulated seconds", AT_FLOAT);
 cmdline_parm sim_result_arg("-sim-result", "Write the simulation result JSON to this path", AT_STRING);
@@ -2403,7 +2403,7 @@ bool SetCmdlineParams()
 		const float dt = fixed_dt_arg.get_float();
 		// a step below the fixed-point resolution (1/65536 s) would round to zero; written as a positive range
 		// test so that NaN is rejected too
-		if (!(dt >= 1.0f / 65536.0f && dt <= 0.25f))
+		if (!(dt >= 1.0f / 65536.0f && dt <= 0.25f)) // NOLINT(readability-simplify-boolean-expr)
 		{
 			Error(LOCATION, "-fixed-dt must be finite and in the range [1/65536, 0.25] seconds.");
 			return false;
@@ -2415,7 +2415,7 @@ bool SetCmdlineParams()
 	{
 		const float max_sim_time = max_sim_time_arg.get_float();
 		// mission time is 16.16 fixed point, so it cannot count past 32767 seconds
-		if (!(max_sim_time > 0.0f && max_sim_time <= 32767.0f))
+		if (!(max_sim_time > 0.0f && max_sim_time <= 32767.0f)) // NOLINT(readability-simplify-boolean-expr)
 		{
 			Error(LOCATION, "-max-sim-time must be finite, greater than zero and at most 32767 seconds.");
 			return false;
