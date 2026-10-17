@@ -279,7 +279,10 @@ def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ..
         command = build_command(plan, seed, port, result_path, launcher)
         started = time.monotonic()
         with open(run_dir / "stdout.txt", "wb") as out, open(run_dir / "stderr.txt", "wb") as err:
+            # On Windows the engine reattaches stdout/stderr to the parent's console unless FSO_KEEP_STDOUT is 1,
+            # and the files above would stay empty
             process = subprocess.Popen(command, cwd=workspace, stdout=out, stderr=err,
+                                       env={**os.environ, "FSO_KEEP_STDOUT": "1"},
                                        start_new_session=(os.name != "nt"))
             try:
                 process.wait(timeout=plan["timeout_seconds"])

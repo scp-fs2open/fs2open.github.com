@@ -107,7 +107,9 @@ For run *i* with seed *s* the runner:
    a run that rewrote one in place would change the base too);
 2. starts `engine -portable_mode -parse_cmdline_only -port <base_port+i> -start_mission <mission> -pilot <pilot>
    -headless -fixed-dt <dt> -max-sim-time <t> -sim-result <path> -noninteractive -nomovies -seed <s>`, then
-   `-mod` if any, then `extra_args`, with the workspace as the working directory;
+   `-mod` if any, then `extra_args`, with the workspace as the working directory, stdout and stderr going to the
+   run folder, and `FSO_KEEP_STDOUT=1` in the environment (without it the Windows engine reattaches its output to
+   the parent's console, if there is one, and the files stay empty);
 3. waits up to `timeout_seconds`, killing the whole process tree if it is exceeded;
 4. reads the result file and records the run.
 
@@ -142,6 +144,9 @@ interrupted, or run with another seed) from a clean workspace; without it a non-
 fs2_open_x64.exe -portable_mode -parse_cmdline_only -mod mymod -start_mission my-mission -pilot Tester
   -headless -fixed-dt 0.0333333333 -max-sim-time 120 -sim-result result.json -noninteractive -seed 1000
 ```
+
+On Windows, set `FSO_KEEP_STDOUT=1` if you redirect the engine's stdout or stderr to a file; otherwise, started
+from a console, the engine writes them to that console instead.
 
 ## Reproducibility
 

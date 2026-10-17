@@ -16,11 +16,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_batch  # noqa: E402
 
 STUB_OK = r"""
-import json, sys
+import json, os, sys
 args = sys.argv[1:]
 path = args[args.index("-sim-result") + 1]
 seed = int(args[args.index("-seed") + 1])
-json.dump({"schema": 1, "seed": seed, "simulated_seconds": 12.5, "termination": "time_limit"}, open(path, "w"))
+json.dump({"schema": 1, "seed": seed, "simulated_seconds": 12.5, "termination": "time_limit",
+           "keep_stdout": os.environ.get("FSO_KEEP_STDOUT")}, open(path, "w"))
 """
 STUB_START_FAILED = STUB_OK.replace('"time_limit"', '"start_failed"')
 STUB_PLAYER_DIED = STUB_OK.replace('"time_limit"', '"player_died"')
@@ -158,6 +159,8 @@ class RunTests(Fixture):
         record = run_batch.run_one(plan, 1, 501, launcher=self.stub(STUB_OK))
         self.assertEqual(record["status"], "ok", record["problems"])
         self.assertEqual(record["sim_result"]["seed"], 501)
+        # without it the Windows engine sends its output to the runner's console instead of stdout.txt/stderr.txt
+        self.assertEqual(record["sim_result"]["keep_stdout"], "1")
         self.assertEqual(record["port"], 40001)
         self.assertTrue((plan["output_dir"] / "runs" / "r0001" / "result.json").is_file())
 
