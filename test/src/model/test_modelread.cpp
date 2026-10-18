@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 #include <model/model.h>
+#include <osapi/dialogs.h>
 
 #include "util/FSTestFixture.h"
+#include "util/test_util.h"
 
 #define EXPECT_VECMAT_NEAR(global,vector) EXPECT_NEAR(error(&global,vector), 0.0f, 0.001f);
 
@@ -98,4 +100,54 @@ TEST_F(SubmodelLocalizeTest, submodel_instance_localize_roundtrip_world) {
 	EXPECT_VECMAT_NEAR(global, (vec3d{ {{-1.0f, 4.0f, 1.0f}} }));
 	EXPECT_VECMAT_NEAR(roundtrip, local);
 	EXPECT_VECMAT_NEAR(roundtripMat, localMat);
+}
+
+extern void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list);
+
+class ResolveSubmodelIndexTest : public test::FSTestFixture {
+public:
+	ResolveSubmodelIndexTest() { pushModDir("model"); }
+
+protected:
+	void SetUp() override {
+		test::FSTestFixture::SetUp();
+
+		pm = new polymodel();
+		pm->n_models = 3;
+		pm->submodel = make_shared<bsp_info[]>(3);
+		strcpy_s(pm->submodel[0].name, "hull");
+		strcpy_s(pm->submodel[1].name, "turret");
+		strcpy_s(pm->submodel[2].name, "barrel");
+	}
+	void TearDown() override {
+		test::FSTestFixture::TearDown();
+
+		pm->submodel.reset();
+		delete pm;
+	}
+
+	int resolve(const char *name) {
+		SCP_vector<SCP_string> names{ name };
+		int index = 0;
+		resolve_submodel_index(pm, "test", "$look_at", index, names);
+		return index;
+	}
+
+	polymodel *pm = nullptr;
+};
+
+TEST_F(ResolveSubmodelIndexTest, names_and_numbers_in_range) {
+	EXPECT_EQ(resolve("turret"), 1);
+	EXPECT_EQ(resolve("0"), 0);
+	EXPECT_EQ(resolve("2"), 2);
+	EXPECT_EQ(resolve("-1"), -1);
+}
+
+TEST_F(ResolveSubmodelIndexTest, numbers_out_of_range_warn) {
+	DEBUG_TEST();
+
+	ASSERT_THROW(resolve("3"), os::dialogs::WarningException);
+	ASSERT_THROW(resolve("-2"), os::dialogs::WarningException);
+	ASSERT_THROW(resolve("4294967296"), os::dialogs::WarningException);
+	ASSERT_THROW(resolve("+3"), os::dialogs::WarningException);
 }

@@ -1562,8 +1562,11 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 
 	// models could specify the submodel number, so let's maintain compatibilty
 	if (can_construe_as_integer(submodel_name)) {
-		submodel_index = atoi(submodel_name);
-		return;
+		long number = strtol(submodel_name, nullptr, 10);
+		if ((number >= -1) && (number < pm->n_models)) {
+			submodel_index = static_cast<int>(number);
+			return;
+		}
 	}
 
 	Warning(LOCATION, "Unable to match %s %s %s %s with a submodel!\n", pm->filename, requester, field, submodel_name);
@@ -3022,6 +3025,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
 			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
 			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->n_glow_point_banks; i++) {
+		if (pm->glow_point_banks[i].submodel_parent >= pm->n_models) {
+			Warning(LOCATION,
+				"Model %s glow point bank %d has parent submodel %d, which does not exist!",
+				pm->filename,
+				i,
+				pm->glow_point_banks[i].submodel_parent);
+			pm->glow_point_banks[i].submodel_parent = -1;
 		}
 	}
 	for (i = 0; i < pm->num_debris_objects; i++) {
