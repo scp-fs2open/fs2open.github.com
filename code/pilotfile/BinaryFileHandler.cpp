@@ -151,6 +151,10 @@ Section pilot::BinaryFileHandler::nextSection() {
 	if (size == 0) {
 		return Section::Invalid;
 	}
+	if (size > static_cast<size_t>(cfilelength(_cfp)) - static_cast<size_t>(cftell(_cfp))) {
+		mprintf(("PLR => WARNING: Section runs past the end of the file.\n"));
+		return Section::Invalid;
+	}
 
 	_section_start_pos = (size_t)cftell(_cfp);
 	_section_end_pos = _section_start_pos + size;

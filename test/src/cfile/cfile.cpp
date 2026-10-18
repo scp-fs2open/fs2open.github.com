@@ -118,6 +118,12 @@ TEST_F(CFileTest, read_limit_at_end_of_file) {
 	cf_set_max_read_len(fp, 0);
 	EXPECT_EQ(0, cfread(buffer, 1, 1, fp));
 
+	cfseek(fp, 0, CF_SEEK_SET);
+	cf_set_max_read_len(fp, length + 10);
+	EXPECT_EQ(length, cfread(buffer, 1, length, fp));
+	EXPECT_EQ(0, cfread(buffer, 1, 1, fp));
+	cf_set_max_read_len(fp, 0);
+
 	cfclose(fp);
 }
 
