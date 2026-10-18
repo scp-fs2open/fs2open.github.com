@@ -3431,7 +3431,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	while (optional_string("$Alt Ship Class:")) {	
 		alt_class new_alt_class; 
 
-		is_variable = get_string_or_variable(alt_ship_class); 
+		is_variable = get_string_or_variable(alt_ship_class, static_cast<int>(sizeof(alt_ship_class))); 
 
 		if (is_variable) {
 			new_alt_class.variable_index = get_index_sexp_variable_name(alt_ship_class);

@@ -5057,22 +5057,27 @@ int stuff_sexp_variable_list()
 	ignore_white_space();
 
 	while (*Mp != ')') {
+		if (*Mp == '\0') {
+			error_display(1, "Reading sexp variable list.  Reached the end of the file before the closing ')'.\n");
+			throw parse::ParseException("Syntax error");
+		}
 		Assert(count < MAX_SEXP_VARIABLES);
 
 		// get index - for debug
+		index = -1;
 		stuff_int(&index);
 		ignore_gray_space();
 
 		// get var_name
-		get_string(var_name);
+		get_string(var_name, TOKEN_LENGTH);
 		ignore_gray_space();
 
 		// get default_value;
-		get_string(default_value);
+		get_string(default_value, TOKEN_LENGTH);
 		ignore_gray_space();
 
 		// get type
-		get_string(str_type);
+		get_string(str_type, TOKEN_LENGTH);
 		ignore_white_space();
 
 		// determine type
@@ -5094,7 +5099,7 @@ int stuff_sexp_variable_list()
 		// possibly get network-variable
 		if (check_for_string("\"network-variable\"")) {
 			// eat it
-			get_string(network);
+			get_string(network, TOKEN_LENGTH);
 			ignore_white_space();
 
 			// set type
@@ -5104,7 +5109,7 @@ int stuff_sexp_variable_list()
 		// maybe this is an eternal persistent variable of some type
 		if (check_for_string("\"eternal\"")) {
 			// eat it
-			get_string(persistent);
+			get_string(persistent, TOKEN_LENGTH);
 			ignore_white_space();
 
 			// set type
@@ -5114,14 +5119,14 @@ int stuff_sexp_variable_list()
 		// maybe this is a persistent variable of some type
 		if (check_for_string("\"player-persistent\"") || check_for_string("\"save-on-mission-close\"")) {
 			// eat it
-			get_string(persistent);
+			get_string(persistent, TOKEN_LENGTH);
 			ignore_white_space();
 
 			// set type
 			type |= SEXP_VARIABLE_SAVE_ON_MISSION_CLOSE;
 		} else if (check_for_string("\"campaign-persistent\"") || check_for_string("\"save-on-mission-progress\"")) {
 			// eat it
-			get_string(persistent);
+			get_string(persistent, TOKEN_LENGTH);
 			ignore_white_space();
 
 			// set type
@@ -5129,7 +5134,7 @@ int stuff_sexp_variable_list()
 		// trap error
 		} else if (check_for_string("\"")) {
 			// eat garbage
-			get_string(persistent);
+			get_string(persistent, TOKEN_LENGTH);
 			ignore_white_space();
 
 			// notify of error
@@ -5137,8 +5142,13 @@ int stuff_sexp_variable_list()
 		}
 
 		// finished getting info; now add the variable
+		bool index_valid = (index >= 0) && (index < MAX_SEXP_VARIABLES);
 		if ( type & SEXP_VARIABLE_BLOCK ) {
-			add_block_variable(default_value, var_name, type, index);
+			if (index_valid) {
+				add_block_variable(default_value, var_name, type, index);
+			} else {
+				error_display(0, "Block variable '%s' has an invalid index (%d)!  Skipping it.", var_name, index);
+			}
 		}
 		else {
 			// check if variable name already exists
@@ -5146,8 +5156,17 @@ int stuff_sexp_variable_list()
 			if (get_index_sexp_variable_name(var_name) >= 0) {
 				error_display(0, "Variable '%s' already exists!  Skipping duplicate.", var_name);
 			} else {
-				count++;
-				sexp_add_variable(default_value, var_name, type, index);
+				if (!index_valid && (index != -1)) {
+					error_display(0, "Variable '%s' has an invalid index (%d)!  Using the next free slot.", var_name, index);
+					index = -1;
+				}
+				// the caller scans slots 0 through count - 1, so count is one past the highest slot used
+				int slot = sexp_add_variable(default_value, var_name, type, index);
+				if (slot >= 0) {
+					count = MAX(count, slot + 1);
+				} else {
+					error_display(0, "Too many variables!  Skipping '%s'.", var_name);
+				}
 			}
 		}
 	}
