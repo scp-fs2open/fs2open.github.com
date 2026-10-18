@@ -428,21 +428,51 @@ void model_init()
 }
 
 // routine to parse out values from a user property field of an object
-void get_user_prop_value(char *buf, char *value)
+void get_user_prop_value(char* buf, char* value, size_t value_size)
 {
-	char *p, *p1, c;
+	char *p, *p1;
+
+	Assertion(value_size > 0, "get_user_prop_value needs room for at least the terminator");
 
 	p = buf;
-	while ( isspace(*p) || (*p == '=') || (*p == ':') )		// skip white space, equal sign, and colon
+	while ( isspace(static_cast<unsigned char>(*p)) || (*p == '=') || (*p == ':') )		// skip white space, equal sign, and colon
 		p++;
 	p1 = p;
-	while ( !iscntrl(*p1) )						// copy until we get to a control character
+	while ( !iscntrl(static_cast<unsigned char>(*p1)) )						// copy until we get to a control character
 		p1++;
-	c = *p1;
-	*p1 = '\0';
-	strcpy(value, p);
-	*p1 = c;
+	while ((p1 > p) && isspace(static_cast<unsigned char>(p1[-1]))) {
+		p1--;
+	}
+	size_t len = std::min(static_cast<size_t>(p1 - p), value_size - 1);
+	memcpy(value, p, len);
+	value[len] = '\0';
+	if (p + len < p1) {
+		Warning(LOCATION,
+			"A model property value is longer than %d characters and was cut to \"%s\"",
+			static_cast<int>(value_size - 1),
+			value);
+	}
 	drop_trailing_white_space(value);			// trim ending whitespace, just as we trimmed leading whitespace
+}
+
+template <size_t SIZE>
+void get_user_prop_value(char* buf, char (&value)[SIZE])
+{
+	get_user_prop_value(buf, value, SIZE);
+}
+
+static char* skip_past_comma(char* p)
+{
+	while ((*p != ',') && (*p != '\0') && (*p != '\n') && (*p != '\r')) {
+		p++;
+	}
+	return (*p == ',') ? (p + 1) : p;
+}
+
+static char* skip_key(char* p, size_t key_len)
+{
+	p += key_len;
+	return (*p != '\0') ? (p + 1) : p;
 }
 
 // routine to parse out a vec3d from a user property field of an object
@@ -459,7 +489,7 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const 
 	// Check if there's a missing line break before the next "$".
 	char end_separator = '\0';
 	char* end_pos = buf;
-	while (!iscntrl(*end_pos) && *end_pos != '$')
+	while (!iscntrl(static_cast<unsigned char>(*end_pos)) && *end_pos != '$')
 		end_pos++;
 
 	// We found a $ before the next line break, remember it and replace it with a line break.
@@ -475,7 +505,7 @@ bool get_user_vec3d_value(char *buf, vec3d *value, bool require_brackets, const 
 	// goto could have been used.
 	do {
 		// skip white space and equal sign or colon
-		while (isspace(*Mp) || (*Mp == '=') || (*Mp == ':'))
+		while (isspace(static_cast<unsigned char>(*Mp)) || (*Mp == '=') || (*Mp == ':'))
 			Mp++;
 
 		if (require_brackets)
@@ -541,8 +571,7 @@ int prop_string(char *props, char **p, int n_args, ...)
 			index = i;
 
 			// so advance past the string and its following character
-			pos += strlen(option);
-			pos++;
+			pos = skip_key(pos, strlen(option));
 
 			break;
 		}
@@ -1363,7 +1392,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 			sm->look_at_submodel = static_cast<int>(look_at_submodel_names.size());
 
 			char submodel_name[MAX_NAME_LEN];
-			get_user_prop_value(p + 9, submodel_name);
+			get_user_prop_value(skip_key(p, 8), submodel_name);
 			look_at_submodel_names.push_back(submodel_name);
 		}
 		else
@@ -1372,7 +1401,7 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		// optional extra property for look_at
 		if (in(p, props, "$look_at_offset"))
 		{
-			auto offset = (float)atof(p + 16);
+			auto offset = (float)atof(skip_key(p, 15));
 
 			// model property is specified in degrees, so convert it
 			offset = fl_radians(offset);
@@ -1533,12 +1562,20 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 
 	// models could specify the submodel number, so let's maintain compatibilty
 	if (can_construe_as_integer(submodel_name)) {
-		submodel_index = atoi(submodel_name);
-		return;
+		long number = strtol(submodel_name, nullptr, 10);
+		if ((number >= -1) && (number < pm->n_models)) {
+			submodel_index = static_cast<int>(number);
+			return;
+		}
 	}
 
 	Warning(LOCATION, "Unable to match %s %s %s %s with a submodel!\n", pm->filename, requester, field, submodel_name);
 	submodel_index = -1;
+}
+
+static int pof_bytes_left(CFILE *fp)
+{
+	return cfilelength(fp) - cftell(fp);
 }
 
 /**
@@ -1573,12 +1610,100 @@ static int pof_read_count(CFILE *fp, const char *filename, const char *what, int
 	return count;
 }
 
+// the old tree format is read node by node in convert_sldc_to_slc2, so every node size has to be usable as-is
+bool sldc_tree_is_valid(const ubyte* sldc, uint tree_size)
+{
+	uint offset = 0;
+	while (offset < tree_size) {
+		if (tree_size - offset < 29) {
+			return false;
+		}
+		ubyte node_type;
+		uint node_size;
+		memcpy(&node_type, sldc + offset, 1);
+		memcpy(&node_size, sldc + offset + 1, 4);
+		if (node_size < 29 || node_size > tree_size - offset) {
+			return false;
+		}
+		if (node_type == 0) {
+			uint back;
+			if (node_size != 37) {
+				return false;
+			}
+			memcpy(&back, sldc + offset + 33, 4);
+			if (back == 0 || back >= tree_size - offset) {
+				return false;
+			}
+		}
+		offset += node_size;
+	}
+	return true;
+}
+
+bool slc2_tree_is_valid(const ubyte* tree, int tree_size, int num_tris)
+{
+	// mc_check_sldc recurses once per level, and real trees are only a few dozen levels deep at most
+	const int max_depth = 256;
+	SCP_vector<bool> covered(tree_size, false);
+	SCP_vector<std::pair<uint, int>> pending{{0, 1}};
+	while (!pending.empty()) {
+		uint offset = pending.back().first;
+		int depth = pending.back().second;
+		pending.pop_back();
+		if (depth > max_depth || offset + 36 > static_cast<uint>(tree_size)) {
+			return false;
+		}
+		int node_type;
+		uint front_or_count;
+		memcpy(&node_type, tree + offset, 4);
+		memcpy(&front_or_count, tree + offset + 32, 4);
+		uint node_end;
+		if (node_type == 0) {
+			node_end = offset + 40;
+		} else if (front_or_count > (tree_size - offset - 36) / 4) {
+			return false;
+		} else {
+			node_end = offset + 36 + 4 * front_or_count;
+		}
+		if (node_end > static_cast<uint>(tree_size)) {
+			return false;
+		}
+		// nodes may not overlap, which keeps this check and every collision test linear in the tree size
+		for (uint i = offset; i < node_end; i++) {
+			if (covered[i]) {
+				return false;
+			}
+			covered[i] = true;
+		}
+		if (node_type == 0) {
+			uint back;
+			memcpy(&back, tree + offset + 36, 4);
+			for (uint child : {front_or_count, back}) {
+				if (child == 0 || child >= tree_size - offset) {
+					return false;
+				}
+				pending.emplace_back(offset + child, depth + 1);
+			}
+		} else {
+			for (uint i = 0; i < front_or_count; i++) {
+				uint tri;
+				memcpy(&tri, tree + offset + 36 + 4 * i, 4);
+				if (tri >= static_cast<uint>(num_tris)) {
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
 modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
 	int id, len, next_chunk;
 	int i,j;
+	SCP_vector<bool> submodel_defined;
 	vec3d temp_vec;
 
 	fp = cfopen(filename,"rb");
@@ -1638,7 +1763,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
-	next_chunk = cftell(fp) + len;
 
 	// keep track of any submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
@@ -1648,6 +1772,13 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	int n_textures_in_file = 0;
 
 	while (!cfeof(fp)) {
+		if (len < 0 || len > INT_MAX - cftell(fp)) {
+			Warning(LOCATION,
+				"Model %s has a chunk with an invalid length!  The rest of the file will be ignored.",
+				filename);
+			break;
+		}
+		next_chunk = cftell(fp) + len;
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
 //		key_getch();
@@ -1661,7 +1792,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
 				if (id == ID_OHDR) {
-					pm->n_models = pof_read_count(fp, filename, "submodels");
+					pm->n_models = pof_read_count(fp, filename, "submodels", pof_bytes_left(fp) / 76);
 //					mprintf(( "Num models = %d\n", pm->n_models ));
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
@@ -1669,7 +1800,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if (id == ID_HDR2) {
 					pm->rad = cfread_float(fp);
 					pm->flags = cfread_int(fp);	// 1=Allow tiling
-					pm->n_models = pof_read_count(fp, filename, "submodels");
+					// each submodel needs an OBJ2 chunk, and even an empty one is more than 76 bytes
+					pm->n_models = pof_read_count(fp, filename, "submodels", pof_bytes_left(fp) / 76);
 //					mprintf(( "Num models = %d\n", pm->n_models ));
 				}
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
@@ -1681,6 +1813,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				pm->submodel = make_shared<bsp_info[]>(MAX(1,pm->n_models));
+				submodel_defined.assign(pm->n_models, false);
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -1780,6 +1913,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if ( pm->version >= 2014 ) {
 					// retail models use -1 to mean there are no cross sections
 					pm->num_xc = std::max(cfread_int(fp), 0);
+					// each cross section is 8 bytes in the file
+					pm->num_xc = std::min(pm->num_xc, pof_bytes_left(fp) / 8);
 					if (pm->num_xc > 0) {
 						pm->xc = make_shared<cross_section[]>(pm->num_xc);
 						for (i=0; i<pm->num_xc; i++) {
@@ -1827,6 +1962,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					break;
 				}
 				auto sm = &pm->submodel[n];
+				submodel_defined[n] = true;
 
 				if (id == ID_OBJ2) {
 					sm->rad = cfread_float(fp);		//radius
@@ -1937,7 +2073,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					SCP_string type_desc;
 					sprintf(type_desc, "$special property (for submodel %s) allowed token", sm->name);
 
-					get_user_prop_value(p+9, type);
+					get_user_prop_value(skip_key(p, 8), type);
 					const char* type_list[] = { "subsystem", "no_movement", "no_rotate", "no_translate" };
 					int type_index = string_lookup(type, type_list, 4, type_desc.c_str(), true, true);
 
@@ -1985,11 +2121,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (in(p, props, "$box_offset:")) {
 						p += 12;
 						while (*p == ' ') p++;
-						sm->render_box_offset.xyz.x = (float)strtod(p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
+						sm->render_box_offset.xyz.x = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_offset.xyz.y = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_offset.xyz.z = (float)strtod(p, &p);
 
 						sm->flags.set(Model::Submodel_flags::Use_render_box_offset);
 					}
@@ -1997,11 +2133,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (in(p, props, "$box_min:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						sm->render_box_min.xyz.x = (float)strtod(p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_min.xyz.y = (float)strtod(++p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_min.xyz.z = (float)strtod(++p, (char **)nullptr);
+						sm->render_box_min.xyz.x = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_min.xyz.y = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_min.xyz.z = (float)strtod(p, &p);
 					} else {
 						sm->render_box_min = sm->min;
 					}
@@ -2009,11 +2145,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (in(p, props, "$box_max:")) {
 						p += 9;
 						while (*p == ' ') p++;
-						sm->render_box_max.xyz.x = (float)strtod(p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_max.xyz.y = (float)strtod(++p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_box_max.xyz.z = (float)strtod(++p, (char **)nullptr);
+						sm->render_box_max.xyz.x = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_max.xyz.y = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_box_max.xyz.z = (float)strtod(p, &p);
 					} else {
 						sm->render_box_max = sm->max;
 					}
@@ -2040,11 +2176,11 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (in(p, props, "$offset:")) {
 						p += 8;
 						while (*p == ' ') p++;
-						sm->render_sphere_offset.xyz.x = (float)strtod(p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_sphere_offset.xyz.y = (float)strtod(++p, (char **)nullptr);
-						while (*p != ',') p++;
-						sm->render_sphere_offset.xyz.z = (float)strtod(++p, (char **)nullptr);
+						sm->render_sphere_offset.xyz.x = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_sphere_offset.xyz.y = (float)strtod(p, &p);
+						p = skip_past_comma(p);
+						sm->render_sphere_offset.xyz.z = (float)strtod(p, &p);
 
 						sm->flags.set(Model::Submodel_flags::Use_render_sphere_offset);
 					} else {
@@ -2173,12 +2309,19 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
 				if (pm->version < 2200) {
 					//mprintf(("SLDC data is being converted to SLC2.\n"));
-					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes", pof_bytes_left(fp));
 
 					std::unique_ptr<ubyte[]> sldc_tree(new ubyte[pm->sldc_size]);
 					std::unique_ptr<ubyte[]> slc2_tree(new ubyte[pm->sldc_size * 2]);
 
-					cfread(sldc_tree.get(), 1, pm->sldc_size, fp);
+					if (cfread(sldc_tree.get(), 1, pm->sldc_size, fp) != pm->sldc_size ||
+						!sldc_tree_is_valid(sldc_tree.get(), pm->sldc_size)) {
+						Warning(LOCATION,
+							"Model %s has a malformed shield collision tree!  The tree will not be used.",
+							filename);
+						pm->sldc_size = 0;
+						break;
+					}
 					//mprintf(("SLDC Shield Collision Tree was %d bytes in size\n", pm->sldc_size));
 					pm->sldc_size = convert_sldc_to_slc2(sldc_tree.get(), slc2_tree.get(), pm->sldc_size);
 					//mprintf(("SLC2 Shield Collision Tree is %d bytes in size\n", pm->sldc_size));
@@ -2192,9 +2335,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
 			{
 				if (pm->version >= 2200) {
-					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes", pof_bytes_left(fp));
 					pm->shield_collision_tree = make_shared<ubyte[]>(pm->sldc_size);
-					cfread(pm->shield_collision_tree.get(), 1, pm->sldc_size, fp);
+					if (cfread(pm->shield_collision_tree.get(), 1, pm->sldc_size, fp) != pm->sldc_size) {
+						Warning(LOCATION,
+							"Model %s has a malformed shield collision tree!  The tree will not be used.",
+							filename);
+						pm->shield_collision_tree.reset();
+						pm->sldc_size = 0;
+						break;
+					}
 					swap_sldc_data(pm->shield_collision_tree.get());
 					//mprintf(( "SLC2 Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
 				}
@@ -2216,6 +2366,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					pm->shield.ntris = pof_read_count( fp, filename, "shield triangles" );		// get the number of triangles that compose the shield
 
 					if (pm->shield.ntris > 0) {
+						bool bad_vertex = false;
+						bool bad_neighbor = false;
 						pm->shield.tris = make_shared<shield_tri[]>(pm->shield.ntris);
 						Assert( pm->shield.tris );
 						for ( i = 0; i < pm->shield.ntris; i++ ) {
@@ -2224,21 +2376,26 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							pm->shield.tris[i].norm = temp_vec;
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
-#ifndef NDEBUG
-								if (pm->shield.tris[i].verts[j] >= pm->shield.nverts) {
-									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, pm->shield.nverts, pm->shield.tris[i].verts[j]);
+								if ((pm->shield.tris[i].verts[j] < 0) || (pm->shield.tris[i].verts[j] >= pm->shield.nverts)) {
+									bad_vertex = true;
 								}
-#endif
 							}
 							
 							for ( j = 0; j < 3; j++ ) {
 								pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
-#ifndef NDEBUG
-								if (pm->shield.tris[i].neighbors[j] >= pm->shield.ntris) {
-									Error(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i triangles, index %i found.\n", filename, pm->shield.ntris, pm->shield.tris[i].neighbors[j]);
+								if ((pm->shield.tris[i].neighbors[j] < 0) || (pm->shield.tris[i].neighbors[j] >= pm->shield.ntris)) {
+									pm->shield.tris[i].neighbors[j] = i;
+									bad_neighbor = true;
 								}
-#endif
 							}
+						}
+
+						if (bad_vertex) {
+							Warning(LOCATION, "Model '%s' has a bogus shield mesh with an invalid vertex index!  The shield mesh will be ignored.", filename);
+							pm->shield.ntris = 0;
+							pm->shield.tris = nullptr;
+						} else if (bad_neighbor) {
+							mprintf(("Model '%s' has shield triangle neighbor indices out of range; those neighbors were reset.\n", filename));
 						}
 					}
 				}
@@ -2472,8 +2629,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 								nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
 							}
 
-							strcat(glow_texture_name, "-neb");
-							bank->glow_neb_bitmap = bm_load(glow_texture_name);
+							if (strlen(glow_texture_name) > MAX_FILENAME_LEN - 4 - 1) {
+								nprintf(("Model", "Glow point bank %i texture '%s' for '%s' is too long for the -neb suffix\n", gpb, glow_texture_name, pm->filename));
+							} else {
+								char glow_texture_neb_name[MAX_FILENAME_LEN];
+								strcpy_s(glow_texture_neb_name, glow_texture_name);
+								strcat_s(glow_texture_neb_name, "-neb");
+								bank->glow_neb_bitmap = bm_load(glow_texture_neb_name);
+							}
 
 							if (bank->glow_neb_bitmap < 0)
 							{
@@ -2645,7 +2808,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						SCP_string type_desc;
 						sprintf(type_desc, "$special property (for special point %s) allowed token", name);
 
-						get_user_prop_value(p+9, type);
+						get_user_prop_value(skip_key(p, 8), type);
 						const char *type_list[] = { "subsystem", "shieldpoint" };
 						int type_index = string_lookup(type, type_list, 2, type_desc.c_str(), true, true);
 
@@ -2953,7 +3116,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		id = cfread_int(fp);
 		len = cfread_int(fp);
-		next_chunk = cftell(fp) + len;
 	}
 
 	cfclose(fp);
@@ -2971,6 +3133,22 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			return modelread_status::FAIL;
 		}
 	}
+	if ((pm->shield_collision_tree != nullptr) &&
+		!slc2_tree_is_valid(pm->shield_collision_tree.get(), pm->sldc_size, pm->shield.ntris)) {
+		Warning(LOCATION, "Model %s has a malformed shield collision tree!  The tree will not be used.", pm->filename);
+		pm->shield_collision_tree.reset();
+		pm->sldc_size = 0;
+	}
+	for (i = 0; i < pm->n_glow_point_banks; i++) {
+		if (pm->glow_point_banks[i].submodel_parent >= pm->n_models) {
+			Warning(LOCATION,
+				"Model %s glow point bank %d has parent submodel %d, which does not exist!",
+				pm->filename,
+				i,
+				pm->glow_point_banks[i].submodel_parent);
+			pm->glow_point_banks[i].submodel_parent = -1;
+		}
+	}
 	for (i = 0; i < pm->num_debris_objects; i++) {
 		if (pm->debris_objects[i] < 0 || pm->debris_objects[i] >= pm->n_models) {
 			Warning(LOCATION, "Model %s debris object %d is %d which is not a valid submodel!", pm->filename, i, pm->debris_objects[i]);
@@ -2978,6 +3156,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 	for (i = 0; i < pm->n_models; i++) {
+		if ((i >= (int)submodel_defined.size()) || !submodel_defined[i]) {
+			Warning(LOCATION, "Model %s submodel %d is counted in its header but never defined!", pm->filename, i);
+			return modelread_status::FAIL;
+		}
 		if (pm->submodel[i].parent < -1 || pm->submodel[i].parent >= pm->n_models) {
 			Warning(LOCATION, "Model %s submodel %d parent is %d which is not a valid submodel!", pm->filename, i, pm->submodel[i].parent);
 			return modelread_status::FAIL;
@@ -3494,8 +3676,11 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		for (j=0; j<pm->n_models; j++ ) {
 			// check if current model name is substring of destroyed
 			if ( strstr( pm->submodel[j].name, live_debris_name ))	{
+				if (pm->submodel[i].num_live_debris >= MAX_LIVE_DEBRIS) {
+					Warning(LOCATION, "Model '%s' has more than %d live debris pieces for '%s'!  The rest will be ignored.", pm->filename, MAX_LIVE_DEBRIS, pm->submodel[i].name);
+					break;
+				}
 				mprintf(( "Found live debris model for '%s'\n", pm->submodel[i].name ));
-				Assert(pm->submodel[i].num_live_debris < MAX_LIVE_DEBRIS);
 				pm->submodel[i].live_debris[pm->submodel[i].num_live_debris++] = j;
 				pm->submodel[j].flags.set(Model::Submodel_flags::Is_live_debris);
 			}
@@ -3580,7 +3765,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					dl1 = 0;
 				}
 
-				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) ) continue;	// invalid detail levels
+				if ( (dl1<0) || (dl2<0) || (dl1>=MAX_MODEL_DETAIL_LEVELS) || (dl2>=MAX_MODEL_DETAIL_LEVELS) || (dl1 == dl2) ) continue;	// invalid detail levels
 
 				if ( dl1 == 0 )	{
 					dl2--;	// Start from 1 up...
@@ -3886,6 +4071,11 @@ void model_set_bay_path_nums(polymodel *pm)
 	if(too_many_paths)
 	{
 		Warning(LOCATION, "Model '%s' has too many bay paths - max is %d", pm->filename, MAX_SHIP_BAY_PATHS);
+	}
+	if (pm->ship_bay->num_paths > MAX_SHIP_BAY_PATHS)
+	{
+		Warning(LOCATION, "Model '%s' has %d bay paths, but there are only %d bay numbers!  Some paths share a number.", pm->filename, pm->ship_bay->num_paths, MAX_SHIP_BAY_PATHS);
+		pm->ship_bay->num_paths = MAX_SHIP_BAY_PATHS;
 	}
 
 	// sanity part 2
@@ -6282,6 +6472,16 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 	uint node_size, node_type_int, new_tree_size = 0, count = 0;
 	char node_type_char;
 
+	// each node grows by 3 bytes, so a back offset grows by 3 for every node it skips over
+	SCP_vector<uint> node_starts;
+	for (uint offset = 0; offset < tree_size;) {
+		node_starts.push_back(offset);
+		memcpy(&node_size, sldc + offset + 1, 4);
+		offset += node_size;
+	}
+	node_starts.push_back(tree_size);
+	size_t node_index = 0;
+
 	//Process the SLDC tree to the end
 	while (count < tree_size) {
 		//Save Node type and size
@@ -6307,20 +6507,13 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 
 		if (node_type_char == 0) {
 			//Front and back offsets must be adjusted
-			uint front, back, newback = 0;
-			ubyte* p;
+			uint front, back, newback;
 
-			p = sldc - 29;
-			memcpy(&back, p + 33, 4);
+			memcpy(&back, sldc - 29 + 33, 4);
 
 			//I need to find the new distance to back.
-			while (p < sldc + back - 29) {
-				uint ns;
-				memcpy(&ns, p + 1, 4);
-				p += ns;
-				newback += ns + 3;
-
-			}
+			auto target = std::lower_bound(node_starts.begin(), node_starts.end(), count + back);
+			newback = (*target - count) + 3 * static_cast<uint>((target - node_starts.begin()) - node_index);
 			//Copy offsets
 			front = node_size + 3;
 			memcpy(slc2, &front, 4); //Front is always this node size+3;
@@ -6340,6 +6533,7 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 		//Count the new tree size and move the counter
 		count += node_size;
 		new_tree_size += node_size + 3;
+		node_index++;
 	}
 
 	//return the SLC2 tree size
