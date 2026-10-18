@@ -1002,7 +1002,7 @@ void cf_set_max_read_len( CFILE * cfile, size_t len )
 	Assert( cfile != NULL );
 
 	if (len) {
-		cfile->max_read_len = cfile->raw_position + len;
+		cfile->max_read_len = std::min(cfile->raw_position + len, cfile->size);
 	} else {
 		cfile->max_read_len = 0;
 	}

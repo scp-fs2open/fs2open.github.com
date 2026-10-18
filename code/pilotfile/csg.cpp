@@ -1778,6 +1778,11 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 		size_t start_pos = cftell(cfp);
 
+		// a size of 0 would turn the read limit off, and only an empty section is written with it
+		if (section_size == 0) {
+			continue;
+		}
+
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);
 
