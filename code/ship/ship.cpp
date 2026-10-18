@@ -1966,6 +1966,16 @@ static void parse_ship(const char *filename, bool replace)
 		if (ship_id >= 0) {
 			mprintf(("Removing previously parsed ship '%s'\n", fname));
 			Ship_info.erase(Ship_info.begin() + ship_id);
+
+			// group memberships store Ship_info indexes, which shift down after the erase
+			for (auto &group : Ai_tp_list)
+			{
+				auto &list = group.ship_class;
+				list.erase(std::remove(list.begin(), list.end(), ship_id), list.end());
+				for (auto &idx : list)
+					if (idx > ship_id)
+						--idx;
+			}
 		}
 
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
@@ -2675,6 +2685,34 @@ int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, c
 
 	// get the index of these warp params, which may be a new index
 	return find_or_add_warp_params(params);
+}
+
+/**
+ * Parses a $Target Priority Groups: list, making the given ship class or ship type index a member of each named group.
+ */
+static void parse_target_priority_groups(SCP_vector<int> ai_target_priority::*members, int index, const char *context)
+{
+	SCP_vector<SCP_string> group_names;
+	stuff_string_list(group_names);
+
+	// +Override replaces this entry's previous group memberships, leaving other members alone
+	if (optional_string("+Override") && index >= 0)
+	{
+		for (auto &group : Ai_tp_list)
+		{
+			auto &list = group.*members;
+			list.erase(std::remove(list.begin(), list.end(), index), list.end());
+		}
+	}
+
+	for (const auto &name : group_names)
+	{
+		int i = find_item_with_string(Ai_tp_list, &ai_target_priority::name, name.c_str());
+		if (i < 0)
+			error_display(0, "Unidentified priority group '%s' set for %s.", name.c_str(), context);
+		else if (index >= 0 && !(Ai_tp_list[i].*members).contains(index))
+			(Ai_tp_list[i].*members).push_back(index);
+	}
 }
 
 /**
@@ -5090,40 +5128,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector<SCP_string> target_group_strings;
-		stuff_string_list(target_group_strings);
-		size_t num_groups = Ai_tp_list.size();
-		bool override_strings = false;
-
-		if (optional_string("+Override")) {
-			override_strings = true;
-		}
-
-		for(size_t j = 0; j < target_group_strings.size(); j++) {
-			size_t i;
-			for(i = 0; i < num_groups; i++) {
-				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
-					//so now the string from the list above as well as the ai priority group name match
-					//clear it if override has been set
-					if (override_strings) {
-						Ai_tp_list[i].ship_class.clear();
-						override_strings = false;
-					}
-					for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-						//find the index number of the current ship info type
-						if (&(*it) == sip) {
-							Ai_tp_list[i].ship_class.push_back((int)std::distance(Ship_info.cbegin(), it));
-							break;
-						}
-					}
-					// found something, try next string
-					break;
-				}
-			}
-			if (i == num_groups) {
-				Warning(LOCATION,"Unidentified priority group '%s' set for %s '%s'\n", target_group_strings[j].c_str(), info_type_name, sip->name);
-			}
-		}
+		SCP_string context;
+		sprintf(context, "%s '%s'", info_type_name, sip->name);
+		int class_idx = is_template ? -1 : static_cast<int>(std::distance(Ship_info.data(), sip));
+		parse_target_priority_groups(&ai_target_priority::ship_class, class_idx, context.c_str());
 	}
 
 	if (optional_string("$EMP Resistance Modifier:")) {
@@ -5825,35 +5833,9 @@ static void parse_ship_type(const char *filename, const bool replace)
 
 	//AI turret targeting priority setup
 	if (optional_string("$Target Priority Groups:") ) {
-		SCP_vector <SCP_string> target_group_strings;
-		stuff_string_list(target_group_strings);
-		auto num_strings = target_group_strings.size();
-		auto num_groups = Ai_tp_list.size();
-		bool override_strings = false;
-
-		if (optional_string("+Override")) {
-			override_strings = true;
-		}
-
-		for(size_t j = 0; j < num_strings; j++) {
-			size_t i;
-			for(i = 0; i < num_groups; i++) {
-				if ( !stricmp(target_group_strings[j].c_str(), Ai_tp_list[i].name) ) {
-					//so now the string from the list above as well as the ai priority group name match
-					//clear it if override has been set
-					if (override_strings) {
-						Ai_tp_list[i].ship_type.clear();
-						override_strings = false;
-					}
-					//find the index number of the current ship info type
-					Ai_tp_list[i].ship_type.push_back(ship_type_name_lookup(name_buf));
-					break;
-				}
-			}
-			if (i == num_groups) {
-				Warning(LOCATION,"Unidentified priority group '%s' set for ship type '%s' in %s\n", target_group_strings[j].c_str(), stp->name, filename);
-			}
-		}
+		SCP_string context;
+		sprintf(context, "ship type '%s' in %s", stp->name, filename);
+		parse_target_priority_groups(&ai_target_priority::ship_type, ship_type_name_lookup(name_buf), context.c_str());
 	}
 
 	if(optional_string("$Counts for Alone:")) {
