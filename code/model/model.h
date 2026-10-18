@@ -260,6 +260,9 @@ public:
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
 	float	turret_base_fov;					//  turret's base's fov, -1 means no restriction
+	float	pof_turret_fov;						//  turret_fov as read from the model, before any ships.tbl override
+	float	pof_turret_max_fov;					//  turret_max_fov as read from the model, before any ships.tbl override
+	float	pof_turret_base_fov;				//  turret_base_fov as read from the model, before any ships.tbl override
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.

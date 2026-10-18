@@ -583,6 +583,17 @@ bool in(char *&p, char *str, const char *substr)
 	return p != nullptr;
 }
 
+// copy the model's turret FOVs into the live values, except for any that ships.tbl has overridden
+static void model_apply_pof_turret_fovs(model_subsystem *subsystemp)
+{
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden])
+		subsystemp->turret_fov = subsystemp->pof_turret_fov;
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden])
+		subsystemp->turret_base_fov = subsystemp->pof_turret_base_fov;
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden])
+		subsystemp->turret_max_fov = subsystemp->pof_turret_max_fov;
+}
+
 const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Translates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate, Model::Subsystem_Flags::Stepped_translate };
 // Function to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
@@ -609,13 +620,21 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->radius = source->radius;
 				dest->type = source->type;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
+				dest->path_num = source->path_num;
+				dest->weapon_rotation_pbank = source->weapon_rotation_pbank;
+				dest->stepped_rotation = source->stepped_rotation;
+				dest->stepped_translation = source->stepped_translation;
 
                 strcpy_s(dest->name, source->name);
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
 
-					dest->turret_fov = source->turret_fov;
+					dest->pof_turret_fov = source->pof_turret_fov;
+					dest->pof_turret_base_fov = source->pof_turret_base_fov;
+					dest->pof_turret_max_fov = source->pof_turret_max_fov;
+					model_apply_pof_turret_fovs(dest);
+
 					dest->turret_num_firing_points = source->turret_num_firing_points;
 					dest->turret_norm = source->turret_norm;
 
@@ -669,39 +688,34 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 
 		subsystemp->type = SUBSYSTEM_TURRET;
 
-		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
-			if (in(p, props, "$fov")) {
-				get_user_prop_value(p + 4, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value) / 2.0f;
-				subsystemp->turret_fov = cosf(angle);
-			} else
-				subsystemp->turret_fov = 0.0f;
-		}		
+		if (in(p, props, "$fov")) {
+			get_user_prop_value(p + 4, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 360.0f);
+			float angle = fl_radians(value) / 2.0f;
+			subsystemp->pof_turret_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_fov = 0.0f;
 
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
-			if (in(p, props, "$base_fov")) {
-				get_user_prop_value(p + 9, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value) / 2.0f;
-				subsystemp->turret_base_fov = cosf(angle);
-			} else
-				subsystemp->turret_base_fov = -1.0f;
-		}
+		if (in(p, props, "$base_fov")) {
+			get_user_prop_value(p + 9, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 360.0f);
+			float angle = fl_radians(value) / 2.0f;
+			subsystemp->pof_turret_base_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_base_fov = -1.0f;
 
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
-			if (in(p, props, "$max_fov")) {
-				get_user_prop_value(p + 8, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 90.0f);
-				float angle = PI_2 - fl_radians(value);
-				subsystemp->turret_max_fov = cosf(angle);
-			} else
-				subsystemp->turret_max_fov = 1.0f;
-		}
+		if (in(p, props, "$max_fov")) {
+			get_user_prop_value(p + 8, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 90.0f);
+			float angle = PI_2 - fl_radians(value);
+			subsystemp->pof_turret_max_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_max_fov = 1.0f;
+
+		model_apply_pof_turret_fovs(subsystemp);
 
 		subsystemp->turret_num_firing_points = 0;
 
@@ -6218,6 +6232,9 @@ void model_subsystem::reset()
     turret_fov = 0;
     turret_max_fov = 1;
     turret_base_fov = -1;
+    pof_turret_fov = 0;
+    pof_turret_max_fov = 1;
+    pof_turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
