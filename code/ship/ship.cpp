@@ -1966,6 +1966,16 @@ static void parse_ship(const char *filename, bool replace)
 		if (ship_id >= 0) {
 			mprintf(("Removing previously parsed ship '%s'\n", fname));
 			Ship_info.erase(Ship_info.begin() + ship_id);
+
+			// group memberships store Ship_info indexes, which shift down after the erase
+			for (auto &group : Ai_tp_list)
+			{
+				auto &list = group.ship_class;
+				list.erase(std::remove(list.begin(), list.end(), ship_id), list.end());
+				for (auto &idx : list)
+					if (idx > ship_id)
+						--idx;
+			}
 		}
 
 		if (!skip_to_start_of_string_either("$Name:", "#End")) {
