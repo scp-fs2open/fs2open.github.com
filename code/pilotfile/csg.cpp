@@ -131,27 +131,40 @@ void pilotfile::csg_read_info()
 
 	// check the idx is within bounds
 	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
-	if (idx >= (int)ship_list.size())
-		idx = -1;
-	else if (idx != -1)
+	if ((idx >= 0) && (idx < (int)ship_list.size()))
 		p->last_ship_flown_si_index = ship_list[idx].index;
 	else
 		p->last_ship_flown_si_index = -1;
 
 	// progression state
 	Campaign.prev_mission = cfread_int(cfp);
+	if (Campaign.num_missions > 0 && (Campaign.prev_mission < -1 || Campaign.prev_mission >= Campaign.num_missions)) {
+		mprintf(("CSG => Parse Warning: Invalid previous mission (%d), clearing it.\n", Campaign.prev_mission));
+		Campaign.prev_mission = -1;
+	}
 	Campaign.next_mission = cfread_int(cfp);
 
 	// check that the next mission won't be greater than the total number of missions
 	// though ensure we only flag if campaign exists and has been loaded
-	if (Campaign.num_missions > 0 && Campaign.next_mission >= Campaign.num_missions) {
+	if (Campaign.num_missions > 0 && (Campaign.next_mission < -1 || Campaign.next_mission >= Campaign.num_missions)) {
 		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
 		m_data_invalid = true; // Causes a warning popup to be displayed
 	}
 
 	// loop state
 	Campaign.loop_reentry = cfread_int(cfp);
+	bool invalid_loop_reentry =
+		Campaign.num_missions > 0 && (Campaign.loop_reentry < -1 || Campaign.loop_reentry >= Campaign.num_missions);
+	if (invalid_loop_reentry) {
+		mprintf(("CSG => Parse Warning: Invalid loop reentry (%d), leaving the loop.\n", Campaign.loop_reentry));
+		Campaign.loop_reentry = -1;
+		// also cleared before the read, in case the section ends there
+		Campaign.loop_enabled = 0;
+	}
 	Campaign.loop_enabled = cfread_int(cfp);
+	if (invalid_loop_reentry) {
+		Campaign.loop_enabled = 0;
+	}
 
 	// missions completed
 	Campaign.num_missions_completed = cfread_int(cfp);
@@ -266,6 +279,8 @@ void pilotfile::csg_read_missions()
 {
 	int i, j, idx, list_size;
 	cmission *missionp;
+	cmission discarded_mission;
+	int num_discarded = 0;
 
 	if ( !m_have_info ) {
 		throw "Missions before Info!";
@@ -273,7 +288,13 @@ void pilotfile::csg_read_missions()
 
 	for (i = 0; i < Campaign.num_missions_completed; i++) {
 		idx = cfread_int(cfp);
-		missionp = &Campaign.missions[idx];
+		if ((idx < 0) || (idx >= MAX_CAMPAIGN_MISSIONS)) {
+			mprintf(("CSG => Parse Warning: Invalid mission index (%d), discarding its record.\n", idx));
+			missionp = &discarded_mission;
+			num_discarded++;
+		} else {
+			missionp = &Campaign.missions[idx];
+		}
 
 		missionp->completed = 1;
 
@@ -353,6 +374,8 @@ void pilotfile::csg_read_missions()
 			}
 		}
 	}
+
+	Campaign.num_missions_completed -= num_discarded;
 }
 
 void pilotfile::csg_write_missions()
@@ -870,8 +893,13 @@ void pilotfile::csg_read_redalert()
 
 			for (j = 0; j < count; j++) {
 				i = cfread_int(cfp);
-				weapons.index = weapon_list[i].index;
 				weapons.count = cfread_int(cfp);
+
+				if ((i < 0) || (i >= (int)weapon_list.size())) {
+					mprintf(("CSG => Parse Warning: Invalid value for red alert weapon index (%d), skipping.\n", i));
+					continue;
+				}
+				weapons.index = weapon_list[i].index;
 
 				// triggering this means something is really fubar
 				if (weapons.index < 0) {
@@ -886,8 +914,13 @@ void pilotfile::csg_read_redalert()
 
 			for (j = 0; j < count; j++) {
 				i = cfread_int(cfp);
-				weapons.index = weapon_list[i].index;
 				weapons.count = cfread_int(cfp);
+
+				if ((i < 0) || (i >= (int)weapon_list.size())) {
+					mprintf(("CSG => Parse Warning: Invalid value for red alert weapon index (%d), skipping.\n", i));
+					continue;
+				}
+				weapons.index = weapon_list[i].index;
 
 				// triggering this means something is really fubar
 				if (weapons.index < 0) {
@@ -1467,9 +1500,17 @@ void pilotfile::csg_read_lastmissions()
 	int i;
 
 	// restore list of most recently played missions
-	Num_recent_missions = cfread_int( cfp );
-	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
-	for ( i = 0; i < Num_recent_missions; i++ ) {
+	// count each entry only once it has been read, so a short section can't leave stale names in the list
+	Num_recent_missions = 0;
+	int count = cfread_int( cfp );
+	if ((count < 0) || (count > MAX_RECENT_MISSIONS)) {
+		ReleaseWarning(LOCATION,
+			"Campaign file has invalid recent mission count %d, keeping at most %d.\n",
+			count,
+			MAX_RECENT_MISSIONS);
+		count = std::clamp(count, 0, MAX_RECENT_MISSIONS);
+	}
+	for ( i = 0; i < count; i++ ) {
 		char *cp;
 
 		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, cfp);
@@ -1477,6 +1518,7 @@ void pilotfile::csg_read_lastmissions()
 		cp = strchr(Recent_missions[i], '.');
 			if (cp)
 				*cp = 0;
+		Num_recent_missions = i + 1;
 	}
 }
 
@@ -1735,6 +1777,15 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
+
+		// a size of 0 would turn the read limit off, and only an empty section is written with it
+		if (section_size == 0) {
+			continue;
+		}
+		if (section_size > static_cast<size_t>(cfilelength(cfp)) - start_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Section runs past the end of the file.\n", (uint32_t)section_id));
+			break;
+		}
 
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);
@@ -2005,6 +2056,15 @@ bool pilotfile::get_csg_rank(int *rank)
 
 		size_t start_pos = cftell(cfp);
 		size_t offset_pos;
+
+		// a size of 0 would turn the read limit off, and only an empty section is written with it
+		if (section_size == 0) {
+			continue;
+		}
+		if (section_size > static_cast<size_t>(cfilelength(cfp)) - start_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Section runs past the end of the file.\n", (uint32_t)section_id));
+			break;
+		}
 
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);

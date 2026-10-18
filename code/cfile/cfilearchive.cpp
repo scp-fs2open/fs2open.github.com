@@ -208,15 +208,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 	if(buf == NULL || size <= 0)
 		return 0;
 
-	if ( (cfile->raw_position+size) > cfile->size ) {
-		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
-		size = cfile->size - cfile->raw_position;
-		if ( size < 1 ) {
-			return 0;
-		}
-		//mprintf(( "CFILE: EOF encountered in file\n" ));
-	}
-
+	// the limit is checked first so that a limited read can't come back short at the end of the file
 	if (cfile->max_read_len) {
 		if ( cfile->raw_position+size > cfile->max_read_len ) {
 			std::ostringstream s_buf;
@@ -224,6 +216,15 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 			throw cfile::max_read_length(s_buf.str());
 		}
+	}
+
+	if ( (cfile->raw_position+size) > cfile->size ) {
+		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
+		size = cfile->size - cfile->raw_position;
+		if ( size < 1 ) {
+			return 0;
+		}
+		//mprintf(( "CFILE: EOF encountered in file\n" ));
 	}
 
 	size_t bytes_read;

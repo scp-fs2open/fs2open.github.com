@@ -307,7 +307,7 @@ void pilotfile_convert::csg_import_missions(bool inferno)
 		if (inferno) {
 			cfread(&t_inf_score, sizeof(scoring_conv_INF_t), 1, cfp);
 
-			for (j = 0; j < ship_list_size; j++) {
+			for (j = 0; j < MIN(ship_list_size, (int)(sizeof(t_inf_score.kills) / sizeof(t_inf_score.kills[0]))); j++) {
 				miss.stats.ship_kills[j].val = INTEL_INT(t_inf_score.kills[j]);
 			}
 
@@ -324,13 +324,13 @@ void pilotfile_convert::csg_import_missions(bool inferno)
 			miss.stats.s_bonehead_hits = INTEL_INT(t_inf_score.s_bonehead_hits);
 			miss.stats.bonehead_kills = INTEL_INT(t_inf_score.bonehead_kills);
 
-			for (j = 0; j < 18; j++) {
+			for (j = 0; j < MIN(18, (int)miss.stats.medals_earned.size()); j++) {
 				miss.stats.medals_earned[j].val = INTEL_INT(t_inf_score.medals[j]);
 			}
 		} else {
 			cfread(&t_score, sizeof(scoring_conv_t), 1, cfp);
 
-			for (j = 0; j < ship_list_size; j++) {
+			for (j = 0; j < MIN(ship_list_size, (int)(sizeof(t_score.kills) / sizeof(t_score.kills[0]))); j++) {
 				miss.stats.ship_kills[j].val = INTEL_INT(t_score.kills[j]);
 			}
 
@@ -347,7 +347,7 @@ void pilotfile_convert::csg_import_missions(bool inferno)
 			miss.stats.s_bonehead_hits = INTEL_INT(t_score.s_bonehead_hits);
 			miss.stats.bonehead_kills = INTEL_INT(t_score.bonehead_kills);
 
-			for (j = 0; j < 18; j++) {
+			for (j = 0; j < MIN(18, (int)miss.stats.medals_earned.size()); j++) {
 				miss.stats.medals_earned[j].val = INTEL_INT(t_score.medals[j]);
 			}
 		}
