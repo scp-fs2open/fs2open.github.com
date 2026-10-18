@@ -4133,13 +4133,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (!optional_string("+noreplace")) {
 			// clear flags since we might have a modular table
 			// clear only those which are actually set in the flags
-			bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
-			bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
-			bool has_display_name = sip->flags[Ship::Info_Flags::Has_display_name];
-			sip->flags.reset();
-			sip->flags.set(Ship::Info_Flags::Afterburner, has_afterburner);
-			sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
-			sip->flags.set(Ship::Info_Flags::Has_display_name, has_display_name);
+			// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+			const Ship::Info_Flags preset_si_flag_defs[] = {
+				Ship::Info_Flags::Afterburner,
+				Ship::Info_Flags::Draw_weapon_models,
+				Ship::Info_Flags::Has_display_name,
+				Ship::Info_Flags::Has_awacs,
+				Ship::Info_Flags::Allow_landings
+			};
+
+			flagset<Ship::Info_Flags> cleared_si_flags;
+			cleared_si_flags.set_multiple_from_source(sip->flags, std::begin(preset_si_flag_defs), std::end(preset_si_flag_defs));
+			sip->flags = cleared_si_flags;
 		}
 
 		for (const auto &flag : ship_strings)
@@ -5608,7 +5613,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
                     sp->flags |= tmp_flags;
                 }
                 else {
-                    sp->flags = tmp_flags;
+					// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+					const Model::Subsystem_Flags preset_subsys_flag_defs[] = {
+						Model::Subsystem_Flags::Turret_barrel_fov_overridden,
+						Model::Subsystem_Flags::Turret_base_fov_overridden,
+						Model::Subsystem_Flags::Turret_max_fov_overridden
+					};
+
+					flagset<Model::Subsystem_Flags> preset_subsys_flags;
+					preset_subsys_flags.set_multiple_from_source(sp->flags, std::begin(preset_subsys_flag_defs), std::end(preset_subsys_flag_defs));
+					sp->flags = tmp_flags | preset_subsys_flags;
                 }
 
                 if (!errors.empty()) {
