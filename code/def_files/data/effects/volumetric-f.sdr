@@ -94,7 +94,9 @@ void main()
 	vec2 fragcoordAngle = (fragTexCoord.xy - 0.5) * fov;
 	fragcoordAngle.x *= aspect;
 	float rawDepth = texture(depth_tex, fragTexCoord.xy).x;
-#ifdef VULKAN
+#if defined(REVERSED_Z)
+	float fragDepth = (zNear * zFar / (zNear + rawDepth * (zFar - zNear))) * sqrt(1.0 + tan(fragcoordAngle.x) * tan(fragcoordAngle.x) + tan(fragcoordAngle.y) * tan(fragcoordAngle.y));
+#elif defined(VULKAN)
 	// Vulkan depth range is [0,1]
 	float fragDepth = (zNear * zFar / (zFar - rawDepth * (zFar - zNear))) * sqrt(1.0 + tan(fragcoordAngle.x) * tan(fragcoordAngle.x) + tan(fragcoordAngle.y) * tan(fragcoordAngle.y));
 #else

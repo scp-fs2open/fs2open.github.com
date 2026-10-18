@@ -176,7 +176,7 @@ bool VulkanShadowMap::init(PostProcessContext& ctx)
 		samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
 		samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
 		samplerInfo.compareEnable = VK_TRUE;
-		samplerInfo.compareOp = vk::CompareOp::eLessOrEqual;
+		samplerInfo.compareOp = Gr_reversed_depth_active ? vk::CompareOp::eGreaterOrEqual : vk::CompareOp::eLessOrEqual;
 		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueWhite;
 
 		try {
