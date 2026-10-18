@@ -151,3 +151,130 @@ TEST_F(ResolveSubmodelIndexTest, numbers_out_of_range_warn) {
 	ASSERT_THROW(resolve("4294967296"), os::dialogs::WarningException);
 	ASSERT_THROW(resolve("+3"), os::dialogs::WarningException);
 }
+
+extern bool sldc_tree_is_valid(const ubyte *sldc, uint tree_size);
+extern bool slc2_tree_is_valid(const ubyte *tree, int tree_size, int num_tris);
+
+namespace {
+void add_slc2_split(SCP_vector<ubyte> &tree, uint front, uint back) {
+	int header[2] = { 0, 40 };
+	float bounds[6] = {};
+	uint offsets[2] = { front, back };
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(header), reinterpret_cast<ubyte *>(header) + sizeof(header));
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(bounds), reinterpret_cast<ubyte *>(bounds) + sizeof(bounds));
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(offsets), reinterpret_cast<ubyte *>(offsets) + sizeof(offsets));
+}
+
+void add_slc2_leaf(SCP_vector<ubyte> &tree, const SCP_vector<uint> &tris) {
+	int header[2] = { 1, static_cast<int>(36 + 4 * tris.size()) };
+	float bounds[6] = {};
+	uint count = static_cast<uint>(tris.size());
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(header), reinterpret_cast<ubyte *>(header) + sizeof(header));
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(bounds), reinterpret_cast<ubyte *>(bounds) + sizeof(bounds));
+	tree.insert(tree.end(), reinterpret_cast<const ubyte *>(&count), reinterpret_cast<const ubyte *>(&count) + sizeof(count));
+	for (uint tri : tris)
+		tree.insert(tree.end(), reinterpret_cast<const ubyte *>(&tri), reinterpret_cast<const ubyte *>(&tri) + sizeof(tri));
+}
+
+void add_sldc_node(SCP_vector<ubyte> &tree, ubyte type, uint size, uint back) {
+	tree.push_back(type);
+	tree.insert(tree.end(), reinterpret_cast<ubyte *>(&size), reinterpret_cast<ubyte *>(&size) + sizeof(size));
+	tree.insert(tree.end(), 24, 0);
+	if (type == 0) {
+		uint front = 0;
+		tree.insert(tree.end(), reinterpret_cast<ubyte *>(&front), reinterpret_cast<ubyte *>(&front) + sizeof(front));
+		tree.insert(tree.end(), reinterpret_cast<ubyte *>(&back), reinterpret_cast<ubyte *>(&back) + sizeof(back));
+	} else {
+		tree.insert(tree.end(), size - 29, 0);
+	}
+}
+
+bool slc2_valid(const SCP_vector<ubyte> &tree, int num_tris) {
+	return slc2_tree_is_valid(tree.data(), static_cast<int>(tree.size()), num_tris);
+}
+}
+
+TEST(ShieldCollisionTreeTest, slc2_valid_trees) {
+	SCP_vector<ubyte> tree;
+	add_slc2_split(tree, 40, 84);
+	add_slc2_leaf(tree, { 0, 1 });
+	add_slc2_leaf(tree, {});
+	EXPECT_TRUE(slc2_valid(tree, 2));
+}
+
+TEST(ShieldCollisionTreeTest, slc2_bad_trees) {
+	SCP_vector<ubyte> tree;
+
+	add_slc2_split(tree, 40, 84);
+	add_slc2_leaf(tree, { 0, 2 });
+	add_slc2_leaf(tree, {});
+	EXPECT_FALSE(slc2_valid(tree, 2)) << "triangle number past the shield mesh";
+
+	tree.clear();
+	add_slc2_split(tree, 0, 40);
+	add_slc2_leaf(tree, { 0 });
+	EXPECT_FALSE(slc2_valid(tree, 1)) << "child pointing at its own node";
+
+	tree.clear();
+	add_slc2_split(tree, 40, 40);
+	add_slc2_leaf(tree, { 0 });
+	EXPECT_FALSE(slc2_valid(tree, 1)) << "two children sharing a node";
+
+	tree.clear();
+	add_slc2_split(tree, 40, 80);
+	add_slc2_leaf(tree, { 0 });
+	EXPECT_FALSE(slc2_valid(tree, 1)) << "child past the end of the tree";
+
+	tree.clear();
+	add_slc2_leaf(tree, { 0, 0 });
+	tree.resize(tree.size() - 4);
+	EXPECT_FALSE(slc2_valid(tree, 1)) << "polygon list past the end of the tree";
+
+	EXPECT_FALSE(slc2_valid({}, 1)) << "empty tree";
+}
+
+TEST(ShieldCollisionTreeTest, slc2_depth_limit) {
+	auto build = [](int levels) {
+		SCP_vector<ubyte> tree;
+		for (int i = 0; i < levels; i++) {
+			add_slc2_split(tree, 80, 40);
+			add_slc2_leaf(tree, { 0 });
+		}
+		add_slc2_leaf(tree, { 0 });
+		return tree;
+	};
+	EXPECT_TRUE(slc2_valid(build(200), 1));
+	EXPECT_FALSE(slc2_valid(build(300), 1));
+}
+
+TEST(ShieldCollisionTreeTest, sldc_trees) {
+	SCP_vector<ubyte> tree;
+	add_sldc_node(tree, 0, 37, 37 + 33);
+	add_sldc_node(tree, 1, 33, 0);
+	add_sldc_node(tree, 1, 33, 0);
+	EXPECT_TRUE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size())));
+
+	tree.clear();
+	add_sldc_node(tree, 1, 29, 0);
+	tree[1] = 28;
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "node smaller than its header";
+
+	tree.clear();
+	add_sldc_node(tree, 1, 33, 0);
+	tree.resize(tree.size() + 10);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "trailing bytes that are not a node";
+
+	tree.clear();
+	add_sldc_node(tree, 0, 37, 0);
+	add_sldc_node(tree, 1, 33, 0);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "split with no back child";
+
+	tree.clear();
+	add_sldc_node(tree, 0, 37, 200);
+	add_sldc_node(tree, 1, 33, 0);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "back child past the end";
+
+	tree.clear();
+	add_sldc_node(tree, 1, 400, 0);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), 100)) << "node larger than the tree";
+}

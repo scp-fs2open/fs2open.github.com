@@ -625,6 +625,11 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	else {
 		subsystemName = std::get<SCP_string>(sourceId);
 
+		if (engineSubsysMap.empty()) {
+			Warning(LOCATION, "Failed to find engine subsystem %s of POF %s for virtual POF %s. Returning original POF.", subsystemName->c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+			return;
+		}
+
 		auto localit = engineSubsysMap.cbegin();
 		do {
 			if (subsystem_stricmp(localit->second.subsystem_name.c_str(), subsystemName->c_str()) == 0) {
