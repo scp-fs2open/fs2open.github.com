@@ -231,6 +231,11 @@ TEST(ShieldCollisionTreeTest, slc2_bad_trees) {
 	EXPECT_FALSE(slc2_valid(tree, 1)) << "polygon list past the end of the tree";
 
 	EXPECT_FALSE(slc2_valid({}, 1)) << "empty tree";
+
+	tree.clear();
+	add_slc2_split(tree, 40, 44);
+	add_slc2_leaf(tree, {0, 0});
+	EXPECT_FALSE(slc2_valid(tree, 1)) << "child starting inside another node";
 }
 
 TEST(ShieldCollisionTreeTest, slc2_depth_limit) {
@@ -243,8 +248,8 @@ TEST(ShieldCollisionTreeTest, slc2_depth_limit) {
 		add_slc2_leaf(tree, { 0 });
 		return tree;
 	};
-	EXPECT_TRUE(slc2_valid(build(200), 1));
-	EXPECT_FALSE(slc2_valid(build(300), 1));
+	EXPECT_TRUE(slc2_valid(build(255), 1));
+	EXPECT_FALSE(slc2_valid(build(256), 1));
 }
 
 TEST(ShieldCollisionTreeTest, sldc_trees) {
@@ -257,12 +262,31 @@ TEST(ShieldCollisionTreeTest, sldc_trees) {
 	tree.clear();
 	add_sldc_node(tree, 1, 29, 0);
 	tree[1] = 28;
+	add_sldc_node(tree, 1, 33, 0);
 	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "node smaller than its header";
 
 	tree.clear();
 	add_sldc_node(tree, 1, 33, 0);
-	tree.resize(tree.size() + 10);
-	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "trailing bytes that are not a node";
+	tree.resize(tree.size() + 3);
+	std::unique_ptr<ubyte[]> exact(new ubyte[tree.size()]);
+	memcpy(exact.get(), tree.data(), tree.size());
+	EXPECT_FALSE(sldc_tree_is_valid(exact.get(), static_cast<uint>(tree.size())))
+		<< "trailing bytes that are not a node";
+
+	tree.clear();
+	add_sldc_node(tree, 0, 37, 37 + 33);
+	tree.push_back(0);
+	tree[1] = 38;
+	add_sldc_node(tree, 1, 33, 0);
+	add_sldc_node(tree, 1, 33, 0);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size()))) << "split that is not 37 bytes";
+
+	tree.clear();
+	add_sldc_node(tree, 0, 37, 37 + 33 + 33);
+	add_sldc_node(tree, 1, 33, 0);
+	add_sldc_node(tree, 1, 33, 0);
+	EXPECT_FALSE(sldc_tree_is_valid(tree.data(), static_cast<uint>(tree.size())))
+		<< "back child at the end of the tree";
 
 	tree.clear();
 	add_sldc_node(tree, 0, 37, 0);

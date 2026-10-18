@@ -1631,7 +1631,7 @@ bool sldc_tree_is_valid(const ubyte* sldc, uint tree_size)
 				return false;
 			}
 			memcpy(&back, sldc + offset + 33, 4);
-			if (back == 0 || back > tree_size - offset) {
+			if (back == 0 || back >= tree_size - offset) {
 				return false;
 			}
 		}
@@ -1642,27 +1642,41 @@ bool sldc_tree_is_valid(const ubyte* sldc, uint tree_size)
 
 bool slc2_tree_is_valid(const ubyte* tree, int tree_size, int num_tris)
 {
-	// mc_check_sldc recurses once per level, and trees in released models are under 20 levels deep
+	// mc_check_sldc recurses once per level, and real trees are only a few dozen levels deep at most
 	const int max_depth = 256;
-	SCP_vector<bool> reached(tree_size, false);
+	SCP_vector<bool> covered(tree_size, false);
 	SCP_vector<std::pair<uint, int>> pending{{0, 1}};
 	while (!pending.empty()) {
 		uint offset = pending.back().first;
 		int depth = pending.back().second;
 		pending.pop_back();
-		if (depth > max_depth || offset + 36 > static_cast<uint>(tree_size) || reached[offset]) {
+		if (depth > max_depth || offset + 36 > static_cast<uint>(tree_size)) {
 			return false;
 		}
-		reached[offset] = true;
 		int node_type;
 		uint front_or_count;
 		memcpy(&node_type, tree + offset, 4);
 		memcpy(&front_or_count, tree + offset + 32, 4);
+		uint node_end;
 		if (node_type == 0) {
-			uint back;
-			if (offset + 40 > static_cast<uint>(tree_size)) {
+			node_end = offset + 40;
+		} else if (front_or_count > (tree_size - offset - 36) / 4) {
+			return false;
+		} else {
+			node_end = offset + 36 + 4 * front_or_count;
+		}
+		if (node_end > static_cast<uint>(tree_size)) {
+			return false;
+		}
+		// nodes may not overlap, which keeps this check and every collision test linear in the tree size
+		for (uint i = offset; i < node_end; i++) {
+			if (covered[i]) {
 				return false;
 			}
+			covered[i] = true;
+		}
+		if (node_type == 0) {
+			uint back;
 			memcpy(&back, tree + offset + 36, 4);
 			for (uint child : {front_or_count, back}) {
 				if (child == 0 || child >= tree_size - offset) {
@@ -1671,9 +1685,6 @@ bool slc2_tree_is_valid(const ubyte* tree, int tree_size, int num_tris)
 				pending.emplace_back(offset + child, depth + 1);
 			}
 		} else {
-			if (front_or_count > (tree_size - offset - 36) / 4) {
-				return false;
-			}
 			for (uint i = 0; i < front_or_count; i++) {
 				uint tri;
 				memcpy(&tri, tree + offset + 36 + 4 * i, 4);
@@ -1752,7 +1763,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
-	next_chunk = cftell(fp) + len;
 
 	// keep track of any submodels we might notice
 	SCP_vector<SCP_string> look_at_submodel_names;
@@ -1768,6 +1778,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				filename);
 			break;
 		}
+		next_chunk = cftell(fp) + len;
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
 //		key_getch();
@@ -3105,7 +3116,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		id = cfread_int(fp);
 		len = cfread_int(fp);
-		next_chunk = cftell(fp) + len;
 	}
 
 	cfclose(fp);
@@ -6462,6 +6472,16 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 	uint node_size, node_type_int, new_tree_size = 0, count = 0;
 	char node_type_char;
 
+	// each node grows by 3 bytes, so a back offset grows by 3 for every node it skips over
+	SCP_vector<uint> node_starts;
+	for (uint offset = 0; offset < tree_size;) {
+		node_starts.push_back(offset);
+		memcpy(&node_size, sldc + offset + 1, 4);
+		offset += node_size;
+	}
+	node_starts.push_back(tree_size);
+	size_t node_index = 0;
+
 	//Process the SLDC tree to the end
 	while (count < tree_size) {
 		//Save Node type and size
@@ -6487,20 +6507,13 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 
 		if (node_type_char == 0) {
 			//Front and back offsets must be adjusted
-			uint front, back, newback = 0;
-			ubyte* p;
+			uint front, back, newback;
 
-			p = sldc - 29;
-			memcpy(&back, p + 33, 4);
+			memcpy(&back, sldc - 29 + 33, 4);
 
 			//I need to find the new distance to back.
-			while (p < sldc + back - 29) {
-				uint ns;
-				memcpy(&ns, p + 1, 4);
-				p += ns;
-				newback += ns + 3;
-
-			}
+			auto target = std::lower_bound(node_starts.begin(), node_starts.end(), count + back);
+			newback = (*target - count) + 3 * static_cast<uint>((target - node_starts.begin()) - node_index);
 			//Copy offsets
 			front = node_size + 3;
 			memcpy(slc2, &front, 4); //Front is always this node size+3;
@@ -6520,6 +6533,7 @@ uint convert_sldc_to_slc2(ubyte* sldc, ubyte* slc2, uint tree_size)
 		//Count the new tree size and move the counter
 		count += node_size;
 		new_tree_size += node_size + 3;
+		node_index++;
 	}
 
 	//return the SLC2 tree size
