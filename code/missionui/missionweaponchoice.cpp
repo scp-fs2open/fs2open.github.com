@@ -2499,6 +2499,7 @@ void wl_render_weapon_desc(float frametime)
 		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height, Weapon_desc_lines[3], GR_RESIZE_MENU);
 		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 2, Weapon_desc_lines[4], GR_RESIZE_MENU);
 		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 3, Weapon_desc_lines[5], GR_RESIZE_MENU);
+		gr_string(weapon_desc_coords[0], weapon_desc_coords[1] + line_height * 4, Weapon_desc_lines[6], GR_RESIZE_MENU);
 	}
 }
 
@@ -2524,16 +2525,16 @@ void wl_weapon_desc_start_wipe()
 	if (w > Weapon_title_max_width[gr_screen.res]) {
 		// split
 		currchar_src = (size_t)(((float)title_len / (float)w) * Weapon_title_max_width[gr_screen.res]);			// char to start space search at
-		while (Weapon_desc_lines[0][currchar_src] != ' ') {
+		while ((currchar_src > 0) && (Weapon_desc_lines[0][currchar_src] != ' ')) {
 			currchar_src--;
-			if (currchar_src <= 0) {
-				currchar_src = title_len;
-				break;
-			}
 		}
 
-		Weapon_desc_lines[0][currchar_src] = '\0';										// shorten line 0
-		strcpy_s(Weapon_desc_lines[1], &(Weapon_desc_lines[0][currchar_src+1]));		// copy remainder into line 1
+		if (currchar_src > 0) {
+			Weapon_desc_lines[0][currchar_src] = '\0';										// shorten line 0
+			strcpy_s(Weapon_desc_lines[1], &(Weapon_desc_lines[0][currchar_src+1]));		// copy remainder into line 1
+		} else {
+			Weapon_desc_lines[1][0] = '\0';
+		}
 	} else {
 		// entire title in line 0, thus line 1 is empty
 		Weapon_desc_lines[1][0] = '\0';
@@ -2548,10 +2549,13 @@ void wl_weapon_desc_start_wipe()
 				// break here
 				if (currchar_src != 0) {					// protect against leading /n's
 					Weapon_desc_lines[currline_dest][currchar_dest] = '\0';
+					if (currline_dest + 1 >= WEAPON_DESC_MAX_LINES) {
+						break;
+					}
 					currline_dest++;
 					currchar_dest = 0;
 				}
-			} else {
+			} else if (currchar_dest < WEAPON_DESC_MAX_LENGTH - 1) {
 				// straight copy
 				Weapon_desc_lines[currline_dest][currchar_dest] = desc[currchar_src];
 				currchar_dest++;
