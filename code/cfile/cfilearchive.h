@@ -62,4 +62,8 @@ void cf_check_compression(CFILE* cfile);
 // Used to clear compression info data and free dynamic memory used by compression
 void cf_clear_compression_info(CFILE* cfile);
 
+// Clamps a read of size bytes to the end of the file and returns the clamped size; throws
+// cfile::max_read_length if the read would pass the file's read limit (cf_set_max_read_len).
+size_t cf_check_read_size(CFILE* cfile, size_t size);
+
 #endif

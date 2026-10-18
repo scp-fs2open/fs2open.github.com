@@ -5,6 +5,7 @@
 #include <graphics/font.h>
 #include <gtest/gtest.h>
 #include <osapi/dialogs.h>
+#include <utils/finally.h>
 
 #include "util/FSTestFixture.h"
 
@@ -548,6 +549,7 @@ SCP_vector<char> length_then_chars(int len, const char* chars)
 TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 {
 	SCP_string path = testing::TempDir() + "cfile_short_read.bin";
+	auto remove_file = util::finally([&] { remove(path.c_str()); });
 	auto fp = open_short_file(path, length_then_chars(10, "hel"), 18);
 	ASSERT_NE(fp, nullptr);
 
@@ -562,8 +564,6 @@ TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 	expect_warning("could not read", [&] { cfread_string_len(fp); });
 	EXPECT_EQ(cftell(fp), 14);
 	cfclose(fp);
-
-	remove(path.c_str());
 }
 
 #ifdef NDEBUG
@@ -586,7 +586,7 @@ TEST_F(CFileTest, string_len_zero_buffer_writes_nothing)
 }
 #endif
 
-TEST_F(CFileTest, string_len_corrupt_length_in_last_section_throws)
+TEST_F(CFileTest, string_len_negative_in_last_section_throws)
 {
 	StringLenFile file;
 	file.add_int(-5);
@@ -598,13 +598,43 @@ TEST_F(CFileTest, string_len_corrupt_length_in_last_section_throws)
 	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
 	cfclose(fp);
 
-	StringLenFile past_end;
-	past_end.add_int(1000000).add_chars("hi", 2);
-	fp = past_end.open();
+	fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	cf_set_max_read_len(fp, cfilelength(fp));
+	EXPECT_THROW(cfread_string_len(fp), cfile::max_read_length);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_past_end_in_last_section_warns)
+{
+	StringLenFile file;
+	file.add_int(1000000).add_chars("hi", 2);
+	auto fp = file.open();
 	ASSERT_NE(fp, nullptr);
 
 	cf_set_max_read_len(fp, cfilelength(fp));
-	EXPECT_THROW(cfread_string_len(fp), cfile::max_read_length);
+	SCP_string str;
+	expect_warning("corrupt string length 1000000", [&] { str = cfread_string_len(fp); });
+#ifdef NDEBUG
+	EXPECT_EQ(str, "hi");
+#endif
+	EXPECT_EQ(cftell(fp), cfilelength(fp));
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_truncated_section_reads_what_is_left)
+{
+	StringLenFile file;
+	file.add_int(20).add_chars("abc", 3);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	// the section claims more bytes than the file still has, as in a truncated pilot file
+	cf_set_max_read_len(fp, 10);
+	char buf[8] = "old";
+	expect_warning("corrupt string length 20", [&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "abc");
+	EXPECT_EQ(cftell(fp), cfilelength(fp));
 	cfclose(fp);
 }
 
@@ -646,15 +676,17 @@ TEST_F(CFileTest, string_len_zero_buffer_still_warns_on_corrupt_length)
 }
 #endif
 
-TEST_F(CFileTest, string_len_cut_off_length_field_inside_max_read_len_throws)
+TEST_F(CFileTest, string_len_cut_off_length_field_inside_max_read_len_warns)
 {
 	StringLenFile file;
-	file.add_chars("\x00\x00", 2);
+	file.add_chars("\x05\x00", 2);
 	auto fp = file.open();
 	ASSERT_NE(fp, nullptr);
 
 	cf_set_max_read_len(fp, cfilelength(fp));
-	char buf[8];
-	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
+	char buf[8] = "old";
+	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cftell(fp), cfilelength(fp));
 	cfclose(fp);
 }
