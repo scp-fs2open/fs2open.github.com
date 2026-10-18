@@ -138,18 +138,33 @@ void pilotfile::csg_read_info()
 
 	// progression state
 	Campaign.prev_mission = cfread_int(cfp);
+	if (Campaign.num_missions > 0 && (Campaign.prev_mission < -1 || Campaign.prev_mission >= Campaign.num_missions)) {
+		mprintf(("CSG => Parse Warning: Invalid previous mission (%d), clearing it.\n", Campaign.prev_mission));
+		Campaign.prev_mission = -1;
+	}
 	Campaign.next_mission = cfread_int(cfp);
 
 	// check that the next mission won't be greater than the total number of missions
 	// though ensure we only flag if campaign exists and has been loaded
-	if (Campaign.num_missions > 0 && Campaign.next_mission >= Campaign.num_missions) {
+	if (Campaign.num_missions > 0 && (Campaign.next_mission < -1 || Campaign.next_mission >= Campaign.num_missions)) {
 		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
 		m_data_invalid = true; // Causes a warning popup to be displayed
 	}
 
 	// loop state
 	Campaign.loop_reentry = cfread_int(cfp);
+	bool invalid_loop_reentry =
+		Campaign.num_missions > 0 && (Campaign.loop_reentry < -1 || Campaign.loop_reentry >= Campaign.num_missions);
+	if (invalid_loop_reentry) {
+		mprintf(("CSG => Parse Warning: Invalid loop reentry (%d), leaving the loop.\n", Campaign.loop_reentry));
+		Campaign.loop_reentry = -1;
+		// also cleared before the read, in case the section ends there
+		Campaign.loop_enabled = 0;
+	}
 	Campaign.loop_enabled = cfread_int(cfp);
+	if (invalid_loop_reentry) {
+		Campaign.loop_enabled = 0;
+	}
 
 	// missions completed
 	Campaign.num_missions_completed = cfread_int(cfp);
