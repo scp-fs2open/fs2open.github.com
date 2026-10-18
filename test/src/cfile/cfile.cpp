@@ -285,11 +285,87 @@ TEST_F(CFileTest, string_len_fits)
 	ASSERT_NE(fp, nullptr);
 
 	char buf[8];
+	memset(buf, 'X', sizeof(buf));
 	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "abc");
 	EXPECT_EQ(cfread_int(fp), 42);
 
 	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_one_short_of_the_buffer)
+{
+	StringLenFile file;
+	file.add_int(3).add_chars("abc", 3).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[4];
+	memset(buf, 'X', sizeof(buf));
+	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "abc");
+	EXPECT_EQ(cfread_int(fp), 42);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_empty_inside_max_read_len)
+{
+	StringLenFile file;
+	file.add_int(0).add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	cf_set_max_read_len(fp, 8);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cfread_int(fp), 42);
+	cfclose(fp);
+
+	fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	cf_set_max_read_len(fp, 4);
+	SCP_string str = "old";
+	expect_no_warning([&] { str = cfread_string_len(fp); });
+	EXPECT_EQ(str, "");
+	EXPECT_EQ(cftell(fp), 4);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_clean_end_of_file_is_silent)
+{
+	StringLenFile file;
+	file.add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	ASSERT_EQ(cfread_int(fp), 42);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cftell(fp), 4);
+
+	SCP_string str = "old";
+	expect_no_warning([&] { str = cfread_string_len(fp); });
+	EXPECT_EQ(str, "");
+	EXPECT_EQ(cftell(fp), 4);
+
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_without_a_file_reads_empty)
+{
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), nullptr); });
+	EXPECT_STREQ(buf, "");
+
+	SCP_string str = "old";
+	expect_no_warning([&] { str = cfread_string_len(nullptr); });
+	EXPECT_EQ(str, "");
 }
 
 TEST_F(CFileTest, string_len_exact_fit_with_stored_terminator)
@@ -393,6 +469,7 @@ TEST_F(CFileTest, string_len_past_end_of_file)
 	ASSERT_NE(fp, nullptr);
 
 	char buf[32];
+	memset(buf, 'X', sizeof(buf));
 	expect_warning("corrupt string length 20", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "hello");
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
@@ -507,6 +584,7 @@ TEST_F(CFileTest, string_len_corrupt_and_cut_warns_once)
 	ASSERT_NE(fp, nullptr);
 
 	char buf[4];
+	memset(buf, 'X', sizeof(buf));
 	expect_warning("corrupt string length 20", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "hel");
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
@@ -523,9 +601,10 @@ CFILE* open_short_file(const SCP_string& path, const SCP_vector<char>& bytes, si
 	if (fp == nullptr) {
 		return nullptr;
 	}
-	fputc(0, fp);
-	fwrite(bytes.data(), 1, bytes.size(), fp);
-	fclose(fp);
+	bool written = (fputc(0, fp) == 0) && (fwrite(bytes.data(), 1, bytes.size(), fp) == bytes.size());
+	if ((fclose(fp) != 0) || !written) {
+		return nullptr;
+	}
 
 	CFileLocation res(true);
 	res.name_ext = "short.bin";
@@ -561,13 +640,17 @@ TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 
 	fp = open_short_file(path, length_then_chars(10, "hel"), 18);
 	ASSERT_NE(fp, nullptr);
-	expect_warning("could not read", [&] { cfread_string_len(fp); });
+	SCP_string str = "old";
+	expect_warning("could not read", [&] { str = cfread_string_len(fp); });
+#ifdef NDEBUG
+	EXPECT_EQ(str, "");
+#endif
 	EXPECT_EQ(cftell(fp), 14);
 	cfclose(fp);
 }
 
 #ifdef NDEBUG
-TEST_F(CFileTest, string_len_zero_buffer_writes_nothing)
+TEST_F(CFileTest, string_len_zero_buffer_warns_and_writes_nothing)
 {
 	StringLenFile file;
 	file.add_int(3).add_chars("abc", 3);
@@ -579,7 +662,7 @@ TEST_F(CFileTest, string_len_zero_buffer_writes_nothing)
 	cfread_string_len(buf + 1, 0, fp);
 	EXPECT_EQ(buf[0], 'X');
 	EXPECT_EQ(buf[1], 'X');
-	EXPECT_EQ(Global_warning_count, warnings);
+	EXPECT_EQ(Global_warning_count, warnings + 1);
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
 
 	cfclose(fp);
@@ -631,7 +714,8 @@ TEST_F(CFileTest, string_len_truncated_section_reads_what_is_left)
 
 	// the section claims more bytes than the file still has, as in a truncated pilot file
 	cf_set_max_read_len(fp, 10);
-	char buf[8] = "old";
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
 	expect_warning("corrupt string length 20", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "abc");
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
@@ -653,9 +737,11 @@ TEST_F(CFileTest, string_len_cut_off_length_field_warns)
 
 	fp = file.open();
 	ASSERT_NE(fp, nullptr);
-	SCP_string str;
+	SCP_string str = "old";
 	expect_warning("length field", [&] { str = cfread_string_len(fp); });
+#ifdef NDEBUG
 	EXPECT_EQ(str, "");
+#endif
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
 	cfclose(fp);
 }
@@ -688,5 +774,58 @@ TEST_F(CFileTest, string_len_cut_off_length_field_inside_max_read_len_warns)
 	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "");
 	EXPECT_EQ(cftell(fp), cfilelength(fp));
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_clamped_but_still_past_max_read_len_throws)
+{
+	StringLenFile file;
+	file.add_int(20).add_chars("0123456789", 10);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, 6);
+	char buf[8];
+	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_length_field_cut_by_max_read_len_throws)
+{
+	StringLenFile file;
+	file.add_int(5).add_chars("abcde", 5);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, 2);
+	char buf[8];
+	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, cfread_keeps_whole_elements_at_end_of_file)
+{
+	StringLenFile file;
+	file.add_chars("abcdef", 6);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[12];
+	EXPECT_EQ(cfread(buf, 4, 3, fp), 1);
+	EXPECT_EQ(cftell(fp), 6);
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, cfread_at_end_of_file_does_not_check_max_read_len)
+{
+	StringLenFile file;
+	file.add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	cf_set_max_read_len(fp, 4);
+	EXPECT_EQ(cfread_int(fp), 42);
+	int value = 0;
+	EXPECT_NO_THROW(EXPECT_EQ(cfread(&value, sizeof(value), 1, fp), 0));
 	cfclose(fp);
 }

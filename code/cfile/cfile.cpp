@@ -1118,9 +1118,15 @@ struct string_len_header {
 string_len_header read_string_len_header(CFILE* file)
 {
 	string_len_header h;
+	if (!cf_is_valid(file)) {
+		return h;
+	}
+	int before = cftell(file);
 	h.length_cut = cfread(&h.len, sizeof(h.len), 1, file) != 1;
 	h.start = cftell(file);
 	if (h.length_cut) {
+		// a clean end of file reads as an empty string without a warning, as cfread_int does
+		h.length_cut = (h.start != before);
 		return h;
 	}
 	h.len = INTEL_INT(h.len);
@@ -1169,7 +1175,7 @@ void cfread_string_len(char* buf, int buffer_size, CFILE* file)
 	string_len_header h = read_string_len_header(file);
 	if (buffer_size <= 0) {
 		bool read_ok = read_string_len_body(h, buf, 0, file);
-		warn_string_len(h, read_ok, false, buffer_size, file);
+		warn_string_len(h, read_ok, h.stored > 0, buffer_size, file);
 		return;
 	}
 	int count = std::min(h.stored, buffer_size);

@@ -320,15 +320,16 @@ void cfread_string(char *buf,int n, CFILE *file);
 /**
  * @brief Read a fixed length string that is not null-terminated, with the length stored in file.
  *
- * Keeps at most buffer_size - 1 characters and leaves the file just past the whole string.
+ * Keeps at most buffer_size - 1 characters and leaves the file just past the whole string, unless it throws.
  *
  * @param buf Pre-allocated array to store string
  * @param buffer_size Size of pre-allocated array
  * @param file File to read from
  *
  * @note Appends NULL character to string (buf)
- * @note Bad data gets a warning. Inside a limited section (cf_set_max_read_len), a negative length or a string that
- * runs past the limit throws cfile::max_read_length.
+ * @note Bad data gets a warning; at a clean end of file the string is empty and nothing is warned. Inside a limited
+ * section (cf_set_max_read_len), a negative length, or a read that still passes the limit once clamped to the end of
+ * the file, throws cfile::max_read_length.
  */
 void cfread_string_len(char *buf,int buffer_size, CFILE *file);
 
@@ -338,7 +339,7 @@ void cfread_string_len(char *buf,int buffer_size, CFILE *file);
  * @param file The file to read the string from
  * @return The string that was read
  *
- * @note Warns and throws in the same cases as the char* overload.
+ * @note Warns and throws like the char* overload, except that nothing is cut.
  */
 SCP_string cfread_string_len(CFILE *file);
 
