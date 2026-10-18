@@ -1126,7 +1126,7 @@ string_len_header read_string_len_header(CFILE* file)
 	h.start = cftell(file);
 	if (h.length_cut) {
 		// a clean end of file reads as an empty string without a warning, as cfread_int does
-		h.length_cut = (h.start != before);
+		h.length_cut = (h.start != before) || (cfeof(file) == 0);
 		return h;
 	}
 	h.len = INTEL_INT(h.len);

@@ -327,9 +327,9 @@ void cfread_string(char *buf,int n, CFILE *file);
  * @param file File to read from
  *
  * @note Appends NULL character to string (buf)
- * @note Bad data gets a warning; at a clean end of file the string is empty and nothing is warned. Inside a limited
- * section (cf_set_max_read_len), a negative length, or a read that still passes the limit once clamped to the end of
- * the file, throws cfile::max_read_length.
+ * @note Bad data gets a warning; at a clean end of file, or with an invalid file, the string is empty and nothing is
+ * warned. Inside a limited section (cf_set_max_read_len), a negative length, or a read that still passes the limit
+ * once clamped to the end of the file, throws cfile::max_read_length.
  */
 void cfread_string_len(char *buf,int buffer_size, CFILE *file);
 

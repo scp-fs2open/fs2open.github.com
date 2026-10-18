@@ -784,8 +784,9 @@ TEST_F(CFileTest, string_len_clamped_but_still_past_max_read_len_throws)
 	auto fp = file.open();
 	ASSERT_NE(fp, nullptr);
 
+	// a 2-byte buffer keeps the body read inside the limit, so only the header's check can throw
 	cf_set_max_read_len(fp, 6);
-	char buf[8];
+	char buf[2];
 	EXPECT_THROW(cfread_string_len(buf, sizeof(buf), fp), cfile::max_read_length);
 	cfclose(fp);
 }
@@ -823,9 +824,85 @@ TEST_F(CFileTest, cfread_at_end_of_file_does_not_check_max_read_len)
 	auto fp = file.open();
 	ASSERT_NE(fp, nullptr);
 
-	cf_set_max_read_len(fp, 4);
-	EXPECT_EQ(cfread_int(fp), 42);
+	cf_set_max_read_len(fp, 2);
+	cfseek(fp, 0, CF_SEEK_END);
 	int value = 0;
 	EXPECT_NO_THROW(EXPECT_EQ(cfread(&value, sizeof(value), 1, fp), 0));
 	cfclose(fp);
 }
+
+TEST_F(CFileTest, string_len_clean_end_of_file_inside_max_read_len_is_silent)
+{
+	StringLenFile file;
+	file.add_int(42);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+	cf_set_max_read_len(fp, 4);
+	ASSERT_EQ(cfread_int(fp), 42);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_no_warning([&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	cfclose(fp);
+}
+
+TEST_F(CFileTest, string_len_missing_length_field_before_the_end_warns)
+{
+	SCP_string path = testing::TempDir() + "cfile_missing_length.bin";
+	auto remove_file = util::finally([&] { remove(path.c_str()); });
+	auto fp = open_short_file(path, {}, 8);
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	cfclose(fp);
+}
+
+#ifdef NDEBUG
+TEST_F(CFileTest, string_len_zero_buffer_and_empty_string_is_silent)
+{
+	StringLenFile file;
+	file.add_int(0);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[2] = {'X', 'X'};
+	expect_no_warning([&] { cfread_string_len(buf + 1, 0, fp); });
+	EXPECT_EQ(buf[1], 'X');
+	cfclose(fp);
+}
+#endif
+
+TEST_F(CFileTest, string_len_length_field_cut_short_on_disk_warns)
+{
+	SCP_string path = testing::TempDir() + "cfile_short_length.bin";
+	auto remove_file = util::finally([&] { remove(path.c_str()); });
+	auto fp = open_short_file(path, {'\x05', '\x00'}, 18);
+	ASSERT_NE(fp, nullptr);
+
+	char buf[8];
+	memset(buf, 'X', sizeof(buf));
+	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
+	EXPECT_STREQ(buf, "");
+	EXPECT_EQ(cftell(fp), 2);
+	cfclose(fp);
+}
+
+#ifndef NDEBUG
+TEST_F(CFileTest, string_len_zero_buffer_asserts)
+{
+	StringLenFile file;
+	file.add_int(3).add_chars("abc", 3);
+	auto fp = file.open();
+	ASSERT_NE(fp, nullptr);
+
+	char buf[2] = {'X', 'X'};
+	EXPECT_THROW(cfread_string_len(buf + 1, 0, fp), os::dialogs::AssertException);
+	EXPECT_EQ(buf[0], 'X');
+	EXPECT_EQ(buf[1], 'X');
+	cfclose(fp);
+}
+#endif
