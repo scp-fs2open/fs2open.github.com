@@ -1610,6 +1610,75 @@ static int pof_read_count(CFILE *fp, const char *filename, const char *what, int
 	return count;
 }
 
+// the old tree format is read node by node in convert_sldc_to_slc2, so every node size has to be usable as-is
+static bool sldc_tree_is_valid(const ubyte* sldc, uint tree_size)
+{
+	uint offset = 0;
+	while (offset < tree_size) {
+		if (tree_size - offset < 29) {
+			return false;
+		}
+		ubyte node_type;
+		uint node_size;
+		memcpy(&node_type, sldc + offset, 1);
+		memcpy(&node_size, sldc + offset + 1, 4);
+		if (node_size < 29 || node_size > tree_size - offset) {
+			return false;
+		}
+		if (node_type == 0) {
+			uint back;
+			if (node_size != 37) {
+				return false;
+			}
+			memcpy(&back, sldc + offset + 33, 4);
+			if (back == 0 || back > tree_size - offset) {
+				return false;
+			}
+		}
+		offset += node_size;
+	}
+	return true;
+}
+
+static bool slc2_tree_is_valid(const ubyte* tree, int tree_size, int num_tris)
+{
+	SCP_vector<uint> pending{0};
+	int nodes_checked = 0;
+	while (!pending.empty()) {
+		uint offset = pending.back();
+		pending.pop_back();
+		// children always point forward, so a tree can't hold more nodes than this
+		if (++nodes_checked > tree_size / 40 + 1 || offset + 40 > static_cast<uint>(tree_size)) {
+			return false;
+		}
+		int node_type;
+		uint front_or_count, back;
+		memcpy(&node_type, tree + offset, 4);
+		memcpy(&front_or_count, tree + offset + 32, 4);
+		memcpy(&back, tree + offset + 36, 4);
+		if (node_type == 0) {
+			for (uint child : {front_or_count, back}) {
+				if (child == 0 || child >= tree_size - offset) {
+					return false;
+				}
+				pending.push_back(offset + child);
+			}
+		} else {
+			if (front_or_count > (tree_size - offset - 36) / 4) {
+				return false;
+			}
+			for (uint i = 0; i < front_or_count; i++) {
+				uint tri;
+				memcpy(&tri, tree + offset + 36 + 4 * i, 4);
+				if (tri >= static_cast<uint>(num_tris)) {
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
 modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
@@ -1686,6 +1755,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	int n_textures_in_file = 0;
 
 	while (!cfeof(fp)) {
+		if (len < 0) {
+			Warning(LOCATION,
+				"Model %s has a chunk with a negative length!  The rest of the file will be ignored.",
+				filename);
+			break;
+		}
 
 //		mprintf(("Processing chunk <%c%c%c%c>, len = %d\n",id,id>>8,id>>16,id>>24,len));
 //		key_getch();
@@ -2216,12 +2291,19 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			{   //ShivanSpS - if pof version is 2200 or higher ignore SLDC, otherwise convert it to slc2.
 				if (pm->version < 2200) {
 					//mprintf(("SLDC data is being converted to SLC2.\n"));
-					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes", pof_bytes_left(fp));
 
 					std::unique_ptr<ubyte[]> sldc_tree(new ubyte[pm->sldc_size]);
 					std::unique_ptr<ubyte[]> slc2_tree(new ubyte[pm->sldc_size * 2]);
 
 					cfread(sldc_tree.get(), 1, pm->sldc_size, fp);
+					if (!sldc_tree_is_valid(sldc_tree.get(), pm->sldc_size)) {
+						Warning(LOCATION,
+							"Model %s has a malformed shield collision tree!  The tree will not be used.",
+							filename);
+						pm->sldc_size = 0;
+						break;
+					}
 					//mprintf(("SLDC Shield Collision Tree was %d bytes in size\n", pm->sldc_size));
 					pm->sldc_size = convert_sldc_to_slc2(sldc_tree.get(), slc2_tree.get(), pm->sldc_size);
 					//mprintf(("SLC2 Shield Collision Tree is %d bytes in size\n", pm->sldc_size));
@@ -2235,7 +2317,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			case ID_SLC2: // ShivanSpS -Newer version of the SLDC Shield Collision tree, only pof version 2200.
 			{
 				if (pm->version >= 2200) {
-					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes");
+					pm->sldc_size = pof_read_count(fp, filename, "shield collision tree bytes", pof_bytes_left(fp));
 					pm->shield_collision_tree = make_shared<ubyte[]>(pm->sldc_size);
 					cfread(pm->shield_collision_tree.get(), 1, pm->sldc_size, fp);
 					swap_sldc_data(pm->shield_collision_tree.get());
@@ -3026,6 +3108,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
 			return modelread_status::FAIL;
 		}
+	}
+	if ((pm->shield_collision_tree != nullptr) &&
+		!slc2_tree_is_valid(pm->shield_collision_tree.get(), pm->sldc_size, pm->shield.ntris)) {
+		Warning(LOCATION, "Model %s has a malformed shield collision tree!  The tree will not be used.", pm->filename);
+		pm->shield_collision_tree.reset();
+		pm->sldc_size = 0;
 	}
 	for (i = 0; i < pm->n_glow_point_banks; i++) {
 		if (pm->glow_point_banks[i].submodel_parent >= pm->n_models) {
