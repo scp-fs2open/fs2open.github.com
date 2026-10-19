@@ -6222,6 +6222,47 @@ static bool ballistic_possible_for_this_ship(const ship_info *sip)
 }
 
 /**
+ * Ship classes that share a model share the model's subsystem data, which is indexed by subsystem position,
+ * so every class using a model should list the same subsystems in the same order
+ */
+static void ship_check_shared_model_subsystems()
+{
+	SCP_unordered_map<SCP_string, const ship_info*, SCP_string_lcase_hash, SCP_string_lcase_equal_to> first_class_for_model;
+
+	for (const auto &si : Ship_info)
+	{
+		if (!VALID_FNAME(si.pof_file))
+			continue;
+
+		auto result = first_class_for_model.emplace(si.pof_file, &si);
+		if (result.second)
+			continue;
+
+		auto first = result.first->second;
+		if (si.n_subsystems != first->n_subsystems)
+		{
+			Warning(LOCATION, "Ship classes '%s' and '%s' share the model '%s', but '%s' has %d subsystems and '%s' has %d.\n\n"
+				"Ship classes that share a model should list the same subsystems in the same order.  Otherwise, hits and engine effects "
+				"may be applied to the wrong subsystem, and a ship may fail to load if its class has subsystems the other class lacks.",
+				first->name, si.name, si.pof_file, first->name, static_cast<int>(first->n_subsystems), si.name, static_cast<int>(si.n_subsystems));
+			continue;
+		}
+
+		for (int i = 0; i < si.n_subsystems; ++i)
+		{
+			if (subsystem_stricmp(first->subsystems[i].subobj_name, si.subsystems[i].subobj_name) != 0)
+			{
+				Warning(LOCATION, "Ship classes '%s' and '%s' share the model '%s', but subsystem %d is '%s' on '%s' and '%s' on '%s'.\n\n"
+					"Ship classes that share a model should list the same subsystems in the same order.  Otherwise, hits and engine effects "
+					"may be applied to the wrong subsystem.",
+					first->name, si.name, si.pof_file, i + 1, first->subsystems[i].subobj_name, first->name, si.subsystems[i].subobj_name, si.name);
+				break;
+			}
+		}
+	}
+}
+
+/**
  * Clean up ship entries, making sure various flags and settings are correct
  */
 static void ship_parse_post_cleanup()
@@ -6326,6 +6367,8 @@ static void ship_parse_post_cleanup()
 			}
 		}
 	}
+
+	ship_check_shared_model_subsystems();
 
 	// check also target groups here
 	size_t n_tgt_groups = Ai_tp_list.size();
