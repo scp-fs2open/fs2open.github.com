@@ -100,9 +100,13 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 
 	// Build a list of all joysticks with the right guid
 	size_t num_sticks = 0;
+	size_t num_attached = 0;
 	for (auto& stick : joysticks) {
 		if (stick->getGUID() == guidStr) {
 			++num_sticks;
+			if (stick->isAttached()) {
+				++num_attached;
+			}
 		}
 	}
 
@@ -115,8 +119,8 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 		return true;
 	}
 
-	// Multiple sticks -> check if the device id is the same
-	return false;
+	// Multiple sticks of the same model -> use the only one that's plugged in
+	return num_attached == 1 && testStick->isAttached();
 }
 
 /**
@@ -473,7 +477,15 @@ bool device_event_handler(const SDL_Event &evt)
 	if (evtType == SDL_EVENT_JOYSTICK_ADDED)
 	{
 		// A new joystick has been added, add it to our list and check if it's the configured joystick
-		Joystick *addedStick;
+		if (getJoystickForID(joyDeviceEvent.which) != nullptr)
+		{
+			// SDL also sends this at startup for sticks init() already set up; instance IDs are never reused
+			return true;
+		}
+
+		Joystick *addedStick = nullptr;
+		// keeps a returning stick's old handles open until it is rebound, so force feedback is shut down first
+		JoystickPtr oldHandles;
 		{
 			auto device = SDL_OpenJoystick(joyDeviceEvent.which);
 
@@ -485,36 +497,36 @@ bool device_event_handler(const SDL_Event &evt)
 
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
+			// the Joystick opened its own handle
+			SDL_CloseJoystick(device);
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				// must use GUID here as joystick IDs are never reused
-				if ((*iter)->getGUID() == added->getGUID())
+				// must use GUID here as joystick IDs are never reused; unplugged only, same-model sticks share a GUID
+				if (!(*iter)->isAttached() && (*iter)->getGUID() == added->getGUID())
 				{
 					// Already have this stick
 					*(*iter) = std::move(*added);
-					return true;
+					oldHandles = std::move(added);
+					addedStick = iter->get();
+					mprintf(("A joystick has been reconnected:\n"));
+					addedStick->printInfo();
+					break;
 				}
 			}
 
-			addedStick = added.get();
-			// This is a new stick so we can output it's information
-			mprintf(("A new joystick has been connected:\n"));
-			addedStick->printInfo();
+			if (addedStick == nullptr)
+			{
+				addedStick = added.get();
+				// This is a new stick so we can output it's information
+				mprintf(("A new joystick has been connected:\n"));
+				addedStick->printInfo();
 
-			joysticks.push_back(std::move(added));
+				joysticks.push_back(std::move(added));
+			}
 		}
 
-		// Is true if all of the pJoysticks are bound
-		bool all_bound = std::all_of(pJoystick.begin(), pJoystick.end(), [](Joystick* pJoy){ return pJoy != nullptr; });
-
-		if (all_bound)
-		{
-			// We already have all valid joystick devices, bail early
-			return true;
-		}	// Else, at least one player stick is unbound
-
-		// Bind the added stick, if we want it
+		// Bind the added stick, if we want it (also when all slots are full: a returning stick may still hold its slot)
 		if (Using_in_game_options)
 		{
 			// New menu system lets players select joysticks in-game
