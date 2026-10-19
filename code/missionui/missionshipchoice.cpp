@@ -2357,8 +2357,12 @@ commit_pressed_status create_wings()
 					for ( auto &p_obj: Parse_objects ) {
 						if ( p_obj.wingnum == WING_INDEX(wp) ) {
 							if ( p_obj.pos_in_wing == j ) {
+								bool class_changed = ( p_obj.ship_class != Wss_slots[slot_index].ship_class );
 								p_obj.ship_class = Wss_slots[slot_index].ship_class;
 								wl_update_parse_object_weapons(&p_obj, &Wss_slots[i*MAX_WING_SLOTS+j]);
+								// the subsystems in the mission file may not exist on the class the player picked
+								if ( class_changed )
+									prune_subsys_status(&p_obj);
 								found_pobj = true;
 								break;
 							}

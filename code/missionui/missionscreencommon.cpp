@@ -1269,8 +1269,12 @@ void wss_direct_restore_loadout()
 						break;
 					}
 					slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];
+					bool class_changed = ( p_objp->ship_class != slot->ship_class );
 					p_objp->ship_class = slot->ship_class;
 					wl_update_parse_object_weapons(p_objp, slot);
+					// the subsystems in the mission file may not exist on the class the player picked
+					if ( class_changed )
+						prune_subsys_status(p_objp);
 					j++;
 				}
 			}
