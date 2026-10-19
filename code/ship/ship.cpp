@@ -11158,8 +11158,8 @@ static void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		for (int fp = 0; fp < pm->gun_banks[i].num_slots; fp++) {
 			fpi.push_back(fp);
 		}
-		std::random_device rd;
-		std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
+		std::mt19937 rng(util::Random::shuffle_seed());
+		std::shuffle(fpi.begin(), fpi.end(), rng);
 	}
 
 	swp->num_secondary_banks = sip->num_secondary_banks;
@@ -11745,8 +11745,8 @@ static void ship_model_change(int n, int ship_type)
 		for (int fp = 0; fp < pm->gun_banks[bank_i].num_slots; fp++) {
 			fpi.push_back(fp);
 		}
-		std::random_device rd;
-		std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
+		std::mt19937 rng(util::Random::shuffle_seed());
+		std::shuffle(fpi.begin(), fpi.end(), rng);
 	}
 
 	model_delete_instance(sp->model_instance_num);
@@ -13496,8 +13496,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					for (int fp = 0; fp < num_slots; fp++) {
 						fpi.push_back(fp);
 					}
-					std::random_device rd;
-					std::shuffle(fpi.begin(), fpi.end(), std::mt19937(rd()));
+					std::mt19937 rng(util::Random::shuffle_seed());
+					std::shuffle(fpi.begin(), fpi.end(), rng);
 				}
 
 				// The energy-consumption code executes even for ballistic primaries, because
@@ -13783,26 +13783,26 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				switch (firing_pattern) {
 					case FiringPattern::RANDOM_EXHAUSTIVE: {
 						if (num_slots < (swp->primary_firepoint_next_to_fire_index[bank_to_fire] + point_count)) {
-							std::random_device rd;
-							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]-1], std::mt19937(rd())); //NOLINT
+							std::mt19937 rng(util::Random::shuffle_seed());
+							std::shuffle(&swp->primary_firepoint_indices[bank_to_fire][0], &swp->primary_firepoint_indices[bank_to_fire][swp->primary_firepoint_next_to_fire_index[bank_to_fire]-1], rng); //NOLINT
 						} else if (swp->primary_firepoint_next_to_fire_index[bank_to_fire] < point_count) {
-							std::random_device rd;
-							std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
+							std::mt19937 rng(util::Random::shuffle_seed());
+							std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), rng);
 						}
 						break;
 					}
 					case FiringPattern::RANDOM_NONREPEATING: {
 						int shuffle_start = MIN(point_count, num_slots - point_count);
-						std::random_device rd;
+						std::mt19937 rng(util::Random::shuffle_seed());
 						auto middle_iterator = swp->primary_firepoint_indices[bank_to_fire].begin();
 						std::advance(middle_iterator, shuffle_start);
-						std::shuffle(middle_iterator, swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
+						std::shuffle(middle_iterator, swp->primary_firepoint_indices[bank_to_fire].end(), rng);
 						std::rotate(swp->primary_firepoint_indices[bank_to_fire].begin(), middle_iterator, swp->primary_firepoint_indices[bank_to_fire].end());
 						break;
 					}
 					case FiringPattern::RANDOM_REPEATING: {
-						std::random_device rd;
-						std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), std::mt19937(rd()));
+						std::mt19937 rng(util::Random::shuffle_seed());
+						std::shuffle(swp->primary_firepoint_indices[bank_to_fire].begin(), swp->primary_firepoint_indices[bank_to_fire].end(), rng);
 						break;
 					}
 					default: {
