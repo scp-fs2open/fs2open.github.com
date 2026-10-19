@@ -8927,7 +8927,7 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 	// do standard departure stuff first
 	objp->flags.set(Object::Object_Flags::Should_be_dead);
 	if (objp->type == OBJ_SHIP)
-		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
+		ship_cleanup(objp->instance, infop->parameter_variables.int_value);
 
 	// do the end-mission stuff if it's the player ship
 	if (objp == Player_obj)
@@ -8939,8 +8939,13 @@ static void ship_actually_depart_helper(object *objp, dock_function_info *infop)
  */
 void ship_actually_depart(int shipnum, int method)
 {
+	Assertion(method & (SHIP_DEPARTED | SHIP_VANISHED | SHIP_DEPARTED_REDALERT),
+		"Invalid departure method '%i' passed to ship_actually_depart for ship %s!", method, Ships[shipnum].ship_name);
+
 	dock_function_info dfi;
 	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
+	dfi.parameter_variables.int_value = method;
+
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
 
 	// in a couple of cases we'll need to send a packet to update clients 
