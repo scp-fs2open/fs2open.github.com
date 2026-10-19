@@ -1061,8 +1061,8 @@ polymodel *model_get(int model_num);
 int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
 
-// routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
-void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
+// routine to copy subsystems, matched by name, between ship classes that share a model -- see ship.cpp
+void model_copy_subsystems(int n_dest, model_subsystem *d_sp, int n_source, const model_subsystem *s_sp);
 
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
 // This defaults to black.

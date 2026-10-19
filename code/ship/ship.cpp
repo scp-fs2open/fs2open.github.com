@@ -7673,20 +7673,19 @@ static void ship_copy_subsystem_fixup(ship_info *sip)
 	for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
 		model_subsystem *source_msp, *dest_msp;
 
-		if ( (it->model_num != model_num) || (&(*it) == sip) ){
+		// a class with no subsystems can neither provide nor receive any subsystem data
+		if ( (it->model_num != model_num) || (&(*it) == sip) || (it->n_subsystems == 0) ){
 			continue;
 		}
 
 		// see if this ship has subsystems and a model for the subsystems.  We only need check the first
 		// subsystem since previous error checking would have trapped its loading as an error.
-		Assert( it->n_subsystems == sip->n_subsystems );
-
 		source_msp = &(it->subsystems[0]);
 		dest_msp = &(sip->subsystems[0]);
 		if (source_msp->model_num != -1) {
-			model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
+			model_copy_subsystems( sip->n_subsystems, dest_msp, it->n_subsystems, source_msp );
 		} else if (dest_msp->model_num != -1) {
-			model_copy_subsystems( sip->n_subsystems, source_msp, dest_msp );
+			model_copy_subsystems( it->n_subsystems, source_msp, sip->n_subsystems, dest_msp );
 		} else {
 			// if none were found try finding a another ship to copy the data from
 			continue;
@@ -22300,6 +22299,10 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
 
 	// no associated subsystem
 	if (pm->submodel[submodel].subsys_num == -1)
+		return nullptr;
+
+	// a class whose subsystems differ from those of the class that loaded the model may not have this subsystem
+	if (pm->submodel[submodel].subsys_num >= Ship_info[shipp->ship_info_index].n_subsystems)
 		return nullptr;
 
 	return ship_get_indexed_subsys(shipp, pm->submodel[submodel].subsys_num);

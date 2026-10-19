@@ -599,15 +599,17 @@ const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
 // this situation by copying stuff from the source subsystem set to the dest subsystem set.
-void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp )
+void model_copy_subsystems( int n_dest, model_subsystem *d_sp, int n_source, const model_subsystem *s_sp )
 {
 	int i, j;
-	model_subsystem *source, *dest;
+	const model_subsystem *source;
+	model_subsystem *dest;
 
-	for (i = 0; i < n_subsystems; i++ ) {
-		source = &s_sp[i];
-		for ( j = 0; j < n_subsystems; j++ ) {
-			dest = &d_sp[j];
+	// a destination subsystem with no match in the source stays unlinked, which is reported when a ship of that class is created
+	for (i = 0; i < n_dest; i++ ) {
+		dest = &d_sp[i];
+		for ( j = 0; j < n_source; j++ ) {
+			source = &s_sp[j];
 			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
 				for (auto const &flag : carry_flags) {
 					if (source->flags[flag])
@@ -647,13 +649,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				break;
 			}
 		}
-		if ( j == n_subsystems )
-			Error(LOCATION, "Subsystem '%s' could not be matched between two ship classes that share a model. "
-				"The destination ship will be missing this subsystem at runtime. "
-				"Check that subsystem names are spelled identically on both ship classes, "
-				"and that any modular table extensions to one ship are mirrored on the other.",
-				source->subobj_name);
-
 	}
 }
 
