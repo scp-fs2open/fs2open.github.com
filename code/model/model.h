@@ -1080,8 +1080,8 @@ void model_instance_snapshot_prev_all();
 // Flags a submodel, and with it all its children, as Can_move
 void model_set_submodel_can_move(polymodel* pm, int submodel_num);
 
-// routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
-void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
+// routine to copy subsystems, matched by name, between ship classes that share a model -- see ship.cpp
+void model_copy_subsystems(int n_dest, model_subsystem *d_sp, int n_source, const model_subsystem *s_sp);
 
 // Flags you can pass to model_render
 #define MR_NORMAL					(0)			// Draw a normal object
