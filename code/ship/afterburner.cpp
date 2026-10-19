@@ -29,7 +29,7 @@ static sound_handle Player_afterburner_loop_id; // identifies the looping afterb
 static int		Player_afterburner_loop_delay;	// timestamp used to time the start of the looping afterburner sound
 static int		Player_disengage_timer;
 static float	Player_afterburner_vol;
-static int		Player_afterburner_start_time;
+static TIMESTAMP	Player_afterburner_start_time;
 
 
 // ----------------------------------------------------------
@@ -53,7 +53,7 @@ void afterburner_level_init()
 	Player_disengage_timer = 1;
 	Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 	Player_afterburner_loop_id    = sound_handle::invalid();
-	Player_afterburner_start_time = 0;
+	Player_afterburner_start_time = TIMESTAMP::invalid();
 }
 
 /**
@@ -88,9 +88,9 @@ void afterburners_start(object *objp)
 
 	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
-	int now = timer_get_milliseconds();
-
-	if (now - shipp->afterburner_last_end_time < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
+	// Measured in mission time, so the delays last as long as specified under time compression or a pause.
+	// They start invalid, because the mission clock may still be near zero when the first mission begins.
+	if (shipp->afterburner_last_end_time.isFinite() && timestamp_since(shipp->afterburner_last_end_time) < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
 
 		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
 			snd_play(gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)));
@@ -101,7 +101,7 @@ void afterburners_start(object *objp)
 
 	if ( (objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj) ) {
 		
-		if ( (now - Player_afterburner_start_time) < 1300 ) {
+		if ( Player_afterburner_start_time.isFinite() && timestamp_since(Player_afterburner_start_time) < 1300 ) {
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)) );
 			return;
 		}
@@ -143,7 +143,7 @@ void afterburners_start(object *objp)
 	Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Afterburner).start(animation::ModelAnimationDirection::FWD);
 
 	if ( objp == Player_obj ) {
-		Player_afterburner_start_time = timer_get_milliseconds();
+		Player_afterburner_start_time = _timestamp();
 		Player_disengage_timer = 1;
 		Player_afterburner_vol = AFTERBURNER_DEFAULT_VOL;
 
@@ -330,7 +330,7 @@ void afterburners_stop(object *objp, int key_released)
 		return;
 	}
 
-	shipp->afterburner_last_end_time = timer_get_milliseconds();
+	shipp->afterburner_last_end_time = _timestamp();
 
 	if (scripting::hooks::OnAfterburnerEnd->isActive()) {
 		scripting::hooks::OnAfterburnerEnd->run(scripting::hooks::ShipSourceConditions{ shipp },
