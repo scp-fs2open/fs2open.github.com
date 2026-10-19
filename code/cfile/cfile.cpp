@@ -34,6 +34,7 @@
 #include "cfilesystem.h"
 
 
+#include <algorithm>
 #include <limits>
 
 char Cfile_root_dir[CFILE_ROOT_DIRECTORY_LEN] = "";
@@ -52,7 +53,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// Root must be index 1!!
 	{ CF_TYPE_ROOT,					"",																			".mve .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																		".cfg .txt",						CF_TYPE_ROOT	},
-	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds .ktx",	CF_TYPE_DATA	},
+	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .png .dds .ktx .mat",	CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",											".txt .net",						CF_TYPE_DATA	},
 	{ CF_TYPE_MODELS,				"data" DIR_SEPARATOR_STR "models",											".pof",								CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,				"data" DIR_SEPARATOR_STR "tables",											".tbl .tbm .lua",						CF_TYPE_DATA	},
@@ -68,7 +69,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt .webm .png",CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg .rml .rcss .ktx",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .ktx .sdr .vert .frag .glsl",	CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .ktx .sdr .vert .frag .glsl .mat",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds .ktx",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf", /* DON'T add pilot files here!! */	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds .ktx",						CF_TYPE_PLAYERS	},
@@ -1107,26 +1108,37 @@ void cfread_string(char *buf, int n, CFILE *file)
 
 void cfread_string_len(char *buf, int buffer_size, CFILE *file)
 {
-	int len;
-	len = cfread_int(file);
-	Assertion( (len <= buffer_size), "String cannot fit in buffer, len: %i, buffer: %i", len, buffer_size);
-	if (len) {
-		cfread(buf, len, 1, file);
-		Assertion(len != buffer_size || buf[len - 1] == 0, "Unterminated string does not fit in buffer");
-	}
+	Assertion(buffer_size > 0, "cfread_string_len needs room for at least the terminator, buffer: %i", buffer_size);
 
-	buf[MIN(len, buffer_size - 1)] = 0;
+	int len = cfread_int(file);
+	int to_read = std::clamp(len, 0, buffer_size - 1);
+
+	if (to_read > 0 && cfread(buf, to_read, 1, file) != 1) {
+		to_read = 0;
+	}
+	buf[to_read] = 0;
+
+	if (len > to_read) {
+		if (len > buffer_size) {
+			mprintf(("cfread_string_len: a string of %d characters was cut to fit a buffer of %d in %s\n", len, buffer_size, cf_get_filename(file)));
+		}
+		// skip what didn't fit so the next read starts after this string
+		cfseek(file, len - to_read, CF_SEEK_CUR);
+	}
 }
 
 SCP_string cfread_string_len(CFILE *file)
 {
 	int len = cfread_int(file);
+	// a corrupt length must not make us allocate more than the file can still hold
+	len = std::clamp(len, 0, std::max(cfilelength(file) - cftell(file), 0));
 
 	SCP_string str;
 	str.resize(len);
 
-	if (len)
-		cfread(&str[0], len, 1, file);
+	if (len > 0 && cfread(str.data(), len, 1, file) != 1) {
+		str.clear();
+	}
 
 	return str;
 }
