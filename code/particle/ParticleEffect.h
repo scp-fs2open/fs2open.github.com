@@ -21,7 +21,7 @@
 class EffectHost;
 
 //Due to parsing shenanigans in weapons, this needs a forward-declare here
-int parse_weapon(int, bool, const char*);
+int parse_weapon(int, bool, const char*, bool);
 namespace scripting::api {
 	particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 }
@@ -132,7 +132,7 @@ public:
 	friend struct effects::EffectAttachment;
 	friend struct ParticleParse;
 	friend class ParticleManager;
-	friend int ::parse_weapon(int, bool, const char*);
+	friend int ::parse_weapon(int, bool, const char*, bool);
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 	friend bool move_particle(float frametime, particle* part);
 	friend bool render_particle(particle* part);

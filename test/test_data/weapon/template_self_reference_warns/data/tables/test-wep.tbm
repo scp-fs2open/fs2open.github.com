@@ -1,0 +1,26 @@
+#Weapon Templates
+
+$Template:									Ouroboros
++Use Template:								Ouroboros
+$Model File:								<none>
+$Mass:										0.1
+$Velocity:									500.0
+$Fire Wait:									0.5
+$Damage:									7.0
+$Blast Force:								1.0
+$Inner Radius:								1.0
+$Outer Radius:								1.5
+$Shockwave Speed:							0
+$Armor Factor:								1.0
+$Shield Factor:								1.0
+$Subsystem Factor:							1.0
+$Lifetime:									2.0
+$Energy Consumed:							0.1
+$Cargo Size:								1.0
+$Homing:									NO
+$LaunchSnd:									-1
+$ImpactSnd:									-1
+$FlyBySnd:									-1
+$Flags:										( "player allowed" )
+
+#End

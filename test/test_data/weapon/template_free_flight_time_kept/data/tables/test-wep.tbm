@@ -1,0 +1,18 @@
+#Weapon Templates
+
+$Template:	Seeker Base
+$Velocity:	300.0
+$Homing:	YES
+	+Type:	HEAT
+	+Turn Time:	1.0
+	+View Cone:	180.0
+$Free Flight Time:	0.3
+
+#End
+
+#Secondary Weapons
+
+$Name:	Seeker Derived
++Use Template:	Seeker Base
+
+#End
