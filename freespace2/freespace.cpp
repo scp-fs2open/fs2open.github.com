@@ -108,6 +108,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
 #include "mission/missionload.h"
+#include "mission/missionjournal.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
@@ -946,6 +947,10 @@ void game_level_close()
 		scripting::hooks::OnMissionAboutToEndHook->run();
 	}
 
+	// after On Mission About To End, so entries its scripts log are delivered too
+	mission_log_run_entry_hooks();
+	mission_journal_mission_end();
+
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
 	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
@@ -1496,6 +1501,8 @@ void game_post_level_init()
 #endif
 
 	training_mission_init();
+
+	mission_journal_mission_start();
 
 	// the asteroids enabled variable can be set via sexp 
 	// so ensure it is resets to the default value before creating asteroids 
@@ -3943,6 +3950,8 @@ void game_simulation_frame()
 			}
 		}
 	}
+
+	mission_log_run_entry_hooks();
 
 	// Kick off externally injected operations after the simulation step has finished
 	executor::OnSimulationExecutor->process();

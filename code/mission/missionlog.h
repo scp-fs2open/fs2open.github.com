@@ -91,6 +91,12 @@ struct log_line_complete {
 // to be called before each mission starts
 extern void mission_log_init();
 
+// the stable name scripts see for a log entry type
+extern const char* mission_log_type_name(LogType type);
+
+// runs the On Mission Log Entry hook for the entries added since the last call
+extern void mission_log_run_entry_hooks();
+
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
 extern void mission_log_add_entry(LogType type, const char *pname, const char *sname, int index = -1, int flags = 0);
