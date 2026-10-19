@@ -1300,6 +1300,11 @@ void gr_opengl_calculate_irrmap()
 	auto previous_target = gr_screen.rendering_to_texture;
 	int irr_shader = gr_opengl_maybe_create_shader(SDR_TYPE_IRRADIANCE_MAP_GEN, 0);
 	opengl_shader_set_current(irr_shader);
+	float u_scale, v_scale;
+	uint32_t array_index;
+	if (!gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 0)) {
+		return;
+	}
 	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
 	glBindTexture(env_tex->texture_target, env_tex->texture_id);
 	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
