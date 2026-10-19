@@ -606,8 +606,7 @@ typedef struct thruster_bank {
 	int		num_points;
 	std::shared_ptr<glow_point[]> points;
 
-	// Engine wash info
-	struct engine_wash_info	*wash_info_pointer;		// index into Engine_wash_info
+	int		subsys_num;		// engine subsystem for this bank, used for engine wash; index to ship_info->subsystems of the class that loaded the model
 	int		obj_num;		// what subsystem number this bank is on; index to ship_info->subsystems
 	int		submodel_num;	// what submodel number this bank is on; index to polymodel->submodel/polymodel_instance->submodel
 } thruster_bank;

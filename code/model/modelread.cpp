@@ -2541,9 +2541,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						if (bank->num_points > 0)
 							bank->points = make_shared<glow_point[]>(bank->num_points);
 
+						bank->subsys_num = -1;
 						bank->obj_num = -1;
 						bank->submodel_num = -1;
-						bank->wash_info_pointer = nullptr;
 
 						if (pm->version >= 2117) {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
@@ -3156,13 +3156,15 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 		// start off assuming the subsys is invalid
 		int table_error = 1;
 		auto bank = &pm->thrusters[subsystem.first];
+		engine_wash_info *wash_info_pointer = nullptr;
 
 		for (int k = 0; k < n_subsystems; k++) {
 			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.second.subsystem_name.c_str())) {
 				bank->submodel_num = subsystems[k].subobj_num;
+				bank->subsys_num = k;
 
-				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-				if (bank->wash_info_pointer != nullptr) {
+				wash_info_pointer = subsystems[k].engine_wash_pointer;
+				if (wash_info_pointer != nullptr) {
 					table_error = 0;
 				}
 				// also set what subsystem this is attached to but not if we only have one thruster bank
@@ -3174,7 +3176,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 			}
 		}
 
-		if ((bank->wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+		if ((wash_info_pointer == nullptr) && (n_subsystems > 0)) {
 			if (table_error) {
 				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
 			}
