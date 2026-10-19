@@ -12,6 +12,7 @@
 #include <cstdarg>
 
 #include "anim/animplay.h"
+#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -1148,7 +1149,17 @@ int popup(int flags, int nchoices, ... )
 	vsnprintf(Popup_info.raw_text, sizeof(Popup_info.raw_text), format, args);
 	va_end(args);
 	Popup_info.raw_text[sizeof(Popup_info.raw_text)-1] = '\0';
-	
+
+	// A headless run has nobody to answer, so log the popup and give the abort answer, unless a script answers dialogs.
+	if (Cmdline_headless && !scripting::hooks::OnDialogFrame->isActive()) {
+		mprintf(("Headless run: skipped popup \"%s\"\n", Popup_info.raw_text));
+		for (i = 0; i < nchoices; i++) {
+			vm_free(Popup_info.button_text[i]);
+			Popup_info.button_text[i] = nullptr;
+		}
+		return -1;
+	}
+
 	gamesnd_play_iface(InterfaceSounds::POPUP_APPEAR); 	// play sound when popup appears
 
 	io::mouse::CursorManager::get()->pushStatus();
