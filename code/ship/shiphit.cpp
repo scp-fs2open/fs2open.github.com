@@ -2393,13 +2393,24 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 	return 1;
 }
 
-// Runs the On Ship Damage hook for one ship_do_damage() call, using the hull and shield strength recorded before the
-// damage was applied.  Does nothing if the ship lost no hull or shield strength.
-static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapon_info_index, int damage_type_idx, int quadrant, float hull_strength_before, float shield_strength_before)
+// Sums the current hits of all the ship's subsystems
+static float ship_get_total_subsystem_strength(ship *shipp)
+{
+	float strength = 0.0f;
+	for (ship_subsys *subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys)) {
+		strength += subsys->current_hits;
+	}
+	return strength;
+}
+
+// Runs the On Ship Damage hook for one ship_do_damage() call, using the hull, shield and subsystem strength recorded
+// before the damage was applied.  Does nothing if the ship lost none of them.
+static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapon_info_index, int damage_type_idx, int quadrant, float hull_strength_before, float shield_strength_before, float subsystem_strength_before)
 {
 	const float shield_damage = MAX(0.0f, shield_strength_before - shield_get_strength(ship_objp));
 	const float hull_damage = MAX(0.0f, MAX(0.0f, hull_strength_before) - MAX(0.0f, ship_objp->hull_strength));
-	if (shield_damage <= 0.0f && hull_damage <= 0.0f) {
+	const float subsystem_damage = MAX(0.0f, subsystem_strength_before - ship_get_total_subsystem_strength(&Ships[ship_objp->instance]));
+	if (shield_damage <= 0.0f && hull_damage <= 0.0f && subsystem_damage <= 0.0f) {
 		return;
 	}
 	const bool lethal_hit = hull_strength_before > 0.0f && ship_objp->hull_strength <= 0.0f;
@@ -2460,6 +2471,7 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 			scripting::hook_param("DamageType", 's', damage_type),
 			scripting::hook_param("ShieldDamage", 'f', shield_damage),
 			scripting::hook_param("HullDamage", 'f', hull_damage),
+			scripting::hook_param("SubsystemDamage", 'f', subsystem_damage),
 			scripting::hook_param("Quadrant", 'i', quadrant),
 			scripting::hook_param("Ballistic", 'b', ballistic),
 			scripting::hook_param("BeamWeapon", 'b', beam_weapon),
@@ -2504,6 +2516,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	bool damage_hook_ran = false;
 	const float hull_strength_before = ship_objp->hull_strength;
 	const float shield_strength_before = damage_hook_active ? shield_get_strength(ship_objp) : 0.0f;
+	const float subsystem_strength_before = damage_hook_active ? ship_get_total_subsystem_strength(shipp) : 0.0f;
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_objp, other_obj, &damage);
@@ -2776,7 +2789,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 						ship_objp->sim_hull_strength -= damage;
 						ship_objp->sim_hull_strength = MAX(0.0f, ship_objp->sim_hull_strength);
 						if (damage_hook_active) {
-							ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before);
+							ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
 						}
 						return;
 					}
@@ -2785,7 +2798,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 				// a lethal hit runs the hook now, before the ship's death processing below
 				if (damage_hook_active && ship_objp->hull_strength <= 0.0f) {
-					ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before);
+					ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
 					damage_hook_ran = true;
 				}
 			}
@@ -2888,7 +2901,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	}
 
 	if (damage_hook_active && !damage_hook_ran) {
-		ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before);
+		ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
 	}
 
 	if (!global_damage) {

@@ -560,7 +560,8 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 	});
 
 const std::shared_ptr<Hook<ShipDamageConditions>> OnShipDamage = Hook<ShipDamageConditions>::Factory(
-	"On Ship Damage", "Called after resolved damage is applied; lethal hits run before the destruction callback.",
+	"On Ship Damage", "Called after resolved damage is applied; lethal hits run before the destruction callback.  "
+		"Only called where damage is applied: in single player and on a multiplayer server, not on multiplayer clients.",
 	{
 		{"Target", "ship", "The ship that took the damage."},
 		{"Source", "object", "The weapon, beam, shockwave, or other object that caused the damage. Could be nil."},
@@ -571,6 +572,7 @@ const std::shared_ptr<Hook<ShipDamageConditions>> OnShipDamage = Hook<ShipDamage
 		{"DamageType", "string", "The resolved damage type, or UNKNOWN if none is defined."},
 		{"ShieldDamage", "number", "Actual total shield strength removed by this damage application."},
 		{"HullDamage", "number", "Actual hull strength removed, clamped to the target's remaining hull."},
+		{"SubsystemDamage", "number", "Actual total subsystem strength removed by this damage application."},
 		{"Quadrant", "number", "Shield quadrant hit, or -1 when no single quadrant applies."},
 		{"Ballistic", "boolean", "Whether the weapon class is marked ballistic."},
 		{"BeamWeapon", "boolean", "Whether the weapon class is configured as a beam."},
