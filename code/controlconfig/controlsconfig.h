@@ -698,6 +698,8 @@ extern int Failed_key_index;
 
 extern int Joy_dead_zone_size;
 extern int Joy_sensitivity;
+extern int Joy_axis_dead_zone_size[Action::NUM_VALUES];
+extern int Joy_axis_sensitivity[Action::NUM_VALUES];
 
 extern int Control_config_overlay_id;
 
@@ -1037,11 +1039,13 @@ void control_config_clear_used_status();
 /**
  * @brief Applies sensitivity multiplier and deadzone histerisis to the raw axis value
  *
- * @param[in] raw  The raw axis value to transform
+ * @param[in] raw     The raw axis value to transform
+ * @param[in] action  The axis action (Action::HEADING and so on) whose own deadzone and sensitivity apply when set,
+ *                    or -1 for the global ones
  *
  * @return The transformed value
  */
-int joy_get_scaled_reading(int raw);
+int joy_get_scaled_reading(int raw, int action = -1);
 
 /**
  * Lookups the given stringified enum to find its value
