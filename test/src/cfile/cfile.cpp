@@ -628,8 +628,16 @@ SCP_vector<char> length_then_chars(int len, const char* chars)
 TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 {
 	SCP_string path = testing::TempDir() + "cfile_short_read.bin";
-	auto remove_file = util::finally([&] { remove(path.c_str()); });
-	auto fp = open_short_file(path, length_then_chars(10, "hel"), 18);
+	// The guard closes the file before removing it: Windows cannot delete an open file, and a failed ASSERT returns
+	// with the file still open.
+	CFILE* fp = nullptr;
+	auto remove_file = util::finally([&] {
+		if (fp != nullptr) {
+			cfclose(fp);
+		}
+		remove(path.c_str());
+	});
+	fp = open_short_file(path, length_then_chars(10, "hel"), 18);
 	ASSERT_NE(fp, nullptr);
 
 	char buf[16] = "old";
@@ -637,6 +645,7 @@ TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 	EXPECT_STREQ(buf, "");
 	EXPECT_EQ(cftell(fp), 14);
 	cfclose(fp);
+	fp = nullptr;
 
 	fp = open_short_file(path, length_then_chars(10, "hel"), 18);
 	ASSERT_NE(fp, nullptr);
@@ -646,7 +655,6 @@ TEST_F(CFileTest, string_len_failed_read_skips_the_string)
 	EXPECT_EQ(str, "");
 #endif
 	EXPECT_EQ(cftell(fp), 14);
-	cfclose(fp);
 }
 
 #ifdef NDEBUG
@@ -850,15 +858,20 @@ TEST_F(CFileTest, string_len_clean_end_of_file_inside_max_read_len_is_silent)
 TEST_F(CFileTest, string_len_missing_length_field_before_the_end_warns)
 {
 	SCP_string path = testing::TempDir() + "cfile_missing_length.bin";
-	auto remove_file = util::finally([&] { remove(path.c_str()); });
-	auto fp = open_short_file(path, {}, 8);
+	CFILE* fp = nullptr;
+	auto remove_file = util::finally([&] {
+		if (fp != nullptr) {
+			cfclose(fp);
+		}
+		remove(path.c_str());
+	});
+	fp = open_short_file(path, {}, 8);
 	ASSERT_NE(fp, nullptr);
 
 	char buf[8];
 	memset(buf, 'X', sizeof(buf));
 	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "");
-	cfclose(fp);
 }
 
 #ifdef NDEBUG
@@ -879,8 +892,14 @@ TEST_F(CFileTest, string_len_zero_buffer_and_empty_string_is_silent)
 TEST_F(CFileTest, string_len_length_field_cut_short_on_disk_warns)
 {
 	SCP_string path = testing::TempDir() + "cfile_short_length.bin";
-	auto remove_file = util::finally([&] { remove(path.c_str()); });
-	auto fp = open_short_file(path, {'\x05', '\x00'}, 18);
+	CFILE* fp = nullptr;
+	auto remove_file = util::finally([&] {
+		if (fp != nullptr) {
+			cfclose(fp);
+		}
+		remove(path.c_str());
+	});
+	fp = open_short_file(path, {'\x05', '\x00'}, 18);
 	ASSERT_NE(fp, nullptr);
 
 	char buf[8];
@@ -888,7 +907,6 @@ TEST_F(CFileTest, string_len_length_field_cut_short_on_disk_warns)
 	expect_warning("length field", [&] { cfread_string_len(buf, sizeof(buf), fp); });
 	EXPECT_STREQ(buf, "");
 	EXPECT_EQ(cftell(fp), 2);
-	cfclose(fp);
 }
 
 #ifndef NDEBUG
