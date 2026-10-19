@@ -45,7 +45,13 @@ bool guessLatin1Encoding(const char* aBuf, size_t aLen);
  * @param filename The name of the file. Only used for possible error messages.
  * @param[out] start_offset A pointer to an int variable. If this is a valid pointer then this variable will contain the
  * offset of the first text byte from the start of the file.
+ * @param accept_utf8_or_ascii If true, a UTF-8 file is accepted (and its BOM skipped) even when Unicode mode is
+ * disabled. ASCII files are always accepted in Unicode mode. For files such as multi.cfg that are read the same way
+ * in either mode.
  * @return The length of the file in bytes. Does not include the BOM if it exists.
  */
-int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset = nullptr);
+int check_encoding_and_skip_bom(CFILE* file,
+	const char* filename,
+	int* start_offset = nullptr,
+	bool accept_utf8_or_ascii = false);
 }
