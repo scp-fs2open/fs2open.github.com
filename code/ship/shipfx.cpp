@@ -2712,17 +2712,16 @@ void engine_wash_ship_process(ship *shipp)
 			}
 
 			// check if thruster bank has engine wash
-			if (bank->wash_info_pointer == NULL) {
+			engine_wash_info *ewp = (bank->subsys_num >= 0 && bank->subsys_num < wash_sip->n_subsystems) ? wash_sip->subsystems[bank->subsys_num].engine_wash_pointer : nullptr;
+			if (ewp == nullptr) {
 				// if huge, give default engine wash
 				if ((wash_sip->is_huge_ship()) && !Engine_wash_info.empty()) {
-					bank->wash_info_pointer = &Engine_wash_info[0];
-					nprintf(("wash", "Adding default engine wash to ship %s", wash_sip->name));
+					ewp = Engine_wash_info.data();
 				} else {
 					continue;
 				}
 			}
 
-			engine_wash_info *ewp = bank->wash_info_pointer;
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 			float wash_intensity;
