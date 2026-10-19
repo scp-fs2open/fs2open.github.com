@@ -100,7 +100,13 @@ int openal_find_capture_device_by_name(const SCP_string& device);
 #define ALC_EFX_MINOR_VERSION			0x20002
 #define ALC_MAX_AUXILIARY_SENDS		0x20003
 
+#define AL_DIRECT_FILTER				0x20005
 #define AL_AUXILIARY_SEND_FILTER		0x20006
+
+#define AL_FILTER_BANDPASS				0x0003
+#define AL_BANDPASS_GAIN				0x0001
+#define AL_BANDPASS_GAINLF				0x0002
+#define AL_BANDPASS_GAINHF				0x0003
 
 #define AL_EAXREVERB_DENSITY					0x0001
 #define AL_EAXREVERB_DIFFUSION					0x0002

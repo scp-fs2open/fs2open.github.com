@@ -231,6 +231,7 @@ typedef struct pmessage {
 	int start_frame;			// the start frame needed to play the animation
 	bool play_anim;			// used to tell HUD gauges if they should be playing or not
 	sound_handle wave;      // handle of wave currently playing
+	sound_handle radio_static;  // static looping under the wave when Radio Voice Filter is on
 	int id;						// id of message currently playing
 	int priority;				// priority of message currently playing
 	int shipnum;				// shipnum of ship sending this message,  -1 if from Terran command
@@ -302,6 +303,11 @@ int message_persona_name_lookup(const char* name);
 
 // preload mission messages (this is called by the level paging code when running with low memory)
 void message_pagein_mission_messages();
+
+/**
+ * @brief Stops the radio static under any playing messages, for leaving gameplay while one still plays
+ */
+void message_stop_all_radio_static();
 
 // given a message id#, should it be filtered for me?
 int message_filter_multi(int id);
