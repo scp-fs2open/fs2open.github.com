@@ -13,6 +13,13 @@ option(MSVC_RELEASE_DEBUGGING "Set options that allow to debug release builds" O
 MARK_AS_ADVANCED(FORCE MSVC_USE_RUNTIME_DLL)
 MARK_AS_ADVANCED(FORCE MSVC_RELEASE_DEBUGGING)
 
+# Qt is only available as DLL-runtime builds, so qtFRED forces the DLL runtime for the whole tree
+if(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
+	set(FSO_MSVC_RUNTIME_DLL ON)
+else()
+	set(FSO_MSVC_RUNTIME_DLL OFF)
+endif()
+
 # These are the warnings we disable
 set(WARNING_FLAGS
 	/wd4100 # unreferenced formal parameters
@@ -71,8 +78,7 @@ if (MSVC_RELEASE_DEBUGGING)
 	endif()
 endif()
 
-# This should be kept in sync with the corresponding IF() in fred2/CMakeLists.txt
-IF(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
+IF(FSO_MSVC_RUNTIME_DLL)
 	# The debug runtime DLLs are not redistributable, so only Debug may use them
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 	add_compile_definitions(_AFXDLL)
