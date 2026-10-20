@@ -73,7 +73,8 @@ endif()
 
 # This should be kept in sync with the corresponding IF() in fred2/CMakeLists.txt
 IF(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>DLL")
+	# The debug runtime DLLs are not redistributable, so only Debug may use them
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 	add_compile_definitions(_AFXDLL)
 ELSE()
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>")

@@ -24,14 +24,15 @@ endif()
 # Must be set before find_package -- CMake snapshots this into each imported target's
 # MAP_IMPORTED_CONFIG_FASTDEBUG property at target-creation time, not at link time.
 # The list entries are tried in order:
-#   "Debug"   -- matches the per-config IMPORTED_LOCATION_DEBUG on Qt's libraries.
-#   "Release" -- per-config fallback if any target ships only a Release variant.
+#   "Release" -- FastDebug uses the release C runtime (see toolchain-msvc.cmake), so it must
+#                link Qt's release libraries: Debug Qt would drag in the non-redistributable
+#                debug CRT, and mixing CRTs across the Qt boundary corrupts the heap.
 #   ""        -- the empty entry means "fall back to the suffix-less IMPORTED_LOCATION".
 #                Required because Qt's host tools (uic/moc/rcc/qhelpgenerator) set
 #                only IMPORTED_LOCATION (no IMPORTED_CONFIGURATIONS), so without this
 #                CMake errors with "IMPORTED_LOCATION not set for imported target
-#                Qt5::uic configuration FastDebug".
-set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Debug Release "")
+#                Qt6::uic configuration FastDebug".
+set(CMAKE_MAP_IMPORTED_CONFIG_FASTDEBUG Release "")
 
 find_package(Qt6 COMPONENTS Core Widgets OpenGL Help)
 

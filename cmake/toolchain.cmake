@@ -3,7 +3,13 @@
 
 add_library(compiler INTERFACE)
 
-target_compile_definitions(compiler INTERFACE "$<$<CONFIG:Release>:NDEBUG>;$<$<CONFIG:Debug>:_DEBUG>;$<$<CONFIG:FastDebug>:_DEBUG>")
+set(FSO_CONFIG_DEFINITIONS "$<$<CONFIG:Release>:NDEBUG>" "$<$<CONFIG:Debug>:_DEBUG>")
+if(NOT MSVC)
+	# On MSVC the debug runtime flags (/MTd, /MDd) define _DEBUG themselves, and a FastDebug
+	# build on the release runtime must not have it
+	list(APPEND FSO_CONFIG_DEFINITIONS "$<$<CONFIG:FastDebug>:_DEBUG>")
+endif()
+target_compile_definitions(compiler INTERFACE ${FSO_CONFIG_DEFINITIONS})
 
 set(FORCED_NATIVE_SIMD_INSTRUCTIONS ON CACHE BOOL "Override instruction set detection and compile with the maximum possible instructions for the current system.")
 IF(IS_X86)
