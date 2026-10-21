@@ -93,6 +93,10 @@ static int Num_enemy_arrivals;
 static int Num_friendly_arrivals;
 
 constexpr int ARRIVAL_INTERVAL_TIMESTAMP =			5 * MILLISECONDS_PER_SECOND;
+
+// FS1 used a repeating timer of 35 seconds, which was renewed each time it expired, causing the check that ends battle music
+// to occur anywhere from 0-35 seconds after the most recent hostile kill.  FS2 fixed the trigger to arm on the actual kill
+// instead of on a cycle.  In FSO, the fixed logic is deliberately used for FS1 soundtracks too.
 constexpr int BATTLE_CHECK_INTERVAL =				15 * MILLISECONDS_PER_SECOND;
 
 static TIMESTAMP Battle_over_timestamp;
@@ -571,6 +575,8 @@ void event_music_do_frame()
 		} else {
 			// We want to go back to NRML track music if all the hostiles have been 
 			// destroyed, and we are still playing the battle music
+			// (FS1 instead set Event_Music_battle_started every frame while battle music played, so it stayed set after
+			// the battle ended and later friendly arrivals led back into battle music; that bug is not reproduced)
 			if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
 				if (timestamp_elapsed(Battle_over_timestamp)) {
 					if (hostile_ships_present() == FALSE) {
@@ -1017,19 +1023,6 @@ int event_music_friendly_arrival()
 		{
 			Patterns[Current_pattern].next_pattern = next_pattern;
 			Patterns[Current_pattern].force_pattern = TRUE;
-
-			// Goober5000 - default to SONG_BTTL_3 as specified above
-			// (this is my attempted recreation of the FS1 behavior)
-			if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
-			{
-				if ((Event_Music_battle_started == TRUE) && (Num_friendly_arrivals > 2))
-				{
-					if (Patterns[SONG_BTTL_3].handle != -1)
-					{
-						Patterns[next_pattern].next_pattern = SONG_BTTL_3;
-					}
-				}
-			}
 		}
 	}
 
