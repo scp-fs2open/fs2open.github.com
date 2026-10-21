@@ -100,6 +100,7 @@ static TIMESTAMP Mission_over_timestamp;
 static bool Victory2_music_played;
 static TIMESTAMP Next_arrival_timestamp;
 static TIMESTAMP Check_for_battle_music;	// this timestamp is actually never set
+static bool Event_music_battle_forced = false;
 
 typedef struct pattern_info
 {
@@ -541,6 +542,10 @@ void event_music_do_frame()
 		}
 
 		if (Event_Music_battle_started == 0) {
+			// some paths, such as respawning or re-enabling the music, clear the battle state
+			if (Event_music_battle_forced)
+				event_music_battle_start();
+
 			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
 					Check_for_battle_music = _timestamp(1 * MILLISECONDS_PER_SECOND);
@@ -690,6 +695,10 @@ void event_music_level_start(int force_soundtrack)
 
 	if (Event_music_level_inited)
 	{
+		// before the first pattern is chosen, so that it can be a battle pattern
+		if (Event_music_battle_forced)
+			event_music_battle_start();
+
 		if (force_soundtrack >= 0)
 			event_music_first_pattern();
 	}
@@ -1607,6 +1616,9 @@ int hostile_ships_present()
 	ship		*shipp;
 	ship_obj *so;
 
+	if (Event_music_battle_forced)
+		return 1;
+
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
 		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
@@ -1704,6 +1716,16 @@ void event_sexp_change_soundtrack(const char *name)
 	event_music_level_start(new_soundtrack);
 }
 
+void event_music_force_battle(bool force)
+{
+	Event_music_battle_forced = force;
+
+	if (force)
+		event_music_battle_start();
+	else
+		Battle_over_timestamp = TIMESTAMP::immediate();
+}
+
 // ----------------------------------------------------------------
 // event_music_get_soundtrack_name()
 //
@@ -1780,6 +1802,7 @@ void event_music_reset_choices()
 {
 	Current_soundtrack_num = -1;
 	mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
+	Event_music_battle_forced = false;
 	Mission_music[SCORE_BRIEFING] = -1;
 	Mission_music[SCORE_FICTION_VIEWER] = -1;
 	event_music_set_score(SCORE_DEBRIEFING_SUCCESS, "Success");
