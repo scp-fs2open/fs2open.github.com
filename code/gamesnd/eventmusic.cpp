@@ -9,6 +9,7 @@
 
 #include "gamesnd/eventmusic.h"
 
+#include "ai/ai_profiles.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
@@ -1636,7 +1637,7 @@ int hostile_ships_present()
 		}
 
 		// check if ship is visible by player's team
-		if ( hud_target_invalid_awacs(&Objects[so->objnum]) == 1 ) {
+		if ( !The_mission.ai_profile->flags[AI::Profile_Flags::Battle_music_ignores_sensor_visibility] && hud_target_invalid_awacs(&Objects[so->objnum]) == 1 ) {
 			continue;
 		}
 
