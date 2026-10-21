@@ -54,6 +54,18 @@ class GPUMemoryHeap {
 	 * @return The graphics code buffer handle.
 	 */
 	gr_buffer_handle bufferHandle();
+
+	/**
+	 * @brief Gets the number of bytes currently allocated from this heap
+	 * @return The sum of the sizes of all active allocations.
+	 */
+	size_t usedBytes() const;
+
+	/**
+	 * @brief Gets the total size of the backing GPU buffer, including both allocated and free space
+	 * @return The current buffer size.
+	 */
+	size_t bufferSize() const;
 };
 
 }

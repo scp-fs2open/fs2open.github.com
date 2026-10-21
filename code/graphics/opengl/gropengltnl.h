@@ -54,6 +54,22 @@ void* gr_opengl_map_buffer(gr_buffer_handle handle);
 void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size);
 
 /**
+ * @brief Gives the bytes that all live vertex and index buffers hold
+ *
+ * The profiler overlay's memory panel shows this value as the "geometry" group. Uniform buffers
+ * and texture buffers are not part of it.
+ */
+size_t opengl_get_geometry_bytes();
+
+/**
+ * @brief Gives the bytes that the shadow map texture array holds
+ *
+ * The profiler overlay's memory panel adds this value to the "render targets" group. The function
+ * gives 0 when shadows are off.
+ */
+size_t opengl_get_shadow_map_bytes();
+
+/**
  * @brief Retrieves the OpenGL handle of a generic buffer handle
  * @param expected_type The expected type of the buffer. Mainly used for debug checking.
  * @param buffer_handle The handle of the generic buffer

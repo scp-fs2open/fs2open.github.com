@@ -1791,6 +1791,8 @@ add_file_folder("Tracing"
 	tracing/MainFrameTimer.cpp
 	tracing/Monitor.h
 	tracing/Monitor.cpp
+	tracing/ProfilerOverlay.h
+	tracing/ProfilerOverlay.cpp
 	tracing/scopes.cpp
 	tracing/scopes.h
 	tracing/ThreadedEventProcessor.h
