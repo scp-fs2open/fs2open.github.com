@@ -78,12 +78,12 @@ if (MSVC_RELEASE_DEBUGGING)
 	endif()
 endif()
 
+# The debug runtime is not redistributable (statically linked or not), so only Debug may use it
 IF(FSO_MSVC_RUNTIME_DLL)
-	# The debug runtime DLLs are not redistributable, so only Debug may use them
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 	add_compile_definitions(_AFXDLL)
 ELSE()
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>")
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 ENDIF()
 
 # Debug

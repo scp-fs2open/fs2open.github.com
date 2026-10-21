@@ -207,8 +207,8 @@ TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies 
 # from the static MFC copy while CRuntimeClass structs are initialized in the DLL form,
 # crashing CDocTemplate's ctor on startup.
 IF(NOT FSO_MSVC_RUNTIME_DLL)
-	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
-	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Debug>:nafxcwd.lib>")
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Debug>>:nafxcw.lib>")
 ENDIF()
 
 target_link_libraries(FRED2 PUBLIC glad_wgl)
