@@ -66,6 +66,7 @@ struct ShipDeathConditions {
 struct ShipDamageConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* target_shipp;
+	int weapon_info_index; // the weapon that caused the damage, or -1 if none
 };
 
 struct SubsystemDeathConditions {

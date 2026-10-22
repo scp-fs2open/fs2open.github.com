@@ -232,8 +232,16 @@ HOOK_CONDITIONS_START(ShipDeathConditions)
 	HOOK_CONDITION_SHIPP(ShipDeathConditions, "", "that died.", dying_shipp);
 HOOK_CONDITIONS_END
 
+// Damage with no weapon has weapon_info_index -1, and so does a weapon name that does not exist, so a named weapon
+// class must also be a real weapon to match.
+static bool conditionDamageWeaponClassMatches(int damage_weapon_index, const int& weapon_index)
+{
+	return damage_weapon_index >= 0 && damage_weapon_index == weapon_index;
+}
+
 HOOK_CONDITIONS_START(ShipDamageConditions)
-	HOOK_CONDITION_SHIPP(ShipDamageConditions, "Target ", "that took resolved damage.", target_shipp);
+	HOOK_CONDITION_SHIPP(ShipDamageConditions, "Target ", "that took damage.", target_shipp);
+	HOOK_CONDITION(ShipDamageConditions, "Weapon class", "Specifies the class of the weapon that caused the damage. For a shockwave, this is the weapon that created it.", weapon_info_index, conditionParseWeaponClass, conditionDamageWeaponClassMatches);
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(SubsystemDeathConditions)

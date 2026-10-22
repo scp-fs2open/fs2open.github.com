@@ -2393,45 +2393,72 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 	return 1;
 }
 
-// Sums the current hits of all the ship's subsystems
-static float ship_get_total_subsystem_strength(ship *shipp)
+// The shield, hull and per-subsystem strength of a ship, recorded before a ship_do_damage() call.  Only filled in while
+// the On Ship Damage hook is active.
+struct ship_damage_snapshot {
+	float hull_strength = 0.0f;
+	float shield_strength = 0.0f;
+	SCP_vector<std::pair<ship_subsys *, float>> subsystem_hits;
+};
+
+static void ship_take_damage_snapshot(object *ship_objp, ship_damage_snapshot &snapshot)
 {
-	float strength = 0.0f;
+	ship *shipp = &Ships[ship_objp->instance];
+	snapshot.hull_strength = ship_objp->hull_strength;
+	snapshot.shield_strength = shield_get_strength(ship_objp);
+	snapshot.subsystem_hits.clear();
 	for (ship_subsys *subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys)) {
-		strength += subsys->current_hits;
+		snapshot.subsystem_hits.emplace_back(subsys, subsys->current_hits);
 	}
-	return strength;
 }
 
-// Runs the On Ship Damage hook for one ship_do_damage() call, using the hull, shield and subsystem strength recorded
-// before the damage was applied.  Does nothing if the ship lost none of them.
-static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapon_info_index, int damage_type_idx, int quadrant, float hull_strength_before, float shield_strength_before, float subsystem_strength_before)
+// Runs the On Ship Damage hook for one ship_do_damage() call, reporting what the ship lost since the snapshot.
+// Does nothing if the ship lost none of its shield, hull or subsystem strength.
+static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapon_info_index, int damage_type_idx, int quadrant, DamageSource source, bool wash_damage, const ship_damage_snapshot &before)
 {
-	const float shield_damage = MAX(0.0f, shield_strength_before - shield_get_strength(ship_objp));
-	const float hull_damage = MAX(0.0f, MAX(0.0f, hull_strength_before) - MAX(0.0f, ship_objp->hull_strength));
-	const float subsystem_damage = MAX(0.0f, subsystem_strength_before - ship_get_total_subsystem_strength(&Ships[ship_objp->instance]));
-	if (shield_damage <= 0.0f && hull_damage <= 0.0f && subsystem_damage <= 0.0f) {
+	const float shield_damage = MAX(0.0f, before.shield_strength - shield_get_strength(ship_objp));
+	const float hull_damage = MAX(0.0f, MAX(0.0f, before.hull_strength) - MAX(0.0f, ship_objp->hull_strength));
+
+	bool subsystem_hit = false;
+	for (const auto &entry : before.subsystem_hits) {
+		if (entry.first->current_hits < entry.second) {
+			subsystem_hit = true;
+			break;
+		}
+	}
+	if (shield_damage <= 0.0f && hull_damage <= 0.0f && !subsystem_hit) {
 		return;
 	}
-	const bool lethal_hit = hull_strength_before > 0.0f && ship_objp->hull_strength <= 0.0f;
+	const bool lethal_hit = before.hull_strength > 0.0f && ship_objp->hull_strength <= 0.0f;
+
+	// the subsystems that lost strength, keyed by subsystem handle
+	luacpp::LuaTable subsystem_losses = luacpp::LuaTable::create(Script_system.GetLuaSession());
+	for (const auto &entry : before.subsystem_hits) {
+		const float lost = entry.second - entry.first->current_hits;
+		if (lost > 0.0f) {
+			subsystem_losses.addValue(scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, entry.first)), lost);
+		}
+	}
 
 	const weapon_info *wip = (weapon_info_index >= 0 && weapon_info_index < weapon_info_size()) ? &Weapon_info[weapon_info_index] : nullptr;
-	const char *weapon_class = (wip != nullptr) ? wip->name : "NON_WEAPON";
-	const char *weapon_subtype = (wip != nullptr && wip->subtype >= 0 && wip->subtype < Num_weapon_subtypes) ? Weapon_subtype_names[wip->subtype] : "UNKNOWN";
-	const bool ballistic = wip != nullptr && wip->wi_flags[Weapon::Info_Flags::Ballistic];
-	const bool beam_weapon = wip != nullptr && wip->is_beam();
-
 	if ((damage_type_idx < 0 || damage_type_idx >= static_cast<int>(Damage_types.size())) && wip != nullptr) {
 		damage_type_idx = wip->damage_type_idx;
 	}
 	const char *damage_type = (damage_type_idx >= 0 && damage_type_idx < static_cast<int>(Damage_types.size())) ? Damage_types[damage_type_idx].name : "UNKNOWN";
 
 	const char *source_kind = "OTHER";
-	object *attacker_objp = nullptr;
-	if (other_obj != nullptr) {
+	if (source == DamageSource::Collision) {
+		source_kind = "COLLISION";
+	} else if (source == DamageSource::Explosion) {
+		source_kind = "EXPLOSION";
+	} else if (wash_damage) {
+		source_kind = "WASH";
+	} else if (other_obj == ship_objp) {
+		source_kind = "SELF";
+	} else if (other_obj != nullptr) {
 		switch (other_obj->type) {
 			case OBJ_WEAPON:
-				source_kind = "PROJECTILE";
+				source_kind = "NON_BEAM_WEAPON";
 				break;
 			case OBJ_BEAM:
 				source_kind = "BEAM";
@@ -2439,15 +2466,13 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 			case OBJ_SHOCKWAVE:
 				source_kind = "SHOCKWAVE";
 				break;
-			case OBJ_SHIP:
-			case OBJ_ASTEROID:
-			case OBJ_DEBRIS:
-				source_kind = "COLLISION";
-				break;
 			default:
 				break;
 		}
+	}
 
+	object *attacker_objp = nullptr;
+	if (other_obj != nullptr) {
 		if (other_obj->type == OBJ_BEAM) {
 			int parent_objnum = beam_get_parent(other_obj);
 			if (parent_objnum >= 0) {
@@ -2460,21 +2485,17 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 		}
 	}
 
-	scripting::hooks::OnShipDamage->run(scripting::hooks::ShipDamageConditions{ &Ships[ship_objp->instance] },
+	scripting::hooks::OnShipDamage->run(scripting::hooks::ShipDamageConditions{ &Ships[ship_objp->instance], weapon_info_index },
 		scripting::hook_param_list(
 			scripting::hook_param("Target", 'o', ship_objp),
 			scripting::hook_param("Source", 'o', other_obj, other_obj != nullptr),
 			scripting::hook_param("Attacker", 'o', attacker_objp, attacker_objp != nullptr),
-			scripting::hook_param("WeaponClass", 's', weapon_class),
-			scripting::hook_param("WeaponSubtype", 's', weapon_subtype),
 			scripting::hook_param("SourceKind", 's', source_kind),
 			scripting::hook_param("DamageType", 's', damage_type),
 			scripting::hook_param("ShieldDamage", 'f', shield_damage),
 			scripting::hook_param("HullDamage", 'f', hull_damage),
-			scripting::hook_param("SubsystemDamage", 'f', subsystem_damage),
+			scripting::hook_param("SubsystemDamage", 't', subsystem_losses),
 			scripting::hook_param("Quadrant", 'i', quadrant),
-			scripting::hook_param("Ballistic", 'b', ballistic),
-			scripting::hook_param("BeamWeapon", 'b', beam_weapon),
 			scripting::hook_param("LethalHit", 'b', lethal_hit)));
 }
 
@@ -2496,7 +2517,7 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 // Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(const object *ship_objp, const object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false, float hit_dot = 1.f, const vec3d* hit_normal = nullptr, const vec3d* local_hitpos = nullptr)
+static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false, float hit_dot = 1.f, const vec3d* hit_normal = nullptr, const vec3d* local_hitpos = nullptr, DamageSource source = DamageSource::Inferred)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2514,9 +2535,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	// snapshot for the On Ship Damage hook, which reports what the ship actually lost
 	const bool damage_hook_active = scripting::hooks::OnShipDamage->isActive();
 	bool damage_hook_ran = false;
-	const float hull_strength_before = ship_objp->hull_strength;
-	const float shield_strength_before = damage_hook_active ? shield_get_strength(ship_objp) : 0.0f;
-	const float subsystem_strength_before = damage_hook_active ? ship_get_total_subsystem_strength(shipp) : 0.0f;
+	ship_damage_snapshot damage_before;
+	if (damage_hook_active) {
+		ship_take_damage_snapshot(ship_objp, damage_before);
+	}
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_objp, other_obj, &damage);
@@ -2789,7 +2811,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 						ship_objp->sim_hull_strength -= damage;
 						ship_objp->sim_hull_strength = MAX(0.0f, ship_objp->sim_hull_strength);
 						if (damage_hook_active) {
-							ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
+							ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, source, wash_damage, damage_before);
 						}
 						return;
 					}
@@ -2798,7 +2820,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 				// a lethal hit runs the hook now, before the ship's death processing below
 				if (damage_hook_active && ship_objp->hull_strength <= 0.0f) {
-					ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
+					ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, source, wash_damage, damage_before);
 					damage_hook_ran = true;
 				}
 			}
@@ -2901,7 +2923,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	}
 
 	if (damage_hook_active && !damage_hook_ran) {
-		ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, hull_strength_before, shield_strength_before, subsystem_strength_before);
+		ship_run_damage_hook(ship_objp, other_obj, weapon_info_index, damage_type_idx, quadrant, source, wash_damage, damage_before);
 	}
 
 	if (!global_damage) {
@@ -3110,7 +3132,7 @@ void ship_apply_tag(ship *shipp, int tag_level, float tag_time, object *target, 
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
 // (it might be possible to make `other_obj` const, but that would set off another const-cascade)
-void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark, int submodel_num, const vec3d *hit_normal, float hit_dot, const vec3d* local_hitpos)
+void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark, int submodel_num, const vec3d *hit_normal, float hit_dot, const vec3d* local_hitpos, DamageSource source)
 {
 	Assert(ship_objp);	// Goober5000
 	Assert(other_obj);	// Goober5000
@@ -3207,7 +3229,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 		ship_do_healing(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, -1, hit_normal, local_hitpos);
 		create_sparks = false;
 	} else {
-		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot, hit_normal, local_hitpos);
+		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot, hit_normal, local_hitpos, source);
 	}
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
@@ -3254,7 +3276,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 // You can pass force_center==NULL if you the damage doesn't come from anywhere,
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
-void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d *force_center, float damage, int damage_type_idx)
+void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d *force_center, float damage, int damage_type_idx, DamageSource source)
 {
 	Assert(ship_objp);	// Goober5000 (but not other_obj in case of sexp)
 
@@ -3291,7 +3313,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, -1, damage_type_idx);
 		else
 			// Do damage on local point		
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx);
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx, false, 1.f, nullptr, nullptr, source);
 	} else {
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
@@ -3300,7 +3322,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 
 		int n_quadrants = static_cast<int>(ship_objp->shield_quadrant.size());
 		for (int i=0; i<n_quadrants; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx);
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx, false, 1.f, nullptr, nullptr, source);
 		}
 	}
 
