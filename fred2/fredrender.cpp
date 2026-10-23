@@ -548,7 +548,7 @@ void display_ship_info() {
 
 						shipp = &Ships[objp->instance];
 						ship_type = shipp->ship_info_index;
-						ASSERT(ship_type >= 0);
+						Assert(ship_type >= 0);
 						sprintf(buf, "%s\n%s", shipp->ship_name, Ship_info[ship_type].short_name);
 
 					} else if (objp->type == OBJ_WAYPOINT) {
@@ -572,7 +572,7 @@ void display_ship_info() {
 
 							propp = prop_id_lookup(objp->instance);
 							prop_type = propp->prop_info_index;
-							ASSERT(prop_type >= 0);
+							Assert(prop_type >= 0);
 							sprintf(buf, "%s\n", propp->prop_name);
 					} else
 						Assert(0);
