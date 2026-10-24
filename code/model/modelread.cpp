@@ -3151,15 +3151,15 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 		// start off assuming the subsys is invalid
 		int table_error = 1;
 		auto bank = &pm->thrusters[subsystem.first];
-		engine_wash_info *wash_info_pointer = nullptr;
+		int wash_index = -1;
 
 		for (int k = 0; k < n_subsystems; k++) {
 			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.second.subsystem_name.c_str())) {
 				bank->submodel_num = subsystems[k].subobj_num;
 				bank->subsys_num = k;
 
-				wash_info_pointer = subsystems[k].engine_wash_pointer;
-				if (wash_info_pointer != nullptr) {
+				wash_index = subsystems[k].engine_wash_index;
+				if (wash_index >= 0) {
 					table_error = 0;
 				}
 				// also set what subsystem this is attached to but not if we only have one thruster bank
@@ -3171,7 +3171,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 			}
 		}
 
-		if ((wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+		if ((wash_index < 0) && (n_subsystems > 0)) {
 			if (table_error) {
 				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
 			}
@@ -6246,7 +6246,7 @@ void model_subsystem::reset()
     dead_snd = gamesnd_id();
     rotation_snd = gamesnd_id();
 
-    engine_wash_pointer = NULL;
+    engine_wash_index = -1;
 
     weapon_rotation_pbank = 0;
     stepped_rotation.reset();

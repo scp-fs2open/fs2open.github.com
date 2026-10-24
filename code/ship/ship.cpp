@@ -153,7 +153,7 @@ char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
 
-static engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
+static int get_engine_wash_index(const char* engine_wash_name);
 static int subsys_set(int objnum, int ignore_subsys_info = 0);
 static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
 static void ship_set_hud_cockpit_targets();
@@ -349,7 +349,6 @@ void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_
 }
 
 
-int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
@@ -970,10 +969,12 @@ static void parse_engine_wash(bool replace)
 
 	//Does this engine wash exist already?
 	//If so, load this new info into it
-	//Otherwise, increment Num_engine_wash_types
-	ewp = get_engine_wash_pointer(ewt.name);
-	if(ewp != NULL)
+	//Otherwise, add it
+	int idx = get_engine_wash_index(ewt.name);
+	if (idx >= 0)
 	{
+		ewp = &Engine_wash_info[idx];
+
 		if(replace)
 		{
 			nprintf(("Warning", "More than one version of engine wash %s exists; using newer version.", ewt.name));
@@ -994,7 +995,7 @@ static void parse_engine_wash(bool replace)
 			return;
 		}
 		Engine_wash_info.push_back(ewt);
-		ewp = &Engine_wash_info[Num_engine_wash_types++];
+		ewp = &Engine_wash_info.back();
 	}
 
 
@@ -5343,7 +5344,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					sp->secondary_bank_capacity[i] = 0;
 				}
 
-				sp->engine_wash_pointer = NULL;
+				sp->engine_wash_index = -1;
 				
 				sp->alive_snd = gamesnd_id();
 				sp->dead_snd = gamesnd_id();
@@ -5441,9 +5442,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			if (optional_string("$Engine Wash:")) {
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				// get and set index
-				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
+				sp->engine_wash_index = get_engine_wash_index(name_tmp);
 
-				if(sp->engine_wash_pointer == NULL)
+				if (sp->engine_wash_index < 0)
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
@@ -5747,18 +5748,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 }
 
-static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
+static int get_engine_wash_index(const char *engine_wash_name)
 {
-	for(int i = 0; i < Num_engine_wash_types; i++)
+	for (size_t i = 0; i < Engine_wash_info.size(); ++i)
 	{
-		if(!stricmp(engine_wash_name, Engine_wash_info[i].name))
-		{
-			return &Engine_wash_info[i];
-		}
+		if (!stricmp(engine_wash_name, Engine_wash_info[i].name))
+			return sz2i(i);
 	}
 
 	//Didn't find anything.
-	return NULL;
+	return -1;
 }
 
 static void parse_ship_type(const char *filename, const bool replace)
@@ -6462,7 +6461,7 @@ void ship_init()
 
 		//ships.tbl
 		{			
-			Num_engine_wash_types = 0;
+			Engine_wash_info.clear();
 			strcpy_s(default_player_ship, "");
 
 			//Parse main TBL first
