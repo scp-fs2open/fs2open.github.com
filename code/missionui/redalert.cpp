@@ -664,7 +664,7 @@ extern int insert_subsys_status(p_object *pobjp);
 
 void red_alert_bash_subsys_status(const red_alert_ship_status *ras, p_object *pobjp)
 {
-	int i, j;
+	int i;
 	ship_info *sip;
 	model_subsystem *psub = NULL;
 	subsys_status *sssp = NULL;
@@ -677,30 +677,28 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, p_object *po
 	// do this differently than the other bash_subsys_status... since the p_object may not contain
 	// all the subsystems, iterate on the red_alert_ship_status entries rather than the p_object's
 	// and create missing subsystems where necessary
-	for (i = 0; i < (int) ras->subsys_current_hits.size(); i++)
+	for (i = 0; (i < sz2i(ras->subsys_current_hits.size())) && (i < sip->n_subsystems); i++)
 	{
 		psub = &sip->subsystems[i];
 
-		// in the p_object, subsystem 0 is the pilot, and afterwards the subsystems go in order
-		j = i + 1;
+		float max_hits = psub->max_subsys_strength * (pobjp->ship_max_hull_strength / sip->max_hull_strength);
 
-		// this subsystem is in the p_object
-		if (j < pobjp->subsys_count)
-		{
-			sssp = &Subsys_status[pobjp->subsys_index + j];
-		}
+		// a subsystem with no hitpoints has no damage to restore
+		if (max_hits <= 0.0f)
+			continue;
+
+		// the mission file only lists some subsystems, in no fixed position, so look this one up by name
+		sssp = parse_get_subsys_status(pobjp, psub->subobj_name);
+
 		// must create subsystem (same technique as in parse_copy_damage)
-		else
+		if (sssp == nullptr)
 		{
 			// jam in the new subsystem at the end of the existing list for this parse object
 			int new_idx = insert_subsys_status(pobjp);
-			Assert(new_idx == pobjp->subsys_index + j);
 			sssp = &Subsys_status[new_idx];
 
 			strcpy_s(sssp->name, psub->subobj_name);
 		}
-
-		float max_hits = psub->max_subsys_strength * (pobjp->ship_max_hull_strength / sip->max_hull_strength);
 
 		float current_hits = ras->subsys_current_hits[i];
 
