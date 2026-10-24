@@ -4511,6 +4511,10 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 			ship_subsystems->secondary_banks[j] = -1;
 		}
 	}
+
+	// Subsystems
+	// Any subsystems from the mission file that the new class doesn't have are no longer relevant
+	prune_subsys_status(p_obj);
 }
 
 // Goober5000 - this needs to search the vector instead of using the registry, because it can be used during parsing before the registry is populated
@@ -8978,6 +8982,67 @@ int insert_subsys_status(p_object *pobjp)
 	}
 
 	return new_index;
+}
+
+// wookieejedi
+void remove_subsys_status(p_object *pobjp, int index)
+{
+	Assertion((index >= pobjp->subsys_index) && (index < pobjp->subsys_index + pobjp->subsys_count),
+		"Subsystem index %d does not belong to parse object %s!", index, pobjp->name);
+
+	// shift the elements downward, which keeps each parse object's subsystems contiguous
+	for (int i = index; i < Subsys_index - 1; i++)
+	{
+		memcpy(&Subsys_status[i], &Subsys_status[i+1], sizeof(subsys_status));
+	}
+
+	Subsys_index--;
+
+	// the parse object has one less subsystem
+	pobjp->subsys_count--;
+
+	// we also have to adjust all the indexes in existing parse objects
+	// (each p_object's subsys_index points to subsystem 0 in its list)
+	for (auto &pobj: Parse_objects)
+	{
+		// bump down base index to account for the removed subsystem
+		if (pobj.subsys_index > index)
+			pobj.subsys_index--;
+	}
+}
+
+// wookieejedi - When a parse object's ship class is changed, such as by the loadout screen, any subsystems
+// that the new class doesn't have are no longer meaningful, so get rid of them.  Otherwise they would be
+// looked up, and warned about, if and when the ship is created.
+void prune_subsys_status(p_object *pobjp)
+{
+	if (!Ship_info.in_bounds(pobjp->ship_class))
+		return;
+
+	auto sip = &Ship_info[pobjp->ship_class];
+
+	// iterate backward so that a removal doesn't shift the entries we haven't checked yet
+	for (int i = pobjp->subsys_count - 1; i >= 0; i--)
+	{
+		int index = pobjp->subsys_index + i;
+
+		// the Pilot subsystem isn't an actual subsystem; it holds the ship's own weapons
+		if (!subsystem_stricmp(Subsys_status[index].name, NOX("pilot")))
+			continue;
+
+		bool found = false;
+		for (int j = 0; j < sip->n_subsystems; j++)
+		{
+			if (!subsystem_stricmp(sip->subsystems[j].subobj_name, Subsys_status[index].name))
+			{
+				found = true;
+				break;
+			}
+		}
+
+		if (!found)
+			remove_subsys_status(pobjp, index);
+	}
 }
 
 // Goober5000
