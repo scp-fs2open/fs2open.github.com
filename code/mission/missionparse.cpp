@@ -666,7 +666,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
     { Mission::Parse_Object_Flags::SF_Nav_needslink,				"This ship requires \"linking\" for autopilot ."},
     { Mission::Parse_Object_Flags::SF_Hide_ship_name,				"If set, the ship name can't be seen when the ship is targeted."},
     { Mission::Parse_Object_Flags::SF_Set_class_dynamically,		"This ship should have its class assigned rather than simply read from the mission file."},
-    { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start or on arrival."},
+    { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start, on arrival, or on a class change."},
     { Mission::Parse_Object_Flags::SF_Afterburner_locked,			"Will stop a ship from firing their afterburner."},
     { Mission::Parse_Object_Flags::OF_Force_shields_on,				"Shields will be activated regardless of other flags."},
     { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
