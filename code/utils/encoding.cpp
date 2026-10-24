@@ -53,7 +53,8 @@ bool has_bom(const SCP_string& content) {
 
 	return false;
 }
-int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset) {
+int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset, bool accept_utf8_or_ascii)
+{
 	cfseek(file, 0, CF_SEEK_SET);
 
 	// Read up to 10 bytes from the file to check if there is a BOM
@@ -86,6 +87,14 @@ int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_of
 			if (start_offset) {
 				*start_offset = 3;
 			}
+		}
+	} else if (accept_utf8_or_ascii && encoding == util::Encoding::UTF8) {
+		// Without Unicode mode, UTF-8 is only detected by its BOM, so skip it just like above
+		cfseek(file, 3, SEEK_SET);
+		filelength -= 3;
+
+		if (start_offset) {
+			*start_offset = 3;
 		}
 	} else {
 		if (encoding != util::Encoding::ASCII) {
