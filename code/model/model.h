@@ -279,7 +279,7 @@ public:
 	gamesnd_id	rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
-	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
+	int		engine_wash_index;						// index into Engine_wash_info, or -1
 
 	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
