@@ -260,6 +260,9 @@ public:
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
 	float	turret_max_fov;						//  dot of turret_norm:vec_to_enemy <= this means barrels can elevate up to the target
 	float	turret_base_fov;					//  turret's base's fov, -1 means no restriction
+	float	pof_turret_fov;						//  turret_fov as read from the model, before any ships.tbl override
+	float	pof_turret_max_fov;					//  turret_max_fov as read from the model, before any ships.tbl override
+	float	pof_turret_base_fov;				//  turret_base_fov as read from the model, before any ships.tbl override
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -276,7 +279,7 @@ public:
 	gamesnd_id	rotation_snd;	//Sound to make when the subsystem is rotating. (ie turrets)
 
 	// engine wash info
-	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
+	int		engine_wash_index;						// index into Engine_wash_info, or -1
 
 	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
@@ -603,8 +606,7 @@ typedef struct thruster_bank {
 	int		num_points;
 	std::shared_ptr<glow_point[]> points;
 
-	// Engine wash info
-	struct engine_wash_info	*wash_info_pointer;		// index into Engine_wash_info
+	int		subsys_num;		// engine subsystem for this bank, used for engine wash; index to ship_info->subsystems of the class that loaded the model
 	int		obj_num;		// what subsystem number this bank is on; index to ship_info->subsystems
 	int		submodel_num;	// what submodel number this bank is on; index to polymodel->submodel/polymodel_instance->submodel
 } thruster_bank;
@@ -1059,8 +1061,8 @@ polymodel *model_get(int model_num);
 int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
 
-// routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
-void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
+// routine to copy subsystems, matched by name, between ship classes that share a model -- see ship.cpp
+void model_copy_subsystems(int n_dest, model_subsystem *d_sp, int n_source, const model_subsystem *s_sp);
 
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
 // This defaults to black.
