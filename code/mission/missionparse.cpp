@@ -2768,15 +2768,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		if (!ptr)
 			continue;
 
-		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
-		{
-			// mark all turrets as locked
-			if(ptr->system_info->type == SUBSYSTEM_TURRET)
-			{
-				ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
-			}
-		}
-
 		if (Fred_running)
 		{
 			ptr->current_hits = sssp->percent;
@@ -2812,6 +2803,16 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		ptr->turret_animation_done_time = 0;
 	}
 	
+	// this covers every turret, including any the mission file has no entry for (e.g. after a ship class change)
+	if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
+	{
+		for (auto ss : list_range(&shipp->subsys_list))
+		{
+			if (ss->system_info->type == SUBSYSTEM_TURRET)
+				ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		}
+	}
+
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
 	// so a initial_hull value of 90% means 90% of max.  This way is opposite of how subsystems are dealt
 	// with
