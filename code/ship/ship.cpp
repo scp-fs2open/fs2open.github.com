@@ -9332,7 +9332,7 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 
 			switch ( objp->type ) {
 			case OBJ_SHIP:
-				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
+				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx, DamageSource::Explosion);
 				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
@@ -9389,7 +9389,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
-		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1);
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1, DamageSource::Explosion);
 
 		// do physics
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
