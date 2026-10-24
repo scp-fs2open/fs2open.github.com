@@ -198,7 +198,9 @@ public:
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 	void setShowOrientationWidget(bool value) { showOrientationWidget = value; }
+	void setHideUI(bool value) { hideUI = value; }
 	bool getShowOrientationWidget() const { return showOrientationWidget; }
+	bool getHideUI() const { return hideUI; }
 
 	static float setAmbientFactor(float factor) { 
 		ltp::lab_set_ambient(factor);
@@ -255,6 +257,7 @@ private:
 
 	std::unique_ptr<LabCamera> labCamera;
 	bool showOrientationWidget = true;
+	bool hideUI = false;
 
 	float cameraDistance;
 

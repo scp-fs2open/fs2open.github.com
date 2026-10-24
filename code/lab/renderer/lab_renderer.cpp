@@ -34,7 +34,8 @@ void LabRenderer::onFrame(float frametime) {
 		renderModel(frametime);
 
 		// print out the current pof filename, to help with... something
-		if (strlen(getLabManager()->ModelFilename.c_str())) {
+		// if we have hidden the HUD via the hotkey we also hide this
+		if ((!hideUI && strlen(getLabManager()->ModelFilename.c_str()))) {
 			SCP_string lab_text = "POF File: " + getLabManager()->ModelFilename + " Detail Level: " + std::to_string(Lab_object_detail_level);
 			gr_get_string_size(&w, &h, lab_text.c_str());
 			gr_set_color_fast(&Color_white);
@@ -43,8 +44,10 @@ void LabRenderer::onFrame(float frametime) {
 		}
 	}
 
-	renderHud(frametime);
-
+	// we hide the entire HUD if the check validates this boolean
+	if (!hideUI){
+		renderHud(frametime);
+	}
 	// Normally, we would call gr_flip here, but because wmcgui conflates rendering and input gathering, this is done at the end of 
 	// the LabManager::onFrame method
 }
@@ -353,7 +356,7 @@ void LabRenderer::renderHud(float) {
 	// Controls info
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
 		gr_screen.center_offset_y + gr_screen.center_h - (gr_get_font_height() * 7) - 3,
-		"Open Options -> Controls reference for the full object and camera controls list.");
+		"Open Options -> Controls reference for the full object and camera controls list. Press H to hide the UI.");
 
 	// Rotation mode
 	gr_printf_no_resize(gr_screen.center_offset_x + 2,
