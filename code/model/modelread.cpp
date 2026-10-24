@@ -3456,7 +3456,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	pm->used_this_mission++;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
 		char buffer[100];

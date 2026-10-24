@@ -2278,7 +2278,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 // built in debug mode.  This helps if you run with the debugger active as the
 // game won't be switching from fullscreen to minimized every time you hit a breakpoint or
 // warning message.
-#ifdef _DEBUG
+#ifndef NDEBUG
 #ifdef _FORCE_DEBUG_WIDESCREEN
 	width = 1280;
 	height = 800;
