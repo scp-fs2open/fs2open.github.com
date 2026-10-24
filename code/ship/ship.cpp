@@ -11810,6 +11810,31 @@ static void ship_model_change(int n, int ship_type)
 	}
 }
 
+// subsystem flags that sexps or scripts can change during a mission, and so must survive a ship class change
+static const Ship::Subsystem_Flags Runtime_subsys_flags[] =
+{
+	Ship::Subsystem_Flags::Untargetable,
+	Ship::Subsystem_Flags::No_SS_targeting,
+	Ship::Subsystem_Flags::No_replace,
+	Ship::Subsystem_Flags::No_live_debris,
+	Ship::Subsystem_Flags::Vanished,
+	Ship::Subsystem_Flags::Missiles_ignore_if_dead
+};
+
+static const Ship::Weapon_Flags Runtime_subsys_weapon_flags[] =
+{
+	Ship::Weapon_Flags::Turret_Lock,
+	Ship::Weapon_Flags::Beam_Free,
+	Ship::Weapon_Flags::Tagged_Only
+};
+
+// which runtime flags differ from what the subsystem's class and the mission would give it, and their values
+struct saved_runtime_subsys_flags
+{
+	flagset<Ship::Subsystem_Flags> changed, values;
+	flagset<Ship::Weapon_Flags> weapon_changed, weapon_values;
+};
+
 /**
  * Change the ship class on a ship, and changing all required information
  * for consistency (ie textures, subsystems, weapons, physics)
@@ -11973,6 +11998,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	char **subsys_names = new char *[sip_orig->n_subsystems];
 	float *subsys_pcts = new float[sip_orig->n_subsystems];
 	SCP_vector<bool> subsys_blown_off(sip_orig->n_subsystems, false);
+	SCP_vector<saved_runtime_subsys_flags> subsys_runtime_flags(sip_orig->n_subsystems);
 
 	// prevent crashes in the event of a subsystem mismatch
 	for (i = 0; i < sip_orig->n_subsystems; ++i)
@@ -12072,6 +12098,23 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
 
 		subsys_blown_off[num_saved_subsystems] = subsystem_submodels_blown_off(sp, ss);
+
+		// only carry over what changed during the mission, so the old class's table settings don't override the new class's
+		{
+			flagset<Ship::Subsystem_Flags> default_flags;
+			flagset<Ship::Weapon_Flags> default_weapon_flags;
+			resolve_subsystem_flags(*ss->system_info, default_flags, default_weapon_flags);
+			if (sp->flags[Ship::Ship_Flags::Lock_all_turrets_initially] && ss->system_info->type == SUBSYSTEM_TURRET)
+				default_weapon_flags.set(Ship::Weapon_Flags::Turret_Lock);
+
+			auto &saved = subsys_runtime_flags[num_saved_subsystems];
+			saved.values = ss->flags;
+			saved.weapon_values = ss->weapons.flags;
+			for (auto flag : Runtime_subsys_flags)
+				saved.changed.set(flag, ss->flags[flag] != default_flags[flag]);
+			for (auto flag : Runtime_subsys_weapon_flags)
+				saved.weapon_changed.set(flag, ss->weapons.flags[flag] != default_weapon_flags[flag]);
+		}
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
@@ -12176,6 +12219,16 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// fix up the subsystems
 	subsys_set( sp->objnum );
 
+	// lock-all-turrets is part of every turret's default, as at ship creation; a turret freed since then is restored below
+	if (sp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
+	{
+		for (auto turret : list_range(&sp->subsys_list))
+		{
+			if (turret->system_info->type == SUBSYSTEM_TURRET)
+				turret->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		}
+	}
+
 	// Goober5000 - restore the subsystem percentages
 	ss = GET_FIRST(&sp->subsys_list);
 	int ss_index = 0;
@@ -12188,6 +12241,18 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
 				if (subsys_blown_off[i])
 					blow_off_subsystem_submodels(sp, ss);
+
+				const auto &saved = subsys_runtime_flags[i];
+				for (auto flag : Runtime_subsys_flags)
+				{
+					if (saved.changed[flag])
+						ss->flags.set(flag, saved.values[flag]);
+				}
+				for (auto flag : Runtime_subsys_weapon_flags)
+				{
+					if (saved.weapon_changed[flag])
+						ss->weapons.flags.set(flag, saved.weapon_values[flag]);
+				}
 
 				// MageKing17 - Every AI doing something with this subsystem must transfer to the new one.
 				{
