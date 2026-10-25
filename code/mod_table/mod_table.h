@@ -120,6 +120,8 @@ extern SCP_string Inherited_shockwave_damage_type_suffix;
 extern SCP_string Inherited_dinky_shockwave_damage_type_suffix;
 extern SCP_string Default_shockwave_damage_type;
 extern SCP_string Default_dinky_shockwave_damage_type;
+extern SCP_string Default_shockwave_2D_filename;
+extern SCP_string Default_shockwave_3D_filename;
 extern color Arc_color_damage_p1;
 extern color Arc_color_damage_p2;
 extern color Arc_color_damage_s1;
