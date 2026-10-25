@@ -1,6 +1,10 @@
 ﻿#include "ktxutils.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#define ETCDEC_IMPLEMENTATION 1
+PUSH_SUPPRESS_WARNINGS
+#include "ktxutils/etcdec.h"
+POP_SUPPRESS_WARNINGS
 #ifdef WITH_OPENGL
 #include "glad/glad.h"
 #else
