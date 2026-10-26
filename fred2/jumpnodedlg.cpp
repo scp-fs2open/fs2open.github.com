@@ -109,9 +109,7 @@ void jumpnode_dlg::OnOK() {
 }
 
 void jumpnode_dlg::OnClose()
-{	
-	UpdateData(TRUE);
-	
+{
 	if (update_data()) {
 		SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 		bypass_errors = 0;
@@ -172,6 +170,8 @@ int jumpnode_dlg::update_data(int redraw)
 
 	if (!GetSafeHwnd())
 		return 0;
+
+	UpdateData(TRUE);
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		auto jnp = jumpnode_get_by_objnum(cur_object_index);
@@ -288,7 +288,7 @@ void jumpnode_dlg::OnChangeName()
 {
 	char buffer[NAME_LENGTH];
 
-	// Note, in this dialog, UpdateData(TRUE) is not used to move data from controls to variables until the dialog is closed, so we edit the control text directly
+	// Note, in this dialog, UpdateData(TRUE) is only used in update_data(), so we edit the control text directly
 
 	// grab the name
 	GetDlgItemText(IDC_NAME, buffer, NAME_LENGTH);
