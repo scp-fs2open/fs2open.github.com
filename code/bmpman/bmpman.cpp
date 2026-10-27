@@ -1036,6 +1036,13 @@ void bm_init() {
 	bm_inited = true;
 }
 
+bool bm_is_cubemap(int handle)
+{
+	const BM_TYPE type = bm_get_entry(handle)->comp_type;
+	return type == BM_TYPE_CUBEMAP_DDS || type == BM_TYPE_CUBEMAP_DXT1 || type == BM_TYPE_CUBEMAP_DXT3 ||
+		   type == BM_TYPE_CUBEMAP_DXT5;
+}
+
 int bm_is_compressed(int num) {
 	auto entry = bm_get_entry(num);
 	BM_TYPE type = BM_TYPE_NONE;

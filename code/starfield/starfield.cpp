@@ -15,6 +15,7 @@
 
 #include "freespace.h"
 #include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
@@ -911,7 +912,15 @@ static void environment_map_gen()
 	else if ( strlen(The_mission.envmap_name) ) {
 		// Load the mission map so we can use it later
 		Mission_env_map = bm_load(The_mission.envmap_name);
-		return;
+		// DX10 (BC7) files keep no cube flag, so they cannot be checked here
+		if (Mission_env_map < 0 || bm_is_cubemap(Mission_env_map) || bm_is_compressed(Mission_env_map) == DDS_BC7) {
+			return;
+		}
+		Warning(LOCATION,
+			"Environment map '%s' is not a cubemap; using the generated environment map instead.",
+			The_mission.envmap_name);
+		bm_release(Mission_env_map);
+		Mission_env_map = -1;
 	}
 
 	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
