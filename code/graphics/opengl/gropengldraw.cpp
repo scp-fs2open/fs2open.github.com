@@ -1300,9 +1300,13 @@ void gr_opengl_calculate_irrmap()
 	auto previous_target = gr_screen.rendering_to_texture;
 	int irr_shader = gr_opengl_maybe_create_shader(SDR_TYPE_IRRADIANCE_MAP_GEN, 0);
 	opengl_shader_set_current(irr_shader);
-	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
-	glBindTexture(env_tex->texture_target, env_tex->texture_id);
-	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
+	// a mission's envmap may not be uploaded yet; this uploads it as a cubemap like the lighting pass does
+	float u_scale, v_scale;
+	uint32_t array_index;
+	if (!gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 0)) {
+		// still draw, from no texture, so the irradiance map is black rather than left from an earlier mission
+		GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, 0);
+	}
 	Current_shader->program->Uniforms.setTextureUniform("envmap", 0);
 
 	for (int i = 0; i < 6; i++) {
