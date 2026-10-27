@@ -748,7 +748,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle, size_t ubo
 	}
 
 	stateTracker->bindPipeline(pipeline, pipelineManager->getPipelineLayout());
-	stateTracker->setDepthBias(-1024.0f, 0.0f);
+	stateTracker->setDepthBias(1024.0f, 1.0f); // GL shadow pass: gr_zbias(-1024) = polygon offset factor 1, units 1024
 
 	// Bind descriptor sets: shadowMapData (per-draw) and shadowCascadeParams
 	// (bound separately, per-frame, via shadow_cascade_params_bind) both live in
