@@ -293,7 +293,7 @@ class VulkanStateTracker {
 	 *
 	 * Must be called before every draw command to ensure dirty dynamic state
 	 * (viewport, scissor, depth bias, stencil ref, line width) is flushed.
-	 * applyMaterial() sets depth bias/stencil AFTER bindPipeline(), so if
+	 * applyMaterial() sets the stencil reference AFTER bindPipeline(), so if
 	 * the pipeline didn't change, those changes would be lost without this.
 	 */
 	void applyDynamicState();
