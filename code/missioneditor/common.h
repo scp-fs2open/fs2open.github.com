@@ -77,6 +77,9 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 // system is still up, since models own GPU buffers and cursors own bitmaps.
 void editor_free_engine_data();
 
+// Bounding-box midpoint of all (or only marked) objects and the farthest distance from it; false if there are none.
+bool get_object_bounds(bool marked_only, vec3d* center, float* radius);
+
 // Resolve a mission filename to its index in Campaign.missions[], lazy-loading the mission's goal/event name lists from disk if the
 // FRED_LOAD_PENDING flag is still set.  Returns -1 if the mission isn't in the campaign.
 int load_and_find_campaign_mission(const char *mission_filename);

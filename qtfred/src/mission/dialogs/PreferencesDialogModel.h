@@ -79,6 +79,8 @@ public:
 	void setInvertOrbitX(bool value);
 	bool getInvertOrbitY() const;
 	void setInvertOrbitY(bool value);
+	bool getOrbitSelectionMidpoint() const;
+	void setOrbitSelectionMidpoint(bool value);
 
 	// Grid
 	int getGridCenterX() const;
@@ -117,6 +119,7 @@ private:
 	std::map<ControlAction, QKeySequence> _controlKeys;
 	bool _invertOrbitX;
 	bool _invertOrbitY;
+	bool _orbitSelectionMidpoint;
 
 	// Grid
 	int _gridCenterX;

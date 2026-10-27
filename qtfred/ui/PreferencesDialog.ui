@@ -570,6 +570,16 @@
         </widget>
        </item>
        <item>
+        <widget class="QCheckBox" name="orbitSelectionMidpoint">
+         <property name="toolTip">
+          <string>When several objects are marked, rotate the view around the midpoint of the selection instead of the current object.</string>
+         </property>
+         <property name="text">
+          <string>Rotate Around Selection Midpoint</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QWidget" name="controlsFormWidget" native="true"/>
        </item>
        <item>
