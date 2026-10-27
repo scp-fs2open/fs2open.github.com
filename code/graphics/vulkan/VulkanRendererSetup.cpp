@@ -1290,6 +1290,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Reset swap chain image tracking
 	m_swapChainImageRenderImage.clear();
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+	createRenderingFinishedSemaphores();
 	m_previousSwapChainImage = UINT32_MAX;
 
 	m_swapChainNeedsRecreation = false;

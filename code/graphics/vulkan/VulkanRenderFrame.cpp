@@ -10,7 +10,6 @@ VulkanRenderFrame::VulkanRenderFrame(vk::Device device, vk::SwapchainKHR swapCha
 	constexpr vk::FenceCreateInfo fenceCreateInfo;
 
 	m_imageAvailableSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
-	m_renderingFinishedSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
 	m_frameInFlightFence = device.createFenceUnique(fenceCreateInfo);
 }
 bool VulkanRenderFrame::waitForFinish(uint64_t timeoutNs)
@@ -82,7 +81,8 @@ SwapChainStatus VulkanRenderFrame::acquireSwapchainImage(uint32_t& outImageIndex
 	}
 	return SwapChainStatus::eSuccess;
 }
-SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers)
+SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers,
+	vk::Semaphore renderingFinished)
 {
 	Assertion(!m_inFlight, "Cannot submit a frame for presentation when it is still in flight.");
 
@@ -99,7 +99,7 @@ SwapChainStatus VulkanRenderFrame::submitAndPresent(const SCP_vector<vk::Command
 	submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
 	submitInfo.pCommandBuffers = cmdBuffers.data();
 
-	const std::array<vk::Semaphore, 1> signalSemaphores = {m_renderingFinishedSemaphore.get()};
+	const std::array<vk::Semaphore, 1> signalSemaphores = {renderingFinished};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
@@ -147,7 +147,6 @@ void VulkanRenderFrame::recreateSyncObjects()
 
 	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
 	m_imageAvailableSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
-	m_renderingFinishedSemaphore = m_device.createSemaphoreUnique(semaphoreCreateInfo);
 }
 
 } // namespace graphics::vulkan
