@@ -1925,7 +1925,7 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 	// Get the mouse position
 	auto pMessage = GetCurrentMessage(); // get mouse pos 
-	ASSERT(pMessage);
+	Assert(pMessage);
 	auto pt = pMessage->pt;
 	ScreenToClient(&pt);
 

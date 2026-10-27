@@ -130,5 +130,8 @@ set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=D
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
 
+# Prevent warnings on files with no symbols on Mac
+suppress_no_symbol_warnings(code)
+
 # Prevent GCC warnings in third-party BitOp... see GitHub #4366
 suppress_file_warnings(scripting/lua/bitop/bit.c)

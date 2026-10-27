@@ -159,7 +159,10 @@ namespace
 					break;
 
 				case SDL_EVENT_WINDOW_RESIZED:
-					gr_screen_resize(e.window.data1, e.window.data2);
+					// FSO does not handle live resizing at all. It will break the internal renderbuffer and swap chain, so prevent this
+					if (Fred_running) {
+						gr_screen_resize(e.window.data1, e.window.data2);
+					}
 					break;
 			}
 

@@ -570,7 +570,7 @@ bool VulkanRenderer::initialize()
 
 bool VulkanRenderer::initDisplayDevice() const
 {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
