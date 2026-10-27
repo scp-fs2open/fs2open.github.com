@@ -127,10 +127,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 						nprintf(("vulkan", "VulkanShaderManager: Failed to create vertex module: %s\n", e.what()));
 					}
 				}
-				shader.vertexInputMask = 0;
-				for (auto attr : typeInfo->attributes) {
-					shader.vertexInputMask |= (1u << attr);
-				}
+				shader.vertexInputMask = shader_vertex_input_mask(*typeInfo);
 
 				SCP_string fragFile = typeInfo->frag;
 				auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags, requiresRaytracing);
@@ -216,10 +213,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 				vertFile.c_str(), e.what()));
 		}
 	}
-	shader.vertexInputMask = 0;
-	for (auto attr : typeInfo->attributes) {
-		shader.vertexInputMask |= (1u << attr);
-	}
+	shader.vertexInputMask = shader_vertex_input_mask(*typeInfo);
 
 	// Compile fragment shader
 	SCP_string fragFile = typeInfo->frag;
