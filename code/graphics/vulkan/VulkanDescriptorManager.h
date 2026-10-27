@@ -22,11 +22,14 @@ struct DescriptorBindingTemplate {
 	uint32_t count;                      // 1 for most, 16 for texture array
 	vk::ShaderStageFlags stages;
 	vk::ImageViewType viewType;          // only meaningful for eCombinedImageSampler
+	bool depthCompare;                   // shadow sampler: needs a depth fallback, not a color one
 
 	constexpr DescriptorBindingTemplate(uint32_t binding_, vk::DescriptorType type_,
 	                                     uint32_t count_, vk::ShaderStageFlags stages_,
-	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D)
-		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_) {}
+	                                     vk::ImageViewType viewType_ = vk::ImageViewType::e2D,
+	                                     bool depthCompare_ = false)
+		: binding(binding_), type(type_), count(count_), stages(stages_), viewType(viewType_),
+		  depthCompare(depthCompare_) {}
 };
 
 struct DescriptorSetTemplate : ArrayView<DescriptorBindingTemplate> {
@@ -39,6 +42,7 @@ struct DescriptorFallbacks {
 	vk::DescriptorImageInfo texture2DArray;
 	vk::DescriptorImageInfo textureCube;
 	vk::DescriptorImageInfo texture3D;
+	vk::DescriptorImageInfo shadowMap;
 
 	// Unlike the fields above (fixed dummy defaults, set once by buildFallbacks()),
 	// this is refreshed every frame by VulkanDescriptorManager::setCurrentShadowTlas()
@@ -50,6 +54,7 @@ struct DescriptorFallbacks {
 	vk::AccelerationStructureKHR shadowTlas;
 
 	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t) const;
+	const vk::DescriptorImageInfo& getImage(vk::ImageViewType t, bool depthCompare) const;
 };
 
 /**
@@ -100,6 +105,7 @@ private:
 		vk::DescriptorImageInfo* imageInfo = nullptr;    // non-null for image bindings
 		uint32_t count = 0;                              // descriptor count (1 or 16 for arrays)
 		vk::ImageViewType viewType = vk::ImageViewType::e2D;  // for fallback lookup
+		bool depthCompare = false;                            // for fallback lookup
 	};
 
 	vk::Device m_device;

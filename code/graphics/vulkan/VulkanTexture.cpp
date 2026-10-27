@@ -245,6 +245,9 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	                           m_fallback3DView, ImageViewType::Volume3D, 1, false, vk::ImageType::e3D)) {
 		return false;
 	}
+	if (!createFallbackShadowTexture()) {
+		return false;
+	}
 
 	// Check BCx and ETC2 Support
 	auto features = m_physicalDevice.getFeatures();
@@ -309,6 +312,22 @@ void VulkanTextureManager::shutdown()
 	}
 	if (m_fallback3DAllocation.isValid()) {
 		m_memoryManager->freeAllocation(m_fallback3DAllocation);
+	}
+
+	if (m_fallbackShadowSampler) {
+		m_device.destroySampler(m_fallbackShadowSampler);
+		m_fallbackShadowSampler = nullptr;
+	}
+	if (m_fallbackShadowView) {
+		m_device.destroyImageView(m_fallbackShadowView);
+		m_fallbackShadowView = nullptr;
+	}
+	if (m_fallbackShadowTexture) {
+		m_device.destroyImage(m_fallbackShadowTexture);
+		m_fallbackShadowTexture = nullptr;
+	}
+	if (m_fallbackShadowAllocation.isValid()) {
+		m_memoryManager->freeAllocation(m_fallbackShadowAllocation);
 	}
 
 	// Destroy fallback cubemap
@@ -2156,6 +2175,72 @@ vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo2DArray()
 {
 	return {m_defaultSampler, m_fallback2DArrayView,
 	                               vk::ImageLayout::eShaderReadOnlyOptimal};
+}
+
+vk::DescriptorImageInfo VulkanTextureManager::getFallbackShadowTextureInfo()
+{
+	return {m_fallbackShadowSampler, m_fallbackShadowView, vk::ImageLayout::eShaderReadOnlyOptimal};
+}
+
+bool VulkanTextureManager::createFallbackShadowTexture()
+{
+	if (!createImage(1, 1, 1, SHADOW_DEPTH_FORMAT, vk::ImageTiling::eOptimal,
+		    vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, MemoryUsage::GpuOnly,
+		    m_fallbackShadowTexture, m_fallbackShadowAllocation, 1, false)) {
+		nprintf(("vulkan", "Failed to create fallback shadow texture image!\n"));
+		return false;
+	}
+
+	m_fallbackShadowView = createImageView(m_fallbackShadowTexture, SHADOW_DEPTH_FORMAT,
+		vk::ImageAspectFlagBits::eDepth, 1, ImageViewType::Array2D, 1);
+	if (!m_fallbackShadowView) {
+		nprintf(("vulkan", "Failed to create fallback shadow texture view!\n"));
+		return false;
+	}
+
+	// same compare state as VulkanShadowMap's sampler, so sampler2DArrayShadow reads "fully lit"
+	vk::SamplerCreateInfo samplerInfo;
+	samplerInfo.magFilter = vk::Filter::eLinear;
+	samplerInfo.minFilter = vk::Filter::eLinear;
+	samplerInfo.mipmapMode = vk::SamplerMipmapMode::eNearest;
+	samplerInfo.addressModeU = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.addressModeV = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.addressModeW = vk::SamplerAddressMode::eClampToEdge;
+	samplerInfo.compareEnable = VK_TRUE;
+	samplerInfo.compareOp = vk::CompareOp::eLessOrEqual;
+	samplerInfo.maxLod = 0.0f;
+	try {
+		m_fallbackShadowSampler = m_device.createSampler(samplerInfo);
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "Failed to create fallback shadow sampler: %s\n", e.what()));
+		return false;
+	}
+
+	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	ImageBarrier2 toTransfer;
+	toTransfer.image = m_fallbackShadowTexture;
+	toTransfer.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	toTransfer.newLayout = vk::ImageLayout::eTransferDstOptimal;
+	toTransfer.dstStage = vk::PipelineStageFlagBits2::eClear;
+	toTransfer.dstAccess = vk::AccessFlagBits2::eTransferWrite;
+	cmdImageBarrier(cmd, toTransfer);
+
+	vk::ImageSubresourceRange range(vk::ImageAspectFlagBits::eDepth, 0, 1, 0, 1);
+	cmd.clearDepthStencilImage(m_fallbackShadowTexture, vk::ImageLayout::eTransferDstOptimal,
+		vk::ClearDepthStencilValue(1.0f, 0), range);
+
+	ImageBarrier2 toRead;
+	toRead.image = m_fallbackShadowTexture;
+	toRead.aspectMask = vk::ImageAspectFlagBits::eDepth;
+	toRead.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+	toRead.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	toRead.srcStage = vk::PipelineStageFlagBits2::eClear;
+	toRead.srcAccess = vk::AccessFlagBits2::eTransferWrite;
+	toRead.dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
+	toRead.dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
+	cmdImageBarrier(cmd, toRead);
+	endSingleTimeCommands(cmd);
+	return true;
 }
 
 vk::DescriptorImageInfo VulkanTextureManager::getFallbackTextureInfo3D()

@@ -11,7 +11,7 @@ namespace graphics::vulkan {
 static constexpr DescriptorBindingTemplate s_globalBindings[] = {
 	{GlobalBinding::Lights,        vk::DescriptorType::eUniformBuffer,        1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
 	{GlobalBinding::DeferredData,  vk::DescriptorType::eUniformBuffer,        1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
-	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray},
+	{GlobalBinding::ShadowMap,     vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::e2DArray, true},
 	{GlobalBinding::EnvMap,        vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::IrradianceMap, vk::DescriptorType::eCombinedImageSampler, 1, vk::ShaderStageFlagBits::eFragment, vk::ImageViewType::eCube},
 	{GlobalBinding::ShadowCascadeParams, vk::DescriptorType::eUniformBuffer,  1, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment},
@@ -90,6 +90,11 @@ const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t
 	}
 }
 
+const vk::DescriptorImageInfo& DescriptorFallbacks::getImage(vk::ImageViewType t, bool depthCompare) const
+{
+	return depthCompare ? shadowMap : getImage(t);
+}
+
 // ========== DescriptorWriter template-based methods ==========
 
 void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTemplate& tmpl)
@@ -113,13 +118,14 @@ void DescriptorWriter::writeSet(vk::DescriptorSet set, const DescriptorSetTempla
 		auto& slot = m_bindingSlots[b.binding];
 		slot.count = b.count;
 		slot.viewType = b.viewType;
+		slot.depthCompare = b.depthCompare;
 
 		bool isImage = (b.type == vk::DescriptorType::eCombinedImageSampler);
 		bool isAccelStruct = (b.type == vk::DescriptorType::eAccelerationStructureKHR);
 		if (isImage) {
 			Assert(m_imageInfoCount + b.count <= MAX_IMAGE_INFOS);
 			auto* dst = &m_imageInfos[m_imageInfoCount];
-			const auto& fallbackImg = m_fallbacks->getImage(b.viewType);
+			const auto& fallbackImg = m_fallbacks->getImage(b.viewType, b.depthCompare);
 			for (uint32_t j = 0; j < b.count; ++j) {
 				dst[j] = fallbackImg;
 			}
@@ -182,7 +188,7 @@ void DescriptorWriter::setImage(uint32_t binding, const vk::DescriptorImageInfo&
 	if (info.imageView) {
 		*slot.imageInfo = info;
 	} else {
-		*slot.imageInfo = m_fallbacks->getImage(slot.viewType);
+		*slot.imageInfo = m_fallbacks->getImage(slot.viewType, slot.depthCompare);
 	}
 }
 
@@ -259,6 +265,7 @@ void VulkanDescriptorManager::buildFallbacks(VulkanBufferManager* bufMgr, Vulkan
 	m_fallbacks.texture2DArray = texMgr->getFallbackTextureInfo2DArray();
 	m_fallbacks.textureCube = texMgr->getFallbackTextureInfoCube();
 	m_fallbacks.texture3D = texMgr->getFallbackTextureInfo3D();
+	m_fallbacks.shadowMap = texMgr->getFallbackShadowTextureInfo();
 	if (m_raytracingEnabled && rtMgr != nullptr) {
 		// Seed with the permanent empty TLAS; setCurrentShadowTlas() takes over
 		// once the first real TLAS is built.
