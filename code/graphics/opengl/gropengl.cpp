@@ -472,6 +472,11 @@ void gr_opengl_dump_envmap(const char* filename)
 	auto height = 512; // in future envmap resolution should be dynamic, or at least extracted from envmap_render_target
 	auto sphere_width = 4 * width;
 	auto sphere_height = 2 * height;
+	float u_scale, v_scale;
+	uint32_t array_index;
+	if (!gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 0)) {
+		return;
+	}
 	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
 	glBindTexture(env_tex->texture_target, env_tex->texture_id);
 
