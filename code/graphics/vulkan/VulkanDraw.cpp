@@ -10,6 +10,7 @@
 #include "VulkanTexture.h"
 #include "VulkanRenderer.h"
 #include "VulkanPostProcessing.h"
+#include "VulkanDeferred.h"
 #include "VulkanDescriptorManager.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanMemory.h"
@@ -1351,11 +1352,12 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		// Set 0: Global (memoized per frame — see m_cachedGlobalSet). Rebuilt only
 		// when a Global input changed: a pending Global UBO (m_globalSetDirty set in
 		// setPendingUniformBinding), the shadow TLAS (invalidateGlobalSet from
-		// setCurrentShadowTlas), or the shadow-map lazy-init transition (compared
-		// below). A descriptor set retains its written contents until overwritten
+		// setCurrentShadowTlas), or the shadow-map binding choice (lazy-init or
+		// shadow pass start/end, compared below). A descriptor set retains its written contents until overwritten
 		// or its pool is reset, so subsequent draws just rebind the cached set.
 		auto* pp = getPostProcessor();
-		const bool shadowReady = (pp && pp->shadow().isInitialized());
+		// draws inside the shadow pass get the depth fallback, never the shadow map being rendered
+		const bool shadowReady = (pp && pp->shadow().isInitialized()) && !vulkan_shadow_pass_active();
 		if (m_globalSetDirty || !m_cachedGlobalSet || shadowReady != m_cachedGlobalHadShadow) {
 			m_cachedGlobalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 			Assert(m_cachedGlobalSet);

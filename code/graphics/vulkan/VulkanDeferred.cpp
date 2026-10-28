@@ -742,6 +742,11 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 	*shadow_view_matrix = gr_view_matrix;
 }
 
+bool vulkan_shadow_pass_active()
+{
+	return Shadow_pass_active;
+}
+
 void vulkan_shadow_map_end()
 {
 	if (!Shadow_pass_active) {

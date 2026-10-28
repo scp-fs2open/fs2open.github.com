@@ -459,14 +459,14 @@ class VulkanDrawManager {
 	// since its inputs change at most a few times per frame. The cached set is
 	// rebuilt only when a Global input actually changes. Dynamic Global inputs are: the three
 	// pending Global UBOs (Lights/DeferredGlobals/ShadowCascadeParams, via
-	// setPendingUniformBinding), the shadow-map image (shadow lazy-init), and the
+	// setPendingUniformBinding), the shadow-map image (lazy-init, and shadow pass start/end), and the
 	// TLAS (setCurrentShadowTlas). EnvMap/IrradianceMap are permanent dummy
 	// fallbacks here (real env/irr live in the deferred pass's own set), so they
 	// need no invalidation. The set is pool-allocated, so it is dropped every
 	// frame (resetFrameStats) when the frame pool is reset.
 	vk::DescriptorSet m_cachedGlobalSet = nullptr;
 	bool m_globalSetDirty = true;
-	bool m_cachedGlobalHadShadow = false; // shadow-init state the cached set was built with
+	bool m_cachedGlobalHadShadow = false; // whether the cached set binds the real shadow map, never in the shadow pass
 
 	// ---- Material (Set 1) previous-set memoization ----
 	// Reuse the previous draw's Material set when EVERY input is unchanged
