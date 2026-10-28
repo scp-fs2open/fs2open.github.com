@@ -761,7 +761,8 @@ void vulkan_calculate_irrmap()
 		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-			texImages.fill(descManager->getFallbacks().texture2D);
+			// irrmap-f.sdr declares this binding as samplerCube, so every element needs a cube view
+			texImages.fill(descManager->getFallbacks().textureCube);
 			texImages[0].imageView = envmapView;
 			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 		}
