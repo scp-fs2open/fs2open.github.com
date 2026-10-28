@@ -89,8 +89,7 @@ void afterburners_start(object *objp)
 	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
 	// Measured in mission time, so the delays last as long as specified under time compression or a pause.
-	// They start invalid, because the mission clock may still be near zero when the first mission begins.
-	if (shipp->afterburner_last_end_time.isFinite() && timestamp_since(shipp->afterburner_last_end_time) < (int)(sip->afterburner_cooldown_time * 1000.0f)) {
+	if (shipp->afterburner_last_end_time.isFinite() && timestamp_since(shipp->afterburner_last_end_time) < fl2i(sip->afterburner_cooldown_time * 1000.0f)) {
 
 		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
 			snd_play(gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_FAIL)));
