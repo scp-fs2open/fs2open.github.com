@@ -2431,12 +2431,12 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 	}
 	const bool lethal_hit = before.hull_strength > 0.0f && ship_objp->hull_strength <= 0.0f;
 
-	// the subsystems that lost strength, keyed by subsystem handle
+	// the subsystems that lost strength, keyed by canonical subsystem name
 	luacpp::LuaTable subsystem_losses = luacpp::LuaTable::create(Script_system.GetLuaSession());
 	for (const auto &entry : before.subsystem_hits) {
 		const float lost = entry.second - entry.first->current_hits;
 		if (lost > 0.0f) {
-			subsystem_losses.addValue(scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, entry.first)), lost);
+			subsystem_losses.addValue(ship_subsys_get_canonical_name(entry.first), lost);
 		}
 	}
 

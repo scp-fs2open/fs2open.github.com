@@ -570,7 +570,7 @@ const std::shared_ptr<Hook<ShipDamageConditions>> OnShipDamage = Hook<ShipDamage
 		{"DamageType", "string", "The damage type, or UNKNOWN if none is defined."},
 		{"ShieldDamage", "number", "Actual total shield strength removed by this damage application."},
 		{"HullDamage", "number", "Actual hull strength removed, clamped to the target's remaining hull."},
-		{"SubsystemDamage", "table", "Maps each subsystem handle to the strength it lost in this damage application. Only subsystems that lost strength are listed, in no particular order."},
+		{"SubsystemDamage", "table", "Maps each subsystem's CanonicalName to the strength it lost in this damage application. Only subsystems that lost strength are listed, in no particular order."},
 		{"Quadrant", "number", "Shield quadrant hit, or -1 when no single quadrant applies."},
 		{"LethalHit", "boolean", "Whether this hit reduced positive hull strength to zero or below."},
 	});
