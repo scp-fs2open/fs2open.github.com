@@ -218,7 +218,8 @@ void VulkanRenderer::flip()
 	});
 
 	// Submit and present
-	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers);
+	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers,
+		m_renderingFinishedSemaphores[m_currentSwapChainImage].get());
 
 	if (presentStatus == SwapChainStatus::eSuboptimal || presentStatus == SwapChainStatus::eOutOfDate) {
 		m_swapChainNeedsRecreation = true;

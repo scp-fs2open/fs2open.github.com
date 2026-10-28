@@ -430,6 +430,15 @@ void VulkanRenderer::createPresentSyncObjects()
 	}
 
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+	createRenderingFinishedSemaphores();
+}
+void VulkanRenderer::createRenderingFinishedSemaphores()
+{
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	m_renderingFinishedSemaphores.clear();
+	for (size_t i = 0; i < m_swapChainImages.size(); ++i) {
+		m_renderingFinishedSemaphores.push_back(m_device->createSemaphoreUnique(semaphoreCreateInfo));
+	}
 }
 
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)

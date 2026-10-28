@@ -451,6 +451,7 @@ class VulkanRenderer {
 	void createCommandPool(const PhysicalDeviceValues& values);
 
 	void createPresentSyncObjects();
+	void createRenderingFinishedSemaphores();
 
 	void acquireNextSwapChainImage();
 
@@ -491,6 +492,8 @@ class VulkanRenderer {
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
 	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
+	// per image, not per frame: a frame's fence does not tell us when present has consumed the semaphore
+	SCP_vector<vk::UniqueSemaphore> m_renderingFinishedSemaphores;
 
 	// HDR composition pipeline: the whole frame is rendered into these fp16
 	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
