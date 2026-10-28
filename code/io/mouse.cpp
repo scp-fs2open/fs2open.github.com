@@ -343,6 +343,11 @@ int mouse_down_count(const CC_bind &bind, int reset_count)
 		}
 	}
 
+	// With mouse-to-fly an axis on Joy0 is not a mouse button
+	if (bind.get_flags() & CCF_AXIS_BTN) {
+		return 0;
+	}
+
 	int btn = bind.get_btn();
 
 	if (btn > MOUSE_NUM_BUTTONS) {
@@ -478,6 +483,11 @@ int mouse_down(const CC_bind &bind, bool must_be_wheel)
 		if (CID != CID_MOUSE) {
 			return 0;
 		}
+	}
+
+	// With mouse-to-fly an axis on Joy0 is not a mouse button
+	if (bind.get_flags() & CCF_AXIS_BTN) {
+		return 0;
 	}
 
 	int btn = bind.get_btn();

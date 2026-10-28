@@ -17,6 +17,10 @@ add_file_folder("CFile"
     cfile/cfile.cpp
 )
 
+add_file_folder("Controlconfig"
+    controlconfig/test_bindings.cpp
+)
+
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
