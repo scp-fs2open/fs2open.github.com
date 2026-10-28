@@ -8,6 +8,7 @@
 #include "globalincs/systemvars.h"
 #include "graphics/post_processing.h"
 
+#include <chrono>
 #include <md5.h>
 #include <shaderc/shaderc.h>
 
@@ -206,6 +207,28 @@ SCP_string VulkanShaderCompiler::computeSourceHash(const SCP_string& header, con
 	return md5.hexdigest();
 }
 
+// rejects a cache file cut short by a crash or full disk: a complete module ends exactly on an OpFunctionEnd
+static bool isCompleteSpirv(const SCP_vector<uint32_t>& spirv)
+{
+	constexpr uint32_t SPIRV_MAGIC = 0x07230203;
+	constexpr size_t HEADER_WORDS = 5;
+	constexpr uint32_t OP_FUNCTION_END = 56;
+	if (spirv.size() < HEADER_WORDS || spirv[0] != SPIRV_MAGIC) {
+		return false;
+	}
+	size_t i = HEADER_WORDS;
+	uint32_t lastOpcode = 0;
+	while (i < spirv.size()) {
+		const uint32_t wordCount = spirv[i] >> 16;
+		if (wordCount == 0) {
+			return false;
+		}
+		lastOpcode = spirv[i] & 0xFFFF;
+		i += wordCount;
+	}
+	return i == spirv.size() && lastOpcode == OP_FUNCTION_END;
+}
+
 SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
                                                      vk::ShaderStageFlagBits stage,
                                                      shader_type sdrType,
@@ -241,10 +264,13 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 		if (fileSize > 0 && (fileSize % 4) == 0) {
 			SCP_vector<uint32_t> spirv(fileSize / 4);
 			if (cfread(spirv.data(), 1, fileSize, cacheFile) == fileSize) {
-				cfclose(cacheFile);
-				nprintf(("vulkan", "VulkanShaderCompiler: Cache hit for %s (flags=0x%x)\n",
-				         filename.c_str(), flags));
-				return spirv;
+				if (isCompleteSpirv(spirv)) {
+					cfclose(cacheFile);
+					nprintf(("vulkan", "VulkanShaderCompiler: Cache hit for %s (flags=0x%x)\n",
+					         filename.c_str(), flags));
+					return spirv;
+				}
+				mprintf(("VulkanShaderCompiler: Ignoring incomplete cache file %s\n", cacheFilename.c_str()));
 			}
 		}
 		cfclose(cacheFile);
@@ -316,11 +342,29 @@ SCP_vector<uint32_t> VulkanShaderCompiler::compile(const SCP_string& filename,
 			nprintf(("vulkan", "VulkanShaderCompiler: Compiled %s -> %zu bytes SPIR-V\n",
 			         filename.c_str(), byteLen));
 
-			// Save to disk cache
-			cacheFile = cfopen(cacheFilename.c_str(), "wb", CF_TYPE_CACHE);
-			if (cacheFile != nullptr) {
-				cfwrite(spirv.data(), static_cast<int>(spirv.size() * sizeof(uint32_t)), 1, cacheFile);
-				cfclose(cacheFile);
+			// each writer renames its own temp file, so a game crash or a second game never leaves a truncated .spv
+			const SCP_string tmpFilename = "vk_shader-" + hash + "-" +
+			                               std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()) +
+			                               ".tmp";
+			const bool complete = isCompleteSpirv(spirv);
+			cacheFile = complete ? cfopen(tmpFilename.c_str(), "wb", CF_TYPE_CACHE) : nullptr;
+			if (!complete) {
+				mprintf(("VulkanShaderCompiler: Not caching %s: compiled module fails the cache check\n",
+				         cacheFilename.c_str()));
+			} else if (cacheFile != nullptr) {
+				const bool written =
+					cfwrite(spirv.data(), static_cast<int>(spirv.size() * sizeof(uint32_t)), 1, cacheFile) == 1;
+				const bool closed = cfclose(cacheFile) == 0;
+				bool saved = false;
+				if (written && closed) {
+					// rename() on Windows fails if the target exists
+					cf_delete(cacheFilename.c_str(), CF_TYPE_CACHE);
+					saved = cf_rename(tmpFilename.c_str(), cacheFilename.c_str(), CF_TYPE_CACHE) == CF_RENAME_SUCCESS;
+				}
+				if (!saved) {
+					cf_delete(tmpFilename.c_str(), CF_TYPE_CACHE);
+					mprintf(("VulkanShaderCompiler: Could not write cache file %s\n", cacheFilename.c_str()));
+				}
 			}
 		}
 	}
@@ -337,26 +381,29 @@ void VulkanShaderCompiler::purgeOldCache()
 	const SCP_string PREFIX = "vk_shader-";
 	const auto TIMEOUT = 2.0 * 30.0 * 24.0 * 60.0 * 60.0; // ~2 months in seconds
 
-	SCP_vector<SCP_string> cache_files;
-	SCP_vector<file_list_info> file_info;
-	cf_get_file_list(cache_files, CF_TYPE_CACHE, "*.spv", CF_SORT_NONE, &file_info,
-	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-
-	Assertion(cache_files.size() == file_info.size(),
-	          "cf_get_file_list returned different sizes for file names and file informations!");
-
 	auto now = std::time(nullptr);
-	for (size_t i = 0; i < cache_files.size(); ++i) {
-		auto& name = cache_files[i];
+	for (const char* ext : {".spv", ".tmp"}) {
+		SCP_vector<SCP_string> cache_files;
+		SCP_vector<file_list_info> file_info;
+		const SCP_string filter = SCP_string("*") + ext;
+		cf_get_file_list(cache_files, CF_TYPE_CACHE, filter.c_str(), CF_SORT_NONE, &file_info,
+		                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
-		if (name.compare(0, PREFIX.size(), PREFIX) != 0) {
-			continue; // Not our cache file
-		}
+		Assertion(cache_files.size() == file_info.size(),
+		          "cf_get_file_list returned different sizes for file names and file informations!");
 
-		auto diff = std::difftime(now, file_info[i].write_time);
-		if (diff > TIMEOUT) {
-			auto full_name = name + ".spv";
-			cf_delete(full_name.c_str(), CF_TYPE_CACHE);
+		for (size_t i = 0; i < cache_files.size(); ++i) {
+			auto& name = cache_files[i];
+
+			if (name.compare(0, PREFIX.size(), PREFIX) != 0) {
+				continue; // Not our cache file
+			}
+
+			auto diff = std::difftime(now, file_info[i].write_time);
+			if (diff > TIMEOUT) {
+				auto full_name = name + ext;
+				cf_delete(full_name.c_str(), CF_TYPE_CACHE);
+			}
 		}
 	}
 }
