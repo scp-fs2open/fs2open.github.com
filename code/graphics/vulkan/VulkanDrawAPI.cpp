@@ -638,9 +638,6 @@ void vulkan_calculate_irrmap()
 
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	// End the current swap chain render pass
-	cmd.endRenderPass();
-
 	// Create pipeline for irradiance map generation
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_IRRADIANCE_MAP_GEN;
@@ -710,6 +707,9 @@ void vulkan_calculate_irrmap()
 	// function-lifetime static VkBuffer would dangle past device destruction.
 
 	vk::Extent2D irrExtent(irrTs->width, irrTs->height);
+
+	// End the swap chain pass only after the early returns above, which never resume it
+	cmd.endRenderPass();
 
 	for (size_t face = 0; face < irrTs->cubeFaceFramebuffers.size(); face++) {
 		vk::Framebuffer fb = irrTs->cubeFaceFramebuffers[face];
