@@ -29,6 +29,8 @@
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "parse/parselo.h"
 #include "radar/radar.h"
 #include "radar/radardradis.h"
@@ -54,6 +56,116 @@ int Force_scaling_above_res_global[2] = {-1, -1};
 int Hud_font = -1;
 
 bool Chase_view_only_ex = false;
+
+static bool orb_radar_default = false;
+
+// Lock an option only when every loaded gauge that reads it took its value from a mod's table
+struct GaugeSettingTally {
+	int gauges = 0;
+	int set_by_mod = 0;
+	bool value = false;
+};
+static GaugeSettingTally Scan_lines_tally;
+static GaugeSettingTally Rearm_timer_tally;
+
+static void tally_gauge_setting(GaugeSettingTally& tally, bool set_by_mod, bool value)
+{
+	++tally.gauges;
+	if (!set_by_mod) {
+		return;
+	}
+	++tally.set_by_mod;
+	tally.value = value;
+}
+
+static void set_option_by_mod(const char* key, bool value)
+{
+	mprintf(("HUD tables set option %s to %s\n", key, value ? "true" : "false"));
+	options::OptionsManager::instance()->setOverride(key,
+		std::unique_ptr<json_t>(value ? json_true() : json_false()),
+		"an active mod",
+		options::OverrideSource::Mod);
+}
+
+static void lock_option_if_mod_set_everywhere(const char* key, const GaugeSettingTally& tally)
+{
+	if ((tally.gauges > 0) && (tally.set_by_mod == tally.gauges)) {
+		set_option_by_mod(key, tally.value);
+	}
+}
+
+static void parse_orb_radar_func()
+{
+	stuff_boolean(&orb_radar_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Cmdline_orb_radar = orb_radar_default ? 1 : 0;
+}
+
+static auto OrbRadarOption __UNUSED = options::OptionBuilder<bool>("HUD.OrbRadar",
+	std::pair<const char*, int>{"3D Radar", -1},
+	std::pair<const char*, int>{"Shows the 3D orb radar instead of the flat radar. Takes effect after a restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return orb_radar_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.change_listener([](bool val, bool initial) {
+		if (initial) {
+			Cmdline_orb_radar = val ? 1 : 0;
+		}
+		return initial;
+	})
+	.importance(59)
+	.parser(parse_orb_radar_func)
+	.finish();
+
+static bool dual_scan_lines_default = false;
+
+static void parse_dual_scan_lines_func()
+{
+	stuff_boolean(&dual_scan_lines_default);
+	Cmdline_dualscanlines = dual_scan_lines_default ? 1 : 0;
+}
+
+static auto DualScanLinesOption __UNUSED = options::OptionBuilder<bool>("HUD.DualScanLines",
+	std::pair<const char*, int>{"Dual Scan Lines", -1},
+	std::pair<const char*, int>{"Adds a second pair of scanning lines to the target box while scanning cargo. "
+		"Takes effect after a restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return dual_scan_lines_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.change_listener([](bool val, bool initial) {
+		if (initial) {
+			Cmdline_dualscanlines = val ? 1 : 0;
+		}
+		return initial;
+	})
+	.importance(58)
+	.parser(parse_dual_scan_lines_func)
+	.finish();
+
+static bool rearm_timer_default = false;
+
+static void parse_rearm_timer_func()
+{
+	stuff_boolean(&rearm_timer_default);
+	Cmdline_rearm_timer = rearm_timer_default ? 1 : 0;
+}
+
+static auto RearmTimerOption __UNUSED = options::OptionBuilder<bool>("HUD.RearmTimer",
+	std::pair<const char*, int>{"Rearm Timer", -1},
+	std::pair<const char*, int>{"Shows the time left until rearming and repair are complete. Takes effect after a "
+		"restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return rearm_timer_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.change_listener([](bool val, bool initial) {
+		if (initial) {
+			Cmdline_rearm_timer = val ? 1 : 0;
+		}
+		return initial;
+	})
+	.importance(57)
+	.parser(parse_rearm_timer_func)
+	.finish();
 
 //WARNING: If you add gauges to this array, make sure to bump Num_builtin_gauges!
 const int Num_builtin_gauges = 42;
@@ -758,6 +870,8 @@ void hud_positions_init()
 	}
 
 	default_hud_gauges.clear();
+	Scan_lines_tally = GaugeSettingTally();
+	Rearm_timer_tally = GaugeSettingTally();
 
 	if (cf_exists_full("hud_gauges.tbl", CF_TYPE_TABLES))
 		parse_hud_gauges_tbl("hud_gauges.tbl");
@@ -766,6 +880,9 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
+
+	lock_option_if_mod_set_everywhere("HUD.DualScanLines", Scan_lines_tally);
+	lock_option_if_mod_set_everywhere("HUD.RearmTimer", Rearm_timer_tally);
 }
 
 void load_missing_retail_gauges()
@@ -3521,7 +3638,9 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	if(optional_string("Cargo Contents Offsets:")) {
 		stuff_int_list(Cargo_string_offsets, 2);
 	}
+	bool scan_type_from_table = false;
 	if (optional_string("Cargo Scan Type:")) {
+		scan_type_from_table = true;
 		char type_str[NAME_LENGTH];
 		stuff_string(type_str, F_NAME, NAME_LENGTH);
 
@@ -3592,6 +3711,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initHiRes(fname_monitor);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
+	tally_gauge_setting(Scan_lines_tally, scan_type_from_table, Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES);
 }
 
 void load_gauge_squad_message(gauge_settings* settings)
@@ -4556,8 +4676,10 @@ void load_gauge_support(gauge_settings* settings)
 	if(optional_string("Dock Time X-offset:")) {
 		stuff_int(&text_dock_val_offset_x);
 	}
+	bool rearm_timer_from_table = false;
 	if (optional_string("Enable Rearm Timer:")) {
 		stuff_boolean(&rearm_timer_choice);
+		rearm_timer_from_table = true;
 	}
 
 	hud_gauge->initBitmaps(fname);
@@ -4569,6 +4691,7 @@ void load_gauge_support(gauge_settings* settings)
 	hud_gauge->initRearmTimer(rearm_timer_choice);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
+	tally_gauge_setting(Rearm_timer_tally, rearm_timer_from_table, rearm_timer_choice);
 }
 
 void load_gauge_training_messages(gauge_settings* settings)
@@ -5042,6 +5165,8 @@ void load_gauge_brackets(gauge_settings* settings)
 	}
 	if (optional_string("Enable Target Info:")) {
 		stuff_boolean(&Extra_target_info);
+		// One setting for every ship, so even a ship-specific HUD replaces the player's choice
+		set_option_by_mod("HUD.TargetInfo", Extra_target_info);
 	}
 
 	hud_gauge->initBitmaps(fname);

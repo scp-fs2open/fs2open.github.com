@@ -48,6 +48,8 @@
 #include "tracing/tracing.h"
 #include "object/object.h"
 #include "object/objectdock.h"
+#include "options/Option.h"
+#include "parse/parselo.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
@@ -180,6 +182,27 @@ static int					Pl_hud_is_bright;
 
 float Player_rearm_eta = 0;
 bool Extra_target_info = false;
+
+static bool target_info_default = false;
+
+static void parse_target_info_func()
+{
+	stuff_boolean(&target_info_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Extra_target_info = target_info_default;
+}
+
+static auto TargetInfoOption __UNUSED = options::OptionBuilder<bool>("HUD.TargetInfo",
+	std::pair<const char*, int>{"Extra Target Info", -1},
+	std::pair<const char*, int>{"Shows the target's name and class next to its brackets, and distance and lead marks "
+		"on other marked targets. Takes effect after a restart.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return target_info_default; })
+	// Read where the flag was, before the HUD tables are parsed, so a mod's table still overrides it
+	.bind_to_once(&Extra_target_info)
+	.importance(54)
+	.parser(parse_target_info_func)
+	.finish();
 
 // forward declarations
 void update_throttle_sound();
