@@ -8,6 +8,7 @@
 #include "gr_vulkan.h"
 
 #include "graphics/util/pixel_swizzle.h"
+#include "bmpman/bm_internal.h"
 #include "bmpman/bmpman.h"
 #include "ddsutils/ddsutils.h"
 #include "ddsutils/bcdec.h"
@@ -820,14 +821,14 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 		return false;
 	}
 
-	uint32_t mipLevels = 1;
 	size_t blockSize = 0;
-
 	if (isCompressed) {
 		blockSize = get_compressed_block_size(baseCompType);
-		mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
-		mipLevels = std::max<uint32_t>(mipLevels, 1);
 	}
+
+	// uncompressed DDS cubemaps also store every face's mip chain (face0[mips], face1[mips], ...)
+	auto mipLevels = static_cast<uint32_t>(bm_get_num_mipmaps(handle));
+	mipLevels = std::max<uint32_t>(mipLevels, 1);
 
 	// A cubemap is six array layers; each face has the same layout.
 	TextureUploadLayout layout;
@@ -841,6 +842,19 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	size_t perFaceSize = layerByteSize(layout);
 	size_t totalDataSize = perFaceSize * 6;
 
+	// OpenGL builds the chain for one-level cubemaps, and the env map is sampled at a roughness-based mip
+	uint32_t imageMipLevels = mipLevels;
+	bool generateMips = false;
+	if (!isCompressed && mipLevels == 1) {
+		const auto fmtProps = m_physicalDevice.getFormatProperties(format);
+		if ((fmtProps.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear) &&
+			(fmtProps.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitSrc) &&
+			(fmtProps.optimalTilingFeatures & vk::FormatFeatureFlagBits::eBlitDst)) {
+			imageMipLevels = calculateMipLevels(faceW, faceH);
+			generateMips = imageMipLevels > 1;
+		}
+	}
+
 	// Defer destruction of existing resources
 	if (ts->image) {
 		auto* deletionQueue = getDeletionQueue();
@@ -852,10 +866,14 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 		ts->image = nullptr;
 		ts->allocation = VulkanAllocation{};
 	}
+	ts->isCubemap = false;
 
 	// Create cubemap image (6 layers, eCubeCompatible)
 	vk::ImageUsageFlags usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
-	if (!createImage(faceW, faceH, mipLevels, format, vk::ImageTiling::eOptimal,
+	if (generateMips) {
+		usage |= vk::ImageUsageFlagBits::eTransferSrc;
+	}
+	if (!createImage(faceW, faceH, imageMipLevels, format, vk::ImageTiling::eOptimal,
 	                 usage, MemoryUsage::GpuOnly, ts->image, ts->allocation, 6, true)) {
 		nprintf(("vulkan", "VulkanTexture: uploadCubemap: failed to create cubemap image\n"));
 		return false;
@@ -863,7 +881,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 
 	// Create cubemap image view (samplerCube)
 	ts->imageView = createImageView(ts->image, format, vk::ImageAspectFlagBits::eColor,
-	                                mipLevels, ImageViewType::Cube, 6);
+	                                imageMipLevels, ImageViewType::Cube, 6);
 	if (!ts->imageView) {
 		nprintf(("vulkan", "VulkanTexture: uploadCubemap: failed to create cube image view\n"));
 		m_device.destroyImage(ts->image);
@@ -888,15 +906,20 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	if (!mapped) {
 		m_memoryManager->freeAllocation(stagingAllocation);
 		m_device.destroyBuffer(stagingBuffer);
+		m_device.destroyImageView(ts->imageView);
+		ts->imageView = nullptr;
+		m_device.destroyImage(ts->image);
+		ts->image = nullptr;
+		m_memoryManager->freeAllocation(ts->allocation);
 		return false;
 	}
 
 	// Copy data to staging buffer
 	// DDS cubemap data layout: face0[mip0..mipN], face1[mip0..mipN], ..., face5[mip0..mipN]
 	if (!isCompressed && bm->bpp == 24) {
-		// Convert BGR to BGRA for all 6 faces
+		// Convert BGR to BGRA for all 6 faces and their mips
 		graphics::util::expand_BGR_to_BGRA(reinterpret_cast<const uint8_t*>(bm->data),
-			static_cast<uint8_t*>(mapped), static_cast<size_t>(faceW) * faceH * 6);
+			static_cast<uint8_t*>(mapped), (perFaceSize / 4) * 6);
 	} else {
 		memcpy(mapped, reinterpret_cast<const void*>(bm->data), totalDataSize);
 	}
@@ -913,15 +936,18 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 
 	// Record transitions + copy and submit async
 	vk::CommandBuffer cmd = beginSingleTimeCommands();
+	if (generateMips) {
+		copyRegions.clear();
+	}
 	recordUploadCommands(cmd, ts->image, stagingBuffer, format, faceW, faceH,
-	                     mipLevels, vk::ImageLayout::eUndefined, false, copyRegions, 6);
+	                     imageMipLevels, vk::ImageLayout::eUndefined, generateMips, copyRegions, 6);
 	submitUploadAsync(cmd, stagingBuffer, stagingAllocation);
 
 	// Update slot info
 	ts->width = faceW;
 	ts->height = faceH;
 	ts->format = format;
-	ts->mipLevels = mipLevels;
+	ts->mipLevels = imageMipLevels;
 	ts->bpp = bm->bpp;
 	ts->arrayLayers = 6;
 	ts->bitmapHandle = handle;
@@ -932,7 +958,7 @@ bool VulkanTextureManager::uploadCubemap(int handle, bitmap* bm, int compType)
 	ts->vScale = 1.0f;
 
 	nprintf(("vulkan", "VulkanTexture: Cubemap uploaded: %ux%u, %u mips, format=%d\n",
-		faceW, faceH, mipLevels, static_cast<int>(format)));
+		faceW, faceH, imageMipLevels, static_cast<int>(format)));
 	return true;
 }
 
@@ -1105,6 +1131,10 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 		// Also check compression type for cubemap DDS variants
 		isCubemapUpload = (compType == DDS_CUBEMAP_DXT1 || compType == DDS_CUBEMAP_DXT3 ||
 		                   compType == DDS_CUBEMAP_DXT5);
+	}
+	// bm_is_compressed() returns 0 for uncompressed DDS cubemaps; only comp_type identifies them
+	if (!isCubemapUpload) {
+		isCubemapUpload = bm_get_entry(handle)->comp_type == BM_TYPE_CUBEMAP_DDS;
 	}
 
 	if (isCubemapUpload) {
@@ -2174,6 +2204,46 @@ tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
 	return static_cast<tcache_slot_vulkan*>(slot->gr_info);
 }
 
+bool VulkanTextureManager::ensureCubemapUploaded(int handle)
+{
+	if (handle < 0) {
+		return false;
+	}
+	auto* ts = getTextureSlot(handle);
+	if (ts != nullptr && ts->imageView && ts->isCubemap) {
+		return true;
+	}
+	// one warning and no per-frame retry for a map that cannot be used; handles are reused, signatures are not
+	const uint signature = bm_get_entry(handle)->signature;
+	if (signature == m_failedCubemapSignature) {
+		return false;
+	}
+
+	bool uploaded = false;
+	// the cubemap kind lives in comp_type; type is just BM_TYPE_DDS
+	const BM_TYPE type = bm_get_entry(handle)->comp_type;
+	if (type == BM_TYPE_CUBEMAP_DDS || type == BM_TYPE_CUBEMAP_DXT1 || type == BM_TYPE_CUBEMAP_DXT3 ||
+		type == BM_TYPE_CUBEMAP_DXT5) {
+		// same lock as OpenGL's opengl_determine_bpp_and_flags for TCACHE_TYPE_CUBEMAP; DXT data stays compressed
+		const int compType = bm_is_compressed(handle);
+		const int bpp = bm_has_alpha_channel(handle) ? 32 : 24;
+		// bm_lock() uploads through bm_data(); upload here only if that did not leave a cube
+		bitmap* bmp = bm_lock(handle, static_cast<ubyte>(bpp), BMP_TEX_OTHER);
+		if (bmp != nullptr) {
+			ts = getTextureSlot(handle);
+			uploaded = (ts != nullptr && ts->imageView && ts->isCubemap) || uploadCubemap(handle, bmp, compType);
+			bm_unlock(handle);
+		}
+	}
+
+	if (!uploaded) {
+		m_failedCubemapSignature = signature;
+		Warning(LOCATION, "Environment map '%s' could not be uploaded as a cubemap; reflections are off.",
+			bm_get_filename(handle));
+	}
+	return uploaded;
+}
+
 vk::Format VulkanTextureManager::bppToVkFormat(int bpp, bool compressed, int compressionType)
 {
 	if (compressed) {
@@ -2719,7 +2789,7 @@ void VulkanTextureManager::recordUploadCommands(vk::CommandBuffer cmd, vk::Image
 		region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
 		region.imageSubresource.mipLevel = 0;
 		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
+		region.imageSubresource.layerCount = arrayLayers;
 		region.imageOffset = vk::Offset3D(0, 0, 0);
 		region.imageExtent = vk::Extent3D(width, height, 1);
 
