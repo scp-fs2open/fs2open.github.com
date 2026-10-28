@@ -182,6 +182,7 @@ const VulkanRaytracingManager::BlasEntry* VulkanRaytracingManager::getOrBuildBla
 		// address) -- destroy and fall through to rebuild.
 		destroyBlasEntry(it->second);
 		m_blasCache.erase(it);
+		retireBuiltTlases();
 	}
 
 	BlasEntry entry;
@@ -236,20 +237,27 @@ void VulkanRaytracingManager::onModelLoaded(int pm_id)
 	}
 }
 
-void VulkanRaytracingManager::onModelUnloaded(int pm_id)
+bool VulkanRaytracingManager::onModelUnloaded(int pm_id)
 {
 	if (!m_enabled) {
-		return;
+		return false;
 	}
 
+	bool retired = false;
 	for (auto it = m_blasCache.begin(); it != m_blasCache.end();) {
 		if (static_cast<int>(it->first >> 32) == pm_id) {
 			destroyBlasEntry(it->second);
 			it = m_blasCache.erase(it);
+			retired = true;
 		} else {
 			++it;
 		}
 	}
+
+	if (retired) {
+		retireBuiltTlases();
+	}
+	return retired;
 }
 
 } // namespace graphics::vulkan

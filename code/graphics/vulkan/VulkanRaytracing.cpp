@@ -1,5 +1,7 @@
 #include "VulkanRaytracing.h"
 
+#include "VulkanDeletionQueue.h"
+
 namespace graphics::vulkan {
 
 namespace {
@@ -222,14 +224,33 @@ uint64_t VulkanRaytracingManager::makeKey(int pm_id, int submodel_num)
 
 void VulkanRaytracingManager::destroyBlasEntry(BlasEntry& entry)
 {
-	entry.accelStruct.reset();
+	// TLASes in frames still in flight hold this BLAS's device address, so defer like ensureTlasCapacity does
+	if (entry.accelStruct) {
+		getDeletionQueue()->queueAccelerationStructure(entry.accelStruct.release());
+	}
 
 	if (entry.buffer) {
-		m_device.destroyBuffer(entry.buffer);
+		getDeletionQueue()->queueBuffer(entry.buffer, entry.allocation);
 		entry.buffer = nullptr;
-	}
-	if (entry.allocation.isValid()) {
+		entry.allocation = VulkanAllocation();
+	} else if (entry.allocation.isValid()) {
 		m_memoryManager->freeAllocation(entry.allocation);
+	}
+}
+
+void VulkanRaytracingManager::retireBuiltTlases()
+{
+	// a built TLAS may still point at a retired BLAS, and screens that never rebuild the TLAS would keep binding it
+	for (auto& frame : m_frameTlas) {
+		if (frame.tlas) {
+			getDeletionQueue()->queueAccelerationStructure(frame.tlas.release());
+		}
+		if (frame.tlasBuffer) {
+			getDeletionQueue()->queueBuffer(frame.tlasBuffer, frame.tlasAllocation);
+			frame.tlasBuffer = nullptr;
+			frame.tlasAllocation = VulkanAllocation();
+		}
+		frame.tlasCapacity = 0;
 	}
 }
 
