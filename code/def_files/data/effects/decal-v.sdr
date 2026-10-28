@@ -51,6 +51,8 @@ uniform decalInfoData {
 	int diffuse_blend_mode;
 
 	int glow_blend_mode;
+	float glow_intensity;
+	float glow_hdr_multiplier;
 };
 
 void main() {

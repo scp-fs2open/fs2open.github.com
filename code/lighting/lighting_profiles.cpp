@@ -15,6 +15,8 @@
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
 
+#include <cmath>
+
 namespace lighting_profiles {
 typedef int profile_index;
 //*************************************************
@@ -95,6 +97,40 @@ const piecewise_power_curve_values& current_piecewise_values()
 float current_exposure()
 {
 	return _current.exposure;
+}
+
+namespace {
+std::optional<float> checked_glow_value(float value, const char* key, const SCP_string& profile_name)
+{
+	if (!std::isfinite(value)) {
+		Warning(LOCATION, "%s in lighting profile %s needs a number.  Ignoring it.", key, profile_name.c_str());
+		return std::nullopt;
+	}
+	if (value < 0.0f) {
+		Warning(LOCATION, "%s in lighting profile %s is negative; using 0.", key, profile_name.c_str());
+		return 0.0f;
+	}
+	if (value > MAX_GLOW_MAP_VALUE) {
+		Warning(LOCATION,
+			"%s in lighting profile %s is above %d; using that.",
+			key,
+			profile_name.c_str(),
+			static_cast<int>(MAX_GLOW_MAP_VALUE));
+		return MAX_GLOW_MAP_VALUE;
+	}
+	return value;
+}
+} // namespace
+
+float current_glow_map_intensity()
+{
+	return _current.glow_map_intensity;
+}
+
+float current_glow_map_hdr_multiplier(float intensity)
+{
+	// unless set, the HDR multiplier follows the intensity, keeping the old 1.5 x 3.0 by default
+	return _current.glow_map_hdr_multiplier.value_or(2.0f * intensity);
 }
 
 piecewise_power_curve_intermediates current_piecewise_intermediates()
@@ -423,6 +459,18 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 			profile_name,
 			&cockpit_light_intensity_modifier);
 
+		float glow_value;
+		if (parse_optional_float_into("$Glow Map Intensity:", &glow_value)) {
+			parsed = true;
+			if (auto checked = checked_glow_value(glow_value, "$Glow Map Intensity:", profile_name))
+				glow_map_intensity = *checked;
+		}
+		if (parse_optional_float_into("$Glow Map HDR Multiplier:", &glow_value)) {
+			parsed = true;
+			if (auto checked = checked_glow_value(glow_value, "$Glow Map HDR Multiplier:", profile_name))
+				glow_map_hdr_multiplier = *checked;
+		}
+
 		if (!parsed) {
 			stuff_string(buffer, F_RAW);
 			Warning(LOCATION, "Unhandled line in lighting profile\n\t%s", buffer.c_str());
@@ -443,6 +491,9 @@ void profile::reset()
 	ppc_values.shoulder_angle = 0.1f;
 
 	exposure = 4.0f;
+
+	glow_map_intensity = 1.5f;
+	glow_map_hdr_multiplier.reset();
 
 	missile_light_brightness.reset();
 	missile_light_radius.reset();

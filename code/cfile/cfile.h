@@ -320,8 +320,9 @@ void cfread_string(char *buf,int n, CFILE *file);
 /**
  * @brief Read a fixed length string that is not null-terminated, with the length stored in file.
  *
- * If it is not null-terminated, the length of the string *must* be less than the size of the buffer (to make room for one)
- * 
+ * Reads at most buffer_size - 1 characters and skips the rest of the string in the file, so the next read
+ * starts after it. A negative length reads nothing.
+ *
  * @param buf Pre-allocated array to store string
  * @param buffer_size Size of pre-allocated array
  * @param file File to read from
@@ -332,6 +333,9 @@ void cfread_string_len(char *buf,int buffer_size, CFILE *file);
 
 /**
  * @brief Read a string from the file where the length is stored in the file
+ *
+ * A negative length reads nothing, and a length past the end of the file reads only what is left.
+ *
  * @param file The file to read the string from
  * @return The string that was read
  */

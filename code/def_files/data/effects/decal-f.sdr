@@ -73,6 +73,8 @@ uniform decalInfoData {
 	int diffuse_blend_mode;
 
 	int glow_blend_mode;
+	float glow_intensity;
+	float glow_hdr_multiplier;
 };
 
 vec3 computeViewPosition(vec2 textureCoord) {
@@ -180,9 +182,9 @@ void main() {
 		// We have a valid glow map
 		vec4 color = texture(glowMap, vec3(tex_coord, float(glow_index)));
 
-		color.rgb = srgb_to_linear(color.rgb) * GLOW_MAP_SRGB_MULTIPLIER;
+		color.rgb = srgb_to_linear(color.rgb) * glow_hdr_multiplier;
 
-		color.rgb *= GLOW_MAP_INTENSITY;
+		color.rgb *= glow_intensity;
 
 		if (glow_blend_mode == 0) {
 			// Normal alpha blending

@@ -5,3 +5,7 @@
 *.tbl text eol=lf
 *.tbm text eol=lf
 *.sdr text eol=lf
+
+# Test inputs that are deliberately not UTF-8, kept out of text diffs
+test/test_data/graphics/texture_material/data/maps/mat_sharp_s.mat binary
+test/test_data/graphics/texture_material/data/maps/mat_truncated.mat binary

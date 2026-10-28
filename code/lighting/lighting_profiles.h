@@ -4,6 +4,8 @@
 #include "globalincs/adjustment.h"
 #include "globalincs/vmallocator.h"
 
+#include <optional>
+
 
 namespace lighting_profiles {
 // This file handles the profiles.tbl and -ltp.tbm files. The purpose of these files is to provide control over the HDR
@@ -78,6 +80,8 @@ class profile {
 	adjustment overall_brightness;
 	adjustment cockpit_light_radius_modifier;
 	adjustment cockpit_light_intensity_modifier;
+	float glow_map_intensity;
+	std::optional<float> glow_map_hdr_multiplier;
 
 	void reset();
 	profile& operator=(const profile& rhs);
@@ -97,6 +101,11 @@ const piecewise_power_curve_values& current_piecewise_values();
 piecewise_power_curve_intermediates current_piecewise_intermediates();
 piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
 float current_exposure();
+// keeps glow within the 16-bit float emissive buffer: 100 x a default HDR multiplier of 200 is 20,000, under 65,504
+constexpr float MAX_GLOW_MAP_VALUE = 100.0f;
+
+float current_glow_map_intensity();
+float current_glow_map_hdr_multiplier(float intensity);
 void lab_set_exposure(float exIn);
 void lab_set_tonemapper(TonemapperAlgorithm tnin);
 void lab_set_ppc(const piecewise_power_curve_values &ppcin);
