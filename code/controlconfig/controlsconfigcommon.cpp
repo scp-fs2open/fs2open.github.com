@@ -173,6 +173,8 @@ void control_config_common_init_bindings() {
 	(JOY_BANK_AXIS,                       JOY_RX_AXIS,           -1, SHIP_TAB, 1018, "Bank Axis",              CC_TYPE_AXIS_REL)
 	(JOY_ABS_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1019, "Absolute Throttle Axis", CC_TYPE_AXIS_ABS)
 	(JOY_REL_THROTTLE_AXIS,                        -1,           -1, SHIP_TAB, 1020, "Relative Throttle Axis", CC_TYPE_AXIS_REL)
+	(JOY_LATERAL_THRUST_AXIS,                      -1,           -1, SHIP_TAB, 1936, "Lateral Thrust Axis",    CC_TYPE_AXIS_REL)
+	(JOY_VERTICAL_THRUST_AXIS,                     -1,           -1, SHIP_TAB, 1937, "Vertical Thrust Axis",   CC_TYPE_AXIS_REL)
 
 	// weapons
 	(FIRE_PRIMARY,                                    KEY_LCTRL,  0, WEAPON_TAB, 1, "Fire Primary Weapon",                    CC_TYPE_CONTINUOUS)
@@ -1193,6 +1195,8 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(JOY_BANK_AXIS)
 	ADD_ENUM_TO_ACTION_MAP(JOY_ABS_THROTTLE_AXIS)
 	ADD_ENUM_TO_ACTION_MAP(JOY_REL_THROTTLE_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_LATERAL_THRUST_AXIS)
+	ADD_ENUM_TO_ACTION_MAP(JOY_VERTICAL_THRUST_AXIS)
 
 	ADD_ENUM_TO_ACTION_MAP(COMMS_MENU_MOVE_UP)
 	ADD_ENUM_TO_ACTION_MAP(COMMS_MENU_MOVE_DOWN)

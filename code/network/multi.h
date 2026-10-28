@@ -77,9 +77,10 @@ class player;
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
+// Version 64 - 10/27/2026 - New IDs for controls after the new lateral and vertical thrust axes
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							63
+#define MULTI_FS_SERVER_VERSION							64
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
