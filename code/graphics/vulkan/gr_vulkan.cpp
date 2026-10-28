@@ -68,7 +68,10 @@ void vulkan_model_loaded(int pm_id)
 void vulkan_model_unloaded(int pm_id)
 {
 	if (auto* rt = getRaytracingManager()) {
-		rt->onModelUnloaded(pm_id);
+		if (rt->onModelUnloaded(pm_id)) {
+			getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
+			getDrawManager()->invalidateGlobalSet();
+		}
 	}
 }
 
