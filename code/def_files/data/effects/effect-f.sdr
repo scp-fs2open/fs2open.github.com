@@ -65,8 +65,13 @@ void main()
 		}
 		fragDepthLinear = -fragPosition.z;
 	} else {
+#ifdef REVERSED_Z
+		sceneDepthLinear = ( farZ * nearZ ) / ( nearZ + sceneDepth.x * (farZ-nearZ) );
+		fragDepthLinear = ( farZ * nearZ ) / ( nearZ + gl_FragCoord.z * (farZ-nearZ) );
+#else
 		sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );
 		fragDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - gl_FragCoord.z * (farZ-nearZ) );
+#endif
 	}
 	// assume UV of 0.5, 0.5 is the centroid of this sphere volume
 	float depthOffset = sqrt((fragRadius*fragRadius) - (offset_len*offset_len));

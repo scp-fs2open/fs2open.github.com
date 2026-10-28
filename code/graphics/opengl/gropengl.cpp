@@ -863,15 +863,33 @@ void gr_opengl_set_fill_mode(int mode)
 	GL_state.SetPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
+// GL 4.5 drivers advertise ARB_clip_control too, so one check covers both
+static void opengl_enable_reversed_depth()
+{
+#ifndef USE_OPENGL_ES
+	if (!GLAD_GL_ARB_clip_control) {
+		mprintf(("  Reversed depth needs ARB_clip_control; using normal depth\n"));
+		return;
+	}
+
+	glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+	glClearDepth(0.0);
+	Gr_reversed_depth_active = true;
+	mprintf(("  Using reversed depth\n"));
+#endif
+}
+
 void gr_opengl_zbias(int bias)
 {
 	if (bias) {
+		// with reversed depth, closer means larger depth, so the offset changes sign
+		const float sign = Gr_reversed_depth_active ? -1.0f : 1.0f;
 		GL_state.PolygonOffsetFill(GL_TRUE);
 		if(bias < 0) {
-			GL_state.SetPolygonOffset(1.0, -i2fl(bias));
+			GL_state.SetPolygonOffset(sign * 1.0f, sign * -i2fl(bias));
 		}
 		else {
-			GL_state.SetPolygonOffset(0.0, -i2fl(bias));
+			GL_state.SetPolygonOffset(0.0, sign * -i2fl(bias));
 		}
 	} else {
 		GL_state.PolygonOffsetFill(GL_FALSE);
@@ -1415,6 +1433,10 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	GL_initted = true;
 
+	if (Gr_enable_reversed_depth) {
+		opengl_enable_reversed_depth();
+	}
+
 #ifndef NDEBUG
 	// Set up the debug extension if present
 	if (GLAD_GL_ARB_debug_output) {
@@ -1442,6 +1464,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(("  Layered viewport support : %s\n", GLAD_GL_ARB_shader_viewport_layer_array ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
+	mprintf(("  Clip control support : %s\n", GLAD_GL_ARB_clip_control ? NOX("YES") : NOX("NO")));
 
 	#ifdef USE_OPENGL_ES
 	GLint maxBuffers;

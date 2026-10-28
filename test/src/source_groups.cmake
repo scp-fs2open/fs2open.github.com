@@ -25,10 +25,12 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_reversed_depth.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_depth.cpp
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()

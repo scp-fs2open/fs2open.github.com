@@ -175,7 +175,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil =
+				vk::ClearDepthStencilValue(gr_far_depth(), 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -231,7 +232,8 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
 			std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil =
+				vk::ClearDepthStencilValue(gr_far_depth(), 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -317,7 +319,8 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.renderArea.extent = extent;
 		// 6 attachments: 5 color + depth. loadOp=eDontCare for all (fully overwritten).
 		std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil =
+			vk::ClearDepthStencilValue(gr_far_depth(), 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -502,7 +505,7 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[6].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -615,7 +618,7 @@ void vulkan_deferred_lighting_finish()
 		rpBegin.renderArea.extent = extent;
 		std::array<vk::ClearValue, 2> clearValues;
 		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -711,7 +714,7 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 			rpBegin.renderArea.extent = vk::Extent2D(static_cast<uint32_t>(shadowSize), static_cast<uint32_t>(shadowSize));
 
 			vk::ClearValue clearValue;
-			clearValue.depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			clearValue.depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 			rpBegin.clearValueCount = 1;
 			rpBegin.pClearValues = &clearValue;
 
@@ -786,7 +789,8 @@ void vulkan_shadow_map_end()
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
 			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil =
+				vk::ClearDepthStencilValue(gr_far_depth(), 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -826,7 +830,7 @@ void vulkan_shadow_map_end()
 			rpBegin.renderArea.extent = extent;
 
 			std::array<vk::ClearValue, 7> clearValues{};
-			clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			clearValues[6].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 
@@ -911,7 +915,7 @@ void vulkan_start_decal_pass()
 		rpBegin.renderArea.extent = extent;
 
 		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[6].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 

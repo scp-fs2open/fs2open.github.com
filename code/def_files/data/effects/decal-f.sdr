@@ -87,7 +87,12 @@ vec3 computeViewPosition(vec2 textureCoord) {
 	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r;
 #else
 	clipSpaceLocation.xy = normalizedCoord * 2.0f - 1.0f;
+#ifdef REVERSED_Z
+	// reversed depth sets the depth range to [0, 1], as in Vulkan
+	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r;
+#else
 	clipSpaceLocation.z = texelFetch(gDepthBuffer, ivec2(textureCoord), 0).r * 2.0f - 1.0f;
+#endif
 #endif
 	clipSpaceLocation.w = 1.0f;
 

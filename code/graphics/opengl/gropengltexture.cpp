@@ -1952,7 +1952,10 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 	if (flags & BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT) {
 		glGenRenderbuffers(1, &new_fbo->renderbuffer_id);
 		glBindRenderbuffer(GL_RENDERBUFFER, new_fbo->renderbuffer_id);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, *w, *h);
+		glRenderbufferStorage(GL_RENDERBUFFER,
+			Gr_reversed_depth_active ? GL_DEPTH32F_STENCIL8 : GL_DEPTH24_STENCIL8,
+			*w,
+			*h);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 

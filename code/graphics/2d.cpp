@@ -987,6 +987,20 @@ static auto HDROption __UNUSED = options::OptionBuilder<bool>("Graphics.HDR",
                      .parser(parse_hdr_func)
                      .finish();
 
+bool Gr_enable_reversed_depth = false;
+bool Gr_reversed_depth_active = false;
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ReversedDepthOption __UNUSED = options::OptionBuilder<bool>("Graphics.ReversedDepth",
+                     std::pair<const char*, int>{"Reversed Depth", -1},
+                     std::pair<const char*, int>{"Reduces flicker between distant surfaces. Needs Vulkan or OpenGL 4.5. Requires a restart to take effect.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(false)
+                     .bind_to_once(&Gr_enable_reversed_depth)
+                     .importance(67)
+                     .finish();
+
 float Gr_hdr_paperwhite_nits = 200.0f;
 
 static void parse_hdr_paperwhite_func()

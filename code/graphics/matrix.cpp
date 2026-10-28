@@ -69,6 +69,14 @@ static void create_perspective_projection_matrix(matrix4 *out, float left, float
 		out->a1d[10] = -(far_dist + near_dist) / (far_dist - near_dist);
 		out->a1d[14] = -2.0f * far_dist * near_dist / (far_dist - near_dist);
 	}
+
+	if (Gr_reversed_depth_active) {
+		// near maps to 1 and far to 0, in the [0, 1] range reversed depth uses on both APIs. Written out rather
+		// than flipped from the values above, where float rounding would move the far plane when far is much
+		// larger than near.
+		out->a1d[10] = near_dist / (far_dist - near_dist);
+		out->a1d[14] = far_dist * near_dist / (far_dist - near_dist);
+	}
 }
 
 static void create_orthographic_projection_matrix(matrix4* out, float left, float right, float bottom, float top, float near_dist, float far_dist)
@@ -81,8 +89,8 @@ static void create_orthographic_projection_matrix(matrix4* out, float left, floa
 	out->a1d[13] = -(top + bottom) / (top - bottom);
 	out->a1d[15] = 1.0f;
 
-	if (gr_screen.mode == GraphicsAPI::Vulkan) {
-		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1])
+	if (gr_screen.mode == GraphicsAPI::Vulkan || Gr_reversed_depth_active) {
+		// Vulkan NDC Z range is [0, 1] (OpenGL is [-1, 1], unless reversed depth set it to [0, 1])
 		// Y-flip is handled by negative viewport height (VK_KHR_maintenance1)
 		out->a1d[10] = -1.0f / (far_dist - near_dist);
 		out->a1d[14] = -near_dist / (far_dist - near_dist);
@@ -90,6 +98,12 @@ static void create_orthographic_projection_matrix(matrix4* out, float left, floa
 		// OpenGL NDC Z range is [-1, 1]
 		out->a1d[10] = -2.0f / (far_dist - near_dist);
 		out->a1d[14] = -(far_dist + near_dist) / (far_dist - near_dist);
+	}
+
+	if (Gr_reversed_depth_active) {
+		// depth becomes 1 - depth: near maps to 1, far to 0
+		out->a1d[10] = -out->a1d[10];
+		out->a1d[14] = 1.0f - out->a1d[14];
 	}
 }
 

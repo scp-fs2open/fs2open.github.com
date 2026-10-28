@@ -148,7 +148,7 @@ void VulkanRenderer::setupFrame()
 	// Begin the composition render pass (clears color to black, depth to far plane)
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
@@ -283,7 +283,8 @@ void VulkanRenderer::beginSceneRendering()
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COMPOSITE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil =
+			vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 		pass.renderPass = m_postProcessor->deferred().renderPass();
 		pass.framebuffer = m_postProcessor->deferred().framebuffer();
@@ -293,7 +294,7 @@ void VulkanRenderer::beginSceneRendering()
 	} else {
 		std::array<vk::ClearValue, 2> clearValues;
 		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 		pass.renderPass = m_postProcessor->getSceneRenderPass();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
@@ -343,7 +344,7 @@ void VulkanRenderer::endSceneRendering()
 	// Vulkan orientation); restored to flipped for HUD rendering below.
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
@@ -401,7 +402,8 @@ void VulkanRenderer::resumeScenePassAfterCopy()
 	if (m_useGbufRenderPass) {
 		// Clear values ignored for eLoad but array must cover all attachments
 		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil =
+			vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 		pass.renderPass = m_postProcessor->deferred().renderPassLoad();
 		pass.framebuffer = m_postProcessor->deferred().framebuffer();
@@ -411,7 +413,7 @@ void VulkanRenderer::resumeScenePassAfterCopy()
 	} else {
 		std::array<vk::ClearValue, 2> clearValues;
 		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 		pass.renderPass = m_postProcessor->getSceneRenderPassLoad();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
@@ -540,7 +542,7 @@ void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)
 	// depth at index 1 when this target has a depth attachment.
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color = m_stateTracker->getClearColor();
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 	const bool hasDepth = static_cast<bool>(ts->depthImage);
 
 	PassBeginDesc pass;
@@ -597,7 +599,7 @@ void VulkanRenderer::resumeSwapChainPass()
 {
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
@@ -611,7 +613,7 @@ void VulkanRenderer::restartCompositionPass()
 {
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
@@ -638,7 +640,7 @@ void VulkanRenderer::resumeRenderTargetPass(tcache_slot_vulkan* ts)
 	// index layout matches the pass attachments.
 	std::array<vk::ClearValue, 2> clearValues;
 	clearValues[0].color = m_stateTracker->getClearColor();
-	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(gr_far_depth(), 0);
 	const bool hasDepth = static_cast<bool>(ts->depthImage);
 
 	PassBeginDesc pass;
