@@ -27,6 +27,19 @@ std::array<Joystick*, CID_JOY_MAX> pJoystick = {nullptr};	//!< The 4 joysticks F
 bool initialized = false;
 
 /**
+* @brief Scales a gamepad trigger's 0..32767 reading to the -32768..32767 range FSO expects from every axis
+*/
+Sint16 scaleTriggerValue(Sint16 value)
+{
+	// Doubling 32767 would land one short of the top, so a fully pressed trigger keeps its value
+	if (value < 32767) {
+		return static_cast<Sint16>((value * 2) - 32768);
+	}
+
+	return value;
+}
+
+/**
 * @brief Compatibility conversion from Button index to HatPosition
 */
 inline
@@ -815,6 +828,11 @@ namespace joystick
 			for (size_t i = 0; i < _axisValues.size(); ++i) {
 				// will return 0 (center) if axis not supported
 				_axisValues[i] = SDL_GetGamepadAxis(_gamepad, static_cast<SDL_GamepadAxis>(i));
+
+				if ((i == static_cast<size_t>(SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) ||
+					(i == static_cast<size_t>(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER))) {
+					_axisValues[i] = scaleTriggerValue(_axisValues[i]);
+				}
 			}
 		} else {
 			auto numSticks = SDL_GetNumJoystickAxes(_joystick);
@@ -986,14 +1004,7 @@ namespace joystick
 		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
 
 		if ((axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) || (axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
-			// Triggers range from 0..32767 so we need to scale the value for FSO
-			// since it expects a full -32768..32767 range. Note that precision is
-			// lost in the scaling so only scale if it's not a min/max trigger value
-			if (value == 0) {
-				value = -32768;
-			} else if (value < 32767) {
-				value = static_cast<decltype(value)>((value * 2) - 32768);
-			}
+			value = scaleTriggerValue(value);
 
 			// We can also take this opportunity to map triggers to a button
 			int button = SDL_GAMEPAD_BUTTON_COUNT + (axis - SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
