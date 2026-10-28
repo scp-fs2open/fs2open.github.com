@@ -98,8 +98,7 @@ void vulkan_set_default_material_uniforms(material* material_info)
 		                              (clip_plane.normal.xyz.y * clip_plane.position.xyz.y) +
 		                              (clip_plane.normal.xyz.z * clip_plane.position.xyz.z));
 
-		// Model matrix (identity for now, material doesn't provide one)
-		vm_matrix4_set_identity(&data->modelMatrix);
+		data->modelMatrix = gr_model_matrix_stack.get_transform();
 	} else {
 		data->clipEnabled = 0;
 		vm_matrix4_set_identity(&data->modelMatrix);
