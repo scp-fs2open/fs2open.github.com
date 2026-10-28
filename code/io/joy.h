@@ -144,6 +144,23 @@ namespace io
 			int getButtonDownCount(int index, bool reset);
 
 			/**
+			 * @brief Seconds since the axis was pushed past half travel on one side, 0 if it is not
+			 *
+			 * @param axis      The axis index
+			 * @param negative  The negative side instead of the positive one
+			 */
+			float getAxisButtonDownTime(int axis, bool negative) const;
+
+			/**
+			 * @brief How many times the axis was pushed past half travel on one side
+			 *
+			 * @param axis      The axis index
+			 * @param negative  The negative side instead of the positive one
+			 * @param reset     Set the count back to zero
+			 */
+			int getAxisButtonDownCount(int axis, bool negative, bool reset);
+
+			/**
 			 * @brief Gets the relative ball movement
 			 * @param index The index of the ball, must be in [0, numBalls())
 			 * @return The @c x and @c y movement of the ball
@@ -271,6 +288,8 @@ namespace io
 			void handleAxisEvent(const SDL_GamepadAxisEvent& evt);
 			void handleButtonEvent(const SDL_GamepadButtonEvent& evt);
 
+			void updateAxisButtons(int axis, Sint16 value);
+
 			SDL_JoystickID _id;     //!< The instance ID
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
 			SDL_Gamepad *_gamepad;  //!< The SDL gamepad handle
@@ -291,6 +310,9 @@ namespace io
 			};
 
 			SCP_vector<button_info> _button;
+
+			//! Two per axis (positive side, then negative): pushed past half travel
+			SCP_vector<button_info> _axisButton;
 
 			struct hat_info
 			{
@@ -375,6 +397,11 @@ const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXI
 const int JOY_AXIS_MAX = 65536;
 const int JOY_AXIS_RANGE = (JOY_AXIS_MAX - JOY_AXIS_MIN) / 2;	// Currently equal to JOY_AXIS_CENTER
 
+// An axis bound as a button presses at half travel and lets go a little lower, so a noisy stick near half travel
+// doesn't press it over and over
+const int JOY_AXIS_BUTTON_PRESS = 16384;
+const int JOY_AXIS_BUTTON_RELEASE = 12288;
+
 int joystick_read_raw_axis(short cid, int num_axes, int *axis);
 
 float joy_down_time(const CC_bind &bind);
@@ -384,6 +411,11 @@ int joy_down_count(const CC_bind &bind, int reset_count);
 int joy_down(const CC_bind &bind);
 
 short joy_get_button_axis(const short cid, short btn);
+
+/**
+ * @brief Whether the given axis is a gamepad trigger, which already works as a button (see joy_get_button_axis)
+ */
+bool joy_axis_is_trigger(short cid, short axis);
 
 /**
  * Checks if the given joystick is present or not
