@@ -110,6 +110,10 @@ void BriefingEditorDialog::accept()
 {
 	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
+		// The model is handed to the undo stack below, but the dialog is only deleted later and the map keeps
+		// rendering until then; its per-frame cameraChanged (and the other map signals) would reach handlers
+		// that use _model after it is gone.
+		_mapWidget->disconnect(this);
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
 		QByteArray stateAfter = _model->captureState();
