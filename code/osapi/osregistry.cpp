@@ -1083,6 +1083,14 @@ void os_config_write_string(const char* section, const char* name, const char* v
 		section = DEFAULT_SECTION;
 
 	profile = profile_update(profile, section, name, value);
+
+	// Keep the updated profile, or with no settings file at startup each write would start again from an empty one
+	if (use_mod_file) {
+		Mod_settings_profile = profile;
+	} else {
+		Osreg_profile = profile;
+	}
+
 	profile_save(profile, file);
 }
 
@@ -1111,6 +1119,14 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 	snprintf(buf, 21, "%u", value);
 
 	profile = profile_update(profile, section, name, buf);
+
+	// Keep the updated profile, or with no settings file at startup each write would start again from an empty one
+	if (use_mod_file) {
+		Mod_settings_profile = profile;
+	} else {
+		Osreg_profile = profile;
+	}
+
 	profile_save(profile, file);
 }
 
