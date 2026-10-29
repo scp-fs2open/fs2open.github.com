@@ -2440,11 +2440,11 @@ static void ship_run_damage_hook(object *ship_objp, object *other_obj, int weapo
 		}
 	}
 
-	const weapon_info *wip = (weapon_info_index >= 0 && weapon_info_index < weapon_info_size()) ? &Weapon_info[weapon_info_index] : nullptr;
-	if ((damage_type_idx < 0 || damage_type_idx >= static_cast<int>(Damage_types.size())) && wip != nullptr) {
+	const weapon_info *wip = Weapon_info.in_bounds(weapon_info_index) ? &Weapon_info[weapon_info_index] : nullptr;
+	if (!Damage_types.in_bounds(damage_type_idx) && wip != nullptr) {
 		damage_type_idx = wip->damage_type_idx;
 	}
-	const char *damage_type = (damage_type_idx >= 0 && damage_type_idx < static_cast<int>(Damage_types.size())) ? Damage_types[damage_type_idx].name : "UNKNOWN";
+	const char *damage_type = Damage_types.in_bounds(damage_type_idx) ? Damage_types[damage_type_idx].name : "UNKNOWN";
 
 	const char *source_kind = "OTHER";
 	if (source == DamageSource::Collision) {

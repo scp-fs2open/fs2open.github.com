@@ -1811,7 +1811,7 @@ int collide_prop_ship(obj_pair* pair)
 
 				// don't draw sparks (using sphere hitpos)
 				damage = (100.0f * damage / ship_objp->phys_info.mass);
-				ship_apply_local_damage(ship_objp, prop_objp, &world_hit_pos, damage, -1, MISS_SHIELDS, CREATE_SPARKS, -1, &prop_ship_hit_info.collision_normal);
+				ship_apply_local_damage(ship_objp, prop_objp, &world_hit_pos, damage, -1, MISS_SHIELDS, CREATE_SPARKS, -1, &prop_ship_hit_info.collision_normal, 1.f, nullptr, DamageSource::Collision);
 
 				hud_shield_quadrant_hit(ship_objp, -1);
 			}
