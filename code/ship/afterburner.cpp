@@ -88,7 +88,6 @@ void afterburners_start(object *objp)
 
 	shipp->flags.set(Ship::Ship_Flags::Attempting_to_afterburn);
 
-	// Measured in mission time, so the delays last as long as specified under time compression or a pause.
 	if (shipp->afterburner_last_end_time.isFinite() && timestamp_since(shipp->afterburner_last_end_time) < fl2i(sip->afterburner_cooldown_time * 1000.0f)) {
 
 		if ((objp->flags[Object::Object_Flags::Player_ship]) && (objp == Player_obj))
