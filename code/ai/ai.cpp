@@ -35,9 +35,6 @@ int ai_get_slot(int shipnum)
 	for (i=0; i<MAX_AI_INFO ; i++)
 		if (Ai_info[i].shipnum == -1)	{
 			Ai_info[i].shipnum = shipnum;
-			// a reused slot's goals belong to the previous ship and may name freed strings
-			for (auto &goal : Ai_info[i].goals)
-				ai_goal_reset(&goal);
 			return i;
 		}
 

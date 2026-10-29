@@ -11530,7 +11530,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	}
 
 	init_ai_object(objnum);
-	ai_clear_ship_goals( &Ai_info[shipp->ai_index] );		// only do this one here.  Can't do it in init_ai because it might wipe out goals in mission file
+	ai_clear_ship_goals( &Ai_info[shipp->ai_index] );		// called to start the ship's default behavior
 
 	// Bump the object radius to ensure that collision detection works right
 	// even when spread shields extend outside the model's natural radius

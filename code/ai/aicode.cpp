@@ -11692,7 +11692,7 @@ void ai_release_queued_rearm_target(const ai_goal *goal, int how)
 	if (!The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stranded_rearm_queue])
 		return;
 
-	// clients mirror only part of the goal list; the server's release reaches them by packet
+	// the server decides this and sends clients the result in its repair packet
 	if (MULTIPLAYER_CLIENT)
 		return;
 
@@ -11712,8 +11712,8 @@ void ai_release_queued_rearm_target(const ai_goal *goal, int how)
 	if (target_aip->support_ship_objnum != -1 || mission_is_repair_scheduled(target_objp))
 		return;
 
-	// a request placed again elsewhere leaves this goal as a stale copy; the live one owns it
-	for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+	// the ship may have been queued again, on this support ship or another one
+	for (auto so : list_range(&Ship_obj_list)) {
 		auto sup_objp = &Objects[so->objnum];
 		if (sup_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
@@ -11723,6 +11723,7 @@ void ai_release_queued_rearm_target(const ai_goal *goal, int how)
 			continue;
 
 		for (const auto &other : Ai_info[sup_shipp->ai_index].goals) {
+			// that queue entry will still service the ship, so it keeps waiting
 			if (&other != goal && other.ai_mode == AI_GOAL_REARM_REPAIR && other.target_name != nullptr && !stricmp(other.target_name, goal->target_name))
 				return;
 		}
@@ -15909,6 +15910,11 @@ void init_ai_object(int objnum)
 	Assert((ai_index >= 0) && (ai_index < MAX_AI_INFO));
 
 	aip = &Ai_info[ai_index];
+
+	// a reused slot's goals belong to the previous ship and may name freed strings
+	for (auto& goal : aip->goals) {
+		ai_goal_reset(&goal);
+	}
 
 	ship_type = Ships[ship_index].ship_info_index;
 
