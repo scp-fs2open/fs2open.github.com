@@ -59,7 +59,7 @@ bool Chase_view_only_ex = false;
 
 static bool orb_radar_default = false;
 
-// Lock an option only when every loaded gauge that reads it took its value from a mod's table
+// Lock an option only when no loaded gauge depends on the player's value
 struct GaugeSettingTally {
 	int gauges = 0;
 	int set_by_mod = 0;
@@ -67,6 +67,7 @@ struct GaugeSettingTally {
 };
 static GaugeSettingTally Scan_lines_tally;
 static GaugeSettingTally Rearm_timer_tally;
+static GaugeSettingTally Radar_tally;
 
 static void tally_gauge_setting(GaugeSettingTally& tally, bool set_by_mod, bool value)
 {
@@ -872,6 +873,7 @@ void hud_positions_init()
 	default_hud_gauges.clear();
 	Scan_lines_tally = GaugeSettingTally();
 	Rearm_timer_tally = GaugeSettingTally();
+	Radar_tally = GaugeSettingTally();
 
 	if (cf_exists_full("hud_gauges.tbl", CF_TYPE_TABLES))
 		parse_hud_gauges_tbl("hud_gauges.tbl");
@@ -883,6 +885,7 @@ void hud_positions_init()
 
 	lock_option_if_mod_set_everywhere("HUD.DualScanLines", Scan_lines_tally);
 	lock_option_if_mod_set_everywhere("HUD.RearmTimer", Rearm_timer_tally);
+	lock_option_if_mod_set_everywhere("HUD.OrbRadar", Radar_tally);
 }
 
 void load_missing_retail_gauges()
@@ -3181,6 +3184,8 @@ void load_gauge_radar_std(gauge_settings* settings)
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
 	
+	tally_gauge_setting(Radar_tally, false, false);
+
 	// Only load this if the user hasn't specified a preference
 	if (Cmdline_orb_radar == 0) {
 		hud_gauge->initBitmaps(fname);
@@ -3277,6 +3282,8 @@ void load_gauge_radar_orb(gauge_settings* settings)
 	if(optional_string("Short Distance Offsets:")) {
 		stuff_int_list(Radar_dist_offsets[0], 2);
 	}
+
+	tally_gauge_setting(Radar_tally, false, false);
 
 	//only load this if the user actually wants to use the orb radar.
 	if (Cmdline_orb_radar == 1) {
@@ -3491,6 +3498,9 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		//In this case, we must always slew every hud gauge, no matter what.
 		hud_gauge->initSlew(true);
 	}
+
+	// DRADIS ignores the 3D radar option, so the lock keeps showing the player's choice
+	tally_gauge_setting(Radar_tally, true, Cmdline_orb_radar == 1);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
