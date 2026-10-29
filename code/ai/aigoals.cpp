@@ -371,6 +371,11 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 
 		aip->active_goal = AI_ACTIVE_GOAL_NONE;
 	}
+	else
+	{
+		// ABORT, as for the active goal, so the player's support gauge closes
+		ai_release_queued_rearm_target(&aip->goals[index], REPAIR_INFO_ABORT);
+	}
 
 	ai_goal_reset(&aip->goals[index]);
 
@@ -858,6 +863,10 @@ int ai_goal_allocate_slot( ai_goal *goals, int active_goal )
 		return first_empty_index;
 
 	// if we didn't find an empty slot, use the oldest goal's slot
+	// (callers overwrite it without ai_remove_ship_goal, so release it here)
+	if (oldest_index >= 0)
+		ai_release_queued_rearm_target(&goals[oldest_index], REPAIR_INFO_ABORT);
+
 	return oldest_index;
 }
 
