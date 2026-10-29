@@ -756,7 +756,7 @@ public:
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
 												// as afterburner_fuel_capacity in ship_info).
 	float   afterburner_last_engage_fuel;      // the fuel level when the afterburners were last engaged
-	int   afterburner_last_end_time;         // timestamp when the ship last stopped its afterburner
+	TIMESTAMP afterburner_last_end_time;     // when the ship last stopped its afterburner
 
 	int cmeasure_count;						//	Number of charges of countermeasures this ship can hold.
 	int current_cmeasure;					//	Currently selected countermeasure.
