@@ -133,9 +133,8 @@ bool mission_load(const char* filename_ext)
 		return false;
 
 	if (Select_default_ship) {
-		int ret;
-		ret = create_default_player_ship();
-		Assert(!ret);
+		// no last flown ship (new pilot, or its ship isn't in this mod): the popup says so, the mission's ship is kept
+		create_default_player_ship();
 	}
 
 	ml_update_recent_missions(filename_ext);  // update recently played missions list (save the csg later)
