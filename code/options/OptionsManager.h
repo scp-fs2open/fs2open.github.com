@@ -10,15 +10,21 @@ namespace options {
 // Forward declaration
 class OptionBase;
 
+enum class OverrideSource {
+	CommandLine,
+	Mod
+};
+
 class OptionsManager {
 	OptionsManager();
 
-	// A value forced by something outside of the options system itself (currently only the command line).
+	// A value forced by something outside of the options system itself: a command line flag, or a mod's own tables.
 	// This takes priority over the persisted config value and over any in-session edit. The options UI shows
 	// an overridden option as a disabled control with the reason in its tooltip.
 	struct OverrideEntry {
 		std::unique_ptr<json_t> value;
 		SCP_string reason; // human-readable source, e.g. "-no_vsync", shown in the options UI
+		OverrideSource source;
 	};
 	SCP_unordered_map<SCP_string, OverrideEntry> _config_overrides;
 
@@ -41,18 +47,27 @@ class OptionsManager {
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
-	void setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason);
+	void setOverride(const SCP_string& key,
+		const SCP_string& json,
+		const SCP_string& reason,
+		OverrideSource source = OverrideSource::CommandLine);
 
 	// Overload that takes an already-built JSON value. Prefer this one: it lets a caller reuse the option's
 	// own serializer instead of formatting the JSON by hand, which can produce a value the option's
 	// deserializer then rejects.
-	void setOverride(const SCP_string& key, std::unique_ptr<json_t>&& value, const SCP_string& reason);
+	void setOverride(const SCP_string& key,
+		std::unique_ptr<json_t>&& value,
+		const SCP_string& reason,
+		OverrideSource source = OverrideSource::CommandLine);
 
 	// Returns true if this key currently has an override.
 	bool isOverridden(const SCP_string& key) const;
 
 	// Returns the reason string passed to setOverride() for this key, if it is currently overridden.
 	std::optional<SCP_string> getOverrideReason(const SCP_string& key) const;
+
+	// Returns where this key's override came from, if it is currently overridden.
+	std::optional<OverrideSource> getOverrideSource(const SCP_string& key) const;
 
 	// Removes all overrides. For tests, so that one test's overrides do not leak into the next.
 	void clearOverrides();

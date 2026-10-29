@@ -93,24 +93,30 @@ void OptionsManager::setConfigValue(const SCP_string& key,std::unique_ptr<json_t
 
 //Provides a method for overriding a built-in option setting
 //Generally used for commandline settings
-void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason)
+void OptionsManager::setOverride(const SCP_string& key,
+	const SCP_string& json,
+	const SCP_string& reason,
+	OverrideSource source)
 {
 	json_error_t err;
 	auto el = json_loads(json.c_str(), JSON_DECODE_ANY, &err);
 	if (el == nullptr) {
 		return;
 	}
-	setOverride(key, std::unique_ptr<json_t>(el), reason);
+	setOverride(key, std::unique_ptr<json_t>(el), reason, source);
 }
 
-void OptionsManager::setOverride(const SCP_string& key, std::unique_ptr<json_t>&& value, const SCP_string& reason)
+void OptionsManager::setOverride(const SCP_string& key,
+	std::unique_ptr<json_t>&& value,
+	const SCP_string& reason,
+	OverrideSource source)
 {
 	if (value == nullptr) {
 		return;
 	}
 	// insert_or_assign (rather than emplace) so a later override for the same key, e.g. from a second cmdline
 	// flag targeting the same option, replaces the earlier one instead of being silently ignored.
-	_config_overrides.insert_or_assign(key, OverrideEntry{std::move(value), reason});
+	_config_overrides.insert_or_assign(key, OverrideEntry{std::move(value), reason, source});
 
 	// An override wins over a pending edit, so drop any edit that is already pending for this key.
 	_changed_values.erase(key);
@@ -130,6 +136,15 @@ std::optional<SCP_string> OptionsManager::getOverrideReason(const SCP_string& ke
 		return std::nullopt;
 	}
 	return iter->second.reason;
+}
+
+std::optional<OverrideSource> OptionsManager::getOverrideSource(const SCP_string& key) const
+{
+	auto iter = _config_overrides.find(key);
+	if (iter == _config_overrides.end()) {
+		return std::nullopt;
+	}
+	return iter->second.source;
 }
 
 //Adds an option to the options vector

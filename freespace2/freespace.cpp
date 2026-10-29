@@ -367,6 +367,30 @@ fix FrametimeOverall = 0;
 	int	Show_framerate = 0;
 #endif
 
+static bool show_fps_default = (Show_framerate != 0);
+
+static void parse_show_fps_func()
+{
+	stuff_boolean(&show_fps_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Show_framerate = show_fps_default ? 1 : 0;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ShowFpsOption __UNUSED = options::OptionBuilder<bool>("HUD.ShowFPS",
+                     std::pair<const char*, int>{"Show FPS", -1},
+                     std::pair<const char*, int>{"Shows the frame rate on the HUD.", -1})
+                     .category(std::make_pair("Game", 1824))
+                     .default_func([]() { return show_fps_default; })
+                     .change_listener([](bool val, bool) {
+                         Show_framerate = val ? 1 : 0;
+                         return true;
+                     })
+                     .level(options::ExpertLevel::Beginner)
+                     .importance(46)
+                     .parser(parse_show_fps_func)
+                     .finish();
+
 int	Framerate_cap = 120;
 
 // for the model page in system
