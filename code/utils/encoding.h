@@ -10,17 +10,20 @@ enum class Encoding {
 
 /**
  * @brief Guesses the encoding of the given content by looking at the first few bytes
+ * @param buf The content to check; need not be null-terminated
+ * @param len The length of the content in bytes
  * @param assume_utf8 Set the @true true if no BOM should be treated as UTF-8 instead of ASCII
  * @return The guessed encoding of the content
  */
-Encoding guess_encoding(const SCP_string& content, bool assume_utf8 = true);
+Encoding guess_encoding(const char* buf, size_t len, bool assume_utf8 = true);
 
 /**
- * @brief Determines if the given text has a Byte Order Mark (BOM) that has to be skipped to get to the real text
- * @param content The text to check
- * @return @c true if there is a BOM, @c false otherwise
+ * @brief Gets the length of the Byte Order Mark (BOM), if any, that has to be skipped to get to the real text
+ * @param buf The content to check; need not be null-terminated
+ * @param len The length of the content in bytes
+ * @return The length of the BOM in bytes, or 0 if there is none
  */
-bool has_bom(const SCP_string& content);
+size_t bom_length(const char* buf, size_t len);
 
 /**
  * @brief Guesses if the specifies buffer contains Latin1 encoding
