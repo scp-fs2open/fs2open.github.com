@@ -925,12 +925,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// Check if the text exceeds the limits
 		auto current_line = wip->desc.get();
+		if ((current_line != nullptr) && (*current_line == '\n')) {
+			++current_line;
+		}
 		size_t num_lines = 0;
 		while (current_line != nullptr) {
 			auto line_end = strchr(current_line, '\n');
 			auto line_length = line_end - current_line;
 			if (line_end == nullptr) {
 				line_length = strlen(current_line);
+			}
+
+			if ((line_end == nullptr) && (line_length == 0) && (num_lines > 0)) {
+				break;
 			}
 
 			if (line_length >= WEAPON_DESC_MAX_LENGTH) {
@@ -940,8 +947,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			++num_lines;
 			current_line = line_end == nullptr ? nullptr : line_end + 1; // Skip the \n character if it was a complete line
 		}
-		if (num_lines >= WEAPON_DESC_MAX_LINES) {
-			error_display(0, "Weapon description has too many lines. Maximum is %d.", WEAPON_DESC_MAX_LINES);
+		// the first two lines of the loadout description box hold the title
+		if (num_lines > WEAPON_DESC_MAX_LINES - 2) {
+			error_display(0, "Weapon description has too many lines. Maximum is %d.", WEAPON_DESC_MAX_LINES - 2);
 		}
 	}
 
