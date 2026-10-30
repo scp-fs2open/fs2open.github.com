@@ -454,14 +454,21 @@ static int joy_get_unscaled_reading(int raw)
 	return (int) ((std::uint64_t) raw * (std::uint64_t) F1_0 / (std::uint64_t) rng);  // convert to 0 - F1_0 range, 64bit ints used to avoid uint overflow
 }
 
-int joy_get_scaled_reading(int raw)
+int joy_get_scaled_reading(int raw, int action)
 {
 	int x, d, dead_zone, rng;
 	float percent, sensitivity_percent, non_sensitivity_percent;
 
+	const bool per_axis = action >= 0 && action < Action::NUM_VALUES;
+	const int axis_dead_zone = per_axis ? Joy_axis_dead_zone_size[action] : -1;
+	const int sensitivity =
+		(per_axis && Joy_axis_sensitivity[action] >= 0) ? Joy_axis_sensitivity[action] : Joy_sensitivity;
+
 	raw -= JOY_AXIS_CENTER;
 
-	if (Cmdline_deadzone >= 0) {
+	if (axis_dead_zone >= 0) {
+		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * axis_dead_zone / 100;
+	} else if (Cmdline_deadzone >= 0) {
 		dead_zone = (JOY_AXIS_MAX - JOY_AXIS_MIN) * Cmdline_deadzone / 200; 
 		//Making this div by 200 is what allows us to have the granularity of 0 to 100 in the cmdline. 
 		//This allows a larger deadzone than the original maximum, all the way to the stick's full range.
@@ -481,11 +488,11 @@ int joy_get_scaled_reading(int raw)
 	if (d > rng)
 		d = rng;
 
-	Assert(Joy_sensitivity >= 0 && Joy_sensitivity <= 9);
+	Assert(sensitivity >= 0 && sensitivity <= 9);
 
 	// compute percentages as a range between 0 and 1
-	sensitivity_percent = (float) Joy_sensitivity / 9.0f;
-	non_sensitivity_percent = (float) (9 - Joy_sensitivity) / 9.0f;
+	sensitivity_percent = (float) sensitivity / 9.0f;
+	non_sensitivity_percent = (float) (9 - sensitivity) / 9.0f;
 
 	// find percent of max axis is at
 	percent = (float) d / (float) rng;
@@ -3055,7 +3062,7 @@ void scale_invert(const CC_bind &bind,
 		case CC_TYPE_AXIS_BTN_NEG:
 		case CC_TYPE_AXIS_BTN_POS:
 		default:
-			dx = joy_get_scaled_reading(axis_in[cid][btn]);
+			dx = joy_get_scaled_reading(axis_in[cid][btn], action);
 			break;
 		}
 		
