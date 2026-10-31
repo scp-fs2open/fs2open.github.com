@@ -530,6 +530,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
+	{ "depart-instantly",				OP_DEPART_INSTANTLY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "destroy-subsys-instantly",		OP_DESTROY_SUBSYS_INSTANTLY,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "sabotage-subsystem",				OP_SABOTAGE_SUBSYSTEM,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "repair-subsystem",				OP_REPAIR_SUBSYSTEM,					3,	5,			SEXP_ACTION_OPERATOR,	},
@@ -19932,6 +19933,52 @@ void multi_sexp_destroy_instantly()
 		ship_destroy_instantly(&Objects[shipp->objnum]);
 }
 
+// Goober5000
+void sexp_depart_instantly(int n)
+{
+	bool skip_checks = is_sexp_true(n);
+	n = CDR(n);
+
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.start_callback();
+
+	for ( ; n >= 0; n = CDR(n) )
+	{
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT)
+			continue;
+
+		auto shipp = ship_entry->shipp();
+		auto objp = ship_entry->objp();
+
+		if (shipp->flags[Ship::Ship_Flags::Dying])
+			continue;
+
+		// the netcode has no way for a single player to leave the mission early
+		if ((Game_mode & GM_MULTIPLAYER) && objp->flags[Object::Object_Flags::Player_ship])
+			continue;
+
+		if (!skip_checks && !ship_can_warp_full_check(shipp))
+			continue;
+
+		if (MULTIPLAYER_MASTER)
+			Current_sexp_network_packet.send_ship(shipp);
+
+		mission_do_instant_departure(objp);
+	}
+
+	if (MULTIPLAYER_MASTER)
+		Current_sexp_network_packet.end_callback();
+}
+
+void multi_sexp_depart_instantly()
+{
+	ship *shipp;
+
+	while (Current_sexp_network_packet.get_ship(shipp))
+		mission_do_instant_departure(&Objects[shipp->objnum]);
+}
+
 void sexp_shields_off(int n, bool shields_off ) //-Sesquipedalian
 {
 	sexp_deal_with_ship_flag(n, true, Object::Object_Flags::No_shields, Ship::Ship_Flags::NUM_VALUES, Mission::Parse_Object_Flags::OF_No_shields, shields_off, true);
@@ -29118,6 +29165,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_DEPART_INSTANTLY:
+				sexp_depart_instantly(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
@@ -31166,6 +31218,10 @@ void multi_sexp_eval()
 				multi_sexp_destroy_instantly();
 				break;
 
+			case OP_DEPART_INSTANTLY:
+				multi_sexp_depart_instantly();
+				break;
+
 			case OP_DESTROY_SUBSYS_INSTANTLY:
 				multi_sexp_destroy_subsys_instantly();
 				break;
@@ -31808,6 +31864,7 @@ int query_operator_return_type(int op)
 		case OP_PROP_VANISH:
 		case OP_DESTROY_INSTANTLY:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
+		case OP_DEPART_INSTANTLY:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_SHIP_STEALTHY:
@@ -33780,6 +33837,7 @@ int query_operator_argument_type(int op_index, int argnum)
 			return OPF_SHIP;
 
 		case OP_SET_SUBSPACE_DRIVE:
+		case OP_DEPART_INSTANTLY:
 			if (argnum == 0)
 				return OPF_BOOL;
 			else
@@ -37364,6 +37422,7 @@ int get_category(int op_id)
 		case OP_CONFIG_FIELD_TARGETS:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_MOTION_DEBRIS:
+		case OP_DEPART_INSTANTLY:
 			return OP_CATEGORY_CHANGE;
 
 		case OP_AI_CHASE:
@@ -37568,6 +37627,7 @@ int get_subcategory(int op_id)
 		case OP_SELF_DESTRUCT:
 		case OP_DESTROY_INSTANTLY:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
+		case OP_DEPART_INSTANTLY:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
 		case OP_SABOTAGE_SUBSYSTEM:
 		case OP_REPAIR_SUBSYSTEM:
@@ -41552,6 +41612,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tLike destroy-instantly, but only spawns debris. No explosions, no sound, no deathroll.\r\n"
 		"\tNon-player ship only!\r\n"
 		"\tAll: List of ship names to destroy.\r\n" },
+
+	{ OP_DEPART_INSTANTLY, "depart-instantly\r\n"
+		"\tMakes the named ships depart via warp without a warp effect, along with anything docked to them.  That is, the ships are instantly gone from the mission, but unlike ship-vanish, the departure is logged as usual.  "
+		"Ships always depart via warp, even if their departure location is a docking bay.  If the player ship departs, the mission ends as it would after a normal warpout.  Player ships are skipped in multiplayer.\r\n"
+		"\tTakes 1 or more arguments...\r\n"
+		"\t1: Whether to skip the usual checks for whether a ship can warp out (subsystem health thresholds, subspace drive flags, etc.)  If this is set to false, a ship that fails a check will not depart.\r\n"
+		"\tRest: List of ship names to depart.\r\n" },
 
 	{ OP_SHIP_CREATE, "ship-create\r\n"
 		"\tCreates a new ship\r\n"

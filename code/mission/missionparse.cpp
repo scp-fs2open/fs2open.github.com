@@ -8787,6 +8787,28 @@ try_to_warp:
 }
 
 /**
+ * Makes object objp (and anything docked to it) depart via warp immediately, with no warp effect.
+ */
+void mission_do_instant_departure(object *objp)
+{
+	Assert(objp->type == OBJ_SHIP);
+	ship *shipp = &Ships[objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
+
+	mprintf(("Instantly departing %s\n", shipp->ship_name));
+
+	// a ship already partway through departing has already run this hook
+	if (aip->mode != AIM_WARP_OUT && !shipp->is_departing() && OnDepartureStartedHook->isActive())
+	{
+		OnDepartureStartedHook->run(scripting::hooks::ShipDepartConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
+
+	MONITOR_INC(NumShipDepartures, 1);
+	ship_actually_depart(objp->instance, SHIP_DEPARTED_WARP);
+}
+
+/**
  * Put here because mission_eval_arrivals is here.
  * @todo Might move these to a better location later -- MWA
  */
