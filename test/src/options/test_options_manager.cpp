@@ -710,6 +710,10 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedHardwareListsFollowTheQuery)
 	ASSERT_FALSE(gr_is_capable(gr_capability::CAPABILITY_SHADOWS));
 	const json_t* aniso_before = described(before.get(), "Graphics.Anisotropy");
 	const json_t* aniso_after = described(after.get(), "Graphics.Anisotropy");
+	// the anisotropy option lives in the OpenGL texture code, so builds without OpenGL don't have it
+	if (aniso_before == nullptr && aniso_after == nullptr) {
+		GTEST_SKIP() << "Graphics.Anisotropy is not built without OpenGL";
+	}
 	ASSERT_NE(aniso_before, nullptr);
 	ASSERT_NE(aniso_after, nullptr);
 	ASSERT_EQ(json_array_size(json_object_get(aniso_before, "values")), 0u);
