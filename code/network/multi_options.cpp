@@ -28,6 +28,7 @@
 #include "playerman/player.h"
 #include "cfile/cfile.h"
 #include "network/multi_fstracker.h"
+#include "utils/encoding.h"
 
 #include <climits>
 
@@ -197,7 +198,10 @@ void multi_options_read_config()
 	} else {
 		Multi_cfg_missing = false;
 
-		while ( !cfeof(in) ) {
+		// some editors save a UTF-8 byte order mark, which would hide the first option
+		bool readable = util::check_encoding_and_skip_bom(in, MULTI_CFG_FILE, nullptr, true) >= 0;
+
+		while ( readable && !cfeof(in) ) {
 			// read in the game info
 			memset(str, 0, 512);
 			cfgets(str, 512, in);

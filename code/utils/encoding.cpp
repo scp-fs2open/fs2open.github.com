@@ -45,7 +45,7 @@ size_t bom_length(const char* buf, size_t len) {
 			return 0;
 	}
 }
-int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset) {
+int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset, bool is_lenient) {
 	cfseek(file, 0, CF_SEEK_SET);
 
 	// Read up to 10 bytes from the file to check if there is a BOM
@@ -62,29 +62,33 @@ int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_of
 
 	// Determine encoding. Assume UTF-8 if we are in unicode text mode
 	auto encoding = util::guess_encoding(probe.data(), probe.size(), Unicode_text_mode);
-	if (Unicode_text_mode) {
-		if (encoding != util::Encoding::UTF8) {
-			//This is probably fatal, so let's abort right here and now.
-			Error(LOCATION,
-				  "%s is in an Unicode/UTF format that cannot be read by FreeSpace Open. Please convert it to UTF-8\n",
-				  filename);
-		}
-		auto bom_len = static_cast<int>(util::bom_length(probe.data(), probe.size()));
-		if (bom_len > 0) {
-			// This makes sure that the first byte we read will be the first actual text byte.
-			cfseek(file, bom_len, CF_SEEK_SET);
-			filelength -= bom_len;
+	bool supported = Unicode_text_mode
+		? (encoding == util::Encoding::UTF8)
+		: (encoding == util::Encoding::ASCII || (is_lenient && encoding == util::Encoding::UTF8));
 
-			if (start_offset) {
-				*start_offset = bom_len;
-			}
+	if (!supported) {
+		const char* problem = Unicode_text_mode
+			? "is in an Unicode/UTF format that cannot be read by FreeSpace Open. Please convert it to UTF-8"
+			: "is in Unicode/UTF format and cannot be read by FreeSpace Open without turning on Unicode mode. Please convert it to ASCII/ANSI";
+
+		if (is_lenient) {
+			ReleaseWarning(LOCATION, "%s %s. Default settings will be used.\n", filename, problem);
+			return -1;
 		}
-	} else {
-		if (encoding != util::Encoding::ASCII) {
-			//This is probably fatal, so let's abort right here and now.
-			Error(LOCATION,
-				  "%s is in Unicode/UTF format and cannot be read by FreeSpace Open without turning on Unicode mode. Please convert it to ASCII/ANSI\n",
-				  filename);
+
+		//This is probably fatal, so let's abort right here and now.
+		Error(LOCATION, "%s %s\n", filename, problem);
+	}
+
+	// Only a UTF-8 BOM can get this far
+	auto bom_len = static_cast<int>(util::bom_length(probe.data(), probe.size()));
+	if (bom_len > 0) {
+		// This makes sure that the first byte we read will be the first actual text byte.
+		cfseek(file, bom_len, CF_SEEK_SET);
+		filelength -= bom_len;
+
+		if (start_offset) {
+			*start_offset = bom_len;
 		}
 	}
 
