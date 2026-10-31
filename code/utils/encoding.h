@@ -48,7 +48,10 @@ bool guessLatin1Encoding(const char* aBuf, size_t aLen);
  * @param filename The name of the file. Only used for possible error messages.
  * @param[out] start_offset A pointer to an int variable. If this is a valid pointer then this variable will contain the
  * offset of the first text byte from the start of the file.
- * @return The length of the file in bytes. Does not include the BOM if it exists.
+ * @param is_lenient For files that can fall back to defaults, such as config files. If true, a UTF-8 file is accepted
+ * even when Unicode mode is disabled, and an unsupported encoding produces a warning instead of an error.
+ * @return The length of the file in bytes. Does not include the BOM if it exists. If @c is_lenient is true, -1 if the
+ * encoding is not supported.
  */
-int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset = nullptr);
+int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset = nullptr, bool is_lenient = false);
 }
