@@ -2,7 +2,9 @@
 #include "options/Option.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
+#include "cmdline/cmdline.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 #include "math/floating.h"
 
 #include "util/FSTestFixture.h"
@@ -340,12 +342,6 @@ TEST_F(OptionsManagerOverride, FlagsetOverrideRoundTrips)
 	ASSERT_TRUE(value[FramebufferEffects::Shockwaves]);
 }
 
-// Graphics.Anisotropy is only registered in builds with the OpenGL backend compiled in
-// (its Option<float> lives in gropengltexture.cpp, which the CMake build excludes entirely
-// when FSO_BUILD_WITH_OPENGL is off) -- so, like Graphics.RenderAPI above, round-trip
-// coverage needs a build-config split rather than a single unconditional test.
-#ifdef WITH_OPENGL
-
 TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy");
@@ -360,14 +356,65 @@ TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 	ASSERT_FLOAT_EQ(typedOpt->getValue(), 16.0f);
 }
 
-#else
+// these globals belong to the whole process and CI shuffles test order, so put them back after each test
+class AnisotropySetting : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		_saved_property = gr_screen.gf_get_property;
+		_saved_ingame = Using_in_game_options;
+		_saved_level = Cmdline_aniso_level;
+		gr_screen.gf_get_property = [](gr_property p, void* dest) {
+			if (p != gr_property::MAX_ANISOTROPY) {
+				return false;
+			}
+			*static_cast<float*>(dest) = 16.0f;
+			return true;
+		};
+	}
+	void TearDown() override
+	{
+		gr_screen.gf_get_property = _saved_property;
+		Using_in_game_options = _saved_ingame;
+		Cmdline_aniso_level = _saved_level;
+		OptionsManagerOverride::TearDown();
+	}
 
-TEST_F(OptionsManagerOverride, AnisotropyIsAbsentWithoutOpenGLSupport)
+  private:
+	decltype(gr_screen.gf_get_property) _saved_property;
+	bool _saved_ingame = true;
+	int _saved_level = 0;
+};
+
+TEST_F(AnisotropySetting, InGameOptionsUseTheOption)
 {
-	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy"), nullptr);
+	Using_in_game_options = true;
+	Cmdline_aniso_level = 0;
+	OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::unique_ptr<json_t>(json_real(4.0)), "test");
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 4.0f);
 }
 
-#endif
+TEST_F(AnisotropySetting, WithoutInGameOptionsTheFlagWins)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 8;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 8.0f);
+}
+
+TEST_F(AnisotropySetting, WithNothingChosenItIsTheCardMaximum)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 16.0f);
+}
+
+TEST_F(AnisotropySetting, WithNoRendererAnswerItIsOff)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	gr_screen.gf_get_property = [](gr_property, void*) { return false; };
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 1.0f);
+}
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 {
