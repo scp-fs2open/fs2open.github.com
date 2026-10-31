@@ -298,7 +298,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		samplerInfo.anisotropyEnable = VK_FALSE;
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = static_cast<float>(VulkanBloom::MAX_MIP_BLUR_LEVELS);
+		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 		samplerInfo.borderColor = vk::BorderColor::eFloatOpaqueBlack;
 
 		try {

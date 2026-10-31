@@ -57,8 +57,8 @@ void PostProcessContext::destroyTarget(RenderTarget& rt) const
 void PostProcessContext::generateMipmaps(vk::CommandBuffer cmd, vk::Image image,
                                            uint32_t width, uint32_t height, uint32_t mipLevels)
 {
-	// Transition mip 0 from eShaderReadOnlyOptimal (after brightpass) to
-	// eTransferSrcOptimal (source for the blit chain below)
+	// Transition mip 0 from eShaderReadOnlyOptimal (after the pass that wrote
+	// it) to eTransferSrcOptimal (source for the blit chain below)
 	{
 		ImageBarrier2 barrier;
 		barrier.image = image;
