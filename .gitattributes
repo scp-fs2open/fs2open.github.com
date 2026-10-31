@@ -5,3 +5,5 @@
 *.tbl text eol=lf
 *.tbm text eol=lf
 *.sdr text eol=lf
+test/test_data/bmpman/eff/data/maps/sharp_s_eff.eff binary
+test/test_data/bmpman/eff/data/maps/encrypted_eff.eff binary
