@@ -958,11 +958,14 @@ void os_init_registry_stuff(const char* company, const char* app)
 
 	// If the mod settings file doesn't exist create it if it doesn't so that the
 	// Mod_options_profile can be written to later during runtime.
-	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
-	if (fp != nullptr) {
-		fclose(fp);
-	} else {
-		Ingame_options_save_found = false;
+	// a launcher query must not create it: a missing file is what makes the first real launch inherit fs2_open.ini
+	if (!Cmdline_get_options) {
+		FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
+		if (fp != nullptr) {
+			fclose(fp);
+		} else {
+			Ingame_options_save_found = false;
+		}
 	}
 
 	// Load the mod settings profile if we have one, otherwise pull the settings from the

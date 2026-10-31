@@ -17,6 +17,12 @@
 
 int parse_cmdline(int argc, char *argv[]);
 
+// True if -get_options is among the arguments; for checks that run before the command line is parsed
+bool cmdline_has_get_options(int argc, char* argv[]);
+
+// Prints every in-game option as JSON for -get_options; false if the output could not be written
+bool cmdline_print_options();
+
 // COMMAND LINE SETTINGS
 // This section is for reference by all the *_init() functions. For example, the multiplayer init function
 // could check to see if (int Cmdline_multi_stream_chat_to_file) has been set by the command line parser.
@@ -149,6 +155,7 @@ extern bool Cmdline_retail_time_compression_range;
 extern bool Cmdline_benchmark_mode;
 extern const char *Cmdline_pilot;
 extern bool Cmdline_noninteractive;
+extern bool Cmdline_get_options;
 extern bool Cmdline_json_profiling;
 extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;

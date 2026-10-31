@@ -3,6 +3,7 @@
 
 #include "OptionsManager.h"
 #include "Option.h"
+#include "cmdline/cmdline.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
 #include <optional>
@@ -276,6 +277,15 @@ void OptionsManager::discardChanges() { _changed_values.clear(); }
 //Get the initial values of the option as stored on disk
 void OptionsManager::loadInitialValues()
 {
+	// only -get_options describes options, so normal startup does no extra work here
+	_describedAtLoad.clear();
+	if (Cmdline_get_options) {
+		_describedAtLoad = getOptions();
+		for (const auto& opt : _describedAtLoad) {
+			opt->rememberDefaultBeforeLoad();
+		}
+	}
+
 	// Collect options to remove in a separate container
 	SCP_vector<std::shared_ptr<const OptionBase>> optionsToRemove;
 
@@ -291,6 +301,120 @@ void OptionsManager::loadInitialValues()
 	for (const auto& optToRemove : optionsToRemove) {
 		removeOption(optToRemove);
 	}
+}
+
+json_t* json_text(const SCP_string& text)
+{
+	json_t* value = json_string(text.c_str());
+	if (value != nullptr) {
+		return value;
+	}
+	// not UTF-8 (a legacy-encoded translation or folder name): read it as Latin-1 rather than drop the key
+	SCP_string utf8;
+	for (unsigned char c : text) {
+		if (c < 0x80) {
+			utf8 += static_cast<char>(c);
+		} else {
+			utf8 += static_cast<char>(0xC0 | (c >> 6));
+			utf8 += static_cast<char>(0x80 | (c & 0x3F));
+		}
+	}
+	return json_string(utf8.c_str());
+}
+
+json_t* OptionsManager::describeOptions()
+{
+	// a serialized value is itself JSON, so it goes in as a value, not as a string holding JSON
+	auto value_of = [](const SCP_string& serialized) {
+		json_error_t err;
+		json_t* value = json_loads(serialized.c_str(), JSON_DECODE_ANY, &err);
+		return (value != nullptr) ? value : json_text(serialized);
+	};
+	const auto& described = _describedAtLoad.empty() ? getOptions() : _describedAtLoad;
+	json_t* list = json_array();
+	for (const auto& option : described) {
+		const auto& key = option->getConfigKey();
+		json_t* default_value = value_of(option->getDescribedDefault());
+		json_t* entry = json_object();
+		json_object_set_new(entry, "key", json_text(key));
+		json_object_set_new(entry, "title", json_text(option->getTitle()));
+		json_object_set_new(entry, "description", json_text(option->getDescription()));
+		json_object_set_new(entry, "category", json_text(option->getCategory()));
+		if (option->getType() == OptionType::Range) {
+			json_object_set_new(entry, "type", json_string("range"));
+			auto range = option->getRangeValues();
+			json_t* bounds = json_object();
+			json_object_set_new(bounds, "min", json_real(range.first));
+			json_object_set_new(bounds, "max", json_real(range.second));
+			// an int option rejects a real number even when the menu flag for whole-number sliders is unset
+			bool integer = option->getFlags()[OptionFlags::RangeTypeInteger] || json_is_integer(default_value);
+			json_object_set_new(bounds, "integer", json_boolean(integer));
+			json_object_set_new(entry, "range", bounds);
+		} else {
+			json_object_set_new(entry, "type", json_string("selection"));
+			json_t* values = json_array();
+			for (const auto& desc : option->getValidValues()) {
+				json_t* value = json_object();
+				json_object_set_new(value, "value", value_of(desc.serialized));
+				json_object_set_new(value, "display", json_text(desc.display));
+				json_array_append_new(values, value);
+			}
+			json_object_set_new(entry, "values", values);
+		}
+		json_object_set_new(entry, "default", default_value);
+		// as stored: read back through the option, a device missing from this process's empty lists becomes none
+		std::optional<std::unique_ptr<json_t>> stored;
+		try {
+			stored = getValueFromConfig(key);
+		} catch (const std::exception&) {
+			// an unparseable key has no stored value; the default stands
+		}
+		if (stored.has_value()) {
+			json_object_set(entry, "current", stored->get());
+		} else {
+			json_object_set(entry, "current", default_value);
+		}
+		auto source = getOverrideSource(key);
+		if (source.has_value()) {
+			json_object_set_new(entry,
+				"overridden_by",
+				json_string(*source == OverrideSource::CommandLine ? "cmdline" : "mod"));
+			json_object_set_new(entry, "override_reason", json_text(getOverrideReason(key).value_or("")));
+		} else {
+			json_object_set_new(entry, "overridden_by", json_null());
+			json_object_set_new(entry, "override_reason", json_null());
+		}
+		json_object_set_new(entry, "enforced", json_boolean(isOptionEnforced(key)));
+		json_object_set_new(entry, "restart_needed", json_boolean(!option->getIsLive()));
+		auto requirement = _requirements.find(key);
+		if (requirement != _requirements.end()) {
+			json_object_set_new(entry, "requires", json_text(requirement->second.first));
+			json_object_set_new(entry, "requires_text", json_text(requirement->second.second));
+		} else {
+			json_object_set_new(entry, "requires", json_null());
+			json_object_set_new(entry, "requires_text", json_null());
+		}
+		json_array_append_new(list, entry);
+	}
+	return list;
+}
+
+void OptionsManager::setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation)
+{
+	_requirements[key] = std::make_pair(requirement, explanation);
+}
+
+void OptionsManager::forgetLoadedOptions()
+{
+	for (const auto& item : _describedAtLoad) {
+		item->forgetDefaultBeforeLoad();
+		if (getOptionByKey(item->getConfigKey()) == nullptr) {
+			auto option = item;
+			addOption(std::move(option));
+		}
+	}
+	_describedAtLoad.clear();
+	_requirements.clear();
 }
 
 void OptionsManager::printValues()

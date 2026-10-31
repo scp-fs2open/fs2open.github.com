@@ -15,6 +15,9 @@ enum class OverrideSource {
 	Mod
 };
 
+// A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
+json_t* json_text(const SCP_string& text);
+
 class OptionsManager {
 	OptionsManager();
 
@@ -36,6 +39,12 @@ class OptionsManager {
 	SCP_unordered_set<SCP_string> _enforcedOptions;
 
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
+
+	// what loadInitialValues() found: enforced and renderer-pruned options leave _options afterwards
+	SCP_vector<std::shared_ptr<const OptionBase>> _describedAtLoad;
+
+	// options the current renderer drops, for a launcher: what the player needs to use them, and a sentence saying so
+	SCP_unordered_map<SCP_string, std::pair<SCP_string, SCP_string>> _requirements;
 	bool _optionsSorted = false;
 
   public:
@@ -104,6 +113,20 @@ class OptionsManager {
 	void loadInitialValues();
 
 	void printValues();
+
+	/**
+	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
+	 * default and current value, override source and reason, whether a mod enforces it, and whether a change needs a
+	 * restart (true unless the option is known to apply at once).
+	 * @return A new JSON array the caller owns
+	 */
+	json_t* describeOptions();
+
+	// Notes what a player needs to use an option ("vulkan", "raytracing"), for describeOptions()
+	void setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation);
+
+	// Puts back what loadInitialValues() removed and forgets its record. For tests, which share this singleton.
+	void forgetLoadedOptions();
 
 	void set_ingame_binary_option(SCP_string key, bool value);
 	void set_ingame_multi_option(SCP_string key, int value);
