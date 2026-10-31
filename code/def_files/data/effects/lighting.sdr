@@ -6,6 +6,7 @@ const int LT_CONE			= 3;		// A cone light, like a flood light
 const int LT_AMBIENT		= 4;		// Directionless ambient light
 
 const float SPEC_FACTOR_NO_SPEC_MAP		= 0.1;
+// no longer used here; kept for mods that ship their own shaders referencing them
 const float GLOW_MAP_INTENSITY			= 1.5;
 const float GLOW_MAP_SRGB_MULTIPLIER	= 3.0;
 const float PI = 3.14159f;

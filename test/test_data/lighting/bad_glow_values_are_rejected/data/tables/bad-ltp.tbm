@@ -1,0 +1,11 @@
+#PROFILES
+
+$Profile: Glow NaN
+$Glow Map Intensity: nan
+$Glow Map HDR Multiplier: nan
+
+$Profile: Glow Huge
+$Glow Map Intensity: 500
+$Glow Map HDR Multiplier: 500
+
+#END PROFILES
