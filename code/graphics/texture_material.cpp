@@ -6,8 +6,6 @@
 
 #include <cmath>
 
-#include <utf8.h>
-
 namespace {
 
 // Misses are stored as nullopt so each name is read once; node-based, so bitmap entries can keep pointers into it
@@ -87,53 +85,36 @@ void parse_texture_material(const char* filename, char* text, texture_material& 
 		warnings.push_back(SCP_string(filename) + ": " + std::to_string(unknown - 1) + " more unrecognized entries ignored.");
 }
 
-// A NUL (as in UTF-16 without a byte order mark) is valid UTF-8 but would end the parse without a warning
-bool is_utf8_text(const SCP_vector<char>& bytes, size_t start, size_t len)
-{
-	for (size_t i = start; i < len; i++) {
-		const auto c = static_cast<unsigned char>(bytes[i]);
-		if (c != '\t' && c != '\n' && c != '\r' && (c < 0x20 || c == 0x7f))
-			return false;
-	}
-	return utf8::find_invalid(bytes.begin() + start, bytes.begin() + len) == bytes.begin() + len;
-}
-
-// Read as-is rather than through the shared table reader, which would decrypt or re-encode the text and could
-// outgrow any fixed buffer
+// Read like an .eff file, so .mat files follow the same encoding rules
 bool read_texture_material(const char* filename, int dir_type, texture_material& mat)
 {
 	CFILE* cfp = cfopen(filename, "rb", dir_type);
 	if (cfp == nullptr)
 		return false;
-
 	const int file_len = cfilelength(cfp);
+	cfclose(cfp);
+
 	if (file_len <= 0 || file_len > MAX_MAT_FILE_LEN) {
-		cfclose(cfp);
 		mat_warning(SCP_string(filename) + " is empty or larger than " + std::to_string(MAX_MAT_FILE_LEN) +
 					" bytes.  Ignoring it.");
 		return false;
 	}
 
-	SCP_vector<char> text(static_cast<size_t>(file_len) + 1, '\0');
-	const int read = cfread(text.data(), file_len, 1, cfp);
-	cfclose(cfp);
-	if (read != 1) {
-		mat_warning(SCP_string("Could not read ") + filename + ".  Ignoring it.");
-		return false;
-	}
+	// encrypted text unpacks 7 bytes into 8, and processing can turn one character into two
+	const size_t raw_len = static_cast<size_t>(file_len) + file_len / 7 + 16;
+	SCP_vector<char> text_raw(raw_len, '\0');
+	SCP_vector<char> text(raw_len * 2, '\0');
 
-	const size_t start = (file_len >= 3 && memcmp(text.data(), "\xEF\xBB\xBF", 3) == 0) ? 3 : 0;
-	if (!is_utf8_text(text, start, static_cast<size_t>(file_len))) {
-		mat_warning(SCP_string(filename) + " is not UTF-8 text.  Ignoring it; save it as UTF-8 to use it.");
-		return false;
-	}
-
-	// a texture can load while a table is being parsed, so the parse position and counters are saved around this one;
-	// warnings wait until it is restored, since a debug build can exit from the warning dialog
+	// our own warnings wait until the outer parse is restored, since a debug build can exit from the warning dialog
 	SCP_vector<SCP_string> warnings;
+	bool ok = true;
 	pause_parse();
 	try {
-		parse_texture_material(filename, text.data() + start, mat, warnings);
+		read_file_text(filename, dir_type, text.data(), text_raw.data());
+		parse_texture_material(filename, text.data(), mat, warnings);
+	} catch (const parse::ParseException& e) {
+		mprintf(("TEXTURE MATERIAL: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		ok = false;
 	} catch (...) {
 		unpause_parse();
 		throw;
@@ -143,7 +124,7 @@ bool read_texture_material(const char* filename, int dir_type, texture_material&
 	for (const auto& warning : warnings)
 		mat_warning(warning);
 
-	return true;
+	return ok;
 }
 
 } // namespace

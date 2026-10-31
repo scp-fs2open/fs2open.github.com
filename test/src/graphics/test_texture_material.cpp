@@ -40,10 +40,19 @@ public:
 	}
 
 protected:
+	void SetUp() override {
+		test::FSTestFixture::SetUp();
+		_was_unicode = Unicode_text_mode;
+	}
+
 	void TearDown() override {
+		Unicode_text_mode = _was_unicode;
 		texture_material_reset();
 		test::FSTestFixture::TearDown();
 	}
+
+private:
+	bool _was_unicode = false;
 };
 
 class TextureMaterialBitmapTest : public test::FSTestFixture {
@@ -89,15 +98,54 @@ TEST_F(TextureMaterialTest, unset_values_stay_unset_and_comments_are_skipped) {
 	EXPECT_FLOAT_EQ(*inline_comment->glow.intensity, 1.5f);
 }
 
-TEST_F(TextureMaterialTest, crlf_and_utf8_bom_are_read) {
+TEST_F(TextureMaterialTest, files_are_read_like_any_table) {
+	int warnings = Global_warning_count;
 	auto crlf = texture_material_find("mat_crlf", CF_TYPE_MAPS);
 	ASSERT_NE(crlf, nullptr);
 	EXPECT_FLOAT_EQ(*crlf->glow.intensity, 0.5f);
 	EXPECT_FLOAT_EQ(*crlf->glow.hdr_multiplier, 2.25f);
 
+	auto latin1 = texture_material_find("mat_sharp_s", CF_TYPE_MAPS);
+	ASSERT_NE(latin1, nullptr);
+	EXPECT_FLOAT_EQ(*latin1->glow.intensity, 2.0f);
+
+	auto encrypted = texture_material_find("mat_encrypted", CF_TYPE_MAPS);
+	ASSERT_NE(encrypted, nullptr);
+	EXPECT_FLOAT_EQ(*encrypted->glow.intensity, 3.5f);
+	EXPECT_EQ(Global_warning_count, warnings);
+}
+
+TEST_F(TextureMaterialTest, a_byte_order_mark_follows_the_table_rules) {
+	Unicode_text_mode = true;
 	auto bom = texture_material_find("mat_bom", CF_TYPE_MAPS);
 	ASSERT_NE(bom, nullptr);
 	EXPECT_FLOAT_EQ(*bom->glow.intensity, 1.75f);
+
+	texture_material_reset();
+	Unicode_text_mode = false;
+	EXPECT_THROW(texture_material_find("mat_bom", CF_TYPE_MAPS), os::dialogs::ErrorException);
+	EXPECT_THROW(texture_material_find("mat_utf16", CF_TYPE_MAPS), os::dialogs::ErrorException);
+	// the error must not leave the parser paused
+	EXPECT_NO_THROW(read_file_text("mat_glow.mat", CF_TYPE_MAPS));
+}
+
+TEST_F(TextureMaterialTest, eight_bit_text_in_unicode_mode_warns_and_is_read) {
+	Unicode_text_mode = true;
+	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "invalid UTF-8");
+#ifdef NDEBUG
+	EXPECT_FLOAT_EQ(*texture_material_find("mat_sharp_s", CF_TYPE_MAPS)->glow.intensity, 2.0f);
+#endif
+}
+
+TEST_F(TextureMaterialTest, text_that_grows_when_processed_fits) {
+	expect_warning("mat_sharp_s_body", CF_TYPE_MAPS, "unrecognized");
+#ifdef NDEBUG
+	EXPECT_FLOAT_EQ(*texture_material_find("mat_sharp_s_body", CF_TYPE_MAPS)->glow.intensity, 2.0f);
+#endif
+}
+
+TEST_F(TextureMaterialTest, utf16_without_a_byte_order_mark_warns) {
+	expect_warning("mat_utf16_nobom", CF_TYPE_MAPS, "unrecognized");
 }
 
 TEST_F(TextureMaterialTest, utf8_comments_and_tabs_are_read) {
@@ -133,27 +181,11 @@ TEST_F(TextureMaterialTest, directory_type_is_part_of_the_lookup) {
 	EXPECT_NE(texture_material_find("mat_fx", CF_TYPE_EFFECTS), nullptr);
 }
 
-TEST_F(TextureMaterialTest, non_text_files_are_rejected) {
-	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_utf16", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_utf16_nobom", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_encrypted", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_ctrl", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_del", CF_TYPE_MAPS, "not UTF-8 text");
-	expect_warning("mat_truncated", CF_TYPE_MAPS, "not UTF-8 text");
+TEST_F(TextureMaterialTest, an_empty_file_warns_once) {
 	expect_warning("mat_empty", CF_TYPE_MAPS, "is empty");
 #ifdef NDEBUG
-	for (const char* name : {"mat_sharp_s", "mat_utf16", "mat_utf16_nobom", "mat_encrypted", "mat_ctrl", "mat_del",
-		 "mat_truncated", "mat_empty"})
-		EXPECT_EQ(texture_material_find(name, CF_TYPE_MAPS), nullptr) << name;
-#endif
-}
-
-TEST_F(TextureMaterialTest, a_rejected_file_warns_once) {
-	expect_warning("mat_sharp_s", CF_TYPE_MAPS, "not UTF-8 text");
-#ifdef NDEBUG
 	int warnings = Global_warning_count;
-	EXPECT_EQ(texture_material_find("mat_sharp_s", CF_TYPE_MAPS), nullptr);
+	EXPECT_EQ(texture_material_find("mat_empty", CF_TYPE_MAPS), nullptr);
 	EXPECT_EQ(Global_warning_count, warnings);
 #endif
 }
