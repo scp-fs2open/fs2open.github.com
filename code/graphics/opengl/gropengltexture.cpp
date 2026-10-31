@@ -89,59 +89,6 @@ static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graph
                      .parser(parse_texture_filtering_func)
                      .finish();
 
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
-	}
-
-	if (max <= 2.0f) {
-		return SCP_vector<float>();
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
-static SCP_string anisotropic_display(float val)
-{
-	if (val < 2.0f) {
-		return "None";
-	}
-
-	SCP_string out;
-	sprintf(out, "%.0fx", val);
-	return out;
-}
-static float anisotropic_default()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return 1.0f;
-	}
-	return max;
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
-                     std::pair<const char*, int>{"Anistropic filtering", 1736},
-                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
-                     .category(std::make_pair("Graphics", 1825))
-                     .display(anisotropic_display)
-                     .default_func(anisotropic_default)
-                     .level(options::ExpertLevel::Advanced)
-                     .importance(78)
-                     .finish();
-
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL);
@@ -206,17 +153,7 @@ void opengl_tcache_init()
 
 	// anisotropy
 	if ( GLAD_GL_EXT_texture_filter_anisotropic ) {
-		// set max value first thing
-		GL_anisotropy = GL_state.Constants.GetMaxAnisotropy();
-
-		if (Using_in_game_options) {
-			GL_anisotropy = AnisotropyOption->getValue();
-		} else {
-			// now for the user setting
-			if (Cmdline_aniso_level != 0)
-				GL_anisotropy = (GLfloat)Cmdline_aniso_level;
-		}
-
+		GL_anisotropy = gr_anisotropy_setting();
 		CLAMP(GL_anisotropy, 1.0f, GL_state.Constants.GetMaxAnisotropy());
 	}
 

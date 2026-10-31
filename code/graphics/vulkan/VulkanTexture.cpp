@@ -192,11 +192,14 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	// Query device limits
 	auto properties = physicalDevice.getProperties();
 	m_maxTextureSize = properties.limits.maxImageDimension2D;
-	m_maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	// samplers may only enable anisotropy when the device has the samplerAnisotropy feature
+	const float deviceMaxAnisotropy =
+		physicalDevice.getFeatures().samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f;
+	m_maxAnisotropy = std::max(1.0f, std::min(gr_anisotropy_setting(), deviceMaxAnisotropy));
 
 	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
 	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
-	nprintf(("vulkan", "  Max anisotropy: %.1f\n", m_maxAnisotropy));
+	nprintf(("vulkan", "  Max anisotropy: %.1f (device %.1f)\n", m_maxAnisotropy, deviceMaxAnisotropy));
 
 	// Create default sampler
 	vk::SamplerCreateInfo samplerInfo;

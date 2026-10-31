@@ -868,6 +868,70 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .parser(parse_anti_aliasing_func)
                      .finish();
 
+static SCP_vector<float> anisotropic_value_enumerator()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+static SCP_string anisotropic_display(float val)
+{
+	if (val < 2.0f) {
+		return "None";
+	}
+
+	SCP_string out;
+	sprintf(out, "%.0fx", val);
+	return out;
+}
+static float anisotropic_default()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return 1.0f;
+	}
+	return max;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
+                     std::pair<const char*, int>{"Anistropic filtering", 1736},
+                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
+                     .enumerator(anisotropic_value_enumerator)
+                     .category(std::make_pair("Graphics", 1825))
+                     .display(anisotropic_display)
+                     .default_func(anisotropic_default)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(78)
+                     .finish();
+
+float gr_anisotropy_setting()
+{
+	if (Using_in_game_options) {
+		return AnisotropyOption->getValue();
+	}
+	if (Cmdline_aniso_level != 0) {
+		return static_cast<float>(Cmdline_aniso_level);
+	}
+	return anisotropic_default();
+}
+
 extern int Cmdline_msaa_enabled;
 
 static void parse_msaa_func()
