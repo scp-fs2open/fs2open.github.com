@@ -12,6 +12,7 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 #include "osregistry.h"
+#include "utils/encoding.h"
 
 
 #ifdef WIN32
@@ -621,8 +622,15 @@ static Profile *profile_read(const char *file)
 	IniSection *sp = nullptr;
 
 	KeyValue **kvp_ptr = nullptr;
+	bool first_line = true;
 
 	while ((str = read_line_from_file(fp)) != nullptr) {
+		// some editors save a UTF-8 byte order mark, which would hide the first section header
+		if (first_line && util::guess_encoding(str, strlen(str), false) == util::Encoding::UTF8) {
+			memmove(str, str + 3, strlen(str + 3) + 1);
+		}
+		first_line = false;
+
 		char *ptr = trim_string(str);
 
 		if (*ptr == '[') {
