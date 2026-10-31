@@ -88,6 +88,11 @@ public:
 	void recompileAllShaders(const std::function<void(size_t, size_t)>& progressCallback);
 
 	/**
+	 * @brief Drop every variant of a shader type so the next use compiles it again
+	 */
+	void forgetShaderType(shader_type type);
+
+	/**
 	 * @brief Get a shader by handle
 	 * @param handle Shader handle from maybeCreateShader
 	 * @return Pointer to shader module, or nullptr if invalid

@@ -347,7 +347,8 @@ vk::ImageView VulkanLDR::getAADetectionView() const
 
 void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 {
-	if (!m_initialized || !gr_is_fxaa_mode(Gr_aa_mode)) {
+	// the preset this frame started with; a change made during the frame waits for the next setupFrame
+	if (!m_initialized || !gr_is_fxaa_mode(Gr_aa_mode_last_frame)) {
 		return;
 	}
 

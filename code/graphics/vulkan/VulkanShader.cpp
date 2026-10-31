@@ -92,6 +92,22 @@ int VulkanShaderManager::maybeCreateShader(shader_type type, unsigned int flags)
 	return loadShader(type, flags);
 }
 
+void VulkanShaderManager::forgetShaderType(shader_type type)
+{
+	for (auto it = m_shaderMap.begin(); it != m_shaderMap.end();) {
+		if (it->first.first != static_cast<int>(type)) {
+			++it;
+			continue;
+		}
+		VulkanShaderModule& shader = m_shaders[it->second];
+		shader.vertexModule.reset();
+		shader.fragmentModule.reset();
+		shader.valid = false;
+		m_freeSlots.push_back(it->second);
+		it = m_shaderMap.erase(it);
+	}
+}
+
 void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, size_t)>& progressCallback)
 {
 	if (!m_initialized || !m_compiler) {

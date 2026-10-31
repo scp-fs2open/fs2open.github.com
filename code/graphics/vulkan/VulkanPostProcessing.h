@@ -916,8 +916,8 @@ public:
 	/**
 	 * @brief Execute SMAA anti-aliasing passes
 	 *
-	 * Called after tonemapping (mutually exclusive with FXAA, selected via
-	 * Gr_aa_mode). Runs edge detection, blending weight calculation, and
+	 * Called after tonemapping (mutually exclusive with FXAA, selected via the
+	 * preset latched at frame start). Runs edge detection, blending weight calculation, and
 	 * neighborhood blending, then resolves the result back into Scene_ldr.
 	 * Must be called outside a render pass.
 	 *
