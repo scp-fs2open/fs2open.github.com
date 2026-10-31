@@ -816,6 +816,8 @@ gr_buffer_handle vulkan_create_buffer(BufferType type, BufferUsageHint usage, bo
 void vulkan_delete_buffer(gr_buffer_handle handle)
 {
 	auto* bufferManager = getBufferManager();
+	// a pending uniform binding names the buffer by index, which the next new buffer may reuse
+	forgetPendingUniformBuffer(handle);
 	bufferManager->deleteBuffer(handle);
 }
 
