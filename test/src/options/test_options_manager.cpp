@@ -5,6 +5,7 @@
 #include "cmdline/cmdline.h"
 #include "localization/localize.h"
 #include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "math/floating.h"
 
 #include "util/FSTestFixture.h"
@@ -414,6 +415,68 @@ TEST_F(AnisotropySetting, WithNoRendererAnswerItIsOff)
 	Cmdline_aniso_level = 0;
 	gr_screen.gf_get_property = [](gr_property, void*) { return false; };
 	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 1.0f);
+}
+
+// the table parser writes a process-wide default, so put trilinear back after each test
+class TextureFilterSetting : public OptionsManagerOverride {
+  protected:
+	static void parseDefault(const char* value)
+	{
+		SCP_string text = SCP_string(value) + "\n";
+		reset_parse(text.data());
+		OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter")->parseDefaultSetting();
+		reset_parse(nullptr);
+	}
+	void SetUp() override { _saved_ingame = Using_in_game_options; }
+	void TearDown() override
+	{
+		parseDefault("Trilinear");
+		Using_in_game_options = _saved_ingame;
+		OptionsManagerOverride::TearDown();
+	}
+
+  private:
+	bool _saved_ingame = true;
+};
+
+TEST_F(TextureFilterSetting, InGameDefaultIsTrilinear)
+{
+	Using_in_game_options = true;
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, ModTableDefaultIsUsed)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, SavedChoiceIsUsed)
+{
+	Using_in_game_options = true;
+	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	opt->loadInitial();
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	opt->loadInitial();
+}
+
+// an enforced option skips the initial load, so a saved value must not replace the mod's value
+TEST_F(TextureFilterSetting, SavedValueDoesNotReplaceTheTableValueWithoutALoad)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, WithoutInGameOptionsTheLauncherDefaultIsTrilinear)
+{
+	Using_in_game_options = false;
+	parseDefault("Bilinear");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
 }
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)

@@ -197,9 +197,12 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 		physicalDevice.getFeatures().samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f;
 	m_maxAnisotropy = std::max(1.0f, std::min(gr_anisotropy_setting(), deviceMaxAnisotropy));
 
+	m_trilinearFiltering = gr_texture_filter_setting() != 0;
+
 	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
 	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
 	nprintf(("vulkan", "  Max anisotropy: %.1f (device %.1f)\n", m_maxAnisotropy, deviceMaxAnisotropy));
+	nprintf(("vulkan", "  Texture filter: %s\n", m_trilinearFiltering ? "trilinear" : "bilinear"));
 
 	// Create default sampler
 	vk::SamplerCreateInfo samplerInfo;
@@ -2099,7 +2102,7 @@ void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format f
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,
                                               vk::SamplerAddressMode addressMode,
                                               bool enableAnisotropy, float maxAnisotropy,
-                                              bool enableMipmaps)
+                                              bool enableMipmaps, bool followTextureFilter)
 {
 	// Create a key from sampler state
 	uint64_t key = 0;
@@ -2108,6 +2111,7 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	key |= static_cast<uint64_t>(addressMode) << 8;
 	key |= static_cast<uint64_t>(enableAnisotropy) << 16;
 	key |= static_cast<uint64_t>(enableMipmaps) << 17;
+	key |= static_cast<uint64_t>(followTextureFilter) << 18;
 	key |= static_cast<uint64_t>(maxAnisotropy * 10) << 24;
 
 	auto it = m_samplerCache.find(key);
@@ -2128,7 +2132,10 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	samplerInfo.unnormalizedCoordinates = false;
 	samplerInfo.compareEnable = false;
 	samplerInfo.compareOp = vk::CompareOp::eAlways;
-	samplerInfo.mipmapMode = enableMipmaps ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest;
+	// only material textures follow the setting; cubemaps, interface art and render targets stay trilinear
+	samplerInfo.mipmapMode = enableMipmaps && (m_trilinearFiltering || !followTextureFilter)
+		? vk::SamplerMipmapMode::eLinear
+		: vk::SamplerMipmapMode::eNearest;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = enableMipmaps ? VK_LOD_CLAMP_NONE : 0.0f;

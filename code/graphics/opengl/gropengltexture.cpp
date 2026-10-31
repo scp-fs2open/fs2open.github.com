@@ -22,8 +22,6 @@
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
 #include "math/vecmat.h"
-#include "options/Option.h"
-#include "osapi/osregistry.h"
 #include "ktxutils/ktxutils.h"
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
@@ -51,43 +49,6 @@ GLint GL_max_renderbuffer_size = 0;
 extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
-
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
-																		                { 1, {"Trilinear", 1678}}};
-
-static void parse_texture_filtering_func()
-{
-	SCP_string mode;
-	stuff_string(mode, F_NAME);
-
-	// Convert to lowercase once
-	SCP_tolower(mode);
-
-	// Use a map to associate strings with their respective actions
-	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
-		{"bilinear", []() { GL_mipmap_filter = 0; }},
-		{"trilinear", []() { GL_mipmap_filter = 1; }}};
-
-	auto it = effectActions.find(mode);
-	if (it != effectActions.end()) {
-		it->second(); // Execute the corresponding action
-	} else {
-		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
-	}
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
-                     std::pair<const char*, int>{"Texture Filtering", 1763},
-                     std::pair<const char*, int>{"Texture filtering option", 1764})
-                     .importance(1)
-                     .category(std::make_pair("Graphics", 1825))
-                     .values(TextureFilteringValues)
-                     .default_func([]() {return GL_mipmap_filter;})
-                     .bind_to_once(&GL_mipmap_filter)
-                     .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .parser(parse_texture_filtering_func)
-                     .finish();
 
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);
@@ -136,11 +97,7 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
-	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
-
-	if (GL_mipmap_filter > 1) {
-		GL_mipmap_filter = 1;
-	}
+	GL_mipmap_filter = gr_texture_filter_setting();
 
 	// max size (width and/or height) that we can use for framebuffer/renderbuffer
 	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
