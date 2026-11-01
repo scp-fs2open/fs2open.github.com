@@ -2493,6 +2493,28 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 }
 
 /**
+ * Parses a string list of target priority group names into indexes into Ai_tp_list, skipping unrecognized names.
+ */
+static void parse_target_priority_list(int (&priorities)[32], int &num_priorities, const char *context)
+{
+	SCP_vector<SCP_string> tgt_priorities;
+	stuff_string_list(tgt_priorities);
+	num_priorities = 0;
+
+	if (tgt_priorities.size() > 32)
+		tgt_priorities.resize(32);
+
+	for (const auto &name : tgt_priorities)
+	{
+		int j = find_item_with_string(Ai_tp_list, &ai_target_priority::name, name.c_str());
+		if (j >= 0)
+			priorities[num_priorities++] = j;
+		else
+			error_display(0, "Unrecognized target priority '%s' for %s.", name.c_str(), context);
+	}
+}
+
+/**
  * Common method for parsing briefing icon info.
  */
 static int parse_and_add_briefing_icon_info()
@@ -5511,28 +5533,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 
 			if (optional_string("$Target Priority:")) {
-				SCP_vector <SCP_string> tgt_priorities;
-				stuff_string_list(tgt_priorities);
-				sp->num_target_priorities = 0;
-
-				if (tgt_priorities.size() > 32)
-					tgt_priorities.resize(32);
-
-				size_t num_groups = Ai_tp_list.size();
-
-				for (size_t i = 0; i < tgt_priorities.size(); ++i) {
-					size_t j;
-					for(j = 0; j < num_groups; j++) {
-						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							sp->target_priority[i] = (int)j;
-							sp->num_target_priorities++;
-							break;
-						}
-					}
-					if (j == num_groups) {
-						Warning(LOCATION, "Unidentified target priority '%s' set for\nsubsystem '%s' in %s '%s'.", tgt_priorities[i].c_str(), sp->subobj_name, info_type_name, sip->name);
-					}
-				}
+				SCP_string context;
+				sprintf(context, "subsystem '%s' in %s '%s'", sp->subobj_name, info_type_name, sip->name);
+				parse_target_priority_list(sp->target_priority, sp->num_target_priorities, context.c_str());
 			}
 
 			if (optional_string("$Max Turrets per Bomb:")) {
@@ -21530,26 +21533,9 @@ void parse_weapon_targeting_priorities()
 			wip->num_targeting_priorities = 0;
 
 			if (optional_string("+Target Priority:")) {
-				SCP_vector <SCP_string> tgt_priorities;
-				stuff_string_list(tgt_priorities);
-
-				if (tgt_priorities.size() > 32)
-					tgt_priorities.resize(32);
-
-				auto num_groups = Ai_tp_list.size();
-
-				for(size_t i = 0; i < tgt_priorities.size(); i++) {
-					size_t j;
-					for(j = 0; j < num_groups; j++) {
-						if ( !stricmp(Ai_tp_list[j].name, tgt_priorities[i].c_str()))  {
-							wip->targeting_priorities[i] = (int)j;
-							wip->num_targeting_priorities++;
-							break;
-						}
-					}
-					if(j == num_groups)
-						error_display(0, "Unrecognized string '%s' found when setting weapon targeting priorities.\n", tgt_priorities[i].c_str());
-				}
+				SCP_string context;
+				sprintf(context, "weapon '%s'", wip->name);
+				parse_target_priority_list(wip->targeting_priorities, wip->num_targeting_priorities, context.c_str());
 			}
 		}
 	}
