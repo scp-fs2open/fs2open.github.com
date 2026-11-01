@@ -1019,11 +1019,10 @@ SCP_string os_android_get_working_folder_path()
     
 	if (wfp.empty()) {
 		mprintf(("Couldn't get working folder path from Java class, reverting to SDL default.\n"));
-		// Fallback to app space on internal storage
+		// SDL's external storage path already includes the app's files directory.
 		const char* fallbackPath = SDL_GetAndroidExternalStoragePath();
 		if (fallbackPath) {
 			wfp = SCP_string(fallbackPath);
-			wfp += "/files/"; 
 		}
 	}
 	

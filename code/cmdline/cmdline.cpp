@@ -556,7 +556,12 @@ int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 bool Cmdline_window = false;
+#ifdef __ANDROID__
+// Default to borderless in the legacy window-mode path as well.
+bool Cmdline_fullscreen_window = true;
+#else
 bool Cmdline_fullscreen_window = false;
+#endif
 std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
@@ -1521,7 +1526,8 @@ static json_t* json_get_v1() {
 	return root;
 }
 
-// json_v2 is a minimal json string to report supported flags only
+// json_v2 reports version, supported flags, and the preferences path for launchers,
+// without querying graphics, audio, or joystick devices.
 static json_t* json_get_v2() {
 	auto root = json_object();
 
@@ -1815,6 +1821,7 @@ bool SetCmdlineParams()
 		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-window");
 		Cmdline_window = true;
+		Cmdline_fullscreen_window = false;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
