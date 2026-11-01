@@ -63,6 +63,7 @@
 #include "network/multiteamselect.h"
 #include "network/multiui.h"
 #include "network/multi_kick.h"
+#include "network/multi_lua.h"
 #include "network/multi_data.h"
 #include "network/multi_voice.h"
 #include "network/multi_team.h"
@@ -893,6 +894,8 @@ void delete_player(int player_num,int kicked_reason)
 	ml_printf(NOX("Deleting player %s"), Net_players[player_num].m_player->callsign);
 	
 	psnet_rel_close_socket(Net_players[player_num].reliable_socket);					// close out the reliable socket
+
+	multi_lua_forget_player(Net_players[player_num].player_id);
 
 	// if this guy was ingame joining, the remove my netgame flag so others may join
 	if ( Net_players[player_num].flags & NETINFO_FLAG_INGAME_JOIN ) {

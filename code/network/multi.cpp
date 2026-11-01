@@ -323,6 +323,9 @@ void multi_level_init()
 	// initialize respawning
 	multi_respawn_init();
 
+	// forget ordered lua packet timestamps from any previous game
+	multi_lua_reset_packet_order();
+
 	// initialize all netgame timestamps
 	multi_reset_timestamps();
 

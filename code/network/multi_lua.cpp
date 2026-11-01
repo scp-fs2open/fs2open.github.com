@@ -13,42 +13,44 @@ static SCP_unordered_map<ushort, scripting::api::rpc_h_ref> rpc_map;
 
 enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, USERDATA, TABLE };
 
+//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
+//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
+static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> received_packets;
+
+//Once this much local time has passed since the last accepted packet, the 16-bit remote difference may have wrapped and can't be trusted
+constexpr int LUA_PACKET_ORDER_WINDOW_MS = 0x4000;
+
+bool multi_lua_packet_is_stale(ushort lastRemote, ushort newRemote, int localDeltaMs) {
+	if (localDeltaMs >= LUA_PACKET_ORDER_WINDOW_MS)
+		return false;
+
+	//Serial number arithmetic: a wrapped difference in the upper half of the range means the new packet was sent before the last one
+	return static_cast<ushort>(newRemote - lastRemote) >= 0x8000U;
+}
+
 static bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
-	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
-	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
-	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> received_packets;
-
-	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
-	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
-	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
-
 	auto& channel = received_packets[{target, packet_source}];
-	std::pair<ushort, UI_TIMESTAMP> newTimestamp = { std::move(packetTime), std::move(localTime) };
 
-	if (!channel.second.isValid()) {
-		//First packet for this channel
-		channel = std::move(newTimestamp);
-		return false;
+	if (channel.second.isValid() && multi_lua_packet_is_stale(channel.first, packetTime, ui_timestamp_get_delta(channel.second, localTime))) {
+		//Since we toss the packet, we DON'T update the received packet index.
+		return true;
 	}
 
-	if (newTimestamp.first - channel.first < 1000) {
-		//The previous packet is less than a second ago. If this were a delayed packet, as a ushort, it'd have to be >60 seconds late, so effectively impossible.
-		channel = std::move(newTimestamp);
-		return false;
-	}
+	channel = { packetTime, localTime };
+	return false;
+}
 
-	if (static_cast<int>(newTimestamp.first - channel.first) * 110 < ui_timestamp_get_delta(channel.second, newTimestamp.second)) {
-		//The previous packet is, at most, 10% older than its age when it arrived. We expect that most delayed packets will happen when sent in quick succession,
-		//so what needs to be guarded here are underflows, which produce very large values but will have very small timestamps. So as long as local and remote timestamp
-		//somewhat agree, the packet's good. In addition, once ui_timestamp_get_delta exceeds 65 seconds, we can't tell anymore due to the remote timestamp being uint16,
-		//but at that point we can just accept the packet as likely new.
-		channel = std::move(newTimestamp);
-		return false;
-	}
+void multi_lua_reset_packet_order() {
+	received_packets.clear();
+}
 
-	//If we're still here, then we've got a packet that has a very high remote time but a very short local time, so likely a packet whose high remote time indicates a
-	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the received packet index.
-	return true;
+void multi_lua_forget_player(short player_id) {
+	for (auto it = received_packets.begin(); it != received_packets.end();) {
+		if (it->first.second == player_id)
+			it = received_packets.erase(it);
+		else
+			it++;
+	}
 }
 
 
