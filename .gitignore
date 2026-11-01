@@ -262,3 +262,8 @@ CMakePresets.json
 !/docker/build
 CMakeFiles/cmake.check_cache
 CMakeCache.txt
+
+# Written by the unittests binary at runtime
+test/test_data/**/*_settings.ini
+test/test_data/data/players/presets/asdf.json
+test/test_data/pilotfile/data/asdf.hdp

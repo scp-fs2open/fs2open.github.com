@@ -124,7 +124,7 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 	// initialize dockpoint stuff
 	if (!_multiEdit) {
 		_numDockPoints = model_get_num_dock_points(Ship_info[Ships[_ship].ship_info_index].model_num);
-		_dockpointArray = new dockpoint_information[_numDockPoints];
+		_dockpointArray = std::make_unique<dockpoint_information[]>(_numDockPoints);
 		objp = &Objects[Ships[_ship].objnum];
 		for (int i = 0; i < _numDockPoints; i++) {
 			object* docked_objp = dock_find_object_at_dockpoint(objp, i);
@@ -885,7 +885,7 @@ int ShipInitialStatusDialogModel::getShipHasScannableSubsystems() const
 
 dockpoint_information* ShipInitialStatusDialogModel::getDockpointArray() const
 {
-	return _dockpointArray;
+	return _dockpointArray.get();
 }
 
 void ShipInitialStatusDialogModel::setDockee(int dockPointIndex, int dockeeShipnum)

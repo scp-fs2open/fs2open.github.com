@@ -1,5 +1,4 @@
 #include "WingEditorDialog.h"
-#include <QCloseEvent>
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
@@ -8,20 +7,42 @@
 #include "ui_WingEditorDialog.h"
 
 #include <globalincs/globals.h>
+#include <mission/missionparse.h>
+#include <ship/ship.h>
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/ImageRenderer.h>
+#include <QShortcut>
+#include <ui/util/menu.h>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
 
 WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()),
+	  ui(new Ui::WingEditorDialog()), _model(new WingEditorDialogModel(this, viewport)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
 
-	ui->HelpTitle->setVisible(viewport->Show_sexp_help_wing_editor);
-	ui->helpText->setVisible(viewport->Show_sexp_help_wing_editor);
+	_show_sexp_help = viewport->Show_sexp_help_wing_editor;
+	ui->HelpTitle->setVisible(_show_sexp_help);
+	ui->helpText->setVisible(_show_sexp_help);
+
+	// Shift+F1 toggles the sexp help pane for this session without changing the saved preference.
+	auto* helpToggle = new QShortcut(QKeySequence(QStringLiteral("Shift+F1")), this);
+	connect(helpToggle, &QShortcut::activated, this, [this] {
+		_show_sexp_help = !_show_sexp_help;
+		ui->HelpTitle->setVisible(!_cues_hidden && _show_sexp_help);
+		ui->helpText->setVisible(!_cues_hidden && _show_sexp_help);
+		QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+		resize(sizeHint());
+	});
+
+	// F6 / Shift+F6 cycle to the next / previous wing, mirroring the Next/Prev buttons.
+	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);
+	connect(nextShortcut, &QShortcut::activated, this, [this] { ui->nextWingButton->click(); });
+	auto* prevShortcut = new QShortcut(QKeySequence(QStringLiteral("Shift+F6")), this);
+	connect(prevShortcut, &QShortcut::activated, this, [this] { ui->prevWingButton->click(); });
 
 	ui->wingNameEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->wingDisplayNameEdit->setMaxLength(NAME_LENGTH - 1);
@@ -31,11 +52,36 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 	// Whenever the model reports changes, refresh the UI
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &WingEditorDialog::updateUi);
 	connect(_model.get(), &WingEditorDialogModel::wingChanged, this, [this] {
-		refreshAllDynamicCombos();
+		initializeUi();
 		updateUi();
 	});
 
-	refreshAllDynamicCombos();
+	connect(ui->arrivalTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_arrivalTree_modified);
+	connect(ui->arrivalTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
+	connect(ui->arrivalTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
+	connect(ui->departureTree, &sexp_tree_view::modified, this, &WingEditorDialog::on_departureTree_modified);
+	connect(ui->departureTree, &sexp_tree_view::helpChanged, this, [this](const QString& help) { ui->helpText->setPlainText(help); });
+	connect(ui->departureTree, &sexp_tree_view::miniHelpChanged, this, [this](const QString& help) { ui->HelpTitle->setText(help); });
+
+	// "Select Wing" menu: jump the editor to any wing in the mission.
+	Editor* editor = viewport->editor;
+	util::installSelectMenu(
+		this,
+		viewport,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (int i = 0; i < MAX_WINGS; i++) {
+				if (Wings[i].wave_count) {
+					entries.push_back({QString::fromUtf8(Wings[i].name), i});
+				}
+			}
+			return entries;
+		},
+		[editor]() { return editor->cur_wing; },
+		[editor](int wing) { editor->mark_wing(wing); },
+		tr("&Select Wing"));
+
+	initializeUi();
 	updateUi();
 
 	// Resize the dialog to the minimum size
@@ -43,11 +89,6 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 }
 
 WingEditorDialog::~WingEditorDialog() = default;
-
-void WingEditorDialog::closeEvent(QCloseEvent* e)
-{
-	QDialog::closeEvent(e);
-}
 
 void WingEditorDialog::updateUi()
 {
@@ -77,8 +118,9 @@ void WingEditorDialog::updateUi()
 	ui->arrivalTargetCombo->setCurrentIndex(ui->arrivalTargetCombo->findData(_model->getArrivalTarget()));
 	ui->arrivalDistanceSpinBox->setValue(_model->getArrivalDistance());
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this);
+	ui->arrivalTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
+	ui->arrivalTree->expandAll();
 	if (ui->arrivalTree->select_sexp_node != -1) {
 		ui->arrivalTree->hilite_item(ui->arrivalTree->select_sexp_node);
 	}
@@ -89,8 +131,9 @@ void WingEditorDialog::updateUi()
 	ui->departureLocationCombo->setCurrentIndex(static_cast<int>(_model->getDepartureType()));
 	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
-	ui->departureTree->initializeEditor(_viewport->editor, this);
+	ui->departureTree->initializeEditor(_viewport->editor, this, _viewport);
 	ui->departureTree->load_tree(_model->getDepartureTree());
+	ui->departureTree->expandAll();
 	if (ui->departureTree->select_sexp_node != -1) {
 		ui->departureTree->hilite_item(ui->departureTree->select_sexp_node);
 	}
@@ -176,36 +219,39 @@ void WingEditorDialog::enableOrDisableControls()
 	const bool containsPlayerStart = _model->containsPlayerStart();
 	const bool allFighterBombers = _model->wingAllFighterBombers();
 
-	// Waves / Threshold: enabled only if NOT a player wing and all members are fighter/bombers
-	const bool wavesEnabled = (!isPlayerWing) && allFighterBombers;
+	// Waves / Threshold: locked for multiplayer starting/TVT wings, which must have exactly one
+	// wave; single-player wings, including the player wing, can have multiple waves.  Also
+	// requires all members to be fighter/bombers.
+	const bool wavesEnabled = !(isPlayerWing && (The_mission.game_type & MISSION_TYPE_MULTI)) && allFighterBombers;
 	ui->numWavesSpinBox->setEnabled(wavesEnabled);
 	ui->waveThresholdSpinBox->setEnabled(wavesEnabled);
 
-	// Arrival section: disabled for starting wings (SP player wing or MP starting wing)
-	const bool arrivalEditable = !isPlayerWing;
-	ui->arrivalLocationCombo->setEnabled(arrivalEditable);
-	ui->arrivalDelaySpinBox->setEnabled(arrivalEditable);
-	ui->minDelaySpinBox->setEnabled(arrivalEditable);
-	ui->maxDelaySpinBox->setEnabled(arrivalEditable);
-	if (!arrivalEditable) {
-		clearArrivalFields();
-	}
+	// Arrival delay is locked for starting wings (SP player wing or MP starting wing), since
+	// they must be present at mission start; the arrival location remains editable because it
+	// governs where subsequent waves arrive from
+	const bool arrivalDelayEditable = !isPlayerWing;
+	ui->arrivalDelaySpinBox->setEnabled(arrivalDelayEditable);
+	ui->minDelaySpinBox->setEnabled(arrivalDelayEditable);
+	ui->maxDelaySpinBox->setEnabled(arrivalDelayEditable);
 
-	// Arrival target/distance and path/custom buttons
+	// Arrival location, target/distance, and path/custom buttons
 	const bool arrivalIsDockBay = _model->arrivalIsDockBay();
 	const bool arrivalNeedsTarget = _model->arrivalNeedsTarget();
 
-	ui->arrivalTargetCombo->setEnabled(arrivalEditable && arrivalNeedsTarget);
-	ui->arrivalDistanceSpinBox->setEnabled(arrivalEditable && _model->arrivalNeedsDistance());
-	ui->restrictArrivalPathsButton->setEnabled(arrivalEditable && arrivalIsDockBay);
-	ui->customWarpinButton->setEnabled(arrivalEditable && !arrivalIsDockBay);
+	ui->arrivalLocationCombo->setEnabled(true);
+	ui->arrivalTargetCombo->setEnabled(arrivalNeedsTarget);
+	ui->arrivalDistanceSpinBox->setEnabled(_model->arrivalNeedsDistance());
+	ui->restrictArrivalPathsButton->setEnabled(arrivalIsDockBay);
+	ui->customWarpinButton->setEnabled(!arrivalIsDockBay);
 
-	// Arrival cue tree: lock when the wing actually contains Player-1 start (retail behavior)
-	ui->arrivalTree->setEnabled(!containsPlayerStart);
+	// Arrival cue tree: the wing containing the Player-1 start must be present at mission
+	// start, so its cue is only editable if it has multiple waves (where the cue governs
+	// the arrival of subsequent waves)
+	ui->arrivalTree->setEnabled(!containsPlayerStart || _model->getNumberOfWaves() > 1);
 
-	// Also tie the "no arrival warp" checkboxes to whether arrival is editable
-	ui->noArrivalWarpCheckBox->setEnabled(arrivalEditable);
-	ui->noArrivalWarpAdjustCheckbox->setEnabled(arrivalEditable);
+	// The "no arrival warp" checkboxes are always editable
+	ui->noArrivalWarpCheckBox->setEnabled(true);
+	ui->noArrivalWarpAdjustCheckbox->setEnabled(true);
 
 	// Departure side: never gated by starting-wing rule
 	ui->departureLocationCombo->setEnabled(true);
@@ -329,7 +375,7 @@ void WingEditorDialog::refreshDepartureTargetCombo()
 	}
 }
 
-void WingEditorDialog::refreshAllDynamicCombos()
+void WingEditorDialog::initializeUi()
 {
 	refreshLeaderCombo();
 	refreshHotkeyCombo();
@@ -342,8 +388,8 @@ void WingEditorDialog::refreshAllDynamicCombos()
 
 void WingEditorDialog::on_hideCuesButton_clicked()
 {
-	const auto showHelp = _viewport->Show_sexp_help_wing_editor;
-	
+	const auto showHelp = _show_sexp_help;
+
 	_cues_hidden = !_cues_hidden;
 	
 	ui->arrivalGroupBox->setVisible(!_cues_hidden);
@@ -592,9 +638,10 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
+void WingEditorDialog::on_arrivalTree_modified()
 {
-	_model->setArrivalTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->arrivalTree->_model.save_tree();
+	_model->setArrivalTree(new_sexp);
 }
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
@@ -669,9 +716,10 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
+void WingEditorDialog::on_departureTree_modified()
 {
-	_model->setDepartureTree(newTree); //TODO This seems broken in a weird way. Will need followup
+	int new_sexp = ui->departureTree->_model.save_tree();
+	_model->setDepartureTree(new_sexp);
 }
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)

@@ -3,7 +3,9 @@
 #include "ui/Theme.h"
 
 #include <globalincs/globals.h>
-#include "ui/widgets/sexp_tree.h"
+#include "mission/missioncampaign.h"
+#include "missioneditor/common.h"
+#include "ui/widgets/sexp_tree_view.h"
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
@@ -29,18 +31,18 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 	ui->loopVoiceLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	// Build the Qt adapter for our data model
-	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree
+	// This is kinda messy but the sexp_tree_view widget owns both the ui and the data for the tree
 	// Simultaneously our tree model needs to be able to tell the tree when things change and also
 	// be able to read data from the tree as needed. So we pass in this small adapter object with
 	// the relevant tree operations allowing the model to do all the cross talk it needs
 	struct QtCampaignTreeOps final : ICampaignEditorTreeOps {
-		explicit QtCampaignTreeOps(sexp_tree& t) : tree(t) {}
-		sexp_tree& tree;
+		explicit QtCampaignTreeOps(sexp_tree_view& t) : tree(t) {}
+		sexp_tree_view& tree;
 
 		int loadSexp(int formula_index) override
 		{
-			// The sexp_tree's load_sub_tree is what creates the internal model for a branch
-			return tree.load_sub_tree(formula_index, true, "true");
+			// The sexp_tree_view's load_sub_tree is what creates the internal model for a branch
+			return tree._model.load_sub_tree(formula_index, true, "true");
 		}
 
 		int saveSexp(int internal_node_id) override
@@ -49,13 +51,13 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			int root_node = tree.get_root(internal_node_id);
 
 			// Now, save the entire branch starting from its root.
-			return tree.save_tree(root_node);
+			return tree._model.save_tree(root_node);
 		}
 
 		int createDefaultSexp() override
 		{
 			// A default branch is just a "true" condition. We load it from an invalid index.
-			return tree.load_sub_tree(-1, true, "true");
+			return tree._model.load_sub_tree(-1, true, "true");
 		}
 
 		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) override
@@ -82,7 +84,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 				// Insert the visual root row with icon and add
 				QTreeWidgetItem* rootItem = tree.insert(rootText, icon);
-				rootItem->setData(0, sexp_tree::FormulaDataRole, branch.sexp_formula);
+				rootItem->setData(0, sexp_tree_view::FormulaDataRole, branch.sexp_formula);
 				tree.add_sub_tree(branch.sexp_formula, rootItem);
 			}
 		}
@@ -92,7 +94,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			// Find the visual tree item corresponding to the internal node
 			for (int i = 0; i < tree.topLevelItemCount(); ++i) {
 				auto* item = tree.topLevelItem(i);
-				if (item && item->data(0, sexp_tree::FormulaDataRole).toInt() == internal_node_id) {
+				if (item && item->data(0, sexp_tree_view::FormulaDataRole).toInt() == internal_node_id) {
 					// Call the widget's expand_branch method
 					tree.expand_branch(item);
 					break;
@@ -103,9 +105,9 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 
 	_treeOps = std::make_unique<QtCampaignTreeOps>(QtCampaignTreeOps{*ui->sxtBranches});
 
-	ui->sxtBranches->initializeEditor(_viewport->editor, this);
+	ui->sxtBranches->initializeEditor(_viewport->editor, this, _viewport);
 	ui->sxtBranches->clear_tree();
-	ui->sxtBranches->post_load();
+	ui->sxtBranches->_model.post_load();
 
 	// Now construct the model with reference to tree ops
 	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps);
@@ -118,7 +120,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 	// Connect sexp tree signals
 	connect(
 		ui->sxtBranches,
-		&sexp_tree::rootNodeDeleted,
+		&sexp_tree_view::rootNodeDeleted,
 		this,
 		[this](int formulaNodeId) {
 			int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
@@ -153,16 +155,58 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 			updateLoopDetails();
 		});
 
-	connect(ui->sxtBranches, &sexp_tree::nodeChanged, this, [this](int node) {
-		_model->updateCurrentBranch(node);
-
-		updateLoopDetails();
+	connect(ui->sxtBranches, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
 	});
 
 	initializeUi();
 	updateUi();
 }
 CampaignEditorDialog::~CampaignEditorDialog() = default;
+
+SCP_vector<SCP_string> CampaignEditorDialog::getMissionNames()
+{
+	SCP_vector<SCP_string> list;
+	if (!_model) {
+		return list;
+	}
+	for (const auto& mission : _model->getCampaignMissions()) {
+		list.emplace_back(mission.filename);
+	}
+	return list;
+}
+
+bool CampaignEditorDialog::hasDefaultMissionName()
+{
+	return _model && !_model->getCampaignMissions().empty();
+}
+
+SCP_vector<SCP_string> CampaignEditorDialog::getMissionGoals(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	const int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0) {
+		return list;
+	}
+	for (const auto& goal : Campaign.missions[idx].goals) {
+		list.emplace_back(goal.name);
+	}
+	return list;
+}
+
+SCP_vector<SCP_string> CampaignEditorDialog::getMissionEvents(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	const int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0) {
+		return list;
+	}
+	for (const auto& event : Campaign.missions[idx].events) {
+		list.emplace_back(event.name);
+	}
+	return list;
+}
+
 
 void CampaignEditorDialog::closeEvent(QCloseEvent* e)
 {
@@ -180,8 +224,10 @@ void CampaignEditorDialog::initializeUi()
 {
 	util::SignalBlockers blocker(this);
 
-	fso::fred::bindStandardIcon(ui->moveBranchUpButton,   QStyle::SP_ArrowUp);
-	fso::fred::bindStandardIcon(ui->moveBranchDownButton, QStyle::SP_ArrowDown);
+	fso::fred::bindCustomIcon(ui->moveBranchTopButton,     CustomIcon::MoveToTop);
+	fso::fred::bindStandardIcon(ui->moveBranchUpButton,    QStyle::SP_ArrowUp);
+	fso::fred::bindStandardIcon(ui->moveBranchDownButton,  QStyle::SP_ArrowDown);
+	fso::fred::bindCustomIcon(ui->moveBranchBottomButton,  CustomIcon::MoveToBottom);
 	fso::fred::bindStandardIcon(ui->testVoiceButton,      QStyle::SP_MediaPlay);
 
 	// setup the types combo box
@@ -331,8 +377,12 @@ void CampaignEditorDialog::enableDisableControls()
 	ui->debriefingPersonaSpinBox->setEnabled(has_mission);
 
 	bool branch_selected = (_model->getCurrentBranchSelection() >= 0);
-	ui->moveBranchUpButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() > 0);
-	ui->moveBranchDownButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() < _model->getNumBranches() -1);
+	bool can_move_up = branch_selected && _model->getCurrentBranchSelection() > 0;
+	bool can_move_down = branch_selected && _model->getCurrentBranchSelection() < _model->getNumBranches() - 1;
+	ui->moveBranchTopButton->setEnabled(can_move_up);
+	ui->moveBranchUpButton->setEnabled(can_move_up);
+	ui->moveBranchDownButton->setEnabled(can_move_down);
+	ui->moveBranchBottomButton->setEnabled(can_move_down);
 
 	bool special_branch_selected = _model->getCurrentBranchIsSpecial();
 	ui->loopDescriptionPlainTextEdit->setEnabled(special_branch_selected);
@@ -712,6 +762,16 @@ void CampaignEditorDialog::on_substituteMainhallComboBox_currentIndexChanged(con
 	_model->setCurrentMissionSubstituteMainhall(arg1.toUtf8().constData());
 }
 
+void CampaignEditorDialog::on_moveBranchTopButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+	_model->moveBranchToTop();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
+}
+
 void CampaignEditorDialog::on_moveBranchUpButton_clicked()
 {
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
@@ -727,6 +787,16 @@ void CampaignEditorDialog::on_moveBranchDownButton_clicked()
 	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
 	
 	_model->moveBranchDown();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
+}
+
+void CampaignEditorDialog::on_moveBranchBottomButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+	_model->moveBranchToBottom();
 	ui->graphView->rebuildAll();
 
 	ui->graphView->setSelectedMission(mission_selection);

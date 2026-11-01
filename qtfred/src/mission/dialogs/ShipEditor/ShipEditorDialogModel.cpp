@@ -14,6 +14,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "missioneditor/common.h"
+#include "missioneditor/sexp_tree_model.h"
 
 #include <globalincs/linklist.h>
 #include <globalincs/utility.h>
@@ -27,8 +28,39 @@ namespace fso::fred::dialogs {
 ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
+	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialogModel::onSelectedObjectChanged);
+	connect(viewport->editor,
+		&Editor::objectMarkingChanged,
+		this,
+		&ShipEditorDialogModel::onSelectedObjectMarkingChanged);
+
 	initializeData();
 }
+
+void ShipEditorDialogModel::scheduleInitializeData()
+{
+	// Bulk selection changes fire one signal per object, so coalesce
+	// the burst into a single refresh once the event loop settles.
+	if (_initPending) {
+		return;
+	}
+	_initPending = true;
+	QTimer::singleShot(0, this, [this] {
+		_initPending = false;
+		initializeData();
+	});
+}
+
+void ShipEditorDialogModel::onSelectedObjectChanged(int)
+{
+	scheduleInitializeData();
+}
+
+void ShipEditorDialogModel::onSelectedObjectMarkingChanged(int, bool)
+{
+	scheduleInitializeData();
+}
+
 
 int ShipEditorDialogModel::tristate_set(int val, int cur_state)
 {
@@ -392,6 +424,10 @@ void ShipEditorDialogModel::initializeData()
 							// set routine local varaiables for ship/object flags
 							_noArrivalWarp = (Ships[i].flags[Ship::Ship_Flags::No_arrival_warp]) ? 2 : 0;
 							_noDepartureWarp = (Ships[i].flags[Ship::Ship_Flags::No_departure_warp]) ? 2 : 0;
+							_dockWarpoutChange =
+								(Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked]) ? 2 : 0;
+							_dockWarpinChange =
+								(Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked]) ? 2 : 0;
 
 							base_ship = -1;
 							if (!_multiEdit)
@@ -429,6 +465,11 @@ void ShipEditorDialogModel::initializeData()
 								tristate_set(Ships[i].flags[Ship::Ship_Flags::No_arrival_warp], _noArrivalWarp);
 							_noDepartureWarp =
 								tristate_set(Ships[i].flags[Ship::Ship_Flags::No_departure_warp], _noDepartureWarp);
+							_dockWarpinChange =
+								tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_arrival_warp_when_docked],
+									_dockWarpinChange);
+							_dockWarpoutChange =
+								tristate_set(Ships[i].flags[Ship::Ship_Flags::Same_departure_warp_when_docked], _dockWarpoutChange);
 						}
 					}
 				}
@@ -509,6 +550,8 @@ void ShipEditorDialogModel::initializeData()
 		_departureTarget = -1;
 		_noArrivalWarp = false;
 		_noDepartureWarp = false;
+		_dockWarpinChange = false;
+		_dockWarpoutChange = false;
 		_wing = "None";
 		_enable = false;
 		_arrivalPaths.clear();
@@ -534,7 +577,7 @@ void ShipEditorDialogModel::initializeData()
 		}
 	}
 
-	modelChanged();
+	Q_EMIT shipMarkingChanged();
 	_modified = false;
 }
 
@@ -696,83 +739,11 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	SCP_string new_name = m_ship_name;
 	drop_white_space(new_name);
 
-	if (new_name.empty()) {
+	SCP_string reason = check_name_conflict("ship", new_name.c_str(), _singleShip);
+	if (!reason.empty()) {
 		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
 			"Ship Name Error",
-			"A ship name cannot be empty.",
-			{DialogButton::Ok});
-		_shipName = Ships[_singleShip].ship_name;
-		modelChanged();
-		return;
-	}
-
-	if (new_name[0] == '<') {
-		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-			"Ship Name Error",
-			"Ship names not allowed to begin with <.",
-			{DialogButton::Ok});
-		_shipName = Ships[_singleShip].ship_name;
-		modelChanged();
-		return;
-	}
-
-	// Check for duplicate ship names
-	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->instance != _singleShip)) {
-			if (!stricmp(new_name.c_str(), Ships[ptr->instance].ship_name)) {
-				_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-					"Ship Name Error",
-					"This ship name is already being used by another ship.",
-					{DialogButton::Ok});
-				_shipName = Ships[_singleShip].ship_name;
-				modelChanged();
-				return;
-			}
-		}
-	}
-
-	// Check for conflict with wing names
-	for (auto& w : Wings) {
-		if (w.wave_count && !stricmp(w.name, new_name.c_str())) {
-			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-				"Ship Name Error",
-				"This ship name is already being used by a wing.",
-				{DialogButton::Ok});
-			_shipName = Ships[_singleShip].ship_name;
-			modelChanged();
-			return;
-		}
-	}
-
-	// Check for conflict with AI target priority group names
-	for (auto& tp : Ai_tp_list) {
-		if (!stricmp(new_name.c_str(), tp.name)) {
-			_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-				"Ship Name Error",
-				"This ship name is already being used by a target priority group.",
-				{DialogButton::Ok});
-			_shipName = Ships[_singleShip].ship_name;
-			modelChanged();
-			return;
-		}
-	}
-
-	// Check for conflict with waypoint paths
-	if (find_matching_waypoint_list(new_name.c_str()) != nullptr) {
-		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-			"Ship Name Error",
-			"This ship name is already being used by a waypoint path.",
-			{DialogButton::Ok});
-		_shipName = Ships[_singleShip].ship_name;
-		modelChanged();
-		return;
-	}
-
-	// Check for conflict with jump nodes
-	if (jumpnode_get_by_name(new_name.c_str()) != nullptr) {
-		_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-			"Ship Name Error",
-			"This ship name is already being used by a jump node.",
+			reason,
 			{DialogButton::Ok});
 		_shipName = Ships[_singleShip].ship_name;
 		modelChanged();
@@ -802,21 +773,9 @@ void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
 	}
 
 	// All validation passed — write the new name
-	char old_name[NAME_LENGTH];
-	strcpy_s(old_name, Ships[_singleShip].ship_name);
-	strcpy_s(Ships[_singleShip].ship_name, new_name.c_str());
+	// (the display name is handled separately in setShipDisplayName)
+	_editor->rename_ship(_singleShip, new_name.c_str(), false);
 	_shipName = new_name;
-
-	if (strcmp(old_name, Ships[_singleShip].ship_name)) {
-		update_sexp_references(old_name, Ships[_singleShip].ship_name);
-		_editor->ai_update_goal_references(sexp_ref_type::SHIP, old_name, Ships[_singleShip].ship_name);
-		_editor->update_texture_replacements(old_name, Ships[_singleShip].ship_name);
-		int j = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-		if (j >= 0) {
-			Assert(strlen(Ships[_singleShip].ship_name) < NAME_LENGTH);
-			strcpy_s(Reinforcements[j].name, Ships[_singleShip].ship_name);
-		}
-	}
 
 	setModified();
 	_editor->missionChanged();
@@ -1138,15 +1097,8 @@ void ShipEditorDialogModel::setPlayer(const bool m_player)
 			}
 		}
 	}
-	// Fix up Player_start_shipnum if it became invalid
-	if (Player_start_shipnum < 0 || Objects[Ships[Player_start_shipnum].objnum].type != OBJ_START) {
-		for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (p->type == OBJ_START) {
-				Player_start_shipnum = p->instance;
-				break;
-			}
-		}
-	}
+	// fix up Player_start_shipnum if it became invalid
+	ensure_valid_player_start_shipnum();
 	setModified();
 	_editor->missionChanged();
 	modelChanged();
@@ -1155,6 +1107,24 @@ void ShipEditorDialogModel::setPlayer(const bool m_player)
 bool ShipEditorDialogModel::getPlayer() const
 {
 	return _isPlayerShip;
+}
+
+void ShipEditorDialogModel::makeSolePlayerStart()
+{
+	// the ship being edited, which is either a player start or a regular ship
+	int shipnum = (_playerShipIndex >= 0) ? _playerShipIndex : _singleShip;
+	if (shipnum < 0)
+		return;
+
+	// since this is single player, clear all player ships and set only this one
+	if (set_single_player_start(Ships[shipnum].objnum))
+	{
+		setModified();
+		_editor->missionChanged();
+	}
+
+	_isPlayerShip = true;
+	modelChanged();
 }
 
 void ShipEditorDialogModel::setRespawn(const int value)
@@ -1363,10 +1333,28 @@ bool ShipEditorDialogModel::getArrivalCue() const
 	return _updateArrival;
 }
 
-void ShipEditorDialogModel::setArrivalFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setArrivalTreeDirty(const SexpTreeModel& tree)
 {
-	if (old_form != _arrivalTreeFormula)
-		modify(_arrivalTreeFormula, new_form);
+	if (_multiEdit && !_updateArrival)
+		return;
+
+	_updateArrival = true;
+
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && ptr->flags[Object::Object_Flags::Marked]) {
+			auto i = ptr->instance;
+			if (Ships[i].wingnum >= 0)
+				continue;
+			if (Ships[i].arrival_cue >= 0)
+				free_sexp2(Ships[i].arrival_cue);
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].arrival_cue = tree.save_tree();
+			_arrivalTreeFormula = Ships[i].arrival_cue;
+		}
+	}
+
+	setModified();
+	_editor->missionChanged();
 }
 
 int ShipEditorDialogModel::getArrivalFormula() const
@@ -1396,6 +1384,30 @@ void ShipEditorDialogModel::setNoArrivalWarp(const int value)
 int ShipEditorDialogModel::getNoArrivalWarp() const
 {
 	return _noArrivalWarp;
+}
+
+void ShipEditorDialogModel::setDockWarpinChange(const int state)
+{
+	if (_dockWarpinChange == state)
+		return;
+	_dockWarpinChange = state;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if (state) {
+				Ships[ptr->instance].flags.set(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			} else {
+				Ships[ptr->instance].flags.remove(Ship::Ship_Flags::Same_arrival_warp_when_docked);
+			}
+		}
+	}
+	setModified();
+	_editor->missionChanged();
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDockWarpinChange() const
+{
+	return _dockWarpinChange;
 }
 
 void ShipEditorDialogModel::setDepartureLocationIndex(const int value)
@@ -1484,10 +1496,28 @@ bool ShipEditorDialogModel::getDepartureCue() const
 	return _updateDeparture;
 }
 
-void ShipEditorDialogModel::setDepartureFormula(const int old_form, const int new_form)
+void ShipEditorDialogModel::setDepartureTreeDirty(const SexpTreeModel& tree)
 {
-	if (old_form != _departureTreeFormula)
-		modify(_departureTreeFormula, new_form);
+	if (_multiEdit && !_updateDeparture)
+		return;
+
+	_updateDeparture = true;
+
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && ptr->flags[Object::Object_Flags::Marked]) {
+			auto i = ptr->instance;
+			if (Ships[i].wingnum >= 0)
+				continue;
+			if (Ships[i].departure_cue >= 0)
+				free_sexp2(Ships[i].departure_cue);
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].departure_cue = tree.save_tree();
+			_departureTreeFormula = Ships[i].departure_cue;
+		}
+	}
+
+	setModified();
+	_editor->missionChanged();
 }
 
 int ShipEditorDialogModel::getDepartureFormula() const
@@ -1517,6 +1547,29 @@ void ShipEditorDialogModel::setNoDepartureWarp(const int value)
 int ShipEditorDialogModel::getNoDepartureWarp() const
 {
 	return _noDepartureWarp;
+}
+
+void ShipEditorDialogModel::setDockWarpoutChange(const int state) {
+	if (_dockWarpoutChange == state)
+		return;
+	_dockWarpoutChange = state;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			if (state) {
+				Ships[ptr->instance].flags.set(Ship::Ship_Flags::Same_departure_warp_when_docked);
+			} else {
+				Ships[ptr->instance].flags.remove(Ship::Ship_Flags::Same_departure_warp_when_docked);
+			}
+		}
+	}
+	setModified();
+	_editor->missionChanged();
+	modelChanged();
+}
+
+int ShipEditorDialogModel::getDockWarpoutChange() const
+{
+	return _dockWarpoutChange;
 }
 
 void ShipEditorDialogModel::onPrevious()

@@ -165,8 +165,10 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 // correct the ship record for player ships when an up to date packet comes in.
 void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity)
 {
-	// calc what the timing was previously.
-	float numerator = static_cast<float>(stamp.value()) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
+	// calc what the timing was previously.  The caller hands us an absolute timestamp, 
+	// but remote_missiontime is relative to mission start, so drop the start time before comparing.
+	auto local_time = static_cast<float>(stamp.value() - Multi_Timing_Info.get_mission_start_time());
+	float numerator = local_time - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
 	denominator = (denominator > 0.05f) ? denominator : 0.05f;
@@ -249,8 +251,8 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 // should never replace index 0
 void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient, physics_info* pip) 
 {
+	Assertion(index >= 1, "Invalid replace interpolation packet index! (%d)", index);
 	if (index < 1) {
-		UNREACHABLE("Invalid replace interpolation packet index! (%d)", index);
 		return;
 	}
 

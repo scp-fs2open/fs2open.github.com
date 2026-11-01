@@ -46,7 +46,40 @@ the viewport. Each dropdown is paired with its own modifier chord:</p>
 
 <h2>Context menu</h2>
 <p><strong>Right-click</strong> anywhere in the viewport to open a context menu with
-options relevant to what was clicked. Available options vary depending on whether
-you clicked an object, a specific object type, or empty space.</p>
+options relevant to what was clicked. A plain right-click (without dragging) opens
+the menu; right-click and drag instead moves the camera (see below). Available
+options vary depending on whether you clicked an object, a specific object type, or
+empty space.</p>
+
+<h2>Camera controls</h2>
+<p>The camera orbits around a pivot point in the scene. Mouse controls move the
+camera without changing any mission data:</p>
+<ul>
+    <li><strong>Middle-button drag</strong> - orbit (rotate) the camera around the
+        pivot.</li>
+    <li><strong>Shift + middle-button drag</strong> - pan the camera, sliding the
+        view sideways and up/down instead of rotating.</li>
+    <li><strong>Right-button drag</strong> - orbit the camera, the same as a
+        middle-button drag. <strong>Shift + right-button drag</strong> pans. A right
+        click that does not drag opens the context menu instead.</li>
+    <li><strong>Mouse wheel</strong> - zoom the camera toward or away from the
+        pivot.</li>
+</ul>
+
+<h2>Keyboard controls</h2>
+<p>The keyboard can also fly the camera around the viewport. The default bindings
+are:</p>
+<ul>
+    <li><strong>A</strong> / <strong>Z</strong> - move forward / backward.</li>
+    <li><strong>Numpad 1</strong> / <strong>Numpad 3</strong> - move left / right.</li>
+    <li><strong>Numpad -</strong> / <strong>Numpad +</strong> - move up / down.</li>
+    <li><strong>Numpad 4</strong> / <strong>Numpad 6</strong> - yaw left / right.</li>
+    <li><strong>Numpad 2</strong> / <strong>Numpad 8</strong> - pitch up / down.</li>
+    <li><strong>Space</strong> - toggle selection lock, which prevents clicks in the
+        viewport from changing the current selection.</li>
+</ul>
+<p>All of these keys can be reassigned under <strong>File &rsaquo; Preferences
+&rsaquo; Controls</strong>. See the <a href="PreferencesDialog.html">Preferences</a>
+page for details.</p>
 </body>
 </html>

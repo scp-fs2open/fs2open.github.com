@@ -25,6 +25,7 @@ class object;
 class waypoint;
 class p_object;
 struct ship_obj;
+class gamesnd_id;
 
 // bumped to 30 by Goober5000
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
@@ -698,7 +699,7 @@ enum : int {
 	OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
 	OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
-	OP_SET_GUARD_RANGE, //MjnMixael
+	OP_SET_GUARD_RANGE, //MjnMixael + The Force
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
 	OP_PROP_CREATE,     // MjnMixael
@@ -1202,9 +1203,11 @@ enum sexp_error_check
 
 	SEXP_CHECK_NONOP_ARGS,              // non-operator has arguments
 	SEXP_CHECK_OP_EXPECTED,             // operator expected, but found data instead
+	SEXP_CHECK_DATA_EXPECTED,           // data expected, but found operator instead
 	SEXP_CHECK_UNKNOWN_OP,              // unrecognized operator
 	SEXP_CHECK_TYPE_MISMATCH,           // return type or data type mismatch
-	SEXP_CHECK_BAD_ARG_COUNT,           // argument count in incorrect
+	SEXP_CHECK_BAD_ARG_COUNT,           // argument count is incorrect
+	SEXP_CHECK_BAD_ARG_COUNT_BENIGN,    // ditto, but don't prevent the mission from loading
 	SEXP_CHECK_UNKNOWN_TYPE,            // unrecognized return type of data type
 
 	SEXP_CHECK_INVALID_NUM = 101,       // number is not valid
@@ -1303,6 +1306,7 @@ enum sexp_error_check
 	SEXP_CHECK_MUST_BE_INTEGER,
 	SEXP_CHECK_INVALID_CUSTOM_STRING,
 	SEXP_CHECK_INVALID_MESSAGE_TYPE,
+	SEXP_CHECK_VARIABLE_TYPE_MISMATCH,
 	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
@@ -1386,7 +1390,8 @@ struct sexp_cached_data
 	}
 };
 
-typedef struct sexp_node {
+struct sexp_node
+{
 	char	text[TOKEN_LENGTH];
 	int op_index;				// the index in the Operators array for the operator at this node (or -1 if not an operator)
 	int	type;						// atom, list, or not used
@@ -1396,11 +1401,11 @@ typedef struct sexp_node {
 	int	value;					// known to be true, known to be false, or not known
 	int flags;					// Goober5000
 
-	sexp_cached_data *cache;	// Goober5000
+	std::unique_ptr<sexp_cached_data> cache;	// Goober5000
 	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
 
 	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
-} sexp_node;
+};
 
 // Goober5000
 #define SNF_ARGUMENT_VALID			(1<<0)
@@ -1413,6 +1418,7 @@ typedef struct sexp_node {
 #define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
 #define SNF_DESCENDANT_OF_WHEN_ARG_OP		(1<<8)
 #define SNF_NOT_DESCENDANT_OF_WHEN_ARG_OP	(1<<9)
+#define SNF_VARIABLE_TYPE_MISMATCH	(1<<10)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1481,6 +1487,7 @@ extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is
 extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
+extern gamesnd_id sexp_get_sound_index(int node);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
 extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
 const char *opr_type_name(sexp_opr_t opr_type);
@@ -1492,7 +1499,7 @@ extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, con
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern bool sexp_query_type_match(int opf, int opr);
-extern int sexp_match_closest_operator(const SCP_string &str, int opf);
+extern int sexp_match_closest_operator(const SCP_string &str, int opf, size_t min = SCP_string::npos);
 extern bool sexp_recoverable_error(int num);
 extern const char *sexp_error_message(int num);
 extern int count_free_sexp_nodes();

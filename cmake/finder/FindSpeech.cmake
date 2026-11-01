@@ -11,6 +11,8 @@ if (WIN32)
 	endif()
 elseif(APPLE)
 	# it should just work
+elseif(ANDROID)
+	# connects to a java TTS manager via SDL activity class
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	# uses speech-dispatcher with dlopen
 else()

@@ -5,6 +5,7 @@
 
 #include <globalincs/linklist.h>
 #include <globalincs/utility.h>
+#include <missioneditor/common.h>
 #include <ship/ship.h>
 
 namespace {
@@ -68,22 +69,6 @@ void Editor::set_cur_wing(int wing)
 			Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
 	updateAllViewports();
 	// TODO: Add notification for a changed selection
-}
-void Editor::update_custom_wing_indexes()
-{
-	int i;
-
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
 }
 
 int Editor::create_wing()
@@ -240,7 +225,8 @@ int Editor::create_wing()
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
+	if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)
+		&& Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
 		count = 1;
 	}
 
@@ -466,7 +452,7 @@ bool Editor::wing_is_player_wing(int wing)
 		}
 	// Single player wing check
 	} else {
-		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS) {
+		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS && Ships[Player_start_shipnum].objnum >= 0) {
 			const int pw = Ships[Player_start_shipnum].wingnum;
 			return pw >= 0 && pw == wing;
 		}
@@ -484,73 +470,24 @@ bool Editor::wing_contains_player_start(int wing)
 WingNameCheck Editor::validate_wing_name(const SCP_string& new_name, int ignore_wing)
 {
 	WingNameCheck r{false, WingNameError::None, {}};
-	if (new_name.empty()) {
-		r.error = WingNameError::Empty;
-		r.message = "Name is empty.";
-		return r;
-	}
 
-	if (new_name.empty()) {
-		r.error = WingNameError::Empty;
-		r.message = "Name is empty.";
-		return r;
-	}
 	if (new_name.size() >= NAME_LENGTH) {
 		r.error = WingNameError::TooLong;
 		r.message = "Name is too long.";
 		return r;
 	}
 
-	// Other wings
-	for (int i = 0; i < MAX_WINGS; ++i) {
-		if (i == ignore_wing)
-			continue;
-		if (Wings[i].wave_count <= 0)
-			continue;
-		if (!stricmp(new_name.c_str(), Wings[i].name)) {
-			r.error = WingNameError::DuplicateWing;
-			r.message = "This wing name is already used by another wing.";
-			return r;
-		}
-	}
-
-	// Ships
-	for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
-			const int si = get_ship_from_obj(ptr);
-			if (!stricmp(new_name.c_str(), Ships[si].ship_name)) {
-				r.error = WingNameError::DuplicateShip;
-				r.message = "This wing name is already used by a ship.";
-				return r;
-			}
-		}
-	}
-
-	// Target priority groups
-	for (auto& ai : Ai_tp_list) {
-		if (!stricmp(new_name.c_str(), ai.name)) {
-			r.error = WingNameError::DuplicateTargetPriority;
-			r.message = "This wing name is already used by a target priority group.";
-			return r;
-		}
-	}
-
-	// Waypoint paths
-	if (find_matching_waypoint_list(new_name.c_str()) != nullptr) {
-		r.error = WingNameError::DuplicateWaypointList;
-		r.message = "This wing name is already used by a waypoint path.";
-		return r;
-	}
-
-	// Jump nodes
-	if (jumpnode_get_by_name(new_name.c_str()) != nullptr) {
-		r.error = WingNameError::DuplicateJumpNode;
-		r.message = "This wing name is already used by a jump node.";
+	// check for an empty name, a name beginning with '<', or a conflict with an existing
+	// ship, wing, waypoint path, jump node, or target priority group
+	SCP_string reason = check_name_conflict("wing", new_name.c_str(), -1, ignore_wing);
+	if (!reason.empty()) {
+		// the enum is coarse now (only .ok is consumed), but the message is preserved
+		r.error = WingNameError::DuplicateWing;
+		r.message = reason;
 		return r;
 	}
 
 	r.ok = true;
-	r.message.clear();
 	return r;
 }
 

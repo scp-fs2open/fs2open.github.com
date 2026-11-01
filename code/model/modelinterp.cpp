@@ -25,6 +25,7 @@
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "model/modelinterp.h"
 #include "model/modelrender.h"
 #include "model/modelsinc.h"
 #include "nebula/neb.h"
@@ -237,16 +238,12 @@ void model_deallocate_interp_data()
 	Num_interp_norms_allocated = 0;
 }
 
-extern void model_collide_allocate_point_list(int n_points);
-extern void model_collide_free_point_list();
-
 void model_allocate_interp_data(uint n_verts, uint n_norms)
 {
 	static ubyte dealloc = 0;
 
 	if (!dealloc) {
 		atexit(model_deallocate_interp_data);
-		atexit(model_collide_free_point_list);
 		dealloc = 1;
 	}
 
@@ -263,9 +260,6 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
 
 		Num_interp_verts_allocated = n_verts;
-
-		// model collide needs a similar size to resize it based on this new value
-		model_collide_allocate_point_list( n_verts );
 	}
 
 	if (n_norms > Num_interp_norms_allocated) {
@@ -1245,19 +1239,19 @@ int submodel_get_num_polys_sub( ubyte *p )
 			int prelist = w(p+44);
 			int postlist = w(p+48);
 			int onlist = w(p+52);
-			n += submodel_get_num_polys_sub(p+frontlist);
-			n += submodel_get_num_polys_sub(p+backlist);
-			n += submodel_get_num_polys_sub(p+prelist);
-			n += submodel_get_num_polys_sub(p+postlist );
-			n += submodel_get_num_polys_sub(p+onlist );
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
+			if (prelist) n += submodel_get_num_polys_sub(p + prelist);
+			if (postlist) n += submodel_get_num_polys_sub(p + postlist);
+			if (onlist) n += submodel_get_num_polys_sub(p + onlist);
 			}
 			break;
 
 		case OP_SORTNORM2: {
 			int frontlist = w(p + 8);
 			int backlist = w(p + 12);
-			n += submodel_get_num_polys_sub(p + frontlist);
-			n += submodel_get_num_polys_sub(p + backlist);
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
 			}
 			end = true; // should not continue after this chunk
 			break;
@@ -1286,13 +1280,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 /**
  * Returns number of tmaps & flat polys in a submodel
  */
-int submodel_get_num_polys(int model_num, int submodel_num )
+int submodel_get_num_polys(int model_num, int submodel_num)
 {
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data.get() );
+	return model_get(model_num)->submodel[submodel_num].num_polys;
 }
 
 /**
@@ -2402,8 +2392,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 	SCP_vector<buffer_data> &tex_buffers = pm->submodel[mn].buffer.tex_buf;
 	uint current_tri[NUM_VERTS_PER_TRI];
-	bool transparent_tri = false;
-	int num_tris = 0;
+	SCP_vector<int> transparent_indices;
 
 	for ( int i = 0; i < (int)tex_buffers.size(); ++i ) {
 		buffer_data *tex_buf = &tex_buffers[i];
@@ -2433,13 +2422,21 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			continue;
 		}
 
-		SCP_vector<int> transparent_indices;
-
-		transparent_tri = false;
-		num_tris = 0;
+		bool transparent_tri = false;
+		transparent_indices.clear();
 
 		for ( size_t j = 0; j < tex_buf->n_verts; ++j ) {
-			uint index = indices[j];
+			if ( j % NUM_VERTS_PER_TRI == 0 && j != 0 && transparent_tri ) {
+				transparent_tri = false;
+
+				// we have a triangle and it's transparent. 
+				// shove index into the transparency buffer
+ 				transparent_indices.push_back(current_tri[0]);
+ 				transparent_indices.push_back(current_tri[1]);
+ 				transparent_indices.push_back(current_tri[2]);
+			}
+
+			const uint index = indices[j];
 
 			// need the uv coords of the vert at this index
 			float u = model_list->vert[index].texture_position.u;
@@ -2449,21 +2446,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 				transparent_tri = true;
 			}
 
-			current_tri[num_tris] = index;
-			num_tris++;
-
-			if ( num_tris == NUM_VERTS_PER_TRI ) {
-				if ( transparent_tri ) {
-					// we have a triangle and it's transparent. 
-					// shove index into the transparency buffer
-					transparent_indices.push_back(current_tri[0]);
-					transparent_indices.push_back(current_tri[1]);
-					transparent_indices.push_back(current_tri[2]);
-				}
-
-				transparent_tri = false;
-				num_tris = 0;
-			}
+			current_tri[j % NUM_VERTS_PER_TRI] = index;
 		}
 
 		if ( transparent_indices.empty() ) {
@@ -2477,6 +2460,10 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
+
+		if ( transparent_indices.size() > USHRT_MAX ) {
+			new_buff.flags |= VB_FLAG_LARGE_INDEX;
+		}
 
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
@@ -2975,6 +2962,11 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 		return;
 	}
 
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP chunk with invalid texture id (%d)!", pof_tex);
+		return;
+	}
+
 	p = &bsp_data[offset + TMAP_NORMAL];
 
 	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
@@ -3038,6 +3030,11 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 
 	if (n_vert < 3) {
 		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
+		return;
+	}
+
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", pof_tex);
 		return;
 	}
 

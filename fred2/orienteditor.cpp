@@ -15,6 +15,7 @@
 #include "Management.h"
 #include "globalincs/linklist.h"
 #include "FREDView.h"
+#include "prop/prop.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -135,6 +136,12 @@ BOOL orient_editor::OnInitDialog()
 			} else if (ptr->type == OBJ_JUMP_NODE) {
 				box->AddString(jumpnode_get_by_objnum(objnum)->GetName());
 				index[total++] = objnum;
+
+			} else if (ptr->type == OBJ_PROP) {
+				if (Props[ptr->instance].has_value()) {
+					box->AddString(Props[ptr->instance].value().prop_name);
+					index[total++] = objnum;
+				}
 
 			} else if (ptr->type != OBJ_POINT)
 				Warning(LOCATION, "Unknown object type %d", ptr->type);

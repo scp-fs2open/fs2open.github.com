@@ -158,6 +158,14 @@ IDB_CONTAINER_NAME      BITMAP                  "res\\container_name.bmp"
 
 IDB_CONTAINER_DATA      BITMAP                  "res\\container_data.bmp"
 
+IDB_MOVE_TO_TOP         BITMAP                  "res\\move_top.bmp"
+
+IDB_MOVE_UP             BITMAP                  "res\\move_up.bmp"
+
+IDB_MOVE_DOWN           BITMAP                  "res\\move_down.bmp"
+
+IDB_MOVE_TO_BOTTOM      BITMAP                  "res\\move_bot.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -271,6 +279,19 @@ BEGIN
             MENUITEM "LOD 2",                       33109
             MENUITEM "LOD 3",                       33110
             MENUITEM "LOD 4 (lowest detail)",       33111
+        END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
         END
         MENUITEM SEPARATOR
         MENUITEM "Hide Marked Objects",         33002
@@ -404,6 +425,7 @@ BEGIN
     BEGIN
         MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
         MENUITEM "Set Global Ship Flags",       33073
+        MENUITEM "Reorder Ships and Wings",     ID_REORDER
         MENUITEM "Calculate Relative Coordinates", 33030
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
@@ -417,6 +439,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
+        MENUITEM SEPARATOR
+        MENUITEM "Classic menu layout",         ID_CLASSIC_MENU_LAYOUT
     END
     POPUP "&Help"
     BEGIN
@@ -424,6 +448,237 @@ BEGIN
         MENUITEM "Show Sexp Help",              33010
         MENUITEM SEPARATOR
         MENUITEM "&About FRED2",                57664
+    END
+END
+
+IDR_MAINMENU_CLASSIC MENU
+BEGIN
+    POPUP "&File"
+    BEGIN
+        MENUITEM "&New\tCtrl+N",                57600
+        MENUITEM "&Open...\tCtrl+O",            57601
+        MENUITEM "&Save\tCtrl+S",               57603
+        MENUITEM "Save &As...\tCtrl+Shift+S",   57604
+        MENUITEM "Re&vert",                     33000
+        MENUITEM SEPARATOR
+        POPUP "Save &Format"
+        BEGIN
+            MENUITEM "FS2 Open",                    33069, CHECKED
+            MENUITEM "FS2 Retail",                  33070
+            MENUITEM "Here Be Dragons",             33092
+        END
+        POPUP "&Import"
+        BEGIN
+            MENUITEM "&FreeSpace 1 mission...",     33074
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "&Run FreeSpace",              32985
+        MENUITEM SEPARATOR
+        MENUITEM "Recent File",                 57616, GRAYED
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit",                       57665
+    END
+    POPUP "&Edit"
+    BEGIN
+        MENUITEM "Undo\tCtrl+Z",                57643
+        MENUITEM "Clone Marked Objects",        33099
+        MENUITEM "Delete\tDel",                 32789
+        MENUITEM "Delete Wing\tCtrl+Del",       33035
+        MENUITEM SEPARATOR
+        MENUITEM "Lock Marked Objects",         ID_EDIT_LOCK_MARKED_OBJECTS
+        MENUITEM "Unlock All Objects",          ID_EDIT_UNLOCK_ALL_OBJECTS
+        MENUITEM "Selection Lock",              ID_SELECTION_LOCK
+        MENUITEM SEPARATOR
+        MENUITEM "Disable Undo",                33055
+    END
+    POPUP "&View"
+    BEGIN
+        MENUITEM "&Toolbar",                    59392, CHECKED
+        MENUITEM "&Status Bar",                 59393, CHECKED
+        MENUITEM SEPARATOR
+        POPUP "Display Filter"
+        BEGIN
+            MENUITEM "Show Ships",                  32990
+            MENUITEM "Show Player Starts",          32991
+            MENUITEM "Show Waypoints",              1075
+            MENUITEM SEPARATOR
+            MENUITEM "Show IFF 0",                  33081
+            MENUITEM "Show IFF 1",                  33082
+            MENUITEM "Show IFF 2",                  33083
+            MENUITEM "Show IFF 3",                  33084
+            MENUITEM "Show IFF 4",                  33085
+            MENUITEM "Show IFF 5",                  33086
+            MENUITEM "Show IFF 6",                  33087
+            MENUITEM "Show IFF 7",                  33088
+            MENUITEM "Show IFF 8",                  33089
+            MENUITEM "Show IFF 9",                  32988
+        END
+        POPUP "Outline LOD"
+        BEGIN
+            MENUITEM "LOD 0 (highest detail)",      33107
+            MENUITEM "LOD 1",                       33108, CHECKED
+            MENUITEM "LOD 2",                       33109
+            MENUITEM "LOD 3",                       33110
+            MENUITEM "LOD 4 (lowest detail)",       33111
+        END
+        POPUP "Label Font Size"
+        BEGIN
+            MENUITEM "50%",                         ID_LABEL_FONT_SCALE_50
+            MENUITEM "75%",                         ID_LABEL_FONT_SCALE_75
+            MENUITEM "100%",                        ID_LABEL_FONT_SCALE_100, CHECKED
+            MENUITEM "125%",                        ID_LABEL_FONT_SCALE_125
+            MENUITEM "150%",                        ID_LABEL_FONT_SCALE_150
+            MENUITEM "200%",                        ID_LABEL_FONT_SCALE_200
+            MENUITEM "250%",                        ID_LABEL_FONT_SCALE_250
+            MENUITEM "300%",                        ID_LABEL_FONT_SCALE_300
+            MENUITEM "350%",                        ID_LABEL_FONT_SCALE_350
+            MENUITEM "400%",                        ID_LABEL_FONT_SCALE_400
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "Hide Marked Objects",         33002
+        MENUITEM "Show Hidden Objects",         33003
+        MENUITEM SEPARATOR
+        MENUITEM "Show Ship Models\tShift+Alt+M", 32820, CHECKED
+        MENUITEM "Show Outlines\tShift+Alt+O",  32980
+        MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
+        MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
+        MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
+        MENUITEM "Show Coordinates\tShift+Alt+C", 32915
+        MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
+        MENUITEM "Show Distances\tD",           32941
+        MENUITEM "Show Model Paths",            33066
+        MENUITEM "Show Model Dock Points",      33065
+        MENUITEM "Highlight Selectable Subsystems", 33062
+        MENUITEM SEPARATOR
+        MENUITEM "Show &Grid\tShift+Alt+G",     32808
+        MENUITEM "Show Horizon\tShift+Alt+H",   32954
+        MENUITEM "Double Fine Gridlines",       32939
+        MENUITEM "Anti-Aliased Gridlines",      33048
+        MENUITEM "Show 3D Compass\tShift+Alt+3", 32832, CHECKED
+        MENUITEM "Show Background\tShift+Alt+B", 32983
+        MENUITEM SEPARATOR
+        POPUP "Viewpoint\tShift+V"
+        BEGIN
+            MENUITEM "Camera",                      32835, CHECKED
+            MENUITEM "Current Ship",                32837
+        END
+        MENUITEM "Save Camera Pos\tCtrl+P",     33008
+        MENUITEM "Restore Camera Pos\tCtrl+R",  33009
+        MENUITEM SEPARATOR
+        MENUITEM "Lighting from Suns",          33079
+        MENUITEM "Render full detail",          33090
+    END
+    POPUP "&Speed"
+    BEGIN
+        POPUP "Movement"
+        BEGIN
+            MENUITEM "x1\t1",                       32898, CHECKED
+            MENUITEM "x2\t2",                       32899
+            MENUITEM "x3\t3",                       32902
+            MENUITEM "x5\t4",                       32900
+            MENUITEM "x8\t5",                       32908
+            MENUITEM "x10\t6",                      32901
+            MENUITEM "x50\t7",                      32917
+            MENUITEM "x100\t8",                     32918
+            MENUITEM "x500",                        32920
+            MENUITEM "x1000",                       32922
+        END
+        POPUP "Rotation"
+        BEGIN
+            MENUITEM "x1\tShift+1",                 32903, CHECKED
+            MENUITEM "x5\tShift+2",                 32904
+            MENUITEM "x12\tShift+3",                32905
+            MENUITEM "x25\tShift+4",                32906
+            MENUITEM "x50\tShift+5",                32907
+        END
+    END
+    POPUP "E&ditors"
+    BEGIN
+        MENUITEM "&Ships\tShift+S",             32799
+        MENUITEM "&Wings\tShift+W",             32955
+        MENUITEM "&Objects\tShift+O",           32973
+        MENUITEM "Waypoint Paths\tShift+Y",     32979
+        MENUITEM "Jump Nodes\tShift+J",         ID_EDITORS_JUMPNODE
+        MENUITEM SEPARATOR
+        MENUITEM "&Mission Specs\tShift+N",     32771
+        MENUITEM "Mission &Goals\tShift+G",     32800
+        MENUITEM "Mission &Events\tShift+E",    32974
+        MENUITEM "Mission Cutscenes",           ID_EDITORS_CUTSCENES
+        MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
+        MENUITEM SEPARATOR
+        MENUITEM "&Fiction Viewer\tShift+F",    ID_EDITORS_FICTION
+        MENUITEM "&Command Briefing\tShift+C",  33054
+        MENUITEM "Team &Loadout\tShift+P",      32972
+        MENUITEM "&Briefing\tShift+B",          33006
+        MENUITEM "&Debriefing\tShift+D",        33007
+        MENUITEM SEPARATOR
+        MENUITEM "Background\tShift+I",         32976
+        MENUITEM "Asteroid Field\tShift+A",     32984
+        MENUITEM "Volumetric Nebula",           ID_EDITORS_VOLUMETRICS
+        MENUITEM SEPARATOR
+        MENUITEM "Reinforcements\tShift+R",     32977
+        MENUITEM "Shield System",               33033
+        MENUITEM "Set Global Ship Flags",       33073
+        MENUITEM "Reorder Ships and Wings",     ID_REORDER
+        MENUITEM SEPARATOR
+        MENUITEM "Campaign",                    32986
+    END
+    POPUP "&Groups"
+    BEGIN
+        MENUITEM "Group 1\tCtrl+1",             33012
+        MENUITEM "Group 2\tCtrl+2",             33013
+        MENUITEM "Group 3\tCtrl+3",             33014
+        MENUITEM "Group 4\tCtrl+4",             33015
+        MENUITEM "Group 5\tCtrl+5",             33016
+        MENUITEM "Group 6\tCtrl+6",             33017
+        MENUITEM "Group 7\tCtrl+7",             33018
+        MENUITEM "Group 8\tCtrl+8",             33019
+        MENUITEM "Group 9\tCtrl+9",             33020
+        POPUP "Set Group"
+        BEGIN
+            MENUITEM "Group 1",                     33021
+            MENUITEM "Group 2",                     33022
+            MENUITEM "Group 3",                     33023
+            MENUITEM "Group 4",                     33024
+            MENUITEM "Group 5",                     33025
+            MENUITEM "Group 6",                     33026
+            MENUITEM "Group 7",                     33027
+            MENUITEM "Group 8",                     33028
+            MENUITEM "Group 9",                     33029
+        END
+    END
+    POPUP "&Misc"
+    BEGIN
+        MENUITEM "Next Object\tTab",            33039
+        MENUITEM "Previous Object\tCtrl+Tab",   33040
+        MENUITEM "Control Object\tT",           33041
+        MENUITEM "Level Object\tL",             33037
+        MENUITEM "Align Object\tCtrl+L",        33036
+        MENUITEM SEPARATOR
+        MENUITEM "Next Subsystem\tK",           33059
+        MENUITEM "Prev Subsystem\tShift+K",     33060
+        MENUITEM "Cancel Subsystem\tAlt+K",     33061
+        MENUITEM SEPARATOR
+        MENUITEM "Mark Wing\tW",                33038
+        MENUITEM "Adjust Grid",                 33032
+        MENUITEM "Calculate Relative Coordinates", 33030
+        MENUITEM "Point Ships Using UVec",      33101
+        MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
+        MENUITEM "Music Player",                ID_MUSIC_PLAYER
+        MENUITEM SEPARATOR
+        MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
+        MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
+        MENUITEM "Error checker\tShift+H",      32978
+        MENUITEM SEPARATOR
+        MENUITEM "Classic menu layout",         ID_CLASSIC_MENU_LAYOUT
+    END
+    POPUP "&Help"
+    BEGIN
+        MENUITEM "&Help Topics",                57667
+        MENUITEM SEPARATOR
+        MENUITEM "&About FRED2",                57664
+        MENUITEM "Show Sexp Help",              33010
     END
 END
 
@@ -1455,9 +1710,9 @@ CAPTION "Mission Event Edit"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     CONTROL         "Tree1",IDC_EVENT_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | TVS_SHOWSELALWAYS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,7,196,343,WS_EX_CLIENTEDGE
-    PUSHBUTTON      "New Event",IDC_BUTTON_NEW_EVENT,207,7,50,14,0,WS_EX_STATICEDGE,HIDC_BUTTON_NEW_EVENT
-    PUSHBUTTON      "Insert Event",IDC_INSERT,207,24,50,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Delete Event",IDC_DELETE,207,41,50,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "New Event",IDC_BUTTON_NEW_EVENT,227,7,48,14,0,WS_EX_STATICEDGE,HIDC_BUTTON_NEW_EVENT
+    PUSHBUTTON      "Insert Event",IDC_INSERT,227,23,48,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Event",IDC_DELETE,227,39,48,14,0,WS_EX_STATICEDGE
     EDITTEXT        IDC_REPEAT_COUNT,208,108,45,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_INTERVAL_TIME,208,165,45,14,ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_EVENT_SCORE,208,239,45,14,ES_AUTOHSCROLL
@@ -1468,16 +1723,17 @@ BEGIN
     EDITTEXT        IDC_OBJ_TEXT,86,354,117,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_OBJ_KEY_TEXT,86,370,117,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_HELP_BOX,208,313,222,111,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL,WS_EX_TRANSPARENT
-    PUSHBUTTON      "New Msg",IDC_NEW_MSG,229,59,50,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "Delete Msg",IDC_DELETE_MSG,229,77,50,14,0,WS_EX_STATICEDGE
-    LISTBOX         IDC_MESSAGE_LIST,285,17,145,74,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "New Msg",IDC_NEW_MSG,387,7,43,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Insert Msg",IDC_INSERT_MSG,387,23,43,14,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Delete Msg",IDC_DELETE_MSG,387,39,43,14,0,WS_EX_STATICEDGE
+    LISTBOX         IDC_MESSAGE_LIST,285,7,78,84,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     EDITTEXT        IDC_MESSAGE_NAME,285,95,145,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MESSAGE_TEXT,261,125,169,54,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
     COMBOBOX        IDC_AVI_FILENAME,303,194,67,111,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Browse",IDC_BROWSE_AVI,374,194,49,14,0,WS_EX_STATICEDGE
     COMBOBOX        IDC_WAVE_FILENAME,303,210,67,110,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,374,210,34,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,410,210,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,410,210,13,14,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     COMBOBOX        IDC_PERSONA_NAME,303,225,67,57,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Update Stuff",IDC_UPDATE,373,226,50,14
     COMBOBOX        IDC_MESSAGE_TEAM,304,243,46,76,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -1490,7 +1746,6 @@ BEGIN
     LTEXT           "Directive keypress text",IDC_STATIC,7,372,74,8
     LTEXT           "Message Text",IDC_STATIC,261,114,48,8
     LTEXT           "Name",IDC_STATIC,261,97,20,8
-    LTEXT           "Messages",IDC_STATIC,335,7,35,8
     LTEXT           "ANI file",IDC_STATIC,275,197,23,8
     LTEXT           "Wave file",IDC_STATIC,267,212,31,8
     LTEXT           "Persona",IDC_STATIC,271,227,27,8
@@ -1511,6 +1766,14 @@ BEGIN
     LTEXT           "Log These States To The Event.log",IDC_STATIC,37,386,114,8
     CONTROL         "Interval && Chain in Milliseconds",IDC_USE_MSECS,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,208,275,65,19
     PUSHBUTTON      "Add Note",IDC_NEW_NOTE,380,111,50,12,0,WS_EX_STATICEDGE
+    PUSHBUTTON      "Top",IDC_EVENT_MOVE_TO_TOP,207,7,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Up",IDC_EVENT_MOVE_UP,207,23,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Down",IDC_EVENT_MOVE_DOWN,207,39,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Bottom",IDC_EVENT_MOVE_TO_BOTTOM,207,55,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Top",IDC_MESSAGE_MOVE_TO_TOP,367,7,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Up",IDC_MESSAGE_MOVE_UP,367,23,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Down",IDC_MESSAGE_MOVE_DOWN,367,39,16,16,BS_ICON,WS_EX_STATICEDGE
+    PUSHBUTTON      "Bottom",IDC_MESSAGE_MOVE_TO_BOTTOM,367,55,16,16,BS_ICON,WS_EX_STATICEDGE
 END
 
 IDD_BG_BITMAP DIALOGEX 0, 0, 431, 470
@@ -1895,7 +2158,7 @@ BEGIN
     EDITTEXT        IDC_TEXT,7,72,396,85,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
     EDITTEXT        IDC_VOICE,63,164,83,13,ES_AUTOHSCROLL
     PUSHBUTTON      "Browse",IDC_BROWSE,150,164,42,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,194,164,28,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,194,164,28,14,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     COMBOBOX        IDC_BRIEFING_MUSIC,205,18,83,135,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     COMBOBOX        IDC_SUBSTITUTE_BRIEFING_MUSIC,205,34,83,135,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,190,200,218,WS_EX_CLIENTEDGE
@@ -1957,7 +2220,7 @@ BEGIN
     CONTROL         "Tree1",IDC_TREE,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_EDITLABELS | WS_BORDER | WS_HSCROLL | WS_TABSTOP,7,55,191,260,WS_EX_CLIENTEDGE
     EDITTEXT        IDC_VOICE,193,7,68,14,ES_AUTOHSCROLL
     PUSHBUTTON      "Browse",IDC_BROWSE,265,7,34,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,311,7,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,311,7,13,14,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     EDITTEXT        IDC_TEXT,204,34,329,143,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
     EDITTEXT        IDC_REC_TEXT,204,192,329,73,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN | WS_VSCROLL
     LTEXT           "Text",IDC_STATIC,204,24,15,8
@@ -2003,10 +2266,10 @@ FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     LTEXT           "Music Files",IDC_STATIC,8,8,42,10
     LISTBOX         IDC_MUSIC_LIST,11,18,126,94,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "IDB_PLAY",IDC_BUTTON_PLAY_MUSIC,31,118,15,15,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_STOP",IDC_BUTTON_STOP_MUSIC,71,118,15,15,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_NEXT",IDC_BUTTON_NEXT_MUSIC,51,118,15,15,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PREV",IDC_BUTTON_PREV_MUSIC,11,118,15,15,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_BUTTON_PLAY_MUSIC,31,118,15,15,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_STOP",IDC_BUTTON_STOP_MUSIC,71,118,15,15,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_NEXT",IDC_BUTTON_NEXT_MUSIC,51,118,15,15,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PREV",IDC_BUTTON_PREV_MUSIC,11,118,15,15,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     CONTROL         "Autoplay",IDC_MUSIC_AUTOPLAY,"Button",BS_3STATE | WS_TABSTOP,94,120,40,10
     PUSHBUTTON      "Music.tbl",IDC_BUTTON_MUSIC_TBL,50,140,50,14
 END
@@ -2028,6 +2291,19 @@ BEGIN
     EDITTEXT        IDC_ORIENTATION_B,255,65,49,14,ES_READONLY
     LTEXT           "H:",IDC_STATIC,245,83,8,8
     EDITTEXT        IDC_ORIENTATION_H,255,81,49,14,ES_READONLY
+END
+
+IDD_REORDER DIALOG 0, 0, 185, 191
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Reorder Ships and Wings"
+FONT 8, "MS Sans Serif"
+BEGIN
+    COMBOBOX        IDC_REORDER_TYPE,7,7,98,114,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LISTBOX         IDC_REORDER_LIST,7,25,98,159,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Move to top",IDC_REORDER_MOVE_TO_TOP,112,25,66,14
+    PUSHBUTTON      "Move up",IDC_REORDER_MOVE_UP,112,43,66,14
+    PUSHBUTTON      "Move down",IDC_REORDER_MOVE_DOWN,112,61,66,14
+    PUSHBUTTON      "Move to bottom",IDC_REORDER_MOVE_TO_BOTTOM,112,79,66,14
 END
 
 IDD_SHIELD_SYS DIALOG 0, 0, 192, 106
@@ -2073,7 +2349,7 @@ BEGIN
     PUSHBUTTON      "Browse",IDC_BROWSE_ANI,334,184,50,14,0,WS_EX_STATICEDGE
     EDITTEXT        IDC_WAVE_FILENAME,263,202,68,14,ES_AUTOHSCROLL
     PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,334,202,34,14,0,WS_EX_STATICEDGE
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,371,202,13,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,371,202,13,14,BS_ICON,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     DEFPUSHBUTTON   "OK",IDOK,334,14,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,334,31,50,14
     LTEXT           "Briefing Text",IDC_STATIC,7,44,40,8
@@ -2403,7 +2679,7 @@ BEGIN
     LTEXT           "range: 0.1 .. 20.0",IDC_STATIC,157,66,62,11,WS_DISABLED
     GROUPBOX        "Preview",IDC_SOUND_ENVIRONMENT_TEST,229,50,79,32
     PUSHBUTTON      "Browse",IDC_BROWSE_WAVE,258,62,44,15
-    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,235,62,17,15,BS_BITMAP,WS_EX_TRANSPARENT
+    PUSHBUTTON      "IDB_PLAY",IDC_PLAY,235,62,17,15,BS_ICON,WS_EX_TRANSPARENT
 END
 
 IDD_WARP_PARAMS DIALOGEX 0, 0, 271, 271
@@ -2929,6 +3205,14 @@ BEGIN
         BOTTOMMARGIN, 87
     END
 
+    IDD_REORDER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 178
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 184
+    END
+
     IDD_SHIELD_SYS, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -3412,8 +3696,9 @@ BEGIN
     0, 100, 50, 0,
     0, 100, 50, 0,
     50, 50, 50, 50,
-    50, 50, 0, 0,
-    50, 50, 0, 0,
+    100, 0, 0, 0,
+    100, 0, 0, 0,
+    100, 0, 0, 0,
     50, 0, 50, 50,
     50, 50, 50, 0,
     50, 50, 50, 0,
@@ -3434,7 +3719,6 @@ BEGIN
     0, 100, 0, 0,
     50, 50, 0, 0,
     50, 50, 0, 0,
-    75, 0, 0, 0,
     50, 50, 0, 0,
     50, 50, 0, 0,
     50, 50, 0, 0,
@@ -3454,7 +3738,15 @@ BEGIN
     25, 100, 0, 0,
     25, 100, 0, 0,
     50, 50, 0, 0,
-    50, 50, 0, 0
+    100, 50, 0, 0,
+    50, 0, 0, 0,
+    50, 0, 0, 0,
+    50, 0, 0, 0,
+    50, 0, 0, 0,
+    100, 0, 0, 0,
+    100, 0, 0, 0,
+    100, 0, 0, 0,
+    100, 0, 0, 0
 END
 
 IDD_ASTEROID_EDITOR AFX_DIALOG_LAYOUT
@@ -3781,6 +4073,7 @@ BEGIN
     ID_ALWAYS_SAVE_DISPLAY_NAMES "When saving a mission, always write display names to the mission file even if the display name is not set"
     ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES "If checked, error checker will check for things that are not necessarily errors but may cause unexpected behavior"
     ID_ERROR_CHECKER        "Checks mission for FRED-detectable errors"
+    ID_CLASSIC_MENU_LAYOUT  "Switch between the QtFRED menu layout and the classic FRED menu layout"
 END
 
 STRINGTABLE
@@ -3791,6 +4084,7 @@ END
 STRINGTABLE
 BEGIN
     ID_CALC_RELATIVE_COORDS "Calculate orientation and distance relative to an origin object"
+    ID_REORDER              "Change the order in which ships and wings are stored in the mission"
     ID_EDITORS_ADJUST_GRID  "Adjust the orientation and level of the grid"
     ID_EDITORS_SHIELD_SYS   "Editor for availability of shield system for ships"
     ID_ALIGN_OBJ            "Align object (or camera if no objects are marked) X/Y/Z axes with the global axes that are closest"

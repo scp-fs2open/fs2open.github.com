@@ -103,7 +103,7 @@ AudioProperties getAdjustedAudioProps(const AudioProperties& baseProps)
 		adjusted.format = AV_SAMPLE_FMT_FLT;
 		break;
 	default:
-		UNREACHABLE("Unhandled switch value!");
+		UNREACHABLE("Unhandled switch value %d!", bytes_per_sample);
 		adjusted.format = AV_SAMPLE_FMT_NONE;
 		break;
 	}

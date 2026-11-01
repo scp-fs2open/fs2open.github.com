@@ -27,6 +27,7 @@
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamesequence/gamesequence.h"
@@ -81,10 +82,9 @@ const char *campaign_types[MAX_CAMPAIGN_TYPES] =
 //XSTR:ON
 };
 
-// modules local variables to deal with getting new ships/weapons available to the player
-int Num_granted_ships, Num_granted_weapons;		// per mission counts of new ships and weapons
-int Granted_ships[MAX_SHIP_CLASSES];
-int Granted_weapons[MAX_WEAPON_TYPES];
+// module-local sets of new ships/weapons granted to the player during the current mission
+static SCP_set<int> Granted_ships;
+static SCP_set<int> Granted_weapons;
 
 // variables to control the UI stuff for loading campaigns
 LOCAL UI_WINDOW Campaign_window;
@@ -392,39 +392,37 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
  */
 void mission_campaign_get_sw_info()
 {
-    int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
+	if (optional_string("+Starting Ships:")) {
+		SCP_vector<int> ship_list;
+		stuff_int_list(ship_list, ParseLookupType::SHIP_INFO_TYPE);
 
-    if (optional_string("+Starting Ships:")) {
-        count = sz2i(stuff_int_list(ship_list, MAX_SHIP_CLASSES, ParseLookupType::SHIP_INFO_TYPE));
-
-        // now set the array elements stating which ships we are allowed
-        for (i = 0; i < count; i++) {
-            if (Ship_info[ship_list[i]].flags[Ship::Info_Flags::Player_ship])
-                Campaign.ships_allowed[ship_list[i]] = 1;
-        }
-	}
-	else {
+		// now note which ships we are allowed
+		for (int idx : ship_list) {
+			if (Ship_info[idx].flags[Ship::Info_Flags::Player_ship])
+				Campaign.ships_allowed.insert(idx);
+		}
+	} else {
 		// set allowable ships to the SIF_PLAYER_SHIPs
 		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
 			if (it->flags[Ship::Info_Flags::Player_ship])
-				Campaign.ships_allowed[std::distance(Ship_info.cbegin(), it)] = 1;
+				Campaign.ships_allowed.insert(static_cast<int>(std::distance(Ship_info.cbegin(), it)));
 		}
 	}
 
-    if (optional_string("+Starting Weapons:")) {
-        count = sz2i(stuff_int_list(weapon_list, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_POOL_TYPE));
+	if (optional_string("+Starting Weapons:")) {
+		SCP_vector<int> weapon_list;
+		stuff_int_list(weapon_list, ParseLookupType::WEAPON_POOL_TYPE);
 
-        // now set the array elements stating which ships we are allowed
-		for (i = 0; i < count; i++) {
-			if (Weapon_info[weapon_list[i]].wi_flags[Weapon::Info_Flags::Player_allowed])
-				Campaign.weapons_allowed[weapon_list[i]] = 1;
+		// now note which weapons we are allowed
+		for (int idx : weapon_list) {
+			if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Player_allowed])
+				Campaign.weapons_allowed.insert(idx);
 		}
-    }
-	else {
+	} else {
 		// set allowable weapons to the player-allowed ones
 		for (auto it = Weapon_info.cbegin(); it != Weapon_info.cend(); ++it) {
 			if (it->wi_flags[Weapon::Info_Flags::Player_allowed])
-				Campaign.weapons_allowed[std::distance(Weapon_info.cbegin(), it)] = 1;
+				Campaign.weapons_allowed.insert(static_cast<int>(std::distance(Weapon_info.cbegin(), it)));
 		}
 	}
 }
@@ -732,13 +730,8 @@ void player_loadout_init()
 	memset(Player_loadout.filename, 0, sizeof(Player_loadout.filename));
 	memset(Player_loadout.last_modified, 0, sizeof(Player_loadout.last_modified));
 
-	for ( i = 0; i < MAX_SHIP_CLASSES; i++ ) {
-		Player_loadout.ship_pool[i] = 0;
-	}
-
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ ) {
-		Player_loadout.weapon_pool[i] = 0;
-	}
+	Player_loadout.ship_pool.clear();
+	Player_loadout.weapon_pool.clear();
 
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		Player_loadout.unit_data[i].ship_class = -1;
@@ -843,9 +836,9 @@ int mission_campaign_next_mission()
 		Campaign.loop_enabled = 0;
 	}
 
-	// reset the number of persistent ships and weapons for the next campaign mission
-	Num_granted_ships = 0;
-	Num_granted_weapons = 0;
+	// reset the persistent ships and weapons for the next campaign mission
+	Granted_ships.clear();
+	Granted_weapons.clear();
 	return 0;
 }
 
@@ -882,8 +875,8 @@ int mission_campaign_previous_mission()
 	Player->stats.assign( Campaign.missions[Campaign.current_mission].stats );
 
 	strcpy_s( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name );
-	Num_granted_ships = 0;
-	Num_granted_weapons = 0;
+	Granted_ships.clear();
+	Granted_weapons.clear();
 
 	return 1;
 }
@@ -989,7 +982,7 @@ void mission_campaign_store_goals_and_events()
 			else
 				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
+			Assertion(false, "Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 
@@ -1125,7 +1118,7 @@ void mission_campaign_store_goals_and_events_and_variables(bool store_red_alert_
  */
 void mission_campaign_mission_over(bool do_next_mission)
 {
-	int mission_num, i;
+	int mission_num;
 	cmission *mission_obj;
 
 	// I don't think that we should have a record for these -- maybe we might??????  If we do,
@@ -1139,13 +1132,8 @@ void mission_campaign_mission_over(bool do_next_mission)
 	mission_obj = &Campaign.missions[mission_num];
 
 	// determine if any ships/weapons were granted this mission
-	for ( i=0; i<Num_granted_ships; i++ ){
-		Campaign.ships_allowed[Granted_ships[i]] = 1;
-	}
-
-	for ( i=0; i<Num_granted_weapons; i++ ){
-		Campaign.weapons_allowed[Granted_weapons[i]] = 1;	
-	}
+	Campaign.ships_allowed.insert(Granted_ships.begin(), Granted_ships.end());
+	Campaign.weapons_allowed.insert(Granted_weapons.begin(), Granted_weapons.end());
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
@@ -1194,6 +1182,35 @@ void mission_campaign_mission_over(bool do_next_mission)
 		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
+void mission_campaign_free_mission_strings(cmission &cm)
+{
+	if (cm.name != nullptr) {
+		vm_free(cm.name);
+		cm.name = nullptr;
+	}
+
+	if (cm.notes != nullptr) {
+		vm_free(cm.notes);
+		cm.notes = nullptr;
+	}
+
+	// the next three are strdup'd return values from parselo.cpp - taylor
+	if (cm.mission_branch_desc != nullptr) {
+		vm_free(cm.mission_branch_desc);
+		cm.mission_branch_desc = nullptr;
+	}
+
+	if (cm.mission_branch_brief_anim != nullptr) {
+		vm_free(cm.mission_branch_brief_anim);
+		cm.mission_branch_brief_anim = nullptr;
+	}
+
+	if (cm.mission_branch_brief_sound != nullptr) {
+		vm_free(cm.mission_branch_brief_sound);
+		cm.mission_branch_brief_sound = nullptr;
+	}
+}
+
 /**
  * Called when the game closes -- to get rid of memory errors for Bounds checker
  * also called at campaign init and campaign load
@@ -1207,35 +1224,11 @@ void mission_campaign_clear()
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
 	for ( i=0; i<Campaign.num_missions; i++ ) {
-		if ( Campaign.missions[i].name != NULL ) {
-			vm_free(Campaign.missions[i].name);
-			Campaign.missions[i].name = NULL;
-		}
-
-		if (Campaign.missions[i].notes != NULL) {
-			vm_free(Campaign.missions[i].notes);
-			Campaign.missions[i].notes = NULL;
-		}
+		mission_campaign_free_mission_strings(Campaign.missions[i]);
 
 		Campaign.missions[i].goals.clear();
 		Campaign.missions[i].events.clear();
 		Campaign.missions[i].variables.clear();
-
-		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_branch_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_desc);
-			Campaign.missions[i].mission_branch_desc = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_anim);
-			Campaign.missions[i].mission_branch_brief_anim = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_sound);
-			Campaign.missions[i].mission_branch_brief_sound = NULL;
-		}
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
@@ -1270,8 +1263,8 @@ void mission_campaign_clear()
 	Campaign.loop_reentry = 0;
 	Campaign.realign_required = 0;
 	Campaign.num_players = 0;
-	memset( Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed) );
-	memset( Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed) );
+	Campaign.ships_allowed.clear();
+	Campaign.weapons_allowed.clear();
 	Campaign.persistent_variables.clear(); 
 	Campaign.red_alert_variables.clear();
 	Campaign.persistent_containers.clear();
@@ -1542,13 +1535,9 @@ void mission_campaign_save_persistent( int type, int sindex )
 	// based on the type of information, save it off for possible saving into the campsign
 	// savefile when the mission is over
 	if ( type == CAMPAIGN_PERSISTENT_SHIP ) {
-		Assert( Num_granted_ships < MAX_SHIP_CLASSES );
-		Granted_ships[Num_granted_ships] = sindex;
-		Num_granted_ships++;
+		Granted_ships.insert(sindex);
 	} else if ( type == CAMPAIGN_PERSISTENT_WEAPON ) {
-		Assert( Num_granted_weapons < MAX_WEAPON_TYPES );
-		Granted_weapons[Num_granted_weapons] = sindex;
-		Num_granted_weapons++;
+		Granted_weapons.insert(sindex);
 	} else
 		Int3();
 }
@@ -1826,12 +1815,11 @@ bool mission_campaign_jump_to_mission(const char* filename, bool no_skip, bool p
 		return false;
 	} else {
 		if (!preserve_loadout) {
-			for (auto it = Ship_info.begin(); it != Ship_info.end(); it++) {
-				i = static_cast<int>(std::distance(Ship_info.begin(), it));
-				Campaign.ships_allowed[i] = 1;
+			for (i = 0; i < ship_info_size(); i++) {
+				Campaign.ships_allowed.insert(i);
 			}
 			for (i = 0; i < weapon_info_size(); i++) {
-				Campaign.weapons_allowed[i] = 1;
+				Campaign.weapons_allowed.insert(i);
 			}
 		}
 

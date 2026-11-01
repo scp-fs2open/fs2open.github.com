@@ -421,30 +421,26 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	}
 
 	// check for compressed image types
-	auto block_size = 0;
-	auto bm_handle = bm_is_compressed(bitmap_handle);
-	switch (bm_handle) {
+	auto bm_type = bm_is_compressed(bitmap_handle);
+	auto block_size = dds_block_size(bm_type);
+	switch (bm_type) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
-		block_size = 8;
 		break;
 
 	case DDS_DXT3:
 	case DDS_CUBEMAP_DXT3:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_DXT5:
 	case DDS_CUBEMAP_DXT5:
 		intFormat  = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-		block_size = 16;
 		break;
 
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
-		block_size = 16;
 		break;
 
 	case KTX_ETC2_RGB:
@@ -453,7 +449,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	case KTX_ETC2_SRGBA_EAC:
 	case KTX_ETC2_RGB_A1:
 	case KTX_ETC2_SRGB_A1:
-		intFormat = ktx_map_ktx_format_to_gl_internal(bm_handle);
+		intFormat = ktx_map_ktx_format_to_gl_internal(bm_type);
 		block_size = ktx_etc_block_size(intFormat);
 		break;
 	}
@@ -474,8 +470,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			auto mipmap_h = bmap_h;
 
 			for (auto i = 0; i < mipmap_levels + base_level; i++) {
-				// size of data block (4x4)
-				dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+				dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 				if (i >= base_level) {
 					glCompressedTexSubImage3D(tSlot->texture_target, i - base_level, 0, 0, tSlot->array_index, mipmap_w,
@@ -601,8 +596,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 			// check if it's a compressed cubemap first
 			if (block_size > 0) {
 				for (auto level = 0; level < mipmap_levels + base_level; level++) {
-					// size of data block (4x4)
-					dsize = ((mipmap_h + 3) / 4) * ((mipmap_w + 3) / 4) * block_size;
+					dsize = static_cast<GLsizei>(dds_compressed_mip_size(mipmap_w, mipmap_h, block_size));
 
 					if (level >= base_level) {
 						// We skipped ahead to the base level so we can start uploading frames now
@@ -978,7 +972,11 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 
 	auto base_level = 0;
 	auto resize = false;
-	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
+	// User bitmaps are excluded from culling because they are streaming surfaces (e.g. animations and
+	// video) that are updated through gr_update_texture() with the bitmap's own dimensions each frame,
+	// which requires the texture to match the bitmap's size.
+	if ( (Detail.hardware_textures < 4) && (bm_get_type(bitmap_handle) != BM_TYPE_USER)
+		&& (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
 		&& (bitmap_type != TCACHE_TYPE_CUBEMAP) && (bitmap_type != TCACHE_TYPE_3DTEX)
 		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
@@ -1236,7 +1234,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL)
+	if (gr_screen.mode != GraphicsAPI::OpenGL)
 		return;
 
 //	opengl_tcache_flush ();
@@ -1247,7 +1245,7 @@ int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 	float u_scale, v_scale;
 	int retval;
 
-	Assert( gr_screen.mode == GR_OPENGL );
+	Assert( gr_screen.mode == GraphicsAPI::OpenGL );
 
 	if ( !GL_should_preload ) {
 		return 0;
@@ -1413,15 +1411,20 @@ int opengl_get_texture( GLenum target, GLenum pixel_format, GLenum data_format, 
 	return m_offset;
 }
 
-void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
+ubyte* gr_opengl_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out)
 {
+	*width_out = 0;
+	*height_out = 0;
+
 	float u,v;
 
 	uint32_t array_index = 0;
-	gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index);
+	if ( !gr_opengl_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u, &v, &array_index) ) {
+		return nullptr;
+	}
 
 	auto *ts = bm_get_gr_info<tcache_slot_opengl>(bitmap_num, true);
-	
+
 	GLenum pixel_format = GL_RGB;
 	GLenum data_format = GL_UNSIGNED_BYTE;
 	int bytes_per_pixel = 3 * sizeof(ubyte);
@@ -1431,24 +1434,46 @@ void gr_opengl_get_bitmap_from_texture(void* data_out, int bitmap_num)
 		bytes_per_pixel = 4 * sizeof(ubyte);
 	}
 
-	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
-	int num_frames = 0;
-	bm_get_info(bitmap_num, nullptr, nullptr, nullptr, &num_frames);
-	if (!bm_is_texture_array(bitmap_num)) {
-		num_frames = 1;
+	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+
+	// The texture in graphics memory may not match the dimensions or frame count that bmpman reports for
+	// this handle, e.g. when mipmap levels are culled at lower texture detail settings, so size the
+	// readback from what OpenGL will actually write, not from the bitmap or the texture cache slot.
+	GLint gl_width = 0, gl_height = 0, gl_layers = 0;
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_WIDTH, &gl_width);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_HEIGHT, &gl_height);
+	glGetTexLevelParameteriv(ts->texture_target, 0, GL_TEXTURE_DEPTH, &gl_layers);
+
+	if ( (gl_width < 1) || (gl_height < 1) || (gl_layers < 1) || (array_index >= static_cast<uint32_t>(gl_layers)) ) {
+		mprintf(("Cannot read bitmap %d (%s) back from its texture; OpenGL reports level 0 as %dx%d with %d layer(s) but layer %u is needed.\n",
+			bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, gl_layers, array_index));
+		return nullptr;
 	}
 
-	// The size of a single frame in the array
-	auto slice_size = ts->w * ts->h * bytes_per_pixel;
-	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[num_frames * slice_size]);
+	// At maximum texture detail no culling occurs on upload, so the texture must match the dimensions
+	// recorded in the texture cache slot; if this trips, we have another slot mismatch.
+	Assertion((Detail.hardware_textures < 4) || ((gl_width == ts->w) && (gl_height == ts->h)),
+		"Texture readback size mismatch for bitmap %d (%s): OpenGL reports level 0 as %dx%d but the texture cache slot expects %dx%d.",
+		bitmap_num, bm_get_filename(bitmap_num), gl_width, gl_height, ts->w, ts->h);
 
-	Assertion(ts->texture_target == GL_TEXTURE_2D_ARRAY, "Unexpected texture target encountered!");
+	// The size of a single layer in the array
+	size_t slice_size = static_cast<size_t>(gl_width) * gl_height * bytes_per_pixel;
+
+	// We can't read a specific layer of the texture so we need to read the entire texture and then memcpy the right part from that...
+	// Some drivers write tiny compressed textures back in whole 4x4 block granularity, so pad each layer
+	// of the staging buffer to full blocks to keep any such overwrite within bounds.
+	size_t padded_slice_size = static_cast<size_t>((gl_width + 3) & ~3) * ((gl_height + 3) & ~3) * bytes_per_pixel;
+	std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[padded_slice_size * gl_layers]);
 
 	// Copy the entire texture level into the bitmap
 	glGetTexImage(ts->texture_target, 0, pixel_format, data_format, buffer.get());
 
-	auto buffer_offset = array_index * slice_size;
-	memcpy(data_out, buffer.get() + buffer_offset, slice_size);
+	auto data_out = reinterpret_cast<ubyte*>(vm_malloc(slice_size));
+	memcpy(data_out, buffer.get() + array_index * slice_size, slice_size);
+
+	*width_out = gl_width;
+	*height_out = gl_height;
+	return data_out;
 }
 
 void gr_opengl_get_texture_scale(int bitmap_handle, float *u_scale, float *v_scale)
@@ -1494,7 +1519,7 @@ size_t opengl_export_render_target( int slot, int width, int height, int alpha, 
 		return 0;
 	}
 
-	if ( (ts->w != width) && (ts->h != height) ) {
+	if ( (ts->w != width) || (ts->h != height) ) {
 		mprintf(("OpenGL ERROR: Passed width and height do not match values for texture!\n"));
 		return 0;
 	}
@@ -1538,6 +1563,13 @@ void gr_opengl_update_texture(int bitmap_handle, int bpp, const ubyte* data, int
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
 	if(!t->texture_id)
 		return;
+
+	// This overwrites the texture with data at the bitmap's own size, so the texture must not have been
+	// culled when it was created (user bitmaps are exempt from texture detail culling for this reason).
+	Assertion((t->w == width) && (t->h == height),
+		"gr_opengl_update_texture() called for bitmap %s with %dx%d data, but its texture is %dx%d.",
+		bm_get_filename(bitmap_handle), width, height, t->w, t->h);
+
 	int byte_mult = (bpp >> 3);
 	int true_byte_mult = (t->bpp >> 3);
 	ubyte* texmem = NULL;

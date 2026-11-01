@@ -40,9 +40,6 @@
 
 // AI BIG MAGIC NUMBERS
 // Select strafing options are now exposed to modders  --wookieejedi
-#define	STRAFE_RETREAT_COLLIDE_TIME	2.0		// when anticipated collision time is less than this, begin retreat
-#define	STRAFE_RETREAT_COLLIDE_DIST	100		// when perpendicular distance to *surface* is less than this, begin retreat
-
 #define	EVADE_BOX_BASE_DISTANCE			300		// standard distance to end evade submode
 #define	EVADE_BOX_MIN_DISTANCE			200		// minimun distance to end evade submode, after long time
 
@@ -68,6 +65,16 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
 extern void compute_desired_rvec(vec3d *rvec, const vec3d *goal_pos, const vec3d *cur_pos);
 extern void big_ship_collide_recover_start(const object *objp, const object *big_objp, const vec3d *collision_normal);
+
+// Record the mode being left as the one to return to, unless a dynamic goal is already in progress
+// (in which case previous_mode still refers to the mode that goal interrupted).
+static void ai_big_save_previous_mode(ai_info *aip)
+{
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state] && aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)
+		return;
+
+	aip->previous_mode = aip->mode;
+}
 
 
 //	Called by ai_big_pick_attack_point.
@@ -502,7 +509,7 @@ bool ai_big_maybe_follow_subsys_path(bool do_dot_check)
 					// for now, only follow the path to the first point
 					if ( aip->path_cur < (aip->path_start+aip->path_length-1) ) {
 						if ( aip->goal_objnum != aip->target_objnum ) {
-							aip->previous_mode = aip->mode;
+							ai_big_save_previous_mode(aip);
 							aip->mode = AIM_NONE;
 							aip->submode = -1;
 							aip->submode_start_time = Missiontime;
@@ -709,7 +716,8 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 						if (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.0f) {
 							dist = vm_vec_normalize(&in_vec);
 							if ((dist < 200.0f) && (vm_vec_dot(&in_vec, &objp->orient.vec.fvec) > 0.95f)) {
-								if ((Objects[objp->parent].signature == objp->parent_sig) && (vm_vec_dist_quick(&objp->pos, &Objects[objp->parent].pos) < 300.0f)) {
+								if ((Objects[objp->parent].signature == objp->parent_sig) && (vm_vec_dist_quick(&objp->pos, &Objects[objp->parent].pos) < 300.0f)
+									&& !ai_declines_pursuit(Pl_objp, &Objects[objp->parent])) {
 									set_target_objnum(aip, objp->parent);
 									aip->submode = SM_ATTACK;
 									aip->submode_start_time = Missiontime;
@@ -730,7 +738,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		// including ai_profile flag and if enemy fighters are near
 		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed && 
 			(The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
-			aip->previous_mode = aip->mode;
+			ai_big_save_previous_mode(aip);
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			ai_big_strafe_position();
@@ -739,7 +747,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
 		if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
-			aip->previous_mode = aip->mode;
+			ai_big_save_previous_mode(aip);
 			aip->mode = AIM_STRAFE;
 			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 			aip->submode = AIS_STRAFE_GLIDE_ATTACK;
@@ -1011,7 +1019,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 // switch ai ship into chase mode
 void ai_big_switch_to_chase_mode(ai_info *aip)
 {
-	aip->previous_mode = aip->mode;
+	ai_big_save_previous_mode(aip);
 	aip->mode = AIM_CHASE;
 	aip->submode = SM_ATTACK;
 	aip->submode_start_time = Missiontime;
@@ -1111,7 +1119,7 @@ void ai_big_chase()
 	} else if (En_objp->flags[Object::Object_Flags::Protected]) {	//	If protected and we're not attacking a subsystem, stop attacking!
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
 		aip->target_objnum = -1;
-		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level]) == -1) {
+		if (find_enemy(OBJ_INDEX(Pl_objp), MAX_ENEMY_DISTANCE, The_mission.ai_profile->max_attackers[Game_skill_level], ai_targets_for_pursuit(aip)) == -1) {
 			ai_do_default_behavior(Pl_objp);
 			return;
 		}
@@ -1198,70 +1206,78 @@ void ai_big_chase()
 		}
 
 		//	If a collision is expected, pull out!
-		float dist_normal_to_enemy;
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Kamikaze_no_collision_avoidance] && aip->ai_flags[AI::AI_Flags::Kamikaze])) {
 
-		if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-			if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
-				dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
-			else // I'm fairly sure this retail code VVV meant to use / instead of * 
-				dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
-		} else {
-			// don;t have normal so use a conservative value here
-			dist_normal_to_enemy = 0.3f * dist_to_enemy;
-		}
+			float dist_normal_to_enemy;
 
-//		float time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed * fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
-//		if (Framecount % 30 == 1) {
-//			mprintf(("normal dist; %.1f, time: %.1f\n", dist_normal_to_enemy, time_to_enemy));
-//		}
-		
-		// since we're not in strafe and we may get a bad normal, cap dist_normal_to_enemy as MIN(0.3*dist_to_enemy, self)
-		// this will allow us to get closer on a bad normal
-		dist_normal_to_enemy = MAX(0.3f*dist_to_enemy, dist_normal_to_enemy);
-
-		if (dist_to_enemy < ATTACK_COLLIDE_BASE_DIST) {
-			// within 50m or 1sec
-			float time_to_enemy;
 			if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
-				if (Pl_objp->phys_info.speed > 0.1) {
-					time_to_enemy = dist_normal_to_enemy / fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
-				} else {
-					// a big time
-					time_to_enemy = 100.0f;
-				}
-			} else {
-				if (Pl_objp->phys_info.speed > 0.1) {
-					time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed;
-				} else {
-					// a big time
-					time_to_enemy = 100.0f;
-				}
+				if (aip->ai_profile_flags[AI::Profile_Flags::Improved_subsystem_attack_pathing])
+					dist_normal_to_enemy = fl_abs((dist_to_enemy / vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+				else // I'm fairly sure this retail code VVV meant to use / instead of * 
+					dist_normal_to_enemy = fl_abs((dist_to_enemy * vm_vec_dot(&vec_to_enemy, &aip->big_attack_surface_normal)));
+			}
+			else {
+				// don;t have normal so use a conservative value here
+				dist_normal_to_enemy = 0.3f * dist_to_enemy;
 			}
 
-			float speed_dist = MAX(0.0f, (Pl_objp->phys_info.speed-50) * 2);
-			if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME) ) {
-				// get away, simulate crsh recovery (don't use avoid)
-//				accelerate_ship(aip, -1.0f);
-				big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
-//				aip->submode = SM_AVOID;
-//				aip->submode_start_time = Missiontime;
-			} else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME) ) {
-				// slow down
-				accelerate_ship(aip, -1.0f);
-			}
-		}
+			//		float time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed * fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
+			//		if (Framecount % 30 == 1) {
+			//			mprintf(("normal dist; %.1f, time: %.1f\n", dist_normal_to_enemy, time_to_enemy));
+			//		}
 
-		/*
-		if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f)) {
-			if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, (aip->targeted_subsys == NULL)*2.0f + 1.5f)) {
-				if ((Missiontime - aip->last_hit_time > F1_0*4) && (dist_to_enemy < Pl_objp->radius*2 + En_objp->radius*2)) {
+					// since we're not in strafe and we may get a bad normal, cap dist_normal_to_enemy as MIN(0.3*dist_to_enemy, self)
+					// this will allow us to get closer on a bad normal
+			dist_normal_to_enemy = MAX(0.3f * dist_to_enemy, dist_normal_to_enemy);
+
+			if (dist_to_enemy < ATTACK_COLLIDE_BASE_DIST) {
+				// within 50m or 1sec
+				float time_to_enemy;
+				if (vm_vec_mag_squared(&aip->big_attack_surface_normal) > 0.9) {
+					if (Pl_objp->phys_info.speed > 0.1) {
+						time_to_enemy = dist_normal_to_enemy / fl_abs(vm_vec_dot(&Pl_objp->phys_info.vel, &aip->big_attack_surface_normal));
+					}
+					else {
+						// a big time
+						time_to_enemy = 100.0f;
+					}
+				}
+				else {
+					if (Pl_objp->phys_info.speed > 0.1) {
+						time_to_enemy = dist_normal_to_enemy / Pl_objp->phys_info.speed;
+					}
+					else {
+						// a big time
+						time_to_enemy = 100.0f;
+					}
+				}
+
+				float speed_dist = MAX(0.0f, (Pl_objp->phys_info.speed - 50) * 2);
+				if ((dist_normal_to_enemy < ATTACK_COLLIDE_AVOID_DIST + speed_dist) || (time_to_enemy < ATTACK_COLLIDE_AVOID_TIME)) {
+					// get away, simulate crsh recovery (don't use avoid)
+	//				accelerate_ship(aip, -1.0f);
+					big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
+					//				aip->submode = SM_AVOID;
+					//				aip->submode_start_time = Missiontime;
+				}
+				else if ((dist_normal_to_enemy < ATTACK_COLLIDE_SLOW_DIST) || (time_to_enemy < ATTACK_COLLIDE_SLOW_TIME)) {
+					// slow down
 					accelerate_ship(aip, -1.0f);
-				} else {
-					aip->submode = SM_AVOID;
-					aip->submode_start_time = Missiontime;
 				}
 			}
-		} */
+
+			/*
+			if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f)) {
+				if (might_collide_with_ship(Pl_objp, En_objp, dot_to_enemy, dist_to_enemy, (aip->targeted_subsys == NULL)*2.0f + 1.5f)) {
+					if ((Missiontime - aip->last_hit_time > F1_0*4) && (dist_to_enemy < Pl_objp->radius*2 + En_objp->radius*2)) {
+						accelerate_ship(aip, -1.0f);
+					} else {
+						aip->submode = SM_AVOID;
+						aip->submode_start_time = Missiontime;
+					}
+				}
+			} */
+		}
 	}
 
 	switch (aip->submode) {
@@ -1444,8 +1460,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 			collide_time = false;
 			collide_distance = false;
 		} else {
-			collide_time = (dist_to_target / Pl_objp->phys_info.speed) < STRAFE_RETREAT_COLLIDE_TIME;
-			collide_distance = dist_to_target < (STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty);
+			collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+			collide_distance = dist_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 		}
 	} else {
 		float dist_normal_to_target;
@@ -1455,8 +1471,8 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 		} else {
 			dist_normal_to_target = 0.2f * dist_to_target;
 		}
-		collide_time = (dist_normal_to_target / Pl_objp->phys_info.speed) < STRAFE_RETREAT_COLLIDE_TIME;
-		collide_distance = dist_normal_to_target < (STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty);
+		collide_time = (Pl_objp->phys_info.speed > 0.0f) && (dist_normal_to_target / Pl_objp->phys_info.speed) < (The_mission.ai_profile->strafe_retreat_collide_time);
+		collide_distance = dist_normal_to_target < ((The_mission.ai_profile->strafe_retreat_collide_distance) + speed_to_dist_penalty);
 	}
 
 	//if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f))
@@ -1862,7 +1878,7 @@ void ai_big_strafe()
 
 /*
 	if ( aip->goal_objnum != aip->target_objnum ) {
-		UNREACHABLE("The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
+		Assertion(false, "The goal objnum does not match the target objnum in ai_big_strafe(), please report to the SCP!");	// what is going on here? - Get Alan
 		aip->mode = AIM_NONE;
 		return;
 	}
@@ -1963,26 +1979,25 @@ int ai_big_maybe_enter_strafe_mode(const object *pl_objp, int weapon_objnum)
 		return 0;
 	}
 
+	if (ai_declines_pursuit(pl_objp, parent_objp)) {
+		return 0;
+	}
+
 	// Maybe the ship which fired the weapon isn't the current target
 	if ( OBJ_INDEX(parent_objp) != aip->target_objnum ) {
-
-//JAS IMPOSSIBLE		if (1) { // consider_target_only ) {
-//JAS IMPOSSIBLE			return 0;
-//JAS IMPOSSIBLE		} else {
 			// switch targets
 			sip = &Ship_info[Ships[parent_objp->instance].ship_info_index];
 			if ( !(sip->is_big_or_huge()) || (sip->flags[Ship::Info_Flags::Transport]) ) {
 				return 0;
 			}
 			set_target_objnum(aip, OBJ_INDEX(parent_objp));
-//JAS IMPOSSIBLE		}
 	}
 
 	ai_big_strafe_maybe_attack_turret(pl_objp, weapon_objp);
 
 	// if we've got this far, the weapon must have come from the player's target, and it is a 
 	// big/capital ship... so enter strafe mode
-	aip->previous_mode = aip->mode;
+	ai_big_save_previous_mode(aip);
 	aip->mode = AIM_STRAFE;
 	aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
 	aip->submode = AIS_STRAFE_AVOID;

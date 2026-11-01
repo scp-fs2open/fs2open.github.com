@@ -32,7 +32,7 @@
 #ifdef NO_RESTRICT_USE
 #   define RESTRICT
 #else
-#   define RESTRICT  restrict
+#   define RESTRICT  __restrict__
 #endif
 
 #define ASSUME(x)

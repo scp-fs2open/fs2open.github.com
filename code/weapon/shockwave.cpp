@@ -42,7 +42,7 @@ int Shockwave_inited = 0;
 // -----------------------------------------------------------
 // Function macros
 // -----------------------------------------------------------
-#define SW_INDEX(sw) (sw-Shockwaves)
+#define SW_INDEX(sw) (static_cast<int>((sw)-Shockwaves))
 	
 // -----------------------------------------------------------
 // Externals
@@ -308,7 +308,13 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		CLAMP(sw->radius, 0.0f, sw->outer_radius);
 	}
 
-	if ( sw->time_elapsed > sw->total_time ) {
+	// It is possible the shockwave may have lifetime shorter than one frame (e.g. high speed, small radius), 
+	// which by default results in shockwave applying no damage.
+	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
+	bool sw_expired = sw->time_elapsed > sw->total_time;
+	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+
+	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
 		return;
 	}
@@ -443,6 +449,25 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 	}	// end for
+
+	// See the sw_expired check above: shockwave has now applied its final damage pass this frame, so let it die.  
+	// With the flag off we already returned before the loop.
+	if ( sw_expired && sw_expire_fix ) {
+        shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
+	}
+}
+
+// an animated base texture carries its own fade in its frames, timed like the glow map
+static bool shockwave_model_base_is_animated(int model_id)
+{
+	polymodel *pm = model_get(model_id);
+
+	for (int i = 0; i < pm->n_textures; i++) {
+		if (pm->maps[i].textures[TM_BASE_TYPE].GetNumFrames() > 1)
+			return true;
+	}
+
+	return false;
 }
 
 /**
@@ -479,7 +504,8 @@ void shockwave_render(const object *objp, model_draw_list *scene)
 
 		model_render_params render_info;
 
-		render_info.set_warp_params(-1, 1.0f - (sw->radius/sw->outer_radius), scale);
+		float warp_alpha = shockwave_model_base_is_animated(sw->model_id) ? 1.0f : 1.0f - (sw->radius/sw->outer_radius);
+		render_info.set_warp_params(-1, warp_alpha, scale);
 
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 

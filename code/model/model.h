@@ -15,6 +15,7 @@
 #include "globalincs/globals.h" // for NAME_LENGTH
 #include "globalincs/pstypes.h"
 #include <array>
+#include <utility>
  
 #include "actions/Program.h"
 #include "gamesnd/gamesnd.h"
@@ -472,7 +473,7 @@ public:
 	matrix	frame_of_reference;		// used to be called 'orientation' - this is just used for setting the rotation axis and the animation angles
 
 	int		bsp_data_size;
-	std::shared_ptr<ubyte[]> bsp_data;
+	std::shared_ptr<ubyte[]> bsp_data; // the bsp_data loaded and then cleared after has been used in modelread
 
 	int collision_tree_index;
 
@@ -489,6 +490,7 @@ public:
 
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
 	int		live_debris[MAX_LIVE_DEBRIS];	// array of live debris submodels for a submodel
+	int     num_polys = 0;          // number of tmaps & flat polys in a submodel, only loaded and used with the -pofspew cmdline
 
 	// Tree info
 	int		parent;					// what is parent for each submodel, -1 if none
@@ -563,17 +565,30 @@ struct w_bank
 		delete[] external_model_angle_offset;
 	}
 
-	w_bank& operator=(w_bank&& other) {
-		this->~w_bank();
-		num_slots = other.num_slots;
-		pnt = other.pnt;
-		norm = other.norm;
-		external_model_angle_offset = other.external_model_angle_offset;
-		other.pnt = nullptr;
-		other.norm = nullptr;
-		other.external_model_angle_offset = nullptr;
+	w_bank(w_bank&& other) noexcept
+		: num_slots(std::exchange(other.num_slots, 0)),
+		  pnt(std::exchange(other.pnt, nullptr)),
+		  norm(std::exchange(other.norm, nullptr)),
+		  external_model_angle_offset(std::exchange(other.external_model_angle_offset, nullptr))
+	{}
+
+	w_bank& operator=(w_bank&& other) noexcept {
+		if (this != &other) {
+			delete[] pnt;
+			delete[] norm;
+			delete[] external_model_angle_offset;
+			num_slots = std::exchange(other.num_slots, 0);
+			pnt = std::exchange(other.pnt, nullptr);
+			norm = std::exchange(other.norm, nullptr);
+			external_model_angle_offset = std::exchange(other.external_model_angle_offset, nullptr);
+		}
 		return *this;
 	}
+
+	// The copy constructor is shallow!  It exists for object_copy_including_array_member,
+	// which copy-constructs and then immediately replaces every owned array with a fresh
+	// allocation.  Do not copy-construct a w_bank in any other context, because the
+	// destructor will delete[] the aliased arrays.
 	w_bank(const w_bank& other) = default;
 	w_bank& operator=(const w_bank& other) = delete;
 };
@@ -754,7 +769,7 @@ typedef struct insignia {
 	float v[MAX_INS_FACES][MAX_INS_FACE_VECS];		// v tex coords on a per-face-per-vertex bases
 	vec3d vecs[MAX_INS_VECS];								// vertex list	
 	vec3d offset;	// global position offset for this insignia
-	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
+	vec3d norm[MAX_INS_FACES];					// normal of each face
 
 	// Computed fields for decal rendering
 	vec3d position;
@@ -1038,8 +1053,6 @@ void model_delete_instance(int model_instance_num);
 // Goober5000
 void model_load_texture(polymodel *pm, int i, const char *file);
 
-SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
-
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
 
@@ -1090,7 +1103,7 @@ void model_set_detail_level(int n);
 #define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
 #define MR_FORCE_CLAMP				(1<<29)		// force clamp - Hery
 #define MR_EMPTY_SLOT5				(1<<30)		// Use a animated Shader - Valathil
-constexpr uint64_t MR_ATTACHED_MODEL = static_cast<uint64_t>(1) << static_cast<uint64_t>(31); // Used for attached weapon model lodding
+constexpr uint64_t MR_EMPTY_SLOT6 = static_cast<uint64_t>(1) << static_cast<uint64_t>(31); // Used for attached weapon model lodding
 constexpr uint64_t MR_NO_INSIGNIA = static_cast<uint64_t>(1) << static_cast<uint64_t>(32);	// Disable the insignias for ... reasons.  Also << more than 31 causes UB, so that's (1<<32)
 
 #define MR_DEBUG_PIVOTS				(1<<0)		// Show the pivot points

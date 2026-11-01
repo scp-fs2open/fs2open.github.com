@@ -3,7 +3,8 @@
 #include "../AbstractDialogModel.h"
 #include "mission/util.h"
 #include "ship/ship.h"
-#include "ui/widgets/sexp_tree.h"
+
+class SexpTreeModel;
 
 namespace fso::fred::dialogs {
 
@@ -60,6 +61,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(bool isPlayer);
 	bool getPlayer() const;
+	void makeSolePlayerStart();
 
 	void setRespawn(int respawn);
 	int getRespawn() const;
@@ -84,11 +86,14 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(bool updateCue);
 	bool getArrivalCue() const;
 
-	void setArrivalFormula(int formula, int objNum);
+	void setArrivalTreeDirty(const SexpTreeModel& tree);
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(int state);
 	int getNoArrivalWarp() const;
+
+	void setDockWarpinChange(const int state);
+	int getDockWarpinChange() const;
 
 	void setDepartureLocationIndex(int index);
 	int getDepartureLocationIndex() const;
@@ -104,10 +109,13 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(bool updateCue);
 	bool getDepartureCue() const;
 
-	void setDepartureFormula(int formula, int objNum);
+	void setDepartureTreeDirty(const SexpTreeModel& tree);
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;
+
+	void setDockWarpoutChange(const int state);
+	int getDockWarpoutChange() const;
 
 	void onPrevious();
 	void onNext();
@@ -143,8 +151,18 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void initializeData();
 
+  signals:
+	// Emitted after the model has re-synced from the current selection; the view
+	// should do a full (overwrite) refresh in response.
+	void shipMarkingChanged();
+
+  private slots:
+	void onSelectedObjectChanged(int);
+	void onSelectedObjectMarkingChanged(int, bool);
+
   private: // NOLINT(readability-redundant-access-specifiers)
 	void setModified();
+	void scheduleInitializeData();
 	void shipAltNameClose(int baseShip);
 	void shipCallsignClose(int baseShip);
 	static int makeShipList(int* arr);
@@ -152,6 +170,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int _noDepartureWarp;
 	int _noArrivalWarp;
+	int _dockWarpoutChange;
+	int _dockWarpinChange;
 	bool _isPlayerShip;
 	int _departureTreeFormula;
 	int _arrivalTreeFormula;
@@ -195,6 +215,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _respawnPriority;
 	SCP_vector<std::pair<SCP_string, bool>> _arrivalPaths;
 	SCP_vector<std::pair<SCP_string, bool>> _departurePaths;
+	bool _initPending = false;
 };
 
 } // namespace fso::fred::dialogs

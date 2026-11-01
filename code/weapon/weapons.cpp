@@ -109,8 +109,7 @@ missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
-int	Num_spawn_types = 0;
-char** Spawn_names = nullptr;
+SCP_vector<SCP_string> Spawn_names;
 
 //WEAPON SUBTYPE STUFF
 const char *Weapon_subtype_names[] = {
@@ -142,14 +141,8 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
 		if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
-			//We need more spawning slots
-			//allocate in slots of 10
-			if ((Num_spawn_types % 10) == 0) {
-				Spawn_names = (char**)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
-			}
-
 			flags.set(Weapon::Info_Flags::Spawn);
-			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Num_spawn_types;
+			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Spawn_names.size();
 			size_t start_num = spawn.find_first_of(',');
 			if (start_num == SCP_string::npos) {
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -161,8 +154,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 
 			weaponp->maximum_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
 
-			Spawn_names[Num_spawn_types] = vm_strndup(spawn.substr(0, start_num).c_str(), start_num);
-			Num_spawn_types++;
+			Spawn_names.push_back(spawn.substr(0, start_num));
 			weaponp->num_spawn_weapons_defined++;
 		}
 		else {
@@ -387,17 +379,6 @@ int weapon_info_lookup(const char *name)
 			return (int)std::distance(Weapon_info.cbegin(), it);
 
 	return -1;
-}
-
-/**
- * Return the index of Weapon_info used by this pointer.  Equivalent to the old WEAPON_INFO_INDEX macro:
- * #define WEAPON_INFO_INDEX(wip)		(int)(wip-Weapon_info)
- */
-int weapon_info_get_index(const weapon_info *wip)
-{
-	Assertion(wip != nullptr, "NULL wip passed to weapon_info_get_index");
-	const weapon_info *data = Weapon_info.data();
-	return static_cast<int>(std::distance(data, wip));
 }
 
 //	Parse the weapon flags.
@@ -699,7 +680,11 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
 			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
-			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
+			float rot_rnd_min = 0.f;
+			float rot_rnd_max = 1.0f / pspew_buffer.particle_spew_rotation_rate;
+			if (rot_rnd_max < rot_rnd_min)
+				std::swap(rot_rnd_min, rot_rnd_max);
+			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(rot_rnd_min, rot_rnd_max), true});
 			velocity_vol = std::move(vel_vol_temp);
 		}
 			break;
@@ -743,7 +728,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			absolutePositionVelocityInherit = true;
 			break;
 		default:
-			UNREACHABLE("Invalid PSPEW legacy type!");
+			UNREACHABLE("Invalid PSPEW legacy type %d!", pspew_buffer.particle_spew_type);
 	}
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
@@ -867,11 +852,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 
 			return -1;
-		}
-
-		// Check if there are too many weapon classes
-		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
-			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
 		}
 
 		w_id = weapon_info_size();
@@ -3889,7 +3869,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->particle_spewers[spew_index] = particle::util::parseEffect(wip->name);
 			}
 			else { // we have a valid index, now parse the spewer already
-				auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][spew_index];
+				auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][spew_index];
 				if (pspew_buffer.particle_spew_type == PSPEW_NONE) {
 					//This must be an uninitialized effect, store defaults.
 					pspew_buffer.particle_spew_count = 1;
@@ -3992,7 +3972,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (wip->particle_spewers.empty()) {
 				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
 			}
-			auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][0];
+			auto& pspew_buffer = pspew_legacy_parse_data_buffer[WEAPON_INFO_INDEX(wip)][0];
 			pspew_buffer.particle_spew_count = 1;
 			pspew_buffer.particle_spew_time = 25;
 			pspew_buffer.particle_spew_vel = 0.4f;
@@ -4143,7 +4123,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Weapon Hitpoints:")) {
 		stuff_int(&wip->weapon_hitpoints);
-	} else if (first_time && (wip->wi_flags[Weapon::Info_Flags::Turret_Interceptable, Weapon::Info_Flags::Fighter_Interceptable, Weapon::Info_Flags::Mine])) {
+	} else if (first_time && (wip->wi_flags.any_of(Weapon::Info_Flags::Turret_Interceptable,Weapon::Info_Flags::Fighter_Interceptable,Weapon::Info_Flags::Mine))) {
 		wip->weapon_hitpoints = wip->is_mine() ? 50 : 25; // mines are tankier by default, like bombs
 	}
 
@@ -4378,16 +4358,13 @@ void translate_spawn_types()
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            if ( (Weapon_info[i].spawn_info[j].spawn_wep_index > -1) && (Weapon_info[i].spawn_info[j].spawn_wep_index < Num_spawn_types) )
+            int spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
+            if ( Spawn_names.in_bounds(spawn_type) )
             {
-                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
-
-                Assert( spawn_type < Num_spawn_types );
-
 				bool found_a_match = false;
                 for (k = 0; k < weapon_info_size(); k++)
                 {
-                    if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
+                    if ( !stricmp(Spawn_names[spawn_type].c_str(), Weapon_info[k].name) )
                     {
                         Weapon_info[i].spawn_info[j].spawn_wep_index = (short)k;
 
@@ -4400,7 +4377,7 @@ void translate_spawn_types()
                 }
 
 				if (!found_a_match) {
-					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type], Weapon_info[i].name);
+					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type].c_str(), Weapon_info[i].name);
 					Weapon_info[i].spawn_info[j].spawn_wep_index = -1;
 				}
             }
@@ -5172,7 +5149,7 @@ void weapon_post_ship_init()
 void weapon_init()
 {
 	if ( !Weapons_inited ) {
-		Num_spawn_types = 0;
+		Spawn_names.clear();
 
 		// parse weapons.tbl
 		Removed_weapons.clear();
@@ -5213,17 +5190,7 @@ void weapon_close()
 		used_weapons = NULL;
 	}
 
-	if (Spawn_names != NULL) {
-		for (i=0; i<Num_spawn_types; i++) {
-			if (Spawn_names[i] != NULL) {
-				vm_free(Spawn_names[i]);
-				Spawn_names[i] = NULL;
-			}
-		}
-
-		vm_free(Spawn_names);
-		Spawn_names = NULL;
-	}
+	Spawn_names.clear();
 }
 
 /**
@@ -5256,7 +5223,8 @@ void weapon_level_init()
 					case LockRestrictionType::CLASS: idx = ship_info_lookup(name); break;
 					case LockRestrictionType::SPECIES: idx = species_info_lookup(name); break;
 					case LockRestrictionType::IFF: idx = iff_lookup(name); break;
-					default: Assertion(false, "Unknown multi lock restriction type %d", (int)pair.first);
+					default:
+						UNREACHABLE("Unknown multi lock restriction type %d", static_cast<int>(pair.first));
 						idx = -1;
 				}
 				if ( idx >= 0 ) {
@@ -5336,8 +5304,10 @@ void weapon_delete(object *obj)
 	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
 		snd_stop(wp->hud_in_flight_snd_sig);
 
-	if (wp->model_instance_num >= 0)
+	if (wp->model_instance_num >= 0) {
 		model_delete_instance(wp->model_instance_num);
+		wp->model_instance_num = -1;
+	}
 
 	if (wp->cmeasure_ignore_list != nullptr) {
 		delete wp->cmeasure_ignore_list;
@@ -5511,7 +5481,7 @@ void find_homing_object(object *weapon_objp, int num)
                 else if (objp->type == OBJ_WEAPON)
 				{
                     //don't attempt to home on weapons if the weapon is a huge weapon or is a javelin homing weapon.
-                    if (wip->wi_flags[Weapon::Info_Flags::Huge, Weapon::Info_Flags::Homing_javelin])
+					if (wip->wi_flags.any_of(Weapon::Info_Flags::Huge,Weapon::Info_Flags::Homing_javelin))
                         continue;
                     
                     //don't look for local ssms that are gone for the time being
@@ -7071,31 +7041,69 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 	}
 }
 
-size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys * src_turret)
+static size_t *get_pointer_to_weapon_fire_pattern_index(ship_weapon *ship_weapon_p, int swp_pbank, int swp_sbank)
 {
-	Assertion(ship_idx >= 0 && ship_idx < MAX_SHIPS, "Invalid ship index in get_pointer_to_weapon_fire_pattern_index()");
-	ship* shipp = &Ships[ship_idx];
-	ship_weapon* ship_weapon_p = &(shipp->weapons);
-	if(src_turret)
+	if (ship_weapon_p)
 	{
-		ship_weapon_p = &src_turret->weapons;
+		if (swp_pbank >= 0)
+		{
+			Assertion(swp_pbank < MAX_SHIP_PRIMARY_BANKS, "swp_pbank is %d, which is out of range [0,%d)", swp_pbank, MAX_SHIP_PRIMARY_BANKS);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[swp_pbank]);
+		}
+		if (swp_sbank >= 0)
+		{
+			Assertion(swp_sbank < MAX_SHIP_SECONDARY_BANKS, "swp_sbank is %d, which is out of range [0,%d)", swp_sbank, MAX_SHIP_SECONDARY_BANKS);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[swp_sbank]);
+		}
 	}
-	Assert( ship_weapon_p != NULL );
+	return nullptr;
+}
 
-	// search for the corresponding bank pattern index for the weapon_type that is being fired.
-	// Note: Because a weapon_type may not be unique to a weapon bank per ship this search may attribute
-	// the weapon to the wrong bank.  Hopefully this isn't a problem.
-	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
-		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
+// gets the substitution pattern pointer for a given weapon
+// returns [use_substitution, substituted_weapon_info_index]
+std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check)
+{
+	auto wip = &Weapon_info[weapon_info_index];
+	if (wip->num_substitution_patterns == 0)
+		return { false, -1 };
+
+	bool paired_shot = false;
+	if (shipp_to_check)
+	{
+		// only advance the pattern once per linked/paired shot rather than once per projectile
+		if (wip->subtype == WP_LASER)
+		{
+			paired_shot = shipp_to_check->flags[Ship::Ship_Flags::Primary_linked];
+		}
+		else if (wip->subtype == WP_MISSILE && shipp_to_check->flags[Ship::Ship_Flags::Secondary_dual_fire])
+		{
+			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
+			paired_shot = ship_secondary_bank_can_dual_fire(shipp_to_check, sbank);
 		}
 	}
-	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
-		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
+
+	auto position = get_pointer_to_weapon_fire_pattern_index(swp, pbank, sbank);
+	if (position)
+	{
+		size_t curr_pos = *position;
+		if (paired_shot && curr_pos > 0)
+			curr_pos--;
+		++(*position);
+		*position = (*position) % wip->num_substitution_patterns;
+
+		if (wip->weapon_substitution_pattern[curr_pos] == -1)
+		{
+			// weapon doesn't want any sub
+			return { true, -1 };
+		}
+		else if (wip->weapon_substitution_pattern[curr_pos] != weapon_info_index)
+		{
+			// weapon wants to sub with weapon other than me
+			return { true, wip->weapon_substitution_pattern[curr_pos] };
 		}
 	}
-	return NULL;
+
+	return { false, -1 };
 }
 
 /**
@@ -7104,7 +7112,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret, const WeaponLaunchCurveData& launch_curve_data )
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, ship_weapon *src_swp, int src_pbank, int src_sbank, const WeaponLaunchCurveData& launch_curve_data )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -7129,32 +7137,17 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if ( (wip->num_substitution_patterns > 0) && (parent_objp != NULL)) {
 		// using substitution
+		// linked/dual fire pairing only applies to ship-level fire, not to turrets or non-ship parents
+		ship *parent_shipp = nullptr;
+		if (parent_objp->type == OBJ_SHIP && src_swp == &Ships[parent_objp->instance].weapons)
+			parent_shipp = &Ships[parent_objp->instance];
+		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(weapon_type, src_swp, src_pbank, src_sbank, parent_shipp);
 
-		// get to the instance of the gun
-		Assertion( parent_objp->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", parent_objp->type );
-		Assertion( (parent_objp->instance < MAX_SHIPS) && (parent_objp->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", parent_objp->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[parent_objp->instance]);
-		Assert( parent_shipp != NULL );
+		if (use_substitution) {
+			if (substituted_weapon_info_index < 0)
+				return -1;
 
-		size_t *position = get_pointer_to_weapon_fire_pattern_index(weapon_type, parent_objp->instance, src_turret);
-		Assertion( position != NULL, "'%s' is trying to fire a weapon that is not selected", Ships[parent_objp->instance].ship_name );
-
-		size_t curr_pos = *position;
-		if (((Weapon_info[weapon_type].subtype == WP_LASER && parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) ||
-			 (Weapon_info[weapon_type].subtype == WP_MISSILE && parent_shipp->flags[Ship::Ship_Flags::Secondary_dual_fire])) &&
-			 (curr_pos > 0)) {
-			curr_pos--;
-		}
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
-
-		if ( wip->weapon_substitution_pattern[curr_pos] == -1 ) {
-			// weapon doesn't want any sub
-			return -1;
-		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
-			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
+			return weapon_create(pos, porient, substituted_weapon_info_index, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
 		}
 	}
 
@@ -7166,7 +7159,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		float test = rng.next();
 		if (test < failure_rate) {
 			if (wip->failure_sub != -1) {
-				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
 			} else {
 				return -1;
 			}
@@ -7219,9 +7212,15 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	orient = &morient;
 
 	float combined_fof = wip->field_of_fire * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FOF_MULT, launch_curve_data);
-	// If there is a fof_cooldown value, increase the spread linearly
-	if (fof_cooldown != 0.0f) {
-		combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
+	{
+		// If there is a fof_cooldown value, increase the spread linearly
+		float fof_cooldown = 0.0f;
+		if (src_swp && src_pbank >= 0)
+			fof_cooldown = src_swp->primary_bank_fof_cooldown[src_pbank];
+//		if (src_swp && src_sbank >= 0)
+//			fof_cooldown = src_swp->secondary_bank_fof_cooldown[src_sbank];
+		if (fof_cooldown != 0.0f)
+			combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
 	}
 
 	if(combined_fof > 0.0f){
@@ -7472,9 +7471,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm])
 	{
-
-		Assert(parent_objp);		//local ssms must have a parent
-
 		wp->lssm_warpout_time=timestamp(wip->lssm_warpout_delay);
 		wp->lssm_warpin_time=timestamp(wip->lssm_warpout_delay + wip->lssm_warpin_delay);
 		wp->lssm_stage=1;
@@ -7579,7 +7575,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	Num_weapons++;
 
-	if (Weapons_inherit_parent_collision_group) {
+	if (Weapons_inherit_parent_collision_group && parent_objnum >= 0) {
 		Objects[objnum].collision_group_id = Objects[parent_objnum].collision_group_id;
 	}
 
@@ -7619,7 +7615,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	}
 
 	if (scripting::hooks::OnWeaponCreated->isActive()) {
-		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
+		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, parent_objnum < 0 ? nullptr : &Objects[parent_objnum] },
 			scripting::hook_param_list(
 				scripting::hook_param("Weapon", 'o', &Objects[objnum])
 			));
@@ -8780,6 +8776,100 @@ void weapon_mark_as_used(int weapon_type)
 	}
 }
 
+/**
+ * Pages in the model(s) and, optionally, all graphics for a single weapon.
+ *
+ * @param wip           Pointer to the weapon_info to page in.
+ * @param load_graphics When true, page in all textures/bitmaps (POF texture maps, laser
+ *                      bitmaps, trail/beam/thruster/decal graphics).  When false only the
+ *                      model geometry is loaded; non-model graphics will load lazily on
+ *                      first render (used by weapons_page_in_cheats).
+ */
+static void weapon_page_in_one(weapon_info *wip, bool load_graphics)
+{
+	wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
+
+	switch (wip->render_type)
+	{
+		case WRT_POF:
+		{
+			wip->model_num = model_load(wip->pofbitmap_name);
+			polymodel *pm = model_get(wip->model_num);
+
+			// If it has a model, and the model pof has thrusters, then set
+			// the flags
+			if (pm->n_thrusters > 0)
+				wip->wi_flags.set(Weapon::Info_Flags::Thruster);
+
+			if (load_graphics)
+				for (int j = 0; j < pm->n_textures; j++)
+					pm->maps[j].PageIn();
+
+			break;
+		}
+
+		case WRT_LASER:
+		{
+			if (load_graphics)
+			{
+				bm_page_in_texture(wip->laser_bitmap.first_frame);
+				bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
+				bm_page_in_texture(wip->laser_headon_bitmap.first_frame);
+				bm_page_in_texture(wip->laser_glow_headon_bitmap.first_frame);
+			}
+
+			break;
+		}
+
+		case WRT_NONE:
+			break;
+
+		default:
+			UNREACHABLE("Weapon %s has an invalid rendering type %d", wip->name, wip->render_type);
+	}
+
+	wip->external_model_num = -1;
+
+	if (VALID_FNAME(wip->external_model_name))
+		wip->external_model_num = model_load(wip->external_model_name);
+
+	if (wip->external_model_num >= 0)
+	{
+		polymodel *external_pm = model_get(wip->external_model_num);
+
+		// only the first gun bank of an external model supplies firing points
+		if (external_pm->n_guns > 1)
+			Warning(LOCATION, "External model %s of weapon %s has %d gun banks; only the firing points of the first bank are used.", wip->external_model_name, wip->name, external_pm->n_guns);
+	}
+
+	//Load shockwaves
+	shockwave_create_info_load(&wip->shockwave);
+	shockwave_create_info_load(&wip->dinky_shockwave);
+
+	if (load_graphics)
+	{
+		// trail bitmaps
+		if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id > -1))
+			bm_page_in_texture(wip->tr_info.texture.bitmap_id);
+
+		// if this is a beam weapon, page in its stuff
+		if (wip->wi_flags[Weapon::Info_Flags::Beam])
+		{
+			// all beam sections
+			for (int idx = 0; idx < wip->b_info.beam_num_sections; idx++)
+				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
+
+			// muzzle glow
+			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
+		}
+
+		bm_page_in_texture(wip->thruster_flame.first_frame);
+		bm_page_in_texture(wip->thruster_glow.first_frame);
+
+		decals::pageInDecal(wip->impact_decal);
+	}
+}
+
 void weapons_page_in()
 {
 	TRACE_SCOPE(tracing::WeaponPageIn);
@@ -8790,8 +8880,8 @@ void weapons_page_in()
 
 	// for weapons in weaponry pool
 	for (i = 0; i < Num_teams; i++) {
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
-			used_weapons[Team_data[i].weaponry_pool[j]] += Team_data[i].weaponry_count[j];
+		for (auto &entry : Team_data[i].weapon_choices) {
+			used_weapons[entry.class_index] += entry.count;
 		}
 	}
 
@@ -8826,75 +8916,7 @@ void weapons_page_in()
 
 		weapon_load_bitmaps(i);
 
-		weapon_info *wip = &Weapon_info[i];
-
-        wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
-		
-		switch (wip->render_type)
-		{
-			case WRT_POF:
-			{
-				wip->model_num = model_load( wip->pofbitmap_name );
-
-				polymodel *pm = model_get( wip->model_num );
-
-				// If it has a model, and the model pof has thrusters, then set
-				// the flags
-				if (pm->n_thrusters > 0) {
-                    wip->wi_flags.set(Weapon::Info_Flags::Thruster);
-				}
-		
-				for (j = 0; j < pm->n_textures; j++)
-					pm->maps[j].PageIn();
-
-				break;
-			}
-
-			case WRT_LASER:
-			{
-				bm_page_in_texture( wip->laser_bitmap.first_frame );
-				bm_page_in_texture( wip->laser_glow_bitmap.first_frame );
-				bm_page_in_texture (wip->laser_headon_bitmap.first_frame );
-				bm_page_in_texture (wip->laser_glow_headon_bitmap.first_frame);
-
-				break;
-			}
-
-			default:
-				Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
-		}
-
-		wip->external_model_num = -1;
-
-		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name );
-
-		if (wip->external_model_num == -1)
-			wip->external_model_num = wip->model_num;
-
-
-		//Load shockwaves
-		shockwave_create_info_load(&wip->shockwave);
-		shockwave_create_info_load(&wip->dinky_shockwave);
-
-		// trail bitmaps
-		if ( (wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id > -1) )
-			bm_page_in_texture( wip->tr_info.texture.bitmap_id );
-
-		// if this is a beam weapon, page in its stuff
-		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-			// all beam sections
-			for (idx = 0; idx < wip->b_info.beam_num_sections; idx++)
-				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
-
-			// muzzle glow
-			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
-		}
-
-		bm_page_in_texture(wip->thruster_flame.first_frame);
-		bm_page_in_texture(wip->thruster_glow.first_frame);
-
-		decals::pageInDecal(wip->impact_decal);
+		weapon_page_in_one(&Weapon_info[i], true);
 	}
 }
 
@@ -8923,34 +8945,7 @@ void weapons_page_in_cheats()
 
 		weapon_load_bitmaps(i);
 
-		weapon_info *wip = &Weapon_info[i];
-		
-        wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
-
-		if ( wip->render_type == WRT_POF ) {
-			wip->model_num = model_load( wip->pofbitmap_name );
-				
-			polymodel *pm = model_get( wip->model_num );
-				
-			// If it has a model, and the model pof has thrusters, then set
-			// the flags
-			if ( pm->n_thrusters > 0 )	{
-                wip->wi_flags.set(Weapon::Info_Flags::Thruster);
-			}
-		}
-		
-		wip->external_model_num = -1;
-		
-		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name );
-
-		if (wip->external_model_num == -1)
-			wip->external_model_num = wip->model_num;
-		
-		
-		//Load shockwaves
-		shockwave_create_info_load(&wip->shockwave);
-		shockwave_create_info_load(&wip->dinky_shockwave);
+		weapon_page_in_one(&Weapon_info[i], false);
 
 		used_weapons[i]++;
 	}
@@ -8999,76 +8994,7 @@ bool weapon_page_in(int weapon_type)
 		// Page in bitmaps for the weapon
 		weapon_load_bitmaps(page_in_weapons.at(k));
 
-		weapon_info *wip = &Weapon_info[page_in_weapons.at(k)];
-
-		wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
-
-		switch (wip->render_type)
-		{
-		case WRT_POF:
-		{
-			wip->model_num = model_load(wip->pofbitmap_name);
-
-			polymodel *pm = model_get(wip->model_num);
-
-			// If it has a model, and the model pof has thrusters, then set
-			// the flags
-			if (pm->n_thrusters > 0) {
-				wip->wi_flags.set(Weapon::Info_Flags::Thruster);
-			}
-
-			for (int j = 0; j < pm->n_textures; j++)
-				pm->maps[j].PageIn();
-
-			break;
-		}
-
-		case WRT_LASER:
-		{
-			bm_page_in_texture(wip->laser_bitmap.first_frame);
-			bm_page_in_texture(wip->laser_glow_bitmap.first_frame);
-			bm_page_in_texture(wip->laser_headon_bitmap.first_frame);
-			bm_page_in_texture(wip->laser_glow_headon_bitmap.first_frame);
-
-			break;
-		}
-
-		default:
-			Assertion(wip->render_type != WRT_POF && wip->render_type != WRT_LASER, "Weapon %s does not have a valid rendering type. Type passed: %d\n", wip->name, wip->render_type);	// Invalid weapon rendering type.
-		}
-
-		wip->external_model_num = -1;
-
-		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load(wip->external_model_name);
-
-		if (wip->external_model_num == -1)
-			wip->external_model_num = wip->model_num;
-
-
-		//Load shockwaves
-		shockwave_create_info_load(&wip->shockwave);
-		shockwave_create_info_load(&wip->dinky_shockwave);
-
-		// trail bitmaps
-		if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id > -1))
-			bm_page_in_texture(wip->tr_info.texture.bitmap_id);
-
-		// if this is a beam weapon, page in its stuff
-		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-			// all beam sections
-			for (int idx = 0; idx < wip->b_info.beam_num_sections; idx++)
-				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
-
-			// muzzle glow
-			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
-		}
-
-		bm_page_in_texture(wip->thruster_flame.first_frame);
-		bm_page_in_texture(wip->thruster_glow.first_frame);
-
-		// Page in decal bitmaps
-		decals::pageInDecal(wip->impact_decal);
+		weapon_page_in_one(&Weapon_info[page_in_weapons.at(k)], true);
 
 		used_weapons[page_in_weapons.at(k)]++;	// Ensures weapon can be counted as used
 	}

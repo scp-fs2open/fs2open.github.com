@@ -429,9 +429,12 @@ void ship_flags_dlg::update_ship(int shipnum)
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
 
-	if (m_reinforcement.GetCheck() != 2)
+	// skip this for player starts, which can be edited in a mixed multi-selection even though
+	// the checkbox is disabled when only players are selected; set_reinforcement would add a
+	// bogus reinforcement entry for the player, since ship_name_lookup skips player starts
+	if ((objp->type != OBJ_START) && (m_reinforcement.GetCheck() != 2))
 	{
-		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());	
+		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());
 	}
 
 	switch (m_cargo_known.GetCheck()) {
@@ -709,22 +712,26 @@ void ship_flags_dlg::update_ship(int shipnum)
 	}
 
 	// deal with updating the "destroy before the mission" stuff
-	switch (m_destroy.GetCheck()) {
-		case 0:  // this means no check in checkbox
-			if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] )
-				set_modified();
+	// (skip this for player starts, which can be edited in a mixed multi-selection even though
+	// the checkbox is disabled when only players are selected)
+	if (objp->type != OBJ_START) {
+		switch (m_destroy.GetCheck()) {
+			case 0:  // this means no check in checkbox
+				if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] )
+					set_modified();
 
-            shipp->flags.remove(Ship::Ship_Flags::Kill_before_mission);
-			break;
+				shipp->flags.remove(Ship::Ship_Flags::Kill_before_mission);
+				break;
 
-		case 1:  // this means checkbox is checked
-			if ( !(shipp->flags[Ship::Ship_Flags::Kill_before_mission]) )
-				set_modified();
+			case 1:  // this means checkbox is checked
+				if ( !(shipp->flags[Ship::Ship_Flags::Kill_before_mission]) )
+					set_modified();
 
-            shipp->flags.set(Ship::Ship_Flags::Kill_before_mission);
-			m_destroy_value.save(&shipp->final_death_time);
-			break;
-	}  // a mixed state is 2, and since it's not handled, it doesn't change
+				shipp->flags.set(Ship::Ship_Flags::Kill_before_mission);
+				m_destroy_value.save(&shipp->final_death_time);
+				break;
+		}  // a mixed state is 2, and since it's not handled, it doesn't change
+	}
 
 	switch (m_no_arrival_music.GetCheck()) {
 		case 0:

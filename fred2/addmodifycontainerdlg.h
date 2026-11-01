@@ -15,7 +15,7 @@
 class CAddModifyContainerDlg : public CDialog
 {
 public:
-	CAddModifyContainerDlg(const sexp_tree &s_tree, CWnd *pParent = nullptr);
+	CAddModifyContainerDlg(const sexp_tree_view &s_tree, CWnd *pParent = nullptr);
 
 	enum { IDD = IDD_EDIT_CONTAINER };
 
@@ -102,7 +102,7 @@ private:
 	static SCP_string create_null_container_name();
 	static bool is_null_container_name(const SCP_string& container_name);
 
-	const sexp_tree &m_sexp_tree;
+	const sexp_tree_view &m_sexp_tree;
 	SCP_vector<sexp_container> m_containers;
 	// two-way map to handle container renaming
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> m_old_to_new_names;

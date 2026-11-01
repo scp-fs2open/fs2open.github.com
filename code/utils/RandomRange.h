@@ -54,6 +54,10 @@ size_t parse_number_list(T (&list)[N])
 }
 } // namespace
 
+//Sampling a random_device is REALLY expensive.
+//Instead of sampling one for each seed, create a pseudorandom seeder which is initialized ONCE from a random_device.
+extern thread_local std::mt19937 seeder;
+
 /**
  * @brief Generic class for generating numbers in a specific range
  *
@@ -76,10 +80,6 @@ class RandomRange {
 	bool m_constant;
 	ValueType m_minValue;
 	ValueType m_maxValue;
-
-	//Sampling a random_device is REALLY expensive.
-	//Instead of sampling one for each seed, create a pseudorandom seeder which is initialized ONCE from a random_device.
-	inline static thread_local std::mt19937 seeder {std::random_device()()};
 
   public:
 	template <typename T, typename... Ts, typename = typename std::enable_if<(sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value) && !std::is_same_v<std::decay_t<T>, RandomRange>, int>::type>

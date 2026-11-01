@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mission/dialogs/VariableDialogModel.h>
-#include <ui/FredView.h>
 
 #include <QColor>
 #include <QDialog>
@@ -16,7 +15,8 @@ class VariableDialog : public QDialog {
 	Q_OBJECT
 
   public:
-	explicit VariableDialog(FredView* parent, EditorViewport* viewport);
+	enum Tab { VariablesTab = 0, ContainersTab = 1 };
+	explicit VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab = VariablesTab);
 	~VariableDialog() override;
 
 	void accept() override;

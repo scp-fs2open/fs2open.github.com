@@ -301,7 +301,7 @@ float Curve::GetValue(float x_val) const {
 			out = Curves[fl2i(kframe->param1 + 0.5f)].GetValue(t);
 			return kframe->pos.y + out * (next_pos->y - kframe->pos.y);
 		default:
-			UNREACHABLE("Unrecognized curve function");
+			UNREACHABLE("Unrecognized curve function %d", static_cast<int>(kframe->interp_func));
 			return 0.0f;
 	}
 }
@@ -352,7 +352,7 @@ float Curve::GetValueIntegrated(float x_val) const
 			integrated_value += m * (Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
 			break;
 		default:
-			UNREACHABLE("Unrecognized curve function");
+			UNREACHABLE("Unrecognized curve function %d", static_cast<int>(kframe->interp_func));
 			break;
 		}
 		if (last_keyframe) {

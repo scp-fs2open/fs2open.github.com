@@ -376,6 +376,18 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>possibleShipsList</tabstop>
+  <tabstop>actionAddShip</tabstop>
+  <tabstop>chosenShipsList</tabstop>
+  <tabstop>moveSelectionUp</tabstop>
+  <tabstop>moveSelectionDown</tabstop>
+  <tabstop>useSpinBox</tabstop>
+  <tabstop>delaySpinBox</tabstop>
+  <tabstop>actionRemoveShip</tabstop>
+  <tabstop>poolMultiselectCheckbox</tabstop>
+  <tabstop>chosenMultiselectCheckbox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

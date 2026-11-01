@@ -168,6 +168,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>keyLineEdit</tabstop>
+  <tabstop>valueLineEdit</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>updateButton</tabstop>
+  <tabstop>removeButton</tabstop>
+  <tabstop>helpTextBrowser</tabstop>
+  <tabstop>stringsTableView</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

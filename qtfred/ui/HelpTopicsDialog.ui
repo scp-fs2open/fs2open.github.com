@@ -137,6 +137,15 @@
    <header>ui/dialogs/HelpTopicsDialog.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>navigationTabs</tabstop>
+  <tabstop>findLineEdit</tabstop>
+  <tabstop>findPreviousButton</tabstop>
+  <tabstop>findNextButton</tabstop>
+  <tabstop>backButton</tabstop>
+  <tabstop>forwardButton</tabstop>
+  <tabstop>helpBrowser</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

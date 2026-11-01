@@ -154,23 +154,6 @@ private:
 };
 
 /**
- * @brief Add a message to be processed at the end of this frame.
- *
- * @details This is useful if you need the display to update before it's useful to process the message.  For example,
- * right click brings up a popup menu, but the menu it brings up depends on where you right clicked.  If you right
- * click on a ship, you get a message that pertains to the chosen ship.  It is useful to have a visual indication that
- * you have changed the current ship.
- *
- * @note z64: I get this feeling that this is a useful function.
- */
-void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count);
-
-/**
- * @brief Initializes the message vector
- */
-void init_pending_messages(void);
-
-/**
  * @brief Refreshes the viewport
  */
 void update_map_window();

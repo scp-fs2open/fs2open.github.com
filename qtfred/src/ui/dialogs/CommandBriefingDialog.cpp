@@ -19,8 +19,8 @@ _viewport(viewport)
 	this->setFocus();
 	ui->setupUi(this);
 
-	ui->speechFileName->setMaxLength(NAME_LENGTH - 1);
-	ui->animationFileName->setMaxLength(NAME_LENGTH - 1);
+	ui->speechFilename->setMaxLength(NAME_LENGTH - 1);
+	ui->animationFilename->setMaxLength(NAME_LENGTH - 1);
 	ui->actionHighResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->actionLowResolutionFilenameEdit->setMaxLength(NAME_LENGTH - 1);
 
@@ -56,7 +56,15 @@ void CommandBriefingDialog::reject()
 void CommandBriefingDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void CommandBriefingDialog::initializeUi()
@@ -79,8 +87,8 @@ void CommandBriefingDialog::updateUi()
 	ui->actionChangeTeams->setCurrentIndex(ui->actionChangeTeams->findData(_model->getCurrentTeam()));
 
 	ui->actionBriefingTextEditor->setPlainText(_model->getBriefingText().c_str());
-	ui->animationFileName->setText(_model->getAnimationFilename().c_str());
-	ui->speechFileName->setText(_model->getSpeechFilename().c_str());
+	ui->animationFilename->setText(_model->getAnimationFilename().c_str());
+	ui->speechFilename->setText(_model->getSpeechFilename().c_str());
 	ui->actionLowResolutionFilenameEdit->setText(_model->getLowResolutionFilename().c_str());
 	ui->actionHighResolutionFilenameEdit->setText(_model->getHighResolutionFilename().c_str());
 
@@ -112,9 +120,9 @@ void CommandBriefingDialog::enableDisableControls()
 	ui->actionChangeTeams->setEnabled(_model->getMissionIsMultiTeam());
 	ui->actionCopyToOtherTeams->setEnabled(_model->getMissionIsMultiTeam());
 
-	ui->animationFileName->setEnabled(total_stages > 0);
+	ui->animationFilename->setEnabled(total_stages > 0);
 	ui->actionBrowseAnimation->setEnabled(total_stages > 0);
-	ui->speechFileName->setEnabled(total_stages > 0);
+	ui->speechFilename->setEnabled(total_stages > 0);
 	ui->actionBrowseSpeechFile->setEnabled(total_stages > 0);
 	ui->actionTestSpeechFileButton->setEnabled(total_stages > 0 && !_model->getSpeechFilename().empty());
 

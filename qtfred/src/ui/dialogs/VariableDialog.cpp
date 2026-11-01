@@ -30,7 +30,7 @@ enum ItemCol {
 	ItemValue = 1
 };
 
-VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
+VariableDialog::VariableDialog(QWidget* parent, EditorViewport* viewport, Tab initialTab)
 	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
@@ -38,15 +38,15 @@ VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 	initializeUi();
 	updateUi();
+	ui->tabWidget->setCurrentIndex(static_cast<int>(initialTab));
 }
 
 VariableDialog::~VariableDialog() = default;
 
 // Returns a subtle, theme-aware tint: blue for blue_type=true, orange for blue_type=false.
-// Detects dark/light mode via the application window-background lightness.
 QColor VariableDialog::rowTypeColor(bool blue_type)
 {
-	const bool dark_mode = QApplication::palette().color(QPalette::Window).lightness() < 128;
+	const bool dark_mode = currentThemeIsDark();
 	if (blue_type) {
 		return dark_mode ? QColor(50, 60, 80) : QColor(225, 235, 252);
 	} else {
@@ -87,7 +87,15 @@ void VariableDialog::reject()
 void VariableDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void VariableDialog::initializeUi()

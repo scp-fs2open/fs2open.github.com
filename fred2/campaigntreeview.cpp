@@ -15,6 +15,7 @@
 #include "CampaignTreeView.h"
 #include "CampaignEditorDlg.h"
 #include "CampaignTreeWnd.h"
+#include "mission/missioncampaign.h"
 #include "mission/missionparse.h"
 
 #ifdef _DEBUG
@@ -936,7 +937,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 
 	// Get pointer to data
 	pData = (LPCSTR) GlobalLock(hGlobal);
-	ASSERT(pData);
+	Assert(pData);
 
 	if (Campaign.num_missions >= MAX_CAMPAIGN_MISSIONS) {  // Can't add any more
 		GlobalUnlock(hGlobal);
@@ -1243,7 +1244,7 @@ void campaign_tree_view::OnContextMenu(CWnd* pWnd, CPoint point)
 		Context_mission = i;
 		if (menu.LoadMenu(IDR_CPGN_VIEW_ON)) {
 			popup = menu.GetSubMenu(0);
-			ASSERT(popup);
+			Assert(popup);
 			popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 		}
 
@@ -1252,7 +1253,7 @@ void campaign_tree_view::OnContextMenu(CWnd* pWnd, CPoint point)
 		if ((Context_mission >= 0) && (Context_mission < total_levels))
 			if (menu.LoadMenu(IDR_CPGN_VIEW_OFF)) {
 				popup = menu.GetSubMenu(0);
-				ASSERT(popup);
+				Assert(popup);
 				popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 			}
 	}
@@ -1292,7 +1293,19 @@ void campaign_tree_view::remove_mission(int m)
 	}
 
 	Elements[m] = Elements[z];
+
+	// free the removed mission's strings before its slot is overwritten, then
+	// null the vacated slot's pointers, which now alias slot m's strings.  (If
+	// m == z, the assignment is a self-assign of freed pointers, and the
+	// nulling below leaves the slot clean.)
+	mission_campaign_free_mission_strings(Campaign.missions[m]);
 	Campaign.missions[m] = Campaign.missions[z];
+	Campaign.missions[z].name = nullptr;
+	Campaign.missions[z].notes = nullptr;
+	Campaign.missions[z].mission_branch_desc = nullptr;
+	Campaign.missions[z].mission_branch_brief_anim = nullptr;
+	Campaign.missions[z].mission_branch_brief_sound = nullptr;
+
 	if (m == Cur_campaign_mission) {
 		Cur_campaign_mission = -1;
 		box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);

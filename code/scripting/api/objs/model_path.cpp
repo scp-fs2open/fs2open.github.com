@@ -25,16 +25,6 @@ struct model_path_point_h {
 
 ADE_OBJ(l_ModelPathPoint, model_path_point_h, "modelpathpoint", "Point in a model path");
 
-ADE_FUNC(isValid, l_ModelPathPoint, nullptr, "Determines if the handle is valid", "boolean",
-         "True if valid, false otherwise")
-{
-	model_path_point_h* p = nullptr;
-	if (!ade_get_args(L, "o", l_ModelPathPoint.GetPtr(&p)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", p->isValid());
-}
-
 ADE_VIRTVAR(Position, l_ModelPathPoint, "vector", "The current, global position of this path point.", "vector",
             "The current position of the point.")
 {
@@ -100,19 +90,6 @@ ADE_FUNC(__len, l_ModelPath, nullptr, "Gets the number of points in this path", 
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "i", static_cast<int>(p->verts.size()));
-}
-
-ADE_FUNC(isValid, l_ModelPath, nullptr, "Determines if the handle is valid", "boolean",
-         "True if valid, false otherwise")
-{
-	model_path_h* p = nullptr;
-	if (!ade_get_args(L, "o", l_ModelPath.GetPtr(&p)))
-		return ADE_RETURN_FALSE;
-
-	if (p == nullptr)
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", p->isValid());
 }
 
 ADE_INDEXER(l_ModelPath, "number", "Returns the point in the path with the specified index", "modelpathpoint",

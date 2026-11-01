@@ -221,22 +221,22 @@ void BackgroundEditorDialog::refreshSunList()
 
 	const auto names = _model->getMissionSunNames();
 
-	const int oldRow = ui->sunsListWidget->currentRow();
-	ui->sunsListWidget->setUpdatesEnabled(false);
-	ui->sunsListWidget->clear();
+	const int oldRow = ui->sunListWidget->currentRow();
+	ui->sunListWidget->setUpdatesEnabled(false);
+	ui->sunListWidget->clear();
 
 	QStringList items;
 	items.reserve(static_cast<int>(names.size()));
 	for (const auto& s : names)
 		items << QString::fromStdString(s);
-	ui->sunsListWidget->addItems(items);
+	ui->sunListWidget->addItems(items);
 
 	if (!items.isEmpty()) {
-		const int clamped = qBound(0, oldRow, ui->sunsListWidget->count() - 1);
-		ui->sunsListWidget->setCurrentRow(clamped);
+		const int clamped = qBound(0, oldRow, ui->sunListWidget->count() - 1);
+		ui->sunListWidget->setCurrentRow(clamped);
 	}
 
-	ui->sunsListWidget->setUpdatesEnabled(true);
+	ui->sunListWidget->setUpdatesEnabled(true);
 
 	updateSunControls();
 }
@@ -901,11 +901,6 @@ void BackgroundEditorDialog::on_skyboxBankSpin_valueChanged(double arg1)
 void BackgroundEditorDialog::on_skyboxHeadingSpin_valueChanged(double arg1)
 {
 	_model->setSkyboxHeading(static_cast<float>(arg1));
-}
-
-void BackgroundEditorDialog::on_skyboxNoLightingCheckBox_toggled(bool checked)
-{
-	_model->setSkyboxNoLighting(checked);
 }
 
 void BackgroundEditorDialog::on_noLightingCheckBox_toggled(bool checked)

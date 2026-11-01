@@ -7,6 +7,7 @@
 #include "globalincs/systemvars.h"
 #include "shadows.h"
 #include "nebula/neb.h"
+#include "mod_table/mod_table.h"
 
 #define MODEL_SDR_FLAG_MODE_CPP
 #include "def_files/data/effects/model_shader_flags.h"
@@ -165,24 +166,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
-	if (material.is_shadow_receiving()) {
-		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
-		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-		}
-
-		data_out->veryneardist = Shadow_cascade_distances[0];
-		data_out->neardist = Shadow_cascade_distances[1];
-		data_out->middist = Shadow_cascade_distances[2];
-		data_out->fardist = Shadow_cascade_distances[3];
-	}
-
-	if (shader_flags & MODEL_SDR_FLAG_SHADOW_MAP) {
-		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
-			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
-		}
-	}
 
 	if (material.is_batched()) {
 		data_out->buffer_matrix_offset = (int) transform_buffer_offset;
@@ -238,6 +222,22 @@ void convert_model_material(model_uniform_data* data_out,
 	if (material.is_alpha_mult_active()) {
 		data_out->alphaMult = material.get_alpha_mult();
 	}
+}
+
+void convert_shadow_material(shadow_uniform_data* data_out,
+							 const matrix4& model_transform,
+							 const vec3d& scale,
+							 size_t transform_buffer_offset)
+{
+	matrix4 scaled_matrix = model_transform;
+
+	scale_matrix(scaled_matrix, scale);
+
+	data_out->modelMatrix = scaled_matrix;
+
+	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
+
+	data_out->buffer_matrix_offset = (int) transform_buffer_offset;
 }
 
 }

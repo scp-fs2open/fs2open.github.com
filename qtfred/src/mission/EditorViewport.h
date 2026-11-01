@@ -5,6 +5,7 @@
 #include "FredRenderer.h"
 #include "Editor.h"
 #include "IDialogProvider.h"
+#include "ui/ThemeMode.h"
 
 #include <object/object.h>
 
@@ -26,6 +27,12 @@ enum class CreateKind {
 enum class OtherKind {
 	Waypoint,
 	JumpNode,
+};
+
+enum class DataMenuStyle {
+	Auto = 0,
+	Columns = 1,
+	Searchable = 2,
 };
 
 struct ViewSettings {
@@ -55,6 +62,7 @@ struct ViewSettings {
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;
+	float Label_font_scale = 1.0f;  // multiplier applied to viewport text labels
 
 	ViewSettings();
 };
@@ -126,6 +134,7 @@ class EditorViewport {
 	SCP_vector<SCP_string> getLayerNames() const;
 	bool addLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
 	bool deleteLayer(const SCP_string& name, SCP_string* errorMessage = nullptr);
+	bool renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* errorMessage = nullptr);
 	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* errorMessage = nullptr);
 	bool getLayerVisibility(const SCP_string& name, bool* visible, SCP_string* errorMessage = nullptr) const;
 	void showAllLayers();
@@ -210,6 +219,7 @@ class EditorViewport {
 
 	bool Group_rotate = true;
 	int  toolbar_icon_size = 24;  ///< Toolbar icon size in pixels (16, 24, or 32)
+	int  sexp_number_every_n = 5; ///< Show a numbered badge on every Nth argument in sexp trees (0 = disabled)
 	bool Offer_autosave_recovery   = true;
 	int  autosave_interval_seconds = 300;  // 5 minutes; 0 = disabled
 	bool Create_bak_on_save        = true;
@@ -228,7 +238,9 @@ class EditorViewport {
 	bool Show_sexp_help_ship_editor = false;
 	bool Show_sexp_help_wing_editor = false;
 
-	bool Dark_mode = false;
+	ThemeMode Theme_mode = ThemeMode::System;
+
+	DataMenuStyle Data_menu_style = DataMenuStyle::Auto;
 
 	void saveSettings() const;
 

@@ -46,7 +46,15 @@ void ShipAltShipClass::reject()
 void ShipAltShipClass::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void ShipAltShipClass::on_buttonBox_accepted()
@@ -178,7 +186,7 @@ void ShipAltShipClass::on_defaultCheckbox_toggled(bool toggled)
 
 void ShipAltShipClass::initUI()
 {
-	_altPool = new QStandardItemModel();
+	_altPool = new QStandardItemModel(this);
 	for (auto& alt_class : _model->getPool()) {
 		auto item = generateItem(alt_class.ship_class, alt_class.variable_index, alt_class.default_to_this_class);
 		if (item != nullptr) {
@@ -192,7 +200,7 @@ void ShipAltShipClass::initUI()
 		this,
 		&ShipAltShipClass::classListChanged);
 
-	auto ship_pool = new QStandardItemModel();
+	auto ship_pool = new QStandardItemModel(this);
 	for (auto& shipClass : _model->getClasses()) {
 		QString classname = shipClass.first.c_str();
 		auto item = new QStandardItem(classname);
@@ -202,7 +210,7 @@ void ShipAltShipClass::initUI()
 	auto shipproxyModel = new InverseSortFilterProxyModel(this);
 	shipproxyModel->setSourceModel(ship_pool);
 	ui->shipCombo->setModel(shipproxyModel);
-	auto variable_pool = new QStandardItemModel();
+	auto variable_pool = new QStandardItemModel(this);
 	for (auto& variable : _model->getVariables()) {
 		QString classname = variable.first.c_str();
 		auto item = new QStandardItem(classname);
@@ -321,7 +329,7 @@ QString ShipAltShipClass::generateName(int classid, int variable)
 		classname = Sexp_variables[variable].variable_name;
 		classname = classname + '[' + Sexp_variables[variable].text + ']';
 	} else {
-		if (classid >= 0 && classid < MAX_SHIP_CLASSES) {
+		if (classid >= 0 && classid < ship_info_size()) {
 			classname = Ship_info[classid].name;
 		} else {
 			classname = "Invalid Ship Class";

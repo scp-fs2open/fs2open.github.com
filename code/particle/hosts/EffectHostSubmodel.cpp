@@ -56,8 +56,8 @@ vec3d EffectHostSubmodel::getVelocity() const {
 	return Objects[m_objnum].phys_info.vel;
 }
 
-std::pair<int, int> EffectHostSubmodel::getParentObjAndSig() const {
-	return { m_objnum, m_objsig };
+effects::EffectAttachment EffectHostSubmodel::getParentAttachment() const {
+	return {effects::attachment_object{m_objnum, m_objsig}};
 }
 
 int EffectHostSubmodel::getParentSubmodel() const {

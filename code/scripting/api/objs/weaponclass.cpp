@@ -17,6 +17,7 @@ namespace api {
 
 //**********HANDLE: Weaponclass
 ADE_OBJ(l_Weaponclass, int, "weaponclass", "Weapon class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Weaponclass, weapon_info_size());
 
 ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon class name, or an empty string if handle is invalid")
 {
@@ -828,10 +829,14 @@ ADE_VIRTVAR(AllowedInCampaign, l_Weaponclass, "boolean", "Gets or sets whether t
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR) {
-		Campaign.weapons_allowed[idx] = new_value;
+		if (new_value) {
+			Campaign.weapons_allowed.insert(idx);
+		} else {
+			Campaign.weapons_allowed.erase(idx);
+		}
 	}
 
-	return Campaign.weapons_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Campaign.weapons_allowed.contains(idx) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")
@@ -1077,18 +1082,6 @@ ADE_VIRTVAR(BeamWarmdown, l_Weaponclass, "number", "The time in seconds that a b
 		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmdown) / MILLISECONDS_PER_SECOND);
 
 	return ade_set_args(L, "f", 0.0f);
-}
-
-ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= weapon_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(renderTechModel,
@@ -1367,7 +1360,7 @@ ADE_FUNC(isWeaponRequired,
 
 	//This could be requested before Common_team has been initialized, so let's check.
 	if (Common_select_inited) {
-		return ade_set_args(L, "b", Team_data[Common_team].weapon_required[idx]);
+		return ade_set_args(L, "b", Team_data[Common_team].required_weapons.contains(idx));
 	} else {
 		return ADE_RETURN_NIL;
 	}

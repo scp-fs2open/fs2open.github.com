@@ -11,6 +11,7 @@
 #include "ShipAltShipClass.h"
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
+#include <missioneditor/sexp_tree_model.h>
 #include <ui/FredView.h>
 #include <QtWidgets/QDialog>
 
@@ -31,10 +32,6 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	int getSingleShip() const;
 	bool getIfMultipleShips() const;
 
-  protected:
-	void closeEvent(QCloseEvent*) override;
-	void hideEvent(QHideEvent*) override;
-	void showEvent(QShowEvent*) override;
   private slots:
 
 	void on_textureReplacementButton_clicked();
@@ -80,33 +77,31 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_arrivalDelaySpinBox_valueChanged(int);
 	void on_updateArrivalCueCheckBox_toggled(bool);
 	void on_noArrivalWarpCheckBox_stateChanged(int);
-	void on_arrivalTree_rootNodeFormulaChanged(int, int);
+	void on_arrivalTree_modified();
 	void on_arrivalTree_helpChanged(const QString&);
 	void on_arrivalTree_miniHelpChanged(const QString&);
+	void on_dockWarpinCheckBox_stateChanged(int);
 
 	//departure
 	void on_departureLocationCombo_currentIndexChanged(int);
 	void on_departureTargetCombo_currentIndexChanged(int);
 	void on_departureDelaySpinBox_valueChanged(int);
 	void on_updateDepartureCueCheckBox_toggled(bool);
-	void on_departureTree_rootNodeFormulaChanged(int, int);
+	void on_departureTree_modified();
 	void on_departureTree_helpChanged(const QString&);
 	void on_departureTree_miniHelpChanged(const QString&);
 	void on_noDepartureWarpCheckBox_stateChanged(int);
+	void on_dockWarpoutCheckBox_stateChanged(int);
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
 
 	bool _cues_hidden = false;
+	bool _show_sexp_help = false; // session-local help visibility, seeded from the saved preference
 
-	void update();
-
-	void updateUi(bool overwrite = false);
-	void updateColumnOne(bool overwrite = false);
-	void updateColumnTwo(bool ovewrite = false);
-	void updateArrival(bool overwrite = false);
-	void updateDeparture(bool overwrite = false);
+	void initializeUi();
+	void updateUi();
 	void enableDisable();
 
 	// column one

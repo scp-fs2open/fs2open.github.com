@@ -47,6 +47,9 @@
 #include "utils/string_utils.h"
 #include "gamesequence/gamesequence.h"
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl3.h"
+
 #ifdef WITH_OPENGL
 #include "graphics/opengl/gropengl.h"
 #endif
@@ -54,14 +57,9 @@
 #include "graphics/vulkan/gr_vulkan.h"
 #endif
 
-#include <SDL_surface.h>
-
 #include <algorithm>
 #include <climits>
 
-#if (SDL_VERSION_ATLEAST(1, 2, 7))
-#include "SDL_cpuinfo.h"
-#endif
 
 #define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
 
@@ -80,8 +78,11 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(SEPARATE_BLEND_FUNCTIONS),
 	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
+	gr_capability_def {gr_capability::CAPABILITY_S3TC, "S3TC Texture Compression"},
 	GR_CAPABILITY_ENTRY(LARGE_SHADER),
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
+	GR_CAPABILITY_ENTRY(FAST_SHADOWS),
+	GR_CAPABILITY_ENTRY(RAYTRACED_SHADOWS),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -220,6 +221,74 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .parser(parse_lighting_func)
                      .finish();
 
+const char* gr_render_api_name(GraphicsAPI api)
+{
+	switch (api) {
+	case GraphicsAPI::OpenGL:
+		return "OpenGL";
+	case GraphicsAPI::Vulkan:
+		return "Vulkan";
+	default:
+		return "Unknown???";
+	}
+}
+
+// The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
+// In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
+// with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.
+#ifdef WITH_VULKAN
+
+static GraphicsAPI Gr_configured_render_api = GraphicsAPI::OpenGL;
+
+static void parse_render_api_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "opengl")) {
+		Gr_configured_render_api = GraphicsAPI::OpenGL;
+	} else if (lcase_equal(value, "vulkan")) {
+		Gr_configured_render_api = GraphicsAPI::Vulkan;
+	} else {
+		error_display(0, "%s is an invalid render API", value.c_str());
+	}
+}
+
+static SCP_vector<GraphicsAPI> render_api_enumerator() { return {GraphicsAPI::OpenGL, GraphicsAPI::Vulkan}; }
+
+static SCP_string render_api_display(const GraphicsAPI& api) { return gr_render_api_name(api); }
+
+// Read directly via getValue() at the one call site that needs it (gr_init() itself), rather than bound to a
+// global via a change listener -- like Resolution/Anisotropy, this can't take effect without a restart, so
+// there is no "live" value to keep in sync.
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto RenderAPIOption __UNUSED = options::OptionBuilder<GraphicsAPI>("Graphics.RenderAPI",
+                     std::pair<const char*, int>{"Render API", -1},
+                     std::pair<const char*, int>{"Selects the rendering backend used by the engine. Requires a restart to take effect.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(render_api_enumerator)
+                     .display(render_api_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_func([]() { return Gr_configured_render_api; })
+                     .importance(99)
+                     .parser(parse_render_api_func)
+                     .finish();
+
+GraphicsAPI gr_get_configured_render_api()
+{
+	return RenderAPIOption->getValue();
+}
+
+#else
+
+GraphicsAPI gr_get_configured_render_api()
+{
+	// No backend choice in an OpenGL-only build; Default resolves to OpenGL in gr_init().
+	return GraphicsAPI::Default;
+}
+
+#endif
+
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
@@ -270,11 +339,6 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .parser(parse_window_mode_func)
                      .finish();
 
-void removeWindowModeOption()
-{
-	options::OptionsManager::instance()->removeOption(WindowModeOption);
-}
-
 // coverity[GLOBAL_INIT_ORDER] -- safe; Hook::Factory() uses Meyers singleton
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
 	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, std::nullopt, CHA_ONFRAME);
@@ -313,35 +377,137 @@ bool Save_custom_screen_size;
 bool Deferred_lighting = false;
 bool High_dynamic_range = false;
 
-static ushort* Gr_original_gamma_ramp = nullptr;
-
-static int videodisplay_deserializer(const json_t* value)
+// Get instace id of preferred display
+// Note that a displays instance id could change, so don't cache it
+SDL_DisplayID gr_get_preferred_display()
 {
-	int id;
+	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
+	int count = 0;
+
+	auto preferred = os_config_read_uint("Video", "Display", 0);
+
+	if (preferred == 0) {
+		return display_id;
+	}
+
+	// We're making the assumption here that displays will generally be in the
+	// same position between launches of FSO *and* that no display is unplugged
+	// or plugged in while FSO is running.
+
+	auto displays = SDL_GetDisplays(&count);
+
+	if (displays) {
+		if (preferred < static_cast<unsigned int>(count)) {
+			display_id = displays[preferred];
+		}
+
+		SDL_free(displays);
+	}
+
+	return display_id;
+}
+
+// This is not a good way to identify displays as the array position may change
+// if a monitor is unplugged while FSO is running. However it's no more or less
+// reliable than the previous SDL2 code.
+//
+// An alternate method would be to use the name of the display for reference,
+// however that alone is insufficient as multiple displays could have the same
+// name. The most reliable method is to use the physical layout of the
+// multi-monitor setup. But that's only a viable method if the user can visually
+// see the monitor setup and choose accordingly. So at present, given our use of
+// a simple dropdown list to show displays, it's not really an option.
+
+static void set_preferred_display(SDL_DisplayID display_id)
+{
+	int count = 0;
+
+	// We're making the assumption here that displays will generally be in the
+	// same position between launches of FSO *and* that no display is unplugged
+	// or plugged in while FSO is running.
+
+	auto displays = SDL_GetDisplays(&count);
+
+	if ( !displays ) {
+		return;
+	}
+
+	for (int i = 0; i < count; ++i) {
+		if (displays[i] == display_id) {
+			os_config_write_uint("Video", "Display", static_cast<uint32_t>(i));
+			break;
+		}
+	}
+
+	SDL_free(displays);
+}
+
+static SDL_DisplayID videodisplay_deserializer(const json_t* value)
+{
+	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
+	int index = 0, count = 0;
 
 	json_error_t err;
-	if (json_unpack_ex((json_t*)value, &err, 0, "i", &id) != 0) {
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
 		throw json_exception(err);
 	}
 
-	return id;
-}
-static json_t* videodisplay_serializer(int value) { return json_pack("i", value); }
-static SCP_vector<int> videodisplay_enumerator()
-{
-	SCP_vector<int> vals;
-	for (int i = 0; i < SDL_GetNumVideoDisplays(); ++i) {
-		vals.push_back(i);
+	auto displays = SDL_GetDisplays(&count);
+
+	if (displays) {
+		if (index < count) {
+			display_id = displays[index];
+		}
+
+		SDL_free(displays);
 	}
+
+	return display_id;
+}
+
+static json_t* videodisplay_serializer(SDL_DisplayID id)
+{
+	int value = 0;
+
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if (displays) {
+		for (int i = 0; displays[i]; ++i) {
+			if (displays[i] == id) {
+				value = i;
+				break;
+			}
+		}
+
+		SDL_free(displays);
+	}
+
+	return json_pack("i", value);
+}
+
+static SCP_vector<SDL_DisplayID> videodisplay_enumerator()
+{
+	SCP_vector<SDL_DisplayID> vals;
+
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if (displays) {
+		for (int i = 0; displays[i]; ++i) {
+			vals.push_back(displays[i]);
+		}
+
+		SDL_free(displays);
+	}
+
 	return vals;
 }
-static SCP_string videodisplay_display(int id)
+static SCP_string videodisplay_display(SDL_DisplayID id)
 {
 	SCP_string out;
-	sprintf(out, "(%d) %s", id + 1, SDL_GetDisplayName(id));
+	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
-static bool videodisplay_change(int display, bool initial)
+static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
 		return false;
@@ -352,15 +518,34 @@ static bool videodisplay_change(int display, bool initial)
 		return false;
 	}
 
+	set_preferred_display(display);
+
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
 
-// Video display cannot support default settings because graphics have not been
-// initialized so we can't validate the setting. But also, this should probably
-// only ever be a user setting
+static SDL_DisplayID videodisplay_default()
+{
+	// gr_get_preferred_display() calls SDL_GetPrimaryDisplay()/SDL_GetDisplays(), which require the video
+	// subsystem. As with resolution_default(), this default can be evaluated during startup before
+	// gr_init_sub() brings video up, so temporarily initialize it if needed.
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("videodisplay_default: could not initialize SDL video to query preferred display: %s\n", SDL_GetError()));
+		return 0;
+	}
+
+	SDL_DisplayID display = gr_get_preferred_display();
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+
+	return display;
+}
+
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
+static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
                      std::pair<const char*, int>{"The display used for rendering", 1742})
                      .category(std::make_pair("Graphics", 1825))
@@ -370,7 +555,7 @@ static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      .enumerator(videodisplay_enumerator)
                      .display(videodisplay_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_val(0)
+                     .default_func(videodisplay_default)
                      .change_listener(videodisplay_change)
                      .importance(99)
                      .finish();
@@ -406,18 +591,32 @@ static json_t* resolution_serializer(const ResolutionInfo& value)
 static SCP_vector<ResolutionInfo> resolution_enumerator()
 {
 	SCP_vector<ResolutionInfo> out;
-	auto display = VideoDisplayOption->getValue();
-	for (auto i = 0; i < SDL_GetNumDisplayModes(display); ++i) {
-		SDL_DisplayMode mode;
-		if (SDL_GetDisplayMode(display, i, &mode) != 0) {
-			continue;
-		}
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("resolution_default: could not initialize SDL video to query desktop mode: %s\n", SDL_GetError()));
+		return {};
+	}
 
-		auto res = ResolutionInfo(mode.w, mode.h);
+	auto modes = SDL_GetFullscreenDisplayModes(VideoDisplayOption->getValue(), nullptr);
+
+	if ( !modes ) {
+		return out;
+	}
+
+	for (int i = 0; modes[i]; ++i) {
+		auto mode = modes[i];
+
+		auto res = ResolutionInfo(mode->w, mode->h);
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
 			out.emplace_back(res);
 		}
 	}
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+
+	SDL_free(modes);
 
 	return out;
 }
@@ -439,50 +638,67 @@ static SCP_string resolution_display(const ResolutionInfo& info)
 }
 static ResolutionInfo resolution_default()
 {
-	SDL_DisplayMode mode;
-	if (SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue(), &mode) != 0) {
+	// SDL_GetDesktopDisplayMode() requires the video subsystem to be initialized, but this default is
+	// evaluated during startup (via OptionsManager::loadInitialValues() and gr_init()) before gr_init_sub()
+	// brings video up. If we don't init it here we'd query a dead subsystem and silently default to 0x0.
+	// So temporarily bring video up if needed, mirroring the legacy config path in gr_init().
+	const bool video_was_inited = SDL_WasInit(SDL_INIT_VIDEO) != 0;
+	if ( !video_was_inited && !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
+		mprintf(("resolution_default: could not initialize SDL video to query desktop mode: %s\n", SDL_GetError()));
 		return {};
 	}
-	return {(uint32_t)mode.w, (uint32_t)mode.h};
+
+	// Use gr_get_preferred_display() rather than the raw VideoDisplayOption default, which is an unvalidated
+	// display id; this matches the sibling query in gr_init() and always resolves to a valid display.
+	auto mode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+
+	ResolutionInfo result;
+	if ( mode ) {
+		result = {(uint32_t)mode->w, (uint32_t)mode->h};
+	}
+
+	if ( !video_was_inited ) {
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	}
+
+	return result;
 }
 static ResolutionInfo resolution_vr_default()
 {
 	return {(uint32_t)2500, (uint32_t)2500};
 }
-static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
+static bool resolution_change(const ResolutionInfo& info __UNUSED, bool initial)
 {
 	if (initial) {
 		return false;
 	}
+
 	return false;
+
 	// The following code should change the size of the window properly but FSO currently can't handle that
 	/*
 	auto window = os::getSDLMainWindow();
 	if (window == nullptr) {
-	    return;
+		return false;
 	}
 
 	auto display = VideoDisplayOption->getValue();
 	if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
-	    SDL_DisplayMode target;
-	    target.w            = info.width;
-	    target.h            = info.height;
-	    target.format       = 0; // don't care
-	    target.refresh_rate = 0; // don't care
-	    target.driverdata   = 0; // initialize to 0
+		SDL_DisplayMode target;
 
-	    SDL_DisplayMode closest;
-	    if (SDL_GetClosestDisplayMode(display, &target, &closest) == nullptr) {
-	        return;
-	    }
+		if ( !SDL_GetClosestFullscreenDisplayMode(display, info.width, info.height, 0.0f, true, &target) ) {
+			return false;
+		}
 
-	    SDL_SetWindowDisplayMode(window, &closest);
+		SDL_SetWindowFullscreenMode(window, &target);
 	} else {
-	    SDL_SetWindowSize(window, info.width, info.height);
-	    // Recenter the window
-	    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+		SDL_SetWindowSize(window, info.width, info.height);
+		// Recenter the window
+		SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	}
-	 */
+
+	return true;
+	*/
 }
 
 static bool resolution_vr_change(const ResolutionInfo& /*info*/, bool initial)
@@ -688,7 +904,8 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
-                              {8, {"8 Samples", 1695}}})
+                              {8, {"8 Samples", 1695}},
+                              {16, {"16 Samples", 1935}}})
                      .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
@@ -744,18 +961,81 @@ static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync"
                      .default_func([]() { return Gr_enable_vsync; })
                      .bind_to_once(&Gr_enable_vsync)
                      .importance(70)
-                     .parser(parse_vsync_func)  
+                     .parser(parse_vsync_func)
                      .finish();
 
-void removeVSyncOption()
+bool Gr_enable_hdr = false;
+bool Gr_hdr_output_active = false;
+
+static void parse_hdr_func()
 {
-	options::OptionsManager::instance()->removeOption(VSyncOption);
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_hdr = value;
 }
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDROption __UNUSED = options::OptionBuilder<bool>("Graphics.HDR",
+                     std::pair<const char*, int>{"HDR Output", -1},
+                     std::pair<const char*, int>{"Enables HDR10 (PQ / BT.2020) output on supported displays. Vulkan renderer only. Requires a restart to take effect.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_enable_hdr; })
+                     .bind_to_once(&Gr_enable_hdr)
+                     .importance(68)
+                     .parser(parse_hdr_func)
+                     .finish();
+
+float Gr_hdr_paperwhite_nits = 200.0f;
+
+static void parse_hdr_paperwhite_func()
+{
+	float value;
+	stuff_float(&value);
+
+	Gr_hdr_paperwhite_nits = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDRPaperWhiteOption __UNUSED = options::OptionBuilder<float>("Graphics.HDRPaperWhite",
+                     std::pair<const char*, int>{"HDR Paper White", -1},
+                     std::pair<const char*, int>{"Reference white luminance in nits for UI and SDR-referenced content when HDR output is active.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_hdr_paperwhite_nits; })
+                     .range(80.0f, 480.0f)
+                     .bind_to(&Gr_hdr_paperwhite_nits)
+                     .importance(67)
+                     .parser(parse_hdr_paperwhite_func)
+                     .finish();
+
+float Gr_hdr_peak_nits = 1000.0f;
+
+static void parse_hdr_peak_func()
+{
+	float value;
+	stuff_float(&value);
+
+	Gr_hdr_peak_nits = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto HDRPeakOption __UNUSED = options::OptionBuilder<float>("Graphics.HDRPeakLuminance",
+                     std::pair<const char*, int>{"HDR Peak Luminance", -1},
+                     std::pair<const char*, int>{"Display peak luminance in nits used for HDR tone curve clamping and HDR10 metadata.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .default_func([]() { return Gr_hdr_peak_nits; })
+                     .range(400.0f, 4000.0f)
+                     .bind_to(&Gr_hdr_peak_nits)
+                     .importance(66)
+                     .parser(parse_hdr_peak_func)
+                     .finish();
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
 // Forward definitions
-static void uniform_buffer_managers_init();
 static void uniform_buffer_managers_deinit();
 static void uniform_buffer_managers_retire_buffers();
 
@@ -1305,15 +1585,6 @@ void gr_close()
 	if(Cmdline_enable_vr)
 		openxr_close();
 
-	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-		                       (Gr_original_gamma_ramp + 512));
-	}
-
-	// This is valid even if Gr_original_gamma_ramp is nullptr
-	vm_free(Gr_original_gamma_ramp);
-	Gr_original_gamma_ramp = nullptr;
-
 	gpu_heap_deinit();
 
 	// Cleanup uniform buffer managers
@@ -1325,27 +1596,29 @@ void gr_close()
 
 	graphics::paths::PathRenderer::shutdown();
 
+	// Free bitmaps before destroying the graphics backend, since
+	// gf_bm_free_data needs the backend (texture manager, GL context, etc.)
+	bm_close();
+
 	switch (gr_screen.mode) {
-		case GR_OPENGL:
+		case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 			gr_opengl_cleanup(true);
 #endif
 			break;
 
-		case GR_VULKAN:
+		case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 			graphics::vulkan::cleanup();
 #endif
 			break;
 
-		case GR_STUB:
+		case GraphicsAPI::Stub:
 			break;
-	
+
 		default:
 			Int3();		// Invalid graphics mode
 	}
-
-	bm_close();
 
 	Gr_inited = 0;
 }
@@ -1430,6 +1703,27 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	gr_setup_viewport();
+}
+
+void gr_window_to_render_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		// Rendering goes straight to the window, so the two spaces are the same
+		return;
+	}
+
+	x *= i2fl(gr_screen.max_w) / static_cast<float>(Cmdline_window_res->first);
+	y *= i2fl(gr_screen.max_h) / static_cast<float>(Cmdline_window_res->second);
+}
+
+void gr_render_to_window_pos(float& x, float& y)
+{
+	if (!Cmdline_window_res) {
+		return;
+	}
+
+	x *= static_cast<float>(Cmdline_window_res->first) / i2fl(gr_screen.max_w);
+	y *= static_cast<float>(Cmdline_window_res->second) / i2fl(gr_screen.max_h);
 }
 
 int gr_get_resolution_class(int width, int height)
@@ -1536,25 +1830,25 @@ static void init_colors()
 	Gr_ta_alpha.scale = 17;
 }
 
-static void gr_init_function_pointers(int mode) {
+static void gr_init_function_pointers(GraphicsAPI mode) {
 	gr_screen = {};
 
 	switch (mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 		gr_opengl_init_function_pointers();
 #else
 		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
 #endif
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 		graphics::vulkan::initialize_function_pointers();
 #else
 		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
 #endif
 		break;
-	case GR_STUB:
+	case GraphicsAPI::Stub:
 		gr_stub_init_function_pointers();
 		break;
 	default:
@@ -1562,7 +1856,7 @@ static void gr_init_function_pointers(int mode) {
 	}
 }
 
-static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
+static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI mode, int width, int height,
 						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
@@ -1596,7 +1890,6 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	if (Fred_running) {
 		gr_screen.custom_size = false;
 		res = GR_640;
-		mode = GR_OPENGL;
 	}
 
 	Save_custom_screen_size = gr_screen.custom_size;
@@ -1664,7 +1957,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	init_colors();
 
 	switch (mode) {
-	case GR_OPENGL:
+	case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 		rc = gr_opengl_init(std::move(graphicsOps));
 #else
@@ -1672,7 +1965,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		rc = false;
 #endif
 		break;
-	case GR_VULKAN:
+	case GraphicsAPI::Vulkan:
 #ifdef WITH_VULKAN
 		rc = graphics::vulkan::initialize(std::move(graphicsOps));
 #else
@@ -1680,7 +1973,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 		rc = false;
 #endif
 		break;
-	case GR_STUB:
+	case GraphicsAPI::Stub:
 		SCP_UNUSED(graphicsOps);
 		rc = gr_stub_init();
 		break;
@@ -1721,7 +2014,7 @@ static void init_window_icon() {
 
 	SDL_SetWindowIcon(sdl_wnd, surface);
 
-	SDL_FreeSurface(surface);
+	SDL_DestroySurface(surface);
 	bm_release(icon_handle);
 }
 
@@ -1736,21 +2029,22 @@ SCP_string gr_capability_to_human_readable_string(gr_capability capability)
 		return "Invalid Capability";
 }
 
-bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, int d_width, int d_height, int d_depth)
+bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI d_mode, int d_width, int d_height, int d_depth)
 {
-	int width = 1024, height = 768, depth = 32, mode = GR_OPENGL;
+	int width = 1024, height = 768, depth = 32;
+	GraphicsAPI mode = GraphicsAPI::OpenGL;
 	float center_aspect_ratio = -1.0f;
 	const char *ptr = NULL;
 	// If already inited, shutdown the previous graphics
 	if (Gr_inited) {
 		switch (gr_screen.mode) {
-			case GR_OPENGL:
+			case GraphicsAPI::OpenGL:
 #ifdef WITH_OPENGL
 				gr_opengl_cleanup(false);
 #endif
 				break;
 			
-			case GR_STUB:
+			case GraphicsAPI::Stub:
 				break;
 	
 			default:
@@ -1760,7 +2054,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	if (Using_in_game_options) {
 		if (Cmdline_enable_vr) {
-			// in VR mode, so set resolution using VR values 
+			// in VR mode, so set resolution using VR values
 			// and hide/disable the default resolution option
 			auto res = ResolutionVROption->getValue();
 			width = res.width;
@@ -1774,6 +2068,14 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			height = res.height;
 			removeResolutionVROption();
 		}
+
+		// Pick the rendering backend from the in-game Graphics.RenderAPI option (or the mod's default
+		// settings table), but only where the caller did not ask for a specific one. FRED passes OpenGL and
+		// the unit tests pass Stub, and neither should be replaced by a player setting.
+		// A -vulkan/-opengl command line flag still wins below via Cmdline_graphics_api.
+		if (d_mode == GraphicsAPI::Default) {
+			d_mode = gr_get_configured_render_api();
+		}
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
@@ -1782,18 +2084,16 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		if (ptr == nullptr) {
 			// If we don't have a display mode, use SDL to get default settings
 			// We need to initialize SDL to do this
-
-			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO))
 			{
-				auto display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
-				SDL_DisplayMode displayMode;
-				if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+				auto displayMode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+				if (displayMode)
 				{
-					width = displayMode.w;
-					height = displayMode.h;
-					int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
+					width = displayMode->w;
+					height = displayMode->h;
+					int sdlBits = SDL_BITSPERPIXEL(displayMode->format);
 
-					if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
+					if (SDL_ISPIXELFORMAT_ALPHA(displayMode->format))
 					{
 						depth = sdlBits;
 					}
@@ -1819,6 +2119,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 					os_config_write_string(nullptr, NOX("VideocardFs2open"), videomode.c_str());
 				}
+
+				SDL_QuitSubSystem(SDL_INIT_VIDEO);
 			}
 		} else {
 			Assert(ptr != nullptr);
@@ -1833,26 +2135,31 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 			SCP_string videoApi(ptr, ptr + 4);
 
 			if (videoApi == "OGL ") {
-				d_mode = GR_OPENGL; // GR_OPENGL;
+				d_mode = GraphicsAPI::OpenGL; // GR_OPENGL;
 			} else if (videoApi == "VK  ") {
-				d_mode = GR_VULKAN;
+				d_mode = GraphicsAPI::Vulkan;
 			} else {
 				ReleaseWarning(LOCATION, "Unknown video API '%s'", videoApi.c_str());
 			}
 		}
 
-		if (Cmdline_res != nullptr) {
-			int tmp_width = 0;
-			int tmp_height = 0;
-
-			if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
-				width = tmp_width;
-				height = tmp_height;
-			}
-		}
-
 		Gr_enable_soft_particles = Cmdline_softparticles != 0;
 	}
+
+	//Commandline ALWAYS wins for Graphics API and resolution
+	if (Cmdline_graphics_api != GraphicsAPI::Default)
+		d_mode = Cmdline_graphics_api;
+
+	if (Cmdline_res != nullptr) {
+		int tmp_width = 0;
+		int tmp_height = 0;
+
+		if ( sscanf(Cmdline_res, "%dx%d", &tmp_width, &tmp_height) == 2 ) {
+			width = tmp_width;
+			height = tmp_height;
+		}
+	}
+
 	if (Cmdline_center_res != NULL) {
 		int tmp_center_width = 0;
 		int tmp_center_height = 0;
@@ -1870,14 +2177,42 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		// (be that a window, a render overlay from nsight, or an FSO-internal buffer) instead of directly rendering to the OS-provided direct screen backbuffer.
 		// As the cost of -window_res is one single blit of a fullscreen buffer, it's probably an acceptable compromise to get rid of render artifacts.
 		// As such, forcibly enable -window_res at the screen resolution here, if we're in fullscreen.
-
+		//
 		// Additionally, SDL3+ doesn't work when reading from the GL_FRONT buffers, so we need our own intermediate buffers.
-		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
+		//
+		// Furthermore, gamma handling now also requires a blit of the final scene (not just the 3D scene, since it needs to work on menus as well).
+		//
+		// As such, window_res is effectively no longer optional, part of the core render path and must always be enabled.
+		// The only reason it is not yet refactored into an always-on thing is due to issues with FRED integration.
+		int window_width = width;
+		int window_height = height;
+
+		// In exclusive fullscreen, the window must match the monitor. Using the render resolution instead would require a
+		// video mode switch to that resolution, which may not exist as a display mode (leaving the window at a different
+		// size than window_res) and is repeated on every alt-tab.
+		if (!gr_is_viewport_window()) {
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+				auto displayMode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+				if (displayMode) {
+					window_width = displayMode->w;
+					window_height = displayMode->h;
+				} else {
+					mprintf(("Could not query desktop display mode for fullscreen window size: %s\n", SDL_GetError()));
+				}
+
+				SDL_QuitSubSystem(SDL_INIT_VIDEO);
+			} else {
+				mprintf(("Could not initialize SDL video for fullscreen window size: %s\n", SDL_GetError()));
+			}
+		}
+
+		mprintf(("Forcing window_res to %dx%d (render resolution %dx%d)\n", window_width, window_height, width, height));
+		Cmdline_window_res.emplace(static_cast<uint16_t>(window_width), static_cast<uint16_t>(window_height));
 	}
 
-	if (d_mode == GR_DEFAULT) {
-		// OpenGL should be default
-		mode = GR_OPENGL;
+	if (d_mode == GraphicsAPI::Default) {
+		// OpenGL should be default.
+		mode = GraphicsAPI::OpenGL;
 	} else {
 		mode = d_mode;
 	}
@@ -1894,11 +2229,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
-		mode = GR_STUB;
+		mode = GraphicsAPI::Stub;
 		width = 640;
 		height = 480;
 		depth = 16;
 		center_aspect_ratio = -1.0f;
+	}
+
+	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
+	// falls back to OpenGL regardless of what was requested. This must happen before gr_init_function_pointers()
+	// below, since that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
+	// later (e.g. in gr_init_sub()) would leave the dispatch table pointing at the wrong backend.
+	if (Fred_running) {
+		mode = GraphicsAPI::OpenGL;
 	}
 
 	gr_init_function_pointers(mode);
@@ -1935,7 +2278,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 // built in debug mode.  This helps if you run with the debugger active as the
 // game won't be switching from fullscreen to minimized every time you hit a breakpoint or
 // warning message.
-#ifdef _DEBUG
+#ifndef NDEBUG
 #ifdef _FORCE_DEBUG_WIDESCREEN
 	width = 1280;
 	height = 800;
@@ -1983,9 +2326,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	graphics::paths::PathRenderer::init();
 
 	gr_light_init();
-
-	// Initialize uniform buffer managers
-	uniform_buffer_managers_init();
 
 	gpu_heap_init();
 
@@ -2050,16 +2390,27 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Shadow_quality = ShadowQuality::Disabled;
 	}
 
+	// Drop options that have no meaning for the renderer we ended up with, so they don't
+	// appear in the options menu. HDR10 output is Vulkan-only; the raytraced-shadow options
+	// are gated on raytracing support (removed below). The bound globals keep their
+	// defaults, so nothing about the rendering path changes.
+	if (gr_screen.mode != GraphicsAPI::Vulkan) {
+		auto* options_mgr = options::OptionsManager::instance();
+		options_mgr->removeOption(HDROption);
+		options_mgr->removeOption(HDRPaperWhiteOption);
+		options_mgr->removeOption(HDRPeakOption);
+	}
+	shadows_remove_unsupported_options();
+
 	if(Cmdline_enable_vr)
 		openxr_init();
 
 	return true;
 }
 
-int gr_activated = 0;
-void gr_activate(int active)
+static bool gr_activated = true;	// start activated
+void gr_activate(bool active)
 {
-
 	if (gr_activated == active) {
 		return;
 	}
@@ -2189,7 +2540,7 @@ void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 	float x, y, w, h;
 	vertex verts[4];
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2910,7 +3261,7 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 
 static void output_uniform_debug_data()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2922,6 +3273,27 @@ static void output_uniform_debug_data()
 	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
 	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
 	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
+}
+
+void gr_imgui_begin_frame()
+{
+	gr_imgui_new_frame();      // renderer backend (OpenGL/Vulkan)
+	ImGui_ImplSDL3_NewFrame(); // platform backend, derives the display size from the SDL window
+
+	if (Cmdline_window_res) {
+		// The platform backend just sized ImGui to the window, but with -window_res active the
+		// frame is rendered into an offscreen buffer at gr_screen.max_w/max_h and only stretched
+		// to the window when we flip. Left alone, the ImGui renderer backend would set a
+		// window-sized viewport and projection on a render-sized target, so the UI would be drawn
+		// into a corner of the frame at the wrong scale before being stretched a second time.
+		//
+		// The framebuffer scale is the target's pixel ratio, which is 1:1 by definition here.
+		ImGuiIO& io = ImGui::GetIO();
+		io.DisplaySize = ImVec2(i2fl(gr_screen.max_w), i2fl(gr_screen.max_h));
+		io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+	}
+
+	ImGui::NewFrame();
 }
 
 void gr_flip(bool execute_scripting)
@@ -2942,6 +3314,16 @@ void gr_flip(bool execute_scripting)
 
 	model_process_cached_ui_render_instances();
 
+	if (Cmdline_graphics_debug_output) {
+		output_uniform_debug_data();
+	}
+
+	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
+	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
+	// buffer write would overwrite vertex data that already-recorded draw commands reference.
+	// In Vulkan (deferred submission), the GPU reads the final buffer state at submit time,
+	// so overwrites here silently corrupt earlier draws. OpenGL's immediate execution hides
+	// this, but it is still logically wrong for any deferred-submission backend.
 	gr_reset_immediate_buffer();
 
 	// Do per frame operations on the matrix state
@@ -2950,10 +3332,6 @@ void gr_flip(bool execute_scripting)
 	gr_reset_clip();
 
 	mouse_reset_deltas();
-
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
 
 	// Use this opportunity for retiring the uniform buffers
 	uniform_buffer_managers_retire_buffers();
@@ -2995,9 +3373,9 @@ void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 	gr_string(x, y, time.c_str(), resize_mode);
 }
 
-static void uniform_buffer_managers_init()
+void gr_uniform_buffer_managers_init()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3006,7 +3384,7 @@ static void uniform_buffer_managers_init()
 
 static void uniform_buffer_managers_deinit()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3015,7 +3393,7 @@ static void uniform_buffer_managers_deinit()
 
 static void uniform_buffer_managers_retire_buffers()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3031,62 +3409,72 @@ SCP_vector<DisplayData> gr_enumerate_displays()
 {
 	// It seems that linux cannot handle having the video subsystem inited
 	// too late
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		return SCP_vector<DisplayData>();
 	}
 
 	SCP_vector<DisplayData> data;
 
-	auto num_displays = SDL_GetNumVideoDisplays();
-	for (auto i = 0; i < num_displays; ++i) {
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if ( !displays ) {
+		return data;
+	}
+
+	for (auto i = 0; displays[i]; ++i) {
+		SDL_DisplayID id = displays[i];
+
 		DisplayData display;
 		display.index = i;
 
 		SDL_Rect bounds;
-		if (SDL_GetDisplayBounds(i, &bounds) == 0) {
+		if ( !SDL_GetDisplayBounds(id, &bounds) ) {
 			display.x = bounds.x;
 			display.y = bounds.y;
 			display.width = bounds.w;
 			display.height = bounds.h;
 		}
 
-		auto name = SDL_GetDisplayName(i);
+		auto name = SDL_GetDisplayName(id);
 		if (name != nullptr) {
 			display.name = name;
 		}
 
-		auto num_mods = SDL_GetNumDisplayModes(i);
-		for (auto j = 0; j < num_mods; ++j) {
-			SDL_DisplayMode mode;
-			if (SDL_GetDisplayMode(i, j, &mode) != 0) {
-				continue;
-			}
-			
-			VideoModeData videoMode;
-			videoMode.width = mode.w;
-			videoMode.height = mode.h;
+		auto modes = SDL_GetFullscreenDisplayModes(id, nullptr);
 
-			int sdlBits = SDL_BITSPERPIXEL(mode.format);
+		if (modes) {
+			for (int j = 0; modes[j]; ++j) {
+				SDL_DisplayMode *mode = modes[j];
 
-			if (SDL_ISPIXELFORMAT_ALPHA(mode.format)) {
-				videoMode.bit_depth = sdlBits;
-			} else {
-				// Fix a few values
-				if (sdlBits == 24) {
-					videoMode.bit_depth = 32;
-				} else if (sdlBits == 15) {
-					videoMode.bit_depth = 16;
-				} else {
+				VideoModeData videoMode;
+				videoMode.width = mode->w;
+				videoMode.height = mode->h;
+
+				int sdlBits = SDL_BITSPERPIXEL(mode->format);
+
+				if (SDL_ISPIXELFORMAT_ALPHA(mode->format)) {
 					videoMode.bit_depth = sdlBits;
+				} else {
+					// Fix a few values
+					if (sdlBits == 24) {
+						videoMode.bit_depth = 32;
+					} else if (sdlBits == 15) {
+						videoMode.bit_depth = 16;
+					} else {
+						videoMode.bit_depth = sdlBits;
+					}
 				}
+
+				display.video_modes.push_back(videoMode);
 			}
 
-			display.video_modes.push_back(videoMode);
+			SDL_free(modes);
 		}
 
 		data.push_back(std::move(display));
 	}
 
+	SDL_free(displays);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 	return data;
@@ -3156,7 +3544,7 @@ size_t vertex_layout::hash() const {
 static std::unique_ptr<graphics::util::GPUMemoryHeap> gpu_heaps [static_cast<size_t>(GpuHeap::NUM_VALUES)];
 
 static void gpu_heap_init() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3197,101 +3585,13 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	gpuHeap->freeGpuData(data_offset);
 }
 
-// I feel dirty...
-static void make_gamma_ramp(float gamma, ushort* ramp)
-{
-	ushort x, y;
-	ushort base_ramp[256];
-
-	Assert(ramp != nullptr);
-
-	// generate the base ramp values first off
-
-	// if no gamma set then just do this quickly
-	if (gamma <= 0.0f) {
-		memset(ramp, 0, 3 * 256 * sizeof(ushort));
-		return;
-	}
-	// identity gamma, avoid all of the math
-	else if (gamma == 1.0f || Gr_original_gamma_ramp == nullptr) {
-		if (Gr_original_gamma_ramp != nullptr) {
-			memcpy(ramp, Gr_original_gamma_ramp, 3 * 256 * sizeof(ushort));
-		}
-		// set identity if no original ramp
-		else {
-			for (x = 0; x < 256; x++) {
-				ramp[x]       = (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
-			}
-		}
-
-		return;
-	}
-	// for everything else we need to actually figure it up
-	else {
-		double g = 1.0 / (double)gamma;
-		double val;
-
-		Assert(Gr_original_gamma_ramp != nullptr);
-
-		for (x = 0; x < 256; x++) {
-			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0., 65535.);
-
-			base_ramp[x] = (ushort)val;
-		}
-
-		for (y = 0; y < 3; y++) {
-			for (x = 0; x < 256; x++) {
-				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0., 65535.);
-
-				ramp[x + y * 256] = (ushort)val;
-			}
-		}
-	}
-}
-
 void gr_set_gamma(float gamma)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
 	Gr_gamma = gamma;
-
-	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
-		if (Gr_original_gamma_ramp == nullptr) {
-			// First time we are here so get the current (original) gamma ramp here so we can reset it later
-			Gr_original_gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-			if (Gr_original_gamma_ramp == nullptr) {
-				mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
-				Cmdline_no_set_gamma = 1;
-			} else {
-				SDL_GetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-									   (Gr_original_gamma_ramp + 512));
-			}
-		}
-
-		auto gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (gamma_ramp == nullptr) {
-			Int3();
-			return;
-		}
-
-		memset(gamma_ramp, 0, 3 * 256 * sizeof(ushort));
-
-		// Create the Gamma lookup table
-		make_gamma_ramp(gamma, gamma_ramp);
-
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
-
-		vm_free(gamma_ramp);
-	}
 }
 
 void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)

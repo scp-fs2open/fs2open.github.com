@@ -262,8 +262,9 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		return LuaValue::createValue(_action.getLuaState(), l_Weaponclass.Set(weapon_info_lookup(name)));
 	}
 	case OPF_GAME_SND: {
-		auto name = CTEXT(node);
-		return LuaValue::createValue(_action.getLuaState(), l_SoundEntry.Set(sound_entry_h(gamesnd_get_by_name(name))));
+		// handle a table index, an operator, or a name (matching what the core SEXPs accept);
+		// -1 or <none> yields an invalid handle that the script can check with :isValid()
+		return LuaValue::createValue(_action.getLuaState(), l_SoundEntry.Set(sound_entry_h(sexp_get_sound_index(node))));
 	}
 	case OPF_STRING: {
 		auto text = CTEXT(node);
@@ -375,8 +376,8 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			auto text = CTEXT(node);
 			return LuaValue::createValue(_action.getLuaState(), text);
 		} else {
-			UNREACHABLE(
-				"Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
+			Assertion(false,
+				"Unhandled argument type '%s'! Someone added an argument type but didn't add handling code to execute().", argtype.first.c_str());
 			return LuaValue::createNil(_action.getLuaState());
 		}
 	}

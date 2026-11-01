@@ -12,7 +12,6 @@ class waypoint
 	public:
 		waypoint();
 		waypoint(const vec3d *pos);
-		~waypoint();
 
 		// accessors
 		const vec3d *get_pos() const;
@@ -37,7 +36,6 @@ class waypoint_list
 	public:
 		waypoint_list();
 		waypoint_list(const char *name);
-		~waypoint_list();
 
 		// accessors
 		const char *get_name() const;

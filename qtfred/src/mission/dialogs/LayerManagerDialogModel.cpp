@@ -59,6 +59,14 @@ bool LayerManagerDialogModel::deleteLayer(const SCP_string& name, SCP_string* er
 	return true;
 }
 
+bool LayerManagerDialogModel::renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* error) {
+	if (!_viewport->renameLayer(oldName, newName, error)) {
+		return false;
+	}
+	modelChanged();
+	return true;
+}
+
 bool LayerManagerDialogModel::isDefaultLayer(const SCP_string& name) {
 	return name == EditorViewport::DefaultLayerName;
 }

@@ -1,5 +1,24 @@
 
-layout(std140) uniform NanoVGUniformData {
+#ifdef VULKAN
+layout (location = 0) in vec4 vertPosition;
+layout (location = 2) in vec4 vertTexCoord;
+
+layout (location = 0) out vec2 ftcoord;
+layout (location = 1) out vec2 fpos;
+#else
+in vec2 vertPosition;
+in vec2 vertTexCoord;
+
+out vec2 ftcoord;
+out vec2 fpos;
+#endif
+
+#ifdef VULKAN
+layout (set = 2, binding = 2, std140)
+#else
+layout(std140)
+#endif
+uniform NanoVGUniformData {
     mat3 scissorMat;
 
     mat3 paintMat;
@@ -24,14 +43,16 @@ layout(std140) uniform NanoVGUniformData {
     int texArrayIndex;
 };
 
-in vec2 vertPosition;
-in vec2 vertTexCoord;
-
-out vec2 ftcoord;
-out vec2 fpos;
-
 void main(void) {
+#ifdef VULKAN
+	ftcoord = vertTexCoord.xy;
+	fpos = vertPosition.xy;
+	gl_Position = vec4(2.0 * vertPosition.x / viewSize.x - 1.0,
+	                   1.0 - 2.0 * vertPosition.y / viewSize.y,
+	                   0.0, 1.0);
+#else
 	ftcoord = vertTexCoord;
 	fpos = vertPosition;
 	gl_Position = vec4(2.0*vertPosition.x/viewSize.x - 1.0, 1.0 - 2.0*vertPosition.y/viewSize.y, 0, 1);
+#endif
 }

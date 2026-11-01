@@ -279,7 +279,15 @@ void ShipWeaponsDialog::reject()
 void ShipWeaponsDialog::closeEvent(QCloseEvent* event)
 {
 	reject();
-	event->ignore();
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		event->ignore();
+	} else {
+		event->accept();
+	}
 }
 
 void ShipWeaponsDialog::on_okAndCancelButtons_accepted()

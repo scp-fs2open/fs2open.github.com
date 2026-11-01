@@ -205,7 +205,7 @@ void ade_output_type_link(FILE* fp, const ade_type_info& type_info)
 		break;
 	}
 	default:
-		Assertion(false, "Unhandled type!");
+		UNREACHABLE("Unhandled type %d!", static_cast<int>(type_info.getType()));
 		break;
 	}
 }

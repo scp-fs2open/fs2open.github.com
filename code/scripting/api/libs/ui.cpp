@@ -72,6 +72,7 @@
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
 #include "sound/audiostr.h"
+#include "sound/fsspeech.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
 
@@ -682,6 +683,63 @@ ADE_LIB_DERIV(l_UserInterface_Brief,
 	"API for accessing data related to the Briefing UI.",
 	l_UserInterface);
 
+ADE_FUNC(playTextToSpeech,
+	l_UserInterface_Brief,
+	"string text",
+	"Speaks the given text using the engine's text-to-speech voice. Does nothing unless the briefing speech option is enabled. Color codes are stripped automatically.",
+	nullptr,
+	nullptr)
+{
+	const char* text = nullptr;
+	if (!ade_get_args(L, "s", &text))
+		return ADE_RETURN_NIL;
+
+	fsspeech_play(FSSPEECH_FROM_BRIEFING, text);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopTextToSpeech, l_UserInterface_Brief, nullptr, "Stops any text-to-speech playback.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	fsspeech_stop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseTextToSpeech,
+	l_UserInterface_Brief,
+	"boolean pause",
+	"Pauses (true) or resumes (false) text-to-speech playback.",
+	nullptr,
+	nullptr)
+{
+	bool pause = true;
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	fsspeech_pause(pause);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isTextToSpeechPlaying,
+	l_UserInterface_Brief,
+	nullptr,
+	"Returns whether text-to-speech is currently speaking.",
+	"boolean",
+	"true if speaking, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_playing());
+}
+
+ADE_FUNC(isTextToSpeechEnabled,
+	l_UserInterface_Brief,
+	nullptr,
+	"Returns whether briefing text-to-speech is enabled and available.",
+	"boolean",
+	"true if enabled, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_play_from(FSSPEECH_FROM_BRIEFING));
+}
+
 ADE_FUNC(getBriefingMusicName,
 	l_UserInterface_Brief,
 	nullptr,
@@ -1074,6 +1132,63 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for accessing data related to the Command Briefing UI.",
 	l_UserInterface);
 
+ADE_FUNC(playTextToSpeech,
+	l_UserInterface_CmdBrief,
+	"string text",
+	"Speaks the given text using the engine's text-to-speech voice. Does nothing unless the briefing speech option is enabled. Color codes are stripped automatically.",
+	nullptr,
+	nullptr)
+{
+	const char* text = nullptr;
+	if (!ade_get_args(L, "s", &text))
+		return ADE_RETURN_NIL;
+
+	fsspeech_play(FSSPEECH_FROM_BRIEFING, text);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopTextToSpeech, l_UserInterface_CmdBrief, nullptr, "Stops any text-to-speech playback.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	fsspeech_stop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseTextToSpeech,
+	l_UserInterface_CmdBrief,
+	"boolean pause",
+	"Pauses (true) or resumes (false) text-to-speech playback.",
+	nullptr,
+	nullptr)
+{
+	bool pause = true;
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	fsspeech_pause(pause);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isTextToSpeechPlaying,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Returns whether text-to-speech is currently speaking.",
+	"boolean",
+	"true if speaking, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_playing());
+}
+
+ADE_FUNC(isTextToSpeechEnabled,
+	l_UserInterface_CmdBrief,
+	nullptr,
+	"Returns whether briefing text-to-speech is enabled and available.",
+	"boolean",
+	"true if enabled, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_play_from(FSSPEECH_FROM_BRIEFING));
+}
+
 ADE_FUNC(getCmdBriefing,
 	l_UserInterface_CmdBrief,
 	nullptr,
@@ -1091,6 +1206,63 @@ ADE_LIB_DERIV(l_UserInterface_Debrief,
 	nullptr,
 	"API for accessing data related to the Debriefing UI.",
 	l_UserInterface);
+
+ADE_FUNC(playTextToSpeech,
+	l_UserInterface_Debrief,
+	"string text",
+	"Speaks the given text using the engine's text-to-speech voice. Does nothing unless the briefing speech option is enabled. Color codes are stripped automatically.",
+	nullptr,
+	nullptr)
+{
+	const char* text = nullptr;
+	if (!ade_get_args(L, "s", &text))
+		return ADE_RETURN_NIL;
+
+	fsspeech_play(FSSPEECH_FROM_BRIEFING, text);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopTextToSpeech, l_UserInterface_Debrief, nullptr, "Stops any text-to-speech playback.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	fsspeech_stop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseTextToSpeech,
+	l_UserInterface_Debrief,
+	"boolean pause",
+	"Pauses (true) or resumes (false) text-to-speech playback.",
+	nullptr,
+	nullptr)
+{
+	bool pause = true;
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	fsspeech_pause(pause);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isTextToSpeechPlaying,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Returns whether text-to-speech is currently speaking.",
+	"boolean",
+	"true if speaking, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_playing());
+}
+
+ADE_FUNC(isTextToSpeechEnabled,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Returns whether briefing text-to-speech is enabled and available.",
+	"boolean",
+	"true if enabled, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_play_from(FSSPEECH_FROM_BRIEFING));
+}
 
 ADE_FUNC(initDebriefing,
 	l_UserInterface_Debrief,
@@ -1521,7 +1693,7 @@ ADE_INDEXER(l_Ship_Pool,
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx > ship_info_size()) {
+	if (idx < 1 || idx > ship_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
@@ -1533,13 +1705,14 @@ ADE_INDEXER(l_Ship_Pool,
 			return ADE_RETURN_NIL;
 		}
 		if (amount < 0) {
-			Ss_pool[idx] = 0;
+			(*Ss_pool)[idx] = 0;
 		} else {
-			Ss_pool[idx] = amount;
+			(*Ss_pool)[idx] = amount;
 		}
 	}
 
-	return ade_set_args(L, "i", Ss_pool[idx]);
+	// an absent entry means the class is not in this mission's loadout, which scripts see as -1
+	return ade_set_args(L, "i", Ss_pool->value_or(idx, -1));
 }
 
 ADE_FUNC(__len, l_Ship_Pool, nullptr, "The number of ship classes in the pool", "number", "The number of ship classes.")
@@ -1559,7 +1732,7 @@ ADE_INDEXER(l_Weapon_Pool,
 	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
-	if (idx < 0 || idx > weapon_info_size()) {
+	if (idx < 1 || idx > weapon_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
@@ -1571,13 +1744,13 @@ ADE_INDEXER(l_Weapon_Pool,
 			return ADE_RETURN_NIL;
 		}
 		if (amount < 0) {
-			Wl_pool[idx] = 0;
+			(*Wl_pool)[idx] = 0;
 		} else {
-			Wl_pool[idx] = amount;
+			(*Wl_pool)[idx] = amount;
 		}
 	}
 
-	return ade_set_args(L, "i", Wl_pool[idx]);
+	return ade_set_args(L, "i", Wl_pool->value_or(idx, 0));
 }
 
 ADE_FUNC(__len,
@@ -1706,6 +1879,63 @@ ADE_LIB_DERIV(l_UserInterface_TechRoom,
 	nullptr,
 	"API for accessing data related to the Tech Room UIs.",
 	l_UserInterface);
+
+ADE_FUNC(playTextToSpeech,
+	l_UserInterface_TechRoom,
+	"string text",
+	"Speaks the given text using the engine's text-to-speech voice. Does nothing unless the tech room speech option is enabled. Color codes are stripped automatically.",
+	nullptr,
+	nullptr)
+{
+	const char* text = nullptr;
+	if (!ade_get_args(L, "s", &text))
+		return ADE_RETURN_NIL;
+
+	fsspeech_play(FSSPEECH_FROM_TECHROOM, text);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopTextToSpeech, l_UserInterface_TechRoom, nullptr, "Stops any text-to-speech playback.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	fsspeech_stop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(pauseTextToSpeech,
+	l_UserInterface_TechRoom,
+	"boolean pause",
+	"Pauses (true) or resumes (false) text-to-speech playback.",
+	nullptr,
+	nullptr)
+{
+	bool pause = true;
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	fsspeech_pause(pause);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isTextToSpeechPlaying,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Returns whether text-to-speech is currently speaking.",
+	"boolean",
+	"true if speaking, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_playing());
+}
+
+ADE_FUNC(isTextToSpeechEnabled,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Returns whether tech room text-to-speech is enabled and available.",
+	"boolean",
+	"true if enabled, false otherwise")
+{
+	return ade_set_args(L, "b", fsspeech_play_from(FSSPEECH_FROM_TECHROOM));
+}
 
 ADE_FUNC(buildMissionList,
 	l_UserInterface_TechRoom,

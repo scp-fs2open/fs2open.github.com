@@ -129,8 +129,8 @@ public:
 	int		loop_reentry;							// mission number to return to after loop is finished
 	int		realign_required;						// are any missions missing alignment info? (Fred)
 	int		num_players;							// valid in multiplayer campaigns -- number of players campaign supports.
-	ubyte	ships_allowed[MAX_SHIP_CLASSES];		// which ships the player can use
-	ubyte	weapons_allowed[MAX_WEAPON_TYPES];		// which weapons the player can use
+	SCP_set<int>	ships_allowed;						// class indices of ships the player can use; absent = not allowed
+	SCP_set<int>	weapons_allowed;					// class indices of weapons the player can use; absent = not allowed
 	cmission	missions[MAX_CAMPAIGN_MISSIONS];	// decription of the missions
 	SCP_vector<sexp_variable> persistent_variables;		// These variables will be saved at the end of a mission
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
@@ -194,6 +194,10 @@ extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
 extern void mission_campaign_clear( void );
+
+// frees and nulls a mission's five vm_strdup'd strings (name, notes, and the
+// three mission-branch strings)
+extern void mission_campaign_free_mission_strings(cmission &cm);
 
 // used by Fred to get a mission's list of goals.
 void read_mission_goal_list(int num);

@@ -83,8 +83,8 @@ int find_prop_empty_slot() {
 
 prop* prop_id_lookup(int id)
 {
+	Assertion(id >= 0 && id < static_cast<int>(Props.size()) && Props[id].has_value(), "Could not find prop for id %d", id);
 	if (id < 0 || id >= static_cast<int>(Props.size()) || !Props[id].has_value()) {
-		Assertion(false, "Could not find prop for id %d", id);
 		return nullptr;
 	}
 	return &Props[id].value();
@@ -102,8 +102,8 @@ int prop_category_id_lookup(const SCP_string& category)
 
 prop_category* prop_get_category(int index)
 {
+	Assertion(SCP_vector_inbounds(Prop_categories, index), "Invalid category index %d", index);
 	if (!SCP_vector_inbounds(Prop_categories, index)) {
-		Assertion(false, "Invalid category index %d", index);
 		return nullptr;
 	}
 	return &Prop_categories[index];
@@ -473,9 +473,8 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	if (pip->model_num == -1) {
-		pip->model_num = model_load(pip->pof_file.c_str());
-	}
+
+	pip->model_num = model_load(pip->pof_file.c_str());
 
 	polymodel* pm = model_get(pip->model_num);
 
@@ -548,7 +547,7 @@ int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const cha
 
 			auto gpoi = pip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != pip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)pip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -592,6 +591,7 @@ void prop_delete(object* obj)
 	propp.glow_point_bank_active.clear();
 
 	model_delete_instance(propp.model_instance_num);
+	propp.model_instance_num = -1;
 
 	// Leave the slot empty for the duration of the scene
 	// The Props array will be compacted at the end of the level
@@ -612,9 +612,7 @@ static void prop_model_change(int n, int prop_type)
 	//polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file.c_str());
-	}
+	sip->model_num = model_load(sip->pof_file.c_str());
 
 	polymodel* pm = model_get(sip->model_num);
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
@@ -639,7 +637,7 @@ static void prop_model_change(int n, int prop_type)
 
 			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
-				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				gpo = &glowpoint_bank_overrides[gpoi->second];
 			}
 
 			if (gpo) {
@@ -736,10 +734,6 @@ void prop_render(object* obj, model_draw_list* scene)
 
 	if (pip->flags[Prop::Info_Flags::No_lighting]) {
 		render_flags |= MR_NO_LIGHTING;
-	}
-
-	if (Rendering_to_shadow_map) {
-		render_flags = MR_NO_TEXTURING | MR_NO_LIGHTING;
 	}
 
 	if (propp->flags[Prop::Prop_Flags::Glowmaps_disabled]) {
@@ -1072,7 +1066,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 				mc.radius = light_obj->radius;
 				break;
 			default:
-				UNREACHABLE("Unknown object type in prop_check_collision");
+				UNREACHABLE("Unknown object type %d in prop_check_collision", light_obj->type);
 			};
 
 			mc_ret_val = model_collide(&mc);
@@ -1100,9 +1094,9 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 		// everything above was calculated relative to the heavy's position
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr))
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr))
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
 			mc_ret_val = 0;

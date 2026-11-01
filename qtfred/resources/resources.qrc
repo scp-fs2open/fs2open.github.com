@@ -1,41 +1,17 @@
 <RCC>
   <qresource prefix="/">
-    <file>images/operator.png</file>
-    <file>images/black_do.png</file>
-    <file>images/chained.png</file>
-    <file>images/chained_directive.png</file>
-    <file>images/comment.png</file>
-    <file>images/container_data.png</file>
-    <file>images/container_name.png</file>
     <file>images/cursor_rotate.png</file>
-    <file>images/data.png</file>
-    <file>images/data00.png</file>
-    <file>images/data05.png</file>
-    <file>images/data10.png</file>
-    <file>images/data15.png</file>
-    <file>images/data20.png</file>
-    <file>images/data25.png</file>
-    <file>images/data30.png</file>
-    <file>images/data35.png</file>
-    <file>images/data40.png</file>
-    <file>images/data45.png</file>
-    <file>images/data50.png</file>
-    <file>images/data55.png</file>
-    <file>images/data60.png</file>
-    <file>images/data65.png</file>
-    <file>images/data70.png</file>
-    <file>images/data75.png</file>
-    <file>images/data80.png</file>
-    <file>images/data85.png</file>
-    <file>images/data90.png</file>
-    <file>images/data95.png</file>
     <file>images/fred_about.png</file>
-    <file>images/green_do.png</file>
-    <file>images/root.png</file>
-    <file>images/root_directive.png</file>
     <file>images/splash.png</file>
     <file>images/V_fred.ico</file>
-    <file>images/variable.png</file>
+    <file>images/sexp_icons/operator.png</file>
+    <file>images/sexp_icons/data.png</file>
+    <file>images/sexp_icons/data_num.png</file>
+    <file>images/sexp_icons/dot.png</file>
+    <file>images/sexp_icons/chain.png</file>
+    <file>images/sexp_icons/comment.png</file>
+    <file>images/sexp_icons/container_name.png</file>
+    <file>images/sexp_icons/container_data.png</file>
     <file>images/toolbar/layers-dark.png</file>
     <file>images/toolbar/layers-light.png</file>
     <file>images/toolbar/unhide-dark.png</file>

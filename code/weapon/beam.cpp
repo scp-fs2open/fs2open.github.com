@@ -323,7 +323,7 @@ bool beam_has_valid_params(beam_fire_info* fire_info) {
 				return false;
 			break;		
 		default:
-			Assertion(false, "Unrecognized beam fire method in beam_has_valid_params");
+			UNREACHABLE("Unrecognized beam fire method %d in beam_has_valid_params", fire_info->fire_method);
 			return false;
 	}
 
@@ -356,41 +356,38 @@ int beam_fire(beam_fire_info *fire_info)
 	}
 
 	// make sure the beam_info_index is valid
+	Assertion((fire_info->beam_info_index >= 0) && (fire_info->beam_info_index < weapon_info_size()) && (Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam]), "beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
 	if ((fire_info->beam_info_index < 0) || (fire_info->beam_info_index >= weapon_info_size()) || !(Weapon_info[fire_info->beam_info_index].wi_flags[Weapon::Info_Flags::Beam])) {
-		UNREACHABLE("beam_info_index (%d) invalid (either <0, >= %d, or not actually a beam)!\n", fire_info->beam_info_index, weapon_info_size());
 		return -1;
 	}
 
 	wip = &Weapon_info[fire_info->beam_info_index];	
 
 	// copied from weapon_create()
-	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr)) {
+	// (a beam whose info was dictated by the server has already had its substitution resolved there)
+	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr) && (fire_info->beam_info_override == nullptr)) {
 		// using substitution
 
-		// get to the instance of the gun
-		Assertion(fire_info->shooter->type == OBJ_SHIP, "Expected type OBJ_SHIP, got %d", fire_info->shooter->type);
-		Assertion((fire_info->shooter->instance < MAX_SHIPS) && (fire_info->shooter->instance >= 0),
-			"Ship index is %d, which is out of range [%d,%d)", fire_info->shooter->instance, 0, MAX_SHIPS);
-		ship* parent_shipp = &(Ships[fire_info->shooter->instance]);
-		Assert(parent_shipp != nullptr);
-
-		size_t* position = get_pointer_to_weapon_fire_pattern_index(fire_info->beam_info_index, fire_info->shooter->instance, fire_info->turret);
-		Assertion(position != nullptr, "'%s' is trying to fire a weapon that is not selected", Ships[fire_info->shooter->instance].ship_name);
-
-		size_t curr_pos = *position;
-		if ((parent_shipp->flags[Ship::Ship_Flags::Primary_linked]) && curr_pos > 0) {
-			curr_pos--;
+		// the turret and fighter firing code both tell us which bank the beam is in
+		int pbank = fire_info->bank;
+		ship *parent_shipp = nullptr;
+		ship_weapon* swp = nullptr;
+		if (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED) {
+			// the fire method and the turret are set independently, so the turret can be null here
+			if (fire_info->turret != nullptr)
+				swp = &fire_info->turret->weapons;
+		} else if (fire_info->fire_method == BFM_FIGHTER_FIRED && fire_info->shooter->type == OBJ_SHIP) {
+			parent_shipp = &Ships[fire_info->shooter->instance];
+			swp = &parent_shipp->weapons;
 		}
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
 
-		if (wip->weapon_substitution_pattern[curr_pos] == -1) {
-			// weapon doesn't want any sub
-			return -1;
-		}
-		else if (wip->weapon_substitution_pattern[curr_pos] != fire_info->beam_info_index) {
-			fire_info->beam_info_index = wip->weapon_substitution_pattern[curr_pos];
-			// weapon wants to sub with weapon other than me
+		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(fire_info->beam_info_index, swp, pbank, -1, parent_shipp);
+
+		if (use_substitution) {
+			if (substituted_weapon_info_index < 0)
+				return -1;
+
+			fire_info->beam_info_index = substituted_weapon_info_index;
 			return beam_fire(fire_info);
 		}
 	}
@@ -1644,7 +1641,7 @@ void beam_render_muzzle_glow(beam *b)
 		b->objp != nullptr // Can validly be nullptr for floating beams!
 		&& b->objp == Player_obj  
 		&& Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model] 
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
+		&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(&Ship_info[Ships[b->objp->instance].ship_info_index])));
 	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
 		return;
 	}
@@ -2539,13 +2536,13 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (b->flags & BF_IS_FIGHTER_BEAM) {
 			orient = b->objp->orient;
 		} else if (b->subsys) {
-			vec3d fvec, uvec, target_pos;
+			vec3d fvec, uvec, target_pos = vmd_zero_vector;
 			if (b->target)
 				target_pos = b->target->pos;
 			else if (b->flags & BF_TARGETING_COORDS)
 				target_pos = b->target_pos1;
 			else
-				UNREACHABLE("Turret beam fired without a target or target coordinates?");
+				Assertion(false, "Turret beam fired without a target or target coordinates?");
 			vm_vec_normalized_dir(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
 			vm_vector_2_matrix_norm(&orient, &fvec, &uvec);
@@ -2968,7 +2965,7 @@ void beam_aim(beam *b)
 		break;
 
 	default:
-		UNREACHABLE("Impossible beam type (%d); get a coder!\n", (int)b->type);
+		UNREACHABLE("Impossible beam type (%d); get a coder!\n", static_cast<int>(b->type));
 	}
 
 	if (!Weapon_info[b->weapon_info_index].wi_flags[Weapon::Info_Flags::No_collide]) {
@@ -3216,9 +3213,9 @@ int beam_collide_ship(obj_pair *pair)
 		WarpEffect* warp_effect = nullptr;
 
 		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr)
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 
 
 		bool hull_no_collide, shield_no_collide;

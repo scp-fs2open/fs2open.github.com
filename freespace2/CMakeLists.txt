@@ -31,11 +31,6 @@ TARGET_LINK_LIBRARIES(Freespace2 code)
 TARGET_LINK_LIBRARIES(Freespace2 platform)
 TARGET_LINK_LIBRARIES(Freespace2 compiler)
 
-IF(WIN32)
-	# Link sdl main only here as it interferes with fred
-	TARGET_LINK_LIBRARIES(Freespace2 sdlmain)
-ENDIF(WIN32)
-
 if(FSO_BUILD_WITH_OPENGL_DEBUG)
 	add_definitions(-DFS_OPENGL_DEBUG)
 endif()
@@ -107,3 +102,9 @@ set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGI
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(Freespace2 PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+
+set_target_properties(Freespace2 PROPERTIES XCODE_SCHEME_ARGUMENTS "${FSO_RUN_ARGUMENTS}")
+
+if(FSO_FREESPACE_PATH AND NOT "${FSO_FREESPACE_PATH}" STREQUAL "${CMAKE_INSTALL_PREFIX}")
+	set_target_properties(Freespace2 PROPERTIES XCODE_SCHEME_WORKING_DIRECTORY "${FSO_FREESPACE_PATH}")
+endif()

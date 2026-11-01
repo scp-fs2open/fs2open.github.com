@@ -638,8 +638,8 @@ sound_handle snd_play(game_snd* gs, float pan, float vol_scale, int priority, bo
 	if (!ds_initialized)
 		return sound_handle::invalid();
 
+	Assertion(gs != nullptr, "gamesnd parameter must not be null!");
 	if (gs == nullptr) {
-		UNREACHABLE("gamesnd parameter must not be null!");
 		return sound_handle::invalid();
 	}
 	if (gs->flags & GAME_SND_NOT_VALID) {
@@ -731,8 +731,8 @@ sound_handle snd_play_3d(game_snd* gs, const vec3d* source_pos, const vec3d* lis
 	if (!ds_initialized)
 		return sound_handle::invalid();
 
+	Assertion(gs != nullptr, "gamesnd parameter must not be null!");
 	if (gs == nullptr) {
-		UNREACHABLE("gamesnd parameter must not be null!");
 		return sound_handle::invalid();
 	}
 	if (gs->flags & GAME_SND_NOT_VALID) {
@@ -948,8 +948,8 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	if (!ds_initialized)
 		return sound_handle::invalid();
 
+	Assertion(gs != nullptr, "gamesnd parameter must not be null!");
 	if (gs == nullptr) {
-		UNREACHABLE("gamesnd parameter must not be null!");
 		return sound_handle::invalid();
 	}
 	if (gs->flags & GAME_SND_NOT_VALID) {

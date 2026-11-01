@@ -81,23 +81,23 @@ private:
 
 	bool autobalance; 
 
-	// ship pool info
-	int static_ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];	// Holds the number of ships of a class that was set by the team loadout
-	int dynamic_ship_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
-	int static_ship_variable_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int dynamic_ship_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
+	// ship pool info; an absent map entry means "not in the loadout" / "no variable" (the old -1 sentinel)
+	SCP_map<int, int> static_ship_pool[MAX_TVT_TEAMS];			// ship class -> count set by the team loadout
+	SCP_map<int, int> dynamic_ship_pool[MAX_TVT_TEAMS];			// string sexp variable index -> count
+	SCP_map<int, int> static_ship_variable_pool[MAX_TVT_TEAMS];	// ship class -> number sexp variable index supplying its count
+	SCP_map<int, int> dynamic_ship_variable_pool[MAX_TVT_TEAMS];	// string sexp variable index -> number sexp variable index supplying its count
 
 	// weapon pool info
-	int static_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];	
-	int dynamic_weapon_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
-	int static_weapon_variable_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-	int dynamic_weapon_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
+	SCP_map<int, int> static_weapon_pool[MAX_TVT_TEAMS];
+	SCP_map<int, int> dynamic_weapon_pool[MAX_TVT_TEAMS];
+	SCP_map<int, int> static_weapon_variable_pool[MAX_TVT_TEAMS];
+	SCP_map<int, int> dynamic_weapon_variable_pool[MAX_TVT_TEAMS];
 
-	// ship and weapon usage pools
-	int ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	// ship and weapon usage pools (class -> number used in starting wings)
+	SCP_map<int, int> ship_usage[MAX_TVT_TEAMS];
+	SCP_map<int, int> weapon_usage[MAX_TVT_TEAMS];
 
-	bool weapon_is_required[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+	SCP_set<int> weapon_is_required[MAX_TVT_TEAMS];
 
 	bool validation_toggle[MAX_TVT_TEAMS];
 

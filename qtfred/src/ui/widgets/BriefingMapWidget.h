@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QWidget>
-#include <QWindow>
+#include <QImage>
+#include <QPixmap>
+#include <QRect>
 #include <QTimer>
 
 #include "globalincs/pstypes.h"
@@ -9,6 +11,9 @@
 #include "osapi/osapi.h"
 #include "ui/QtGraphicsOperations.h"
 
+class QOffscreenSurface;
+class QPainter;
+class QPaintEvent;
 class briefing;
 
 namespace fso::fred::dialogs {
@@ -19,26 +24,13 @@ namespace fso::fred {
 
 class EditorViewport;
 
-class BriefingMapWindow : public QWindow {
-	Q_OBJECT
-public:
-	explicit BriefingMapWindow(QWidget* parentWidget);
-
-	void initializeGL(const QSurfaceFormat& fmt);
-
-protected:
-	bool event(QEvent* evt) override;
-	void exposeEvent(QExposeEvent* event) override;
-
-private:
-	QWidget* _parentWidget = nullptr;
-};
-
-// Lightweight os::Viewport that wraps BriefingMapWindow so we can use
-// gr_use_viewport() / gr_flip() through FSO's normal rendering pipeline.
+// Lightweight os::Viewport backed by an offscreen surface so we can make the engine's GL context
+// current and render the briefing into an off-screen render target. The briefing map is then read
+// back into a QImage and painted into a normal QWidget, which (unlike an embedded native QWindow)
+// participates in the layout and resizes/clips cleanly.
 class BriefingViewport : public QtSurfaceViewport {
 public:
-	explicit BriefingViewport(BriefingMapWindow* window);
+	explicit BriefingViewport(QOffscreenSurface* surface);
 
 	SDL_Window* toSDLWindow() override;
 	std::pair<uint32_t, uint32_t> getSize() override;
@@ -49,7 +41,7 @@ public:
 	QSurface* getRenderSurface() override;
 
 private:
-	BriefingMapWindow* _window = nullptr;
+	QOffscreenSurface* _surface = nullptr;
 };
 
 class BriefingMapWidget : public QWidget {
@@ -68,8 +60,6 @@ public:
 	void setMovementSpeedScale(float scale);
 	void setRotationSpeedScale(float scale);
 
-	QWindow* getRenderWindow() const;
-
 signals:
 	void iconSelected(int index, bool toggleSelection);
 	void cameraChanged(vec3d pos, matrix orient);
@@ -81,24 +71,30 @@ protected:
 	void mousePressEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;
 	void mouseReleaseEvent(QMouseEvent* event) override;
+	void paintEvent(QPaintEvent* event) override;
 
 private:
 	void renderFrame();
+	void restoreMainViewportFrame(bool wasActive);
 	void initBriefingMap();
 	void applyStageTransition(int stageNum, int transitionTime);
 	void maybeRenderCutTransition(float frametime, int width, int height);
 	static bool shouldUseCutTransition(int fromStage, int toStage, const briefing* briefPtr);
 	void updateEditorHighlightPlayback() const;
-	void drawSelectedIconOutline();
+	void drawSelectionBrackets(QPainter& painter);
+	QPixmap checkerboardTile(); // subtle, theme-appropriate matte for the letterbox bars
 	void applyCameraPoseLikeKeyboardControls(const vec3d& camPos, const matrix& camOrient, bool updateModel);
 	void applyBoundCameraControls(float frametime);
 
 	CameraController _cameraController;
 
-	BriefingMapWindow* _window = nullptr;
+	QOffscreenSurface* _surface = nullptr; // offscreen GL surface the briefing renders through
+	QImage _frameImage;                    // last rendered briefing frame (reference resolution)
+	QRect _blitRect;                       // where _frameImage is drawn in the widget (logical px)
+	QPixmap _checkerTile;                  // cached matte tile
+	bool _checkerTileDark = false;         // theme the cached tile was built for
 	QTimer* _renderTimer = nullptr;
 	std::unique_ptr<BriefingViewport> _briefingViewport; // our os::Viewport for gr_use_viewport
-	std::unique_ptr<QOpenGLContext> _diagnosticContext;
 
 	dialogs::BriefingEditorDialogModel* _model = nullptr;
 	EditorViewport* _viewport = nullptr;
@@ -106,21 +102,22 @@ private:
 	int _currentStage = 0;
 	bool _initialized = false;
 	bool _rendering = false; // re-entrancy guard
-	bool _loggedNotInitialized = false;
-	bool _loggedNotExposed = false;
-	bool _loggedNoViewport = false;
-	bool _loggedInFrameSkip = false;
 	bool _loggedNoContext = false;
-	bool _loggedSurfaceMismatch = false;
-	bool _loggedMakeCurrentFailure = false;
-	uint32_t _debugFrameCounter = 0;
+	bool _loggedNoRenderTarget = false;
+
+	// Offscreen render target: the briefing is rendered at the reference resolution, read back into
+	// _frameImage, and painted (scaled + letterboxed) into the widget, so the view is a faithful copy
+	// of the canonical briefing that resizes cleanly.
+	int _renderTarget = -1;
+	int _renderTargetW = 0;
+	int _renderTargetH = 0;
 
 	// Mouse drag state
 	bool _draggingIcon = false;
 	int _dragIconIndex = -1;
-	QPoint _lastMousePos;
 	QPointF _dragStartMousePos;
 	vec3d _dragStartIconPos = ZERO_VECTOR;
+	// Render size icon coordinates are expressed in (the reference/render-target resolution).
 	int _lastRenderWidth = 0;
 	int _lastRenderHeight = 0;
 

@@ -18,12 +18,28 @@ namespace
 {
 	SDL_Cursor* bitmapToCursor(int bitmapNum)
 	{
-		auto bitmapSurface = bm_to_sdl_surface(bitmapNum);
+		auto surface = bm_to_sdl_surface(bitmapNum);
+
+		if ( !surface ) {
+			return nullptr;
+		}
+
+		// create alternate 2x version for high-dpi
+		auto surfaceScaled = SDL_ScaleSurface(surface,
+											  surface->w * 2,
+											  surface->h * 2,
+											  SDL_SCALEMODE_LINEAR);
+
+		if (surfaceScaled) {
+			SDL_AddSurfaceAlternateImage(surface, surfaceScaled);
+			SDL_DestroySurface(surfaceScaled);
+			surfaceScaled = nullptr;
+		}
 
 		// For now set the hot coordinates to the upper left corner
-		SDL_Cursor* cursorHandle = SDL_CreateColorCursor(bitmapSurface, 0, 0);
+		SDL_Cursor* cursorHandle = SDL_CreateColorCursor(surface, 0, 0);
 
-		SDL_FreeSurface(bitmapSurface);
+		SDL_DestroySurface(surface);
 
 		return cursorHandle;
 	}
@@ -31,9 +47,9 @@ namespace
 	void setRelativeMouseMode(bool grab) {
 		if (Cmdline_nograb) {
 			// Never grab the mouse if this is enabled
-			SDL_SetRelativeMouseMode(SDL_FALSE);
+			SDL_SetWindowRelativeMouseMode(os::getSDLMainWindow(), false);
 		} else {
-			SDL_SetRelativeMouseMode(grab ? SDL_TRUE : SDL_FALSE);
+			SDL_SetWindowRelativeMouseMode(os::getSDLMainWindow(), grab);
 		}
 	}
 	
@@ -43,7 +59,7 @@ namespace
 		{
 			// If shown don't grab the mouse
 			setRelativeMouseMode(false);
-			SDL_ShowCursor(1);
+			SDL_ShowCursor();
 		}
 		else
 		{
@@ -56,7 +72,7 @@ namespace
 				setRelativeMouseMode(false);
 			}
 
-			SDL_ShowCursor(0);
+			SDL_HideCursor();
 		}
 	}
 }
@@ -78,14 +94,10 @@ namespace io
 
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
-			this->mBitmapHandle = other.mBitmapHandle;
-			this->mBeginTimeStamp = other.mBeginTimeStamp;
-			this->mLastFrame = other.mLastFrame;
-			
-			other.mBitmapHandle = -1;
-			other.mBeginTimeStamp = UI_TIMESTAMP::invalid();
-			other.mLastFrame = static_cast<size_t>(-1);
-			
+			this->mBitmapHandle = std::exchange(other.mBitmapHandle, -1);
+			this->mBeginTimeStamp = std::exchange(other.mBeginTimeStamp, UI_TIMESTAMP::invalid());
+			this->mLastFrame = std::exchange(other.mLastFrame, static_cast<size_t>(-1));
+
 			return *this;
 		}
 
@@ -95,7 +107,7 @@ namespace io
 
 			for (iter = mAnimationFrames.begin(); iter != mAnimationFrames.end(); ++iter)
 			{
-				SDL_FreeCursor(*iter);
+				SDL_DestroyCursor(*iter);
 			}
 
 			mAnimationFrames.clear();
@@ -187,7 +199,7 @@ namespace io
 
 		Cursor* CursorManager::loadFromBitmap(int bitmapHandle)
 		{
-			Assertion(gr_screen.mode != GR_STUB, "Cursors can not be used with the stub renderer!");
+			Assertion(gr_screen.mode != GraphicsAPI::Stub, "Cursors can not be used with the stub renderer!");
 
 			Assertion(bm_is_valid(bitmapHandle), "%d is no valid bitmap handle!", bitmapHandle);
 

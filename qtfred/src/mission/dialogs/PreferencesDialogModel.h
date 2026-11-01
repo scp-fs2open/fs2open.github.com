@@ -2,6 +2,7 @@
 
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/ControlBindings.h"
+#include "ui/ThemeMode.h"
 
 namespace fso::fred::dialogs {
 
@@ -23,6 +24,9 @@ public:
 
 	int  getAutosaveIntervalSeconds() const;
 	void setAutosaveIntervalSeconds(int value);
+
+	int  getSexpNumberEveryN() const;
+	void setSexpNumberEveryN(int value);
 
 	bool getCreateBakOnSave() const;
 	void setCreateBakOnSave(bool value);
@@ -51,16 +55,30 @@ public:
 	bool getShowSexpHelpWingEditor() const;
 	void setShowSexpHelpWingEditor(bool value);
 
-	bool getDarkMode() const;
-	void setDarkMode(bool value);
+	ThemeMode getThemeMode() const;
+	void setThemeMode(ThemeMode value);
+
+	DataMenuStyle getDataMenuStyle() const;
+	void setDataMenuStyle(DataMenuStyle value);
 
 	int  getToolbarIconSize() const;
 	void setToolbarIconSize(int size);
+
+	int  getOutlineLod() const;
+	void setOutlineLod(int value);
+
+	double getLabelFontScale() const;
+	void setLabelFontScale(double value);
 
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
 	void resetControlDefaults();
+
+	bool getInvertOrbitX() const;
+	void setInvertOrbitX(bool value);
+	bool getInvertOrbitY() const;
+	void setInvertOrbitY(bool value);
 
 	// Grid
 	int getGridCenterX() const;
@@ -78,6 +96,7 @@ private:
 	// General
 	bool _offerAutosaveRecovery;
 	int  _autosaveIntervalSeconds;
+	int  _sexpNumberEveryN;
 	bool _createBakOnSave;
 	bool _moveShipsWhenUndocking;
 	bool _alwaysSaveDisplayNames;
@@ -88,11 +107,16 @@ private:
 	bool _showSexpHelpMissionCutscenes;
 	bool _showSexpHelpShipEditor;
 	bool _showSexpHelpWingEditor;
-	bool _darkMode;
+	ThemeMode _themeMode;
+	DataMenuStyle _dataMenuStyle;
 	int  _toolbarIconSize;
+	int  _outlineLod;
+	float _labelFontScale;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;
+	bool _invertOrbitX;
+	bool _invertOrbitY;
 
 	// Grid
 	int _gridCenterX;

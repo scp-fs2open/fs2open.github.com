@@ -8,7 +8,7 @@
 #include <variant>
 
 bool model_exists(const SCP_string& filename);
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, ErrorType error_type, model_read_deferred_tasks& deferredTasks);
+std::optional<modelread_status> read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, ErrorType error_type, model_read_deferred_tasks& deferredTasks);
 void virtual_pof_purge_cache();
 
 void virtual_pof_init();

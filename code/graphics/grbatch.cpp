@@ -13,6 +13,8 @@
 #include "graphics/grbatch.h"
 #include "render/3d.h"
 
+#include <utility>
+
 geometry_batcher::~geometry_batcher()
 {
 	if (vert != NULL) {
@@ -124,6 +126,15 @@ void geometry_batcher::clone(const geometry_batcher &geo)
 	n_to_render = geo.n_to_render;
 	n_allocated = geo.n_allocated;
 	use_radius = geo.use_radius;
+	buffer_offset = geo.buffer_offset;
+
+	// free any buffers we already own, so that assignment doesn't leak them
+	if (vert != nullptr) {
+		vm_free(vert);
+	}
+	if (radius_list != nullptr) {
+		vm_free(radius_list);
+	}
 
 	if (n_allocated > 0) {
 		vert = (vertex *) vm_malloc( sizeof(vertex) * n_allocated );
@@ -141,6 +152,37 @@ geometry_batcher& geometry_batcher::operator=(const geometry_batcher &geo)
 {
 	if (this != &geo) {
 		clone(geo);
+	}
+
+	return *this;
+}
+
+geometry_batcher::geometry_batcher(geometry_batcher &&other) noexcept
+	: n_to_render(std::exchange(other.n_to_render, 0)),
+	  n_allocated(std::exchange(other.n_allocated, 0)),
+	  vert(std::exchange(other.vert, nullptr)),
+	  use_radius(std::exchange(other.use_radius, true)),
+	  radius_list(std::exchange(other.radius_list, nullptr)),
+	  buffer_offset(std::exchange(other.buffer_offset, -1))
+{
+}
+
+geometry_batcher& geometry_batcher::operator=(geometry_batcher &&other) noexcept
+{
+	if (this != &other) {
+		if (vert != nullptr) {
+			vm_free(vert);
+		}
+		if (radius_list != nullptr) {
+			vm_free(radius_list);
+		}
+
+		n_to_render = std::exchange(other.n_to_render, 0);
+		n_allocated = std::exchange(other.n_allocated, 0);
+		vert = std::exchange(other.vert, nullptr);
+		use_radius = std::exchange(other.use_radius, true);
+		radius_list = std::exchange(other.radius_list, nullptr);
+		buffer_offset = std::exchange(other.buffer_offset, -1);
 	}
 
 	return *this;

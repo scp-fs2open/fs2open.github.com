@@ -56,7 +56,7 @@ int Debris_num_submodels = 0;
 
 particle::ParticleEffectHandle Debris_hit_particle;
 
-#define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
+#define	DEBRIS_INDEX(dp) (static_cast<int>((dp)-Debris.data()))
 
 // Find the first available arc slot.  If none is available, and no_create is false, add one.
 debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create);
@@ -248,6 +248,7 @@ void debris_delete( object * obj )
 
 	if (db->model_instance_num >= 0) {
 		model_delete_instance(db->model_instance_num);
+		db->model_instance_num = -1;
 	}
 
 	if ( db->is_hull ) {
@@ -336,7 +337,7 @@ void debris_process_post(object * obj, float frame_time)
 						break;
 
 					default:
-						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
+						Assertion(false, "Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
 				}
 			}
@@ -1151,9 +1152,9 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		// everything above was calculated relative to the heavy's position
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 		if ((shipp->is_arriving()) && (shipp->warpin_effect != nullptr))
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 		else if ((shipp->flags[Ship::Ship_Flags::Depart_warp]) && (shipp->warpout_effect != nullptr))
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 
 		if (warp_effect != nullptr && point_is_clipped_by_warp(&actual_world_hit_pos, warp_effect))
 			mc_ret_val = 0;

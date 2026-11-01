@@ -49,7 +49,7 @@ public:
 	int			m_combo_last_modified_index;
 	int			m_translate_combo_to_sexp[MAX_SEXP_VARIABLES];
 	int			m_start_index;		// index of sexp_variables which is right clicked to get this menu
-	sexp_tree	*m_p_sexp_tree;
+	sexp_tree_view	*m_p_sexp_tree;
 	//}}AFX_DATA
 
 
@@ -68,9 +68,9 @@ private:
 protected:
 
 	// tooltips
-	CToolTipCtrl* m_ProgressToolTip;
-	CToolTipCtrl* m_CloseToolTip;
-	CToolTipCtrl* m_EternalToolTip;
+	CToolTipCtrl m_ProgressToolTip;
+	CToolTipCtrl m_CloseToolTip;
+	CToolTipCtrl m_EternalToolTip;
 
 	// Generated message map functions
 	//{{AFX_MSG(CModifyVariableDlg)

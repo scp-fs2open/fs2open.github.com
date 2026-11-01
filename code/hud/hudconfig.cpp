@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"

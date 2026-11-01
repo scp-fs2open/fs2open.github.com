@@ -55,11 +55,12 @@ ADE_INDEXER(l_WeaponBankType, "number Index", "Array of weapon banks", "weaponba
 			idx--; //Lua->FS2
 
 			if(ADE_SETTING_VAR && newbank && newbank->isValid()) {
-				sb->sw->primary_bank_weapons[idx] = newbank->typeh.sw->primary_bank_weapons[idx];
-				sb->sw->next_primary_fire_stamp[idx] = timestamp(0);
-				sb->sw->primary_bank_ammo[idx] = newbank->typeh.sw->primary_bank_ammo[idx];
-				sb->sw->primary_bank_start_ammo[idx] = newbank->typeh.sw->primary_bank_start_ammo[idx];
-				sb->sw->primary_bank_capacity[idx] = newbank->typeh.sw->primary_bank_capacity[idx];
+				sb->sw->secondary_bank_weapons[idx] = newbank->typeh.sw->secondary_bank_weapons[idx];
+				sb->sw->next_secondary_fire_stamp[idx] = timestamp(0);
+				sb->sw->secondary_bank_ammo[idx] = newbank->typeh.sw->secondary_bank_ammo[idx];
+				sb->sw->secondary_bank_start_ammo[idx] = newbank->typeh.sw->secondary_bank_start_ammo[idx];
+				sb->sw->secondary_bank_capacity[idx] = newbank->typeh.sw->secondary_bank_capacity[idx];
+				sb->sw->secondary_bank_rearm_time[idx] = timestamp(0);
 			}
 			break;
 		case SWH_TERTIARY:
@@ -136,15 +137,6 @@ ADE_VIRTVAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire
 	}
 
 	return ade_set_error(L, "b", false);
-}
-
-ADE_FUNC(isValid, l_WeaponBankType, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_banktype_h *sb;
-	if(!ade_get_args(L, "o", l_WeaponBankType.GetPtr(&sb)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sb->isValid());
 }
 
 ADE_FUNC(__len, l_WeaponBankType, NULL, "Number of weapons in the mounted bank", "number", "Number of bank weapons, or 0 if handle is invalid")
@@ -473,15 +465,6 @@ ADE_VIRTVAR(BurstSeed, l_WeaponBank, "number", "A random seed associated to the 
 	}
 
 	return ade_set_error(L, "i", -1);
-}
-
-ADE_FUNC(isValid, l_WeaponBank, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_bank_h *bh;
-	if(!ade_get_args(L, "o", l_WeaponBank.GetPtr(&bh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", bh->isValid());
 }
 
 

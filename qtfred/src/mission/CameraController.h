@@ -29,6 +29,9 @@ class CameraController {
 	float _orbitPhi = 1.24f;
 	float _orbitTheta = 2.25f;
 	bool _orbitActive = false;
+	// Default to inverted, matching the engine's F3 lab and POF Tools.
+	bool _invertOrbitX = true;
+	bool _invertOrbitY = true;
 
 	void orbitCameraApply();
 
@@ -71,6 +74,12 @@ public:
 
 	bool getLookatMode() const { return _lookatMode; }
 	void setLookatMode(bool mode) { _lookatMode = mode; }
+
+	bool getInvertOrbitX() const { return _invertOrbitX; }
+	void setInvertOrbitX(bool invert) { _invertOrbitX = invert; }
+
+	bool getInvertOrbitY() const { return _invertOrbitY; }
+	void setInvertOrbitY(bool invert) { _invertOrbitY = invert; }
 
 	void orbitCameraInitFromCurrentView(const vec3d* pivot, const matrix* grid_orient);
 	void orbitCameraRotate(int dx, int dy);

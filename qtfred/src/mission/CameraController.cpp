@@ -166,6 +166,10 @@ void CameraController::orbitCameraApply()
 void CameraController::orbitCameraRotate(int dx, int dy)
 {
 	float rot_scale = _physicsRot / 300.0f;
+	if (_invertOrbitX)
+		dx = -dx;
+	if (_invertOrbitY)
+		dy = -dy;
 	_orbitTheta += dx / 100.0f * rot_scale;
 	_orbitPhi += dy / 100.0f * rot_scale;
 
@@ -190,7 +194,10 @@ void CameraController::orbitCameraPan(int dx, int dy)
 
 void CameraController::orbitCameraZoom(float delta)
 {
-	float zoom_speed = 1.0f + (_physicsSpeed - 1) / 499.0f * 4.0f;
+	// Scale the per-notch zoom with the camera move speed: slow speeds give fine, precise
+	// zoom, fast speeds give coarse jumps for traversing large scenes. sqrt keeps the
+	// 1..100 move-speed range from exploding into absurd steps at the top end.
+	float zoom_speed = sqrtf(static_cast<float>(_physicsSpeed)) * 0.5f;
 	_orbitDistance *= powf(2.0f, delta * zoom_speed);
 
 	CLAMP(_orbitDistance, 1.0f, 10000000.0f);

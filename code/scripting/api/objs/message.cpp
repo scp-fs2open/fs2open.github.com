@@ -15,6 +15,7 @@ namespace api {
 
 //**********HANDLE: Persona
 ADE_OBJ(l_Persona, int, "persona", "Persona handle");
+ADE_OBJ_VALIDATOR(l_Persona, idx, Personas.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The name or empty string on error")
 {
@@ -83,18 +84,9 @@ ADE_FUNC(hasCustomData, l_Persona, nullptr, "Detects whether the persona has any
 	return ade_set_args(L, "b", result);
 }
 
-ADE_FUNC(isValid, l_Persona, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
-{
-	int idx = -1;
-
-	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", SCP_vector_inbounds(Personas, idx));
-}
-
 //**********HANDLE: Message
 ADE_OBJ(l_Message, int, "message", "Handle to a mission message");
+ADE_OBJ_VALIDATOR(l_Message, idx, Messages.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Message, "string", "The name of the message as specified in the mission file", "string", "The name or an empty string if handle is invalid")
 {
@@ -214,15 +206,6 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceStuff = true]", "Gets the text 
 
 		return ade_set_args(L, "s", temp_buf);
 	}
-}
-
-ADE_FUNC(isValid, l_Message, nullptr, "Checks if the message handle is valid", "boolean", "true if valid, false otherwise")
-{
-	int idx = -1;
-	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", SCP_vector_inbounds(Messages, idx));
 }
 
 

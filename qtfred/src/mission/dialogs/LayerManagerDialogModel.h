@@ -20,6 +20,7 @@ public:
 	bool setLayerVisibility(const SCP_string& name, bool visible, SCP_string* error);
 	bool addLayer(const SCP_string& name, SCP_string* error);
 	bool deleteLayer(const SCP_string& name, SCP_string* error);
+	bool renameLayer(const SCP_string& oldName, const SCP_string& newName, SCP_string* error);
 	static bool isDefaultLayer(const SCP_string& name);
 
 	// Object type filters

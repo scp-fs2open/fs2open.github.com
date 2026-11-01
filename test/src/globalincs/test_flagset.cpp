@@ -38,9 +38,9 @@ TEST(FlagsetTests, two_flags) {
 	{
 		flagset<TestFlags> flags{ TestFlags::First, TestFlags::Second };
 
-		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Second]));
-		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Another]));
-		ASSERT_FALSE((flags[TestFlags::AndAnother, TestFlags::Another]));
+		ASSERT_TRUE((flags.any_of(TestFlags::First, TestFlags::Second)));
+		ASSERT_TRUE((flags.any_of(TestFlags::First, TestFlags::Another)));
+		ASSERT_FALSE((flags.any_of(TestFlags::AndAnother, TestFlags::Another)));
 	}
 }
 
@@ -48,8 +48,8 @@ TEST(FlagsetTests, three_flags) {
 	{
 		flagset<TestFlags> flags{ TestFlags::First, TestFlags::Second, TestFlags::Another };
 
-		ASSERT_TRUE((flags[TestFlags::First, TestFlags::Second, TestFlags::Another]));
-		ASSERT_FALSE((flags[TestFlags::One, TestFlags::Two, TestFlags::AndAnother]));
+		ASSERT_TRUE((flags.any_of(TestFlags::First, TestFlags::Second, TestFlags::Another)));
+		ASSERT_FALSE((flags.any_of(TestFlags::One, TestFlags::Two, TestFlags::AndAnother)));
 	}
 }
 

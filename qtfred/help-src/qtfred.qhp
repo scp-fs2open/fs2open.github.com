@@ -77,6 +77,7 @@
                     <section title="Error Checker"                  ref="doc/dialogs/ErrorCheckerDialog.html"/>
                     <section title="Global Ship Flags"              ref="doc/dialogs/GlobalShipFlagsDialog.html"/>
                     <section title="Music Player"                   ref="doc/dialogs/MusicPlayerDialog.html"/>
+                    <section title="Reorder Objects"                ref="doc/dialogs/ReorderDialog.html"/>
                     <section title="Voice Acting Manager"           ref="doc/dialogs/VoiceActingManager.html"/>
                     <section title="Waypoint Path Generator"        ref="doc/dialogs/WaypointPathGeneratorDialog.html"/>
                 </section>
@@ -121,6 +122,7 @@
             <keyword name="Prop Editor"             id="PropEditorDialog"               ref="doc/dialogs/PropEditorDialog.html"/>
             <keyword name="Calculate Relative Coordinates" id="RelativeCoordinatesDialog" ref="doc/dialogs/RelativeCoordinatesDialog.html"/>
             <keyword name="Reinforcements"          id="ReinforcementsEditorDialog"     ref="doc/dialogs/ReinforcementsEditorDialog.html"/>
+            <keyword name="Reorder Objects"         id="ReorderDialog"                  ref="doc/dialogs/ReorderDialog.html"/>
             <keyword name="Shield System"           id="ShieldSystemDialog"             ref="doc/dialogs/ShieldSystemDialog.html"/>
             <keyword name="Ship Editor"             id="ShipEditorDialog"               ref="doc/dialogs/ShipEditorDialog.html"/>
             <keyword name="Ship Alt Class"          id="ShipAltShipClass"               ref="doc/dialogs/ShipAltShipClass.html"/>
@@ -182,6 +184,7 @@
             <file>doc/dialogs/PropEditorDialog.html</file>
             <file>doc/dialogs/ReinforcementsEditorDialog.html</file>
             <file>doc/dialogs/RelativeCoordinatesDialog.html</file>
+            <file>doc/dialogs/ReorderDialog.html</file>
             <file>doc/dialogs/ShieldSystemDialog.html</file>
             <file>doc/dialogs/ShipEditorDialog.html</file>
             <file>doc/dialogs/ShipAltShipClass.html</file>

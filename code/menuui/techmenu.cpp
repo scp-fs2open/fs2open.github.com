@@ -600,8 +600,11 @@ void techroom_ships_render(float frametime)
 	render_info.set_detail_level_lock(0);
 
 	int model_instance = -1;
-	model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance);
-	if (Tab == SHIPS_DATA_TAB) {
+	auto cache_result = model_get_cached_ui_render_instance(Techroom_modelnum, &model_instance);
+	// Only set up the instance when it was freshly created; the cached instance persists across
+	// frames, so re-running this every frame would re-apply initial animations on top of the
+	// already-animated pose and make animated submodels (e.g. turrets) flip/jitter.
+	if (Tab == SHIPS_DATA_TAB && cache_result == TriStateBool::TRUE_) {
 		model_set_up_techroom_instance(&Ship_info[Cur_entry_index], model_instance);
 	}
 
@@ -611,7 +614,7 @@ void techroom_ships_render(float frametime)
 
 		auto pm = model_get(Techroom_modelnum);
 
-		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos.xyz.z + pm->rad, -closeup_pos.xyz.z + pm->rad + 200.0f, -closeup_pos.xyz.z + pm->rad + 2000.0f, -closeup_pos.xyz.z + pm->rad + 10000.0f);
+		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, Proj_fov, gr_screen.clip_aspect, SCP_vector {{-closeup_pos.xyz.z + pm->rad, -closeup_pos.xyz.z + pm->rad + 200.0f, -closeup_pos.xyz.z + pm->rad + 2000.0f, -closeup_pos.xyz.z + pm->rad + 10000.0f}});
         render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 		
 		model_render_immediate(&render_info, Techroom_modelnum, model_instance, &Techroom_ship_orient, &vmd_zero_vector);

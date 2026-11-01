@@ -176,7 +176,7 @@ SCP_string get_output_type_link(const ade_type_info& type_info, SCP_string neste
 		return get_output_type_link(type_info.elements().front());
 
 	default:
-		Assertion(false, "Unhandled type!");
+		UNREACHABLE("Unhandled type %d!", static_cast<int>(type_info.getType()));
 		return "";
 	}
 }

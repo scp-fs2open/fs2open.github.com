@@ -29,15 +29,6 @@ bool medal_h::isRank() const
 //**********HANDLE: medal
 ADE_OBJ(l_Medal, medal_h, "medal", "Medal handle");
 
-ADE_FUNC(isValid, l_Medal, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	medal_h current;
-	if (!ade_get_args(L, "o", l_Medal.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Name, l_Medal, nullptr, "The name of the medal", "string", "The name")
 {
 	medal_h current;

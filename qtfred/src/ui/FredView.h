@@ -21,6 +21,7 @@
 #include <ui/widgets/ObjectComboBox.h>
 
 class waypoint_list;
+class QDateTime;
 
 namespace fso {
 namespace fred {
@@ -113,6 +114,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionCamera_triggered(bool enabled);
 	void on_actionCurrent_Ship_triggered(bool enabled);
+	void on_actionToggle_Viewpoint_triggered(bool);
 
 	void on_actionMission_Events_triggered(bool);
 	void on_actionMission_Cutscenes_triggered(bool);
@@ -140,7 +142,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionZoomSelected_triggered(bool);
 	void on_actionZoomExtents_triggered(bool);
 
-	void on_actionSelectionList_triggered(bool);
+	void on_actionSceneBrowser_triggered(bool);
 
 	void on_actionOrbitSelected_triggered(bool enabled);
 
@@ -178,6 +180,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionMusic_Player_triggered(bool);
 	void on_actionCalculate_Relative_Coordinates_triggered(bool);
 	void on_actionWaypointPathGenerator_triggered(bool);
+	void on_actionReorder_Objects_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -247,8 +250,15 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onSetGroup(int group);
 
 	QLabel* _statusBarObjectCount = nullptr;
+	QLabel* _statusBarLastSaved   = nullptr;
 	QLabel* _statusBarViewmode    = nullptr;
 	QLabel* _statusBarUnitsLabel  = nullptr;
+
+	// Updates the "Last Saved" status bar label: pass an empty time to show "Never".
+	void setLastSaved(const QDateTime& when);
+
+	// Sweeps a brief white gleam across the status bar to celebrate a save.
+	void triggerSaveShine();
 
 	SceneBrowserPanel* _browserPanel = nullptr;
 
@@ -331,6 +341,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QDoubleSpinBox* _transformC          = nullptr;
 	QComboBox*      _transformMoveSpeedCombo = nullptr;
 	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	// Last camera speeds written to QSettings; lets us persist on change instead of only on close.
+	int             _lastSavedCameraSpeedMove = -1;
+	int             _lastSavedCameraSpeedRot  = -1;
 	QComboBox*      _transformIffCombo   = nullptr;
 	QLabel*         _transformRadiusLabel = nullptr;
 	QToolButton*    _transformLocalBtn   = nullptr;

@@ -128,14 +128,5 @@ ADE_FUNC(removeEnumItem,
 	return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(isValid, l_LuaEnum, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	lua_enum_h lua_enum;
-	if (!ade_get_args(L, "o", l_LuaEnum.Get(&lua_enum)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", lua_enum.isValid());
-}
-
 } // namespace api
 } // namespace scripting

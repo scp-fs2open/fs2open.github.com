@@ -44,6 +44,10 @@ class FredRenderer: public QObject {
 
 	ViewSettings& view();
 
+	// the engine draws viewport labels in physical pixels
+	float _devicePixelRatio = 1.0f;
+	float labelFontScale();
+
  public:
 	explicit FredRenderer(os::Viewport* targetView);
 	~FredRenderer() override;
@@ -67,9 +71,10 @@ class FredRenderer: public QObject {
 	void render_volumetric_overlay();
 	void freeVolumetricModel();
 	void render_frame(int cur_object_index,
-					  subsys_to_render& Render_subsys,
-					  bool box_marking,
-					  const Marking_box& marking_box);
+		subsys_to_render& Render_subsys,
+		bool box_marking,
+		const Marking_box& marking_box,
+		qreal scale);
 
  signals:
 	void scheduleUpdate();

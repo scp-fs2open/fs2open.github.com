@@ -15,7 +15,7 @@ public:
 
 	vec3d getVelocity() const override;
 
-	std::pair<int, int> getParentObjAndSig() const override;
+	effects::EffectAttachment getParentAttachment() const override;
 	int getParentSubmodel() const override;
 
 	float getHostRadius() const override;

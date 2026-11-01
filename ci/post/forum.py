@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import requests
@@ -33,12 +34,14 @@ class ForumAPI:
             print("Post failed! No API or API_KEY given!")
             return
 
-        resp = requests.post(self.config["hlp"]["api"], data={
-            "api_key": self.config["hlp"]["key"],
-            "board": str(board),
-            "subject": title,
-            "body": content
-        })
+        resp = requests.post(self.config["hlp"]["api"],
+                             headers={"X-HLP-Bot": os.environ["FORUM_SECRET"]},
+                             data={
+                                "api_key": self.config["hlp"]["key"],
+                                "board": str(board),
+                                "subject": title,
+                                "body": content
+                            })
 
         if resp.status_code != 200:
             print("Post failed! Response: %s" %resp.text)

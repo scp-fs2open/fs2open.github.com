@@ -188,7 +188,7 @@ static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
 		bind = &Control_config[AxisAction].second;
 	else
 	{
-		UNREACHABLE("Currently only primary and secondary bindings are supported!");
+		Assertion(false, "Currently only primary and secondary bindings are supported!");
 		return ADE_RETURN_NIL;
 	}
 

@@ -477,7 +477,7 @@ void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selec
 		Detail_defaults[static_cast<int>(preset)].lighting = value;
 		break;
 	default:
-		Assertion(false, "Invalid detail selection. Get a coder!");
+		UNREACHABLE("Invalid detail selection %d. Get a coder!", static_cast<int>(selection));
 	}
 }
 
@@ -497,7 +497,7 @@ void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selec
 		Detail_defaults[static_cast<int>(preset)].weapon_extras = value;
 		break;
 	default:
-		Assertion(false, "Invalid detail selection. Get a coder!");
+		UNREACHABLE("Invalid detail selection %d. Get a coder!", static_cast<int>(selection));
 	}
 }
 

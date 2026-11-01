@@ -1387,8 +1387,8 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentParticlesDuring::ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position, std::optional<matrix> orientation) :
-		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_orientation(std::move(orientation)), m_effect(effect), m_atTime(atTime) { }
+	ModelAnimationSegmentParticlesDuring::ModelAnimationSegmentParticlesDuring(std::shared_ptr<ModelAnimationSegment> segment, particle::ParticleEffectHandle effect, float atTime, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position, std::optional<matrix> orientation, std::optional<ModelAnimationDirection> limitDirection) :
+		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_orientation(std::move(orientation)), m_limitDirection(std::move(limitDirection)), m_effect(effect), m_atTime(atTime) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentParticlesDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentParticlesDuring(*this);
@@ -1407,8 +1407,8 @@ namespace animation {
 
 	void ModelAnimationSegmentParticlesDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
 		float atTime = fminf(fmaxf(m_atTime, 0.0f), m_duration.at(pmi_id));
-		if (timeboundLower <= atTime && atTime <= timeboundUpper) {
-			createParticleSource(model_get_instance(pmi_id));
+		if (timeboundLower <= atTime && atTime <= timeboundUpper && (!m_limitDirection || direction == *m_limitDirection)) {
+		    createParticleSource(model_get_instance(pmi_id));
 		}
 		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
 	}
@@ -1483,7 +1483,17 @@ namespace animation {
 			orientation = std::move(mat);
 		}
 
-		auto segment = std::make_shared<ModelAnimationSegmentParticlesDuring>(data->parseSegment(), effect, atTime, submodel, position, orientation);
+		std::optional<ModelAnimationDirection> limitDirection = std::nullopt;
+		if (optional_string("+Limit Direction:")) {
+			SCP_string buf;
+			stuff_string(buf, F_NAME);
+			if (!stricmp(buf.c_str(), "FWD"))
+				limitDirection = ModelAnimationDirection::FWD;
+			else if (!stricmp(buf.c_str(), "RWD"))
+				limitDirection = ModelAnimationDirection::RWD;
+		}
+
+		auto segment = std::make_shared<ModelAnimationSegmentParticlesDuring>(data->parseSegment(), effect, atTime, submodel, position, orientation, limitDirection);
 
 		return segment;
 	}

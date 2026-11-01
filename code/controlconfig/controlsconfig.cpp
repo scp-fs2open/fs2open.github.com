@@ -739,7 +739,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order, bool API
 	Undo_stack stack;
 	stack.save(Control_config[i].first);
 	stack.save(Control_config[i].second);
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	CCB old(Control_config[i]);
 
@@ -770,7 +770,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 			stack.save(Control_config[ctrl].first);
 			stack.save(Control_config[ctrl].second);
-			Undo_controls.save_stack(stack);
+			Undo_controls.save_stack(std::move(stack));
 
 			Control_config[ctrl].first.clear();
 			Control_config[ctrl].second.clear();
@@ -804,7 +804,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 	default:
 		// Coder forgot to add a case!
-		UNREACHABLE("Unhandled selItem case.");
+		UNREACHABLE("Unhandled selItem case: %i", static_cast<int>(item));
 	}
 
 	if (success)
@@ -873,7 +873,7 @@ bool control_config_clear_other(int ctrl, bool API_Access)
 		return false;
 	}
 
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 	control_config_conflict_check();
 
 	if (!API_Access) {
@@ -911,7 +911,7 @@ bool control_config_clear_all(bool API_Access)
 		return false;
 	}
 
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 	control_config_conflict_check();
 
 	if (!API_Access) {
@@ -975,7 +975,7 @@ bool control_config_do_reset(bool cycle, bool API_Access)
 		stack.save(item.first);
 		stack.save(item.second);
 	}
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	control_config_use_preset(Control_config_presets[Defaults_cycle_pos]);
 
@@ -1097,7 +1097,7 @@ bool control_config_toggle_modifier(int bit, int ctrl, bool API_Access)
 	Undo_stack stack;
 	stack.save(Control_config[ctrl].first);
 	stack.save(Control_config[ctrl].second);
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	Control_config[ctrl].take(CC_bind(CID_KEYBOARD, static_cast<short>(k ^ bit)), -1);
 	control_config_conflict_check();
@@ -3120,7 +3120,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 			case CC_TYPE_AXIS_BTN_POS:
 			default:
 				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
-				UNREACHABLE("Unhandled control item type");
+				UNREACHABLE("Unhandled control item type %d", static_cast<int>(item.type));
 				break;
 			}
 		}

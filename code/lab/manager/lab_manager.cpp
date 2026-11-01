@@ -18,8 +18,10 @@
 
 #include "freespace.h"
 
-#include "extensions/ImGuizmo.h"
 #include "io/mouse.h"
+
+#undef LOCAL
+#include "extensions/ImGuizmo.h"
 
 //Turret firing forward declarations
 void ai_turret_execute_behavior(const ship* shipp, ship_subsys* ss);
@@ -69,24 +71,21 @@ LabManager::LabManager() {
 	team_data* teamp = &Team_data[0];
 
 	// In the lab, all ships are valid
+	teamp->ship_choices.clear();
 	for (size_t i = 0; i < Ship_info.size(); ++i) {
-		teamp->ship_list[i] = static_cast<int>(i);
-		strcpy_s(teamp->ship_list_variables[i], "");
-		teamp->ship_count[i] = 1;
-		teamp->loadout_total += 1;
-		strcpy_s(teamp->ship_count_variables[i], "");
+		auto &entry = teamp->ship_choices.emplace_back();
+		entry.class_index = sz2i(i);
+		entry.count = 1;
 	}
 	teamp->default_ship = 0;
-	teamp->num_ship_choices = static_cast<int>(Ship_info.size());
 
 	// you want guns? you get guns.
+	teamp->weapon_choices.clear();
 	for (size_t i = 0; i < Weapon_info.size(); ++i) {
-		teamp->weaponry_pool[i] = static_cast<int>(i);
-		teamp->weaponry_count[i] = 640; // should be enough for everyone
-		strcpy_s(teamp->weaponry_amount_variable[i], "");
-		strcpy_s(teamp->weaponry_pool_variable[i], "");
+		auto &entry = teamp->weapon_choices.emplace_back();
+		entry.class_index = sz2i(i);
+		entry.count = 640; // should be enough for everyone
 	}
-	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
 
 	Game_mode |= GM_LAB;
 
@@ -112,10 +111,7 @@ void LabManager::resetGraphicsSettings() {
 }
 
 void LabManager::onFrame(float frametime) {
-	if (gr_screen.mode == GR_OPENGL)
-		ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame(gr_screen.max_w, gr_screen.max_h);
-	ImGui::NewFrame();
+	gr_imgui_begin_frame();
 
 	Renderer->onFrame(frametime);
 
@@ -353,7 +349,7 @@ void LabManager::onFrame(float frametime) {
 						break;
 					}
 					default:
-						Assertion(false, "Invalid Lab Turret Aim Type!");
+						UNREACHABLE("Invalid Lab Turret Aim Type %d!", static_cast<int>(mode));
 						break;
 				}
 
@@ -417,8 +413,7 @@ void LabManager::onFrame(float frametime) {
 	if (Cmdline_show_imgui_debug)
 		ImGui::ShowDemoWindow();
 	ImGui::Render();
-	if (gr_screen.mode == GR_OPENGL)
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	gr_imgui_render_draw_data();
 
 	if (CloseThis)
 		close();
@@ -843,7 +838,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		break;
 	}
 	default:
-		UNREACHABLE("Unhandled lab mode %d", (int)mode);
+		UNREACHABLE("Unhandled lab mode %d", static_cast<int>(mode));
 		ModelFilename = "";
 		break;
 	}

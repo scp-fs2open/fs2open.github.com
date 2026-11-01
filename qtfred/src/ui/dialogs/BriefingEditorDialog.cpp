@@ -89,6 +89,10 @@ BriefingEditorDialog::BriefingEditorDialog(FredView* parent, EditorViewport* vie
 	ui->iconCloseupLabelLineEdit->setMaxLength(MAX_LABEL_LEN - 1);
 	ui->voiceFileLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
+	// validate the icon id when the edit is committed (focus-out/Enter) rather than on every
+	// keystroke, so a transient value while typing can't pop a collision warning
+	ui->iconIdSpinBox->setKeyboardTracking(false);
+
 	setupMapWidget();
 	initializeUi();
 	updateUi();
@@ -131,15 +135,26 @@ void BriefingEditorDialog::reject()
 void BriefingEditorDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void BriefingEditorDialog::setupMapWidget()
 {
 	// Replace the mapView placeholder with the BriefingMapWidget
 	_mapWidget = new fso::fred::BriefingMapWidget(this, _model.get(), _viewport);
-	_mapWidget->setMinimumSize(ui->mapView->minimumSize());
-	_mapWidget->setSizePolicy(ui->mapView->sizePolicy());
+	// The map paints an aspect-correct, letterboxed image and can scale to any size, so it needs no
+	// minimum. A minimum here would set the floor the whole left pane can't shrink below, which is
+	// what stops the dialog narrowing. Keep it at (0,0) and let it expand to fill available space.
+	_mapWidget->setMinimumSize(0, 0);
+	_mapWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
 	// Insert the map widget in place of the placeholder in the left pane layout
 	int idx = ui->leftPaneLayout->indexOf(ui->mapView);
@@ -171,46 +186,6 @@ void BriefingEditorDialog::setupMapWidget()
 	if (_model->getTotalStages() > 0) {
 		_mapWidget->setStage(_model->getCurrentStage());
 		captureResetCameraForCurrentStage();
-	}
-
-	applyMapWidgetAspectRatio();
-}
-
-void BriefingEditorDialog::applyMapWidgetAspectRatio()
-{
-	if (_mapWidget == nullptr) {
-		return;
-	}
-
-	if (Briefing_window_resolution[0] <= 0 || Briefing_window_resolution[1] <= 0) {
-		return;
-	}
-
-	auto mapWidth = _mapWidget->width();
-	if (mapWidth <= 0) {
-		mapWidth = _mapWidget->minimumWidth();
-	}
-	if (mapWidth <= 0) {
-		return;
-	}
-
-	const auto targetHeight = std::max(1,
-		static_cast<int>(std::lround(static_cast<double>(mapWidth) *
-									 static_cast<double>(Briefing_window_resolution[1]) /
-									 static_cast<double>(Briefing_window_resolution[0]))));
-
-	_mapWidget->setMinimumHeight(targetHeight);
-	_mapWidget->setMaximumHeight(targetHeight);
-	_mapWidget->resize(mapWidth, targetHeight);
-
-	const auto oldDialogHeight = height();
-	if (auto* dialogLayout = layout(); dialogLayout != nullptr) {
-		dialogLayout->activate();
-	}
-
-	const auto requiredSize = sizeHint();
-	if (requiredSize.height() > oldDialogHeight) {
-		resize(width(), requiredSize.height());
 	}
 }
 
@@ -249,7 +224,11 @@ void BriefingEditorDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	_model->setTreeControl(ui->formulaTreeView);
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
+	});
 
 	on_movementSpeedComboBox_currentIndexChanged(ui->movementSpeedComboBox->currentIndex());
 	on_rotationSpeedComboBox_currentIndexChanged(ui->rotationSpeedComboBox->currentIndex());
@@ -296,6 +275,7 @@ void BriefingEditorDialog::updateUi()
 
 	// SEXP tree formula
 	ui->formulaTreeView->load_tree(_model->getFormula());
+	ui->formulaTreeView->expandAll();
 	if (ui->formulaTreeView->select_sexp_node != -1) {
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
@@ -557,7 +537,12 @@ void BriefingEditorDialog::on_disableGridCheckBox_toggled(bool checked)
 
 void BriefingEditorDialog::on_iconIdSpinBox_valueChanged(int arg1)
 {
-	_model->setIconId(arg1);
+	if (!_model->setIconId(arg1)) {
+		// the id was rejected; reset the spin box to the model's current value
+		ui->iconIdSpinBox->blockSignals(true);
+		ui->iconIdSpinBox->setValue(_model->getIconId());
+		ui->iconIdSpinBox->blockSignals(false);
+	}
 }
 
 void BriefingEditorDialog::on_iconLabelLineEdit_textChanged(const QString& string)
@@ -702,11 +687,6 @@ void BriefingEditorDialog::on_voiceFileBrowseButton_clicked()
 void BriefingEditorDialog::on_voiceFilePlayButton_clicked()
 {
 	_model->testSpeech();
-}
-
-void BriefingEditorDialog::on_formulaTreeView_nodeChanged(int newTree)
-{
-	_model->setFormula(newTree);
 }
 
 void BriefingEditorDialog::on_defaultMusicWidget_currentIndexChanged(int spooledMusicIdx)

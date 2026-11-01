@@ -1,9 +1,13 @@
 #include "ui/dialogs/JumpNodeEditorDialog.h"
 #include "ui/util/SignalBlockers.h"
+
+#include <QShortcut>
 #include "ui_JumpNodeEditorDialog.h"
 
 #include <globalincs/globals.h>
+#include <jumpnode/jumpnode.h>
 #include <mission/util.h>
+#include <ui/util/menu.h>
 
 namespace fso::fred::dialogs {
 
@@ -13,6 +17,12 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	// F6 / Shift+F6 cycle to the next / previous jump node, mirroring the Next/Prev buttons.
+	auto* nextShortcut = new QShortcut(QKeySequence(Qt::Key_F6), this);
+	connect(nextShortcut, &QShortcut::activated, this, [this] { ui->nextNodeButton->click(); });
+	auto* prevShortcut = new QShortcut(QKeySequence(QStringLiteral("Shift+F6")), this);
+	connect(prevShortcut, &QShortcut::activated, this, [this] { ui->prevNodeButton->click(); });
 
 	ui->nameLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->displayNameLineEdit->setMaxLength(NAME_LENGTH - 1);
@@ -31,6 +41,25 @@ JumpNodeEditorDialog::JumpNodeEditorDialog(FredView* parent, EditorViewport* vie
 		initializeUi();
 		updateUi();
 	});
+
+	// "Select Jump Node" menu: jump the editor to any jump node in the mission.
+	Editor* editor = viewport->editor;
+	util::installSelectMenu(
+		this,
+		viewport,
+		[]() {
+			std::vector<util::SelectMenuEntry> entries;
+			for (const auto& jn : Jump_nodes) {
+				entries.push_back({QString::fromUtf8(jn.GetName()), jn.GetSCPObjectNumber()});
+			}
+			return entries;
+		},
+		[this, editor]() { return _model->hasMultipleSelection() ? -1 : editor->currentObject; },
+		[editor](int objnum) {
+			editor->unmark_all();
+			editor->selectObject(objnum);
+		},
+		tr("&Select Jump Node"));
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());

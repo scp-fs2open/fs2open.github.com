@@ -23,9 +23,9 @@ void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const 
 	// allocate space for the element being moved
 	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
 	current_buf = new T();
+	Assertion(current_buf != nullptr, "Malloc failed!");
 	if (current_buf == nullptr)
 	{
-		UNREACHABLE("Malloc failed!");
 		return;
 	}
 
@@ -516,5 +516,11 @@ const T* coalesce(const T* possibly_null, const T* value_if_null)
 
 	return (possibly_null != nullptr) ? possibly_null : value_if_null;
 }
+
+template<typename... Ts>
+struct overloads : Ts... {
+	constexpr overloads(Ts... t) : Ts(t)... {}
+	using Ts::operator()...;
+};
 
 #endif

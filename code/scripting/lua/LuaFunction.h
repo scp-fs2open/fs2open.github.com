@@ -69,8 +69,8 @@ class LuaFunction: public LuaValue {
      *
      * @param other The other function.
      */
-	LuaFunction(const LuaFunction& other);
-	LuaFunction& operator=(const LuaFunction& other);
+	LuaFunction(const LuaFunction& other) noexcept;
+	LuaFunction& operator=(const LuaFunction& other) noexcept;
 
 	LuaFunction(LuaFunction&&) noexcept;
 	LuaFunction& operator=(LuaFunction&&) noexcept;

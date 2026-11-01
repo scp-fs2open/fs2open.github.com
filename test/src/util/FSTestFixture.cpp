@@ -52,7 +52,7 @@ void test::FSTestFixture::SetUp() {
 		}
 
 		if (_initFlags & INIT_GRAPHICS) {
-			if (!gr_init(nullptr, GR_STUB, 1024, 768)) {
+			if (!gr_init(nullptr, GraphicsAPI::Stub, 1024, 768)) {
 				FAIL() << "Graphics init failed!";
 			}
 

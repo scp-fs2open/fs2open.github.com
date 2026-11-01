@@ -16,6 +16,7 @@
 #include <direct.h>
 #endif
 
+#include "cmdline/cmdline.h"
 #include "osapi/DebugWindow.h"
 #include "osapi/osapi.h"
 #include "osapi/outwnd.h"
@@ -33,16 +34,21 @@ static const char *FILTERS_ENABLED_BY_DEFAULT[] =
 	"scripting"
 };
 
-struct outwnd_filter_struct {
-	char name[NAME_LENGTH];
-	bool enabled;
-};
-
 // This technique is necessary to avoid a crash in FRED.  See commit e624f6c1.
 static SCP_vector<outwnd_filter_struct>& filter_vector()
 {
 	static SCP_vector<outwnd_filter_struct> vec;
 	return vec;
+}
+
+// Ring buffer of recent log lines, kept so a UI can display the log. Uses the same
+// static-local technique as filter_vector() above.
+static const size_t OUTWND_LOG_HISTORY_MAX = 4000;
+
+static SCP_deque<OutwndLogEntry>& log_history()
+{
+	static SCP_deque<OutwndLogEntry> history;
+	return history;
 }
 
 // used for file logging
@@ -86,7 +92,6 @@ void load_filter_info()
 	fp = fopen(os_get_config_path(pathname).c_str(), "rt");
 
 	if (!fp) {
-		Outwnd_no_filter_file = 1;
 		return;
 	}
 
@@ -247,6 +252,11 @@ void outwnd_print(const char *id, const char *tmp)
 	if (debugWindow) {
 		debugWindow->addDebugMessage(id, tmp);
 	}
+
+	log_history().push_back({id, tmp});
+	if (log_history().size() > OUTWND_LOG_HISTORY_MAX) {
+		log_history().pop_front();
+	}
 }
 
 extern const char* Osapi_legacy_mode_reason; // This was not exported in a header since it's not intended for general use
@@ -325,6 +335,32 @@ void outwnd_close()
 	}
 
 	outwnd_inited = false;
+}
+
+const SCP_vector<outwnd_filter_struct>& outwnd_get_filters()
+{
+	return filter_vector();
+}
+
+void outwnd_set_filter_enabled(const char* name, bool enabled)
+{
+	for (auto& filter : filter_vector()) {
+		if (!stricmp(filter.name, name)) {
+			filter.enabled = enabled;
+			save_filter_info();
+			return;
+		}
+	}
+}
+
+const SCP_deque<OutwndLogEntry>& outwnd_get_log_history()
+{
+	return log_history();
+}
+
+void outwnd_clear_log_history()
+{
+	log_history().clear();
 }
 
 void outwnd_debug_window_init() {

@@ -60,7 +60,15 @@ void DebriefingDialog::reject()
 void DebriefingDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void DebriefingDialog::initializeUi()
@@ -78,7 +86,11 @@ void DebriefingDialog::initializeUi()
 	}
 
 	// Initialize the formula tree editor
-	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
+	ui->formulaTreeView->initializeEditor(_viewport->editor, this, _viewport);
+	_model->setTreeControl(ui->formulaTreeView);
+	connect(ui->formulaTreeView, &sexp_tree_view::modified, this, [this]() {
+		_model->setModified();
+	});
 }
 
 void DebriefingDialog::updateUi()
@@ -105,6 +117,7 @@ void DebriefingDialog::updateUi()
 
 	// SEXP tree formula
 	ui->formulaTreeView->load_tree(_model->getFormula());
+	ui->formulaTreeView->expandAll();
 	if (ui->formulaTreeView->select_sexp_node != -1) {
 		ui->formulaTreeView->hilite_item(ui->formulaTreeView->select_sexp_node);
 	}
@@ -228,11 +241,6 @@ void DebriefingDialog::on_voiceFileBrowseButton_clicked()
 void DebriefingDialog::on_voiceFilePlayButton_clicked()
 {
 	_model->testSpeech();
-}
-
-void DebriefingDialog::on_formulaTreeView_nodeChanged(int newTree)
-{
-	_model->setFormula(newTree);
 }
 
 void DebriefingDialog::on_successMusicWidget_currentIndexChanged(int spooledMusicIdx)

@@ -343,7 +343,7 @@ ADE_VIRTVAR(ArmorClass, l_Ship, "string", "Current Armor class", "string", "Armo
 	return ade_set_args(L, "s", name);
 }
 
-ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Ship name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the ship. Use <i>getDisplayString</i> to get the string which should be displayed to the player.  Beware of setting the name to the name of an existing ship!", "string", "Ship name, or empty string if handle is invalid")
 {
 	object_h *objh;
 	const char* s = nullptr;
@@ -355,10 +355,18 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 
 	ship *shipp = &Ships[objh->objp()->instance];
 
-	if(ADE_SETTING_VAR && s != nullptr) {
+	if(ADE_SETTING_VAR && s != nullptr)
+	{
+		int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+		Assertion(ship_entry_index >= 0, "Ship %s must be in the ship registry!", shipp->ship_name);
+
 		auto len = sizeof(shipp->ship_name);
 		strncpy(shipp->ship_name, s, len);
 		shipp->ship_name[len - 1] = 0;
+
+		// need to update the ship registry too
+		if (ship_entry_index >= 0)
+			ship_registry_rename(ship_entry_index, shipp->ship_name, true);
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);
@@ -784,20 +792,21 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
-		// we have a different target, or are clearng the target
+		// we have a different target, or are clearing the target
 		if(newh && newh->isValid())	{
-			aip->target_objnum = newh->objnum;
-			aip->target_signature = newh->sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objnum);
 
-			if (aip == Player_ai)
+			if (aip == Player_ai) {
+				// prevent hud_target_change_check() from restoring the wrong targeted subsystem
+				if (newh->objp()->type == OBJ_SHIP)
+					Ships[newh->objp()->instance].last_targeted_subobject[Player_num] = nullptr;
+
 				hud_shield_hit_reset(newh->objp());
+			}
 		} else if (lua_isnil(L, 2)) {
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, nullptr, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -825,25 +834,21 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 	{
 		if(newh && newh->isValid())
 		{
-			if (aip == Player_ai) {
-				if (aip->target_signature != newh->objh.sig)
-					hud_shield_hit_reset(newh->objh.objp());
+			// this must be checked before the signature is updated in set_target_objnum
+			if (aip == Player_ai && aip->target_signature != newh->objh.sig)
+				hud_shield_hit_reset(newh->objh.objp());
 
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, newh->objh.objnum);
+			set_targeted_subsys(aip, newh->ss, newh->objh.objnum);
+
+			if (aip == Player_ai)
 				Ships[Objects[newh->ss->parent_objnum].instance].last_targeted_subobject[Player_num] = newh->ss;
-			}
-
-			aip->target_objnum = newh->objh.objnum;
-			aip->target_signature = newh->objh.sig;
-			aip->target_time = 0.0f;
-			set_targeted_subsys(aip, newh->ss, aip->target_objnum);
 		}
 		else
 		{
-			aip->target_objnum = -1;
-			aip->target_signature = -1;
-			aip->target_time = 0.0f;
-
-			set_targeted_subsys(aip, NULL, -1);
+			aip->ok_to_target_timestamp = timestamp(0);
+			set_target_objnum(aip, -1);
 		}
 	}
 
@@ -1162,7 +1167,34 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp())));
 }
 
-ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at which any ships guarding this ship will engage with threats. If the value is <= 0, regular dynamic guard range behavior will resume.", "number", "Max range in meters, or 0 if handle is invalid")
+ADE_FUNC(setGuardRange, l_Ship, "ship guarded, number range", "Limits how far this ship will stray from the guarded ship while guarding it.  A range <= 0 removes the limit, restoring the default dynamic guard range.  The limit is discarded when either ship leaves the mission.", "boolean", "True if successful, or nil if either handle is invalid")
+{
+	object_h *guarder_objh = nullptr, *guarded_objh = nullptr;
+	float range;
+	if (!ade_get_args(L, "oof", l_Ship.GetPtr(&guarder_objh), l_Ship.GetPtr(&guarded_objh), &range))
+		return ADE_RETURN_NIL;
+
+	if (guarder_objh == nullptr || guarded_objh == nullptr || !guarder_objh->isValid() || !guarded_objh->isValid())
+		return ADE_RETURN_NIL;
+
+	set_guard_range_ship(range, guarded_objh->objp()->instance, &Ships[guarder_objh->objp()->instance]);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getGuardRange, l_Ship, "ship guarded", "Gets the limit on how far this ship will stray from the guarded ship while guarding it.", "number", "The range limit in meters, -1 if there is no limit, or nil if either handle is invalid")
+{
+	object_h *guarder_objh = nullptr, *guarded_objh = nullptr;
+	if (!ade_get_args(L, "oo", l_Ship.GetPtr(&guarder_objh), l_Ship.GetPtr(&guarded_objh)))
+		return ADE_RETURN_NIL;
+
+	if (guarder_objh == nullptr || guarded_objh == nullptr || !guarder_objh->isValid() || !guarded_objh->isValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "f", get_guard_range_ship(guarded_objh->objp()->instance, &Ships[guarder_objh->objp()->instance]));
+}
+
+ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at which any ships guarding this ship will engage with threats.  If the value is <= 0, regular dynamic guard range behavior will resume, and any ranges set on individual guards with setGuardRange are cleared.  Otherwise, a range set with setGuardRange takes precedence over this one.", "number", "Max range in meters, or 0 if handle is invalid")
 {
 	object_h *objh;
 	float new_max_guard_radius = -1;
@@ -1175,7 +1207,15 @@ ADE_VIRTVAR(MaxGuardRadius, l_Ship, "number", "Sets the max range in meters at w
 	ship *shipp = &Ships[objh->objp()->instance];
 
 	if (ADE_SETTING_VAR)
-		shipp->max_guard_radius = new_max_guard_radius;
+	{
+		if (new_max_guard_radius > 0.0f)
+			shipp->max_guard_radius = new_max_guard_radius;
+		else
+		{
+			shipp->max_guard_radius = -1.0f;
+			clear_guard_ranges_for_ship(objh->objp()->instance);
+		}
+	}
 
 	return ade_set_args(L, "f", shipp->max_guard_radius);
 }
@@ -1654,7 +1694,7 @@ ADE_FUNC(callSupport,
 		return ADE_RETURN_FALSE;
 	}
 
-	if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]) {
+	if (aip->ai_flags.any_of(AI::AI_Flags::Being_repaired,AI::AI_Flags::Awaiting_repair)) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -1708,7 +1748,7 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil, string|number DockerPoint=nil, string|number DockeePoint=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200).  DockerPoint and DockeePoint only apply to ORDER_DOCK.", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
@@ -1717,6 +1757,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 	int stype = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
+	int docker_index = -1;
+	int dockee_index = -1;
 	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
 	if (n_args < 2)
 		return ADE_RETURN_NIL;
@@ -1770,6 +1812,52 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 			ai_shipname = Ships[tgh->objp()->instance].ship_name;
 			ai_mode = AI_GOAL_DOCK;
 			ai_submode = AIS_DOCK_0;
+
+			polymodel *docker_pm = model_get(Ship_info[Ships[objh->objp()->instance].ship_info_index].model_num);
+			polymodel *dockee_pm = model_get(Ship_info[Ships[tgh->objp()->instance].ship_info_index].model_num);
+
+			if (!lua_isnoneornil(L, 8))
+			{
+				if (lua_isnumber(L, 8))
+				{
+					ade_get_args(L, "*******i", &docker_index);
+					docker_index--;	// Lua --> C/C++
+				}
+				else
+				{
+					const char *name = nullptr;
+					ade_get_args(L, "*******s", &name);
+					docker_index = model_find_dock_name_index(docker_pm, name);
+				}
+
+				if (docker_index < 0 || docker_index >= docker_pm->n_docks)
+				{
+					LuaError(L, "Invalid docker point specified for ship '%s'", Ships[objh->objp()->instance].ship_name);
+					return ade_set_error(L, "b", false);
+				}
+			}
+
+			if (!lua_isnoneornil(L, 9))
+			{
+				if (lua_isnumber(L, 9))
+				{
+					ade_get_args(L, "********i", &dockee_index);
+					dockee_index--;	// Lua --> C/C++
+				}
+				else
+				{
+					const char *name = nullptr;
+					ade_get_args(L, "********s", &name);
+					dockee_index = model_find_dock_name_index(dockee_pm, name);
+				}
+
+				if (dockee_index < 0 || dockee_index >= dockee_pm->n_docks)
+				{
+					LuaError(L, "Invalid dockee point specified for ship '%s'", Ships[tgh->objp()->instance].ship_name);
+					return ade_set_error(L, "b", false);
+				}
+			}
+
 			break;
 		}
 		case LE_ORDER_WAYPOINTS:
@@ -1992,7 +2080,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order /* ORDER_* */, [object Target=nil
 		return ade_set_error(L, "b", false);
 
 	//Fire off the goal
-	ai_add_ship_goal_scripting(ai_mode, ai_submode, fl2i(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data);
+	ai_add_ship_goal_scripting(ai_mode, ai_submode, fl2i(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data, docker_index, dockee_index);
 
 	return ADE_RETURN_TRUE;
 }

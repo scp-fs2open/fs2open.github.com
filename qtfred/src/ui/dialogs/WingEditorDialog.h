@@ -52,7 +52,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_arrivalDistanceSpinBox_valueChanged(int value);
 	void on_restrictArrivalPathsButton_clicked();
 	void on_customWarpinButton_clicked();
-	void on_arrivalTree_nodeChanged(int newTree);
+	void on_arrivalTree_modified();
 	void on_noArrivalWarpCheckBox_toggled(bool checked);
 	void on_noArrivalWarpAdjustCheckbox_toggled(bool checked);
 
@@ -62,7 +62,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTargetCombo_currentIndexChanged(int /*index*/);
 	void on_restrictDeparturePathsButton_clicked();
 	void on_customWarpoutButton_clicked();
-	void on_departureTree_nodeChanged(int newTree);
+	void on_departureTree_modified();
 	void on_noDepartureWarpCheckBox_toggled(bool checked);
 	void on_noDepartureWarpAdjustCheckbox_toggled(bool checked);
 
@@ -72,16 +72,15 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_departureTree_helpChanged(const QString& help);
 	void on_departureTree_miniHelpChanged(const QString& help);
 
-  protected:
-	void closeEvent(QCloseEvent* e) override;
-
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::WingEditorDialog> ui;
 	std::unique_ptr<WingEditorDialogModel> _model;
 	EditorViewport* _viewport;
 
 	bool _cues_hidden = false;
+	bool _show_sexp_help = false; // session-local help visibility, seeded from the saved preference
 
+	void initializeUi();
 	void updateUi();
 	void enableOrDisableControls();
 
@@ -96,7 +95,6 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void refreshDepartureLocationCombo();
 	void refreshArrivalTargetCombo();
 	void refreshDepartureTargetCombo();
-	void refreshAllDynamicCombos();
 
 	void updateLogoPreview();
 };

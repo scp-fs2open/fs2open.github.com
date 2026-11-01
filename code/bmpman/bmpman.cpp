@@ -13,6 +13,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define BMPMAN_INTERNAL
 
+#include "globalincs/pstypes.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "bmpman/bm_internal.h"
@@ -83,7 +84,12 @@ static bool bm_inited = false;
 static uint Bm_next_signature = 0x1234;
 static int Bm_low_mem = 0;
 
-SCP_map<int,ubyte*> bm_lookup_cache;
+struct bm_lookup_cache_entry {
+	ubyte* data;
+	int width;
+	int height;
+};
+SCP_map<int, bm_lookup_cache_entry> bm_lookup_cache;
 
 /**
  * How much RAM bmpman can use for textures.
@@ -144,30 +150,31 @@ bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames) {
 // Declaration of private functions and templates(declared as static type func(type param);)
 
 bitmap_lookup::bitmap_lookup(int bitmap_num):
-	Bitmap_data(NULL)
+	Bitmap_data(nullptr),
+	Width(0),
+	Height(0),
+	Num_channels(3)
 {
 	if ( !bm_is_valid(bitmap_num) ) return;
-
-	Num_channels = 3;
 
 	if ( bm_has_alpha_channel(bitmap_num) ) {
 		Num_channels = 4;
 	}
 
-	bitmap_entry *be = bm_get_entry(bitmap_num);
-	
-	Width = be->bm.w;
-	Height = be->bm.h;
-
-
 	auto cache_search = bm_lookup_cache.find(bitmap_num);
 	if (cache_search == bm_lookup_cache.end()) {
-		Bitmap_data = (ubyte*)vm_malloc(Width * Height * Num_channels * sizeof(ubyte));
+		// The texture in graphics memory may be smaller than the bitmap itself, e.g. when mipmap levels
+		// are culled at lower texture detail settings, so the readback reports the dimensions of the
+		// data it actually returns.
+		Bitmap_data = gr_get_bitmap_from_texture(bitmap_num, &Width, &Height);
 
-		gr_get_bitmap_from_texture((void*)Bitmap_data, bitmap_num);
-		bm_lookup_cache.insert({bitmap_num, Bitmap_data});
+		if (Bitmap_data != nullptr) {
+			bm_lookup_cache.insert({bitmap_num, {Bitmap_data, Width, Height}});
+		}
 	} else {
-		Bitmap_data = cache_search->second;
+		Bitmap_data = cache_search->second.data;
+		Width = cache_search->second.width;
+		Height = cache_search->second.height;
 	}
 }
 
@@ -190,6 +197,11 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 {
 	Assert( Bitmap_data != NULL );
 
+	// without an alpha channel there is nothing to look up, and indexing channel 3 would read out of bounds
+	if ( Num_channels < 4 ) {
+		return 1.0f;
+	}
+
 	int x = fl2i(map_texture_address(u) * (Width-1));
 	int y = fl2i(map_texture_address(v) * (Height-1));
 
@@ -198,7 +210,7 @@ float bitmap_lookup::get_channel_alpha(float u, float v)
 
 void clear_bm_lookup_cache() {
 	for(auto &iter: bm_lookup_cache) {
-		free(iter.second);
+		vm_free(iter.second.data);
 	}
 	bm_lookup_cache.clear();
 }
@@ -599,8 +611,8 @@ int bm_create_3d(int bpp, int w, int h, int d, void* data) {
 		return -1;
 
 	// make sure that we have valid data
+	Assertion(data != nullptr, "No valid data received for 3D Bitmap creation!");
 	if (data == nullptr) {
-		UNREACHABLE("No valid data received for 3D Bitmap creation!");
 		return -1;
 	}
 
@@ -1210,7 +1222,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 		}
 	}
 	else {
-		UNREACHABLE("Unknown file type specified! This is probably a coding error.");
+		UNREACHABLE("Unknown file type %d specified! This is probably a coding error.", type);
 
 		return -1;
 	}
@@ -3462,37 +3474,22 @@ bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animat
 	}
 	return false;
 }
-SDL_Surface* bm_to_sdl_surface(int handle) {
+
+SDL_Surface* bm_to_sdl_surface(int handle)
+{
 	Assertion(bm_is_valid(handle), "%d is no valid bitmap handle!", handle);
 
-	int w;
-	int h;
-
-	bm_get_info(handle, &w, &h, nullptr, nullptr);
-	Uint32 rmask, gmask, bmask, amask;
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	rmask = 0x0000ff00;
-		gmask = 0x00ff0000;
-		bmask = 0xff000000;
-		amask = 0x000000ff;
-#else
-	rmask = 0x00ff0000;
-	gmask = 0x0000ff00;
-	bmask = 0x000000ff;
-	amask = 0xff000000;
-#endif
-
-	SDL_Surface* bitmapSurface = SDL_CreateRGBSurface(0, w, h, 32, rmask, gmask, bmask, amask);
-	if (SDL_LockSurface(bitmapSurface) < 0) {
-		return nullptr;
-	}
 	bitmap* bmp = bm_lock(handle, 32, BMP_TEX_XPARENT);
 
-	memcpy(bitmapSurface->pixels, reinterpret_cast<void*>(bmp->data), static_cast<size_t>(w * h * 4));
+	auto bitmapSurface = SDL_CreateSurface(bmp->w, bmp->h, SDL_PIXELFORMAT_BGRA32);
+
+	if (bitmapSurface) {
+		memcpy(bitmapSurface->pixels, reinterpret_cast<void *>(bmp->data),
+			   bmp->w * bmp->h * (bmp->bpp >> 3));
+	}
 
 	bm_unlock(handle);
-	SDL_UnlockSurface(bitmapSurface);
+	bm_unload(handle);
 
 	return bitmapSurface;
 

@@ -435,9 +435,9 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		WarpEffect* warp_effect = nullptr;
 
 		if (shipp->flags[Ship::Ship_Flags::Depart_warp] && shipp->warpout_effect != nullptr) 
-			warp_effect = shipp->warpout_effect;
+			warp_effect = shipp->warpout_effect.get();
 		else if (shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && shipp->warpin_effect != nullptr)
-			warp_effect = shipp->warpin_effect;
+			warp_effect = shipp->warpin_effect.get();
 
 		bool hull_no_collide, shield_no_collide;
 		hull_no_collide = shield_no_collide = false;
@@ -947,22 +947,25 @@ int collide_prop_weapon(obj_pair* pair)
 /**
  * Upper limit estimate ship speed at end of time
  */
-static float estimate_ship_speed_upper_limit( object *ship, float time ) 
+static float estimate_ship_speed_upper_limit( object *objp, float time )
 {
 	float exponent;
 	float delta_v;
 	float factor;
 
-	delta_v = Ship_info[Ships[ship->instance].ship_info_index].max_vel.xyz.z - ship->phys_info.speed;
+	if (objp->type != OBJ_SHIP)
+		return objp->phys_info.speed;
+
+	delta_v = Ship_info[Ships[objp->instance].ship_info_index].max_vel.xyz.z - objp->phys_info.speed;
 	
-	if (ship->phys_info.forward_accel_time_const == 0) {
-		return ship->phys_info.speed;
+	if (objp->phys_info.forward_accel_time_const == 0) {
+		return objp->phys_info.speed;
 	}
 	
-	exponent = time / ship->phys_info.forward_accel_time_const;
+	exponent = time / objp->phys_info.forward_accel_time_const;
 
 	factor = 1.0f - (float)exp( -exponent );
-	return ship->phys_info.speed + factor*delta_v;
+	return objp->phys_info.speed + factor*delta_v;
 }
 
 // maximum error allowed in detecting collisions between laser and big ship inside the radius

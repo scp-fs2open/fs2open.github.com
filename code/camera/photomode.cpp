@@ -249,7 +249,7 @@ void photo_mode_compute_hud_layout()
 		if (param.type == photo_mode_param_type::INT_RANGE) {
 			snprintf(buf, sizeof(buf), "%s: %d", XSTR(param.label, param.xstr_id), param.max_val);
 		} else {
-			snprintf(buf, sizeof(buf), "%s: %s", XSTR(param.label, param.xstr_id), XSTR("Off", 1285));
+			snprintf(buf, sizeof(buf), "%s: %s", XSTR(param.label, param.xstr_id), XSTR("Off", 1286));
 		}
 		measure(buf);
 	}

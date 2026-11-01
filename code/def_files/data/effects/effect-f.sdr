@@ -2,6 +2,17 @@
 #include "gamma.sdr"
 #include "z-compress.sdr"
 
+#ifdef VULKAN
+layout(location = 0) in vec4 fragTexCoord;
+layout(location = 1) in vec4 fragColor;
+layout(location = 2) in float fragRadius;
+layout(location = 3) in vec4 fragPosition;
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(set = 1, binding = 1) uniform sampler2DArray baseMap;
+layout(set = 1, binding = 4) uniform sampler2D depthMap;
+#else
 in float fragRadius;
 in vec4 fragPosition;
 in vec4 fragTexCoord;
@@ -11,8 +22,14 @@ out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
 uniform sampler2D depthMap;
+#endif
 
-layout (std140) uniform genericData {
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
 	float window_width;
 	float window_height;
 	float nearZ;
@@ -39,7 +56,13 @@ void main()
 	float sceneDepthLinear;
 	float fragDepthLinear;
 	if ( linear_depth == 1 ) {
-		sceneDepthLinear = -uncompress_depth_value(sceneDepth.z);
+		// Position buffer .z == 0 means no deferred geometry was rendered at this pixel
+		// (G-buffer was cleared to zero). Treat as max distance so particles render fully.
+		if (sceneDepth.z == 0.0) {
+			sceneDepthLinear = farZ;
+		} else {
+			sceneDepthLinear = -uncompress_depth_value(sceneDepth.z);
+		}
 		fragDepthLinear = -fragPosition.z;
 	} else {
 		sceneDepthLinear = ( 2.0 * farZ * nearZ ) / ( farZ + nearZ - sceneDepth.x * (farZ-nearZ) );

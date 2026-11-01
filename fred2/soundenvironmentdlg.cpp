@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "fred.h"
 #include "soundenvironmentdlg.h"
+#include "management.h"
 #include "sound/audiostr.h"
 #include "sound/sound.h"
 #include "sound/ds.h"
@@ -29,6 +30,7 @@ SoundEnvironment::SoundEnvironment(CWnd* pParent /*=NULL*/)
 	m_wave_filename = _T("");
 	m_wave_id = -1;
 	//}}AFX_DATA_INIT
+	m_play_icon = nullptr;
 }
 
 
@@ -60,8 +62,8 @@ END_MESSAGE_MAP()
 
 BOOL SoundEnvironment::OnInitDialog()
 {
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton *) GetDlgItem(IDC_PLAY)) -> SetIcon(m_play_icon);
 
 	// fill environment list ...
 
@@ -185,7 +187,7 @@ BOOL SoundEnvironment::DestroyWindow()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
-	m_play_bm.DeleteObject();
+	if (m_play_icon) DestroyIcon(m_play_icon);
 	return CDialog::DestroyWindow();
 }
 

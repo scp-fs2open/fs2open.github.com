@@ -16,6 +16,20 @@ Apply button.</p>
 <p>Miscellaneous editor options. Hover over each setting for a tooltip
 description.</p>
 
+<h3>Autosave</h3>
+<p>QtFRED periodically saves a background copy of the mission you are editing so
+that work can be recovered after a crash. Autosaves are written to a separate
+autosave folder and never overwrite the mission file you are working on.</p>
+<ul>
+    <li><strong>Autosave interval</strong> - how often, in seconds, the background
+        save runs. The timer runs on its own; you do not need to trigger autosaves
+        manually.</li>
+    <li><strong>Offer autosave recovery</strong> - when enabled, opening a mission
+        whose autosave copy is newer than the mission file prompts you to load the
+        autosave instead. Disable this to always open the on-disk mission without
+        being asked.</li>
+</ul>
+
 <h2>Grid</h2>
 <p>Configures the reference grid shown in the main viewport. You can set which
 world-space plane the grid lies on (XZ, XY, or YZ) and adjust the grid's center
@@ -24,6 +38,8 @@ grid</strong> to restore the plane and center to their defaults.</p>
 
 <h2>Controls</h2>
 <p>Allows remapping the default input controls, such as camera movement and
-viewport navigation. Hover over each entry for a description of what it does.</p>
+viewport navigation. Hover over each entry for a description of what it does. The
+default keyboard bindings are listed on the
+<a href="Viewport.html">Viewport</a> page.</p>
 </body>
 </html>

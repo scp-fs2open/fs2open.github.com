@@ -492,10 +492,12 @@ void initial_status::OnOK()
 		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Afterburner_locked, m_afterburner_locked);
 	}
 
-	if (m_team_color_setting.IsWindowEnabled() && m_team_color_setting.GetCurSel() > 0)
-		Ships[m_ship].team_name = Team_Names[m_team_color_setting.GetCurSel() - 1];
-	else
-		Ships[m_ship].team_name = "none";
+	if (m_team_color_setting.IsWindowEnabled()) {
+		if (m_team_color_setting.GetCurSel() > 0)
+			Ships[m_ship].team_name = Team_Names[m_team_color_setting.GetCurSel() - 1];
+		else
+			Ships[m_ship].team_name = "none";
+	}
 
 	update_docking_info();
 

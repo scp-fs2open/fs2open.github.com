@@ -17,7 +17,9 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/light.h"
+#include "graphics/shadows.h"
 #include "jumpnode/jumpnode.h"
+#include "mod_table/mod_table.h"
 #include "mission/missionparse.h"
 #include "model/modelrender.h"
 #include "nebula/neb.h"
@@ -265,7 +267,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 			&& (obj->type == OBJ_SHIP)
 			&& c_viewer
 			&& (Ship_info[Ships[obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-			&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) )
+			&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(&Ship_info[Ships[obj->instance].ship_info_index])) )
 		{
 			(*draw_viewer_last) = true;
 			continue;
@@ -367,6 +369,10 @@ void obj_render_queue_all()
 	}
 
 	scene.init_render();
+
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		shadow_cascade_params_bind(Num_cockpit_shadow_cascades, Num_shadow_cascades);
+	}
 
 	scene.render_all(ZBUFFER_TYPE_FULL);
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);

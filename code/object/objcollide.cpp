@@ -8,6 +8,7 @@
 */ 
 
 
+#include "cmdline/cmdline.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
 #include "object/objcollide.h"
@@ -1100,7 +1101,7 @@ void obj_collide_pair(object *A, object *B)
                 }
 
                 // for nonplayer ships, only create collision pair if close enough
-                if ( (B->parent >= 0) && !((Objects[B->parent].signature == B->parent_sig) && (Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) ) {
+                if ( (B->parent >= 0) && ((Objects[B->parent].signature != B->parent_sig) || !(Objects[B->parent].flags[Object::Object_Flags::Player_ship])) && (vm_vec_dist_squared(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f) * (4.0f*A->radius + 200.0f)) ) {
                     collision_info->next_check_time = -1;
                     return;
                 }
@@ -1208,7 +1209,9 @@ void collide_mp_worker_thread(size_t threadIdx) {
 						check_collision = collide_ship_ship_check;
 						break;
 					default:
-						UNREACHABLE("Got non MP-compatible collision type!");
+						UNREACHABLE("Got non MP-compatible collision type %d!", collision_check.ctype);
+						thread.queue_length.fetch_sub(1, std::memory_order_release); // keep the counter balanced
+						continue;                                                    // skip the bad pair
 				}
 
 				auto&& [never_check_again, collision_data_maybe, collision_fnc] = check_collision(&collision_check.objs);

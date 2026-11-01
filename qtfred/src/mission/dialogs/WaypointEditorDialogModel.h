@@ -45,6 +45,8 @@ public:
 
 	void selectNextPath();
 	void selectPreviousPath();
+	void selectWaypointPathByIndex(int idx);
+	int getSelectedPathIndex() const;
 
 signals:
 	void waypointPathMarkingChanged();
@@ -56,9 +58,9 @@ private slots:
 
 private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
+	void scheduleInitializeData();
 	void showErrorDialogNoCancel(const SCP_string& message);
 	bool validateName(const SCP_string& name);
-	void selectWaypointPathByIndex(int idx);
 
 	SCP_vector<int> _selectedWaypointPaths; // indices into Waypoint_lists
 	SCP_string _currentName;
@@ -74,6 +76,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	// Guards against re-entry into initializeData() from selection/marking/mission signals
 	// while we're already mutating mission state (e.g., setLayer fans out unmarks).
 	bool _suppressRefresh = false;
+	bool _initPending = false;
 };
 
 } // namespace fso::fred::dialogs

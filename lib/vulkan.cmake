@@ -1,4 +1,8 @@
 
+if(NOT FSO_BUILD_WITH_VULKAN)
+	return()
+endif()
+
 find_program(GLSLC_PATH glslc)
 
 # Add an option for this so that this can be disabled locally when not needed
@@ -82,3 +86,107 @@ if (SHADERS_ENABLE_COMPILATION AND GLSLC_PATH)
 	add_executable(shadertool IMPORTED GLOBAL)
 	set_target_properties(shadertool PROPERTIES IMPORTED_LOCATION "${SHADERTOOL_PATH}")
 endif ()
+
+#
+# Install any required libraries
+#
+
+option(VULKAN_USE_PRECOMPILED "Force use of precompiled versions of Vulkan-Loader and Shaderc." OFF)
+
+set(USING_PREBUILT_VULKAN ${VULKAN_USE_PRECOMPILED})
+
+if(PLATFORM_WINDOWS OR PLATFORM_MAC)
+	set(USING_PREBUILT_VULKAN TRUE)
+elseif(PLATFORM_LINUX AND FSO_BUILD_APPIMAGE)
+	set(USING_PREBUILT_VULKAN TRUE)
+endif()
+
+if(USING_PREBUILT_VULKAN)
+	get_prebuilt_path(PREBUILT_PATH)
+endif()
+
+# Shaderc - runtime compilation of glsl to SPIRV
+#
+# This is dynamically loaded, so we don't have to link against it. That also
+# means that we don't have to jump through hoops to make sure it's available at
+# build time. We just have prebuilt libs for packaging purposes and system libs
+# will automatically be used otherwise.
+
+if(USING_PREBUILT_VULKAN)
+	message(STATUS "Using pre-built Shaderc library.")
+
+	if(PLATFORM_WINDOWS)
+		file(GLOB SHADERC_LIB "${PREBUILT_PATH}/shaderc/bin/*.dll")
+	else()
+		file(GLOB SHADERC_LIB "${PREBUILT_PATH}/shaderc/lib/lib*")
+	endif()
+
+	add_target_copy_files("${SHADERC_LIB}")
+endif()
+
+# Vulkan loader
+#
+# This is dynamically loaded by SDL. It's presence doesn't necessarily mean that
+# Vulkan is supported, but having it here does allow things to fail more gracefully
+# than if the loader is not present at all. Prebuilt lib is for packaging purposes
+# and system libs are assumed to be present otherwise.
+
+if(USING_PREBUILT_VULKAN)
+	# We use MoltenVK instead of Vulkan-Loader on Mac, but if Vulkan-Loader is
+	# installed system wide then SDL will prefer using it.
+	if(PLATFORM_MAC)
+		message(STATUS "Using pre-built MoltenVK framework.")
+
+		unset(MOLTENVK_LIBRARY CACHE)
+		find_library(MOLTENVK_LIBRARY MoltenVK PATHS "${PREBUILT_PATH}" NO_DEFAULT_PATH)
+
+		add_target_copy_files("${MOLTENVK_LIBRARY}")
+	else()
+		message(STATUS "Using pre-built Vulkan-Loader library.")
+
+		if(PLATFORM_WINDOWS)
+			file(GLOB VULKAN_LOADER_LIB "${PREBUILT_PATH}/vulkan-loader/bin/*.dll")
+		else()
+			file(GLOB VULKAN_LOADER_LIB "${PREBUILT_PATH}/vulkan-loader/lib/lib*")
+		endif()
+
+		add_target_copy_files("${VULKAN_LOADER_LIB}")
+	endif()
+endif()
+
+# Vulkan/Shaderc headers
+# 
+# Use prebuilt if we should, otherwise require that the headers/loader be available.
+# The find_package() min version should be what is used in the prebuilt repo.
+# Note that we only rely on the headers and do NOT link against the Vulkan libs!
+
+if(NOT USING_PREBUILT_VULKAN)
+	# oldest version that shouldn't require code changes to support
+	find_package(Vulkan 1.4.304 REQUIRED)
+
+	# shaderc ships separately from the Vulkan headers on most Linux distros
+	find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
+
+	if(NOT SHADERC_INCLUDE_DIR)
+		message(FATAL_ERROR
+			"shaderc headers not found. Install them (Debian/Ubuntu: libshaderc-dev) or "
+			"the Vulkan SDK, or configure with -DVULKAN_USE_PRECOMPILED=ON.")
+	endif()
+
+	target_include_directories(Vulkan::Headers SYSTEM INTERFACE "${SHADERC_INCLUDE_DIR}")
+endif()
+
+# prebuilt
+if(NOT TARGET Vulkan::Headers)
+	add_library(VulkanHeaders INTERFACE)
+
+	target_include_directories(VulkanHeaders SYSTEM INTERFACE
+		"${PREBUILT_PATH}/vulkan-headers/include"
+		"${PREBUILT_PATH}/shaderc/include"
+	)
+
+	add_library(Vulkan::Headers ALIAS VulkanHeaders)
+endif()
+
+# Just use our VMA
+add_subdirectory(VulkanMemoryAllocator)

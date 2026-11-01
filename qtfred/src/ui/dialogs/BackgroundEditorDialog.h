@@ -88,7 +88,6 @@ private slots:
 	void on_skyboxPitchSpin_valueChanged(double arg1);
 	void on_skyboxBankSpin_valueChanged(double arg1);
 	void on_skyboxHeadingSpin_valueChanged(double arg1);
-	void on_skyboxNoLightingCheckBox_toggled(bool checked);
 	void on_noLightingCheckBox_toggled(bool checked);
 	void on_transparentCheckBox_toggled(bool checked);
 	void on_forceClampCheckBox_toggled(bool checked);

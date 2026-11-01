@@ -201,7 +201,7 @@ static void pre_render_init_lights() {
 }
 
 void gr_set_light(light* fs_light) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -213,7 +213,7 @@ void gr_set_light(light* fs_light) {
 }
 
 void gr_set_center_alpha(int type) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -274,7 +274,7 @@ void gr_set_center_alpha(int type) {
 }
 
 void gr_reset_lighting() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -287,7 +287,7 @@ void gr_light_shutdown() {
 }
 
 void gr_light_init() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -296,7 +296,7 @@ void gr_light_init() {
 }
 
 void gr_set_lighting() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -329,7 +329,7 @@ void gr_set_lighting() {
 }
 
 void gr_set_ambient_light(int red, int green, int blue) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -357,7 +357,7 @@ void gr_get_ambient_light(vec3d* light_vector) {
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

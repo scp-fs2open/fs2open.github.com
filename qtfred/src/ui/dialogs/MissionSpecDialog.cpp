@@ -62,7 +62,15 @@ void MissionSpecDialog::reject()
 
 void MissionSpecDialog::closeEvent(QCloseEvent* e) {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void MissionSpecDialog::initializeUi()
@@ -391,22 +399,6 @@ void MissionSpecDialog::on_supportRearmOptionsButton_clicked()
 	if (dlg.exec() == QDialog::Accepted) {
 		_model->setSupportRearmSettings(dlg.settings());
 	}
-}
-
-void MissionSpecDialog::on_toggleSupportShip_toggled(bool enabled) {
-	_model->setDisallowSupport(enabled);
-}
-
-void MissionSpecDialog::on_toggleHullRepair_toggled(bool enabled) {
-	_model->setMissionFlagDirect(Mission::Mission_Flags::Support_repairs_hull, enabled);
-}
-
-void MissionSpecDialog::on_hullRepairMax_valueChanged(double value) {
-	_model->setHullRepairMax((float)value);
-}
-
-void MissionSpecDialog::on_subsysRepairMax_valueChanged(double value) {
-	_model->setSubsysRepairMax((float)value);
 }
 
 void MissionSpecDialog::on_toggleTrail_toggled(bool enabled) {

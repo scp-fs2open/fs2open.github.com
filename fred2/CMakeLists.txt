@@ -105,13 +105,15 @@ set(FRED2_SOURCES
 	propdlg.h
 	reinforcementeditordlg.cpp
 	reinforcementeditordlg.h
+	reorderdlg.cpp
+	reorderdlg.h
 	resource.h
 	restrictpaths.cpp
 	restrictpaths.h
 	setglobalshipflags.cpp
 	setglobalshipflags.h
-	sexp_tree.cpp
-	sexp_tree.h
+	sexp_tree_view.cpp
+	sexp_tree_view.h
 	shieldsysdlg.cpp
 	shieldsysdlg.h
 	ship_select.cpp
@@ -166,8 +168,7 @@ set_source_files_properties(fred.rc PROPERTIES
 	LANGUAGE RC
 )
 
-# This should be kept in sync with the corresponding IF() in cmake/toolchain-msvc.cmake
-IF(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
+IF(FSO_MSVC_RUNTIME_DLL)
 	set(CMAKE_MFC_FLAG 2)
 ELSE()
 	set(CMAKE_MFC_FLAG 1)
@@ -205,9 +206,9 @@ TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies 
 # explicitly adding the static MFC libs (nafxcw*) on top causes IsDerivedFrom to be resolved
 # from the static MFC copy while CRuntimeClass structs are initialized in the DLL form,
 # crashing CDocTemplate's ctor on startup.
-IF(NOT (MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED))
-	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
-	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+IF(NOT FSO_MSVC_RUNTIME_DLL)
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Debug>:nafxcwd.lib>")
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Debug>>:nafxcw.lib>")
 ENDIF()
 
 target_link_libraries(FRED2 PUBLIC glad_wgl)
