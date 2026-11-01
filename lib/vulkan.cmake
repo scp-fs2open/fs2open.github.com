@@ -161,7 +161,19 @@ endif()
 # Note that we only rely on the headers and do NOT link against the Vulkan libs!
 
 if(NOT USING_PREBUILT_VULKAN)
-	find_package(Vulkan 1.4.341 REQUIRED)
+	# oldest version that shouldn't require code changes to support
+	find_package(Vulkan 1.4.304 REQUIRED)
+
+	# shaderc ships separately from the Vulkan headers on most Linux distros
+	find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
+
+	if(NOT SHADERC_INCLUDE_DIR)
+		message(FATAL_ERROR
+			"shaderc headers not found. Install them (Debian/Ubuntu: libshaderc-dev) or "
+			"the Vulkan SDK, or configure with -DVULKAN_USE_PRECOMPILED=ON.")
+	endif()
+
+	target_include_directories(Vulkan::Headers SYSTEM INTERFACE "${SHADERC_INCLUDE_DIR}")
 endif()
 
 # prebuilt

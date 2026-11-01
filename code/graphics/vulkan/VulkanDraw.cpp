@@ -1281,6 +1281,9 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 
 	m_frameStats.applyMaterialCalls++;
 
+	// Like opengl_tnl_set_material(), every material draw sets the texture addressing (e.g. MR_FORCE_CLAMP skyboxes)
+	setTextureAddressing(mat->get_texture_addressing());
+
 	// Build pipeline configuration from material
 	PipelineConfig config = buildPipelineConfig(mat, prim_type);
 

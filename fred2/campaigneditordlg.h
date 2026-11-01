@@ -104,7 +104,7 @@ protected:
 	virtual void Dump(CDumpContext& dc) const;
 #endif
 
-	CToolTipCtrl* m_SubstituteMainHallToolTip;
+	CToolTipCtrl m_SubstituteMainHallToolTip;
 
 	// Generated message map functions
 	//{{AFX_MSG(campaign_editor)

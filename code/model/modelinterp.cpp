@@ -2962,6 +2962,11 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 		return;
 	}
 
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP chunk with invalid texture id (%d)!", pof_tex);
+		return;
+	}
+
 	p = &bsp_data[offset + TMAP_NORMAL];
 
 	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
@@ -3025,6 +3030,11 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 
 	if (n_vert < 3) {
 		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
+		return;
+	}
+
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", pof_tex);
 		return;
 	}
 

@@ -6734,9 +6734,10 @@ void physics_ship_init(object *objp)
 		pi->I_body_inv = pm->moment_of_inertia;
 
 	// scale inverse moment of inertia value by inverse density
-	vm_vec_scale( &pi->I_body_inv.vec.rvec, 1/sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.uvec, 1/sinfo->density );
-	vm_vec_scale( &pi->I_body_inv.vec.fvec, 1/sinfo->density );
+	float moi_scale = Fix_density_moment_of_inertia ? 1/sinfo->density : sinfo->density;	// retail scaled by density, not inverse density
+	vm_vec_scale( &pi->I_body_inv.vec.rvec, moi_scale );
+	vm_vec_scale( &pi->I_body_inv.vec.uvec, moi_scale );
+	vm_vec_scale( &pi->I_body_inv.vec.fvec, moi_scale );
 
 	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
@@ -6922,6 +6923,7 @@ void ship::clear()
 
 	ship_guardian_threshold = 0;
 	max_guard_ranges.clear();
+	max_guard_radius = -1.0f;
 
 	ship_name[0] = 0;
 	display_name.clear();
@@ -7527,6 +7529,68 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->passive_arc_next_times.push_back(TIMESTAMP::immediate());
 }
 
+void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss)
+{
+	//Get rid of any persistent sounds on the subsystem
+	//This is inefficient + sloppy but there's not really an easy way to handle things
+	//if a subsystem is brought back from the dead, other than this
+	if (ss->current_hits > 0.0f)
+	{
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->dead_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Dead);
+		}
+		if ((ss->system_info->alive_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->alive_snd, &ss->system_info->pnt, OS_SUBSYS_ALIVE, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
+		}
+		if (!(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
+		{
+			if (ss->system_info->turret_base_rotation_snd.isValid())
+			{
+				obj_snd_assign(shipp->objnum, ss->system_info->turret_base_rotation_snd, &ss->system_info->pnt, OS_TURRET_BASE_ROTATION, ss);
+				ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+			}
+			if (ss->system_info->turret_gun_rotation_snd.isValid())
+			{
+				obj_snd_assign(shipp->objnum, ss->system_info->turret_gun_rotation_snd, &ss->system_info->pnt, OS_TURRET_GUN_ROTATION, ss);
+				ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
+			}
+		}
+		if ((ss->flags[Ship::Subsystem_Flags::Rotates]) && (ss->system_info->rotation_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->rotation_snd, &ss->system_info->pnt, OS_SUBSYS_ROTATION, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
+		}
+	}
+	else
+	{
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->alive_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Alive);
+		}
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->turret_base_rotation_snd, ss);
+			obj_snd_delete_type(shipp->objnum, ss->system_info->turret_gun_rotation_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Turret_rotation);
+		}
+		if (ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
+		{
+			obj_snd_delete_type(shipp->objnum, ss->system_info->rotation_snd, ss);
+			ss->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
+		}
+		if ((ss->system_info->dead_snd.isValid()) && !(ss->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
+		{
+			obj_snd_assign(shipp->objnum, ss->system_info->dead_snd, &ss->system_info->pnt, OS_SUBSYS_DEAD, ss);
+			ss->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead);
+		}
+	}
+}
+
 /**
  * Recalculates the overall strength of subsystems.
  *
@@ -7560,64 +7624,7 @@ void ship_recalc_subsys_strength( ship *shipp )
 			shipp->subsys_info[type].aggregate_current_hits += ship_system->current_hits;
 		}
 
-		//Get rid of any persistent sounds on the subsystem
-		//This is inefficient + sloppy but there's not really an easy way to handle things
-		//if a subsystem is brought back from the dead, other than this
-		if(ship_system->current_hits > 0.0f)
-		{
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->dead_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
-            }
-            if ((ship_system->system_info->alive_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->alive_snd, &ship_system->system_info->pnt, OS_SUBSYS_ALIVE, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive);
-            }
-            if (!(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation]))
-            {
-                if (ship_system->system_info->turret_base_rotation_snd.isValid())
-                {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_BASE_ROTATION, ship_system);
-                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
-                }
-                if (ship_system->system_info->turret_gun_rotation_snd.isValid())
-                {
-                    obj_snd_assign(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, &ship_system->system_info->pnt, OS_TURRET_GUN_ROTATION, ship_system);
-                    ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation);
-                }
-            }
-            if ((ship_system->flags[Ship::Subsystem_Flags::Rotates]) && (ship_system->system_info->rotation_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->rotation_snd, &ship_system->system_info->pnt, OS_SUBSYS_ROTATION, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
-            }
-		}
-		else
-		{
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Alive])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->alive_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Alive, false);;
-            }
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Turret_rotation])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_base_rotation_snd, ship_system);
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->turret_gun_rotation_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Turret_rotation, false);
-            }
-            if (ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
-            {
-                obj_snd_delete_type(shipp->objnum, ship_system->system_info->rotation_snd, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate, false);
-            }
-            if ((ship_system->system_info->dead_snd.isValid()) && !(ship_system->subsys_snd_flags[Ship::Subsys_Sound_Flags::Dead]))
-            {
-                obj_snd_assign(shipp->objnum, ship_system->system_info->dead_snd, &ship_system->system_info->pnt, OS_SUBSYS_DEAD, ship_system);
-                ship_system->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Dead, false);
-            }
-		}
+		ship_update_subsys_sounds(shipp, ship_system);
 	}
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
@@ -8187,6 +8194,15 @@ static bool ship_render_player_renderShipModel(const ship_info* sip) {
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK) || !(Viewer_mode & VM_EXTERNAL));
 }
 
+vec3d ship_cockpit_render_offset(const ship_info* sip, const object* objp) {
+	vec3d offset;
+	vm_vec_unrotate(&offset, &sip->cockpit_offset, &objp->orient);
+	if (!Disable_cockpit_sway) {
+		offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+	}
+	return offset;
+}
+
 bool ship_render_player_ship_casts_shadow_on_cockpit() {
 	if (Viewer_obj == nullptr)
 		return false;
@@ -8218,6 +8234,17 @@ bool ship_render_player_has_closeup_visuals() {
 	const bool renderShipModel = ship_render_player_renderShipModel(sip);
 
 	return renderCockpitModel || renderShipModel;
+}
+
+// Draws one player model. When cockpit shadows are active, `ray` is bound first, because the hull
+// and the cockpit are drawn in different frames.
+static void ship_render_player_model(model_render_params* render_info, int model_num, int model_instance_num,
+	const object* objp, const vec3d* offset, int render_pass, const shadow_ray_params* ray)
+{
+	if (ray != nullptr) {
+		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades, *ray);
+	}
+	model_render_immediate(render_info, model_num, model_instance_num, &objp->orient, offset, render_pass);
 }
 
 void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override) {
@@ -8317,13 +8344,26 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	Shadow_view_matrix_render = gr_view_matrix;
 
 	matrix4 shadow_view_light_backup = Shadow_view_matrix_light;
+	bool cockpit_shadow_rendering_active = false;
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		Shadow_override = false;
 		Shadow_view_matrix_light.a1d[12] = 0;
 		Shadow_view_matrix_light.a1d[13] = 0;
 		Shadow_view_matrix_light.a1d[14] = 0;
-		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
+		cockpit_shadow_rendering_active = true;
 	}
+
+	// Hull and cockpit render in different internal frames, so each needs its own RT shadow
+	// ray state. Both frames are anchored at leaning_position; the hull frame's origin is the
+	// ship position minus eye_offset.
+	shadow_ray_params cockpit_ray = shadow_ray_params_cockpit(objp);
+	shadow_ray_params hull_ray = cockpit_ray;
+	vm_vec_sub2(&hull_ray.view_origin, &eye_offset);
+	if (ship_render_player_ship_casts_shadow_on_cockpit()) {
+		cockpit_ray.cull_mask = TLAS_MASK_ALL;
+	}
+	const shadow_ray_params* hull_ray_ptr = cockpit_shadow_rendering_active ? &hull_ray : nullptr;
+	const shadow_ray_params* cockpit_ray_ptr = cockpit_shadow_rendering_active ? &cockpit_ray : nullptr;
 
 	if (light_deferredcockpit_enabled()) {
 		gr_deferred_lighting_begin(true);
@@ -8343,7 +8383,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	model_render_params ship_render_info;
 	model_render_params cockpit_render_info;
-	vec3d cockpit_offset = sip->cockpit_offset;
+	vec3d cockpit_offset = vmd_zero_vector;
 
 	//Properly render ship and cockpit model
 	if (deferredRenderShipModel) {
@@ -8354,17 +8394,16 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		if (sip->uses_team_colors)
 			ship_render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
+		ship_render_player_model(&ship_render_info, sip->model_num, shipp->model_instance_num, objp, &eye_offset, MODEL_RENDER_OPAQUE, hull_ray_ptr);
 		gr_zbuffer_clear(true);
 	}
 	if (renderCockpitModel) {
 		cockpit_render_info.set_detail_level_lock(0);
 		cockpit_render_info.set_flags(render_flags);
 		cockpit_render_info.set_replacement_textures(Player_cockpit_textures);
-		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
-		if (!Disable_cockpit_sway)
-			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
-		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_OPAQUE);
+		cockpit_offset = ship_cockpit_render_offset(sip, objp);
+
+		ship_render_player_model(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, objp, &cockpit_offset, MODEL_RENDER_OPAQUE, cockpit_ray_ptr);
 	}
 
 	if (light_deferredcockpit_enabled()) {
@@ -8392,11 +8431,11 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	gr_zbuffer_set(ZBUFFER_TYPE_READ);
 
 	if (deferredRenderShipModel) {
-		model_render_immediate(&ship_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
+		ship_render_player_model(&ship_render_info, sip->model_num, shipp->model_instance_num, objp, &eye_offset, MODEL_RENDER_TRANS, hull_ray_ptr);
 	}
 
 	if (renderCockpitModel) {
-		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_TRANS);
+		ship_render_player_model(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, objp, &cockpit_offset, MODEL_RENDER_TRANS, cockpit_ray_ptr);
 	}
 
 	if (light_deferredcockpit_enabled()) {
@@ -10094,6 +10133,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 			// check for overflow of current_hits
 			float repaired_delta = ssp->max_hits * real_repair_rate * frametime;
 			float repair_threshold_hits = ssp->max_hits * sip->subsys_repair_max;
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 
 			if ((ssp->current_hits + repaired_delta) < repair_threshold_hits) {
 				ssp->current_hits += repaired_delta;
@@ -10102,6 +10142,11 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 				CLAMP(repaired_delta, 0.0f, repair_threshold_hits); // this will be negative if it is already way above the threshold
 				if (repaired_delta != 0.0f)
 					ssp->current_hits += repaired_delta;
+			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f) {
+				restore_subsystem_submodels(sp, ssp);
+				ship_update_subsys_sounds(sp, ssp);
 			}
 
 			// aggregate repair
@@ -11624,15 +11669,12 @@ static void ship_model_change(int n, int ship_type)
 	objp = &Objects[sp->objnum];
 	pmi = model_get_instance(sp->model_instance_num);
 
-	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip);
-	}
+	// get new model; as in ship_create(), load even if the class already has one, so that this ship holds
+	// its own reference and the model survives a UI preview releasing the one it loaded
+	sip->model_num = model_load(sip->pof_file, sip);
 
-	if ( sip->cockpit_model_num == -1 ) {
-		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-		}
+	if ( VALID_FNAME(sip->cockpit_pof_file) ) {
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	pm = model_get(sip->model_num);
@@ -11913,6 +11955,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	int num_saved_subsystems = 0;
 	char **subsys_names = new char *[sip_orig->n_subsystems];
 	float *subsys_pcts = new float[sip_orig->n_subsystems];
+	SCP_vector<bool> subsys_blown_off(sip_orig->n_subsystems, false);
 
 	// prevent crashes in the event of a subsystem mismatch
 	for (i = 0; i < sip_orig->n_subsystems; ++i)
@@ -12010,6 +12053,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		// extra check
 		Assert(subsys_pcts[num_saved_subsystems] >= 0.0f && subsys_pcts[num_saved_subsystems] <= 1.0f);
 		CLAMP(subsys_pcts[num_saved_subsystems], 0.0f, 1.0f);
+
+		subsys_blown_off[num_saved_subsystems] = subsystem_submodels_blown_off(sp, ss);
 
 		num_saved_subsystems++;
 		ss = GET_NEXT(ss);
@@ -12124,6 +12169,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			if (!subsystem_stricmp(ss->system_info->subobj_name, subsys_names[i]))
 			{
 				ss->current_hits = ss->max_hits * subsys_pcts[i];
+				if (subsys_blown_off[i])
+					blow_off_subsystem_submodels(sp, ss);
 
 				// MageKing17 - Every AI doing something with this subsystem must transfer to the new one.
 				{
@@ -15984,11 +16031,14 @@ void ship_set_subsystem_strength( ship *shipp, int type, float strength )
 	while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {
 
 		if ( (ssp->system_info->type == type) && !(ssp->flags[Ship::Subsystem_Flags::No_aggregate]) ) {
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits = strength * ssp->max_hits;
 
 			// maybe blow up subsys
 			if (ssp->current_hits <= 0) {
 				do_subobj_destroyed_stuff(shipp, ssp, nullptr);
+			} else if (was_destroyed) {
+				restore_subsystem_submodels(shipp, ssp);
 			}
 		}
 		ssp = GET_NEXT( ssp );
@@ -16371,9 +16421,15 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			Assert(repair_allocated >= 0.0f);
 
 			// add repair to current strength of single subsystem
+			bool was_destroyed = (ssp->current_hits <= 0.0f);
 			ssp->current_hits += repair_delta;
 			if ( ssp->current_hits > max_subsys_repair ) {
 				ssp->current_hits = max_subsys_repair;
+			}
+
+			if (was_destroyed && ssp->current_hits > 0.0f) {
+				restore_subsystem_submodels(shipp, ssp);
+				ship_update_subsys_sounds(shipp, ssp);
 			}
 
 			// add repair to aggregate strength of subsystems of that type
@@ -17528,8 +17584,8 @@ int ship_return_subsys_path_normal(const ship *shipp, const ship_subsys *ss, con
 		Assert( pm != NULL );
 
 		// possibly a bad model?
-		Assertion(ss->system_info->path_num <= pm->n_paths, "Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->subobj_name);
-		if (ss->system_info->path_num > pm->n_paths) 
+		Assertion(ss->system_info->path_num < pm->n_paths, "Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths - 1, ss->system_info->path_num, ss->system_info->subobj_name);
+		if (ss->system_info->path_num >= pm->n_paths)
 			return 1;
 
 		mp = &pm->paths[ss->system_info->path_num];
@@ -21591,33 +21647,46 @@ int get_nearest_bbox_point(const object *ship_objp, const vec3d *start, vec3d *b
 
 	return inside;
 }
-void set_guard_range_ship(float range, const int target_ship_index, ship* shipp)
+
+void set_guard_range_ship(float range, int guarded_shipnum, ship* guarder_shipp)
 {
-	bool done = false;
-	if (range > 0) {
-		for (auto& exist : shipp->max_guard_ranges) {
-			if (exist.shipnum == target_ship_index) {
-				if (range > 0) {
-					exist.range = range;
-				} else {
-					exist.range = -1.0f;
-				}
-				done = true;
-				break;
-			}
-		}
-		if (!done) {
-			auto item = guard_range_entry(range, target_ship_index);
-			shipp->max_guard_ranges.push_back(item);
-		}
-	} else {
-		for (auto& exist : shipp->max_guard_ranges) {
-			if (exist.shipnum == target_ship_index) {
-				exist.range = -1.0f;
-			}
-		}
+	auto& ranges = guarder_shipp->max_guard_ranges;
+	auto it = std::find_if(ranges.begin(), ranges.end(), [guarded_shipnum](const guard_range_entry& entry) { return entry.shipnum == guarded_shipnum; });
+
+	if (range > 0.0f)
+	{
+		if (it != ranges.end())
+			it->range = range;
+		else
+			ranges.emplace_back(range, guarded_shipnum);
+	}
+	else if (it != ranges.end())
+		ranges.erase(it);
+}
+
+float get_guard_range_ship(int guarded_shipnum, const ship* guarder_shipp)
+{
+	for (const auto& entry : guarder_shipp->max_guard_ranges)
+	{
+		if (entry.shipnum == guarded_shipnum)
+			return entry.range;
+	}
+
+	return -1.0f;
+}
+
+void clear_guard_ranges_for_ship(int guarded_shipnum)
+{
+	for (auto so: list_range(&Ship_obj_list))
+	{
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		auto& ranges = Ships[Objects[so->objnum].instance].max_guard_ranges;
+		ranges.erase(std::remove_if(ranges.begin(), ranges.end(), [guarded_shipnum](const guard_range_entry& entry) { return entry.shipnum == guarded_shipnum; }), ranges.end());
 	}
 }
+
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
 	mst->length = obj->phys_info.linear_thrust;

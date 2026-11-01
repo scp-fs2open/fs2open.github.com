@@ -173,6 +173,8 @@ extern struct shadow_disable_overrides {
 	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
 } Shadow_disable_overrides;
 extern float Thruster_easing;
+extern float Primary_thruster_glow_depth_factor;
+extern float Tertiary_thruster_glow_depth_factor;
 extern bool Always_use_distant_firepoints;
 extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
@@ -210,6 +212,8 @@ extern float Min_radius_for_persistent_debris;
 extern bool Zero_radius_explosions_skip_fireballs;
 extern bool Render_insignias_as_decals;
 extern bool Link_special_point_subsystems_to_destroyed_submodels;
+extern bool Fix_density_moment_of_inertia;
+extern bool Fix_collision_moment_of_inertia;
 
 void mod_table_init();
 void mod_table_post_process();

@@ -19,6 +19,7 @@
 #include "hud/hudshield.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_interpolate.h"
 #include "object/objcollide.h"
@@ -869,14 +870,17 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 //
 static void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
 {
-	matrix Mtemp1, Mtemp2;
+	matrix orient_t;
 	// I_inv = (Rt)(I_inv_body)(R)
 	// This is opposite to what is commonly seen in books since we are rotating coordianates axes 
 	// which is equivalent to rotating in the opposite direction (or transpose)
 
-	vm_matrix_x_matrix(&Mtemp1, I_inv_body, orient);
-	vm_copy_transpose(&Mtemp2, orient);
-	vm_matrix_x_matrix(I_inv, &Mtemp2, &Mtemp1);
+	vm_copy_transpose(&orient_t, orient);
+
+	if (Fix_collision_moment_of_inertia)
+		*I_inv = orient_t * (*I_inv_body) * (*orient);
+	else
+		*I_inv = (*orient) * (*I_inv_body) * orient_t;	// retail multiplied in the opposite order
 }
 
 #define	PLANET_DAMAGE_SCALE	4.0f

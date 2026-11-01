@@ -248,6 +248,8 @@ public:
 	virtual void ui_set_item_text(void* handle, const char* text) = 0;
 	// Update the icon of a tree item
 	virtual void ui_set_item_image(void* handle, NodeImage image) = 0;
+	// Sync native widget editability. FRED2 checks the model flags when editing instead.
+	virtual void ui_set_item_editable(void* /*handle*/, bool /*editable*/) {}
 	// Return the first child handle of the given tree item, or nullptr if none
 	virtual void* ui_get_child_item(void* handle) const = 0;
 	// Return true if the tree item has any children

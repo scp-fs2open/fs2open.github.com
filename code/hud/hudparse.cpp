@@ -1493,7 +1493,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	}
 
 	if (settings->set_position) {
-		if ( optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0 ) {
+		if ( optional_string("Cockpit Target:") && settings->ship_idx && !settings->ship_idx->empty() && settings->ship_idx->at(0) >= 0 ) {
 			stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 			if ( optional_string("Canvas Size:") ) {
@@ -1603,7 +1603,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 
 template<typename T>
 void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hud_gauge) {
-	if(settings->ship_idx && settings->ship_idx->at(0) >= 0) {
+	if(settings->ship_idx && !settings->ship_idx->empty() && settings->ship_idx->at(0) >= 0) {
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			std::unique_ptr<T> instance(new T());
 			*instance = *hud_gauge;
@@ -1673,7 +1673,7 @@ void load_gauge_custom(gauge_settings* settings)
 			}
 		}
 
-		if ( optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0 ) {
+		if ( optional_string("Cockpit Target:") && settings->ship_idx && !settings->ship_idx->empty() &&settings->ship_idx->at(0) >= 0 ) {
 			stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 			if ( optional_string("Canvas Size:") ) {
@@ -3297,7 +3297,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	if(optional_string("Unknown Contact Filename:")) {
 		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Cockpit Target:") && settings->ship_idx && settings->ship_idx->at(0) >= 0) {
+	if(optional_string("Cockpit Target:") && settings->ship_idx && !settings->ship_idx->empty() && settings->ship_idx->at(0) >= 0) {
 		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 		if(optional_string("Canvas Size:")) {

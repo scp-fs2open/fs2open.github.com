@@ -113,7 +113,7 @@ protected:
 
 	void copy_stage(int from, int to);
 
-	CToolTipCtrl* m_CloseupLabelToolTip;
+	CToolTipCtrl m_CloseupLabelToolTip;
 
 	virtual BOOL OnInitDialog();
 	BOOL PreTranslateMessage(MSG * pMsg);

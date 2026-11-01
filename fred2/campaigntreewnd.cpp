@@ -76,21 +76,21 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	// create a splitter with 1 row, 2 columns
 	if (!m_splitter.CreateStatic(this, 1, 2))
 	{
-		TRACE0("Failed to CreateStaticSplitter\n");
+		mprintf(("Failed to CreateStaticSplitter\n"));
 		return FALSE;
 	}
 
 	// add the first splitter pane - the campaign input form in column 0
 	if (!m_splitter.CreateView(0, 0, RUNTIME_CLASS(campaign_editor), CSize(0, 0), pContext))
 	{
-		TRACE0("Failed to create first pane\n");
+		mprintf(("Failed to create first pane\n"));
 		return FALSE;
 	}
 
 	// add the second splitter pane - the campaign tree view in column 1
 	if (!m_splitter.CreateView(0, 1, RUNTIME_CLASS(campaign_tree_view), CSize(240, 100), pContext))
 	{
-		TRACE0("Failed to create second pane\n");
+		mprintf(("Failed to create second pane\n"));
 		return FALSE;
 	}
 

@@ -14,6 +14,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "missioneditor/common.h"
+#include "missioneditor/sexp_tree_model.h"
 
 #include <globalincs/linklist.h>
 #include <globalincs/utility.h>
@@ -1332,12 +1333,11 @@ bool ShipEditorDialogModel::getArrivalCue() const
 	return _updateArrival;
 }
 
-void ShipEditorDialogModel::setArrivalTreeDirty(int formula)
+void ShipEditorDialogModel::setArrivalTreeDirty(const SexpTreeModel& tree)
 {
 	if (_multiEdit && !_updateArrival)
 		return;
 
-	_arrivalTreeFormula = formula;
 	_updateArrival = true;
 
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -1345,9 +1345,11 @@ void ShipEditorDialogModel::setArrivalTreeDirty(int formula)
 			auto i = ptr->instance;
 			if (Ships[i].wingnum >= 0)
 				continue;
-			if (Ships[i].arrival_cue >= 0 && Ships[i].arrival_cue != formula)
+			if (Ships[i].arrival_cue >= 0)
 				free_sexp2(Ships[i].arrival_cue);
-			Ships[i].arrival_cue = formula;
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].arrival_cue = tree.save_tree();
+			_arrivalTreeFormula = Ships[i].arrival_cue;
 		}
 	}
 
@@ -1494,12 +1496,11 @@ bool ShipEditorDialogModel::getDepartureCue() const
 	return _updateDeparture;
 }
 
-void ShipEditorDialogModel::setDepartureTreeDirty(int formula)
+void ShipEditorDialogModel::setDepartureTreeDirty(const SexpTreeModel& tree)
 {
 	if (_multiEdit && !_updateDeparture)
 		return;
 
-	_departureTreeFormula = formula;
 	_updateDeparture = true;
 
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
@@ -1507,9 +1508,11 @@ void ShipEditorDialogModel::setDepartureTreeDirty(int formula)
 			auto i = ptr->instance;
 			if (Ships[i].wingnum >= 0)
 				continue;
-			if (Ships[i].departure_cue >= 0 && Ships[i].departure_cue != formula)
+			if (Ships[i].departure_cue >= 0)
 				free_sexp2(Ships[i].departure_cue);
-			Ships[i].departure_cue = formula;
+			// Each ship owns its cue, so serialize a separate expression for each one.
+			Ships[i].departure_cue = tree.save_tree();
+			_departureTreeFormula = Ships[i].departure_cue;
 		}
 	}
 

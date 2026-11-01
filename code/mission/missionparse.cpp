@@ -2794,8 +2794,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				if (ptr->submodel_instance_1 != nullptr)
-					ptr->submodel_instance_1->blown_off = true;
+				blow_off_subsystem_submodels(shipp, ptr);
 			}
 			else
 			{
