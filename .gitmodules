@@ -1,3 +1,0 @@
-[submodule "lib/libRocket"]
-	path = lib/libRocket
-	url = https://github.com/scp-fs2open/libRocket.git
