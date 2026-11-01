@@ -488,7 +488,7 @@ void CFREDView::OnDraw(CDC* pDC)
 	CRect clip;
 
 	CFREDDoc* pDoc = GetDocument();
-	ASSERT_VALID(pDoc);
+	Assert(pDoc != nullptr);
 
 	Update_window = 1;
 }
@@ -528,7 +528,7 @@ void CFREDView::Dump(CDumpContext& dc) const
 
 CFREDDoc* CFREDView::GetDocument() // non-debug version is inline
 {
-	ASSERT(m_pDocument->IsKindOf(RUNTIME_CLASS(CFREDDoc)));
+	Assert(m_pDocument->IsKindOf(RUNTIME_CLASS(CFREDDoc)));
 	return (CFREDDoc*)m_pDocument;
 }
 #endif //_DEBUG
@@ -1617,7 +1617,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			int id = ID_EDITORS_SHIPS;
 			CMenu* pPopup = menu.GetSubMenu(0);
 
-			ASSERT(pPopup != NULL);
+			Assert(pPopup != nullptr);
 			if (Marked > 1)
 				pPopup->ModifyMenu(ID_EDITORS_SHIPS, MF_BYCOMMAND | MF_STRING, ID_EDITORS_SHIPS, "Edit Marked Ships");
 			else {
@@ -1664,7 +1664,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
-			ASSERT(pPopup != NULL);
+			Assert(pPopup != nullptr);
 
 			// create a popup menu based on the ship models read in ship.cpp.
 			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown

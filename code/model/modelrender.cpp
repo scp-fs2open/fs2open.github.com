@@ -485,31 +485,14 @@ size_t model_batch_buffer::get_buffer_offset() const
 	return Current_offset;
 }
 
-void model_batch_buffer::allocate_memory()
-{
-	auto size = Submodel_matrices.size() * sizeof(matrix4);
-
-	if ( Mem_alloc == NULL || Mem_alloc_size < size ) {
-		if ( Mem_alloc != NULL ) {
-			vm_free(Mem_alloc);
-		}
-
-		Mem_alloc = vm_malloc(size);
-	}
-
-	Mem_alloc_size = size;
-	memcpy(Mem_alloc, &Submodel_matrices[0], size);
-}
-
 void model_batch_buffer::submit_buffer_data()
 {
 	if ( Submodel_matrices.empty() ) {
 		return;
 	}
 
-	allocate_memory();
-
-	gr_update_transform_buffer(Mem_alloc, Mem_alloc_size);
+	// the graphics backends copy the data before returning, so it can be passed directly
+	gr_update_transform_buffer(Submodel_matrices.data(), Submodel_matrices.size() * sizeof(matrix4));
 }
 
 model_draw_list::model_draw_list()
@@ -1099,6 +1082,9 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				// an underlying texture is replaced with a real new texture
 				tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
+			} else if ( (obj_num >= 0) && (Objects[obj_num].type == OBJ_SHOCKWAVE) && (tmap->textures[TM_BASE_TYPE].GetNumFrames() > 1) ) {
+				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
+				texture_maps[TM_BASE_TYPE] = tmap->textures[TM_BASE_TYPE].GetTexture() + shockwave_get_framenum(Objects[obj_num].instance, tmap->textures[TM_BASE_TYPE].GetTexture());
 			} else {
 				// we just use the underlying texture
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
@@ -1416,7 +1402,8 @@ bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, in
 
 void model_render_determine_color(color *clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate)
 {
-	clr->alpha = static_cast<ubyte>((alpha * 255.0f));
+	CLAMP(alpha, 0.0f, 1.0f);
+	clr->alpha = static_cast<ubyte>(alpha * 255.0f);
 
 	if ( no_texturing || desaturate ) {
 		// don't override the given color if we're not texturing or we're desaturating
@@ -2320,14 +2307,14 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 			// start primary thruster glows
 			if ( (thruster_info.primary_glow_bitmap >= 0) && (d > 0.0f) ) {
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
-				batching_add_volume_bitmap(thruster_info.primary_glow_bitmap, &p, 0, (w * 0.5f * thruster_info.glow_rad_factor), d, w * 0.325f);
+				batching_add_volume_bitmap(thruster_info.primary_glow_bitmap, &p, 0, (w * 0.5f * thruster_info.glow_rad_factor), d, w * Primary_thruster_glow_depth_factor);
 			}
 
 			// start tertiary thruster glows
 			if (thruster_info.tertiary_glow_bitmap >= 0) {
 				p.screen.xyw.w -= w;
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
-				batching_add_volume_bitmap_rotated(thruster_info.tertiary_glow_bitmap, &p, magnitude * 4, w * 0.6f * thruster_info.tertiary_glow_rad_factor, fog_int, -w*0.5f);
+				batching_add_volume_bitmap_rotated(thruster_info.tertiary_glow_bitmap, &p, magnitude * 4, w * 0.6f * thruster_info.tertiary_glow_rad_factor, fog_int, w * Tertiary_thruster_glow_depth_factor);
 			}
 
 			// begin secondary glows
@@ -2432,6 +2419,9 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 	material insignia_material;
 	insignia_material.set_depth_bias(1);
 
+	// light_apply_rgb needs the lights in this insignia's frame of reference, which the caller's instance has set up
+	light_rotate_all();
+
 	// set the proper texture
 	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
 
@@ -2471,9 +2461,9 @@ void model_render_insignias(const insignia_draw_data *insignia_data)
 			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
 			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
 
-			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
-			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
-			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
+			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &t1, &pm->ins[idx].norm[s_idx], 1.5f );
+			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &t2, &pm->ins[idx].norm[s_idx], 1.5f );
+			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &t3, &pm->ins[idx].norm[s_idx], 1.5f );
 			vecs[0].a = vecs[1].a = vecs[2].a = 255;
 
 			// draw the polygon

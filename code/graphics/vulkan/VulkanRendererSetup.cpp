@@ -570,7 +570,7 @@ bool VulkanRenderer::initialize()
 
 bool VulkanRenderer::initDisplayDevice() const
 {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
@@ -1291,6 +1291,7 @@ bool VulkanRenderer::recreateSwapChain()
 		m_drawManager->onResize();
 	}
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Update VulkanRenderFrame handles to point to the new swap chain, and
 	// recreate their semaphores: an acquire that succeeded against the old swap

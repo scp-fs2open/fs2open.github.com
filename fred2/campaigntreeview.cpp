@@ -937,7 +937,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 
 	// Get pointer to data
 	pData = (LPCSTR) GlobalLock(hGlobal);
-	ASSERT(pData);
+	Assert(pData);
 
 	if (Campaign.num_missions >= MAX_CAMPAIGN_MISSIONS) {  // Can't add any more
 		GlobalUnlock(hGlobal);
@@ -1244,7 +1244,7 @@ void campaign_tree_view::OnContextMenu(CWnd* pWnd, CPoint point)
 		Context_mission = i;
 		if (menu.LoadMenu(IDR_CPGN_VIEW_ON)) {
 			popup = menu.GetSubMenu(0);
-			ASSERT(popup);
+			Assert(popup);
 			popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 		}
 
@@ -1253,7 +1253,7 @@ void campaign_tree_view::OnContextMenu(CWnd* pWnd, CPoint point)
 		if ((Context_mission >= 0) && (Context_mission < total_levels))
 			if (menu.LoadMenu(IDR_CPGN_VIEW_OFF)) {
 				popup = menu.GetSubMenu(0);
-				ASSERT(popup);
+				Assert(popup);
 				popup->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 			}
 	}

@@ -9,15 +9,10 @@
 class model_batch_buffer
 {
 	SCP_vector<matrix4> Submodel_matrices;
-	void* Mem_alloc;
-	size_t Mem_alloc_size;
 
-	size_t Current_offset;
+	size_t Current_offset = 0;
 
-	void allocate_memory();
 public:
-	model_batch_buffer() : Mem_alloc(nullptr), Mem_alloc_size(0), Current_offset(0) {};
-
 	void reset();
 
 	size_t get_buffer_offset() const;

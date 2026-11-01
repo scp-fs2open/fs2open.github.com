@@ -34,6 +34,15 @@ extern vec3d check_offsets[8];
 
 matrix4 Shadow_view_matrix_light;
 matrix4 Shadow_view_matrix_render;
+
+vec3d Shadow_rt_tlas_origin = vmd_zero_vector;
+
+vec3d shadow_rt_relative(const vec3d& world_pos)
+{
+	vec3d out;
+	vm_vec_sub(&out, &world_pos, &Shadow_rt_tlas_origin);
+	return out;
+}
 SCP_vector<matrix4> Shadow_proj_matrix;
 SCP_vector<float> Shadow_cascade_distances;
 
@@ -794,17 +803,12 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 		viewer_list.render_all();
 	}
 
-	const bool renderCockpitModel = ship_render_player_cockpit(sip);
-
-	if (renderCockpitModel && !Shadow_disable_overrides.disable_cockpit) {
+	if (shadows_cockpit_casts_shadow(sip)) {
 		matrix4 dummy_view;
 		gr_shadow_map_start(&dummy_view, light_matrix, &vmd_zero_vector, false);
 		shadow_cascade_params_bind(0, Num_cockpit_shadow_cascades);
 
-		vec3d cockpit_offset = sip->cockpit_offset;
-		vm_vec_unrotate(&cockpit_offset, &cockpit_offset, &objp->orient);
-		if (!Disable_cockpit_sway)
-			cockpit_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+		vec3d cockpit_offset = ship_cockpit_render_offset(sip, objp);
 
 		model_clear_instance(sip->cockpit_model_num);
 		polymodel_instance* cockpit_pmi = nullptr;
@@ -1049,7 +1053,7 @@ void shadow_cascade_params_shutdown() {
 }
 
 int Shadow_cascade_count = 0;
-void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const shadow_ray_params& ray) {
 	if (!Shadow_cascade_params_buffer.isValid()) {
 		return;
 	}
@@ -1071,6 +1075,9 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
+
+	static_data.shadow_ray_cull_mask = ray.cull_mask;
+	static_data.shadow_ray_view_origin = ray.view_origin;
 
 	Shadow_cascade_count = cascade_count;
 
@@ -1096,8 +1103,40 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
 	}
 	offset += sizeof(float) * padding;
 
-	gr_update_buffer_data_offset(Shadow_cascade_params_buffer, 0, required_size, buffer.data());
+	// Full replacement, not _offset: this runs several times per frame with different content,
+	// and Vulkan's streaming buffer only bump-allocates fresh memory for a full update.
+	gr_update_buffer_data(Shadow_cascade_params_buffer, required_size, buffer.data());
 	gr_bind_uniform_buffer(uniform_block_type::ShadowCascadeParams, 0, required_size, Shadow_cascade_params_buffer);
+}
+
+void shadow_cascade_params_bind(int cascade_offset, int cascade_count) {
+	shadow_cascade_params_bind(cascade_offset, cascade_count, shadow_ray_params{shadow_rt_relative(Eye_position)});
+}
+
+shadow_ray_params shadow_ray_params_cockpit(const object* viewer) {
+	shadow_ray_params ray{shadow_rt_relative(viewer->pos)};
+	vm_vec_add2(&ray.view_origin, &leaning_position);
+	return ray;
+}
+
+void shadow_cascade_params_bind_deferred() {
+	const bool cockpit = Lighting_mode == lighting_mode::COCKPIT;
+	const int offset = cockpit ? 0 : Num_cockpit_shadow_cascades;
+	const int count  = cockpit ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
+
+	if (cockpit && Viewer_obj != nullptr) {
+		shadow_ray_params ray = shadow_ray_params_cockpit(Viewer_obj);
+		if (ship_render_player_ship_casts_shadow_on_cockpit()) {
+			ray.cull_mask = TLAS_MASK_ALL;
+		}
+		shadow_cascade_params_bind(offset, count, ray);
+	} else {
+		shadow_cascade_params_bind(offset, count);
+	}
+}
+
+bool shadows_cockpit_casts_shadow(const ship_info* sip) {
+	return ship_render_player_cockpit(sip) && !Shadow_disable_overrides.disable_cockpit;
 }
 
 shadow_render_list::shadow_render_list() {

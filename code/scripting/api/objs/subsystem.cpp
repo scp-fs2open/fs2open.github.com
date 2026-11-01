@@ -252,12 +252,16 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 
 	if(ADE_SETTING_VAR)
 	{
+		bool was_destroyed = (sso->ss->current_hits <= 0.0f);
+
 		//Only go down to 0 hits
 		sso->ss->current_hits = MAX(0.0f, f);
 
 		ship *shipp = &Ships[sso->objh.objp()->instance];
 		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
 			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
+		} else if (was_destroyed && sso->ss->current_hits > 0.0f && sso->ss->max_hits > 0.0f) {
+			restore_subsystem_submodels(shipp, sso->ss);
 		}
 		ship_recalc_subsys_strength(shipp);
 	}

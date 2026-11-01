@@ -526,7 +526,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-no-guardian",				OP_SHIP_NO_GUARDIAN,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-guardian-threshold",		OP_SHIP_GUARDIAN_THRESHOLD,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "ship-subsys-guardian-threshold",	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
-	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     3,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael + The Force
+	{ "set-guard-range",                OP_SET_GUARD_RANGE,                     2,  INT_MAX,    SEXP_ACTION_OPERATOR,   },  // MjnMixael + The Force
 	{ "self-destruct",					OP_SELF_DESTRUCT,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "destroy-instantly",				OP_DESTROY_INSTANTLY,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Admiral MS
 	{ "destroy-instantly-with-debris",	OP_DESTROY_INSTANTLY_WITH_DEBRIS,		1,	INT_MAX,	SEXP_ACTION_OPERATOR,   },	// Asteroth
@@ -2126,7 +2126,8 @@ bool check_container_data_type(int type, ContainerType con_type, int op, int arg
 	}
 }
 
-bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container) {
+bool check_variable_data_type(int type, int var_type, int op, int argnum, const sexp_container *p_value_container)
+{
 	const bool is_string = (var_type & SEXP_VARIABLE_STRING);
 	const bool is_number = (var_type & SEXP_VARIABLE_NUMBER);
 	if (type == OPF_CONTAINER_VALUE) {
@@ -2141,7 +2142,25 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
 	}
 }
 
-bool is_special_sender(const char* name) {
+// whether a variable reference node's format (quoted or not) contradicts the variable's declared type
+static bool is_variable_node_type_mismatched(int node)
+{
+	if (!(Sexp_nodes[node].type & SEXP_FLAG_VARIABLE))
+		return false;
+
+	if (Sexp_nodes[node].flags & SNF_VARIABLE_TYPE_MISMATCH)
+		return true;
+
+	int var_index = sexp_get_variable_index(node);
+	if (var_index < 0)
+		return false;	// handled by SEXP_CHECK_INVALID_VARIABLE
+
+	bool is_number = (Sexp_variables[var_index].type & SEXP_VARIABLE_NUMBER) != 0;
+	return (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) != is_number;
+}
+
+static bool is_special_sender(const char* name)
+{
 	return name[0] == '#';
 }
 
@@ -2224,6 +2243,12 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 		if (bad_node)
 			*bad_node = node;
 		node_subtype = Sexp_nodes[node].subtype;
+
+		// check a node's variable type, but if there's a mismatch, defer it so that the rest of the tree is still checked
+		if (deferred_error == SEXP_CHECK_NO_ERROR && is_variable_node_type_mismatched(node)) {
+			deferred_error = SEXP_CHECK_VARIABLE_TYPE_MISMATCH;
+			deferred_bad_node = node;
+		}
 
 		if (node_subtype == SEXP_ATOM_LIST) {
 			i = Sexp_nodes[node].first;
@@ -2340,6 +2365,14 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					argnum,
 					p_container)) {
 				return SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE;
+			}
+
+			// the modifiers are not visited as arguments, so check any variables among them here
+			for (int mod_node = modifier_node; mod_node != -1; mod_node = CDR(mod_node)) {
+				if (deferred_error == SEXP_CHECK_NO_ERROR && is_variable_node_type_mismatched(mod_node)) {
+					deferred_error = SEXP_CHECK_VARIABLE_TYPE_MISMATCH;
+					deferred_bad_node = mod_node;
+				}
 			}
 
 			// ignore nested "Replace" uses
@@ -4535,6 +4568,24 @@ void skip_sexp(bool within_quotes = false)
 }
 
 /**
+ * Allocates a variable reference node whose subtype comes from the variable's declared type.
+ * If the reference was quoted contrary to that type, the node is flagged so check_sexp_syntax can report it.
+ */
+static int alloc_sexp_variable_node(int sexp_var_index, bool quoted)
+{
+	char token[TOKEN_LENGTH];
+	get_sexp_text_for_variable(token, sexp_var_index);
+
+	bool is_number = (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) != 0;
+	int node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), is_number ? SEXP_ATOM_NUMBER : SEXP_ATOM_STRING, -1, -1);
+
+	if (quoted == is_number)
+		Sexp_nodes[node].flags |= SNF_VARIABLE_TYPE_MISMATCH;
+
+	return node;
+}
+
+/**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
  * NOTE: On entry into this function, Mp points to the first character past the opening parenthesis.
@@ -4584,11 +4635,10 @@ int get_sexp()
 			// bump past closing quote
 			Mp += (len + 2);
 
-			// it could be a string variable
+			// it could be a variable
 			int sexp_var_index = check_string_for_sexp_variable(startp + 1, len);
 			if (sexp_var_index >= 0) {
-				get_sexp_text_for_variable(token, sexp_var_index);
-				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
+				node = alloc_sexp_variable_node(sexp_var_index, true);
 			}
 			// it's a regular string
 			else {
@@ -4688,11 +4738,10 @@ int get_sexp()
 				len++;
 			}
 
-			// it could be a numeric variable
+			// it could be a variable
 			int sexp_var_index = check_string_for_sexp_variable(startp, len);
 			if (sexp_var_index >= 0) {
-				get_sexp_text_for_variable(token, sexp_var_index);
-				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
+				node = alloc_sexp_variable_node(sexp_var_index, false);
 			}
 			// it could be an operator
 			else {
@@ -4790,7 +4839,9 @@ int get_sexp()
 
 	Mp++;  // skip past the ')'
 
-	
+	if (start == -1)
+		return -1;
+
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
 	if (get_operator_const(start) == OP_AI_CHASE_ANY && prune_extra_args)
 	{
@@ -15735,13 +15786,7 @@ void set_subsys_strength_and_maybe_ancestors(ship *shipp, ship_subsys *ss, polym
 	// and now see if we are repairing from zero
 	if (originally_zero && ss->current_hits > 0 && do_submodel_repair)
 	{
-		if (ss->submodel_instance_1)
-			ss->submodel_instance_1->blown_off = false;
-		if (ss->submodel_instance_2)
-			ss->submodel_instance_2->blown_off = false;
-
-		// special case for subsystems that don't correspond to a submodel
-		check_subsystem_submodel_link(shipp, ss, false);
+		restore_subsystem_submodels(shipp, ss);
 
 		// see if we are handling ancestors and if this subsystem has a submodel
 		int subobj = ss->system_info->subobj_num;
@@ -19509,33 +19554,48 @@ void sexp_ship_guardian_threshold(int node)
 		ship_entry->shipp()->ship_guardian_threshold = threshold;
 	}
 }
+
 // MjnMixael + The Force
 void sexp_set_guard_range(int node)
 {
-	int range, n = node;
+	int n = node;
 	bool is_nan, is_nan_forever;
+
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp()) {
 		return;
 	}
-	int shipnum = ship_entry->shipnum;
 	n = CDR(n);
-	range = eval_num(n, is_nan, is_nan_forever);
+
+	float range = i2fl(eval_num(n, is_nan, is_nan_forever));
 	if (is_nan || is_nan_forever) {
 		return;
 	}
-	auto true_range = static_cast<float>(range);
 	n = CDR(n);
-	for (; n != -1; n = CDR(n)) {
+
+	// a general range
+	if (n < 0) {
+		if (range > 0.0f) {
+			ship_entry->shipp()->max_guard_radius = range;
+		} else {
+			ship_entry->shipp()->max_guard_radius = -1.0f;
+			clear_guard_ranges_for_ship(ship_entry->shipnum);
+		}
+		return;
+	}
+
+	// one or more specific ranges
+	int shipnum = ship_entry->shipnum;
+	for (; n >= 0; n = CDR(n)) {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, n);
 		if (oswpt.type == OSWPT_TYPE_SHIP) {
 			auto shipp = oswpt.shipp();
-			set_guard_range_ship(true_range, shipnum, shipp);
+			set_guard_range_ship(range, shipnum, shipp);
 		} else if (oswpt.type == OSWPT_TYPE_WING) {
 			for (int i = 0; i < oswpt.wingp()->current_count; ++i) {
 				auto shipp = &Ships[oswpt.wingp()->ship_index[i]];
-				set_guard_range_ship(true_range, shipnum, shipp);
+				set_guard_range_ship(range, shipnum, shipp);
 			}
 		} else if (oswpt.type == OSWPT_TYPE_WHOLE_TEAM) {
 			ship_obj* so;
@@ -19545,7 +19605,7 @@ void sexp_set_guard_range(int node)
 
 				auto shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team == oswpt.team) {
-					set_guard_range_ship(true_range, shipnum, shipp);
+					set_guard_range_ship(range, shipnum, shipp);
 				}
 			}
 		} else {
@@ -21662,6 +21722,16 @@ void ship_copy_damage(const ship_registry_entry *target, const ship_registry_ent
 			target_ss->submodel_instance_1->blown_off = source_ss->submodel_instance_1->blown_off;
 		if (target_ss->submodel_instance_2 && source_ss->submodel_instance_2)
 			target_ss->submodel_instance_2->blown_off = source_ss->submodel_instance_2->blown_off;
+
+		// special case for subsystems that don't correspond to a submodel;
+		// copy what the source shows if it can show anything, since its hitpoints don't say whether it was blown off
+		bool show_destroyed;
+		if (source_ss->submodel_instance_1 || submodel_find_destroyed_form(Ship_info[source_shipp->ship_info_index].model_num, source_ss->system_info->subobj_name) >= 0)
+			show_destroyed = subsystem_submodels_blown_off(source_shipp, source_ss);
+		else
+			show_destroyed = (source_ss->max_hits > 0.0f) && (source_ss->current_hits <= 0.0f);
+		show_destroyed = show_destroyed && !(target_ss->flags[Ship::Subsystem_Flags::No_disappear]);
+		check_subsystem_submodel_link(target_shipp, target_ss, show_destroyed);
 	}
 }
 
@@ -28976,6 +29046,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_guard_range(node);
 				sexp_val = SEXP_TRUE;
 				break;
+
 			case OP_SHIP_SUBSYS_TARGETABLE:
 				sexp_ship_deal_with_subsystem_flag(cur_node, node, Ship::Subsystem_Flags::Untargetable, true, false);
 				sexp_val = SEXP_TRUE;
@@ -35365,6 +35436,10 @@ bool sexp_recoverable_error(int num)
 		case SEXP_CHECK_BAD_ARG_COUNT_BENIGN:
 			return true;
 
+		// The node type was taken from the variable's declared type when parsed, so the reference still works
+		case SEXP_CHECK_VARIABLE_TYPE_MISMATCH:
+			return true;
+
 		// most errors will halt mission loading
 		default:
 			return false;
@@ -35683,6 +35758,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_MESSAGE_TYPE:
 			return "Invalid message type";
+
+		case SEXP_CHECK_VARIABLE_TYPE_MISMATCH:
+			return "Variable's parsed type does not match its declared type (string variables must be in quotes; number variables must not be)";
 
 		case SEXP_CHECK_POTENTIAL_ISSUE:
 			return "This particular SEXP_CHECK_ code is handled differently from the others.  You shouldn't actually see this message; if you do, report it to a SCP coder.";
@@ -40621,14 +40699,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// MjnMixael
 	{ OP_SET_GUARD_RANGE, "set-guard-range\r\n"
-		"\tLimits the range that selected ships or wings can move when guarding a specific ship\r\n"
-		"This range will override the default dynamic range behavior for ships obeying a guard order.\r\n"
-		"If the value is <= 0, regular dynamic guard range behavior will resume. Positive values are used as is with no size validation based on ship class.\r\n"
-		"Warning: Will not apply to future waves of wings or ships not currently in mission.\r\n\r\n"
-		"Takes 3 or more arguments...\r\n"
-		"\t1:\tShip the escorts won't leave the range of if guarding (Ship must be in mission)\r\n"
+		"\tLimits the range that selected ships or wings can move when guarding a target ship.  This range will override the default dynamic range behavior for ships obeying a guard order.  "
+		"If the value is <= 0, regular dynamic guard range behavior will resume.  Positive values are used as-is with no size validation based on ship class.\r\n\r\n"
+		"The range can be set to generally apply to all ships (including ones yet to arrive) guarding a target ship, or only some specific ships.  If multiple ranges are set, a specific range "
+		"will take priority over a general range.  Clearing a general range will also clear all specific ranges.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tTarget ship the escorts won't leave the range of if guarding (Ship must be in-mission)\r\n"
 		"\t2:\tGuard range cap in meters (<= 0 disables cap)\r\n"
-		"\t3+:\tEscort ships and wings that the limit applies to" },
+		"\t3+:\tEscort ships and wings that the limit applies to (optional, must be in-mission, and will not apply to future waves)" },
 
 	// Goober5000
 	{ OP_SHIP_STEALTHY, "ship-stealthy\r\n"

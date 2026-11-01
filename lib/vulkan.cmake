@@ -93,14 +93,16 @@ endif ()
 
 option(VULKAN_USE_PRECOMPILED "Force use of precompiled versions of Vulkan-Loader and Shaderc." OFF)
 
-get_prebuilt_path(PREBUILT_PATH)
-
 set(USING_PREBUILT_VULKAN ${VULKAN_USE_PRECOMPILED})
 
 if(PLATFORM_WINDOWS OR PLATFORM_MAC OR ANDROID)
 	set(USING_PREBUILT_VULKAN TRUE)
 elseif(PLATFORM_LINUX AND FSO_BUILD_APPIMAGE)
 	set(USING_PREBUILT_VULKAN TRUE)
+endif()
+
+if(USING_PREBUILT_VULKAN)
+	get_prebuilt_path(PREBUILT_PATH)
 endif()
 
 # Shaderc - runtime compilation of glsl to SPIRV
@@ -154,15 +156,27 @@ endif()
 
 # Vulkan/Shaderc headers
 # 
-# Use prebuilt if we should, or just as a fallback if the SDK isn't installed.
+# Use prebuilt if we should, otherwise require that the headers/loader be available.
 # The find_package() min version should be what is used in the prebuilt repo.
 # Note that we only rely on the headers and do NOT link against the Vulkan libs!
 
 if(NOT USING_PREBUILT_VULKAN)
-	find_package(Vulkan 1.4.341)
+	# oldest version that shouldn't require code changes to support
+	find_package(Vulkan 1.4.304 REQUIRED)
+
+	# shaderc ships separately from the Vulkan headers on most Linux distros
+	find_path(SHADERC_INCLUDE_DIR shaderc/shaderc.h)
+
+	if(NOT SHADERC_INCLUDE_DIR)
+		message(FATAL_ERROR
+			"shaderc headers not found. Install them (Debian/Ubuntu: libshaderc-dev) or "
+			"the Vulkan SDK, or configure with -DVULKAN_USE_PRECOMPILED=ON.")
+	endif()
+
+	target_include_directories(Vulkan::Headers SYSTEM INTERFACE "${SHADERC_INCLUDE_DIR}")
 endif()
 
-# prebuilt/fallback
+# prebuilt
 if(NOT TARGET Vulkan::Headers)
 	add_library(VulkanHeaders INTERFACE)
 

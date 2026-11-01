@@ -507,10 +507,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
 			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
-
-			int offset = (Lighting_mode == lighting_mode::COCKPIT) ? 0 : Num_cockpit_shadow_cascades;
-			int count  = (Lighting_mode == lighting_mode::COCKPIT) ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
-			shadow_cascade_params_bind(offset, count);
+			shadow_cascade_params_bind_deferred();
 		}
 	}
 

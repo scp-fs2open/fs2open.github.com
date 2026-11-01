@@ -21,6 +21,7 @@
 #include <menuui/mainhallmenu.h>
 #include <menuui/techmenu.h>
 #include <mission/missioncampaign.h>
+#include <missioneditor/common.h>
 #include <missionui/fictionviewer.h>
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
@@ -319,6 +320,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 void shutdown() {
 	audiostream_close();
 	snd_close();
+
+	editor_free_engine_data();
+
 	gr_close();
 
 	os_cleanup();

@@ -211,6 +211,9 @@ constexpr int DEFAULT_LARGE_SHIP_NO_COLLIDE_COLLISION_GROUP = 0;
 
 extern int debrief_find_persona_index();
 
+// for mission_init
+extern SCP_vector<SCP_vm_unique_ptr<char>> Goal_target_names;
+
 static bool mission_has_layer_name(const mission* pm, const SCP_string& layerName) {
 	return std::any_of(pm->fred_layers.begin(), pm->fred_layers.end(), [&layerName](const SCP_string& existingLayer) {
 		return stricmp(existingLayer.c_str(), layerName.c_str()) == 0;
@@ -2791,8 +2794,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			if ((100.0f - sssp->percent) < 0.5)
 			{
 				ptr->current_hits = 0.0f;
-				if (ptr->submodel_instance_1 != nullptr)
-					ptr->submodel_instance_1->blown_off = true;
+				blow_off_subsystem_submodels(shipp, ptr);
 			}
 			else
 			{
@@ -7439,7 +7441,7 @@ void mission_init(mission *pm, bool quick_init)
 	Parse_names.clear();
 	Num_path_restrictions = 0;
 	Num_ai_dock_names = 0;
-	ai_clear_goal_target_names();
+	Goal_target_names.clear();
 
 	for (int i = 0; i < MAX_CARGO; i++)
 		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
