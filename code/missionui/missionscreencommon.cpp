@@ -85,11 +85,6 @@ shader Icon_shaders[NUM_ICON_FRAMES];
 loadout_data Player_loadout;	// what the ship and weapon loadout is... used since we want to use the 
 								// same loadout if the mission is played again
 
-//wss_unit	Wss_slots[MAX_WSS_SLOTS];				// slot data struct
-//int		Wl_pool[MAX_WEAPON_TYPES];				// weapon pool 
-//int		Ss_pool[MAX_SHIP_CLASSES];				// ship pool
-//int		Wss_num_wings;								// number of player wings
-
 wss_unit	Wss_slots_teams[MAX_TVT_TEAMS][MAX_WSS_SLOTS];
 SCP_map<int, int>	Wl_pool_teams[MAX_TVT_TEAMS];
 SCP_map<int, int>	Ss_pool_teams[MAX_TVT_TEAMS];
@@ -984,10 +979,6 @@ void common_select_close()
 
 	nprintf(("Alan","entering common_select_close()\n"));
 
-	// catch open anims that weapon_select_init_team() opened when not in weapon_select - taylor
-	// *** not the same as weapon_select_close() ***
-	weapon_select_close_team();
-
 	weapon_select_close();
 
 	if(Game_mode & GM_MULTIPLAYER){
@@ -995,6 +986,7 @@ void common_select_close()
 	} 
 
 	ship_select_close();
+	common_select_level_close();
 	brief_close();	
 
 	common_free_interface_palette();
@@ -1018,6 +1010,16 @@ void common_select_close()
 	common_reset_team_pointers();
 
 	Common_select_inited = 0;
+}
+
+// Release the model and bitmap handles held by the select screens, whether or not the screens themselves
+// were ever opened.  Called from common_select_close() on a state change and from game_level_close(),
+// because a scripted UI that overrides the state hooks never reaches the former, and by the next mission
+// the model slots those handles name may belong to other models.
+void common_select_level_close()
+{
+	weapon_select_common_close();
+	ship_select_common_close();
 }
 
 // ------------------------------------------------------------------------
@@ -1148,7 +1150,7 @@ void wss_maybe_restore_loadout()
 			++last_loadout_ships[slot->ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(slot->wep[j])) {
 					last_loadout_weapons[slot->wep[j]] += slot->wep_count[j]; 
 				}
 			}
@@ -1161,7 +1163,7 @@ void wss_maybe_restore_loadout()
 			++this_loadout_ships[Wss_slots[i].ship_class];
 
 			for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-				if ((Wss_slots[i].wep[j] >= 0) && (Wss_slots[i].wep[j] < weapon_info_size())) {
+				if (Weapon_info.in_bounds(Wss_slots[i].wep[j])) {
 					this_loadout_weapons[Wss_slots[i].wep[j]] += Wss_slots[i].wep_count[j];
 				}
 			}
@@ -1196,7 +1198,7 @@ void wss_maybe_restore_loadout()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		slot = &Player_loadout.unit_data[i];
 
-		if ((slot->ship_class >= 0) && (slot->ship_class < ship_info_size())) {
+		if (Ship_info.in_bounds(slot->ship_class)) {
 			--this_loadout_ships[slot->ship_class];
 			Assertion((this_loadout_ships[slot->ship_class] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of ships available");
 
@@ -1205,7 +1207,7 @@ void wss_maybe_restore_loadout()
 		Wss_slots[i].ship_class = slot->ship_class;
 
 		for ( j = 0; j < MAX_SHIP_WEAPONS; j++ ) {
-			if ((slot->ship_class >= 0) && (slot->wep[j] >= 0) && (slot->wep[j] < weapon_info_size())) {
+			if (Ship_info.in_bounds(slot->ship_class) && Weapon_info.in_bounds(slot->wep[j])) {
 				this_loadout_weapons[slot->wep[j]] -= slot->wep_count[j];
 				Assertion((this_loadout_weapons[slot->wep[j]] >= 0), "Attempting to restore the previous missions loadout has resulted in an invalid number of weapons available");
 			}
@@ -1870,9 +1872,8 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2, -clip);
 
 			if ( (time < 2.5f) && (time >= 0.5f) ) { // Phase 1 and 2 render the wireframe
-				if (time >= 1.5f) // Just clip the wireframe after Phase 1
-					render_info->set_clip_plane(plane_point,wire_normal);
-				
+				render_info->set_clip_plane(plane_point,wire_normal);
+
 				render_info->set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING | MR_NO_LIGHTING);
 
 				model_render_immediate(render_info, model_id, model_instance, &model_orient, &vmd_zero_vector);
@@ -1984,7 +1985,7 @@ void draw_model_rotating(model_render_params *render_info, int ship_class, int m
 }
 
 /**
- * @brief add and rotate lights for all the non-gameplay ship rendering instances
+ * @brief add lights for all the non-gameplay ship rendering instances
  */
 void common_setup_room_lights()
 {
@@ -1999,7 +2000,6 @@ void common_setup_room_lights()
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
 	light_add_directional(&tempv,-1,false,&tempc);
 	gr_set_ambient_light(53, 53, 53);
-	light_rotate_all();
 }
 
 // NEWSTUFF END

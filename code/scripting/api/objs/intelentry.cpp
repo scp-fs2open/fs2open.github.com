@@ -10,6 +10,7 @@ namespace api {
 
 //**********HANDLE: Intelentry
 ADE_OBJ(l_Intelentry, int, "intel_entry", "Intel entry handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Intelentry, intel_info_size());
 
 ADE_FUNC(__tostring, l_Intelentry, nullptr, "Intel entry name", "string", "Intel entry name, or an empty string if handle is invalid")
 {
@@ -172,18 +173,6 @@ ADE_FUNC(hasCustomData,
 
 	bool result = !Intel_info[idx].custom_data.empty();
 	return ade_set_args(L, "b", result);
-}
-
-ADE_FUNC(isValid, l_Intelentry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Intelentry.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= intel_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getIntelEntryIndex, l_Intelentry, nullptr, "Gets the index value of the intel entry", "number", "index value of the intel entry")

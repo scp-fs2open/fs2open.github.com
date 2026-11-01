@@ -665,7 +665,35 @@ void mission_debrief_common_reset()
 	}
 }
 
+/**
+ * Frees the briefing icon and line buffers that the mission editors allocate in mission_brief_common_init()
+ * and keep for their whole session.  Called at editor shutdown.
+ */
+void mission_brief_common_close()
+{
+	int i, j;
 
+	for (i = 0; i < MAX_TVT_TEAMS; i++)
+	{
+		for (j = 0; j < MAX_BRIEF_STAGES; j++)
+		{
+			if ( Briefings[i].stages[j].icons )
+			{
+				vm_free(Briefings[i].stages[j].icons);
+				Briefings[i].stages[j].icons = nullptr;
+			}
+
+			if ( Briefings[i].stages[j].lines )
+			{
+				vm_free(Briefings[i].stages[j].lines);
+				Briefings[i].stages[j].lines = nullptr;
+			}
+
+			Briefings[i].stages[j].num_icons = 0;
+			Briefings[i].stages[j].num_lines = 0;
+		}
+	}
+}
 
 
 // --------------------------------------------------------------------------------------

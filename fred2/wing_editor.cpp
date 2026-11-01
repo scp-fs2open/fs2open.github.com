@@ -181,6 +181,7 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
 	ON_BN_CLICKED(IDC_WING_FORMATION_ALIGN, OnWingFormationAlign)
 	ON_EN_CHANGE(IDC_WING_NAME, OnChangeWingName)
+	ON_EN_CHANGE(IDC_WING_WAVES, OnChangeWingWaves)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -273,7 +274,7 @@ void wing_editor::OnClose()
 // initialize everything that update_data_safe() saves.
 void wing_editor::initialize_data_safe(int full_update)
 {
-	int i, enable = TRUE, player_wing = 0, player_enabled = 1;
+	int i, enable = TRUE, player_wing = 0, player_enabled = 1, waves_enabled = 1;
 	CComboBox *arrival_box, *departure_box;
 
 	nprintf(("Fred routing", "Wing dialog load safe\n"));
@@ -314,10 +315,14 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_same_arrival_warp_when_docked = FALSE;
 		m_same_departure_warp_when_docked = FALSE;
 		m_no_dynamic = 0;
-		player_enabled = enable = FALSE;
+		waves_enabled = player_enabled = enable = FALSE;
 
 	} else {
 		CComboBox *ptr;
+
+		if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0))
+			if (Ships[Player_start_shipnum].wingnum == cur_wing)
+				player_wing = 1;
 
 		if (The_mission.game_type & MISSION_TYPE_MULTI)
 		{
@@ -326,7 +331,7 @@ void wing_editor::initialize_data_safe(int full_update)
 				for (i=0; i<MAX_TVT_WINGS; i++)
 				{
 					if (cur_wing == TVT_wings[i])
-						player_enabled = 0;
+						waves_enabled = player_enabled = 0;
 				}
 			}
 			else
@@ -334,19 +339,16 @@ void wing_editor::initialize_data_safe(int full_update)
 				for (i=0; i<MAX_STARTING_WINGS; i++)
 				{
 					if (cur_wing == Starting_wings[i])
-						player_enabled = 0;
+						waves_enabled = player_enabled = 0;
 				}
 			}
 		}
 		else
 		{
-			if (cur_wing == Ships[Player_start_shipnum].wingnum)
+			// single-player wings, including the player wing, can have multiple waves
+			if (player_wing)
 				player_enabled = 0;
 		}
-
-		if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0))
-			if (Ships[Player_start_shipnum].wingnum == cur_wing)
-				player_wing = 1;
 
 		m_wing_squad_filename = _T(Wings[cur_wing].wing_squad_filename);
 		m_wing_display_name = Wings[cur_wing].has_display_name() ? Wings[cur_wing].get_display_name() : "<none>";
@@ -410,10 +412,7 @@ void wing_editor::initialize_data_safe(int full_update)
 			m_departure_target = departure_box->FindStringExact(-1, Ships[m_departure_target].ship_name);
 
 		m_departure_delay = Wings[cur_wing].departure_delay;
-		if (player_wing)
-			m_arrival_tree.load_tree(Locked_sexp_true);
-		else
-			m_arrival_tree.load_tree(Wings[cur_wing].arrival_cue);
+		m_arrival_tree.load_tree(Wings[cur_wing].arrival_cue);
 
 		m_departure_tree.load_tree(Wings[cur_wing].departure_cue, "false");
 		m_hotkey = Wings[cur_wing].hotkey+1;
@@ -452,11 +451,11 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_WING_NAME)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_SQUAD_LOGO_BUTTON)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_SPECIAL_SHIP)->EnableWindow(enable);
-	GetDlgItem(IDC_WING_WAVES)->EnableWindow(player_enabled);
-	GetDlgItem(IDC_WING_WAVE_THRESHOLD)->EnableWindow(player_enabled);
+	GetDlgItem(IDC_WING_WAVES)->EnableWindow(waves_enabled);
+	GetDlgItem(IDC_WING_WAVE_THRESHOLD)->EnableWindow(waves_enabled);
 	GetDlgItem(IDC_DISBAND_WING)->EnableWindow(enable);
-	GetDlgItem(IDC_SPIN_WAVES)->EnableWindow(player_enabled);
-	GetDlgItem(IDC_SPIN_WAVE_THRESHOLD)->EnableWindow(player_enabled);
+	GetDlgItem(IDC_SPIN_WAVES)->EnableWindow(waves_enabled);
+	GetDlgItem(IDC_SPIN_WAVE_THRESHOLD)->EnableWindow(waves_enabled);
 
 	GetDlgItem(IDC_WING_FORMATION)->EnableWindow(enable);
 	GetDlgItem(IDC_WING_FORMATION_ALIGN)->EnableWindow(enable);
@@ -496,8 +495,10 @@ void wing_editor::initialize_data_safe(int full_update)
 		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(enable);
 	}
 
+	// the player wing must be present at mission start, so its arrival cue is only editable
+	// if it has multiple waves (where the cue governs the arrival of subsequent waves)
 	if (player_wing)
-		GetDlgItem(IDC_ARRIVAL_TREE)->EnableWindow(0);
+		GetDlgItem(IDC_ARRIVAL_TREE)->EnableWindow(m_waves > 1);
 	else
 		GetDlgItem(IDC_ARRIVAL_TREE)->EnableWindow(enable);
 
@@ -1402,4 +1403,22 @@ void wing_editor::OnChangeWingName()
 
 	// sync the variable to the edit box
 	UpdateData(FALSE);
+}
+
+void wing_editor::OnChangeWingWaves()
+{
+	if (!GetSafeHwnd() || cur_wing < 0)
+		return;
+
+	// only the player wing's arrival cue is gated on the number of waves
+	if ((Player_start_shipnum < 0) || (Player_start_shipnum >= MAX_SHIPS) || (Ships[Player_start_shipnum].objnum < 0))
+		return;
+	if (Ships[Player_start_shipnum].wingnum != cur_wing)
+		return;
+
+	// read the control directly; this notification can arrive in the middle of a DDX update,
+	// so calling UpdateData() here would not be safe
+	CString str;
+	GetDlgItem(IDC_WING_WAVES)->GetWindowText(str);
+	GetDlgItem(IDC_ARRIVAL_TREE)->EnableWindow(atoi(str) > 1);
 }

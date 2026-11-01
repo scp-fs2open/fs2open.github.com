@@ -1154,6 +1154,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 				// Recheck pointer right before using it again
 				if (!n) {
+					m_drag.active = false;
 					ev->ignore();
 					return;
 				}
@@ -1163,6 +1164,14 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 				// Build preview edge
 				const auto& missions = m_model->getCampaignMissions();
+
+				// quickly check for this, as we can drag the end mission sink that is not supposed to be dragged, by accident 
+				if (!SCP_vector_inbounds(missions, m_drag.fromIndex)){
+					m_drag.active = false;
+					ev->ignore();
+					return;
+				}
+
 				const auto mode = missions[m_drag.fromIndex].special_mode_hint;
 
 				m_drag.preview = new detail::EdgeItem(m_drag.fromIndex, /*branchId*/ -1, m_drag.isSpecial, mode, m_style);

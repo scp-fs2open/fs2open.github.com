@@ -3,6 +3,8 @@
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
 
+#include "graphics/shadows.h"
+
 #include <vulkan/vulkan.hpp>
 
 // Forward declarations to avoid pulling model/model.h into every Vulkan
@@ -20,6 +22,14 @@ namespace graphics::vulkan {
 // (defined in VulkanRaytracing.cpp) so it can be unit tested directly -- see
 // test/src/graphics/vulkan/test_vulkan_raytracing.cpp.
 vk::TransformMatrixKHR toVkTransform(const matrix& orient, const vec3d& pos);
+
+struct SubmodelWalkOptions {
+	uint8_t mask = TLAS_MASK_ALL;
+	// The detail-box gate compares against the global `Eye_position`, which is wrong for
+	// the cockpit model (its rasterized checks use a cockpit-relative eye position).
+	// Cockpit models are small and sit against the camera, so they skip the gate.
+	bool skipDetailBoxCheck = false;
+};
 
 /**
  * @brief Manages bottom-level acceleration structures (BLAS) for raytraced shadows.
@@ -192,23 +202,33 @@ private:
 
 	// Shared by walkSubmodelTree/addSingleSubmodelInstance: appends one TLAS
 	// instance referencing blasAddress, placed at the given world orient/pos.
+	// `mask` is the instance's ray-cull mask (vk::AccelerationStructureInstanceKHR::mask,
+	// see the TLAS_MASK_* constants in shadows.h).
 	static void pushInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		vk::DeviceAddress blasAddress,
 		const matrix& orient,
-		const vec3d& pos);
+		const vec3d& pos,
+		uint8_t mask = TLAS_MASK_ALL);
 
 	void gatherShadowCasterInstances(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances);
+	// Adds Viewer_obj's cockpit polymodel, which -- unlike ships/asteroids/debris -- has no
+	// backing `object` for gatherShadowCasterInstances() to discover. Uses the same gate as
+	// the rasterized cockpit shadow pass (shadows_cockpit_casts_shadow()).
+	void gatherCockpitShadowCasterInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances);
+
 	void walkSubmodelTree(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		transform_stack& stack,
 		const polymodel* pm,
 		const polymodel_instance* pmi,
-		int submodel_num);
+		int submodel_num,
+		const SubmodelWalkOptions& options = {});
 	void addSingleSubmodelInstance(SCP_vector<vk::AccelerationStructureInstanceKHR>& instances,
 		const polymodel* pm,
 		const polymodel_instance* pmi,
 		int submodel_num,
 		const matrix& orient,
-		const vec3d& pos);
+		const vec3d& pos,
+		uint8_t mask = TLAS_MASK_ALL);
 
 	// One full set of grow-only TLAS resources per frame-in-flight slot, indexed
 	// by currentFrameIndex() -- NOT a single shared instance. buildTlas()

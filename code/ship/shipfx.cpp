@@ -938,7 +938,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 			}
 
 			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
-				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
+				&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(sip)) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 
 				mc_info mc;
@@ -1084,7 +1084,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	bool player_show_ship_model = (
 		objp == Player_obj 
 		&& Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]
-		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
+		&& (!Show_ship_only_if_cockpits_enabled || ship_cockpit_enabled(&Ship_info[Ships[objp->instance].ship_info_index])));
 
 	auto* wip = &Weapon_info[weapon_info_index];
 	

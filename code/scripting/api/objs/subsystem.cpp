@@ -252,12 +252,16 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 
 	if(ADE_SETTING_VAR)
 	{
+		bool was_destroyed = (sso->ss->current_hits <= 0.0f);
+
 		//Only go down to 0 hits
 		sso->ss->current_hits = MAX(0.0f, f);
 
 		ship *shipp = &Ships[sso->objh.objp()->instance];
 		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
 			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
+		} else if (was_destroyed && sso->ss->current_hits > 0.0f && sso->ss->max_hits > 0.0f) {
+			restore_subsystem_submodels(shipp, sso->ss);
 		}
 		ship_recalc_subsys_strength(shipp);
 	}
@@ -946,6 +950,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 		sso->ss->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, nullptr, flak_range);
@@ -1096,15 +1101,6 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 	bool in_sight = ship_subsystem_in_sight(sso->objh.objp(), sso->ss, from, &world_pos, false);
 
 	return ade_set_args(L, "b", in_sight);
-}
-
-ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_subsys_h *sso;
-	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sso->isValid());
 }
 
 }

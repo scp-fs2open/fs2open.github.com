@@ -200,20 +200,13 @@ SCP_string get_version_string()
 #endif
 
 	// Lets get some more info in here
-	switch (gr_screen.mode) {
-	case GraphicsAPI::OpenGL:
-		str += " OpenGL";
-		#ifdef USE_OPENGL_ES
+	str += " ";
+	str += gr_render_api_name(gr_screen.mode);
+	#ifdef USE_OPENGL_ES
+	if (gr_screen.mode == GraphicsAPI::OpenGL) {
 		str += " ES";
-		#endif
-		break;
-	case GraphicsAPI::Vulkan:
-		str += " Vulkan";
-		break;
-	default:
-		str += " Unknown???";
-		break;
 	}
+	#endif
 
 	return str;
 }

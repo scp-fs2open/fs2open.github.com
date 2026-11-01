@@ -1321,7 +1321,9 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 			float tri_separation;
 
 			offscreengauge->resetClip();
-			offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation);
+			if (!offscreengauge->calculatePosition(&target_point, &targetp->pos, &outpoint, &dir, &tri_separation)) {
+				break;
+			}
 
 			if (draw) {
 				// needs to be turned on so it can pass the canRender() condition

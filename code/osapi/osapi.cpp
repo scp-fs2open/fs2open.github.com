@@ -21,6 +21,7 @@
 
 #include "imgui.h"
 #include "backends/imgui_impl_sdl3.h"
+#include "io/spacemouse.h"
 
 #ifdef SCP_UNIX
 #include <sys/stat.h>
@@ -34,8 +35,6 @@ namespace
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
 
-	SCP_string preferencesPath;
-
 	bool checkedLegacyMode = false;
 	bool legacyMode = false;
 
@@ -45,6 +44,8 @@ namespace
 
 	SCP_string getPreferencesPath()
 	{
+		static SCP_string preferencesPath;
+
 		// Lazily initialize the preferences path
 		if (preferencesPath.empty()) {
 			//Check for a custom path set by env variable
@@ -158,7 +159,10 @@ namespace
 					break;
 
 				case SDL_EVENT_WINDOW_RESIZED:
-					gr_screen_resize(e.window.data1, e.window.data2);
+					// FSO does not handle live resizing at all. It will break the internal renderbuffer and swap chain, so prevent this
+					if (Fred_running) {
+						gr_screen_resize(e.window.data1, e.window.data2);
+					}
 					break;
 			}
 
@@ -634,10 +638,12 @@ void os_deinit()
 	// Free the view ports
 	os::closeAllViewports();
 
-	SDL_Quit();
+	//If we have an open space mouse, close it
+	io::spacemouse::SpaceMouse::shutdownSharedSpaceMouse();
 
-	// Balance the SDL_hid_init() from os_init().
 	SDL_hid_exit();
+
+	SDL_Quit();
 }
 
 void debug_int3(const char *file, int line)

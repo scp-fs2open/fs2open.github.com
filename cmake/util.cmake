@@ -241,6 +241,17 @@ function(suppress_file_warnings)
 	endif()
 endfunction(suppress_file_warnings)
 
+# Suppress no symbols warnings in static libraries (on Xcode)
+function(suppress_no_symbol_warnings _target)
+	if(XCODE)
+		get_target_property(target_type ${_target} TYPE)
+		if(target_type STREQUAL "STATIC_LIBRARY")
+			set_property(TARGET ${_target} APPEND PROPERTY
+				STATIC_LIBRARY_OPTIONS "-no_warning_for_no_symbols"
+			)
+		endif()
+	endif()
+endfunction(suppress_no_symbol_warnings)
 
 function(list_target_dependencies _target _out_var)
 	set(out_list)

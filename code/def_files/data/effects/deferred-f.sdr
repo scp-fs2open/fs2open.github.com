@@ -65,6 +65,10 @@ uniform shadowCascadeParams {
 	float rtShadowBiasMax;
 
 	mat4 shadow_mv_matrix;
+
+	// See shadow_cascade_static_data (uniform_structs.h).
+	vec3 shadow_ray_view_origin;
+	int shadow_ray_cull_mask;
 	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
 	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
@@ -310,12 +314,15 @@ void main()
 
 		if (enable_shadows != 0) {
 #ifdef RT_SHADOWS
-			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
+			// Ray origin in TLAS-relative space; see shadow_cascade_static_data (uniform_structs.h).
+			// Only the rotation of inv_view_matrix is used: its translation is the (large) camera
+			// world position, which shadow_ray_view_origin supplies already rebased onto the TLAS.
+			vec3 worldPos = mat3(inv_view_matrix) * position + shadow_ray_view_origin;
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
 			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias);
+			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];

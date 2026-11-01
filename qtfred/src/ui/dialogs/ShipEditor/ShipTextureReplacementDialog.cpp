@@ -84,7 +84,16 @@ ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, Edit
 	ui->TexturesList->setModel(_listModel);
 	QItemSelectionModel* selectionModel = ui->TexturesList->selectionModel();
 	connect(selectionModel, &QItemSelectionModel::selectionChanged, this, &ShipTextureReplacementDialog::updateUiFull);
-	QModelIndex index = _listModel->index(0);
+	// Select the first real texture; blank/duplicate slots are placeholders that render as
+	// hidden (zero-height) rows and have no editable data.
+	int firstReal = 0;
+	for (size_t i = 0; i < _model->getSize(); i++) {
+		if (!_model->getDefaultName(i).empty()) {
+			firstReal = static_cast<int>(i);
+			break;
+		}
+	}
+	QModelIndex index = _listModel->index(firstReal);
 	ui->TexturesList->setCurrentIndex(index);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipTextureReplacementDialog::updateUi);

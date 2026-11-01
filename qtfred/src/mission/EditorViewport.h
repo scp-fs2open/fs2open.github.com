@@ -62,6 +62,7 @@ struct ViewSettings {
 	bool Show_compass = true;
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;
+	float Label_font_scale = 1.0f;  // multiplier applied to viewport text labels
 
 	ViewSettings();
 };

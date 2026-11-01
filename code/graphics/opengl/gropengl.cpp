@@ -956,7 +956,7 @@ void gr_opengl_use_viewport(os::Viewport* view) {
 
 int opengl_init_display_device()
 {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	attrs.enable_opengl = true;
 
 	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;

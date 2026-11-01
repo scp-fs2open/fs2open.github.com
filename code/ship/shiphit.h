@@ -36,6 +36,15 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 // (the usual submodel-submodel case is handled through the normal code paths)
 void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed);
 
+// when a destroyed subsystem has been repaired, bring back its submodels in place of any -destroyed form
+void restore_subsystem_submodels(const ship *shipp, const ship_subsys *subsys);
+
+// hide a destroyed subsystem's submodels in favor of any -destroyed form, unless the subsystem is flagged not to disappear
+void blow_off_subsystem_submodels(const ship *shipp, const ship_subsys *subsys);
+
+// whether a subsystem's submodels are currently blown off, or its linked -destroyed submodel is shown
+bool subsystem_submodels_blown_off(const ship *shipp, const ship_subsys *subsys);
+
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d *hitpos, bool no_explosion = false );
 

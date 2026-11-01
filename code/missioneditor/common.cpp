@@ -1,14 +1,24 @@
 // methods and members common to any mission editor FSO may have
 #include "common.h"
 #include "ai/ai.h"
+#include "cmdline/cmdline.h"
+#include "controlconfig/controlsconfig.h"
 #include "globalincs/linklist.h"
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
+#include "io/cursor.h"
 #include "jumpnode/jumpnode.h"
+#include "localization/fhash.h"
+#include "mission/missionbriefcommon.h"
+#include "mission/missioncampaign.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "object/waypoint.h"
+#include "parse/sexp.h"
 #include "prop/prop.h"
+#include "render/batching.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 #include <algorithm>
 
@@ -114,28 +124,58 @@ void update_custom_wing_indexes()
 		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
 }
 
-void generate_weaponry_usage_list_team(int team, int* arr)
+void generate_ship_usage_list_team(int team, SCP_map<int, int>& usage)
+{
+	usage.clear();
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
+	{
+		Assert(team >= 0 && team < MAX_TVT_TEAMS);
+
+		for (int i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++)
+			generate_ship_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], usage);
+	}
+	else
+	{
+		for (int starting_wing: Starting_wings)
+			generate_ship_usage_list_wing(starting_wing, usage);
+	}
+}
+
+void generate_ship_usage_list_wing(int wing_num, SCP_map<int, int>& usage)
 {
 	int i;
 
-	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
-		arr[i] = 0;
+	if (wing_num < 0) {
+		return;
 	}
+
+	i = Wings[wing_num].wave_count;
+	while (i--) {
+		usage[Ships[Wings[wing_num].ship_index[i]].ship_info_index]++;
+	}
+}
+
+void generate_weaponry_usage_list_team(int team, SCP_map<int, int>& usage)
+{
+	int i;
+
+	usage.clear();
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		Assert(team >= 0 && team < MAX_TVT_TEAMS);
 
 		for (i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], arr);
+			generate_weaponry_usage_list_wing(TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i], usage);
 		}
 	} else {
 		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list_wing(Starting_wings[i], arr);
+			generate_weaponry_usage_list_wing(Starting_wings[i], usage);
 		}
 	}
 }
 
-void generate_weaponry_usage_list_wing(int wing_num, int* arr)
+void generate_weaponry_usage_list_wing(int wing_num, SCP_map<int, int>& usage)
 {
 	int i, j;
 	ship_weapon* swp;
@@ -149,20 +189,17 @@ void generate_weaponry_usage_list_wing(int wing_num, int* arr)
 		swp = &Ships[Wings[wing_num].ship_index[i]].weapons;
 		j = swp->num_primary_banks;
 		while (j--) {
-			if (swp->primary_bank_weapons[j] >= 0 &&
-				swp->primary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->primary_bank_weapons[j]]++;
+			if (Weapon_info.in_bounds(swp->primary_bank_weapons[j])) {
+				usage[swp->primary_bank_weapons[j]]++;
 			}
 		}
 
 		j = swp->num_secondary_banks;
 		while (j--) {
-			if (swp->secondary_bank_weapons[j] >= 0 &&
-				swp->secondary_bank_weapons[j] < static_cast<int>(Weapon_info.size())) {
-				arr[swp->secondary_bank_weapons[j]] +=
-					(int)floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f /
-								   Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) +
-							   0.5f);
+			if (Weapon_info.in_bounds(swp->secondary_bank_weapons[j])) {
+				usage[swp->secondary_bank_weapons[j]] +=
+					sz2i(floor((swp->secondary_bank_ammo[j] * swp->secondary_bank_capacity[j] / 100.0f /
+								   Weapon_info[swp->secondary_bank_weapons[j]].cargo_size) + 0.5f));
 			}
 		}
 	}
@@ -316,6 +353,54 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 	}
 
 	return "";	// no error
+}
+
+void editor_free_engine_data()
+{
+	// models, model instances, and collision trees; done before ship_close() because model_unload() walks Ship_info
+	model_free_all();
+
+	// weapon and ship table data, and ship subsystems
+	weapon_close();
+	ship_close();
+
+	// the editors hold strdup'd media names in every message, including the builtin ones
+	for (auto &msg : Messages)
+		message_free_media_names(msg);
+
+	mission_parse_close();
+	mission_brief_common_close();
+	fhash_flush();
+	control_config_common_close();
+	sexp_shutdown();
+	batching_shutdown();
+
+	// the cursors hold bitmaps, so this must happen before the graphics system shuts down
+	io::mouse::CursorManager::shutdown();
+
+	if (Cmdline_mod != nullptr)
+	{
+		delete[] Cmdline_mod;
+		Cmdline_mod = nullptr;
+	}
+}
+
+int load_and_find_campaign_mission(const char *mission_filename)
+{
+	if (!mission_filename || !mission_filename[0])
+		return -1;
+
+	int idx = mission_campaign_find_mission(mission_filename);
+	if (idx < 0)
+		return -1;
+
+	if (Campaign.missions[idx].flags & CMISSION_FLAG_FRED_LOAD_PENDING)
+	{
+		read_mission_goal_list(idx);
+		Campaign.missions[idx].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+	}
+
+	return idx;
 }
 
 void reassign_ship_slot(int from, int to, const FredShipSlotConfig& cfg, bool resort_obj_list)

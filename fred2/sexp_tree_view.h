@@ -89,6 +89,7 @@ public:
 	HTREEITEM	m_h_drag;
 	HTREEITEM	m_h_drop;
 	CImageList	*m_p_image_list;
+	CImageList	m_image_list;	// node icons; a member so that it is freed with the tree however the window is destroyed
 	CEdit *help_box;
 	CEdit *mini_help_box;
 	CPoint m_pt;
@@ -125,7 +126,6 @@ protected:
 	afx_msg void OnBegindrag(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-	afx_msg void OnDestroy();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);

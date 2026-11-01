@@ -26,6 +26,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _dataMenuStyle(viewport->Data_menu_style)
 	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _outlineLod(viewport->view.Outline_lod)
+	, _labelFontScale(viewport->view.Label_font_scale)
 	, _invertOrbitX(viewport->camera.getInvertOrbitX())
 	, _invertOrbitY(viewport->camera.getInvertOrbitY())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
@@ -68,6 +69,7 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Data_menu_style                  = _dataMenuStyle;
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 	_viewport->view.Outline_lod                 = _outlineLod;
+	_viewport->view.Label_font_scale            = _labelFontScale;
 	_viewport->camera.setInvertOrbitX(_invertOrbitX);
 	_viewport->camera.setInvertOrbitY(_invertOrbitY);
 
@@ -179,6 +181,9 @@ void PreferencesDialogModel::setToolbarIconSize(int size) { modify(_toolbarIconS
 
 int  PreferencesDialogModel::getOutlineLod() const { return _outlineLod; }
 void PreferencesDialogModel::setOutlineLod(int value) { modify(_outlineLod, value); }
+
+double PreferencesDialogModel::getLabelFontScale() const { return _labelFontScale; }
+void PreferencesDialogModel::setLabelFontScale(double value) { modify(_labelFontScale, static_cast<float>(value)); }
 
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);
