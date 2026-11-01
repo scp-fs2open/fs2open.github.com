@@ -960,7 +960,7 @@ static void parse_texture_filtering_func()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
+static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter",
                      std::pair<const char*, int>{"Texture Filtering", 1763},
                      std::pair<const char*, int>{"Texture filtering option", 1764})
                      .importance(1)
@@ -975,7 +975,8 @@ static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graph
 int gr_texture_filter_setting()
 {
 	if (Using_in_game_options) {
-		return Texture_filter;
+		// read live: qtFRED sets an override and never loads initial values into the bound copy
+		return TextureFilteringOption->getValue();
 	}
 	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
 }

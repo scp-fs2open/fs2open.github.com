@@ -452,31 +452,40 @@ TEST_F(TextureFilterSetting, ModTableDefaultIsUsed)
 	ASSERT_EQ(gr_texture_filter_setting(), 0);
 }
 
-TEST_F(TextureFilterSetting, SavedChoiceIsUsed)
+TEST_F(TextureFilterSetting, BilinearOverrideBeatsTrilinearDefault)
 {
 	Using_in_game_options = true;
-	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter");
 	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
-	opt->loadInitial();
 	ASSERT_EQ(gr_texture_filter_setting(), 0);
-	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
-	opt->loadInitial();
 }
 
-// an enforced option skips the initial load, so a saved value must not replace the mod's value
-TEST_F(TextureFilterSetting, SavedValueDoesNotReplaceTheTableValueWithoutALoad)
+// qtFRED sets an override and never loads initial values
+TEST_F(TextureFilterSetting, OverrideIsReadWithoutALoad)
 {
 	Using_in_game_options = true;
 	parseDefault("Bilinear");
 	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
-	ASSERT_EQ(gr_texture_filter_setting(), 0);
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
 }
 
 TEST_F(TextureFilterSetting, WithoutInGameOptionsTheLauncherDefaultIsTrilinear)
 {
 	Using_in_game_options = false;
 	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
 	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+// texture filtering only trades quality for speed, so a mod's +Enforce does not outrank the player's choice
+TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->enforceOption("Graphics.TextureFilter");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	const int filter = gr_texture_filter_setting();
+	OptionsManager::instance()->unenforceOption("Graphics.TextureFilter");
+	ASSERT_EQ(filter, 1);
 }
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
