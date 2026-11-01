@@ -35,6 +35,7 @@
 #include <SDL3/SDL.h>
 #include <jni.h>
 #include "options/Option.h"
+#include "utils/finally.h"
 #endif
 
 namespace
@@ -937,86 +938,92 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 */
 
 #ifdef __ANDROID__
-// Helper to get a static method from a java class and clear the exception
-// if the method is not found. This is needed to avoid crashing on the next JNI request.
-static jmethodID android_get_static_method(JNIEnv* e, jclass cls, const char* name, const char* sig)
+static bool android_check_exception(JNIEnv* env, const char* operation)
 {
-	jmethodID m = e->GetStaticMethodID(cls, name, sig);
-	if (e->ExceptionCheck()) {
-		e->ExceptionClear();
-		m = nullptr;
-		mprintf(("OSAPI : Method: %s. Not found on GameActivity! Signature: %s. \n", name, sig));
+	if (!env->ExceptionCheck()) {
+		return false;
 	}
-	return m;
+
+	mprintf(("OSAPI: JNI exception in %s.\n", operation));
+	env->ExceptionDescribe();
+	env->ExceptionClear();
+	return true;
+}
+
+template <typename Callback>
+static void android_with_static_method(const char* name, const char* signature, Callback&& callback)
+{
+	JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+	if (env == nullptr) {
+		mprintf(("OSAPI: Couldn't get JNI environment for %s.\n", name));
+		return;
+	}
+	if (android_check_exception(env, name)) {
+		return;
+	}
+
+	if (env->PushLocalFrame(4) < 0) {
+		android_check_exception(env, "PushLocalFrame");
+		mprintf(("OSAPI: Couldn't create JNI local frame for %s.\n", name));
+		return;
+	}
+	// Release the activity, class, and temporary strings on every exit path.
+	auto local_frame = util::finally([env]() { env->PopLocalFrame(nullptr); });
+
+	jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
+	if (android_check_exception(env, "SDL_GetAndroidActivity") || activity == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity for %s.\n", name));
+		return;
+	}
+
+	jclass activity_class = env->GetObjectClass(activity);
+	if (android_check_exception(env, "GetObjectClass") || activity_class == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity class for %s.\n", name));
+		return;
+	}
+
+	jmethodID method = env->GetStaticMethodID(activity_class, name, signature);
+	if (android_check_exception(env, name) || method == nullptr) {
+		mprintf(("OSAPI: Couldn't find static method %s with signature %s.\n", name, signature));
+		return;
+	}
+
+	callback(env, activity_class, method);
+	android_check_exception(env, name);
 }
 
 void os_android_set_flags_string(const char* json)
 {
-	//Get the JNI Environment pointer and current Activity instance via SDL
-	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-	jobject activity = (jobject)SDL_GetAndroidActivity();
-
-	if (env && activity) {
-		// Locate the Java class (FlagsActivity / GameActivity on KnossosNET)
-		jclass ga = env->GetObjectClass(activity);
-		if (ga) {
-			// void setFlagsJson(String) -> "(Ljava/lang/String;)V"
-			jmethodID methodId = android_get_static_method(env, ga, "setFlagsJson", "(Ljava/lang/String;)V");
-			if (methodId) {
-				jstring jstr = env->NewStringUTF(json ? json : "");
-				env->CallStaticVoidMethod(ga, methodId, jstr);
-				env->DeleteLocalRef(jstr);
+	android_with_static_method("setFlagsJson", "(Ljava/lang/String;)V",
+		[json](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = env->NewStringUTF(json ? json : "");
+			if (android_check_exception(env, "NewStringUTF") || value == nullptr) {
+				return;
 			}
-			else {
-				mprintf(("os_android_set_flags_string: Couldn't get the methodID.\n"));
-			}
-			env->DeleteLocalRef(ga);
-		}
-		else {
-			mprintf(("os_android_set_flags_string: Couldn't get java class.\n"));
-		}
-	}
-	else {
-		mprintf(("os_android_set_flags_string: Couldn't get JNI enviroment or activity.\n"));
-	}
+			env->CallStaticVoidMethod(activity_class, method, value);
+		});
 }
 
 SCP_string os_android_get_working_folder_path()
 {
 	SCP_string wfp{};
-	 
-	//Get the JNI Environment pointer and current Activity instance via SDL
-    JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-    jobject activity = (jobject)SDL_GetAndroidActivity();
-    
-    if (env && activity) {
-    	// Locate the Java class (GameActivity on KnossosNET)
-    	jclass ga = env->GetObjectClass(activity);
-    	if(ga) {
-    		// Get the methodID (activity, methodName, signature);
-    		// "()Ljava/lang/String;" means it takes no paramenters and returns a string 
-    		jmethodID methodId = android_get_static_method (env, ga, "getWorkingFolder", "()Ljava/lang/String;");
-			if (methodId) {
-				jstring jString = (jstring)env->CallStaticObjectMethod(ga, methodId);
-				if (jString) {
-					const char* workingFolder = env->GetStringUTFChars(jString, 0);
-					wfp = SCP_string(workingFolder);
-					env->ReleaseStringUTFChars(jString, workingFolder);
-					env->DeleteLocalRef(jString);
-				} else {
-					mprintf(("os_android_get_working_folder_path: Couldn't get the jString.\n"));
-				}
-			} else {
-				mprintf(("os_android_get_working_folder_path: Couldn't get the methodID.\n"));
+	android_with_static_method("getWorkingFolder", "()Ljava/lang/String;",
+		[&wfp](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = static_cast<jstring>(env->CallStaticObjectMethod(activity_class, method));
+			if (android_check_exception(env, "getWorkingFolder") || value == nullptr) {
+				return;
 			}
-			env->DeleteLocalRef(ga);
-    	} else {
-    		mprintf(("os_android_get_working_folder_path: Couldn't get java class.\n"));
-    	}
-    } else {
-    	mprintf(("os_android_get_working_folder_path: Couldn't get JNI enviroment or activity.\n"));
-    }
-    
+
+			const char* working_folder = env->GetStringUTFChars(value, nullptr);
+			if (android_check_exception(env, "GetStringUTFChars") || working_folder == nullptr) {
+				return;
+			}
+			auto release_chars = util::finally([env, value, working_folder]() {
+				env->ReleaseStringUTFChars(value, working_folder);
+			});
+			wfp = working_folder;
+		});
+
 	if (wfp.empty()) {
 		mprintf(("Couldn't get working folder path from Java class, reverting to SDL default.\n"));
 		// SDL's external storage path already includes the app's files directory.
@@ -1036,52 +1043,18 @@ SCP_string os_android_get_working_folder_path()
 
 void os_android_touch_overlay_toggle(bool status)
 {
-	//Get the JNI Environment pointer and current Activity instance via SDL
-    JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-    jobject activity = (jobject)SDL_GetAndroidActivity();
-    
-    if (env && activity) {
-    	// Locate the Java class (GameActivity on KnossosNET)
-    	jclass ga = env->GetObjectClass(activity);
-    	if(ga) {
-			jmethodID methodId = android_get_static_method (env, ga, status ? "enableOverlay" : "disableOverlay", "()V");
-			if (methodId) {
-				env->CallStaticVoidMethod(ga, methodId); 
-			} else {
-				mprintf(("os_android_touch_overlay_toggle: Couldn't get the methodID.\n"));
-			}
-			env->DeleteLocalRef(ga);
-    	} else {
-    		mprintf(("os_android_touch_overlay_toggle: Couldn't get java class.\n"));
-    	}
-    } else {
-    	mprintf(("os_android_touch_overlay_toggle: Couldn't get JNI enviroment or activity.\n"));
-    }
+	android_with_static_method(status ? "enableOverlay" : "disableOverlay", "()V",
+		[](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method);
+		});
 }
 
 void os_android_touch_overlay_set_opacity(int opacity)
 {
-	// Get the JNI environment pointer and current Activity instance via SDL
-	JNIEnv* env = (JNIEnv*)SDL_GetAndroidJNIEnv();
-	jobject activity = (jobject)SDL_GetAndroidActivity();
-
-	if (env && activity) {
-		// Locate the Java class (GameActivity on KnossosNET)
-		jclass ga = env->GetObjectClass(activity);
-		if (ga) {
-			jmethodID methodId = android_get_static_method(env, ga, "setOverlayOpacity", "(F)V");
-			if (methodId) {
-				env->CallStaticVoidMethod(ga, methodId, static_cast<jfloat>(opacity) / 100.0f);
-			} else {
-				mprintf(("os_android_touch_overlay_set_opacity: Couldn't get the methodID.\n"));
-			}
-			env->DeleteLocalRef(ga);
-		} else {
-			mprintf(("os_android_touch_overlay_set_opacity: Couldn't get java class.\n"));
-		}
-	} else {
-		mprintf(("os_android_touch_overlay_set_opacity: Couldn't get JNI environment or activity.\n"));
-	}
+	android_with_static_method("setOverlayOpacity", "(F)V",
+		[opacity](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method, static_cast<jfloat>(opacity) / 100.0f);
+		});
 }
 
 static bool touch_ui_change(bool new_val, bool initial)
