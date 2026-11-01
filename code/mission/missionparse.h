@@ -38,9 +38,6 @@ struct p_dock_instance;
 enum class ArrivalLocation;
 enum class DepartureLocation;
 
-#define NUM_NEBULAS			3				// how many background nebulas we have altogether
-#define NUM_NEBULA_COLORS	9
-
 #define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
 
 #define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
@@ -605,10 +602,8 @@ extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
 extern p_object	*Player_start_pobject;
 
-extern int Mission_palette;  // index of palette file to use for mission
-extern int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
-extern const char *Nebula_filenames[NUM_NEBULAS];
-extern const char *Nebula_colors[NUM_NEBULA_COLORS];
+extern int Mission_palette;  // index into Generated_nebula_colors of the generated nebula tint color
+extern int Nebula_index;  // index into Generated_nebula_patterns of the generated nebula to use in mission (-1 = none)
 extern p_object *Arriving_support_ship;
 
 extern char Neb2_texture_name[MAX_FILENAME_LEN];

@@ -1079,6 +1079,8 @@ void stars_level_close() {
 		Mission_env_map = -1;
 	}
 
+	nebula_close();
+
 	ENVMAP = Default_env_map;
 }
 
@@ -1928,7 +1930,7 @@ void stars_draw_motion_debris()
 		refresh_motion_debris = false;
 }
 
-void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_subspace, int env, bool in_mission)
+void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspace, int env, bool in_mission)
 {
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
@@ -1964,6 +1966,14 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	else if ( !show_subspace ) // don't render the background pof when rendering subspace
 	{
 		stars_draw_background();
+	}
+
+	// generated (FS1-style) background nebula -- a skybox-level backdrop that sits in front of
+	// the background pof and behind the stars.  Gate it like stars_draw_background() above (render
+	// whenever the background does, including into the env map for reflections) but never under neb2.
+	if (show_nebulas && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && (show_stars || !show_subspace) &&
+		!(The_mission.flags[Mission::Mission_Flags::Fullneb])) {
+		nebula_render();
 	}
 
 	if ( !env && show_stars && (Nmodel_num < 0) && (Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags[Mission::Mission_Flags::Fullneb]) && (supernova_stage() < SUPERNOVA_STAGE::TOOLTIME) ) {

@@ -29,6 +29,7 @@
 int Directive_wait_time;
 bool True_loop_argument_sexps;
 bool Skybox_internal_depth_consistency;
+bool Fs1_nebula_backgrounds;
 bool Fixed_turret_collisions;
 bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
@@ -979,6 +980,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Render_insignias_as_decals);
 			}
 
+			if (optional_string("$FS1 nebula backgrounds:")) {
+				stuff_boolean(&Fs1_nebula_backgrounds);
+			}
+
 			optional_string("#NETWORK SETTINGS");
 
 			if (optional_string("$FS2NetD port:")) {
@@ -1677,6 +1682,9 @@ static void mod_table_log_settings()
 	else
 		mprintf(("Game Settings Table: Skybox submodels will not use internal depth consistency (retail behavior)\n"));
 
+	if (Fs1_nebula_backgrounds)
+		mprintf(("Game Settings Table: FS1 nebula backgrounds will be drawn for missions that name one\n"));
+
 	if (Fixed_turret_collisions)
 		mprintf(("Game Settings Table: Using fixed turret collisions (shooting a turret barrel will always register)\n"));
 	else
@@ -1865,6 +1873,7 @@ void mod_table_reset()
 	Directive_wait_time = 3000;
 	True_loop_argument_sexps = false;
 	Skybox_internal_depth_consistency = false;
+	Fs1_nebula_backgrounds = false;
 	Fixed_turret_collisions = false;
 	Fixed_missile_detonation = false;
 	Damage_impacted_subsystem_first = false;

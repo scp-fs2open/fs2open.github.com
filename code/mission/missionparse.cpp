@@ -105,8 +105,8 @@ int Total_initially_docked;
 mission	The_mission;
 char Mission_filename[80];
 
-int Mission_palette;  // index into Nebula_palette_filenames[] of palette file to use for mission
-int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
+int Mission_palette;  // index into Generated_nebula_colors of the generated nebula tint color
+int Nebula_index;  // index into Generated_nebula_patterns of the generated nebula to use in mission (-1 = none)
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
@@ -221,31 +221,6 @@ static bool mission_has_layer_name(const mission* pm, const SCP_string& layerNam
 }
 
 //XSTR:OFF
-
-const char *Nebula_filenames[NUM_NEBULAS] = {
-	"Nebula01",
-	"Nebula02",
-	"Nebula03"	
-};
-
-const char *Neb2_filenames[NUM_NEBULAS] = {
-	"Nebfull01",
-	"Nebfull02",
-	"Nebfull03"
-};
-
-// Note: Nebula_colors[] and Nebula_palette_filenames are linked via index numbers
-const char *Nebula_colors[NUM_NEBULA_COLORS] = {
-	"Red",
-	"Blue",
-	"Gold",
-	"Purple",
-	"Maroon",
-	"Green",
-	"Grey blue",
-	"Violet",
-	"Grey Green",
-};
 
 const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Chase",
@@ -6337,7 +6312,6 @@ void parse_one_background(background_t *background)
 void parse_bitmaps(mission *pm)
 {
 	char str[MAX_FILENAME_LEN];
-	int z;
 
 	required_string("#Background bitmaps");
 
@@ -6403,37 +6377,25 @@ void parse_bitmaps(mission *pm)
 	} else {
 		if (optional_string("+Nebula:")) {
 			stuff_string(str, F_NAME, MAX_FILENAME_LEN);
-			
-			// parse the proper nebula type (full or not)	
-			for (z=0; z<NUM_NEBULAS; z++){
-				if(pm->flags[Mission::Mission_Flags::Fullneb]){
-					if (!stricmp(str, Neb2_filenames[z])) {
-						Nebula_index = z;
-						break;
-					}
-				} else {
-					if (!stricmp(str, Nebula_filenames[z])) {
-						Nebula_index = z;
-						break;
-					}
-				}
-			}
 
-			if (z == NUM_NEBULAS)
+			// look up the generated nebula pattern in the registry; an unknown name is kept so a
+			// save writes it back unchanged
+			Nebula_index = generated_nebula_pattern_lookup(str);
+			if (Nebula_index < 0) {
 				WarningEx(LOCATION, "Mission %s\nUnknown nebula %s!", pm->name.c_str(), str);
+				Nebula_unknown_pattern = str;
+			}
 
 			if (optional_string("+Color:")) {
 				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
-				for (z=0; z<NUM_NEBULA_COLORS; z++){
-					if (!stricmp(str, Nebula_colors[z])) {
-						Mission_palette = z;
-						break;
-					}
+				int color_idx = generated_nebula_color_lookup(str);
+				if (color_idx < 0) {
+					WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name.c_str(), str);
+					Nebula_unknown_color = str;
+				} else {
+					Mission_palette = color_idx;
 				}
 			}
-
-			if (z == NUM_NEBULA_COLORS)
-				WarningEx(LOCATION, "Mission %s\nUnknown nebula color %s!", pm->name.c_str(), str);
 
 			if (optional_string("+Pitch:")){
 				stuff_int(&Nebula_pitch);
@@ -6451,7 +6413,7 @@ void parse_bitmaps(mission *pm)
 				stuff_int(&Nebula_heading);
 			} else {
 				Nebula_heading = 0;
-			}						
+			}
 		}
 
 		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
@@ -6466,6 +6428,12 @@ void parse_bitmaps(mission *pm)
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if (optional_string("$FS1 Nebula:")) {
+		bool on = false;
+		stuff_boolean(&on);
+		Nebula_mission_switch = on ? 1 : 0;
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions
@@ -7501,7 +7469,10 @@ void mission_init(mission *pm, bool quick_init)
 	Nebula_bank = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Nebula_heading = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
 	Nebula_index = -1;
-	Mission_palette = 1;
+	Mission_palette = std::max(generated_nebula_default_color(), 0);
+	Nebula_mission_switch = -1;
+	Nebula_unknown_pattern.clear();
+	Nebula_unknown_color.clear();
 }
 
 // Main parse routine for parsing a mission.  The default parameter flags tells us which information
