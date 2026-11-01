@@ -153,7 +153,7 @@ char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
 
-static engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
+static int get_engine_wash_index(const char* engine_wash_name);
 static int subsys_set(int objnum, int ignore_subsys_info = 0);
 static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_model_num);
 static void ship_set_hud_cockpit_targets();
@@ -349,7 +349,6 @@ void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_
 }
 
 
-int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
@@ -970,10 +969,12 @@ static void parse_engine_wash(bool replace)
 
 	//Does this engine wash exist already?
 	//If so, load this new info into it
-	//Otherwise, increment Num_engine_wash_types
-	ewp = get_engine_wash_pointer(ewt.name);
-	if(ewp != NULL)
+	//Otherwise, add it
+	int idx = get_engine_wash_index(ewt.name);
+	if (idx >= 0)
 	{
+		ewp = &Engine_wash_info[idx];
+
 		if(replace)
 		{
 			nprintf(("Warning", "More than one version of engine wash %s exists; using newer version.", ewt.name));
@@ -994,7 +995,7 @@ static void parse_engine_wash(bool replace)
 			return;
 		}
 		Engine_wash_info.push_back(ewt);
-		ewp = &Engine_wash_info[Num_engine_wash_types++];
+		ewp = &Engine_wash_info.back();
 	}
 
 
@@ -4133,13 +4134,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (!optional_string("+noreplace")) {
 			// clear flags since we might have a modular table
 			// clear only those which are actually set in the flags
-			bool has_afterburner = sip->flags[Ship::Info_Flags::Afterburner];
-			bool draw_weapon_models = sip->flags[Ship::Info_Flags::Draw_weapon_models];
-			bool has_display_name = sip->flags[Ship::Info_Flags::Has_display_name];
-			sip->flags.reset();
-			sip->flags.set(Ship::Info_Flags::Afterburner, has_afterburner);
-			sip->flags.set(Ship::Info_Flags::Draw_weapon_models, draw_weapon_models);
-			sip->flags.set(Ship::Info_Flags::Has_display_name, has_display_name);
+			// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+			const Ship::Info_Flags preset_si_flag_defs[] = {
+				Ship::Info_Flags::Afterburner,
+				Ship::Info_Flags::Draw_weapon_models,
+				Ship::Info_Flags::Has_display_name,
+				Ship::Info_Flags::Has_awacs,
+				Ship::Info_Flags::Allow_landings
+			};
+
+			flagset<Ship::Info_Flags> cleared_si_flags;
+			cleared_si_flags.set_multiple_from_source(sip->flags, std::begin(preset_si_flag_defs), std::end(preset_si_flag_defs));
+			sip->flags = cleared_si_flags;
 		}
 
 		for (const auto &flag : ship_strings)
@@ -5338,7 +5344,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					sp->secondary_bank_capacity[i] = 0;
 				}
 
-				sp->engine_wash_pointer = NULL;
+				sp->engine_wash_index = -1;
 				
 				sp->alive_snd = gamesnd_id();
 				sp->dead_snd = gamesnd_id();
@@ -5436,9 +5442,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			if (optional_string("$Engine Wash:")) {
 				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				// get and set index
-				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
+				sp->engine_wash_index = get_engine_wash_index(name_tmp);
 
-				if(sp->engine_wash_pointer == NULL)
+				if (sp->engine_wash_index < 0)
 					WarningEx(LOCATION,"Invalid engine wash name %s specified for subsystem %s in %s '%s'", name_tmp, sp->subobj_name, info_type_name, sip->name);
 			}
 
@@ -5608,7 +5614,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
                     sp->flags |= tmp_flags;
                 }
                 else {
-                    sp->flags = tmp_flags;
+					// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+					const Model::Subsystem_Flags preset_subsys_flag_defs[] = {
+						Model::Subsystem_Flags::Turret_barrel_fov_overridden,
+						Model::Subsystem_Flags::Turret_base_fov_overridden,
+						Model::Subsystem_Flags::Turret_max_fov_overridden
+					};
+
+					flagset<Model::Subsystem_Flags> preset_subsys_flags;
+					preset_subsys_flags.set_multiple_from_source(sp->flags, std::begin(preset_subsys_flag_defs), std::end(preset_subsys_flag_defs));
+					sp->flags = tmp_flags | preset_subsys_flags;
                 }
 
                 if (!errors.empty()) {
@@ -5733,18 +5748,16 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 }
 
-static engine_wash_info *get_engine_wash_pointer(char *engine_wash_name)
+static int get_engine_wash_index(const char *engine_wash_name)
 {
-	for(int i = 0; i < Num_engine_wash_types; i++)
+	for (size_t i = 0; i < Engine_wash_info.size(); ++i)
 	{
-		if(!stricmp(engine_wash_name, Engine_wash_info[i].name))
-		{
-			return &Engine_wash_info[i];
-		}
+		if (!stricmp(engine_wash_name, Engine_wash_info[i].name))
+			return sz2i(i);
 	}
 
 	//Didn't find anything.
-	return NULL;
+	return -1;
 }
 
 static void parse_ship_type(const char *filename, const bool replace)
@@ -6208,6 +6221,47 @@ static bool ballistic_possible_for_this_ship(const ship_info *sip)
 }
 
 /**
+ * Ship classes that share a model share the model's subsystem data, which is indexed by subsystem position,
+ * so every class using a model should list the same subsystems in the same order
+ */
+static void ship_check_shared_model_subsystems()
+{
+	SCP_unordered_map<SCP_string, const ship_info*, SCP_string_lcase_hash, SCP_string_lcase_equal_to> first_class_for_model;
+
+	for (const auto &si : Ship_info)
+	{
+		if (!VALID_FNAME(si.pof_file))
+			continue;
+
+		auto result = first_class_for_model.emplace(si.pof_file, &si);
+		if (result.second)
+			continue;
+
+		auto first = result.first->second;
+		if (si.n_subsystems != first->n_subsystems)
+		{
+			Warning(LOCATION, "Ship classes '%s' and '%s' share the model '%s', but '%s' has %d subsystems and '%s' has %d.\n\n"
+				"Ship classes that share a model should list the same subsystems in the same order.  Otherwise, hits and engine effects "
+				"may be applied to the wrong subsystem, and a ship may fail to load if its class has subsystems the other class lacks.",
+				first->name, si.name, si.pof_file, first->name, static_cast<int>(first->n_subsystems), si.name, static_cast<int>(si.n_subsystems));
+			continue;
+		}
+
+		for (int i = 0; i < si.n_subsystems; ++i)
+		{
+			if (subsystem_stricmp(first->subsystems[i].subobj_name, si.subsystems[i].subobj_name) != 0)
+			{
+				Warning(LOCATION, "Ship classes '%s' and '%s' share the model '%s', but subsystem %d is '%s' on '%s' and '%s' on '%s'.\n\n"
+					"Ship classes that share a model should list the same subsystems in the same order.  Otherwise, hits and engine effects "
+					"may be applied to the wrong subsystem.",
+					first->name, si.name, si.pof_file, i + 1, first->subsystems[i].subobj_name, first->name, si.subsystems[i].subobj_name, si.name);
+				break;
+			}
+		}
+	}
+}
+
+/**
  * Clean up ship entries, making sure various flags and settings are correct
  */
 static void ship_parse_post_cleanup()
@@ -6313,6 +6367,8 @@ static void ship_parse_post_cleanup()
 		}
 	}
 
+	ship_check_shared_model_subsystems();
+
 	// check also target groups here
 	size_t n_tgt_groups = Ai_tp_list.size();
 
@@ -6405,7 +6461,7 @@ void ship_init()
 
 		//ships.tbl
 		{			
-			Num_engine_wash_types = 0;
+			Engine_wash_info.clear();
 			strcpy_s(default_player_ship, "");
 
 			//Parse main TBL first
@@ -7659,20 +7715,19 @@ static void ship_copy_subsystem_fixup(ship_info *sip)
 	for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
 		model_subsystem *source_msp, *dest_msp;
 
-		if ( (it->model_num != model_num) || (&(*it) == sip) ){
+		// a class with no subsystems can neither provide nor receive any subsystem data
+		if ( (it->model_num != model_num) || (&(*it) == sip) || (it->n_subsystems == 0) ){
 			continue;
 		}
 
 		// see if this ship has subsystems and a model for the subsystems.  We only need check the first
 		// subsystem since previous error checking would have trapped its loading as an error.
-		Assert( it->n_subsystems == sip->n_subsystems );
-
 		source_msp = &(it->subsystems[0]);
 		dest_msp = &(sip->subsystems[0]);
 		if (source_msp->model_num != -1) {
-			model_copy_subsystems( sip->n_subsystems, dest_msp, source_msp );
+			model_copy_subsystems( sip->n_subsystems, dest_msp, it->n_subsystems, source_msp );
 		} else if (dest_msp->model_num != -1) {
-			model_copy_subsystems( sip->n_subsystems, source_msp, dest_msp );
+			model_copy_subsystems( it->n_subsystems, source_msp, sip->n_subsystems, dest_msp );
 		} else {
 			// if none were found try finding a another ship to copy the data from
 			continue;
@@ -22286,6 +22341,10 @@ ship_subsys* ship_get_subsys_for_submodel(ship* shipp, int submodel)
 
 	// no associated subsystem
 	if (pm->submodel[submodel].subsys_num == -1)
+		return nullptr;
+
+	// a class whose subsystems differ from those of the class that loaded the model may not have this subsystem
+	if (pm->submodel[submodel].subsys_num >= Ship_info[shipp->ship_info_index].n_subsystems)
 		return nullptr;
 
 	return ship_get_indexed_subsys(shipp, pm->submodel[submodel].subsys_num);

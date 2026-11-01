@@ -91,6 +91,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Ship"
+    ship/test_shared_model.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h

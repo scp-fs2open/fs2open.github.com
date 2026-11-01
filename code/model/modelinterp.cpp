@@ -2541,7 +2541,9 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		ship *shipp = &Ships[obj->instance];
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-		Assert( bank_obj < sip->n_subsystems );
+		// a class whose subsystems differ from those of the class that loaded the model may not have this subsystem
+		if (bank_obj >= sip->n_subsystems)
+			return 1;
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
