@@ -173,7 +173,9 @@ bool mouse_motion_handler(const SDL_Event& evt)
 
 	input_context->ProcessMouseMove((int)evt_pos.x, (int)evt_pos.y, get_modifier_state());
 
-	return true;
+	// Don't consume motion: the engine's own handler still has to track the cursor position, which
+	// mouse_get_pos() and thereby e.g. the cursor drawn into the VR headset image depend on.
+	return false;
 }
 
 bool mouse_button_handler(const SDL_Event& evt)

@@ -125,6 +125,9 @@ public:
 	bool rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name);
 
 private:
+	// Update model flags and synchronize the widget's inline editability.
+	void set_node_flags(int node_index, int flags);
+
 	// Delete all UI children of a node and free their model data.
 	// Resets the model's child link to -1.
 	void clear_node_children(int node_index);

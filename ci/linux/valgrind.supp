@@ -120,6 +120,9 @@
    fun:_Z7os_initPKcS0_S0_
    fun:_ZN4test13FSTestFixture5SetUpEv
 }
+# Kept only as a backstop for running memcheck by hand. run_tests.sh pins SDL_VIDEODRIVER=dummy, so
+# the X11 backend is never created there; this block also cannot match the prebuilt libSDL3 anymore,
+# since that library is now stripped and X11_CreateDevice is a static symbol.
 {
    SDL3 X11 video backend internal allocations, not freed by SDL_VideoQuit
    Memcheck:Leak

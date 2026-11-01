@@ -556,22 +556,21 @@ struct v4 {
 };
 static v4 String_render_buff[MAX_VERTS_PER_DRAW];
 
-namespace font {
-extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int* width, int* spacing);
-}
-
 static void gr_string_old(float sx,
 	float sy,
 	const char* s,
 	const char* end,
-	font::font* fontData,
-	float height,
-	bool canAutoScale,
-	bool canScale,
+	const font::font* fontData,
+	const font::FSFont* fontMetrics,
 	int resize_mode,
 	float scaleMultiplier)
 {
 	GR_DEBUG_SCOPE("Render VFNT string");
+
+	const float height = fontMetrics->getHeight();
+	const bool canAutoScale = fontMetrics->getAutoScaleBehavior();
+	const bool canScale = fontMetrics->getScaleBehavior();
+	const float tabWidth = fontMetrics->getTabWidth();
 
 	float x = sx;
 	float y = sy;
@@ -638,6 +637,13 @@ static void gr_string_old(float sx,
 
 		if (*s == 0) {
 			break;
+		}
+
+		// Handle tabs
+		if (*s == '\t') {
+			s++;
+			x += tabWidth * scale_factor;
+			continue;
 		}
 
 		// Get character width and spacing
@@ -822,7 +828,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
 		fo::font* fontData = fnt->getFontData();
 
-		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), currentFont->getAutoScaleBehavior(), currentFont->getScaleBehavior(), resize_mode, scaleMultiplier);
+		gr_string_old(sx, sy, s, s + length, fontData, currentFont, resize_mode, scaleMultiplier);
 	} else if (currentFont->getType() == NVG_FONT) {
 		GR_DEBUG_SCOPE("Render TTF string");
 
@@ -878,13 +884,13 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 						case '\n':
 							doRender = false;
 
-							y += nvgFont->getHeight();
+							y += nvgFont->getHeight() * scale_factor;
 							x = 0;
 							break;
 						case '\t':
 							doRender = false;
 
-							x += nvgFont->getTabWidth();
+							x += nvgFont->getTabWidth() * scale_factor;
 							break;
 						case '\r':
 							// Ignore Carriage return chars
@@ -919,9 +925,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 									  text,
 									  text + 1,
 									  nvgFont->getSpecialCharacterFont(),
-									  nvgFont->getHeight(),
-							          nvgFont->getAutoScaleBehavior(),
-									  nvgFont->getScaleBehavior(),
+									  nvgFont,
 									  resize_mode,
 									  scaleMultiplier);
 					}

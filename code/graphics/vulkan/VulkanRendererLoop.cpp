@@ -139,6 +139,7 @@ void VulkanRenderer::setupFrame()
 
 	// Reset per-frame flags
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Reset per-frame draw statistics
 	Assertion(m_drawManager, "Vulkan DrawManager not initialized in setupFrame!");
@@ -152,7 +153,7 @@ void VulkanRenderer::setupFrame()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
@@ -173,7 +174,9 @@ void VulkanRenderer::flip()
 	// End the composition render pass (composition image is now in
 	// eShaderReadOnlyOptimal) and run the final output-encode pass that writes
 	// the actual swap chain image (SDR passthrough or HDR10 PQ/BT.2020).
-	m_currentCommandBuffer.endRenderPass();
+	// Tolerates the pass having already been ended: the OpenXR flip has to end
+	// it itself to record its swapchain blit before handing off to us.
+	endCurrentRenderPass();
 
 #ifdef __APPLE__
 	// MoltenVK: the encode render pass's VK_SUBPASS_EXTERNAL dependency (see
@@ -345,7 +348,7 @@ void VulkanRenderer::endSceneRendering()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -355,9 +358,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_swapChainExtent.height),
-		static_cast<float>(m_swapChainExtent.width),
-		-static_cast<float>(m_swapChainExtent.height));
+		static_cast<float>(m_renderExtent.height),
+		static_cast<float>(m_renderExtent.width),
+		-static_cast<float>(m_renderExtent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -431,9 +434,18 @@ void VulkanRenderer::copySceneDepthForParticles()
 	// Copy scene depth → samplable depth copy (handles all depth image transitions)
 	m_postProcessor->copySceneDepth(m_currentCommandBuffer);
 
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthCopiedThisFrame = true;
+}
+
+// Shared tail of every mid-scene copy that touches only depth: put the color
+// attachments back the way the resumed loadOp=eLoad pass expects them, then resume.
+void VulkanRenderer::resumeScenePassAfterDepthCopy()
+{
 	// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	// (needed for the resumed render pass with loadOp=eLoad, which expects
-	// initialLayout=eColorAttachmentOptimal; copySceneDepth only touches depth)
+	// initialLayout=eColorAttachmentOptimal; a depth copy only touches depth)
 	{
 		ImageBarrier2 barrier;
 		barrier.image = m_postProcessor->getSceneColorImage();
@@ -460,8 +472,59 @@ void VulkanRenderer::copySceneDepthForParticles()
 
 	// Resume the scene render pass with loadOp=eLoad
 	resumeScenePassAfterCopy();
+}
 
-	m_sceneDepthCopiedThisFrame = true;
+// Head of every mid-scene depth copy: end the scene (or G-buffer) pass, which leaves the color
+// attachments in eShaderReadOnlyOptimal and depth in eDepthStencilAttachmentOptimal.
+// resumeScenePassAfterCopy() knows the scene pass and the non-MSAA G-buffer pass only. The
+// player-ship callers run between one deferred pass and the next, so the multisampled G-buffer
+// pass is never live -- resuming the wrong pass would desync the state tracker.
+void VulkanRenderer::endScenePassForDepthCopy()
+{
+	Assertion(m_stateTracker->getCurrentSampleCount() == vk::SampleCountFlagBits::e1,
+		"Tried to copy the scene depth while a multisampled render pass was active!");
+	m_currentCommandBuffer.endRenderPass();
+}
+
+// The cockpit model is rendered around the camera, inside the ship hull that the scene
+// pass already drew, so it needs a depth buffer that does not know about that hull --
+// otherwise the hull wins the depth test and shows through the cockpit. OpenGL swaps
+// the depth attachment to Cockpit_depth_texture for the duration; Vulkan bakes the
+// attachment into the framebuffer, so the scene depth is copied aside and cleared
+// instead. Only the scene depth image is parked: with MSAA the cockpit renders against
+// the multisampled depth, which the G-buffer pass clears on its own, and
+// gr_deferred_lighting_msaa() resolves back into the scene depth before restore runs.
+void VulkanRenderer::saveSceneDepth()
+{
+	if (m_sceneDepthSaved || !m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	endScenePassForDepthCopy();
+	m_postProcessor->saveSceneDepth(m_currentCommandBuffer);
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthSaved = true;
+}
+
+void VulkanRenderer::restoreSceneDepth()
+{
+	if (!m_sceneDepthSaved) {
+		return;
+	}
+
+	// Cleared first: a scene that ends between the save and the restore (a failed
+	// resize dropping the post-processor, say) must not leave the flag set for the
+	// next frame's restore to act on stale content.
+	m_sceneDepthSaved = false;
+
+	if (!m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	endScenePassForDepthCopy();
+	m_postProcessor->restoreSceneDepth(m_currentCommandBuffer);
+	resumeScenePassAfterDepthCopy();
 }
 
 void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)
@@ -539,9 +602,33 @@ void VulkanRenderer::resumeSwapChainPass()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_renderExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::restartCompositionPass()
+{
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+	PassBeginDesc pass;
+	pass.renderPass = m_renderPass.get();
+	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
+	pass.extent = m_renderExtent;
+	pass.clearValues = clearValues;
+	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::endCurrentRenderPass()
+{
+	if (!m_stateTracker->getCurrentRenderPass()) {
+		return;
+	}
+
+	m_currentCommandBuffer.endRenderPass();
+	m_stateTracker->setRenderPass(vk::RenderPass());
 }
 
 void VulkanRenderer::resumeRenderTargetPass(tcache_slot_vulkan* ts)

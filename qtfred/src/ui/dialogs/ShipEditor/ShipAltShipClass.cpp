@@ -186,7 +186,7 @@ void ShipAltShipClass::on_defaultCheckbox_toggled(bool toggled)
 
 void ShipAltShipClass::initUI()
 {
-	_altPool = new QStandardItemModel();
+	_altPool = new QStandardItemModel(this);
 	for (auto& alt_class : _model->getPool()) {
 		auto item = generateItem(alt_class.ship_class, alt_class.variable_index, alt_class.default_to_this_class);
 		if (item != nullptr) {
@@ -200,7 +200,7 @@ void ShipAltShipClass::initUI()
 		this,
 		&ShipAltShipClass::classListChanged);
 
-	auto ship_pool = new QStandardItemModel();
+	auto ship_pool = new QStandardItemModel(this);
 	for (auto& shipClass : _model->getClasses()) {
 		QString classname = shipClass.first.c_str();
 		auto item = new QStandardItem(classname);
@@ -210,7 +210,7 @@ void ShipAltShipClass::initUI()
 	auto shipproxyModel = new InverseSortFilterProxyModel(this);
 	shipproxyModel->setSourceModel(ship_pool);
 	ui->shipCombo->setModel(shipproxyModel);
-	auto variable_pool = new QStandardItemModel();
+	auto variable_pool = new QStandardItemModel(this);
 	for (auto& variable : _model->getVariables()) {
 		QString classname = variable.first.c_str();
 		auto item = new QStandardItem(classname);
@@ -329,7 +329,7 @@ QString ShipAltShipClass::generateName(int classid, int variable)
 		classname = Sexp_variables[variable].variable_name;
 		classname = classname + '[' + Sexp_variables[variable].text + ']';
 	} else {
-		if (classid >= 0 && classid < MAX_SHIP_CLASSES) {
+		if (classid >= 0 && classid < ship_info_size()) {
 			classname = Ship_info[classid].name;
 		} else {
 			classname = "Invalid Ship Class";

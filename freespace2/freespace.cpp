@@ -257,6 +257,7 @@ struct big_expl_flash {
 #define FRAME_FILTER 16
 
 #define DEFAULT_SKILL_LEVEL	1
+static int Default_skill_level = DEFAULT_SKILL_LEVEL; // can be overridden by default_settings.tbl
 int	Game_skill_level = DEFAULT_SKILL_LEVEL;
 
 static SCP_string skill_level_display(int value)
@@ -272,6 +273,7 @@ static void parse_skill_func()
 	value -= 1; // Parse 1-5 for the skill levels but convert to our internal 0-4
 	CLAMP(value, 0, 4);
 
+	Default_skill_level = value;
 	Game_skill_level = value;
 }
 
@@ -282,7 +284,7 @@ static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLe
                      .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
-                     .default_func([]() { return DEFAULT_SKILL_LEVEL; })
+                     .default_func([]() { return Default_skill_level; })
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
@@ -620,7 +622,7 @@ const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 
 int game_get_default_skill_level()
 {
-	return DEFAULT_SKILL_LEVEL;
+	return Default_skill_level;
 }
 
 // Resets the flash
@@ -987,6 +989,7 @@ void game_level_close()
 		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
+		common_select_level_close();	// usually already done on the state change, but not under a scripted UI
 		model_instance_free_all();
 		batch_render_close();
 
@@ -1019,9 +1022,6 @@ void game_level_close()
 			// of letting it use a bunch of memory
 			extern void model_deallocate_interp_data();
 			model_deallocate_interp_data();
-
-			extern void model_collide_free_point_list();
-			model_collide_free_point_list();
 		}
 	}
 	else
@@ -1209,6 +1209,8 @@ void game_do_networking()
 
 int Game_loading_callback_inited = 0;
 int Game_loading_background = -1;
+int Game_loading_default_bground_w = 0;
+int Game_loading_default_bground_h = 0;
 generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -1251,14 +1253,36 @@ void game_loading_callback(int count)
 		framenum = new_framenum;
 
 	if ( Game_loading_ani.num_frames > 0 )	{
+		int ani_x = Game_loading_ani_coords[gr_screen.res][0];
+		int ani_y = Game_loading_ani_coords[gr_screen.res][1];
+		float ani_scale = 1.0f;
+
 		GR_MAYBE_CLEAR_RES(Game_loading_background);
 		if ( Game_loading_background > -1 )	{
+			int bg_w, bg_h;
+			bm_get_info(Game_loading_background, &bg_w, &bg_h);
+
+			// the animation is assumed to match the default background, or the default layout if there is none
+			bool have_default = (Game_loading_default_bground_w > 0) && (Game_loading_default_bground_h > 0);
+			float ref_w = i2fl(have_default ? Game_loading_default_bground_w : gr_screen.max_w_unscaled);
+			float ref_h = i2fl(have_default ? Game_loading_default_bground_h : gr_screen.max_h_unscaled);
+
+			// fit the reference into the background the way menus are fit into the screen:
+			// scaled by the limiting dimension and centered in the other
+			ani_scale = MIN(i2fl(bg_w) / ref_w, i2fl(bg_h) / ref_h);
+			ani_x = fl2i(i2fl(ani_x) * ref_w / i2fl(gr_screen.max_w_unscaled) * ani_scale + (i2fl(bg_w) - ref_w * ani_scale) / 2.0f);
+			ani_y = fl2i(i2fl(ani_y) * ref_h / i2fl(gr_screen.max_h_unscaled) * ani_scale + (i2fl(bg_h) - ref_h * ani_scale) / 2.0f);
+
+			// set the screen scale to the background's dimensions
+			gr_set_screen_scale(bg_w, bg_h);
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
-		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1], GR_RESIZE_MENU);
+		gr_bitmap(ani_x, ani_y, GR_RESIZE_MENU, false, ani_scale);
+
+		gr_reset_screen_scale();
 
 		do_flip = 1;
 	}
@@ -1304,9 +1328,17 @@ void game_loading_callback_init()
 	Assert( Game_loading_callback_inited==0 );
 
 	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
-	
+
 	if (Game_loading_background < 0)
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+
+	Game_loading_default_bground_w = 0;
+	Game_loading_default_bground_h = 0;
+	int default_bground = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	if (default_bground >= 0) {
+		bm_get_info(default_bground, &Game_loading_default_bground_w, &Game_loading_default_bground_h);
+		bm_release(default_bground);
+	}
 
 	generic_anim_init(&Game_loading_ani, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_load(&Game_loading_ani);
@@ -2383,15 +2415,15 @@ void game_show_framerate()
 		MEMORYSTATUSEX mem_stats;
 		mem_stats.dwLength = sizeof(mem_stats);
 		if (GlobalMemoryStatusEx(&mem_stats)) {
-			sprintf(mem_buffer, "Physical Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
+			sprintf(mem_buffer, "Physical Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPhys / 1024 / 1024, mem_stats.ullTotalPhys / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Pagefile Free: %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
+			sprintf(mem_buffer, "Pagefile Free: " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailPageFile / 1024 / 1024, mem_stats.ullTotalPageFile / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 			sy += line_height;
 
-			sprintf(mem_buffer, "Virtual Free:  %" PRIu64 " / %" PRIu64 " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
+			sprintf(mem_buffer, "Virtual Free:  " UINT64_T_ARG " / " UINT64_T_ARG " Meg", mem_stats.ullAvailVirtual / 1024 / 1024, mem_stats.ullTotalVirtual / 1024 / 1024);
 			gr_string(sx, sy, mem_buffer.c_str(), GR_RESIZE_NONE);
 		}
 	}
@@ -5260,8 +5292,8 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act accordingly
-			if( player_select_get_last_pilot() ) {	
+			// see if the command line has been set to select a pilot automatically, and act accordingly
+			if( player_select_try_auto_select() ) {
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
@@ -5887,6 +5919,13 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
+	// consume the flag before any script override, so that it can't remain set for a later main hall entry
+	bool pilot_just_committed = false;
+	if (new_state == GS_STATE_MAIN_MENU) {
+		pilot_just_committed = Player_select_pilot_just_committed;
+		Player_select_pilot_just_committed = false;
+	}
+
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
 			scripting::hooks::OnStateStart->run(std::move(script_param_list));
@@ -5915,8 +5954,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
-			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
+			// if we have just selected a pilot, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(pilot_just_committed);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
@@ -7021,7 +7060,7 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !skip_intro && !player_select_auto_select_requested()) {
 		movie::play("intro.mve");
 	}
 
@@ -8168,6 +8207,12 @@ int main(int argc, char *argv[])
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
+#ifndef __MINGW32__
+	// Report leaks when the CRT shuts down, i.e. after static destructors have run.  Calling
+	// _CrtDumpMemoryLeaks() at the end of main() would report every global container as a leak.
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
 	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), nullptr);
 	if (hwnd)	{
@@ -8247,10 +8292,6 @@ int main(int argc, char *argv[])
 	SCP_mspdbcs_Cleanup();
 
 	::CoUninitialize();
-
-#ifndef __MINGW32__
-	_CrtDumpMemoryLeaks();
-#endif
 #endif
 
 	return result;

@@ -28,6 +28,7 @@ namespace api {
 
 //**********HANDLE: default primary
 ADE_OBJ(l_Default_Primary, int, "default_primary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Primary, ship_info_size());
 
 ADE_INDEXER(l_Default_Primary,
 	"number idx",
@@ -70,6 +71,7 @@ ADE_FUNC(__len,
 
 //**********HANDLE: default secondary
 ADE_OBJ(l_Default_Secondary, int, "default_secondary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Secondary, ship_info_size());
 
 ADE_INDEXER(l_Default_Secondary,
 	"number idx",
@@ -112,6 +114,7 @@ ADE_FUNC(__len,
 	
 //**********HANDLE: Shipclass
 ADE_OBJ(l_Shipclass, int, "shipclass", "Ship class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Shipclass, ship_info_size());
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
@@ -1115,18 +1118,6 @@ ADE_FUNC(hasCustomStrings,
 
 	bool result = !sip->custom_strings.empty();
 	return ade_set_args(L, "b", result);
-}
-
-ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is available in the techroom", "boolean", "Whether ship has been revealed in the techroom, false if handle is invalid")

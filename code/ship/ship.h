@@ -93,6 +93,18 @@ struct reinforcements {
 	reinforcements(const char *reinforcement_name = nullptr);
 };
 
+// Per-bank state for a weapon's external model - the model rendered at the bank's firing
+// points when the ship enables $Show Primary Models: / $Show Secondary Models:.
+struct external_weapon_state
+{
+	int model_instance = -1;		// model instance used to spin Gun_rotation submodels, or -1 if the weapon doesn't need one
+	int model_instance_weapon = -1;	// the weapon the model instance state was created for, or -1 if not yet checked
+	int fp_counter = 0;				// cycles through the model's firing points, for "chain external model fps" weapons
+	float rotate_rate = 0.0f;		// current spin rate of the model's Gun_rotation submodels (primaries only)
+	float rotate_ang = 0.0f;		// current spin angle of the model's Gun_rotation submodels (primaries only)
+	bool spin_up_requested = false;	// set each frame the bank tries to fire; consumed by update_external_weapon_spin()
+};
+
 class ship_weapon {
 public:
 	int num_primary_banks;					// Number of primary banks (same as model)
@@ -102,8 +114,8 @@ public:
 	int primary_bank_weapons[MAX_SHIP_PRIMARY_BANKS];			// Weapon_info[] index for the weapon in the bank
 	int secondary_bank_weapons[MAX_SHIP_SECONDARY_BANKS];		// Weapon_info[] index for the weapon in the bank
 
-	int primary_bank_external_model_instance[MAX_SHIP_PRIMARY_BANKS];
-	int primary_bank_model_instance_weapon[MAX_SHIP_PRIMARY_BANKS];	// the weapon the model instance was created for, or -1 if not yet checked
+	external_weapon_state primary_bank_external_weapon[MAX_SHIP_PRIMARY_BANKS];
+	external_weapon_state secondary_bank_external_weapon[MAX_SHIP_SECONDARY_BANKS];
 
 	int current_primary_bank;			// currently selected primary bank
 	int current_secondary_bank;		// currently selected secondary bank
@@ -162,7 +174,6 @@ public:
 
 	int	burst_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
-	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
 	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
 	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
@@ -255,6 +266,13 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
+// Caps how far the guarder will stray from the guarded ship while guarding it; range <= 0 removes the cap
+void set_guard_range_ship(float range, int guarded_shipnum, ship* guarder_shipp);
+// Returns the guarder's cap for the guarded ship, or -1 if there is none
+float get_guard_range_ship(int guarded_shipnum, const ship* guarder_shipp);
+// Removes the caps that all ships have for the guarded ship
+void clear_guard_ranges_for_ship(int guarded_shipnum);
+
 //**************************************************************
 //WMC - Damage type handling code
 
@@ -294,7 +312,6 @@ typedef struct cockpit_display {
 
 extern bool Disable_cockpits;
 extern bool Disable_cockpit_sway;
-extern bool Cockpit_active;
 
 extern SCP_vector<cockpit_display> Player_displays;
 
@@ -337,6 +354,12 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
+
+struct guard_range_entry {
+	float range;
+	int shipnum;
+	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
+};
 
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
@@ -682,7 +705,8 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
-	float max_guard_radius;      // Optional clamp for guard engagement/resume ranges; <= 0 means unused
+	SCP_vector<guard_range_entry> max_guard_ranges;	// per-guarded-ship caps on this ship's guard engagement/resume range
+	float max_guard_radius;	// cap for every ship guarding this one, used when the guarder has no cap of its own; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
@@ -863,8 +887,6 @@ public:
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
 	reload_pct<float> secondary_point_reload_pct;	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
-	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
-	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
 
 	SCP_vector<std::tuple<TIMESTAMP, int, float>> rcs_activity;	//Timestamp of when thrusters started
 																//Sound index for thrusters
@@ -1040,6 +1062,7 @@ struct ship_registry_entry
 	ship* shipp_or_null() const;
 
 	ship_info* sip() const;
+	int ship_class_index() const;
 };
 
 extern SCP_vector<ship_registry_entry> Ship_registry;
@@ -1054,6 +1077,7 @@ extern const ship_registry_entry *ship_registry_get(const char *name);
 extern const ship_registry_entry *ship_registry_get(const SCP_string &name);
 extern const ship_registry_entry *ship_registry_get(int index);
 extern const ship_registry_entry *ship_registry_get(anchor_t anchor);
+extern void ship_registry_rename(int entry_index, const char *new_name, bool erase_old_key);
 
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
@@ -1308,6 +1332,7 @@ public:
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
+	bool disable_main_fireball;
 	float skip_deathroll_chance;					
 
 	particle::ParticleEffectHandle		impact_spew;
@@ -1763,9 +1788,9 @@ extern SCP_vector<wing_formation> Wing_formations;
 
 // Use the below macros when you want to find the index of an array element in the
 // Wings[] or Ships[] arrays.
-#define WING_INDEX(wingp) (static_cast<int>(wingp-Wings))
-#define SHIP_INDEX(shipp) (static_cast<int>(shipp-Ships))
-#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>(ship_entry-Ship_registry.data()))
+#define WING_INDEX(wingp) (static_cast<int>((wingp)-Wings))
+#define SHIP_INDEX(shipp) (static_cast<int>((shipp)-Ships))
+#define SHIP_REGISTRY_INDEX(ship_entry) (static_cast<int>((ship_entry)-Ship_registry.data()))
 
 
 extern void ship_init();				// called once	at game start
@@ -1778,8 +1803,21 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
+// whether this ship class shows a cockpit at all: it has a cockpit model and the player hasn't turned cockpits off
+extern bool ship_cockpit_enabled(const ship_info* sip);
+// whether the cockpit model is rendered for this ship class when it is the viewer
+extern bool ship_render_player_cockpit(const ship_info* sip);
+// whether the viewer's cockpit is being rendered this frame
+extern bool ship_render_player_cockpit_active();
 extern bool ship_render_player_ship_casts_shadow_on_cockpit();
 extern bool ship_render_player_has_closeup_visuals();
+// The cockpit model's render offset: sip->cockpit_offset rotated into world orientation,
+// plus acceleration-driven sway (unless Disable_cockpit_sway). This is the camera-relative
+// offset used to draw the cockpit model, NOT combined with objp->pos -- callers that need
+// a world-space position must add objp->pos themselves. Shared by every path that draws or
+// otherwise anchors the cockpit model: ship_render_player_ship(), render_viewer_shadow()
+// (shadows.cpp), and gatherCockpitShadowCasterInstance() (VulkanRaytracingTlas.cpp).
+extern vec3d ship_cockpit_render_offset(const ship_info* sip, const object* objp);
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
@@ -1815,9 +1853,9 @@ extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
 extern int ship_fire_primary(object * objp, int force = 0, bool rollback_shot = false);
-extern vec3d ship_get_external_model_fp_offset(ship_weapon *swp, const weapon_info *wip, const polymodel *weapon_model, int fp_counter_index, bool advance_counter, int sub_shot = 0);
+extern vec3d ship_get_external_model_fp_offset(external_weapon_state *ext, const weapon_info *wip, const polymodel *weapon_model, const w_bank *ship_bank, int slot, bool advance_counter, int sub_shot = 0);
 extern void ship_get_weapon_model_slot_transform(const w_bank *bank, int slot, float reload_slide_back, vec3d *outpnt, matrix *outorient);
-extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank);
+extern int ship_get_external_weapon_model_instance(ship_weapon *swp, int bank, int display_model_num);
 extern int ship_fire_secondary(object * objp, int allow_swarm = 0, bool rollback_shot = false );
 extern bool ship_secondary_bank_can_dual_fire(const ship *shipp, int bank);
 bool ship_start_secondary_fire(object* objp);
@@ -1835,6 +1873,9 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
+
+// switch a subsystem's looping sounds between its alive and dead sets, according to its hitpoints
+extern void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
@@ -1870,6 +1911,8 @@ extern void wing_bash_ship_name(SCP_string &ship_name, const char *wing_name, in
 extern void wing_bash_ship_name(char *ship_name, const char *wing_name, int ordinal);
 extern void wing_bash_ship_name(p_object *p_objp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
 extern void wing_bash_ship_name(ship *shipp, const wing *wingp, int ordinal, bool reset_display_name_if_normal = false);
+extern bool wing_bash_legacy_hashed_ship_name(SCP_string &dest, const char *src);
+
 extern int Player_ship_class;
 
 //	Do the special effect for energy dissipating into the shield for a hit.

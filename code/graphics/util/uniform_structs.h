@@ -147,7 +147,39 @@ struct shadow_cascade_static_data {
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
 	matrix4 shadow_mv_matrix;
+
+	// Position of the view-space origin (the camera) in TLAS-relative space. The RT shadow
+	// ray origin is mat3(inverse(view)) * viewPos + shadow_ray_view_origin.
+	//
+	// The TLAS is not built in true world space: every instance is translated by
+	// -Shadow_rt_tlas_origin (shadows.h) so all coordinates near the viewer stay small.
+	// Float32 has ~1 mm steps at 10 km and ~8 mm at 100 km, which made cockpit-scale
+	// shadows shimmer far from the mission origin. The CPU computes this value from
+	// exact float differences instead of letting the shader add two large numbers. It is
+	// the camera position minus Shadow_rt_tlas_origin for ordinary passes; the cockpit
+	// pass renders in a different frame (view anchored at leaning_position, models offset
+	// in that same un-translated frame, never combined with objp->pos), so there it also
+	// includes the viewer ship's position -- see shadow_cascade_params_bind() (shadows.cpp)
+	// and its callers for where this is set.
+	//
+	// Declared before shadow_ray_cull_mask so the trailing int packs into this vec3's
+	// std140 alignment padding instead of needing a manual pad field (std140 gives a vec3
+	// 16-byte alignment but only 12-byte size, so a following scalar fills the gap for free).
+	vec3d shadow_ray_view_origin;
+
+	// Ray cull mask for raytraced shadow queries (traceShadowRay()/shadows.sdr). Excludes
+	// the viewer ship's own hull TLAS instance (TLAS_MASK_VIEWER_HULL, shadows.h) outside
+	// the cockpit pass, matching the rasterized path's exclusion of Viewer_obj from the
+	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
+	int shadow_ray_cull_mask;
 };
+// Must match the GLSL shadowCascadeParams block's implicit std140 padding
+// exactly (16 [4 leading scalars] + 64 [matrix4] + 12 [shadow_ray_view_origin]
+// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 96) --
+// shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
+// this struct via sizeof(), so a mismatch here silently shifts every cascade
+// matrix in the buffer, in both backends.
+static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

@@ -911,7 +911,24 @@ void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode
 	}
 }
 
-void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data)
+// find a dockpoint on the given ship that is compatible with the specified dock-type flags (c.f. ai_goal_fixup_dockpoints)
+static int ai_goal_find_compatible_dockpoint(int shipnum, int type_flags)
+{
+	for (int i = 0; i < Num_dock_type_names; i++)
+	{
+		if (type_flags & Dock_type_names[i].def)
+		{
+			int dock_index = ai_goal_find_dockpoint(shipnum, Dock_type_names[i].def);
+			if (dock_index >= 0)
+				return dock_index;
+		}
+	}
+
+	// no compatible type-specific point found; fall back to a generic one
+	return ai_goal_find_dockpoint(shipnum, DOCK_TYPE_GENERIC);
+}
+
+void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data, int docker_index, int dockee_index)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -927,7 +944,27 @@ void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, co
 	}
 
 	if ( (mode == AI_GOAL_REARM_REPAIR) || (mode == AI_GOAL_DOCK) ) {
-		ai_goal_fixup_dockpoints( aip, aigp );
+		// if the caller specified one or both dockpoints, honor them and choose the other side to match
+		if ( mode == AI_GOAL_DOCK && (docker_index >= 0 || dockee_index >= 0) ) {
+			int dockee_shipnum = ship_name_lookup(shipname);
+			Assertion(dockee_shipnum >= 0, "Couldn't find dock target '%s'; get a coder!", shipname);
+
+			// if only one point was given, choose the other to match its dock type
+			if ( docker_index < 0 ) {
+				polymodel *dockee_pm = model_get(Ship_info[Ships[dockee_shipnum].ship_info_index].model_num);
+				docker_index = ai_goal_find_compatible_dockpoint(aip->shipnum, dockee_pm->docking_bays[dockee_index].type_flags);
+			} else if ( dockee_index < 0 ) {
+				polymodel *docker_pm = model_get(Ship_info[Ships[aip->shipnum].ship_info_index].model_num);
+				dockee_index = ai_goal_find_compatible_dockpoint(dockee_shipnum, docker_pm->docking_bays[docker_index].type_flags);
+			}
+
+			aigp->docker.index = docker_index;
+			aigp->dockee.index = dockee_index;
+			aigp->flags.set(AI::Goal_Flags::Docker_index_valid);
+			aigp->flags.set(AI::Goal_Flags::Dockee_index_valid);
+		} else {
+			ai_goal_fixup_dockpoints( aip, aigp );
+		}
 	}
 }
 
@@ -1766,6 +1803,20 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 	auto target_ship_entry = aigp->target_name == nullptr ? nullptr : ship_registry_get(aigp->target_name);
 
+	// a ship can't guard itself, and the leader of a wing is the ship the rest of the wing guards
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state])
+	{
+		if (aigp->ai_mode == AI_GOAL_GUARD && target_ship_entry && target_ship_entry->has_shipp() && target_ship_entry->shipp() == shipp)
+			return ai_achievability::NOT_ACHIEVABLE;
+
+		if (aigp->ai_mode == AI_GOAL_GUARD_WING)
+		{
+			int wingnum = wing_name_lookup(aigp->target_name);
+			if (wingnum >= 0 && Wings[wingnum].ship_index[0] == objp->instance)
+				return ai_achievability::NOT_ACHIEVABLE;
+		}
+	}
+
 	// warp (depart) only achievable if there's somewhere to depart to
 	if (aigp->ai_mode == AI_GOAL_WARP)
 	{
@@ -2498,8 +2549,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	if ( !(Player_use_ai) && (objp->flags[Object::Object_Flags::Player_ship]) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
-	}	
+	}
 
+	ai_reset_order_state(aip);
 
 	std::unique_ptr<ai_goal> current_goal_backup;
 	auto current_goal_target_ship = current_goal->target_name ? ship_registry_get(current_goal->target_name) : nullptr;

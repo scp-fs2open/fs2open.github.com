@@ -452,7 +452,7 @@ bool Editor::wing_is_player_wing(int wing)
 		}
 	// Single player wing check
 	} else {
-		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS) {
+		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS && Ships[Player_start_shipnum].objnum >= 0) {
 			const int pw = Ships[Player_start_shipnum].wingnum;
 			return pw >= 0 && pw == wing;
 		}

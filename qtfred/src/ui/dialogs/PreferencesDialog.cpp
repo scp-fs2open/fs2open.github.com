@@ -125,6 +125,7 @@ void PreferencesDialog::updateUi() {
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
 	ui->outlineLodCombo->setCurrentIndex(_model->getOutlineLod());
+	ui->labelFontScaleSpin->setValue(_model->getLabelFontScale());
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -196,6 +197,10 @@ void PreferencesDialog::on_toolbarIconSizeCombo_currentIndexChanged(int index) {
 
 void PreferencesDialog::on_outlineLodCombo_currentIndexChanged(int index) {
 	_model->setOutlineLod(index);
+}
+
+void PreferencesDialog::on_labelFontScaleSpin_valueChanged(double value) {
+	_model->setLabelFontScale(value);
 }
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {

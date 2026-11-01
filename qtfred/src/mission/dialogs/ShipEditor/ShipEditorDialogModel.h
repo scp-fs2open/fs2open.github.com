@@ -4,6 +4,8 @@
 #include "mission/util.h"
 #include "ship/ship.h"
 
+class SexpTreeModel;
+
 namespace fso::fred::dialogs {
 
 class ShipEditorDialogModel : public AbstractDialogModel {
@@ -84,7 +86,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setArrivalCue(bool updateCue);
 	bool getArrivalCue() const;
 
-	void setArrivalTreeDirty(int formula);
+	void setArrivalTreeDirty(const SexpTreeModel& tree);
 	int getArrivalFormula() const;
 
 	void setNoArrivalWarp(int state);
@@ -107,7 +109,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setDepartureCue(bool updateCue);
 	bool getDepartureCue() const;
 
-	void setDepartureTreeDirty(int formula);
+	void setDepartureTreeDirty(const SexpTreeModel& tree);
 	int getDepartureFormula() const;
 	void setNoDepartureWarp(int state);
 	int getNoDepartureWarp() const;

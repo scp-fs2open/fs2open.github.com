@@ -1063,7 +1063,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 // Once the error no longer occurs, bypass mode is cleared and data is updated.
 int CShipEditorDlg::update_data(int redraw)
 {
-	char *str, old_name[255];
+	char old_name[255];
 	object *ptr;
 	int i, z, wing;
 	CSingleLock sync(&CS_cur_object_index), sync2(&CS_update);
@@ -1136,17 +1136,11 @@ int CShipEditorDlg::update_data(int redraw)
 		if (z)
 			return z;
 
-		strcpy_s(old_name, Ships[single_ship].ship_name);
-		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH - 1, 1);
-		str = Ships[single_ship].ship_name;
-		if (strcmp(old_name, str)) {
-			update_sexp_references(old_name, str);
-			ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
-			update_texture_replacements(old_name, str);
-			i = find_item_with_string(Reinforcements, &reinforcements::name, old_name);
-			if (i >= 0)
-				strcpy_s(Reinforcements[i].name, str);
-
+		char new_name[NAME_LENGTH];
+		string_copy(new_name, m_ship_name, NAME_LENGTH - 1, 1);
+		if (strcmp(Ships[single_ship].ship_name, new_name) != 0) {
+			// the display name was already handled in update_ship
+			rename_ship(single_ship, new_name, false);
 			Update_window = 1;
 		}
 	}

@@ -173,6 +173,44 @@ class VulkanRenderer {
 	VkCommandBuffer getVkCurrentCommandBuffer() const;
 
 	/**
+	 * @brief Get the current frame command buffer (valid between setupFrame and flip)
+	 */
+	vk::CommandBuffer getCurrentCommandBuffer() const { return m_currentCommandBuffer; }
+
+	vk::Instance getVkInstance() const { return m_vkInstance.get(); }
+	vk::PhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+	vk::Device getDevice() const { return m_device.get(); }
+	vk::Queue getGraphicsQueue() const { return m_graphicsQueue; }
+	uint32_t getGraphicsQueueFamilyIndex() const { return m_graphicsQueueFamilyIndex; }
+
+	/**
+	 * @brief Size of the actual window / swap chain images
+	 */
+	vk::Extent2D getSwapChainExtent() const { return m_swapChainExtent; }
+
+	/**
+	 * @brief Size everything is rendered at, which is not always the window size
+	 *
+	 * The engine positions every draw in terms of gr_screen.max_w/max_h, which
+	 * may differ from the window (see Cmdline_window_res and
+	 * gr_window_to_render_pos). Everything upstream of the output-encode pass --
+	 * composition image, depth, and the post-processor's scene and G-buffer
+	 * targets -- is sized to this, and the encode pass scales it into the swap
+	 * chain image. OpenGL does the same thing with Back_framebuffer.
+	 */
+	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
+
+	/**
+	 * @brief Get the composition image the frame is currently being rendered into
+	 *
+	 * This is the fp16 image behind m_swapChainFramebuffers -- the whole frame
+	 * (3D scene, HUD and menus alike) lands here, and encodeToSwapChain() later
+	 * converts it into the actual swap chain image. Returns a null handle if
+	 * composition resources do not exist yet.
+	 */
+	vk::Image getCurrentCompositionImage() const;
+
+	/**
 	 * @brief Check if VK_EXT_debug_utils is enabled
 	 */
 	bool isDebugUtilsEnabled() const { return m_debugUtilsEnabled; }
@@ -246,6 +284,24 @@ class VulkanRenderer {
 	void copySceneDepthForParticles();
 
 	/**
+	 * @brief Park the scene depth so the cockpit can render on a cleared depth buffer
+	 *
+	 * Called by vulkan_post_process_save_zbuffer(). Ends the current scene render
+	 * pass, copies scene depth → backup image, then resumes the pass with
+	 * loadOp=eLoad. The caller clears the depth buffer afterwards. No-op when a
+	 * save is already outstanding, or outside scene rendering.
+	 */
+	void saveSceneDepth();
+
+	/**
+	 * @brief Put the parked scene depth back, discarding what the cockpit wrote
+	 *
+	 * Called by vulkan_post_process_restore_zbuffer(). No-op unless saveSceneDepth()
+	 * parked something.
+	 */
+	void restoreSceneDepth();
+
+	/**
 	 * @brief Check if scene depth copy is available for sampling this frame
 	 */
 	bool isSceneDepthCopied() const { return m_sceneDepthCopiedThisFrame; }
@@ -284,6 +340,25 @@ class VulkanRenderer {
 	 * (render targets, irradiance map generation) to return to swap chain.
 	 */
 	void resumeSwapChainPass();
+
+	/**
+	 * @brief Begin the composition render pass afresh, clearing color and depth
+	 *
+	 * The loadOp=eClear counterpart to resumeSwapChainPass(): discards whatever
+	 * the composition image held and starts a clean frame into the same swap
+	 * chain image, without submitting anything.
+	 */
+	void restartCompositionPass();
+
+	/**
+	 * @brief End the in-flight render pass, if one is active
+	 *
+	 * Recording a transfer/build command requires being outside a render pass
+	 * instance, but callers cannot generally know whether the frame currently
+	 * has one open. This ends it and clears the state tracker's record of it,
+	 * so a second call (or a later flip()) is a no-op rather than an error.
+	 */
+	void endCurrentRenderPass();
 
 	/**
 	 * @brief Resume rendering into a render target with loadOp=eLoad (preserving content)
@@ -335,6 +410,17 @@ class VulkanRenderer {
 	 * after a mid-scene copy (copyEffectTexture / copySceneDepthForParticles)
 	 */
 	void resumeScenePassAfterCopy();
+
+	/**
+	 * @brief End the scene (or G-buffer) render pass ahead of a depth-only copy
+	 */
+	void endScenePassForDepthCopy();
+
+	/**
+	 * @brief Restore the color attachment layouts a depth-only copy left behind,
+	 * then resume the scene (or G-buffer) render pass
+	 */
+	void resumeScenePassAfterDepthCopy();
 
 	bool initDisplayDevice() const;
 
@@ -393,6 +479,14 @@ class VulkanRenderer {
 	bool m_hdrActive = false;            // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
 	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
 	vk::Extent2D m_swapChainExtent;
+	// The resolution the engine draws at (gr_screen.max_w/max_h), which is not
+	// always the window size: when Cmdline_window_res is set,
+	// SDLGraphicsOperations::createViewport sizes the window from that instead,
+	// and the frame is scaled into it by the output-encode pass. -vr forces
+	// exactly that split (Cmdline_window_res 1000x1000 vs. the VR resolution
+	// option), so treating the two as one is what put whole frames in the
+	// upper-left corner of the screen.
+	vk::Extent2D m_renderExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
@@ -473,6 +567,7 @@ class VulkanRenderer {
 	std::unique_ptr<VulkanPostProcessor> m_postProcessor;
 	bool m_sceneRendering = false;
 	bool m_sceneDepthCopiedThisFrame = false;
+	bool m_sceneDepthSaved = false;    // True between saveSceneDepth() and restoreSceneDepth()
 	bool m_useGbufRenderPass = false;  // True when scene uses G-buffer (deferred lighting)
 
 	bool m_supportsShaderViewportLayerOutput = false;  // VK_EXT_shader_viewport_index_layer

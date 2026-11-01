@@ -50,7 +50,8 @@ QString SupportRearmDialog::weaponEntryText(int weaponClass) const
 	if (wi.disallow_rearm) {
 		return QString::fromStdString(SCP_string(wi.name) + " - 0 (disabled by weapon settings)");
 	}
-	const int amount = _model->settings().rearmWeaponPool[_activePoolTeam][weaponClass];
+	const auto& settings = _model->settings();
+	const int amount = settings.rearmWeaponPool[_activePoolTeam].value_or(weaponClass, settings.rearmPoolDefault());
 	if (amount < 0) {
 		return QString::fromStdString(SCP_string(wi.name) + " - Unlimited");
 	}
@@ -130,7 +131,8 @@ void SupportRearmDialog::updateFromSelection()
 	} else if (Weapon_info[cls].disallow_rearm) {
 		ui->poolAmountSpin->setValue(0);
 	} else {
-		ui->poolAmountSpin->setValue(_model->settings().rearmWeaponPool[_activePoolTeam][cls]);
+		const auto& settings = _model->settings();
+		ui->poolAmountSpin->setValue(settings.rearmWeaponPool[_activePoolTeam].value_or(cls, settings.rearmPoolDefault()));
 	}
 }
 
@@ -243,6 +245,9 @@ void SupportRearmDialog::on_limitPoolCheck_toggled(bool checked)
 void SupportRearmDialog::on_fromLoadoutCheck_toggled(bool checked)
 {
 	_model->setRearmPoolFromLoadout(checked);
+	// this flag changes the pool's default amount, so the displayed entries must be redrawn
+	populateWeaponList();
+	updateFromSelection();
 	updateControlStates();
 }
 void SupportRearmDialog::on_precedenceCheck_toggled(bool checked)

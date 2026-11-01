@@ -114,14 +114,20 @@ float computeRtShadowBias(float cameraDist, float biasMin, float biasMax)
 //
 // bias is a world-unit offset applied along worldNormal before tracing, to clear
 // the source triangle -- see computeRtShadowBias() above for how callers derive it.
-float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir, float tMax, float bias)
+//
+// cullMask selects which TLAS instances this ray can hit (Vulkan spec: an instance
+// is a candidate iff (cullMask & instance.mask) != 0). Callers should pass
+// shadow_ray_cull_mask (shadowCascadeParams uniform block) rather than a literal --
+// see SHADOW_RAY_CULL_MASK_EXCLUDE_VIEWER_HULL/TLAS_MASK_VIEWER_HULL (shadows.h)
+// for how it excludes the viewer ship's own hull outside the cockpit pass.
+float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir, float tMax, float bias, uint cullMask)
 {
 	vec3 origin = worldPos + worldNormal * bias;
 	vec3 direction = normalize(worldLightDir);
 
 	rayQueryEXT rq;
 	rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
-		0xFF, origin, 0.001, direction, tMax);
+		cullMask, origin, 0.001, direction, tMax);
 	while (rayQueryProceedEXT(rq)) {}
 
 	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;

@@ -15,10 +15,12 @@
 #include "MainFrm.h"
 #include "FREDDoc.h"
 #include "FREDView.h"
+#include "EventEditor.h"
 #include "MessageEditorDlg.h"
 #include "ShipClassEditorDlg.h"
 #include "MissionNotesDlg.h"
 #include "Grid.h"
+#include "Management.h"
 
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
@@ -169,6 +171,20 @@ void CMainFrame::init_tools()
 	m_new_prop_type_combo_box.SetCurSel(0);
 }
 
+// The modeless editors are allocated on the heap and only delete themselves when they are closed, so any that
+// are still open when FRED exits must be deleted here.  Their DestroyWindow() overrides clear the global pointer.
+template <typename T>
+static void destroy_modeless_editor(T *&dlg)
+{
+	if (dlg == nullptr)
+		return;
+
+	T *ptr = dlg;
+	ptr->DestroyWindow();
+	delete ptr;
+	dlg = nullptr;
+}
+
 void CMainFrame::OnClose()
 {
 	// CFrameWnd::OnClose() doesn't provide a way for the caller to tell that the close has been cancelled,
@@ -182,8 +198,16 @@ void CMainFrame::OnClose()
 	// do the closing stuff
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
+
+	// any changes still pending in these editors are discarded
+	destroy_modeless_editor(Event_editor_dlg);
+	destroy_modeless_editor(Message_editor_dlg);
+	destroy_modeless_editor(Briefing_dialog);
+	destroy_modeless_editor(Debriefing_dialog);
+	destroy_modeless_editor(Bg_bitmap_dialog);
+
 	CFrameWnd::OnClose();
-	gr_close();
+	fred_shutdown();
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
@@ -304,6 +328,26 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 void CMainFrame::OnDestroy() {
 	Fred_main_wnd = NULL;
 	CFrameWnd::OnDestroy();
+}
+
+void CMainFrame::apply_menu_layout(bool classic)
+{
+	CMenu menu;
+	if (!menu.LoadMenu(classic ? IDR_MAINMENU_CLASSIC : IDR_MAINMENU))
+		return;
+
+	// grab the menu currently on the frame so we can free it after the swap
+	CMenu *old_menu = GetMenu();
+
+	SetMenu(&menu);
+	m_hMenuDefault = menu.GetSafeHmenu();	// keep MFC's fallback handle in sync so the bar isn't reverted later
+	menu.Detach();							// the frame now owns the new menu
+
+	// destroy the menu we just replaced to avoid a GDI leak
+	if (old_menu != nullptr && old_menu->GetSafeHmenu() != nullptr)
+		old_menu->DestroyMenu();
+
+	DrawMenuBar();
 }
 
 void CMainFrame::OnFileMissionnotes() {

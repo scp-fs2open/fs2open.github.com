@@ -8,6 +8,7 @@ namespace scripting::api
 {
 //**********HANDLE: mission event
 ADE_OBJ(l_Event, int, "mission_event", "Mission event handle");
+ADE_OBJ_VALIDATOR(l_Event, idx, Mission_events.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", nullptr)
 {
@@ -140,18 +141,6 @@ ADE_VIRTVAR(Score, l_Event, "number", "Event score", "number", "Event score, or 
 	}
 
 	return ade_set_args(L, "i", mep->score);
-}
-
-ADE_FUNC(isValid, l_Event, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if (!ade_get_args(L, "o", l_Event.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (idx < 0 || idx >= (int)Mission_events.size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 }

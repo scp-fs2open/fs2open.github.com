@@ -156,18 +156,6 @@ ADE_FUNC(__tostring, l_SEXPVariable, NULL, "Returns SEXP name", "string", "SEXP 
 	return ade_set_args(L, "s", Sexp_variables[svh->idx].variable_name);
 }
 
-ADE_FUNC(isValid, l_SEXPVariable, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	sexpvar_h *svh = NULL;
-	if(!ade_get_args(L, "o", l_SEXPVariable.GetPtr(&svh)))
-		return ADE_RETURN_NIL;
-
-	if(!svh->isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_FUNC(delete, l_SEXPVariable, NULL, "Deletes a SEXP Variable", "boolean", "True if successful, false if the handle is invalid")
 {
 	sexpvar_h *svh = NULL;
