@@ -1221,7 +1221,8 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 
 bool VulkanRenderer::shouldRecreateSwapChain(SwapChainStatus status) const
 {
-	if (status == SwapChainStatus::eOutOfDate) {
+	// An already requested rebuild also avoids redundant Android surface queries.
+	if (m_swapChainNeedsRecreation || status == SwapChainStatus::eOutOfDate) {
 		return true;
 	}
 	if (status != SwapChainStatus::eSuboptimal) {
