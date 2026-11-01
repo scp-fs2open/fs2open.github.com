@@ -236,6 +236,9 @@ inline void glDrawBuffer(GLenum buf)
 	}
 }
 
+// ES uses layout(location = ) directly on shader
+#define glBindFragDataLocation(program, colorNumber, name) ((void)0)
+
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
 // Notes: 
 // -This function is not required to run.

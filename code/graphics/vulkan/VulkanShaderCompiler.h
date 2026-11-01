@@ -24,7 +24,6 @@ public:
 	~VulkanShaderCompiler();
 
 	bool init(bool hwClipDistance);
-	bool init();
 	void shutdown();
 
 	/**

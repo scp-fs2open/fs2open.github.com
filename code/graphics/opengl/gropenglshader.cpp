@@ -178,6 +178,9 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 
 #ifndef USE_OPENGL_ES
 	sflags << "#version " << GLSL_version << " core\n";
+	if (GLSL_version < 330) {
+		sflags << "#extension GL_ARB_explicit_attrib_location : enable\n";
+	}
 #else
 	sflags << "#version " << GLSL_version << " es\n";
 #endif
@@ -494,6 +497,13 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				// assign vert attribute binding locations before we link the shader
 				glBindAttribLocation(program->getShaderHandle(), (GLint)i, GL_vertex_attrib_info[i].name.c_str());
 			}
+
+			// bind fragment data locations before we link the shader
+			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
+			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
+			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
+			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
+			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
 
 			if (do_shader_caching()) {
 				// Enable shader caching
