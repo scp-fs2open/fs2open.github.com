@@ -20,9 +20,9 @@
 #include "utils/threading.h"
 
 
-#define LZ41_MT_MIN_BLOCKS 3 // Minimum number of consecutive blocks to trigger MT
-#define LZ41_MAX_BLOCK_SIZE 4194304 // 4 MB
-#define LZ41_MIN_BLOCK_SIZE 16
+constexpr int LZ41_MT_MIN_BLOCKS = 3; // Minimum number of consecutive blocks to trigger MT
+constexpr int LZ41_MAX_BLOCK_SIZE = 4194304; // 4 MB
+constexpr int LZ41_MIN_BLOCK_SIZE = 16;
 
 /*INTERNAL FUNCTIONS*/
 /*LZ41*/
@@ -206,10 +206,7 @@ static bool lz41_create_ci(CFILE* cf, int header)
 	ci->cached_block = -1;
 	ci->cached_block_bytes = 0;
 
-	if (!lz41_load_and_validate_offsets(cf))
-		return false;
-
-	return true;
+	return lz41_load_and_validate_offsets(cf);
 }
 
 // Load the offset table and validate it. The table must:
@@ -326,7 +323,7 @@ static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offse
 	if (ci->offsets == nullptr || ci->num_offsets < 2)
 		return (size_t)LZ41_OFFSETS_MISMATCH;
 
-	const size_t block_size = (size_t)ci->block_size;
+	const auto block_size = static_cast<size_t>(ci->block_size);
 
 	// The blocks [current_block, end_block) contain the data we want.
 	const size_t current_block = offset / block_size;
@@ -374,7 +371,7 @@ static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offse
 static size_t lz41_random_access_mt(CFILE* cf, char* bytes_out, size_t offset, size_t length, size_t current_block, size_t end_block, int max_threads)
 {
 	COMPRESSION_INFO* ci = &cf->compression_info;
-	const size_t block_size  = (size_t)ci->block_size;
+	const auto block_size = static_cast<size_t>(ci->block_size);
 	const size_t block_count = end_block - current_block;
 
 	// Compressed span: from the start of the first block to the start of the block past the last.
