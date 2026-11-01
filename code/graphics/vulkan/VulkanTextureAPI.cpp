@@ -28,8 +28,8 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 	}
 
 	// Determine lock parameters based on compression type.
-	// For compressed DDS textures, lock with the matching DXT/BC7 flags to get
-	// raw compressed data with all pre-baked mipmap levels.
+	// For compressed DDS/KTX textures, lock with the matching DXT/BC7/ETC2
+	// flags to get raw compressed data with all pre-baked mipmap levels.
 	int compType = bm_is_compressed(bitmap_num);
 	int lockBpp = 32;
 	uint lockFlags = BMP_TEX_XPARENT;

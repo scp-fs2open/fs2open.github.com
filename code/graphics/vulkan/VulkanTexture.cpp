@@ -1875,7 +1875,7 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 	const bool isCompressed = (ts->format == vk::Format::eBc1RgbaUnormBlock ||
 	                           ts->format == vk::Format::eBc2UnormBlock ||
 	                           ts->format == vk::Format::eBc3UnormBlock ||
-	                           ts->format == vk::Format::eBc7UnormBlock || 
+	                           ts->format == vk::Format::eBc7UnormBlock ||
 							   ts->format == vk::Format::eEtc2R8G8B8UnormBlock ||
 							   ts->format == vk::Format::eEtc2R8G8B8SrgbBlock ||
 							   ts->format == vk::Format::eEtc2R8G8B8A1UnormBlock ||
