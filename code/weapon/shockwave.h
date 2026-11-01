@@ -55,6 +55,7 @@ typedef struct shockwave {
 	SCP_vector<std::pair<int, int>>			obj_sig_hitlist;
 	float		speed, radius;
 	float		inner_radius, outer_radius, damage;
+	int			radius_curve_idx;		// curve for radius over time, or -1 to expand at a constant speed
 	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
 	int			damage_type_idx;			//What type of damage this shockwave does to armor
 	vec3d		pos;
