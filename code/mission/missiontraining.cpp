@@ -741,7 +741,7 @@ SCP_string message_translate_tokens(const char *text)
 	char temp[40];
 	const char *ptr, *toke1, *toke2;
 	int r;
-	SCP_string buf;
+	SCP_string buf, translated;
 
 	toke1 = strchr(text, '$');
 	toke2 = strchr(text, '#');
@@ -758,9 +758,8 @@ SCP_string message_translate_tokens(const char *text)
 			if ( (toke2 > text) && ((toke2 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
-				ptr = translate_key(temp);  // try and translate key
-				if (ptr != nullptr) {  // was key translated properly?
-					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
+				if (translate_key(temp, translated)) {  // was key translated properly?
+					if (!stricmp(translated.c_str(), NOX("none")) && (Training_bind_warning != Missiontime)) {
 						// check if a warning message should be displayed if the key is unbound
 						if ( (The_mission.game_type & MISSION_TYPE_TRAINING) || (Always_warn_player_about_unbound_keys && (The_mission.game_type & MISSION_TYPE_SINGLE)) ) {
 							int xstr_index;
@@ -784,7 +783,7 @@ SCP_string message_translate_tokens(const char *text)
 					}
 
 					buf.pop_back();	// erase the $
-					buf += ptr;		// put translated key in place of token
+					buf += translated;	// put translated key in place of token
 					text = toke2 + 1;
 				}
 			}

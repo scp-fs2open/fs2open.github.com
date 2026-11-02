@@ -171,7 +171,7 @@ static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of te
 static UI_WINDOW Ui_window;
 static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last selected
 static UI_TIMESTAMP bound_timestamp;
-static char bound_string[40];
+static char bound_string[256];
 
 int Control_config_overlay_id;
 
@@ -2383,7 +2383,7 @@ void control_config_do_frame(float frametime)
 
 		if (done) {
 			// done with binding mode, clean up and prepare for display
-			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+			font::force_fit_string(bound_string, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 			bound_timestamp = ui_timestamp(2500);
 			control_config_conflict_check();
 			control_config_list_prepare();
