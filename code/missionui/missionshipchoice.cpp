@@ -1359,11 +1359,6 @@ void ship_select_do(float frametime)
 				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
 			}
 
-			if (sip->replacement_textures.size() > 0)
-			{
-				render_info.set_replacement_textures(ShipSelectModelNum, sip->replacement_textures);
-			}
-
 			select_effect_params params;
 			params.effect = sip->selection_effect;
 			params.fs2_grid_color = sip->fs2_effect_grid_color;
