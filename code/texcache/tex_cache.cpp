@@ -43,7 +43,7 @@ SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_typ
 	}
 
 	const auto location = *name != '\0' ? cf_find_file_location(name, cf_get_dir_type(dds)) : CFileLocation();
-	const int64_t src_mtime = static_cast<int64_t>(location.m_time);
+	const auto src_mtime = static_cast<int64_t>(location.m_time);
 	const int saved_pos = cftell(dds);
 
 	cfseek(dds, 0, CF_SEEK_SET);
