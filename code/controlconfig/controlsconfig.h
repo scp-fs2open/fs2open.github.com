@@ -296,6 +296,8 @@ enum IoActionId : int {
 	JOY_BANK_AXIS									= 126,
 	JOY_ABS_THROTTLE_AXIS							= 127,
 	JOY_REL_THROTTLE_AXIS							= 128,
+	JOY_LATERAL_THRUST_AXIS							= 129,
+	JOY_VERTICAL_THRUST_AXIS						= 130,
 
 	//!< @n
 	//! Communication menu controls
@@ -324,7 +326,7 @@ enum IoActionId : int {
 // Constants for array-based checking (within Control_config) for the axis actions.
 // z64: Yes, this is hackish. No I don't really like it.
 const int JOY_AXIS_BEGIN = JOY_HEADING_AXIS;
-const int JOY_AXIS_END = JOY_REL_THROTTLE_AXIS + 1;
+const int JOY_AXIS_END = JOY_VERTICAL_THRUST_AXIS + 1;
 const int NUM_JOY_AXIS_ACTIONS = JOY_AXIS_END - JOY_AXIS_BEGIN;
 
 /*!
@@ -338,10 +340,13 @@ enum {
 	BANK,
 	ABS_THROTTLE,
 	REL_THROTTLE,
+	LATERAL_THRUST,
+	VERTICAL_THRUST,
 
 	NUM_VALUES
 };
 }
+static_assert(NUM_JOY_AXIS_ACTIONS == Action::NUM_VALUES);
 
 /*!
  * Where the preset is located in memory
