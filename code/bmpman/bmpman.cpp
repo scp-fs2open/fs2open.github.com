@@ -883,6 +883,16 @@ const char *bm_get_filename(int handle) {
 	return entry->filename;
 }
 
+const char *bm_get_image_filename(int handle) {
+	auto entry = bm_get_entry(handle);
+
+	// an EFF entry stores the file of its individual image separately
+	if (entry->type == BM_TYPE_EFF)
+		return entry->info.ani.eff.filename;
+
+	return entry->filename;
+}
+
 void bm_get_filename(int bitmapnum, char *filename) {
 	if (!bm_is_valid(bitmapnum)) {
 		strcpy(filename, "");
