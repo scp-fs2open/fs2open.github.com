@@ -1067,8 +1067,8 @@ static bool touch_ui_change(bool new_val, bool initial)
 }
 
 static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverlay",
-	std::pair<const char*, int>{"Touch Overlay", -1}, // TODO: set string id after approval
-	std::pair<const char*, int>{"Enable or disable the touch overlay", -1}) // TODO: set string id after approval
+	std::pair<const char*, int>{"Touch Overlay", 1936},
+	std::pair<const char*, int>{"Enable or disable the touch overlay", 1937})
 	.category(std::make_pair("Input", 1827))
 	.level(options::ExpertLevel::Beginner)
 	.change_listener(touch_ui_change)
@@ -1087,8 +1087,8 @@ static bool touch_ui_opacity_change(int new_val, bool initial)
 }
 
 static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
-	std::pair<const char*, int>{"Touch Overlay Opacity", -1}, // TODO: set string id after approval
-	std::pair<const char*, int>{"Set the opacity of the touch overlay", -1}) // TODO: set string id after approval
+	std::pair<const char*, int>{"Touch Overlay Opacity", 1938},
+	std::pair<const char*, int>{"Set the opacity of the touch overlay", 1939})
 	.category(std::make_pair("Input", 1827))
 	.level(options::ExpertLevel::Beginner)
 	.range(0, 100)
