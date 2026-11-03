@@ -247,47 +247,12 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 		return false;
 	}
 
-	// Check BCx and ETC2 Support
-	auto features = m_physicalDevice.getFeatures();
-	bool supportsETC2 = features.textureCompressionETC2;
-	bool supportsBC = features.textureCompressionBC;
-
-	if (!supportsETC2) {
-		std::array<vk::Format, 6> etcFormats = {vk::Format::eEtc2R8G8B8UnormBlock,
-			vk::Format::eEtc2R8G8B8SrgbBlock,
-			vk::Format::eEtc2R8G8B8A1UnormBlock,
-			vk::Format::eEtc2R8G8B8A1SrgbBlock,
-			vk::Format::eEtc2R8G8B8A8UnormBlock,
-			vk::Format::eEtc2R8G8B8A8SrgbBlock};
-
-		for (auto fmt : etcFormats) {
-			auto props = m_physicalDevice.getFormatProperties(fmt);
-			if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage) {
-				supportsETC2 = true;
-				break;
-			}
-		}
-	}
-
-	if (!supportsBC) {
-		std::array<vk::Format, 4> bcFormats = {
-			vk::Format::eBc1RgbaUnormBlock, // DXT1
-			vk::Format::eBc2UnormBlock,     // DXT3
-			vk::Format::eBc3UnormBlock,     // DXT5
-			vk::Format::eBc7UnormBlock      // BC7
-		};
-
-		for (auto fmt : bcFormats) {
-			auto props = m_physicalDevice.getFormatProperties(fmt);
-			if (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImage) {
-				supportsBC = true;
-				break;
-			}
-		}
-	}
-
-	mprintf(("VulkanTextureManager: ETC2 Texture Support = %s\n", supportsETC2 ? "YES" : "NO"));
-	mprintf(("VulkanTextureManager: BCn Texture Support = %s\n", supportsBC ? "YES" : "NO"));
+	// Report the same compression capabilities used by the renderer.
+	const auto* renderer = getRendererInstance();
+	mprintf(("VulkanTextureManager: Texture Support: ETC2=%s, S3TC=%s, BC7=%s\n",
+		renderer->isTextureCompressionETC2Supported() ? "YES" : "NO",
+		renderer->isTextureCompressionS3TCSupported() ? "YES" : "NO",
+		renderer->isTextureCompressionBCSupported() ? "YES" : "NO"));
 
 	m_initialized = true;
 	return true;
