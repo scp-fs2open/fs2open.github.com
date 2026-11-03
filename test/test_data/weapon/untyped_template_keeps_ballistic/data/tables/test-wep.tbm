@@ -1,0 +1,14 @@
+#Weapon Templates
+
+$Template:	Gun Base
+$Rearm Rate:	50.0
+$Flags:	( "ballistic" "player allowed" )
+
+#End
+
+#Primary Weapons
+
+$Name:	Gun Derived
++Use Template:	Gun Base
+
+#End

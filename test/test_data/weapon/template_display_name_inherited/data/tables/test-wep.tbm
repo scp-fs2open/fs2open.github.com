@@ -1,0 +1,13 @@
+#Weapon Templates
+
+$Template:	Named Base
+$Display Name:	Shown
+
+#End
+
+#Primary Weapons
+
+$Name:	Derived#Laser
++Use Template:	Named Base
+
+#End

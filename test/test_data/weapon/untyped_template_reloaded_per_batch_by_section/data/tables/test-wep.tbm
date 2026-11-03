@@ -1,0 +1,20 @@
+#Weapon Templates
+
+$Template:	Any Base
+$Velocity:	100.0
+
+#End
+
+#Primary Weapons
+
+$Name:	Any Primary
++Use Template:	Any Base
+
+#End
+
+#Secondary Weapons
+
+$Name:	Any Secondary
++Use Template:	Any Base
+
+#End

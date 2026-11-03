@@ -1,0 +1,12 @@
+#Weapon Templates
+
+$Template:	Trebuchet
+
+#End
+
+#Secondary Weapons
+
+$Name:	Trebuchet
+$SSM:	Trebuchet Strike
+
+#End

@@ -39,3 +39,5 @@ std::unique_ptr<char[]> unique_copy(const char *str, bool null_if_empty);
 SCP_vm_unique_ptr<char> vm_unique_copy(const char *str, bool null_if_empty);
 
 } // namespace util
+
+#define CLONE_UNIQUE_PTR(attribute) attribute = util::unique_copy(other.attribute.get(), true)

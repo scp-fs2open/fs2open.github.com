@@ -1,0 +1,12 @@
+#Weapon Templates
+
+$Template:	Laser#Base
+
+#End
+
+#Primary Weapons
+
+$Name:	Subach#Mk2
++Use Template:	Laser#Base
+
+#End
