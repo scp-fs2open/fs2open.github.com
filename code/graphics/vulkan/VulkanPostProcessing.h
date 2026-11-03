@@ -113,7 +113,8 @@ struct PostProcessContext {
 	                                 vk::Framebuffer framebuffer, vk::Extent2D extent,
 	                                 int shaderType,
 	                                 const vk::ImageView* views, uint32_t viewCount,
-	                                 const void* uboData, size_t uboSize);
+	                                 const void* uboData, size_t uboSize,
+	                                 vk::Sampler sampler = nullptr);
 
 	/**
 	 * @brief Generate a mip chain for an image (transitions mip 0 first)
@@ -300,6 +301,8 @@ public:
 
 	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6; // Full layout (with composite)
 	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5; // MSAA layout (without composite)
+	// With motion vectors the subpass has this many color locations, in both layouts. MSAA leaves location 5 unused.
+	static constexpr uint32_t VELOCITY_COLOR_LOCATION_COUNT = 7;
 
 	static constexpr vk::Format GBUF_FORMAT_COLOR     = vk::Format::eR16G16B16A16Sfloat;
 	static constexpr vk::Format GBUF_FORMAT_POSITION  = vk::Format::eR16G16B16A16Sfloat;
@@ -332,6 +335,21 @@ public:
 	bool isInitialized() const { return m_gbufInitialized; }
 	bool isMsaaInitialized() const { return m_msaaInitialized; }
 
+	/**
+	 * @brief Selects the render pass variants with a motion vector attachment for this frame
+	 * @param drawnMotion The single-sample image to write into. Null selects the plain variants.
+	 * @return false if the resources couldn't be created, in which case the plain variants stay selected
+	 */
+	bool setVelocityTarget(const RenderTarget* drawnMotion);
+	bool velocityActive() const { return m_velocityActive; }
+	uint32_t colorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : GBUF_COLOR_ATTACHMENT_COUNT; }
+	uint32_t msaaColorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : MSAA_COLOR_ATTACHMENT_COUNT; }
+	// Attachment indices into the clear values, since the unused MSAA location takes no attachment
+	uint32_t velocityAttachmentIndex() const { return GBUF_COLOR_ATTACHMENT_COUNT; }
+	uint32_t depthAttachmentIndex() const { return GBUF_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
+	uint32_t msaaVelocityAttachmentIndex() const { return MSAA_COLOR_ATTACHMENT_COUNT; }
+	uint32_t msaaDepthAttachmentIndex() const { return MSAA_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
+
 	// Mid-frame layout transitions / copies (all outside a render pass)
 	void transitionForResume(vk::CommandBuffer cmd);
 	void copyNormal(vk::CommandBuffer cmd);
@@ -339,9 +357,9 @@ public:
 	void transitionMsaaForResume(vk::CommandBuffer cmd);
 
 	// G-buffer accessors
-	vk::RenderPass renderPass() const { return m_gbufRenderPass; }
-	vk::RenderPass renderPassLoad() const { return m_gbufRenderPassLoad; }
-	vk::Framebuffer framebuffer() const { return m_gbufFramebuffer; }
+	vk::RenderPass renderPass() const { return m_velocityActive ? m_velocityRenderPass : m_gbufRenderPass; }
+	vk::RenderPass renderPassLoad() const { return m_velocityActive ? m_velocityRenderPassLoad : m_gbufRenderPassLoad; }
+	vk::Framebuffer framebuffer() const { return m_velocityActive ? m_velocityFramebuffer : m_gbufFramebuffer; }
 	vk::ImageView positionView() const { return m_gbufPosition.view; }
 	vk::ImageView normalView() const { return m_gbufNormal.view; }
 	vk::ImageView specularView() const { return m_gbufSpecular.view; }
@@ -353,11 +371,13 @@ public:
 	vk::Image normalImage() const { return m_gbufNormal.image; }
 
 	// MSAA accessors
-	vk::RenderPass msaaRenderPass() const { return m_msaaGbufRenderPass; }
-	vk::RenderPass msaaRenderPassLoad() const { return m_msaaGbufRenderPassLoad; }
-	vk::Framebuffer msaaFramebuffer() const { return m_msaaGbufFramebuffer; }
-	vk::RenderPass msaaResolveRenderPass() const { return m_msaaResolveRenderPass; }
-	vk::Framebuffer msaaResolveFramebuffer() const { return m_msaaResolveFramebuffer; }
+	vk::RenderPass msaaRenderPass() const { return m_velocityActive ? m_velocityMsaaRenderPass : m_msaaGbufRenderPass; }
+	vk::RenderPass msaaRenderPassLoad() const { return m_velocityActive ? m_velocityMsaaRenderPassLoad : m_msaaGbufRenderPassLoad; }
+	vk::Framebuffer msaaFramebuffer() const { return m_velocityActive ? m_velocityMsaaFramebuffer : m_msaaGbufFramebuffer; }
+	vk::RenderPass msaaResolveRenderPass() const { return m_velocityActive ? m_velocityResolveRenderPass : m_msaaResolveRenderPass; }
+	vk::Framebuffer msaaResolveFramebuffer() const { return m_velocityActive ? m_velocityResolveFramebuffer : m_msaaResolveFramebuffer; }
+	vk::ImageView msaaVelocityView() const { return m_msaaVelocity.view; }
+	vk::Image msaaVelocityImage() const { return m_msaaVelocity.image; }
 	vk::RenderPass msaaEmissiveCopyRenderPass() const { return m_msaaEmissiveCopyRenderPass; }
 	vk::Framebuffer msaaEmissiveCopyFramebuffer() const { return m_msaaEmissiveCopyFramebuffer; }
 	vk::ImageView msaaColorView() const { return m_msaaColor.view; }
@@ -384,10 +404,16 @@ private:
 		vk::ImageLayout depthInitialLayout;
 		bool useResolveDependency = false;
 		SCP_unordered_map<uint32_t, vk::AttachmentLoadOp> attachmentLoadOpOverrides = {};
+		bool includeVelocity = false;
+		vk::AttachmentLoadOp velocityLoadOp = vk::AttachmentLoadOp::eClear;
 	};
 	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
 	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
-	                                      bool useMsaaImages);
+	                                      bool useMsaaImages, const RenderTarget* velocity = nullptr);
+	bool createVelocityRenderPasses();
+	bool createVelocityTargets(const RenderTarget& drawnMotion);
+	void destroyVelocityTargets();
+	void destroyVelocityRenderPasses();
 
 	bool createTargets();
 	void destroyTargets();
@@ -427,6 +453,56 @@ private:
 	vk::RenderPass m_msaaEmissiveCopyRenderPass;   // 1 MS color att (for upsample)
 	vk::Framebuffer m_msaaEmissiveCopyFramebuffer;
 	bool m_msaaInitialized = false;
+
+	// ---- Variants with a motion vector attachment, created on first use ----
+	bool m_velocityActive = false;
+	RenderTarget m_msaaVelocity;
+	vk::RenderPass m_velocityRenderPass;
+	vk::RenderPass m_velocityRenderPassLoad;
+	vk::Framebuffer m_velocityFramebuffer;
+	vk::RenderPass m_velocityMsaaRenderPass;
+	vk::RenderPass m_velocityMsaaRenderPassLoad;
+	vk::Framebuffer m_velocityMsaaFramebuffer;
+	vk::RenderPass m_velocityResolveRenderPass;
+	vk::Framebuffer m_velocityResolveFramebuffer;
+};
+
+/**
+ * @brief Per-pixel screen motion for FSR and later effects
+ *
+ * Holds the total motion of each pixel since last frame, in image UV units, unjittered, pointing at where the
+ * pixel was. Resources are created on first use, because most configurations never need them.
+ */
+class VulkanMotionVectors {
+public:
+	static constexpr vk::Format FORMAT = vk::Format::eR16G16Sfloat;
+	// Well outside any real motion. Tested in motion-vector-f.sdr and msaa-f.sdr.
+	static constexpr float NO_MOTION_WRITTEN = 1000.0f;
+
+	static bool wanted();
+
+	void init(PostProcessContext& ctx);
+	void destroyTargets();
+	void shutdown();
+
+	bool createResources();
+	const RenderTarget& drawnMotion() const { return m_drawnMotion; }
+
+	// Outside a render pass, with the drawn motion attachment still in eColorAttachmentOptimal and sceneDepthCopy
+	// holding this frame's final depth.
+	void execute(vk::CommandBuffer cmd, vk::ImageView sceneDepthCopy);
+	// Inside the composition pass.
+	void drawDebug(vk::CommandBuffer cmd);
+
+	vk::ImageView view() const { return m_valid ? m_target.view : vk::ImageView{}; }
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	RenderTarget m_drawnMotion; // what geometry wrote during the scene
+	RenderTarget m_target;      // the drawn motion, with camera motion filled in everywhere else
+	vk::RenderPass m_renderPass;
+	vk::Framebuffer m_framebuffer;
+	bool m_valid = false;
 };
 
 /**
@@ -803,7 +879,7 @@ public:
 	 * This render pass has RGBA16F color + depth attachments with loadOp=eClear.
 	 * Used between scene_texture_begin() and scene_texture_end().
 	 */
-	vk::RenderPass getSceneRenderPass() const { return m_sceneRenderPass; }
+	vk::RenderPass getSceneRenderPass() const { return m_velocityActive ? m_velocitySceneRenderPass : m_sceneRenderPass; }
 
 	/**
 	 * @brief Get the HDR scene render pass with loadOp=eLoad
@@ -812,12 +888,12 @@ public:
 	 * the same framebuffer. Used to resume scene rendering after
 	 * copy_effect_texture interrupts the pass.
 	 */
-	vk::RenderPass getSceneRenderPassLoad() const { return m_sceneRenderPassLoad; }
+	vk::RenderPass getSceneRenderPassLoad() const { return m_velocityActive ? m_velocitySceneRenderPassLoad : m_sceneRenderPassLoad; }
 
 	/**
 	 * @brief Get the HDR scene framebuffer
 	 */
-	vk::Framebuffer getSceneFramebuffer() const { return m_sceneFramebuffer; }
+	vk::Framebuffer getSceneFramebuffer() const { return m_velocityActive ? m_velocitySceneFramebuffer : m_sceneFramebuffer; }
 
 	/**
 	 * @brief Get the scene rendering extent
@@ -926,6 +1002,26 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
 	void executeSMAA(vk::CommandBuffer cmd) { m_smaa.execute(cmd); }
+
+	// Selects whether this frame's scene writes motion vectors. Before the scene's first render pass.
+	void prepareMotionVectors();
+
+	void executeMotionVectors(vk::CommandBuffer cmd)
+	{
+		if (m_velocityActive) {
+			copySceneDepth(cmd);
+			m_motionVectors.execute(cmd, m_sceneDepthCopy.view);
+		}
+	}
+	void drawMotionVectorDebug(vk::CommandBuffer cmd) { m_motionVectors.drawDebug(cmd); }
+
+	// Color locations of the current forward pass
+	uint32_t sceneColorAttachmentCount() const
+	{
+		return m_velocityActive ? VulkanDeferredGBuffer::VELOCITY_COLOR_LOCATION_COUNT : 1;
+	}
+	// Attachment count is 2 or 3. The extra clear value is ignored on the plain passes.
+	std::array<vk::ClearValue, 3> sceneClearValues() const;
 
 	/**
 	 * @brief Execute post-processing effects (saturation, brightness, etc.)
@@ -1229,6 +1325,12 @@ private:
 
 	// ---- Fog / volumetric nebula (self-contained subsystem) ----
 	VulkanFog m_fog;
+	VulkanMotionVectors m_motionVectors;
+	bool createVelocitySceneResources();
+	bool m_velocityActive = false;
+	vk::RenderPass m_velocitySceneRenderPass;
+	vk::RenderPass m_velocitySceneRenderPassLoad;
+	vk::Framebuffer m_velocitySceneFramebuffer;
 
 	// ---- Distortion (ping-pong textures, self-contained subsystem) ----
 	VulkanDistortion m_distortion;

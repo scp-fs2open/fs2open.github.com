@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanOpenXR.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 #include "cmdline/cmdline.h"
 #include "globalincs/version.h"
@@ -1055,6 +1056,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
 		deviceCreateChain.unlink<vk::PhysicalDeviceRayQueryFeaturesKHR>();
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+	}
+
+	// FSR adds to the feature set audited above, for AMD's shaders and host code. It's disabled in VR for now.
+	if (!openxr_requested()) {
+		vulkan_upscaler_prepare_device(m_vkInstance.get(),
+			deviceValues.device,
+			deviceValues.graphicsQueueIndex.index,
+			supportedFeatures,
+			deviceCreateChain.get<vk::DeviceCreateInfo>());
 	}
 
 	if (openxr_requested())

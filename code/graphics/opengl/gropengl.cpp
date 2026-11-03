@@ -1643,6 +1643,8 @@ bool gr_opengl_is_capable(gr_capability capability)
 #else
 		return GLAD_GL_VERSION_3_3 != 0;
 #endif
+	case gr_capability::CAPABILITY_FSR:
+		return false;
 	}
 
 

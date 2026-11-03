@@ -86,6 +86,7 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(FAST_SHADOWS),
 	GR_CAPABILITY_ENTRY(RAYTRACED_SHADOWS),
 	GR_CAPABILITY_ENTRY(SHADOW_CONTACT_HARDENING),
+	GR_CAPABILITY_ENTRY(FSR),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -873,6 +874,56 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .bind_to(&Gr_aa_mode)
                      .importance(79)
                      .parser(parse_anti_aliasing_func)
+                     .finish();
+
+FsrMode Gr_fsr_mode = FsrMode::Off;
+
+bool gr_fsr_upscale_available()
+{
+	return Cmdline_window_res.has_value()
+		&& (Cmdline_window_res->first > gr_screen.max_w || Cmdline_window_res->second > gr_screen.max_h);
+}
+
+// The option framework has no disabled state, so values that can't be used aren't offered.
+static SCP_vector<FsrMode> fsr_mode_enumerator()
+{
+	SCP_vector<FsrMode> out{FsrMode::Off};
+
+	// Options are also enumerated before gr_init has set up the renderer.
+	if (gr_screen.gf_is_capable && gr_is_capable(gr_capability::CAPABILITY_FSR)) {
+		out.push_back(FsrMode::AA);
+		if (gr_fsr_upscale_available()) {
+			out.push_back(FsrMode::On);
+		}
+	}
+
+	return out;
+}
+
+static SCP_string fsr_mode_display(FsrMode mode)
+{
+	switch (mode) {
+	case FsrMode::AA:
+		return "FSR AA";
+	case FsrMode::On:
+		return "On";
+	case FsrMode::Off:
+	default:
+		return "Off";
+	}
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FsrOption __UNUSED = options::OptionBuilder<FsrMode>("Graphics.FSR",
+                     std::pair<const char*, int>{"AMD FSR", -1},
+                     std::pair<const char*, int>{"Upscales the 3D scene from the rendering resolution to the window resolution. FSR AA only does anti aliasing.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(fsr_mode_enumerator)
+                     .display(fsr_mode_display)
+                     .default_func([]() { return Gr_fsr_mode; } )
+                     .bind_to(&Gr_fsr_mode)
+                     .importance(77)
                      .finish();
 
 extern int Cmdline_msaa_enabled;
@@ -2057,6 +2108,10 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 			default:
 				Int3();		// Invalid graphics mode
 		}
+	}
+
+	if (Cmdline_fsr_mode >= static_cast<int>(FsrMode::Off) && Cmdline_fsr_mode <= static_cast<int>(FsrMode::On)) {
+		Gr_fsr_mode = static_cast<FsrMode>(Cmdline_fsr_mode);
 	}
 
 	if (Using_in_game_options) {

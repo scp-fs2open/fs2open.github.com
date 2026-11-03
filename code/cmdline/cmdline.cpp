@@ -354,6 +354,7 @@ cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), req
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window. Vulkan only", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -379,6 +380,7 @@ int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
 int Cmdline_msaa_enabled = 0;
+int Cmdline_fsr_mode = -1;
 
 // Game Speed related
 cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
@@ -531,6 +533,7 @@ cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
+cmdline_parm debug_motion_vectors_arg("-gr_debug_motion_vectors", "Shows motion vectors instead of the scene. Vulkan only", AT_NONE); // Cmdline_debug_motion_vectors
 cmdline_parm gr_sync_validation_arg("-gr_sync_validation", nullptr, AT_NONE); // Cmdline_gr_sync_validation (implies -gr_debug)
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
@@ -578,6 +581,7 @@ bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
+bool Cmdline_debug_motion_vectors = false;
 bool Cmdline_gr_sync_validation = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
@@ -2127,6 +2131,10 @@ bool SetCmdlineParams()
 			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
 	}
 
+	if (fsr_mode_arg.found()) {
+		Cmdline_fsr_mode = fsr_mode_arg.get_int();
+	}
+
 	if (msaa_enabled_arg.found()) {
 		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
 		switch (Cmdline_msaa_enabled) {
@@ -2435,6 +2443,10 @@ bool SetCmdlineParams()
 
 	if (debug_window_arg.found()) {
 		Cmdline_debug_window = true;
+	}
+
+	if (debug_motion_vectors_arg.found()) {
+		Cmdline_debug_motion_vectors = true;
 	}
 
 	if (graphics_debug_output_arg.found()) {

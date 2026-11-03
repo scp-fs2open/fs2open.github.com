@@ -31,6 +31,54 @@ static bool matrix_uniform_up_to_date = false;
 static bool  gr_ortho_override_active   = false;
 static float gr_ortho_override_distance = 0.0f;
 
+bool Gr_motion_vectors_active = false;
+
+namespace {
+struct velocity_camera {
+	matrix4 view_proj;
+	matrix4 previous_view_proj;
+
+	void capture()
+	{
+		previous_view_proj = view_proj;
+		vm_matrix4_x_matrix4(&view_proj, &gr_projection_matrix, &gr_view_matrix);
+	}
+};
+}
+
+static velocity_camera Scene_camera;
+static velocity_camera Cockpit_camera;
+static const velocity_camera* Current_velocity_camera = &Scene_camera;
+static float Scene_viewport_rect[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+
+void gr_capture_scene_camera()
+{
+	Scene_camera.capture();
+
+	Scene_viewport_rect[0] = i2fl(gr_screen.offset_x) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[1] = i2fl(gr_screen.offset_y) / i2fl(gr_screen.max_h);
+	Scene_viewport_rect[2] = i2fl(gr_screen.clip_width) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[3] = i2fl(gr_screen.clip_height) / i2fl(gr_screen.max_h);
+}
+
+void gr_begin_cockpit_camera()
+{
+	Cockpit_camera.capture();
+	Current_velocity_camera = &Cockpit_camera;
+}
+
+void gr_end_cockpit_camera()
+{
+	Current_velocity_camera = &Scene_camera;
+}
+
+void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, float viewport_rect[4])
+{
+	*view_proj = Current_velocity_camera->view_proj;
+	*previous_view_proj = Current_velocity_camera->previous_view_proj;
+	memcpy(viewport_rect, Scene_viewport_rect, sizeof(Scene_viewport_rect));
+}
+
 static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
 	vec3d scaled_pos;

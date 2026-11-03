@@ -1116,6 +1116,9 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
+	config.writesVelocity = mat->get_velocity_output()
+		&& config.shaderType == SDR_TYPE_MODEL
+		&& config.colorWriteMask.x;
 
 	return config;
 }

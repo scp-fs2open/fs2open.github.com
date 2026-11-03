@@ -52,6 +52,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       renderPass == other.renderPass &&
 	       subpass == other.subpass &&
 	       colorAttachmentCount == other.colorAttachmentCount &&
+	       writesVelocity == other.writesVelocity &&
 	       sampleCount == other.sampleCount &&
 	       perAttachmentBlendEnabled == other.perAttachmentBlendEnabled &&
 	       [&]() {
@@ -126,6 +127,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, handleToU64(static_cast<VkRenderPass>(renderPass)));
 	hashCombine(h, subpass);
 	hashCombine(h, colorAttachmentCount);
+	hashCombine(h, writesVelocity ? 1u : 0u);
 	hashCombine(h, static_cast<uint64_t>(sampleCount));
 	hashCombine(h, perAttachmentBlendEnabled ? 1u : 0u);
 	if (perAttachmentBlendEnabled) {
@@ -453,6 +455,22 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 				config.attachmentBlends[i].blendMode, config.attachmentBlends[i].writeMask));
 		} else {
 			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask));
+		}
+	}
+
+	if (config.colorAttachmentCount > PipelineConfig::VELOCITY_ATTACHMENT) {
+		auto& velocity = colorBlendAttachments[PipelineConfig::VELOCITY_ATTACHMENT];
+		velocity = vk::PipelineColorBlendAttachmentState{};
+		if (config.writesVelocity) {
+			// The shader's alpha chooses per fragment whether to replace the motion already there.
+			velocity.blendEnable = VK_TRUE;
+			velocity.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+			velocity.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+			velocity.colorBlendOp = vk::BlendOp::eAdd;
+			velocity.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+			velocity.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+			velocity.alphaBlendOp = vk::BlendOp::eAdd;
+			velocity.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG;
 		}
 	}
 

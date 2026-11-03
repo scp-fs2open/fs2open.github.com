@@ -259,6 +259,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main_large.sdr
 	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/motion-vector-f.sdr
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
@@ -630,6 +631,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessingLighting.cpp
 		graphics/vulkan/VulkanPostProcessingMSAA.cpp
 		graphics/vulkan/VulkanPostProcessingSMAA.cpp
+		graphics/vulkan/VulkanPostProcessingMotion.cpp
 		graphics/vulkan/VulkanPostProcessingShadow.cpp
 		graphics/vulkan/VulkanQuery.cpp
 		graphics/vulkan/VulkanQuery.h
@@ -650,6 +652,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanShaderCompiler.h
 		graphics/vulkan/VulkanState.cpp
 		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanUpscaler.cpp
+		graphics/vulkan/VulkanUpscaler.h
 		graphics/vulkan/VulkanTexture.cpp
 		graphics/vulkan/VulkanTexture.h
 		graphics/vulkan/VulkanTextureAPI.cpp

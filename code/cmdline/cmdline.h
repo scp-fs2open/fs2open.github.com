@@ -86,6 +86,7 @@ extern bool Cmdline_stretch_menu;
 extern bool Cmdline_capture_mouse;
 extern int Cmdline_deadzone;
 extern bool Cmdline_enable_vr;
+extern int Cmdline_fsr_mode;
 
 // Audio related
 extern int Cmdline_voice_recognition;
@@ -154,6 +155,7 @@ extern bool Cmdline_frame_profile;
 extern bool Cmdline_show_video_info;
 extern bool Cmdline_debug_window;
 extern bool Cmdline_graphics_debug_output;
+extern bool Cmdline_debug_motion_vectors;
 extern bool Cmdline_gr_sync_validation;
 extern bool Cmdline_log_to_stdout;
 extern bool Cmdline_slow_frames_ok;

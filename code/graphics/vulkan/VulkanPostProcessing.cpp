@@ -14,6 +14,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "math/vecmat.h"
@@ -348,6 +349,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	// Wire the deferred light accumulation + fog subsystems (resources are lazy).
 	m_lighting.init(m_ctx, m_sceneColor, m_deferred, m_shadow);
 	m_fog.init(m_ctx, m_sceneColor, m_sceneDepth, m_sceneDepthCopy, m_deferred);
+	m_motionVectors.init(m_ctx);
 
 	// Initialize MSAA resources if MSAA is enabled and G-buffer is ready
 	if (m_deferred.isInitialized() && Cmdline_msaa_enabled > 0) {
@@ -368,6 +370,7 @@ void VulkanPostProcessor::shutdown()
 	if (m_ctx.device) {
 		m_ctx.device.waitIdle();
 
+		m_motionVectors.shutdown();
 		m_fog.shutdown();
 		shutdownShadowPass();
 		shadow_cascade_params_shutdown();
@@ -391,6 +394,14 @@ void VulkanPostProcessor::shutdown()
 		}
 		destroySceneTargets();
 
+		if (m_velocitySceneRenderPassLoad) {
+			m_ctx.device.destroyRenderPass(m_velocitySceneRenderPassLoad);
+			m_velocitySceneRenderPassLoad = nullptr;
+		}
+		if (m_velocitySceneRenderPass) {
+			m_ctx.device.destroyRenderPass(m_velocitySceneRenderPass);
+			m_velocitySceneRenderPass = nullptr;
+		}
 		if (m_sceneRenderPassLoad) {
 			m_ctx.device.destroyRenderPass(m_sceneRenderPassLoad);
 			m_sceneRenderPassLoad = nullptr;
@@ -490,6 +501,10 @@ void VulkanPostProcessor::destroySceneTargets()
 		m_ctx.device.destroyFramebuffer(m_sceneFramebuffer);
 		m_sceneFramebuffer = nullptr;
 	}
+	if (m_velocitySceneFramebuffer) {
+		m_ctx.device.destroyFramebuffer(m_velocitySceneFramebuffer);
+		m_velocitySceneFramebuffer = nullptr;
+	}
 	m_ctx.destroyTarget(m_sceneEffect);
 	m_ctx.destroyTarget(m_sceneColor);
 	m_ctx.destroyTarget(m_sceneDepth);
@@ -516,6 +531,147 @@ bool VulkanPostProcessor::createSceneFramebuffer()
 		return false;
 	}
 	return true;
+}
+
+bool VulkanPostProcessor::createVelocitySceneResources()
+{
+	if (!m_velocitySceneRenderPass) {
+		// Same as the plain scene passes, with motion vectors at the location the model shader writes them.
+		const auto createPass = [this](vk::AttachmentLoadOp loadOp, vk::ImageLayout colorInitial, vk::ImageLayout depthInitial) {
+			std::array<vk::AttachmentDescription, 3> attachments;
+
+			attachments[0].format = HDR_COLOR_FORMAT;
+			attachments[0].loadOp = loadOp;
+			attachments[0].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[0].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			attachments[0].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			attachments[0].initialLayout = colorInitial;
+			attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+			attachments[1].format = VulkanMotionVectors::FORMAT;
+			attachments[1].loadOp = loadOp;
+			attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+			attachments[1].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+			attachments[1].initialLayout = colorInitial;
+			attachments[1].finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+			attachments[2].format = m_ctx.depthFormat;
+			attachments[2].loadOp = loadOp;
+			attachments[2].storeOp = vk::AttachmentStoreOp::eStore;
+			attachments[2].stencilLoadOp = loadOp;
+			attachments[2].stencilStoreOp = vk::AttachmentStoreOp::eStore;
+			attachments[2].initialLayout = depthInitial;
+			attachments[2].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+			std::array<vk::AttachmentReference, VulkanDeferredGBuffer::VELOCITY_COLOR_LOCATION_COUNT> colorRefs;
+			for (auto& ref : colorRefs) {
+				ref.attachment = VK_ATTACHMENT_UNUSED;
+				ref.layout = vk::ImageLayout::eUndefined;
+			}
+			colorRefs[0].attachment = 0;
+			colorRefs[0].layout = vk::ImageLayout::eColorAttachmentOptimal;
+			colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].attachment = 1;
+			colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+			vk::AttachmentReference depthRef;
+			depthRef.attachment = 2;
+			depthRef.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+
+			vk::SubpassDescription subpass;
+			subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+			subpass.colorAttachmentCount = static_cast<uint32_t>(colorRefs.size());
+			subpass.pColorAttachments = colorRefs.data();
+			subpass.pDepthStencilAttachment = &depthRef;
+
+			vk::SubpassDependency dependency;
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+			                        | vk::PipelineStageFlagBits::eEarlyFragmentTests
+			                        | vk::PipelineStageFlagBits::eLateFragmentTests
+			                        | vk::PipelineStageFlagBits::eFragmentShader
+			                        | vk::PipelineStageFlagBits::eTransfer;
+			dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput
+			                        | vk::PipelineStageFlagBits::eEarlyFragmentTests;
+			dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+			                         | vk::AccessFlagBits::eShaderRead
+			                         | vk::AccessFlagBits::eTransferRead;
+			dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
+			                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
+
+			vk::RenderPassCreateInfo rpInfo;
+			rpInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+			rpInfo.pAttachments = attachments.data();
+			rpInfo.subpassCount = 1;
+			rpInfo.pSubpasses = &subpass;
+			rpInfo.dependencyCount = 1;
+			rpInfo.pDependencies = &dependency;
+
+			return m_ctx.device.createRenderPass(rpInfo);
+		};
+
+		try {
+			m_velocitySceneRenderPass = createPass(vk::AttachmentLoadOp::eClear,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eUndefined);
+			m_velocitySceneRenderPassLoad = createPass(vk::AttachmentLoadOp::eLoad,
+				vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create motion vector scene passes: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	if (!m_velocitySceneFramebuffer) {
+		std::array<vk::ImageView, 3> views = {m_sceneColor.view, m_motionVectors.drawnMotion().view, m_sceneDepth.view};
+
+		vk::FramebufferCreateInfo fbInfo;
+		fbInfo.renderPass = m_velocitySceneRenderPass;
+		fbInfo.attachmentCount = static_cast<uint32_t>(views.size());
+		fbInfo.pAttachments = views.data();
+		fbInfo.width = m_ctx.sceneExtent.width;
+		fbInfo.height = m_ctx.sceneExtent.height;
+		fbInfo.layers = 1;
+
+		try {
+			m_velocitySceneFramebuffer = m_ctx.device.createFramebuffer(fbInfo);
+		} catch (const vk::SystemError& e) {
+			nprintf(("vulkan", "VulkanPostProcessor: Failed to create motion vector scene framebuffer: %s\n", e.what()));
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void VulkanPostProcessor::prepareMotionVectors()
+{
+	const bool active = VulkanMotionVectors::wanted()
+		&& m_motionVectors.createResources()
+		&& createVelocitySceneResources()
+		&& m_deferred.setVelocityTarget(&m_motionVectors.drawnMotion());
+
+	if (!active) {
+		m_deferred.setVelocityTarget(nullptr);
+	}
+
+	m_velocityActive = active;
+	Gr_motion_vectors_active = active;
+}
+
+std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
+{
+	std::array<vk::ClearValue, 3> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	if (m_velocityActive) {
+		clearValues[1].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+		clearValues[2].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	} else {
+		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+	}
+	return clearValues;
 }
 
 bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
@@ -570,6 +726,8 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
 		nprintf(("vulkan", "VulkanPostProcessor: Fog resize failed, disabling fog\n"));
 		m_fog.shutdown();
 	}
+	// Recreated at the new size on next use.
+	m_motionVectors.destroyTargets();
 	// Distortion (fixed 32x32) and the shadow map (sized from Shadow_quality)
 	// are extent-independent.
 

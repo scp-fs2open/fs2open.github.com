@@ -184,6 +184,7 @@ class VulkanRenderer {
 	vk::CommandBuffer getCurrentCommandBuffer() const { return m_currentCommandBuffer; }
 
 	vk::Instance getVkInstance() const { return m_vkInstance.get(); }
+	bool supportsIndependentBlend() const { return m_deviceFeatures.independentBlend == VK_TRUE; }
 	vk::PhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
 	vk::Device getDevice() const { return m_device.get(); }
 	vk::Queue getGraphicsQueue() const { return m_graphicsQueue; }

@@ -277,6 +277,8 @@ void VulkanRenderer::beginSceneRendering()
 	// this call, for the TLAS build, so end it only when it is still open.
 	endCurrentRenderPass();
 
+	m_postProcessor->prepareMotionVectors();
+
 	// Use G-buffer render pass when deferred lighting is enabled and G-buffer is ready
 	m_useGbufRenderPass = m_postProcessor->deferred().isInitialized() && light_deferred_enabled();
 
@@ -285,29 +287,33 @@ void VulkanRenderer::beginSceneRendering()
 	pass.extent = m_postProcessor->getSceneExtent();
 
 	if (m_useGbufRenderPass) {
-		// Clear values: 6 color + depth
-		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		const auto& gbuffer = m_postProcessor->deferred();
+
+		// Clear values: 6 color, optionally motion vectors, then depth. Extras are ignored by the plain pass.
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COMPOSITE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		if (gbuffer.velocityActive()) {
+			clearValues[gbuffer.velocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+		}
+		clearValues[gbuffer.depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-		pass.renderPass = m_postProcessor->deferred().renderPass();
-		pass.framebuffer = m_postProcessor->deferred().framebuffer();
+		pass.renderPass = gbuffer.renderPass();
+		pass.framebuffer = gbuffer.framebuffer();
 		pass.clearValues = clearValues;
-		pass.colorAttachmentCount = VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT;
+		pass.colorAttachmentCount = gbuffer.colorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	} else {
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		auto clearValues = m_postProcessor->sceneClearValues();
 
 		pass.renderPass = m_postProcessor->getSceneRenderPass();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 		pass.clearValues = clearValues;
+		pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	}
 
@@ -320,6 +326,7 @@ void VulkanRenderer::resumeSceneRendering()
 	pass.renderPass = m_postProcessor->getSceneRenderPassLoad();
 	pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 	pass.extent = m_postProcessor->getSceneExtent();
+	pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 	beginTrackedRenderPass(pass);
 }
 
@@ -334,6 +341,8 @@ void VulkanRenderer::endSceneRendering()
 
 	// End HDR scene render pass (transitions scene color to eShaderReadOnlyOptimal)
 	m_currentCommandBuffer.endRenderPass();
+
+	m_postProcessor->executeMotionVectors(m_currentCommandBuffer);
 
 	// Update distortion ping-pong textures (every ~30ms, matching OpenGL)
 	if (Gr_framebuffer_effects.any_set()) {
@@ -365,6 +374,7 @@ void VulkanRenderer::endSceneRendering()
 
 	// Blit the HDR scene to swap chain through post-processing
 	m_postProcessor->blitToSwapChain(m_currentCommandBuffer);
+	m_postProcessor->drawMotionVectorDebug(m_currentCommandBuffer);
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
@@ -409,23 +419,24 @@ void VulkanRenderer::resumeScenePassAfterCopy()
 	pass.extent = m_postProcessor->getSceneExtent();
 
 	if (m_useGbufRenderPass) {
-		// Clear values ignored for eLoad but array must cover all attachments
-		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		const auto& gbuffer = m_postProcessor->deferred();
 
-		pass.renderPass = m_postProcessor->deferred().renderPassLoad();
-		pass.framebuffer = m_postProcessor->deferred().framebuffer();
+		// Clear values ignored for eLoad but array must cover all attachments
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+		clearValues[gbuffer.depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		pass.renderPass = gbuffer.renderPassLoad();
+		pass.framebuffer = gbuffer.framebuffer();
 		pass.clearValues = clearValues;
-		pass.colorAttachmentCount = VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT;
+		pass.colorAttachmentCount = gbuffer.colorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	} else {
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		auto clearValues = m_postProcessor->sceneClearValues();
 
 		pass.renderPass = m_postProcessor->getSceneRenderPassLoad();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 		pass.clearValues = clearValues;
+		pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	}
 }

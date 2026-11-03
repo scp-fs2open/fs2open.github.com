@@ -68,6 +68,16 @@ enum class AntiAliasMode {
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
+enum class FsrMode {
+	Off = 0,
+	AA = 1, // 1:1, any upscaling is left to the final blit
+	On = 2, // upscales the scene to the window's resolution
+};
+extern FsrMode Gr_fsr_mode;
+
+// On needs a window larger than the render resolution on at least one axis
+bool gr_fsr_upscale_available();
+
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
 
@@ -232,6 +242,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_MOTION_VECTORS,
+
 	NUM_SHADER_TYPES
 };
 
@@ -255,6 +267,8 @@ enum shader_type {
 
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 #define SDR_FLAG_COPY_CLAMP01 (1 << 1)
+
+#define SDR_FLAG_MOTION_VECTORS_DEBUG (1 << 0)
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
@@ -376,7 +390,8 @@ enum class gr_capability {
 	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
 	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
 	// otherwise texture-object state shared by every sampler bound to that texture.
-	CAPABILITY_SHADOW_CONTACT_HARDENING
+	CAPABILITY_SHADOW_CONTACT_HARDENING,
+	CAPABILITY_FSR
 };
 
 struct gr_capability_def {

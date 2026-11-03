@@ -79,6 +79,7 @@ public:
 	vec4 Clr;
 	float Clr_scale;
 	int Depth_bias;
+	bool Velocity_output = false;
 	bvec4 Color_mask;
 	bool Stencil_test = false;
 	uint32_t Stencil_mask = 0xFF;
@@ -130,6 +131,10 @@ public:
 
 	void set_depth_bias(int bias);
 	int get_depth_bias() const;
+
+	// Whether this writes its own motion vectors when the target has a place for them
+	void set_velocity_output(bool output) { Velocity_output = output; }
+	bool get_velocity_output() const { return Velocity_output; }
 
 	void set_color(float red, float green, float blue, float alpha);
 	void set_color(int r, int g, int b, int a);

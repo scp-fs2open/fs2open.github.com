@@ -2,8 +2,11 @@
 
 #include <array>
 
+#include "gr_vulkan.h"
 #include "VulkanRenderer.h"
 #include "VulkanBarrier.h"
+#include "VulkanPipeline.h"
+#include "VulkanTexture.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
 #include "nebula/neb.h"
@@ -35,11 +38,12 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 
 	const uint32_t colorCount = config.includeComposite
 		? GBUF_COLOR_ATTACHMENT_COUNT : MSAA_COLOR_ATTACHMENT_COUNT;
-	const uint32_t depthIndex = colorCount;
-	const uint32_t totalAttachments = colorCount + 1;
+	const uint32_t velocityIndex = colorCount;
+	const uint32_t depthIndex = colorCount + (config.includeVelocity ? 1 : 0);
+	const uint32_t totalAttachments = depthIndex + 1;
 
-	// Max 6 color + 1 depth = 7 attachments
-	std::array<vk::AttachmentDescription, 7> attachments;
+	// Max 6 color + 1 velocity + 1 depth = 8 attachments
+	std::array<vk::AttachmentDescription, 8> attachments;
 		for (uint32_t i = 0; i < colorCount; ++i) {
 		attachments[i].format = COLOR_FORMATS[i];
 		attachments[i].samples = config.samples;
@@ -50,6 +54,21 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 		attachments[i].stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
 		attachments[i].initialLayout = config.colorInitialLayout;
 		attachments[i].finalLayout = config.colorFinalLayout;
+	}
+
+	// Motion vectors stay an attachment through the whole scene, which spares every mid-scene copy from having
+	// to transition them around each pass end and resume.
+	if (config.includeVelocity) {
+		auto& velocity = attachments[velocityIndex];
+		velocity.format = VulkanMotionVectors::FORMAT;
+		velocity.samples = config.samples;
+		velocity.loadOp = config.velocityLoadOp;
+		velocity.storeOp = vk::AttachmentStoreOp::eStore;
+		velocity.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+		velocity.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+		velocity.initialLayout = config.velocityLoadOp == vk::AttachmentLoadOp::eLoad
+			? vk::ImageLayout::eColorAttachmentOptimal : vk::ImageLayout::eUndefined;
+		velocity.finalLayout = vk::ImageLayout::eColorAttachmentOptimal;
 	}
 
 	// Depth — stencil ops mirror the depth loadOp
@@ -66,10 +85,18 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 	attachments[depthIndex].initialLayout = config.depthInitialLayout;
 	attachments[depthIndex].finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-	std::array<vk::AttachmentReference, 6> colorRefs;
+	std::array<vk::AttachmentReference, VELOCITY_COLOR_LOCATION_COUNT> colorRefs;
+	for (auto& ref : colorRefs) {
+		ref.attachment = VK_ATTACHMENT_UNUSED;
+		ref.layout = vk::ImageLayout::eUndefined;
+	}
 	for (uint32_t i = 0; i < colorCount; ++i) {
 		colorRefs[i].attachment = i;
 		colorRefs[i].layout = vk::ImageLayout::eColorAttachmentOptimal;
+	}
+	if (config.includeVelocity) {
+		colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].attachment = velocityIndex;
+		colorRefs[PipelineConfig::VELOCITY_ATTACHMENT].layout = vk::ImageLayout::eColorAttachmentOptimal;
 	}
 
 	vk::AttachmentReference depthRef;
@@ -78,7 +105,7 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 
 	vk::SubpassDescription subpass;
 	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
-	subpass.colorAttachmentCount = colorCount;
+	subpass.colorAttachmentCount = config.includeVelocity ? VELOCITY_COLOR_LOCATION_COUNT : colorCount;
 	subpass.pColorAttachments = colorRefs.data();
 	subpass.pDepthStencilAttachment = &depthRef;
 
@@ -138,10 +165,10 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 }
 
 vk::Framebuffer VulkanDeferredGBuffer::createGbufFramebuffer(
-	vk::RenderPass renderPass, bool includeComposite, bool useMsaaImages)
+	vk::RenderPass renderPass, bool includeComposite, bool useMsaaImages, const RenderTarget* velocity)
 {
-	// Attachment order: color, position, normal, specular, emissive, [composite], depth
-	std::array<vk::ImageView, 7> views;
+	// Attachment order: color, position, normal, specular, emissive, [composite], [velocity], depth
+	std::array<vk::ImageView, 8> views;
 	uint32_t count = 0;
 
 	if (useMsaaImages) {
@@ -160,6 +187,10 @@ vk::Framebuffer VulkanDeferredGBuffer::createGbufFramebuffer(
 
 	if (includeComposite) {
 		views[count++] = m_gbufComposite.view;
+	}
+
+	if (velocity) {
+		views[count++] = velocity->view;
 	}
 
 	views[count++] = useMsaaImages ? m_msaaDepthView : m_sceneDepth->view;
@@ -284,8 +315,143 @@ bool VulkanDeferredGBuffer::createTargets()
 	return true;
 }
 
+bool VulkanDeferredGBuffer::createVelocityRenderPasses()
+{
+	if (m_velocityRenderPass) {
+		return true;
+	}
+
+	try {
+		m_velocityRenderPass = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+			vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eUndefined,
+			false, {}, true, vk::AttachmentLoadOp::eClear,
+		});
+		m_velocityRenderPassLoad = createGbufRenderPass({
+			true, vk::SampleCountFlagBits::e1,
+			vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+			vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+			vk::ImageLayout::eDepthStencilAttachmentOptimal,
+			false, {}, true, vk::AttachmentLoadOp::eLoad,
+		});
+
+		if (m_msaaInitialized) {
+			const auto samples = getRendererInstance()->getMsaaSampleCount();
+			m_velocityMsaaRenderPass = createGbufRenderPass({
+				false, samples,
+				vk::AttachmentLoadOp::eClear, vk::AttachmentLoadOp::eClear,
+				vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+				vk::ImageLayout::eDepthStencilAttachmentOptimal,
+				false, {{GBUF_ATT_EMISSIVE, vk::AttachmentLoadOp::eLoad}}, true, vk::AttachmentLoadOp::eClear,
+			});
+			m_velocityMsaaRenderPassLoad = createGbufRenderPass({
+				false, samples,
+				vk::AttachmentLoadOp::eLoad, vk::AttachmentLoadOp::eLoad,
+				vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+				vk::ImageLayout::eDepthStencilAttachmentOptimal,
+				false, {}, true, vk::AttachmentLoadOp::eLoad,
+			});
+			// Loads rather than discards velocity, because the cockpit resolves on top of the main scene's.
+			m_velocityResolveRenderPass = createGbufRenderPass({
+				false, vk::SampleCountFlagBits::e1,
+				vk::AttachmentLoadOp::eDontCare, vk::AttachmentLoadOp::eDontCare,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
+				vk::ImageLayout::eUndefined,
+				true, {}, true, vk::AttachmentLoadOp::eLoad,
+			});
+		}
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanDeferredGBuffer: Failed to create motion vector render passes: %s\n", e.what()));
+		destroyVelocityRenderPasses();
+		return false;
+	}
+
+	return true;
+}
+
+void VulkanDeferredGBuffer::destroyVelocityRenderPasses()
+{
+	for (auto* pass : {&m_velocityRenderPass, &m_velocityRenderPassLoad, &m_velocityMsaaRenderPass,
+	                   &m_velocityMsaaRenderPassLoad, &m_velocityResolveRenderPass}) {
+		if (*pass) {
+			m_ctx->device.destroyRenderPass(*pass);
+			*pass = nullptr;
+		}
+	}
+}
+
+bool VulkanDeferredGBuffer::createVelocityTargets(const RenderTarget& drawnMotion)
+{
+	if (m_velocityFramebuffer) {
+		return true;
+	}
+
+	try {
+		m_velocityFramebuffer = createGbufFramebuffer(m_velocityRenderPass, true, false, &drawnMotion);
+
+		if (m_msaaInitialized) {
+			if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, VulkanMotionVectors::FORMAT,
+			                        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+			                        vk::ImageAspectFlagBits::eColor,
+			                        m_msaaVelocity.image, m_msaaVelocity.view, m_msaaVelocity.allocation,
+			                        getRendererInstance()->getMsaaSampleCount())) {
+				nprintf(("vulkan", "VulkanDeferredGBuffer: Failed to create MSAA motion vector image!\n"));
+				destroyVelocityTargets();
+				return false;
+			}
+			m_msaaVelocity.format = VulkanMotionVectors::FORMAT;
+			m_msaaVelocity.width = m_ctx->sceneExtent.width;
+			m_msaaVelocity.height = m_ctx->sceneExtent.height;
+
+			m_velocityMsaaFramebuffer = createGbufFramebuffer(m_velocityMsaaRenderPass, false, true, &m_msaaVelocity);
+			m_velocityResolveFramebuffer = createGbufFramebuffer(m_velocityResolveRenderPass, false, false, &drawnMotion);
+
+			getTextureManager()->transitionImageLayout(m_msaaVelocity.image, m_msaaVelocity.format,
+				vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
+		}
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanDeferredGBuffer: Failed to create motion vector framebuffers: %s\n", e.what()));
+		destroyVelocityTargets();
+		return false;
+	}
+
+	return true;
+}
+
+void VulkanDeferredGBuffer::destroyVelocityTargets()
+{
+	for (auto* framebuffer : {&m_velocityFramebuffer, &m_velocityMsaaFramebuffer, &m_velocityResolveFramebuffer}) {
+		if (*framebuffer) {
+			m_ctx->device.destroyFramebuffer(*framebuffer);
+			*framebuffer = nullptr;
+		}
+	}
+	m_ctx->destroyTarget(m_msaaVelocity);
+}
+
+bool VulkanDeferredGBuffer::setVelocityTarget(const RenderTarget* drawnMotion)
+{
+	m_velocityActive = false;
+
+	if (!drawnMotion || !m_gbufInitialized) {
+		return drawnMotion == nullptr;
+	}
+
+	if (!createVelocityRenderPasses() || !createVelocityTargets(*drawnMotion)) {
+		return false;
+	}
+
+	m_velocityActive = true;
+	return true;
+}
+
 void VulkanDeferredGBuffer::destroyTargets()
 {
+	// Rebuilt at the new size when next selected
+	destroyVelocityTargets();
+
 	if (m_gbufFramebuffer) {
 		m_ctx->device.destroyFramebuffer(m_gbufFramebuffer);
 		m_gbufFramebuffer = nullptr;
@@ -331,6 +497,7 @@ void VulkanDeferredGBuffer::shutdown()
 	}
 
 	destroyTargets();
+	destroyVelocityRenderPasses();
 
 	if (m_gbufRenderPassLoad) {
 		m_ctx->device.destroyRenderPass(m_gbufRenderPassLoad);

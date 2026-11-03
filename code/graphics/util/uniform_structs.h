@@ -141,6 +141,14 @@ struct model_uniform_data {
 	float alphaMult;
 	int flags;
 	float pad;
+
+	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
+	matrix4 prevModelMatrix;
+	matrix4 velocityViewProj;
+	matrix4 velocityPrevViewProj;
+	float velocityUvScale[2];
+	int prev_transform_stride;
+	float pad2;
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);

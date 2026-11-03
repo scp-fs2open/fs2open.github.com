@@ -8359,6 +8359,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
+	gr_begin_cockpit_camera();
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
@@ -8463,6 +8464,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	Lighting_mode = lighting_mode::NORMAL;
 
+	gr_end_cockpit_camera();
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
@@ -21926,6 +21928,8 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 					angles angs = vmd_zero_angles;
 					angs.b = swp->primary_bank_external_weapon[i].rotate_ang;
 					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
+					// runs during rendering, possibly more than once per frame, so there is no meaningful previous value
+					pmi->submodel[mn].canonical_prev_orient = pmi->submodel[mn].canonical_orient;
 				}
 			}
 		}

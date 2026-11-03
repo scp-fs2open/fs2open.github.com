@@ -1596,7 +1596,7 @@ void obj_move_all(float frametime)
 	SCP_vector<object*> cmeasure_list;
 	const bool global_cmeasure_timer = (Cmeasures_homing_check > 0);
 
-	Assertion(Cmeasures_homing_check >= 0, "Cmeasures_homing_check is %d in obj_move_all(); it should never be negative. Get a coder!\n", Cmeasures_homing_check);
+	Assertion(Cmeasures_homing_check >= 0,"Cmeasures_homing_check is %d in obj_move_all(); it should never be negative. Get a coder!\n", Cmeasures_homing_check);
 
 	if (global_cmeasure_timer)
 		Cmeasures_homing_check--;
@@ -1646,7 +1646,17 @@ void obj_move_all(float frametime)
 
 		vec3d cur_pos = objp->pos;			// Save the current position
 
-#ifdef OBJECT_CHECK 
+		// Likewise for submodels, whose movers only record this when they actually move. It has to happen before
+		// obj_move_all_pre, because turrets can move in there under framerate independent turning.
+		if (int instance_num = object_get_model_instance_num(objp); instance_num >= 0) {
+			auto pmi = model_get_instance(instance_num);
+			for (int i = 0; i < model_get(pmi->model_num)->n_models; ++i) {
+				pmi->submodel[i].canonical_prev_orient = pmi->submodel[i].canonical_orient;
+				pmi->submodel[i].canonical_prev_offset = pmi->submodel[i].canonical_offset;
+			}
+		}
+
+#ifdef OBJECT_CHECK
 			obj_check_object( objp );
 #endif
 

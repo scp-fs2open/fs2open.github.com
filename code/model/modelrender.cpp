@@ -454,6 +454,7 @@ void model_batch_buffer::reset()
 	Submodel_matrices.clear();
 
 	Current_offset = 0;
+	Prev_stride = 0;
 }
 
 void model_batch_buffer::set_num_models(int n_models)
@@ -463,15 +464,26 @@ void model_batch_buffer::set_num_models(int n_models)
 	vm_matrix4_set_identity(&init_mat);
 
 	Current_offset = Submodel_matrices.size();
+	Prev_stride = Gr_motion_vectors_active ? n_models : 0;
 
-	for ( int i = 0; i < n_models; ++i ) {
-		Submodel_matrices.push_back(init_mat);
-	}
+	Submodel_matrices.insert(Submodel_matrices.end(), n_models + Prev_stride, init_mat);
 }
 
 void model_batch_buffer::set_model_transform(const matrix4 &transform, int model_id)
 {
 	Submodel_matrices[Current_offset + model_id] = transform;
+}
+
+void model_batch_buffer::set_prev_model_transform(const matrix4 &transform, int model_id)
+{
+	if (Prev_stride > 0) {
+		Submodel_matrices[Current_offset + Prev_stride + model_id] = transform;
+	}
+}
+
+int model_batch_buffer::get_prev_stride() const
+{
+	return Prev_stride;
 }
 
 void model_batch_buffer::add_matrix(const matrix4 &mat)
@@ -542,6 +554,8 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 
 	if (tmap_flags & TMAP_FLAG_BATCH_TRANSFORMS && buffer->flags & VB_FLAG_MODEL_ID) {
 		vm_matrix4_set_identity(&draw_data.transform);
+		vm_matrix4_set_identity(&draw_data.prev_transform);
+		draw_data.prev_transform_stride = _batchBuffer.get_prev_stride();
 
 		draw_data.scale.xyz.x = 1.0f;
 		draw_data.scale.xyz.y = 1.0f;
@@ -552,6 +566,7 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 		draw_data.render_material.set_batching(true);
 	} else {
 		draw_data.transform = get_transform();
+		draw_data.prev_transform = _prev_transforms.get_transform();
 		draw_data.scale = _scale;
 		draw_data.transform_buffer_offset = INVALID_SIZE;
 		draw_data.render_material.set_batching(false);
@@ -802,7 +817,9 @@ void model_draw_list::build_uniform_buffer() {
 												   queued_draw.render_material,
 												   queued_draw.transform,
 												   queued_draw.scale,
-												   queued_draw.transform_buffer_offset);
+												   queued_draw.transform_buffer_offset,
+												   queued_draw.prev_transform,
+												   queued_draw.prev_transform_stride);
 		queued_draw.uniform_buffer_offset = _dataBuffer.getCurrentAlignerOffset();
 	}
 
@@ -1280,8 +1297,16 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		vm_vec_add2(&submodel_offset, &smi->canonical_offset);
 	}
 
-	scene->push_transform(&submodel_offset, &submodel_orient);
-	
+	matrix prev_submodel_orient = submodel_orient;
+	vec3d prev_submodel_offset = submodel_offset;
+
+	if ( smi != nullptr ) {
+		prev_submodel_orient = smi->canonical_prev_orient;
+		vm_vec_add(&prev_submodel_offset, &sm->offset, &smi->canonical_prev_offset);
+	}
+
+	scene->push_transform(&submodel_offset, &submodel_orient, &prev_submodel_offset, &prev_submodel_orient);
+
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
@@ -1548,7 +1573,11 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 	bool is_outlines_only_htl = (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 
 	//set to true since D3d and OGL need the api matrices set
-	scene->push_transform(pos, orient);
+	// Anything not drawn at its object's own position doesn't move with it.
+	const object* objp = render_info->get_object_number() >= 0 ? &Objects[render_info->get_object_number()] : nullptr;
+	const bool at_object_pos = objp != nullptr && pos == &objp->pos;
+	scene->push_transform(pos, orient, at_object_pos ? &objp->last_pos : pos, at_object_pos ? &objp->last_orient : orient);
+	rendering_material.set_velocity_output(true);
 
 	
 	vec3d auto_back = ZERO_VECTOR;
@@ -2773,7 +2802,12 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
 	}
 
-	scene->push_transform(pos, orient);
+	// Anything not drawn at its object's own position, like the player's hull in the cockpit, doesn't move with it.
+	const bool at_object_pos = objp != nullptr && pos == &objp->pos;
+	scene->push_transform(pos, orient, at_object_pos ? &objp->last_pos : pos, at_object_pos ? &objp->last_orient : orient);
+
+	// The skybox moves with the camera, so its pixels are better served by camera reprojection at the far plane.
+	rendering_material.set_velocity_output(model_num != Nmodel_num);
 
 	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
 

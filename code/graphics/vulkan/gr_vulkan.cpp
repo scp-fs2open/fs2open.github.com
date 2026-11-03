@@ -27,6 +27,7 @@
 #include "graphics/post_processing.h"
 #include "graphics/grinternal.h"
 #include "graphics/shadows.h"
+#include "graphics/vulkan/VulkanUpscaler.h"
 #include "lighting/lighting.h"
 #include "pngutils/pngutils.h"
 
@@ -140,6 +141,8 @@ bool vulkan_is_capable(gr_capability capability)
 		// Vulkan samplers are independent of images, so a second (non-compare) sampler on
 		// the same shadow map view is always available -- no capability gap here.
 		return true;
+	case gr_capability::CAPABILITY_FSR:
+		return vulkan_upscaler_available();
 	}
 	return false;
 }

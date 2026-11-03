@@ -16,7 +16,9 @@ void convert_model_material(model_uniform_data* data_out,
 							const model_material& material,
 							const matrix4& model_transform,
 							const vec3d& scale,
-							size_t transform_buffer_offset);
+							size_t transform_buffer_offset,
+							const matrix4& prev_model_transform,
+							int prev_transform_stride);
 
 void convert_shadow_material(shadow_uniform_data* data_out,
 							 const matrix4& model_transform,
