@@ -147,6 +147,7 @@ public:
 	/**
 	 * @brief Delete a buffer
 	 * @param handle The buffer to delete
+	 * @note A uniform buffer must be deleted through vulkan_delete_buffer, which also drops pending bindings naming it
 	 */
 	void deleteBuffer(gr_buffer_handle handle);
 

@@ -164,6 +164,13 @@ void setDrawManager(VulkanDrawManager* manager)
 	g_drawManager = manager;
 }
 
+void forgetPendingUniformBuffer(gr_buffer_handle bufferHandle)
+{
+	if (g_drawManager != nullptr) {
+		g_drawManager->forgetUniformBuffer(bufferHandle);
+	}
+}
+
 bool VulkanDrawManager::init(vk::Device device)
 {
 	if (m_initialized) {
@@ -933,6 +940,16 @@ void VulkanDrawManager::setPendingUniformBinding(uniform_block_type blockType, g
 	    blockType == uniform_block_type::DeferredGlobals ||
 	    blockType == uniform_block_type::ShadowCascadeParams) {
 		m_globalSetDirty = true;
+	}
+}
+
+void VulkanDrawManager::forgetUniformBuffer(gr_buffer_handle bufferHandle)
+{
+	for (size_t i = 0; i < NUM_UNIFORM_BLOCK_TYPES; ++i) {
+		const auto& binding = m_pendingUniformBindings[i];
+		if (binding.valid && binding.bufferHandle.value() == bufferHandle.value()) {
+			setPendingUniformBinding(static_cast<uniform_block_type>(i), gr_buffer_handle(), 0, 0);
+		}
 	}
 }
 
