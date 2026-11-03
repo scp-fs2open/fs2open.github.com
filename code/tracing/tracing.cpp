@@ -342,8 +342,8 @@ void set_frame_profiling_enabled(bool enable) {
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto ProfilerOverlayOption = options::OptionBuilder<bool>("Game.ProfilerOverlay",
-	std::pair<const char*, int>{"Frame Profiler Overlay", 1932},
-	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1933})
+	std::pair<const char*, int>{"Frame Profiler Overlay", 1936},
+	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1937})
 	.category(std::make_pair("Graphics", 1825))
 	.level(options::ExpertLevel::Advanced)
 	.default_val(false)
@@ -421,16 +421,31 @@ void start(const Category& category, trace_event* evt) {
 
 		// This does not need to be synchronized since GPU queries are only allowed on the main thread.
 		gpu_events.push(gpu_event);
+		evt->gpu_started = true;
 	}
 }
 
 void end(trace_event* evt) {
-	if (!do_trace_events) {
-		// No one to process the event is here
+	// A scope can be open when the profiler turns on, so start() may never have run for it.
+	if (evt->type != EventType::Complete) {
 		return;
 	}
 
-	if (!initialized) {
+	// The profiler can also turn off mid-scope. Close the GPU event that start() opened.
+	const bool close_gpu = evt->gpu_started && initialized && do_gpu_queries;
+	evt->gpu_started = false;
+
+	if (!do_trace_events || !initialized) {
+		if (close_gpu) {
+			gpu_trace_event gpu_event;
+			gpu_event.base_evt.category = evt->category;
+			gpu_event.base_evt.category_id = evt->category_id;
+			gpu_event.base_evt.tid = 1;
+			gpu_event.base_evt.pid = GPU_PID;
+			gpu_event.base_evt.type = EventType::End;
+			gpu_event.gpu_begin_query = get_gpu_timestamp_query();
+			gpu_events.push(gpu_event);
+		}
 		return;
 	}
 
@@ -444,7 +459,7 @@ void end(trace_event* evt) {
 	submit_event(evt);
 
 	// Create GPU events
-	if (do_gpu_queries && evt->category->usesGPUCounter()) {
+	if (close_gpu) {
 		Assertion(get_tid() == main_thread_id, "This function must be called from the main thread!");
 
 		gpu_trace_event gpu_event;
