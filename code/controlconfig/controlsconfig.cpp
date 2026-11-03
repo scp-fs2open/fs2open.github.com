@@ -171,7 +171,8 @@ static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of te
 static UI_WINDOW Ui_window;
 static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last selected
 static UI_TIMESTAMP bound_timestamp;
-static char bound_string[256];
+constexpr size_t bound_string_len = 255;
+static char bound_string[bound_string_len + 1];
 
 int Control_config_overlay_id;
 
@@ -1917,7 +1918,8 @@ int control_config_draw_list(int select_tease_line) {
 	int x;  // x coordinate of text anchor
 	int y;  // y coordinate of text anchor
 	int z;  // cc_index of the line being drawn
-	char buf[256];  // c_str buffer
+	constexpr size_t buf_len = 255;
+	char buf[buf_len + 1];  // c_str buffer
 	int font_height = gr_get_font_height();
 
 	for (line = Scroll_offset; cc_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX); ++line) {
@@ -1945,7 +1947,7 @@ int control_config_draw_list(int select_tease_line) {
 		gr_set_color_fast(c);
 		if (Cc_lines[line].label) {
 			strcpy_s(buf, Cc_lines[line].label);
-			font::force_fit_string(buf, 255, Control_list_ctrl_w[gr_screen.res]);
+			font::force_fit_string(buf, buf_len, Control_list_ctrl_w[gr_screen.res]);
 			gr_printf_menu(Control_list_coords[gr_screen.res][CONTROL_X_COORD], y, "%s", buf);
 		}
 
@@ -1960,7 +1962,7 @@ int control_config_draw_list(int select_tease_line) {
 		x = Control_list_first_x[gr_screen.res];
 		*buf = 0;
 		strcpy_s(buf, first.c_str());
-		font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+		font::force_fit_string(buf, buf_len, Control_list_first_w[gr_screen.res]);
 		gr_printf_menu(x, y, "%s", buf);
 
 		Cc_lines[line].kx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
@@ -1973,7 +1975,7 @@ int control_config_draw_list(int select_tease_line) {
 		x = Control_list_second_x[gr_screen.res];
 		*buf = 0;
 		strcpy_s(buf, second.c_str());
-		font::force_fit_string(buf, 255, Control_list_first_w[gr_screen.res]);
+		font::force_fit_string(buf, buf_len, Control_list_first_w[gr_screen.res]);
 		gr_printf_menu(x, y, "%s", buf);
 
 		Cc_lines[line].jx = x - Control_list_coords[gr_screen.res][CONTROL_X_COORD];
@@ -2365,7 +2367,8 @@ int control_config_search_key_on_frame(bool API_Access)
 void control_config_do_frame(float frametime)
 {
 	const char *str;
-	char buf[256];
+	constexpr size_t buf_len = 255;
+	char buf[buf_len + 1];
 	int i; // generic index
 	int w, x, y, conflict;
 	int k; // polled key.  Can be masked with SHIFT and/or ALT
@@ -2383,7 +2386,7 @@ void control_config_do_frame(float frametime)
 
 		if (done) {
 			// done with binding mode, clean up and prepare for display
-			font::force_fit_string(bound_string, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+			font::force_fit_string(bound_string, bound_string_len, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 			bound_timestamp = ui_timestamp(2500);
 			control_config_conflict_check();
 			control_config_list_prepare();
@@ -2720,7 +2723,7 @@ void control_config_do_frame(float frametime)
 			strcpy_s(buf, Control_config[i].text.c_str());
 		}
 
-		w = font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+		w = font::force_fit_string(buf, buf_len, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_printf_menu(x - w / 2, y, "%s", buf);
 
 	} else if (*bound_string) {
