@@ -2,7 +2,10 @@
 #include "options/Option.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
+#include "cmdline/cmdline.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "math/floating.h"
 
 #include "util/FSTestFixture.h"
@@ -340,12 +343,6 @@ TEST_F(OptionsManagerOverride, FlagsetOverrideRoundTrips)
 	ASSERT_TRUE(value[FramebufferEffects::Shockwaves]);
 }
 
-// Graphics.Anisotropy is only registered in builds with the OpenGL backend compiled in
-// (its Option<float> lives in gropengltexture.cpp, which the CMake build excludes entirely
-// when FSO_BUILD_WITH_OPENGL is off) -- so, like Graphics.RenderAPI above, round-trip
-// coverage needs a build-config split rather than a single unconditional test.
-#ifdef WITH_OPENGL
-
 TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy");
@@ -360,14 +357,136 @@ TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 	ASSERT_FLOAT_EQ(typedOpt->getValue(), 16.0f);
 }
 
-#else
+// these globals belong to the whole process and CI shuffles test order, so put them back after each test
+class AnisotropySetting : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		_saved_property = gr_screen.gf_get_property;
+		_saved_ingame = Using_in_game_options;
+		_saved_level = Cmdline_aniso_level;
+		gr_screen.gf_get_property = [](gr_property p, void* dest) {
+			if (p != gr_property::MAX_ANISOTROPY) {
+				return false;
+			}
+			*static_cast<float*>(dest) = 16.0f;
+			return true;
+		};
+	}
+	void TearDown() override
+	{
+		gr_screen.gf_get_property = _saved_property;
+		Using_in_game_options = _saved_ingame;
+		Cmdline_aniso_level = _saved_level;
+		OptionsManagerOverride::TearDown();
+	}
 
-TEST_F(OptionsManagerOverride, AnisotropyIsAbsentWithoutOpenGLSupport)
+  private:
+	decltype(gr_screen.gf_get_property) _saved_property;
+	bool _saved_ingame = true;
+	int _saved_level = 0;
+};
+
+TEST_F(AnisotropySetting, InGameOptionsUseTheOption)
 {
-	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy"), nullptr);
+	Using_in_game_options = true;
+	Cmdline_aniso_level = 0;
+	OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::unique_ptr<json_t>(json_real(4.0)), "test");
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 4.0f);
 }
 
-#endif
+TEST_F(AnisotropySetting, WithoutInGameOptionsTheFlagWins)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 8;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 8.0f);
+}
+
+TEST_F(AnisotropySetting, WithNothingChosenItIsTheCardMaximum)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 16.0f);
+}
+
+TEST_F(AnisotropySetting, WithNoRendererAnswerItIsOff)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	gr_screen.gf_get_property = [](gr_property, void*) { return false; };
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 1.0f);
+}
+
+// the table parser writes a process-wide default, so put trilinear back after each test
+class TextureFilterSetting : public OptionsManagerOverride {
+  protected:
+	static void parseDefault(const char* value)
+	{
+		SCP_string text = SCP_string(value) + "\n";
+		reset_parse(text.data());
+		OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter")->parseDefaultSetting();
+		reset_parse(nullptr);
+	}
+	void SetUp() override { _saved_ingame = Using_in_game_options; }
+	void TearDown() override
+	{
+		parseDefault("Trilinear");
+		Using_in_game_options = _saved_ingame;
+		OptionsManagerOverride::TearDown();
+	}
+
+  private:
+	bool _saved_ingame = true;
+};
+
+TEST_F(TextureFilterSetting, InGameDefaultIsTrilinear)
+{
+	Using_in_game_options = true;
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, ModTableDefaultIsUsed)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, BilinearOverrideBeatsTrilinearDefault)
+{
+	Using_in_game_options = true;
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+// qtFRED sets an override and never loads initial values
+TEST_F(TextureFilterSetting, OverrideIsReadWithoutALoad)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, WithoutInGameOptionsTheLauncherDefaultIsTrilinear)
+{
+	Using_in_game_options = false;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+// texture filtering only trades quality for speed, so a mod's +Enforce does not outrank the player's choice
+TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->enforceOption("Graphics.TextureFilter");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	const int filter = gr_texture_filter_setting();
+	OptionsManager::instance()->unenforceOption("Graphics.TextureFilter");
+	ASSERT_EQ(filter, 1);
+}
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 {

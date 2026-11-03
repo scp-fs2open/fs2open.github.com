@@ -71,6 +71,11 @@ extern AntiAliasMode Gr_aa_mode_last_frame;
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
 
+// not clamped: only the renderer knows what the card supports
+float gr_anisotropy_setting();
+
+int gr_texture_filter_setting();
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;

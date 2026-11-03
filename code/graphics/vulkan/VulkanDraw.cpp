@@ -1076,7 +1076,7 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	// Get sampler matching current texture addressing mode and fallback texture
 	vk::SamplerAddressMode addressMode = convertTextureAddressing(m_textureAddressing);
 	vk::Sampler sampler = texManager->getSampler(
-		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true);
+		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true, true);
 	// OpenGL skips applying texture addressing for AABITMAP, INTERFACE, and CUBEMAP
 	// types - they always stay clamped. We need a clamp sampler for those cases.
 	vk::Sampler clampSampler = texManager->getSampler(

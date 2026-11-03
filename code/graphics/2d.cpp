@@ -868,6 +868,119 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .parser(parse_anti_aliasing_func)
                      .finish();
 
+static SCP_vector<float> anisotropic_value_enumerator()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+static SCP_string anisotropic_display(float val)
+{
+	if (val < 2.0f) {
+		return "None";
+	}
+
+	SCP_string out;
+	sprintf(out, "%.0fx", val);
+	return out;
+}
+static float anisotropic_default()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return 1.0f;
+	}
+	return max;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
+                     std::pair<const char*, int>{"Anistropic filtering", 1736},
+                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
+                     .enumerator(anisotropic_value_enumerator)
+                     .category(std::make_pair("Graphics", 1825))
+                     .display(anisotropic_display)
+                     .default_func(anisotropic_default)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(78)
+                     .finish();
+
+float gr_anisotropy_setting()
+{
+	if (Using_in_game_options) {
+		return AnisotropyOption->getValue();
+	}
+	if (Cmdline_aniso_level != 0) {
+		return static_cast<float>(Cmdline_aniso_level);
+	}
+	return anisotropic_default();
+}
+
+// trilinear, which the launcher setting has always defaulted to
+static int Texture_filter = 1;
+
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
+																		                { 1, {"Trilinear", 1678}}};
+
+static void parse_texture_filtering_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	SCP_tolower(mode);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"bilinear", []() { Texture_filter = 0; }},
+		{"trilinear", []() { Texture_filter = 1; }}};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
+	}
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter",
+                     std::pair<const char*, int>{"Texture Filtering", 1763},
+                     std::pair<const char*, int>{"Texture filtering option", 1764})
+                     .importance(1)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(TextureFilteringValues)
+                     .default_func([]() {return Texture_filter;})
+                     .bind_to_once(&Texture_filter)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_texture_filtering_func)
+                     .finish();
+
+int gr_texture_filter_setting()
+{
+	if (Using_in_game_options) {
+		// read live: qtFRED sets an override and never loads initial values into the bound copy
+		return TextureFilteringOption->getValue();
+	}
+	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
+}
+
 extern int Cmdline_msaa_enabled;
 
 static void parse_msaa_func()

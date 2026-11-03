@@ -22,8 +22,6 @@
 #include "globalincs/systemvars.h"
 #include "graphics/grinternal.h"
 #include "math/vecmat.h"
-#include "options/Option.h"
-#include "osapi/osregistry.h"
 #include "ktxutils/ktxutils.h"
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
@@ -51,96 +49,6 @@ GLint GL_max_renderbuffer_size = 0;
 extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
-
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
-																		                { 1, {"Trilinear", 1678}}};
-
-static void parse_texture_filtering_func()
-{
-	SCP_string mode;
-	stuff_string(mode, F_NAME);
-
-	// Convert to lowercase once
-	SCP_tolower(mode);
-
-	// Use a map to associate strings with their respective actions
-	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
-		{"bilinear", []() { GL_mipmap_filter = 0; }},
-		{"trilinear", []() { GL_mipmap_filter = 1; }}};
-
-	auto it = effectActions.find(mode);
-	if (it != effectActions.end()) {
-		it->second(); // Execute the corresponding action
-	} else {
-		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
-	}
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
-                     std::pair<const char*, int>{"Texture Filtering", 1763},
-                     std::pair<const char*, int>{"Texture filtering option", 1764})
-                     .importance(1)
-                     .category(std::make_pair("Graphics", 1825))
-                     .values(TextureFilteringValues)
-                     .default_func([]() {return GL_mipmap_filter;})
-                     .bind_to_once(&GL_mipmap_filter)
-                     .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .parser(parse_texture_filtering_func)
-                     .finish();
-
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return SCP_vector<float>();
-	}
-
-	if (max <= 2.0f) {
-		return SCP_vector<float>();
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
-static SCP_string anisotropic_display(float val)
-{
-	if (val < 2.0f) {
-		return "None";
-	}
-
-	SCP_string out;
-	sprintf(out, "%.0fx", val);
-	return out;
-}
-static float anisotropic_default()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return 1.0f;
-	}
-	return max;
-}
-
-// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
-                     std::pair<const char*, int>{"Anistropic filtering", 1736},
-                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
-                     .category(std::make_pair("Graphics", 1825))
-                     .display(anisotropic_display)
-                     .default_func(anisotropic_default)
-                     .level(options::ExpertLevel::Advanced)
-                     .importance(78)
-                     .finish();
 
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);
@@ -189,11 +97,7 @@ void opengl_tcache_init()
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
 	//   1  ==  Trilinear
-	GL_mipmap_filter = os_config_read_uint(NULL, "TextureFilter", 1);
-
-	if (GL_mipmap_filter > 1) {
-		GL_mipmap_filter = 1;
-	}
+	GL_mipmap_filter = gr_texture_filter_setting();
 
 	// max size (width and/or height) that we can use for framebuffer/renderbuffer
 	glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &GL_max_renderbuffer_size);
@@ -206,17 +110,7 @@ void opengl_tcache_init()
 
 	// anisotropy
 	if ( GLAD_GL_EXT_texture_filter_anisotropic ) {
-		// set max value first thing
-		GL_anisotropy = GL_state.Constants.GetMaxAnisotropy();
-
-		if (Using_in_game_options) {
-			GL_anisotropy = AnisotropyOption->getValue();
-		} else {
-			// now for the user setting
-			if (Cmdline_aniso_level != 0)
-				GL_anisotropy = (GLfloat)Cmdline_aniso_level;
-		}
-
+		GL_anisotropy = gr_anisotropy_setting();
 		CLAMP(GL_anisotropy, 1.0f, GL_state.Constants.GetMaxAnisotropy());
 	}
 
