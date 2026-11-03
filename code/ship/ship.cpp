@@ -6970,7 +6970,7 @@ void ship::clear()
 	
 	afterburner_fuel = 0.0f;
 	afterburner_last_engage_fuel = 0.0f;
-	afterburner_last_end_time = 0;
+	afterburner_last_end_time = TIMESTAMP::invalid();
 
 	cmeasure_count = 0;
 	current_cmeasure = -1;
