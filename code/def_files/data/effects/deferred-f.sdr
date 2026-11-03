@@ -314,7 +314,8 @@ void main()
 		{
 			// Raytraced AO multiplies into the same ao term as the baked AO maps,
 			// so the env-map/IBL ambient below darkens consistently for free.
-			vec3 worldPos = (inv_view_matrix * vec4(position, 1.0)).xyz;
+			// Ray origin in TLAS-relative space, as for the shadow rays below.
+			vec3 worldPos = mat3(inv_view_matrix) * position + shadow_ray_view_origin;
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
 			float rtaoBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
 			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,

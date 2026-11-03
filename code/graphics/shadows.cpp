@@ -399,6 +399,8 @@ static float shadow_clamp_smoothness(float smoothness)
 
 void shadows_remove_unsupported_options()
 {
+	rtao_remove_unsupported_options();
+
 	if (!shadow_contact_hardening_supported()) {
 		// No raw-depth sampler support (pre-3.3 OpenGL): the option is inert, so drop it.
 		// The bound global keeps its default; shadow_contact_hardening_enabled() folding

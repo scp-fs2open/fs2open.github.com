@@ -166,7 +166,7 @@ float sun_disc_measure_bitmap(int bitmap_handle)
 		// bm_lock() hands back block-compressed data as-is whenever the renderer supports
 		// S3TC/BPTC (see bm_lock_dds()), so this path has to go around bmpman and decompress
 		// the file itself. Sun art really does ship compressed, so it isn't an edge case.
-		const char* filename = bm_get_filename(bitmap_handle);
+		const char* filename = bm_get_image_filename(bitmap_handle);
 
 		if ((filename == nullptr) || (*filename == '\0')) {
 			return -1.0f;
