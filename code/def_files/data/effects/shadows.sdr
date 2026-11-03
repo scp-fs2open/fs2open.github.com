@@ -8,8 +8,9 @@
 
 // Full 16-tap Poisson disc. Unconditional (independent of SMOOTH_PCSS) because it has three
 // consumers with different needs: samplePoissonPCSS() takes the first SAMPLES_PCSS of these,
-// pcssBlockerSearch() always wants the first 8 regardless of SAMPLES_PCSS (a blocker search
-// only needs a coarse estimate), and the raytraced cone/AO sampling further below always
+// pcssBlockerSearch() always wants 8 (every second tap) regardless of SAMPLES_PCSS (a
+// blocker search only needs a coarse estimate), and the raytraced cone/AO sampling further
+// below always
 // wants the full spread. Keeping one table means none of those three can end up indexing
 // past a table sized for a different consumer.
 const vec2 poissonDisc16[16] = vec2[](
@@ -55,8 +56,10 @@ float samplePoissonPCSS(sampler2DArrayShadow shadow_map, vec4 shadowUV, float ma
 	return visibility * (1.0f/float(SAMPLES_PCSS));
 }
 
-// PCSS blocker search: raw (non-compare) depth taps within searchRadiusUV, using the first 8
-// of poissonDisc16 (always the full-spread table, not samplePoissonPCSS()'s poissonDisc --
+// PCSS blocker search: raw (non-compare) depth taps within searchRadiusUV, using every
+// second tap of poissonDisc16. The first 8 taps are mostly on one side (x < 0), so they
+// would search the penumbra on one side only. This is always the full-spread table, not
+// samplePoissonPCSS()'s poissonDisc --
 // a blocker search only needs a coarse estimate, not the final filtered result, but it needs
 // that estimate regardless of how many taps the raster PCSS path itself is set to take).
 // "Blocker" = stored < receiverDepth, matching the GL_LEQUAL/eLessOrEqual compare convention
@@ -69,7 +72,7 @@ float pcssBlockerSearch(sampler2DArray shadow_map_raw, vec4 shadowUV, float sear
 	float sum = 0.0;
 	int blockerCount = 0;
 	for (int i = 0; i < 8; i++) {
-		vec2 uv = shadowUV.xy + poissonDisc16[i] * searchRadiusUV;
+		vec2 uv = shadowUV.xy + poissonDisc16[i * 2] * searchRadiusUV;
 		float sampled = texture(shadow_map_raw, vec3(uv, shadowUV.z)).r;
 		if (sampled < shadowUV.w) {
 			sum += sampled;

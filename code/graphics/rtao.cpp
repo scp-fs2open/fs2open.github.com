@@ -1,6 +1,7 @@
 #include "graphics/rtao.h"
 
 #include "graphics/2d.h"
+#include "graphics/shadows.h"
 #include "options/Option.h"
 
 int Rtao_samples = 0;
@@ -36,5 +37,14 @@ bool rtao_supported()
 
 bool rtao_enabled()
 {
-	return Rtao_samples > 0 && rtao_supported();
+	// The shadow cascade parameters that RTAO reads are only created when shadows are on.
+	return Rtao_samples > 0 && rtao_supported() && Shadow_quality != ShadowQuality::Disabled;
+}
+
+void rtao_remove_unsupported_options()
+{
+	if (!rtao_supported()) {
+		// The option has no effect without raytracing support, so remove it.
+		options::OptionsManager::instance()->removeOption(RtaoQualityOption);
+	}
 }

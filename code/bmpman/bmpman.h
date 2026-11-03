@@ -437,6 +437,13 @@ void bm_get_filename(int bitmapnum, char *filename);
 const char *bm_get_filename(int handle);
 
 /**
+ * @brief Gets the name of the file that holds the pixels of this bitmap
+ *
+ * This is the same as bm_get_filename(), except for an EFF. For an EFF it is the file of the individual image.
+ */
+const char *bm_get_image_filename(int handle);
+
+/**
  * @brief Unloads all used bitmaps, should only ever be called by game_shutdown()
  *
  * @todo Maybe move this declaration into bmpman.cpp and then extern this function within game_shutdown() to

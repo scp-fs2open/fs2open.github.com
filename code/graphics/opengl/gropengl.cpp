@@ -1637,7 +1637,12 @@ bool gr_opengl_is_capable(gr_capability capability)
 		// project's glad build only wires glGenSamplers/glBindSampler/glSamplerParameteri
 		// up behind the core GL_VERSION_3_3 flag, not a separate ARB entry point -- so that's
 		// the check that actually reflects whether those functions are non-null here.
+#ifdef USE_OPENGL_ES
+		// GLES has no GLAD_GL_VERSION_3_3 symbol, and the sampler setup here is desktop GL only.
+		return false;
+#else
 		return GLAD_GL_VERSION_3_3 != 0;
+#endif
 	}
 
 

@@ -33,6 +33,7 @@
 #include "render/batching.h"
 #include "starfield/nebula.h"
 #include "starfield/starfield.h"
+#include "graphics/shadows.h"
 #include "starfield/sun_disc.h"
 #include "starfield/supernova.h"
 #include "tracing/tracing.h"
@@ -1370,6 +1371,11 @@ static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, flo
 
 	if (specified >= 0.0f) {
 		return sun_disc_tangent_from_diameter(specified);
+	}
+
+	// the size is only used to soften shadows, so do not read the bitmap when shadows are off
+	if (Shadow_quality == ShadowQuality::Disabled) {
+		return 0.0f;
 	}
 
 	return sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);

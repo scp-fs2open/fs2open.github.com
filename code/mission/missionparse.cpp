@@ -6280,7 +6280,7 @@ void parse_one_background(background_t *background)
 
 		// apparent diameter in degrees, overriding both the sun's stars.tbl entry and the
 		// size that would otherwise be measured from its bitmap. Optional, so missions
-		// written before 26.1 simply don't have it
+		// written before 27.0 simply don't have it
 		if (optional_string("+AngularSize:")) {
 			stuff_float(&sle.angular_size);
 			if (sle.angular_size < 0.0f) {
@@ -9803,7 +9803,7 @@ bool check_for_25_1_data()
 	return false;
 }
 
-bool check_for_26_1_data()
+bool check_for_27_0_data()
 {
 	// a sun that carries its own apparent diameter (+AngularSize:) can't be represented
 	// in an older mission file
