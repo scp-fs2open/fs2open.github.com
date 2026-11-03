@@ -45,10 +45,12 @@ class FrameTimeQueue : public SCP_queue<float> {
 
 FrameTimeQueue History_ms;
 
-// ImPlot needs the frame times in one contiguous block, and the deque of the queue is not
-// contiguous. The overlay copies the elements into this buffer one time in each frame. The
-// statistics and the graph then read the buffer.
-SCP_vector<float> History_snapshot;
+using HistoryContainer = FrameTimeQueue::container_type;
+
+// Wall-clock timestamp of the previous overlay frame, 0 when there is none yet. The frame time
+// in the history is the time between two overlay frames. It is not the traced self-time, which
+// leaves out every part of the frame that has no trace scope.
+uint64_t Last_frame_ns = 0;
 
 void push_history(float frame_ms) {
 	History_ms.push(frame_ms);
@@ -57,12 +59,7 @@ void push_history(float frame_ms) {
 	}
 }
 
-void update_history_snapshot() {
-	const auto& elements = History_ms.elements();
-	History_snapshot.assign(elements.begin(), elements.end());
-}
-
-float history_average(const SCP_vector<float>& history) {
+float history_average(const HistoryContainer& history) {
 	if (history.empty()) {
 		return 0.0f;
 	}
@@ -70,7 +67,7 @@ float history_average(const SCP_vector<float>& history) {
 	return sum / static_cast<float>(history.size());
 }
 
-float history_median(const SCP_vector<float>& history) {
+float history_median(const HistoryContainer& history) {
 	if (history.empty()) {
 		return 0.0f;
 	}
@@ -88,7 +85,7 @@ float history_median(const SCP_vector<float>& history) {
 	return median;
 }
 
-void draw_frametime_graph(const SCP_vector<float>& history) {
+void draw_frametime_graph(const HistoryContainer& history) {
 	if (history.empty()) {
 		return;
 	}
@@ -102,7 +99,15 @@ void draw_frametime_graph(const SCP_vector<float>& history) {
 			ImPlotAxisFlags_AutoFit);
 		ImPlot::SetupAxisLimits(ImAxis_X1, 0, static_cast<double>(history.size()), ImPlotCond_Always);
 
-		ImPlot::PlotLine("frametime", history.data(), static_cast<int>(history.size()));
+		// The getter reads the deque directly, so the graph needs no contiguous copy.
+		ImPlot::PlotLineG(
+			"frametime",
+			[](int idx, void* data) {
+				const auto& values = *static_cast<const HistoryContainer*>(data);
+				return ImPlotPoint(static_cast<double>(idx), static_cast<double>(values[static_cast<size_t>(idx)]));
+			},
+			const_cast<HistoryContainer*>(&history),
+			static_cast<int>(history.size()));
 
 		ImPlot::EndPlot();
 	}
@@ -395,16 +400,18 @@ void draw_subsystem_memory_stats() {
 void profiler_overlay_frame() {
 	if (!frame_profiling_active()) {
 		History_ms = {};
-		History_snapshot.clear();
+		Last_frame_ns = 0;
 		return;
 	}
 
 	frame_profile_process_frame();
 
 	const frame_overlay_snapshot& snapshot = get_frame_profiler_overlay_snapshot();
-	if (snapshot.valid) {
-		push_history(static_cast<float>(static_cast<double>(snapshot.total_nanosec) / NANOSEC_PER_MS));
+	const uint64_t now_ns = timer_get_nanoseconds();
+	if (Last_frame_ns != 0) {
+		push_history(static_cast<float>(static_cast<double>(now_ns - Last_frame_ns) / NANOSEC_PER_MS));
 	}
+	Last_frame_ns = now_ns;
 
 	gr_imgui_begin_frame();
 	if (!gr_imgui_frame_active()) {
@@ -416,20 +423,18 @@ void profiler_overlay_frame() {
 	ImGui::SetNextWindowSize(ImVec2(380, 480), ImGuiCond_FirstUseEver);
 	ImGui::Begin("Frame Profiler", nullptr, ImGuiWindowFlags_NoFocusOnAppearing);
 
-	update_history_snapshot();
-
-	if (History_snapshot.empty()) {
+	if (History_ms.elements().empty()) {
 		ImGui::TextUnformatted("Collecting data...");
 	} else {
-		float avg_ms = history_average(History_snapshot);
-		float median_ms = history_median(History_snapshot);
+		float avg_ms = history_average(History_ms.elements());
+		float median_ms = history_median(History_ms.elements());
 
 		ImGui::Text("Avg: %.2f ms (%.0f FPS)   Median: %.2f ms",
 			avg_ms,
 			avg_ms > 0.0f ? 1000.0f / avg_ms : 0.0f,
 			median_ms);
 
-		draw_frametime_graph(History_snapshot);
+		draw_frametime_graph(History_ms.elements());
 
 		ImGui::Separator();
 
