@@ -195,6 +195,7 @@ Flag exe_params[] =
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
+	{ "-event_journal",		"Write mission events to a JSON journal",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-event_journal", },
 	{ "-orig_speedx_range", "Restrict speedup/slowdown (1x to 4x)", 	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-orig_speedx_range", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
@@ -403,6 +404,7 @@ cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
 cmdline_parm vr("-vr", nullptr, AT_NONE);
+cmdline_parm event_journal_arg("-event_journal", nullptr, AT_NONE);	// Cmdline_event_journal
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
@@ -411,6 +413,7 @@ bool Cmdline_stretch_menu = false;
 bool Cmdline_capture_mouse = false;
 int Cmdline_deadzone = -1;
 bool Cmdline_enable_vr = false;
+bool Cmdline_event_journal = false;
 
 // Audio related
 cmdline_parm voice_recognition_arg("-voicer", NULL, AT_NONE);	// Cmdline_voice_recognition
@@ -1962,6 +1965,10 @@ bool SetCmdlineParams()
 		else {
 			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
 		}
+	}
+
+	if (event_journal_arg.found()) {
+		Cmdline_event_journal = true;
 	}
 
 	if (vr.found()) {
