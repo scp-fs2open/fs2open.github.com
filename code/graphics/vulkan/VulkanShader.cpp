@@ -34,7 +34,7 @@ void vulkan_recompile_all_shaders(const std::function<void(size_t, size_t)>& pro
 VulkanShaderManager::VulkanShaderManager() = default;
 VulkanShaderManager::~VulkanShaderManager() = default;
 
-bool VulkanShaderManager::init(vk::Device device)
+bool VulkanShaderManager::init(vk::Device device, bool hwClipDistance)
 {
 	if (m_initialized) {
 		return true;
@@ -44,7 +44,7 @@ bool VulkanShaderManager::init(vk::Device device)
 
 	// Initialize runtime shader compiler
 	m_compiler = std::make_unique<VulkanShaderCompiler>();
-	if (!m_compiler->init()) {
+	if (!m_compiler->init(hwClipDistance)) {
 		nprintf(("vulkan", "VulkanShaderManager: Failed to initialize shader compiler!\n"));
 		return false;
 	}
