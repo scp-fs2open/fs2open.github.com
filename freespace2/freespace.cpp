@@ -1959,7 +1959,6 @@ void game_init()
 	if (Cmdline_no_transcode_cache) {
 		tex_cache_disable_option();
 	}
-	tex_cache_prune(); // Clear texture transcode cache
 
 	if (Is_standalone) {
 		// force off some cmdlines if they are on

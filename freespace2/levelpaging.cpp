@@ -13,6 +13,7 @@
 #include "levelpaging.h"
 
 #include "tracing/tracing.h"
+#include "texcache/tex_cache.h"
 
 
 // All the page in functions
@@ -65,6 +66,8 @@ void level_page_in()
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		model_page_in_stop();		// free any loaded models that aren't used
 		bm_page_in_stop();
+		// All mission textures are loaded, so cached files can now be evicted safely.
+		tex_cache_prune();
 	}
 
 	mprintf(( "Ending level bitmap paging...\n" ));

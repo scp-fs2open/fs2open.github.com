@@ -8,8 +8,10 @@
 
 #include <cstring>
 #include <algorithm>
+#include <limits>
 
-#define TEX_CACHE_VERSION_TAG "tex-v1"
+// Includes a fingerprint of the bundled etcpak sources. Update it when the encoder changes.
+#define TEX_CACHE_VERSION_TAG "tex-v2-etcpak-c779f41fd9eb"
 static constexpr uint TEX_CACHE_MAGIC = 0x32435445u;
 static constexpr uint TEX_CACHE_VERSION = 1u;
 static constexpr uint TEX_CACHE_FLAG_LZ4 = 0x1u;
@@ -21,7 +23,7 @@ static constexpr float TEX_CACHE_OPTION_MAX_SIZE = 30.0f; // Unlimited cache
 static constexpr float TEX_CACHE_OPTION_MIN_SIZE = 0.0f;  // Disabled cache
 //
 
-static const uint32_t CACHE_LOCATION_FLAGS = CF_LOCATION_ROOT_USER | CF_LOCATION_TYPE_ROOT;
+static const uint32_t CACHE_LOCATION_FLAGS = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
 
 static SCP_string tex_cache_filename(const SCP_string &key)
 {
@@ -33,28 +35,32 @@ static SCP_string tex_cache_temp_filename(const SCP_string &key)
 	return SCP_string("tex-") + key + ".cache.tmp";
 }
 
-SCP_string tex_cache_make_key(CFILE *dds, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size)
+SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size)
 {
+	const char* name = source_name;
+	if (name == nullptr) {
+		name = "";
+	}
+
+	const auto location = *name != '\0' ? cf_find_file_location(name, cf_get_dir_type(dds)) : CFileLocation();
+	const int64_t src_mtime = static_cast<int64_t>(location.m_time);
 	const int saved_pos = cftell(dds);
 
 	cfseek(dds, 0, CF_SEEK_SET);
 
 	uint src_crc = 0;
-	cf_chksum_long(dds, &src_crc, TEX_CACHE_CHKSUM_WINDOW);
+	// Fall back to a full checksum if the source metadata cannot be resolved.
+	cf_chksum_long(dds, &src_crc, location.found ? TEX_CACHE_CHKSUM_WINDOW : -1);
 
 	const uint src_len = (uint)cfilelength(dds);
 
 	cfseek(dds, saved_pos, CF_SEEK_SET);
 
-	const char* name = cf_get_filename(dds);
-	if (name == nullptr) {
-		name = "";
-	}
-
 	MD5 md5;
 	md5.update(TEX_CACHE_VERSION_TAG, (MD5::size_type)strlen(TEX_CACHE_VERSION_TAG));
 	md5.update(reinterpret_cast<const char*>(&cache_type), sizeof(cache_type));
 	md5.update(name, (MD5::size_type)strlen(name));
+	md5.update(reinterpret_cast<const char*>(&src_mtime), sizeof(src_mtime));
 	md5.update(reinterpret_cast<const char*>(&src_crc), sizeof(src_crc));
 	md5.update(reinterpret_cast<const char*>(&src_len), sizeof(src_len));
 	md5.update(reinterpret_cast<const char*>(&src_fourcc), sizeof(src_fourcc));
@@ -96,7 +102,12 @@ bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expecte
 	                       (width == expected_width) &&
 	                       (height == expected_height) &&
 	                       (mips == expected_mips) &&
-	                       (payload_size == (uint)expected_size);
+	                       (payload_size == expected_size) &&
+	                       (payload_size > 0) &&
+	                       (payload_size <= static_cast<uint>(std::numeric_limits<int>::max())) &&
+	                       (stored_size > 0) &&
+	                       (stored_size <= payload_size) &&
+	                       (stored_size == static_cast<uint>(cfilelength(fp) - cftell(fp)));
 
 	if (!header_ok) {
 		cfclose(fp);

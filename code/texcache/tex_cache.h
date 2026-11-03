@@ -16,7 +16,7 @@ void tex_cache_prune();
 void tex_cache_disable_option();
 
 // Get the MD5 key hash for the dds texture
-SCP_string tex_cache_make_key(CFILE *dds, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size);
+SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size);
 
 // Load a transcoded texture from cache if present
 bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expected_height, uint expected_mips, int expected_format, size_t expected_size, ubyte *out_data);

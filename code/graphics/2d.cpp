@@ -79,6 +79,7 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
 	gr_capability_def {gr_capability::CAPABILITY_S3TC, "S3TC Texture Compression"},
+	gr_capability_def {gr_capability::CAPABILITY_ETC2, "ETC2 Texture Compression"},
 	GR_CAPABILITY_ENTRY(LARGE_SHADER),
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 	GR_CAPABILITY_ENTRY(FAST_SHADOWS),

@@ -1,6 +1,7 @@
 set(ETCPAK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/etcpak")
 
 # Note: BC7 encoder was commented out in ProcessDxtc as it needs C++20 and not included
+# Keep ProcessDxtc for planned transcoding to BC/DXT; only the ETC2 encoder is used for now.
 set(ETCPAK_SOURCES
 	"${ETCPAK_DIR}/ProcessRGB.cpp"
 	"${ETCPAK_DIR}/Tables.cpp"

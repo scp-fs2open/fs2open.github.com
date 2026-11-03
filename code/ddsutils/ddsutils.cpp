@@ -532,7 +532,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 		if (!Cmdline_no_transcode_cache) {
 			//Build the cache MD5 hash
-			key = tex_cache_make_key(cfp, TEX_CACHE_TYPE_ETC2, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
+			key = tex_cache_make_key(cfp, real_name, TEX_CACHE_TYPE_ETC2, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
 
 			//Try to load from a cache file
 			if (tex_cache_try_load(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, etc2_size, data)) {
