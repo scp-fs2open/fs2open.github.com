@@ -732,7 +732,13 @@ void gr_opengl_shadow_map_start(matrix4 *shadow_view_matrix, const matrix *light
 
 		glClear(GL_DEPTH_BUFFER_BIT);
 
+#ifdef USE_OPENGL_ES
+		if (GLAD_GL_EXT_depth_clamp) {
+			glEnable(GL_DEPTH_CLAMP);
+		}
+#else
 		glEnable(GL_DEPTH_CLAMP);
+#endif
 
 		Glowpoint_override_save = Glowpoint_override;
 		Glowpoint_override = true;
@@ -753,7 +759,13 @@ void gr_opengl_shadow_map_end()
 {
 	gr_end_view_matrix();
 
+#ifdef USE_OPENGL_ES
+	if (GLAD_GL_EXT_depth_clamp) {
+		glDisable(GL_DEPTH_CLAMP);
+	}
+#else
 	glDisable(GL_DEPTH_CLAMP);
+#endif
 
 	gr_zbuffer_set(ZBUFFER_TYPE_FULL);
 	GL_state.PopFramebufferState();
@@ -1135,6 +1147,12 @@ void opengl_tnl_set_material_nanovg(nanovg_material* material_info) {
 
 void opengl_tnl_set_material_decal(decal_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
+
+#ifdef USE_OPENGL_ES
+	// ES decal outputs use G-buffer locations instead of packed draw-buffer indices.
+	GL_state.SetAlphaBlendModei(2, material_info->get_blend_mode(1));
+	GL_state.SetAlphaBlendModei(4, material_info->get_blend_mode(2));
+#endif
 
 	float u_scale, v_scale;
 	uint32_t array_index;

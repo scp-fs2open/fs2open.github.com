@@ -459,8 +459,11 @@ bool VulkanRenderer::initialize()
 	setTextureManager(m_textureManager.get());
 
 	// Initialize shader manager
+	if (m_deviceFeatures.shaderClipDistance != VK_TRUE) {
+		mprintf(("Vulkan: HW clip distance not supported, using software clip distance fallback\n"));
+	}
 	m_shaderManager = std::make_unique<VulkanShaderManager>();
-	if (!m_shaderManager->init(m_device.get())) {
+	if (!m_shaderManager->init(m_device.get(), m_deviceFeatures.shaderClipDistance == VK_TRUE)) {
 		nprintf(("vulkan", "Failed to initialize Vulkan shader manager!\n"));
 		return false;
 	}
@@ -1012,6 +1015,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	enabledFeatures.fillModeNonSolid     = supportedFeatures.fillModeNonSolid;     // wireframe (GR_FILL_MODE_WIRE -> vk::PolygonMode::eLine)
 	enabledFeatures.shaderClipDistance   = supportedFeatures.shaderClipDistance;   // gl_ClipDistance[] in main / shadow-map / default-material vertex shaders
 	enabledFeatures.textureCompressionBC = supportedFeatures.textureCompressionBC; // BC/DXT texture formats (optional; usage gated by isTextureCompressionBCSupported)
+	enabledFeatures.textureCompressionETC2 = supportedFeatures.textureCompressionETC2; // ETC2/EAC texture formats (optional)
 	enabledFeatures.depthClamp           = supportedFeatures.depthClamp;           // clamp depth in the shadow pass (optional; when absent, CAPABILITY_SHADOWS reports false and shadows are disabled)
 
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures;
