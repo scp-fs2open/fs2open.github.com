@@ -76,8 +76,14 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 		lockFlags = BMP_TEX_ETC2_RGBA1;
 		break;
 	default:
-		// Uncompressed — use 32bpp decompressed
+		// PCX HUD art is a palette-index mask. Preserve the indices as R8 so
+		// the HUD shader can use them as coverage instead of RGB color data,
+		// matching the draw-time AABITMAP lock in bindMaterialTextures.
 		compType = 0;
+		if (is_aabitmap) {
+			lockBpp = 8;
+			lockFlags = BMP_AABITMAP;
+		}
 		break;
 	}
 
