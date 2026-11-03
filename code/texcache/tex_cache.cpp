@@ -11,7 +11,7 @@
 #include <limits>
 
 // Includes a fingerprint of the bundled etcpak sources. Update it when the encoder changes.
-#define TEX_CACHE_VERSION_TAG "tex-v2-etcpak-c779f41fd9eb"
+#define TEX_CACHE_VERSION_TAG "tex-v1-etcpak-c779f41fd9eb"
 static constexpr uint TEX_CACHE_MAGIC = 0x32435445u;
 static constexpr uint TEX_CACHE_VERSION = 1u;
 static constexpr uint TEX_CACHE_FLAG_LZ4 = 0x1u;
