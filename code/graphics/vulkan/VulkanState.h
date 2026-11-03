@@ -142,7 +142,7 @@ class VulkanStateTracker {
 	 *        null only for a set that declares none.
 	 */
 	void
-	bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set, const uint32_t* dynamicOffsets = nullptr);
+	bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set, const uint32_t* dynamicOffsets);
 
 	// ========== Buffer Binding ==========
 

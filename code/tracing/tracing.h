@@ -60,6 +60,10 @@ struct trace_event {
 	std::int64_t pid = -1;
 
 	float value = -1.f;
+
+	// True when complete::start() pushed a GPU begin event. complete::end() pushes the matching
+	// GPU end event only in that case, so toggling the profiler mid-scope cannot unbalance them.
+	bool gpu_started = false;
 };
 
 /**

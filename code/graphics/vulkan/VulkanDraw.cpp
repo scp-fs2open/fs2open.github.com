@@ -839,7 +839,7 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle,
 
 		static constexpr uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
 
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, m_cachedShadowGlobalSet);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, m_cachedShadowGlobalSet, nullptr);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, m_cachedShadowMaterialSet, materialDynOffsets);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, m_cachedShadowPerDrawSet, perDrawDynOffsets);
 	}
@@ -1516,7 +1516,8 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 				pdInputs.uboHandle[i] = p.bufferHandle.value();
 				// GenericData (0) and Matrices (1) are dynamic bindings — their offset
 				// rides in perDrawDynOffsets and is not part of the set's contents.
-				pdInputs.uboOffset[i] = (i <= 1) ? 0 : p.offset;
+				const auto binding = static_cast<uint32_t>(i);
+				pdInputs.uboOffset[i] = (binding == PerDrawBinding::GenericData || binding == PerDrawBinding::Matrices) ? 0 : p.offset;
 				pdInputs.uboSize[i] = p.size;
 				pdInputs.uboValid[i] = p.valid;
 			}
@@ -1535,7 +1536,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			m_cachedPerDrawValid = true;
 		}
 		writer.flush();
-		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet);
+		stateTracker->bindDescriptorSet(DescriptorSetIndex::Global, globalSet, nullptr);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet, materialDynOffsets);
 		stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet, perDrawDynOffsets);
 	}
