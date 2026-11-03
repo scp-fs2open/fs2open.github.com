@@ -1,5 +1,6 @@
 #pragma once
 
+#include "mission/GraphicsSettings.h"
 #include "mission/dialogs/AbstractDialogModel.h"
 #include "ui/ControlBindings.h"
 #include "ui/ThemeMode.h"
@@ -70,6 +71,11 @@ public:
 	double getLabelFontScale() const;
 	void setLabelFontScale(double value);
 
+	// Graphics. The dialog edits a whole GraphicsSettings rather than a field at a time; the
+	// setter exists so edits still route through modify() and mark the model dirty.
+	const GraphicsSettings& getGraphics() const;
+	void setGraphics(const GraphicsSettings& value);
+
 	// Controls
 	QKeySequence getControlKey(ControlAction action) const;
 	void setControlKey(ControlAction action, const QKeySequence& sequence);
@@ -112,6 +118,8 @@ private:
 	int  _toolbarIconSize;
 	int  _outlineLod;
 	float _labelFontScale;
+
+	GraphicsSettings _graphics;
 
 	// Controls
 	std::map<ControlAction, QKeySequence> _controlKeys;

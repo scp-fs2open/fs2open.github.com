@@ -27,6 +27,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _outlineLod(viewport->view.Outline_lod)
 	, _labelFontScale(viewport->view.Label_font_scale)
+	, _graphics(viewport->view.Graphics)
 	, _invertOrbitX(viewport->camera.getInvertOrbitX())
 	, _invertOrbitY(viewport->camera.getInvertOrbitY())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
@@ -70,6 +71,9 @@ bool PreferencesDialogModel::apply() {
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 	_viewport->view.Outline_lod                 = _outlineLod;
 	_viewport->view.Label_font_scale            = _labelFontScale;
+	_viewport->view.Graphics                    = _graphics;
+	// Only some of these can take effect now; the rest need a restart (see GraphicsSettings).
+	_viewport->view.Graphics.applyLive();
 	_viewport->camera.setInvertOrbitX(_invertOrbitX);
 	_viewport->camera.setInvertOrbitY(_invertOrbitY);
 
@@ -184,6 +188,9 @@ void PreferencesDialogModel::setOutlineLod(int value) { modify(_outlineLod, valu
 
 double PreferencesDialogModel::getLabelFontScale() const { return _labelFontScale; }
 void PreferencesDialogModel::setLabelFontScale(double value) { modify(_labelFontScale, static_cast<float>(value)); }
+
+const GraphicsSettings& PreferencesDialogModel::getGraphics() const { return _graphics; }
+void PreferencesDialogModel::setGraphics(const GraphicsSettings& value) { modify(_graphics, value); }
 
 QKeySequence PreferencesDialogModel::getControlKey(ControlAction action) const {
 	auto it = _controlKeys.find(action);
