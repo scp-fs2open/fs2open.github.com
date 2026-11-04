@@ -61,6 +61,18 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_FUNC(__eq, l_Subsystem, "subsystem, subsystem", "Checks if the two subsystem handles refer to the same subsystem", "boolean", "true if equal, false otherwise")
+{
+	ship_subsys_h *sso1, *sso2;
+	if (!ade_get_args(L, "oo", l_Subsystem.GetPtr(&sso1), l_Subsystem.GetPtr(&sso2)))
+		return ade_set_error(L, "b", false);
+
+	if (!sso1->isValid() || !sso2->isValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", sso1->objh.objp() == sso2->objh.objp() && sso1->ss == sso2->ss);
+}
+
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	ship_subsys_h *sso;
