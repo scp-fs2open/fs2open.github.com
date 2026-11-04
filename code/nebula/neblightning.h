@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "math/vecmat.h"
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
