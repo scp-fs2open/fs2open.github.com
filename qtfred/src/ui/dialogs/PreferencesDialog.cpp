@@ -89,6 +89,7 @@ PreferencesDialog::~PreferencesDialog() = default;
 void PreferencesDialog::applyChanges() {
 	_model->apply();
 	_fredView->setIconSize(QSize(_model->getToolbarIconSize(), _model->getToolbarIconSize()));
+	_fredView->applyMenuLayout(_model->getClassicMenuLayout());
 	_fredView->restartAutosaveTimer();
 	_viewport->needsUpdate();
 }
@@ -121,6 +122,7 @@ void PreferencesDialog::updateUi() {
 	ui->applyAutoCorrections->setChecked(_model->getApplyAutoCorrections());
 	ui->themeCombo->setCurrentIndex(themeModeToIndex(_model->getThemeMode()));
 	ui->dataMenuStyleCombo->setCurrentIndex(static_cast<int>(_model->getDataMenuStyle()));
+	ui->classicMenuLayout->setChecked(_model->getClassicMenuLayout());
 
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
@@ -210,6 +212,10 @@ void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
 
 void PreferencesDialog::on_dataMenuStyleCombo_currentIndexChanged(int index) {
 	_model->setDataMenuStyle(static_cast<DataMenuStyle>(index));
+}
+
+void PreferencesDialog::on_classicMenuLayout_toggled(bool checked) {
+	_model->setClassicMenuLayout(checked);
 }
 
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {
