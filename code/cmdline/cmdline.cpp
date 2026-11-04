@@ -2386,8 +2386,17 @@ bool SetCmdlineParams()
 		Cmdline_benchmark_mode = true;
 	}
 
+	// before the headless checks below, so that their errors are reported without a dialog
+	if (noninteractive_arg.found())
+	{
+		Cmdline_noninteractive = true;
+	}
+
 	if (headless_arg.found())
 	{
+		// nobody can dismiss an error or warning dialog, so report and exit instead (as -standalone does)
+		Cmdline_noninteractive = true;
+
 		// headless runs are single player only
 		if (standalone_arg.found() || connect_arg.found() || startgame_arg.found())
 		{
@@ -2401,8 +2410,6 @@ bool SetCmdlineParams()
 		Cmdline_nomovies = 1;
 		// frames run as fast as the CPU allows, on a mission clock that advances by -fixed_dt per frame
 		Cmdline_NoFPSCap = 1;
-		// nobody can dismiss an error or warning dialog, so report and exit instead (as -standalone does)
-		Cmdline_noninteractive = true;
 	}
 	else if (fixed_dt_arg.found() || max_sim_time_arg.found() || sim_result_arg.found())
 	{
@@ -2443,11 +2450,6 @@ bool SetCmdlineParams()
 	if (pilot_arg.found())
 	{
 		Cmdline_pilot = pilot_arg.str();
-	}
-
-	if (noninteractive_arg.found())
-	{
-		Cmdline_noninteractive = true;
 	}
 
 	if (json_profiling.found())

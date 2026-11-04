@@ -356,14 +356,56 @@ object	*Last_view_target = nullptr;
 
 int dogfight_blown = 0;
 static uint64_t Sim_run_wall_start_us = 0;
-// why the run ended, for -sim_result; null means the mission or the game ended it ("mission_exit")
+// why the run ended, for -sim_result; null until sim_run_end() is called, and "quit" if the game quits without it
 static const char* Sim_run_termination = nullptr;
+// the mission the run played, taken when it loads (a campaign red alert names the next mission before the run ends)
+static SCP_string Sim_run_mission;
+// the -sim_result outcome, taken when the run's end is decided, before anything later can change it
+static json_t* Sim_run_outcome = nullptr;
 
-// End an unattended run, keeping the first reason given.
+extern uint Cmdline_rng_seed;
+
+// The -sim_result outcome as it stands now; wall_seconds is added when it is written.
+static json_t* sim_run_snapshot(const char* termination)
+{
+	const char* mission = Sim_run_mission.empty() ? Game_current_mission_filename : Sim_run_mission.c_str();
+	json_t* result = json_pack("{s:i,s:s,s:i,s:f,s:f,s:f,s:b,s:s}",
+		"schema", 1,
+		"mission", mission,
+		"seed", static_cast<int>(Cmdline_rng_seed),
+		"fixed_dt", Cmdline_fixed_dt,
+		"max_sim_time", Cmdline_max_sim_time,
+		"simulated_seconds", f2fl(timestamp_get_mission_time()),
+		"time_limit_reached", !strcmp(termination, "time_limit") ? 1 : 0,
+		"termination", termination);
+	if (result == nullptr) {
+		return nullptr;
+	}
+
+	// the outcome: goal states as the debriefing would show them (goals are kept until the next mission loads)
+	json_t* goals = json_array();
+	for (const auto& goal : Mission_goals) {
+		if (goal.type & INVALID_GOAL) {
+			continue;
+		}
+		const int type = goal.type & GOAL_TYPE_MASK;
+		json_array_append_new(goals, json_pack("{s:s,s:s,s:s}",
+			"name", goal.name.c_str(),
+			"type", type == PRIMARY_GOAL ? "primary" : type == SECONDARY_GOAL ? "secondary" : "bonus",
+			"status", goal.satisfied == GOAL_COMPLETE ? "complete" : goal.satisfied == GOAL_FAILED ? "failed" : "incomplete"));
+	}
+	json_object_set_new(result, "goals", goals);
+	return result;
+}
+
+// End an unattended run, keeping the first reason given and the outcome at that moment.
 static void sim_run_end(const char* termination)
 {
 	if (Sim_run_termination == nullptr) {
 		Sim_run_termination = termination;
+		if (Cmdline_sim_result != nullptr) {
+			Sim_run_outcome = sim_run_snapshot(termination);
+		}
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 	}
 }
@@ -1600,6 +1642,10 @@ bool game_start_mission()
 		game_level_close();
 
 		return false;
+	}
+
+	if (Cmdline_headless) {
+		Sim_run_mission = Game_current_mission_filename;
 	}
 
 	// Since we just freed up memory, now is probably a good time to run the Lua garbage collector.
@@ -6088,7 +6134,12 @@ void game_enter_state( int old_state, int new_state )
 		case GS_STATE_START_GAME:
 			main_hall_stop_music(true);
 			main_hall_stop_ambient();
-			
+
+			// a headless run that has already ended (e.g. at a campaign red alert) does not load the next mission
+			if (Cmdline_headless && Sim_run_termination != nullptr) {
+				break;
+			}
+
 			if (Game_mode & GM_NORMAL) {
 				// this should put us into a new state on failure!
 				if (!game_start_mission())
@@ -6720,7 +6771,7 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_DEBRIEF);
 			if (Cmdline_headless && !(Game_mode & GM_MULTIPLAYER)) {
 				// The mission is over and nobody will dismiss the debriefing; the run ends with its result.
-				gameseq_post_event(GS_EVENT_QUIT_GAME);
+				sim_run_end("mission_exit");
 				break;
 			}
 			debrief_do_frame(flFrametime);
@@ -7210,39 +7261,17 @@ int game_main(int argc, char *argv[])
 void game_shutdown(void)
 {
 	if (Cmdline_sim_result != nullptr) {
-		const auto sim_time = f2fl(timestamp_get_mission_time());
 		const auto wall_time = Sim_run_wall_start_us > 0
 			? (timer_get_microseconds() - Sim_run_wall_start_us) / static_cast<double>(MICROSECONDS_PER_SECOND)
 			: 0.0;
-		const char* termination = Sim_run_termination != nullptr ? Sim_run_termination : "mission_exit";
-		json_t* result = json_pack("{s:i,s:s,s:i,s:f,s:f,s:f,s:b,s:s}",
-			"schema", 1,
-			"mission", Game_current_mission_filename,
-			"seed", static_cast<int>(Cmdline_rng_seed),
-			"fixed_dt", Cmdline_fixed_dt,
-			"max_sim_time", Cmdline_max_sim_time,
-			"simulated_seconds", sim_time,
-			"time_limit_reached", !strcmp(termination, "time_limit") ? 1 : 0,
-			"termination", termination);
+		json_t* result = Sim_run_outcome != nullptr ? Sim_run_outcome
+			: sim_run_snapshot(Sim_run_termination != nullptr ? Sim_run_termination : "quit");
+		Sim_run_outcome = nullptr;
 		if (result != nullptr) {
 			json_object_set_new(result, "wall_seconds", json_real(wall_time));
 
-			// the outcome: goal states as the debriefing would show them (goals are kept until the next mission loads)
-			json_t* goals = json_array();
-			for (const auto& goal : Mission_goals) {
-				if (goal.type & INVALID_GOAL) {
-					continue;
-				}
-				const int type = goal.type & GOAL_TYPE_MASK;
-				json_array_append_new(goals, json_pack("{s:s,s:s,s:s}",
-					"name", goal.name.c_str(),
-					"type", type == PRIMARY_GOAL ? "primary" : type == SECONDARY_GOAL ? "secondary" : "bonus",
-					"status", goal.satisfied == GOAL_COMPLETE ? "complete" : goal.satisfied == GOAL_FAILED ? "failed" : "incomplete"));
-			}
-			json_object_set_new(result, "goals", goals);
-
 			if (json_dump_file(result, Cmdline_sim_result, JSON_INDENT(2) | JSON_SORT_KEYS) != 0) {
-				// release builds show no warning and write no log
+				// warnings are not shown in release builds, which usually write no log either
 				fprintf(stderr, "Failed to write simulation result to '%s'.\n", Cmdline_sim_result);
 				fflush(stderr);
 				Warning(LOCATION, "Failed to write simulation result to '%s'.", Cmdline_sim_result);

@@ -938,7 +938,8 @@ int popup_do(popup_info *pi, int flags)
 			mprintf(("Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT));
 			fprintf(stderr, "Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT);
 			fflush(stderr);
-			choice = -1;
+			// as if cancelled, so popup_input() treats it as cancelled too
+			choice = POPUP_ABORT;
 			break;
 		}
 
@@ -1167,7 +1168,7 @@ int popup(int flags, int nchoices, ... )
 	// A headless run has nobody to answer, so log the popup and give the abort answer, unless a script answers dialogs.
 	if (Cmdline_headless && !scripting::hooks::OnDialogFrame->isActive()) {
 		mprintf(("Headless run: skipped popup \"%s\"\n", Popup_info.raw_text));
-		// release builds write no log
+		// release builds usually write no log
 		fprintf(stderr, "Headless run: skipped popup \"%s\"\n", Popup_info.raw_text);
 		fflush(stderr);
 		for (i = 0; i < nchoices; i++) {
