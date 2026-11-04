@@ -676,8 +676,12 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	SCP_vector<vk::BufferImageCopy> copyRegions;
 
 	// BMPMAN's bitmap flags describe converted pixel data and do not retain the
-	// BMP_AABITMAP lock flag. An 8bpp decoded frame can only come from an
-	// AABITMAP lock, so recover that policy before locking sibling ANI frames.
+	// BMP_AABITMAP lock flag. EFF animations load each frame separately, so an
+	// 8-bit PCX sibling locked with flags 0 would trip the bpp assert in
+	// bm_convert_format. ANI and APNG decode every frame in the triggering lock,
+	// so their sibling locks load nothing. Other 8bpp sources are safe to treat
+	// the same way: the standalone server never runs Vulkan, user bitmaps are
+	// never multi-frame, and the PNG and DDS loaders ignore lock flags.
 	auto lockBpp = bm->bpp;
 	auto lockFlags = (lockBpp == 8) ? BMP_AABITMAP : bm->flags;
 

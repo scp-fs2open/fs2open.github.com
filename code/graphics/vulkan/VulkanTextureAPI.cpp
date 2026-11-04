@@ -17,7 +17,7 @@ namespace graphics::vulkan {
 
 // ========== gr_screen function pointer implementations ==========
 
-int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
+int vulkan_preload(int bitmap_num, int is_aabitmap)
 {
 	auto* texManager = getTextureManager();
 
@@ -76,7 +76,7 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 		lockFlags = BMP_TEX_ETC2_RGBA1;
 		break;
 	default:
-		// PCX HUD art is a palette-index mask. Preserve the indices as R8 so
+		// AABITMAP art is a palette-index mask. Keep the indices as R8 so
 		// the HUD shader can use them as coverage instead of RGB color data,
 		// matching the draw-time AABITMAP lock in bindMaterialTextures.
 		compType = 0;
@@ -105,9 +105,13 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 
 	if (success) {
 		static int successCount = 0;
-		if (successCount < 10) {
-			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",
-				bitmap_num, compType));
+		// AABITMAP uploads bypass the cap so a playtest can confirm R8 for HUD handles,
+		// which page in long after the first few textures.
+		if (successCount < 10 || is_aabitmap) {
+			auto* uploaded = texManager->getTextureSlot(bitmap_num);
+			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d, aabitmap=%d, format=%s)\n",
+				bitmap_num, compType, is_aabitmap,
+				uploaded ? vk::to_string(uploaded->format).c_str() : "none"));
 			successCount++;
 		}
 	}
