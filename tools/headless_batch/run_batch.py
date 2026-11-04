@@ -3,7 +3,7 @@
 
 Each run is one engine process in its own portable workspace, with its own seed
 and UDP port, started with -headless, a fixed step and a simulated-time limit.
-The engine's -sim-result sidecar is collected into results.jsonl and summary.json.
+The engine's -sim_result sidecar is collected into results.jsonl and summary.json.
 See README.md for the plan format and the engine options this relies on.
 """
 
@@ -12,12 +12,17 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import ctypes
+import functools
+import hashlib
 import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -27,7 +32,12 @@ RESERVED_NAMES = {".", ".."}
 MAX_SEED = 2**31 - 1
 MAX_SIM_TIME = 32767.0  # the engine's mission clock is 16.16 fixed point
 FIXED_DT_MIN = 1.0 / 65536  # a shorter step rounds to zero in the engine
-FINISHED = {"time_limit", "player_died", "mission_exit"}  # engine terminations that mean the mission ran
+# engine terminations that mean the mission ran
+FINISHED = {"time_limit", "player_died", "mission_exit", "left_mission"}
+PACK_SUFFIXES = (".vp", ".vpc")  # root packs, plain and compressed
+FLAG_CHECK_TIMEOUT = 60.0
+# The plan keys that change what a run does. A kept run must have been made with the same values (and its seed).
+FINGERPRINT_KEYS = ("engine", "base_workspace", "mission", "pilot", "mods", "fixed_dt", "max_sim_time", "extra_args")
 
 # Plan keys, with None meaning "required". Unknown keys are rejected so typos fail loudly.
 PLAN_DEFAULTS: dict[str, Any] = {
@@ -46,6 +56,7 @@ PLAN_DEFAULTS: dict[str, Any] = {
     "timeout_seconds": 600.0,
     "base_port": 39000,
     "extra_args": [],
+    "keep_workspaces": False,
 }
 
 
@@ -62,7 +73,8 @@ def _name(value: Any, what: str) -> str:
 def _path(value: Any, what: str) -> Path:
     if not isinstance(value, str) or not value or "\0" in value:
         raise PlanError(f"{what} must be a path string, got {value!r}")
-    return Path(value).resolve()
+    # absolute, but symlinks are kept: an engine or interpreter reached through a link may depend on its own path
+    return Path(os.path.abspath(value))
 
 
 def _number(plan: dict[str, Any], key: str, low: float, high: float, integer: bool = False,
@@ -103,6 +115,8 @@ def load_plan(path: Path) -> dict[str, Any]:
     plan["mods"] = [_name(mod, "mod") for mod in plan["mods"]]
     if not isinstance(plan["extra_args"], list) or not all(isinstance(a, str) for a in plan["extra_args"]):
         raise PlanError("extra_args must be a list of strings")
+    if not isinstance(plan["keep_workspaces"], bool):
+        raise PlanError(f"keep_workspaces must be true or false, got {plan['keep_workspaces']!r}")
 
     plan["fixed_dt"] = _number(plan, "fixed_dt", FIXED_DT_MIN, 0.25)
     plan["max_sim_time"] = _number(plan, "max_sim_time", 0.0, MAX_SIM_TIME, low_inclusive=False)
@@ -113,6 +127,8 @@ def load_plan(path: Path) -> dict[str, Any]:
     if plan["seeds"] is None:
         start = int(_number(plan, "seed_start", 1, MAX_SEED, integer=True))
         repeats = int(_number(plan, "repeats", 1, 100000, integer=True))
+        if start + repeats - 1 > MAX_SEED:
+            raise PlanError(f"seed_start plus repeats would make seeds above {MAX_SEED}")
         plan["seeds"] = [start + i for i in range(repeats)]
     else:
         seeds = plan["seeds"]
@@ -122,13 +138,14 @@ def load_plan(path: Path) -> dict[str, Any]:
     if plan["base_port"] + len(plan["seeds"]) > 65535:
         raise PlanError("base_port plus the number of runs exceeds the port range")
 
-    # Absolute, because the engine runs in its run folder: a relative -sim-result path would land there.
+    # Absolute, because the engine runs in its run folder: a relative -sim_result path would land there.
     plan["engine"] = _path(plan["engine"], "engine")
     plan["base_workspace"] = _path(plan["base_workspace"], "base_workspace")
     plan["output_dir"] = _path(plan["output_dir"], "output_dir")
     if not plan["engine"].is_file():
         raise PlanError(f"engine not found: {plan['engine']}")
     check_workspace(plan["base_workspace"], plan["mods"], plan["pilot"])
+    check_separate(plan["base_workspace"], plan["output_dir"])
     check_same_volume(plan["base_workspace"], plan["output_dir"])
     check_path_length(plan["base_workspace"], plan["mods"], plan["output_dir"])
     return plan
@@ -145,6 +162,14 @@ def _volume_of(path: Path) -> int:
     while not probe.exists():
         probe = probe.parent
     return probe.stat().st_dev
+
+
+def check_separate(base: Path, output_dir: Path) -> None:
+    """Neither folder may contain the other: staging would copy the output into itself, or runs would write into the
+    base workspace."""
+    base_real, output_real = base.resolve(), output_dir.resolve()
+    if base_real == output_real or base_real in output_real.parents or output_real in base_real.parents:
+        raise PlanError(f"base_workspace and output_dir must not contain each other ({base} and {output_dir})")
 
 
 def check_same_volume(base: Path, output_dir: Path) -> None:
@@ -180,27 +205,66 @@ def check_path_length(base: Path, mods: list[str], output_dir: Path, limit: int 
 def check_workspace(base: Path, mods: list[str], pilot: str) -> None:
     if not base.is_dir():
         raise PlanError(f"base_workspace not found: {base}")
-    if not list(base.glob("*.vp")):
-        raise PlanError(f"base_workspace has no root .vp files: {base}")
+    if not root_packs(base):
+        raise PlanError(f"base_workspace has no root .vp or .vpc files: {base}")
     for mod in mods:
         if not (base / mod).is_dir():
             raise PlanError(f"mod directory not found under base_workspace: {base / mod}")
-    # A stored pilot is mandatory: without one the engine stops at the pilot chooser.
-    places = [base / "data" / "players"] + [base / mod / "data" / "players" for mod in mods]
-    if not any((place / (pilot + ext)).is_file() for place in places for ext in (".json", ".plr")):
-        raise PlanError(f"no stored pilot {pilot!r} (data/players/{pilot}.json or .plr) in the base workspace or its mods")
+    # A stored pilot is mandatory: without one the engine stops at the pilot chooser. -pilot only opens
+    # <pilot>.json in the root data/players folder; it does not look in mods or convert .plr files.
+    if not (base / "data" / "players" / (pilot + ".json")).is_file():
+        raise PlanError(f"no stored pilot {pilot!r}: -pilot needs data/players/{pilot}.json in the base workspace")
+
+
+def root_packs(base: Path) -> list[Path]:
+    return [item for item in base.iterdir() if item.is_file() and item.suffix.lower() in PACK_SUFFIXES]
 
 
 def link_or_copy(source: str, destination: str) -> None:
-    """Hardlink .vp packs (immutable and large); copy everything else so a run can never write through to the base."""
-    if source.lower().endswith(".vp"):
+    """Hardlink packs (immutable and large); copy everything else so a run can never write through to the base."""
+    if source.lower().endswith(PACK_SUFFIXES):
         try:
             os.link(source, destination)
             return
         except OSError as exc:
             raise RuntimeError(
-                f"cannot hardlink {source}; put base_workspace and output_dir on the same volume") from exc
+                f"cannot hardlink {source} ({exc}); base_workspace and output_dir must be on the same volume, and "
+                "NTFS allows at most 1023 links to one file") from exc
     shutil.copy2(source, destination)
+
+
+# Serialises the read-only handling below, which briefly clears an attribute that all links to a pack share.
+_READ_ONLY_LOCK = threading.Lock()
+
+
+def _retry_writable(workspace: Path, base: Path, function: Any, path: str, *_details: Any) -> None:
+    """rmtree error handler: make `path` writable, retry `function`, then make its base copy read-only again."""
+    twin = base / os.path.relpath(path, workspace)
+    with _READ_ONLY_LOCK:
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+        try:
+            function(path)
+        finally:
+            if twin.is_file():
+                os.chmod(twin, stat.S_IREAD)
+
+
+def remove_workspace(workspace: Path, base: Path) -> None:
+    """Delete a run workspace. Windows refuses to delete a read-only file, and a hardlinked pack shares the read-only
+    attribute with the base copy, so such a link is made writable, deleted, and the base copy made read-only again."""
+    handler = functools.partial(_retry_writable, workspace, base)
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(workspace, onexc=handler)
+    else:
+        shutil.rmtree(workspace, onerror=handler)
+
+
+def save_logs(workspace: Path, destination: Path) -> None:
+    """Copy the engine's .log files out of a workspace, keeping their paths relative to it."""
+    for log in workspace.rglob("*.log"):
+        target = destination / log.relative_to(workspace)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(log, target)
 
 
 def _ignore_logs(_directory: str, names: list[str]) -> set[str]:
@@ -209,9 +273,8 @@ def _ignore_logs(_directory: str, names: list[str]) -> set[str]:
 
 def prepare_workspace(base: Path, destination: Path, mods: list[str]) -> None:
     destination.mkdir(parents=True, exist_ok=False)
-    for item in base.iterdir():
-        if item.is_file() and item.suffix.lower() == ".vp":
-            link_or_copy(str(item), str(destination / item.name))
+    for item in root_packs(base):
+        link_or_copy(str(item), str(destination / item.name))
     if (base / "data").is_dir():
         shutil.copytree(base / "data", destination / "data", ignore=_ignore_logs, copy_function=link_or_copy)
     else:
@@ -225,8 +288,8 @@ def build_command(plan: dict[str, Any], seed: int, port: int, result_path: Path,
     command = [str(plan["engine"]), *launcher,
                "-portable_mode", "-parse_cmdline_only", "-port", str(port),
                "-start_mission", plan["mission"], "-pilot", plan["pilot"],
-               "-headless", "-fixed-dt", repr(plan["fixed_dt"]), "-max-sim-time", repr(plan["max_sim_time"]),
-               "-sim-result", str(result_path), "-noninteractive", "-nomovies", "-seed", str(seed)]
+               "-headless", "-fixed_dt", repr(plan["fixed_dt"]), "-max_sim_time", repr(plan["max_sim_time"]),
+               "-sim_result", str(result_path), "-noninteractive", "-nomovies", "-seed", str(seed)]
     if plan["mods"]:
         command += ["-mod", ",".join(plan["mods"])]
     return command + plan["extra_args"]
@@ -242,7 +305,7 @@ def suppress_crash_dialogs() -> None:
         ctypes.windll.kernel32.SetErrorMode(0x0001 | 0x0002 | 0x8000)
 
 
-def kill_tree(process: subprocess.Popen[bytes]) -> None:
+def kill_tree(process: subprocess.Popen[Any]) -> None:
     if os.name == "nt":
         subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], capture_output=True, check=False)
     else:
@@ -251,6 +314,74 @@ def kill_tree(process: subprocess.Popen[bytes]) -> None:
         except ProcessLookupError:
             pass
     process.wait()
+
+
+class LiveEngines:
+    """The engine processes running now, so an interrupted batch can kill them. Once stopped, no new run starts."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._processes: set[subprocess.Popen[Any]] = set()
+        self._killed: set[subprocess.Popen[Any]] = set()
+        self._stopped = False
+
+    def start(self, command: list[str], **popen_args: Any) -> subprocess.Popen[Any] | None:
+        with self._lock:
+            if self._stopped:
+                return None
+            process = subprocess.Popen(command, **popen_args)
+            self._processes.add(process)
+            return process
+
+    def finished(self, process: subprocess.Popen[Any]) -> None:
+        with self._lock:
+            self._processes.discard(process)
+
+    def stop_all(self) -> None:
+        with self._lock:
+            self._stopped = True
+            processes = [process for process in self._processes if process.poll() is None]
+            self._killed.update(processes)
+        for process in processes:
+            kill_tree(process)
+
+    def was_killed(self, process: subprocess.Popen[Any]) -> bool:
+        """Whether stop_all() killed this process (it was still running when the batch was interrupted)."""
+        with self._lock:
+            return process in self._killed
+
+
+def engine_flags(engine: Path, launcher: tuple[str, ...], parent: Path) -> set[str] | None:
+    """The command-line flags the engine knows, from its -help listing (lower case), or None if it printed none.
+
+    An unknown flag opens a message box that ignores -noninteractive, so each run would wait for its timeout.
+    The engine runs in a new temporary folder under `parent`, removed afterwards."""
+    parent.mkdir(parents=True, exist_ok=True)
+    workdir = tempfile.mkdtemp(prefix="flag-check-", dir=parent)
+    try:
+        completed = subprocess.run([str(engine), *launcher, "-portable_mode", "-parse_cmdline_only", "-help"],
+                                   cwd=workdir, capture_output=True, timeout=FLAG_CHECK_TIMEOUT, check=False,
+                                   env={**os.environ, "FSO_KEEP_STDOUT": "1"})
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    finally:
+        # a file the engine still holds open is left behind rather than failing the check
+        shutil.rmtree(workdir, ignore_errors=True)
+    flags = {flag.lower() for flag in re.findall(r"\[ (-\S+) \]", completed.stdout.decode(errors="replace"))}
+    return flags or None
+
+
+def unknown_flags(command: list[str], known: set[str]) -> list[str]:
+    """Arguments that start with a dash and that the engine does not list. The engine reads every such argument as a
+    flag, a value like -0.5 included, and opens a message box for an unknown one."""
+    return sorted({argument for argument in command[1:]
+                   if argument.startswith("-") and argument.lower() not in known})
+
+
+def plan_fingerprint(plan: dict[str, Any]) -> str:
+    """A short hash of the plan values that change what a run does (FINGERPRINT_KEYS)."""
+    values = {key: str(plan[key]) if isinstance(plan[key], Path) else plan[key] for key in FINGERPRINT_KEYS}
+    return hashlib.sha256(json.dumps(values, sort_keys=True).encode("utf-8")).hexdigest()[:16]
 
 
 def engine_reason(stderr_text: str) -> str | None:
@@ -265,15 +396,28 @@ def engine_reason(stderr_text: str) -> str | None:
     return candidates[-1] if candidates else None
 
 
-def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ...] = ()) -> dict[str, Any]:
+def read_engine_result(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    """The engine's -sim_result sidecar, or None and why it is not usable."""
+    try:
+        result = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as exc:  # truncated or not UTF-8 (json.JSONDecodeError and UnicodeDecodeError)
+        return None, f"unreadable engine result: {exc}"
+    if not isinstance(result, dict):
+        return None, f"engine result is not a JSON object: {type(result).__name__}"
+    return result, None
+
+
+def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ...] = (),
+            engines: LiveEngines | None = None) -> dict[str, Any]:
     """Stage a workspace, run one engine process to completion or timeout, and return its result record."""
+    engines = engines or LiveEngines()
     run_dir = plan["output_dir"] / "runs" / f"r{index:04d}"
     workspace = run_dir / "w"
     result_path = run_dir / "engine-result.json"
     port = plan["base_port"] + index
     record: dict[str, Any] = {"index": index, "seed": seed, "port": port, "status": "failed",
                               "exit_code": None, "timed_out": False, "wall_seconds": None,
-                              "sim_result": None, "problems": []}
+                              "sim_result": None, "problems": [], "plan_fingerprint": plan_fingerprint(plan)}
     try:
         prepare_workspace(plan["base_workspace"], workspace, plan["mods"])
         command = build_command(plan, seed, port, result_path, launcher)
@@ -281,27 +425,32 @@ def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ..
         with open(run_dir / "stdout.txt", "wb") as out, open(run_dir / "stderr.txt", "wb") as err:
             # On Windows the engine reattaches stdout/stderr to the parent's console unless FSO_KEEP_STDOUT is 1,
             # and the files above would stay empty
-            process = subprocess.Popen(command, cwd=workspace, stdout=out, stderr=err,
-                                       env={**os.environ, "FSO_KEEP_STDOUT": "1"},
-                                       start_new_session=(os.name != "nt"))
+            process = engines.start(command, cwd=workspace, stdout=out, stderr=err,
+                                    env={**os.environ, "FSO_KEEP_STDOUT": "1"},
+                                    start_new_session=(os.name != "nt"))
+            if process is None:
+                raise RuntimeError("the batch was interrupted before this run started")
             try:
                 process.wait(timeout=plan["timeout_seconds"])
             except subprocess.TimeoutExpired:
                 record["timed_out"] = True
                 kill_tree(process)
+            finally:
+                engines.finished(process)
         record["wall_seconds"] = round(time.monotonic() - started, 3)
         record["exit_code"] = process.returncode
+        if engines.was_killed(process):
+            record["problems"].append("killed: the batch was interrupted")
         if result_path.is_file():
-            try:
-                record["sim_result"] = json.loads(result_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError as exc:
-                record["problems"].append(f"unreadable engine result: {exc}")
+            record["sim_result"], problem = read_engine_result(result_path)
+            if problem:
+                record["problems"].append(problem)
             else:
                 termination = record["sim_result"].get("termination")
-                if termination not in FINISHED:
+                if not isinstance(termination, str) or termination not in FINISHED:
                     record["problems"].append(f"mission did not run to an end (termination {termination!r})")
         else:
-            record["problems"].append("engine wrote no -sim-result file")
+            record["problems"].append("engine wrote no -sim_result file")
         if record["timed_out"]:
             record["problems"].append(f"killed after {plan['timeout_seconds']} s")
         if record["exit_code"] not in (0, None) and not record["timed_out"]:
@@ -314,20 +463,36 @@ def run_one(plan: dict[str, Any], index: int, seed: int, launcher: tuple[str, ..
     except (OSError, RuntimeError) as exc:
         record["problems"].append(str(exc))
     (run_dir / "result.json").write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+    if not plan["keep_workspaces"] and workspace.exists():
+        # each run hardlinks every pack again, and NTFS allows a file at most 1023 links
+        try:
+            if record["status"] != "ok":
+                save_logs(workspace, run_dir / "logs")  # the engine log, when the build writes one
+            remove_workspace(workspace, plan["base_workspace"])
+        except OSError as exc:
+            print(f"warning: could not delete the workspace of run {index}: {exc}", file=sys.stderr, flush=True)
     return record
 
 
 def read_record(path: Path) -> dict[str, Any] | None:
     """A run's result.json, or None if it is missing or unreadable (an interrupted write)."""
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
+    return record if isinstance(record, dict) else None
 
 
-def summarize(records: list[dict[str, Any]], batch_wall: float) -> dict[str, Any]:
+def _simulated_seconds(record: dict[str, Any]) -> float:
+    value = (record.get("sim_result") or {}).get("simulated_seconds", 0.0)
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else 0.0
+
+
+def summarize(records: list[dict[str, Any]], batch_wall: float, kept: frozenset[int] = frozenset()) -> dict[str, Any]:
+    """Counts over all records. The rate counts only the runs made by this invocation, not those kept by --resume."""
     ok = [r for r in records if r["status"] == "ok"]
-    sim = sum(r["sim_result"].get("simulated_seconds", 0.0) for r in ok)
+    sim = sum(_simulated_seconds(r) for r in ok)
+    sim_now = sum(_simulated_seconds(r) for r in ok if r.get("index") not in kept)
     exits: dict[str, int] = {}
     ends: dict[str, int] = {}
     for r in records:
@@ -336,10 +501,62 @@ def summarize(records: list[dict[str, Any]], batch_wall: float) -> dict[str, Any
             term = str(r["sim_result"].get("termination"))
             ends[term] = ends.get(term, 0) + 1
     return {"runs": len(records), "ok": len(ok), "failed": len(records) - len(ok),
+            "kept_from_previous": len(kept),
             "timed_out": sum(1 for r in records if r["timed_out"]),
             "exit_codes": exits, "terminations": ends,
             "simulated_seconds_total": round(sim, 3), "batch_wall_seconds": round(batch_wall, 3),
-            "simulated_seconds_per_wall_second": round(sim / batch_wall, 3) if batch_wall > 0 else None}
+            "simulated_seconds_per_wall_second": round(sim_now / batch_wall, 3) if batch_wall > 0 else None}
+
+
+def write_results(path: Path, records: dict[int, dict[str, Any]]) -> None:
+    """Rewrite results.jsonl from the given records, in run order, so no row from an earlier invocation remains."""
+    temporary = path.with_suffix(".jsonl.tmp")
+    with open(temporary, "w", encoding="utf-8") as sink:
+        for index in sorted(records):
+            sink.write(json.dumps(records[index], sort_keys=True) + "\n")
+    os.replace(temporary, path)
+
+
+INTERRUPT_GRACE_SECONDS = 10.0  # how long Ctrl-C waits for the killed runs to write their records
+
+
+def _add_record(record: dict[str, Any], records: dict[int, dict[str, Any]], results_path: Path) -> None:
+    records[record["index"]] = record
+    with open(results_path, "a", encoding="utf-8") as sink:
+        sink.write(json.dumps(record, sort_keys=True) + "\n")
+    print(f"run {record['index']:>4} seed {record['seed']}: {record['status']}"
+          + (f" ({'; '.join(record['problems'])})" if record["problems"] else ""), flush=True)
+
+
+def run_all(plan: dict[str, Any], pending: list[tuple[int, int]], records: dict[int, dict[str, Any]],
+            engines: LiveEngines) -> None:
+    """Run the pending runs on the worker pool, adding each record as it finishes. On Ctrl-C, cancel the queued runs,
+    kill the running engines, record the runs that finish within a short grace period, and re-raise."""
+    results_path = plan["output_dir"] / "results.jsonl"
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=plan["workers"])
+    submitted: list[concurrent.futures.Future[dict[str, Any]]] = []
+    recorded: set[concurrent.futures.Future[dict[str, Any]]] = set()
+    try:
+        submitted = [pool.submit(run_one, plan, i, s, engines=engines) for i, s in pending]
+        waiting = set(submitted)
+        while waiting:
+            # a timed wait, so Ctrl-C reaches this thread on Windows too
+            finished, waiting = concurrent.futures.wait(waiting, timeout=0.5,
+                                                        return_when=concurrent.futures.FIRST_COMPLETED)
+            for future in finished:
+                _add_record(future.result(), records, results_path)
+                recorded.add(future)
+    except BaseException:
+        pool.shutdown(wait=False, cancel_futures=True)
+        engines.stop_all()
+        # cancelled futures never complete, so wait only for the runs that had started
+        started = [future for future in submitted if future not in recorded and not future.cancelled()]
+        finished, _ = concurrent.futures.wait(started, timeout=INTERRUPT_GRACE_SECONDS)
+        for future in finished:
+            if future.exception() is None:
+                _add_record(future.result(), records, results_path)
+        raise
+    pool.shutdown(wait=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -347,6 +564,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("plan", type=Path, help="plan JSON file (see README.md)")
     parser.add_argument("--resume", action="store_true", help="keep finished runs in output_dir and run only the rest")
     parser.add_argument("--dry-run", action="store_true", help="validate the plan and print the commands without running")
+    parser.add_argument("--skip-flag-check", action="store_true",
+                        help="do not compare the command line with the engine's -help listing (it omits deprecated flags)")
     args = parser.parse_args(argv)
 
     try:
@@ -361,38 +580,59 @@ def main(argv: list[str] | None = None) -> int:
             print(subprocess.list2cmdline(build_command(plan, seed, plan["base_port"] + index, runs_dir / f"r{index:04d}" / "engine-result.json")))
         return 0
 
-    done: dict[int, dict[str, Any]] = {}
-    if runs_dir.exists() and any(runs_dir.iterdir()):
-        if not args.resume:
-            print(f"plan error: {runs_dir} is not empty; use --resume or a new output_dir", file=sys.stderr)
+    if runs_dir.exists() and any(runs_dir.iterdir()) and not args.resume:
+        print(f"plan error: {runs_dir} is not empty; use --resume or a new output_dir", file=sys.stderr)
+        return 2
+
+    suppress_crash_dialogs()
+    if not args.skip_flag_check:
+        known = engine_flags(plan["engine"], (), plan["output_dir"])
+        if known is None:
+            print(f"plan error: {plan['engine']} -help listed no flags, so the command line cannot be checked; "
+                  "use --skip-flag-check to run anyway", file=sys.stderr)
             return 2
+        unknown = unknown_flags(build_command(plan, plan["seeds"][0], plan["base_port"], runs_dir / "x.json"), known)
+        if unknown:
+            print(f"plan error: the engine does not know {', '.join(unknown)} (an older engine, or a typo in "
+                  "extra_args?); each run would stop at a message box. Use --skip-flag-check if the flag is "
+                  "deprecated but still accepted", file=sys.stderr)
+            return 2
+
+    fingerprint = plan_fingerprint(plan)
+    done: dict[int, dict[str, Any]] = {}
+    if runs_dir.exists():
         for index, seed in enumerate(plan["seeds"]):
             run_dir = runs_dir / f"r{index:04d}"
             if not run_dir.exists():
                 continue
             previous = read_record(run_dir / "result.json")
-            if previous and previous.get("status") == "ok" and previous.get("seed") == seed:
+            if (previous and previous.get("status") == "ok" and previous.get("seed") == seed
+                    and previous.get("plan_fingerprint") == fingerprint):
                 done[index] = previous
             else:
-                # failed, interrupted before it wrote a record, or run with another seed: rerun from a clean workspace
-                shutil.rmtree(run_dir)
+                # failed, interrupted before it wrote a record, or made by another plan or seed: rerun it cleanly
+                try:
+                    shutil.rmtree(run_dir)
+                except OSError as exc:
+                    print(f"plan error: cannot clear {run_dir} for a rerun: {exc}", file=sys.stderr)
+                    return 2
     runs_dir.mkdir(parents=True, exist_ok=True)
 
-    suppress_crash_dialogs()
     pending = [(i, s) for i, s in enumerate(plan["seeds"]) if i not in done]
     records = dict(done)
+    results_path = plan["output_dir"] / "results.jsonl"
+    write_results(results_path, records)  # drop rows left by an earlier invocation
     started = time.monotonic()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=plan["workers"]) as pool:
-        futures = [pool.submit(run_one, plan, i, s) for i, s in pending]
-        for future in concurrent.futures.as_completed(futures):
-            record = future.result()
-            records[record["index"]] = record
-            with open(plan["output_dir"] / "results.jsonl", "a", encoding="utf-8") as sink:
-                sink.write(json.dumps(record, sort_keys=True) + "\n")
-            print(f"run {record['index']:>4} seed {record['seed']}: {record['status']}"
-                  + (f" ({'; '.join(record['problems'])})" if record["problems"] else ""), flush=True)
+    try:
+        run_all(plan, pending, records, LiveEngines())
+    except KeyboardInterrupt:
+        write_results(results_path, records)
+        print(f"interrupted: {len(records)} of {len(plan['seeds'])} runs have records; use --resume to continue",
+              file=sys.stderr)
+        return 130
+    write_results(results_path, records)
     ordered = [records[i] for i in sorted(records)]
-    summary = summarize(ordered, time.monotonic() - started)
+    summary = summarize(ordered, time.monotonic() - started, frozenset(done))
     (plan["output_dir"] / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0 if summary["failed"] == 0 else 1

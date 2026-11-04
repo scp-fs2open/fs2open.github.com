@@ -1,5 +1,5 @@
 """Tests for run_batch.py. They need no FreeSpace Open install: a stub "engine" (a Python script run by the
-current interpreter) stands in for the executable and writes the -sim-result sidecar the real engine writes.
+current interpreter) stands in for the executable and writes the -sim_result sidecar the real engine writes.
 
     python -m unittest tools/headless_batch/test_run_batch.py
 """
@@ -18,7 +18,7 @@ import run_batch  # noqa: E402
 STUB_OK = r"""
 import json, os, sys
 args = sys.argv[1:]
-path = args[args.index("-sim-result") + 1]
+path = args[args.index("-sim_result") + 1]
 seed = int(args[args.index("-seed") + 1])
 json.dump({"schema": 1, "seed": seed, "simulated_seconds": 12.5, "termination": "time_limit",
            "keep_stdout": os.environ.get("FSO_KEEP_STDOUT")}, open(path, "w"))
@@ -141,7 +141,7 @@ class RunTests(Fixture):
         self.assertEqual(command[command.index("-seed") + 1], "501")
         self.assertEqual(command[command.index("-port") + 1], "40001")
         self.assertEqual(command[command.index("-mod") + 1], "mymod")
-        self.assertEqual(command[command.index("-max-sim-time") + 1], "20.0")
+        self.assertEqual(command[command.index("-max_sim_time") + 1], "20.0")
 
     def test_workspace_hardlinks_packs_copies_the_rest_and_skips_logs(self):
         destination = self.root / "w"
@@ -178,10 +178,10 @@ class RunTests(Fixture):
         record = run_batch.run_one(plan, 0, 500, launcher=self.stub(STUB_CRASH))
         self.assertEqual(record["status"], "failed")
         self.assertEqual(record["exit_code"], 3)
-        self.assertTrue(any("no -sim-result" in p for p in record["problems"]))
+        self.assertTrue(any("no -sim_result" in p for p in record["problems"]))
 
     def test_relative_output_dir_still_finds_the_engine_result(self):
-        # The engine runs in its run folder, so a relative -sim-result path would be written there instead.
+        # The engine runs in its run folder, so a relative -sim_result path would be written there instead.
         old_cwd = os.getcwd()
         os.chdir(self.root)
         try:
@@ -212,12 +212,13 @@ class RunTests(Fixture):
         (runs / "r0002" / "result.json").write_text(json.dumps({"index": 2, "seed": 99, "status": "ok"}))  # old plan
         (runs / "r0003").mkdir()
         kept = {"index": 3, "seed": 10, "status": "ok", "exit_code": 0, "timed_out": False,
-                "sim_result": {"simulated_seconds": 1.0, "termination": "time_limit"}, "problems": []}
+                "sim_result": {"simulated_seconds": 1.0, "termination": "time_limit"}, "problems": [],
+                "plan_fingerprint": run_batch.plan_fingerprint(run_batch.load_plan(path))}
         (runs / "r0003" / "result.json").write_text(json.dumps(kept))
         original = run_batch.run_one
         run_batch.run_one = functools.partial(original, launcher=self.stub(STUB_OK))
         try:
-            self.assertEqual(run_batch.main([str(path), "--resume"]), 0)
+            self.assertEqual(run_batch.main([str(path), "--resume", "--skip-flag-check"]), 0)
         finally:
             run_batch.run_one = original
         for index, seed in enumerate([7, 8, 9]):
