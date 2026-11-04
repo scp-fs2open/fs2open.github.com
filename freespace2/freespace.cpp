@@ -4385,10 +4385,7 @@ void game_frame(bool paused)
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
 
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
-					// a headless run has no input, but the player's flight controls still apply scripted (Lua) control
-					if (!Cmdline_headless) {
-						game_process_keys();
-					}
+					game_process_keys();
 					read_player_controls( Player_obj, flFrametime);
 				}
 				
@@ -4424,6 +4421,10 @@ void game_frame(bool paused)
 			// commonly run authoritative game logic (AI, economy, objectives) from
 			// OnFrame, so preserve that work while omitting presentation in headless runs.
 			gr_process_frame_callbacks();
+
+			// The frame counter normally advances while the frame is drawn. Mission messages,
+			// auto-targeting and other per-frame checks read it.
+			game_get_framerate();
 		}
 
 	}
