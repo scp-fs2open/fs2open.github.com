@@ -595,6 +595,14 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 int bm_is_compressed(int handle);
 
 /**
+ * @brief Returns true if the bitmap indexed by handle was loaded from a cubemap image file
+ *
+ * @note Render targets return false, even cubemap ones, and so do BC7 (DX10) DDS cubemaps, whose cube flag the DDS
+ * loader does not keep
+ */
+bool bm_is_cubemap(int handle);
+
+/**
  * @brief Gets the correct TCACHE_TYPE for compressed graphics (uncompressed are assumed TCACHE_TYPE_NORMAL)
  */
 int bm_get_tcache_type(int handle);
