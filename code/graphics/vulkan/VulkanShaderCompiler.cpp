@@ -185,13 +185,14 @@ SCP_string VulkanShaderCompiler::buildHeader(vk::ShaderStageFlagBits /*stage*/, 
 				header += temp;
 			}
 		}
-	} else if (gr_is_fxaa_mode(Gr_aa_mode) && sdrType == SDR_TYPE_POST_PROCESS_FXAA) {
+	} else if (gr_is_fxaa_mode(Gr_aa_mode_last_frame) && sdrType == SDR_TYPE_POST_PROCESS_FXAA) {
+		// the preset latched at frame start, not the live one, so cached shaders match the passes this frame runs
 		// GLSL 450 always has textureGather
-		header += shader_get_fxaa_defines(Gr_aa_mode, true);
-	} else if (gr_is_smaa_mode(Gr_aa_mode) && (sdrType == SDR_TYPE_POST_PROCESS_SMAA_EDGE || sdrType == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
+		header += shader_get_fxaa_defines(Gr_aa_mode_last_frame, true);
+	} else if (gr_is_smaa_mode(Gr_aa_mode_last_frame) && (sdrType == SDR_TYPE_POST_PROCESS_SMAA_EDGE || sdrType == SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT ||
 	           sdrType == SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING)) {
 		// GLSL 450 always has textureGather
-		header += shader_get_smaa_defines(Gr_aa_mode, true);
+		header += shader_get_smaa_defines(Gr_aa_mode_last_frame, true);
 	} else {
 		// Inject variant-specific #defines based on flags
 		header += shader_build_variant_defines(sdrType, flags);

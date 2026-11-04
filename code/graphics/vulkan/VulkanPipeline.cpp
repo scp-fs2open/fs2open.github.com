@@ -181,6 +181,17 @@ void VulkanPipelineManager::shutdown()
 	nprintf(("vulkan", "VulkanPipelineManager: Shutdown complete\n"));
 }
 
+void VulkanPipelineManager::forgetPipelinesOfShaderType(shader_type type)
+{
+	for (auto it = m_pipelines.begin(); it != m_pipelines.end();) {
+		if (it->first.shaderType == type) {
+			it = m_pipelines.erase(it);
+		} else {
+			++it;
+		}
+	}
+}
+
 vk::Pipeline VulkanPipelineManager::getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout)
 {
 	Assertion(m_initialized, "VulkanPipelineManager::getPipeline called before initialization!");

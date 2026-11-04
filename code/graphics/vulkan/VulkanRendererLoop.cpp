@@ -101,6 +101,11 @@ void VulkanRenderer::setupFrame()
 		return;
 	}
 
+	// before recording: in VR both eyes record into one command buffer, which must not hold a pipeline destroyed here
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
+		rebuildAntiAliasingShaders();
+	}
+
 	// Free completed texture upload command buffers
 	Assertion(m_textureManager, "Vulkan TextureManager not initialized in setupFrame!");
 	m_textureManager->frameStart();
@@ -311,6 +316,21 @@ void VulkanRenderer::resumeSceneRendering()
 	pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 	pass.extent = m_postProcessor->getSceneExtent();
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::rebuildAntiAliasingShaders()
+{
+	mprintf(("Vulkan: anti-aliasing preset changed, rebuilding its shaders\n"));
+	// the preset is compiled into these shaders, and earlier frames may still be drawing with their pipelines
+	m_device->waitIdle();
+	for (auto type : {SDR_TYPE_POST_PROCESS_FXAA,
+			 SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+			 SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
+			 SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING}) {
+		m_pipelineManager->forgetPipelinesOfShaderType(type);
+		m_shaderManager->forgetShaderType(type);
+	}
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
 
 void VulkanRenderer::endSceneRendering()

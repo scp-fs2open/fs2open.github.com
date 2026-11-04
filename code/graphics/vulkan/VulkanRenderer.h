@@ -398,6 +398,11 @@ class VulkanRenderer {
 
   private:
 	/**
+	 * @brief Rebuild the FXAA and SMAA shaders and pipelines for the current anti-aliasing preset
+	 */
+	void rebuildAntiAliasingShaders();
+
+	/**
 	 * @brief Begin a render pass on the frame command buffer with full state-tracker sync
 	 *
 	 * Records vkCmdBeginRenderPass and updates the state tracker (render pass,

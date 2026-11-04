@@ -149,6 +149,11 @@ public:
 	size_t getPipelineCount() const { return m_pipelines.size(); }
 
 	/**
+	 * @brief Destroy every cached pipeline built from a shader type; the caller must know the GPU is done with them
+	 */
+	void forgetPipelinesOfShaderType(shader_type type);
+
+	/**
 	 * @brief Check if a draw needs a fallback buffer for a given vertex attribute
 	 * @param vertexLayout The vertex layout to check
 	 * @param shaderType The shader being used (checked against vertexInputMask)
