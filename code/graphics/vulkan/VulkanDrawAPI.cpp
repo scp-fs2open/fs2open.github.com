@@ -613,6 +613,9 @@ void vulkan_calculate_irrmap()
 	}
 
 	// Get envmap cubemap view
+	if (!texManager->ensureCubemapUploaded(ENVMAP)) {
+		return;
+	}
 	auto* envSlot = bm_get_slot(ENVMAP, true);
 	if (!envSlot || !envSlot->gr_info) {
 		return;
