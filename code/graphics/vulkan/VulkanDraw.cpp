@@ -1283,6 +1283,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 
 	// Like opengl_tnl_set_material(), every material draw sets the texture addressing (e.g. MR_FORCE_CLAMP skyboxes)
 	setTextureAddressing(mat->get_texture_addressing());
+	vulkan_zbias(mat->get_depth_bias());
 
 	// Build pipeline configuration from material
 	PipelineConfig config = buildPipelineConfig(mat, prim_type);
@@ -1483,9 +1484,6 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		stateTracker->setStencilMode(GR_STENCIL_NONE);
 	}
 
-	// Set depth bias if needed
-	stateTracker->setDepthBias(static_cast<float>(mat->get_depth_bias()), 0.0f);
-
 	return true;
 }
 
@@ -1543,7 +1541,7 @@ void VulkanDrawManager::draw(primitive_type prim_type, int first_vertex, int ver
 	m_frameStats.totalVertices += vertex_count;
 
 	// Flush any dirty dynamic state (viewport, scissor, depth bias, stencil ref)
-	// before issuing the draw command. applyMaterial sets these AFTER bindPipeline,
+	// before issuing the draw command. applyMaterial sets some of these AFTER bindPipeline,
 	// so they may be dirty even when the pipeline didn't change.
 	stateTracker->applyDynamicState();
 
