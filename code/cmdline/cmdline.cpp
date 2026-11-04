@@ -524,9 +524,9 @@ cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmd
 cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm headless_arg("-headless", nullptr, AT_NONE);
-cmdline_parm fixed_dt_arg("-fixed-dt", "Authoritative simulation step in seconds", AT_FLOAT);
-cmdline_parm max_sim_time_arg("-max-sim-time", "End after this many simulated seconds", AT_FLOAT);
-cmdline_parm sim_result_arg("-sim-result", "Write the simulation result JSON to this path", AT_STRING);
+cmdline_parm fixed_dt_arg("-fixed_dt", "Authoritative simulation step in seconds", AT_FLOAT);
+cmdline_parm max_sim_time_arg("-max_sim_time", "End after this many simulated seconds", AT_FLOAT);
+cmdline_parm sim_result_arg("-sim_result", "Write the simulation result JSON to this path", AT_STRING);
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
 cmdline_parm json_profiling("-json_profiling", NULL, AT_NONE); //Cmdline_json_profiling
@@ -2388,14 +2388,26 @@ bool SetCmdlineParams()
 
 	if (headless_arg.found())
 	{
+		// headless runs are single player only
+		if (standalone_arg.found() || connect_arg.found() || startgame_arg.found())
+		{
+			Error(LOCATION, "-headless cannot be combined with -standalone, -connect or -startgame.");
+			return false;
+		}
+
 		Cmdline_headless = true;
 		Cmdline_freespace_no_sound = 1;
 		Cmdline_freespace_no_music = 1;
 		Cmdline_nomovies = 1;
-		// frames run as fast as the CPU allows, on a mission clock that advances by -fixed-dt per frame
+		// frames run as fast as the CPU allows, on a mission clock that advances by -fixed_dt per frame
 		Cmdline_NoFPSCap = 1;
 		// nobody can dismiss an error or warning dialog, so report and exit instead (as -standalone does)
 		Cmdline_noninteractive = true;
+	}
+	else if (fixed_dt_arg.found() || max_sim_time_arg.found() || sim_result_arg.found())
+	{
+		Error(LOCATION, "-fixed_dt, -max_sim_time and -sim_result require -headless.");
+		return false;
 	}
 
 	if (fixed_dt_arg.found())
@@ -2405,7 +2417,7 @@ bool SetCmdlineParams()
 		// test so that NaN is rejected too
 		if (!(dt >= 1.0f / 65536.0f && dt <= 0.25f)) // NOLINT(readability-simplify-boolean-expr)
 		{
-			Error(LOCATION, "-fixed-dt must be finite and in the range [1/65536, 0.25] seconds.");
+			Error(LOCATION, "-fixed_dt must be finite and in the range [1/65536, 0.25] seconds.");
 			return false;
 		}
 		Cmdline_fixed_dt = dt;
@@ -2417,7 +2429,7 @@ bool SetCmdlineParams()
 		// mission time is 16.16 fixed point, so it cannot count past 32767 seconds
 		if (!(max_sim_time > 0.0f && max_sim_time <= 32767.0f)) // NOLINT(readability-simplify-boolean-expr)
 		{
-			Error(LOCATION, "-max-sim-time must be finite, greater than zero and at most 32767 seconds.");
+			Error(LOCATION, "-max_sim_time must be finite, greater than zero and at most 32767 seconds.");
 			return false;
 		}
 		Cmdline_max_sim_time = max_sim_time;

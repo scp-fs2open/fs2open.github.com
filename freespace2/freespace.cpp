@@ -356,7 +356,7 @@ object	*Last_view_target = nullptr;
 
 int dogfight_blown = 0;
 static uint64_t Sim_run_wall_start_us = 0;
-// why the run ended, for -sim-result; null means the mission or the game ended it ("mission_exit")
+// why the run ended, for -sim_result; null means the mission or the game ended it ("mission_exit")
 static const char* Sim_run_termination = nullptr;
 
 // End an unattended run, keeping the first reason given.
