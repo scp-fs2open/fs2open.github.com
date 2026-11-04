@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Bmpman"
+    bmpman/test_eff.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
