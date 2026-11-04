@@ -40,6 +40,9 @@
 #define POPUP_NOCHANGE				100
 #define POPUP_ABORT					101
 
+// frames a headless run waits for an On Dialog Frame script to answer a popup
+#define HEADLESS_POPUP_FRAME_LIMIT	600
+
 int Popup_max_display[GR_NUM_RESOLUTIONS] = {
 	11,
 	19
@@ -917,6 +920,8 @@ int popup_do(popup_info *pi, int flags)
 
 	gr_reset_screen_scale();
 
+	int headless_frames = 0;
+
 	while(!done) {
 		int k;
 
@@ -924,6 +929,15 @@ int popup_do(popup_info *pi, int flags)
 
 		// if we were killed by a call to popup_kill_any_active(), kill the popup
 		if(Popup_should_die){
+			choice = -1;
+			break;
+		}
+
+		// in a headless run only a script can answer; give up if it doesn't
+		if (Cmdline_headless && ++headless_frames > HEADLESS_POPUP_FRAME_LIMIT) {
+			mprintf(("Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT));
+			fprintf(stderr, "Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT);
+			fflush(stderr);
 			choice = -1;
 			break;
 		}
@@ -1153,6 +1167,9 @@ int popup(int flags, int nchoices, ... )
 	// A headless run has nobody to answer, so log the popup and give the abort answer, unless a script answers dialogs.
 	if (Cmdline_headless && !scripting::hooks::OnDialogFrame->isActive()) {
 		mprintf(("Headless run: skipped popup \"%s\"\n", Popup_info.raw_text));
+		// release builds write no log
+		fprintf(stderr, "Headless run: skipped popup \"%s\"\n", Popup_info.raw_text);
+		fflush(stderr);
 		for (i = 0; i < nchoices; i++) {
 			vm_free(Popup_info.button_text[i]);
 			Popup_info.button_text[i] = nullptr;

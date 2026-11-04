@@ -1583,7 +1583,12 @@ bool game_start_mission()
 			else {
 				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Attempt to load the mission failed", 169));
 			}
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+			if (Cmdline_headless) {
+				sim_run_end("load_failed");
+			} else {
+				gameseq_post_event(GS_EVENT_MAIN_MENU);
+			}
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
 		}
@@ -4772,8 +4777,9 @@ void game_do_frame(bool set_frametime)
 	if (Cmdline_headless) {
 		timer_advance_simulation_clock(Frametime);
 
-		// nobody can answer the death popup (which is not even shown), so the player's death ends the run
-		if ((Game_mode & GM_DEAD_BLEW_UP) && !(Game_mode & GM_MULTIPLAYER)) {
+		// nobody can answer the death popup, so the player's death ends the run; a supernova opens
+		// that popup without the player ship blowing up
+		if (((Game_mode & GM_DEAD_BLEW_UP) || popupdead_is_active()) && !(Game_mode & GM_MULTIPLAYER)) {
 			sim_run_end("player_died");
 		}
 	}
@@ -5716,6 +5722,12 @@ void game_leave_state( int old_state, int new_state )
 
 				if (Cmdline_benchmark_mode) {
 					gameseq_post_event( GS_EVENT_QUIT_GAME );
+				}
+
+				// Only the debriefing ends a headless run on its own. Any other way out of the mission
+				// (end-mission to the main hall, a red alert, the end of a campaign) ends it here.
+				if (Cmdline_headless && !(Game_mode & GM_MULTIPLAYER) && new_state != GS_STATE_DEBRIEF && new_state != GS_STATE_QUIT_GAME) {
+					sim_run_end("left_mission");
 				}
 			}
 			io::mouse::CursorManager::get()->showCursor(true);
@@ -7230,6 +7242,9 @@ void game_shutdown(void)
 			json_object_set_new(result, "goals", goals);
 
 			if (json_dump_file(result, Cmdline_sim_result, JSON_INDENT(2) | JSON_SORT_KEYS) != 0) {
+				// release builds show no warning and write no log
+				fprintf(stderr, "Failed to write simulation result to '%s'.\n", Cmdline_sim_result);
+				fflush(stderr);
 				Warning(LOCATION, "Failed to write simulation result to '%s'.", Cmdline_sim_result);
 			}
 			json_decref(result);
