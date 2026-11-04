@@ -7,6 +7,7 @@ current interpreter) stands in for the executable and writes the -sim_result sid
 import functools
 import json
 import os
+import stat
 import sys
 import tempfile
 import unittest
@@ -153,6 +154,48 @@ class RunTests(Fixture):
         self.assertEqual((self.base / "mymod" / "data" / "table.tbm").read_text(), "x")  # a run cannot write through
         self.assertFalse((destination / "data" / "debug.log").exists())
         self.assertTrue((destination / "data" / "players" / "Tester.json").is_file())
+
+    def base_files_writable(self):
+        return {name: os.access(self.base / name, os.W_OK)
+                for name in ("root_fs2.vp", "mymod/data/mod.vp", "data/players/Tester.json")}
+
+    def test_removing_a_workspace_keeps_the_mode_of_read_only_base_packs(self):
+        for name in ("root_fs2.vp", "mymod/data/mod.vp"):
+            os.chmod(self.base / name, stat.S_IREAD)
+        try:
+            workspace = self.root / "w"
+            run_batch.prepare_workspace(self.base, workspace, ["mymod"])
+            run_batch.remove_workspace(workspace, self.base)
+            self.assertFalse(workspace.exists())
+            self.assertEqual(self.base_files_writable(),
+                             {"root_fs2.vp": False, "mymod/data/mod.vp": False, "data/players/Tester.json": True})
+        finally:
+            for name in ("root_fs2.vp", "mymod/data/mod.vp"):
+                os.chmod(self.base / name, stat.S_IREAD | stat.S_IWRITE)
+
+    @unittest.skipUnless(sys.platform == "win32", "only Windows refuses to delete an open file")
+    def test_a_file_that_cannot_be_deleted_leaves_the_base_workspace_unchanged(self):
+        workspace = self.root / "w"
+        run_batch.prepare_workspace(self.base, workspace, ["mymod"])
+        for held in ("data/players/Tester.json", "root_fs2.vp"):  # a copied file and a hardlinked pack
+            with self.subTest(held):
+                with open(workspace / held, "rb"):
+                    with self.assertRaises(PermissionError):
+                        run_batch.remove_workspace(workspace, self.base)
+                self.assertEqual(set(self.base_files_writable().values()), {True})
+
+    def test_the_cleanup_handler_raises_other_failures_unchanged(self):
+        workspace = self.root / "w"
+        run_batch.prepare_workspace(self.base, workspace, ["mymod"])
+        path = str(workspace / "data" / "players" / "Tester.json")
+        error = PermissionError("in use")
+        for given in (error, (PermissionError, error, None)):  # onexc passes the exception, onerror sys.exc_info()
+            with self.subTest(type(given).__name__):
+                with self.assertRaises(PermissionError) as ctx:
+                    run_batch._retry_writable(workspace, self.base, os.unlink, path, given)
+                self.assertIs(ctx.exception, error)
+                self.assertTrue(os.path.exists(path))
+        self.assertEqual(set(self.base_files_writable().values()), {True})
 
     def test_successful_run_collects_the_sidecar(self):
         plan = run_batch.load_plan(self.plan_file())

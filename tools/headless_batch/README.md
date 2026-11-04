@@ -89,8 +89,8 @@ load.
 1. Make a **base workspace**: a portable FreeSpace Open folder holding the root `.vp` or `.vpc` files, any mod
    folders the mission needs, and a stored pilot, `data/players/<pilot>.json` in the root `data` folder (`-pilot`
    does not look in mods or read `.plr` files). The runner never writes to its files; the only change it makes
-   is to clear a read-only pack's read-only attribute for a moment while deleting a run's link to it, then set it
-   again. `output_dir` must not be inside it (or contain it).
+   is to clear a read-only pack's read-only attribute for a moment while deleting a run's link to it, then put
+   the pack's mode back. `output_dir` must not be inside it (or contain it).
 2. Use Python 3.9 or later (standard library only). Copy `example.plan.json`, set `engine`, `base_workspace`, `output_dir`, `mission` and `pilot`.
 3. Check the plan, then run it:
 
@@ -147,8 +147,9 @@ For run *i* with seed *s* the runner:
 4. reads the result file and records the run;
 5. deletes the workspace `w/`, unless `keep_workspaces` is set (each run adds a hardlink to every pack, and NTFS
    allows at most 1023 links to one file). A failed run first copies the workspace's `.log` files (the engine log,
-   if the build writes one) to `logs/`. A read-only pack link is made writable to delete it, and the base copy is
-   made read-only again.
+   if the build writes one) to `logs/`. A read-only pack link is made writable to delete it, and the base copy
+   gets its mode back. A workspace that cannot be deleted for another reason (a file still open) is left behind,
+   possibly in part, with a warning.
 
 Ctrl-C stops the batch: queued runs are cancelled and running engines are killed. The runner waits up to 10 s for
 the killed runs to write their records (marked `killed: the batch was interrupted`), keeps every finished run in

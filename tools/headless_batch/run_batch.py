@@ -237,21 +237,29 @@ def link_or_copy(source: str, destination: str) -> None:
 _READ_ONLY_LOCK = threading.Lock()
 
 
-def _retry_writable(workspace: Path, base: Path, function: Any, path: str, *_details: Any) -> None:
-    """rmtree error handler: make `path` writable, retry `function`, then make its base copy read-only again."""
+def _retry_writable(workspace: Path, base: Path, function: Any, path: str, error: Any) -> None:
+    """rmtree error handler: if `path` is read-only, make it writable and retry `function`. A hardlink shares its mode
+    with the base copy, so that copy gets its own mode back. Any other failure is raised as it was.
+
+    `error` is the exception (onexc, Python 3.12+) or the sys.exc_info() tuple (onerror)."""
     twin = base / os.path.relpath(path, workspace)
     with _READ_ONLY_LOCK:
-        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+        mode = stat.S_IMODE(os.lstat(path).st_mode)
+        if mode & stat.S_IWRITE:
+            # not read-only, so it failed for another reason, such as the file being open
+            raise error[1] if isinstance(error, tuple) else error
+        shared = twin.is_file() and os.path.samefile(path, twin)
+        os.chmod(path, mode | stat.S_IWRITE)
         try:
             function(path)
         finally:
-            if twin.is_file():
-                os.chmod(twin, stat.S_IREAD)
+            if shared:
+                os.chmod(twin, mode)
 
 
 def remove_workspace(workspace: Path, base: Path) -> None:
     """Delete a run workspace. Windows refuses to delete a read-only file, and a hardlinked pack shares the read-only
-    attribute with the base copy, so such a link is made writable, deleted, and the base copy made read-only again."""
+    attribute with the base copy, so such a link is made writable, deleted, and the base copy's mode restored."""
     handler = functools.partial(_retry_writable, workspace, base)
     if sys.version_info >= (3, 12):
         shutil.rmtree(workspace, onexc=handler)
