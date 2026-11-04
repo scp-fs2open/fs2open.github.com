@@ -29,6 +29,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _labelFontScale(viewport->view.Label_font_scale)
 	, _invertOrbitX(viewport->camera.getInvertOrbitX())
 	, _invertOrbitY(viewport->camera.getInvertOrbitY())
+	, _orbitSelectionMidpoint(viewport->camera.getOrbitSelectionMidpoint())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
 	, _gridCenterY(static_cast<int>(viewport->The_grid->center.xyz.y))
 	, _gridCenterZ(static_cast<int>(viewport->The_grid->center.xyz.z))
@@ -72,6 +73,7 @@ bool PreferencesDialogModel::apply() {
 	_viewport->view.Label_font_scale            = _labelFontScale;
 	_viewport->camera.setInvertOrbitX(_invertOrbitX);
 	_viewport->camera.setInvertOrbitY(_invertOrbitY);
+	_viewport->camera.setOrbitSelectionMidpoint(_orbitSelectionMidpoint);
 
 	_viewport->saveSettings();
 	if (themeModeChanged) {
@@ -202,6 +204,9 @@ void PreferencesDialogModel::setInvertOrbitX(bool value) { modify(_invertOrbitX,
 
 bool PreferencesDialogModel::getInvertOrbitY() const { return _invertOrbitY; }
 void PreferencesDialogModel::setInvertOrbitY(bool value) { modify(_invertOrbitY, value); }
+
+bool PreferencesDialogModel::getOrbitSelectionMidpoint() const { return _orbitSelectionMidpoint; }
+void PreferencesDialogModel::setOrbitSelectionMidpoint(bool value) { modify(_orbitSelectionMidpoint, value); }
 
 void PreferencesDialogModel::resetControlDefaults() {
 	auto& bindings = ControlBindings::instance();
