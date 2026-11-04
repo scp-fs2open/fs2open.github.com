@@ -72,6 +72,10 @@ float Nebl_flash_y = 0.0f;		// avg y of the points rendered
 float Nebl_bang = 0.0;			// distance to the viewer object
 float Nebl_alpha = 0.0f;		// alpha to use when rendering the bolt itself
 float Nebl_glow_alpha = 0.0f;	// alpha to use when rendering the bolt glow
+static bool Nebl_batching_active = false;
+// Reuse the storage between bolts and frames; the geometry is rebuilt for the current view.
+static SCP_vector<vertex> Nebl_body_vertices;
+static SCP_vector<vertex> Nebl_glow_vertices;
 int Nebl_stamp = -1;			// random timestamp for making bolts
 float Nebl_bolt_len;			// length of the current bolt being generated
 bolt_type *Nebl_type;			// bolt type
@@ -498,6 +502,42 @@ void nebl_set_storm(const char *name)
 	Storm = &Storm_types[index];
 }
 
+void nebl_page_in()
+{
+	// Storms can change during a mission, and scripts can create any bolt type.
+	// Upload both textures during level paging instead of on the first strike.
+	for (const auto& bolt : Bolt_types) {
+		bm_page_in_texture(bolt.texture);
+		bm_page_in_texture(bolt.glow);
+	}
+}
+
+static void nebl_render_quad(material* material_params, vertex* verts, SCP_vector<vertex>& batch)
+{
+	if (Nebl_batching_active) {
+		// Preserve the two triangles and winding of the original four-vertex triangle fan.
+		batch.insert(batch.end(), {verts[0], verts[1], verts[2], verts[0], verts[2], verts[3]});
+		return;
+	}
+
+	g3_render_primitives_textured(material_params, verts, 4, PRIM_TYPE_TRIFAN, false);
+}
+
+static void nebl_flush_batch(const bolt_type* bi)
+{
+	material material_params;
+	if (!Nebl_body_vertices.empty()) {
+		material_set_unlit_emissive(&material_params, bi->texture, Nebl_alpha, 2.0f);
+		g3_render_primitives_textured(&material_params, Nebl_body_vertices.data(),
+			static_cast<int>(Nebl_body_vertices.size()), PRIM_TYPE_TRIS, false);
+	}
+	if (!Nebl_glow_vertices.empty()) {
+		material_set_unlit_emissive(&material_params, bi->glow, Nebl_glow_alpha, 2.0f);
+		g3_render_primitives_textured(&material_params, Nebl_glow_vertices.data(),
+			static_cast<int>(Nebl_glow_vertices.size()), PRIM_TYPE_TRIS, false);
+	}
+}
+
 // render all lightning bolts
 void nebl_render_all()
 {
@@ -565,6 +605,12 @@ void nebl_render_all()
 			// pick some cool alpha values
 			Nebl_alpha = frand();
 			Nebl_glow_alpha = frand();
+			Nebl_body_vertices.clear();
+			Nebl_glow_vertices.clear();
+			// Additive surfaces can be regrouped without changing their compositing order.
+			// Alpha-blended mod textures keep the original interleaved body/glow draws.
+			Nebl_batching_active = material_determine_blend_mode(bi->texture, true) == ALPHA_BLEND_ADDITIVE
+				&& material_determine_blend_mode(bi->glow, true) == ALPHA_BLEND_ADDITIVE;
 
 			// otherwise render him
 			Nebl_flash_count = 0;
@@ -572,6 +618,10 @@ void nebl_render_all()
 			Nebl_flash_y = 0.0f;
 			Nebl_bang = 10000000.0f;
 			nebl_render(bi, b->head, b->width);
+			if (Nebl_batching_active) {
+				nebl_flush_batch(bi);
+			}
+			Nebl_batching_active = false;
 
 			// if this is the first frame he has been rendered, determine if we need to make a flash and sound effect
 			if(b->first_frame){
@@ -1018,7 +1068,9 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 
 	material material_params;
 
-	material_set_unlit_emissive(&material_params, bi->texture, Nebl_alpha, 2.0f);
+	if (!Nebl_batching_active) {
+		material_set_unlit_emissive(&material_params, bi->texture, Nebl_alpha, 2.0f);
+	}
 	
 	// draw some stuff
 	for(size_t idx=0; idx<2; idx++){		
@@ -1035,7 +1087,7 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 		v[3].texture_position.u = 0.0f; v[3].texture_position.v = 1.0f;
 
 		// draw
-		g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
+		nebl_render_quad(&material_params, v, Nebl_body_vertices);
 	}
 
 	// draw
@@ -1051,10 +1103,12 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 	v[3] = b->vex[2];		
 	v[3].texture_position.u = 0.0f; v[3].texture_position.v = 1.0f;
 
-	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
+	nebl_render_quad(&material_params, v, Nebl_body_vertices);
 
 	// draw the glow beam
-	material_set_unlit_emissive(&material_params, bi->glow, Nebl_glow_alpha, 2.0f);
+	if (!Nebl_batching_active) {
+		material_set_unlit_emissive(&material_params, bi->glow, Nebl_glow_alpha, 2.0f);
+	}
 
 	v[0] = a->glow_vex[0];
 	v[0].texture_position.v = 0.0f; v[0].texture_position.u = 0.0f;
@@ -1068,7 +1122,7 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 	v[3] = b->glow_vex[0];
 	v[3].texture_position.v = 0.0f; v[3].texture_position.u = 1.0f;
 
-	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
+	nebl_render_quad(&material_params, v, Nebl_glow_vertices);
 }
 
 // generate a section

@@ -129,6 +129,9 @@ void nebl_level_init();
 // set the storm (call from mission parse)
 void nebl_set_storm(const char *name);
 
+// preload lightning textures before entering a level
+void nebl_page_in();
+
 // render all lightning bolts
 void nebl_render_all();
 
