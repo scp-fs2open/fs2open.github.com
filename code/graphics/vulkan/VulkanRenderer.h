@@ -96,6 +96,12 @@ class VulkanRenderer {
 	void setupFrame();
 
 	/**
+	 * @brief Drop every cached pipeline at the start of the next frame; each is rebuilt on its next use
+	 * Called after the shaders are recompiled, since a pipeline keeps the shader code it was built from
+	 */
+	void requestPipelineRebuild() { m_pipelinesStale = true; }
+
+	/**
 	 * @brief End frame - ends render pass, submits, and presents
 	 * Called at the END of each frame after all draw calls
 	 */
@@ -531,6 +537,7 @@ class VulkanRenderer {
 	vk::CommandBuffer m_currentCommandBuffer;
 	SCP_vector<vk::CommandBuffer> m_currentCommandBuffers;  // For cleanup
 	bool m_frameInProgress = false;
+	bool m_pipelinesStale = false;
 
 	// Swap chain recreation
 	bool m_swapChainNeedsRecreation = false;
