@@ -123,7 +123,7 @@ Unknown keys are rejected, so a misspelt option fails instead of being ignored.
 | `timeout_seconds` | no | 600 | Wall-clock limit per run; a run over it is killed and counted as failed. |
 | `base_port` | no | 39000 | Run *i* binds UDP port `base_port + i`. Every engine process binds one at startup, so ports must be unique. |
 | `extra_args` | no | `[]` | Extra engine arguments appended to the command line. |
-| `keep_workspaces` | no | `false` | Keep each run's `w/` workspace after the run instead of deleting it. Without it, a failed run keeps only its `.log` files. |
+| `keep_workspaces` | no | `false` | Keep each run's `w/` workspace after the run instead of deleting it. Without it, a failed run keeps only its `.log` files, and files a mod or script writes into the workspace (its own logs or telemetry) are deleted with it. Each kept workspace holds a link to every pack, and NTFS allows 1023 per file. |
 
 ## What a run does
 
