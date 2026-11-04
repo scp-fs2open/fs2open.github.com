@@ -441,63 +441,23 @@ void HudGaugeReticle::getFirepointStatus() {
 						bankactive = 1;
 					}
 
-					int num_slots = pm->gun_banks[i].num_slots;
-					int point_count = 0;
-					FiringPattern firing_pattern;
-					if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
-						firing_pattern = sip->dyn_firing_patterns_allowed[shipp->weapons.current_primary_bank][swp->dynamic_firing_pattern[shipp->weapons.current_primary_bank]];
-					} else {
-						firing_pattern = Weapon_info[swp->primary_bank_weapons[i]].firing_pattern;
-					}
+					int num_points = pm->gun_banks[i].num_slots;
+					weapon_info *wip = &Weapon_info[swp->primary_bank_weapons[i]];
 
-					if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
-						point_count = MIN(num_slots, swp->primary_bank_slot_count[shipp->weapons.current_primary_bank] );
-					} else if (firing_pattern != FiringPattern::STANDARD) {
-						point_count = MIN(num_slots, Weapon_info[swp->primary_bank_weapons[i]].shots);
-					} else {
-						point_count = num_slots;
-					}
-					
-					for (int j = 0; j < num_slots; j++) {
+					// use this bank's pattern, not the current bank's (the old code got this wrong under dynamic linking)
+					FiringPattern firing_pattern = ship_get_firing_pattern(sip, swp, wip, i);
+
+					int shot_count = ship_get_firepoint_counts(sip, swp, wip, firing_pattern, i, num_points).shot_count;
+
+					for (int j = 0; j < num_points; j++) {
 						int fpactive = bankactive;
 
 						fpactive--;
 
-						for (int q = 0; q < point_count; q++) {
-							// If this firepoint is not among the next shot(s) to be fired, dim it one step
-							switch (firing_pattern) {
-								case FiringPattern::CYCLE_FORWARD: {
-								if (j == (swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots) {
-										fpactive++;
-									}
-									break;
-								}
-								case FiringPattern::CYCLE_REVERSE: {
-									if (j == ((swp->primary_firepoint_next_to_fire_index[i] - (q + 1)) % num_slots + num_slots) % num_slots) {
-										fpactive++;
-									}
-									break;
-								}
-								case FiringPattern::RANDOM_EXHAUSTIVE: {
-									if (j == swp->primary_firepoint_indices[i][(swp->primary_firepoint_next_to_fire_index[i] + q) % num_slots]) {
-										fpactive++;
-									}
-									break;
-								}
-								case FiringPattern::RANDOM_NONREPEATING:
-								case FiringPattern::RANDOM_REPEATING: {
-									if (j == swp->primary_firepoint_indices[i][q]) {
-										fpactive++;
-									}
-									break;
-								}
-								default:
-								case FiringPattern::STANDARD: {
-									fpactive++;
-									break;
-								}
-							}
-							if (fpactive == bankactive) {
+						// If this firepoint is not among the next shot(s) to be fired, dim it one step
+						for (int q = 0; q < shot_count; q++) {
+							if (j == swp->primary_firepoint_state[i].peek(firing_pattern, q, num_points)) {
+								fpactive++;
 								break;
 							}
 						}
