@@ -461,6 +461,9 @@ void multi_endgame_popup(int notify_code,int error_code,int wsa_error)
 			case MULTI_END_NOTIFY_KICKED_INGAME_ENDED:
 				strcat_s(err_msg,XSTR("You were kicked because you were ingame joining a game that has ended",1000));
 				break;
+			case MULTI_END_NOTIFY_KICKED_SEXP_MISMATCH:
+				strcat_s(err_msg,XSTR("You were kicked because your game has a different list of SEXPs than the server. Use the same FreeSpace Open build and mods as the server.",1947));
+				break;
 			default : 
 				Int3();
 			}		
