@@ -35,6 +35,10 @@ if (FSO_BUILD_WITH_VULKAN)
 	)
 endif()
 
+add_file_folder("IO"
+    io/test_timer.cpp
+)
+
 add_file_folder("Math"
     math/test_vecmat.cpp
 )

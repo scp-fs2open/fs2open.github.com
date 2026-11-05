@@ -39,7 +39,6 @@
 // OBJECT UPDATE STRUCTS
 // 
 
-extern const std::uint32_t MAX_TIME;
 constexpr int OO_MAIN_HEADER_SIZE = 9;  // two ints and a ubyte (recall! fix is basically an int)
 
 
