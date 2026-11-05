@@ -110,6 +110,7 @@ public:
 	void Stop_and_Rewind ();
 	void Fade_and_Destroy ();
 	void Fade_and_Stop();
+	void Resume_After_Device_Loss();
 	void	Set_Volume(float vol);
 	float	Get_Volume();
 	double  Get_Duration();
@@ -537,6 +538,13 @@ bool AudioStream::ServiceBuffer (void)
 		return false;
 	}
 
+	// while the device is gone, servicing would keep reading the file ahead of what was heard
+	if ( !ds_device_connected() ) {
+		SDL_UnlockMutex( write_lock );
+
+		return true;
+	}
+
 	if ( m_bFade == true ) {
 		if ( m_lCutoffVolume == 0.0f ) {
 			vol = Get_Volume();
@@ -768,6 +776,22 @@ void AudioStream::Fade_and_Stop (void)
 {
 	m_bFade = true;
 	m_bDestroy_when_faded = false;
+}
+
+// Restart a stream that a lost playback device stopped; playback resumes from the start of the queued buffers
+void AudioStream::Resume_After_Device_Loss()
+{
+	SDL_LockMutex(write_lock);
+
+	if ( (status == ASF_USED) && m_fPlaying ) {
+		ALint state = AL_PLAYING;
+		OpenAL_ErrorPrint( alGetSourcei(m_source_id, AL_SOURCE_STATE, &state) );
+		if (state == AL_STOPPED) {
+			OpenAL_ErrorPrint( alSourcePlay(m_source_id) );
+		}
+	}
+
+	SDL_UnlockMutex(write_lock);
 }
 
 
@@ -1090,6 +1114,15 @@ void audiostream_close_all(bool fade)
 
 		audiostream_close_file(i, fade);
 	}
+}
+
+void audiostream_resume_after_device_loss()
+{
+	if (!Audiostream_inited)
+		return;
+
+	for (auto &stream : Audio_streams)
+		stream.Resume_After_Device_Loss();
 }
 
 void audiostream_play(int i, float volume, int looping)
