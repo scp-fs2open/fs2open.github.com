@@ -1683,10 +1683,12 @@ void sexp_tree_view::endOperatorQuickSearch(bool confirm)
 			static const QRegularExpression kIntRx(QStringLiteral(R"(^[+-]?\d+$)"));
 			const bool isInt = kIntRx.match(typed).hasMatch();
 
-			// Enforce positivity if required
+			// Enforce positivity if required; the engine counts 0 as positive and rejects only a leading minus
 			bool okForPositive = true;
 			if (expected == OPF_POSITIVE && isInt) {
-				okForPositive = typed.toLongLong() > 0;
+				bool fits = false;
+				typed.toInt(&fits);
+				okForPositive = fits && !typed.startsWith(QLatin1Char('-'));
 			}
 
 			if (expectsNumber && isInt && okForPositive) {
@@ -1900,6 +1902,15 @@ void sexp_tree_view::beginItemEdit(QTreeWidgetItem* item) {
 	_currently_editing = true;
 	
 	editItem(item);
+	// opening this editor closes any other one, and that close clears the flag
+	_currently_editing = (state() == QAbstractItemView::EditingState);
+}
+
+void sexp_tree_view::closeEditor(QWidget* editor, QAbstractItemDelegate::EndEditHint hint)
+{
+	QTreeWidget::closeEditor(editor, hint);
+	// a commit has already gone through handleItemChange; Tab or a new edit may have opened another editor
+	_currently_editing = (state() == QAbstractItemView::EditingState);
 }
 // Handles add/replace of a specific typed data item selected from the context menu.
 // Resolves the correct sexp_list_item by walking the linked list to data_idx:
