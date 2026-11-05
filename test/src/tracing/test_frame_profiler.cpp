@@ -203,10 +203,10 @@ TEST(FrameProfilerSelfTime, category_can_die_before_self_time_is_accumulated)
 // snapshot keep ids alone instead of a parallel id -> name array.
 TEST(TracingCategory, id_round_trips_through_registry)
 {
-	ASSERT_GT(Category::getCount(), 0);
+	ASSERT_GT(Category::getCount(), 0u);
 
-	for (int id = 0; id < Category::getCount(); id++) {
-		EXPECT_FALSE(Category::getNameById(id).empty());
+	for (size_t id = 0; id < Category::getCount(); id++) {
+		EXPECT_FALSE(Category::getNameById(static_cast<int>(id)).empty());
 	}
 
 	EXPECT_EQ(Category::getNameById(Physics.getId()), SCP_string(Physics.getName()));
@@ -268,7 +268,7 @@ TEST(TracingCategory, name_outlives_the_category_object)
 TEST(TracingCategory, same_name_reuses_the_id)
 {
 	Category first("Repeated test category", false);
-	const int count = Category::getCount();
+	const size_t count = Category::getCount();
 
 	Category second("Repeated test category", false);
 
