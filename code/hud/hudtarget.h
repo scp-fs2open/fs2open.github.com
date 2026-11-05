@@ -248,6 +248,29 @@ public:
 	void pageIn() override;
 };
 
+class HudGaugeAutoShields: public HudGauge
+{
+protected:
+	hud_frames Toggle_frame;
+
+	int Auto_text_offsets[2];
+	int Shields_text_offsets[2];
+
+	color On_color;
+	bool Use_on_color;
+	color Off_color;
+	bool Use_off_color;
+public:
+	HudGaugeAutoShields();
+	void initAutoTextOffsets(int x, int y);
+	void initShieldsTextOffsets(int x, int y);
+	void initBitmaps(char* fname);
+	void initOnColor(int r, int g, int b, int a);
+	void initOffColor(int r, int g, int b, int a);
+	void render(float frametime, bool config = false) override;
+	void pageIn() override;
+};
+
 class HudGaugeCmeasures: public HudGauge
 {
 protected:

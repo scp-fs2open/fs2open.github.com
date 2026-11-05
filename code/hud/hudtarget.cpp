@@ -21,6 +21,7 @@
 #include "graphics/matrix.h"
 #include "hud/hudartillery.h"
 #include "hud/hudbrackets.h"
+#include "hud/hudconfig.h"
 #include "hud/hudlock.h"
 #include "hud/hudmessage.h"
 #include "hud/hudparse.h"
@@ -29,6 +30,7 @@
 #include "hud/hudtarget.h"
 #include "hud/hudtargetbox.h"
 #include "iff_defs/iff_defs.h"
+#include "io/keycontrol.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "localization/localize.h"
@@ -5233,6 +5235,127 @@ void HudGaugeAutoSpeed::render(float /*frametime*/, bool config)
 }
 
 void HudGaugeAutoSpeed::pageIn()
+{
+	bm_page_in_aabitmap(Toggle_frame.first_frame, Toggle_frame.num_frames);
+}
+
+HudGaugeAutoShields::HudGaugeAutoShields()
+	: HudGauge(HUD_OBJECT_AUTO_SHIELDS,
+		  NUM_HUD_GAUGES,
+		  false,
+		  false,
+		  (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP),
+		  255,
+		  255,
+		  255)
+{
+	// no retail config slot, so lookups by a retail gauge type never find it; its color falls back to Auto Speed's
+	gauge_config_id = "AutoShieldsIcon";
+	HUD_config.set_gauge_type(gauge_config_id, HUD_AUTO_SPEED);
+	// ship-specific HUDs are searched by this name, so it matches the gauge type name used for the default HUD
+	config_name = "Auto shields";
+}
+
+void HudGaugeAutoShields::initAutoTextOffsets(int x, int y)
+{
+	Auto_text_offsets[0] = x;
+	Auto_text_offsets[1] = y;
+}
+
+void HudGaugeAutoShields::initShieldsTextOffsets(int x, int y)
+{
+	Shields_text_offsets[0] = x;
+	Shields_text_offsets[1] = y;
+}
+
+void HudGaugeAutoShields::initBitmaps(char* fname)
+{
+	Toggle_frame.first_frame = bm_load_animation(fname, &Toggle_frame.num_frames);
+	if (Toggle_frame.first_frame < 0) {
+		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
+	}
+}
+
+void HudGaugeAutoShields::initOnColor(int r, int g, int b, int a)
+{
+	if (r == -1 || g == -1 || b == -1 || a == -1) {
+		Use_on_color = false;
+		gr_init_alphacolor(&On_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_on_color = true;
+	gr_init_alphacolor(&On_color, r, g, b, a);
+}
+
+void HudGaugeAutoShields::initOffColor(int r, int g, int b, int a)
+{
+	if (r == -1 || g == -1 || b == -1 || a == -1) {
+		Use_off_color = false;
+		gr_init_alphacolor(&Off_color, 0, 0, 0, 0);
+		return;
+	}
+
+	Use_off_color = true;
+	gr_init_alphacolor(&Off_color, r, g, b, a);
+}
+
+void HudGaugeAutoShields::render(float /*frametime*/, bool config)
+{
+	// until the player allows the feature, the HUD looks as it does in retail
+	if (!config && !auto_shield_equalize_allowed())
+		return;
+
+	// the same off/on box frames Auto Speed draws, so the two indicators look identical
+	int frame_offset;
+
+	if (!config && auto_shield_equalize_running(&Players[Player_num])) {
+		frame_offset = 3;
+	} else {
+		frame_offset = 2;
+	}
+
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+	// a failed or short animation must not turn into some other bitmap's handle
+	const bool have_frame = (Toggle_frame.first_frame >= 0) && (frame_offset < Toggle_frame.num_frames);
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw = 0, bmh = 0;
+		if (have_frame) {
+			bm_get_info(Toggle_frame.first_frame + frame_offset, &bmw, &bmh);
+		}
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
+
+	if (have_frame)
+		renderBitmap(Toggle_frame.first_frame + frame_offset, x, y, scale, config);
+
+	// draw the text on top
+	if (frame_offset == 3) {
+		if (Use_on_color) {
+			gr_set_color_fast(&On_color);
+		}
+	} else if (Use_off_color) {
+		gr_set_color_fast(&Off_color);
+	}
+	renderString(x + fl2i(Auto_text_offsets[0] * scale),
+		y + fl2i(Auto_text_offsets[1] * scale),
+		XSTR("auto", 1463),
+		scale,
+		config);
+	renderString(x + fl2i(Shields_text_offsets[0] * scale),
+		y + fl2i(Shields_text_offsets[1] * scale),
+		XSTR("shields", 1941),
+		scale,
+		config);
+}
+
+void HudGaugeAutoShields::pageIn()
 {
 	bm_page_in_aabitmap(Toggle_frame.first_frame, Toggle_frame.num_frames);
 }

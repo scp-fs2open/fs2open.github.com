@@ -13724,12 +13724,14 @@ void sexp_hud_reset_color(int n)
 			int type = hg->getConfigType();
 			auto ii = std::find_if(std::begin(Legacy_HUD_gauges), std::end(Legacy_HUD_gauges), [type](const Legacy_HUD_gauge_pair& pair) { return pair.hud_gauge_type == type; });
 
-			if (ii == std::end(Legacy_HUD_gauges)) {
+			if ((ii == std::end(Legacy_HUD_gauges)) && hud_config_controls_gauge(hg)) {
 				WarningEx(LOCATION, "HUD gauge %s does not have a built-in configured color!", gaugename);
 			} else {
 				// use the color as specified in the HUD config
 				auto id = hg->getConfigId();
-				auto& c = HUD_config.gauge_colors[id];
+				// a gauge HUD Config does not list has no color entry of its own; its type supplies one
+				const color c =
+					hud_config_controls_gauge(hg) ? HUD_config.gauge_colors[id] : HUD_config.get_gauge_color(id);
 
 				hg->sexpLockConfigColor(false);
 				hg->updateColor(c.red, c.green, c.blue, (HUD_color_alpha + 1) * 16);

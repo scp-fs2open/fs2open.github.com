@@ -315,6 +315,8 @@ enum IoActionId : int {
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
 
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -1004,6 +1006,17 @@ void control_used(int id);
  * @return Whether the control should be overridden
  */
 bool control_run_lua(IoActionId id, int value);
+
+/**
+ * @brief Whether an enabled Lua override hook is registered for this action, without running it
+ */
+bool control_has_lua_override(IoActionId id);
+
+/**
+ * @brief Whether the controls screen leaves this control out: disabled by a table, or an option-gated control whose
+ * option is off
+ */
+bool control_config_is_hidden(const CCI& item);
 
 /**
  * @brief Resets the cache for script evaluations for continuous buttons. Should be called once per frame.

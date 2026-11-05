@@ -626,12 +626,14 @@ void control_config_conflict_check()
 				continue;
 			}
 
-			if (item_i.disabled && (item_i.has_first_conflict(item_j) || item_i.has_second_conflict(item_j))) {
+			if (control_config_is_hidden(item_i) &&
+				(item_i.has_first_conflict(item_j) || item_i.has_second_conflict(item_j))) {
 				// item_i conflicts with item_j and is disabled.  Silently clear item_i
 				item_i.clear();
 			}
 
-			if (item_j.disabled && (item_j.has_first_conflict(item_i) || item_j.has_second_conflict(item_i))) {
+			if (control_config_is_hidden(item_j) &&
+				(item_j.has_first_conflict(item_i) || item_j.has_second_conflict(item_i))) {
 				// item_j conflicts with item_i and is disabled.  Silently clear item_j
 				item_j.clear();
 			}
@@ -676,7 +678,7 @@ void control_config_list_prepare()
 
 	// Populate the digital controls
 	for (const auto &item : Control_config) {
-		if (item.tab == Tab && !item.disabled) {
+		if (item.tab == Tab && !control_config_is_hidden(item)) {
 			if (item.indexXSTR > 1) {
 				Cc_lines[Num_cc_lines].label = XSTR(item.text.c_str(), item.indexXSTR, true);
 			} else if (item.indexXSTR == 1) {
@@ -2292,6 +2294,9 @@ int control_config_search_key_on_frame(bool API_Access)
 		// If not done, Find the control bound to the given key
 		if ((ctrl < 0) && (k > 0)) {
 			for (int i = 0; i < CCFG_SIZE; ++i) {
+				if (control_config_is_hidden(Control_config[i])) {
+					continue;
+				}
 				if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
 					Selected_item = selItem::Primary;
 					ctrl = i;
@@ -2307,6 +2312,9 @@ int control_config_search_key_on_frame(bool API_Access)
 		// If not done, Find the control bound to the given joy
 		if ((ctrl < 0) && (joy < CID_JOY_MAX)) {
 			for (int i = 0; i < CCFG_SIZE; ++i) {
+				if (control_config_is_hidden(Control_config[i])) {
+					continue;
+				}
 				if (Control_config[i].first == CC_bind(static_cast<CID>(joy), j)) {
 					Selected_item = selItem::Primary;
 					ctrl = i;
@@ -2338,6 +2346,9 @@ int control_config_search_key_on_frame(bool API_Access)
 				if (mouse_down(CC_bind(CID_MOUSE, j))) {
 					// Find the control bound to the given mouse button
 					for (i = 0; i < CCFG_SIZE; ++i) {
+						if (control_config_is_hidden(Control_config[i])) {
+							continue;
+						}
 						if (Control_config[i].first == CC_bind(CID_MOUSE, j)) {
 							Selected_item = selItem::Primary;
 							ctrl = i;

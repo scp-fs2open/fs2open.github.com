@@ -61,6 +61,7 @@
 #include "autopilot/autopilot.h"
 #include "cmdline/cmdline.h"
 #include "object/objectshield.h"
+#include "options/Option.h"
 #include "sound/audiostr.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"
@@ -335,6 +336,7 @@ int Normal_key_set[] = {
 	PHOTO_MODE_FILTER_RESET,
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -488,6 +490,7 @@ int Non_critical_key_set[] = {
 	PHOTO_MODE_FILTER_RESET,
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
+	TOGGLE_AUTO_SHIELD_EQUALIZE,
 
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
@@ -1658,6 +1661,130 @@ void game_process_cheats(int k)
 	}
 }
 
+static bool Auto_shield_equalize_allowed = false;
+
+static void parse_auto_shield_equalize_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Auto_shield_equalize_allowed = enabled;
+}
+
+void auto_shield_equalize_init_control()
+{
+	const auto& toggle = Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE];
+
+	for (auto& preset : Control_config_presets) {
+		auto& bindings = preset.bindings;
+
+		for (size_t i = 0; i < Control_config.size() && i < bindings.size(); ++i) {
+			const auto& other = Control_config[i];
+			if ((i == TOGGLE_AUTO_SHIELD_EQUALIZE) || other.disabled ||
+				((other.conflict_groups & toggle.conflict_groups) == 0)) {
+				continue;
+			}
+
+			// a key the table already gives another control stays with it; the toggle is left unbound there
+			auto& ours = bindings[TOGGLE_AUTO_SHIELD_EQUALIZE];
+			if (ours.has_first_conflict(bindings[i])) {
+				ours.first.clear();
+			}
+			if (ours.has_second_conflict(bindings[i])) {
+				ours.second.clear();
+			}
+		}
+	}
+
+	const auto& defaults = Control_config_presets[0].bindings[TOGGLE_AUTO_SHIELD_EQUALIZE];
+	Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE].first = defaults.first;
+	Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE].second = defaults.second;
+}
+
+// off by default so retail play is unchanged; a mod can preset or enforce it in default_settings.tbl
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto AutoShieldEqualizeOption __UNUSED = options::OptionBuilder<bool>("Game.AutoShieldEqualize",
+	std::pair<const char*, int>{"Auto Shield Equalization", 1944},
+	std::pair<const char*, int>{
+		"Allows the Toggle Auto Shield Equalization control, which equalizes your shields after hits",
+		1945})
+													.category(std::make_pair("Game", 1824))
+													.default_func([]() { return Auto_shield_equalize_allowed; })
+													.level(options::ExpertLevel::Beginner)
+													.bind_to(&Auto_shield_equalize_allowed)
+													.importance(44)
+													.parser(parse_auto_shield_equalize_func)
+													.finish();
+
+bool auto_shield_equalize_allowed()
+{
+	return Auto_shield_equalize_allowed;
+}
+
+bool auto_shield_equalize_running(const player* pl)
+{
+	if ((pl == nullptr) || !Auto_shield_equalize_allowed || !(pl->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) ||
+		(pl->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED)) {
+		return false;
+	}
+
+	// whatever stops the player pressing the toggle would leave a saved "on" with no way to turn it off
+	if (Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE].disabled || Control_config[TOGGLE_AUTO_SHIELD_EQUALIZE].locked ||
+		Ignored_keys[TOGGLE_AUTO_SHIELD_EQUALIZE] || control_has_lua_override(TOGGLE_AUTO_SHIELD_EQUALIZE)) {
+		return false;
+	}
+
+	// whatever stops the player pressing Equalize Shields (a table, a mission, a script) stops it here too
+	return !(Control_config[SHIELD_EQUALIZE].disabled || Control_config[SHIELD_EQUALIZE].locked ||
+			 Ignored_keys[SHIELD_EQUALIZE] || control_has_lua_override(SHIELD_EQUALIZE) ||
+			 (lua_game_control & LGC_B_OVERRIDE));
+}
+
+// Matches the once-a-second shield balance penalty, so each automatic equalize costs what one manual press does.
+static const int AUTO_SHIELD_EQUALIZE_INTERVAL = 1000;
+
+static void maybe_auto_equalize_shields()
+{
+	// timestamp_elapsed_safe() would read a stamp set this frame as already elapsed; game time keeps running across
+	// missions, so a leftover stamp is in the past (a debug build's long-hitch fix can delay it by that hitch)
+	static int next_equalize_stamp = 1;
+
+	if (!auto_shield_equalize_running(Player)) {
+		return;
+	}
+	if ((Player_obj == nullptr) || (Player_obj->type != OBJ_SHIP) || (Game_mode & GM_DEAD) ||
+		Player_obj->flags[Object::Object_Flags::No_shields]) {
+		return;
+	}
+	if (!timestamp_elapsed(next_equalize_stamp)) {
+		return;
+	}
+
+	const auto& quadrants = Player_obj->shield_quadrant;
+	if (quadrants.empty()) {
+		return;
+	}
+	float total = 0.0f;
+	float weakest = quadrants.front();
+	for (float quadrant : quadrants) {
+		total += quadrant;
+		weakest = std::min(weakest, quadrant);
+	}
+	// only when the weakest quadrant still ends up stronger after the 2% penalty hud_shield_equalize() can charge
+	if (weakest >= (total / static_cast<float>(quadrants.size())) * 0.98f) {
+		return;
+	}
+
+	next_equalize_stamp = timestamp(AUTO_SHIELD_EQUALIZE_INTERVAL);
+
+	// clients ask the server as a key press does (and the server's echo counts as one on the client); elsewhere
+	// a direct call keeps it from counting as the player pressing the key
+	if (MULTIPLAYER_CLIENT) {
+		button_info_set(&Player->bi, SHIELD_EQUALIZE);
+	} else {
+		hud_shield_equalize(Player_obj, Player);
+	}
+}
+
 void game_process_keys()
 {
 	int k;
@@ -1782,6 +1909,8 @@ void game_process_keys()
 	// there.. wasnt that bad hack was it?
 
 	button_info_do(&Player->bi);	// call functions based on status of button_info bit vectors
+
+	maybe_auto_equalize_shields();
 }
 
 int button_function_critical(int n, net_player *p = NULL)
@@ -2415,15 +2544,24 @@ int button_function(int n)
 		case CYCLE_PREV_PRIMARY:	// cycle to previous primary weapon
 		case CYCLE_SECONDARY:		// cycle to next secondary weapon
 		case CYCLE_NUM_MISSLES:		// cycle number of missiles fired from secondary bank
-		case SHIELD_EQUALIZE:		// equalize shield energy to all quadrants
-		case SHIELD_XFER_TOP:		// transfer shield energy to front
-		case SHIELD_XFER_BOTTOM:	// transfer shield energy to rear
-		case SHIELD_XFER_LEFT:		// transfer shield energy to left
-		case SHIELD_XFER_RIGHT:		// transfer shield energy to right
 		case XFER_SHIELD:			// transfer energy to shield from weapons
 		case XFER_LASER:			// transfer energy to weapons from shield
 			return button_function_critical(n);
 			break;
+
+		case SHIELD_EQUALIZE:		// equalize shield energy to all quadrants
+			Player->flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED;
+			return button_function_critical(n);
+
+		case SHIELD_XFER_TOP:		// transfer shield energy to front
+		case SHIELD_XFER_BOTTOM:	// transfer shield energy to rear
+		case SHIELD_XFER_LEFT:		// transfer shield energy to left
+		case SHIELD_XFER_RIGHT:		// transfer shield energy to right
+			// auto-equalize would undo the transfer a moment later, so it waits for the next Equalize
+			if (Auto_shield_equalize_allowed && (Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE)) {
+				Player->flags |= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED;
+			}
+			return button_function_critical(n);
 
 		case INCREASE_WEAPON:		// increase weapon recharge rate
 		case DECREASE_WEAPON:		// decrease weapon recharge rate
@@ -2490,6 +2628,37 @@ int button_function(int n)
 			{
 				snd_play(gamesnd_get_game_sound(GameSounds::SHIELD_XFER_OK), 1.0f);
 				player_match_target_speed();
+			}
+			break;
+
+		case TOGGLE_AUTO_SHIELD_EQUALIZE:
+			// the player has to allow it in the options first (or a mod presets it); until then retail behavior is kept
+			if (!Auto_shield_equalize_allowed) {
+				break;
+			}
+
+			// multiplayer observers have no shields to equalize
+			if ((Game_mode & GM_MULTIPLAYER) && (Net_player != nullptr) &&
+				((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))) {
+				break;
+			}
+
+			// while paused by a manual transfer, the toggle resumes it (as Equalize does) instead of switching it off
+			if (Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED) {
+				Player->flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED;
+			} else {
+				Player->flags ^= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE;
+			}
+			control_used(TOGGLE_AUTO_SHIELD_EQUALIZE);
+			snd_play(gamesnd_get_game_sound(GameSounds::SHIELD_XFER_OK), 1.0f);
+
+			// without the indicator on screen, the message is the only way to see the new state
+			if (!hud_player_gauge_can_render(HUD_OBJECT_AUTO_SHIELDS)) {
+				if (Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization activated", 1942));
+				} else {
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization deactivated", 1943));
+				}
 			}
 			break;
 

@@ -15,6 +15,7 @@
 #include "hud/hudparse.h"
 #include "hud/hudshield.h"
 #include "hud/hudtargetbox.h"
+#include "io/keycontrol.h"
 #include "io/timer.h"
 #include "network/multi.h"
 #include "object/object.h"
@@ -244,8 +245,8 @@ void hud_shield_equalize(object *objp, player *pl)
 
 	shield_balance(objp, 1, penalty);
 
-	// beep
-	if (objp == Player_obj) {
+	// no beep while auto-equalize runs, or it would beep on every hit
+	if ((objp == Player_obj) && !auto_shield_equalize_running(pl)) {
 		snd_play(gamesnd_get_game_sound(GameSounds::SHIELD_XFER_OK));
 	}
 }
