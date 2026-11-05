@@ -13,6 +13,16 @@
 
 namespace tracing {
 
+/**
+ * Computes the self time of each category for one frame of Begin/End events, sorted by event_id.
+ *
+ * @c self_time_by_id is resized to Category::getCount() and indexed by Category::getId(). Pass the
+ * same vector every frame to reuse its allocation.
+ *
+ * @return the sum of all self times, which is the total traced frame time.
+ */
+uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id);
+
 struct profile_sample_history {
 	bool valid;
 	//char name[256];
@@ -39,6 +49,11 @@ class FrameProfiler {
 	SCP_vector<trace_event> _bufferedEvents;
 
 	SCP_vector<profile_sample_history> history;
+
+	frame_overlay_snapshot overlaySnapshot;
+
+	// Reused across frames by accumulate_self_times() so the per-frame walk allocates nothing.
+	SCP_vector<uint64_t> _selfTimeScratch;
 
 	std::int64_t _mainThreadID = -1;
 
@@ -69,6 +84,12 @@ class FrameProfiler {
 					 uint64_t end_profile_time,
 					 SCP_vector<profile_sample>& samples);
 
+	/**
+	 * Builds the structured overlay snapshot (see frame_overlay_snapshot) from this frame's
+	 * per-category self-time. self_time_by_id is indexed by Category::getId(); total is the sum of
+	 * all self-times (i.e. total traced frame time). Called once per processFrame().
+	 */
+	void build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total);
 
  public:
 	FrameProfiler();
@@ -79,6 +100,8 @@ class FrameProfiler {
 	void processFrame();
 
 	SCP_string getContent();
+
+	const frame_overlay_snapshot& getOverlaySnapshot() const { return overlaySnapshot; }
 };
 
 }

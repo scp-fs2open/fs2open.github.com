@@ -17,12 +17,33 @@ namespace tracing {
 class Category {
 	const SCP_string _name;
 	bool _graphics_category;
+	int _id;
  public:
 	Category(const char* name, bool is_graphics);
 
 	const char* getName() const;
 
 	bool usesGPUCounter() const;
+
+	/**
+	 * @brief A dense id in the range [0, getCount()), one for each distinct category name.
+	 *
+	 * Categories with the same name share an id, and a copy keeps the id of the original. The id
+	 * only selects a name, so it stays valid after the Category object is gone.
+	 */
+	int getId() const { return _id; }
+
+	/**
+	 * @brief The number of distinct category names registered so far. A safe size for an array
+	 * indexed by getId().
+	 */
+	static size_t getCount();
+
+	/**
+	 * @brief The name of the category with the given id, which must be in [0, getCount()).
+	 * Thread-safe, and it does not touch a Category object.
+	 */
+	static SCP_string getNameById(int id);
 };
 
 extern Category LuaOnFrame;

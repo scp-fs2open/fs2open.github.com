@@ -31,6 +31,19 @@ class VulkanRenderer;
 constexpr uint32_t VulkanApiVersion = VK_API_VERSION_1_2;
 
 /**
+ * @brief What an allocation is used for, for the profiler overlay's per-purpose GPU memory
+ * breakdown. Unknown covers anything not worth categorizing for that panel (transient staging
+ * buffers, uniform buffers -- the latter are already tracked separately via
+ * UniformBufferManager/gr_debug_stats).
+ */
+enum class MemoryPurpose {
+	Unknown,
+	Texture,
+	Geometry,
+	RenderTarget
+};
+
+/**
  * @brief Memory allocation info returned when allocating GPU memory.
  *
  * Wraps a VmaAllocation handle. Callers should use isValid() instead of
@@ -40,6 +53,7 @@ struct VulkanAllocation {
 	VmaAllocation vmaAlloc = VK_NULL_HANDLE;
 	vk::DeviceSize size = 0;
 	void* mappedPtr = nullptr;  // Non-null if memory is persistently mapped
+	MemoryPurpose purpose = MemoryPurpose::Unknown;
 
 	bool isValid() const { return vmaAlloc != VK_NULL_HANDLE; }
 };
@@ -94,18 +108,24 @@ public:
 	 * @param buffer The buffer to allocate memory for
 	 * @param usage The intended memory usage pattern
 	 * @param[out] allocation Output allocation info
+	 * @param purpose What the buffer is used for, for the per-purpose memory breakdown. Defaults
+	 *        to Unknown for callers that don't care about that breakdown (staging buffers, etc).
 	 * @return true on success
 	 */
-	bool allocateBufferMemory(vk::Buffer buffer, MemoryUsage usage, VulkanAllocation& allocation);
+	bool allocateBufferMemory(vk::Buffer buffer, MemoryUsage usage, VulkanAllocation& allocation,
+		MemoryPurpose purpose = MemoryPurpose::Unknown);
 
 	/**
 	 * @brief Allocate memory for an image
 	 * @param image The image to allocate memory for
 	 * @param usage The intended memory usage pattern
 	 * @param[out] allocation Output allocation info
+	 * @param purpose What the image is used for, for the per-purpose memory breakdown. Defaults
+	 *        to Unknown for callers that don't care about that breakdown.
 	 * @return true on success
 	 */
-	bool allocateImageMemory(vk::Image image, MemoryUsage usage, VulkanAllocation& allocation);
+	bool allocateImageMemory(vk::Image image, MemoryUsage usage, VulkanAllocation& allocation,
+		MemoryPurpose purpose = MemoryPurpose::Unknown);
 
 	/**
 	 * @brief Free a previous allocation
@@ -148,6 +168,10 @@ public:
 	size_t getAllocationCount() const { return m_allocationCount; }
 	size_t getTotalAllocatedBytes() const { return m_totalAllocatedBytes; }
 
+	size_t getTextureBytes() const { return m_bytesByPurpose[static_cast<size_t>(MemoryPurpose::Texture)]; }
+	size_t getGeometryBytes() const { return m_bytesByPurpose[static_cast<size_t>(MemoryPurpose::Geometry)]; }
+	size_t getRenderTargetBytes() const { return m_bytesByPurpose[static_cast<size_t>(MemoryPurpose::RenderTarget)]; }
+
 private:
 	static VmaMemoryUsage toVmaUsage(MemoryUsage usage);
 
@@ -155,6 +179,7 @@ private:
 
 	size_t m_allocationCount = 0;
 	size_t m_totalAllocatedBytes = 0;
+	size_t m_bytesByPurpose[4] = {}; // indexed by MemoryPurpose
 
 	bool m_initialized = false;
 };
