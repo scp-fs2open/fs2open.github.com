@@ -1,37 +1,56 @@
-
 #include "tracing/categories.h"
+
+#include <algorithm>
+#include <mutex>
 
 namespace tracing {
 
 namespace {
-// Function-local static (Meyers singleton) to avoid any static-init-order dependency: categories
-// are themselves global statics, so this registry must be alive before the first one is constructed.
-// Each Category adds its name here at construction; the index of the name is the category id.
-//
-// The registry keeps the name by value and never keeps a Category pointer. Not every Category is a
-// global static: the Lua API tracing_category constructs one and copies it into a script-owned
-// object, so the constructed object can be dead while its id is still in the trace events. A copy
-// keeps the id of the original, which stays correct because the id only selects a name here.
-SCP_vector<SCP_string>& category_registry()
+// Maps a category id to its name. A Meyers singleton, because the categories are global statics too.
+// The mutex is necessary because the JSON writer thread reads names while Lua can add categories.
+struct category_registry_t {
+	std::mutex mutex;
+	SCP_vector<SCP_string> names;
+};
+
+category_registry_t& category_registry()
 {
-	static SCP_vector<SCP_string> registry;
+	static category_registry_t registry;
 	return registry;
+}
+
+// Categories with the same name share an id, so a script that makes a category each frame does not
+// make the registry grow.
+int register_category_name(const SCP_string& name)
+{
+	auto& registry = category_registry();
+	std::lock_guard<std::mutex> lock(registry.mutex);
+
+	auto it = std::find(registry.names.begin(), registry.names.end(), name);
+	if (it == registry.names.end()) {
+		registry.names.push_back(name);
+		return static_cast<int>(registry.names.size()) - 1;
+	}
+	return static_cast<int>(std::distance(registry.names.begin(), it));
 }
 } // namespace
 
 Category::Category(const char* name, bool is_graphics)
-	: _name(name), _graphics_category(is_graphics), _id(static_cast<int>(category_registry().size())) {
-	category_registry().push_back(_name);
+	: _name(name), _graphics_category(is_graphics), _id(register_category_name(_name)) {
 }
 const char* Category::getName() const {
 	return _name.c_str();
 }
 int Category::getCount() {
-	return static_cast<int>(category_registry().size());
+	auto& registry = category_registry();
+	std::lock_guard<std::mutex> lock(registry.mutex);
+	return static_cast<int>(registry.names.size());
 }
 SCP_string Category::getNameById(int id) {
-	Assertion(id >= 0 && id < getCount(), "Category id %d is out of range!", id);
-	return category_registry()[static_cast<size_t>(id)];
+	auto& registry = category_registry();
+	std::lock_guard<std::mutex> lock(registry.mutex);
+	Assertion(id >= 0 && id < static_cast<int>(registry.names.size()), "Category id %d is out of range!", id);
+	return registry.names[id];
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;

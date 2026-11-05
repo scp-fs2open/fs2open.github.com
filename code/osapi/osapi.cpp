@@ -39,14 +39,9 @@
 #include "utils/finally.h"
 #endif
 
-#if defined(WIN32)
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#include <psapi.h>
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #include <mach/mach.h>
 #elif defined(__linux__)
-#include <cstdio>
 #include <unistd.h>
 #endif
 
@@ -266,6 +261,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <psapi.h>
 #include <backends/imgui_impl_sdl3.h>
 
 // go through all windows and try and find the one that matches the search string

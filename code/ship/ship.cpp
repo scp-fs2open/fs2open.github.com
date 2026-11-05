@@ -964,8 +964,7 @@ int ship_get_num_ships()
 		return count;
 	}
 
-	for ( ship_obj const* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
-	{
+	for (auto so : list_range(&Ship_obj_list)) {
 		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 

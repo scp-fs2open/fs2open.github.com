@@ -278,11 +278,8 @@ void refresh_memory_stats_if_needed() {
 }
 
 /**
- * Formats a byte count as a human-readable string using the largest unit that keeps at least one
- * digit before the decimal point (e.g. "12.3 MB"). Returned by value: several call sites below pass
- * multiple format_bytes() results as arguments to the same ImGui::Text() call, and every temporary
- * in a function call's argument list lives until the end of that call, so this needs no buffer
- * management to stay safe -- unlike returning a pointer into any kind of shared/reused storage.
+ * Formats a byte count with the largest unit that keeps at least one digit before the decimal point
+ * (e.g. "12.3 MB").
  */
 SCP_string format_bytes(size_t bytes) {
 	constexpr double KB = 1024.0;

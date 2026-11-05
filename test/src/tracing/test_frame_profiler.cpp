@@ -5,6 +5,9 @@
 
 #include "tracing/FrameProfiler.h"
 #include "tracing/categories.h"
+#include "io/timer.h"
+#include "tracing/tracing.h"
+#include "util/FSTestFixture.h"
 
 using namespace tracing;
 
@@ -258,4 +261,75 @@ TEST(TracingCategory, name_outlives_the_category_object)
 	}
 
 	EXPECT_EQ(Category::getNameById(id), SCP_string("Temporary test category"));
+}
+
+// Categories with the same name share an id, so a script that makes a category each frame does not
+// make the registry grow.
+TEST(TracingCategory, same_name_reuses_the_id)
+{
+	Category first("Repeated test category", false);
+	const int count = Category::getCount();
+
+	Category second("Repeated test category", false);
+
+	EXPECT_EQ(second.getId(), first.getId());
+	EXPECT_EQ(Category::getCount(), count);
+}
+
+// Runs the real tracing system on the stub renderer, so complete::start() and complete::end() run.
+class TracingProfilerToggleTest : public test::FSTestFixture {
+ public:
+	TracingProfilerToggleTest() : test::FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+
+ protected:
+	void SetUp() override {
+		test::FSTestFixture::SetUp();
+		tracing::init();
+		tracing::set_frame_profiling_enabled(false);
+	}
+
+	void TearDown() override {
+		tracing::set_frame_profiling_enabled(false);
+		tracing::shutdown();
+		test::FSTestFixture::TearDown();
+	}
+};
+
+// A scope that is open when the profiler turns on never started. Its end() must do nothing. Before
+// the fix, Debug builds asserted and Release builds read a null category.
+TEST_F(TracingProfilerToggleTest, enable_inside_open_scope)
+{
+	{
+		TRACE_SCOPE(Physics);
+		tracing::set_frame_profiling_enabled(true);
+	}
+	ASSERT_TRUE(tracing::frame_profiling_active());
+
+	tracing::frame_profile_process_frame();
+	EXPECT_EQ(tracing::get_frame_profiler_overlay_snapshot().total_nanosec, 0u);
+
+	// A scope that starts after the profiler is on is recorded as usual.
+	{
+		TRACE_SCOPE(PostMove);
+
+		// The profiler drops events with a duration of zero.
+		const auto start = timer_get_nanoseconds();
+		while (timer_get_nanoseconds() == start) {
+		}
+	}
+	tracing::frame_profile_process_frame();
+	const auto& snapshot = tracing::get_frame_profiler_overlay_snapshot();
+	ASSERT_EQ(snapshot.top_contributors.size(), 1u);
+	EXPECT_EQ(snapshot.top_contributors[0].name, SCP_string(PostMove.getName()));
+}
+
+// A scope that is open when the profiler turns off must close without an error.
+TEST_F(TracingProfilerToggleTest, disable_inside_open_scope)
+{
+	tracing::set_frame_profiling_enabled(true);
+	{
+		TRACE_SCOPE(Physics);
+		tracing::set_frame_profiling_enabled(false);
+	}
+	EXPECT_FALSE(tracing::frame_profiling_active());
 }
