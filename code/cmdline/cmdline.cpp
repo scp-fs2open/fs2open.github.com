@@ -75,6 +75,7 @@ const char *cmdline_arg_types[] =
 enum class flag_output_type {
 	Binary,
 	Json_V1,
+	Json_V2,
 };
 
 // variables
@@ -555,7 +556,12 @@ int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 bool Cmdline_window = false;
+#ifdef __ANDROID__
+// Default to borderless in the legacy window-mode path as well.
+bool Cmdline_fullscreen_window = true;
+#else
 bool Cmdline_fullscreen_window = false;
+#endif
 std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
@@ -1358,51 +1364,58 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 // external entry point into this modules
 
+static void json_add_version(json_t* root) {
+	auto version_obj = json_object();
+
+	json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
+	json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
+	json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
+	json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
+
+	json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
+	json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
+	json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
+
+	json_object_set_new(root, "version", version_obj);
+}
+
+static void json_add_easy_flags(json_t* root) {
+	auto easy_array = json_array();
+
+	for (auto& easy_flag : easy_flags) {
+		json_array_append_new(easy_array, json_string(easy_flag.name));
+	}
+
+	json_object_set_new(root, "easy_flags", easy_array);
+}
+
+static void json_add_flags(json_t* root) {
+	auto flags_array = json_array();
+
+	for (auto& flag : exe_params) {
+		auto flag_obj = json_object();
+
+		json_object_set_new(flag_obj, "name", json_string(flag.name));
+		json_object_set_new(flag_obj, "description", json_string(flag.desc));
+		json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
+		json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
+		json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
+		json_object_set_new(flag_obj, "type", json_string(flag.type));
+		json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
+
+		json_array_append_new(flags_array, flag_obj);
+	}
+
+	json_object_set_new(root, "flags", flags_array);
+}
+
 static json_t* json_get_v1() {
 	auto root = json_object();
 
-	{
-		auto version_obj = json_object();
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
 
-		json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
-		json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
-		json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
-		json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
-
-		json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
-		json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
-		json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
-
-		json_object_set_new(root, "version", version_obj);
-	}
-	{
-		auto easy_array = json_array();
-
-		for (auto& easy_flag : easy_flags) {
-			json_array_append_new(easy_array, json_string(easy_flag.name));
-		}
-
-		json_object_set_new(root, "easy_flags", easy_array);
-	}
-	{
-		auto flags_array = json_array();
-
-		for (auto& flag : exe_params) {
-			auto flag_obj = json_object();
-
-			json_object_set_new(flag_obj, "name", json_string(flag.name));
-			json_object_set_new(flag_obj, "description", json_string(flag.desc));
-			json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
-			json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
-			json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
-			json_object_set_new(flag_obj, "type", json_string(flag.type));
-			json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
-
-			json_array_append_new(flags_array, flag_obj);
-		}
-
-		json_object_set_new(root, "flags", flags_array);
-	}
 	{
 		auto caps_array = json_array();
 
@@ -1513,6 +1526,19 @@ static json_t* json_get_v1() {
 	return root;
 }
 
+// json_v2 reports version, supported flags, and the preferences path for launchers,
+// without querying graphics, audio, or joystick devices.
+static json_t* json_get_v2() {
+	auto root = json_object();
+
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
+	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
+
+	return root;
+}
+
 static void write_flags_file() {
 	FILE *fp = fopen("flags.lch","w");
 
@@ -1570,6 +1596,8 @@ static flag_output_type get_flags_output_type() {
 		return flag_output_type::Binary;
 	} else if (type == "json_v1") {
 		return flag_output_type::Json_V1;
+	} else if (type == "json_v2") {
+		return flag_output_type::Json_V2;
 	} else {
 		// This is supposed to make it easy for the launcher to recognize an unsupported type
 		printf("OUTPUT TYPE NOT SUPPORTED!\n");
@@ -1580,17 +1608,23 @@ static flag_output_type get_flags_output_type() {
 
 static void write_flags() {
 	auto type = get_flags_output_type();
-	switch(type) {
-	case flag_output_type::Binary:
-		write_flags_file();
-		break;
-	case flag_output_type::Json_V1:
-		json_t* root = json_get_v1();
 
-		json_dumpf(root, stdout, JSON_INDENT(4));
-		json_decref(root);
-		break;
+	if (type == flag_output_type::Binary) {
+		write_flags_file();
+		return;
 	}
+
+	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+
+#ifdef __ANDROID__
+	char* dumped = json_dumps(root, JSON_INDENT(4));
+	os_android_set_flags_string(dumped ? dumped : "");
+	free(dumped);
+#else
+	json_dumpf(root, stdout, JSON_INDENT(4));
+#endif
+
+	json_decref(root);
 }
 
 bool SetCmdlineParams()
@@ -1787,6 +1821,7 @@ bool SetCmdlineParams()
 		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-window");
 		Cmdline_window = true;
+		Cmdline_fullscreen_window = false;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
