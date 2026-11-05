@@ -14,20 +14,12 @@
 namespace tracing {
 
 /**
- * Computes per-category exclusive (self) time for a frame's trace events in a single pass.
+ * Computes the self time of each category for one frame of Begin/End events, sorted by event_id.
  *
- * @c events must already be sorted into transition order (by @c event_id, i.e. call order), as a
- * stream of Begin/End events. A stack of currently-open scopes is maintained; the time between two
- * consecutive transitions is attributed to the innermost open scope.
+ * @c self_time_by_id is resized to Category::getCount() and indexed by Category::getId(). Pass the
+ * same vector every frame to reuse its allocation.
  *
- * @c self_time_by_id is resized and zeroed to @c Category::getCount() entries and filled with each
- * category's self time, indexed by @c Category::getId() (recover the category with
- * @c Category::getNameById()). Pass the same vector every frame to reuse its allocation.
- *
- * @return the sum of all self-times, i.e. the total traced frame time.
- *
- * This is O(events) with no tree building or string comparisons. Declared here (rather than kept
- * file-local) so it can be unit-tested directly.
+ * @return the sum of all self times, which is the total traced frame time.
  */
 uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id);
 
