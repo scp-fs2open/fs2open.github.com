@@ -13896,7 +13896,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 		const auto animList = Ship_info[parent_ship->ship_info_index].animations.getDockBayDoors(model_get_instance(parent_ship->model_instance_num), shipp->bay_doors_launched_from);
 		if (animList.start(animation::ModelAnimationDirection::FWD)) {
 			parent_ship->bay_doors_status = MA_POS_SET;
-			parent_ship->bay_doors_anim_done_time = animList.getTime();
+			parent_ship->bay_doors_anim_done_time = timestamp(animList.getTime());
 		} else {
 			parent_ship->bay_doors_status = MA_POS_READY;
 		}
