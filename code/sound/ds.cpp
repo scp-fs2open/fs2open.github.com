@@ -330,16 +330,19 @@ void ds_init_channels()
 	if (Cmdline_no_enhanced_sound)
 		MAX_CHANNELS = 32; // Old sound code limts
 	else {
-		ALCint size;
+		ALCint size = 0;
 		alcGetIntegerv(ds_sound_device, ALC_ATTRIBUTES_SIZE, 1, &size);
-		std::vector<ALCint> attrs(size);
-		alcGetIntegerv(ds_sound_device, ALC_ALL_ATTRIBUTES, size, &attrs[0]);
-		for (size_t i = 0; i < attrs.size(); ++i) {
-			//We reserve a portion of the reported channels to avoid colliding with other types of sound
-			//Using the 32 channels of the no_enhanced_sound as a floor.
-			if (attrs[i] == ALC_MONO_SOURCES && attrs[i+1] - DS_RESERVED_CHANNELS > 32) {
-				MAX_CHANNELS = attrs[i + 1] - DS_RESERVED_CHANNELS;
-				mprintf(("  ALC reported %i available sources, setting max to use at %i ", attrs[i + 1],MAX_CHANNELS));
+		if (size > 0) {
+			std::vector<ALCint> attrs(size);
+			alcGetIntegerv(ds_sound_device, ALC_ALL_ATTRIBUTES, size, attrs.data());
+			// the list is zero-terminated key/value pairs
+			for (size_t i = 0; i + 1 < attrs.size() && attrs[i] != 0; i += 2) {
+				//We reserve a portion of the reported channels to avoid colliding with other types of sound
+				//Using the 32 channels of the no_enhanced_sound as a floor.
+				if (attrs[i] == ALC_MONO_SOURCES && attrs[i+1] - DS_RESERVED_CHANNELS > 32) {
+					MAX_CHANNELS = attrs[i + 1] - DS_RESERVED_CHANNELS;
+					mprintf(("  ALC reported %i available sources, setting max to use at %i ", attrs[i + 1],MAX_CHANNELS));
+				}
 			}
 		}
 	}
