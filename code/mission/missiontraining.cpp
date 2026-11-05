@@ -855,12 +855,8 @@ int message_play_training_voice(int index)
 			if ((Training_voice < 0) || !Training_voice_type || (Training_voice != index)) {
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
-						if (Training_voice == index)
-							audiostream_stop(Training_voice_soundstream, 1, 0);
-						else {
-							audiostream_close_file(Training_voice_soundstream, false);
-							Training_voice_soundstream = -1;
-						}
+						audiostream_close_file(Training_voice_soundstream, false);
+						Training_voice_soundstream = -1;
 
 					} else {
 						snd_stop(Training_voice_snd_handle);

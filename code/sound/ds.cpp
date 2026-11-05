@@ -531,7 +531,7 @@ int ds_init()
 
 	{
 	ALCint freq = 0;
-	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, sizeof(ALCint), &freq) );
+	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, 1, &freq) );
 
 	mprintf(("  Sample rate: %d (%d)\n", freq, sample_rate));
 	}
