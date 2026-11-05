@@ -12149,11 +12149,11 @@ void ai_dock()
 			ai_dock_do_animations(goal_shipp, AIS_UNDOCK_0, AIS_UNDOCK_1, dockee_index);
 
 			// calculate time until animations elapse
-			int time = sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index).getTime();
+			int time = sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, docker_index).getRemainingTime();
 
 			if (goal_shipp != nullptr) {
 				ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
-				int time2 = goal_sip->animations.getAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, dockee_index).getTime();
+				int time2 = goal_sip->animations.getAll(model_get_instance(goal_shipp->model_instance_num), animation::ModelAnimationTriggerType::Docked, dockee_index).getRemainingTime();
 				time = MAX(time, time2);
 			}
 			aip->mode_time = timestamp(time);
@@ -13896,7 +13896,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 		const auto animList = Ship_info[parent_ship->ship_info_index].animations.getDockBayDoors(model_get_instance(parent_ship->model_instance_num), shipp->bay_doors_launched_from);
 		if (animList.start(animation::ModelAnimationDirection::FWD)) {
 			parent_ship->bay_doors_status = MA_POS_SET;
-			parent_ship->bay_doors_anim_done_time = timestamp(animList.getTime());
+			parent_ship->bay_doors_anim_done_time = timestamp(animList.getRemainingTime());
 		} else {
 			parent_ship->bay_doors_status = MA_POS_READY;
 		}

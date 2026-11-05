@@ -18850,7 +18850,7 @@ void ship_primary_changed(ship *sp)
 			if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
 				auto animList = Ship_info[sp->ship_info_index].animations.getAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, i);
 				if ( animList.start(animation::ModelAnimationDirection::FWD) ) {
-					swp->primary_animation_done_time[i] = timestamp(animList.getTime());
+					swp->primary_animation_done_time[i] = timestamp(animList.getRemainingTime());
 					swp->primary_animation_position[i] = MA_POS_SET;
 				} else {
 					swp->primary_animation_position[i] = MA_POS_READY;
@@ -18880,7 +18880,7 @@ void ship_primary_changed(ship *sp)
 				if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
 					auto animList = Ship_info[sp->ship_info_index].animations.getAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, i);
 					if (animList.start(animation::ModelAnimationDirection::FWD)) {
-						swp->primary_animation_done_time[i] = timestamp(animList.getTime());
+						swp->primary_animation_done_time[i] = timestamp(animList.getRemainingTime());
 						swp->primary_animation_position[i] = MA_POS_SET;
 					} else {
 						swp->primary_animation_position[i] = MA_POS_READY;
@@ -18942,7 +18942,7 @@ void ship_secondary_changed(ship *sp)
 				if (swp->secondary_animation_position[i] == MA_POS_NOT_SET) {
 					auto animList = Ship_info[sp->ship_info_index].animations.getAll(model_get_instance(sp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, i);
 					if (animList.start(animation::ModelAnimationDirection::FWD)) {
-						swp->secondary_animation_done_time[i] = timestamp(animList.getTime());
+						swp->secondary_animation_done_time[i] = timestamp(animList.getRemainingTime());
 						swp->secondary_animation_position[i] = MA_POS_SET;
 					} else {
 						swp->secondary_animation_position[i] = MA_POS_READY;
