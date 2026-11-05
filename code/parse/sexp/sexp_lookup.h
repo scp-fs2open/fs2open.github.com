@@ -33,6 +33,25 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type = 
 DynamicSEXP* get_dynamic_sexp(int operator_const);
 
 /**
+ * @brief A checksum of the built-in SEXP operators: each one's name and number
+ *
+ * Multiplayer SEXP packets name operators by number, so server and clients must agree on this.
+ */
+uint builtin_operator_fingerprint();
+
+/**
+ * @brief A checksum of the dynamic SEXPs: each one's name, number, argument counts, argument types, return type and
+ * whether it runs on multiplayer clients
+ */
+uint dynamic_operator_fingerprint();
+
+/**
+ * @brief Whether multiplayer clients need the server's dynamic SEXPs: one of them runs on clients, or it is a Lua AI
+ * SEXP, whose number is sent as an AI goal mode and whose player order position is sent with squad orders
+ */
+bool dynamic_sexps_must_match();
+
+/**
  * @brief Given a category name, return the category index
  * @param name The category name
  * @return The category index or OP_CATEGORY_NONE if not found

@@ -180,6 +180,9 @@ void multi_kick_get_text(net_player *pl, int reason, char *str)
 	case KICK_REASON_INGAME_ENDED:
 		sprintf(str, XSTR("<%s was kicked for ingame joining an ended game>",1005), pl->m_player->callsign);
 		break;
+	case KICK_REASON_SEXP_MISMATCH:
+		sprintf(str, XSTR("<%s was kicked for having a different SEXP list than the server>", 1946), pl->m_player->callsign);
+		break;
 	default:
 		sprintf(str, XSTR("<%s was kicked>",687), pl->m_player->callsign);
 		break;
