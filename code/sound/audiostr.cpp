@@ -550,7 +550,7 @@ bool AudioStream::ServiceBuffer (void)
 
 //		nprintf(("Sound","SOUND => Volume for stream sound is %d\n",vol));
 //		nprintf(("Alan","Cuttoff Volume is: %d\n",m_lCutoffVolume));
-		if ( vol < m_lCutoffVolume ) {
+		if ( vol <= m_lCutoffVolume ) {
 			m_bFade = false;
 			m_lCutoffVolume = 0.0f;
 
