@@ -10,12 +10,14 @@ class TimerTest : public test::FSTestFixture {
 	TimerTest() : test::FSTestFixture(INIT_NONE) {}
 };
 
+namespace {
+// 12.5 days: past INT_MAX / 2 ms, where new stamps wrapped, and still below INT_MAX ms
+constexpr uint64_t jump_us = 1'080'000'000'000ULL;
+constexpr uint64_t step_us = 600'000ULL;
+} // namespace
+
 TEST_F(TimerTest, stampsSetAfterTwelveDaysStillWait)
 {
-	// 12.5 days: past INT_MAX / 2 ms, where new stamps wrapped, and still below INT_MAX ms
-	constexpr uint64_t jump_us = 1'080'000'000'000ULL;
-	constexpr uint64_t step_us = 600'000ULL;
-
 	timestamp_adjust_microseconds(jump_us, TIMER_DIRECTION::FORWARD);
 	bool stepped = false;
 	// undone in the same steps, since each adjustment rounds to whole counter ticks on its own
