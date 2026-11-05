@@ -128,7 +128,7 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 namespace tracing {
 
 uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector<uint64_t>& self_time_by_id) {
-	self_time_by_id.assign(static_cast<size_t>(Category::getCount()), 0);
+	self_time_by_id.assign(Category::getCount(), 0);
 
 	if (events.empty()) {
 		return 0;

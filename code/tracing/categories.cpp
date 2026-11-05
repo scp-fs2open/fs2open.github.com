@@ -23,34 +23,34 @@ category_registry_t& category_registry()
 // make the registry grow.
 int register_category_name(const SCP_string& name)
 {
-	auto& registry = category_registry();
-	std::lock_guard<std::mutex> lock(registry.mutex);
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
 
-	auto it = std::find(registry.names.begin(), registry.names.end(), name);
-	if (it == registry.names.end()) {
-		registry.names.push_back(name);
-		return static_cast<int>(registry.names.size()) - 1;
+	const auto it = std::find(names.begin(), names.end(), name);
+	if (it == names.end()) {
+		names.push_back(name);
+		return static_cast<int>(names.size()) - 1;
 	}
-	return static_cast<int>(std::distance(registry.names.begin(), it));
+	return static_cast<int>(std::distance(names.begin(), it));
 }
 } // namespace
 
-Category::Category(const char* name, bool is_graphics)
+Category::Category(const char* name, const bool is_graphics)
 	: _name(name), _graphics_category(is_graphics), _id(register_category_name(_name)) {
 }
 const char* Category::getName() const {
 	return _name.c_str();
 }
-int Category::getCount() {
-	auto& registry = category_registry();
-	std::lock_guard<std::mutex> lock(registry.mutex);
-	return static_cast<int>(registry.names.size());
+size_t Category::getCount() {
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
+	return names.size();
 }
-SCP_string Category::getNameById(int id) {
-	auto& registry = category_registry();
-	std::lock_guard<std::mutex> lock(registry.mutex);
-	Assertion(id >= 0 && id < static_cast<int>(registry.names.size()), "Category id %d is out of range!", id);
-	return registry.names[id];
+SCP_string Category::getNameById(const int id) {
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
+	Assertion(id >= 0 && id < static_cast<int>(names.size()), "Category id %d is out of range!", id);
+	return names[id];
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;

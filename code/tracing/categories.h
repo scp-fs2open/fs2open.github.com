@@ -37,7 +37,7 @@ class Category {
 	 * @brief The number of distinct category names registered so far. A safe size for an array
 	 * indexed by getId().
 	 */
-	static int getCount();
+	static size_t getCount();
 
 	/**
 	 * @brief The name of the category with the given id, which must be in [0, getCount()).
