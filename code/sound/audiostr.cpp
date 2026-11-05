@@ -711,7 +711,7 @@ void AudioStream::Play (float volume, int looping)
 		Set_Volume(volume);
 
 		// Kick off timer to service buffer
-		m_timer.constructor();
+		m_timer.destructor();
 
 		m_timer.Create (m_nBufService, m_nBufService, ptr_u (this), TimerCallback);
 
@@ -1111,6 +1111,9 @@ void audiostream_play(int i, float volume, int looping)
 	CAP(volume, 0.0f, 1.0f);
 
 	Assert( Audio_streams[i].status == ASF_USED );
+	if ( Audio_streams[i].status != ASF_USED )
+		return;
+
 	Audio_streams[i].Set_Default_Volume(volume);
 	Audio_streams[i].Play(volume, looping);
 }
@@ -1139,6 +1142,8 @@ void audiostream_stop(int i, int rewind, int paused)
 
 	Assert( i >= 0 && i < MAX_AUDIO_STREAMS );
 	Assert( Audio_streams[i].status == ASF_USED );
+	if ( Audio_streams[i].status != ASF_USED )
+		return;
 
 	if ( rewind )
 		Audio_streams[i].Stop_and_Rewind();
