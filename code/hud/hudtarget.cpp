@@ -39,6 +39,7 @@
 #include "network/multiutil.h"
 #include "object/object.h"
 #include "libs/renderdoc/renderdoc.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "render/3dinternal.h"
@@ -76,6 +77,29 @@ SCP_vector<target_display_info> target_display_list;
 object* hostile_obj = NULL;
 
 static int ballistic_hud_index = 0;	// Goober5000
+
+static bool ballistic_gauge_default = false;
+
+static void parse_ballistic_gauge_func()
+{
+	stuff_boolean(&ballistic_gauge_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Cmdline_ballistic_gauge = ballistic_gauge_default ? 1 : 0;
+}
+
+static auto BallisticGaugeOption __UNUSED = options::OptionBuilder<bool>("HUD.BallisticGauge",
+	std::pair<const char*, int>{"Ballistic Ammo Gauge", -1},
+	std::pair<const char*, int>{"Shows an ammo gauge in place of the energy gauge for ships with ballistic primary "
+		"weapons.", -1})
+	.category(std::make_pair("Game", 1824))
+	.default_func([]() { return ballistic_gauge_default; })
+	.change_listener([](bool val, bool) {
+		Cmdline_ballistic_gauge = val ? 1 : 0;
+		return true;
+	})
+	.importance(47)
+	.parser(parse_ballistic_gauge_func)
+	.finish();
 
 extern object obj_used_list;		// dummy node in linked list of active objects
 extern char *Cargo_names[];

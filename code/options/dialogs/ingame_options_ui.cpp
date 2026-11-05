@@ -34,10 +34,12 @@ void OptUi::build_options_list(const char* category) const
 
 			auto val = thisOpt->getCurrentValueDescription();
 
-			// An overridden option (currently only from a command line flag) is not editable: OptionsManager
+			// An overridden option (from a command line flag or an active mod) is not editable: OptionsManager
 			// always returns the override, so an edit here would never take effect. Show the control greyed out
 			// with the override source in its tooltip instead of letting the player change a dead value.
 			auto overrideReason = options::OptionsManager::instance()->getOverrideReason(thisOpt->getConfigKey());
+			bool setByMod = options::OptionsManager::instance()->getOverrideSource(thisOpt->getConfigKey()) ==
+							options::OverrideSource::Mod;
 			ImGui::BeginDisabled(overrideReason.has_value());
 
 			// Selectors
@@ -133,12 +135,17 @@ void OptUi::build_options_list(const char* category) const
 
 			if (overrideReason.has_value()) {
 				ImGui::SameLine();
-				ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%s", XSTR("(cmdline)", 1933));
+				ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
+					"%s",
+					setByMod ? XSTR("(mod)", 1938) : XSTR("(cmdline)", 1933));
 			}
 
 			// Add a tooltip with the option description on mouseover
 			if (isHovered) {
-				if (overrideReason.has_value()) {
+				if (setByMod) {
+					ImGui::SetTooltip(XSTR("%s\n\nSet by an active mod; it cannot be changed here.", 1939),
+						thisOpt->getDescription().c_str());
+				} else if (overrideReason.has_value()) {
 					ImGui::SetTooltip(XSTR("%s\n\nSet on the command line by %s; it cannot be changed here.", 1934),
 						thisOpt->getDescription().c_str(), overrideReason->c_str());
 				} else {

@@ -275,6 +275,9 @@ void outwnd_init()
 			// Zacam: Set various conditions based on what type of log to generate.
 			if (Fred_running) {
 				FreeSpace_logfilename = "fred2_open.log";
+			} else if (Cmdline_get_options) {
+				// a settings query must not empty a running server's log
+				FreeSpace_logfilename = "fs2_get_options.log";
 			} else if (Is_standalone) {
 				FreeSpace_logfilename = "fs2_standalone.log";
 			} else {

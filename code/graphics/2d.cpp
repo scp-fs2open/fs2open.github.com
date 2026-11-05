@@ -2230,10 +2230,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GraphicsAPI::Stub;
-		width = 640;
-		height = 480;
-		depth = 16;
-		center_aspect_ratio = -1.0f;
+		// the HUD tables keep only the gauge settings for this resolution, and -get_options reports their locks
+		if (!Cmdline_get_options) {
+			width = 640;
+			height = 480;
+			depth = 16;
+			center_aspect_ratio = -1.0f;
+		} else if (width <= 0 || height <= 0) {
+			// no saved resolution and no display to ask: use the game's own default size
+			width = 1024;
+			height = 768;
+		}
 	}
 
 	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
@@ -2263,7 +2270,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 	}
 
-	if (Cmdline_enable_vr) {
+	// a settings query must not start a VR runtime
+	if (Cmdline_enable_vr && !Cmdline_get_options) {
 		float user_ar = i2fl(width) / i2fl(height);
 		float xr_ar = openxr_preinit(user_ar);
 
@@ -2335,7 +2343,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 
 	mprintf(("Checking mod required rendering features...\n"));
 	for (gr_capability ext : Required_render_ext) {
-		if (!gr_is_capable(ext)) {
+		// the stub renderer used by -get_options supports nothing, which says nothing about the player's GPU
+		if (!gr_is_capable(ext) && !Cmdline_get_options) {
 			Error(LOCATION, "Feature %s required by mod not supported by system.\n",
 				gr_capability_to_human_readable_string(ext).c_str());
 		}
@@ -2396,9 +2405,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	// defaults, so nothing about the rendering path changes.
 	if (gr_screen.mode != GraphicsAPI::Vulkan) {
 		auto* options_mgr = options::OptionsManager::instance();
-		options_mgr->removeOption(HDROption);
-		options_mgr->removeOption(HDRPaperWhiteOption);
-		options_mgr->removeOption(HDRPeakOption);
+		const SCP_vector<std::shared_ptr<const options::OptionBase>> hdr_options = {HDROption,
+			HDRPaperWhiteOption,
+			HDRPeakOption};
+		for (const auto& option : hdr_options) {
+			if (Cmdline_get_options) {
+				options_mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+			}
+			options_mgr->removeOption(option);
+		}
 	}
 	shadows_remove_unsupported_options();
 

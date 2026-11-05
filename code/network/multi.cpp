@@ -200,14 +200,19 @@ void multi_init()
 	Multi_connection_speed = multi_get_connection_speed();			
 	
 	// initialize other stuff
-	multi_log_init();
+	// -get_options only reads settings, and opening the log would empty a running game's copy
+	if (!Cmdline_get_options) {
+		multi_log_init();
+	}
 
 	// load up common multiplayer icons
 	if (!Is_standalone)
 		multi_load_common_icons();	
 
 	// delete mvalid.cfg if it exists
-	cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
+	if (!Cmdline_get_options) {
+		cf_delete(MULTI_VALID_MISSION_FILE, CF_TYPE_DATA);
+	}
 }
 
 // this is an important function which re-initializes any variables required in multiplayer games. 

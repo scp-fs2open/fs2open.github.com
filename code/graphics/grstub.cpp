@@ -3,6 +3,7 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "bmpman/bmpman.h"
+#include "cmdline/cmdline.h"
 #include "ddsutils/ddsutils.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
@@ -409,15 +410,29 @@ void gr_stub_render_rocket_primitives(interface_material* /*material_info*/,
 {
 }
 
-bool gr_stub_is_capable(gr_capability  /*capability*/)
+// answers from a windowless hardware query, so -get_options can offer the choices the real renderer would
+static bool Stub_queried_raytraced_shadows = false;
+static float Stub_queried_max_anisotropy = 0.0f;
+
+void gr_stub_set_queried_hardware(bool raytraced_shadows, float max_anisotropy)
 {
-	return false;
+	Stub_queried_raytraced_shadows = raytraced_shadows;
+	Stub_queried_max_anisotropy = max_anisotropy;
+}
+
+bool gr_stub_is_capable(gr_capability capability)
+{
+	return capability == gr_capability::CAPABILITY_RAYTRACED_SHADOWS && Stub_queried_raytraced_shadows;
 }
 bool gr_stub_get_property(gr_property p, void* dest)
 {
 	if (p == gr_property::UNIFORM_BUFFER_OFFSET_ALIGNMENT) {
 		// This is required by the startup code of the uniform buffer manager
 		*reinterpret_cast<int*>(dest) = 4;
+		return true;
+	}
+	if (p == gr_property::MAX_ANISOTROPY && Stub_queried_max_anisotropy > 0.0f) {
+		*reinterpret_cast<float*>(dest) = Stub_queried_max_anisotropy;
 		return true;
 	}
 	return false;
@@ -484,7 +499,8 @@ bool gr_stub_openxr_flip()
 
 bool gr_stub_init()
 {
-	if (gr_screen.res != GR_640) {
+	// -get_options parses the HUD tables, which scale gauges by max size over center size, so both must agree
+	if (gr_screen.res != GR_640 && !Cmdline_get_options) {
 		gr_screen.res = GR_640;
 		gr_screen.max_w = 640;
 		gr_screen.max_h = 480;

@@ -620,7 +620,8 @@ bool os_is_legacy_mode()
 
 	if (legacyMode) {
 		// Print a message for the people running it from the terminal
-		fprintf(stdout, "FSO is running in legacy config mode. Please either update your launcher or"
+		// stdout carries -get_options' JSON
+		fprintf(Cmdline_get_options ? stderr : stdout, "FSO is running in legacy config mode. Please either update your launcher or"
 			" copy the configuration and pilot files to '%s' for better future compatibility.\n", getPreferencesPath().c_str());
 	}
 

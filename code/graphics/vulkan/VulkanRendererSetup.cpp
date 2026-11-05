@@ -1,5 +1,6 @@
 
 #include "VulkanRenderer.h"
+#include "gr_vulkan.h"
 #include "VulkanMemory.h"
 #include "VulkanBuffer.h"
 #include "VulkanOpenXR.h"
@@ -15,6 +16,7 @@
 #include "lighting/lighting.h"
 #include "libs/renderdoc/renderdoc.h"
 #include "mod_table/mod_table.h"
+#include "utils/finally.h"
 
 #include <SDL3/SDL_vulkan.h>
 #include <cstdint>
@@ -342,7 +344,55 @@ vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t 
 	}
 }
 
+PhysicalDeviceValues queryDeviceValues(const vk::PhysicalDevice& dev)
+{
+	PhysicalDeviceValues vals;
+	vals.device = dev;
+	vals.properties = dev.getProperties2().properties;
+
+	// Query ray tracing feature bits alongside the base features. It is
+	// safe to include extension feature structs here even if the device
+	// doesn't support the corresponding extension -- this is the standard
+	// way to discover whether to request it. Extension *presence*
+	// is checked separately in createLogicalDevice() before enabling.
+	auto featureChain = dev.getFeatures2<vk::PhysicalDeviceFeatures2,
+		vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
+		vk::PhysicalDeviceRayQueryFeaturesKHR,
+		vk::PhysicalDeviceBufferDeviceAddressFeatures,
+		vk::PhysicalDeviceSynchronization2Features>();
+	vals.features = featureChain.get<vk::PhysicalDeviceFeatures2>().features;
+	vals.accelerationStructureFeatureSupported =
+		featureChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure != VK_FALSE;
+	vals.rayQueryFeatureSupported =
+		featureChain.get<vk::PhysicalDeviceRayQueryFeaturesKHR>().rayQuery != VK_FALSE;
+	vals.bufferDeviceAddressFeatureSupported =
+		featureChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress != VK_FALSE;
+	vals.synchronization2FeatureSupported =
+		featureChain.get<vk::PhysicalDeviceSynchronization2Features>().synchronization2 != VK_FALSE;
+
+	auto qprops = dev.getQueueFamilyProperties();
+	vals.queueProperties.assign(qprops.begin(), qprops.end());
+	return vals;
+}
+
+bool hasDeviceExtension(const PhysicalDeviceValues& values, const char* name)
+{
+	return std::any_of(values.extensions.cbegin(), values.extensions.cend(),
+		[name](const vk::ExtensionProperties& ext) { return strcmp(ext.extensionName, name) == 0; });
+}
+
 } // namespace
+
+// shared by the renderer and the launcher query, so both judge the card by the same features
+bool raytracedShadowsSupported(const PhysicalDeviceValues& values)
+{
+	return hasDeviceExtension(values, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) &&
+		hasDeviceExtension(values, VK_KHR_RAY_QUERY_EXTENSION_NAME) &&
+		hasDeviceExtension(values, VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME) &&
+		values.accelerationStructureFeatureSupported && values.rayQueryFeatureSupported &&
+		values.bufferDeviceAddressFeatureSupported;
+}
+
 bool VulkanRenderer::initialize()
 {
 	mprintf(("Initializing Vulkan graphics device at %ix%i with %i-bit color...\n",
@@ -844,35 +894,7 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	}
 
 	SCP_vector<PhysicalDeviceValues> values;
-	std::transform(devices.cbegin(), devices.cend(), std::back_inserter(values), [](const vk::PhysicalDevice& dev) {
-		PhysicalDeviceValues vals;
-		vals.device = dev;
-		vals.properties = dev.getProperties2().properties;
-
-		// Query ray tracing feature bits alongside the base features. It is
-		// safe to include extension feature structs here even if the device
-		// doesn't support the corresponding extension -- this is the standard
-		// way to discover whether to request it below. Extension *presence*
-		// is checked separately in createLogicalDevice() before enabling.
-		auto featureChain = dev.getFeatures2<vk::PhysicalDeviceFeatures2,
-			vk::PhysicalDeviceAccelerationStructureFeaturesKHR,
-			vk::PhysicalDeviceRayQueryFeaturesKHR,
-			vk::PhysicalDeviceBufferDeviceAddressFeatures,
-			vk::PhysicalDeviceSynchronization2Features>();
-		vals.features = featureChain.get<vk::PhysicalDeviceFeatures2>().features;
-		vals.accelerationStructureFeatureSupported =
-			featureChain.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>().accelerationStructure != VK_FALSE;
-		vals.rayQueryFeatureSupported =
-			featureChain.get<vk::PhysicalDeviceRayQueryFeaturesKHR>().rayQuery != VK_FALSE;
-		vals.bufferDeviceAddressFeatureSupported =
-			featureChain.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress != VK_FALSE;
-		vals.synchronization2FeatureSupported =
-			featureChain.get<vk::PhysicalDeviceSynchronization2Features>().synchronization2 != VK_FALSE;
-
-		auto qprops = dev.getQueueFamilyProperties();
-		vals.queueProperties.assign(qprops.begin(), qprops.end());
-		return vals;
-	});
+	std::transform(devices.cbegin(), devices.cend(), std::back_inserter(values), queryDeviceValues);
 
 	mprintf(("Physical Vulkan devices:\n"));
 	std::for_each(values.cbegin(), values.cend(), printPhysicalDevice);
@@ -898,7 +920,8 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	}
 
 	// Sort the suitability of the devices in increasing order
-	std::sort(values.begin(), values.end(), compareDevices);
+	// stable, so among equal devices the last one listed wins, the same one the -get_options query reports
+	std::stable_sort(values.begin(), values.end(), compareDevices);
 
 	deviceValues = values.back();
 	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
@@ -962,9 +985,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	// enabled. bufferDeviceAddress is core in Vulkan 1.2 (no extension name to
 	// check for), but its feature bit still has to be queried/enabled
 	// explicitly -- core promotion only drops the extension-name requirement.
-	m_supportsRaytracedShadows = hasAccelerationStructureExt && hasRayQueryExt && hasDeferredHostOperationsExt &&
-		deviceValues.accelerationStructureFeatureSupported && deviceValues.rayQueryFeatureSupported &&
-		deviceValues.bufferDeviceAddressFeatureSupported;
+	m_supportsRaytracedShadows = raytracedShadowsSupported(deviceValues);
 
 	if (m_supportsRaytracedShadows) {
 		enabledExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
@@ -1303,6 +1324,66 @@ bool VulkanRenderer::recreateSwapChain()
 		m_swapChainExtent.width, m_swapChainExtent.height, m_swapChainImages.size()));
 
 	return true;
+}
+
+bool query_hardware_without_window(HardwareQuery& out)
+{
+	if (!SDL_Vulkan_LoadLibrary(nullptr)) {
+		mprintf(("Vulkan hardware query: %s\n", SDL_GetError()));
+		return false;
+	}
+	auto unload = ::util::finally([]() { SDL_Vulkan_UnloadLibrary(); });
+
+	try {
+		// -get_options exits right after this, so the dispatcher is left pointing at the unloaded library
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(
+			reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr()));
+		vk::ApplicationInfo appInfo(Window_title.c_str(), 1, EngineName, 1, VulkanApiVersion);
+		vk::InstanceCreateInfo createInfo(vk::InstanceCreateFlags(), &appInfo);
+		// as the renderer does: without it, portability drivers such as MoltenVK list no devices
+		SCP_vector<const char*> extensions;
+		for (const auto& ext : vk::enumerateInstanceExtensionProperties()) {
+			if (!stricmp(ext.extensionName, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
+				extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+				createInfo.flags |= vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+			}
+		}
+		createInfo.setPEnabledExtensionNames(extensions);
+		auto instance = vk::createInstanceUnique(createInfo, nullptr);
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(instance.get());
+
+		bool found = false;
+		PhysicalDeviceValues best;
+		for (const auto& dev : instance->enumeratePhysicalDevices()) {
+			auto values = queryDeviceValues(dev);
+			// the same device types the renderer accepts: a software device's answers say nothing about the card
+			const auto type = values.properties.deviceType;
+			if (type != vk::PhysicalDeviceType::eDiscreteGpu && type != vk::PhysicalDeviceType::eIntegratedGpu &&
+				type != vk::PhysicalDeviceType::eVirtualGpu) {
+				continue;
+			}
+			const bool hasGraphicsQueue = std::any_of(values.queueProperties.cbegin(),
+				values.queueProperties.cend(),
+				[](const vk::QueueFamilyProperties& queue) { return static_cast<bool>(queue.queueFlags & vk::QueueFlagBits::eGraphics); });
+			if (!checkDeviceExtensionSupport(values) || !values.synchronization2FeatureSupported || !hasGraphicsQueue) {
+				continue;
+			}
+			// on a tie take the later device, as the renderer's sort-and-take-last does
+			if (!found || !compareDevices(values, best)) {
+				best = std::move(values);
+				found = true;
+			}
+		}
+		if (!found) {
+			return false;
+		}
+		out.raytraced_shadows = raytracedShadowsSupported(best);
+		out.max_anisotropy = best.properties.limits.maxSamplerAnisotropy;
+		return true;
+	} catch (const vk::SystemError& err) {
+		mprintf(("Vulkan hardware query: %s\n", err.what()));
+		return false;
+	}
 }
 
 } // namespace graphics::vulkan

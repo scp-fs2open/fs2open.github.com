@@ -216,6 +216,14 @@ void OptionBase::setIsOnce(bool is_once) {
 	_is_once = is_once;
 }
 
+bool OptionBase::getIsLive() const {
+	return _is_live;
+}
+
+void OptionBase::setIsLive(bool is_live) {
+	_is_live = is_live;
+}
+
 //persists any changes made to this specific option and returns whether or not it was successful
 bool OptionBase::persistChanges() const { return _parent->persistOptionChanges(this); }
 

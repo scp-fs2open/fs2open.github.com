@@ -367,6 +367,30 @@ fix FrametimeOverall = 0;
 	int	Show_framerate = 0;
 #endif
 
+static bool show_fps_default = (Show_framerate != 0);
+
+static void parse_show_fps_func()
+{
+	stuff_boolean(&show_fps_default);
+	// An enforced option is never loaded, so the table value has to reach the variable here
+	Show_framerate = show_fps_default ? 1 : 0;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto ShowFpsOption __UNUSED = options::OptionBuilder<bool>("HUD.ShowFPS",
+                     std::pair<const char*, int>{"Show FPS", -1},
+                     std::pair<const char*, int>{"Shows the frame rate on the HUD.", -1})
+                     .category(std::make_pair("Game", 1824))
+                     .default_func([]() { return show_fps_default; })
+                     .change_listener([](bool val, bool) {
+                         Show_framerate = val ? 1 : 0;
+                         return true;
+                     })
+                     .level(options::ExpertLevel::Beginner)
+                     .importance(46)
+                     .parser(parse_show_fps_func)
+                     .finish();
+
 int	Framerate_cap = 120;
 
 // for the model page in system
@@ -1957,7 +1981,8 @@ void game_init()
 	lcl_xstr_init();
 
 
-	if (Is_standalone) {
+	// this block forces options off for a server, and -get_options must print the player's values instead
+	if (Is_standalone && !Cmdline_get_options) {
 		// force off some cmdlines if they are on
 		Cmdline_spec = 0;
 		Cmdline_glow = 0;
@@ -2010,7 +2035,8 @@ void game_init()
 		snd_init();
 	}
 
-	if(!fsspeech_init()) {
+	// the voice list fills without it, and a settings query must not start the speech service
+	if (!Cmdline_get_options && !fsspeech_init()) {
 		mprintf(("Failed to init speech\n"));
 	}
 
@@ -2039,7 +2065,8 @@ void game_init()
 
 // Karajorma - Moved here from the sound init code cause otherwise windows complains
 #ifdef FS2_VOICER
-	if(Cmdline_voice_recognition)
+	// with no game window it fails, and its failure message is a dialog nobody can click
+	if(Cmdline_voice_recognition && !Cmdline_get_options)
 	{
 		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
 															 SDL_PROP_WINDOW_WIN32_HWND_POINTER,
@@ -2135,8 +2162,11 @@ void game_init()
 	multi_init();	
 
 	// start up the mission logfile
-	logfile_init(LOGFILE_EVENT_LOG);
-	log_string(LOGFILE_EVENT_LOG,"FS2_Open Mission Log - Opened \n\n", 1);
+	// -get_options only reads settings, and opening the log would empty a running game's copy
+	if (!Cmdline_get_options) {
+		logfile_init(LOGFILE_EVENT_LOG);
+		log_string(LOGFILE_EVENT_LOG, "FS2_Open Mission Log - Opened \n\n", 1);
+	}
 
 	// standalone's don't use the joystick and it seems to sometimes cause them to not get shutdown properly
 	if(!Is_standalone){
@@ -2181,6 +2211,15 @@ void game_init()
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
+
+	// exits before the network starts (psnet_init opens the multiplayer port)
+	if (Cmdline_get_options) {
+		bool printed = cmdline_print_options();
+		// static teardown would free text textures after bmpman, and joinable worker threads abort
+		gr_close();
+		threading::shut_down_task_pool();
+		exit(printed ? 0 : 1);
+	}
 	
 	// initialize psnet
 	psnet_init(Multi_options_g.port);						// initialize the networking code
@@ -8220,7 +8259,8 @@ int main(int argc, char *argv[])
 
 	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow(NOX("FreeSpaceClass"), nullptr);
-	if (hwnd)	{
+	// a -get_options query opens no window, so it may run beside the game
+	if (hwnd && !cmdline_has_get_options(argc, argv)) {
 		SetForegroundWindow(hwnd);
 		return 0;
 	}
