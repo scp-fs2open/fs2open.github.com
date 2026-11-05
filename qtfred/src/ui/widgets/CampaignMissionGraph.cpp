@@ -40,7 +40,17 @@ MissionNodeItem::MissionNodeItem(int missionIndex,
 
 QRectF MissionNodeItem::boundingRect() const
 {
-	return m_rect.adjusted(-1, -1, 1, 1);
+	// the ports are drawn centered on the top and bottom edges, so half of each sticks out of the card
+	const qreal portExtent = m_style.portRadius + 2.0;
+	return m_rect.adjusted(-1, -portExtent, 1, portExtent);
+}
+
+QPainterPath MissionNodeItem::shape() const
+{
+	// hit-testing stays on the card; hitTestPortScene handles the ports
+	QPainterPath path;
+	path.addRect(m_rect.adjusted(-1, -1, 1, 1));
+	return path;
 }
 
 static inline QPainterPath roundedRectPath(const QRectF& r, qreal rad)
@@ -415,6 +425,13 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	return path;
 }
 
+QRectF EdgeItem::boundingRect() const
+{
+	// arrowheads are drawn across the line, past the path's own bounds
+	const qreal arrowExtent = m_style.arrowSize + pen().widthF();
+	return QGraphicsPathItem::boundingRect().adjusted(-arrowExtent, -arrowExtent, arrowExtent, arrowExtent);
+}
+
 void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
 	// Draw the line/path first
@@ -515,6 +532,14 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	// Recolor graph when the application theme changes
 	qApp->installEventFilter(this);
 }
+CampaignMissionGraph::~CampaignMissionGraph()
+{
+	// the scene is a child of this view and is deleted after it, when its selection changes can no longer reach us
+	if (m_scene != nullptr) {
+		disconnect(m_scene, nullptr, this, nullptr);
+	}
+}
+
 bool CampaignMissionGraph::eventFilter(QObject* watched, QEvent* event)
 {
 	if (event->type() == QEvent::ApplicationPaletteChange) {
@@ -857,7 +882,7 @@ void CampaignMissionGraph::buildMissionEdges()
 			if (i == j) {
 				// Selfloop: draw outside node
 				if (m_style.showSelfLoops) {
-					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->boundingRect());
+					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->shape().boundingRect());
 					const bool sourceRight = isSpecial; // special port on right; main on left
 					edge->setSelfLoop(nodeRectScene, sourceRight, sibIndex, sibCount);
 					m_scene->addItem(edge);
@@ -911,9 +936,9 @@ void CampaignMissionGraph::ensureEndSink()
 	// Position below the union of mission nodes
 	// Future TODO: Let the user move this around. Will require being able to save it's position to the campaign file
 	if (!m_nodeItems.empty()) {
-		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->boundingRect());
+		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->shape().boundingRect());
 		for (size_t i = 1; i < m_nodeItems.size(); ++i) {
-			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->boundingRect()));
+			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->shape().boundingRect()));
 		}
 		const qreal x = nodesRect.center().x() - m_style.endSinkSize.width() * 0.5;
 		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
