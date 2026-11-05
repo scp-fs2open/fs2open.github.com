@@ -67,7 +67,6 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // retail XSTR_SIZE = 1570
 // #define XSTR_SIZE	1943 // This is the next available ID
 
-
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
 typedef struct {
