@@ -531,6 +531,9 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 		if (dot > 0.7f) {
 			sun_x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f + 0.5f;
 			sun_y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+			// The formula above is OpenGL's, whose texture V grows upward. The Vulkan fullscreen triangle in
+			// post-v.sdr has V = 0 at the top of the screen, so flip to the space ls-f.sdr's fragTexCoord is in.
+			sun_y = 1.0f - sun_y;
 			found = true;
 			break;
 		}
