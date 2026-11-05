@@ -254,22 +254,11 @@ int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after)
 
 // ======================================== checking timestamps ========================================
 
-// Restrict all time values between 0 and MAX_TIME
-// so we don't have to use UINTs to calculate rollover.
-// For debugging & testing, you could set this to
-// something like 1 minute (60000).
-// Although this is around 12.4 days (1073741823 milliseconds).
-extern const std::uint32_t MAX_TIME = INT_MAX / 2;
-
 int timestamp(int delta_ms) {
 	int t2;
 	if (delta_ms < 0 ) return 0;
 	if (delta_ms == 0 ) return 1;
 	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
-	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return t2;
 }
@@ -279,10 +268,6 @@ TIMESTAMP _timestamp(int delta_ms) {
 	if (delta_ms < 0 ) return TIMESTAMP::never();
 	if (delta_ms == 0 ) return TIMESTAMP::immediate();
 	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
-	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return TIMESTAMP(t2);
 }
@@ -292,10 +277,6 @@ UI_TIMESTAMP ui_timestamp(int delta_ms) {
 	if (delta_ms < 0 ) return UI_TIMESTAMP::never();
 	if (delta_ms == 0 ) return UI_TIMESTAMP::immediate();
 	t2 = timer_get_milliseconds() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timer_get_milliseconds());
-	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return UI_TIMESTAMP(t2);
 }
