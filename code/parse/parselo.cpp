@@ -1215,7 +1215,7 @@ char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 
 // Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string
 // variable. Returns PARSING_FOUND_STRING if a string was found or PARSING_FOUND_VARIABLE if a variable was present.
-int get_string_or_variable (char *str)
+int get_string_or_variable (char *str, int max)
 {
 	int result = -1;
 
@@ -1226,7 +1226,7 @@ int get_string_or_variable (char *str)
 	{
 		auto saved_Mp = Mp;
 		Mp++;
-		stuff_string_white(str);
+		stuff_string_white(str, max - 1);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
@@ -1235,19 +1235,19 @@ int get_string_or_variable (char *str)
 		else
 		{
 			Mp = saved_Mp;
-			stuff_string_white(str);
+			stuff_string_white(str, max - 1);
 			error_display(1, "Expected \"%s\" to be a variable", str);
 		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
 	{
-		get_string(str);
+		get_string(str, max);
 		result =  PARSING_FOUND_STRING;
 	}
 	else
 	{
-		get_string(str);
+		get_string(str, max);
 		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
@@ -1300,16 +1300,28 @@ int get_string_or_variable (SCP_string &str)
  */
 int get_string(char *str, int max)
 {
+	if (*Mp == '\0') {
+		if (max != 0)
+			str[0] = '\0';
+		return 0;
+	}
+
 	auto len = strcspn(Mp + 1, "\"");
 
-	if (max >= 0 && len >= (size_t)max)
-		error_display(0, "String too long.  Length = " SIZE_T_ARG ".  Max is %i.\n", len, max);
+	auto copy_len = len;
+	if (max >= 0 && len >= (size_t)max) {
+		error_display(0, "String too long.  Length = " SIZE_T_ARG ".  Max is %i.\n", len, max - 1);
+		copy_len = (max > 0) ? (size_t)(max - 1) : 0;
+	}
 
-	strncpy(str, Mp + 1, len);
-	str[len] = 0;
+	strncpy(str, Mp + 1, copy_len);
+	str[copy_len] = 0;
 
-	Mp += len + 2;
-	return (int)len;
+	// step over the closing quote only if there is one
+	Mp += len + 1;
+	if (*Mp == '"')
+		Mp++;
+	return (int)copy_len;
 }
 
 /**
@@ -1317,10 +1329,17 @@ int get_string(char *str, int max)
  */
 void get_string(SCP_string &str)
 {
+	if (*Mp == '\0') {
+		str.clear();
+		return;
+	}
+
 	auto len = strcspn(Mp + 1, "\"");
 	str.assign(Mp + 1, len);
 
-	Mp += len + 2;
+	Mp += len + 1;
+	if (*Mp == '"')
+		Mp++;
 }
 
 //	Stuff a string into a string buffer.
@@ -2067,13 +2086,16 @@ bool matches_version_specific_tag(const char *line_start, bool &compatible_versi
 		s_num = 3;
 	}
 
+	// sscanf counts conversions, not the trailing literal, so the closing ";;" may be missing
 	const char *ch = line_start + 6;
 	while ((*ch) != ';') {
-		Assertion((*ch) != '\0', "String that was already guaranteed to end with semicolons did not end with semicolons; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
+		if ((*ch == '\0') || (*ch == '\n') || (*ch == '\r'))
+			return false;
 		ch++;
 	}
 	ch++;
-	Assertion((*ch) == ';', "String that was guaranteed to have double semicolons did not; it's possible we have fallen into an alternate universe. Failing string: [%s]\n", line_start);
+	if ((*ch) != ';')
+		return false;
 	ch++;
 
 	tag_len = (int)(ch - line_start);
