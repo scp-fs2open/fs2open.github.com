@@ -10,6 +10,13 @@ class AutoShieldControlTest : public test::FSTestFixture {
 	{
 		pushModDir("controlconfig");
 	}
+
+	void TearDown() override
+	{
+		// each test calls control_config_common_init(), which allocates the axis and button names
+		control_config_common_close();
+		test::FSTestFixture::TearDown();
+	}
 };
 
 // The table's "Classic" preset gives Alt+Q to Toggle Auto Pilot; the default preset leaves Alt+Q free
