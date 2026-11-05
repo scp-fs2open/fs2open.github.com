@@ -941,6 +941,7 @@ enum : int {
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
 	OP_NEBULA_SET_RANGE,	// Goober5000
 	OP_SET_SQUADRON_WINGS,	// Goober5000
+	OP_FORCE_BATTLE_MUSIC,	// Goober5000
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
