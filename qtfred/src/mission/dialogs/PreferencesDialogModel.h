@@ -61,6 +61,9 @@ public:
 	DataMenuStyle getDataMenuStyle() const;
 	void setDataMenuStyle(DataMenuStyle value);
 
+	bool getClassicMenuLayout() const;
+	void setClassicMenuLayout(bool value);
+
 	int  getToolbarIconSize() const;
 	void setToolbarIconSize(int size);
 
@@ -111,6 +114,7 @@ private:
 	bool _showSexpHelpWingEditor;
 	ThemeMode _themeMode;
 	DataMenuStyle _dataMenuStyle;
+	bool _classicMenuLayout;
 	int  _toolbarIconSize;
 	int  _outlineLod;
 	float _labelFontScale;

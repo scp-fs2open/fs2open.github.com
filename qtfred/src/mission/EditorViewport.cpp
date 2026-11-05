@@ -155,6 +155,8 @@ void EditorViewport::loadSettings() {
 		}
 	}
 
+	Classic_menu_layout                = settings.value("classic_menu_layout",                Classic_menu_layout).toBool();
+
 	view.Universal_heading                 = settings.value("view_universal_heading",                 view.Universal_heading).toBool();
 	view.Show_stars                        = settings.value("view_show_stars",                        view.Show_stars).toBool();
 	view.Show_horizon                      = settings.value("view_show_horizon",                      view.Show_horizon).toBool();
@@ -204,6 +206,7 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("show_sexp_help_wing_editor",          Show_sexp_help_wing_editor);
 	writeThemeModeSetting(Theme_mode);
 	settings.setValue("data_menu_style",                     static_cast<int>(Data_menu_style));
+	settings.setValue("classic_menu_layout",                 Classic_menu_layout);
 
 	settings.setValue("view_universal_heading",                 view.Universal_heading);
 	settings.setValue("view_show_stars",                        view.Show_stars);
