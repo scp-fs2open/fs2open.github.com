@@ -30,6 +30,14 @@
 #include <sys/types.h>
 #endif
 
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL.h>
+#include <jni.h>
+#include "options/Option.h"
+#include "utils/finally.h"
+#endif
+
 namespace
 {
 	const char* ORGANIZATION_NAME = "HardLightProductions";
@@ -924,4 +932,176 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 
 	return ss.str();
 }
+
+/*
+	  Special functions for Android
+*/
+
+#ifdef __ANDROID__
+static bool android_check_exception(JNIEnv* env, const char* operation)
+{
+	if (!env->ExceptionCheck()) {
+		return false;
+	}
+
+	mprintf(("OSAPI: JNI exception in %s.\n", operation));
+	env->ExceptionDescribe();
+	env->ExceptionClear();
+	return true;
+}
+
+template <typename Callback>
+static void android_with_static_method(const char* name, const char* signature, Callback&& callback)
+{
+	JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+	if (env == nullptr) {
+		mprintf(("OSAPI: Couldn't get JNI environment for %s.\n", name));
+		return;
+	}
+	if (android_check_exception(env, name)) {
+		return;
+	}
+
+	if (env->PushLocalFrame(4) < 0) {
+		android_check_exception(env, "PushLocalFrame");
+		mprintf(("OSAPI: Couldn't create JNI local frame for %s.\n", name));
+		return;
+	}
+	// Release the activity, class, and temporary strings on every exit path.
+	auto local_frame = util::finally([env]() { env->PopLocalFrame(nullptr); });
+
+	jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
+	if (android_check_exception(env, "SDL_GetAndroidActivity") || activity == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity for %s.\n", name));
+		return;
+	}
+
+	jclass activity_class = env->GetObjectClass(activity);
+	if (android_check_exception(env, "GetObjectClass") || activity_class == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity class for %s.\n", name));
+		return;
+	}
+
+	jmethodID method = env->GetStaticMethodID(activity_class, name, signature);
+	if (android_check_exception(env, name) || method == nullptr) {
+		mprintf(("OSAPI: Couldn't find static method %s with signature %s.\n", name, signature));
+		return;
+	}
+
+	callback(env, activity_class, method);
+	android_check_exception(env, name);
+}
+
+void os_android_set_flags_string(const char* json)
+{
+	android_with_static_method("setFlagsJson", "(Ljava/lang/String;)V",
+		[json](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = env->NewStringUTF(json ? json : "");
+			if (android_check_exception(env, "NewStringUTF") || value == nullptr) {
+				return;
+			}
+			env->CallStaticVoidMethod(activity_class, method, value);
+		});
+}
+
+SCP_string os_android_get_working_folder_path()
+{
+	SCP_string wfp{};
+	android_with_static_method("getWorkingFolder", "()Ljava/lang/String;",
+		[&wfp](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = static_cast<jstring>(env->CallStaticObjectMethod(activity_class, method));
+			if (android_check_exception(env, "getWorkingFolder") || value == nullptr) {
+				return;
+			}
+
+			const char* working_folder = env->GetStringUTFChars(value, nullptr);
+			if (android_check_exception(env, "GetStringUTFChars") || working_folder == nullptr) {
+				return;
+			}
+			auto release_chars = util::finally([env, value, working_folder]() {
+				env->ReleaseStringUTFChars(value, working_folder);
+			});
+			wfp = working_folder;
+		});
+
+	if (wfp.empty()) {
+		mprintf(("Couldn't get working folder path from Java class, reverting to SDL default.\n"));
+		// SDL's external storage path already includes the app's files directory.
+		const char* fallbackPath = SDL_GetAndroidExternalStoragePath();
+		if (fallbackPath) {
+			wfp = SCP_string(fallbackPath);
+		}
+	}
+	
+	// Ensure path ends with a dir separator
+	if (!wfp.empty() && (wfp.back() != DIR_SEPARATOR_CHAR)) {
+		wfp += DIR_SEPARATOR_CHAR;
+	}
+	mprintf(("Using working folder: %s\n", wfp.c_str()));
+	return wfp;
+}
+
+void os_android_touch_overlay_toggle(bool status)
+{
+	android_with_static_method(status ? "enableOverlay" : "disableOverlay", "()V",
+		[](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method);
+		});
+}
+
+void os_android_touch_overlay_set_opacity(int opacity)
+{
+	android_with_static_method("setOverlayOpacity", "(F)V",
+		[opacity](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method, static_cast<jfloat>(opacity) / 100.0f);
+		});
+}
+
+static bool touch_ui_change(bool new_val, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_toggle(new_val);
+	return true;
+}
+
+static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverlay",
+	std::pair<const char*, int>{"Touch Overlay", 1936},
+	std::pair<const char*, int>{"Enable or disable the touch overlay", 1937})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.change_listener(touch_ui_change)
+	.default_val(true)
+	.importance(2)
+	.finish();
+
+static bool touch_ui_opacity_change(int new_val, bool initial)
+{
+	Assertion(new_val >= 0 && new_val <= 100, "Invalid value %d supplied by options system!", new_val);
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_set_opacity(new_val);
+	return true;
+}
+
+static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
+	std::pair<const char*, int>{"Touch Overlay Opacity", 1938},
+	std::pair<const char*, int>{"Set the opacity of the touch overlay", 1939})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.range(0, 100)
+	.default_val(20)
+	.flags({ options::OptionFlags::RangeTypeInteger })
+	.change_listener(touch_ui_opacity_change)
+	.importance(1)
+	.finish();
+	
+void os_android_touch_overlay_init()
+{
+	os_android_touch_overlay_toggle(TouchOverlayOption->getValue());
+	os_android_touch_overlay_set_opacity(TouchOverlayOpacityOption->getValue());
+}
+#endif
 
