@@ -14,13 +14,14 @@
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "graphics/material.h"
+#include "graphics/render.h"
 #include "io/timer.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "graphics/material.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "weapon/emp.h"
@@ -70,8 +71,6 @@ int Nebl_flash_count = 0;		// # of points rendered onscreen for this bolt
 float Nebl_flash_x = 0.0f;		// avg x of the points rendered
 float Nebl_flash_y = 0.0f;		// avg y of the points rendered
 float Nebl_bang = 0.0;			// distance to the viewer object
-float Nebl_alpha = 0.0f;		// alpha to use when rendering the bolt itself
-float Nebl_glow_alpha = 0.0f;	// alpha to use when rendering the bolt glow
 int Nebl_stamp = -1;			// random timestamp for making bolts
 float Nebl_bolt_len;			// length of the current bolt being generated
 bolt_type *Nebl_type;			// bolt type
@@ -453,6 +452,11 @@ void nebl_init()
 
 	//Verify the bolts after all parsing is done to make sure that load order isn't a factor
 	verify_storm_bolts();
+
+	for (auto& bolt : Bolt_types) {
+		bolt.batch_by_bolt = material_determine_blend_mode(bolt.texture, true) == ALPHA_BLEND_ADDITIVE
+			&& material_determine_blend_mode(bolt.glow, true) == ALPHA_BLEND_ADDITIVE;
+	}
 }
 
 // initialize lightning before entering a level
@@ -498,10 +502,78 @@ void nebl_set_storm(const char *name)
 	Storm = &Storm_types[index];
 }
 
+void nebl_page_in()
+{
+	if (!The_mission.flags[Mission::Mission_Flags::Fullneb] && !Nebula_sexp_used) {
+		return;
+	}
+
+	// Storms can change during a nebula mission, and scripts can create any bolt type.
+	for (const auto& bolt : Bolt_types) {
+		bm_page_in_texture(bolt.texture);
+		bm_page_in_texture(bolt.glow);
+	}
+}
+
+struct lightning_vertex {
+	vec3d position;
+	uv_pair uv;
+};
+
+// Six position/UV vertices use less space than the original four full vertices.
+static_assert(6 * sizeof(lightning_vertex) < 4 * sizeof(vertex));
+
+struct lightning_geometry {
+	SCP_vector<lightning_vertex> body;
+	SCP_vector<lightning_vertex> glow;
+};
+
+struct lightning_render_batch {
+	lightning_geometry& geometry;
+	material body_material;
+	material glow_material;
+
+	lightning_render_batch(lightning_geometry& storage, const bolt_type& bolt, float body_alpha, float glow_alpha)
+		: geometry(storage)
+	{
+		geometry.body.clear();
+		geometry.glow.clear();
+
+		constexpr float emissive_scale = 2.0f;
+		material_set_unlit_emissive(&body_material, bolt.texture, body_alpha, emissive_scale);
+		// Match the original path, which applied the glow settings to the body material.
+		glow_material = body_material;
+		material_set_unlit_emissive(&glow_material, bolt.glow, glow_alpha, emissive_scale);
+	}
+
+	void draw()
+	{
+		if (geometry.body.empty()) {
+			return;
+		}
+
+		vertex_layout layout;
+		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(lightning_vertex), offsetof(lightning_vertex, position));
+		layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(lightning_vertex), offsetof(lightning_vertex, uv));
+
+		gr_render_primitives_immediate(&body_material, PRIM_TYPE_TRIS, &layout,
+			static_cast<int>(geometry.body.size()), geometry.body.data(), geometry.body.size() * sizeof(lightning_vertex));
+		gr_render_primitives_immediate(&glow_material, PRIM_TYPE_TRIS, &layout,
+			static_cast<int>(geometry.glow.size()), geometry.glow.data(), geometry.glow.size() * sizeof(lightning_vertex));
+		geometry.body.clear();
+		geometry.glow.clear();
+	}
+};
+
+static void nebl_render(bolt_type* bi, l_node* node, float width, lightning_render_batch& batch, l_section* prev = nullptr);
+
 // render all lightning bolts
 void nebl_render_all()
 {
 	GR_DEBUG_SCOPE("Nebula render all");
+
+	// Reuse vertex storage between bolts and frames.
+	static lightning_geometry geometry;
 
 	l_bolt *b;
 	bolt_type *bi;
@@ -563,15 +635,19 @@ void nebl_render_all()
 			}
 
 			// pick some cool alpha values
-			Nebl_alpha = frand();
-			Nebl_glow_alpha = frand();
+			const float body_alpha = frand();
+			const float glow_alpha = frand();
 
 			// otherwise render him
 			Nebl_flash_count = 0;
 			Nebl_flash_x = 0.0f;
 			Nebl_flash_y = 0.0f;
 			Nebl_bang = 10000000.0f;
-			nebl_render(bi, b->head, b->width);
+			if (b->head != nullptr) {
+				lightning_render_batch batch(geometry, *bi, body_alpha, glow_alpha);
+				nebl_render(bi, b->head, b->width, batch);
+				batch.draw();
+			}
 
 			// if this is the first frame he has been rendered, determine if we need to make a flash and sound effect
 			if(b->first_frame){
@@ -1011,64 +1087,30 @@ void nebl_calc_facing_pts_smart( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos
 	vm_vec_scale_add2( bot, &rvec, z_add );
 }
 
-// render a section of the bolt
-void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
-{		
-	vertex v[4];
+static void nebl_append_quad(SCP_vector<lightning_vertex>& vertices, const lightning_vertex& a,
+	const lightning_vertex& b, const lightning_vertex& c, const lightning_vertex& d)
+{
+	// Keep the winding and diagonal of the original triangle fan.
+	vertices.push_back(a);
+	vertices.push_back(b);
+	vertices.push_back(c);
+	vertices.push_back(a);
+	vertices.push_back(c);
+	vertices.push_back(d);
+}
 
-	material material_params;
-
-	material_set_unlit_emissive(&material_params, bi->texture, Nebl_alpha, 2.0f);
-	
-	// draw some stuff
-	for(size_t idx=0; idx<2; idx++){		
-		v[0] = a->vex[idx];		
-		v[0].texture_position.u = 0.0f; v[0].texture_position.v = 0.0f;
-
-		v[1] = a->vex[idx+1];		
-		v[1].texture_position.u = 1.0f; v[1].texture_position.v = 0.0f;
-
-		v[2] = b->vex[idx+1];		
-		v[2].texture_position.u = 1.0f; v[2].texture_position.v = 1.0f;
-
-		v[3] = b->vex[idx];		
-		v[3].texture_position.u = 0.0f; v[3].texture_position.v = 1.0f;
-
-		// draw
-		g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
+static void nebl_queue_section(lightning_geometry& geometry, const l_section& a, const l_section& b)
+{
+	for (size_t i = 0; i < 3; ++i) {
+		const size_t next = (i + 1) % 3;
+		nebl_append_quad(geometry.body, {a.vex[i].world, {0.0f, 0.0f}},
+			{a.vex[next].world, {1.0f, 0.0f}}, {b.vex[next].world, {1.0f, 1.0f}},
+			{b.vex[i].world, {0.0f, 1.0f}});
 	}
 
-	// draw
-	v[0] = a->vex[2];		
-	v[0].texture_position.u = 0.0f; v[0].texture_position.v = 0.0f;
-
-	v[1] = a->vex[0];		
-	v[1].texture_position.u = 1.0f; v[1].texture_position.v = 0.0f;
-
-	v[2] = b->vex[0];		
-	v[2].texture_position.u = 1.0f; v[2].texture_position.v = 1.0f;
-
-	v[3] = b->vex[2];		
-	v[3].texture_position.u = 0.0f; v[3].texture_position.v = 1.0f;
-
-	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
-
-	// draw the glow beam
-	material_set_unlit_emissive(&material_params, bi->glow, Nebl_glow_alpha, 2.0f);
-
-	v[0] = a->glow_vex[0];
-	v[0].texture_position.v = 0.0f; v[0].texture_position.u = 0.0f;
-
-	v[1] = a->glow_vex[1];
-	v[1].texture_position.v = 1.0f; v[1].texture_position.u = 0.0f;
-
-	v[2] = b->glow_vex[1];
-	v[2].texture_position.v = 1.0f; v[2].texture_position.u = 1.0f;
-
-	v[3] = b->glow_vex[0];
-	v[3].texture_position.v = 0.0f; v[3].texture_position.u = 1.0f;
-
-	g3_render_primitives_textured(&material_params, v, 4, PRIM_TYPE_TRIFAN, false);
+	nebl_append_quad(geometry.glow, {a.glow_vex[0].world, {0.0f, 0.0f}},
+		{a.glow_vex[1].world, {0.0f, 1.0f}}, {b.glow_vex[1].world, {1.0f, 1.0f}},
+		{b.glow_vex[0].world, {1.0f, 0.0f}});
 }
 
 // generate a section
@@ -1152,60 +1194,52 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 	}
 }
 
-// render the bolt
-void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev)
-{		
-	l_section start;
-	l_section end;
-	l_section child_start;
-
-	// bad
-	if(whee == NULL){
+// Traverse a bolt and its branches in their original drawing order.
+static void nebl_render(bolt_type* bi, l_node* node, float width, lightning_render_batch& batch, l_section* prev)
+{
+	if (node == nullptr) {
 		return;
 	}
 
-	// if prev is NULL, we're just starting so we need our start point
-	if(prev == NULL){
-		Assert(whee->links[LINK_RIGHT] != NULL);
-		nebl_generate_section(bi, width, whee, whee->links[LINK_RIGHT], &start, NULL, 1, 0);
+	const auto render_section = [&](const l_section& first, const l_section& last) {
+		nebl_queue_section(batch.geometry, first, last);
+		// Preserve the interleaving of body and glow for alpha-blended materials.
+		if (!bi->batch_by_bolt) {
+			batch.draw();
+		}
+	};
+
+	auto* next = node->links[LINK_RIGHT];
+	l_section start;
+	l_section end;
+	if (prev == nullptr) {
+		Assert(next != nullptr);
+		nebl_generate_section(bi, width, node, next, &start, nullptr, 1, 0);
 	} else {
 		start = *prev;
 	}
-	
-	// if we have a child section	
-	if(whee->links[LINK_CHILD]){		
-		// generate section
-		nebl_generate_section(bi, width * 0.5f, whee, whee->links[LINK_CHILD], &child_start, &end, 0, whee->links[LINK_CHILD]->links[LINK_RIGHT] == NULL ? 1 : 0);
 
-		// render
-		nebl_render_section(bi, &child_start, &end);			
+	if (auto* child = node->links[LINK_CHILD]) {
+		l_section child_start;
+		const float child_width = width * 0.5f;
+		const bool child_ends_here = child->links[LINK_RIGHT] == nullptr;
+		nebl_generate_section(bi, child_width, node, child, &child_start, &end, 0, child_ends_here);
+		render_section(child_start, end);
 
-		// maybe continue
-		if(whee->links[LINK_CHILD]->links[LINK_RIGHT] != NULL){
-			nebl_render(bi, whee->links[LINK_CHILD], width * 0.5f, &end);
+		if (!child_ends_here) {
+			nebl_render(bi, child, child_width, batch, &end);
 		}
-	}	
-		
-	// if the next section is an end section
-	if(whee->links[LINK_RIGHT]->links[LINK_RIGHT] == NULL){
-		l_section temp;
-
-		// generate section
-		nebl_generate_section(bi, width, whee, whee->links[LINK_RIGHT], &temp, &end, 0, 1);
-
-		// render the section
-		nebl_render_section(bi, &start, &end);		
 	}
-	// a middle section
-	else if(whee->links[LINK_RIGHT]->links[LINK_RIGHT] != NULL){
-		// generate section
-		nebl_generate_section(bi, width, whee->links[LINK_RIGHT], whee->links[LINK_RIGHT]->links[LINK_RIGHT], &end, NULL, 0, 0);
 
-		// render the section
-		nebl_render_section(bi, &start, &end);
-
-		// recurse through him
-		nebl_render(bi, whee->links[LINK_RIGHT], width, &end);
+	auto* following = next->links[LINK_RIGHT];
+	if (following == nullptr) {
+		l_section temp;
+		nebl_generate_section(bi, width, node, next, &temp, &end, 0, 1);
+		render_section(start, end);
+	} else {
+		nebl_generate_section(bi, width, next, following, &end, nullptr, 0, 0);
+		render_section(start, end);
+		nebl_render(bi, next, width, batch, &end);
 	}
 }
 

@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "math/vecmat.h"
 
 // ------------------------------------------------------------------------------------------------------
 // NEBULA LIGHTNING DEFINES/VARS
@@ -73,6 +74,7 @@ typedef struct bolt_type {
 	
 	int			texture;				//the main bolt texture
 	int			glow;					//the main bolt glow texture
+	bool		batch_by_bolt = false;	// Both materials support additive blending.
 	
 	float		b_bright;				//the brightness of the bolts
 
@@ -129,6 +131,9 @@ void nebl_level_init();
 // set the storm (call from mission parse)
 void nebl_set_storm(const char *name);
 
+// preload lightning textures before entering a level
+void nebl_page_in();
+
 // render all lightning bolts
 void nebl_render_all();
 
@@ -159,14 +164,8 @@ int nebl_gen(vec3d *left, vec3d *right, float depth, float max_depth, int child,
 // w == width of the diff between top and bottom around pos
 void nebl_calc_facing_pts_smart(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add );
 
-// render a section of the bolt
-void nebl_render_section(bolt_type *bi, l_section *a, l_section *b);
-
 // generate a section
 void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_section *c, l_section *cap, int pinch_a, int pinch_b);
-
-// render the bolt
-void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev = NULL);
 
 // given a valid, complete bolt, jitter him based upon his noise
 void nebl_jitter(l_bolt *b);
