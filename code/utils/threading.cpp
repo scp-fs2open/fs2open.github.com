@@ -239,4 +239,8 @@ namespace threading {
 	size_t get_num_workers() {
 		return worker_threads.size();
 	}
+
+	size_t get_num_physical_cores() { 
+		return get_number_of_physical_cores(); 
+	}
 }

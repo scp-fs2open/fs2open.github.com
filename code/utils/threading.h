@@ -19,4 +19,5 @@ namespace threading {
 
 	bool is_threading();
 	size_t get_num_workers();
+	size_t get_num_physical_cores();
 }
