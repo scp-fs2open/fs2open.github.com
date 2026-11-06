@@ -167,9 +167,10 @@ namespace headtracking
 				return false;
 			}
 
-			statusOut->pitch = data.pitch;
-			statusOut->yaw = data.yaw;
-			statusOut->roll = data.roll;
+			// Angles are in radians
+			statusOut->pitch = data.pitch / PI;
+			statusOut->yaw = data.yaw / PI;
+			statusOut->roll = data.roll / PI;
 
 			// Coordinates are in millimeters
 			statusOut->x = data.x / 1000.0f;
