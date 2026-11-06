@@ -58,6 +58,8 @@ public:
 	void onRootRenamed(int formula_node, const char* new_name) override;
 	void onRootInserted(int old_formula, int new_formula) override;
 	void onRootMoved(int node1, int node2, bool insert_before) override;
+	SCP_vector<SCP_string> getMessages() override;
+	bool hasDefaultMessageParameter() override;
 
 	void update_persona();
 	void save();
