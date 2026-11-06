@@ -31,6 +31,7 @@ struct COMPRESSION_INFO {
 	char* decoder_buffer = nullptr;		// holds the most recently decoded block (block_size bytes)
 	int cached_block = -1;              // index of the block currently held in decoder_buffer: -1 = none
 	int cached_block_bytes = 0;         // number of decoded bytes in decoder_buffer
+	bool read_failed = false;
 };
 
 struct CFILE {
@@ -56,8 +57,8 @@ extern std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 // Called once to setup the low-level reading code.
 void cf_init_lowlevel_read_code(CFILE* cfile, size_t lib_offset, size_t size, size_t pos);
 
-// This checks if the file is compressed or not, and creates the proper compression info if so.
-void cf_check_compression(CFILE* cfile);
+// Detect compression and initialize the decoder. Returns false for invalid compressed files.
+bool cf_check_compression(CFILE* cfile);
 
 // Used to clear compression info data and free dynamic memory used by compression
 void cf_clear_compression_info(CFILE* cfile);

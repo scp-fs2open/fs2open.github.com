@@ -3,16 +3,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
-#include <thread>
-#include <atomic>
 #include <algorithm>
-
-#ifdef _WIN32
-#include <io.h>
-#include <direct.h>
-#include <windows.h>
-#include <winbase.h>
-#endif
+#include <atomic>
+#include <limits>
+#include <memory>
+#include <new>
+#include <system_error>
+#include <thread>
 
 #include "lz4.h"
 #include "cfilecompression.h"
@@ -20,7 +17,7 @@
 #include "utils/threading.h"
 
 
-constexpr int LZ41_MT_MIN_BLOCKS = 3; // Minimum number of consecutive blocks to trigger MT
+constexpr size_t LZ41_MT_MIN_BLOCKS = 5;
 constexpr int LZ41_MAX_BLOCK_SIZE = 4194304; // 4 MB
 constexpr int LZ41_MIN_BLOCK_SIZE = 16;
 
@@ -28,39 +25,23 @@ constexpr int LZ41_MIN_BLOCK_SIZE = 16;
 /*LZ41*/
 static bool   lz41_create_ci(CFILE* cf, int header);
 static bool   lz41_load_and_validate_offsets(CFILE* cf);
-static int    lz41_block_compressed_size(const CFILE* cf, int block);
 static int    lz41_decode_one_block(CFILE* cf, int block);
 static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size_t length);
 static size_t lz41_random_access_mt(CFILE* cf, char* bytes_out, size_t offset, size_t length, size_t current_block, size_t end_block, int max_threads);
 
 /*MISC*/
-static int fso_fseek(CFILE* cfile, int offset, int where);
+static int fso_fseek(const CFILE* cf, size_t offset);
 static int max_threads();
 /*END OF INTERNAL FUNCTIONS*/
 
-int comp_check_header(int header)
+bool comp_create_ci(CFILE* cf, int header)
 {
-	if (LZ41_FILE_HEADER == header)
-		return COMP_HEADER_MATCH;
+	if (lz41_create_ci(cf, header))
+		return true;
 
-	return COMP_HEADER_MISMATCH;
-}
-
-void comp_create_ci(CFILE* cf, int header)
-{
-	bool ok = false;
-
-	if (LZ41_FILE_HEADER == header)
-		ok = lz41_create_ci(cf, header);
-
-	// If validation fails drop back to "not compressed" so the file is handled as a normal
-	// (raw) file by the rest of CFILE. This keeps every later read bounds-safe instead of
-	// trusting a corrupt footer. The data will be wrong, but no decoder crash can occur.
-	if (!ok) {
-		cf_clear_compression_info(cf);
-		mprintf(("CFILE: '%s' looks compressed but its header/footer failed validation; "
-		         "treating it as a normal file.\n", cf->original_filename.c_str()));
-	}
+	cf_clear_compression_info(cf);
+	mprintf(("CFILE: '%s' is not a valid LZ41 file.\n", cf->original_filename.c_str()));
+	return false;
 }
 
 size_t comp_fread(CFILE* cf, char* buffer, size_t length)
@@ -84,10 +65,7 @@ size_t comp_ftell(CFILE* cf)
 
 int comp_feof(CFILE* cf)
 {
-	if (cf->raw_position >= cf->size)
-		return 1;
-	else
-		return 0;
+	return cf->compression_info.read_failed || cf->raw_position >= cf->size;
 }
 
 int comp_fseek(CFILE* cf, int offset, int where)
@@ -104,42 +82,30 @@ int comp_fseek(CFILE* cf, int offset, int where)
 	CAP(goal_position,(size_t)0, cf->size);
 
 	cf->raw_position = goal_position;
+	cf->compression_info.read_failed = false;
 
 	return 0;
 }
 
 extern int Cmdline_multithreading;
-static int allowed_threads = Cmdline_multithreading;
-//Get number of max threads we are allowed to use
 static int max_threads()
 {
-	if (allowed_threads == 0) {
-		allowed_threads = static_cast<int>(threading::get_num_physical_cores());
-	}
-	return allowed_threads;
+	if (Cmdline_multithreading != 0)
+		return Cmdline_multithreading;
+
+	static const auto physical_cores = static_cast<int>(threading::get_num_physical_cores());
+	return physical_cores;
 }
 
-//Special fseek for compressed files handled by FSO, only SEEK_SET and SEEK_END is supported.
-static int fso_fseek(CFILE* cfile, int offset, int where)
+// Seek within the stored file, which may be a member of a VP.
+static int fso_fseek(const CFILE* cf, size_t offset)
 {
-	size_t goal_position;
+	const auto max_position = static_cast<size_t>(std::numeric_limits<long>::max());
+	if (offset > cf->compression_info.compressed_size || cf->lib_offset > max_position ||
+		offset > max_position - cf->lib_offset)
+		return -1;
 
-	switch (where) {
-	case SEEK_SET: goal_position = offset + cfile->lib_offset; break;
-	case SEEK_END: goal_position = cfile->compression_info.compressed_size + offset + cfile->lib_offset; break;
-	default: return 0;
-	}
-	
-	// Make sure we don't seek beyond the end of the file
-	CAP(goal_position, cfile->lib_offset, cfile->lib_offset + cfile->compression_info.compressed_size);
-	
-	int result = 0;
-	if (cfile->fp)
-	{
-		result = fseek(cfile->fp, (long)goal_position, SEEK_SET);
-		Assertion(goal_position >= cfile->lib_offset, "Invalid offset values detected while seeking! Goal was " SIZE_T_ARG ", lib_offset is " SIZE_T_ARG ".", goal_position, cfile->lib_offset);
-	}
-	return result;
+	return fseek(cf->fp, static_cast<long>(cf->lib_offset + offset), SEEK_SET);
 }
 
 // Read and validate the LZ41 footer + offset table. Returns true only if the metadata is consistent
@@ -149,179 +115,105 @@ static bool lz41_create_ci(CFILE* cf, int header)
 	ci->header = header;
 	ci->compressed_size = cf->size;
 
-	// Smallest possible valid file: 4 (header) + 1 (>=1 compressed byte) + 8 (2 offsets) + 12 (footer).
-	if (cf->size < 25) {
-		mprintf(("LZ41: '%s' is too small to be a valid compressed file (" SIZE_T_ARG " bytes).\n",
-		         cf->original_filename.c_str(), cf->size));
+	// Minimum layout: header, at least one compressed byte, two offsets, footer.
+	if (cf->size < 25 || cf->size > static_cast<size_t>(std::numeric_limits<int>::max()))
 		return false;
-	}
 
-	// Read the footer (NUM_OFFSETS, ORIGINAL_FILESIZE, BLOCK_SIZE)
-	int num_offsets = 0, orig_size = 0, block_size = 0;
-	if (fso_fseek(cf, (int)sizeof(int) * -3, SEEK_END) != 0) return false;
-	if (fread(&num_offsets, sizeof(int), 1, cf->fp) != 1) return false;
-	if (fread(&orig_size,   sizeof(int), 1, cf->fp) != 1) return false;
-	if (fread(&block_size,  sizeof(int), 1, cf->fp) != 1) return false;
+	int footer[3];
+	if (fso_fseek(cf, cf->size - sizeof(footer)) != 0 ||
+		fread(footer, sizeof(footer), 1, cf->fp) != 1)
+		return false;
 
-	// Validate BLOCK_SIZE
-	if (block_size < LZ41_MIN_BLOCK_SIZE || block_size > LZ41_MAX_BLOCK_SIZE) {
-		mprintf(("LZ41: '%s' has an invalid block size (%d).\n", cf->original_filename.c_str(), block_size));
+	const int num_offsets = INTEL_INT(footer[0]);
+	const int orig_size = INTEL_INT(footer[1]);
+	const int block_size = INTEL_INT(footer[2]);
+	if (block_size < LZ41_MIN_BLOCK_SIZE || block_size > LZ41_MAX_BLOCK_SIZE || orig_size <= 0)
 		return false;
-	}
 
-	// Validate NUM_OFFSETS
-	// There must be at least 2 offsets (one block), and the table has to physically fit before the 12-byte footer.
-	const long payload = (long)cf->size;
-	const long max_offsets_by_size = (payload - 12) / (long)sizeof(int);
-	if (num_offsets < 2 || (long)num_offsets > max_offsets_by_size) {
-		mprintf(("LZ41: '%s' has an invalid offset count (%d).\n", cf->original_filename.c_str(), num_offsets));
+	const size_t max_offsets = (cf->size - sizeof(footer) - sizeof(int) - 1) / sizeof(int);
+	if (num_offsets < 2 || static_cast<size_t>(num_offsets) > max_offsets ||
+		num_offsets - 1 != 1 + (orig_size - 1) / block_size)
 		return false;
-	}
-
-	// Validate ORIGINAL_FILESIZE
-	// num_blocks == num_offsets - 1, and the uncompressed size must round up to exactly that many blocks of block_size.
-	const long num_blocks = (long)num_offsets - 1;
-	if (orig_size <= 0) {
-		mprintf(("LZ41: '%s' has an invalid uncompressed size (%d).\n", cf->original_filename.c_str(), orig_size));
-		return false;
-	}
-	const long expected_blocks = ((long)orig_size + block_size - 1) / block_size;
-	if (expected_blocks != num_blocks) {
-		mprintf(("LZ41: '%s' footer is inconsistent (uncompressed size %d implies %ld blocks, table has %ld).\n",
-		         cf->original_filename.c_str(), orig_size, expected_blocks, num_blocks));
-		return false;
-	}
 
 	ci->num_offsets = num_offsets;
-	ci->block_size  = block_size;
-	cf->size        = (size_t)orig_size; // from here on cf->size is the uncompressed size
-
-	// Allocate the decoder_buffer, holds one decoded block.
-	ci->decoder_buffer = (char*)malloc((size_t)block_size);
-	if (ci->decoder_buffer == nullptr) {
-		mprintf(("LZ41: '%s' could not allocate decode buffer.\n", cf->original_filename.c_str()));
-		return false;
-	}
-
-	ci->cached_block = -1;
-	ci->cached_block_bytes = 0;
-
-	return lz41_load_and_validate_offsets(cf);
-}
-
-// Load the offset table and validate it. The table must:
-//   * start at offset 4 (immediately after the header),
-//   * be strictly monotonically increasing,
-//   * stay within [4, start-of-offset-table].
-static bool lz41_load_and_validate_offsets(CFILE* cf)
-{
-	COMPRESSION_INFO* ci = &cf->compression_info;
-
-	ci->offsets = (int*)malloc((size_t)ci->num_offsets * sizeof(int));
-	if (ci->offsets == nullptr) {
-		mprintf(("LZ41: '%s' could not allocate the offset table.\n", cf->original_filename.c_str()));
-		return false;
-	}
-
-	// The offset table sits before the 12-byte footer.
-	const int table_start = (int)ci->compressed_size - 12 - (int)(ci->num_offsets * sizeof(int));
-	if (table_start < 4) {
-		mprintf(("LZ41: '%s' offset table does not fit in the file.\n", cf->original_filename.c_str()));
-		return false;
-	}
-
-	if (fso_fseek(cf, table_start, SEEK_SET) != 0)
+	ci->block_size = block_size;
+	if (!lz41_load_and_validate_offsets(cf))
 		return false;
 
-	int prev = 3; // first real offset must be >= 4, so seed below it
-	for (int i = 0; i < ci->num_offsets; ++i) {
-		int off = 0;
-		if (fread(&off, sizeof(int), 1, cf->fp) != 1) {
-			mprintf(("LZ41: '%s' error reading offset %d.\n", cf->original_filename.c_str(), i));
-			return false;
-		}
-		if (i == 0 && off != 4) {
-			mprintf(("LZ41: '%s' first offset is %d (expected 4).\n", cf->original_filename.c_str(), off));
-			return false;
-		}
-		if (off <= prev || off > table_start) {
-			mprintf(("LZ41: '%s' offset %d out of range or not increasing (%d).\n",
-			         cf->original_filename.c_str(), i, off));
-			return false;
-		}
-		ci->offsets[i] = off;
-		prev = off;
-	}
-
-	// The final offset must mark exactly the start of the offset table.
-	if (ci->offsets[ci->num_offsets - 1] != table_start) {
-		mprintf(("LZ41: '%s' last offset (%d) does not match the offset table start (%d).\n",
-		         cf->original_filename.c_str(), ci->offsets[ci->num_offsets - 1], table_start));
+	ci->decoder_buffer = static_cast<char*>(malloc(static_cast<size_t>(block_size)));
+	if (ci->decoder_buffer == nullptr)
 		return false;
-	}
 
+	cf->size = static_cast<size_t>(orig_size);
 	return true;
 }
 
-// Compressed byte length of a single block, or -1 if the offsets produce an impossible size
-static int lz41_block_compressed_size(const CFILE* cf, int block)
+static bool lz41_load_and_validate_offsets(CFILE* cf)
 {
-	const COMPRESSION_INFO* ci = &cf->compression_info;
-	if (block < 0 || block + 1 >= ci->num_offsets)
-		return -1;
+	auto& ci = cf->compression_info;
+	const auto table_size = ci.num_offsets * sizeof(int);
+	const auto table_start = static_cast<int>(ci.compressed_size - 3 * sizeof(int) - table_size);
 
-	const int len = ci->offsets[block + 1] - ci->offsets[block];
-	if (len <= 0 || len > LZ4_compressBound(ci->block_size))
-		return -1;
+	ci.offsets = static_cast<int*>(malloc(table_size));
+	if (ci.offsets == nullptr || fso_fseek(cf, table_start) != 0 ||
+		fread(ci.offsets, table_size, 1, cf->fp) != 1)
+		return false;
 
-	return len;
-}
+	ci.offsets[0] = INTEL_INT(ci.offsets[0]);
+	if (ci.offsets[0] != static_cast<int>(sizeof(int)))
+		return false;
 
-// Decode a single block into the shared decoder_buffer. Returns the number of decoded bytes, or a
-// negative value on error.
-static int lz41_decode_one_block(CFILE* cf, int block)
-{
-	COMPRESSION_INFO* ci = &cf->compression_info;
+	const int max_block_bytes = LZ4_compressBound(ci.block_size);
+	for (int i = 1; i < ci.num_offsets; ++i) {
+		const int offset = INTEL_INT(ci.offsets[i]);
+		const int prev = ci.offsets[i - 1];
+		if (offset <= prev || offset > table_start || offset - prev > max_block_bytes)
+			return false;
 
-	if (ci->cached_block == block)
-		return ci->cached_block_bytes;
-
-	const int cmp_bytes = lz41_block_compressed_size(cf, block);
-	if (cmp_bytes < 0)
-		return LZ41_OFFSETS_MISMATCH;
-
-	if (fso_fseek(cf, ci->offsets[block], SEEK_SET) != 0)
-		return LZ41_DECOMPRESSION_ERROR;
-
-	auto cmp_buffer = (char*)malloc((size_t)LZ4_compressBound(ci->block_size));
-	if (cmp_buffer == nullptr)
-		return LZ41_DECOMPRESSION_ERROR;
-
-	if (fread(cmp_buffer, 1, (size_t)cmp_bytes, cf->fp) != (size_t)cmp_bytes)
-		return LZ41_DECOMPRESSION_ERROR;
-
-	const int decoded = LZ4_decompress_safe(cmp_buffer, ci->decoder_buffer, cmp_bytes, ci->block_size);
-	free(cmp_buffer);
-
-	if (decoded <= 0) {
-		ci->cached_block = -1;
-		return LZ41_DECOMPRESSION_ERROR;
+		ci.offsets[i] = offset;
 	}
 
-	ci->cached_block = block;
-	ci->cached_block_bytes = decoded;
+	return ci.offsets[ci.num_offsets - 1] == table_start;
+}
+
+// A block must fill its entire logical range, including a possibly partial last block.
+static int lz41_decode_block(const CFILE* cf, size_t block, const char* src, int src_size, char* dst)
+{
+	const auto block_size = static_cast<size_t>(cf->compression_info.block_size);
+	const int expected = static_cast<int>(std::min(block_size, cf->size - block * block_size));
+	return LZ4_decompress_safe(src, dst, src_size, expected) == expected ? expected : 0;
+}
+
+// Decode into the shared cache. Returns zero on error.
+static int lz41_decode_one_block(CFILE* cf, int block)
+{
+	auto& ci = cf->compression_info;
+	if (ci.cached_block == block)
+		return ci.cached_block_bytes;
+
+	const int cmp_bytes = ci.offsets[block + 1] - ci.offsets[block];
+	if (fso_fseek(cf, ci.offsets[block]) != 0)
+		return 0;
+
+	std::unique_ptr<char[]> cmp_buffer(new (std::nothrow) char[cmp_bytes]);
+	if (!cmp_buffer || fread(cmp_buffer.get(), 1, cmp_bytes, cf->fp) != static_cast<size_t>(cmp_bytes))
+		return 0;
+
+	const int decoded = lz41_decode_block(cf, block, cmp_buffer.get(), cmp_bytes, ci.decoder_buffer);
+	ci.cached_block = decoded == 0 ? -1 : block;
+	ci.cached_block_bytes = decoded;
 	return decoded;
 }
 
 // Random-access read of length uncompressed bytes starting at `offset`.
 // The read maps onto a contiguous run of blocks [current_block, end_block). Single or few-block reads
-// go through the cached single-threaded path. Reads that span more than LZ41_MT_MIN_BLOCKS blocks are decoded in parallel. 
+// go through the cached single-threaded path.
 static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offset, size_t length)
 {
 	COMPRESSION_INFO* ci = &cf->compression_info;
 
 	if (ci->offsets == nullptr || ci->num_offsets < 2)
-		return (size_t)LZ41_OFFSETS_MISMATCH;
+		return 0;
 
 	const auto block_size = static_cast<size_t>(ci->block_size);
 
@@ -331,14 +223,14 @@ static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offse
 
 	// We index offsets[current_block .. end_block].
 	if ((size_t)ci->num_offsets <= end_block)
-		return (size_t)LZ41_OFFSETS_MISMATCH;
+		return 0;
 
 	const size_t block_count = end_block - current_block;
 
-	if (block_count > LZ41_MT_MIN_BLOCKS) {
+	if (block_count >= LZ41_MT_MIN_BLOCKS) {
 		const auto threads = max_threads();
-		if(threads > 1)
-			return lz41_random_access_mt(cf, bytes_out, offset, length, current_block, end_block, threads); // MT path
+		if (threads > 1)
+			return lz41_random_access_mt(cf, bytes_out, offset, length, current_block, end_block, threads);
 	}
 
 	// ST path
@@ -347,11 +239,8 @@ static size_t lz41_stream_random_access(CFILE* cf, char* bytes_out, size_t offse
 
 	for (size_t block = current_block; block < end_block; ++block) {
 		const int decoded = lz41_decode_one_block(cf, (int)block);
-		if (decoded < 0)
-			return (size_t)decoded;
-
-		if ((size_t)decoded <= in_block_offset)
-			return (size_t)LZ41_DECOMPRESSION_ERROR; // block shorter than expected -> corrupt
+		if (decoded == 0)
+			return 0;
 
 		const size_t available = (size_t)decoded - in_block_offset;
 		const size_t to_copy   = (length < available) ? length : available;
@@ -379,19 +268,19 @@ static size_t lz41_random_access_mt(CFILE* cf, char* bytes_out, size_t offset, s
 	const int span_end   = ci->offsets[end_block];
 	const int span_bytes = span_end - span_start;
 	if (span_bytes <= 0)
-		return (size_t)LZ41_OFFSETS_MISMATCH;
+		return 0;
 
 	SCP_vector<char> span;
 	try {
 		span.resize((size_t)span_bytes);
 	} catch (const std::bad_alloc&) {
-		return (size_t)LZ41_DECOMPRESSION_ERROR;
+		return 0;
 	}
 
-	if (fso_fseek(cf, span_start, SEEK_SET) != 0)
-		return (size_t)LZ41_DECOMPRESSION_ERROR;
+	if (fso_fseek(cf, span_start) != 0)
+		return 0;
 	if (fread(span.data(), 1, (size_t)span_bytes, cf->fp) != (size_t)span_bytes)
-		return (size_t)LZ41_DECOMPRESSION_ERROR;
+		return 0;
 
 	// The absolute uncompressed range. Each block writes only its overlap with this range.
 	const size_t read_start = offset;
@@ -410,17 +299,12 @@ static size_t lz41_random_access_mt(CFILE* cf, char* bytes_out, size_t offset, s
 		}
 
 		for (size_t block = lo; block < hi && !failed.load(); ++block) {
-			const int cmp_bytes = lz41_block_compressed_size(cf, (int)block);
-			if (cmp_bytes < 0) { 
-				failed.store(true); 
-				return; 
-			}
-
+			const int cmp_bytes = ci->offsets[block + 1] - ci->offsets[block];
 			const char* src = span.data() + (ci->offsets[block] - span_start);
-			const int decoded = LZ4_decompress_safe(src, local.data(), cmp_bytes, (int)block_size);
-			if (decoded <= 0) { 
-				failed.store(true); 
-				return; 
+			const int decoded = lz41_decode_block(cf, block, src, cmp_bytes, local.data());
+			if (decoded == 0) {
+				failed.store(true);
+				return;
 			}
 
 			const size_t block_uncomp_start = block * block_size;
@@ -438,31 +322,27 @@ static size_t lz41_random_access_mt(CFILE* cf, char* bytes_out, size_t offset, s
 		}
 	};
 
-	// Decide worker count and split the block range into contiguous chunks.
-	size_t workers = std::min<size_t>(block_count, max_threads);
-	if (workers < 1) workers = 1;
-
+	const size_t workers = std::min<size_t>(block_count, max_threads);
 	const size_t per = (block_count + workers - 1) / workers;
 	SCP_vector<std::thread> threads;
-	threads.reserve(workers);
+	size_t inline_start = current_block;
 
-	for (size_t w = 0; w < workers; ++w) {
-		const size_t lo = current_block + w * per;
-		if (lo >= end_block) break;
-
-		const size_t hi = std::min(lo + per, end_block);
-		if (w + 1 == workers || hi == end_block) {
-			worker(lo, hi);
-			break;
-		}
-		threads.emplace_back(worker, lo, hi);
+	try {
+		threads.reserve(workers - 1);
+		for (; end_block - inline_start > per; inline_start += per)
+			threads.emplace_back(worker, inline_start, inline_start + per);
+	} catch (const std::bad_alloc&) {
+		// Finish the unassigned blocks on the calling thread.
+	} catch (const std::system_error&) {
+		// Finish the unassigned blocks if the system cannot start another worker.
 	}
 
+	worker(inline_start, end_block);
 	for (auto& t : threads)
 		t.join();
 
 	if (failed.load())
-		return (size_t)LZ41_DECOMPRESSION_ERROR;
+		return 0;
 
 	return length;
 }

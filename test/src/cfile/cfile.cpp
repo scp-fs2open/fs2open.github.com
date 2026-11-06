@@ -3,6 +3,10 @@
 #include <graphics/font.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
+#include <fstream>
+#include <random>
+
 #include "util/FSTestFixture.h"
 
 class CFileInitTest : public test::FSTestFixture {
@@ -61,6 +65,89 @@ class CFileTest : public test::FSTestFixture {
 		cfile_close();
 	}
 };
+
+namespace {
+
+class Lz41Test : public CFileTest {
+protected:
+	void SetUp() override
+	{
+		CFileTest::SetUp();
+		const auto name = "fso-lz41-" + std::to_string(std::random_device{}());
+		const auto temp_dir = std::filesystem::temp_directory_path() / name;
+		ASSERT_TRUE(std::filesystem::create_directory(temp_dir));
+		_temp_dir = temp_dir;
+	}
+
+	void TearDown() override
+	{
+		if (!_temp_dir.empty()) {
+			std::error_code error;
+			std::filesystem::remove(_temp_dir / "test.lz41", error);
+			std::filesystem::remove(_temp_dir, error);
+		}
+		CFileTest::TearDown();
+	}
+
+	CFileLocation write_lz41(const std::string& bytes, bool packed)
+	{
+		const auto path = _temp_dir / "test.lz41";
+		std::ofstream stream(path, std::ios::binary);
+		const std::string padding(packed ? 32 : 0, '\0');
+		stream << padding << bytes << padding;
+		stream.close();
+		EXPECT_TRUE(stream);
+
+		CFileLocation location(true);
+		location.full_name = path.string();
+		location.name_ext = "test-wep.tbm";
+		location.offset = padding.size();
+		location.size = bytes.size();
+		return location;
+	}
+
+	static void append_words(std::string& bytes, std::initializer_list<uint32_t> words)
+	{
+		for (const auto word : words) {
+			for (unsigned shift = 0; shift < 32; shift += 8)
+				bytes.push_back(static_cast<char>((word >> shift) & 0xff));
+		}
+	}
+
+private:
+	std::filesystem::path _temp_dir;
+};
+
+TEST_F(Lz41Test, rejects_oversized_compressed_block)
+{
+	std::string bytes = "LZ41";
+	bytes.append(1000, '\0');
+	append_words(bytes, {4, 1004, 2, 64, 64});
+
+	for (bool packed : {false, true}) {
+		const auto location = write_lz41(bytes, packed);
+		const std::unique_ptr<CFILE> file(cfopen_special(location, "rb", CF_TYPE_TABLES));
+		EXPECT_EQ(nullptr, file.get()) << "packed = " << packed;
+	}
+}
+
+TEST_F(Lz41Test, reports_short_decoded_block_as_read_failure)
+{
+	constexpr int block_size = 1024 * 1024;
+	// An independent LZ4 block containing just one literal byte.
+	std::string bytes = "LZ41\x10x";
+	append_words(bytes, {4, 6, 2, block_size, block_size});
+	const auto location = write_lz41(bytes, true);
+	const std::unique_ptr<CFILE> file(cfopen_special(location, "rb", CF_TYPE_TABLES));
+	ASSERT_NE(nullptr, file.get());
+
+	char buffer = '?';
+	EXPECT_EQ(0, cfread(&buffer, 1, 1, file.get()));
+	EXPECT_EQ(0, cftell(file.get()));
+	EXPECT_TRUE(cfeof(file.get()));
+}
+
+} // namespace
 
 TEST_F(CFileTest, list_files_in_vps_and_dirs) {
 	SCP_vector<SCP_string> table_files;

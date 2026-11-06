@@ -54,16 +54,16 @@ void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, 
 	}
 }
 
-//This function checks the file header to see if the file is compressed, if so it fills the correct compression info.
-void cf_check_compression(CFILE* cfile)
+bool cf_check_compression(CFILE* cfile)
 {
-	// Smallest a valid LZ41 file can be: 4 (header) + 1 (block) + 8 (2 offsets) + 12 (footer) = 25.
-	if (cfile->size < 25)
-		return;
-	int header=cfread_int(cfile);
-	cfseek(cfile, 0, SEEK_SET);
-	if (comp_check_header(header) == COMP_HEADER_MATCH)
-		comp_create_ci(cfile, header);
+	if (cfile->size < sizeof(int))
+		return true;
+
+	const int header = cfread_int(cfile);
+	if (cfseek(cfile, 0, SEEK_SET) != 0)
+		return false;
+
+	return header != LZ41_FILE_HEADER || comp_create_ci(cfile, header);
 }
 
 //This function is called to cleanup compression info when the cfile handle is reused.
@@ -73,14 +73,7 @@ void cf_clear_compression_info(CFILE* cfile)
 	{
 		free(cfile->compression_info.offsets);
 		free(cfile->compression_info.decoder_buffer);
-		cfile->compression_info.offsets = nullptr;
-		cfile->compression_info.decoder_buffer = nullptr;
-		cfile->compression_info.header = 0;
-		cfile->compression_info.block_size = 0;
-		cfile->compression_info.cached_block = -1;
-		cfile->compression_info.cached_block_bytes = 0;
-		cfile->compression_info.num_offsets = 0;
-		cfile->compression_info.compressed_size = 0;
+		cfile->compression_info = {};
 	}
 }
 
@@ -89,7 +82,7 @@ void cf_clear_compression_info(CFILE* cfile)
 //
 // returns a nonzero value after the first read operation that attempts to read
 // past the end of the file. It returns 0 if the current position is not end of file.
-// There is no error return.
+// Compressed streams also stop at a decompression error.
 int cfeof(CFILE *cfile)
 {
 	Assert(cfile != NULL);
@@ -234,11 +227,12 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		bytes_read = size;
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
 	} else if (cfile->compression_info.header != 0) {
-		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
-		if (bytes_read != size)
-		{
-			mprintf(("\nFile: %s decompression error. Result was: %d expected: %d\n", cfile->original_filename.c_str(), (int)bytes_read, (int)size));
-			Assertion(bytes_read == size, "File decompression error!");
+		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf), size);
+		cfile->compression_info.read_failed = bytes_read != size;
+		if (cfile->compression_info.read_failed) {
+			mprintf(("CFILE: '%s' decompression failed at offset " SIZE_T_ARG ".\n",
+				cfile->original_filename.c_str(), cfile->raw_position));
+			return 0;
 		}
 	} else {
 		bytes_read = fread(buf, 1, size, cfile->fp);

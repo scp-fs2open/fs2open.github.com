@@ -17,46 +17,21 @@ LZ41 FORMAT
     NUM_OFFSETS = (number of blocks) + 1.
   * The 12-byte footer (NUM_OFFSETS, ORIGINAL_FILESIZE, BLOCK_SIZE) is written by the compressor.
 
-  A decoder cache holds the last decoded block so sequential reads only decode each block once.
-  All dynamic memory is allocated in comp_create_ci() at cfopen() and released in
-  cf_clear_compression_info() at cfclose().
+  A decoder cache holds the last block decoded by the single-threaded reader.
 */
 
 #ifndef _CFILECOMPRESSION_H
 #define _CFILECOMPRESSION_H
 struct CFILE;
 
-/*LZ41*/
 #define LZ41_FILE_HEADER 0x31345A4C // "14ZL" -> "LZ41", inverted
-#define LZ41_DECOMPRESSION_ERROR -1
-#define LZ41_MAX_BLOCKS_OVERFLOW -2
-#define LZ41_HEADER_MISMATCH -3
-#define LZ41_OFFSETS_MISMATCH -4
-/******/
 
-#define COMP_HEADER_MATCH 1
-#define COMP_HEADER_MISMATCH 0
-
-/*
-	Returns COMP_HEADER_MATCH if header is a valid compressed file header,
-	returns COMP_HEADER_MISMATCH if it dosent.
-*/
-int comp_check_header(int header);
-
-/*
-	This is called to generate the correct compression_info data
-	after the file has been indentified as a compressed file.
-	This must be done before calling any other function.
-
-	If the file footer or offset table fail validation the file is rejected: compression_info
-	is left cleared (header = 0) and cfile considers it as a normal file, so a corrupt
-	compressed file never crashes the decoder.
-*/
-void comp_create_ci(CFILE* cf, int header);
+// Initialize compression info after detecting LZ41. Returns false if the file is invalid.
+bool comp_create_ci(CFILE* cf, int header);
 
 /*
 	Read X bytes from the uncompressed file starting from the current position.
-	Returns the amount of bytes read, and a negative LZ41_* code (cast to size_t) on error.
+	Returns the requested length on success or zero on error.
 */
 size_t comp_fread(CFILE* cf, char* buffer, size_t length);
 

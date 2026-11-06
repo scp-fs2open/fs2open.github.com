@@ -2422,22 +2422,23 @@ void allocate_parse_text(size_t size)
 // Goober5000
 void read_raw_file_text(const char *filename, int mode, char *raw_text)
 {
-	CFILE	*mf;
-	int	file_is_encrypted;
-
 	Assertion(filename, "Filename must not be null!");
 	if (!filename)
 		throw parse::FileOpenException("Filename must not be null!");
 
-	mf = cfopen(filename, "rb", mode);
-	if (mf == NULL)
+	std::unique_ptr<CFILE> file(cfopen(filename, "rb", mode));
+	if (!file)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
 		throw parse::FileOpenException("Failed to open file");
 	}
 
-	// read the entire file in
-	int file_len = cfilelength(mf);
+	auto read_exact = [&](char* buffer, int size) {
+		if (cfread(buffer, 1, size, file.get()) != size)
+			throw parse::ParseException(SCP_string("Failed to read '") + filename + "'");
+	};
+
+	int file_len = cfilelength(file.get());
 
 	if(!file_len) {
 		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
@@ -2449,33 +2450,25 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	auto can_reallocate = raw_text == nullptr;
 	if (raw_text == nullptr) {
 		// allocate, or reallocate, memory for Parse_text and Parse_text_raw based on size we need now
-		allocate_parse_text((size_t) (file_len + 1));
+		allocate_parse_text(static_cast<size_t>(file_len) + 1);
 		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
 		raw_text = Parse_text_raw;
 	}
 
-	// read first 10 bytes to determine if file is encrypted
-	cfread(raw_text, MIN(file_len, 10), 1, mf);
-	file_is_encrypted = is_encrypted(raw_text);
-	cfseek(mf, 0, CF_SEEK_SET);
+	// Read the prefix to determine if the file is encrypted.
+	read_exact(raw_text, MIN(file_len, 10));
+	const bool file_is_encrypted = file_len >= 4 && is_encrypted(raw_text);
+	file_len = util::check_encoding_and_skip_bom(file.get(), filename);
 
-	file_len = util::check_encoding_and_skip_bom(mf, filename);
-
-	if ( file_is_encrypted )
-	{
-		int	unscrambled_len;
-		char	*scrambled_text;
-		scrambled_text = (char*)vm_malloc(file_len+1);
+	if (file_is_encrypted) {
+		int unscrambled_len;
+		SCP_vm_unique_ptr<char> scrambled_text(static_cast<char*>(vm_malloc(static_cast<size_t>(file_len) + 1)));
 		Assert(scrambled_text);
-		cfread(scrambled_text, file_len, 1, mf);
-		// unscramble text
-		unencrypt(scrambled_text, file_len, raw_text, &unscrambled_len);
+		read_exact(scrambled_text.get(), file_len);
+		unencrypt(scrambled_text.get(), file_len, raw_text, &unscrambled_len);
 		file_len = unscrambled_len;
-		vm_free(scrambled_text);
-	}
-	else
-	{
-		cfread(raw_text, file_len, 1, mf);
+	} else {
+		read_exact(raw_text, file_len);
 	}
 
 	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
@@ -2547,8 +2540,6 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 			}
 		}
 	}
-
-	cfclose(mf);
 }
 
 // Goober5000, based partly on above iconv usage

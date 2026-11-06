@@ -907,7 +907,10 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		if(pos == -1L)
 			pos = 0;
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );
-		cf_check_compression(cfp);
+		if (!cf_check_compression(cfp)) {
+			cfclose(cfp);
+			return nullptr;
+		}
 		return cfp;
 	}
 }
@@ -941,7 +944,10 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
-		cf_check_compression(cfp);
+		if (!cf_check_compression(cfp)) {
+			cfclose(cfp);
+			return nullptr;
+		}
 		return cfp;
 	}
 
