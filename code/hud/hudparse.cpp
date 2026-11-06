@@ -2346,8 +2346,8 @@ void load_gauge_center_reticle(gauge_settings* settings)
 {
 	char fname[MAX_FILENAME_LEN];
 	bool firepoints = false;
-	int scaleX = 15;
-	int scaleY = 10;
+	float scaleX = 15.0f;
+	float scaleY = 10.0f;
 	int size = 5;
 	int autoaim_frame = -1;
 	int flight_cursor_frame = -1;
@@ -2395,10 +2395,10 @@ void load_gauge_center_reticle(gauge_settings* settings)
 		stuff_int(&size);
 
 	if (optional_string("Firepoint X coordinate multiplier:"))
-		stuff_int(&scaleX);
+		stuff_float(&scaleX);
 
 	if (optional_string("Firepoint Y coordinate multiplier:"))
-		stuff_int(&scaleY);
+		stuff_float(&scaleY);
 
 	if (optional_string("Autoaim Frame:"))
 		stuff_int(&autoaim_frame);
