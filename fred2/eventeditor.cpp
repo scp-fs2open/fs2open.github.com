@@ -1625,18 +1625,21 @@ void event_editor::OnBrowseWave()
 	}
 }
 
-char *event_editor::current_message_name(int i)
+// The event editor works on a local copy of the messages, so the sexp tree must list those rather than Messages[].
+SCP_vector<SCP_string> event_editor::getMessages()
 {
-	if ( (i < 0) || (i >= (int)m_messages.size()) ){
-		return NULL;
-	}
+	SCP_vector<SCP_string> list;
+	list.reserve(m_messages.size());
 
-	return m_messages[i].name;
+	for (const auto& msg : m_messages)
+		list.emplace_back(msg.name);
+
+	return list;
 }
 
-char *event_editor::get_message_list_item(int i)
+bool event_editor::hasDefaultMessageParameter()
 {
-	return m_messages[i].name;
+	return !m_messages.empty();
 }
 
 void event_editor::update_persona()
