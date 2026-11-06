@@ -2945,6 +2945,71 @@ bool CCI::is_axis() {
 	}
 }
 
+abs_axis_state::abs_axis_state()
+{
+	reset();
+}
+
+void abs_axis_state::reset()
+{
+	value = F1_0 / 2;
+	active = -1;
+
+	clear_anchors();
+}
+
+void abs_axis_state::clear_anchors()
+{
+	for (int i = 0; i < NUM_POSITION_SOURCES; ++i)
+	{
+		anchor[i] = 0;
+		anchored[i] = false;
+	}
+}
+
+void abs_axis_state::update_position(int source, int pos)
+{
+	Assertion((source >= 0) && (source < NUM_POSITION_SOURCES), "Invalid position source %d!", source);
+
+	if (source != active)
+	{
+		if (!anchored[source])
+		{
+			// a new input doesn't take control from one that is in control or has already reported
+			bool other_reported = (active >= 0);
+			for (bool other_anchored : anchored)
+			{
+				if (other_anchored)
+					other_reported = true;
+			}
+
+			if (other_reported)
+			{
+				anchor[source] = pos;
+				anchored[source] = true;
+				return;
+			}
+		}
+		// an idle input doesn't take control
+		else if (abs(pos - anchor[source]) <= TAKEOVER_THRESHOLD)
+			return;
+	}
+
+	active = source;
+	value = pos;
+	anchor[source] = pos;
+	anchored[source] = true;
+}
+
+void abs_axis_state::update_delta(float delta)
+{
+	float new_value = i2fl(value) + delta;
+	CLAMP(new_value, 0.0f, i2fl(F1_0));
+
+	active = -1;
+	value = fl2i(new_value);
+}
+
 CCI_builder::CCI_builder(SCP_vector<CCI>& _ControlConfig) : ControlConfig(_ControlConfig) {
 	ControlConfig.resize(CCFG_MAX);
 };
