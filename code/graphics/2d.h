@@ -74,6 +74,8 @@ enum class FsrMode {
 	On = 2, // upscales the scene to the window's resolution
 };
 extern FsrMode Gr_fsr_mode;
+// The FSR version the renderer uses, such as "4.1.2". Empty if unknown.
+extern SCP_string Gr_fsr_version;
 
 // On needs a window larger than the render resolution on at least one axis
 bool gr_fsr_upscale_available();

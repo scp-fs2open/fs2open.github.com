@@ -8303,9 +8303,10 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		eye_orient = *rot_offset * eye_orient;
 	}
 
+	// The same sway as in ship_cockpit_render_offset()
+	const vec3d sway = Disable_cockpit_sway ? vmd_zero_vector : sip->cockpit_sway_val * objp->phys_info.acceleration;
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
-	if (!Disable_cockpit_sway)
-		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+	eye_offset += sway;
 
 	fov_t fov_backup = Proj_fov;
 	if(fov_override)
@@ -8318,6 +8319,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 		gr_set_view_matrix(&leaning_position, &eye_orient);
+		gr_begin_cockpit_camera(&objp->orient, &objp->last_orient, &sway);
 
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(objp));
@@ -8332,6 +8334,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
 
+		gr_end_cockpit_camera();
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 
@@ -8359,7 +8362,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
-	gr_begin_cockpit_camera();
+	gr_begin_cockpit_camera(&objp->orient, &objp->last_orient, &sway);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 

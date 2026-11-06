@@ -1129,8 +1129,11 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 
 	// Get sampler matching current texture addressing mode and fallback texture
 	vk::SamplerAddressMode addressMode = convertTextureAddressing(m_textureAddressing);
+	// The skybox is the one model without motion vectors. Detailed star textures on it alias under a negative bias.
+	const bool skybox = dynamic_cast<model_material*>(mat) != nullptr && !mat->get_velocity_output();
 	vk::Sampler sampler = texManager->getSampler(
-		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true);
+		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true,
+		skybox ? 0.0f : getStateTracker()->getMaterialLodBias());
 	// OpenGL skips applying texture addressing for AABITMAP, INTERFACE, and CUBEMAP
 	// types - they always stay clamped. We need a clamp sampler for those cases.
 	vk::Sampler clampSampler = texManager->getSampler(

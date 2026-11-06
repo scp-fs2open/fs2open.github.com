@@ -195,6 +195,7 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	auto properties = physicalDevice.getProperties();
 	m_maxTextureSize = properties.limits.maxImageDimension2D;
 	m_maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	m_maxLodBias = properties.limits.maxSamplerLodBias;
 
 	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
 	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
@@ -2160,8 +2161,10 @@ void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format f
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,
                                               vk::SamplerAddressMode addressMode,
                                               bool enableAnisotropy, float maxAnisotropy,
-                                              bool enableMipmaps)
+                                              bool enableMipmaps, float negativeLodBias)
 {
+	const float lodBias = std::max(negativeLodBias, -m_maxLodBias);
+
 	// Create a key from sampler state
 	uint64_t key = 0;
 	key |= static_cast<uint64_t>(magFilter) << 0;
@@ -2169,6 +2172,7 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	key |= static_cast<uint64_t>(addressMode) << 8;
 	key |= static_cast<uint64_t>(enableAnisotropy) << 16;
 	key |= static_cast<uint64_t>(enableMipmaps) << 17;
+	key |= static_cast<uint64_t>(lodBias * -8.0f) << 18; // 6 bits, in eighths
 	key |= static_cast<uint64_t>(maxAnisotropy * 10) << 24;
 
 	auto it = m_samplerCache.find(key);
@@ -2190,7 +2194,7 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	samplerInfo.compareEnable = false;
 	samplerInfo.compareOp = vk::CompareOp::eAlways;
 	samplerInfo.mipmapMode = enableMipmaps ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest;
-	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.mipLodBias = lodBias;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = enableMipmaps ? VK_LOD_CLAMP_NONE : 0.0f;
 

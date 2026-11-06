@@ -70,6 +70,15 @@ class VulkanStateTracker {
 	void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f);
 
 	/**
+	 * @brief Sets the upscaler's subpixel image offset and texture LOD bias, which apply only to the scene's own passes
+	 *
+	 * Offsetting the viewport moves everything the scene draws, including its CPU-projected 2D backgrounds, and leaves
+	 * the camera matrices that motion vectors and the HUD rely on untouched.
+	 */
+	void setUpscalerSceneState(float jitterX, float jitterY, float lodBias);
+	float getMaterialLodBias() const { return isUpscaledScenePass() ? m_upscalerLodBias : 0.0f; }
+
+	/**
 	 * @brief Set scissor rectangle (dynamic state)
 	 */
 	void setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height);
@@ -322,6 +331,13 @@ class VulkanStateTracker {
 	std::array<std::array<uint32_t, DescriptorWriter::MAX_DYNAMIC_OFFSETS_PER_SET>,
 		static_cast<size_t>(DescriptorSetIndex::Count)>
 		m_boundDynamicOffsets{};
+
+	// Only the scene's passes have the motion vector location the upscaler requires.
+	bool isUpscaledScenePass() const { return m_colorAttachmentCount > PipelineConfig::VELOCITY_ATTACHMENT; }
+
+	float m_upscalerJitterX = 0.0f;
+	float m_upscalerJitterY = 0.0f;
+	float m_upscalerLodBias = 0.0f;
 
 	// Dynamic state
 	vk::Viewport m_viewport;

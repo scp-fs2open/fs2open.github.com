@@ -221,7 +221,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
                                                        int shaderType,
                                                        const vk::ImageView* views, uint32_t viewCount,
                                                        const void* uboData, size_t uboSize,
-                                                       vk::Sampler sampler)
+                                                       vk::Sampler sampler, uint32_t colorAttachmentCount)
 {
 	GR_DEBUG_SCOPE("Draw full screen triangle (multi-view)");
 
@@ -243,6 +243,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	config.cullEnabled = false;
 	config.depthWriteEnabled = false;
 	config.renderPass = renderPass;
+	config.colorAttachmentCount = colorAttachmentCount;
 
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);

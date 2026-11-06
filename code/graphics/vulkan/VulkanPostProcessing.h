@@ -114,7 +114,8 @@ struct PostProcessContext {
 	                                 int shaderType,
 	                                 const vk::ImageView* views, uint32_t viewCount,
 	                                 const void* uboData, size_t uboSize,
-	                                 vk::Sampler sampler = nullptr);
+	                                 vk::Sampler sampler = nullptr,
+	                                 uint32_t colorAttachmentCount = 1);
 
 	/**
 	 * @brief Generate a mip chain for an image (transitions mip 0 first)
@@ -237,6 +238,9 @@ public:
 	 */
 	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor);
 	void shutdown();
+
+	// The caller follows up with resize(), which rebuilds the framebuffer around it.
+	void setSceneColor(const RenderTarget& sceneColor) { m_sceneColor = &sceneColor; }
 
 	/**
 	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
@@ -476,6 +480,7 @@ private:
 class VulkanMotionVectors {
 public:
 	static constexpr vk::Format FORMAT = vk::Format::eR16G16Sfloat;
+	static constexpr vk::Format DEPTH_FORMAT = vk::Format::eR32Sfloat;
 	// Well outside any real motion. Tested in motion-vector-f.sdr and msaa-f.sdr.
 	static constexpr float NO_MOTION_WRITTEN = 1000.0f;
 
@@ -488,21 +493,57 @@ public:
 	bool createResources();
 	const RenderTarget& drawnMotion() const { return m_drawnMotion; }
 
+	// Before the scene's depth is restored, while it still holds the cockpit's.
+	void captureCockpitDepth(vk::CommandBuffer cmd, vk::Image sceneDepth);
 	// Outside a render pass, with the drawn motion attachment still in eColorAttachmentOptimal and sceneDepthCopy
 	// holding this frame's final depth.
 	void execute(vk::CommandBuffer cmd, vk::ImageView sceneDepthCopy);
 	// Inside the composition pass.
 	void drawDebug(vk::CommandBuffer cmd);
 
-	vk::ImageView view() const { return m_valid ? m_target.view : vk::ImageView{}; }
+	const RenderTarget& motion() const { return m_target; }
+	const RenderTarget& depth() const { return m_depth; }
 
 private:
 	PostProcessContext* m_ctx = nullptr;
-	RenderTarget m_drawnMotion; // what geometry wrote during the scene
-	RenderTarget m_target;      // the drawn motion, with camera motion filled in everywhere else
+	RenderTarget m_drawnMotion;  // what geometry wrote during the scene
+	RenderTarget m_target;       // the drawn motion, with camera motion filled in everywhere else
+	RenderTarget m_depth;        // the depth that motion belongs to, including the cockpit, on the cockpit's projection
+	RenderTarget m_cockpitDepth;
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
 	bool m_valid = false;
+	bool m_cockpitDepthValid = false;
+};
+
+/**
+ * @brief FSR: temporal reconstruction of the HDR scene, ahead of bloom and tonemapping
+ *
+ * Owns AMD's context and the image FSR writes. Resources are created on first use.
+ */
+class VulkanUpscaler {
+public:
+	void init(PostProcessContext& ctx) { m_ctx = &ctx; }
+	void destroyTargets();
+
+	bool wanted() const;
+	bool createResources();
+	const RenderTarget& output() const { return m_output; }
+
+	// Before the scene's first pass. The image offset to draw this frame with, and the texture LOD bias to go with it.
+	void beginFrame(float& imageOffsetX, float& imageOffsetY, float& lodBias);
+	// Outside a render pass, with all inputs in eShaderReadOnlyOptimal. Leaves the output in eShaderReadOnlyOptimal.
+	void dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion);
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	RenderTarget m_output;
+	void* m_context = nullptr; // ffxContext
+	int m_jitterPhaseCount = 1;
+	int m_jitterIndex = 0;
+	float m_jitterX = 0.0f;
+	float m_jitterY = 0.0f;
+	bool m_failed = false;
 };
 
 /**
@@ -680,6 +721,8 @@ public:
 	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor, const RenderTarget& sceneDepth,
 	          const VulkanBloom& bloom);
 	void shutdown();
+
+	void setSceneColor(const RenderTarget& sceneColor) { m_sceneColor = &sceneColor; }
 
 	/**
 	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
@@ -1015,6 +1058,16 @@ public:
 	}
 	void drawMotionVectorDebug(vk::CommandBuffer cmd) { m_motionVectors.drawDebug(cmd); }
 
+	// Selects whether FSR runs for this frame's scene. After prepareMotionVectors(), which it depends on.
+	void prepareUpscaler();
+
+	void executeUpscaler(vk::CommandBuffer cmd)
+	{
+		if (m_upscalerActive) {
+			m_upscaler.dispatch(cmd, m_sceneColor, m_motionVectors.depth(), m_motionVectors.motion());
+		}
+	}
+
 	// Color locations of the current forward pass
 	uint32_t sceneColorAttachmentCount() const
 	{
@@ -1111,7 +1164,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void restoreSceneDepth(vk::CommandBuffer cmd) const;
+	void restoreSceneDepth(vk::CommandBuffer cmd);
 
 	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)
@@ -1331,6 +1384,10 @@ private:
 	vk::RenderPass m_velocitySceneRenderPass;
 	vk::RenderPass m_velocitySceneRenderPassLoad;
 	vk::Framebuffer m_velocitySceneFramebuffer;
+	VulkanUpscaler m_upscaler;
+	bool m_upscalerActive = false;
+	// Bloom and tonemapping read from here, which is FSR's output while FSR runs
+	void setPostProcessInput(const RenderTarget& input);
 
 	// ---- Distortion (ping-pong textures, self-contained subsystem) ----
 	VulkanDistortion m_distortion;

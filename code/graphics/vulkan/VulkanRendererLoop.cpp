@@ -278,6 +278,7 @@ void VulkanRenderer::beginSceneRendering()
 	endCurrentRenderPass();
 
 	m_postProcessor->prepareMotionVectors();
+	m_postProcessor->prepareUpscaler();
 
 	// Use G-buffer render pass when deferred lighting is enabled and G-buffer is ready
 	m_useGbufRenderPass = m_postProcessor->deferred().isInitialized() && light_deferred_enabled();
@@ -343,6 +344,7 @@ void VulkanRenderer::endSceneRendering()
 	m_currentCommandBuffer.endRenderPass();
 
 	m_postProcessor->executeMotionVectors(m_currentCommandBuffer);
+	m_postProcessor->executeUpscaler(m_currentCommandBuffer);
 
 	// Update distortion ping-pong textures (every ~30ms, matching OpenGL)
 	if (Gr_framebuffer_effects.any_set()) {

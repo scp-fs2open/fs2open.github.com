@@ -1201,6 +1201,7 @@ bool cam_set_camera(camid cid)
 
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = cid;
+	gr_reset_temporal_history();
 
 	if (!Cutscene_camera_displays_hud) 
 	{

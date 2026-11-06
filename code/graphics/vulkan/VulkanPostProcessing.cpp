@@ -350,6 +350,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	m_lighting.init(m_ctx, m_sceneColor, m_deferred, m_shadow);
 	m_fog.init(m_ctx, m_sceneColor, m_sceneDepth, m_sceneDepthCopy, m_deferred);
 	m_motionVectors.init(m_ctx);
+	m_upscaler.init(m_ctx);
 
 	// Initialize MSAA resources if MSAA is enabled and G-buffer is ready
 	if (m_deferred.isInitialized() && Cmdline_msaa_enabled > 0) {
@@ -370,6 +371,7 @@ void VulkanPostProcessor::shutdown()
 	if (m_ctx.device) {
 		m_ctx.device.waitIdle();
 
+		m_upscaler.destroyTargets();
 		m_motionVectors.shutdown();
 		m_fog.shutdown();
 		shutdownShadowPass();
@@ -661,6 +663,36 @@ void VulkanPostProcessor::prepareMotionVectors()
 	Gr_motion_vectors_active = active;
 }
 
+void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
+{
+	m_bloom.setSceneColor(input);
+	m_ldr.setSceneColor(input);
+	if (m_bloom.isInitialized() && !m_bloom.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Bloom rebuild failed, disabling bloom\n"));
+		m_bloom.shutdown();
+	}
+}
+
+void VulkanPostProcessor::prepareUpscaler()
+{
+	const bool active = m_velocityActive && m_upscaler.wanted() && m_upscaler.createResources();
+
+	if (active != m_upscalerActive) {
+		m_ctx.device.waitIdle();
+		m_upscalerActive = active;
+		setPostProcessInput(active ? m_upscaler.output() : m_sceneColor);
+		gr_reset_temporal_history();
+	}
+
+	float imageOffsetX = 0.0f;
+	float imageOffsetY = 0.0f;
+	float lodBias = 0.0f;
+	if (active) {
+		m_upscaler.beginFrame(imageOffsetX, imageOffsetY, lodBias);
+	}
+	getStateTracker()->setUpscalerSceneState(imageOffsetX, imageOffsetY, lodBias);
+}
+
 std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
 {
 	std::array<vk::ClearValue, 3> clearValues;
@@ -685,6 +717,12 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
 
 	// Caller (recreateSwapChain) has already waited for the device to go idle.
 	m_ctx.sceneExtent = newExtent;
+
+	// Recreated at the new size on next use. Bloom is rebuilt around the input below.
+	m_upscaler.destroyTargets();
+	m_upscalerActive = false;
+	m_bloom.setSceneColor(m_sceneColor);
+	m_ldr.setSceneColor(m_sceneColor);
 
 	// Scene targets first: every subsystem framebuffer that wires scene
 	// color/depth needs the recreated views.
@@ -770,8 +808,12 @@ void VulkanPostProcessor::saveSceneDepth(vk::CommandBuffer cmd) const
 		imageAspectFromFormat(m_ctx.depthFormat));
 }
 
-void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd) const
+void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd)
 {
+	if (m_velocityActive) {
+		m_motionVectors.captureCockpitDepth(cmd, m_sceneDepth.image);
+	}
+
 	// The backup was left in eTransferSrcOptimal by saveSceneDepth() and stays there --
 	// the next save transitions it from eUndefined anyway.
 	copyImageToImage(cmd,
@@ -852,6 +894,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		texArrayInfos[0].sampler = m_ctx.linearSampler;
 		texArrayInfos[0].imageView = m_ldr.postEffectsApplied() ? m_ldr.luminanceView()
 		                            : useLdr ? m_ldr.ldrView()
+		                            : m_upscalerActive ? m_upscaler.output().view
 		                            : m_sceneColor.view;
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}

@@ -877,6 +877,7 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .finish();
 
 FsrMode Gr_fsr_mode = FsrMode::Off;
+SCP_string Gr_fsr_version;
 
 bool gr_fsr_upscale_available()
 {
@@ -902,11 +903,12 @@ static SCP_vector<FsrMode> fsr_mode_enumerator()
 
 static SCP_string fsr_mode_display(FsrMode mode)
 {
+	const SCP_string version = Gr_fsr_version.empty() ? "" : " (FSR " + Gr_fsr_version + ")";
 	switch (mode) {
 	case FsrMode::AA:
-		return "FSR AA";
+		return "FSR AA" + version;
 	case FsrMode::On:
-		return "On";
+		return "On" + version;
 	case FsrMode::Off:
 	default:
 		return "Off";
@@ -921,6 +923,7 @@ static auto FsrOption __UNUSED = options::OptionBuilder<FsrMode>("Graphics.FSR",
                      .level(options::ExpertLevel::Advanced)
                      .enumerator(fsr_mode_enumerator)
                      .display(fsr_mode_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
                      .default_func([]() { return Gr_fsr_mode; } )
                      .bind_to(&Gr_fsr_mode)
                      .importance(77)

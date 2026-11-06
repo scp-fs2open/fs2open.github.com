@@ -187,6 +187,14 @@ void VulkanStateTracker::setViewport(float x, float y, float width, float height
 	}
 }
 
+void VulkanStateTracker::setUpscalerSceneState(float jitterX, float jitterY, float lodBias)
+{
+	m_upscalerJitterX = jitterX;
+	m_upscalerJitterY = jitterY;
+	m_upscalerLodBias = lodBias;
+	m_viewportDirty = true;
+}
+
 void VulkanStateTracker::setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height)
 {
 	if (m_scissor.offset.x != x || m_scissor.offset.y != y ||
@@ -314,7 +322,12 @@ void VulkanStateTracker::applyDynamicState()
 	Assertion(m_cmdBuffer, "applyDynamicState called without active command buffer!");
 
 	if (m_viewportDirty) {
-		m_cmdBuffer.setViewport(0, 1, &m_viewport);
+		vk::Viewport viewport = m_viewport;
+		if (isUpscaledScenePass()) {
+			viewport.x += m_upscalerJitterX;
+			viewport.y += m_upscalerJitterY;
+		}
+		m_cmdBuffer.setViewport(0, 1, &viewport);
 		m_viewportDirty = false;
 	}
 
