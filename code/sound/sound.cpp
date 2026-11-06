@@ -1012,6 +1012,8 @@ void snd_stop(sound_handle sig)
 
 	channel = ds_get_channel(sig);
 	if ( channel == -1 )
+		channel = ds_get_channel_raw(sig);	// a stopped channel must still be stopped so its loop flag is cleared
+	if ( channel == -1 )
 		return;
 	
 	currentlyLoopingSoundInfos.erase(sig);
