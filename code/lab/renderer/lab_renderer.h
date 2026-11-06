@@ -11,6 +11,7 @@
 #include "globalincs/systemvars.h"
 #include "starfield/starfield.h"
 #include "graphics/light.h"
+#include "graphics/post_processing.h"
 #include "globalincs/alphacolors.h"
 
 FLAG_LIST(LabRenderFlag) {
@@ -101,6 +102,8 @@ public:
 		Viewer_mode |= VM_FREECAMERA;
 
 		Motion_debris_override = true;
+		// the lab never runs mission_init
+		Lightshafts_override = false;
 		Num_stars = 0;
 
 		gr_set_clear_color(0, 0, 0);

@@ -72,6 +72,8 @@ class PostProcessingManager {
 
 } // namespace graphics
 
+extern bool Lightshafts_override;
+
 bool gr_lightshafts_enabled();
 bool gr_sunglare_enabled();
 int gr_bloom_intensity();
