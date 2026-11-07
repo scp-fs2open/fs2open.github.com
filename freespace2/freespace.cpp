@@ -1882,8 +1882,15 @@ void game_init()
 
 	Game_current_mission_filename[0] = 0;
 
-	// seed the random number generator
-	Random::seed(static_cast<unsigned int>(time(nullptr)));
+	// Seed both game RNG families from the command line when reproducible runs
+	// are requested. RandomRange instances must receive their seed before the
+	// tables are parsed during game initialization.
+	if (Cmdline_reuse_rng_seed) {
+		Random::seed(Cmdline_rng_seed);
+		Random::seed_ranges(Cmdline_rng_seed);
+	} else {
+		Random::seed(static_cast<unsigned int>(time(nullptr)));
+	}
 
 	ImGui::CreateContext();
 
