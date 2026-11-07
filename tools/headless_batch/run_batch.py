@@ -620,6 +620,10 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 # failed, interrupted before it wrote a record, or made by another plan or seed: rerun it cleanly
                 try:
+                    workspace = run_dir / "w"
+                    if workspace.exists():
+                        # a kept workspace may hold read-only pack links
+                        remove_workspace(workspace, plan["base_workspace"])
                     shutil.rmtree(run_dir)
                 except OSError as exc:
                     print(f"plan error: cannot clear {run_dir} for a rerun: {exc}", file=sys.stderr)
@@ -630,6 +634,8 @@ def main(argv: list[str] | None = None) -> int:
     records = dict(done)
     results_path = plan["output_dir"] / "results.jsonl"
     write_results(results_path, records)  # drop rows left by an earlier invocation
+    # an earlier summary would disagree with results.jsonl if this invocation is interrupted
+    (plan["output_dir"] / "summary.json").unlink(missing_ok=True)
     started = time.monotonic()
     try:
         run_all(plan, pending, records, LiveEngines())

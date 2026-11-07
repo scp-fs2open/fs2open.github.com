@@ -153,7 +153,8 @@ For run *i* with seed *s* the runner:
 
 Ctrl-C stops the batch: queued runs are cancelled and running engines are killed. The runner waits up to 10 s for
 the killed runs to write their records (marked `killed: the batch was interrupted`), keeps every finished run in
-`results.jsonl`, and exits with code 130. `--resume` continues from there.
+`results.jsonl`, and exits with code 130 without writing `summary.json` (one left by an earlier invocation is
+deleted when the batch starts). `--resume` continues from there.
 
 A run is `ok` only if the engine exited with code 0 and wrote a readable result file whose `termination` is
 `time_limit`, `player_died`, `mission_exit` or `left_mission` (a player death is an outcome of the mission, not a

@@ -116,7 +116,7 @@ class PlanTests(Fixture):
     def test_output_dir_on_another_volume_is_rejected(self):
         original = run_batch._volume_of
         try:
-            run_batch._volume_of = lambda path: 1 if path == self.base.resolve() else 2
+            run_batch._volume_of = lambda path: 1 if path == Path(os.path.abspath(self.base)) else 2
             with self.assertRaises(run_batch.PlanError) as ctx:
                 run_batch.load_plan(self.plan_file())
             self.assertIn("same volume", str(ctx.exception))
