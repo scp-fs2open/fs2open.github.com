@@ -14,6 +14,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/linklist.h"
 #include "camera/photomode.h"
+#include "cmdline/cmdline.h"
 #include "io/key.h"
 #include "io/joy.h"
 #include "io/timer.h"
@@ -1663,8 +1664,14 @@ void game_process_keys()
 	int k;
 
 	button_info_clear(&Player->bi);	// clear out the button info struct for the player
+
+	// a headless run reads no keys, but the Lua button actions below still apply
     do
-	{		
+	{
+		if (Cmdline_headless) {
+			break;
+		}
+
 		k = game_poll();
 
 		if ( Game_mode & GM_DEAD_BLEW_UP ) {

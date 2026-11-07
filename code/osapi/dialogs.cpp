@@ -201,6 +201,9 @@ namespace os
 			}
 
 			if (Cmdline_noninteractive) {
+				// as Error() does, so the message is not lost when no log is written (e.g. release builds)
+				fprintf(stderr, "\n%s\n", msgStream.str().c_str());
+				fflush(stderr);
 				throw LuaErrorException(msgStream.str());
 				return;
 			}
