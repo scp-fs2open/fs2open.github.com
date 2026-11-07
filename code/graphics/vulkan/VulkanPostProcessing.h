@@ -27,6 +27,8 @@ struct PostProcessContext {
 	vk::Device device;
 	VulkanMemoryManager* memoryManager = nullptr;
 	vk::Extent2D sceneExtent;
+	// Everything from tonemapping to the final blit. Larger than the scene while FSR upscales.
+	vk::Extent2D outputExtent;
 	vk::Format depthFormat = vk::Format::eUndefined;
 
 	// True when the renderer negotiated an HDR10 swap chain. Drives fp16 LDR
@@ -527,6 +529,8 @@ public:
 	void destroyTargets();
 
 	bool wanted() const;
+	// The context was made for a different version than the one now chosen
+	bool versionChanged() const { return m_context && m_contextMajorVersion != Gr_fsr_major_version; }
 	bool createResources();
 	const RenderTarget& output() const { return m_output; }
 
@@ -539,6 +543,7 @@ private:
 	PostProcessContext* m_ctx = nullptr;
 	RenderTarget m_output;
 	void* m_context = nullptr; // ffxContext
+	int m_contextMajorVersion = 0;
 	int m_jitterPhaseCount = 1;
 	int m_jitterIndex = 0;
 	float m_jitterX = 0.0f;
@@ -897,14 +902,16 @@ public:
 	/**
 	 * @brief Recreate all extent-sized targets/framebuffers for a new resolution
 	 *
-	 * Called from VulkanRenderer::recreateSwapChain() after the device-idle
-	 * wait. Render passes, samplers, and the scratch UBO ring are extent-
+	 * Called by VulkanRenderer after a device-idle wait, when the swap chain or
+	 * the FSR output size changes. Render passes, samplers, and the scratch UBO ring are extent-
 	 * independent and kept alive, so every cached pipeline stays valid.
 	 * Individual subsystem failures are non-fatal (the subsystem is disabled,
 	 * matching init()); returns false only if the core scene targets could not
 	 * be recreated.
+	 *
+	 * @param outputExtent Size from tonemapping on, which FSR upscales the scene to
 	 */
-	bool resize(vk::Extent2D newExtent);
+	bool resize(vk::Extent2D newExtent, vk::Extent2D outputExtent);
 
 	/**
 	 * @brief Per-frame reset (called from VulkanRenderer::setupFrame after the frame fence wait)

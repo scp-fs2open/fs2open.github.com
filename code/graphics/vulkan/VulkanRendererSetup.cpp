@@ -538,6 +538,7 @@ bool VulkanRenderer::initialize()
 		m_postProcessor.reset();
 	} else {
 		setPostProcessor(m_postProcessor.get());
+		m_postProcessor->resize(m_renderExtent, m_compositionExtent);
 	}
 
 	// Initialize shared post-processing manager (bloom/lightshaft settings, post-effect table)
@@ -1192,6 +1193,8 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	if (!Cmdline_window_res) {
 		m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 	}
+	m_compositionExtent = wantedCompositionExtent();
+	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
 
 	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",
@@ -1336,7 +1339,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();

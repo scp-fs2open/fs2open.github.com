@@ -47,9 +47,23 @@ void primitive_batch::clear()
 	Vertices.clear();
 }
 
+void primitive_batch::set_motion(size_t first_vertex, const vec3d* motion)
+{
+	if (motion == nullptr) {
+		return;
+	}
+	for (size_t i = first_vertex; i < Vertices.size(); ++i) {
+		Vertices[i].motion.xyzw = {motion->xyz.x, motion->xyz.y, motion->xyz.z, 1.0f};
+	}
+}
+
 void batching_setup_vertex_layout(vertex_layout *layout, uint vert_mask)
 {
 	int stride = sizeof(batch_vertex);
+
+	if ( vert_mask & vertex_format_data::mask(vertex_format_data::MOTION4) ) {
+		layout->add_vertex_component(vertex_format_data::MOTION4, stride, (int)offsetof(batch_vertex, motion));
+	}
 
 	if ( vert_mask & vertex_format_data::mask(vertex_format_data::POSITION3) ) {
 		layout->add_vertex_component(vertex_format_data::POSITION3, stride, (int)offsetof(batch_vertex, position));
@@ -140,15 +154,20 @@ uint batching_determine_vertex_layout(batch_info *info)
 			| vertex_format_data::mask(vertex_format_data::TEX_COORD4);
 	}
 
+	// Vulkan's effect shaders always read motion. OpenGL has no slot for it.
+	const uint motion = gr_screen.mode == GraphicsAPI::Vulkan ? vertex_format_data::mask(vertex_format_data::MOTION4) : 0;
+
 	if ( info->mat_type == batch_info::VOLUME_EMISSIVE || info->mat_type == batch_info::DISTORTION ) {
-		return vertex_format_data::mask(vertex_format_data::POSITION3) 
-			| vertex_format_data::mask(vertex_format_data::COLOR4) 
+		return vertex_format_data::mask(vertex_format_data::POSITION3)
+			| vertex_format_data::mask(vertex_format_data::COLOR4)
 			| vertex_format_data::mask(vertex_format_data::TEX_COORD4)
-			| vertex_format_data::mask(vertex_format_data::RADIUS);
+			| vertex_format_data::mask(vertex_format_data::RADIUS)
+			| motion;
 	} else {
-		return vertex_format_data::mask(vertex_format_data::POSITION3) 
-			| vertex_format_data::mask(vertex_format_data::COLOR4) 
-			| vertex_format_data::mask(vertex_format_data::TEX_COORD4);
+		return vertex_format_data::mask(vertex_format_data::POSITION3)
+			| vertex_format_data::mask(vertex_format_data::COLOR4)
+			| vertex_format_data::mask(vertex_format_data::TEX_COORD4)
+			| motion;
 	}
 }
 
@@ -691,7 +710,7 @@ void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float 
 	batching_add_bitmap_internal(batch, texture, pnt, orient, rad, &clr, depth);
 }
 
-void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth)
+void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth, const vec3d* motion)
 {
 	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
@@ -709,10 +728,12 @@ void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad,
 	color clr;
 	batching_determine_blend_color(&clr, texture, alpha);
 
+	const size_t first_vertex = batch->num_verts();
 	batching_add_bitmap_internal(batch, texture, pnt, orient, rad, &clr, depth);
+	batch->set_motion(first_vertex, motion);
 }
 
-void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth)
+void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth, const vec3d* motion)
 {
 	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
@@ -730,7 +751,9 @@ void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, f
 	color clr;
 	batching_determine_blend_color(&clr, texture, alpha);
 
+	const size_t first_vertex = batch->num_verts();
 	batching_add_bitmap_rotated_internal(batch, texture, pnt, angle, rad, &clr, depth);
+	batch->set_motion(first_vertex, motion);
 }
 
 void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth)
@@ -840,7 +863,7 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 	batching_add_line_internal(batch, lineTexture, start, end, widthStart, widthEnd, &clr);
 }
 
-void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r, int g, int b)
+void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r, int g, int b, const vec3d* motion)
 {
 	Assertion((texture >= 0), "batching_add_laser() attempted for invalid texture");
 	if ( texture < 0 ) {
@@ -849,7 +872,9 @@ void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d 
 
 	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
+	const size_t first_vertex = batch->num_verts();
 	batching_add_laser_internal(batch, texture, p0, width1, p1, width2, r, g, b);
+	batch->set_motion(first_vertex, motion);
 }
 
 void batching_add_volume_polygon(int texture, const vec3d* pos, const matrix* orient, float width, float height, float alpha)
@@ -943,6 +968,7 @@ void batching_render_batch_item(primitive_batch_item* item,
 		particle_material material_def;
 
 		material_set_unlit_volume(&material_def, item->batch_item_info.texture, prim_type == PRIM_TYPE_POINTS);
+		material_def.set_velocity_output(true);
 		gr_render_primitives_particle(&material_def, prim_type, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	} else if ( item->batch_item_info.mat_type == batch_info::DISTORTION ) {
 		distortion_material material_def;
@@ -953,11 +979,13 @@ void batching_render_batch_item(primitive_batch_item* item,
 		batched_bitmap_material material_def;
 
 		material_set_batched_opaque_bitmap(&material_def, item->batch_item_info.texture, 2.0f);
+		material_def.set_velocity_output(true);
 		gr_render_primitives_batched(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	} else {
 		batched_bitmap_material material_def;
 
 		material_set_batched_bitmap(&material_def, item->batch_item_info.texture, 1.0f, 2.0f);
+		material_def.set_velocity_output(true);
 		gr_render_primitives_batched(&material_def, PRIM_TYPE_TRIS, layout, (int)item->offset, (int)item->n_verts, buffer_num);
 	}
 }

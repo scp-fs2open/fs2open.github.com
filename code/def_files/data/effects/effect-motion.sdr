@@ -1,0 +1,13 @@
+// Motion vector output of the batched effect shaders, for location 6. Alpha 0 keeps the motion already there, through
+// the attachment's blend state: effects without movement of their own, and fragments too faint to matter.
+const float EFFECT_MOTION_MIN_CONTRIBUTION = 0.1;
+
+vec4 effect_motion(vec4 curClip, vec4 prevClip, float hasMotion, vec2 uvScale, vec4 color)
+{
+	float contribution = max(max(color.r, color.g), color.b) * color.a;
+	if (hasMotion < 0.5 || contribution < EFFECT_MOTION_MIN_CONTRIBUTION || prevClip.w <= 0.0) {
+		return vec4(0.0);
+	}
+	vec2 velocity = (prevClip.xy / prevClip.w - curClip.xy / curClip.w) * vec2(0.5, -0.5) * uvScale;
+	return vec4(velocity, 0.0, 1.0);
+}

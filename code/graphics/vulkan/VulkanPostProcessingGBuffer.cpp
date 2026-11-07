@@ -131,7 +131,9 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 		dependency.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 		                         | vk::AccessFlagBits::eShaderRead;
+		// The read covers the motion vectors, which the resolve loads and blends
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eColorAttachmentRead
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
 	} else {
 		// Standard G-buffer: previous pass may have done transfers (copies), and
@@ -148,7 +150,9 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 		                         | vk::AccessFlagBits::eShaderRead
 		                         | vk::AccessFlagBits::eTransferRead
 		                         | vk::AccessFlagBits::eTransferWrite;
+		// The read covers attachments the load variants keep, such as the motion vectors
 		dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+		                         | vk::AccessFlagBits::eColorAttachmentRead
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 		                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
 	}

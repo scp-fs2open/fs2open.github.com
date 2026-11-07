@@ -233,7 +233,14 @@ void vulkan_imgui_render_draw_data()
 {
 	auto* renderer = getRendererInstance();
 	if (renderer) {
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), renderer->getVkCurrentCommandBuffer());
+		// The composition image is larger than ImGui's display while FSR upscales
+		auto* drawData = ImGui::GetDrawData();
+		const auto extent = renderer->getCompositionExtent();
+		if (drawData && drawData->DisplaySize.x > 0.0f && drawData->DisplaySize.y > 0.0f) {
+			drawData->FramebufferScale = ImVec2(static_cast<float>(extent.width) / drawData->DisplaySize.x,
+				static_cast<float>(extent.height) / drawData->DisplaySize.y);
+		}
+		ImGui_ImplVulkan_RenderDrawData(drawData, renderer->getVkCurrentCommandBuffer());
 
 		// ImGui just bound its own pipeline/descriptor set directly on the command buffer,
 		// inside the same (already-active) render pass FSO's own draws share -- it can't begin
@@ -295,6 +302,24 @@ int vulkan_save_screen()
 	uint32_t w, h;
 	if (!renderer_instance->readbackFramebuffer(&pixels, &w, &h)) {
 		return -1;
+	}
+
+	// While FSR upscales, the frame is larger than gr_screen, but restoring draws it 1:1 in gr_screen pixels
+	const auto screen_w = static_cast<uint32_t>(gr_screen.max_w);
+	const auto screen_h = static_cast<uint32_t>(gr_screen.max_h);
+	if (w != screen_w || h != screen_h) {
+		auto* scaled = static_cast<ubyte*>(vm_malloc(static_cast<int>(screen_w * screen_h * 4)));
+		for (uint32_t y = 0; y < screen_h; ++y) {
+			const uint32_t src_y = std::min((2 * y + 1) * h / (2 * screen_h), h - 1);
+			for (uint32_t x = 0; x < screen_w; ++x) {
+				const uint32_t src_x = std::min((2 * x + 1) * w / (2 * screen_w), w - 1);
+				memcpy(&scaled[(y * screen_w + x) * 4], &pixels[(src_y * w + src_x) * 4], 4);
+			}
+		}
+		vm_free(pixels);
+		pixels = scaled;
+		w = screen_w;
+		h = screen_h;
 	}
 
 	int bmpId = bm_create(32, static_cast<int>(w), static_cast<int>(h), pixels, 0);

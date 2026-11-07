@@ -3,6 +3,7 @@
 #include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 
 #include "backends/imgui_impl_vulkan.h"
@@ -26,6 +27,11 @@ void VulkanRenderer::beginTrackedRenderPass(const PassBeginDesc& desc)
 	m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 
 	m_stateTracker->setRenderPass(desc.renderPass, 0);
+	if (desc.renderPass == m_renderPass.get() || desc.renderPass == m_renderPassLoad.get()) {
+		// Everything the engine draws onto the composition image is in gr_screen units
+		m_stateTracker->setScreenScale(static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width),
+			static_cast<float>(m_compositionExtent.height) / static_cast<float>(m_renderExtent.height));
+	}
 	m_stateTracker->setColorAttachmentCount(desc.colorAttachmentCount);
 	m_stateTracker->setCurrentSampleCount(desc.sampleCount);
 	m_stateTracker->setRenderArea(desc.extent);
@@ -94,6 +100,43 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	// Reserve the image as in use
 	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
 }
+vk::Extent2D VulkanRenderer::wantedCompositionExtent() const
+{
+	const float factor = vulkan_upscaler_available() ? gr_fsr_upscale_factor(Gr_fsr_mode) : 1.0f;
+	return {static_cast<uint32_t>(std::lround(m_renderExtent.width * factor)),
+		static_cast<uint32_t>(std::lround(m_renderExtent.height * factor))};
+}
+
+void VulkanRenderer::updateCompositionExtent()
+{
+	const auto wanted = wantedCompositionExtent();
+	if (wanted == m_compositionExtent) {
+		return;
+	}
+
+	m_device->waitIdle();
+	m_compositionExtent = wanted;
+	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+	mprintf(("Vulkan: Composition resolution %ux%u for render resolution %ux%u\n",
+		m_compositionExtent.width, m_compositionExtent.height, m_renderExtent.width, m_renderExtent.height));
+
+	destroyDepthResources();
+	createDepthResources();
+	createCompositionResources();
+	createFrameBuffers();
+
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
+		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
+		setPostProcessor(nullptr);
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
+	}
+	if (m_drawManager) {
+		m_drawManager->onResize();
+	}
+	m_previousSwapChainImage = UINT32_MAX;
+}
+
 void VulkanRenderer::setupFrame()
 {
 	if (m_frameInProgress) {
@@ -108,6 +151,8 @@ void VulkanRenderer::setupFrame()
 		m_pipelineManager->forgetAllPipelines();
 		m_pipelinesStale = false;
 	}
+
+	updateCompositionExtent();
 
 	// Free completed texture upload command buffers
 	Assertion(m_textureManager, "Vulkan TextureManager not initialized in setupFrame!");
@@ -161,7 +206,7 @@ void VulkanRenderer::setupFrame()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
@@ -369,7 +414,7 @@ void VulkanRenderer::endSceneRendering()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -380,9 +425,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_renderExtent.height),
-		static_cast<float>(m_renderExtent.width),
-		-static_cast<float>(m_renderExtent.height));
+		static_cast<float>(m_compositionExtent.height),
+		static_cast<float>(m_compositionExtent.width),
+		-static_cast<float>(m_compositionExtent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -625,7 +670,7 @@ void VulkanRenderer::resumeSwapChainPass()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 }
@@ -639,7 +684,7 @@ void VulkanRenderer::restartCompositionPass()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_renderExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 }

@@ -242,6 +242,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/effect-distort-v.sdr
 	def_files/data/effects/effect-f.sdr
 	def_files/data/effects/effect-g.sdr
+	def_files/data/effects/effect-motion.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/envmap-sphere-warp-f.sdr
 	def_files/data/effects/fog-f.sdr

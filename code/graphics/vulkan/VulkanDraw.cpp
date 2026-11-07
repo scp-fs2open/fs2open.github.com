@@ -236,7 +236,7 @@ void VulkanDrawManager::clear()
 	// gr_screen dimensions can exceed the active render pass when rendering to a
 	// smaller off-screen target; vkCmdClearAttachments requires rects inside the
 	// render area.
-	clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+	clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 	if (clearRect.rect.extent.width == 0 || clearRect.rect.extent.height == 0) {
 		return;
 	}
@@ -422,7 +422,7 @@ void VulkanDrawManager::zbufferClear(int mode)
 		clearRect.rect.offset = vk::Offset2D(0, 0);
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
-		clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+		clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
@@ -1117,7 +1117,8 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
 	config.writesVelocity = mat->get_velocity_output()
-		&& config.shaderType == SDR_TYPE_MODEL
+		&& (config.shaderType == SDR_TYPE_MODEL || config.shaderType == SDR_TYPE_BATCHED_BITMAP
+			|| config.shaderType == SDR_TYPE_EFFECT_PARTICLE)
 		&& config.colorWriteMask.x;
 
 	return config;

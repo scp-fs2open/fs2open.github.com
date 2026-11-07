@@ -68,17 +68,26 @@ enum class AntiAliasMode {
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
+// AA renders at 1:1. Upscale upscales the scene from the render resolution to the window resolution, and everything
+// drawn after it then draws at that size.
 enum class FsrMode {
 	Off = 0,
-	AA = 1, // 1:1, any upscaling is left to the final blit
-	On = 2, // upscales the scene to the window's resolution
+	AA = 1,
+	Upscale = 2,
 };
 extern FsrMode Gr_fsr_mode;
-// The FSR version the renderer uses, such as "4.1.2". Empty if unknown.
-extern SCP_string Gr_fsr_version;
+// The chosen FSR major version, or 0 for the newest the renderer offers
+extern int Gr_fsr_major_version;
+// The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
+extern SCP_vector<SCP_string> Gr_fsr_versions;
+// The largest image side the renderer supports, which limits the upscale factor. 0 without FSR.
+extern int Gr_fsr_max_output_size;
 
-// On needs a window larger than the render resolution on at least one axis
-bool gr_fsr_upscale_available();
+// Scales the render resolution to cover the window in both axes, keeping its aspect ratio; the final blit squeezes the
+// rest. 1 for Off and AA, and when the window isn't larger than the render resolution.
+float gr_fsr_upscale_factor(FsrMode mode);
+// Framebuffer pixels per gr_screen unit for what's drawn after the scene. Above 1 only while FSR upscales.
+extern float Gr_composition_scale;
 
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
@@ -318,6 +327,7 @@ struct vertex_format_data
 		RADIUS,
 		UVEC,
 		MATRIX4,
+		MOTION4, // Vulkan only. OpenGL's attribute tables have no slot for it.
 	};
 
 	vertex_format format_type;

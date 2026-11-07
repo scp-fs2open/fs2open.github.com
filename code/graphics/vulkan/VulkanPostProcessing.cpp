@@ -54,6 +54,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 	m_ctx.device = device;
 	m_ctx.memoryManager = memMgr;
 	m_ctx.sceneExtent = extent;
+	m_ctx.outputExtent = extent;
 	m_ctx.depthFormat = depthFormat;
 	m_ctx.hdrActive = hdrActive;
 	// In HDR the tonemapped scene must be able to exceed paper white, so use fp16.
@@ -601,6 +602,7 @@ bool VulkanPostProcessor::createVelocitySceneResources()
 			                         | vk::AccessFlagBits::eShaderRead
 			                         | vk::AccessFlagBits::eTransferRead;
 			dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+			                         | vk::AccessFlagBits::eColorAttachmentRead
 			                         | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 			                         | vk::AccessFlagBits::eDepthStencilAttachmentRead;
 
@@ -675,6 +677,14 @@ void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
 
 void VulkanPostProcessor::prepareUpscaler()
 {
+	if (m_upscaler.versionChanged()) {
+		m_ctx.device.waitIdle();
+		m_upscaler.destroyTargets();
+		// Bloom and tonemapping must not keep the destroyed output, even if the new version then fails
+		setPostProcessInput(m_sceneColor);
+		m_upscalerActive = false;
+	}
+
 	const bool active = m_velocityActive && m_upscaler.wanted() && m_upscaler.createResources();
 
 	if (active != m_upscalerActive) {
@@ -706,17 +716,18 @@ std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
 	return clearValues;
 }
 
-bool VulkanPostProcessor::resize(vk::Extent2D newExtent)
+bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExtent)
 {
 	if (!m_initialized) {
 		return false;
 	}
-	if (newExtent == m_ctx.sceneExtent) {
+	if (newExtent == m_ctx.sceneExtent && outputExtent == m_ctx.outputExtent) {
 		return true;
 	}
 
-	// Caller (recreateSwapChain) has already waited for the device to go idle.
+	// Caller has already waited for the device to go idle.
 	m_ctx.sceneExtent = newExtent;
+	m_ctx.outputExtent = outputExtent;
 
 	// Recreated at the new size on next use. Bloom is rebuilt around the input below.
 	m_upscaler.destroyTargets();
@@ -876,8 +887,8 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 	// Set viewport (non-flipped for post-processing — textures are already
 	// in the correct Vulkan orientation, no Y-flip needed)
 	stateTracker->setViewport(0.0f, 0.0f,
-		static_cast<float>(m_ctx.sceneExtent.width),
-		static_cast<float>(m_ctx.sceneExtent.height));
+		static_cast<float>(m_ctx.outputExtent.width),
+		static_cast<float>(m_ctx.outputExtent.height));
 
 	stateTracker->applyDynamicState();
 

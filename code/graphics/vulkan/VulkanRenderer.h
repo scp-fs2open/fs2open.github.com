@@ -208,6 +208,13 @@ class VulkanRenderer {
 	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
 
 	/**
+	 * @brief The size of the composition image: the render extent, times FSR's upscale factor while it upscales
+	 *
+	 * Everything after the scene draws at this size, scaled from gr_screen coordinates by the backend.
+	 */
+	vk::Extent2D getCompositionExtent() const { return m_compositionExtent; }
+
+	/**
 	 * @brief Get the composition image the frame is currently being rendered into
 	 *
 	 * This is the fp16 image behind m_swapChainFramebuffers -- the whole frame
@@ -465,6 +472,10 @@ class VulkanRenderer {
 	bool recreateSwapChain();
 	bool shouldRecreateSwapChain(SwapChainStatus status) const;
 
+	vk::Extent2D wantedCompositionExtent() const;
+	// Recreates the composition and output-sized targets when the FSR upscale factor changed. Outside a frame.
+	void updateCompositionExtent();
+
 	void createImGuiDescriptorPool();
 	void initImGui();
 	void shutdownImGui();
@@ -497,6 +508,7 @@ class VulkanRenderer {
 	// option), so treating the two as one is what put whole frames in the
 	// upper-left corner of the screen.
 	vk::Extent2D m_renderExtent;
+	vk::Extent2D m_compositionExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;

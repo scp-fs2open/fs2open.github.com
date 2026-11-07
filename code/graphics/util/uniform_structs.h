@@ -439,6 +439,12 @@ struct effect_data {
 	int blend_alpha;
 
 	float pad[1];
+
+	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
+	matrix4 velocityViewProj;
+	matrix4 velocityPrevViewProj;
+	float velocityUvScale[2];
+	float pad2[2];
 };
 
 struct effect_distort_data {
@@ -455,6 +461,12 @@ struct batched_data {
 	float intensity;
 
 	float pad[3];
+
+	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
+	matrix4 velocityViewProj;
+	matrix4 velocityPrevViewProj;
+	float velocityUvScale[2];
+	float pad2[2];
 };
 
 struct post_data {

@@ -21892,7 +21892,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	ship_weapon *swp = &shipp->weapons;
 	auto ship_pm = model_get(sip->model_num);
 
-	scene->push_transform(&obj->pos, &obj->orient);
+	scene->push_transform(&obj->pos, &obj->orient, &obj->last_pos, &obj->last_orient);
 
 	auto ship_render_flags = ship_render_info->get_model_flags();
 	ship_render_info->set_flags(ship_render_flags & ~MR_SHOW_THRUSTERS);

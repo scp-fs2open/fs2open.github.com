@@ -877,55 +877,88 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .finish();
 
 FsrMode Gr_fsr_mode = FsrMode::Off;
-SCP_string Gr_fsr_version;
+int Gr_fsr_major_version = 0;
+SCP_vector<SCP_string> Gr_fsr_versions;
+int Gr_fsr_max_output_size = 0;
+float Gr_composition_scale = 1.0f;
 
-bool gr_fsr_upscale_available()
+static float fsr_window_factor()
 {
-	return Cmdline_window_res.has_value()
-		&& (Cmdline_window_res->first > gr_screen.max_w || Cmdline_window_res->second > gr_screen.max_h);
+	if (!Cmdline_window_res.has_value()) {
+		return 1.0f;
+	}
+	const float factor = std::max(i2fl(Cmdline_window_res->first) / i2fl(gr_screen.max_w),
+		i2fl(Cmdline_window_res->second) / i2fl(gr_screen.max_h));
+	if (factor <= 1.0f || std::max(gr_screen.max_w, gr_screen.max_h) * factor > Gr_fsr_max_output_size) {
+		return 1.0f;
+	}
+	return factor;
+}
+
+float gr_fsr_upscale_factor(FsrMode mode)
+{
+	return mode == FsrMode::Upscale ? fsr_window_factor() : 1.0f;
+}
+
+// The option stores the major version times 10 plus the mode, so values saved before versions were selectable read
+// as the newest version.
+static int fsr_setting(FsrMode mode, int major_version)
+{
+	return mode == FsrMode::Off ? 0 : major_version * 10 + static_cast<int>(mode);
 }
 
 // The option framework has no disabled state, so values that can't be used aren't offered.
-static SCP_vector<FsrMode> fsr_mode_enumerator()
+static SCP_vector<int> fsr_setting_enumerator()
 {
-	SCP_vector<FsrMode> out{FsrMode::Off};
+	SCP_vector<int> out{0};
 
 	// Options are also enumerated before gr_init has set up the renderer.
 	if (gr_screen.gf_is_capable && gr_is_capable(gr_capability::CAPABILITY_FSR)) {
-		out.push_back(FsrMode::AA);
-		if (gr_fsr_upscale_available()) {
-			out.push_back(FsrMode::On);
+		for (const auto& version : Gr_fsr_versions) {
+			const int major = atoi(version.c_str());
+			out.push_back(fsr_setting(FsrMode::AA, major));
+			if (fsr_window_factor() > 1.0f) {
+				out.push_back(fsr_setting(FsrMode::Upscale, major));
+			}
 		}
 	}
 
 	return out;
 }
 
-static SCP_string fsr_mode_display(FsrMode mode)
+static SCP_string fsr_setting_display(int setting)
 {
-	const SCP_string version = Gr_fsr_version.empty() ? "" : " (FSR " + Gr_fsr_version + ")";
-	switch (mode) {
-	case FsrMode::AA:
-		return "FSR AA" + version;
-	case FsrMode::On:
-		return "On" + version;
-	case FsrMode::Off:
-	default:
+	const auto mode = static_cast<FsrMode>(setting % 10);
+	if (mode == FsrMode::Off) {
 		return "Off";
 	}
+
+	SCP_string label = "FSR";
+	for (const auto& name : Gr_fsr_versions) {
+		if (atoi(name.c_str()) == setting / 10) {
+			label += " " + name;
+			break;
+		}
+	}
+	return label + (mode == FsrMode::AA ? " AA" : " Upscale");
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto FsrOption __UNUSED = options::OptionBuilder<FsrMode>("Graphics.FSR",
+static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      std::pair<const char*, int>{"AMD FSR", -1},
-                     std::pair<const char*, int>{"Upscales the 3D scene from the rendering resolution to the window resolution. FSR AA only does anti aliasing.", -1})
+                     std::pair<const char*, int>{"AMD's temporal anti aliasing and upscaling. AA keeps the rendering resolution; Upscale renders the 3D scene at the chosen resolution and upscales it to the window resolution.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .enumerator(fsr_mode_enumerator)
-                     .display(fsr_mode_display)
+                     .enumerator(fsr_setting_enumerator)
+                     .display(fsr_setting_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_func([]() { return Gr_fsr_mode; } )
-                     .bind_to(&Gr_fsr_mode)
+                     .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_fsr_major_version); } )
+                     .change_listener([](const int& setting, bool) {
+                         const int mode = setting % 10;
+                         Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
+                         Gr_fsr_major_version = setting / 10;
+                         return true;
+                     })
                      .importance(77)
                      .finish();
 
@@ -2113,7 +2146,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 	}
 
-	if (Cmdline_fsr_mode >= static_cast<int>(FsrMode::Off) && Cmdline_fsr_mode <= static_cast<int>(FsrMode::On)) {
+	if (Cmdline_fsr_mode >= static_cast<int>(FsrMode::Off) && Cmdline_fsr_mode <= static_cast<int>(FsrMode::Upscale)) {
 		Gr_fsr_mode = static_cast<FsrMode>(Cmdline_fsr_mode);
 	}
 
