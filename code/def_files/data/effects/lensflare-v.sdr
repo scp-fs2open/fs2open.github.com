@@ -1,0 +1,123 @@
+// Physically-based lens flare (Lee & Eisemann 2013 matrix method).
+// Instanced draw: one 4-vertex triangle-strip quad per ghost, plus one for the
+// starburst billboard. All placement math was precomputed on the CPU into the
+// per-instance data below; positions are in sensor-plane millimeters.
+
+struct lens_flare_instance {
+	vec4 center;   // w = LENS_QUAD_*, the kind tag; xyz meaning depends on it
+	vec4 halfext;
+	vec4 apscale;
+	vec4 apoff;
+	vec4 color;
+};
+
+// Which artifact this slot draws. Mirrored from LENS_QUAD_* in
+// graphics/util/uniform_structs.h, which also tabulates what each kind reads out
+// of the fields above.
+#define LENS_QUAD_GHOST     0.0
+#define LENS_QUAD_STARBURST 1.0
+#define LENS_QUAD_STREAK    2.0
+
+// The tag travels as a float, so match it with a half-step tolerance rather than
+// by equality.
+bool quad_is(float tag, float kind) { return abs(tag - kind) < 0.5; }
+
+#ifdef VULKAN
+layout(location = 0) out vec2 sensorPos;
+layout(location = 1) flat out vec4 g_center;
+layout(location = 2) flat out vec4 g_halfext;
+layout(location = 3) flat out vec4 g_apscale;
+layout(location = 4) flat out vec4 g_apoff;
+layout(location = 5) flat out vec4 g_color;
+layout(location = 6) flat out float g_origin;
+#define INSTANCE_INDEX gl_InstanceIndex
+#else
+in vec4 vertPosition;
+out vec2 sensorPos;
+flat out vec4 g_center;
+flat out vec4 g_halfext;
+flat out vec4 g_apscale;
+flat out vec4 g_apoff;
+flat out vec4 g_color;
+flat out float g_origin;
+#define INSTANCE_INDEX gl_InstanceID
+#endif
+
+#ifdef VULKAN
+layout(std140, set = 2, binding = 0)
+#else
+layout(std140)
+#endif
+uniform genericData {
+	vec2 axis;       // unit flare axis in sensor space
+	vec2 ndc_scale;  // sensor mm -> NDC
+	vec4 tint;       // sun color * visibility * lens intensity
+	int n_instances;
+	float squeeze;   // anamorphic horizontal stretch, 1.0 = spherical
+	// keep the array size in sync with MAX_LENS_FLARE_INSTANCES (uniform_structs.h)
+	lens_flare_instance instances[64];
+};
+
+void main()
+{
+#ifdef VULKAN
+	vec2 corner = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1)) * 2.0 - 1.0;
+#else
+	vec2 corner = vertPosition.xy;
+#endif
+
+	lens_flare_instance inst = instances[INSTANCE_INDEX];
+
+	vec2 p;
+	float origin;
+
+	if (quad_is(inst.center.w, LENS_QUAD_STREAK)) {
+		// Anamorphic streak: a screen-horizontal bar centred on the sun's image,
+		// built straight in sensor space rather than in the axis/perp frame. The
+		// streak lies along the cylindrical element, not along the line to the
+		// frame centre, so it stays horizontal wherever the sun sits. It is also
+		// exempt from `squeeze` -- its length is an explicit control, and
+		// stretching it as well would count the anamorphic twice.
+		// The vertical bound is padded well past the half-thickness: the gaussian
+		// across the bar is still ~2% of peak at one half-thickness, so a quad
+		// cut exactly there would leave a hard horizontal line down the whole
+		// streak. At 3x the profile has decayed to exp(-36), i.e. nothing. This
+		// only pads the geometry -- halfext.y still means half-thickness, so
+		// +Thickness: keeps its meaning.
+		origin = inst.center.x;
+		p = axis * origin + vec2(corner.x * inst.halfext.x, corner.y * inst.halfext.y * 3.0);
+	} else {
+		// Ghosts and the starburst share this path: both are laid out per channel
+		// in the axis/perp frame, the starburst simply with all three channels
+		// equal.
+		// Bounds of the union of the three chromatic quads, along/around the axis
+		float cmin = min(inst.center.x - inst.halfext.x, min(inst.center.y - inst.halfext.y, inst.center.z - inst.halfext.z));
+		float cmax = max(inst.center.x + inst.halfext.x, max(inst.center.y + inst.halfext.y, inst.center.z + inst.halfext.z));
+		float caxis = 0.5 * (cmin + cmax);
+		float haxis = 0.5 * (cmax - cmin);
+		float hperp = max(inst.halfext.x, max(inst.halfext.y, inst.halfext.z));
+
+		// The anamorphic stretch is linear, so applying it to the corner offset
+		// takes the oriented rectangle to a parallelogram that still bounds the
+		// stretched footprint exactly -- no need to widen out to a screen-aligned
+		// box. The stretch is about the instance's axial centre, not the sensor
+		// origin, so ghosts stay put and only grow: on a desqueezed anamorphic
+		// frame the horizontal squeeze of capture cancels for positions but not
+		// for footprints.
+		vec2 perp = vec2(-axis.y, axis.x);
+		vec2 off = axis * (corner.x * haxis) + perp * (corner.y * hperp);
+		off.x *= squeeze;
+		origin = caxis;
+		p = axis * caxis + off;
+	}
+
+	sensorPos = p;
+	g_origin = origin;
+	g_center = inst.center;
+	g_halfext = inst.halfext;
+	g_apscale = inst.apscale;
+	g_apoff = inst.apoff;
+	g_color = inst.color;
+
+	gl_Position = vec4(p * ndc_scale, 0.0, 1.0);
+}

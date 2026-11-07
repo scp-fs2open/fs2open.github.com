@@ -120,6 +120,9 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	// Vulkan-only
 	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
+
+	{ SDR_TYPE_LENS_FLARE, "lensflare-v.sdr", "lensflare-f.sdr", nullptr,
+		{ VATTRIB_POSITION }, "Physically-based lens flare", false },
 };
 // clang-format on
 

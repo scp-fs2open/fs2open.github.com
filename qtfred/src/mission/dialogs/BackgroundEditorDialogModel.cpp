@@ -7,6 +7,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "starfield/nebula.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "missioneditor/common.h"
 
@@ -1430,6 +1431,53 @@ SCP_string BackgroundEditorDialogModel::getLightingProfileName()
 void BackgroundEditorDialogModel::setLightingProfileName(const SCP_string& name)
 {
 	modify(The_mission.lighting_profile_name, name);
+}
+
+// The camera lens every sun's flare is imaged through. "Default" and "None" are
+// genuinely different answers -- the first leaves the mission silent so it follows
+// lens_flares.tbl's $Default Lens:, the second says no flares even when one is
+// declared -- so both head the list, ahead of the lenses themselves.
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getCameraLensOptions()
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back(CAMERA_LENS_DEFAULT);
+	out.emplace_back(CAMERA_LENS_NONE);
+	for (int i = 0; i < graphics::lens_flare_num_systems(); i++)
+		out.emplace_back(graphics::lens_flare_get_system(i)->name);
+	return out;
+}
+
+SCP_string BackgroundEditorDialogModel::getCameraLensName()
+{
+	// An unset mission (and one that spelled <default> by hand) shows as "Default"
+	if (The_mission.camera_lens_name.empty() ||
+		!stricmp(The_mission.camera_lens_name.c_str(), LENS_NAME_DEFAULT))
+		return { CAMERA_LENS_DEFAULT };
+
+	if (!stricmp(The_mission.camera_lens_name.c_str(), LENS_NAME_NONE))
+		return { CAMERA_LENS_NONE };
+
+	return The_mission.camera_lens_name;
+}
+
+void BackgroundEditorDialogModel::setCameraLensName(const SCP_string& name)
+{
+	// Empty for "Default" so the mission stays silent, the <none> token for "None"
+	// so the choice survives being saved
+	SCP_string lens_name;
+	if (name == CAMERA_LENS_NONE)
+		lens_name = LENS_NAME_NONE;
+	else if (name != CAMERA_LENS_DEFAULT)
+		lens_name = name;
+
+	if (lens_name == The_mission.camera_lens_name)
+		return;
+
+	modify(The_mission.camera_lens_name, lens_name);
+
+	// mount it right away so the editor's viewport shows what the mission will
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
+	refreshBackgroundPreview();
 }
 
 } // namespace fso::fred::dialogs

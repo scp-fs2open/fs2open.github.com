@@ -3139,6 +3139,23 @@ int Fred_mission_save::save_mission_info()
 		bypass_comment(";;FSO 23.1.0;; $Lighting Profile:");
 	}
 
+	// the-e's camera lens for physically-based flares. The token is written back
+	// verbatim: an empty one means the mission named no lens, and anything else --
+	// a lens name or <none> -- is a deliberate choice that has to survive the
+	// round trip even if it happens to match the current $Default Lens:.
+	if (!The_mission.camera_lens_name.empty()) {
+		fso_comment_push(";;FSO 26.1.0;;");
+		if (optional_string_fred("$Camera Lens:")) {
+			parse_comments(2);
+			fout(" %s", The_mission.camera_lens_name.c_str());
+		} else {
+			fout_version("\n\n$Camera Lens: %s", The_mission.camera_lens_name.c_str());
+		}
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 26.1.0;; $Camera Lens:");
+	}
+
 	// sound environment (EFX/EAX) - taylor
 	sound_env* m_env = &The_mission.sound_environment;
 	if ((m_env->id >= 0) && (m_env->id < static_cast<int>(EFX_presets.size()))) {

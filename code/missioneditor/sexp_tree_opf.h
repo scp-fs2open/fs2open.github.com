@@ -110,6 +110,7 @@ public:
 	static sexp_list_item* get_listing_opf_turret_target_order();
 	static sexp_list_item* get_listing_opf_turret_types();
 	static sexp_list_item* get_listing_opf_post_effect();
+	static sexp_list_item* get_listing_opf_lens_system();
 	static sexp_list_item* get_listing_opf_turret_target_priorities();
 	static sexp_list_item* get_listing_opf_armor_type();
 	static sexp_list_item* get_listing_opf_damage_type();
