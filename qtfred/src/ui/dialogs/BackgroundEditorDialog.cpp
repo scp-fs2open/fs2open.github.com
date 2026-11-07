@@ -127,6 +127,10 @@ void BackgroundEditorDialog::initializeUi()
 		ui->lightingProfileCombo->addItem(QString::fromStdString(s));
 	}
 
+	for (const auto& s : _model->getCameraLensOptions()) {
+		ui->cameraLensCombo->addItem(QString::fromStdString(s));
+	}
+
 	updateMiscControls();
 
 }
@@ -413,6 +417,7 @@ void BackgroundEditorDialog::updateMiscControls()
 	ui->subspaceCheckBox->setChecked(_model->getTakesPlaceInSubspace());
 	ui->envMapEdit->setText(QString::fromStdString(_model->getEnvironmentMapName()));
 	ui->lightingProfileCombo->setCurrentIndex(ui->lightingProfileCombo->findText(QString::fromStdString(_model->getLightingProfileName())));
+	ui->cameraLensCombo->setCurrentIndex(ui->cameraLensCombo->findText(QString::fromStdString(_model->getCameraLensName())));
 }
 
 int BackgroundEditorDialog::pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex)
@@ -997,6 +1002,15 @@ void BackgroundEditorDialog::on_lightingProfileCombo_currentIndexChanged(int ind
 
 	const QString text = ui->lightingProfileCombo->itemText(index);
 	_model->setLightingProfileName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_cameraLensCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->cameraLensCombo->itemText(index);
+	_model->setCameraLensName(text.toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs

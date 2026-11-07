@@ -35,6 +35,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "graphics/lens_flare.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/bitarray.h"
@@ -1213,6 +1214,17 @@ void parse_mission_info(mission *pm, bool basic = false)
 	else
 		The_mission.lighting_profile_name = lighting_profiles::default_name();
 	lighting_profiles::switch_to(The_mission.lighting_profile_name);
+
+	// The camera lens every sun's flare is imaged through (graphics/lens_flare.h).
+	// Stored as the token the mission actually wrote, so that "this mission says
+	// nothing" (empty, taking the tabled default) stays distinct from an explicit
+	// <none> -- otherwise a mod adding a $Default Lens: would silently override
+	// missions that had deliberately asked for no flares. lens_flare_switch_to()
+	// resolves all of it, including the empty case.
+	The_mission.camera_lens_name.clear();
+	if (optional_string("$Camera Lens:"))
+		stuff_string(The_mission.camera_lens_name, F_NAME);
+	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -7278,6 +7290,8 @@ void mission::Reset()
 
 	ai_profile_index = Default_ai_profile;
 	lighting_profile_name = lighting_profiles::default_name();
+	// empty = this mission names no lens, so the tabled default applies
+	camera_lens_name.clear();
 
 	cutscenes.clear( );
 
