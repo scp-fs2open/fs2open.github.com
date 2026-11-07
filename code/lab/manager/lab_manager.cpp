@@ -142,7 +142,7 @@ void LabManager::onFrame(float frametime) {
 		dx, dy, dz, lmb_down, lmb_pressed, mouse_down(MOUSE_RIGHT_BUTTON) != 0, key_get_shift_status(), mouse_x, mouse_y);
 
 	if (!current_camera->handlesObjectPlacement()) {
-		const bool over_camera_overlay = Renderer->getShowOrientationWidget() && current_camera->isOverlayHit(mouse_x, mouse_y);
+		const bool over_camera_overlay = Renderer->getShowOrientationWidget() && !Renderer->getHideUI() && current_camera->isOverlayHit(mouse_x, mouse_y);
 		if (lmb_down && !over_camera_overlay) {
 			angles rot_angle;
 			vm_extract_angles_matrix_alternate(&rot_angle, &CurrentOrientation);
@@ -198,6 +198,10 @@ void LabManager::onFrame(float frametime) {
 
 		case KEY_V:
 			Renderer->resetView();
+			break;
+
+		case KEY_H:
+			Renderer->setHideUI(!Renderer->getHideUI());
 			break;
 
 		case KEY_UP:
