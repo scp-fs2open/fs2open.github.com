@@ -122,17 +122,17 @@ vk::Extent2D windowExtent(const VulkanPresentTarget& target)
 	return {static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h)};
 }
 
-vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)
+vk::Extent2D chooseSwapChainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height)
 {
-	if (values.surfaceCapabilities.currentExtent.width != UINT32_MAX) {
-		return values.surfaceCapabilities.currentExtent;
+	if (capabilities.currentExtent.width != UINT32_MAX) {
+		return capabilities.currentExtent;
 	} else {
 		VkExtent2D actualExtent = {width, height};
 
-		actualExtent.width = std::max(values.surfaceCapabilities.minImageExtent.width,
-			std::min(values.surfaceCapabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(values.surfaceCapabilities.minImageExtent.height,
-			std::min(values.surfaceCapabilities.maxImageExtent.height, actualExtent.height));
+		actualExtent.width = std::max(capabilities.minImageExtent.width,
+			std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height,
+			std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
 		return actualExtent;
 	}
@@ -549,7 +549,7 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, window.width, window.height);
+	createInfo.imageExtent = chooseSwapChainExtent(deviceValues.surfaceCapabilities, window.width, window.height);
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment
 	                      | vk::ImageUsageFlagBits::eTransferSrc
@@ -564,7 +564,17 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 	}
 
-	createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	// preTransform describes the transform already applied to the rendered content.
+	// FSO does not pre-rotate it, so request identity whenever supported. If this
+	// differs from currentTransform (e.g. landscape on an Android phone), the
+	// presentation engine compensates during presentation. Passing currentTransform
+	// instead would claim that FSO had already performed that rotation.
+	auto supported = deviceValues.surfaceCapabilities.supportedTransforms;
+	if (supported & vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+		createInfo.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+	} else {
+		createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	}
 	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	createInfo.presentMode = choosePresentMode(deviceValues);
 	createInfo.clipped = true;
@@ -585,6 +595,7 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 	target.hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
 	Gr_hdr_output_active = target.hdrActive;
 	target.extent = createInfo.imageExtent;
+	target.preTransform = createInfo.preTransform;
 
 	// Only the main target can draw at a size other than its window. Without -window_res the render
 	// resolution simply is the window, so follow gr_screen (which gr_screen_resize() has already
@@ -653,6 +664,42 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 	return true;
 }
 
+bool VulkanRenderer::shouldRecreateSwapChain(const VulkanPresentTarget& target, SwapChainStatus status) const
+{
+	// An already requested rebuild also avoids redundant Android surface queries.
+	if (target.needsRecreation || status == SwapChainStatus::eOutOfDate) {
+		return true;
+	}
+	if (status != SwapChainStatus::eSuboptimal) {
+		return false;
+	}
+
+#ifdef __ANDROID__
+	if (target.preTransform == vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+		vk::SurfaceCapabilitiesKHR capabilities;
+		try {
+			capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(target.surface.get());
+		} catch (const vk::SystemError&) {
+			// Let the normal recreation path handle a failed surface query.
+			return true;
+		}
+		if (capabilities.currentTransform != target.preTransform &&
+			(capabilities.supportedTransforms & target.preTransform)) {
+			const auto window = windowExtent(target);
+			const auto extent = chooseSwapChainExtent(capabilities, window.width, window.height);
+			if (extent == target.extent) {
+				// Android can report SUBOPTIMAL on every present while the compositor
+				// compensates for our identity preTransform. Rebuilding with the same
+				// extent and preTransform would just repeat that condition next frame.
+				return false;
+			}
+		}
+	}
+#endif
+
+	return true;
+}
+
 bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 {
 	nprintf(("vulkan", "Vulkan: Recreating swap chain...\n"));
@@ -677,7 +724,7 @@ bool VulkanRenderer::recreateSwapChain(VulkanPresentTarget& target)
 
 	// Check for 0x0 extent (minimized window) — caller should retry later
 	const vk::Extent2D window = windowExtent(target);
-	auto extent = chooseSwapChainExtent(freshValues, window.width, window.height);
+	auto extent = chooseSwapChainExtent(freshValues.surfaceCapabilities, window.width, window.height);
 	if (extent.width == 0 || extent.height == 0) {
 		nprintf(("vulkan", "Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
 		return false;
