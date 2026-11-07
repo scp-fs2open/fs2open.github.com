@@ -41,16 +41,21 @@ MissionNodeItem::MissionNodeItem(int missionIndex,
 QRectF MissionNodeItem::boundingRect() const
 {
 	// the ports are drawn centered on the top and bottom edges, so half of each sticks out of the card
-	const qreal portExtent = m_style.portRadius + 2.0;
+	const qreal portExtent = m_style.portRadius + kMaxBorderWidth;
 	return m_rect.adjusted(-1, -portExtent, 1, portExtent);
 }
 
 QPainterPath MissionNodeItem::shape() const
 {
-	// hit-testing stays on the card; hitTestPortScene handles the ports
+	// clicks and drops hit the card only; the half of a port outside it is not hit
 	QPainterPath path;
-	path.addRect(m_rect.adjusted(-1, -1, 1, 1));
+	path.addRect(cardRect());
 	return path;
+}
+
+QRectF MissionNodeItem::cardRect() const
+{
+	return m_rect.adjusted(-1, -1, 1, 1);
 }
 
 static inline QPainterPath roundedRectPath(const QRectF& r, qreal rad)
@@ -65,7 +70,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	p->setRenderHint(QPainter::Antialiasing, true);
 
 	// Precompute geometry
-	const qreal borderW = isSelected() ? 2.0 : 1.0;
+	const qreal borderW = isSelected() ? kMaxBorderWidth : 1.0;
 	const QPen borderPen(m_style.nodeBorder, borderW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
 	const qreal topPortY = m_rect.top();       // center exactly on edge; half visible
@@ -534,6 +539,7 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 }
 CampaignMissionGraph::~CampaignMissionGraph()
 {
+	qApp->removeEventFilter(this);
 	// the scene is a child of this view and is deleted after it, when its selection changes can no longer reach us
 	if (m_scene != nullptr) {
 		disconnect(m_scene, nullptr, this, nullptr);
@@ -882,7 +888,7 @@ void CampaignMissionGraph::buildMissionEdges()
 			if (i == j) {
 				// Selfloop: draw outside node
 				if (m_style.showSelfLoops) {
-					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->shape().boundingRect());
+					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->cardRect());
 					const bool sourceRight = isSpecial; // special port on right; main on left
 					edge->setSelfLoop(nodeRectScene, sourceRight, sibIndex, sibCount);
 					m_scene->addItem(edge);
@@ -936,9 +942,9 @@ void CampaignMissionGraph::ensureEndSink()
 	// Position below the union of mission nodes
 	// Future TODO: Let the user move this around. Will require being able to save it's position to the campaign file
 	if (!m_nodeItems.empty()) {
-		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->shape().boundingRect());
+		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->cardRect());
 		for (size_t i = 1; i < m_nodeItems.size(); ++i) {
-			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->shape().boundingRect()));
+			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->cardRect()));
 		}
 		const qreal x = nodesRect.center().x() - m_style.endSinkSize.width() * 0.5;
 		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
@@ -1040,7 +1046,8 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 	const QPointF snapped(qRound(scenePt.x() / s) * s, qRound(scenePt.y() / s) * s);
 
 	// Don't spawn if we actually clicked on an item's body
-	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->sceneBoundingRect().contains(scenePt))) {
+	if (!nodeAtScenePos(scenePt) &&
+		!(m_endSink && m_endSink->mapRectToScene(m_endSink->pillRect()).contains(scenePt))) {
 		m_spawnPending = true;
 		Q_EMIT createMissionAtAndConnectRequested(snapped, m_drag.fromIndex, m_drag.isSpecial);
 		// return false so caller won't rebuild; dialog will rebuild after it adds the mission
@@ -1286,7 +1293,7 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 	}
 
 	// END sink under cursor? no special menu
-	if (m_endSink && m_endSink->sceneBoundingRect().contains(sp)) {
+	if (m_endSink && m_endSink->mapRectToScene(m_endSink->pillRect()).contains(sp)) {
 		QGraphicsView::contextMenuEvent(e);
 		return;
 	}
