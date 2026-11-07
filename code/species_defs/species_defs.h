@@ -16,6 +16,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/generic.h"
+#include "graphics/lens_flare.h"
 #include "hud/hudparse.h"
 #include "mission/missionbriefcommon.h"
 
@@ -58,6 +59,10 @@ public:
 	generic_bitmap debris_texture;
 	generic_anim shield_anim;
 	thrust_info thruster_info;
+
+	// How this species' engines flare through the camera lens; disabled unless
+	// species_defs.tbl says otherwise (graphics/lens_flare.h)
+	graphics::thruster_flare_info thruster_flare;
 
 	// Bobboau's thruster stuff
 	thrust_pair_bitmap thruster_secondary_glow_info;
