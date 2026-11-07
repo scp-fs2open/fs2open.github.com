@@ -1625,6 +1625,23 @@ void event_editor::OnBrowseWave()
 	}
 }
 
+// The event editor works on a local copy of the messages, so the sexp tree must list those rather than Messages[].
+SCP_vector<SCP_string> event_editor::getMessages()
+{
+	SCP_vector<SCP_string> list;
+	list.reserve(m_messages.size());
+
+	for (const auto& msg : m_messages)
+		list.emplace_back(msg.name);
+
+	return list;
+}
+
+bool event_editor::hasDefaultMessageParameter()
+{
+	return !m_messages.empty();
+}
+
 char *event_editor::current_message_name(int i)
 {
 	if ( (i < 0) || (i >= (int)m_messages.size()) ){
