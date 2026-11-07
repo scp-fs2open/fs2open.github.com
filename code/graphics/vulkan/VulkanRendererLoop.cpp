@@ -101,6 +101,14 @@ void VulkanRenderer::setupFrame()
 		return;
 	}
 
+	// before recording: the recompile can run mid-frame, while the frame being recorded still holds old pipelines
+	if (m_pipelinesStale) {
+		mprintf(("Vulkan: shaders were recompiled, rebuilding pipelines\n"));
+		m_device->waitIdle();
+		m_pipelineManager->forgetAllPipelines();
+		m_pipelinesStale = false;
+	}
+
 	// Free completed texture upload command buffers
 	Assertion(m_textureManager, "Vulkan TextureManager not initialized in setupFrame!");
 	m_textureManager->frameStart();
