@@ -203,14 +203,18 @@ TEST_F(LensFlareTableTest, ShippedLensesParseAndPrecompute)
 		EXPECT_GT(ls->efl, 0.0f);
 		EXPECT_GT(ls->bfd, 0.0f);
 		EXPECT_FALSE(ls->ghosts.empty());
-		EXPECT_LE(static_cast<int>(ls->ghosts.size()), ls->max_ghosts);
+		// Every ghost the uniform block can hold is enumerated; $Max Ghosts: is
+		// applied when the quads are packed, so that it can be overridden without
+		// re-running this precompute.
+		EXPECT_LE(static_cast<int>(ls->ghosts.size()), MAX_LENS_FLARE_GHOSTS);
+		EXPECT_GT(ls->max_ghosts, 0);
 		EXPECT_GT(ls->entrance_radius, 0.0f);
 		EXPECT_GT(ls->aperture_radius, 0.0f);
 		EXPECT_GT(ls->sensor_width, 0.0f);
 		// every shipped lens is spherical, so both anamorphic paths must be
 		// exactly off -- this is what keeps existing content identical
-		EXPECT_FLOAT_EQ(ls->anamorphic_squeeze, 1.0f);
-		EXPECT_FLOAT_EQ(ls->streak.strength, 0.0f);
+		EXPECT_FLOAT_EQ(ls->anamorphic.squeeze, 1.0f);
+		EXPECT_FLOAT_EQ(ls->anamorphic.streak.strength, 0.0f);
 
 		for (const auto& ghost : ls->ghosts) {
 			for (int wl = 0; wl < 3; wl++) {
@@ -339,7 +343,7 @@ TEST_F(LensFlareTableTest, ApertureEditRebuildsStarburst)
 {
 	const int idx = lens_flare_lookup("angenieux_100mm");
 	ASSERT_GE(idx, 0);
-	auto* lens = lens_flare_get_system_mutable(idx);
+	const lens_system* lens = lens_flare_get_system(idx);
 	ASSERT_NE(lens, nullptr);
 
 	const auto* before = lens_flare_get_textures(idx);
@@ -347,33 +351,49 @@ TEST_F(LensFlareTableTest, ApertureEditRebuildsStarburst)
 	SCP_vector<float> starburst_before = before->starburst;
 	ASSERT_FALSE(starburst_before.empty());
 
-	lens->aperture.blades = 3;
-	lens->aperture.rotation = 40.0f;
-	lens_flare_invalidate_textures(idx);
+	lens_aperture edited = lens->aperture;
+	edited.blades = 3;
+	edited.rotation = 40.0f;
+	lens_flare_overrides().aperture = edited;
+	lens_flare_overrides_changed();
 
 	const auto* after = lens_flare_get_textures(idx);
 	ASSERT_NE(after, nullptr);
 	ASSERT_EQ(after->starburst.size(), starburst_before.size());
 	EXPECT_NE(after->starburst, starburst_before) << "starburst did not follow the aperture";
+
+	// and the lens itself was never touched, which is the whole point of an
+	// override: there is nothing to put back
+	EXPECT_NE(lens->aperture.blades, 3);
 }
 
-// The backends cache their uploaded copy per lens, so an edit has to change the
-// generation counter or the new mask never reaches the GPU.
+// The backends cache their uploaded copy, so an edit has to change the
+// generation counter or the new mask never reaches the GPU -- and, just as
+// importantly, an edit that changes nothing must *not* bump it, or every slider
+// tick would re-upload.
 TEST_F(LensFlareTableTest, TextureInvalidationBumpsGeneration)
 {
 	const int idx = lens_flare_lookup("angenieux_100mm");
 	ASSERT_GE(idx, 0);
+	const lens_system* lens = lens_flare_get_system(idx);
+	ASSERT_NE(lens, nullptr);
 
 	ASSERT_NE(lens_flare_get_textures(idx), nullptr);
 	const unsigned int before = lens_flare_get_texture_generation();
 
-	lens_flare_invalidate_textures(idx);
+	lens_aperture edited = lens->aperture;
+	edited.blades = 3;
+	lens_flare_overrides().aperture = edited;
+	lens_flare_overrides_changed();
 	EXPECT_NE(lens_flare_get_texture_generation(), before);
 
-	// out-of-range invalidation is a no-op, not a bump
-	const unsigned int after = lens_flare_get_texture_generation();
-	lens_flare_invalidate_textures(lens_flare_num_systems() + 5);
-	EXPECT_EQ(lens_flare_get_texture_generation(), after);
+	// An override that resolves to the same iris is not an edit. This is what
+	// keeps a repeating mission event from rebuilding the mask forever.
+	ASSERT_NE(lens_flare_get_textures(idx), nullptr);
+	const unsigned int settled = lens_flare_get_texture_generation();
+	lens_flare_overrides().aperture = edited;
+	lens_flare_overrides_changed();
+	EXPECT_EQ(lens_flare_get_texture_generation(), settled);
 }
 
 // Same engine, but reached through the table parser and the *-lens.tbm modular
@@ -558,50 +578,137 @@ TEST_F(LensFlareApertureTbmTest, ParsesEveryApertureField)
 	EXPECT_EQ(ls->max_ghosts, 7);
 	EXPECT_FLOAT_EQ(ls->entrance_radius, 20.0f);
 	EXPECT_FLOAT_EQ(ls->aperture_radius, 14.0f);
-	EXPECT_FLOAT_EQ(ls->anamorphic_squeeze, 1.75f);
-	EXPECT_FLOAT_EQ(ls->streak.strength, 0.81f);
-	EXPECT_FLOAT_EQ(ls->streak.length, 0.82f);
-	EXPECT_FLOAT_EQ(ls->streak.thickness, 0.083f);
-	EXPECT_FLOAT_EQ(ls->streak.tint[0], 0.84f);
-	EXPECT_FLOAT_EQ(ls->streak.tint[1], 0.85f);
-	EXPECT_FLOAT_EQ(ls->streak.tint[2], 0.86f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.squeeze, 1.75f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.strength, 0.81f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.length, 0.82f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.thickness, 0.083f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.tint[0], 0.84f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.tint[1], 0.85f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.streak.tint[2], 0.86f);
 
 	// and the tbm must not have disturbed the built-in table
 	EXPECT_GE(lens_flare_lookup("angenieux_100mm"), 0);
 }
 
-// A mission's set-lens-* sexps edit the tabled lens in place, so the reset that
-// stars_pre_level_init() performs is the only thing stopping one mission's lens
-// from carrying into the next.
-TEST_F(LensFlareTableTest, ResetForLevelRestoresTabledValues)
+// Overriding is what a mission, the lab and the set-lens-* sexps all do, and
+// dropping those overrides is the whole of "one mission's camera cannot carry
+// into the next". The lens itself is never written to, so there is nothing to
+// restore and nothing that can be left half-restored.
+TEST_F(LensFlareTableTest, ResetForLevelDropsOverrides)
 {
 	const int idx = lens_flare_lookup("angenieux_100mm");
 	ASSERT_GE(idx, 0);
-	auto* lens = lens_flare_get_system_mutable(idx);
+	const lens_system* lens = lens_flare_get_system(idx);
 	ASSERT_NE(lens, nullptr);
+	lens_flare_switch_to("angenieux_100mm");
+	ASSERT_EQ(lens_flare_active_lens(), idx);
 
-	const lens_aperture tabled = lens->tabled_aperture;
-	ASSERT_EQ(lens->aperture, tabled) << "a freshly parsed lens must match its own snapshot";
+	const lens_aperture tabled = lens->aperture;
+	ASSERT_EQ(lens_flare_effective_settings(idx).aperture, tabled)
+		<< "with nothing overridden the camera must be exactly what the table declared";
 
-	// make sure the textures exist, so the reset has something to invalidate
+	// make sure the textures exist, so the reset has something to drop
 	ASSERT_NE(lens_flare_get_textures(idx), nullptr);
 	const unsigned int generation = lens_flare_get_texture_generation();
 
 	// what a mission's sexps would do
-	lens->aperture.blades = 3;
-	lens->aperture.dust.strength = 0.8f;
-	lens->aperture.scratches.strength = 0.4f;
-	ASSERT_NE(lens->aperture, tabled);
+	lens_aperture edited = tabled;
+	edited.blades = 3;
+	edited.dust.strength = 0.8f;
+	edited.scratches.strength = 0.4f;
+	ASSERT_NE(edited, tabled);
+	lens_flare_overrides().aperture = edited;
+	lens_flare_overrides_changed();
+
+	EXPECT_EQ(lens_flare_effective_settings(idx).aperture, edited);
+	EXPECT_EQ(lens->aperture, tabled) << "an override must never write through to the lens";
 
 	lens_flare_reset_for_level();
 
-	EXPECT_EQ(lens->aperture, tabled);
+	EXPECT_FALSE(lens_flare_overrides().any());
+	EXPECT_EQ(lens_flare_effective_settings(idx).aperture, tabled);
 	EXPECT_NE(lens_flare_get_texture_generation(), generation) << "backends would keep the edited textures";
+}
 
-	// a second reset has nothing to do, and must not churn the backends' caches
-	const unsigned int settled = lens_flare_get_texture_generation();
+// Every knob resolves the same way -- the mounted lens's tabled value unless
+// overridden -- so one test covers the whole set rather than one per field. What
+// it actually guards is that lens_flare_effective_settings() reads each override
+// into the member it names: a copy-paste slip there would silently make a knob
+// unoverridable.
+TEST_F(LensFlareTableTest, EveryOverrideReachesTheEffectiveSettings)
+{
+	const int idx = lens_flare_lookup("tessar_50mm");
+	ASSERT_GE(idx, 0);
+	lens_flare_switch_to("tessar_50mm");
+	ASSERT_EQ(lens_flare_active_lens(), idx);
+
+	const lens_system* lens = lens_flare_get_system(idx);
+	ASSERT_NE(lens, nullptr);
+	const lens_settings tabled = lens_flare_effective_settings(idx);
+
+	lens_overrides& ov = lens_flare_overrides();
+	lens_aperture ap = tabled.aperture;
+	ap.blades = 3;
+	ap.rotation = 25.0f;
+	ap.dust.strength = 0.6f;
+	ov.aperture = ap;
+
+	lens_anamorphic an;
+	an.squeeze = 2.5f;
+	an.streak.strength = 0.8f;
+	an.streak.length = 3.0f;
+	ov.anamorphic = an;
+
+	ov.intensity = tabled.intensity + 1.0f;
+	ov.starburst = !tabled.starburst;
+	ov.starburst_scale = tabled.starburst_scale + 1.5f;
+	ov.max_ghosts = 5;
+	ov.ghost_brightness = 123.0f;
+	ov.starburst_brightness = 4.5f;
+	lens_flare_overrides_changed();
+
+	const lens_settings eff = lens_flare_effective_settings(idx);
+	EXPECT_EQ(eff.aperture, ap);
+	EXPECT_EQ(eff.anamorphic, an);
+	EXPECT_FLOAT_EQ(eff.intensity, tabled.intensity + 1.0f);
+	EXPECT_EQ(eff.starburst, !tabled.starburst);
+	EXPECT_FLOAT_EQ(eff.starburst_scale, tabled.starburst_scale + 1.5f);
+	EXPECT_EQ(eff.max_ghosts, 5);
+	EXPECT_FLOAT_EQ(eff.ghost_brightness, 123.0f);
+	EXPECT_FLOAT_EQ(eff.starburst_brightness, 4.5f);
+
+	// None of it reached the lens, so all of it goes away at once
+	EXPECT_EQ(lens->aperture, tabled.aperture);
+	EXPECT_EQ(lens->anamorphic, tabled.anamorphic);
+
 	lens_flare_reset_for_level();
-	EXPECT_EQ(lens_flare_get_texture_generation(), settled);
+
+	const lens_settings after = lens_flare_effective_settings(idx);
+	EXPECT_EQ(after.aperture, tabled.aperture);
+	EXPECT_EQ(after.anamorphic, tabled.anamorphic);
+	EXPECT_FLOAT_EQ(after.intensity, tabled.intensity);
+	EXPECT_EQ(after.starburst, tabled.starburst);
+	EXPECT_FLOAT_EQ(after.starburst_scale, tabled.starburst_scale);
+	EXPECT_EQ(after.max_ghosts, tabled.max_ghosts);
+	EXPECT_FLOAT_EQ(after.ghost_brightness, tabled.ghost_brightness);
+	EXPECT_FLOAT_EQ(after.starburst_brightness, tabled.starburst_brightness);
+}
+
+// An unmounted camera resolves to the plain defaults rather than to whatever
+// lens happened to be looked up last -- the case a mission with "<none>" hits,
+// and the one where an out-of-range index would otherwise index the vector.
+TEST_F(LensFlareTableTest, EffectiveSettingsWithoutALensAreTheDefaults)
+{
+	const lens_settings none = lens_flare_effective_settings(-1);
+	const lens_settings expected;
+
+	EXPECT_EQ(none.aperture, expected.aperture);
+	EXPECT_EQ(none.anamorphic, expected.anamorphic);
+	EXPECT_FLOAT_EQ(none.intensity, expected.intensity);
+	EXPECT_EQ(none.max_ghosts, expected.max_ghosts);
+	EXPECT_FLOAT_EQ(none.ghost_brightness, expected.ghost_brightness);
+
+	EXPECT_EQ(lens_flare_effective_settings(lens_flare_num_systems() + 5).max_ghosts, expected.max_ghosts);
 }
 
 // The sexps apply their arguments to a copy and only rebuild when the result
@@ -964,7 +1071,7 @@ TEST_F(LensFlareOverrideTbmTest, OverrideKeepsEverythingItDoesNotMention)
 	ASSERT_NE(ls, nullptr);
 
 	// what the tbm set
-	EXPECT_FLOAT_EQ(ls->anamorphic_squeeze, 2.0f);
+	EXPECT_FLOAT_EQ(ls->anamorphic.squeeze, 2.0f);
 	EXPECT_FLOAT_EQ(ls->intensity, 0.75f);
 
 	// what it did not: these are the shipped table's values, and the twelve-surface
@@ -976,9 +1083,9 @@ TEST_F(LensFlareOverrideTbmTest, OverrideKeepsEverythingItDoesNotMention)
 	EXPECT_GT(ls->surfaces.size(), 8u) << "the override dropped the prescription it never touched";
 	EXPECT_FALSE(ls->ghosts.empty());
 
-	// an override is still a tabled value, so it is what a mission's sexps and the
-	// lab get reset back to
-	EXPECT_TRUE(ls->tabled_aperture == ls->aperture);
+	// an override is still a tabled value, so it is what a mission's own overrides
+	// are laid over and what dropping them goes back to
+	EXPECT_EQ(lens_flare_effective_settings(idx).aperture, ls->aperture);
 }
 
 // Opening a stack replaces the whole of it. A prescription is an ordered run

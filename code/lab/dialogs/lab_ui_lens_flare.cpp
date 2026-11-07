@@ -51,7 +51,7 @@ const char* flare_source_beam_shooter_name(int beam_objnum)
 // (the starburst is the Fraunhofer transform of this mask), so every slider
 // here changes both at once. Edits are coalesced by lens_flare.cpp -- the mask
 // and its FFT are far too expensive to rebuild on every frame of a drag.
-void LabUi::build_lens_aperture_options(int lens_idx, graphics::lens_aperture& ap)
+void LabUi::build_lens_aperture_options(graphics::lens_aperture& ap)
 {
 	bool changed = false;
 
@@ -105,17 +105,43 @@ void LabUi::build_lens_aperture_options(int lens_idx, graphics::lens_aperture& a
 	}
 
 	if (changed) {
-		graphics::lens_flare_aperture_changed(lens_idx);
+		graphics::lens_flare_overrides().aperture = ap;
+		graphics::lens_flare_overrides_changed();
 	}
 }
 
 void LabUi::build_lens_flare_options()
 {
-	// Global calibration, edited in place -- same as the per-lens sliders below
-	// (see graphics/lens_flare.h). The sliders' own bounds keep the values sane.
+	// The camera's own settings, resolved once: the controls below start from
+	// whatever is currently in force -- a lens's tabled values, or whatever this
+	// panel or a mission has already overridden them with -- so nothing here has
+	// to know which of the two it is looking at.
+	const int active_lens = graphics::lens_flare_active_lens();
+	graphics::lens_settings settings = graphics::lens_flare_effective_settings(active_lens);
+	auto& overrides = graphics::lens_flare_overrides();
+	bool settings_changed = false;
+
+	// A control writes back *only its own* override, and only when it actually
+	// moved. Writing the whole set on any change would freeze the mounted lens's
+	// entire tabled look into the overrides the moment one slider was nudged --
+	// after which switching lenses in the combo below would keep showing the old
+	// lens's intensity, starburst and squeeze, since an override quite correctly
+	// beats whatever the new lens tables.
+	auto edited = [&settings_changed](bool moved, auto& slot, const auto& value) {
+		if (moved) {
+			slot = value;
+			settings_changed = true;
+		}
+		return moved;
+	};
+
+	// Not per-camera and so not overridable: this one describes the display.
 	auto& tuning = graphics::lens_flare_get_tuning();
-	SliderFloat("Ghost brightness", &tuning.ghost_brightness, 0.0f, 500.0f, "%.1f", ImGuiSliderFlags_Logarithmic);
-	SliderFloat("Starburst brightness", &tuning.starburst_brightness, 0.0f, 10.0f);
+	edited(SliderFloat("Ghost brightness", &settings.ghost_brightness, 0.0f, 500.0f, "%.1f",
+			   ImGuiSliderFlags_Logarithmic),
+		overrides.ghost_brightness, settings.ghost_brightness);
+	edited(SliderFloat("Starburst brightness", &settings.starburst_brightness, 0.0f, 10.0f),
+		overrides.starburst_brightness, settings.starburst_brightness);
 	SliderFloat("HDR headroom (x paper white)", &tuning.hdr_headroom, 0.0f, 8.0f);
 	if (Gr_hdr_output_active) {
 		TextDisabled("HDR output active: flare auto-scaled to ~%.1fx paper white", tuning.hdr_headroom);
@@ -126,7 +152,6 @@ void LabUi::build_lens_flare_options()
 	// The camera lens: one for the whole scene, so every sun flares through it
 	Separator();
 	const auto lab_lens = graphics::lens_flare_get_lab_lens();
-	const int active_lens = graphics::lens_flare_active_lens();
 
 	const char* mission_lens_name = graphics::lens_flare_mission_lens_name();
 	SCP_string mission_label = "Mission default (";
@@ -159,31 +184,52 @@ void LabUi::build_lens_flare_options()
 		}
 	}
 
-	if (auto* lens = graphics::lens_flare_get_system_mutable(active_lens)) {
-		SliderFloat("Lens intensity", &lens->intensity, 0.0f, 10.0f);
-		// Costs nothing to change: the squeeze is applied when the quads are
-		// drawn, so unlike the aperture sliders it needs no texture rebuild
-		SliderFloat("Anamorphic squeeze", &lens->anamorphic_squeeze, 1.0f, 3.0f, "%.2fx");
+	if (const auto* lens = graphics::lens_flare_get_system(active_lens)) {
+		edited(SliderFloat("Lens intensity", &settings.intensity, 0.0f, 10.0f), overrides.intensity,
+			settings.intensity);
+		edited(Checkbox("Starburst", &settings.starburst), overrides.starburst, settings.starburst);
+		if (settings.starburst) {
+			edited(SliderFloat("Starburst scale", &settings.starburst_scale, 0.0f, 4.0f, "%.2fx"),
+				overrides.starburst_scale, settings.starburst_scale);
+		}
+		edited(SliderInt("Max ghosts", &settings.max_ghosts, 0, graphics::MAX_LENS_FLARE_GHOSTS),
+			overrides.max_ghosts, settings.max_ghosts);
 
+		// The squeeze and the streak are one artifact and are overridden together,
+		// so unlike the knobs above they share a slot -- any of the five moving
+		// writes the whole lens_anamorphic. All of them cost nothing to change:
+		// they are applied when the quads are drawn, with no texture to rebuild.
+		graphics::lens_streak& streak = settings.anamorphic.streak;
+		bool anamorphic_moved = SliderFloat("Anamorphic squeeze", &settings.anamorphic.squeeze, 1.0f, 3.0f, "%.2fx");
 		with_TreeNode("Anamorphic streak")
 		{
 			TextDisabled("Stays horizontal wherever the sun is");
-			SliderFloat("Streak strength", &lens->streak.strength, 0.0f, 2.0f);
-			if (lens->streak.strength > 0.0f) {
-				SliderFloat("Streak length", &lens->streak.length, 0.0f, 4.0f);
-				SliderFloat("Streak thickness", &lens->streak.thickness, 0.001f, 0.2f, "%.3f");
-				ColorEdit3("Streak tint", lens->streak.tint);
+			anamorphic_moved |= SliderFloat("Streak strength", &streak.strength, 0.0f, 2.0f);
+			if (streak.strength > 0.0f) {
+				anamorphic_moved |= SliderFloat("Streak length", &streak.length, 0.0f, 4.0f);
+				anamorphic_moved |= SliderFloat("Streak thickness", &streak.thickness, 0.001f, 0.2f, "%.3f");
+				anamorphic_moved |= ColorEdit3("Streak tint", streak.tint);
 			}
 		}
-		Text("%d ghosts | EFL %.1f mm | f/%.1f | %s",
+		edited(anamorphic_moved, overrides.anamorphic, settings.anamorphic);
+
+		Text("%d of %d ghosts | EFL %.1f mm | f/%.1f | %s",
+			MIN(static_cast<int>(lens->ghosts.size()), MAX(settings.max_ghosts, 0)),
 			static_cast<int>(lens->ghosts.size()),
 			lens->efl,
 			lens->efl / (2.0f * lens->entrance_radius),
-			lens->starburst ? "starburst" : "no starburst");
+			settings.starburst ? "starburst" : "no starburst");
 
-		build_lens_aperture_options(active_lens, lens->aperture);
+		build_lens_aperture_options(settings.aperture);
 	} else {
 		TextDisabled("No lens mounted: this background renders no physically-based flares");
+	}
+
+	// The overrides themselves were written above, by whichever control moved.
+	// This only publishes the fact that something did -- the iris sliders do it
+	// for themselves, since theirs is the edit that costs a texture rebuild.
+	if (settings_changed) {
+		graphics::lens_flare_overrides_changed();
 	}
 
 	Separator();

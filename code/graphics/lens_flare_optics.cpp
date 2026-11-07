@@ -276,7 +276,14 @@ bool lens_flare_precompute(lens_system& lens)
 
 	std::sort(scored.begin(), scored.end(), [](const scored_ghost& x, const scored_ghost& y) { return x.key > y.key; });
 
-	int cap = std::clamp(lens.max_ghosts, 1, generic_data::MAX_LENS_FLARE_INSTANCES - 1);
+	// Enumerate every ghost the instance budget can hold, brightest first, and
+	// leave $Max Ghosts: to pack_source_instances() -- which just takes a prefix of
+	// this. Capping here instead would bake the tabled number into the precompute
+	// and so put a full paraxial re-trace behind every edit of it.
+	//
+	// The ceiling is what remains once the starburst and streak have reserved their
+	// slots, so enumerating more could never be drawn anyway.
+	const int cap = MAX_LENS_FLARE_GHOSTS;
 	for (const auto& sg : scored) {
 		if (static_cast<int>(lens.ghosts.size()) >= cap) {
 			break;
