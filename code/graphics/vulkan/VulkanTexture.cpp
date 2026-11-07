@@ -676,12 +676,15 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	// Build per-layer copy regions and upload each frame's data
 	SCP_vector<vk::BufferImageCopy> copyRegions;
 
-	// Use the same lock parameters that were used for the triggering frame.
-	// bm->flags contains the lock flags (BMP_AABITMAP, BMP_TEX_OTHER, BMP_TEX_DXT*, etc.)
-	// bm->bpp contains the requested bpp. Using these ensures all frames are locked
-	// consistently (e.g., 8bpp for aabitmaps, 32bpp for RGBA textures).
+	// BMPMAN's bitmap flags describe converted pixel data and do not retain the
+	// BMP_AABITMAP lock flag. EFF animations load each frame separately, so an
+	// 8-bit PCX sibling locked with flags 0 would trip the bpp assert in
+	// bm_convert_format. ANI and APNG decode every frame in the triggering lock,
+	// so their sibling locks load nothing. Other 8bpp sources are safe to treat
+	// the same way: the standalone server never runs Vulkan, user bitmaps are
+	// never multi-frame, and the PNG and DDS loaders ignore lock flags.
 	auto lockBpp = bm->bpp;
-	auto lockFlags = bm->flags;
+	auto lockFlags = (lockBpp == 8) ? BMP_AABITMAP : bm->flags;
 
 	// Set guard flag to make recursive bm_data calls no-ops
 	m_uploadingAnimation = true;
