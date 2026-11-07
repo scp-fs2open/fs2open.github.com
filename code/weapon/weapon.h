@@ -376,6 +376,15 @@ struct WeaponLaunchCurveData {
 	float target_forward_speed;
 };
 
+enum PrimarySelectionTargetType {
+	ARMOR,
+	SHIP_TYPE,
+	SHIP_CLASS,
+	WEAPON_CLASS,
+
+	MAX,
+};
+
 struct weapon_info;
 extern SCP_vector<weapon_info> Weapon_info;
 
@@ -723,6 +732,8 @@ struct weapon_info
 	actions::ProgramSet on_create_program;
 
 	animation::ModelAnimationSet animations;
+
+	std::array<SCP_unordered_map<int, float>, PrimarySelectionTargetType::MAX> primary_selection_target_flags;
 
 	enum class WeaponLaunchCurveOutputs {
 		// outputs

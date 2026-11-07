@@ -7,6 +7,8 @@
 #include "utils/RandomRange.h"
 #include "utils/reset_on_move.h"
 
+class ship;
+
 namespace decals {
 
 class DecalDefinition {
