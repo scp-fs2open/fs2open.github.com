@@ -124,7 +124,45 @@ Transparent, and No Lighting, which is the correct setup for most cases.</div>
         and lighting on ship surfaces.</td></tr>
     <tr><td>Lighting profile</td><td>Selects the lighting profile from the tables to
         apply to the mission.</td></tr>
+    <tr><td>Camera Lens</td><td>The physically-based camera lens every sun's flare is
+        imaged through. <kbd>Default</kbd> follows the tables' declared default lens;
+        <kbd>None</kbd> disables lens flares entirely even when a default exists.</td></tr>
 </table>
+<p>The <strong>Lens Aperture...</strong> button opens a dialog for overriding
+everything about the camera except which lens it is &ndash; the same parameters the
+<code>set-lens-*</code> sexps control, but applied for the whole mission instead of
+by an event:</p>
+<table>
+    <tr><th>Group</th><th>What it overrides</th></tr>
+    <tr><td>Iris</td><td>Blade count, rotation, curvature and edge softness. One
+        iris drives both the ghosts and the starburst, so these restyle both.</td></tr>
+    <tr><td>Rim grating, Scratches, Dust</td><td>Imperfections layered onto the
+        iris, each off at strength&nbsp;0.</td></tr>
+    <tr><td>Anamorphic</td><td>The squeeze (how much wider than tall flare
+        footprints are) and the horizontal streak (strength, length, thickness and
+        colour tint).</td></tr>
+    <tr><td>Strength</td><td>Overall lens intensity, ghost and starburst
+        brightness, starburst on/off and size, and how many ghosts to draw at
+        most.</td></tr>
+</table>
+<p>Every control applies live as you move it; use <strong>Reset to Lens
+Default</strong> to drop every override and go back to what the lens's own table
+entry declares. A control left at its default is not saved into the mission, so a
+mission only carries what it actually restyles.</p>
+<div class="note">The <strong>Iris</strong>, <strong>Rim grating</strong>,
+<strong>Scratches</strong> and <strong>Dust</strong> groups are the expensive ones:
+changing any of them makes the engine re-render the iris mask and take a Fourier
+transform of it to get the new starburst. That is fine for an editor and for
+occasional mission events, but it is why <code>set-lens-aperture</code> and its
+relatives should not be driven from a repeating event. The <strong>Anamorphic</strong>
+and <strong>Strength</strong> groups cost nothing, and
+<code>set-lens-flare-strength</code> is the operator to use for a flare that
+brightens or fades over time.</div>
+<div class="note">Lens flares (and bloom/tonemapping generally) are only visible in
+the 3D viewport when <strong>View &rsaquo; Enable Post Processing</strong> is
+checked. With it off the viewport still renders normally, just without that
+pipeline, so a lens or aperture change made here won't be visible until it's
+turned on.</div>
 
 <h2>Old Nebula</h2>
 <p>A legacy FS1-style nebula system. These settings are read and written for
