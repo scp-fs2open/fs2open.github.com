@@ -70,13 +70,14 @@ TEST_F(DDSConversionResizeTest, keeps_small_and_narrow_etc2_textures_at_original
 {
 	check_dimensions(128, 128, 128, 128);
 	check_dimensions(256, 256, 256, 256);
-	check_dimensions(512, 512, 512, 512);
-	check_dimensions(1024, 512, 1024, 512);
+	check_dimensions(1024, 256, 1024, 256);
 	check_dimensions(256, 2048, 256, 2048);
 }
 
 TEST_F(DDSConversionResizeTest, halves_large_etc2_textures_and_keeps_the_4096_cap)
 {
+	check_dimensions(512, 512, 256, 256, 2);
+	check_dimensions(1024, 512, 512, 256, 2);
 	check_dimensions(1024, 1024, 512, 512, 2);
 	check_dimensions(2048, 2048, 1024, 1024, 2);
 	check_dimensions(4096, 4096, 2048, 2048, 2);
