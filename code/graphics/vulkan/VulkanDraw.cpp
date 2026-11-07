@@ -1507,17 +1507,23 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 		// Set 2: PerDraw (previous-set memoized — see m_cachedPerDrawSet)
 		PerDrawSetInputs pdInputs;
 		{
-			static constexpr uniform_block_type pdTypes[NUM_PERDRAW_UBOS] = {
-				uniform_block_type::GenericData, uniform_block_type::Matrices,
-				uniform_block_type::NanoVGData, uniform_block_type::DecalInfo,
-				uniform_block_type::MovieData};
+			struct PerDrawUbo {
+				uniform_block_type blockType;
+				uint32_t binding;
+			};
+			static constexpr PerDrawUbo pdUbos[NUM_PERDRAW_UBOS] = {
+				{uniform_block_type::GenericData, PerDrawBinding::GenericData},
+				{uniform_block_type::Matrices, PerDrawBinding::Matrices},
+				{uniform_block_type::NanoVGData, PerDrawBinding::NanoVGData},
+				{uniform_block_type::DecalInfo, PerDrawBinding::DecalInfo},
+				{uniform_block_type::MovieData, PerDrawBinding::MovieData}};
 			for (int i = 0; i < NUM_PERDRAW_UBOS; ++i) {
-				const auto& p = m_pendingUniformBindings[static_cast<size_t>(pdTypes[i])];
+				const auto& p = m_pendingUniformBindings[static_cast<size_t>(pdUbos[i].blockType)];
 				pdInputs.uboHandle[i] = p.bufferHandle.value();
-				// GenericData (0) and Matrices (1) are dynamic bindings — their offset
-				// rides in perDrawDynOffsets and is not part of the set's contents.
-				const auto binding = static_cast<uint32_t>(i);
-				pdInputs.uboOffset[i] = (binding == PerDrawBinding::GenericData || binding == PerDrawBinding::Matrices) ? 0 : p.offset;
+				// The offset of a dynamic binding rides in perDrawDynOffsets and is not part
+				// of the set's contents.
+				const bool dynamic = dynamic_offset_slot(PerDrawSetBindings, pdUbos[i].binding) != DYNAMIC_SLOT_INVALID;
+				pdInputs.uboOffset[i] = dynamic ? 0 : p.offset;
 				pdInputs.uboSize[i] = p.size;
 				pdInputs.uboValid[i] = p.valid;
 			}

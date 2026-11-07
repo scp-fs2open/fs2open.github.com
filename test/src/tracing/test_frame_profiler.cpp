@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 
+#include "graphics/2d.h"
 #include "tracing/FrameProfiler.h"
 #include "tracing/categories.h"
 #include "io/timer.h"
@@ -221,7 +222,8 @@ TEST(FrameProfilerOverlaySnapshot, contributors_are_named_and_sorted)
 	// A category made at run time, like the one the Lua API tracing_category makes.
 	Category runtime_category("Overlay snapshot test category", false);
 
-	FrameProfiler profiler;
+	// make_complete_event() gives every event thread id 1.
+	FrameProfiler profiler(1);
 
 	// The outer scope runs for 10 ns and contains the inner scope, which runs for 3 ns.
 	trace_event outer = make_complete_event(runtime_category, 0, 10, 1, 4);
@@ -256,7 +258,7 @@ TEST(TracingCategory, name_outlives_the_category_object)
 		id = temporary.getId();
 
 		// A copy keeps the id of the original, which is how the Lua object gets a usable id.
-		const Category& copy = temporary;
+		const Category copy = temporary;
 		EXPECT_EQ(copy.getId(), id);
 	}
 
@@ -277,13 +279,30 @@ TEST(TracingCategory, same_name_reuses_the_id)
 }
 
 // Runs the real tracing system on the stub renderer, so complete::start() and complete::end() run.
+// The stub renderer reports timestamp queries as supported, so scopes of GPU categories also make
+// GPU queries. The fixture counts the queries.
 class TracingProfilerToggleTest : public test::FSTestFixture {
  public:
 	TracingProfilerToggleTest() : test::FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
 
  protected:
+	static int timestamp_query_count;
+
 	void SetUp() override {
 		test::FSTestFixture::SetUp();
+
+		_oldIsCapable = gr_screen.gf_is_capable;
+		_oldQueryValue = gr_screen.gf_query_value;
+		gr_screen.gf_is_capable = [](gr_capability capability) {
+			return capability == gr_capability::CAPABILITY_TIMESTAMP_QUERY;
+		};
+		gr_screen.gf_query_value = [](int, QueryType type) {
+			if (type == QueryType::Timestamp) {
+				++timestamp_query_count;
+			}
+		};
+		timestamp_query_count = 0;
+
 		tracing::init();
 		tracing::set_frame_profiling_enabled(false);
 	}
@@ -291,9 +310,19 @@ class TracingProfilerToggleTest : public test::FSTestFixture {
 	void TearDown() override {
 		tracing::set_frame_profiling_enabled(false);
 		tracing::shutdown();
+
+		gr_screen.gf_is_capable = _oldIsCapable;
+		gr_screen.gf_query_value = _oldQueryValue;
+
 		test::FSTestFixture::TearDown();
 	}
+
+ private:
+	decltype(gr_screen.gf_is_capable) _oldIsCapable = nullptr;
+	decltype(gr_screen.gf_query_value) _oldQueryValue = nullptr;
 };
+
+int TracingProfilerToggleTest::timestamp_query_count = 0;
 
 // A scope that is open when the profiler turns on never started. Its end() must do nothing. Before
 // the fix, Debug builds asserted and Release builds read a null category.
@@ -323,13 +352,20 @@ TEST_F(TracingProfilerToggleTest, enable_inside_open_scope)
 	EXPECT_EQ(snapshot.top_contributors[0].name, SCP_string(PostMove.getName()));
 }
 
-// A scope that is open when the profiler turns off must close without an error.
+// A scope that is open when the profiler turns off must close without an error. If the scope
+// started a GPU query, its end() must also make the GPU query that closes it.
 TEST_F(TracingProfilerToggleTest, disable_inside_open_scope)
 {
+	ASSERT_TRUE(DrawSceneTexture.usesGPUCounter());
+
 	tracing::set_frame_profiling_enabled(true);
+	const int queries_before = timestamp_query_count;
 	{
-		TRACE_SCOPE(Physics);
+		TRACE_SCOPE(DrawSceneTexture);
+		EXPECT_EQ(timestamp_query_count, queries_before + 1);
+
 		tracing::set_frame_profiling_enabled(false);
 	}
 	EXPECT_FALSE(tracing::frame_profiling_active());
+	EXPECT_EQ(timestamp_query_count, queries_before + 2);
 }

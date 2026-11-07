@@ -329,7 +329,9 @@ void set_frame_profiling_enabled(bool enable) {
 	// its buffer used to grow without bound.
 	if (enable != (frameProfiler != nullptr)) {
 		if (enable) {
-			frameProfiler.reset(new FrameProfiler());
+			// Only the main thread calls this function: init() and the option's change listener. The change
+			// listener can run before init() sets main_thread_id, so use the id of the calling thread then.
+			frameProfiler.reset(new FrameProfiler(main_thread_id != -1 ? main_thread_id : get_tid()));
 		} else {
 			frameProfiler = nullptr;
 		}
@@ -342,8 +344,8 @@ void set_frame_profiling_enabled(bool enable) {
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto ProfilerOverlayOption = options::OptionBuilder<bool>("Game.ProfilerOverlay",
-	std::pair<const char*, int>{"Frame Profiler Overlay", 1936},
-	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1937})
+	std::pair<const char*, int>{"Frame Profiler Overlay", 1940},
+	std::pair<const char*, int>{"Show an ImGui overlay with a frametime graph and a breakdown of what's taking up frame time", 1941})
 	.category(std::make_pair("Graphics", 1825))
 	.level(options::ExpertLevel::Advanced)
 	.default_val(false)

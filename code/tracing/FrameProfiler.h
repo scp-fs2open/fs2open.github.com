@@ -55,7 +55,8 @@ class FrameProfiler {
 	// Reused across frames by accumulate_self_times() so the per-frame walk allocates nothing.
 	SCP_vector<uint64_t> _selfTimeScratch;
 
-	std::int64_t _mainThreadID = -1;
+	// The profiler keeps only events from this thread. Other threads have no deterministic event order.
+	std::int64_t _mainThreadID;
 
 	SCP_string content;
 
@@ -92,7 +93,7 @@ class FrameProfiler {
 	void build_overlay_snapshot(const SCP_vector<uint64_t>& self_time_by_id, uint64_t total);
 
  public:
-	FrameProfiler();
+	explicit FrameProfiler(std::int64_t mainThreadID);
 	~FrameProfiler();
 
 	void processEvent(const trace_event* event);

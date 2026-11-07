@@ -843,19 +843,21 @@ static void handle_sdl_event(const SDL_Event& event) {
 	bool imgui_processed_this = false;
 	// The profiler overlay is drawn from gr_flip(), so it can be on screen in any state — it
 	// needs input forwarded wherever it is active, not in a fixed list of states.
-	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS) ||
-		tracing::frame_profiling_active()) {
+	const bool imgui_state = (gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS);
+	if (imgui_state || tracing::frame_profiling_active()) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
 		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
 		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
 
+		// In other states, the game also needs mouse motion while the pointer is over the overlay.
+		// If the overlay consumed the motion, mouse flight would stop there.
 		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
 									(event.type == SDL_EventType::SDL_EVENT_KEY_UP ||
 									 event.type == SDL_EventType::SDL_EVENT_KEY_DOWN)) ||
 							   (ImGui::GetIO().WantCaptureMouse &&
 									(event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_UP ||
 				 					 event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_DOWN||
-									 event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION));
+									 (imgui_state && event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION)));
 	}
 
 	if (!imgui_processed_this) {

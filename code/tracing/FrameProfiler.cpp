@@ -168,7 +168,7 @@ uint64_t accumulate_self_times(const SCP_vector<trace_event>& events, SCP_vector
 	return total;
 }
 
-FrameProfiler::FrameProfiler() {
+FrameProfiler::FrameProfiler(std::int64_t mainThreadID) : _mainThreadID(mainThreadID) {
 
 }
 FrameProfiler::~FrameProfiler() {
@@ -183,12 +183,6 @@ void FrameProfiler::processEvent(const trace_event* event) {
 	if (event->pid == GPU_PID) {
 		// Ignore GPU events since we can't display them properly
 		return;
-	}
-
-	if (_mainThreadID == -1) {
-		// We need the ID of the main thread to filter out multi threaded events. We just assume that the first event
-		// of the main process we see is from the main thread. That should be a safe assumption.
-		_mainThreadID = event->tid;
 	}
 
 	if (event->tid != _mainThreadID) {
