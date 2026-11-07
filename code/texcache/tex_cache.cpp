@@ -8,6 +8,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <filesystem>
 #include <limits>
 
 // Includes a fingerprint of the bundled etcpak sources. Update it when the encoder changes.
@@ -146,6 +147,14 @@ bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expecte
 	if (crc != payload_crc) {
 		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
+	}
+
+	// Pruning uses mtime as the last-use time. Only touch fully validated, loose cache files.
+	const auto location = cf_find_file_location(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+	if (location.found && location.offset == 0 && location.data_ptr == nullptr) {
+		std::error_code error;
+		std::filesystem::last_write_time(std::filesystem::u8path(location.full_name.c_str()),
+			std::filesystem::file_time_type::clock::now(), error);
 	}
 
 	return true;

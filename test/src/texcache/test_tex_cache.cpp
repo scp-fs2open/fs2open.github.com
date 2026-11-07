@@ -22,6 +22,7 @@ protected:
 	void TearDown() override
 	{
 		cf_delete("tex-unittest-texture-cache.cache", CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("tex-unittest-texture-cache-cold.cache", CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		cf_delete(source_name, CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		tex_cache_size = saved_cache_size;
 		test::FSTestFixture::TearDown();
@@ -99,4 +100,34 @@ TEST_F(TextureCacheTest, oversized_stored_payload_is_rejected)
 
 	ubyte loaded[16] = {};
 	EXPECT_FALSE(tex_cache_try_load(key, 4, 4, 1, 0, sizeof(loaded), loaded));
+}
+
+TEST_F(TextureCacheTest, cache_hit_refreshes_mtime_and_survives_pruning)
+{
+	SCP_vector<ubyte> payload(1024, 42);
+	SCP_vector<ubyte> loaded(payload.size());
+	tex_cache_store(key, 32, 32, 1, 0, payload.data(), payload.size());
+	tex_cache_store("unittest-texture-cache-cold", 32, 32, 1, 0, payload.data(), payload.size());
+	const auto hot = cf_find_file_location("tex-unittest-texture-cache.cache", CF_TYPE_CACHE,
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	const auto cold = cf_find_file_location("tex-unittest-texture-cache-cold.cache", CF_TYPE_CACHE,
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	ASSERT_TRUE(hot.found);
+	ASSERT_TRUE(cold.found);
+
+	const auto now = std::filesystem::file_time_type::clock::now();
+	std::filesystem::last_write_time(hot.full_name.c_str(), now - std::chrono::hours(48));
+	std::filesystem::last_write_time(cold.full_name.c_str(), now - std::chrono::hours(24));
+	ASSERT_TRUE(tex_cache_try_load(key, 32, 32, 1, 0, loaded.size(), loaded.data()));
+	EXPECT_EQ(payload, loaded);
+	EXPECT_GT(std::filesystem::last_write_time(hot.full_name.c_str()),
+		std::filesystem::last_write_time(cold.full_name.c_str()));
+
+	// Leave room for one entry, so the hit must displace the unused entry.
+	const auto entry_size = std::filesystem::file_size(hot.full_name.c_str());
+	ASSERT_EQ(entry_size, std::filesystem::file_size(cold.full_name.c_str()));
+	tex_cache_size = static_cast<float>(entry_size * 3 / 2) / 1000000000.0f;
+	tex_cache_prune();
+	EXPECT_TRUE(std::filesystem::exists(hot.full_name.c_str()));
+	EXPECT_FALSE(std::filesystem::exists(cold.full_name.c_str()));
 }
