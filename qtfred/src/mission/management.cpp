@@ -9,6 +9,7 @@
 #include <cutscene/cutscenes.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>
+#include <graphics/2d.h>
 #include <hud/hudsquadmsg.h>
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
@@ -125,6 +126,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	//	Cmdline_nospec = 1;
 	// 	Cmdline_noglow = 1;
 	Cmdline_window = 1;
+
 
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 	gr_init(std::move(graphicsOps));

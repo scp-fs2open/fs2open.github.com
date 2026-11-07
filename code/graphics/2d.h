@@ -941,6 +941,12 @@ typedef struct screen {
 	std::function<void()> gf_scene_texture_end;
 	std::function<void()> gf_copy_effect_texture;
 
+	// Grow the offscreen render targets that back the scene/post-processing pipeline to cover the
+	// current gr_screen, if they don't already. Called from gr_screen_resize(). Optional: the
+	// Vulkan backend leaves this unset because VulkanRenderer::recreateSwapChain() already owns
+	// resizing its extent-sized targets.
+	std::function<void()> gf_resize_render_targets;
+
 	std::function<void(int zbias)> gf_zbias;
 
 	std::function<void(int)> gf_set_fill_mode;
