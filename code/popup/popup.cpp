@@ -20,6 +20,7 @@
 #include "graphics/font.h"
 #include "io/key.h"
 #include "io/mouse.h"
+#include "io/timer.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -40,8 +41,8 @@
 #define POPUP_NOCHANGE				100
 #define POPUP_ABORT					101
 
-// frames a headless run waits for an On Dialog Frame script to answer a popup
-#define HEADLESS_POPUP_FRAME_LIMIT	600
+// real time a headless run waits for an On Dialog Frame script to answer a popup (headless frames don't sleep)
+#define HEADLESS_POPUP_TIMEOUT_MS	10000
 
 int Popup_max_display[GR_NUM_RESOLUTIONS] = {
 	11,
@@ -920,7 +921,7 @@ int popup_do(popup_info *pi, int flags)
 
 	gr_reset_screen_scale();
 
-	int headless_frames = 0;
+	const UI_TIMESTAMP headless_deadline = ui_timestamp(HEADLESS_POPUP_TIMEOUT_MS);
 
 	while(!done) {
 		int k;
@@ -934,9 +935,9 @@ int popup_do(popup_info *pi, int flags)
 		}
 
 		// in a headless run only a script can answer; give up if it doesn't
-		if (Cmdline_headless && ++headless_frames > HEADLESS_POPUP_FRAME_LIMIT) {
-			mprintf(("Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT));
-			fprintf(stderr, "Headless run: no answer to popup \"%s\" after %d frames\n", pi->raw_text, HEADLESS_POPUP_FRAME_LIMIT);
+		if (Cmdline_headless && ui_timestamp_elapsed(headless_deadline)) {
+			mprintf(("Headless run: no answer to popup \"%s\" after %d s\n", pi->raw_text, HEADLESS_POPUP_TIMEOUT_MS / 1000));
+			fprintf(stderr, "Headless run: no answer to popup \"%s\" after %d s\n", pi->raw_text, HEADLESS_POPUP_TIMEOUT_MS / 1000);
 			fflush(stderr);
 			// as if cancelled, so popup_input() treats it as cancelled too
 			choice = POPUP_ABORT;

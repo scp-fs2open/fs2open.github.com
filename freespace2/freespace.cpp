@@ -5863,6 +5863,11 @@ void game_leave_state( int old_state, int new_state )
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
 						popupdead_close();			// it's usually closed by this point, but not always (e.g. if end-mission is called)
 						freespace_stop_mission();
+
+						// as when leaving gameplay: an end-mission or red alert during the death roll ends a headless run
+						if (Cmdline_headless && new_state != GS_STATE_DEBRIEF && new_state != GS_STATE_QUIT_GAME) {
+							sim_run_end("left_mission");
+						}
 					} else {
 						// early end while respawning or blowing up in a multiplayer game
 						// if we are not respawing as an observer or as a player, our new state will not
@@ -6758,7 +6763,7 @@ void game_do_state(int state)
 				// Same as the engine does for missions flagged no-briefing: take the default loadout and enter.
 				const auto commit_status = commit_pressed(true);
 				if (commit_status != commit_pressed_status::SUCCESS) {
-					Warning(LOCATION, "Headless run could not commit the default loadout (status %d); ending the run.",
+					ReleaseWarning(LOCATION, "Headless run could not commit the default loadout (status %d); ending the run.",
 						static_cast<int>(commit_status));
 					sim_run_end("start_failed");
 				}
@@ -7271,10 +7276,7 @@ void game_shutdown(void)
 			json_object_set_new(result, "wall_seconds", json_real(wall_time));
 
 			if (json_dump_file(result, Cmdline_sim_result, JSON_INDENT(2) | JSON_SORT_KEYS) != 0) {
-				// warnings are not shown in release builds, which usually write no log either
-				fprintf(stderr, "Failed to write simulation result to '%s'.\n", Cmdline_sim_result);
-				fflush(stderr);
-				Warning(LOCATION, "Failed to write simulation result to '%s'.", Cmdline_sim_result);
+				ReleaseWarning(LOCATION, "Failed to write simulation result to '%s'.", Cmdline_sim_result);
 			}
 			json_decref(result);
 		}
