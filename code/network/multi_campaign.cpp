@@ -355,15 +355,15 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 		// clear the campaign
 		multi_campaign_client_start();
 
-		// read in the # of missions
+		// read in the # of missions and size the missions vector to match
 		GET_DATA(val);
-		Campaign.num_missions = val;
+		Campaign.missions.resize(val);
 		break;
 
 	case MC_CODE_MISSION_NAMES:
 		GET_DATA(item_count);
 		GET_DATA(starting_num);
-		Assert(starting_num + item_count <= Campaign.num_missions);
+		Assert(starting_num + item_count <= sz2i(Campaign.missions.size()));
 		for (idx = starting_num; idx < (starting_num + item_count); ++idx) {
 			GET_STRING(fname);
 			Campaign.missions[idx].name = vm_strdup(fname);
@@ -516,7 +516,7 @@ void multi_campaign_send_start(net_player *pl)
 	val = MC_CODE_START;
 	ADD_DATA(val);
 
-	val = static_cast<ubyte>(Campaign.num_missions);
+	val = static_cast<ubyte>(Campaign.missions.size());
 	ADD_DATA(val);
 
 	if (pl != nullptr) {
@@ -539,7 +539,7 @@ void multi_campaign_send_start(net_player *pl)
 	starting_num = 0;
 	ADD_DATA(starting_num);
 
-	for (idx = 0; idx < Campaign.num_missions; idx++) {
+	for (idx = 0; idx < sz2i(Campaign.missions.size()); idx++) {
 		Assert(Campaign.missions[idx].name != NULL);
 		ADD_STRING(Campaign.missions[idx].name);
 		++item_count;
@@ -598,7 +598,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		packet_type = MC_JIP_INITIAL_PACKET;
 		ADD_DATA(packet_type);
 
-		val = static_cast<ubyte>(Campaign.num_missions);
+		val = static_cast<ubyte>(Campaign.missions.size());
 		ADD_DATA(val);
 
 		multi_io_send_reliable(pl, data, packet_size);
@@ -616,7 +616,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		starting_num = 0;
 		ADD_DATA(starting_num);
 
-		for (i = 0; i < Campaign.num_missions; i++) {
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			Assert(Campaign.missions[i].name != NULL);
 			ADD_STRING(Campaign.missions[i].name);
 			++item_count;
@@ -644,7 +644,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		multi_io_send_reliable(pl, data, packet_size);
 
 		// send the number and status of all goals event for all previous missions
-		for (i = 0; i < Campaign.num_missions; i++ ) {
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			ubyte status;
 
 			// don't do anything if mission hasn't been completed
@@ -680,7 +680,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		}	
 
 		// send the goal/event names.
-		for ( i = 0; i < Campaign.num_missions; i++ ) {
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			ubyte goal_count, starting_goal_num;
 
 			// first the goal names
@@ -732,7 +732,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 		}
 
 		// send the goal/event names.
-		for ( i = 0; i < Campaign.num_missions; i++ ) {
+		for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 			ushort event_count, starting_event_num;
 
 			// first the goal names
@@ -809,7 +809,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 
 		// get the number of missions
 		GET_DATA(mission_num);
-		Campaign.num_missions = mission_num;
+		Campaign.missions.resize(mission_num);
 		break;
 
 	case MC_JIP_GE_STATUS:
@@ -860,7 +860,7 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 	case MC_JIP_MISSION_NAMES:
 		GET_DATA(num_missions);
 		GET_DATA(starting_num);
-		Assert(starting_num + num_missions <= Campaign.num_missions);
+		Assert(starting_num + num_missions <= sz2i(Campaign.missions.size()));
 		for (i = starting_num; i < (starting_num + num_missions); ++i) {
 			GET_STRING(fname);
 			Campaign.missions[i].name = vm_strdup(fname);

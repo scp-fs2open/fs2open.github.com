@@ -202,7 +202,7 @@ static char *Mission_filenames[MAX_MISSIONS] = { NULL };
 static char *Standalone_mission_names[MAX_MISSIONS] = { NULL };
 static int  Standalone_mission_flags[MAX_MISSIONS];
 static char *Campaign_missions[MAX_MISSIONS] = { NULL };
-static char *Campaign_mission_names[MAX_CAMPAIGN_MISSIONS] = { NULL };
+static SCP_vector<char*> Campaign_mission_names;
 static int Campaign_mission_flags[MAX_MISSIONS];
 static int Simroom_show_all = 0;
 static int Standalone_mission_names_inited = 0;
@@ -544,7 +544,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	static int valid_missions_with_info = 0; // we use this to avoid blank entries in the mission list
 
 	// When no campaign files in data directory
-	if (Campaign.num_missions == 0) {
+	if (Campaign.missions.empty()) {
 		Campaign_mission_names_inited = 1;
 		return 1;
 	}
@@ -552,6 +552,11 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 	// change popup
 	sprintf(popup_str, XSTR("Campaign Mission\n\n%s", 990), Campaign.missions[Num_campaign_missions_with_info].name);
 	popup_change_text(popup_str.c_str());
+
+	// Ensure storage matches the number of missions we are about to process
+	if (Campaign_mission_names.size() != Campaign.missions.size()) {
+		Campaign_mission_names.assign(Campaign.missions.size(), nullptr);
+	}
 
 	// Set global variable so we we'll have list available next time
 	Campaign_mission_names[Num_campaign_missions_with_info] = NULL;
@@ -596,7 +601,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 
 	Num_campaign_missions_with_info++;
 
-	if (Num_campaign_missions_with_info == Campaign.num_missions) {
+	if (Num_campaign_missions_with_info == sz2i(Campaign.missions.size())) {
 		valid_missions_with_info = 0;
 		Campaign_mission_names_inited = 1;
 		return 1;
@@ -684,10 +689,10 @@ void sim_room_reset_campaign_listing()
 		return;
 
 
-	for (int i=0; i<Campaign.num_missions; i++) {
-		if (Campaign_mission_names[i]) {
-			vm_free(Campaign_mission_names[i]);
-			Campaign_mission_names[i] = NULL;
+	for (auto*& name : Campaign_mission_names) {
+		if (name) {
+			vm_free(name);
+			name = nullptr;
 		}
 	}
 
@@ -1051,7 +1056,7 @@ void sim_room_init()
 		mission_campaign_next_mission();
 	} else {
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		// don't display the popup in the sim room - first because there is already logic to prevent listing campaign missions,
 		// second because there's not much the player can do about it in the sim room, and third because displaying the popup
@@ -1138,10 +1143,10 @@ void sim_room_close()
 	}
 
 	if (Campaign_mission_names_inited) {
-		for (i=0; i<Campaign.num_missions; i++) {
-			if (Campaign_mission_names[i]) {
-				vm_free(Campaign_mission_names[i]);
-				Campaign_mission_names[i] = NULL;
+		for (auto*& name : Campaign_mission_names) {
+			if (name) {
+				vm_free(name);
+				name = nullptr;
 			}
 		}
 	}
@@ -1216,10 +1221,10 @@ void api_sim_room_build_mission_list(bool API_Access)
 	}
 
 	if (Campaign_mission_names_inited) {
-		for (i = 0; i < Campaign.num_missions; i++) {
-			if (Campaign_mission_names[i]) {
-				vm_free(Campaign_mission_names[i]);
-				Campaign_mission_names[i] = NULL;
+		for (auto*& name : Campaign_mission_names) {
+			if (name) {
+				vm_free(name);
+				name = nullptr;
 			}
 		}
 	}
@@ -1680,7 +1685,7 @@ bool campaign_build_campaign_list() {
 		mission_campaign_next_mission();
 	} else {
 		Campaign.filename[0] = 0;
-		Campaign.num_missions = 0;
+		Campaign.missions.clear();
 
 		mission_campaign_load_failure_popup();
 	}

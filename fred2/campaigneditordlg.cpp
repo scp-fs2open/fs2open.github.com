@@ -65,13 +65,13 @@ campaign_editor::campaign_editor()
 int campaign_editor::onRootDeleted(int formula_node)
 {
 	int i;
-	for (i = 0; i < Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == formula_node)) {
 			break;
 		}
 	}
 
-	if (i < Total_links) {
+	if (i < sz2i(Links.size())) {
 		Campaign_tree_viewp->delete_link(i);
 		m_num_links--;
 	}
@@ -89,7 +89,7 @@ SCP_vector<SCP_string> campaign_editor::getMissionNames()
 
 	// only list missions the player could have already played: the current mission and
 	// any mission at an earlier level in the campaign tree
-	for (int i = 0; i < Campaign.num_missions; i++)
+	for (int i = 0; i < sz2i(Campaign.missions.size()); i++)
 	{
 		if ((i == Cur_campaign_mission) || (Campaign.missions[i].level < Campaign.missions[Cur_campaign_mission].level))
 			list.emplace_back(Campaign.missions[i].name);
@@ -400,7 +400,7 @@ void campaign_editor::update()
 
 	// set the number of players in a multiplayer mission equal to the number of players in the first mission
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
-		if ( Campaign.num_missions == 0 ) {
+		if (Campaign.missions.empty()) {
 			Campaign.num_players = 0;
 		} else {
 			mission a_mission;
@@ -451,7 +451,7 @@ void campaign_editor::load_tree(int save_first)
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND_BROWSE)->EnableWindow(FALSE);
 
-	for (i=0; i<Total_links; i++) {
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if (Links[i].from == Cur_campaign_mission) {
 			Links[i].node = m_tree._model.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
@@ -509,18 +509,16 @@ void campaign_editor::OnEndlabeleditSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 void campaign_editor::save_tree(int clear)
 {
-	int i;
-
 	if (m_last_mission < 0){
 		return;  // nothing to save
 	}
 
-	for (i=0; i<Total_links; i++){
-		if (Links[i].from == m_last_mission) {
-			sexp_unmark_persistent(Links[i].sexp);
-			free_sexp2(Links[i].sexp);
-			Links[i].sexp = m_tree._model.save_tree(Links[i].node);
-			sexp_mark_persistent(Links[i].sexp);
+	for (auto& link : Links) {
+		if (link.from == m_last_mission) {
+			sexp_unmark_persistent(link.sexp);
+			free_sexp2(link.sexp);
+			link.sexp = m_tree._model.save_tree(link.node);
+			sexp_mark_persistent(link.sexp);
 		}
 	}
 
@@ -549,13 +547,13 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 	// get identifier of parent
 	node = (int)m_tree.GetItemData(h);
-	for (i=0; i<Total_links; i++){
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
 			break;
 		}
 	}
 
-	if (i == Total_links) {
+	if (i == sz2i(Links.size())) {
 		Cur_campaign_link = -1;
 		return;
 	}
@@ -570,15 +568,14 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = 0;
 }
 
-void campaign_editor::OnMoveUp() 
+void campaign_editor::OnMoveUp()
 {
 	int i, last = -1;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
 		save_tree();
-		for (i=0; i<Total_links; i++){
+		for (i = 0; i < sz2i(Links.size()); i++) {
 			if (Links[i].from == Cur_campaign_mission) {
 				if (i == Cur_campaign_link){
 					break;
@@ -588,15 +585,13 @@ void campaign_editor::OnMoveUp()
 			}
 		}
 
-		if ((last != -1) && (i < Total_links)) {
+		if ((last != -1) && (i < sz2i(Links.size()))) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[last].node));
 			m_tree.move_root(h1, h2, true);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[last];
-			Links[last] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[i], Links[last]);
 			Cur_campaign_link = last;
 		}
 	}
@@ -604,32 +599,29 @@ void campaign_editor::OnMoveUp()
 	GetDlgItem(IDC_SEXP_TREE)->SetFocus();
 }
 
-void campaign_editor::OnMoveDown() 
+void campaign_editor::OnMoveDown()
 {
 	int i, j;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
 		save_tree();
-		for (i=0; i<Total_links; i++)
+		for (i = 0; i < sz2i(Links.size()); i++)
 			if (Links[i].from == Cur_campaign_mission)
 				if (i == Cur_campaign_link)
 					break;
 
-		for (j=i+1; j<Total_links; j++)
+		for (j = i + 1; j < sz2i(Links.size()); j++)
 			if (Links[j].from == Cur_campaign_mission)
 				break;
 
-		if (j < Total_links) {
+		if (j < sz2i(Links.size())) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[j].node));
 			m_tree.move_root(h1, h2, false);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[j];
-			Links[j] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[i], Links[j]);
 			Cur_campaign_link = j;
 		}
 	}
@@ -642,19 +634,19 @@ void campaign_editor::move_handler(int node1, int node2, bool insert_before)
 	int index1, index2;
 	campaign_tree_link temp;
 
-	for (index1=0; index1<Total_links; index1++){
+	for (index1 = 0; index1 < sz2i(Links.size()); index1++) {
 		if ((Links[index1].from == Cur_campaign_mission) && (Links[index1].node == node1)){
 			break;
 		}
 	}
-	Assert(index1 < Total_links);
+	Assert(index1 < sz2i(Links.size()));
 
-	for (index2=0; index2<Total_links; index2++){
+	for (index2 = 0; index2 < sz2i(Links.size()); index2++) {
 		if ((Links[index2].from == Cur_campaign_mission) && (Links[index2].node == node2)){
 			break;
 		}
 	}
-	Assert(index2 < Total_links);
+	Assert(index2 < sz2i(Links.size()));
 
 	temp = Links[index1];
 
@@ -679,13 +671,13 @@ void campaign_editor::insert_handler(int old, int node)
 {
 	int i;
 
-	for (i=0; i<Total_links; i++){
+	for (i = 0; i < sz2i(Links.size()); i++) {
 		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == old)){
 			break;
 		}
 	}
 
-	Assert(i < Total_links);
+	Assert(i < sz2i(Links.size()));
 	Links[i].node = node;
 	return;
 }
