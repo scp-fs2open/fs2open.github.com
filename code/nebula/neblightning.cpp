@@ -1116,7 +1116,7 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 		}
 	}
 	// calculate the glow points		
-	nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &a->pos, pinch_a ? 0.5f : width * 6.0f, Nebl_type->b_add);
+	nebl_calc_facing_pts_smart(&glow_a, &glow_b, &dir_normal, &a->pos, pinch_a ? 0.5f : width * 6.0f, bi->b_add);
 	g3_transfer_vertex(&c->glow_vex[0], &glow_a);
 	g3_transfer_vertex(&c->glow_vex[1], &glow_b);
 
