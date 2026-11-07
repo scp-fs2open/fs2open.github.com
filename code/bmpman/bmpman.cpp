@@ -1161,6 +1161,14 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 			*c_type = BM_TYPE_BC7;
 			break;
 
+		case DDS_ETC2_RGBA8:
+			*c_type = BM_TYPE_ETC2_RGBA_EAC;
+			break;
+
+		case DDS_ETC2_RGB:
+			*c_type = BM_TYPE_ETC2_RGB;
+			break;
+
 		case DDS_UNCOMPRESSED:
 			*c_type = BM_TYPE_DDS;
 			break;

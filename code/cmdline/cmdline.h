@@ -129,6 +129,7 @@ extern bool Cmdline_no_large_shaders;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif
+extern bool Cmdline_no_transcode_cache;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

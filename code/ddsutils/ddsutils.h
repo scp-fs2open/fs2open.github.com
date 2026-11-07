@@ -28,6 +28,8 @@
 #define DDS_CUBEMAP_DXT1				11
 #define DDS_CUBEMAP_DXT3				13
 #define DDS_CUBEMAP_DXT5				15
+#define DDS_ETC2_RGBA8					20
+#define DDS_ETC2_RGB                    21
 
 #ifndef MAKEFOURCC
 	#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
