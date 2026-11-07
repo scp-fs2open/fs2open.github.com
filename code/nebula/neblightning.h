@@ -74,7 +74,6 @@ typedef struct bolt_type {
 	
 	int			texture;				//the main bolt texture
 	int			glow;					//the main bolt glow texture
-	bool		batch_by_bolt = false;	// Both materials support additive blending.
 	
 	float		b_bright;				//the brightness of the bolts
 

@@ -452,11 +452,6 @@ void nebl_init()
 
 	//Verify the bolts after all parsing is done to make sure that load order isn't a factor
 	verify_storm_bolts();
-
-	for (auto& bolt : Bolt_types) {
-		bolt.batch_by_bolt = material_determine_blend_mode(bolt.texture, true) == ALPHA_BLEND_ADDITIVE
-			&& material_determine_blend_mode(bolt.glow, true) == ALPHA_BLEND_ADDITIVE;
-	}
 }
 
 // initialize lightning before entering a level
@@ -520,9 +515,6 @@ struct lightning_vertex {
 	uv_pair uv;
 };
 
-// Six position/UV vertices use less space than the original four full vertices.
-static_assert(6 * sizeof(lightning_vertex) < 4 * sizeof(vertex));
-
 struct lightning_geometry {
 	SCP_vector<lightning_vertex> body;
 	SCP_vector<lightning_vertex> glow;
@@ -546,20 +538,29 @@ struct lightning_render_batch {
 		material_set_unlit_emissive(&glow_material, bolt.glow, glow_alpha, emissive_scale);
 	}
 
+	bool batch_by_bolt() const
+	{
+		return body_material.get_blend_mode() == ALPHA_BLEND_ADDITIVE
+			&& glow_material.get_blend_mode() == ALPHA_BLEND_ADDITIVE;
+	}
+
 	void draw()
 	{
 		if (geometry.body.empty()) {
 			return;
 		}
 
-		vertex_layout layout;
-		layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(lightning_vertex), offsetof(lightning_vertex, position));
-		layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(lightning_vertex), offsetof(lightning_vertex, uv));
+		static vertex_layout layout = [] {
+			vertex_layout result;
+			result.add_vertex_component(vertex_format_data::POSITION3, sizeof(lightning_vertex), offsetof(lightning_vertex, position));
+			result.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(lightning_vertex), offsetof(lightning_vertex, uv));
+			return result;
+		}();
 
 		gr_render_primitives_immediate(&body_material, PRIM_TYPE_TRIS, &layout,
-			static_cast<int>(geometry.body.size()), geometry.body.data(), geometry.body.size() * sizeof(lightning_vertex));
+			sz2i(geometry.body.size()), geometry.body.data(), geometry.body.size() * sizeof(lightning_vertex));
 		gr_render_primitives_immediate(&glow_material, PRIM_TYPE_TRIS, &layout,
-			static_cast<int>(geometry.glow.size()), geometry.glow.data(), geometry.glow.size() * sizeof(lightning_vertex));
+			sz2i(geometry.glow.size()), geometry.glow.data(), geometry.glow.size() * sizeof(lightning_vertex));
 		geometry.body.clear();
 		geometry.glow.clear();
 	}
@@ -643,11 +644,9 @@ void nebl_render_all()
 			Nebl_flash_x = 0.0f;
 			Nebl_flash_y = 0.0f;
 			Nebl_bang = 10000000.0f;
-			if (b->head != nullptr) {
-				lightning_render_batch batch(geometry, *bi, body_alpha, glow_alpha);
-				nebl_render(bi, b->head, b->width, batch);
-				batch.draw();
-			}
+			lightning_render_batch batch(geometry, *bi, body_alpha, glow_alpha);
+			nebl_render(bi, b->head, b->width, batch);
+			batch.draw();
 
 			// if this is the first frame he has been rendered, determine if we need to make a flash and sound effect
 			if(b->first_frame){
@@ -1204,7 +1203,7 @@ static void nebl_render(bolt_type* bi, l_node* node, float width, lightning_rend
 	const auto render_section = [&](const l_section& first, const l_section& last) {
 		nebl_queue_section(batch.geometry, first, last);
 		// Preserve the interleaving of body and glow for alpha-blended materials.
-		if (!bi->batch_by_bolt) {
+		if (!batch.batch_by_bolt()) {
 			batch.draw();
 		}
 	};
