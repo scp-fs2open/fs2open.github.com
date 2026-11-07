@@ -115,6 +115,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	Q_OBJECT
   public:
 	explicit CampaignMissionGraph(QWidget* parent = nullptr);
+	~CampaignMissionGraph() override;
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 
@@ -234,6 +235,9 @@ namespace detail {
 
 using fso::fred::dialogs::CampaignSpecialMode;
 
+// widest border the items paint; their bounds pad by it so a port's outline is repainted when dragged
+constexpr qreal kMaxBorderWidth = 2.0;
+
 /**
  * One mission node item.
  */
@@ -251,7 +255,17 @@ class MissionNodeItem final : public QGraphicsObject {
 		QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
+	QPainterPath shape() const override;
 	void paint(QPainter* p, const QStyleOptionGraphicsItem* opt, QWidget* w) override;
+
+	QRectF cardRect() const;
+
+	// qgraphicsitem_cast matches on this; without it any scene item would cast to a mission card
+	static constexpr int Type = UserType + 1;
+	int type() const override
+	{
+		return Type;
+	}
 
 	int missionIndex() const
 	{
@@ -335,6 +349,8 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	int targetIndex() const { return m_targetIndex; }
 	void setTargetIndex(int idx) { m_targetIndex = idx; }
 
+	QRectF boundingRect() const override;
+
   protected:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
@@ -375,9 +391,21 @@ class EndSinkItem final : public QGraphicsObject {
 
 	QRectF boundingRect() const override
 	{
-		// Expand upward by port radius so the top port isn't clipped
-		QRectF pill(QPointF(0, 0), m_style.endSinkSize);
-		return pill.adjusted(-1.0, -m_style.portRadius, +1.0, +1.0);
+		// Expand upward by port radius plus the port's pen so the top port isn't clipped
+		return pillRect().adjusted(-1.0, -(m_style.portRadius + kMaxBorderWidth), +1.0, +1.0);
+	}
+
+	QRectF pillRect() const
+	{
+		return QRectF(QPointF(0, 0), m_style.endSinkSize);
+	}
+
+	// clicks and drops hit the pill only, like the cards; the strip above it is only for repainting the port
+	QPainterPath shape() const override
+	{
+		QPainterPath path;
+		path.addRect(pillRect());
+		return path;
 	}
 
 	void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*) override
