@@ -48,7 +48,7 @@ protected:
 		}
 	}
 
-	void check_dimensions(uint width, uint height, int expected_width, int expected_height,
+	static void check_dimensions(uint width, uint height, int expected_width, int expected_height,
 		int expected_mips = 3, uint input_mips = 3, int expected_format = DDS_ETC2_RGB)
 	{
 		SCOPED_TRACE(::testing::Message() << width << "x" << height);
