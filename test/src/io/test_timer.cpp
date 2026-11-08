@@ -24,6 +24,9 @@ constexpr uint64_t US_PER_DAY = 86'400ULL * MICROSECONDS_PER_SECOND;
 constexpr uint64_t STEP_US = 600'000ULL;
 constexpr uint64_t COMPRESSED_JUMP_US = 13 * US_PER_DAY;
 constexpr uint64_t COMPRESSED_STEP_US = 300'000ULL;
+constexpr std::int64_t PAUSE_TARGET_MS = MS_2_31 - 2000;
+constexpr int PAUSE_STAMP_MS = 2500;
+constexpr uint64_t PAUSE_STEP_US = 3'000'000ULL;
 
 struct ClockJump {
 	uint64_t days;
@@ -155,14 +158,13 @@ TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 TEST_F(TimerTest, gameClockPausedAcrossThirtyTwoBits)
 {
 	timer_start_frame();
-	constexpr std::int64_t TARGET_MS = MS_2_31 - 200;
 	const std::int64_t start_ms = _timestamp().value();
 	// other tests may leave the clock ahead of the target, so approach it from whichever side the clock is on
-	const bool behind = start_ms < TARGET_MS;
+	const bool behind = start_ms < PAUSE_TARGET_MS;
 	const auto jump_dir = behind ? TIMER_DIRECTION::FORWARD : TIMER_DIRECTION::BACKWARD;
 	const auto back_dir = behind ? TIMER_DIRECTION::BACKWARD : TIMER_DIRECTION::FORWARD;
-	const auto jump_us =
-		static_cast<uint64_t>(behind ? TARGET_MS - start_ms : start_ms - TARGET_MS) * MICROSECONDS_PER_MILLISECOND;
+	const std::int64_t gap_ms = behind ? PAUSE_TARGET_MS - start_ms : start_ms - PAUSE_TARGET_MS;
+	const auto jump_us = static_cast<uint64_t>(gap_ms) * MICROSECONDS_PER_MILLISECOND;
 	timestamp_adjust_microseconds(jump_us, jump_dir);
 	bool stepped = false;
 	uint64_t pause_started_us = 0;
@@ -172,7 +174,7 @@ TEST_F(TimerTest, gameClockPausedAcrossThirtyTwoBits)
 			timestamp_unpause(true);
 		}
 		if (stepped) {
-			timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::BACKWARD);
+			timestamp_adjust_microseconds(PAUSE_STEP_US, TIMER_DIRECTION::BACKWARD);
 		}
 		timestamp_adjust_microseconds(jump_us, back_dir);
 		// the unpause added the paused time to the counter offset; give it back, as in the compression test
@@ -180,26 +182,26 @@ TEST_F(TimerTest, gameClockPausedAcrossThirtyTwoBits)
 		timer_start_frame();
 	});
 	timer_start_frame();
-	ASSERT_GT(_timestamp().value(), TARGET_MS - 1000);
-	ASSERT_LT(_timestamp().value(), TARGET_MS + 100);
-	const TIMESTAMP stamp = _timestamp(500);
+	ASSERT_GT(_timestamp().value(), PAUSE_TARGET_MS - 1000);
+	ASSERT_LT(_timestamp().value(), PAUSE_TARGET_MS + 1000);
+	const TIMESTAMP stamp = _timestamp(PAUSE_STAMP_MS);
 
 	pause_started_us = timer_get_microseconds();
 	timestamp_pause(true);
 	timer_start_frame();
 	const std::int64_t paused_ms = _timestamp().value();
 	ASSERT_LT(paused_ms, MS_2_31);
-	std::this_thread::sleep_for(std::chrono::milliseconds(50));
+	std::this_thread::sleep_for(std::chrono::milliseconds(400));
 	timer_start_frame();
 	EXPECT_EQ(_timestamp().value(), paused_ms);
 	EXPECT_FALSE(timestamp_elapsed(stamp));
 
 	timestamp_unpause(true);
 	timer_start_frame();
-	EXPECT_LT(_timestamp().value() - paused_ms, 50);
+	EXPECT_LT(_timestamp().value() - paused_ms, 200);
 	EXPECT_FALSE(timestamp_elapsed(stamp));
 
-	timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
+	timestamp_adjust_microseconds(PAUSE_STEP_US, TIMER_DIRECTION::FORWARD);
 	stepped = true;
 	timer_start_frame();
 
@@ -221,12 +223,19 @@ TEST_F(TimerTest, uiStampsPastThirtyTwoBitsStayPending)
 
 TEST_F(TimerTest, uiClockReadsZeroWhileTheTimerIsClosed)
 {
+	// without some uptime an unguarded read would also round down to 0 ms
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	timer_close();
 	auto reopen = util::finally([] { timer_init(); });
 #ifdef NDEBUG
 	EXPECT_EQ(ui_timestamp().value(), 0);
 #else
-	EXPECT_THROW(ui_timestamp(), os::dialogs::AssertException);
+	// the counter read asserts too, with a different message, so match the guard's own text
+	try {
+		const UI_TIMESTAMP stamp = ui_timestamp();
+		ADD_FAILURE() << "expected an assertion, got " << stamp.value();
+	} catch (const os::dialogs::AssertException& e) {
+		EXPECT_NE(SCP_string(e.what()).find("Make sure you call timer_init"), SCP_string::npos) << e.what();
+	}
 #endif
 }

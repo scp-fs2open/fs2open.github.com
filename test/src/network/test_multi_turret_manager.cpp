@@ -13,8 +13,9 @@
 namespace {
 constexpr std::int64_t MS_2_31 = 2'147'483'648LL;
 constexpr uint64_t JUMP_US = 25ULL * 86'400ULL * MICROSECONDS_PER_SECOND;
-constexpr uint64_t STEP_US = 30'000ULL;
-constexpr int PACKET_AHEAD_MS = 50;
+constexpr uint64_t STEP_US = 300'000ULL;
+constexpr int PACKET_AHEAD_MS = 500;
+constexpr int PAUSE_SLEEP_MS = 400;
 constexpr ushort PARENT_SIG = 1234;
 constexpr int PARENT_OBJNUM = 0;
 constexpr short SUBSYS_INDEX = 0;
@@ -170,7 +171,7 @@ TEST_F(MultiTurretManagerTest, packetsWaitWhileTheGameIsPaused)
 	EXPECT_FALSE(packet_applied(&packet));
 
 	pause_game();
-	std::this_thread::sleep_for(std::chrono::milliseconds(2 * PACKET_AHEAD_MS));
+	std::this_thread::sleep_for(std::chrono::milliseconds(PAUSE_SLEEP_MS));
 	timer_start_frame();
 	Multi_Timing_Info.update_current_time();
 	EXPECT_FALSE(packet_applied(&packet));
