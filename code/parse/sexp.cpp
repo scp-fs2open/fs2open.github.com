@@ -1721,7 +1721,11 @@ int dup_sexp_chain(int node)
 	// TODO - CASE OF SEXP VARIABLES - ONLY 1 COPY OF VARIABLE
 	first = dup_sexp_chain(Sexp_nodes[node].first);
 	rest = dup_sexp_chain(Sexp_nodes[node].rest);
-	cur = alloc_sexp(Sexp_nodes[node].text, Sexp_nodes[node].type, Sexp_nodes[node].subtype, first, rest);
+
+	// copy the text, since alloc_sexp may reallocate Sexp_nodes before reading it
+	char text[TOKEN_LENGTH];
+	strcpy_s(text, Sexp_nodes[node].text);
+	cur = alloc_sexp(text, Sexp_nodes[node].type, Sexp_nodes[node].subtype, first, rest);
 
 	if (cur == -1) {
 		if (first != -1){
