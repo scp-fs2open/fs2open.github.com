@@ -19,8 +19,10 @@ class ShipInitialStatusDialog : public QDialog {
 
 	// Positions of ships that will be moved by docking when accept() is called,
 	// captured before apply() runs.  Retrieved by ShipEditorDialog via accepted().
-	struct PreApplyDockeePos { int sig; vec3d pos; matrix orient; };
-	const SCP_vector<PreApplyDockeePos>& preApplyDockeePositions() const { return _preApplyDockeePositions; }
+	// Every ship's position from just before apply(). Docking moves the other ship's whole dock
+	// tree and undocking can move a ship with its partners, so undo needs more than the edited ships.
+	struct PreApplyShipPos { int sig; vec3d pos; matrix orient; };
+	const SCP_vector<PreApplyShipPos>& preApplyShipPositions() const { return _preApplyShipPositions; }
 
 	void accept() override;
 	void reject() override;
@@ -70,6 +72,7 @@ class ShipInitialStatusDialog : public QDialog {
 	int _curDockee = -1;
 	int _curDockeePoint = -1;
 
-	SCP_vector<PreApplyDockeePos> _preApplyDockeePositions;
+	SCP_vector<PreApplyShipPos> _preApplyShipPositions;
+	void capturePreApplyPositions();
 };
 } // namespace fso::fred::dialogs

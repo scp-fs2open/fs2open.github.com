@@ -252,6 +252,22 @@ class EditorViewport {
 	IDialogProvider* dialogProvider = nullptr;
 
 private:
+	// Flying an object with the camera controls (the current object, or the one being viewed
+	// through) is one undo step per flight: where the objects were when it started, recorded once
+	// the controls have been still for a moment
+	struct ObjectFlyStart {
+		int    signature;
+		vec3d  pos;
+		matrix orient;
+	};
+	bool _objFlying = false;
+	SCP_vector<ObjectFlyStart> _objFlyStart;
+	int _objFlyLastMove = 0; // timer_get_milliseconds()
+	// flown: the object the controls move, with where it was before this frame's move; input:
+	// whether a fly control was held this frame
+	void noteObjectFly(const object* flown, const vec3d& oldPos, const matrix& oldOrient, bool input);
+	void commitObjectFly();
+
 	fix _lasttime = 0;
 	vec3d Last_control_pos = vmd_zero_vector;
 	matrix Last_control_orient = vmd_identity_matrix;

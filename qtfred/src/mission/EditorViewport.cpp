@@ -10,6 +10,9 @@
 #include "object.h"
 
 #include "EditorViewport.h"
+#include "mission/commands/FredCommands.h"
+
+#include <QUndoStack>
 #include <QSettings>
 #include <math/fvi.h>
 #include <jumpnode/jumpnode.h>
@@ -435,8 +438,11 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 
 	case 2: // Control viewpoint object
 		if (!controlsLocked && !Objects[camera.getViewObj()].flags[Object::Object_Flags::Locked_from_editing]) {
-			camera.processControls(&Objects[camera.getViewObj()].pos, &Objects[camera.getViewObj()].orient,
-			                       f2fl(Frametime), false);
+			object* viewed = &Objects[camera.getViewObj()];
+			const vec3d old_pos = viewed->pos;
+			const matrix old_orient = viewed->orient;
+			const bool input = camera.processControls(&viewed->pos, &viewed->orient, f2fl(Frametime), false);
+			noteObjectFly(viewed, old_pos, old_orient, input);
 			object_moved(&Objects[camera.getViewObj()]);
 			control_pos = Objects[camera.getViewObj()].pos;
 			control_orient = Objects[camera.getViewObj()].orient;
@@ -454,10 +460,11 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 			leader_orient = leader->orient;
 			vm_copy_transpose(&leader_transpose, &leader_orient);
 
-			camera.processControls(&leader->pos, &leader->orient, f2fl(Frametime), false);
+			const bool input = camera.processControls(&leader->pos, &leader->orient, f2fl(Frametime), false);
 			vm_vec_sub(&delta_pos, &leader->pos, &leader_old_pos);
 			control_pos = leader->pos;
 			control_orient = leader->orient;
+			noteObjectFly(leader, leader_old_pos, leader_orient, input); // before the followers move
 
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
@@ -503,6 +510,11 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 
 	default:
 		Assert(0);
+	}
+
+	// one undo step per flight, once the object has settled (or the controls went elsewhere)
+	if (_objFlying && (timer_get_milliseconds() - _objFlyLastMove >= 300 || (cmode != 1 && cmode != 2))) {
+		commitObjectFly();
 	}
 
 	if (camera.getLookatMode() && query_valid_object(cur_object_index)) {
@@ -1759,11 +1771,60 @@ void EditorViewport::cancel_drag() {
 		objp = GET_NEXT(objp);
 	}
 
+	// The drag carried docked partners along, and they were never backed up: snap them back
+	// to the restored ships (docking geometry fixes a partner's place exactly)
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked])
+			object_moved(objp);
+	}
+
 	button_down = false;
 	moved = false;
 	Dup_drag = 0;
 	needsUpdate();
 }
+
+void EditorViewport::noteObjectFly(const object* flown, const vec3d& oldPos, const matrix& oldOrient, bool input) {
+	// The controls drive the object through physics, so it coasts to a stop after the keys are
+	// released; once they are, movement under about a centimeter counts as still
+	const bool flew = input || vm_vec_dist_squared(&oldPos, &flown->pos) > 1e-4f ||
+		vm_vec_dist_squared(&oldOrient.vec.fvec, &flown->orient.vec.fvec) > 1e-8f ||
+		vm_vec_dist_squared(&oldOrient.vec.uvec, &flown->orient.vec.uvec) > 1e-8f;
+	if (!flew)
+		return;
+	_objFlyLastMove = timer_get_milliseconds();
+	if (_objFlying)
+		return;
+
+	// Start of a flight: the flown object as it was, and every marked object (followers move
+	// after this). Docked partners aren't needed: undo re-snaps them to the restored ships.
+	_objFlying = true;
+	_objFlyStart.clear();
+	_objFlyStart.push_back({flown->signature, oldPos, oldOrient});
+	for (auto* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked] && objp != flown)
+			_objFlyStart.push_back({objp->signature, objp->pos, objp->orient});
+	}
+}
+
+void EditorViewport::commitObjectFly() {
+	_objFlying = false;
+	SCP_vector<ObjectTransform> transforms;
+	for (const auto& start : _objFlyStart) {
+		const int objnum = obj_get_by_signature(start.signature);
+		if (objnum < 0)
+			continue;
+		const object& obj = Objects[objnum];
+		if (vm_vec_cmp(&start.pos, &obj.pos) == 0 && vm_matrix_cmp(&start.orient, &obj.orient) == 0)
+			continue;
+		transforms.push_back({start.signature, start.pos, start.orient, obj.pos, obj.orient});
+	}
+	_objFlyStart.clear();
+	// pushing runs redo(), which puts the objects where they already are
+	if (!transforms.empty() && editor->undoStack() != nullptr)
+		editor->undoStack()->push(new MoveObjectsCommand(std::move(transforms), editor, this));
+}
+
 void EditorViewport::view_universe(bool just_marked) {
 	float dist, radius;
 	vec3d center;

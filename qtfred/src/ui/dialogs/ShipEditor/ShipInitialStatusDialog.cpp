@@ -34,21 +34,20 @@ ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport
 
 ShipInitialStatusDialog::~ShipInitialStatusDialog() = default;
 
+void ShipInitialStatusDialog::capturePreApplyPositions()
+{
+	_preApplyShipPositions.clear();
+	for (auto* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->type == OBJ_SHIP || objp->type == OBJ_START)
+			_preApplyShipPositions.push_back({ objp->signature, objp->pos, objp->orient });
+	}
+}
+
 void ShipInitialStatusDialog::accept()
 {
-	// Capture dockee positions before apply() physically moves them.
-	// ShipEditorDialog retrieves these via preApplyDockeePositions() in its
-	// accepted() handler to enable full position restore on undo.
-	_preApplyDockeePositions.clear();
-	if (!_model->getIfMultipleShips()) {
-		for (int i = 0; i < _model->getNumDockPoints(); i++) {
-			int dockeeShip = _model->getDockpointArray()[i].dockee_shipnum;
-			if (dockeeShip >= 0) {
-				const object& obj = Objects[Ships[dockeeShip].objnum];
-				_preApplyDockeePositions.push_back({ obj.signature, obj.pos, obj.orient });
-			}
-		}
-	}
+	// Record positions before apply() physically moves ships. ShipEditorDialog reads them in its
+	// finished() handler to make undo restore every ship the docking changes moved.
+	capturePreApplyPositions();
 	if (_model->apply()) {
 		QDialog::accept();
 	}
@@ -59,6 +58,8 @@ void ShipInitialStatusDialog::reject()
 	// Asks the user if they want to save changes, if any
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
+	// closing can apply the changes too ("save changes?")
+	capturePreApplyPositions();
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		QDialog::reject(); // actually close
 	}

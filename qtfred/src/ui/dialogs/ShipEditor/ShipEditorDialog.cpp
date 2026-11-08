@@ -149,9 +149,9 @@ struct ShipInitialStatusSnapshot {
 		matrix otherOrient;
 	};
 	SCP_vector<DockLink> dockLinks;
-	// Positions of ships that were moved by a newly-added dock connection.
-	// Populated from ShipInitialStatusDialog::preApplyDockeePositions() via
-	// the accepted() signal — captured before apply() physically moves them.
+	// Every ship apply() moved (docking and undocking move whole dock trees), from
+	// ShipInitialStatusDialog::preApplyShipPositions() via the finished() signal:
+	// pre-apply positions in the undo snapshot, post-apply ones in the redo snapshot.
 	struct ExtraPosition { int sig; vec3d pos; matrix orient; };
 	SCP_vector<ExtraPosition> extraPositions;
 	// pos/orient are excluded from equality: they change as a consequence of
@@ -586,13 +586,13 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 	dlg->setAttribute(Qt::WA_DeleteOnClose);
 	dlg->show();
 
-	// accepted() fires after apply() but before destroyed().  Retrieve the
-	// pre-apply dockee positions the dialog captured and stash them so the
-	// destroyed() handler can store them in before.extraPositions.
+	// finished() fires after apply() (from OK, or from saving changes when closing) but before
+	// destroyed(). Retrieve the pre-apply ship positions the dialog captured and stash them so
+	// the destroyed() handler can work out which ships moved.
 	using ExtraPos = ShipInitialStatusSnapshot::ExtraPosition;
 	auto preApply = std::make_shared<SCP_vector<ExtraPos>>();
-	connect(dlg, &QDialog::accepted, this, [dlg, preApply]() {
-		for (const auto& p : dlg->preApplyDockeePositions())
+	connect(dlg, &QDialog::finished, this, [dlg, preApply]() {
+		for (const auto& p : dlg->preApplyShipPositions())
 			preApply->push_back({ p.sig, p.pos, p.orient });
 	}, Qt::DirectConnection);
 
@@ -610,21 +610,20 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 		}
 		if (!anyChanged) return;
 
-		// For each ship that is newly docked in 'after' (not in 'before'),
-		// store its pre-apply position in before.extraPositions so undo can
-		// move it back.  preApply was populated in the accepted() handler
-		// before apply() physically moved the ships.
-		for (size_t i = 0; i < before.size() && i < after.size(); i++) {
-			for (const auto& aDL : after[i].dockLinks) {
-				bool wasDocked = false;
-				for (const auto& bDL : before[i].dockLinks)
-					if (bDL.otherSig == aDL.otherSig) { wasDocked = true; break; }
-				if (!wasDocked) {
-					auto it = std::find_if(preApply->begin(), preApply->end(),
-						[&](const ExtraPos& ep) { return ep.sig == aDL.otherSig; });
-					if (it != preApply->end())
-						before[i].extraPositions.push_back(*it);
-				}
+		// Docking moves the other ship's whole dock tree, and undocking can move a ship with its
+		// partners, so record every ship that apply() moved: where it was for undo, where it went
+		// for redo. The restore lambda applies extra positions from every snapshot, so they all
+		// go on the first one.
+		if (!before.empty() && !after.empty()) {
+			for (const auto& pre : *preApply) {
+				const int o = obj_get_by_signature(pre.sig);
+				if (o < 0)
+					continue;
+				const object& obj = Objects[o];
+				if (vm_vec_cmp(&pre.pos, &obj.pos) == 0 && vm_matrix_cmp(&pre.orient, &obj.orient) == 0)
+					continue;
+				before.front().extraPositions.push_back(pre);
+				after.front().extraPositions.push_back({ pre.sig, obj.pos, obj.orient });
 			}
 		}
 
