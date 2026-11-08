@@ -25,6 +25,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "jpgutils/jpgutils.h"
+#include "mod_table/mod_table.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
@@ -1357,15 +1358,12 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 
 	memset(ext, 0, sizeof(ext));
 
-	CFILE* eff_cfp = cfopen(filename, "rb", dir_type);
-	const int file_len = (eff_cfp != nullptr) ? cfilelength(eff_cfp) : 0;
-	if (eff_cfp != nullptr)
-		cfclose(eff_cfp);
+	const size_t file_len = cf_find_file_location(filename, dir_type).size;
 
-	// encrypted text unpacks 7 bytes into 8, and processing can turn one character into two
-	const size_t raw_len = static_cast<size_t>(std::max(file_len, 0)) + std::max(file_len, 0) / 7 + 16;
+	// encrypted text unpacks 7 bytes into 8, and outside Unicode mode processing can turn one character into two
+	const size_t raw_len = file_len + file_len / 7 + 16;
 	SCP_vector<char> file_text_raw(raw_len, '\0');
-	SCP_vector<char> file_text(raw_len * 2, '\0');
+	SCP_vector<char> file_text(Unicode_text_mode ? raw_len : raw_len * 2, '\0');
 
 	// pause anything that may happen to be parsing right now
 	pause_parse();
