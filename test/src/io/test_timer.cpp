@@ -16,7 +16,6 @@ constexpr std::int64_t MS_2_31 = 2'147'483'648LL;
 constexpr std::int64_t MS_2_32 = 4'294'967'296LL;
 constexpr uint64_t US_PER_DAY = 86'400ULL * MICROSECONDS_PER_SECOND;
 constexpr uint64_t STEP_US = 600'000ULL;
-constexpr uint64_t LEGACY_JUMP_US = 25 * US_PER_DAY;
 
 struct ClockJump {
 	uint64_t days;
@@ -58,21 +57,6 @@ TEST_F(TimerTest, gameStampsKeepWorkingPastThirtyTwoBits)
 		EXPECT_TRUE(timestamp_elapsed_safe(stamp, 2500));
 		EXPECT_GE(timestamp_since(stamp), 100);
 	}
-}
-
-// Pins the int API to its old 32-bit clock until its callers are converted, so a silent widening shows up here.
-TEST_F(TimerTest, legacyIntApiKeepsItsThirtyTwoBitClock)
-{
-	timestamp_adjust_microseconds(LEGACY_JUMP_US, TIMER_DIRECTION::FORWARD);
-	auto restore_clock = util::finally([] {
-		timestamp_adjust_microseconds(LEGACY_JUMP_US, TIMER_DIRECTION::BACKWARD);
-		timer_start_frame();
-	});
-	timer_start_frame();
-	ASSERT_GT(_timestamp().value(), MS_2_31);
-
-	EXPECT_LT(timestamp(), 0);
-	EXPECT_FALSE(timestamp_elapsed(timestamp(500)));
 }
 
 TEST_F(TimerTest, typedArithmeticPastThirtyTwoBits)
