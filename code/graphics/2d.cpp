@@ -309,7 +309,7 @@ static void parse_window_mode_func()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
+static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
                      .category(std::make_pair("Graphics", 1825))
@@ -491,21 +491,26 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
-static bool fullscreen_on_display(SDL_Window* window, SDL_DisplayID display)
+static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SDL_DisplayID display)
 {
 	const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
-	if (fullscreen && SDL_GetDisplayForWindow(window) == display) {
+	const auto original = SDL_GetDisplayForWindow(window);
+	if (original == display) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+		}
 		return true;
 	}
 
-	// The renderer cannot be resized mid-session, so a display without a mode of the window's size waits for a
-	// restart. Mode and window sizes are both in scaled units, which is also the renderer's size while the window
-	// does not ask for high-density pixels (a 4K mode on a 145% desktop is 2648x1490)
+	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
 	int width, height;
 	SDL_DisplayMode target;
 	if (!SDL_GetWindowSize(window, &width, &height) ||
 		!SDL_GetClosestFullscreenDisplayMode(display, width, height, 0.0f, true, &target) || target.w != width ||
 		target.h != height) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+		}
 		return false;
 	}
 
@@ -526,9 +531,17 @@ static bool fullscreen_on_display(SDL_Window* window, SDL_DisplayID display)
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	SDL_SyncWindow(window);
 
-	// No fullscreen fallback on failure: it could land on the wrong display or at the wrong size
-	return SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true) &&
-		   SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
+	if (!SDL_SetWindowFullscreenMode(window, &target) || !SDL_SetWindowFullscreen(window, true)) {
+		// Fullscreen where the window started rather than a window, until the restart moves it
+		SDL_SetWindowPosition(window,
+			SDL_WINDOWPOS_CENTERED_DISPLAY(original),
+			SDL_WINDOWPOS_CENTERED_DISPLAY(original));
+		SDL_SyncWindow(window);
+		viewport->setState(os::ViewportState::Fullscreen);
+		return false;
+	}
+
+	return SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
 }
 
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
@@ -549,7 +562,7 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 	// first; when the mode listener runs second it finds the window already in place
 	const auto state = WindowModeOption->getCommittedValue();
 	if (state == os::ViewportState::Fullscreen) {
-		return fullscreen_on_display(window, display);
+		return fullscreen_on_display(viewport, window, display);
 	}
 
 	const auto flags = SDL_GetWindowFlags(window);
@@ -620,14 +633,15 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	}
 
 	auto window = os::getMainViewport();
-	if (window == nullptr) {
+	auto sdl_window = os::getSDLMainWindow();
+	if (window == nullptr || sdl_window == nullptr) {
 		return false;
 	}
 
 	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach
 	const auto display = VideoDisplayOption->getCommittedValue();
-	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(os::getSDLMainWindow()) != display) {
-		return fullscreen_on_display(os::getSDLMainWindow(), display);
+	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(sdl_window) != display) {
+		return fullscreen_on_display(window, sdl_window, display);
 	}
 
 	window->setState(state);

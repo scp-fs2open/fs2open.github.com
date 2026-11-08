@@ -38,7 +38,7 @@ OptionsManager* options::OptionsManager::instance()
 
 //Gets the value of an option from the Config using the option key
 std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key,
-	bool include_pending) const
+	PendingEdits pending) const
 {
 	// An override always wins. The options UI disables the control for an overridden option, and
 	// setConfigValue() rejects writes to one, so no edit can be pending here anyway.
@@ -50,7 +50,7 @@ std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const 
 		return std::unique_ptr<json_t>(override_iter->second.value.get());
 	}
 
-	auto changed_iter = include_pending ? _changed_values.find(key) : _changed_values.end();
+	auto changed_iter = pending == PendingEdits::Include ? _changed_values.find(key) : _changed_values.end();
 	if (changed_iter != _changed_values.end()) {
 		json_incref(changed_iter->second.get());
 		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23

@@ -4,6 +4,7 @@
 #include "graphics/shadows.h"
 #include "localization/localize.h"
 #include "math/floating.h"
+#include "osapi/osregistry.h"
 
 #include "util/FSTestFixture.h"
 
@@ -108,7 +109,7 @@ TEST_F(OptionsManagerOverride, CommittedValueIgnoresPendingEdit)
 	ASSERT_TRUE(pending.has_value());
 	ASSERT_EQ(json_integer_value(pending->get()), 7);
 
-	ASSERT_FALSE(mgr->getValueFromConfig("Test.Committed.Pending", false).has_value());
+	ASSERT_FALSE(mgr->getValueFromConfig("Test.Committed.Pending", PendingEdits::Ignore).has_value());
 }
 
 TEST_F(OptionsManagerOverride, CommittedValueStillHonorsOverride)
@@ -117,7 +118,7 @@ TEST_F(OptionsManagerOverride, CommittedValueStillHonorsOverride)
 
 	mgr->setOverride("Test.Committed.Override", "42", "-test_flag");
 
-	auto result = mgr->getValueFromConfig("Test.Committed.Override", false);
+	auto result = mgr->getValueFromConfig("Test.Committed.Override", PendingEdits::Ignore);
 	ASSERT_TRUE(result.has_value());
 	ASSERT_EQ(json_integer_value(result->get()), 42);
 }
@@ -145,6 +146,89 @@ TEST_F(OptionsManagerOverride, WindowModeCommittedValueIgnoresPendingEdit)
 
 	ASSERT_EQ(typedOpt->getValue(), os::ViewportState::Windowed);
 	ASSERT_EQ(typedOpt->getCommittedValue(), os::ViewportState::Fullscreen);
+}
+
+// The display and window mode listeners read each other's committed value, which needs a real settings profile to
+// write to and read back from. FSTestFixture runs in portable mode, so the file is test_data/data/options_settings.ini.
+class OptionsManagerPersist : public test::FSTestFixture {
+  public:
+	OptionsManagerPersist() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
+
+  protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+
+		// On a fresh checkout the first init found no settings file and loaded no profile; it created the file, so
+		// load again from it
+		_save_found = Ingame_options_save_found;
+		Ingame_options_save_found = true;
+		os_deinit_registry_stuff();
+		os_init_registry_stuff(nullptr, "Test");
+
+		_first = makeOption("Test.Persist.First", &_second_seen_by_first, "Test.Persist.Second");
+		_second = makeOption("Test.Persist.Second", &_first_seen_by_second, "Test.Persist.First");
+
+		// Start from known committed values; the file keeps whatever an earlier run wrote
+		setBoth(1);
+		OptionsManager::instance()->persistChanges();
+		_first_seen_by_second = 0;
+		_second_seen_by_first = 0;
+	}
+	void TearDown() override
+	{
+		OptionsManager::instance()->discardChanges();
+		OptionsManager::instance()->removeOption(_first);
+		OptionsManager::instance()->removeOption(_second);
+		Ingame_options_save_found = _save_found;
+
+		test::FSTestFixture::TearDown();
+	}
+
+	static std::shared_ptr<const Option<int>> makeOption(const char* key, int* seen, const char* other_key)
+	{
+		return OptionBuilder<int>(key, SCP_string(key), SCP_string(key))
+			.default_val(0)
+			.change_listener([seen, other_key](const int&, bool) {
+				auto* other = static_cast<const Option<int>*>(OptionsManager::instance()->getOptionByKey(other_key));
+				*seen = other->getCommittedValue();
+				return true;
+			})
+			.finish();
+	}
+	static void setBoth(int value)
+	{
+		OptionsManager::instance()->setConfigValue("Test.Persist.First", std::unique_ptr<json_t>(json_integer(value)));
+		OptionsManager::instance()->setConfigValue("Test.Persist.Second", std::unique_ptr<json_t>(json_integer(value)));
+	}
+
+	std::shared_ptr<const Option<int>> _first;
+	std::shared_ptr<const Option<int>> _second;
+	int _first_seen_by_second = 0;
+	int _second_seen_by_first = 0;
+	bool _save_found = true;
+};
+
+// One Apply of several options: persistChanges() writes every value before it notifies any listener, so either
+// listener, whichever runs first, sees the other option's new value
+TEST_F(OptionsManagerPersist, PersistChangesShowsEveryNewValueToEveryListener)
+{
+	setBoth(2);
+	ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
+
+	ASSERT_EQ(_first_seen_by_second, 2);
+	ASSERT_EQ(_second_seen_by_first, 2);
+}
+
+// A script can persist one option alone; another option's edit stays pending and its committed value stays old
+TEST_F(OptionsManagerPersist, PersistOneOptionKeepsTheOtherCommittedValueOld)
+{
+	setBoth(2);
+	ASSERT_TRUE(OptionsManager::instance()->persistOptionChanges(_second.get()));
+
+	ASSERT_EQ(_first_seen_by_second, 1);
+	ASSERT_EQ(_first->getValue(), 2);
+	ASSERT_EQ(_first->getCommittedValue(), 1);
 }
 
 // The tests above exercise getValueFromConfig() directly with synthetic keys and integer payloads. The

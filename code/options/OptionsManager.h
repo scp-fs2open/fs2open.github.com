@@ -10,6 +10,11 @@ namespace options {
 // Forward declaration
 class OptionBase;
 
+enum class PendingEdits {
+	Include,
+	Ignore
+};
+
 class OptionsManager {
 	OptionsManager();
 
@@ -37,7 +42,8 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key, bool include_pending = true) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key,
+		PendingEdits pending = PendingEdits::Include) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
