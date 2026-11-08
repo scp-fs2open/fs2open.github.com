@@ -1689,7 +1689,8 @@ void sexp_tree_view::endOperatorQuickSearch(bool confirm)
 				okForPositive = !typed.startsWith(QLatin1Char('-'));
 			}
 
-			if (expectsNumber && isInt && okForPositive) {
+			// a node's text must be shorter than TOKEN_LENGTH; set_node asserts on anything longer
+			if (expectsNumber && isInt && okForPositive && typed.size() < TOKEN_LENGTH) {
 				// Commit as NUMBER data
 				if (_opPopup)
 					_opPopup->hide();
