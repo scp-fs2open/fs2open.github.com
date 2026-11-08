@@ -503,6 +503,7 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 	}
 
 	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
+	// Scaled size, not pixels: SDL lists display modes in scaled units
 	int width, height;
 	SDL_DisplayMode target;
 	if (!SDL_GetWindowSize(window, &width, &height) ||
@@ -531,17 +532,18 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	SDL_SyncWindow(window);
 
-	if (!SDL_SetWindowFullscreenMode(window, &target) || !SDL_SetWindowFullscreen(window, true)) {
-		// Fullscreen where the window started rather than a window, until the restart moves it
-		SDL_SetWindowPosition(window,
-			SDL_WINDOWPOS_CENTERED_DISPLAY(original),
-			SDL_WINDOWPOS_CENTERED_DISPLAY(original));
-		SDL_SyncWindow(window);
-		viewport->setState(os::ViewportState::Fullscreen);
-		return false;
+	if (SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true)) {
+		const bool synced = SDL_SyncWindow(window);
+		if ((SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0) {
+			return synced && SDL_GetDisplayForWindow(window) == display;
+		}
 	}
 
-	return SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
+	// Fullscreen on the starting display beats a window until the restart moves it
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(original), SDL_WINDOWPOS_CENTERED_DISPLAY(original));
+	SDL_SyncWindow(window);
+	viewport->setState(os::ViewportState::Fullscreen);
+	return false;
 }
 
 static bool videodisplay_change(SDL_DisplayID display, bool initial)

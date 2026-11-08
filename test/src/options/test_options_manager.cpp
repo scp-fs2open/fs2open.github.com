@@ -157,11 +157,11 @@ class OptionsManagerPersist : public test::FSTestFixture {
   protected:
 	void SetUp() override
 	{
+		_save_found = Ingame_options_save_found;
 		test::FSTestFixture::SetUp();
 
 		// On a fresh checkout the first init found no settings file and loaded no profile; it created the file, so
 		// load again from it
-		_save_found = Ingame_options_save_found;
 		Ingame_options_save_found = true;
 		os_deinit_registry_stuff();
 		os_init_registry_stuff(nullptr, "Test");
@@ -170,8 +170,11 @@ class OptionsManagerPersist : public test::FSTestFixture {
 		_second = makeOption("Test.Persist.Second", &_first_seen_by_second, "Test.Persist.First");
 
 		// Start from known committed values; the file keeps whatever an earlier run wrote
+		OptionsManager::instance()->discardChanges();
 		setBoth(1);
-		OptionsManager::instance()->persistChanges();
+		ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
+		ASSERT_EQ(_first->getCommittedValue(), 1);
+		ASSERT_EQ(_second->getCommittedValue(), 1);
 		_first_seen_by_second = 0;
 		_second_seen_by_first = 0;
 	}
