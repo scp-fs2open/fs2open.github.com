@@ -2403,7 +2403,7 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 }
 
 void FredView::openLayerManagerDialog() {
-	dialogs::LayerManagerDialog dialog(_viewport, this);
+	dialogs::LayerManagerDialog dialog(this, _viewport);
 	dialog.exec();
 }
 

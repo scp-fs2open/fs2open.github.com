@@ -17,6 +17,7 @@
 
 #include "mission/Editor.h"
 #include "mission/EditorViewport.h"
+#include "mission/dialogs/ReorderDialogModel.h"
 #include "mission/object.h"
 #include <missioneditor/common.h>
 
@@ -833,6 +834,125 @@ void MoveLayerCommand::redo()
 			_viewport->moveObjectToLayer(objNum, c.layerAfter);
 	}
 	_editor->missionChanged();
+}
+
+// ===========================================================================
+// LayerStructureCommand
+// ===========================================================================
+
+LayerStructureCommand::LayerStructureCommand(EditorViewport* viewport,
+                                             Editor*         editor,
+                                             const QString&  text,
+                                             QUndoCommand*   parent)
+    : QUndoCommand(text, parent)
+    , _viewport(viewport)
+    , _editor(editor)
+{
+	_before = capture();
+}
+
+void LayerStructureCommand::captureAfter()
+{
+	_after = capture();
+}
+
+LayerStructureCommand::Snapshot LayerStructureCommand::capture() const
+{
+	Snapshot snap;
+	snap.layerNames = _viewport->getLayerNames();
+	snap.layerVisibility.reserve(snap.layerNames.size());
+	for (const auto& name : snap.layerNames) {
+		bool visible = true;
+		_viewport->getLayerVisibility(name, &visible);
+		snap.layerVisibility.push_back(visible);
+	}
+
+	for (auto* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		const int objNum = OBJ_INDEX(objp);
+		snap.objectLayers.push_back({objp->signature, _viewport->getObjectLayerName(objNum)});
+	}
+	return snap;
+}
+
+void LayerStructureCommand::restore(const Snapshot& snap)
+{
+	// Rebuild the layer list from the mission-file representation, then put every
+	// object back on its captured layer. reloadLayersFromMission() derives object
+	// assignments from each object's own fred_layer string, which delete/rename
+	// may have rewritten, so the per-object pass below is what actually restores them.
+	The_mission.fred_layers = snap.layerNames;
+	_viewport->reloadLayersFromMission();
+
+	// Only touch objects that actually need moving. reloadLayersFromMission() has
+	// already put every object whose fred_layer string still resolves back on the
+	// right layer, so for an add or rename this loop is usually a no-op and for a
+	// delete it only covers the objects that were on the deleted layer.
+	// The guard matters: moveObjectToLayer() emits layerStructureChanged per call,
+	// and the Scene Browser answers that by cancelling its debounce and rebuilding
+	// its whole tree, so moving every object in the mission would rebuild it once
+	// per object.
+	for (const auto& entry : snap.objectLayers) {
+		const int objNum = obj_get_by_signature(entry.signature);
+		if (objNum < 0)
+			continue;
+		if (_viewport->getObjectLayerName(objNum) == entry.layerName)
+			continue;
+		_viewport->moveObjectToLayer(objNum, entry.layerName);
+	}
+
+	// reloadLayersFromMission() resets every layer to visible, so this only has to
+	// re-hide. setLayerVisibility() has no unchanged-value guard and notifies on
+	// every call, so skip the ones already correct.
+	for (size_t i = 0; i < snap.layerNames.size() && i < snap.layerVisibility.size(); ++i) {
+		if (snap.layerVisibility[i])
+			continue;
+		_viewport->setLayerVisibility(snap.layerNames[i], false);
+	}
+
+	_editor->missionChanged();
+}
+
+void LayerStructureCommand::undo()
+{
+	restore(_before);
+}
+
+void LayerStructureCommand::redo()
+{
+	if (_skipFirstRedo) { _skipFirstRedo = false; return; }
+	restore(_after);
+}
+
+// ===========================================================================
+// ReorderCommand
+// ===========================================================================
+
+ReorderCommand::ReorderCommand(int             type,
+                               int             fromPos,
+                               int             toPos,
+                               EditorViewport* viewport,
+                               QUndoCommand*   parent)
+    : QUndoCommand(QObject::tr("Reorder Objects"), parent)
+    , _type(type)
+    , _fromPos(fromPos)
+    , _toPos(toPos)
+    , _viewport(viewport)
+    , _skipFirstRedo(true)
+{}
+
+void ReorderCommand::undo()
+{
+	using Model = dialogs::ReorderDialogModel;
+	Model::applyMove(_viewport, static_cast<Model::Type>(_type), _toPos, _fromPos);
+	_viewport->editor->missionChanged();
+}
+
+void ReorderCommand::redo()
+{
+	if (_skipFirstRedo) { _skipFirstRedo = false; return; }
+	using Model = dialogs::ReorderDialogModel;
+	Model::applyMove(_viewport, static_cast<Model::Type>(_type), _fromPos, _toPos);
+	_viewport->editor->missionChanged();
 }
 
 // ===========================================================================

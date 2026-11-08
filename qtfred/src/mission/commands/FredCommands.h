@@ -279,6 +279,87 @@ public:
 };
 
 // ---------------------------------------------------------------------------
+// LayerStructureCommand - add / delete / rename a layer
+//
+// These three operations all cascade beyond the layer list itself: delete
+// reassigns every object on the layer to the default layer and shifts the
+// indices of all layers above it, and rename rewrites the fred_layer string on
+// every object assigned to it. Rather than invert each cascade by hand, this
+// captures the whole layer structure before and after and restores it wholesale,
+// the same rationale as DialogSnapshotCommand.
+//
+// Objects are keyed by signature so the mapping survives objnum pool changes.
+// Visibility is viewport-only state (never written to the mission file) but is
+// captured too, so that undoing a delete does not silently reveal a layer the
+// user had hidden.
+//
+// Construct BEFORE the operation, call captureAfter() once it succeeds; the
+// first redo() fired by QUndoStack::push() is then a no-op.
+// ---------------------------------------------------------------------------
+
+class LayerStructureCommand : public QUndoCommand {
+public:
+	struct ObjectLayerAssignment {
+		int        signature;
+		SCP_string layerName;
+	};
+
+	struct Snapshot {
+		SCP_vector<SCP_string>            layerNames;      // The_mission.fred_layers
+		SCP_vector<bool>                  layerVisibility; // parallel to layerNames
+		SCP_vector<ObjectLayerAssignment> objectLayers;
+	};
+
+	// Captures the before-state immediately.
+	LayerStructureCommand(EditorViewport* viewport,
+	                      Editor*         editor,
+	                      const QString&  text,
+	                      QUndoCommand*   parent = nullptr);
+
+	// Call after the operation has been applied to capture the after-state.
+	void captureAfter();
+
+	void undo() override;
+	void redo() override;
+
+private:
+	Snapshot capture() const;
+	void     restore(const Snapshot& snap);
+
+	Snapshot        _before;
+	Snapshot        _after;
+	EditorViewport* _viewport;
+	Editor*         _editor;
+	bool            _skipFirstRedo = true;
+};
+
+// ---------------------------------------------------------------------------
+// ReorderCommand - move one item within the mission-file ordering of a type
+//
+// The underlying rotate_*_slots() helpers preserve the set of occupied storage
+// slots (they only permute which item lives in which slot), so moving the item
+// back from to_pos to from_pos is an exact inverse.
+// ---------------------------------------------------------------------------
+
+class ReorderCommand : public QUndoCommand {
+	int             _type;    // dialogs::ReorderDialogModel::Type, stored as int to avoid the include
+	int             _fromPos;
+	int             _toPos;
+	EditorViewport* _viewport;
+	bool            _skipFirstRedo;
+
+public:
+	// Construct AFTER the move has been applied; the first redo() is a no-op.
+	ReorderCommand(int             type,
+	               int             fromPos,
+	               int             toPos,
+	               EditorViewport* viewport,
+	               QUndoCommand*   parent = nullptr);
+	void undo() override;
+	void redo() override;
+};
+
+// ---------------------------------------------------------------------------
 // CloneMarkedObjectsCommand — duplicate all marked objects (menu action)
 // ---------------------------------------------------------------------------
 
