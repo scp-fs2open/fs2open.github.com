@@ -3041,7 +3041,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_int(&sip->collision_lod);
 
 		// Cap to sane values, just in case
-		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels - 1));
 	}
 
 	// check for optional pixel colors
