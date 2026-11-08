@@ -137,13 +137,13 @@ void OptUi::build_options_list(const char* category) const
 				ImGui::SameLine();
 				ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f),
 					"%s",
-					setByMod ? XSTR("(mod)", 1938) : XSTR("(cmdline)", 1933));
+					setByMod ? XSTR("(mod)", 1946) : XSTR("(cmdline)", 1933));
 			}
 
 			// Add a tooltip with the option description on mouseover
 			if (isHovered) {
 				if (setByMod) {
-					ImGui::SetTooltip(XSTR("%s\n\nSet by an active mod; it cannot be changed here.", 1939),
+					ImGui::SetTooltip(XSTR("%s\n\nSet by an active mod; it cannot be changed here.", 1947),
 						thisOpt->getDescription().c_str());
 				} else if (overrideReason.has_value()) {
 					ImGui::SetTooltip(XSTR("%s\n\nSet on the command line by %s; it cannot be changed here.", 1934),
