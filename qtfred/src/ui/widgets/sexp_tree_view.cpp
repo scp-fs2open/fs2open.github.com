@@ -1686,9 +1686,7 @@ void sexp_tree_view::endOperatorQuickSearch(bool confirm)
 			// Enforce positivity if required; the engine counts 0 as positive and rejects only a leading minus
 			bool okForPositive = true;
 			if (expected == OPF_POSITIVE && isInt) {
-				bool fits = false;
-				typed.toInt(&fits);
-				okForPositive = fits && !typed.startsWith(QLatin1Char('-'));
+				okForPositive = !typed.startsWith(QLatin1Char('-'));
 			}
 
 			if (expectsNumber && isInt && okForPositive) {
