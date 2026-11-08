@@ -397,7 +397,7 @@ class EndSinkItem final : public QGraphicsObject {
 
 	QRectF pillRect() const
 	{
-		return QRectF(QPointF(0, 0), m_style.endSinkSize);
+		return {QPointF(0, 0), m_style.endSinkSize};
 	}
 
 	// clicks and drops hit the pill only, like the cards; the strip above it is only for repainting the port
