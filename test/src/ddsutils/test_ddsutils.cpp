@@ -28,7 +28,7 @@ protected:
 		test::FSTestFixture::TearDown();
 	}
 
-	void write_header(CFILE* fp, uint width, uint height, uint mips)
+	static void write_header(CFILE* fp, uint width, uint height, uint mips)
 	{
 		// A standard 124-byte DDS header with a DXT1 pixel format.
 		uint header[31] = {};
