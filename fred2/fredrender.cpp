@@ -43,6 +43,7 @@
 #include "model/model.h"
 #include "model/model.h"
 #include "mod_table/mod_table.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "physics/physics.h"
 #include "prop/prop.h"
@@ -115,6 +116,7 @@ int Show_horizon = 0;
 int Show_outlines = 0;
 bool Draw_outlines_on_selected_ships = true;
 bool Draw_outline_at_warpin_position = false;
+bool Orbit_selection_midpoint = false;
 int Outline_lod = 1;
 bool Always_save_display_names = false;
 bool Error_checker_checks_potential_issues = true;
@@ -548,7 +550,7 @@ void display_ship_info() {
 
 						shipp = &Ships[objp->instance];
 						ship_type = shipp->ship_info_index;
-						ASSERT(ship_type >= 0);
+						Assert(ship_type >= 0);
 						sprintf(buf, "%s\n%s", shipp->ship_name, Ship_info[ship_type].short_name);
 
 					} else if (objp->type == OBJ_WAYPOINT) {
@@ -572,7 +574,7 @@ void display_ship_info() {
 
 							propp = prop_id_lookup(objp->instance);
 							prop_type = propp->prop_info_index;
-							ASSERT(prop_type >= 0);
+							Assert(prop_type >= 0);
 							sprintf(buf, "%s\n", propp->prop_name);
 					} else
 						Assert(0);
@@ -1055,10 +1057,9 @@ void game_do_frame() {
 	}
 
 	if (Lookat_mode && query_valid_object()) {
-		float dist;
-
-		dist = vm_vec_dist(&view_pos, &Objects[cur_object_index].pos);
-		vm_vec_scale_add(&view_pos, &Objects[cur_object_index].pos, &view_orient.vec.fvec, -dist);
+		vec3d center = selection_midpoint();
+		float dist = vm_vec_dist(&view_pos, &center);
+		vm_vec_scale_add(&view_pos, &center, &view_orient.vec.fvec, -dist);
 	}
 
 	switch (viewpoint) {
@@ -1288,6 +1289,18 @@ void move_mouse(int btn, int mdx, int mdy) {
 	}
 }
 
+vec3d selection_midpoint()
+{
+	vec3d center;
+	float radius;
+
+	if (Orbit_selection_midpoint && Marked > 1 && get_object_bounds(true, &center, &radius)) {
+		return center;
+	}
+
+	return Objects[cur_object_index].pos;
+}
+
 // ---------- Orbit camera functions ----------
 
 vec3d orbit_camera_get_pivot()
@@ -1295,8 +1308,8 @@ vec3d orbit_camera_get_pivot()
 	vec3d pivot;
 
 	if (query_valid_object()) {
-		// Pivot on current object
-		pivot = Objects[cur_object_index].pos;
+		// Pivot on the selection
+		pivot = selection_midpoint();
 	} else if (!The_grid) {
 		// Pivot on the origin, if no grid
 		pivot = ZERO_VECTOR;

@@ -81,7 +81,7 @@ void VulkanRenderer::acquireNextSwapChainImage()
 			MAX_ACQUIRE_ATTEMPTS);
 	}
 
-	if (status == SwapChainStatus::eSuboptimal) {
+	if (shouldRecreateSwapChain(status)) {
 		m_swapChainNeedsRecreation = true;
 	}
 
@@ -99,6 +99,14 @@ void VulkanRenderer::setupFrame()
 	if (m_frameInProgress) {
 		Warning(LOCATION, "VulkanRenderer::setupFrame called while frame already in progress!");
 		return;
+	}
+
+	// before recording: the recompile can run mid-frame, while the frame being recorded still holds old pipelines
+	if (m_pipelinesStale) {
+		mprintf(("Vulkan: shaders were recompiled, rebuilding pipelines\n"));
+		m_device->waitIdle();
+		m_pipelineManager->forgetAllPipelines();
+		m_pipelinesStale = false;
 	}
 
 	// Free completed texture upload command buffers
@@ -218,9 +226,10 @@ void VulkanRenderer::flip()
 	});
 
 	// Submit and present
-	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers);
+	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers,
+		m_renderingFinishedSemaphores[m_currentSwapChainImage].get());
 
-	if (presentStatus == SwapChainStatus::eSuboptimal || presentStatus == SwapChainStatus::eOutOfDate) {
+	if (shouldRecreateSwapChain(presentStatus)) {
 		m_swapChainNeedsRecreation = true;
 	}
 

@@ -3041,7 +3041,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_int(&sip->collision_lod);
 
 		// Cap to sane values, just in case
-		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels - 1));
 	}
 
 	// check for optional pixel colors
@@ -6968,7 +6968,7 @@ void ship::clear()
 	
 	afterburner_fuel = 0.0f;
 	afterburner_last_engage_fuel = 0.0f;
-	afterburner_last_end_time = 0;
+	afterburner_last_end_time = TIMESTAMP::invalid();
 
 	cmeasure_count = 0;
 	current_cmeasure = -1;
@@ -9330,7 +9330,7 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 
 			switch ( objp->type ) {
 			case OBJ_SHIP:
-				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
+				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx, DamageSource::Explosion);
 				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
@@ -9387,7 +9387,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
-		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1);
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1, DamageSource::Explosion);
 
 		// do physics
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
@@ -11667,15 +11667,12 @@ static void ship_model_change(int n, int ship_type)
 	objp = &Objects[sp->objnum];
 	pmi = model_get_instance(sp->model_instance_num);
 
-	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip);
-	}
+	// get new model; as in ship_create(), load even if the class already has one, so that this ship holds
+	// its own reference and the model survives a UI preview releasing the one it loaded
+	sip->model_num = model_load(sip->pof_file, sip);
 
-	if ( sip->cockpit_model_num == -1 ) {
-		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-		}
+	if ( VALID_FNAME(sip->cockpit_pof_file) ) {
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	pm = model_get(sip->model_num);

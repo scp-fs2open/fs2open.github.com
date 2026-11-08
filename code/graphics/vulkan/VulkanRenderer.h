@@ -96,6 +96,12 @@ class VulkanRenderer {
 	void setupFrame();
 
 	/**
+	 * @brief Drop every cached pipeline at the start of the next frame; each is rebuilt on its next use
+	 * Called after the shaders are recompiled, since a pipeline keeps the shader code it was built from
+	 */
+	void requestPipelineRebuild() { m_pipelinesStale = true; }
+
+	/**
 	 * @brief End frame - ends render pass, submits, and presents
 	 * Called at the END of each frame after all draw calls
 	 */
@@ -451,10 +457,12 @@ class VulkanRenderer {
 	void createCommandPool(const PhysicalDeviceValues& values);
 
 	void createPresentSyncObjects();
+	void createRenderingFinishedSemaphores();
 
 	void acquireNextSwapChainImage();
 
 	bool recreateSwapChain();
+	bool shouldRecreateSwapChain(SwapChainStatus status) const;
 
 	void createImGuiDescriptorPool();
 	void initImGui();
@@ -479,6 +487,7 @@ class VulkanRenderer {
 	bool m_hdrActive = false;            // True when an HDR10 (PQ/BT.2020) swap chain was negotiated
 	bool m_hdrMetadataSupported = false; // VK_EXT_hdr_metadata device extension enabled
 	vk::Extent2D m_swapChainExtent;
+	vk::SurfaceTransformFlagBitsKHR m_swapChainPreTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
 	// The resolution the engine draws at (gr_screen.max_w/max_h), which is not
 	// always the window size: when Cmdline_window_res is set,
 	// SDLGraphicsOperations::createViewport sizes the window from that instead,
@@ -491,6 +500,8 @@ class VulkanRenderer {
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;
 	SCP_vector<VulkanRenderFrame*> m_swapChainImageRenderImage;
+	// per image, not per frame: a frame's fence does not tell us when present has consumed the semaphore
+	SCP_vector<vk::UniqueSemaphore> m_renderingFinishedSemaphores;
 
 	// HDR composition pipeline: the whole frame is rendered into these fp16
 	// images (via m_renderPass / m_swapChainFramebuffers) instead of directly
@@ -528,6 +539,7 @@ class VulkanRenderer {
 	vk::CommandBuffer m_currentCommandBuffer;
 	SCP_vector<vk::CommandBuffer> m_currentCommandBuffers;  // For cleanup
 	bool m_frameInProgress = false;
+	bool m_pipelinesStale = false;
 
 	// Swap chain recreation
 	bool m_swapChainNeedsRecreation = false;

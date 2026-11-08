@@ -89,6 +89,7 @@ PreferencesDialog::~PreferencesDialog() = default;
 void PreferencesDialog::applyChanges() {
 	_model->apply();
 	_fredView->setIconSize(QSize(_model->getToolbarIconSize(), _model->getToolbarIconSize()));
+	_fredView->applyMenuLayout(_model->getClassicMenuLayout());
 	_fredView->restartAutosaveTimer();
 	_viewport->needsUpdate();
 }
@@ -121,6 +122,7 @@ void PreferencesDialog::updateUi() {
 	ui->applyAutoCorrections->setChecked(_model->getApplyAutoCorrections());
 	ui->themeCombo->setCurrentIndex(themeModeToIndex(_model->getThemeMode()));
 	ui->dataMenuStyleCombo->setCurrentIndex(static_cast<int>(_model->getDataMenuStyle()));
+	ui->classicMenuLayout->setChecked(_model->getClassicMenuLayout());
 
 	const int iconSize = _model->getToolbarIconSize();
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
@@ -150,6 +152,7 @@ void PreferencesDialog::updateUi() {
 	// Controls
 	ui->invertOrbitX->setChecked(_model->getInvertOrbitX());
 	ui->invertOrbitY->setChecked(_model->getInvertOrbitY());
+	ui->orbitSelectionMidpoint->setChecked(_model->getOrbitSelectionMidpoint());
 	for (const auto& entry : _controlEditors) {
 		entry.second->setKeySequence(_model->getControlKey(entry.first));
 	}
@@ -211,6 +214,10 @@ void PreferencesDialog::on_dataMenuStyleCombo_currentIndexChanged(int index) {
 	_model->setDataMenuStyle(static_cast<DataMenuStyle>(index));
 }
 
+void PreferencesDialog::on_classicMenuLayout_toggled(bool checked) {
+	_model->setClassicMenuLayout(checked);
+}
+
 void PreferencesDialog::on_showSexpHelpMissionEvents_toggled(bool checked) {
 	_model->setShowSexpHelpMissionEvents(checked);
 }
@@ -267,6 +274,10 @@ void PreferencesDialog::on_invertOrbitX_toggled(bool checked) {
 
 void PreferencesDialog::on_invertOrbitY_toggled(bool checked) {
 	_model->setInvertOrbitY(checked);
+}
+
+void PreferencesDialog::on_orbitSelectionMidpoint_toggled(bool checked) {
+	_model->setOrbitSelectionMidpoint(checked);
 }
 
 void PreferencesDialog::on_resetDefaultsButton_clicked() {

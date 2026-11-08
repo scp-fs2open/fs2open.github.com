@@ -93,8 +93,9 @@ public:
 	/**
 	 * @brief Purge all cached BLASes for a model and free their GPU resources.
 	 * Called from model_unload()/model_free_all() before the model is destroyed.
+	 * @return true if any BLAS was retired (the shadow TLAS binding must then be refreshed)
 	 */
-	void onModelUnloaded(int pm_id);
+	bool onModelUnloaded(int pm_id);
 
 	/**
 	 * @brief Rebuild the top-level acceleration structure for this frame from
@@ -172,6 +173,7 @@ private:
 	const BlasEntry* getOrBuildBlasEntry(int pm_id, int submodel_num);
 
 	void destroyBlasEntry(BlasEntry& entry);
+	void retireBuiltTlases();
 
 	bool createRawBuffer(vk::DeviceSize size,
 		vk::BufferUsageFlags usage,

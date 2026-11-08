@@ -271,6 +271,9 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 
 void vulkan_deferred_lighting_msaa()
 {
+	if (!Deferred_lighting) {
+		return;
+	}
 	if (Cmdline_msaa_enabled <= 0) {
 		return;
 	}
@@ -956,6 +959,7 @@ void vulkan_render_decals(decal_material* material_info,
 	// Build pipeline config for decal rendering
 	PipelineConfig config;
 	config.shaderType = SDR_TYPE_DECAL;
+	config.shaderFlags = material_info->get_shader_flags();
 	config.primitiveType = prim_type;
 	config.depthMode = material_info->get_depth_mode();
 	config.depthWriteEnabled = false;

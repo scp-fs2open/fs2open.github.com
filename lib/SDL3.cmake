@@ -49,7 +49,7 @@ else()
         # CMake can't check for SDL3 so we'll just use PkgConfig
         find_package(PkgConfig)
 
-        PKG_SEARCH_MODULE(SDL3 "sdl3 >= 3.2.14")
+        PKG_SEARCH_MODULE(SDL3 "sdl3 >= 3.2.8")
         if(SDL3_FOUND)
             PKG_CONFIG_LIB_RESOLVE(SDL3 SDL3_LIB)
             ADD_IMPORTED_LIB(sdl3 "${SDL3_INCLUDE_DIRS}" "${SDL3_LIB}")
@@ -66,7 +66,7 @@ else()
         message(STATUS "Using pre-built SDL3 library.")
 
         unset(SDL3_LOCATION CACHE)
-        find_library(SDL3_LOCATION NAMES SDL3 SDL3-3.0 PATHS "${SDL3_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+        find_library(SDL3_LOCATION NAMES SDL3 SDL3-3.0 PATHS "${SDL3_ROOT_DIR}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 
         get_filename_component(FULL_LIB_PATH "${SDL3_LOCATION}" REALPATH)
         ADD_IMPORTED_LIB(sdl3 "${SDL3_ROOT_DIR}/include" "${FULL_LIB_PATH}")

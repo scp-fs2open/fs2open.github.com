@@ -1323,7 +1323,7 @@ void ship_select_do(float frametime)
 	ss_maybe_drop_icon();
 
 	Assert( Ss_icons != NULL );
-
+		
 	if ( !Background_playing ) {	
 		GR_MAYBE_CLEAR_RES(Ship_select_background_bitmap);
 		gr_set_bitmap(Ship_select_background_bitmap);
@@ -1463,6 +1463,16 @@ void ship_select_do(float frametime)
 }
 
 
+// release the ship select model, if one is loaded
+static void ss_unload_select_model()
+{
+	if (ShipSelectModelNum >= 0)
+	{
+		model_unload(ShipSelectModelNum);
+		ShipSelectModelNum = -1;
+	}
+}
+
 // ------------------------------------------------------------------------
 //	ship_select_close() is called once when the ship select screen is exited
 //
@@ -1470,8 +1480,6 @@ void ship_select_do(float frametime)
 void ship_select_close()
 {
 	key_flush();
-
-	ship_select_common_close();
 
 	if ( !Ship_select_open ) {
 		nprintf(("Alan","ship_select_close() returning without doing anything\n"));
@@ -1636,7 +1644,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 
 	if (ship_class < 0) {
 		mprintf(("No ship class passed in to start_ship_animation\n"));
-		ShipSelectModelNum = -1;
+		ss_unload_select_model();
 		return;
 	}
     
@@ -1652,8 +1660,13 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 			Ship_anim_class = -1;
 		}
 
-		// Load the necessary model file
+		// Load the necessary model file; the previous one is released only afterwards so that
+		// re-selecting the same ship doesn't free and reload it
+		int previous_model = ShipSelectModelNum;
 		ShipSelectModelNum = model_load(sip, true);
+		if (previous_model >= 0) {
+			model_unload(previous_model);
+		}
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
@@ -1670,10 +1683,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 		}
 
 		//If there was a model loaded for the previous ship, unload it
-		if (ShipSelectModelNum >= 0 ) {
-			model_unload(ShipSelectModelNum);
-			ShipSelectModelNum = -1;
-		}
+		ss_unload_select_model();
 
 		//unload the previous anim
 		if(Ship_anim_class > 0 && (*Ss_icons)[Ship_anim_class].ss_anim.num_frames > 0)
@@ -3136,6 +3146,8 @@ void ship_select_common_close()
 		ss_unload_team_icons(team_icons);
 		team_icons.clear();
 	}
+
+	ss_unload_select_model();
 }
 
 // change any interface data based on updated Wss_slots[] and Ss_pool[]
