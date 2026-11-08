@@ -232,6 +232,12 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
 
+	#ifdef __ANDROID__
+	SDL_SetHint(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1");
+	SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+	os_android_touch_overlay_init();
+	#endif
+
 	SDL_Rect bounds;
 	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
 		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
@@ -328,8 +334,9 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 
 	Assertion(ImGui::GetCurrentContext() != nullptr, "Can't use ImGui without a valid context!");
 
-	#ifndef USE_OPENGL_ES
 	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
+
+	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
 	#else
 	ImGui_ImplOpenGL3_Init("#version 300 es");

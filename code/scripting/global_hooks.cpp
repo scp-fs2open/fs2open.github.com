@@ -559,6 +559,22 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 		{"Camera", "camera", "The camera about to be used for rendering."},
 	});
 
+const std::shared_ptr<Hook<ShipDamageConditions>> OnShipDamage = Hook<ShipDamageConditions>::Factory(
+	"On Ship Damage", "Called after damage is applied to a ship; lethal hits run before the On Ship Death Started hook.  "
+		"Only called where damage is applied: in single player and on a multiplayer server, not on multiplayer clients.",
+	{
+		{"Target", "ship", "The ship that took the damage."},
+		{"Source", "object", "The weapon, beam, shockwave, or other object that caused the damage. Could be nil."},
+		{"Attacker", "object", "The source ship or parent object, if available."},
+		{"SourceKind", "string", "NON_BEAM_WEAPON, BEAM, SHOCKWAVE, COLLISION, EXPLOSION, WASH, SELF (the ship damaged itself, such as a self-destruct), or OTHER."},
+		{"DamageType", "string", "The damage type, or UNKNOWN if none is defined."},
+		{"ShieldDamage", "number", "Actual total shield strength removed by this damage application."},
+		{"HullDamage", "number", "Actual hull strength removed, clamped to the target's remaining hull."},
+		{"SubsystemDamage", "table", "Maps each subsystem's CanonicalName to the strength it lost in this damage application. Only subsystems that lost strength are listed, in no particular order."},
+		{"Quadrant", "number", "Shield quadrant hit, or -1 when no single quadrant applies."},
+		{"LethalHit", "boolean", "Whether this hit reduced positive hull strength to zero or below."},
+	});
+
 // ========== FRED HOOKS ==========
 
 const std::shared_ptr<Hook<>> FredOnMissionLoad = Hook<>::Factory("FRED On Mission Load",

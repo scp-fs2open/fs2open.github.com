@@ -1083,8 +1083,6 @@ const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which shi
 const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
 
-#define CLONE_UNIQUE_PTR(attribute) attribute = util::unique_copy(other.attribute.get(), true)
-
 void ship_info::clone(const ship_info& other)
 {
 	strcpy_s(name, other.name);
@@ -3043,7 +3041,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_int(&sip->collision_lod);
 
 		// Cap to sane values, just in case
-		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels - 1));
 	}
 
 	// check for optional pixel colors
@@ -6970,7 +6968,7 @@ void ship::clear()
 	
 	afterburner_fuel = 0.0f;
 	afterburner_last_engage_fuel = 0.0f;
-	afterburner_last_end_time = 0;
+	afterburner_last_end_time = TIMESTAMP::invalid();
 
 	cmeasure_count = 0;
 	current_cmeasure = -1;
@@ -9332,7 +9330,7 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 
 			switch ( objp->type ) {
 			case OBJ_SHIP:
-				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
+				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx, DamageSource::Explosion);
 				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
@@ -9389,7 +9387,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
-		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1);
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1, DamageSource::Explosion);
 
 		// do physics
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);

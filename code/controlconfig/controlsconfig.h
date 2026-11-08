@@ -572,20 +572,28 @@ public:
  * A preset, a collection of bindings for use in Control_config with an associated name
  */
 class CC_preset {
-public:
+  public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
-	Preset_t type = Preset_t::hardcode;
 
-public:
-	CC_preset() = default;
-	CC_preset(const CC_preset& A) = default;
+  private:
+	// No default value: the type is always set explicitly by the constructor
+	Preset_t type;
 
-	CC_preset& operator=(const CC_preset&);
-	/*!
-	 * Checks if the given preset is a duplicate of this one
-	 */
-	bool is_duplicate_of(CC_preset&);
+  public:
+	// No default constructor: every preset must be created with an explicit type
+	CC_preset(SCP_string preset_name, Preset_t preset_type) : name(std::move(preset_name)), type(preset_type) {}
+	CC_preset(const CC_preset&) = default;
+
+	// Preserve target's preset type during copy assignment
+	CC_preset& operator=(const CC_preset& other);
+
+	Preset_t get_type() const
+	{
+		return type;
+	}
+
+	bool is_duplicate_of(const CC_preset& other) const;
 };
 
 /*!
