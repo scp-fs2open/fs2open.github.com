@@ -1358,7 +1358,12 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 
 	memset(ext, 0, sizeof(ext));
 
-	const size_t file_len = cf_find_file_location(filename, dir_type).size;
+	// cf_find_file_location reports the stored size, which is smaller than the text for a compressed file
+	CFILE* eff_cfp = cfopen(filename, "rb", dir_type);
+	const size_t file_len = (eff_cfp != nullptr) ? static_cast<size_t>(std::max(cfilelength(eff_cfp), 0)) : 0;
+	if (eff_cfp != nullptr) {
+		cfclose(eff_cfp);
+	}
 
 	// encrypted text unpacks 7 bytes into 8, and outside Unicode mode processing can turn one character into two
 	const size_t raw_len = file_len + file_len / 7 + 16;
