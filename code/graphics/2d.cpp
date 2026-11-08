@@ -291,80 +291,7 @@ GraphicsAPI gr_get_configured_render_api()
 
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
-static bool move_fullscreen_window(SDL_Window* window, SDL_DisplayID display)
-{
-	if (SDL_GetDisplayForWindow(window) == display) {
-		return true;
-	}
-
-	// Exclusive fullscreen windows ignore position requests and move only by taking a mode of the new display
-	int width, height;
-	SDL_DisplayMode target;
-	if (!SDL_GetWindowSize(window, &width, &height) ||
-		!SDL_GetClosestFullscreenDisplayMode(display, width, height, 0.0f, true, &target)) {
-		return false;
-	}
-
-	// The renderer cannot be resized mid-session, so a display without a mode of the window's size waits for a
-	// restart. Mode and window sizes are both in scaled units, which is also the renderer's size while the window
-	// does not ask for high-density pixels (a 4K mode on a 145% desktop is 2648x1490)
-	if (target.w != width || target.h != height) {
-		return false;
-	}
-
-	// KWin keeps a fullscreen window on its current screen when asked to fullscreen it on another one, so leave
-	// fullscreen before choosing the new display's mode and entering fullscreen again
-	if (!SDL_SetWindowFullscreen(window, false)) {
-		return false;
-	}
-
-	// Asked too soon after leaving fullscreen, KWin puts the window back on its old screen (seen with Vulkan), so
-	// give it a moment to settle first; whether the sync finished in time does not change what happens next
-	SDL_SyncWindow(window);
-	SDL_Delay(100);
-	SDL_PumpEvents();
-
-	// On X11 the window goes fullscreen on the screen it is over (seen with KWin), so put it there first; Wayland
-	// ignores this and goes by the mode's display, so a refusal here is expected and not an error
-	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
-	SDL_SyncWindow(window);
-
-	if (!SDL_SetWindowFullscreenMode(window, &target)) {
-		// Go back to fullscreen rather than leave the player in a window; if that fails too, the restart popup is
-		// all that is left
-		SDL_SetWindowFullscreen(window, true);
-		return false;
-	}
-
-	return SDL_SetWindowFullscreen(window, true);
-}
-
-static SDL_DisplayID chosen_display();
-
-static bool mode_change_func(os::ViewportState state, bool initial)
-{
-	Gr_configured_window_state = state;
-
-	if (initial) {
-		return false;
-	}
-
-	auto window = os::getMainViewport();
-	if (window == nullptr) {
-		return false;
-	}
-
-	window->setState(state);
-	SDL_SyncWindow(os::getSDLMainWindow());
-
-	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach; if it
-	// cannot get there either, it stays fullscreen where it is
-	if (state == os::ViewportState::Fullscreen) {
-		move_fullscreen_window(os::getSDLMainWindow(), chosen_display());
-	}
-
-	return true;
-}
+static bool mode_change_func(os::ViewportState state, bool initial);
 
 static void parse_window_mode_func()
 {
@@ -564,6 +491,46 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
+static bool fullscreen_on_display(SDL_Window* window, SDL_DisplayID display)
+{
+	const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+	if (fullscreen && SDL_GetDisplayForWindow(window) == display) {
+		return true;
+	}
+
+	// The renderer cannot be resized mid-session, so a display without a mode of the window's size waits for a
+	// restart. Mode and window sizes are both in scaled units, which is also the renderer's size while the window
+	// does not ask for high-density pixels (a 4K mode on a 145% desktop is 2648x1490)
+	int width, height;
+	SDL_DisplayMode target;
+	if (!SDL_GetWindowSize(window, &width, &height) ||
+		!SDL_GetClosestFullscreenDisplayMode(display, width, height, 0.0f, true, &target) || target.w != width ||
+		target.h != height) {
+		return false;
+	}
+
+	if (fullscreen) {
+		// KWin keeps a fullscreen window on its screen when asked to fullscreen it on another one
+		if (!SDL_SetWindowFullscreen(window, false)) {
+			return false;
+		}
+
+		// KWin puts the window back on its old screen when it is fullscreened again too soon; a sync that times out
+		// changes nothing here
+		SDL_SyncWindow(window);
+		SDL_Delay(100);
+		SDL_PumpEvents();
+	}
+
+	// KWin on X11 fullscreens a window on the screen it is over; Wayland ignores this and uses the mode's display
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	SDL_SyncWindow(window);
+
+	// No fullscreen fallback on failure: it could land on the wrong display or at the wrong size
+	return SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true) &&
+		   SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
+}
+
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
@@ -580,11 +547,11 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 
 	// One Apply can also change the window mode, and the two listeners run in no fixed order, so take the new mode
 	// first; when the mode listener runs second it finds the window already in place
-	auto state = WindowModeOption->getValue();
-	if (Cmdline_enable_vr) {
-		// Window creation forces a windowed window in VR whatever the option says
-		state = os::ViewportState::Windowed;
+	const auto state = WindowModeOption->getCommittedValue();
+	if (state == os::ViewportState::Fullscreen) {
+		return fullscreen_on_display(window, display);
 	}
+
 	const auto flags = SDL_GetWindowFlags(window);
 	auto current = os::ViewportState::Windowed;
 	if (flags & SDL_WINDOW_FULLSCREEN) {
@@ -597,13 +564,9 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 		SDL_SyncWindow(window);
 	}
 
-	if (state == os::ViewportState::Fullscreen) {
-		if (!move_fullscreen_window(window, display)) {
-			return false;
-		}
-	} else if (!SDL_SetWindowPosition(window,
-				   SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-				   SDL_WINDOWPOS_CENTERED_DISPLAY(display))) {
+	if (!SDL_SetWindowPosition(window,
+			SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+			SDL_WINDOWPOS_CENTERED_DISPLAY(display))) {
 		return false;
 	}
 
@@ -648,9 +611,28 @@ static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics
                      .importance(99)
                      .finish();
 
-static SDL_DisplayID chosen_display()
+static bool mode_change_func(os::ViewportState state, bool initial)
 {
-	return VideoDisplayOption->getValue();
+	Gr_configured_window_state = state;
+
+	if (initial) {
+		return false;
+	}
+
+	auto window = os::getMainViewport();
+	if (window == nullptr) {
+		return false;
+	}
+
+	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach
+	const auto display = VideoDisplayOption->getCommittedValue();
+	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(os::getSDLMainWindow()) != display) {
+		return fullscreen_on_display(os::getSDLMainWindow(), display);
+	}
+
+	window->setState(state);
+
+	return true;
 }
 
 struct ResolutionInfo {

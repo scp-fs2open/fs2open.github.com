@@ -37,7 +37,7 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key, bool include_pending = true) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 

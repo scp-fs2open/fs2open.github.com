@@ -96,6 +96,57 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 	ASSERT_EQ(*reason, "-second_flag");
 }
 
+// A script can persist one option while another still has an edit pending, so a listener that reads another
+// option has to see only what was persisted.
+TEST_F(OptionsManagerOverride, CommittedValueIgnoresPendingEdit)
+{
+	auto* mgr = OptionsManager::instance();
+
+	mgr->setConfigValue("Test.Committed.Pending", std::unique_ptr<json_t>(json_integer(7)));
+
+	auto pending = mgr->getValueFromConfig("Test.Committed.Pending");
+	ASSERT_TRUE(pending.has_value());
+	ASSERT_EQ(json_integer_value(pending->get()), 7);
+
+	ASSERT_FALSE(mgr->getValueFromConfig("Test.Committed.Pending", false).has_value());
+}
+
+TEST_F(OptionsManagerOverride, CommittedValueStillHonorsOverride)
+{
+	auto* mgr = OptionsManager::instance();
+
+	mgr->setOverride("Test.Committed.Override", "42", "-test_flag");
+
+	auto result = mgr->getValueFromConfig("Test.Committed.Override", false);
+	ASSERT_TRUE(result.has_value());
+	ASSERT_EQ(json_integer_value(result->get()), 42);
+}
+
+TEST_F(OptionsManagerOverride, WindowModeCommittedValueIgnoresPendingEdit)
+{
+	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.WindowMode");
+	ASSERT_NE(opt, nullptr);
+	auto* typedOpt = static_cast<const Option<os::ViewportState>*>(opt);
+
+	class WindowStateGuard {
+	  public:
+		WindowStateGuard() : _original(Gr_configured_window_state) {}
+		~WindowStateGuard() { Gr_configured_window_state = _original; }
+
+	  private:
+		os::ViewportState _original;
+	};
+	WindowStateGuard guard;
+
+	// No override and no persisted ini value, so the committed value is the default
+	Gr_configured_window_state = os::ViewportState::Fullscreen;
+	OptionsManager::instance()->setConfigValue("Graphics.WindowMode",
+		std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))));
+
+	ASSERT_EQ(typedOpt->getValue(), os::ViewportState::Windowed);
+	ASSERT_EQ(typedOpt->getCommittedValue(), os::ViewportState::Fullscreen);
+}
+
 // The tests above exercise getValueFromConfig() directly with synthetic keys and integer payloads. The
 // tests below instead go through real, statically-registered Option<T> instances (confirmed live by the
 // probe test above), each with the same JSON value cmdline.cpp builds for that option, so a malformed value

@@ -123,7 +123,10 @@ OptionBase::OptionBase(SCP_string config_key, SCP_string title, SCP_string descr
 }
 
 //Return the option value from the config
-std::optional<std::unique_ptr<json_t>> OptionBase::getConfigValue() const { return _parent->getValueFromConfig(_config_key); }
+std::optional<std::unique_ptr<json_t>> OptionBase::getConfigValue(bool include_pending) const
+{
+	return _parent->getValueFromConfig(_config_key, include_pending);
+}
 
 //Return the option expert_level value
 ExpertLevel OptionBase::getExpertLevel() const { return _expert_level; }

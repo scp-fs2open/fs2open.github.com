@@ -81,7 +81,7 @@ class OptionBase {
 
 	flagset<OptionFlags> _flags;
 
-	std::optional<std::unique_ptr<json_t>> getConfigValue() const;
+	std::optional<std::unique_ptr<json_t>> getConfigValue(bool include_pending = true) const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
 
@@ -274,10 +274,10 @@ class Option : public OptionBase {
 			return 0.0f;
 		}
 	}
-	T getValue() const
+	T getValue(bool include_pending = true) const
 	{
 		try {
-			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
+			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue(include_pending);
 			//missing keys are signalled via the optional
 			if (!config_value.has_value()) {
 				return _defaultValueFunc();
@@ -287,6 +287,10 @@ class Option : public OptionBase {
 			// deserializers are allowed to throw on error
 			return _defaultValueFunc();
 		}
+	}
+	T getCommittedValue() const
+	{
+		return getValue(false);
 	}
 	ValueDescription getCurrentValueDescription() const override
 	{
