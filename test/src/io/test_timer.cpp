@@ -1,4 +1,5 @@
 #include "io/timer.h"
+#include "osapi/dialogs.h"
 #include "util/FSTestFixture.h"
 #include "utils/finally.h"
 
@@ -216,4 +217,16 @@ TEST_F(TimerTest, uiStampsPastThirtyTwoBitsStayPending)
 	EXPECT_FALSE(ui_timestamp_elapsed_last_frame(far));
 	EXPECT_EQ(ui_timestamp_until(far), INT_MAX);
 	EXPECT_EQ(ui_timestamp_since(far), INT_MIN);
+}
+
+TEST_F(TimerTest, uiClockReadsZeroWhileTheTimerIsClosed)
+{
+	std::this_thread::sleep_for(std::chrono::milliseconds(5));
+	timer_close();
+	auto reopen = util::finally([] { timer_init(); });
+#ifdef NDEBUG
+	EXPECT_EQ(ui_timestamp().value(), 0);
+#else
+	EXPECT_THROW(ui_timestamp(), os::dialogs::AssertException);
+#endif
 }

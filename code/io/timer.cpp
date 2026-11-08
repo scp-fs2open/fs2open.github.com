@@ -171,6 +171,11 @@ static int legacy_timestamp_ms() {
 }
 
 static std::int64_t ui_timestamp_ms() {
+	Assertion(Timer_inited, "Make sure you call timer_init before anything that uses timer functions!");
+	if (!Timer_inited) {
+		return 0;
+	}
+
 	return static_cast<std::int64_t>(timer_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
