@@ -114,9 +114,9 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			index = ship_name_lookup( pname );
 		}
 
-		Assert (index >= 0);
 		// without a ship there is no team to record, and reading Ships[-1] would crash
 		if (index < 0) {
+			Warning(LOCATION, "Mission log: no ship found for \"%s\", so the entry has no team", entry.pname);
 			break;
 		}
 		entry.primary_team = Ships[index].team;
