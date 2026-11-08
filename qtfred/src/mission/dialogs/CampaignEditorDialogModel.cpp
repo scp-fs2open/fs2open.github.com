@@ -359,13 +359,11 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		dest_mission.formula = -1;
 		dest_mission.mission_loop_formula = -1;
 
-		// We need to build a 'cond' SEXP for normal branches...
-		int* normal_branch_ptr = &dest_mission.formula;
-		bool normal_branches_exist = false;
-
-		// ...and another 'cond' SEXP for loop branches
-		int* loop_branch_ptr = &dest_mission.mission_loop_formula;
-		bool loop_branches_exist = false;
+		// We need to build a 'cond' SEXP for normal branches and another for loop branches.
+		// Track the last node of each chain by index: alloc_sexp can reallocate Sexp_nodes,
+		// so a pointer into the array would not survive the allocations for the next arm.
+		int normal_branch_tail = -1;
+		int loop_branch_tail = -1;
 
 		for (const auto& branch : source_mission.branches) {
 			// First, save the branch's SEXP tree to get the final formula index
@@ -392,11 +390,10 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 
 			// Add the arm to the correct SEXP list
 			if (branch.is_loop) {
-				if (!loop_branches_exist) {
+				if (loop_branch_tail < 0) {
 					// This is the first loop branch; create the parent 'cond' operator
-					*loop_branch_ptr = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-					loop_branch_ptr = &Sexp_nodes[*loop_branch_ptr].rest; // Point to the first argument slot
-					loop_branches_exist = true;
+					dest_mission.mission_loop_formula = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+					loop_branch_tail = dest_mission.mission_loop_formula;
 
 					// Set the single loop properties on the cmission from the first loop branch we find
 					dest_mission.flags |= CMISSION_FLAG_HAS_LOOP;
@@ -404,17 +401,16 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 					dest_mission.mission_branch_brief_anim = branch.loop_briefing_anim.empty() ? nullptr : strdup(branch.loop_briefing_anim.c_str());
 					dest_mission.mission_branch_brief_sound = branch.loop_briefing_sound.empty() ? nullptr : strdup(branch.loop_briefing_sound.c_str());
 				}
-				*loop_branch_ptr = cond_arm;
-				loop_branch_ptr = &Sexp_nodes[*loop_branch_ptr].rest;
+				Sexp_nodes[loop_branch_tail].rest = cond_arm;
+				loop_branch_tail = cond_arm;
 			} else {
-				if (!normal_branches_exist) {
+				if (normal_branch_tail < 0) {
 					// This is the first normal branch; create the parent 'cond' operator
-					*normal_branch_ptr = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-					normal_branch_ptr = &Sexp_nodes[*normal_branch_ptr].rest; // Point to the first argument slot
-					normal_branches_exist = true;
+					dest_mission.formula = alloc_sexp("cond", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+					normal_branch_tail = dest_mission.formula;
 				}
-				*normal_branch_ptr = cond_arm;
-				normal_branch_ptr = &Sexp_nodes[*normal_branch_ptr].rest;
+				Sexp_nodes[normal_branch_tail].rest = cond_arm;
+				normal_branch_tail = cond_arm;
 			}
 		}
 	}
