@@ -122,6 +122,12 @@ public:
 	vk::Pipeline getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout);
 
 	/**
+	 * @brief Destroy all cached pipelines; later getPipeline calls build them again
+	 * @note No submitted or recording command buffer may still use them
+	 */
+	void forgetAllPipelines() { m_pipelines.clear(); }
+
+	/**
 	 * @brief Get the common pipeline layout
 	 *
 	 * All pipelines share the same pipeline layout (descriptor set layouts
