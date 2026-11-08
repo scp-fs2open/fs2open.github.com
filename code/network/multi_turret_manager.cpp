@@ -4,7 +4,7 @@ multiplayer_turret_manager Multi_Turret_Manager;
 
 bool multiplayer_turret_manager::get_latest_packet(ushort net_signature, int subsys_index, turret_packet* packet) 
 {
-    TIMESTAMP current_time = _timestamp(Multi_Timing_Info.get_current_time() + Multi_Timing_Info.get_mission_start_time());
+    TIMESTAMP current_time = _timestamp(static_cast<int>(Multi_Timing_Info.get_current_time() + Multi_Timing_Info.get_mission_start_time()));
 
     auto it = _packets_in.find(turret_packet_address(net_signature, subsys_index));
 

@@ -18,7 +18,7 @@ struct turret_packet {
     
     turret_packet(int time_in, ushort target_netsig, std::pair<bool, float> ang1_in, std::pair<bool, float> ang2_in) 
     {
-        time = _timestamp(time_in + Multi_Timing_Info.get_mission_start_time());
+        time = _timestamp(static_cast<int>(time_in + Multi_Timing_Info.get_mission_start_time()));
 
         object* temp = (multi_get_network_object(target_netsig));
         target_objnum = (temp != nullptr) ? OBJ_INDEX(temp) : -1;

@@ -161,12 +161,25 @@ static uint64_t timestamp_get_microseconds()
 	return Timestamp_time_compression_microseconds_offset + static_cast<uint64_t>(timestamp_get_raw() * Timer_to_microseconds * Timestamp_time_compression_multiplier);
 }
 
-static int timestamp_ms() {
+static std::int64_t timestamp_ms() {
+	return static_cast<std::int64_t>(timestamp_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
+}
+
+// The int API keeps its old 32-bit clock until its callers move to TIMESTAMP, so its behavior does not change.
+static int legacy_timestamp_ms() {
 	return static_cast<int>(timestamp_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
+static std::int64_t ui_timestamp_ms() {
+	return static_cast<std::int64_t>(timer_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
+}
+
+static int clamp_to_int(std::int64_t ms) {
+	return static_cast<int>(std::clamp<std::int64_t>(ms, INT_MIN, INT_MAX));
+}
+
 int timestamp() {
-	return timestamp_ms();
+	return legacy_timestamp_ms();
 }
 
 TIMESTAMP _timestamp() {
@@ -174,7 +187,7 @@ TIMESTAMP _timestamp() {
 }
 
 UI_TIMESTAMP ui_timestamp() {
-	return UI_TIMESTAMP(timer_get_milliseconds());
+	return UI_TIMESTAMP(ui_timestamp_ms());
 }
 
 TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms)
@@ -194,7 +207,7 @@ UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms)
 		return stamp;
 
 	if (stamp.isImmediate())
-		return UI_TIMESTAMP(timer_get_milliseconds() + delta_ms);
+		return UI_TIMESTAMP(ui_timestamp_ms() + delta_ms);
 
 	return UI_TIMESTAMP(stamp.value() + delta_ms);
 }
@@ -223,7 +236,7 @@ int timestamp_get_delta(TIMESTAMP before, TIMESTAMP after)
 		return 0;
 	}
 
-	return (after.value() - before.value());
+	return clamp_to_int(after.value() - before.value());
 }
 
 // Returns the difference between two timestamps, does not check that the result will be positive.
@@ -249,53 +262,41 @@ int ui_timestamp_get_delta(UI_TIMESTAMP before, UI_TIMESTAMP after)
 		return 0;
 	}
 	
-	return (after.value() - before.value());
+	return clamp_to_int(after.value() - before.value());
 }
 
 // ======================================== checking timestamps ========================================
 
-// Restrict all time values between 0 and MAX_TIME
-// so we don't have to use UINTs to calculate rollover.
-// For debugging & testing, you could set this to
-// something like 1 minute (60000).
-// Although this is around 12.4 days (1073741823 milliseconds).
+// Legacy int timestamps wrap at MAX_TIME, around 12.4 days (1073741823 milliseconds).
 extern const std::uint32_t MAX_TIME = INT_MAX / 2;
 
 int timestamp(int delta_ms) {
 	int t2;
 	if (delta_ms < 0 ) return 0;
 	if (delta_ms == 0 ) return 1;
-	t2 = timestamp_ms() + delta_ms;
+	t2 = legacy_timestamp_ms() + delta_ms;
 	if ( t2 > (int)MAX_TIME )	{
 		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
+		t2 = delta_ms - (MAX_TIME-legacy_timestamp_ms());
 	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return t2;
 }
 
 TIMESTAMP _timestamp(int delta_ms) {
-	int t2;
+	std::int64_t t2;
 	if (delta_ms < 0 ) return TIMESTAMP::never();
 	if (delta_ms == 0 ) return TIMESTAMP::immediate();
 	t2 = timestamp_ms() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timestamp_ms());
-	}
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return TIMESTAMP(t2);
 }
 
 UI_TIMESTAMP ui_timestamp(int delta_ms) {
-	int t2;
+	std::int64_t t2;
 	if (delta_ms < 0 ) return UI_TIMESTAMP::never();
 	if (delta_ms == 0 ) return UI_TIMESTAMP::immediate();
-	t2 = timer_get_milliseconds() + delta_ms;
-	if ( t2 > (int)MAX_TIME )	{
-		// wrap!!!
-		t2 = delta_ms - (MAX_TIME-timer_get_milliseconds());
-	}
+	t2 = ui_timestamp_ms() + delta_ms;
 	if (t2 < 2 ) t2 = 2;	// hack??
 	return UI_TIMESTAMP(t2);
 }
@@ -314,7 +315,7 @@ int timestamp_until(int stamp)
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
 
-	return stamp - timestamp_ms();
+	return stamp - legacy_timestamp_ms();
 
 /*
 	uint	delta;
@@ -340,7 +341,7 @@ int timestamp_until(TIMESTAMP stamp)
 	if (stamp.isImmediate())
 		return 0;
 
-	return stamp.value() - timestamp_ms();
+	return clamp_to_int(stamp.value() - timestamp_ms());
 }
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
@@ -352,7 +353,7 @@ int ui_timestamp_until(UI_TIMESTAMP stamp)
 	if (stamp.isImmediate())
 		return 0;
 
-	return stamp.value() - timer_get_milliseconds();
+	return clamp_to_int(stamp.value() - ui_timestamp_ms());
 }
 
 int timestamp_since(int stamp)
@@ -363,7 +364,7 @@ int timestamp_since(int stamp)
 	if (stamp == 1)
 		return 0;
 
-	return timestamp_ms() - stamp;
+	return legacy_timestamp_ms() - stamp;
 }
 
 int timestamp_since(TIMESTAMP stamp)
@@ -375,7 +376,7 @@ int timestamp_since(TIMESTAMP stamp)
 	if (stamp.isImmediate())
 		return 0;
 
-	return timestamp_ms() - stamp.value();
+	return clamp_to_int(timestamp_ms() - stamp.value());
 }
 
 int ui_timestamp_since(UI_TIMESTAMP stamp)
@@ -387,7 +388,7 @@ int ui_timestamp_since(UI_TIMESTAMP stamp)
 	if (stamp.isImmediate())
 		return 0;
 
-	return timer_get_milliseconds() - stamp.value();
+	return clamp_to_int(ui_timestamp_ms() - stamp.value());
 }
 
 int timestamp_compare(TIMESTAMP t1, TIMESTAMP t2)
@@ -492,7 +493,7 @@ bool timestamp_elapsed(int stamp) {
 		return true;
 	}
 
-	return timestamp_ms() >= stamp;
+	return legacy_timestamp_ms() >= stamp;
 }
 
 bool timestamp_elapsed(TIMESTAMP stamp) {
@@ -514,7 +515,7 @@ bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
 		return true;
 	}
 
-	return timer_get_milliseconds() >= ui_stamp.value();
+	return ui_timestamp_ms() >= ui_stamp.value();
 }
 
 bool timestamp_elapsed_last_frame(TIMESTAMP stamp) {
@@ -536,7 +537,7 @@ bool ui_timestamp_elapsed_last_frame(UI_TIMESTAMP ui_stamp) {
 		return true;
 	}
 
-	return timer_get_milliseconds() > ui_stamp.value();
+	return ui_timestamp_ms() > ui_stamp.value();
 }
 
 bool timestamp_elapsed_safe(int a, int b) {
@@ -547,7 +548,7 @@ bool timestamp_elapsed_safe(int a, int b) {
 		return true;
 	}
 
-	return timestamp_ms() >= a || timestamp_ms() < (a - b + 100);
+	return legacy_timestamp_ms() >= a || legacy_timestamp_ms() < (a - b + 100);
 }
 
 bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
@@ -569,7 +570,7 @@ bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {
 		return true;
 	}
 
-	return timer_get_milliseconds() >= a.value() || timer_get_milliseconds() < (a.value() - b + 100);
+	return ui_timestamp_ms() >= a.value() || ui_timestamp_ms() < (a.value() - b + 100);
 }
 
 // ======================================== pausing/unpausing/adjusting ========================================
