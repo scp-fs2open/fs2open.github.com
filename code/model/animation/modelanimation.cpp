@@ -962,6 +962,39 @@ namespace animation {
 		return (int)(duration * 1000.0f);
 	}
 
+	int ModelAnimationSet::AnimationList::getRemainingTime() const {
+		if (pmi_id < 0)
+			return 0;
+
+		float remaining = 0.0f;
+
+		for (const auto& anim : animations) {
+			auto instanceIt = anim->m_instances.find(pmi_id);
+			if (instanceIt == anim->m_instances.end())
+				continue;
+
+			const auto& instanceData = instanceIt->second;
+			if (instanceData.state == ModelAnimationState::UNTRIGGERED || instanceData.state == ModelAnimationState::PAUSED)
+				continue;
+
+			// cyclic animations have no well-defined end, so assume a full run
+			float localRemaining;
+			if (anim->m_flags.any_of(Animation_Flags::Loop, Animation_Flags::Auto_Reverse, Animation_Flags::Seamless_with_startup))
+				localRemaining = instanceData.duration;
+			else if (instanceData.canonicalDirection == ModelAnimationDirection::FWD)
+				localRemaining = instanceData.duration - instanceData.time;
+			else
+				localRemaining = instanceData.time;
+
+			if (instanceData.speed > 0.0f)
+				localRemaining /= instanceData.speed;
+
+			remaining = MAX(remaining, localRemaining);
+		}
+
+		return fl2i(remaining * 1000.0f);
+	}
+
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
 		if (pmi_id < 0)
 			return;
