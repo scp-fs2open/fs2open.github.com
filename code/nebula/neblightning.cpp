@@ -524,6 +524,7 @@ struct lightning_render_batch {
 	lightning_geometry& geometry;
 	material body_material;
 	material glow_material;
+	bool batch_by_bolt = false;
 
 	lightning_render_batch(lightning_geometry& storage, const bolt_type& bolt, float body_alpha, float glow_alpha)
 		: geometry(storage)
@@ -533,14 +534,9 @@ struct lightning_render_batch {
 
 		constexpr float emissive_scale = 2.0f;
 		material_set_unlit_emissive(&body_material, bolt.texture, body_alpha, emissive_scale);
-		// Match the original path, which applied the glow settings to the body material.
-		glow_material = body_material;
 		material_set_unlit_emissive(&glow_material, bolt.glow, glow_alpha, emissive_scale);
-	}
 
-	bool batch_by_bolt() const
-	{
-		return body_material.get_blend_mode() == ALPHA_BLEND_ADDITIVE
+		batch_by_bolt = body_material.get_blend_mode() == ALPHA_BLEND_ADDITIVE
 			&& glow_material.get_blend_mode() == ALPHA_BLEND_ADDITIVE;
 	}
 
@@ -1203,7 +1199,7 @@ static void nebl_render(bolt_type* bi, l_node* node, float width, lightning_rend
 	const auto render_section = [&](const l_section& first, const l_section& last) {
 		nebl_queue_section(batch.geometry, first, last);
 		// Preserve the interleaving of body and glow for alpha-blended materials.
-		if (!batch.batch_by_bolt()) {
+		if (!batch.batch_by_bolt) {
 			batch.draw();
 		}
 	};
