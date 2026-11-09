@@ -88,6 +88,7 @@ bool No_built_in_languages;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 std::array<int, 4> Movie_subtitle_rgba;
+SCP_string ImGui_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
@@ -1290,6 +1291,12 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			if (optional_string("$ImGui font:")) {
+				// Fonts have not been parsed yet, so validation must be deferred
+				// until the font system has been initialized.
+				stuff_string(ImGui_font, F_NAME);
+			}
+
 			if (optional_string("$Disable built-in translations:")) {
 				stuff_boolean(&Disable_built_in_translations);
 			}
@@ -1917,6 +1924,7 @@ void mod_table_reset()
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "";
 	Movie_subtitle_rgba = std::array<int, 4>{-1, -1, -1, -1};
+	ImGui_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;

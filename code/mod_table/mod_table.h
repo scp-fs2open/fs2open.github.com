@@ -107,6 +107,7 @@ extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
 extern std::array<int, 4> Movie_subtitle_rgba;
+extern SCP_string ImGui_font;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;

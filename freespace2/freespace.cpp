@@ -63,6 +63,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -2063,6 +2064,9 @@ void game_init()
 
 	font::init();					// loads up all fonts
 	font::checkFontOptions();
+
+	// Initialize the mod-defined ImGui font after the font tables have been loaded.
+	gr_init_imgui_font();
 	
 	// add title screen
 	game_title_screen_display();

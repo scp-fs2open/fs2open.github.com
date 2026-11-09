@@ -1310,6 +1310,15 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
 
 /**
+ * @brief Registers the mod-defined TrueType font with ImGui
+ *
+ * @details Must be called after the FSO font system has been initialized
+ * and an ImGui context has been created. If no custom font is configured,
+ * the default ImGui font remains unchanged.
+ */
+void gr_init_imgui_font();
+
+/**
  * @brief Starts an ImGui frame, sized to the render target rather than to the OS window
  *
  * @details Drives the renderer backend, the SDL platform backend and ImGui itself, then corrects
