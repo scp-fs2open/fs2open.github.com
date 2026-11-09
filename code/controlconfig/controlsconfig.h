@@ -899,20 +899,16 @@ int translate_key_to_index(const char *key, bool find_override=true);
  * @brief Given the system default key 'key', return the current control input(s) that is bound to that function.
  *
  * @param[in]   key     The default key combo (as cstring) to a certain control
+ * @param[out]  out     The key combo currently bound to the control, or "None" if there is nothing bound to it
  *
- * @return  The key combo (as cstring) currently bound to the control, or
- * @return  nullptr if the given key is not a system default key, or
- * @return  "None" if there is nothing bound to the control
+ * @return  true if 'key' is a system default key, in which case 'out' is set, or
+ * @return  false otherwise, in which case 'out' is unchanged
  *
- * @details Both the 'key' and the return value are descriptive strings that can be displayed
- * directly to the user.  If 'key' isn't a real key, is not normally bound to anything,
- * or there is no key currently bound to the function, nullptr is returned.
- *
- * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ * @details Both the 'key' and 'out' are descriptive strings that can be displayed directly to the user.
  *
  * @note Uses CC_bind::textify for translations
  */
-const char *translate_key(char *key);
+bool translate_key(const char *key, SCP_string &out);
 
 /**
  * @brief Converts the specified key code to a human readable string, according to the selected locale and keyboard layout
