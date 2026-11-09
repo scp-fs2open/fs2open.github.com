@@ -11039,7 +11039,7 @@ float weapon_get_target_dot(const weapon& wp) {
 
 	if (wp.homing_object != &obj_used_list && (wp.homing_object->type != OBJ_NONE) && (!IS_VEC_NULL(&wp.homing_pos))) {
 		target_pos = wp.homing_pos;
-	} else if(wp.target_num > -1 && Objects[target_num].type != OBJ_NONE && Objects[target_num].signature == wp.target_sig)	{
+	} else if(wp.target_num > -1 && Objects[wp.target_num].type != OBJ_NONE && Objects[wp.target_num].signature == wp.target_sig)	{
 		target_pos = Objects[wp.target_num].pos;
 	} else {
 		return 1.f;
