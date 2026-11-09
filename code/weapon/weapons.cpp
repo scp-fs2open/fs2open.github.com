@@ -11033,22 +11033,23 @@ float weapon_get_apparent_size(const weapon& wp) {
 }
 
 float weapon_get_target_dot(const weapon& wp) {
-	object* wep_objp = &Objects[wp.objnum];
+	const object* wep_objp = &Objects[wp.objnum];
 
 	vec3d target_pos;
 
-	if(wp.homing_object != &obj_used_list && (wp.homing_object->type != 0))
-	{
-		if (!IS_VEC_NULL(&wp.homing_pos)) {
-			target_pos = wp.homing_pos;
-		}
-	} else if(wp.target_num > -1)
-	{
+	if (wp.homing_object != &obj_used_list && (wp.homing_object->type != OBJ_NONE) && (!IS_VEC_NULL(&wp.homing_pos))) {
+		target_pos = wp.homing_pos;
+	} else if(wp.target_num > -1 && Objects[target_num].type != OBJ_NONE && Objects[target_num].signature == wp.target_sig)	{
 		target_pos = Objects[wp.target_num].pos;
 	} else {
-		return 0.f;
+		return 1.f;
 	}
 	vec3d dir;
-	vm_vec_sub(&dir, &wep_objp->pos, &target_pos);
-	return vm_vec_dot(&dir, &wep_objp->orient.vec.fvec);
+	vm_vec_sub(&dir, &target_pos, &wep_objp->pos);
+	if (vm_vec_mag(&dir) == 0) {
+		return 1.f;
+	} else {
+		vm_vec_normalize(&dir);
+		return vm_vec_dot(&dir, &wep_objp->orient.vec.fvec);	
+	}
 }
