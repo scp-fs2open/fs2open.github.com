@@ -20,6 +20,11 @@ void gr_end_instance_matrix();
 void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far);
 void gr_end_proj_matrix();
 
+// Orthographic projection override... when active gr_set_proj_matrix substitutes an
+// orthographic frustum sized to match the perspective view at the given camera distance.
+void gr_activate_ortho_proj_override(float camera_distance);
+void gr_deactivate_ortho_proj_override();
+
 void gr_set_view_matrix(const vec3d* pos, const matrix* orient);
 void gr_end_view_matrix();
 

@@ -29,33 +29,57 @@ ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 SET(TARGET_COPY_FILES "" CACHE INTERNAL "" FORCE)
 SET(TARGET_COPY_DIRS "" CACHE INTERNAL "" FORCE)
 
-### Define options and editable variables in the section below:
-# This is only needed for single configuration generators so don't annoy others
-if(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
-	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
-endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
+get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 # Override standard CMake configurations
-set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
+set(FSO_BUILD_TYPES Debug Release FastDebug)
+
+if(is_multi_config)
+	set(CMAKE_CONFIGURATION_TYPES "${FSO_BUILD_TYPES}" CACHE STRING "Configuration types" FORCE)
+elseif(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
+	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${FSO_BUILD_TYPES}")
+endif()
 
 set(FSO_LANGUAGES C CXX)
 
 if(APPLE)
 	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+
+	# 10.15 for c++17 std::filesystem
+	# NOTE: this must be set *before* the project() call to work properly!!
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "macOS deployment target")
+
+	# fix all targets in scheme (so it's not just qtfred)
+	set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
+if (ANDROID)
+    message(STATUS "Building for Android (NDK)")
+	set(FSO_BUILD_INCLUDED_LIBS ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_LIBS ON CACHE BOOL "" FORCE)
+	set(SDL3_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(OPENAL_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_VULKAN ON CACHE BOOL "" FORCE)
+endif()
+
 # Check if the external modules exists
-IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
+IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/libRocket/Build")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
 endif()
 
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
-LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
+
+# this must be set before include(toolchain)
+if(WIN32 AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+	set(FSO_BUILD_QTFRED OFF CACHE INTERNAL "" FORCE)
+else()
+	OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" ON)
+endif()
 
 INCLUDE(globals)
 INCLUDE(toolchain)
@@ -74,9 +98,11 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF(WIN32 OR APPLE)
+IF(WIN32 OR APPLE OR ANDROID OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
-ENDIF(WIN32 OR APPLE)
+ELSE()
+	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" OFF)
+ENDIF()
 
 IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
@@ -92,10 +118,8 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
-
-IF(WIN32 OR APPLE)
-	# On windows and mac the default should be to always build the included libraries
+IF(WIN32 OR APPLE OR ANDROID)
+	# On windows, mac and android the default should be to always build the included libraries
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT ON)
 ELSE()
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT OFF)
@@ -115,8 +139,6 @@ SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generate
 
 option(FSO_INSTALL_DEBUG_FILES "Install some debug files (currently only PDB files on windows)" OFF)
 
-option(ENABLE_COTIRE "Enable cotire for faster compilation. Enabled by default." ON)
-
 option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
@@ -125,10 +147,25 @@ OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
+OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer" OFF)
 
-OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
+OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
 
-IF(NOT APPLE)
+if(NOT FSO_BUILD_WITH_OPENGL AND FSO_BUILD_WITH_OPENGL_ES)
+	# Disable GLES if not building with OpenGL
+	set(FSO_BUILD_WITH_OPENGL_ES OFF CACHE BOOL "" FORCE)
+endif()
+
+
+if(FSO_BUILD_WITH_OPENGL_ES)
+	add_definitions(-DUSE_OPENGL_ES)
+	IF(FSO_BUILD_WITH_OPENXR)
+		MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. But not supported on OpenGL ES for now - setting to OFF.")
+		SET(FSO_BUILD_WITH_OPENXR OFF CACHE BOOL "" FORCE)
+	endif()
+endif()
+
+IF(NOT APPLE AND NOT FSO_BUILD_WITH_OPENGL_ES)
 	SET(OPENXR_BUILD_DEFAULT ON)
 ELSE()
 	SET(OPENXR_BUILD_DEFAULT OFF)
@@ -150,12 +187,12 @@ MARK_AS_ADVANCED(FORCE FSO_USE_LUAJIT)
 MARK_AS_ADVANCED(FORCE FSO_DEVELOPMENT_MODE)
 MARK_AS_ADVANCED(FORCE FSO_FATAL_WARNINGS)
 mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
-mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_DISCORD)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_ES)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
@@ -178,11 +215,11 @@ include(clang-tidy)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_AVAILABLE)
-if (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+if (FSO_USE_LTO AND LTO_AVAILABLE)
 	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-	message("Enabled LTO")
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+	message("Enabled LTO for Release builds")
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+endif (FSO_USE_LTO AND LTO_AVAILABLE)
 
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
@@ -227,9 +264,7 @@ include(package)
 include(doxygen)
 
 # Print used options to log
-IF(WIN32 OR APPLE)
-	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
-ENDIF()
+message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
 IF (WIN32)
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
 	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
@@ -243,5 +278,6 @@ message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
 message(STATUS "With Discord: ${FSO_BUILD_WITH_DISCORD}")
 message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
+message(STATUS "With OpenGL ES: ${FSO_BUILD_WITH_OPENGL_ES}")
 message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
 message(STATUS "With OpenXR: ${FSO_BUILD_WITH_OPENXR}")

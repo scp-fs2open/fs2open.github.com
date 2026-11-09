@@ -8,10 +8,11 @@
  */
 
 #include "freespace.h"
-
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "io/joy_ff.h"
 
@@ -19,7 +20,8 @@
 #include <utf8.h>
 
 #include "imgui.h"
-#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl3.h"
+#include "io/spacemouse.h"
 
 #ifdef SCP_UNIX
 #include <sys/stat.h>
@@ -28,12 +30,18 @@
 #include <sys/types.h>
 #endif
 
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL.h>
+#include <jni.h>
+#include "options/Option.h"
+#include "utils/finally.h"
+#endif
+
 namespace
 {
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
-
-	SCP_string preferencesPath;
 
 	bool checkedLegacyMode = false;
 	bool legacyMode = false;
@@ -44,6 +52,8 @@ namespace
 
 	SCP_string getPreferencesPath()
 	{
+		static SCP_string preferencesPath;
+
 		// Lazily initialize the preferences path
 		if (preferencesPath.empty()) {
 			//Check for a custom path set by env variable
@@ -128,33 +138,40 @@ namespace
 	{
 		Assertion(mainSDLWindow != nullptr, "This function may only be called with a valid SDL Window.");
 		if (os::events::isWindowEvent(e, mainSDLWindow)) {
-			switch (e.window.event) {
-			case SDL_WINDOWEVENT_MINIMIZED:
-			case SDL_WINDOWEVENT_FOCUS_LOST:
-			{
-				if (fAppActive) {
-					game_pause();
-					joy_unacquire_ff();
+			switch (e.type) {
+				case SDL_EVENT_WINDOW_MINIMIZED:
+				case SDL_EVENT_WINDOW_FOCUS_LOST: {
+					if (fAppActive) {
+						game_pause();
+						joy_unacquire_ff();
 
-					fAppActive = false;
+						fAppActive = false;
+					}
+					break;
 				}
-				break;
-			}
-			case SDL_WINDOWEVENT_MAXIMIZED:
-			case SDL_WINDOWEVENT_RESTORED:
-			case SDL_WINDOWEVENT_FOCUS_GAINED:
-			{
-				if (!fAppActive) {
-					joy_reacquire_ff();
-					game_unpause();
 
-					fAppActive = true;
+				case SDL_EVENT_WINDOW_MAXIMIZED:
+				case SDL_EVENT_WINDOW_RESTORED:
+				case SDL_EVENT_WINDOW_FOCUS_GAINED: {
+					if (!fAppActive) {
+						joy_reacquire_ff();
+						game_unpause();
+
+						fAppActive = true;
+					}
+					break;
 				}
-				break;
-			}
-			case SDL_WINDOWEVENT_CLOSE:
-				gameseq_post_event(GS_EVENT_QUIT_GAME);
-				break;
+
+				case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+					gameseq_post_event(GS_EVENT_QUIT_GAME);
+					break;
+
+				case SDL_EVENT_WINDOW_RESIZED:
+					// FSO does not handle live resizing at all. It will break the internal renderbuffer and swap chain, so prevent this
+					if (Fred_running) {
+						gr_screen_resize(e.window.data1, e.window.data2);
+					}
+					break;
 			}
 
 			gr_activate(fAppActive);
@@ -237,7 +254,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <backends/imgui_impl_sdl.h>
+#include <backends/imgui_impl_sdl3.h>
 
 // go through all windows and try and find the one that matches the search string
 BOOL __stdcall os_enum_windows( HWND hwnd, LPARAM param )
@@ -311,6 +328,30 @@ void os_set_process_affinity()
 	}
 }
 
+// custom message preprocessor
+// check/handle/modify native events as needed before processing by SDL
+// return true if SDL should process the event, false otherwise
+// NOTE: this function can slow oeverall event processing so don't put anything
+//       in here unless it's ABSOLUTELY NECESSARY!!!
+#ifdef FS2_VOICER
+static bool windows_message_hook(void *userdata, MSG *msg)
+{
+	SDL_Event event{};
+
+	#define WM_RECOEVENT	WM_USER+190		// from voicerec.h
+	if (msg->message == WM_RECOEVENT) {
+		extern bool VOICEREC_get_sdl_event(SDL_Event *event);
+		if (VOICEREC_get_sdl_event(&event)) {
+			SDL_PushEvent(&event);
+		}
+		return false;	// skip further processing by SDL
+	}
+
+	// have SDL process this message
+	return true;
+}
+#endif
+
 #endif // WIN32
 
 
@@ -372,21 +413,26 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	strcpy_s( szWinTitle, title );
 	strcpy_s( szWinClass, wclass );
 
-	SDL_version compiled;
-	SDL_version linked;
+	auto ver = SDL_GetVersion();
 
-	SDL_VERSION(&compiled);
-	SDL_GetVersion(&linked);
-
-	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n", linked.major, linked.minor, linked.patch,
-	         compiled.major, compiled.minor, compiled.patch));
+	mprintf(("  Initializing SDL %d.%d.%d (compiled with %d.%d.%d)...\n",
+			 SDL_VERSIONNUM_MAJOR(ver), SDL_VERSIONNUM_MINOR(ver), SDL_VERSIONNUM_MICRO(ver),
+			 SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_MICRO_VERSION));
 
 	if (LoggingEnabled) {
-		SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
-		SDL_LogSetOutputFunction(&logHandler, nullptr);
+		SDL_SetLogPriorities(SDL_LOG_PRIORITY_VERBOSE);
+		SDL_SetLogOutputFunction(&logHandler, nullptr);
 	}
 
-	if (SDL_Init(SDL_INIT_EVENTS) < 0)
+	// Initialize SDL's HIDAPI up front. SDL_hid_enumerate() nominally auto-inits, but FRED's space
+	// mouse support only reliably finds an already-connected device when HIDAPI is initialized here
+	// rather than lazily on first enumeration. Paired with SDL_hid_exit() in os_deinit().
+	if ( SDL_hid_init() != 0 )
+	{
+		mprintf(("Couldn't init SDL HIDAPI (space mouse may be unavailable): %s\n", SDL_GetError()));
+	}
+
+	if ( !SDL_Init(SDL_INIT_EVENTS) )
 	{
 		fprintf(stderr, "Couldn't init SDL: %s", SDL_GetError());
 		mprintf(("Couldn't init SDL: %s\n", SDL_GetError()));
@@ -395,9 +441,6 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 		return;
 	}
 
-#ifdef FS2_VOICER
-	SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE); // We currently only need this for voice recognition
-#endif
 
 	// initialized
 	Os_inited = 1;
@@ -413,8 +456,21 @@ void os_init(const char * wclass, const char * title, const char * app_name)
 	}
 #endif // WIN32
 
-	os::events::addEventListener(SDL_WINDOWEVENT, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
-	os::events::addEventListener(SDL_QUIT, os::events::DEFAULT_LISTENER_WEIGHT, quit_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_RESIZED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_RESTORED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_MINIMIZED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_MAXIMIZED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_FOCUS_LOST, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_FOCUS_GAINED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+	os::events::addEventListener(SDL_EVENT_WINDOW_CLOSE_REQUESTED, os::events::DEFAULT_LISTENER_WEIGHT, window_event_handler);
+
+	os::events::addEventListener(SDL_EVENT_QUIT, os::events::DEFAULT_LISTENER_WEIGHT, quit_handler);
+
+#ifdef WIN32
+#ifdef FS2_VOICER
+	SDL_SetWindowsMessageHook(windows_message_hook, nullptr);
+#endif
+#endif
 }
 
 // set the main window title
@@ -587,8 +643,13 @@ bool os_is_legacy_mode()
 // called at shutdown. Makes sure all thread processing terminates.
 void os_deinit()
 {
-	// Free the view ports 
+	// Free the view ports
 	os::closeAllViewports();
+
+	//If we have an open space mouse, close it
+	io::spacemouse::SpaceMouse::shutdownSharedSpaceMouse();
+
+	SDL_hid_exit();
 
 	SDL_Quit();
 }
@@ -597,7 +658,7 @@ void debug_int3(const char *file, int line)
 {
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
-	gr_activate(0);
+	gr_activate(false);
 
 	mprintf(("%s\n", dump_stacktrace().c_str()));
 
@@ -605,7 +666,7 @@ void debug_int3(const char *file, int line)
 	SDL_TriggerBreakpoint();
 #endif
 
-	gr_activate(1);
+	gr_activate(true);
 }
 
 namespace os
@@ -703,23 +764,26 @@ namespace os
 		bool isWindowEvent(const SDL_Event& e, SDL_Window* window)
 		{
 			auto mainId = SDL_GetWindowID(window);
+
+			if ((e.type >= SDL_EVENT_WINDOW_FIRST) && (e.type <= SDL_EVENT_WINDOW_LAST)) {
+				return mainId == e.window.windowID;
+			}
+
 			switch(e.type)
 			{
-			case SDL_WINDOWEVENT:
-				return mainId == e.window.windowID;
-			case SDL_KEYDOWN:
-			case SDL_KEYUP:
+			case SDL_EVENT_KEY_DOWN:
+			case SDL_EVENT_KEY_UP:
 				return mainId == e.key.windowID;
-			case SDL_TEXTEDITING:
+			case SDL_EVENT_TEXT_EDITING:
 				return mainId == e.edit.windowID;
-			case SDL_TEXTINPUT:
+			case SDL_EVENT_TEXT_INPUT:
 				return mainId == e.text.windowID;
-			case SDL_MOUSEMOTION:
+			case SDL_EVENT_MOUSE_MOTION:
 				return mainId == e.motion.windowID;
-			case SDL_MOUSEBUTTONDOWN:
-			case SDL_MOUSEBUTTONUP:
+			case SDL_EVENT_MOUSE_BUTTON_DOWN:
+			case SDL_EVENT_MOUSE_BUTTON_UP:
 				return mainId == e.button.windowID;
-			case SDL_MOUSEWHEEL:
+			case SDL_EVENT_MOUSE_WHEEL:
 				return mainId == e.wheel.windowID;
 			default:
 				// Event doesn't have a window ID
@@ -737,21 +801,50 @@ void os_defer_events_on_load_screen() {
 	}
 }
 
+// ImGui lays out at the render resolution (see gr_imgui_begin_frame), but SDL reports mouse
+// coordinates in window pixels, so positional events have to be converted before they reach it.
+//
+// Note that ImGui_ImplSDL3_NewFrame has a SDL_GetGlobalMouseState fallback that queues an
+// unconverted position. It only fires when no window is hovered and no buttons are held, i.e. the
+// cursor is outside the window entirely, so it cannot affect hit testing.
+static SDL_Event scale_imgui_mouse_event(const SDL_Event& event)
+{
+	SDL_Event scaled = event;
+
+	switch (event.type) {
+	case SDL_EVENT_MOUSE_MOTION:
+		gr_window_to_render_pos(scaled.motion.x, scaled.motion.y);
+		gr_window_to_render_pos(scaled.motion.xrel, scaled.motion.yrel);
+		break;
+
+	case SDL_EVENT_MOUSE_BUTTON_DOWN:
+	case SDL_EVENT_MOUSE_BUTTON_UP:
+		gr_window_to_render_pos(scaled.button.x, scaled.button.y);
+		break;
+
+	default:
+		break;
+	}
+
+	return scaled;
+}
+
 static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
 	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
-		ImGui_ImplSDL2_ProcessEvent(&event);
+		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
+		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
 
 		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
-									(event.type == SDL_EventType::SDL_KEYUP ||
-									 event.type == SDL_EventType::SDL_KEYDOWN)) ||
+									(event.type == SDL_EventType::SDL_EVENT_KEY_UP ||
+									 event.type == SDL_EventType::SDL_EVENT_KEY_DOWN)) ||
 							   (ImGui::GetIO().WantCaptureMouse &&
-									(event.type == SDL_EventType::SDL_MOUSEBUTTONUP ||
-				 					 event.type == SDL_EventType::SDL_MOUSEBUTTONDOWN||
-									 event.type == SDL_EventType::SDL_MOUSEMOTION));
+									(event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_UP ||
+				 					 event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_DOWN||
+									 event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION));
 	}
 
 	if (!imgui_processed_this) {
@@ -778,10 +871,10 @@ void os_remove_deferred_cutscene_key_events() {
 	deferred_events.erase(
 		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
 		{
-			return (event.type == SDL_KEYUP) && (
-				event.key.keysym.sym == SDLK_KP_ENTER ||
-				event.key.keysym.sym == SDLK_RETURN ||
-				event.key.keysym.sym == SDLK_SPACE
+			return (event.type == SDL_EVENT_KEY_UP) && (
+				event.key.key == SDLK_KP_ENTER ||
+				event.key.key == SDLK_RETURN ||
+				event.key.key == SDLK_SPACE
 			);
 		}),
 		deferred_events.end()
@@ -839,4 +932,176 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 
 	return ss.str();
 }
+
+/*
+	  Special functions for Android
+*/
+
+#ifdef __ANDROID__
+static bool android_check_exception(JNIEnv* env, const char* operation)
+{
+	if (!env->ExceptionCheck()) {
+		return false;
+	}
+
+	mprintf(("OSAPI: JNI exception in %s.\n", operation));
+	env->ExceptionDescribe();
+	env->ExceptionClear();
+	return true;
+}
+
+template <typename Callback>
+static void android_with_static_method(const char* name, const char* signature, Callback&& callback)
+{
+	JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+	if (env == nullptr) {
+		mprintf(("OSAPI: Couldn't get JNI environment for %s.\n", name));
+		return;
+	}
+	if (android_check_exception(env, name)) {
+		return;
+	}
+
+	if (env->PushLocalFrame(4) < 0) {
+		android_check_exception(env, "PushLocalFrame");
+		mprintf(("OSAPI: Couldn't create JNI local frame for %s.\n", name));
+		return;
+	}
+	// Release the activity, class, and temporary strings on every exit path.
+	auto local_frame = util::finally([env]() { env->PopLocalFrame(nullptr); });
+
+	jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
+	if (android_check_exception(env, "SDL_GetAndroidActivity") || activity == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity for %s.\n", name));
+		return;
+	}
+
+	jclass activity_class = env->GetObjectClass(activity);
+	if (android_check_exception(env, "GetObjectClass") || activity_class == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity class for %s.\n", name));
+		return;
+	}
+
+	jmethodID method = env->GetStaticMethodID(activity_class, name, signature);
+	if (android_check_exception(env, name) || method == nullptr) {
+		mprintf(("OSAPI: Couldn't find static method %s with signature %s.\n", name, signature));
+		return;
+	}
+
+	callback(env, activity_class, method);
+	android_check_exception(env, name);
+}
+
+void os_android_set_flags_string(const char* json)
+{
+	android_with_static_method("setFlagsJson", "(Ljava/lang/String;)V",
+		[json](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = env->NewStringUTF(json ? json : "");
+			if (android_check_exception(env, "NewStringUTF") || value == nullptr) {
+				return;
+			}
+			env->CallStaticVoidMethod(activity_class, method, value);
+		});
+}
+
+SCP_string os_android_get_working_folder_path()
+{
+	SCP_string wfp{};
+	android_with_static_method("getWorkingFolder", "()Ljava/lang/String;",
+		[&wfp](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = static_cast<jstring>(env->CallStaticObjectMethod(activity_class, method));
+			if (android_check_exception(env, "getWorkingFolder") || value == nullptr) {
+				return;
+			}
+
+			const char* working_folder = env->GetStringUTFChars(value, nullptr);
+			if (android_check_exception(env, "GetStringUTFChars") || working_folder == nullptr) {
+				return;
+			}
+			auto release_chars = util::finally([env, value, working_folder]() {
+				env->ReleaseStringUTFChars(value, working_folder);
+			});
+			wfp = working_folder;
+		});
+
+	if (wfp.empty()) {
+		mprintf(("Couldn't get working folder path from Java class, reverting to SDL default.\n"));
+		// SDL's external storage path already includes the app's files directory.
+		const char* fallbackPath = SDL_GetAndroidExternalStoragePath();
+		if (fallbackPath) {
+			wfp = SCP_string(fallbackPath);
+		}
+	}
+	
+	// Ensure path ends with a dir separator
+	if (!wfp.empty() && (wfp.back() != DIR_SEPARATOR_CHAR)) {
+		wfp += DIR_SEPARATOR_CHAR;
+	}
+	mprintf(("Using working folder: %s\n", wfp.c_str()));
+	return wfp;
+}
+
+void os_android_touch_overlay_toggle(bool status)
+{
+	android_with_static_method(status ? "enableOverlay" : "disableOverlay", "()V",
+		[](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method);
+		});
+}
+
+void os_android_touch_overlay_set_opacity(int opacity)
+{
+	android_with_static_method("setOverlayOpacity", "(F)V",
+		[opacity](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method, static_cast<jfloat>(opacity) / 100.0f);
+		});
+}
+
+static bool touch_ui_change(bool new_val, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_toggle(new_val);
+	return true;
+}
+
+static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverlay",
+	std::pair<const char*, int>{"Touch Overlay", 1936},
+	std::pair<const char*, int>{"Enable or disable the touch overlay", 1937})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.change_listener(touch_ui_change)
+	.default_val(true)
+	.importance(2)
+	.finish();
+
+static bool touch_ui_opacity_change(int new_val, bool initial)
+{
+	Assertion(new_val >= 0 && new_val <= 100, "Invalid value %d supplied by options system!", new_val);
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_set_opacity(new_val);
+	return true;
+}
+
+static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
+	std::pair<const char*, int>{"Touch Overlay Opacity", 1938},
+	std::pair<const char*, int>{"Set the opacity of the touch overlay", 1939})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.range(0, 100)
+	.default_val(20)
+	.flags({ options::OptionFlags::RangeTypeInteger })
+	.change_listener(touch_ui_opacity_change)
+	.importance(1)
+	.finish();
+	
+void os_android_touch_overlay_init()
+{
+	os_android_touch_overlay_toggle(TouchOverlayOption->getValue());
+	os_android_touch_overlay_set_opacity(TouchOverlayOpacityOption->getValue());
+}
+#endif
 

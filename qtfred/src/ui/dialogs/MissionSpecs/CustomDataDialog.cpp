@@ -1,6 +1,7 @@
 #include "CustomDataDialog.h"
 #include "ui_CustomDataDialog.h"
 
+#include "mission/missionparse.h"
 #include "mission/util.h"
 
 #include <ui/util/SignalBlockers.h>
@@ -42,7 +43,7 @@ void CustomDataDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void CustomDataDialog::reject()
@@ -70,7 +71,15 @@ void CustomDataDialog::reject()
 void CustomDataDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void CustomDataDialog::setInitial(const SCP_map<SCP_string, SCP_string>& items)
@@ -104,7 +113,7 @@ void CustomDataDialog::buildView()
 	auto* hdr = ui->stringsTableView->horizontalHeader();
 	hdr->setSectionsClickable(false);  // no click/press behavior
 	hdr->setSortIndicatorShown(false); // hide sort arrow
-	hdr->setHighlightSections(false);  // don’t change look when selected
+	hdr->setHighlightSections(false);  // don't change look when selected
 	hdr->setSectionsMovable(false);    // no drag-to-reorder columns
 	hdr->setFocusPolicy(Qt::NoFocus);
 
@@ -158,8 +167,23 @@ void CustomDataDialog::loadRowIntoEditors(int row)
 
 	const auto* keyItem = _tableModel->item(row, ColKey);
 	const auto* valItem = _tableModel->item(row, ColValue);
-	ui->keyLineEdit->setText(keyItem ? keyItem->text() : QString());
+	const auto key = keyItem ? keyItem->text() : QString();
+	ui->keyLineEdit->setText(key);
 	ui->valueLineEdit->setText(valItem ? valItem->text() : QString());
+	updateHelpTextForKey(key);
+}
+
+void CustomDataDialog::updateHelpTextForKey(const QString& key)
+{
+	auto helpText = tr("No help text provided");
+	for (const auto& entry : Default_custom_data) {
+		if (key == QString::fromStdString(entry.key)) {
+			helpText = QString::fromStdString(entry.description);
+			break;
+		}
+	}
+
+	ui->helpTextBrowser->setPlainText(helpText);
 }
 
 std::pair<SCP_string, SCP_string> CustomDataDialog::editorsToEntry() const
@@ -176,6 +200,7 @@ void CustomDataDialog::clearEditors()
 
 	ui->keyLineEdit->clear();
 	ui->valueLineEdit->clear();
+	ui->helpTextBrowser->setPlainText("");
 }
 
 void CustomDataDialog::on_addButton_clicked()

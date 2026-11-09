@@ -319,10 +319,14 @@ void HudGaugeRadarDradis::drawBlips(int blip_type, int bright, int distort)
 		} else {
 			if (b->flags & BLIP_DRAW_DISTORTED) {
 				blipDrawFlicker(b, &pos, alpha);
-			} else if (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0) {
-				drawContact(&pos, b->radar_image_2d, b->radar_color_image_2d, b->dist, alpha, scale_factor);
 			} else {
-				drawContact(&pos, -1, unknown_contact_icon, b->dist, alpha, scale_factor);
+				bool show_icon = (Radar_2d_icon_mode == RadarIconMode::On ||
+				                  (Radar_2d_icon_mode == RadarIconMode::TargetOnly && (b->flags & BLIP_CURRENT_TARGET)));
+				if (show_icon && (b->radar_image_2d >= 0 || b->radar_color_image_2d >= 0)) {
+					drawContact(&pos, b->radar_image_2d, b->radar_color_image_2d, b->dist, alpha, scale_factor);
+				} else {
+					drawContact(&pos, -1, unknown_contact_icon, b->dist, alpha, scale_factor);
+				}
 			}
 		}
 	}

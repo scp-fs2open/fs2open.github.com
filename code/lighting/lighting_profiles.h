@@ -25,7 +25,12 @@ enum class TonemapperAlgorithm : int
 	Reinhard_Jodie = 5,
 	Reinhard_Extended = 6,
 	PPC = 7,
-	PPC_RGB = 8
+	PPC_RGB = 8,
+	// Display-referred, paper-white-relative. Not an author-selectable choice
+	// (see name_to_tonemapper()) -- current_tonemapper() forces this whenever
+	// Gr_hdr_output_active is true, overriding whatever the active profile
+	// or Lab UI has stored.
+	HdrScene = 9
 };
 
 struct piecewise_power_curve_values {

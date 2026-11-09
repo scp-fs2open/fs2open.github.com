@@ -9,7 +9,7 @@
 
 
 
-#include "Sexp_tree.h"
+#include "sexp_tree_view.h"
 #include "mission/missiongoals.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -18,14 +18,18 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class goal_sexp_tree : public sexp_tree
+class goal_sexp_tree : public sexp_tree_view
 {
 };
 
-class CMissionGoalsDlg : public CDialog
+class CMissionGoalsDlg : public CDialog, public SexpTreeEditorInterface
 {
 // Construction
 public:
+	int onRootDeleted(int formula_node) override;
+	void onRootInserted(int old_formula, int new_formula) override;
+	void onRootMoved(int node1, int node2, bool insert_before) override;
+
 	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
@@ -36,7 +40,6 @@ public:
 	void create_tree();
 	CMissionGoalsDlg(CWnd* pParent = NULL);   // standard constructor
 	BOOL OnInitDialog();
-	int handler(int code, int goal);
 	void insert_handler(int old, int node);
 	int select_sexp_node;
 
@@ -58,6 +61,8 @@ public:
 // Overrides
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CMissionGoalsDlg)
+	public:
+	virtual BOOL DestroyWindow();
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
@@ -91,4 +96,4 @@ protected:
 	int modified;
 };
 
-extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
+extern CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree_view class

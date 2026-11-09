@@ -88,7 +88,7 @@ void parse_sexp_table(const char* filename) {
 					if (skip)
 						continue;
 
-					thisList.list.push_back(item);
+					thisList.list.push_back(std::move(item));
 				}
 
 				if (thisList.list.size() > 0) {

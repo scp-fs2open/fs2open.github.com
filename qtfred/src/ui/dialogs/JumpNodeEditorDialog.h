@@ -12,12 +12,13 @@ class JumpNodeEditorDialog;
 
 class JumpNodeEditorDialog : public QDialog {
 	Q_OBJECT
-  public:
+public:
 	JumpNodeEditorDialog(FredView* parent, EditorViewport* viewport);
 	~JumpNodeEditorDialog() override;
 
-  private slots:
-	void on_selectJumpNodeComboBox_currentIndexChanged(int index);
+private slots:
+	void on_prevNodeButton_clicked();
+	void on_nextNodeButton_clicked();
 	void on_nameLineEdit_editingFinished();
 	void on_displayNameLineEdit_editingFinished();
 	void on_modelFileLineEdit_editingFinished();
@@ -25,17 +26,17 @@ class JumpNodeEditorDialog : public QDialog {
 	void on_greenSpinBox_valueChanged(int value);
 	void on_blueSpinBox_valueChanged(int value);
 	void on_alphaSpinBox_valueChanged(int value);
-	void on_hiddenByDefaultCheckBox_toggled(bool checked);
+	void on_hiddenByDefaultCheckBox_clicked();
+	void on_layerCombo_currentIndexChanged(int index);
 
-  private: // NOLINT(readability-redundant-access-specifiers)
+private: // NOLINT(readability-redundant-access-specifiers)
 	EditorViewport* _viewport;
 	std::unique_ptr<Ui::JumpNodeEditorDialog> ui;
 	std::unique_ptr<JumpNodeEditorDialogModel> _model;
 
 	void initializeUi();
-	void updateJumpNodeListComboBox();
 	void updateUi();
-	void enableOrDisableControls();
+	void updateColorSwatch();
 };
 
 } // namespace fso::fred::dialogs

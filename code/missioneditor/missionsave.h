@@ -9,7 +9,7 @@
 #include "ship/shipfx.h"
 
 #define MISSION_BACKUP_NAME "Backup"
-inline constexpr int MISSION_BACKUP_DEPTH = 9; // TODO make user configurable in QtFRED's future settings menu
+inline constexpr int MISSION_BACKUP_DEPTH = 9;
 
 struct sexp_container;
 
@@ -19,12 +19,20 @@ enum class MissionFormat {
 	COMPATIBILITY_MODE = 2
 };
 
+struct MissionTemplateInfo {
+	SCP_string title;
+	SCP_string author;
+	SCP_string tags;
+	SCP_string description;
+};
+
 struct FredSaveConfig {
 
 	vec3d view_pos{};
 	matrix view_orient{};
 
 	bool always_save_display_names = false;
+	bool create_bak_file = true;
 
 	// These are a little strange since mission saving and campaign saving use the same class here
 	// which may be worth splitting up in the future. For now these will assert if not set when saving
@@ -34,8 +42,7 @@ struct FredSaveConfig {
 
 	MissionFormat save_format = MissionFormat::STANDARD;
 
-	int mission_backup_depth = MISSION_BACKUP_DEPTH; // TODO make user configurable
-	SCP_string mission_backup_name = MISSION_BACKUP_NAME; // TODO make user configurable
+	MissionTemplateInfo template_info;
 };
 
 /**
@@ -51,17 +58,16 @@ class Fred_mission_save {
 	Fred_mission_save() = default;
 
 	void set_save_format(MissionFormat fmt) { save_config.save_format = fmt; }
+	void set_template_info(const MissionTemplateInfo& info) { save_config.template_info = info; }
 	void set_view_pos(const vec3d& pos) { save_config.view_pos = pos; }
 	void set_view_orient(const matrix& orient) { save_config.view_orient = orient; }
 	void set_fred_alt_names(const char (*names)[NAME_LENGTH + 1]) { save_config.fred_alt_names = names; }
 	void set_fred_callsigns(const char (*callsigns)[NAME_LENGTH + 1]) { save_config.fred_callsigns = callsigns; }
 	void set_always_save_display_names(bool always) { save_config.always_save_display_names = always; }
-	void set_mission_backup_depth(int depth) { save_config.mission_backup_depth = depth; }
-	void set_mission_backup_name(const SCP_string& name) { save_config.mission_backup_name = name; }
-
+	void set_create_bak_file(bool create) { save_config.create_bak_file = create; }
 
 	/**
-	 * @brief Saves the mission onto the undo stack
+	 * @brief Saves the mission onto the backup stack
 	 *
 	 * @param[in] pathname The full pathname
 	 *
@@ -71,6 +77,8 @@ class Fred_mission_save {
 	 * @returns A negative value if an error occured.
 	 *
 	 * @see save_mission_internal()
+	 *
+	 * @note Used by legacy FRED2 only; QtFRED uses save_autosave_file() instead.
 	 */
 	int autosave_mission_file(char* pathname);
 
@@ -87,6 +95,32 @@ class Fred_mission_save {
 	 * @see save_mission_internal()
 	 */
 	int save_mission_file(const char* pathname);
+
+	/**
+	 * @brief Saves the mission directly to an absolute path without any .bak rename dance.
+	 *        Used by the QtFRED timer-based autosave, which writes to an AppData directory
+	 *        outside the game's virtual file system.
+	 *
+	 * @param[in] pathname Absolute path for the autosave file
+	 *
+	 * @returns 0 for no error, or a negative value if an error occurred
+	 */
+	int save_autosave_file(const char* pathname);
+
+	/**
+	 * @brief Saves a mission template (.fst) to the given full pathname
+	 *
+	 * @param[in] pathname The full pathname to save to
+	 *
+	 * @details Saves a complete mission file and prepends a #Template Info section
+	 *   containing display metadata (title, author, tags, description) from
+	 *   save_config.template_info.  The metadata is used by the template browser
+	 *   and is ignored by the normal mission parser.
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_template_file(const char* pathname);
 
   protected:
 
@@ -167,6 +201,11 @@ class Fred_mission_save {
 	 * @param[in] ship
 	 */
 	void save_ai_goals(ai_goal* goalp, int ship);
+
+	/**
+	 * @brief Writes the #Template Info section to the top of the file
+	 */
+	void save_template_info();
 
 	/**
 	 * @brief Saves the skybox bitmaps

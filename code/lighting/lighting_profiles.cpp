@@ -8,6 +8,7 @@
 
 #include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
+#include "graphics/2d.h"
 #include "io/timer.h"
 #include "lighting/lighting.h"
 #include "osapi/dialogs.h"
@@ -75,6 +76,14 @@ void update_current_profile()
 //*************************************************
 TonemapperAlgorithm current_tonemapper()
 {
+	// HDR10 output has no use for the SDR tone curves -- the shader's HdrScene
+	// case is the only one that produces valid extended-range output for it.
+	// Enforce that here, at the single point everything (Vulkan, OpenGL, the
+	// Lab UI) reads the active tonemapper from, rather than mutating the
+	// stored profile value.
+	if (Gr_hdr_output_active) {
+		return TonemapperAlgorithm::HdrScene;
+	}
 	return _current.tonemapper;
 }
 
@@ -186,6 +195,8 @@ SCP_string tonemapper_to_name(TonemapperAlgorithm tnm)
 		return "Reinhard Jodie";
 	case TonemapperAlgorithm::Uncharted:
 		return "Uncharted 2";
+	case TonemapperAlgorithm::HdrScene:
+		return "HDR (Display-referred)";
 	default:
 		return "<unknown algorithm>";
 	}

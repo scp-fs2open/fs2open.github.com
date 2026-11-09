@@ -825,7 +825,8 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 // friendlies want to rearm at the same time.  The support ship forgets what it's doing and flies
 // off to repair somebody while still docked.  I reproduced this with retail, so it's not a bug in
 // my new docking code. :)
-int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
+// Note that this function is now where Purge_when_new_goal_added is checked to set the Purge flag.
+int ai_goal_allocate_slot( ai_goal *goals, int active_goal )
 {
 	int oldest_index = -1, first_empty_index = -1;
 
@@ -910,12 +911,29 @@ void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode
 	}
 }
 
-void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data)
+// find a dockpoint on the given ship that is compatible with the specified dock-type flags (c.f. ai_goal_fixup_dockpoints)
+static int ai_goal_find_compatible_dockpoint(int shipnum, int type_flags)
+{
+	for (int i = 0; i < Num_dock_type_names; i++)
+	{
+		if (type_flags & Dock_type_names[i].def)
+		{
+			int dock_index = ai_goal_find_dockpoint(shipnum, Dock_type_names[i].def);
+			if (dock_index >= 0)
+				return dock_index;
+		}
+	}
+
+	// no compatible type-specific point found; fall back to a generic one
+	return ai_goal_find_dockpoint(shipnum, DOCK_TYPE_GENERIC);
+}
+
+void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data, int docker_index, int dockee_index)
 {
 	int empty_index;
 	ai_goal *aigp;
 
-	empty_index = ai_goal_find_empty_slot(aip->goals, aip->active_goal);
+	empty_index = ai_goal_allocate_slot(aip->goals, aip->active_goal);
 	aigp = &aip->goals[empty_index];
 	ai_add_goal_sub_scripting(ai_goal_type::PLAYER_SHIP, mode, submode, priority, shipname, aigp, int_data, float_data);
 
@@ -926,7 +944,27 @@ void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, co
 	}
 
 	if ( (mode == AI_GOAL_REARM_REPAIR) || (mode == AI_GOAL_DOCK) ) {
-		ai_goal_fixup_dockpoints( aip, aigp );
+		// if the caller specified one or both dockpoints, honor them and choose the other side to match
+		if ( mode == AI_GOAL_DOCK && (docker_index >= 0 || dockee_index >= 0) ) {
+			int dockee_shipnum = ship_name_lookup(shipname);
+			Assertion(dockee_shipnum >= 0, "Couldn't find dock target '%s'; get a coder!", shipname);
+
+			// if only one point was given, choose the other to match its dock type
+			if ( docker_index < 0 ) {
+				polymodel *dockee_pm = model_get(Ship_info[Ships[dockee_shipnum].ship_info_index].model_num);
+				docker_index = ai_goal_find_compatible_dockpoint(aip->shipnum, dockee_pm->docking_bays[dockee_index].type_flags);
+			} else if ( dockee_index < 0 ) {
+				polymodel *docker_pm = model_get(Ship_info[Ships[aip->shipnum].ship_info_index].model_num);
+				dockee_index = ai_goal_find_compatible_dockpoint(dockee_shipnum, docker_pm->docking_bays[docker_index].type_flags);
+			}
+
+			aigp->docker.index = docker_index;
+			aigp->dockee.index = dockee_index;
+			aigp->flags.set(AI::Goal_Flags::Docker_index_valid);
+			aigp->flags.set(AI::Goal_Flags::Dockee_index_valid);
+		} else {
+			ai_goal_fixup_dockpoints( aip, aigp );
+		}
 	}
 }
 
@@ -939,7 +977,7 @@ void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, 
 	int empty_index;
 	ai_goal *aigp;
 
-	empty_index = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
+	empty_index = ai_goal_allocate_slot( aip->goals, aip->active_goal );
 	aigp = &aip->goals[empty_index];
 	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, int_data, float_data, lua_target );
 
@@ -973,7 +1011,7 @@ void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, 
 	// add the sexpression index into the wing's list of goal sexpressions if
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
-	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
+	empty_index = ai_goal_allocate_slot( wingp->ai_goals, -1 );
 	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], int_data, float_data, lua_target );
 }
 
@@ -1252,7 +1290,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		} else if ( op == OP_AI_IGNORE_NEW ) {
 			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
 		} else
-			UNREACHABLE("Coding error: unhandled AI goal in ai_add_goal_sub_sexp!");
+			UNREACHABLE("Coding error: unhandled AI goal %d in ai_add_goal_sub_sexp!", op);
 
 		break;
 
@@ -1613,7 +1651,7 @@ void ai_add_ship_goal_sexp( int sexp, ai_goal_type type, ai_info *aip )
 {
 	int gindex;
 
-	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
+	gindex = ai_goal_allocate_slot( aip->goals, aip->active_goal );
 	ai_add_goal_sub_sexp( sexp, type, aip, &aip->goals[gindex], Ships[aip->shipnum].ship_name );
 }
 
@@ -1637,7 +1675,7 @@ void ai_add_wing_goal_sexp(int sexp, ai_goal_type type, wing *wingp)
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) {
 		int gindex;
 
-		gindex = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
+		gindex = ai_goal_allocate_slot( wingp->ai_goals, -1 );
 		ai_add_goal_sub_sexp( sexp, type, nullptr, &wingp->ai_goals[gindex], wingp->name );
 	}
 }
@@ -1660,7 +1698,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 	Assertion(strcmp(name, Ships[aip->shipnum].ship_name) != 0, "The goals apply to the actor in ai_add_goal_ship_internal for ship %s, please report to the SCP!", name);
 
 	// find an empty slot to put this goal in.
-	gindex = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
+	gindex = ai_goal_allocate_slot( aip->goals, aip->active_goal );
 	aigp = &(aip->goals[gindex]);
 	ai_goal_reset(aigp, true);
 
@@ -1765,6 +1803,20 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 	auto target_ship_entry = aigp->target_name == nullptr ? nullptr : ship_registry_get(aigp->target_name);
 
+	// a ship can't guard itself, and the leader of a wing is the ship the rest of the wing guards
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_stale_ai_order_state])
+	{
+		if (aigp->ai_mode == AI_GOAL_GUARD && target_ship_entry && target_ship_entry->has_shipp() && target_ship_entry->shipp() == shipp)
+			return ai_achievability::NOT_ACHIEVABLE;
+
+		if (aigp->ai_mode == AI_GOAL_GUARD_WING)
+		{
+			int wingnum = wing_name_lookup(aigp->target_name);
+			if (wingnum >= 0 && Wings[wingnum].ship_index[0] == objp->instance)
+				return ai_achievability::NOT_ACHIEVABLE;
+		}
+	}
+
 	// warp (depart) only achievable if there's somewhere to depart to
 	if (aigp->ai_mode == AI_GOAL_WARP)
 	{
@@ -1789,7 +1841,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		if (!target_ship_entry || !target_ship_entry->has_shipp())
 			return ai_achievability::NOT_ACHIEVABLE;
 
-		// the override flag is now set in the calling function, ai_mission_goal_achievable
+		// the override flag is now set in the calling function, validate_mission_goals
 		return ai_achievability::ACHIEVABLE;
 	}
 
@@ -2055,7 +2107,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			if (target_ship_entry->shipp()->subsys_info[SUBSYSTEM_TURRET].type_count == 0)
 				return ai_achievability::NOT_ACHIEVABLE;
 		} else {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 	}
@@ -2104,8 +2156,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return ai_achievability::NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
+		Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_shipp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto goal_objp = target_ship_entry->objp();
@@ -2162,7 +2214,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				if (aip->goal_objnum != target_ship_entry->objnum)
 					return ai_achievability::NOT_KNOWN;
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
@@ -2176,14 +2228,14 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				aigp->ai_submode = ship_find_subsys( target_ship_entry->shipp(), aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				Assertion(false, "Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
 	} else if ( ((aigp->ai_mode == AI_GOAL_IGNORE) || (aigp->ai_mode == AI_GOAL_IGNORE_NEW)) && (status == SHIP_STATUS_ARRIVED) ) {
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
+		Assertion(target_ship_entry && target_ship_entry->has_objp(), "Target name %s is not an arrived ship!", aigp->target_name);
 		if (!target_ship_entry || !target_ship_entry->has_objp()) {
-			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 		}
 		auto ignored = target_ship_entry->objp();
@@ -2232,16 +2284,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		{
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
+			Assertion(status != SHIP_STATUS_NOT_ARRIVED, "Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				UNREACHABLE("Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", shipp->ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
 			if ( status == SHIP_STATUS_GONE )
 				return ai_achievability::NOT_ACHIEVABLE;
 
+			Assertion(target_ship_entry && target_ship_entry->has_shipp(), "Target name %s is not an arrived ship!", aigp->target_name);
 			if ( !target_ship_entry || !target_ship_entry->has_shipp() ) {
-				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2497,8 +2549,9 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	if ( !(Player_use_ai) && (objp->flags[Object::Object_Flags::Player_ship]) && (current_goal->ai_mode != AI_GOAL_FORM_ON_WING) )
 	{
 		return;
-	}	
+	}
 
+	ai_reset_order_state(aip);
 
 	std::unique_ptr<ai_goal> current_goal_backup;
 	auto current_goal_target_ship = current_goal->target_name ? ship_registry_get(current_goal->target_name) : nullptr;

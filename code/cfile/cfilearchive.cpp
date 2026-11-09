@@ -193,21 +193,8 @@ int cfseek( CFILE *cfile, int offset, int where )
 }
 
 
-// cfread() reads from a file
-//
-// returns:   returns the number of full elements read
-//            
-//
-int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
+size_t cf_check_read_size(CFILE* cfile, size_t size)
 {
-	if(!cf_is_valid(cfile))
-		return 0;
-
-	size_t size = elsize*nelem;
-
-	if(buf == NULL || size <= 0)
-		return 0;
-
 	if ( (cfile->raw_position+size) > cfile->size ) {
 		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
 		size = cfile->size - cfile->raw_position;
@@ -224,6 +211,29 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 			throw cfile::max_read_length(s_buf.str());
 		}
+	}
+
+	return size;
+}
+
+// cfread() reads from a file
+//
+// returns:   returns the number of full elements read
+//            
+//
+int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
+{
+	if(!cf_is_valid(cfile))
+		return 0;
+
+	size_t size = elsize*nelem;
+
+	if(buf == nullptr || size <= 0)
+		return 0;
+
+	size = cf_check_read_size(cfile, size);
+	if (size < 1) {
+		return 0;
 	}
 
 	size_t bytes_read;

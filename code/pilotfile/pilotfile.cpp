@@ -215,7 +215,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 		if (j >= 0) {
 			p_stats->medals_earned[j].val = std::max(0,p_stats->medals_earned[j].val--);
 		} else {
-			Assertion(true, "Medal '%s' not found, should have been added by pilotfile::update_stats.", Medals[stats->m_medal_earned].name);
+			Assertion(false, "Medal '%s' not found, should have been added by pilotfile::update_stats.", Medals[stats->m_medal_earned].name);
 		}
 	}
 
@@ -292,7 +292,7 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 			if (j >= 0) {
 				p_stats->ship_kills[j].val -= stats->m_okKills[i];
 			} else {
-				UNREACHABLE("Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
+				Assertion(false, "Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
 			}
 		}
 	}
@@ -333,7 +333,7 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 	multi_stats.ship_kills.clear();
 	multi_stats.ship_kills.shrink_to_fit();
 
-	auto kills_size = std::min(SDL_arraysize(stats->kills), Ship_info.size());
+	auto kills_size = stats->kills.size();
 
 	for (idx = 0; idx < kills_size; ++idx) {
 		if (stats->kills[idx] <= 0) {
@@ -446,7 +446,7 @@ bool pilotfile::export_stats(scoring_struct *stats)
 
 	// only export ships that this mod knows about (should already be index)
 	for (auto &item : p_stats->ship_kills) {
-		if ( (item.index >= 0) && (item.index < MAX_SHIP_CLASSES) ) {
+		if ( stats->kills.in_bounds(item.index) ) {
 			stats->kills[item.index] = item.val;
 		}
 	}

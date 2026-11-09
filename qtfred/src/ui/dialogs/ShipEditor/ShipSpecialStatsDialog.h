@@ -42,11 +42,11 @@ class ShipSpecialStatsDialog : public QDialog {
 	void on_specialHullCheckbox_toggled(bool);
 	void on_hullSpinBox_valueChanged(int);
 
-  private:// NOLINT(readability-redundant-access-specifiers)
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipSpecialStatsDialog> ui;
 	std::unique_ptr<ShipSpecialStatsDialogModel> _model;
 	EditorViewport* _viewport;
 
-	void updateUI(bool first = false);
+	void updateUi(bool first = false);
 };
 } // namespace fso::fred::dialogs

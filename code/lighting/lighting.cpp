@@ -111,6 +111,7 @@ static void parse_deferred_lighting_func()
 	DeferredLightingEnabled = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
                   std::pair<const char*, int>{"Deferred Lighting", 1782},
                   std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
@@ -131,6 +132,7 @@ static void parse_deferredcockpit_lighting_func()
 	DeferredCockpitLightingEnabled = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto DeferredCockpitLightingOption = options::OptionBuilder<bool>("Graphics.DeferredCockpitLighting",
                   std::pair<const char*, int>{"Deferred Cockpit Lighting", 1864},
                   std::pair<const char*, int>{"Enables or disables deferred lighting in cockpits (requires Deferred Lighting to be enabled)", 1865})
@@ -233,7 +235,7 @@ void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float
 
 	Num_lights++;
 
-	light l;
+	light l{};
 
 	l.type = Light_Type::Directional;
 	l.flags = no_glare ? (LF_DEFAULT | LF_NO_GLARE) : LF_DEFAULT;
@@ -261,13 +263,13 @@ void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float
 }
 
 
-void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color, float source_radius)
+void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color, float source_radius, bool no_rt_shadow)
 {
 	Assert(new_color!= nullptr);
-	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius, no_rt_shadow);
 }
 
-void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius)
+void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius, bool no_rt_shadow)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -276,11 +278,11 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 	l.type = Light_Type::Point;
-	l.flags = LF_DEFAULT;
+	l.flags = no_rt_shadow ? (LF_DEFAULT | LF_NO_RT_SHADOW) : LF_DEFAULT;
 	l.sun_index = -1;
 	l.vec = *pos;
 	l.r = r;
@@ -316,7 +318,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 
@@ -339,8 +341,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.instance = Num_lights-1;
 
 	l.source_radius = MAX(0.0f,source_radius);
-	l.local_vec = vmd_zero_vector;
-	l.local_vec2 = vmd_zero_vector;
 
 	Lights.push_back(l);
 }
@@ -351,6 +351,10 @@ void light_rotate_all()
 	if ( Lighting_off ) return;
 
 	for (auto& l : Lights)
+		light_rotate(&l);
+
+	// the sun lights are separate copies, and light_apply_rgb reads these
+	for (auto& l : Static_light)
 		light_rotate(&l);
 }
 
@@ -551,7 +555,7 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 
 	if (!Lighting_flag) return;
 
-	light l;
+	light l{};
 
 	Num_lights++;
 

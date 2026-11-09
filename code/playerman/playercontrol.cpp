@@ -10,6 +10,7 @@
 
 #include "autopilot/autopilot.h"
 #include "camera/camera.h"
+#include "camera/photomode.h"
 #include "controlconfig/controlsconfig.h"
 #include "debugconsole/console.h"
 #include "freespace.h"
@@ -91,6 +92,7 @@ static void parse_flight_mode_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	std::pair<const char*, int>{"Flight Mode", 1842},
 	std::pair<const char*, int>{"Choose the flying style to use during gameplay.", 1843})
@@ -123,6 +125,7 @@ static void parse_flight_cursor_extent_func()
 	Flight_cursor_extent = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursorExtent",
 	std::pair<const char*, int>{"Flight Cursor Extent", 1846},
 	std::pair<const char*, int>{"How far from the center the cursor can go.", 1847})
@@ -146,6 +149,7 @@ static void parse_cursor_deadzone_func()
 	Flight_cursor_deadzone = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCursorDeadzone",
 	std::pair<const char*, int>{"Flight Cursor Deadzone", 1848},
 	std::pair<const char*, int>{"How far from the center the cursor needs to go before registering.", 1849})
@@ -412,6 +416,15 @@ void do_view_track_target()
 	vm_extract_angles_vector(&forward_angles,&forwardvec_rotated);
 	chase_slew_angles.h = forward_angles.h - view_angles.h;
 	chase_slew_angles.p = -(forward_angles.p - view_angles.p);
+
+	// Do over-the-top correction.
+	// Headings are extracted with atan2, so each one lies in (-PI, PI] and their difference can be
+	// nearly a full circle in either direction.  Without wrapping it back into (-PI, PI], a target just
+	// past the left shoulder reads as being almost all the way around to the right instead.
+	if (chase_slew_angles.h > PI)
+		chase_slew_angles.h -= PI2;
+	else if (chase_slew_angles.h < -PI)
+		chase_slew_angles.h += PI2;
 
 	// the gimbal limits of the player's virtual neck.
 	// These nested ifs prevent the player from looking up and 
@@ -1056,6 +1069,11 @@ void copy_control_info(control_info *dest_ci, control_info *src_ci, int control_
 
 void read_player_controls(object *objp, float frametime)
 {
+	// Photo mode controls the camera, not the player ship
+	if (game_is_photo_mode_active()) {
+		return;
+	}
+
 	float diff;
 	float target_warpout_speed;
 
@@ -1411,7 +1429,6 @@ void player_restore_target_and_weapon_link_prefs()
 {
 	ship_info *player_sip;
 	player_sip = &Ship_info[Player_ship->ship_info_index];
-	polymodel *pm = model_get(player_sip->model_num);
 
 	//	Don't restores the save flags in training, as we must ensure certain things are off, such as speed matching.
 	if ( !(The_mission.game_type & MISSION_TYPE_TRAINING )) {
@@ -1424,7 +1441,9 @@ void player_restore_target_and_weapon_link_prefs()
 		}
 	}
 
-	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY && (pm->n_missiles > 0 && pm->missile_banks[0].num_slots > 1) ) {
+	// restore the dual fire preference regardless of whether the current bank can use it;
+	// the flag is ignored rather than cleared for banks that can't
+	if ( Player->flags & PLAYER_FLAGS_LINK_SECONDARY ) {
 		Player_ship->flags.set(Ship::Ship_Flags::Secondary_dual_fire);
 	}
 }
@@ -1440,6 +1459,8 @@ void player_level_init()
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
+	reset_angles(&chase_slew_angles);
+	reset_angles(&Viewer_slew_angles_delta);
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
@@ -1458,7 +1479,10 @@ void player_level_init()
 	{
 		Viewer_mode = 0;
 	}
- 
+
+	Perspective_locked = false;
+	Slew_locked = false;
+
 	Player_obj = NULL;
 	Player_ship = NULL;
 	Player_ai = NULL;
@@ -2068,6 +2092,10 @@ void player_generate_death_message(player *player_p)
 
 		case OBJ_ASTEROID:
 			sprintf(msg, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
+			break;
+
+		case OBJ_PROP:
+			sprintf(msg, XSTR( "%s was killed by a collision with an object", -1), player_p->callsign);
 			break;
 
 		case OBJ_BEAM:

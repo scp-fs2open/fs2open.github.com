@@ -33,6 +33,7 @@ UI_TIMESTAMP Multi_ping_timestamp;
 int Sun_drew = 0;
 
 int Fred_running = 0;
+int Qtfred_running = 0;
 float Sun_spot = 0.0f;
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];

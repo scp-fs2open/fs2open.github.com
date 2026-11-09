@@ -25,9 +25,6 @@ class ship;
 class object;
 
 extern bool Nebula_sexp_used;
-// fog near and far values for rendering the background nebula
-extern float Neb_backg_fog_near;
-extern float Neb_backg_fog_far;
 
 // nebula rendering mode
 #define NEB2_RENDER_NONE								0			// no rendering
@@ -38,9 +35,15 @@ extern int Neb2_render_mode;
 // the AWACS suppresion level for the nebula
 extern float Neb2_awacs;
 
+extern bool  Neb2_fog_save_legacy_values;
+extern float Neb2_fog_legacy_near_mult;
+extern float Neb2_fog_legacy_far_mult;
+
 // The visual render distance multipliers for the nebula
-extern float Neb2_fog_near_mult;
-extern float Neb2_fog_far_mult;
+extern float Neb2_fog_near_distance;
+extern float Neb2_fog_1000m_visibility;
+extern float Neb2_fog_skybox_clip_distance;
+extern float Neb2_fog_clip_distance;
 
 extern float Neb2_fog_visibility_trail;
 extern float Neb2_fog_visibility_thruster;
@@ -170,11 +173,8 @@ void neb2_fade_poof(int poof_idx, int time, bool type);
 // render the player nebula
 void neb2_render_poofs();
 
-// get near and far fog values based upon object type and rendering mode
-void neb2_get_fog_values(float *fnear, float *ffar, object *obj = NULL);
-
 // get adjusted near and far fog values (allows mission-specific fog adjustments)
-void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = nullptr, object *obj = nullptr);
+void neb2_get_adjusted_fog_values(float *fnear, float *fdensity = nullptr);
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal

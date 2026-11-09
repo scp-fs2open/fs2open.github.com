@@ -394,7 +394,7 @@ void shield_render_triangle(int texture, float alpha, gshield_tri *trip, matrix 
 
 void shield_render_decal(polymodel *pm, matrix *orient, vec3d *pos, matrix* hit_orient, vec3d *hit_pos, float hit_radius, int bitmap_id, color *clr)
 {
-	if (!pm->shield.buffer_id.isValid() || pm->shield.buffer_n_verts < 3) {
+	if (!pm->shield.buffer_id->isValid() || pm->shield.buffer_n_verts < 3) {
 		return;
 	}
 
@@ -410,7 +410,7 @@ void shield_render_decal(polymodel *pm, matrix *orient, vec3d *pos, matrix* hit_
 	material_info.set_impact_transform(*hit_orient, *hit_pos);
 	material_info.set_cull_mode(false);
 
-	gr_render_shield_impact(&material_info, PRIM_TYPE_TRIS, &pm->shield.layout, pm->shield.buffer_id, pm->shield.buffer_n_verts);
+	gr_render_shield_impact(&material_info, PRIM_TYPE_TRIS, &pm->shield.layout, *pm->shield.buffer_id, pm->shield.buffer_n_verts);
 
 	g3_done_instance(true);
 }
@@ -562,9 +562,8 @@ void render_shields()
 void create_tris_containing(vec3d *vp, matrix *orient, shield_info *shieldp, vec3d *tcp, vec3d *centerp, float radius, vec3d *rvec, vec3d *uvec)
 {
 	int	i, j;
-	shield_vertex *verts;
 
-	verts = shieldp->verts;
+	const auto& verts = shieldp->verts;
 
 	for (i=0; i<Num_tris; i++) {
 		if ( !shieldp->tris[i].used ) {
@@ -624,7 +623,7 @@ int get_global_shield_tri()
 
 void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shieldp, vec3d *tcp, vec3d *centerp, float radius, vec3d *rvec, vec3d *uvec)
 {
-	rs_compute_uvs( &shieldp->tris[trinum], shieldp->verts, tcp, radius, rvec, uvec);
+	rs_compute_uvs( &shieldp->tris[trinum], shieldp->verts.get(), tcp, radius, rvec, uvec);
 
 	shieldp->tris[trinum].used = 1;
 

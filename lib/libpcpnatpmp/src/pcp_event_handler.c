@@ -834,10 +834,15 @@ static pcp_server_state_e handle_server_ping(pcp_server_t *s) {
 
             PCP_LOG_END(PCP_LOGLVL_DEBUG);
             return pss_wait_ping_resp;
+        } else {
+            gettimeofday(&s->next_timeout, NULL);
+            PCP_LOG_END(PCP_LOGLVL_DEBUG);
+            return pss_set_not_working;
         }
     }
     s->next_timeout.tv_sec = 0;
     s->next_timeout.tv_usec = 0;
+    PCP_LOG_END(PCP_LOGLVL_DEBUG);
     return pss_ping;
 }
 

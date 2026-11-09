@@ -61,6 +61,18 @@ ADE_FUNC(__tostring, l_Subsystem, NULL, "Returns name of subsystem", "string", "
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
 }
 
+ADE_FUNC(__eq, l_Subsystem, "subsystem, subsystem", "Checks if the two subsystem handles refer to the same subsystem", "boolean", "true if equal, false otherwise")
+{
+	ship_subsys_h *sso1, *sso2;
+	if (!ade_get_args(L, "oo", l_Subsystem.GetPtr(&sso1), l_Subsystem.GetPtr(&sso2)))
+		return ade_set_error(L, "b", false);
+
+	if (!sso1->isValid() || !sso2->isValid())
+		return ade_set_error(L, "b", false);
+
+	return ade_set_args(L, "b", sso1->objh.objp() == sso2->objh.objp() && sso1->ss == sso2->ss);
+}
+
 ADE_VIRTVAR(ArmorClass, l_Subsystem, "string", "Current Armor class", "string", "Armor class name, or empty string if none is set")
 {
 	ship_subsys_h *sso;
@@ -252,12 +264,16 @@ ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "n
 
 	if(ADE_SETTING_VAR)
 	{
+		bool was_destroyed = (sso->ss->current_hits <= 0.0f);
+
 		//Only go down to 0 hits
 		sso->ss->current_hits = MAX(0.0f, f);
 
 		ship *shipp = &Ships[sso->objh.objp()->instance];
 		if (f <= -1.0f && sso->ss->current_hits <= 0.0f) {
 			do_subobj_destroyed_stuff(shipp, sso->ss, NULL);
+		} else if (was_destroyed && sso->ss->current_hits > 0.0f && sso->ss->max_hits > 0.0f) {
+			restore_subsystem_submodels(shipp, sso->ss);
 		}
 		ship_recalc_subsys_strength(shipp);
 	}
@@ -946,6 +962,7 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 		sso->ss->system_info->turret_num_firing_points,
 		0.f,
 		0.f,
+		0.f,
 	};
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, nullptr, flak_range);
@@ -1096,15 +1113,6 @@ ADE_FUNC(isInViewFrom, l_Subsystem, "vector from",
 	bool in_sight = ship_subsystem_in_sight(sso->objh.objp(), sso->ss, from, &world_pos, false);
 
 	return ade_set_args(L, "b", in_sight);
-}
-
-ADE_FUNC(isValid, l_Subsystem, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	ship_subsys_h *sso;
-	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", sso->isValid());
 }
 
 }

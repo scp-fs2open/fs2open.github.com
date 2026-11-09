@@ -445,7 +445,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(ss_objp));
 			}
 			if (aip == Player_ai) {
-				Ships[newh->ss->parent_objnum].last_targeted_subobject[Player_num] = newh->ss;
+				ss_shipp->last_targeted_subobject[Player_num] = newh->ss;
 			}
 		}
 	}
@@ -559,15 +559,6 @@ ADE_VIRTVAR(PurgeWhenNewGoalAdded, l_Order, "boolean", "Whether this goal should
 	return goal_flag_helper(L, AI::Goal_Flags::Purge_when_new_goal_added);
 }
 
-ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	order_h *ohp = NULL;
-	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", ohp->isValid());
-}
-
 //**********HANDLE: shiporders
 ADE_OBJ(l_ShipOrders, object_h, "shiporders", "Ship orders");
 
@@ -602,15 +593,6 @@ ADE_INDEXER(l_ShipOrders, "number Index", "Array of ship orders", "order", "Orde
 		return ade_set_args(L, "o", l_Order.Set(order_h(objh->objp(), i)));
 	else
 		return ade_set_args(L, "o", l_Order.Set(order_h()));
-}
-
-ADE_FUNC(isValid, l_ShipOrders, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	object_h *oh;
-	if(!ade_get_args(L, "o", l_ShipOrders.GetPtr(&oh)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", oh->isValid());
 }
 
 

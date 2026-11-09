@@ -22,7 +22,14 @@ class QtOpenGLContext: public os::OpenGLContext {
 	void makeCurrent(QSurface* surface);
 };
 
-class QtViewport: public os::Viewport {
+class QtSurfaceViewport : public os::Viewport {
+public:
+	~QtSurfaceViewport() override = default;
+
+	virtual QSurface* getRenderSurface() = 0;
+};
+
+class QtViewport: public QtSurfaceViewport {
 	std::unique_ptr<FredView> _viewportWindow;
 	os::ViewPortProperties _viewProps;
  public:
@@ -35,6 +42,7 @@ class QtViewport: public os::Viewport {
 	void setState(os::ViewportState state) override;
 	void minimize() override;
 	void restore() override;
+	QSurface* getRenderSurface() override;
 
 	const os::ViewPortProperties& getViewProperties() const;
 	FredView* getWindow();

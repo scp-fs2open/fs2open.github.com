@@ -1,10 +1,13 @@
 #include "ui/dialogs/VolumetricNebulaDialog.h"
+#include "ui/util/default_dir.h"
 #include "ui/util/SignalBlockers.h"
 
 #include "ui_VolumetricNebulaDialog.h"
+#include <globalincs/globals.h>
 #include <mission/util.h>
 
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QMessageBox>
 
 namespace fso::fred::dialogs {
@@ -15,6 +18,8 @@ VolumetricNebulaDialog::VolumetricNebulaDialog(FredView* parent, EditorViewport*
 {
 	this->setFocus();
 	ui->setupUi(this);
+
+	ui->setModelLineEdit->setMaxLength(MAX_FILENAME_LEN - 1);
 
 	// set our internal values, update the UI
 	initializeUi();
@@ -29,7 +34,7 @@ void VolumetricNebulaDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void VolumetricNebulaDialog::reject()
@@ -46,7 +51,15 @@ void VolumetricNebulaDialog::reject()
 void VolumetricNebulaDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void VolumetricNebulaDialog::initializeUi()
@@ -198,15 +211,17 @@ void VolumetricNebulaDialog::on_enabled_toggled(bool checked)
 
 void VolumetricNebulaDialog::on_setModelButton_clicked()
 {
+	const QString lastDir = util::getLastDir("volumetricNebula/pofModel", CF_TYPE_MODELS);
+
 	const QString path = QFileDialog::getOpenFileName(this,
 		"Select POF File",
-		QString(),
+		lastDir,
 		"Freespace 2 Model Files (*.pof);;All Files (*)");
 	if (path.isEmpty())
 		return;
 
-	const QString filename = QFileInfo(path).fileName();
-	_model->setHullPof(filename.toUtf8().constData());
+	util::saveLastDir("volumetricNebula/pofModel", path);
+	_model->setHullPof(QFileInfo(path).fileName().toUtf8().constData());
 	updateUi();
 }
 

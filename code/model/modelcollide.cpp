@@ -46,33 +46,6 @@ thread_local static vec3d		Mc_p1;			// The ray end rotated into the current subm
 thread_local static float		Mc_mag;			// The length of the ray
 thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
-
-
-
-void model_collide_free_point_list()
-{
-	if (Mc_point_list != NULL) {
-		vm_free(Mc_point_list);
-		Mc_point_list = NULL;
-	}
-}
-
-// allocate the point list
-// NOTE: SHOULD ONLY EVER BE CALLED FROM model_allocate_interp_data()!!!
-void model_collide_allocate_point_list(int n_points)
-{
-	Assert( n_points > 0 );
-
-	if (Mc_point_list != NULL) {
-		vm_free(Mc_point_list);
-		Mc_point_list = NULL;
-	}
-
-	Mc_point_list = (vec3d**) vm_malloc( sizeof(vec3d *) * n_points );
-
-	Verify( Mc_point_list != NULL );
-}
 
 // Returns non-zero if vector from p0 to pdir 
 // intersects the bounding box.
@@ -359,26 +332,30 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 }
 
-int model_collide_parse_bsp_defpoints(ubyte * p)
+// copies each vertex in the submodel's BSP data into the tree's point list
+void model_collide_parse_bsp_defpoints(bsp_collision_tree *tree, ubyte *p)
 {
 	uint n;
-	uint nverts = uw(p+8);	
-	uint offset = uw(p+16);	
+	uint nverts = uw(p+8);
+	uint offset = uw(p+16);
 
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_collide_allocate_point_list(nverts);
+	tree->n_verts = (int)nverts;
 
-	Assert( Mc_point_list != NULL );
+	if (nverts == 0) {
+		tree->point_list = nullptr;
+		return;
+	}
+
+	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * nverts);
 
 	for (n=0; n<nverts; n++ ) {
-		Mc_point_list[n] = src;
+		tree->point_list[n] = *src;
 
 		src += normcount[n]+1;
-	} 
-
-	return nverts;
+	}
 }
 
 void model_collide_bsp_poly(bsp_collision_tree *tree, int leaf_index)
@@ -592,12 +569,9 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 
 	Assert(chunk_type == OP_DEFPOINTS);
 
-	int n_verts = model_collide_parse_bsp_defpoints(p);
+	model_collide_parse_bsp_defpoints(tree, p);
 
-	if ( n_verts <= 0) {
-		tree->point_list = NULL;
-		tree->n_verts = 0;
-
+	if (tree->n_verts == 0) {
 		tree->n_nodes = 0;
 		tree->node_list = NULL;
 
@@ -749,7 +723,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 					// add another polygon center
 					vec3d center = vmd_zero_vector;
 					for (int j = 0; j < new_leaf.num_verts; j++) {
-						center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
+						center += tree->point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
 					}
 					tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
 
@@ -785,7 +759,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			// add another polygon center
 			vec3d center = vmd_zero_vector;
 			for (int j = 0; j < new_leaf.num_verts; j++) {
-				center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];				
+				center += tree->point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
 			}
 			tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
 
@@ -797,17 +771,6 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int vers
 			break;
 		}
 	}
-
-	// copy point list
-	Assert(n_verts != -1);
-
-	tree->point_list = (vec3d*)vm_malloc(sizeof(vec3d) * n_verts);
-
-	for ( i = 0; i < (size_t)n_verts; ++i ) {
-		tree->point_list[i] = *Mc_point_list[i];
-	}
-
-	tree->n_verts = n_verts;
 
 	// copy node info. this might be a good time to organize the nodes into a cache efficient tree layout.
 	tree->n_nodes = (int)node_buffer.size();
@@ -859,7 +822,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 		// also finds the uv's where the ray hit.
 		if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
 			Mc->hit_dist = dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
 			Mc->hit_point = hitpoint;
 			Mc->hit_normal = tri->norm;
 			Mc->hit_submodel = -1;
@@ -877,7 +840,7 @@ bool mc_shield_check_common(shield_tri	*tri)
 			// same behavior whether face or edge
 			// normal, edge_hit, hit_point all updated thru sphereline_face
 			sphere_check_closest_shield_dist = Mc->hit_dist;
-			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris);
+			Mc->shield_hit_tri = (int)(tri - Mc_pm->shield.tris.get());
 			Mc->hit_submodel = -1;
 			Mc->num_hits++;
 			return true;		// We hit, so we're done
@@ -893,22 +856,22 @@ bool mc_check_sldc(int offset)
 	if (offset > Mc_pm->sldc_size - 5) //no way is this big enough
 		return false;
 
-	int* type_p = (int*)(Mc_pm->shield_collision_tree + offset);
+	int* type_p = (int*)(Mc_pm->shield_collision_tree.get() + offset);
 
 	// not used
 	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+4);
 	// split and polygons
-	auto* minbox_p = (vec3d*)(Mc_pm->shield_collision_tree + offset + 8);
-	auto* maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree + offset + 20);
+	auto* minbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 8);
+	auto* maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree.get() + offset + 20);
 
 	// split
-	auto* front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 32);
-	auto* back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 36);
+	auto* front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
+	auto* back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
 
 	// polygons
-	auto* num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 32);
+	auto* num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 32);
 
-	auto* shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree + offset + 36);
+	auto* shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree.get() + offset + 36);
 
 
 
@@ -1098,7 +1061,7 @@ NoHit:
 			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
 
 			blown_off = csmi->blown_off;
-			collision_checked = csmi->collision_checked;
+			collision_checked = !Mc->collision_checked.empty() && Mc->collision_checked[i];
 		}
 
 		// Don't check it or its children if it is destroyed
@@ -1148,6 +1111,11 @@ int model_collide(mc_info *mc_info_obj)
 		Mc_pmi = model_get_instance(Mc->model_instance_num);
 	} else {
 		Mc_pmi = NULL;
+	}
+
+	if (Mc_pmi && Mc->collision_checked.size() != static_cast<size_t>(Mc_pm->n_models)) {
+		Assertion(Mc->collision_checked.empty(), "model_collide was called with a dirty mc_info state! Please report to the SCP.");
+		Mc->collision_checked.resize(Mc_pm->n_models, 0);
 	}
 
 	// DA 11/19/98 - disable this check for rotating submodels

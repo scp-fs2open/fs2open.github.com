@@ -57,7 +57,7 @@ ActionResult PlaySoundAction::execute(ProgramLocals& locals) const
 }
 std::unique_ptr<Action> PlaySoundAction::clone() const
 {
-	return std::unique_ptr<Action>(new PlaySoundAction(*this));
+	return std::make_unique<PlaySoundAction>(*this);
 }
 } // namespace types
 } // namespace actions

@@ -17,6 +17,7 @@
 
 #include "BgBitmapDlg.h"
 #include "BriefingEditorDlg.h"
+#include "DebriefingEditorDlg.h"
 #include "resource.h"
 #include "ShipEditorDlg.h"
 #include "propdlg.h"
@@ -153,23 +154,6 @@ private:
 };
 
 /**
- * @brief Add a message to be processed at the end of this frame.
- *
- * @details This is useful if you need the display to update before it's useful to process the message.  For example,
- * right click brings up a popup menu, but the menu it brings up depends on where you right clicked.  If you right
- * click on a ship, you get a message that pertains to the chosen ship.  It is useful to have a visual indication that
- * you have changed the current ship.
- *
- * @note z64: I get this feeling that this is a useful function.
- */
-void add_pending_message(HWND hwnd, int id, WPARAM wparam, LPARAM lparam, int skip_count);
-
-/**
- * @brief Initializes the message vector
- */
-void init_pending_messages(void);
-
-/**
  * @brief Refreshes the viewport
  */
 void update_map_window();
@@ -187,7 +171,8 @@ extern waypoint_path_dlg    Waypoint_editor_dialog; //!< The waypoint editor ins
 extern jumpnode_dlg			Jumpnode_editor_dialog; //!< The jumpnode editor instance
 extern music_player_dlg		Music_player_dialog;    //!< The music player instance
 extern bg_bitmap_dlg*       Bg_bitmap_dialog;       //!< The bitmap dialog instance
-extern briefing_editor_dlg* Briefing_dialog;        //!< The briefing editor instance
+extern briefing_editor_dlg*    Briefing_dialog;    //!< The briefing editor instance
+extern debriefing_editor_dlg*  Debriefing_dialog;  //!< The debriefing editor instance
 
 extern CFREDApp theApp; //!< The application instance
 
@@ -203,6 +188,7 @@ extern window_data Player_wnd_data;
 extern window_data Events_wnd_data;
 extern window_data Bg_wnd_data;
 extern window_data Briefing_wnd_data;
+extern window_data Debriefing_wnd_data;
 extern window_data Reinforcement_wnd_data;
 extern window_data Waypoint_wnd_data;
 extern window_data Jumpnode_wnd_data;

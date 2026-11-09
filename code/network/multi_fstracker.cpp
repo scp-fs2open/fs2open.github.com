@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #endif
 
+#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "io/timer.h"
 #include "gamesequence/gamesequence.h"
@@ -893,6 +894,11 @@ void multi_stats_fs_to_tracker(scoring_struct *fs, vmt_stats_struct *vmt, player
 	// find only up to last in array with at least 1 kill
 	vmt->num_ships = MAX_FS2OPEN_COUNTS - vmt->num_medals;
 
+	// can't transmit more ship classes than this mod actually has
+	if (static_cast<size_t>(vmt->num_ships) > fs->kills.size()) {
+		vmt->num_ships = static_cast<unsigned char>(fs->kills.size());
+	}
+
 	for (int idx = vmt->num_ships-1; idx >= 0; --idx) {
 		if (fs->kills[idx] > 0) {
 			break;
@@ -958,7 +964,11 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 				fs->medal_counts[idx] = static_cast<int>(vmt->counts[idx]);
 			}
 		} else {
-			fs->kills[idx2++] = static_cast<int>(vmt->counts[idx]);
+			// tracker may have more ship slots than this mod's ship_info; drop excess
+			if (fs->kills.in_bounds(idx2)) {
+				fs->kills[idx2] = static_cast<int>(vmt->counts[idx]);
+			}
+			++idx2;
 		}
 	}
 }
@@ -1290,7 +1300,7 @@ bool multi_fs_tracker_validate_mission_list(SCP_vector<multi_create_info> &file_
 			cf_chksum_long(entry.filename, &item.crc);
 			item.name = entry.filename;
 
-			vdr.files.push_back(item);
+			vdr.files.push_back(std::move(item));
 			vdr.num_files++;
 
 			packet_size += len;
@@ -1375,7 +1385,7 @@ static int validate_table_list(const SCP_vector<SCP_string> &table_list, int &ga
 			cf_chksum_long(tbl.c_str(), &item.crc);
 			item.name = tbl;
 
-			vdr.files.push_back(item);
+			vdr.files.push_back(std::move(item));
 			vdr.num_files++;
 
 			packet_size += len;

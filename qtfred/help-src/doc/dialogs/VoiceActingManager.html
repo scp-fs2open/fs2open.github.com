@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Voice Acting Manager - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Tools &rsaquo; Voice Acting Manager</nav>
+<h1>Voice Acting Manager</h1>
+<p>Opens via <strong>Editors &rsaquo; Voice Acting Manager</strong>.</p>
+<p>A tool for generating voice acting scripts and programmatically assigning voice file
+paths across all spoken lines in a mission. It covers messages created in the Mission
+Events editor, briefing stages, command briefing stages, and debriefing stages.</p>
+
+<h2>Abbreviations</h2>
+<p>Abbreviations define how voice filenames are automatically constructed. The
+<strong>Example</strong> box shows a live preview as you fill in the fields.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Campaign abbreviation</td><td>Short code identifying the campaign. Placed
+        at the start of every filename, combined with the mission
+        abbreviation.</td></tr>
+    <tr><td>Mission abbreviation</td><td>Short code identifying the mission. Combined
+        with the campaign abbreviation at the start of the filename.</td></tr>
+    <tr><td>Cmd. Briefing</td><td>String inserted into filenames for command briefing
+        lines.</td></tr>
+    <tr><td>Briefing</td><td>String inserted into filenames for briefing lines.</td></tr>
+    <tr><td>Debriefing</td><td>String inserted into filenames for debriefing
+        lines.</td></tr>
+    <tr><td>Message</td><td>String inserted into filenames for in-mission message
+        lines.</td></tr>
+    <tr><td>Extension</td><td>Preferred audio file extension: <code>.wav</code> or
+        <code>.ogg</code>.</td></tr>
+    <tr><td>Include sender name</td><td>When checked, the name of the sending ship or
+        persona is included in the filename for message lines.</td></tr>
+</table>
+
+<h2>Generating filenames</h2>
+<p><strong>Replace existing filenames</strong> - when checked, the generator will
+overwrite voice file assignments that are already set. When unchecked, only lines
+with no assignment are filled in.</p>
+<p><strong>Generate filenames</strong> applies the abbreviation rules to every line in
+the mission, setting voice file paths according to the options above.</p>
+
+<h2>Script options</h2>
+<p>Controls how the exported script document is formatted and what it contains.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Format</td><td>A free-form template defining how each line appears in the
+        exported script. The available substitution tokens are listed in the dialog
+        itself.</td></tr>
+    <tr><td>Export</td><td>Radio buttons selecting which source to include in the
+        script: everything, messages only, briefing stages only, command briefing
+        stages only, or debriefing stages only.</td></tr>
+    <tr><td>Group sent-message-list messages together</td><td>When checked, messages in
+        the script are reordered to match the sequence they appear in mission events
+        (send-message-list, send-message-chain, and send-random-message operations),
+        rather than the default message index order. Any messages not referenced in
+        events are appended at the end. This is useful for voice directors who want
+        to work through the script in mission flow order.</td></tr>
+</table>
+<p><strong>Generate script</strong> writes the script file to disk using the format
+and export settings above.</p>
+
+<h2>Sync Personas</h2>
+<p>Tools for keeping persona assignments consistent between ships and the messages they
+send. The <strong>persona filter</strong> drop-down scopes all operations in this
+section to a specific set of personas: wingman personas only, non-wingman personas
+only, or a single named persona.</p>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Copy message personas to ships</td><td>For each mission message that has a
+        persona assigned, finds the ship that sends it and sets that ship's persona
+        to match.</td></tr>
+    <tr><td>Copy ship personas to messages</td><td>Reverse of the above; for each
+        ship with a persona set, updates the messages it sends to use that same
+        persona.</td></tr>
+    <tr><td>Clear personas from ships that don't send messages</td><td>Removes the
+        persona assignment from any ship that has one but does not send any messages.
+        Useful for cleaning up personas that were set by mistake or are no longer
+        needed.</td></tr>
+    <tr><td>Set head ANIs using personas in messages.tbl</td><td>For each message with
+        a persona assigned, looks up a matching built-in message in
+        <code>messages.tbl</code> with the same persona and copies its head
+        animation assignment.</td></tr>
+    <tr><td>Check if messages sent by &lt;any wingman&gt; have at least one ship with
+        that persona</td><td>Validates that every message addressed to
+        <code>&lt;any wingman&gt;</code> has a wingman persona assigned and that at
+        least one ship in the mission carries that persona. Reports any
+        discrepancies.</td></tr>
+</table>
+</body>
+</html>

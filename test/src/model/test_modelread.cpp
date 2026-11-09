@@ -26,7 +26,7 @@ protected:
 		pm = new polymodel();
 		pmi = new polymodel_instance();
 
-		pm->submodel = new bsp_info[3];
+		pm->submodel = make_shared<bsp_info[]>(3);
 		pmi->submodel = new submodel_instance[3];
 
 		pm->submodel[0].parent = -1;
@@ -51,7 +51,7 @@ protected:
 	void TearDown() override {
 		test::FSTestFixture::TearDown();
 
-		delete[] pm->submodel;
+		pm->submodel.reset();
 		delete[] pmi->submodel;
 		delete pm;
 		delete pmi;

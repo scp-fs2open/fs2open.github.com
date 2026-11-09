@@ -35,6 +35,7 @@
 #include "object/deadobjectdock.h"
 #include "object/objectdock.h"
 #include "ship/ship.h"
+#include "ship/shiphit.h"
 #include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "weapon/weapon.h"
@@ -367,7 +368,7 @@ void red_alert_close()
 		red_alert_voice_stop();
 		red_alert_voice_unload();
 
-		weapon_select_close_team();
+		weapon_select_common_close();
 
 		if (Background_bitmap >= 0) {
 			bm_release(Background_bitmap);
@@ -626,6 +627,8 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 	if (!ras->subsys_current_hits.empty()) {
 		ss = GET_FIRST(&shipp->subsys_list);
 		while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
+			bool was_destroyed = (ss->current_hits <= 0.0f);
+
 			// using at() here for the bounds check, although out-of-bounds should
 			// probably never happen here
 			try {
@@ -634,8 +637,13 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 				break;
 			}
 
-			if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
-				ss->submodel_instance_1->blown_off = true;
+			if (ss->current_hits <= 0) {
+				// subsystems with no hitpoints at all are never destroyed
+				if (ss->max_hits > 0.0f)
+					blow_off_subsystem_submodels(shipp, ss);
+			} else if (was_destroyed) {
+				// the mission file may have started this subsystem destroyed
+				restore_subsystem_submodels(shipp, ss);
 			}
 
 			ss = GET_NEXT( ss );
@@ -767,8 +775,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, &shipp->weapons);
 		red_alert_store_subsys_status(&ras, shipp);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (shipp->wingnum >= 0) {
@@ -803,8 +811,8 @@ void red_alert_store_ship_status()
 		red_alert_store_weapons(&ras, NULL);
 		red_alert_store_subsys_status(&ras, NULL);
 
-		Red_alert_ship_status.push_back( ras );
-		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Red_alert_ship_status.push_back( std::move(ras) );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files
 		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
 		if (exited.wingnum >= 0) {
@@ -829,7 +837,7 @@ void red_alert_store_ship_status()
 		rws.total_destroyed = wingp->total_destroyed;
 		rws.total_vanished = wingp->total_vanished;
 
-		Red_alert_wing_status.push_back( rws );
+		Red_alert_wing_status.push_back( std::move(rws) );
 		// see comments from niffiwan above
 		Assert( (Red_alert_wing_status.size() <= MAX_WINGS) );
 	}
@@ -968,10 +976,9 @@ void red_alert_bash_ship_status()
 
 					// give the ship its name from the latest wave
 					// (this will make the ship match to the correct red-alert data)
-					wing_bash_ship_name(shipp->ship_name, wingp->name, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
-					// need to update the ship registry too
-					strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
-					Ship_registry_map[shipp->ship_name] = ship_entry_index;
+					wing_bash_ship_name(shipp, wingp, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+					// need to update the ship registry too; keep the old key because the previous name was a real ship name that may still be referenced
+					ship_registry_rename(ship_entry_index, shipp->ship_name, false);
 				}
 			}
 		}
@@ -1232,7 +1239,7 @@ void red_alert_maybe_move_to_next_mission()
 			// this should handle close-out and moving to next mission
 			gameseq_post_event(GS_EVENT_DEBRIEF);
 		} else {
-			mission_campaign_store_goals_and_events_and_variables();
+			mission_campaign_store_goals_and_events_and_variables(true);
 			scoring_level_close();
 			mission_campaign_eval_next_mission();
 			mission_campaign_mission_over();

@@ -332,7 +332,7 @@ ADE_FUNC(yield,
 		explicit yield_resolve_context(executor::Executor* executor) : m_exec(executor) {}
 		void setResolver(Resolver resolver) override
 		{
-			m_exec->post([resolver]() {
+			m_exec->post([resolver = std::move(resolver)]() {
 				resolver(false, luacpp::LuaValueList());
 				return executor::Executor::CallbackResult::Done;
 			});
@@ -396,8 +396,8 @@ ADE_FUNC(captureGameState,
 
 ADE_FUNC(createLuaState,
 	l_Async_Context,
-	"function() => enumeration",
-	"Creates an execution state by storing the passed function and calling that when the state is required.",
+	"function() => enumeration /* CONTEXT_* */",
+	"Creates an execution state by storing the passed function and calling that when the state is required. The function must return a CONTEXT_* enumeration.",
 	"execution_context",
 	"The execution context or invalid handle on error")
 {

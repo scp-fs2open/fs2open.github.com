@@ -15,6 +15,7 @@
 
 #include "freespace.h"
 #include "cmdline/cmdline.h"
+#include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
 #include "graphics/matrix.h"
 #include "graphics/paths/PathRenderer.h"
@@ -169,6 +170,7 @@ static void parse_motion_debris_func()
 	Motion_debris_enabled = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
                      std::pair<const char*, int>{"Motion Debris", 1713},
                      std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
@@ -454,7 +456,7 @@ void parse_startbl(const char *filename)
 					}
 				}
 				else {
-					Starfield_bitmaps.push_back(sbm);
+					Starfield_bitmaps.push_back(std::move(sbm));
 				}
 			}
 
@@ -563,7 +565,7 @@ void parse_startbl(const char *filename)
 						Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 				}
 				else {
-					Sun_bitmaps.push_back(sbm);
+					Sun_bitmaps.push_back(std::move(sbm));
 				}
 			}
 
@@ -593,7 +595,7 @@ void parse_startbl(const char *filename)
 					}
 				}
 				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
-					Motion_debris_info.push_back(this_debris);
+					Motion_debris_info.push_back(std::move(this_debris));
 				} else {
 					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
@@ -623,7 +625,7 @@ void parse_startbl(const char *filename)
 					}
 				}
 				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
-					Motion_debris_info.push_back(this_debris);
+					Motion_debris_info.push_back(std::move(this_debris));
 				} else {
 					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
@@ -653,7 +655,7 @@ void parse_startbl(const char *filename)
 						this_debris.bitmaps[i].name[0] = '\0';
 					}
 
-					Motion_debris_info.push_back(this_debris);
+					Motion_debris_info.push_back(std::move(this_debris));
 					check = static_cast<int>(Motion_debris_info.size()) - 1;
 				}
 
@@ -910,7 +912,15 @@ static void environment_map_gen()
 	else if ( strlen(The_mission.envmap_name) ) {
 		// Load the mission map so we can use it later
 		Mission_env_map = bm_load(The_mission.envmap_name);
-		return;
+		// DX10 (BC7) files keep no cube flag, so they cannot be checked here
+		if (Mission_env_map < 0 || bm_is_cubemap(Mission_env_map) || bm_is_compressed(Mission_env_map) == DDS_BC7) {
+			return;
+		}
+		Warning(LOCATION,
+			"Environment map '%s' is not a cubemap; using the generated environment map instead.",
+			The_mission.envmap_name);
+		bm_release(Mission_env_map);
+		Mission_env_map = -1;
 	}
 
 	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
@@ -953,7 +963,7 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1273,7 +1283,7 @@ void stars_draw_sun(int show_sun)
 	starfield_bitmap *bm;
 	float local_scale;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1358,7 +1368,7 @@ void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 	float dx,dy;
 	vertex flare_vex = *sun_vex; //copy over to flare_vex to get all sorts of properties
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1413,7 +1423,7 @@ void stars_draw_sun_glow(int sun_n)
 	vertex sun_vex;	
 	float local_scale;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1486,7 +1496,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 	int idx;
 	int star_index;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1615,7 +1625,7 @@ void subspace_render()
 {
 	int framenum = 0;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1757,7 +1767,7 @@ void stars_draw_stars()
 	vertex p1, p2;
 	int can_draw = 1;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1869,7 +1879,7 @@ void stars_draw_motion_debris()
 	GR_DEBUG_SCOPE("Draw motion debris");
 	TRACE_SCOPE(tracing::DrawMotionDebris);
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1932,7 +1942,7 @@ void stars_draw(int show_stars, int show_suns, int  /*show_nebulas*/, int show_s
 	GR_DEBUG_SCOPE("Draw Stars");
 	TRACE_SCOPE(tracing::DrawStars);
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2057,7 +2067,7 @@ void stars_page_in()
 {
 	int idx, i;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2301,7 +2311,7 @@ void stars_draw_background()
 	GR_DEBUG_SCOPE("Draw Background");
 	TRACE_SCOPE(tracing::DrawBackground);
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2343,7 +2353,7 @@ void stars_draw_background()
 
 void stars_set_background_model(int new_model, int new_bitmap, uint64_t flags, float alpha)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -2391,7 +2401,7 @@ void stars_set_background_model(const char* model_name, const char* texture_name
 	int new_model = -1;
 	int new_bitmap = -1;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -3096,7 +3106,7 @@ void stars_setup_environment_mapping(camid cid) {
 	extern fov_t View_zoom;
 	fov_t old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

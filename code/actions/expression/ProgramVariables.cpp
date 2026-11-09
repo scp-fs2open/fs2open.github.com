@@ -6,7 +6,7 @@ namespace expression {
 
 ProgramVariablesDefinition& ProgramVariablesDefinition::addScope(const SCP_string& name)
 {
-	auto scope = std::unique_ptr<ProgramVariablesDefinition>(new ProgramVariablesDefinition());
+	auto scope = std::make_unique<ProgramVariablesDefinition>();
 
 	auto scopePtr = scope.get();
 

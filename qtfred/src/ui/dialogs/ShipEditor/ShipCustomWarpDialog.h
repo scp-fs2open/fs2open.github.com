@@ -7,20 +7,10 @@ namespace fso::fred::dialogs {
 namespace Ui {
 class ShipCustomWarpDialog;
 }
-/**
- * @brief QtFRED's Custom Warp Editor
- */
 class ShipCustomWarpDialog : public QDialog {
 	Q_OBJECT
   public:
-	/**
-	 * @brief Constructor
-	 * @param [in] parent The parent dialog.
-	 * @param [in] viewport The viewport this dialog is attacted to.
-	 * @param [in] departure Whether the dialog is changeing warp-in or warp-out.
-	 */
-	explicit ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, const bool departure = false);
-	// Constructor for wing mode
+	explicit ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, bool departure = false);
 	ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, bool departure, int wingIndex, bool wingMode);
 	~ShipCustomWarpDialog() override;
 
@@ -28,10 +18,6 @@ class ShipCustomWarpDialog : public QDialog {
 	void reject() override;
 
   protected:
-	/**
-	 * @brief Overides the Dialogs Close event to add a confermation dialog
-	 * @param [in] *e The event.
-	 */
 	void closeEvent(QCloseEvent*) override;
   private slots:
 	void on_buttonBox_accepted();
@@ -51,10 +37,6 @@ class ShipCustomWarpDialog : public QDialog {
 	std::unique_ptr<Ui::ShipCustomWarpDialog> ui;
 	std::unique_ptr<ShipCustomWarpDialogModel> _model;
 	EditorViewport* _viewport;
-	/**
-	 * @brief Populates the UI
-	 * @param [in] firstRun If this is the first run.
-	 */
-	void updateUI(const bool firstRun = false);
+	void updateUi(bool firstRun = false);
 };
 } // namespace fso::fred::dialogs

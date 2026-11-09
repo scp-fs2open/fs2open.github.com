@@ -36,17 +36,18 @@ static void gr_flash_internal(int r, int g, int b, int a, bool alpha_flash)
 		render_material.set_blend_mode(ALPHA_BLEND_ALPHA_ADDITIVE);
 	}
 
-	int glVertices[8] = { x1, y1, x1, y2, x2, y1, x2, y2 };
+	float glVertices[8] = { (float)x1, (float)y1, (float)x1, (float)y2,
+	                        (float)x2, (float)y1, (float)x2, (float)y2 };
 
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::SCREEN_POS, sizeof(int) * 2, 0);
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(float) * 2, 0);
 
-	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(int) * 8);
+	gr_render_primitives_2d_immediate(&render_material, PRIM_TYPE_TRISTRIP, &vert_def, 4, glVertices, sizeof(float) * 8);
 }
 
 void gr_flash(int r, int g, int b) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -58,7 +59,7 @@ void gr_flash(int r, int g, int b) {
 }
 
 void gr_flash_alpha(int r, int g, int b, int a) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -166,7 +167,7 @@ static void bitmap_ex_internal(int x,
 }
 
 void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -206,8 +207,10 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 		return;
 	}
 
+	int delta_left = 0, delta_right = 0;
+
 	if (dx1 < clip_left) {
-		sx = clip_left - dx1;
+		delta_left = clip_left - dx1;
 		dx1 = clip_left;
 	}
 
@@ -217,12 +220,17 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 	}
 
 	if (dx2 > clip_right) {
+		delta_right = dx2 - clip_right;
 		dx2 = clip_right;
 	}
 
 	if (dy2 > clip_bottom) {
 		dy2 = clip_bottom;
 	}
+
+	// When mirrored, the destination's left edge maps to the source's right edge,
+	// so a left-side dest clip drops pixels from the right of the source (and vice versa).
+	sx = mirror ? delta_right : delta_left;
 
 	if ((sx < 0) || (sy < 0)) {
 		return;
@@ -246,7 +254,7 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   scale_factor);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -307,7 +315,12 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		}
 
 		if (dx1 < clip_left) {
-			sx += clip_left - dx1;
+			int delta = clip_left - dx1;
+			// When mirrored, dest-left maps to source-right, so drop from the source's right
+			// edge (handled via reduced w below) instead of advancing sx.
+			if (!mirror) {
+				sx += delta;
+			}
 			dx1 = clip_left;
 		}
 
@@ -317,6 +330,11 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		}
 
 		if (dx2 > clip_right) {
+			int delta = dx2 - clip_right;
+			// When mirrored, dest-right maps to source-left, so advance sx by the right delta.
+			if (mirror) {
+				sx += delta;
+			}
 			dx2 = clip_right;
 		}
 
@@ -388,7 +406,7 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 }
 //these are penguins bitmap functions
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -449,7 +467,12 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, b
 		}
 
 		if (dx1 < clip_left) {
-			sx += clip_left - dx1;
+			int delta = clip_left - dx1;
+			// When mirrored, dest-left maps to source-right, so drop from the source's right
+			// edge (handled via reduced w below) instead of advancing sx.
+			if (!mirror) {
+				sx += delta;
+			}
 			dx1 = clip_left;
 		}
 
@@ -459,6 +482,11 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, b
 		}
 
 		if (dx2 > clip_right) {
+			int delta = dx2 - clip_right;
+			// When mirrored, dest-right maps to source-left, so advance sx by the right delta.
+			if (mirror) {
+				sx += delta;
+			}
 			dx2 = clip_right;
 		}
 
@@ -528,22 +556,21 @@ struct v4 {
 };
 static v4 String_render_buff[MAX_VERTS_PER_DRAW];
 
-namespace font {
-extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int* width, int* spacing);
-}
-
 static void gr_string_old(float sx,
 	float sy,
 	const char* s,
 	const char* end,
-	font::font* fontData,
-	float height,
-	bool canAutoScale,
-	bool canScale,
+	const font::font* fontData,
+	const font::FSFont* fontMetrics,
 	int resize_mode,
 	float scaleMultiplier)
 {
 	GR_DEBUG_SCOPE("Render VFNT string");
+
+	const float height = fontMetrics->getHeight();
+	const bool canAutoScale = fontMetrics->getAutoScaleBehavior();
+	const bool canScale = fontMetrics->getScaleBehavior();
+	const float tabWidth = fontMetrics->getTabWidth();
 
 	float x = sx;
 	float y = sy;
@@ -610,6 +637,13 @@ static void gr_string_old(float sx,
 
 		if (*s == 0) {
 			break;
+		}
+
+		// Handle tabs
+		if (*s == '\t') {
+			s++;
+			x += tabWidth * scale_factor;
+			continue;
 		}
 
 		// Get character width and spacing
@@ -765,7 +799,7 @@ void endDrawing(graphics::paths::PathRenderer* path) {
 
 void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMultiplier, size_t in_length)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -794,7 +828,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
 		fo::font* fontData = fnt->getFontData();
 
-		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), currentFont->getAutoScaleBehavior(), currentFont->getScaleBehavior(), resize_mode, scaleMultiplier);
+		gr_string_old(sx, sy, s, s + length, fontData, currentFont, resize_mode, scaleMultiplier);
 	} else if (currentFont->getType() == NVG_FONT) {
 		GR_DEBUG_SCOPE("Render TTF string");
 
@@ -850,13 +884,13 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 						case '\n':
 							doRender = false;
 
-							y += nvgFont->getHeight();
+							y += nvgFont->getHeight() * scale_factor;
 							x = 0;
 							break;
 						case '\t':
 							doRender = false;
 
-							x += nvgFont->getTabWidth();
+							x += nvgFont->getTabWidth() * scale_factor;
 							break;
 						case '\r':
 							// Ignore Carriage return chars
@@ -891,9 +925,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 									  text,
 									  text + 1,
 									  nvgFont->getSpecialCharacterFont(),
-									  nvgFont->getHeight(),
-							          nvgFont->getAutoScaleBehavior(),
-									  nvgFont->getScaleBehavior(),
+									  nvgFont,
 									  resize_mode,
 									  scaleMultiplier);
 					}
@@ -934,6 +966,20 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 	}
 }
 
+void gr_string_outlined(int x, int y, const char* text, const color* foreground, const color* outline, int offset, int resize_mode, float scaleMultiplier, size_t length)
+{
+	// draw outline by rendering text at all surrounding offsets
+	gr_set_color_fast(outline);
+	for (int dx = -offset; dx <= offset; dx++)
+		for (int dy = -offset; dy <= offset; dy++)
+			if (dx || dy)
+				gr_string(x + dx, y + dy, text, resize_mode, scaleMultiplier, length);
+
+	// draw foreground text on top
+	gr_set_color_fast(foreground);
+	gr_string(x, y, text, resize_mode, scaleMultiplier, length);
+}
+
 static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
@@ -954,7 +1000,7 @@ static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 }
 
 void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -962,7 +1008,7 @@ void gr_line(int x1, int y1, int x2, int y2, int resize_mode) {
 }
 
 void gr_aaline(vertex* v1, vertex* v2) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -976,7 +1022,7 @@ void gr_aaline(vertex* v1, vertex* v2) {
 }
 
 void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1002,7 +1048,7 @@ void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
 	endDrawing(path);
 }
 void gr_pixel(int x, int y, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1010,7 +1056,7 @@ void gr_pixel(int x, int y, int resize_mode) {
 }
 
 void gr_circle(int xc, int yc, int d, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1023,7 +1069,7 @@ void gr_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1036,7 +1082,7 @@ void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
 	endDrawing(path);
 }
 void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fill, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1066,7 +1112,7 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 	endDrawing(path);
 }
 void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1117,7 +1163,7 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 }
 
 void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1138,7 +1184,7 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 }
 
 void gr_shade(int x, int y, int w, int h, int resize_mode) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1160,7 +1206,7 @@ void gr_shade(int x, int y, int w, int h, int resize_mode) {
 }
 
 void gr_2d_start_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1173,7 +1219,7 @@ void gr_2d_start_buffer() {
 }
 
 void gr_2d_stop_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1191,7 +1237,7 @@ static size_t immediate_buffer_size = 0;
 static const size_t IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return 0;
 	}
 
@@ -1221,7 +1267,7 @@ size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	return old_offset;
 }
 void gr_reset_immediate_buffer() {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1243,7 +1289,7 @@ void gr_render_primitives_immediate(material* material_info,
 									int n_verts,
 									void* data,
 									size_t size) {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1259,7 +1305,7 @@ void gr_render_primitives_2d_immediate(material* material_info,
 	void* data,
 	size_t size)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1416,7 +1462,7 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 
@@ -1431,7 +1477,7 @@ void gr_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float ang
 
 void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float angle)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

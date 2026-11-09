@@ -75,9 +75,8 @@ ADE_FUNC(getMouseY, l_Mouse, nullptr, "Gets Mouse Y pos", "number", "Mouse y pos
 
 ADE_FUNC(isMouseButtonDown,
 	l_Mouse,
-	"enumeration buttonCheck1 /* MOUSE_*_BUTTON */, [ enumeration buttonCheck2 /* MOUSE_*_BUTTON */, enumeration "
-	"buttonCheck3 /* MOUSE_*_BUTTON */ ]",
-	"Returns whether the specified mouse buttons are up or down",
+	"enumeration buttonCheck1 /* MOUSE_* */, [enumeration buttonCheck2 /* MOUSE_* */, enumeration buttonCheck3 /* MOUSE_* */]",
+	"Returns whether the specified MOUSE_* buttons are up or down",
 	"boolean",
 	"Whether specified mouse buttons are down, or false if mouse is not initialized yet")
 {
@@ -115,8 +114,8 @@ ADE_FUNC(isMouseButtonDown,
 
 ADE_FUNC(mouseButtonDownCount,
 	l_Mouse,
-	"enumeration buttonCheck /* any one of MOUSE_LEFT_BUTTON, MOUSE_RIGHT_BUTTON, MOUSE_MIDDLE_BUTTON, MOUSE_X1_BUTTON, MOUSE_X2_BUTTON */, [ boolean reset_count ]",
-	"Returns the pressed count of the specified button.  The count is then reset, unless reset_count (which defaults to true) is false.",
+	"enumeration buttonCheck /* MOUSE_* */, [boolean reset_count]",
+	"Returns the pressed count of the specified MOUSE_* button.  The count is then reset, unless reset_count (which defaults to true) is false.",
 	"number",
 	"The number of frames this button has been pressed, or -1 if the mouse has not been initialized")
 {
@@ -189,7 +188,7 @@ static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
 		bind = &Control_config[AxisAction].second;
 	else
 	{
-		UNREACHABLE("Currently only primary and secondary bindings are supported!");
+		Assertion(false, "Currently only primary and secondary bindings are supported!");
 		return ADE_RETURN_NIL;
 	}
 
@@ -315,7 +314,7 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 		return ADE_RETURN_FALSE;
 }
 
-ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration FlightMode", "Flight Mode; uses LE_FLIGHTMODE_* enumerations.", "enumeration", "enumeration flight mode")
+ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration /* FLIGHTMODE_* */", "Flight Mode; uses FLIGHTMODE_* enumerations.", "enumeration", "Current flight cursor mode as a FLIGHTMODE_* enumeration")
 {
 	enum_h flightmode_arg;
 

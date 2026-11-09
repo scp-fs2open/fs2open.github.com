@@ -17,6 +17,7 @@ namespace api {
 
 //**********HANDLE: Weaponclass
 ADE_OBJ(l_Weaponclass, int, "weaponclass", "Weapon class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Weaponclass, weapon_info_size());
 
 ADE_FUNC(__tostring, l_Weaponclass, NULL, "Weapon class name", "string", "Weapon class name, or an empty string if handle is invalid")
 {
@@ -261,6 +262,38 @@ ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model
 	}
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(wip->model_num)));
+}
+
+ADE_VIRTVAR(CloseupPosition, l_Weaponclass, nullptr, "Weapon class closeup position", "vector", "closeup position, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Weapon_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Position is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Weapon_info[idx].closeup_pos));
+}
+
+ADE_VIRTVAR(CloseupZoom, l_Weaponclass, nullptr, "Weapon class closeup zoom", "number", "closeup zoom, or nil if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Weapon_info, idx))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Closeup Zoom is not supported");
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].closeup_zoom);
 }
 
 ADE_VIRTVAR(ArmorFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship hull (0-1.0)", "number", "Armor factor, or empty string if handle is invalid")
@@ -650,6 +683,28 @@ ADE_VIRTVAR(Bomb, l_Weaponclass, "boolean", "Is weapon class flagged as bomb", "
 		return ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(Puncture, l_Weaponclass, "boolean", "Is weapon class flagged as puncture", "boolean", "New flag")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_FALSE;
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_FALSE;
+
+	weapon_info *info = &Weapon_info[idx];
+
+	if(ADE_SETTING_VAR)
+	{
+		LuaError(L, "Setting Puncture flag is not supported");
+	}
+
+	if (info->wi_flags[Weapon::Info_Flags::Puncture])
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_VIRTVAR(CustomData, l_Weaponclass, nullptr, "Gets the custom data table for this weapon class", "table", "The weapon class's custom data table") 
 {
 	int idx;
@@ -774,10 +829,14 @@ ADE_VIRTVAR(AllowedInCampaign, l_Weaponclass, "boolean", "Gets or sets whether t
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR) {
-		Campaign.weapons_allowed[idx] = new_value;
+		if (new_value) {
+			Campaign.weapons_allowed.insert(idx);
+		} else {
+			Campaign.weapons_allowed.erase(idx);
+		}
 	}
 
-	return Campaign.weapons_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Campaign.weapons_allowed.contains(idx) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")
@@ -1023,18 +1082,6 @@ ADE_VIRTVAR(BeamWarmdown, l_Weaponclass, "number", "The time in seconds that a b
 		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmdown) / MILLISECONDS_PER_SECOND);
 
 	return ade_set_args(L, "f", 0.0f);
-}
-
-ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= weapon_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(renderTechModel,
@@ -1313,7 +1360,7 @@ ADE_FUNC(isWeaponRequired,
 
 	//This could be requested before Common_team has been initialized, so let's check.
 	if (Common_select_inited) {
-		return ade_set_args(L, "b", Team_data[Common_team].weapon_required[idx]);
+		return ade_set_args(L, "b", Team_data[Common_team].required_weapons.contains(idx));
 	} else {
 		return ADE_RETURN_NIL;
 	}

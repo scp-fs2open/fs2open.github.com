@@ -128,7 +128,7 @@ void prop_dlg::initialize_data(int full_update)
 	m_flags_list.EnableWindow(enable);
 }
 
-int prop_dlg::update_data()
+int prop_dlg::update_data(int redraw)
 {
 	if (!GetSafeHwnd())
 		return 0;
@@ -185,7 +185,9 @@ int prop_dlg::update_data()
 		}
 	}
 
-	update_map_window();
+	if (redraw)
+		update_map_window();
+
 	return 0;
 }
 

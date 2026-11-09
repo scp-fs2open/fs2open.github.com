@@ -180,8 +180,6 @@ SCP_vector<mission_event> Mission_events;
 SCP_vector<mission_goal> Mission_goals;		// structure for the goals of this mission
 static goal_text Goal_text;
 
-SCP_vector<event_annotation> Event_annotations;
-
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 
@@ -752,7 +750,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 			isOverride = true; // Override here only prevents displaying the goals and playing the music. Everything
 							   // else still runs.
 		}
-		scripting::hooks::OnMissionGoalStatusChanged->run(paramList);
+		scripting::hooks::OnMissionGoalStatusChanged->run(std::move(paramList));
 	}
 
 	Mission_goals[goal_num].satisfied = new_status;

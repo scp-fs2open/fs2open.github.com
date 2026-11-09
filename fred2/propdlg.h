@@ -6,7 +6,7 @@ class prop_dlg : public CDialog {
   public:
 	int bypass_errors;
 	BOOL Create();
-	int update_data();
+	int update_data(int redraw = 1);
 	void initialize_data(int full_update);
 	void OnOK();
 	prop_dlg(CWnd* pParent = NULL); // standard constructor

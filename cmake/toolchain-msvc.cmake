@@ -13,6 +13,13 @@ option(MSVC_RELEASE_DEBUGGING "Set options that allow to debug release builds" O
 MARK_AS_ADVANCED(FORCE MSVC_USE_RUNTIME_DLL)
 MARK_AS_ADVANCED(FORCE MSVC_RELEASE_DEBUGGING)
 
+# Qt is only available as DLL-runtime builds, so qtFRED forces the DLL runtime for the whole tree
+if(MSVC_USE_RUNTIME_DLL OR FSO_BUILD_QTFRED)
+	set(FSO_MSVC_RUNTIME_DLL ON)
+else()
+	set(FSO_MSVC_RUNTIME_DLL OFF)
+endif()
+
 # These are the warnings we disable
 set(WARNING_FLAGS
 	/wd4100 # unreferenced formal parameters
@@ -71,12 +78,13 @@ if (MSVC_RELEASE_DEBUGGING)
 	endif()
 endif()
 
-IF(MSVC_USE_RUNTIME_DLL)
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>DLL")
+# The debug runtime is not redistributable (statically linked or not), so only Debug may use it
+IF(FSO_MSVC_RUNTIME_DLL)
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 	add_compile_definitions(_AFXDLL)
-ELSE(MSVC_USE_RUNTIME_DLL)
-	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>")
-ENDIF(MSVC_USE_RUNTIME_DLL)
+ELSE()
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+ENDIF()
 
 # Debug
 set(CMAKE_C_FLAGS_DEBUG "/W4 /Gy /Zi /Od /RTC1 /Gd /Oy-")
@@ -113,7 +121,6 @@ if(IS_X86)
 
 endif()
 
-add_compile_definitions("$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
 target_compile_definitions(compiler INTERFACE _CRT_SECURE_NO_DEPRECATE _CRT_SECURE_NO_WARNINGS _SECURE_SCL=0 NOMINMAX _SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING)
 
 if (FSO_FATAL_WARNINGS)

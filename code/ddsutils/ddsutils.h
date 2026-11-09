@@ -273,6 +273,27 @@ typedef struct {
 } DDS_HEADER_DXT10;
 #pragma pack()
 
+// Block size in bytes for a 4x4 texel block of a compressed DDS format.
+// comp_type is one of the DDS_DXT*/DDS_CUBEMAP_DXT* constants.
+inline int dds_block_size(int comp_type) {
+	switch (comp_type) {
+	case DDS_DXT1:
+	case DDS_CUBEMAP_DXT1:
+		return 8;
+	case DDS_DXT3: case DDS_CUBEMAP_DXT3:
+	case DDS_DXT5: case DDS_CUBEMAP_DXT5:
+	case DDS_BC7:
+		return 16;
+	default:
+		return 0;
+	}
+}
+
+// Size in bytes of one mip level of a block-compressed texture.
+inline size_t dds_compressed_mip_size(int w, int h, int block_size) {
+	return static_cast<size_t>(((w + 3) / 4) * ((h + 3) / 4) * block_size);
+}
+
 #define DDS_OFFSET						4+sizeof(DDS_HEADER)		//place where the data starts -- should be 128
 #define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
@@ -284,6 +305,15 @@ int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0,
 //reads bitmap
 //size of the data it stored in size
 int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp = NULL, int cf_type = CF_TYPE_ANY);
+
+// Decompress just the top mip of a 2D FOURCC-compressed DDS (DXT1/3/5, BC7)
+// to 32-bpp BGRA, regardless of what the renderer's compression support is.
+// Intended for tool/preview code that needs raw pixels and doesn't care
+// about mipmaps or cubemap faces. On success, out_pixels is sized to
+// width*height*4 in BGRA byte order.
+int dds_decompress_top_mip_bgra(const char *filename, int cf_type,
+                                int *out_width, int *out_height,
+                                SCP_vector<ubyte> &out_pixels);
 
 // writes a DDS file using given data
 void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data = NULL, int cubemap = 0, const char *filename = NULL);

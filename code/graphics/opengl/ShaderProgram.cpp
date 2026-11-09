@@ -137,7 +137,7 @@ GLenum get_gl_shader_stage(opengl::ShaderStage stage) {
 		case opengl::STAGE_FRAGMENT:
 			return GL_FRAGMENT_SHADER;
 		default:
-			UNREACHABLE("Unhandled shader type found!");
+			UNREACHABLE("Unhandled shader type %d found!", static_cast<int>(stage));
 			return GL_NONE;
 	}
 }
@@ -246,7 +246,7 @@ void opengl::ShaderUniforms::setTextureUniform(const SCP_string& name, const int
 		new_bind.name  = name;
 		new_bind.value = texture_unit;
 
-		_uniforms.push_back(new_bind);
+		_uniforms.push_back(std::move(new_bind));
 
 		_uniform_lookup[name] = _uniforms.size() - 1;
 	}

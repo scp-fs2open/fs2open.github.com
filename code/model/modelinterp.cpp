@@ -25,6 +25,7 @@
 #include "math/fvi.h"
 #include "math/staticrand.h"
 #include "mission/missionparse.h"
+#include "model/modelinterp.h"
 #include "model/modelrender.h"
 #include "model/modelsinc.h"
 #include "nebula/neb.h"
@@ -237,16 +238,12 @@ void model_deallocate_interp_data()
 	Num_interp_norms_allocated = 0;
 }
 
-extern void model_collide_allocate_point_list(int n_points);
-extern void model_collide_free_point_list();
-
 void model_allocate_interp_data(uint n_verts, uint n_norms)
 {
 	static ubyte dealloc = 0;
 
 	if (!dealloc) {
 		atexit(model_deallocate_interp_data);
-		atexit(model_collide_free_point_list);
 		dealloc = 1;
 	}
 
@@ -263,9 +260,6 @@ void model_allocate_interp_data(uint n_verts, uint n_norms)
 		Interp_points = (vertex*) vm_realloc( Interp_points, n_verts * sizeof(vertex) );
 
 		Num_interp_verts_allocated = n_verts;
-
-		// model collide needs a similar size to resize it based on this new value
-		model_collide_allocate_point_list( n_verts );
 	}
 
 	if (n_norms > Num_interp_norms_allocated) {
@@ -671,7 +665,7 @@ void model_draw_paths_htl( int model_num, uint64_t flags )
 }
 
 /**
- * Docking bay and fighter bay paths
+ * Fighter bay approach/departure paths (paths named $bayN)
  */
 void model_draw_bay_paths_htl(int model_num)
 {
@@ -684,6 +678,40 @@ void model_draw_bay_paths_htl(int model_num)
 	}
 
 	int cull = gr_set_cull(0);
+
+	// render fighter bay paths
+	gr_set_color(0, 255, 255);
+
+	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
+	for (idx = 0; idx<pm->n_paths; idx++) {
+		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {
+			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
+				v1 = pm->paths[idx].verts[s_idx].pos;
+				v2 = pm->paths[idx].verts[s_idx+1].pos;
+
+				g3_render_line_3d(true, &v1, &v2);
+			}
+		}
+	}
+
+	gr_set_cull(cull);
+}
+
+/**
+ * Docking bay slot positions and normals
+ */
+void model_draw_dock_points_htl(int model_num)
+{
+	int idx, s_idx;
+	vec3d v1, v2;
+
+	polymodel *pm = model_get(model_num);
+	if(pm == nullptr){
+		return;
+	}
+
+	int cull = gr_set_cull(0);
+
 	// render docking bay normals
 	gr_set_color(0, 255, 0);
 	for(idx=0; idx<pm->n_docks; idx++){
@@ -693,26 +721,9 @@ void model_draw_bay_paths_htl(int model_num)
 
 			// draw the point and normal
 			g3_render_sphere(&v1, 2.0);
-			//g3_draw_htl_line(&v1, &v2);
 			g3_render_line_3d(true, &v1, &v2);
 		}
 	}
-
-	// render figher bay paths
-	gr_set_color(0, 255, 255);
-		
-	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (idx = 0; idx<pm->n_paths; idx++) {
-		if ( !strnicmp(pm->paths[idx].name, NOX("$bay"), 4) ) {						
-			for(s_idx=0; s_idx<pm->paths[idx].nverts-1; s_idx++){
-				v1 = pm->paths[idx].verts[s_idx].pos;
-				v2 = pm->paths[idx].verts[s_idx+1].pos;
-
-				//g3_draw_htl_line(&v1, &v2);
-				g3_render_line_3d(true, &v1, &v2);
-			}
-		}
-	}	
 
 	gr_set_cull(cull);
 }
@@ -1228,19 +1239,19 @@ int submodel_get_num_polys_sub( ubyte *p )
 			int prelist = w(p+44);
 			int postlist = w(p+48);
 			int onlist = w(p+52);
-			n += submodel_get_num_polys_sub(p+frontlist);
-			n += submodel_get_num_polys_sub(p+backlist);
-			n += submodel_get_num_polys_sub(p+prelist);
-			n += submodel_get_num_polys_sub(p+postlist );
-			n += submodel_get_num_polys_sub(p+onlist );
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
+			if (prelist) n += submodel_get_num_polys_sub(p + prelist);
+			if (postlist) n += submodel_get_num_polys_sub(p + postlist);
+			if (onlist) n += submodel_get_num_polys_sub(p + onlist);
 			}
 			break;
 
 		case OP_SORTNORM2: {
 			int frontlist = w(p + 8);
 			int backlist = w(p + 12);
-			n += submodel_get_num_polys_sub(p + frontlist);
-			n += submodel_get_num_polys_sub(p + backlist);
+			if (frontlist) n += submodel_get_num_polys_sub(p + frontlist);
+			if (backlist) n += submodel_get_num_polys_sub(p + backlist);
 			}
 			end = true; // should not continue after this chunk
 			break;
@@ -1269,13 +1280,9 @@ int submodel_get_num_polys_sub( ubyte *p )
 /**
  * Returns number of tmaps & flat polys in a submodel
  */
-int submodel_get_num_polys(int model_num, int submodel_num )
+int submodel_get_num_polys(int model_num, int submodel_num)
 {
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	return submodel_get_num_polys_sub( pm->submodel[submodel_num].bsp_data );
+	return model_get(model_num)->submodel[submodel_num].num_polys;
 }
 
 /**
@@ -1876,9 +1883,9 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_
 		return;
 	}
 
-	if ( vert_src->Vertex_list != NULL ) {
+	if ( vert_src->Vertex_list != nullptr ) {
 		size_t offset;
-		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list, offset, vert_src->Vbuffer_handle);
+		gr_heap_allocate(GpuHeap::ModelVertex, vert_src->Vertex_list_size, vert_src->Vertex_list.get(), offset, vert_src->Vbuffer_handle);
 
 		// If this happens then someone must have allocated something from the heap with a different stride than what we
 		// are using.
@@ -1886,15 +1893,13 @@ void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_
 		vert_src->Base_vertex_offset = offset / vertex_stride;
 		vert_src->Vertex_offset = offset;
 
-		vm_free(vert_src->Vertex_list);
-		vert_src->Vertex_list = NULL;
+		vert_src->Vertex_list.reset();
 	}
 
-	if ( vert_src->Index_list != NULL ) {
-		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list, vert_src->Index_offset, vert_src->Ibuffer_handle);
+	if ( vert_src->Index_list != nullptr ) {
+		gr_heap_allocate(GpuHeap::ModelIndex, vert_src->Index_list_size, vert_src->Index_list.get(), vert_src->Index_offset, vert_src->Ibuffer_handle);
 
-		vm_free(vert_src->Index_list);
-		vert_src->Index_list = NULL;
+		vert_src->Index_list.reset();
 	}
 }
 
@@ -1908,30 +1913,26 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 
 	int i, n_verts = 0;
 	size_t j;
-	if ( vert_src->Vertex_list == NULL ) {
-		vert_src->Vertex_list = vm_malloc(vert_src->Vertex_list_size);
+	if ( vert_src->Vertex_list == nullptr ) {
+		vert_src->Vertex_list = make_shared<uint8_t[]>(vert_src->Vertex_list_size);
 
 		// return invalid if we don't have the memory
-		if ( vert_src->Vertex_list == NULL ) {
+		if ( vert_src->Vertex_list == nullptr ) {
 			return false;
 		}
-
-		memset(vert_src->Vertex_list, 0, vert_src->Vertex_list_size);
 	}
 
-	if ( vert_src->Index_list == NULL ) {
-		vert_src->Index_list = vm_malloc(vert_src->Index_list_size);
+	if ( vert_src->Index_list == nullptr ) {
+		vert_src->Index_list = make_shared<uint8_t[]>(vert_src->Index_list_size);
 
 		// return invalid if we don't have the memory
-		if ( vert_src->Index_list == NULL ) {
+		if ( vert_src->Index_list == nullptr ) {
 			return false;
 		}
-
-		memset(vert_src->Index_list, 0, vert_src->Index_list_size);
 	}
 
 	// bump to our index in the array
-	auto array = reinterpret_cast<interp_vertex*>(static_cast<uint8_t*>(vert_src->Vertex_list) + (vb->vertex_offset));
+	auto array = reinterpret_cast<interp_vertex*>(vert_src->Vertex_list.get() + vb->vertex_offset);
 
 	// generate the vertex array
 	n_verts = vb->model_list->n_verts;
@@ -1997,7 +1998,7 @@ bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb
 		const uint *index = tex_buf->get_index();
 
 		// bump to our spot in the buffer
-		auto ibuf = static_cast<uint8_t*>(vert_src->Index_list) + offset;
+		auto ibuf = vert_src->Index_list.get() + offset;
 
 		if ( vb->tex_buf[j].flags & VB_FLAG_LARGE_INDEX ) {
 			memcpy(ibuf, index, n_verts * sizeof(uint));
@@ -2109,7 +2110,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	int milliseconds = timer_get_milliseconds();
 
-	auto bsp_polies = new bsp_polygon_data(model->bsp_data, model->bsp_data_size);
+	auto bsp_polies = new bsp_polygon_data(model->bsp_data.get(), model->bsp_data_size);
 
 	auto textureReplace = deferredTasks.texture_replacements.find(mn);
 	if (textureReplace != deferredTasks.texture_replacements.end())
@@ -2141,9 +2142,9 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	if ( outline_n_lines > 0 ) {
 		model->n_verts_outline = outline_n_lines * 2;
-		model->outline_buffer = (vertex*)vm_malloc(sizeof(vertex) * model->n_verts_outline);
+		model->outline_buffer = make_shared<vertex[]>(model->n_verts_outline);
 
-		bsp_polies->generate_lines(-1, model->outline_buffer);
+		bsp_polies->generate_lines(-1, model->outline_buffer.get());
 	}
 
 	// done with the bsp now that we have the vertex data
@@ -2391,8 +2392,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 	SCP_vector<buffer_data> &tex_buffers = pm->submodel[mn].buffer.tex_buf;
 	uint current_tri[NUM_VERTS_PER_TRI];
-	bool transparent_tri = false;
-	int num_tris = 0;
+	SCP_vector<int> transparent_indices;
 
 	for ( int i = 0; i < (int)tex_buffers.size(); ++i ) {
 		buffer_data *tex_buf = &tex_buffers[i];
@@ -2422,13 +2422,21 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 			continue;
 		}
 
-		SCP_vector<int> transparent_indices;
-
-		transparent_tri = false;
-		num_tris = 0;
+		bool transparent_tri = false;
+		transparent_indices.clear();
 
 		for ( size_t j = 0; j < tex_buf->n_verts; ++j ) {
-			uint index = indices[j];
+			if ( j % NUM_VERTS_PER_TRI == 0 && j != 0 && transparent_tri ) {
+				transparent_tri = false;
+
+				// we have a triangle and it's transparent. 
+				// shove index into the transparency buffer
+ 				transparent_indices.push_back(current_tri[0]);
+ 				transparent_indices.push_back(current_tri[1]);
+ 				transparent_indices.push_back(current_tri[2]);
+			}
+
+			const uint index = indices[j];
 
 			// need the uv coords of the vert at this index
 			float u = model_list->vert[index].texture_position.u;
@@ -2438,21 +2446,7 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 				transparent_tri = true;
 			}
 
-			current_tri[num_tris] = index;
-			num_tris++;
-
-			if ( num_tris == NUM_VERTS_PER_TRI ) {
-				if ( transparent_tri ) {
-					// we have a triangle and it's transparent. 
-					// shove index into the transparency buffer
-					transparent_indices.push_back(current_tri[0]);
-					transparent_indices.push_back(current_tri[1]);
-					transparent_indices.push_back(current_tri[2]);
-				}
-
-				transparent_tri = false;
-				num_tris = 0;
-			}
+			current_tri[j % NUM_VERTS_PER_TRI] = index;
 		}
 
 		if ( transparent_indices.empty() ) {
@@ -2466,6 +2460,10 @@ void interp_create_transparency_index_buffer(polymodel *pm, int mn)
 
 		buffer_data &new_buff = trans_buffer->tex_buf.back();
 		new_buff.texture = tex_buf->texture;
+
+		if ( transparent_indices.size() > USHRT_MAX ) {
+			new_buff.flags |= VB_FLAG_LARGE_INDEX;
+		}
 
 		for ( int j = 0; j < (int)transparent_indices.size(); ++j ) {
 			new_buff.assign(j, transparent_indices[j]);
@@ -2516,14 +2514,16 @@ void model_interp_process_shield_mesh(polymodel * pm)
 	}
 	
 	if ( !buffer.empty() ) {
-		pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
-		pm->shield.buffer_n_verts = n_verts;
-		gr_update_buffer_data(pm->shield.buffer_id, buffer.size() * sizeof(vec3d), &buffer[0]);
+		if (*pm->shield.buffer_id == gr_buffer_handle::invalid()) {
+			*pm->shield.buffer_id = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
+			pm->shield.buffer_n_verts = n_verts;
+			gr_update_buffer_data(*pm->shield.buffer_id, buffer.size() * sizeof(vec3d), buffer.data());
 
-		pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
-		pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+			pm->shield.layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d) * 2, 0);
+			pm->shield.layout.add_vertex_component(vertex_format_data::NORMAL, sizeof(vec3d) * 2, sizeof(vec3d));
+		}
 	} else {
-		pm->shield.buffer_id = gr_buffer_handle::invalid();
+		*pm->shield.buffer_id = gr_buffer_handle::invalid();
 	}
 }
 
@@ -2962,6 +2962,11 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 		return;
 	}
 
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP chunk with invalid texture id (%d)!", pof_tex);
+		return;
+	}
+
 	p = &bsp_data[offset + TMAP_NORMAL];
 
 	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
@@ -3025,6 +3030,11 @@ void bsp_polygon_data::process_tmap2(int offset, ubyte* bsp_data)
 
 	if (n_vert < 3) {
 		Error(LOCATION, "Model contains TMAP2 chunk with less than 3 vertices!");
+		return;
+	}
+
+	if (pof_tex < 0 || pof_tex >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", pof_tex);
 		return;
 	}
 
@@ -3233,5 +3243,5 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 }
 
 SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
-	return bsp_polygon_data{ pm->submodel[submodel].bsp_data, pm->submodel[submodel].bsp_data_size }.get_textures_used();
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data.get(), pm->submodel[submodel].bsp_data_size }.get_textures_used();
 }

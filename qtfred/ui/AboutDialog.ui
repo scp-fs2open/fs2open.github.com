@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>756</width>
-    <height>233</height>
+    <width>720</width>
+    <height>260</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>About qtFRED</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
+  <layout class="QHBoxLayout" name="mainLayout">
    <property name="sizeConstraint">
     <enum>QLayout::SetFixedSize</enum>
    </property>
-   <item row="0" column="0" rowspan="3" alignment="Qt::AlignHCenter|Qt::AlignVCenter">
-    <widget class="QLabel" name="label_7">
+   <item>
+    <widget class="QLabel" name="logoLabel">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -40,48 +40,24 @@
      <property name="text">
       <string/>
      </property>
-     <property name="pixmap">
-      <pixmap resource="../resources/resources.qrc">:/images/V_fred.ico</pixmap>
-     </property>
-     <property name="scaledContents">
-      <bool>true</bool>
-     </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
      </property>
-     <property name="wordWrap">
-      <bool>false</bool>
-     </property>
     </widget>
    </item>
-   <item row="0" column="1" rowspan="11">
-    <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QVBoxLayout" name="textLayout">
      <item>
       <widget class="QLabel" name="labelVersion">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
        <property name="text">
-        <string>qtFRED - FreeSpace Editor, Version xx.yy.zz</string>
+        <string/>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_3">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QLabel" name="labelCopyright">
        <property name="text">
-        <string>Based on FRED2_OPEN: Copyright © 1999 Volition, Inc. All Rights Reserved</string>
-       </property>
-       <property name="wordWrap">
-        <bool>false</bool>
+        <string/>
        </property>
       </widget>
      </item>
@@ -102,50 +78,29 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_4">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QLabel" name="labelQtFREDCredits">
        <property name="text">
-        <string>qtFRED port done by groscask (Initial port), DahBlount, m!m, and z64555.</string>
+        <string/>
        </property>
        <property name="wordWrap">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_5">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QPushButton" name="scpCreditsButton">
        <property name="text">
-        <string>Ported to OpenGL by RandomTiger</string>
-       </property>
-       <property name="wordWrap">
-        <bool>false</bool>
+        <string>Supported by the entire SCP team</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_6">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QLabel" name="labelGraphicsCredits">
        <property name="text">
-        <string>Original FSO OpenGL port by Phreak and Fry_Day</string>
+        <string/>
        </property>
        <property name="wordWrap">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -157,18 +112,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
-       </property>
+      <widget class="QLabel" name="labelQuote">
        <property name="text">
-        <string>&quot;FRED2 is the omega of all giant unwieldy pieces of code. It's big, it's horrifying, and it just doesn't care. View it at your own risk.&quot; - Dave Baranec</string>
+        <string/>
        </property>
        <property name="wordWrap">
         <bool>true</bool>
@@ -190,8 +136,8 @@
      </item>
     </layout>
    </item>
-   <item row="0" column="2" rowspan="11">
-    <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QVBoxLayout" name="buttonLayout">
      <item>
       <widget class="QDialogButtonBox" name="okBox">
        <property name="sizePolicy">
@@ -204,26 +150,26 @@
         <enum>Qt::Vertical</enum>
        </property>
        <property name="standardButtons">
-        <set>QDialogButtonBox::Ok</set>
+        <set>QDialogButtonBox::Close</set>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonReportBug">
+      <widget class="QPushButton" name="reportBugButton">
        <property name="text">
         <string>Report a Bug</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonVisitForums">
+      <widget class="QPushButton" name="visitForumsButton">
        <property name="text">
         <string>Visit Forums</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="buttonAboutQt">
+      <widget class="QPushButton" name="aboutQtButton">
        <property name="text">
         <string>About Qt</string>
        </property>
@@ -249,22 +195,5 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>okBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::AboutDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

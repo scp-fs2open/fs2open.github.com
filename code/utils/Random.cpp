@@ -1,4 +1,5 @@
 #include "Random.h"
+#include "RandomRange.h"
 
 #include <limits>
 #include <random>
@@ -8,6 +9,9 @@
 #include "globalincs/pstypes.h"
 
 namespace util {
+
+thread_local std::mt19937 seeder {std::random_device()()};
+
 namespace {
 template <typename RngType>
 class RandomImpl {

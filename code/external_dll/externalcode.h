@@ -3,7 +3,6 @@
 
 #include "globalincs/pstypes.h"
 
-#include <SDL_loadso.h>
 
 /* This class loads external libraries for FSO use.
 * Uses SDL to do the actual loading so this should be supported on most platforms
@@ -23,12 +22,39 @@ public:
 	}
 
 protected:
-	bool LoadExternal( const char* externlib )
+	bool LoadExternal( const char* externlib, const char* basePath = nullptr )
 	{
 		if ( !externlib )
 			return FALSE;
 		
 		m_library = SDL_LoadObject(externlib);
+		
+#ifdef __ANDROID__
+		if (m_library == NULL) {
+			auto android_path = SDL_GetAndroidInternalStoragePath();
+			if (android_path != nullptr) {
+				SCP_string android_full_path = android_path;
+				if (android_full_path.back() != DIR_SEPARATOR_CHAR) {
+					android_full_path += DIR_SEPARATOR_CHAR;
+				}
+				android_full_path += SCP_string("natives") + DIR_SEPARATOR_CHAR + externlib;
+				#ifndef NDEBUG
+					mprintf(("Calling SDL_LoadObject with the following path: '%s'\n", android_full_path.c_str()));
+				#endif
+				m_library = SDL_LoadObject(android_full_path.c_str());
+			}
+		}
+#endif
+
+		// check full path as a fallback for our own libraries
+		// NOTE: basePath is assumed to have a trailing slash!
+		if ( !m_library && basePath )
+		{
+			SCP_string fullpath = basePath;
+			fullpath += externlib;
+
+			m_library = SDL_LoadObject(fullpath.c_str());
+		}
 
 #ifndef NDEBUG
 		if (m_library == NULL)
@@ -44,7 +70,7 @@ protected:
 	{
 		if (m_library != NULL && functionname != NULL)
 		{
-			void* func = SDL_LoadFunction(m_library, functionname);
+			void* func = reinterpret_cast<void *>(SDL_LoadFunction(m_library, functionname));
 
 #ifndef NDEBUG
 			if (func == NULL)
@@ -66,7 +92,7 @@ protected:
 	}
 
 private:
-	void* m_library;
+	SDL_SharedObject* m_library;
 };
 
 /* These are available if you're compiling an external DLL

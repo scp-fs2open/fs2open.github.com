@@ -150,7 +150,7 @@ ContainerType sexp_container::get_data_type() const
 
 bool sexp_container::name_matches(const sexp_container &container) const
 {
-	return !stricmp(container.container_name.c_str(), container_name.c_str());
+	return lcase_equal(container.container_name, container_name);
 }
 
 bool sexp_container::empty() const
@@ -165,7 +165,7 @@ int sexp_container::size() const
 	} else if (is_map()) {
 		return (int)map_data.size();
 	} else {
-		UNREACHABLE("Unknown container type %d", (int)type);
+		UNREACHABLE("Unknown container type %d", static_cast<int>(type));
 		return 0;
 	}
 }
@@ -205,7 +205,7 @@ const SCP_string &sexp_container::get_value_at_index(int index) const
 		// since map_data uses a custom hash function
 		return std::next(map_data.cbegin(), index)->first;
 	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), static_cast<int>(type));
 		return *list_data.cbegin(); // gibberish
 	}
 }
@@ -239,7 +239,7 @@ SCP_string sexp_container::apply_list_modifier(ListModifier modifier, int data_i
 			return list_get_at(data_index);
 
 		default:
-			UNREACHABLE("Unhandled list modifier %d. Please report!", (int)modifier);
+			UNREACHABLE("Unhandled list modifier %d. Please report!", static_cast<int>(modifier));
 			return "";
 	}
 }
@@ -320,7 +320,7 @@ const char *get_list_modifier_name(const ListModifier modifier)
 		}
 	}
 
-	UNREACHABLE("get_list_modifier_name() given unknown modifier %d", (int)modifier);
+	Assertion(false, "get_list_modifier_name() given unknown modifier %d", static_cast<int>(modifier));
 	return Empty_str;
 }
 
@@ -807,21 +807,9 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 	} else {
 		UNREACHABLE("Container %s has invalid type (%d). Please report!",
 			container.container_name.c_str(),
-			(int)container.type);
+			static_cast<int>(container.type));
 		return false;
 	}
-}
-
-// inspired by sexp_campaign_file_variable_count()
-bool sexp_container_has_persistent_non_eternal_containers()
-{
-	for (const auto &container : Sexp_containers) {
-		if (container.is_persistent() && !container.is_eternal()) {
-			return true;
-		}
-	}
-
-	return false;
 }
 
 const char *sexp_container_CTEXT(int node)
@@ -860,7 +848,7 @@ const char *sexp_container_CTEXT(int node)
 
 		if (result.front() != sexp_container::DELIM) {
 			if (!Sexp_nodes[node].cache) {
-				Sexp_nodes[node].cache = new sexp_cached_data(OPF_CONTAINER_NAME, result);
+				Sexp_nodes[node].cache = std::make_unique<sexp_cached_data>(OPF_CONTAINER_NAME, result);
 			} else {
 				Sexp_nodes[node].cache->update_container_CTEXT_result(result);
 			}
@@ -920,7 +908,7 @@ int sexp_is_container_empty(int node)
 			return SEXP_TRUE;
 		}
 	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 	}
 
 	return SEXP_FALSE;
@@ -943,7 +931,7 @@ int sexp_get_container_size(int node)
 	} else if (container.is_list()) {
 		return (int)container.list_data.size();
 	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 		return 0;
 	}
 }
@@ -1417,7 +1405,7 @@ void sexp_clear_container(int node)
 		} else if (container.is_list()) {
 			container.list_data.clear();
 		} else {
-			UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+			UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 		}
 	}
 }
@@ -1493,7 +1481,7 @@ void sexp_copy_container(int node)
 			add_to_map_internal(dest_container, kv_pair.first, kv_pair.second);
 		}
 	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", src_container_name, (int)src_container.type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", src_container_name, static_cast<int>(src_container.type));
 	}
 }
 
@@ -1587,7 +1575,7 @@ void sexp_apply_container_filter(int node)
 			container.map_data.erase(filter_data);
 		}
 	} else {
-		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 	}
 }
 
@@ -1700,7 +1688,7 @@ int collect_container_values(int node,
 					}
 				}
 			} else {
-				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, (int)container.type);
+				UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name, static_cast<int>(container.type));
 			}
 		}
 	}

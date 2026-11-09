@@ -69,5 +69,19 @@ ADE_VIRTVAR(Alpha,
 	return colorVarHelper(L, &color::alpha);
 }
 
+ADE_FUNC(copy,
+	l_Color,
+	nullptr,
+	"Returns a copy of the color",
+	"color",
+	"The copy, or null color on failure")
+{
+	color* clr = nullptr;
+	if (!ade_get_args(L, "o", l_Color.GetPtr(&clr)))
+		return ade_set_error(L, "o", l_Color.Set(color()));
+
+	return ade_set_args(L, "o", l_Color.Set(*clr));
+}
+
 } // namespace api
 } // namespace scripting

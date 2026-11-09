@@ -2,69 +2,65 @@
 
 #include "../AbstractDialogModel.h"
 
-namespace fso {
-	namespace fred {
-		namespace dialogs {
-			class ShipSpecialStatsDialogModel : public AbstractDialogModel {
-			private:
-				int m_ship;
+namespace fso::fred::dialogs {
 
-				int num_selected_ships;
-				SCP_vector<int> m_selected_ships;
-				//Special Explosion
-				bool m_special_exp;
-				bool m_shockwave;
-				bool m_deathRoll;
-				int m_inner_rad;
-				int m_outer_rad;
-				int m_damage;
-				int m_shock_speed;
-				int m_duration;
-				int m_blast;
+class ShipSpecialStatsDialogModel : public AbstractDialogModel {
+	Q_OBJECT
+  public:
+	ShipSpecialStatsDialogModel(QObject* parent, EditorViewport* viewport);
 
-				//Special Hits
-				bool m_special_hitpoints_enabled;
-				bool m_special_shield_enabled;
-				int m_shields;
-				int m_hull;
+	bool apply() override;
+	void reject() override;
 
+	bool getSpecialExp() const;
+	void setSpecialExp(bool specialExp);
+	bool getShockwave() const;
+	void setShockwave(bool shockwave);
+	bool getDeathRoll() const;
+	void setDeathRoll(bool deathRoll);
+	int getDamage() const;
+	void setDamage(int damage);
+	int getBlast() const;
+	void setBlast(int blast);
+	int getInnerRadius() const;
+	void setInnerRadius(int innerRadius);
+	int getOuterRadius() const;
+	void setOuterRadius(int outerRadius);
+	int getShockwaveSpeed() const;
+	void setShockwaveSpeed(int speed);
+	int getRollDuration() const;
+	void setRollDuration(int duration);
 
-			public:
-				ShipSpecialStatsDialogModel(QObject* parent, EditorViewport* viewport);
-			  void initializeData();
-				bool apply() override;
-				void reject() override;
+	bool getSpecialShield() const;
+	void setSpecialShield(bool specialShield);
+	int getShield() const;
+	void setShield(int shield);
+	bool getSpecialHull() const;
+	void setSpecialHull(bool specialHull);
+	int getHull() const;
+	void setHull(int hull);
 
-				//Exp Get/Setters
-				bool getSpecialExp() const;
-				void setSpecialExp(const bool);
-				bool getShockwave() const;
-				void setShockwave(const bool);
-				bool getDeathRoll() const;
-				void setDeathRoll(const bool);
-				int getDamage() const;
-				void setDamage(const int);
-				int getBlast() const;
-				void setBlast(const int);
-				int getInnerRadius() const;
-				void setInnerRadius(const int);
-				int getOuterRadius() const;
-				void setOuterRadius(const int);
-				int getShockwaveSpeed() const;
-				void setShockwaveSpeed(const int);
-				int getRollDuration() const;
-				void setRollDuration(const int);
+  private: // NOLINT(readability-redundant-access-specifiers)
+	void initializeData();
 
-				//Hit Get/Setters
-				bool getSpecialShield() const;
-				void setSpecialShield(const bool);
-				int getShield() const;
-				void setShield(const int);
-				bool getSpecialHull() const;
-				void setSpecialHull(const bool);
-				int getHull() const;
-				void setHull(const int);
-			};
-		}
-	}
-}
+	int _ship;
+	int _numSelectedShips;
+	SCP_vector<int> _selectedShips;
+
+	bool _specialExp;
+	bool _shockwave;
+	bool _deathRoll;
+	int _innerRad;
+	int _outerRad;
+	int _damage;
+	int _shockSpeed;
+	int _duration;
+	int _blast;
+
+	bool _specialHitpointsEnabled;
+	bool _specialShieldEnabled;
+	int _shields;
+	int _hull;
+};
+
+} // namespace fso::fred::dialogs

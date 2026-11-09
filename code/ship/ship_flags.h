@@ -292,6 +292,7 @@ namespace Ship {
 		Same_departure_warp_when_docked,	// Goober5000
 		No_first_wave_message,		// don't play arrival message for the first wave
 		Waypoints_no_formation, // wing will not try to form up when running a waypoint together
+		Has_display_name,			// Goober5000
 
 		NUM_VALUES
 	};

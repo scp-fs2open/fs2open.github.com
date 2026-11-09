@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Alt Ship Class - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; <a href="ShipEditorDialog.html">Ship Editor</a> &rsaquo; Alt Ship Class</nav>
+<h1>Alt Ship Class</h1>
+<p>Accessed via the <strong>Alt Ship Class</strong> button in the <a href="ShipEditorDialog.html">Ship Editor</a>.</p>
+<p>Defines a prioritized fallback chain of ship classes to substitute if this ship's
+primary class is unavailable at mission load. The engine tries the primary class
+first, then works through the alt class list in order, assigning the first class
+that qualifies. This is primarily useful in campaign missions where the available
+ship pool can vary based on earlier choices or loadout configuration.</p>
+
+<h2>The alt class list</h2>
+<p>Each entry in the list is one fallback candidate. Order matters. The engine tries
+them top to bottom and stops at the first one it can use. Use the
+<strong>Up</strong> and <strong>Down</strong> buttons to reorder entries.
+<strong>Add</strong> and <strong>Insert</strong> create new entries;
+<strong>Delete</strong> removes the selected one.</p>
+
+<h2>Entry properties</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>From Ship</td><td>A fixed ship class chosen directly from the available
+        classes. The class is resolved at mission load.</td></tr>
+    <tr><td>From Variable</td><td>A string variable whose value names the ship class
+        to use. The variable is read at mission load, so the class can be set
+        dynamically by earlier SEXPs in the campaign.</td></tr>
+    <tr><td>Default to this class</td><td>Controls how the engine checks availability.
+        When unchecked, the engine assigns this class immediately without checking
+        whether any slots remain in the loadout. When checked, the engine first
+        verifies that ships of this class are still available in the loadout; if
+        none remain, it skips this entry and tries the next one.</td></tr>
+</table>
+</body>
+</html>

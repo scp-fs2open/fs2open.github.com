@@ -37,9 +37,10 @@ void FictionViewerDialog::accept()
 {
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
+		ui->musicWidget->stopPlayback();
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void FictionViewerDialog::reject()
@@ -48,6 +49,7 @@ void FictionViewerDialog::reject()
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		ui->musicWidget->stopPlayback();
 		QDialog::reject(); // actually close
 	}
 	// else: do nothing, don't close
@@ -56,7 +58,15 @@ void FictionViewerDialog::reject()
 void FictionViewerDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void FictionViewerDialog::initializeUi()
@@ -65,35 +75,16 @@ void FictionViewerDialog::initializeUi()
 	ui->fontFileEdit->setMaxLength(_model->getMaxFontFileLength());
 	ui->voiceFileEdit->setMaxLength(_model->getMaxVoiceFileLength());
 
-	updateMusicComboBox();
 }
 
-void FictionViewerDialog::updateUi() {
+void FictionViewerDialog::updateUi()
+{
 	util::SignalBlockers blockers(this);
 
 	ui->storyFileEdit->setText(QString::fromStdString(_model->getStoryFile()));
 	ui->fontFileEdit->setText(QString::fromStdString(_model->getFontFile()));
 	ui->voiceFileEdit->setText(QString::fromStdString(_model->getVoiceFile()));
-	ui->musicComboBox->setCurrentIndex(ui->musicComboBox->findData(_model->getFictionMusic()));
-}
-
-void FictionViewerDialog::updateMusicComboBox()
-{
-	util::SignalBlockers blockers(this);
-	
-	ui->musicComboBox->clear();
-
-	const auto& musicOptions = _model->getMusicOptions();
-
-	if (musicOptions.empty()) {
-		ui->musicComboBox->setEnabled(false);
-		return;
-	}
-
-	ui->musicComboBox->setEnabled(true);
-	for (const auto& option : musicOptions) {
-		ui->musicComboBox->addItem(QString::fromStdString(option.first), option.second);
-	}
+	ui->musicWidget->setCurrentMusicIndex(_model->getFictionMusic());
 }
 
 void FictionViewerDialog::on_okAndCancelButtons_accepted()
@@ -121,9 +112,9 @@ void FictionViewerDialog::on_voiceFileEdit_textChanged(const QString& text)
 	_model->setVoiceFile(text.toUtf8().constData());
 }
 
-void FictionViewerDialog::on_musicComboBox_currentIndexChanged(int index)
+void FictionViewerDialog::on_musicWidget_currentIndexChanged(int spooledMusicIdx)
 {
-	_model->setFictionMusic(ui->musicComboBox->itemData(index).value<int>());
+	_model->setFictionMusic(spooledMusicIdx);
 }
 
 } // namespace fso::fred::dialogs

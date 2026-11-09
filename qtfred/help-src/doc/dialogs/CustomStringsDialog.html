@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Custom Strings - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; <a href="MissionSpecsDialog.html">Mission Specs</a> &rsaquo; Custom Strings</nav>
+<h1>Custom Strings</h1>
+<p>Accessed via <strong>Custom Strings</strong> in the <a href="MissionSpecsDialog.html">Mission Specs</a> dialog.</p>
+<p>Attaches arbitrary key-value-text entries to the mission. Each entry has three
+fields: a key for lookup, a value, and a longer text field. The intended use is
+localization support; the value holds an XSTR ID number and the text holds the
+matching string, allowing Lua scripts to resolve translatable strings by key.
+The fields are general purpose and can serve any other use case where a key,
+a value, and a block of text need to be stored together.</p>
+
+<h2>Fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Key</td><td>The name used to look up this entry.</td></tr>
+    <tr><td>Value</td><td>A short string associated with the key, typically an
+        XSTR ID number.</td></tr>
+    <tr><td>Text</td><td>The longer string content, typically the translatable text
+        matching the XSTR ID.</td></tr>
+</table>
+
+<h2>Editing</h2>
+<p>Fill in all three fields and click <strong>Add</strong> to create a new entry.
+Select an entry in the list to load it into the fields, modify as needed, and click
+<strong>Update</strong> to apply changes. Click <strong>Remove</strong> to delete
+the selected entry.</p>
+</body>
+</html>

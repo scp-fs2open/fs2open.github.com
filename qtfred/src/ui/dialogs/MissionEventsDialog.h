@@ -5,7 +5,7 @@
 #include <QDialog>
 #include <QListWidget>
 
-#include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/sexp_tree_view.h"
 
 #include <mission/missiongoals.h>
 #include <mission/missionmessage.h>
@@ -31,7 +31,8 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 	void reject() override;
 
 	SCP_vector<SCP_string> getMessages() override;
-	bool hasDefaultMessageParamter() override;
+	bool hasDefaultMessageParameter() override;
+	int getRootReturnType() const override;
 
   protected:
 	void closeEvent(QCloseEvent* event) override;
@@ -43,14 +44,17 @@ private slots:
 	void on_btnNewEvent_clicked();
     void on_btnInsertEvent_clicked();
 	void on_btnDeleteEvent_clicked();
+	void on_eventMoveTopBtn_clicked();
 	void on_eventUpBtn_clicked();
 	void on_eventDownBtn_clicked();
+	void on_eventMoveBottomBtn_clicked();
 
 	void on_repeatCountBox_valueChanged(int value);
 	void on_triggerCountBox_valueChanged(int value);
 	void on_intervalTimeBox_valueChanged(int value);
 	void on_chainedCheckBox_stateChanged(int state);
-	void on_chainedDelayBox_valueChanged(int value);
+	void on_chainDelayBox_valueChanged(int value);
+	void on_useMsecsCheckBox_stateChanged(int state);
 	void on_scoreBox_valueChanged(int value);
 	void on_teamCombo_currentIndexChanged(int index);
 	
@@ -72,8 +76,10 @@ private slots:
 	void on_btnNewMsg_clicked();
 	void on_btnInsertMsg_clicked();
 	void on_btnDeleteMsg_clicked();
+	void on_msgMoveTopBtn_clicked();
 	void on_msgUpBtn_clicked();
 	void on_msgDownBtn_clicked();
+	void on_msgMoveBottomBtn_clicked();
 
 	void on_messageName_textChanged(const QString& text);
 	void on_messageContent_textChanged();
@@ -93,7 +99,6 @@ private slots:
 private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
 	EditorViewport* _viewport;
-	std::unique_ptr<IEventTreeOps> _treeOps;
 	std::unique_ptr<MissionEventsDialogModel> _model;
 
 	int m_last_message_node = -1;
@@ -101,6 +106,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void updateEventUi();
 	void updateEventMoveButtons();
+	void setEventLogEnabled(bool enable);
 	void updateMessageUi();
 	void updateMessageMoveButtons();
 
@@ -122,7 +128,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void initEventWidgets();
 	void updateEventBitmap();
 
-	static SCP_vector<int> read_root_formula_order(sexp_tree* tree);
+	static SCP_vector<int> read_root_formula_order(sexp_tree_view* tree);
 };
 
 } // namespace fso::fred::dialogs

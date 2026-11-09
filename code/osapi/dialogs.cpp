@@ -7,9 +7,6 @@
 #include "scripting/ade.h"
 #include "utils/string_utils.h"
 
-#include <SDL_messagebox.h>
-#include <SDL_clipboard.h>
-
 #include <string>
 #include <algorithm>
 
@@ -69,7 +66,7 @@ namespace
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
-		if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+		if (SDL_InitSubSystem(SDL_INIT_VIDEO))
 		{
 			SDL_SetClipboardText(text);
 		}
@@ -236,29 +233,30 @@ namespace os
 			boxData.title = "Error!";
 			boxData.window = getDialogParent();
 
-			gr_activate(0);
+			gr_activate(false);
 
-			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			int buttonId = -1;	// if dialog is silently suppressed
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
-				buttonId = 1; // No action
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 2:
+			case 2:				// Exit
 				abort();
 
-			case 0:
+			case 0:				// Debug
 				Int3();
 				break;
 
+			case 1:				// Continue
 			default:
 				break;
 			}
 
-			gr_activate(1);
+			gr_activate(true);
 		}
 
 		void Error(const char * filename, int line, const char * format, ...)
@@ -282,6 +280,12 @@ namespace os
 		void Error(const char* text)
 		{
 			mprintf(("\n%s\n", text));
+
+			// also output to stderr so the message is visible if the dialog is suppressed
+			// (e.g., the SDL message box is dismissed silently by the window manager when the
+			// game is fullscreen on Linux)
+			fprintf(stderr, "\n%s\n", text);
+			fflush(stderr);
 
 			if (running_unittests) {
 				throw ErrorException(text);
@@ -320,25 +324,26 @@ namespace os
 			boxData.title = "Error!";
 			boxData.window = getDialogParent();
 
-			gr_activate(0);
+			gr_activate(false);
 
-			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			int buttonId = -1;	// if dialog is silently suppressed
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
-				abort();
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 1:
-				abort();
-
-			default:
+			case 0:				// Debug
 				Int3();
 				break;
+
+			case 1:				// Exit
+			default:
+				abort();
 			}
-			gr_activate(1);
+			gr_activate(true);
 		}
 
 		// Actual implementation of the warning function. Used by the various warning functions
@@ -348,6 +353,12 @@ namespace os
 
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
+
+			// also output to stderr so the message is visible if the dialog is suppressed
+			// (e.g., the SDL message box is dismissed silently by the window manager when the
+			// game is fullscreen on Linux)
+			fprintf(stderr, "WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line);
+			fflush(stderr);
 
 			if (running_unittests) {
 				throw WarningException(text);
@@ -388,29 +399,30 @@ namespace os
 			boxData.title = "Warning!";
 			boxData.window = getDialogParent();
 
-			gr_activate(0);
+			gr_activate(false);
 
-			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			int buttonId = -1;	// if dialog is silently suppressed
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
-				buttonId = 1; // No action
+				buttonId = 1;
 			}
 
 			switch (buttonId)
 			{
-			case 2:
+			case 2:				// Exit
 				abort();
 
-			case 0:
+			case 0:				// Debug
 				Int3();
 				break;
 
+			case 1:				// Continue
 			default:
 				break;
 			}
 
-			gr_activate(1);
+			gr_activate(true);
 		}
 
 
@@ -490,11 +502,11 @@ namespace os
 			SCP_string boxMessage = truncateLines(boxMsgStream, Messagebox_lines);
 			boxMessage += "\n[ This info is in the clipboard so you can paste it somewhere now ]\n";
 
-			gr_activate(0);
+			gr_activate(false);
 
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Information", boxMessage.c_str(), getDialogParent());
 
-			gr_activate(1);
+			gr_activate(true);
 		}
 
 		void Message(MessageType type, const char* message, const char* title)

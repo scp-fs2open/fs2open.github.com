@@ -477,7 +477,7 @@ void pilotfile_convert::csg_import_red_alert()
 		}
 
 		// add to list
-		csg->wingman_status.push_back( ras );
+		csg->wingman_status.push_back( std::move(ras) );
 	}
 }
 

@@ -56,6 +56,10 @@ APPLY_TO_FOV_T(-, sub)
 
 // Used to set the default value for in-game options
 static float fov_default = DEFAULT_FOV;
+static float cockpit_fov_default = DEFAULT_FOV;
+static bool cockpit_fov_toggle_default = false;
+
+bool Use_cockpit_fov = false;
 
 static SCP_string fov_display(float val)
 {
@@ -73,6 +77,22 @@ static void parse_fov_func()
 	fov_default = value;
 }
 
+static void parse_cockpit_fov_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.436332f, 1.5708f);
+	cockpit_fov_default = value;
+}
+
+static void parse_cockpit_fov_toggle_func()
+{
+	bool value;
+	stuff_boolean(&value);
+	cockpit_fov_toggle_default = value;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 std::pair<const char*, int>{"Field Of View", 1703},
 					 std::pair<const char*, int>{"The vertical field of view", 1704})
@@ -89,41 +109,42 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 .parser(parse_fov_func)
 					 .finish();
 
-bool Use_cockpit_fov = false;
-
-auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
-					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
-					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
-					 .category(std::make_pair("Graphics", 1825))
-					 .default_val(false)
-					 .change_listener([](bool val, bool) {
-					      if (!val) {
-					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-					      }
-					      return true; // This option will always persist so we never return false
-					 })
-					 .level(options::ExpertLevel::Advanced)
-					 .bind_to(&Use_cockpit_fov)
-					 .importance(61)
-					 .finish();
-
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto CockpitFovOption = options::OptionBuilder<float>("Graphics.CockpitFOV",
 					 std::pair<const char*, int>{"Cockpit Field Of View", 1840},
 					 std::pair<const char*, int>{"The vertical field of view for cockpit rendering. Only works if cockpits are active and cockpit FOV toggle is turned on.", 1841})
 					 .category(std::make_pair("Graphics", 1825))
 					 .range(0.436332f, 1.5708f)
 					 .change_listener([](const float& val, bool) {
-					      if (Use_cockpit_fov){
-					           COCKPIT_ZOOM_DEFAULT = val;
-						  } else {
-							  COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
-						  }
+					      // Graphics.CockpitFOVToggle has its own listener that re-applies this value, so the
+					      // result is the same whichever of the two options the manager happens to load first.
+					      COCKPIT_ZOOM_DEFAULT = Use_cockpit_fov ? fov_t(val) : VIEWER_ZOOM_DEFAULT;
 					      return true;
 					 })
 					 .display(fov_display)
-					 .default_val(fov_default)
+					 .default_func([]() { return cockpit_fov_default; })
 					 .level(options::ExpertLevel::Advanced)
 					 .importance(62)
+					 .parser(parse_cockpit_fov_func)
+					 .finish();
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVToggle",
+					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
+					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
+					 .category(std::make_pair("Graphics", 1825))
+					 .default_func([]() {return cockpit_fov_toggle_default;})
+					 // This does the work of bind_to(&Use_cockpit_fov) and then re-applies Graphics.CockpitFOV,
+					 // because that option's listener needs Use_cockpit_fov to already hold its final value.
+					 // Doing it here makes the pair of options independent of the order the manager loads them in.
+					 .change_listener([](bool val, bool) {
+					      Use_cockpit_fov = val;
+					      COCKPIT_ZOOM_DEFAULT = val ? fov_t(CockpitFovOption->getValue()) : VIEWER_ZOOM_DEFAULT;
+					      return true; // This option will always persist so we never return false
+					 })
+					 .level(options::ExpertLevel::Advanced)
+					 .importance(61)
+					 .parser(parse_cockpit_fov_toggle_func)
 					 .finish();
 
 //*************************CLASS: camera*************************
@@ -732,6 +753,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		text_buf = in_text;
 		sexp_replace_variable_names_with_values(text_buf);
 		sexp_container_replace_refs_with_values(text_buf);
+		// (message_translate_tokens is called when the subtitle is queued, so does not need to be called here)
 		in_text = text_buf.c_str();
 	}
 

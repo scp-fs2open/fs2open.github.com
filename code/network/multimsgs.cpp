@@ -2204,8 +2204,8 @@ void send_netgame_descript_packet(net_addr *addr, int code)
 	int packet_size = 0;
 
 	// Get this out of the way, because we don't want to waste our time if the addr is bad.
+	Assertion(addr != nullptr, "Net address not specified!");
 	if (addr == nullptr) {
-		UNREACHABLE("Net address not specified!");
 		return;
 	}
 
@@ -2646,7 +2646,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	}
 
 	// maybe set wash_killed
-	if (extra_death_info & EXTRA_DEATH_VAPORIZED) {
+	if (extra_death_info & EXTRA_DEATH_WASHED) {
 		Ships[sobjp->instance].wash_killed = 1;
 	}
 
@@ -3317,7 +3317,7 @@ void process_countermeasure_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating that a turret has been fired
-void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius )
+void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius, float target_forward_speed )
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -3376,6 +3376,8 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	ADD_FLOAT(dist_to_target);
 
 	ADD_FLOAT(target_radius);
+
+	ADD_FLOAT(target_forward_speed);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3398,6 +3400,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	float angle1, angle2;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3415,6 +3418,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_FLOAT( angle2 );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3463,6 +3467,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object
@@ -3470,7 +3475,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
@@ -4046,9 +4051,17 @@ void process_endgame_packet(ubyte * /*data*/, header *hinfo)
 		// do any special processing for being in a state other than the gameplay state
 		multi_handle_state_special();
 
+		// If end-mission fired via SEXP, enter debrief immediately (skipping warp-out).
+		// Stats have already been received via multi_broadcast_stats() which send_endgame_packet()
+		// calls before sending this packet, so scoring_level_close() will see correct kill data.
+		if (Multi_sexp_end_mission_pending) {
+			Multi_sexp_end_mission_pending = false;
+			send_debrief_event();
+		}
+
 		// make sure we're not already in the debrief state
 		if((gameseq_get_state() != GS_STATE_DEBRIEF) && (gameseq_get_state() != GS_STATE_MULTI_DOGFIGHT_DEBRIEF)){
-			multi_warpout_all_players();			
+			multi_warpout_all_players();
 		}
 	}	
 }
@@ -4498,8 +4511,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	// check to see if the type of order is a reinforcement call.  If so, intercept it, and
 	// then call them in.
 	if ( type == SQUAD_MSG_REINFORCEMENT ) {
-		Assert( (index >= 0) && (index < Num_reinforcements) );
-		hud_squadmsg_call_reinforcement(index, player_num);
+		Assert(Reinforcements.in_bounds(index));
+		hud_squadmsg_call_reinforcement(Reinforcements[index], player_num);
 		return;
 	}
 
@@ -6556,11 +6569,13 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	
 	// kill information - alltime
 	switch(stats_code){
-	case STATS_ALLTIME:	
+	case STATS_ALLTIME:
 		// alltime kills
+		// Wire protocol packs offset/count as USHORT; bump to wider field if ship_info_size() ever exceeds USHRT_MAX.
+		Assertion(sc->kills.size() <= USHRT_MAX, "ship_info_size() exceeds STATS_ALLTIME_KILLS packet's USHORT field width");
 		idx = 0;
-		while (idx < MAX_SHIP_CLASSES) {
-			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+		while (idx < sz2i(sc->kills.size())) {
+			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, idx, sz2i(sc->kills.size())-idx);
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 
@@ -6592,11 +6607,12 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_INT(sc->last_backup);  // should be 32-bit value - taylor
 		break;
 
-	case STATS_MISSION:	
-		// mission OKkills	
+	case STATS_MISSION:
+		// mission OKkills
+		Assertion(sc->m_okKills.size() <= USHRT_MAX, "ship_info_size() exceeds STATS_MISSION_CLASS_KILLS packet's USHORT field width");
 		idx = 0;
-		while (idx < MAX_SHIP_CLASSES) {
-			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, MAX_SHIP_CLASSES-idx);
+		while (idx < sz2i(sc->m_okKills.size())) {
+			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, idx, sz2i(sc->m_okKills.size())-idx);
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 	
@@ -6639,7 +6655,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_USHORT(static_cast<ushort>(offset));
 		ADD_USHORT(static_cast<ushort>(len));
 
-		for (idx = offset; idx < len; idx++) {
+		for (idx = offset; idx < offset + len; idx++) {
 			ADD_INT(sc->m_okKills[idx]);
 		}
 		break;
@@ -6650,7 +6666,7 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_USHORT(static_cast<ushort>(offset));
 		ADD_USHORT(static_cast<ushort>(len));
 
-		for (idx = offset; idx < len; idx++) {
+		for (idx = offset; idx < offset + len; idx++) {
 			ADD_INT(sc->kills[idx]);
 		}
 		break;
@@ -6712,7 +6728,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < MAX_SHIP_CLASSES) {
+			if (sc->kills.in_bounds(idx)) {
 				sc->kills[idx] = i_tmp;
 			}
 		}
@@ -6725,7 +6741,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = si_offset; idx < si_offset+si_count; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < MAX_SHIP_CLASSES) {
+			if (sc->m_okKills.in_bounds(idx)) {
 				sc->m_okKills[idx] = i_tmp;
 			}
 		}
@@ -7604,7 +7620,7 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	if ( homing_object->type == OBJ_WEAPON ) {
 		auto flags_check = Weapon_info[Weapons[homing_object->instance].weapon_info_index].wi_flags;
 
-		if ( !((flags_check[Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure])) ) {
+		if (flags_check.none_of(Weapon::Info_Flags::Bomb, Weapon::Info_Flags::Cmeasure)) {
 			nprintf(("Network", "Homing object is invalid for homing update\n"));
 			return;
 		}
@@ -7622,7 +7638,8 @@ void process_homing_weapon_info( ubyte *data, header *hinfo )
 	}
 
 	if (flags & HWIF_BIG_UPDATE) {
-		wp->creation_time = Missiontime + missile_lifetime;
+		// the sender packed the missile's age, so walk creation_time back from now to recover it
+		wp->creation_time = Missiontime - missile_lifetime;
 		weapon_objp->pos = missile_pos;
 		weapon_objp->orient = orient_in;
 		wp->launch_speed = launch_speed;
@@ -7697,7 +7714,7 @@ void process_reinforcement_avail( ubyte *data, header *hinfo )
 	PACKET_SET_SIZE();
 
 	// sanity check for a valid reinforcement number
-	if ( (rnum >= 0) && (rnum < Num_reinforcements) ) {
+	if (Reinforcements.in_bounds(rnum)) {
 		Reinforcements[rnum].flags |= RF_IS_AVAILABLE;
 	}
 }
@@ -7837,7 +7854,7 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
 	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = static_cast<ushort>(timestamp_since(multi_client_lookup_frame_timestamp()));
+	auto time_elapsed = static_cast<ushort>(Multi_Timing_Info.get_current_time() - multi_client_lookup_frame_timestamp());
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);
@@ -7931,7 +7948,7 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	object* objp_ref = multi_get_network_object(target_ref);
 
-	if (objp_ref == nullptr || objp_ref->type != OBJ_SHIP) {
+	if ((Is_standalone && !Multi_options_g.std_rollback) || !objp_ref || (objp_ref->type != OBJ_SHIP)) {
 		// new way failed, use the old new way.
 
 		if (objp_ref != nullptr){
@@ -8365,6 +8382,12 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 	fire_info.target = multi_get_network_object(target_sig);
 	fire_info.burst_index = 0;
 
+	// the weapon class arrives over the network, so validate it before using it to index Weapon_info
+	if (!Weapon_info.in_bounds(fire_info.beam_info_index)) {
+		nprintf(("Network", "Received invalid weapon class %d for BEAM weapon!\n", fire_info.beam_info_index));
+		return;
+	}
+
 	if ( fire_info.target && (target_subsys_index >= 0) ) {
 		ship *targetp = &Ships[fire_info.target->instance];
 		fire_info.target_subsys = ship_get_indexed_subsys(targetp, target_subsys_index);
@@ -8377,12 +8400,14 @@ void process_beam_fired_packet(ubyte *data, header *hinfo)
 			Assertion(bank >= 0, "Fighter BEAM bank is invalid!");
 			Assertion(point >= 0, "Fighter BEAM point is invalid!");
 
-			if ( (bank < 0) || (point < 0) ) {
+			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
+
+			// the bank and point also arrive over the network, so validate them against the model
+			if ( (bank < 0) || (bank >= pm->n_guns) || (point < 0) || (point >= pm->gun_banks[bank].num_slots) ) {
 				nprintf(("Network", "Couldn't get firing point for fighter BEAM weapon!\n"));
 				return;
 			}
 
-			polymodel *pm = model_get( Ship_info[shipp->ship_info_index].model_num );
 			float field_of_fire = Weapon_info[fire_info.beam_info_index].field_of_fire;
 
 			fire_info.local_fire_postion = pm->gun_banks[bank].pnt[point];
@@ -8622,7 +8647,7 @@ void process_weapon_detonate_packet(ubyte *data, header *hinfo)
 }	
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius)
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius, float target_forward_speed)
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -8674,6 +8699,8 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	ADD_FLOAT( dist_to_target );
 
 	ADD_FLOAT( target_radius );
+
+	ADD_FLOAT( target_forward_speed );
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8695,6 +8722,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	float flak_range;
 	float dist_to_target;
 	float target_radius;
+	float target_forward_speed;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
@@ -8707,6 +8735,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( flak_range );
 	GET_FLOAT( dist_to_target );
 	GET_FLOAT( target_radius );
+	GET_FLOAT( target_forward_speed );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -8754,10 +8783,11 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		ssp->system_info->turret_num_firing_points,
 		dist_to_target,
 		target_radius,
+		target_forward_speed,
 	};
 
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, nullptr, -1, -1, launch_curve_data);
 	if (weapon_objnum != -1) {
 		const weapon_info& wip = Weapon_info[wid];
 		if ( wip.launch_snd.isValid() ) {
@@ -8775,7 +8805,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(wip.muzzle_effect);
 			//This could potentially be attached to the ship, but might look weird if the spawn position of the weapon is ever interpolated away from the ship's barrel.
-			particleSource->setHost(make_unique<EffectHostVector>(pos, orient, objp->phys_info.vel));
+			particleSource->setHost(std::make_unique<EffectHostVector>(pos, orient, objp->phys_info.vel));
 			particleSource->setTriggerRadius(wp_obj.radius * radius_mult);
 			particleSource->setTriggerVelocity(vm_vec_mag_quick(&wp_obj.phys_info.vel));
 			particleSource->finishCreation();

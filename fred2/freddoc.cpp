@@ -36,7 +36,9 @@
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "mission/missiongoals.h"
+#include "mission/missiongrid.h"
 #include "mission/missionparse.h"
+#include "missioneditor/common.h"
 #include "object/object.h"
 #include "render/3d.h"
 #include "ship/ship.h"
@@ -226,15 +228,26 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	chdir(Fred_base_dir);
 
 	char name[512], *old_name;
-	int i, j, k, ob;
-	int used_pool[MAX_WEAPON_TYPES];
+	int i, j, ob;
+	SCP_map<int, int> used_pool;
 	object *objp;
 
 	Parse_viewer_pos = view_pos;
 	Parse_viewer_orient = view_orient;
 
+	// preserve the editor grid across the reload; it's display state, not part of the mission,
+	// but clear_mission() recreates it via fred_render_init().  (See the view_pos/view_orient handling above and below.)
+	matrix grid_orient = The_grid->gmatrix;
+	vec3d grid_center = The_grid->center;
+	int grid_nrows = The_grid->nrows;
+	int grid_ncols = The_grid->ncols;
+	float grid_square_size = The_grid->square_size;
+
 	// activate the localizer hash table
 	fhash_flush();
+
+	// Guard against reentrant ship-editor write-back while the mission is loaded.  The guard is released once the mission has stabilized.
+	Ship_editor_dialog.bypass_all++;
 
 	clear_mission(flags & MPF_FAST_RELOAD);
 
@@ -250,6 +263,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		}
 
 		Fred_view_wnd->MessageBox(name);
+		Ship_editor_dialog.bypass_all--;
 		create_new_mission();
 		return false;
 	}
@@ -257,9 +271,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_prop_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
-			char msg[256];
-			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name, pathname);
-			Fred_view_wnd->MessageBox(msg);
+			SCP_string msg;
+			sprintf(msg, "Fred encountered unknown ship/prop/weapon classes when importing \"%s\" (path \"%s\"). You will have to manually edit the converted mission to correct this.", The_mission.name.c_str(), pathname);
+			Fred_view_wnd->MessageBox(msg.c_str());
 		} else {
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/prop/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
@@ -317,47 +331,41 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 			if ((Objects[wing_objects[i][j]].type == OBJ_SHIP) || (Objects[wing_objects[i][j]].type == OBJ_START)) {  // don't change player ship names
 				wing_bash_ship_name(name, Wings[i].name, j + 1);
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
-				if (stricmp(name, old_name)) {  // need to fix name
-					update_sexp_references(old_name, name);
-					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
-					update_texture_replacements(old_name, name);
-					for (k = 0; k < Num_reinforcements; k++)
-						if (!strcmp(old_name, Reinforcements[k].name)) {
-							Assert(strlen(name) < NAME_LENGTH);
-							strcpy_s(Reinforcements[k].name, name);
-						}
-
-					strcpy_s(Ships[Wings[i].ship_index[j]].ship_name, name);
+				if (stricmp(name, old_name) != 0) {  // need to fix name
+					rename_ship(Wings[i].ship_index[j], name);
+					// bash it again so that we handle display names if needed
+					wing_bash_ship_name(&Ships[Wings[i].ship_index[j]], &Wings[i], j + 1, true);
 				}
 			}
 		}
 	}
 
 	for (i = 0; i < Num_teams; i++) {
-		generate_weaponry_usage_list(i, used_pool);
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+		generate_weaponry_usage_list_team(i, used_pool);
+		for (auto &entry : Team_data[i].weapon_choices) {
 			// The amount used in wings is always set by a static loadout entry so skip any that were set by Sexp variables
-			if ((!strlen(Team_data[i].weaponry_pool_variable[j])) && (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
-				// convert weaponry_pool to be extras available beyond the current ships weapons
-				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
-				if (Team_data[i].weaponry_count[j] < 0) {
-					Team_data[i].weaponry_count[j] = 0;
+			if (entry.class_variable.empty() && entry.count_variable.empty()) {
+				// convert weaponry pool to be extras available beyond the current ships weapons
+				entry.count -= used_pool.value_or(entry.class_index, 0);
+				if (entry.count < 0) {
+					entry.count = 0;
 				}
 
 				// zero the used pool entry
-				used_pool[Team_data[i].weaponry_pool[j]] = 0;
+				used_pool.erase(entry.class_index);
 			}
 		}
 		// double check the used pool is empty
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (!Team_data[i].do_not_validate && used_pool[j] != 0) {
-				Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[j].name, i + 1);
+		if (!Team_data[i].do_not_validate) {
+			for (const auto &[weapon_class, count] : used_pool) {
+				if (count != 0) {
+					Warning(LOCATION, "%s is used in wings of team %d but was not in the loadout. Fixing now", Weapon_info[weapon_class].name, i + 1);
 
-				// add the weapon as a new entry
-				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
-				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j];
-				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
-				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");
+					// add the weapon as a new entry
+					auto &entry = Team_data[i].weapon_choices.emplace_back();
+					entry.class_index = weapon_class;
+					entry.count = count;
+				}
 			}
 		}
 	}
@@ -391,8 +399,15 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 
 	view_pos = Parse_viewer_pos;
 	view_orient = Parse_viewer_orient;
+
+	// restore the editor grid that was preserved above
+	create_grid(The_grid, &grid_orient.vec.fvec, &grid_orient.vec.rvec, &grid_center, grid_nrows, grid_ncols, grid_square_size);
+
 	set_modified(0);
 	stars_post_level_init();
+
+	// mission is fully built and consistent now; allow the editors to repopulate
+	Ship_editor_dialog.bypass_all--;
 
 	recreate_dialogs();
 
@@ -629,9 +644,9 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	SCP_string created = The_mission.created;
 	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
 	time_t modified = res.m_time;
+	Assertion(res.found, "Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 	if (!res.found)
 	{
-		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
 		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
 	}
 

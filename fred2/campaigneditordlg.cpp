@@ -20,7 +20,9 @@
 #include "cfile/cfile.h"
 #include "FREDDoc.h"
 #include "parse/parselo.h"
+#include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
+#include "missioneditor/common.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -38,7 +40,8 @@ IMPLEMENT_DYNCREATE(campaign_editor, CFormView)
 campaign_editor *Campaign_tree_formp;
 
 campaign_editor::campaign_editor()
-	: CFormView(campaign_editor::IDD)
+	: CFormView(campaign_editor::IDD),
+	  SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable })
 {
 	//{{AFX_DATA_INIT(campaign_editor)
 	m_name = _T("");
@@ -51,12 +54,79 @@ campaign_editor::campaign_editor()
 	m_custom_tech_db = FALSE;
 	//}}AFX_DATA_INIT
 
-	m_tree.m_mode = MODE_CAMPAIGN;
+	m_tree._model._interface = this;
 	m_num_links = 0;
-	m_tree.link_modified(&Campaign_modified);
+	m_tree._model.modified = &Campaign_modified;
 	m_last_mission = -1;
 
 	m_current_campaign_path = _T("");
+}
+
+int campaign_editor::onRootDeleted(int formula_node)
+{
+	int i;
+	for (i = 0; i < Total_links; i++) {
+		if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == formula_node)) {
+			break;
+		}
+	}
+
+	if (i < Total_links) {
+		Campaign_tree_viewp->delete_link(i);
+		m_num_links--;
+	}
+	return formula_node;
+}
+
+void campaign_editor::onRootInserted(int old_formula, int new_formula) { insert_handler(old_formula, new_formula); }
+void campaign_editor::onRootMoved(int node1, int node2, bool insert_before) { move_handler(node1, node2, insert_before); }
+
+SCP_vector<SCP_string> campaign_editor::getMissionNames()
+{
+	SCP_vector<SCP_string> list;
+	if (Cur_campaign_mission < 0)
+		return list;
+
+	// only list missions the player could have already played: the current mission and
+	// any mission at an earlier level in the campaign tree
+	for (int i = 0; i < Campaign.num_missions; i++)
+	{
+		if ((i == Cur_campaign_mission) || (Campaign.missions[i].level < Campaign.missions[Cur_campaign_mission].level))
+			list.emplace_back(Campaign.missions[i].name);
+	}
+
+	return list;
+}
+
+bool campaign_editor::hasDefaultMissionName()
+{
+	return Cur_campaign_mission >= 0;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionGoals(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& goal : Campaign.missions[idx].goals)
+		list.emplace_back(goal.name);
+
+	return list;
+}
+
+SCP_vector<SCP_string> campaign_editor::getMissionEvents(const SCP_string& reference_name)
+{
+	SCP_vector<SCP_string> list;
+	int idx = load_and_find_campaign_mission(reference_name.c_str());
+	if (idx < 0)
+		return list;
+
+	for (const auto& event : Campaign.missions[idx].events)
+		list.emplace_back(event.name);
+
+	return list;
 }
 
 campaign_editor::~campaign_editor()
@@ -172,19 +242,18 @@ BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWOR
 	}
 
 	//create tool tip controls
-	m_SubstituteMainHallToolTip = new CToolTipCtrl();
-	m_SubstituteMainHallToolTip->Create(this);
+	m_SubstituteMainHallToolTip.Create(this);
 
 	CWnd* pWnd = GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL);
-	m_SubstituteMainHallToolTip->AddTool(pWnd, "Main hall to be used if optional main hall pack is present");
-	m_SubstituteMainHallToolTip->Activate(TRUE);
+	m_SubstituteMainHallToolTip.AddTool(pWnd, "Main hall to be used if optional main hall pack is present");
+	m_SubstituteMainHallToolTip.Activate(TRUE);
 
 	return r;
 }
 
 BOOL campaign_editor::PreTranslateMessage(MSG* pMsg)
 {
-	m_SubstituteMainHallToolTip->RelayEvent(pMsg);
+	m_SubstituteMainHallToolTip.RelayEvent(pMsg);
 	return CFormView::PreTranslateMessage(pMsg);
 }
 
@@ -384,7 +453,7 @@ void campaign_editor::load_tree(int save_first)
 
 	for (i=0; i<Total_links; i++) {
 		if (Links[i].from == Cur_campaign_mission) {
-			Links[i].node = m_tree.load_sub_tree(Links[i].sexp, true, "do-nothing");
+			Links[i].node = m_tree._model.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
 
 			if (Links[i].from == Links[i].to) {
@@ -415,7 +484,7 @@ void campaign_editor::load_tree(int save_first)
 
 void campaign_editor::OnRclickTree(NMHDR* pNMHDR, LRESULT* pResult) 
 {
-	m_tree.right_clicked(MODE_CAMPAIGN);
+	m_tree.right_clicked();
 	*pResult = 0;
 }
 
@@ -438,29 +507,6 @@ void campaign_editor::OnEndlabeleditSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 	*pResult = m_tree.end_label_edit(pTVDispInfo->item);
 }
 
-int campaign_editor::handler(int code, int node, char *str)
-{
-	int i;
-
-	switch (code) {
-	case ROOT_DELETED:
-		for (i=0; i<Total_links; i++){
-			if ((Links[i].from == Cur_campaign_mission) && (Links[i].node == node)){
-				break;
-			}
-		}
-
-		Campaign_tree_viewp->delete_link(i);
-		m_num_links--;
-		return node;
-
-	default:
-		Int3();
-	}
-
-	return -1;
-}
-
 void campaign_editor::save_tree(int clear)
 {
 	int i;
@@ -473,7 +519,7 @@ void campaign_editor::save_tree(int clear)
 		if (Links[i].from == m_last_mission) {
 			sexp_unmark_persistent(Links[i].sexp);
 			free_sexp2(Links[i].sexp);
-			Links[i].sexp = m_tree.save_tree(Links[i].node);
+			Links[i].sexp = m_tree._model.save_tree(Links[i].node);
 			sexp_mark_persistent(Links[i].sexp);
 		}
 	}

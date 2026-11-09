@@ -450,7 +450,7 @@ void credits_parse_table(const char* filename)
 			}
 		}
 
-		Credit_text_parts.push_back(credits_text);
+		Credit_text_parts.push_back(std::move(credits_text));
 
 		Credits_parsed = true;
 	}

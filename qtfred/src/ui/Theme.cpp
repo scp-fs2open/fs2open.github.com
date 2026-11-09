@@ -1,0 +1,657 @@
+#include "ui/Theme.h"
+
+#include <QApplication>
+#include <QGraphicsDropShadowEffect>
+#include <QGraphicsPixmapItem>
+#include <QGraphicsScene>
+#include <QPainter>
+#include <QPainterPath>
+#include <QPalette>
+#include <QPixmap>
+#include <QSettings>
+#include <QStyleHints>
+
+namespace {
+class PaletteChangeFilter : public QObject {
+  public:
+	PaletteChangeFilter(QObject* parent, std::function<void()> callback)
+		: QObject(parent), m_callback(std::move(callback))
+	{
+	}
+
+  protected:
+	bool eventFilter(QObject* watched, QEvent* event) override
+	{
+		if (event->type() == QEvent::ApplicationPaletteChange) {
+			m_callback();
+		}
+		return QObject::eventFilter(watched, event);
+	}
+
+  private:
+	std::function<void()> m_callback;
+};
+const char* const LIGHT_BUTTON_QSS = R"(
+QPushButton {
+    background-color: #e1e1e1;
+    border: 1px solid #adadad;
+    border-radius: 2px;
+    padding: 3px 10px;
+    min-height: 16px;
+}
+QPushButton:hover {
+    background-color: #e5f1fb;
+    border-color: #0078d7;
+}
+QPushButton:pressed {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QPushButton:checked {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QPushButton:checked:hover {
+    background-color: #d8ecf9;
+    border-color: #0078d7;
+}
+QPushButton:default {
+    border-color: #0078d7;
+}
+QPushButton:disabled {
+    background-color: #f0f0f0;
+    color: #a0a0a0;
+    border-color: #c0c0c0;
+}
+QToolButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 2px;
+}
+QToolButton:hover {
+    background-color: #e5f1fb;
+    border-color: #0078d7;
+}
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+QToolButton:checked:hover {
+    background-color: #d8ecf9;
+    border-color: #0078d7;
+}
+QToolButton::menu-indicator {
+    image: none;
+}
+QToolBar::separator {
+    background: #c0c0c0;
+    width: 1px;
+    margin: 4px 5px;
+}
+#contextToolBar QToolButton {
+    border: 1px solid #adadad;
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+#contextToolBar QToolButton:hover {
+    background-color: #e5f1fb;
+    border-color: #0078d7;
+}
+#contextToolBar QToolButton:pressed {
+    background-color: #cce4f7;
+    border-color: #005499;
+}
+)";
+
+const char* const DARK_BUTTON_QSS = R"(
+QPushButton {
+    background-color: #353535;
+    border: 1px solid #555555;
+    border-radius: 2px;
+    padding: 3px 10px;
+    min-height: 16px;
+}
+QPushButton:hover {
+    background-color: #454545;
+    border-color: #888888;
+}
+QPushButton:pressed {
+    background-color: #606060;
+    border-color: #909090;
+}
+QPushButton:checked {
+    background-color: #2a82da;
+    border-color: #2a82da;
+    color: #ffffff;
+}
+QPushButton:checked:hover {
+    background-color: #3d92e6;
+    border-color: #3d92e6;
+}
+QPushButton:default {
+    border-color: #2a82da;
+}
+QPushButton:disabled {
+    background-color: #2a2a2a;
+    color: #7f7f7f;
+    border-color: #444444;
+}
+QToolButton {
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 2px;
+}
+QToolButton:hover {
+    background-color: #4a4a4a;
+    border-color: #666666;
+}
+QToolButton:pressed,
+QToolButton:checked {
+    background-color: #606060;
+    border-color: #909090;
+}
+QToolButton:checked:hover {
+    background-color: #6a6a6a;
+    border-color: #aaaaaa;
+}
+QToolButton::menu-indicator {
+    image: none;
+}
+QToolBar::separator {
+    background: #666666;
+    width: 1px;
+    margin: 4px 5px;
+}
+#contextToolBar QToolButton {
+    border: 1px solid #555555;
+    border-radius: 3px;
+    padding: 2px 6px;
+}
+#contextToolBar QToolButton:hover {
+    background-color: #4a4a4a;
+    border-color: #888888;
+}
+#contextToolBar QToolButton:pressed {
+    background-color: #606060;
+    border-color: #909090;
+}
+QMenu::separator {
+    height: 1px;
+    background: #8f8f8f;
+    margin: 4px 8px;
+}
+)";
+
+} // anonymous namespace
+
+namespace fso::fred {
+
+namespace {
+
+constexpr auto SETTINGS_GROUP = "Preferences";
+constexpr auto THEME_MODE_KEY = "theme_mode";
+
+ThemeMode Current_mode = ThemeMode::System;
+bool System_hook_installed = false;
+
+bool resolveDark(ThemeMode mode)
+{
+	switch (mode) {
+	case ThemeMode::Light:
+		return false;
+	case ThemeMode::Dark:
+		return true;
+	case ThemeMode::System:
+		// Unknown when the OS reports no scheme which lands on light theme
+		return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+	}
+	return false;
+}
+
+void applyPalette(bool darkMode)
+{
+	if (darkMode) {
+		QPalette p;
+		p.setColor(QPalette::Window,          QColor(53, 53, 53));
+		p.setColor(QPalette::WindowText,      Qt::white);
+		p.setColor(QPalette::Base,            QColor(25, 25, 25));
+		p.setColor(QPalette::AlternateBase,   QColor(53, 53, 53));
+		p.setColor(QPalette::ToolTipBase,     QColor(53, 53, 53));
+		p.setColor(QPalette::ToolTipText,     Qt::white);
+		p.setColor(QPalette::Text,            Qt::white);
+		p.setColor(QPalette::Button,          QColor(53, 53, 53));
+		p.setColor(QPalette::ButtonText,      Qt::white);
+		p.setColor(QPalette::BrightText,      Qt::red);
+		p.setColor(QPalette::Link,            QColor(42, 130, 218));
+		p.setColor(QPalette::Highlight,       QColor(42, 130, 218));
+		p.setColor(QPalette::HighlightedText, Qt::black);
+		// Mid-tone roles — Fusion uses these for scroll bar grooves, frame bevels, spin boxes.
+		// Without them the roles inherit from the system (light-mode) palette, causing
+		// light-gray artifacts on dark backgrounds.
+		p.setColor(QPalette::Mid,       QColor( 45,  45,  45));
+		p.setColor(QPalette::Midlight,  QColor( 65,  65,  65));
+		p.setColor(QPalette::Dark,      QColor( 18,  18,  18));
+		p.setColor(QPalette::Shadow,    QColor(  5,   5,   5));
+		// Disabled roles — must set WindowText and Light or Fusion renders
+		// disabled text with a bright shadow, making it look blurry
+		p.setColor(QPalette::Disabled, QPalette::WindowText, QColor(127, 127, 127));
+		p.setColor(QPalette::Disabled, QPalette::Text,       QColor(127, 127, 127));
+		p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(127, 127, 127));
+		p.setColor(QPalette::Disabled, QPalette::Light,      QColor(53, 53, 53));
+		qApp->setPalette(p);
+		qApp->setStyleSheet(DARK_BUTTON_QSS);
+	} else {
+		// Explicit light palette matching Windows 10 native colors
+		QPalette p;
+		p.setColor(QPalette::Window,          QColor(240, 240, 240));
+		p.setColor(QPalette::WindowText,      Qt::black);
+		p.setColor(QPalette::Base,            Qt::white);
+		p.setColor(QPalette::AlternateBase,   QColor(233, 231, 227));
+		p.setColor(QPalette::ToolTipBase,     QColor(255, 255, 220));
+		p.setColor(QPalette::ToolTipText,     Qt::black);
+		p.setColor(QPalette::Text,            Qt::black);
+		p.setColor(QPalette::Button,          QColor(225, 225, 225));
+		p.setColor(QPalette::ButtonText,      Qt::black);
+		p.setColor(QPalette::BrightText,      Qt::red);
+		p.setColor(QPalette::Link,            QColor(0, 0, 255));
+		p.setColor(QPalette::Highlight,       QColor(0, 120, 215));
+		p.setColor(QPalette::HighlightedText, Qt::white);
+		p.setColor(QPalette::Disabled, QPalette::Text,       QColor(160, 160, 160));
+		p.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(160, 160, 160));
+		qApp->setPalette(p);
+		qApp->setStyleSheet(LIGHT_BUTTON_QSS);
+	}
+}
+
+} // namespace
+
+void applyEditorTheme(ThemeMode mode)
+{
+	Current_mode = mode;
+
+	// Installed once and left in place, since the mode can return to System later.
+	if (!System_hook_installed) {
+		QObject::connect(QGuiApplication::styleHints(),
+			&QStyleHints::colorSchemeChanged,
+			qApp,
+			[](Qt::ColorScheme) {
+				if (Current_mode == ThemeMode::System) {
+					applyPalette(resolveDark(ThemeMode::System));
+				}
+			});
+		System_hook_installed = true;
+	}
+
+	applyPalette(resolveDark(mode));
+}
+
+bool currentThemeIsDark()
+{
+	return resolveDark(Current_mode);
+}
+
+ThemeMode readThemeModeSetting()
+{
+	QSettings settings;
+	settings.beginGroup(SETTINGS_GROUP);
+
+	const auto value = settings.value(THEME_MODE_KEY).toString();
+	if (value == "light") {
+		return ThemeMode::Light;
+	}
+	if (value == "dark") {
+		return ThemeMode::Dark;
+	}
+	return ThemeMode::System;
+}
+
+void writeThemeModeSetting(ThemeMode mode)
+{
+	QSettings settings;
+	settings.beginGroup(SETTINGS_GROUP);
+	switch (mode) {
+	case ThemeMode::Light:
+		settings.setValue(THEME_MODE_KEY, "light");
+		break;
+	case ThemeMode::Dark:
+		settings.setValue(THEME_MODE_KEY, "dark");
+		break;
+	case ThemeMode::System:
+		settings.setValue(THEME_MODE_KEY, "system");
+		break;
+	}
+}
+
+QIcon makeThemedIcon(QStyle::StandardPixmap sp, const QColor& color, int size)
+{
+	QPixmap pm(size, size);
+	pm.fill(Qt::transparent);
+	QPainter p(&pm);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setPen(Qt::NoPen);
+	p.setBrush(color);
+
+	const qreal m  = size * 0.15;
+	const QRectF r(m, m, size - 2 * m, size - 2 * m);
+	const QPointF c = r.center();
+
+	// Arrow geometry helpers — shaft+head arrow as a single filled polygon (no seam)
+	const qreal headLen  = r.width()  * 0.50; // how far the arrowhead extends along the axis
+	const qreal shaftW   = r.width()  * 0.38; // width of the rectangular shaft (cross-axis)
+	const qreal shaftOff = (r.width() - shaftW) / 2.0; // offset from edge to shaft side
+
+	switch (sp) {
+	case QStyle::SP_ArrowUp: {
+		const qreal headY = r.top() + headLen;
+		QPainterPath path;
+		path.moveTo(c.x(),               r.top());   // tip
+		path.lineTo(r.right(),           headY);     // head right corner
+		path.lineTo(r.left() + shaftOff + shaftW, headY);     // shoulder right
+		path.lineTo(r.left() + shaftOff + shaftW, r.bottom()); // shaft bottom right
+		path.lineTo(r.left() + shaftOff,           r.bottom()); // shaft bottom left
+		path.lineTo(r.left() + shaftOff,           headY);     // shoulder left
+		path.lineTo(r.left(),            headY);     // head left corner
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowDown: {
+		const qreal headY = r.bottom() - headLen;
+		QPainterPath path;
+		path.moveTo(r.left() + shaftOff,           r.top());   // shaft top left
+		path.lineTo(r.left() + shaftOff + shaftW, r.top());   // shaft top right
+		path.lineTo(r.left() + shaftOff + shaftW, headY);     // shoulder right
+		path.lineTo(r.right(),           headY);     // head right corner
+		path.lineTo(c.x(),               r.bottom()); // tip
+		path.lineTo(r.left(),            headY);     // head left corner
+		path.lineTo(r.left() + shaftOff, headY);     // shoulder left
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowLeft: {
+		const qreal headX = r.left() + headLen;
+		QPainterPath path;
+		path.moveTo(r.left(),  c.y());               // tip
+		path.lineTo(headX,     r.top());             // head top corner
+		path.lineTo(headX,     r.top() + shaftOff); // shoulder top
+		path.lineTo(r.right(), r.top() + shaftOff); // shaft right top
+		path.lineTo(r.right(), r.top() + shaftOff + shaftW); // shaft right bottom
+		path.lineTo(headX,     r.top() + shaftOff + shaftW); // shoulder bottom
+		path.lineTo(headX,     r.bottom());          // head bottom corner
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_ArrowRight: {
+		const qreal headX = r.right() - headLen;
+		QPainterPath path;
+		path.moveTo(r.left(), r.top() + shaftOff);           // shaft left top
+		path.lineTo(headX,    r.top() + shaftOff);           // shoulder top
+		path.lineTo(headX,    r.top());                      // head top corner
+		path.lineTo(r.right(), c.y());                       // tip
+		path.lineTo(headX,    r.bottom());                   // head bottom corner
+		path.lineTo(headX,    r.top() + shaftOff + shaftW); // shoulder bottom
+		path.lineTo(r.left(), r.top() + shaftOff + shaftW); // shaft left bottom
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_MediaPlay: {
+		QPainterPath path;
+		path.moveTo(r.left(),  r.top());
+		path.lineTo(r.right(), c.y());
+		path.lineTo(r.left(),  r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	case QStyle::SP_MediaStop:
+		p.drawRect(r);
+		break;
+	case QStyle::SP_MediaSkipForward: {
+		// triangle pointing right + vertical bar on the right
+		const qreal barW = r.width() * 0.18;
+		const qreal gap  = r.width() * 0.05;
+		const qreal triR = r.right() - barW - gap;
+		QPainterPath path;
+		path.moveTo(r.left(), r.top());
+		path.lineTo(triR,     c.y());
+		path.lineTo(r.left(), r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
+		p.drawRect(QRectF(r.right() - barW, r.top(), barW, r.height()));
+		break;
+	}
+	case QStyle::SP_MediaSkipBackward: {
+		// vertical bar on the left + triangle pointing left
+		const qreal barW = r.width() * 0.18;
+		const qreal gap  = r.width() * 0.05;
+		const qreal triL = r.left() + barW + gap;
+		p.drawRect(QRectF(r.left(), r.top(), barW, r.height()));
+		QPainterPath path;
+		path.moveTo(r.right(), r.top());
+		path.lineTo(triL,      c.y());
+		path.lineTo(r.right(), r.bottom());
+		path.closeSubpath();
+		p.drawPath(path);
+		break;
+	}
+	default:
+		// Fall back to the style's own icon for anything we haven't drawn
+		return qApp->style()->standardIcon(sp);
+	}
+
+	return {pm};
+}
+
+void bindStandardIcon(QAbstractButton* btn, QStyle::StandardPixmap sp)
+{
+	auto refresh = [btn, sp]() {
+		const QColor color = qApp->palette().color(QPalette::ButtonText);
+		btn->setIcon(makeThemedIcon(sp, color));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
+}
+
+QIcon makeThemedIcon(CustomIcon icon, const QColor& color, int size)
+{
+	QPixmap pm(size, size);
+	pm.fill(Qt::transparent);
+	QPainter p(&pm);
+	p.setRenderHint(QPainter::Antialiasing);
+	p.setPen(Qt::NoPen);
+	p.setBrush(color);
+
+	const qreal m = size * 0.15;
+	const QRectF full(m, m, size - 2 * m, size - 2 * m);
+
+	const qreal bar = full.width() * 0.16; // thickness of the "end" bar (full is square)
+	const qreal gap = full.width() * 0.10; // space between the bar and the arrow
+
+	// Fill a vertical shaft+head arrow (single polygon, no seam) inside the sub-rect.
+	auto drawVArrow = [&](const QRectF& r, bool up) {
+		const qreal shaftW   = full.width() * 0.38;
+		const qreal shaftOff = (r.width() - shaftW) / 2.0;
+		const qreal headLen  = r.height() * 0.55;
+		const qreal cx = r.center().x();
+		QPainterPath path;
+		if (up) {
+			const qreal headY = r.top() + headLen;
+			path.moveTo(cx,                            r.top());    // tip
+			path.lineTo(r.right(),                     headY);      // head right corner
+			path.lineTo(r.left() + shaftOff + shaftW,  headY);      // shoulder right
+			path.lineTo(r.left() + shaftOff + shaftW,  r.bottom()); // shaft bottom right
+			path.lineTo(r.left() + shaftOff,           r.bottom()); // shaft bottom left
+			path.lineTo(r.left() + shaftOff,           headY);      // shoulder left
+			path.lineTo(r.left(),                      headY);      // head left corner
+		} else {
+			const qreal headY = r.bottom() - headLen;
+			path.moveTo(r.left() + shaftOff,           r.top());    // shaft top left
+			path.lineTo(r.left() + shaftOff + shaftW,  r.top());    // shaft top right
+			path.lineTo(r.left() + shaftOff + shaftW,  headY);      // shoulder right
+			path.lineTo(r.right(),                     headY);      // head right corner
+			path.lineTo(cx,                            r.bottom()); // tip
+			path.lineTo(r.left(),                      headY);      // head left corner
+			path.lineTo(r.left() + shaftOff,           headY);      // shoulder left
+		}
+		path.closeSubpath();
+		p.drawPath(path);
+	};
+
+	// Fill a horizontal shaft+head arrow (single polygon, no seam) inside the sub-rect.
+	auto drawHArrow = [&](const QRectF& r, bool left) {
+		const qreal shaftW   = full.height() * 0.38;
+		const qreal shaftOff = (r.height() - shaftW) / 2.0;
+		const qreal headLen  = r.width() * 0.55;
+		const qreal cy = r.center().y();
+		QPainterPath path;
+		if (left) {
+			const qreal headX = r.left() + headLen;
+			path.moveTo(r.left(),  cy);                          // tip
+			path.lineTo(headX,     r.top());                     // head top corner
+			path.lineTo(headX,     r.top() + shaftOff);          // shoulder top
+			path.lineTo(r.right(), r.top() + shaftOff);          // shaft right top
+			path.lineTo(r.right(), r.top() + shaftOff + shaftW); // shaft right bottom
+			path.lineTo(headX,     r.top() + shaftOff + shaftW); // shoulder bottom
+			path.lineTo(headX,     r.bottom());                  // head bottom corner
+		} else {
+			const qreal headX = r.right() - headLen;
+			path.moveTo(r.left(),  r.top() + shaftOff);          // shaft left top
+			path.lineTo(headX,     r.top() + shaftOff);          // shoulder top
+			path.lineTo(headX,     r.top());                     // head top corner
+			path.lineTo(r.right(), cy);                          // tip
+			path.lineTo(headX,     r.bottom());                  // head bottom corner
+			path.lineTo(headX,     r.top() + shaftOff + shaftW); // shoulder bottom
+			path.lineTo(r.left(),  r.top() + shaftOff + shaftW); // shaft left bottom
+		}
+		path.closeSubpath();
+		p.drawPath(path);
+	};
+
+	switch (icon) {
+	case CustomIcon::MoveToTop:
+		p.drawRect(QRectF(full.left(), full.top(), full.width(), bar));
+		drawVArrow(QRectF(full.left(), full.top() + bar + gap, full.width(), full.height() - bar - gap), true);
+		break;
+	case CustomIcon::MoveToBottom:
+		p.drawRect(QRectF(full.left(), full.bottom() - bar, full.width(), bar));
+		drawVArrow(QRectF(full.left(), full.top(), full.width(), full.height() - bar - gap), false);
+		break;
+	case CustomIcon::MoveToLeft:
+		p.drawRect(QRectF(full.left(), full.top(), bar, full.height()));
+		drawHArrow(QRectF(full.left() + bar + gap, full.top(), full.width() - bar - gap, full.height()), true);
+		break;
+	case CustomIcon::MoveToRight:
+		p.drawRect(QRectF(full.right() - bar, full.top(), bar, full.height()));
+		drawHArrow(QRectF(full.left(), full.top(), full.width() - bar - gap, full.height()), false);
+		break;
+	}
+
+	p.end();
+	return {pm};
+}
+
+void bindCustomIcon(QAbstractButton* btn, CustomIcon icon)
+{
+	auto refresh = [btn, icon]() {
+		const QColor color = qApp->palette().color(QPalette::ButtonText);
+		btn->setIcon(makeThemedIcon(icon, color));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
+}
+
+void bindThemeIcon(QAction* action, const QString& baseName)
+{
+	auto refresh = [action, baseName]() {
+		const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+		const QString path = QStringLiteral(":/images/toolbar/") + baseName
+		                   + (dark ? QStringLiteral("-dark") : QStringLiteral("-light"))
+		                   + QStringLiteral(".png");
+		action->setIcon(QIcon(path));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(action, refresh);
+	qApp->installEventFilter(filter);
+}
+
+void bindThemeIcon(QAbstractButton* btn, const QString& baseName)
+{
+	auto refresh = [btn, baseName]() {
+		const bool dark = qApp->palette().color(QPalette::Window).lightness() < 128;
+		const QString path = QStringLiteral(":/images/toolbar/") + baseName
+		                   + (dark ? QStringLiteral("-dark") : QStringLiteral("-light"))
+		                   + QStringLiteral(".png");
+		btn->setIcon(QIcon(path));
+	};
+	refresh();
+	auto* filter = new PaletteChangeFilter(btn, refresh);
+	qApp->installEventFilter(filter);
+}
+
+QPixmap tintMultiply(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	// Multiply the color into the artwork...
+	p.setCompositionMode(QPainter::CompositionMode_Multiply);
+	p.fillRect(pm.rect(), color);
+	// ...then clip back to the master's alpha so transparent areas stay transparent
+	// (the opaque fill would otherwise flood them).
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap tintScreen(const QPixmap& src, const QColor& color)
+{
+	if (src.isNull())
+		return src;
+
+	QPixmap pm = src.copy();
+	QPainter p(&pm);
+	p.setCompositionMode(QPainter::CompositionMode_Screen);
+	p.fillRect(pm.rect(), color);
+	p.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+	p.drawPixmap(0, 0, src);
+	p.end();
+	return pm;
+}
+
+QPixmap applyIconShadow(const QPixmap& src)
+{
+	if (src.isNull())
+		return src;
+
+	// Use a graphics scene so we get a proper soft (blurred) drop shadow. The shadow
+	// is neutral and identical for every icon, which is what unifies the set.
+	QGraphicsScene scene;
+	auto* item = new QGraphicsPixmapItem(src); // owned by the scene
+	auto* effect = new QGraphicsDropShadowEffect;
+	effect->setBlurRadius(4.0);
+	effect->setColor(QColor(0, 0, 0, 110));
+	effect->setOffset(1.0, 1.4);
+	item->setGraphicsEffect(effect);
+	scene.addItem(item);
+
+	QPixmap out(src.size());
+	out.fill(Qt::transparent);
+	QPainter p(&out);
+	const QRectF box(0.0, 0.0, src.width(), src.height());
+	scene.render(&p, box, box);
+	p.end();
+	return out;
+}
+
+} // namespace fso::fred

@@ -3,7 +3,10 @@
 #include <mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.h>
 
 #include <QAbstractListModel>
+#include <QCheckBox>
 #include <QItemSelectionModel>
+#include <QLabel>
+#include <QLineEdit>
 #include <QtWidgets/QDialog>
 
 namespace fso::fred::dialogs {
@@ -22,7 +25,6 @@ class MapModel : public QAbstractListModel {
 };
 
 class ShipTextureReplacementDialog : public QDialog {
-
 	Q_OBJECT
 
   public:
@@ -37,39 +39,23 @@ class ShipTextureReplacementDialog : public QDialog {
   private slots:
 	void on_buttonBox_accepted();
 	void on_buttonBox_rejected();
-
 	void on_newTextureLineEdit_editingFinished();
-	void on_MiscTextureLineEdit_editingFinished();
-	void on_GlowTextureLineEdit_editingFinished();
-	void on_ShineTextureLineEdit_editingFinished();
-	void on_NormalTextureLineEdit_editingFinished();
-	void on_HeightTextureLineEdit_editingFinished();
-	void on_AmbiantTextureLineEdit_editingFinished();
-	void on_ReflectTextureLineEdit_editingFinished();
 
-	void on_useMiscTexturecheckbox_toggled(bool);
-	void on_useGlowTexturecheckbox_toggled(bool);
-	void on_useShineTexturecheckbox_toggled(bool);
-	void on_useNormalTexturecheckbox_toggled(bool);
-	void on_useHeightTexturecheckbox_toggled(bool);
-	void on_useAmbiantTexturecheckbox_toggled(bool);
-	void on_useReflectTexturecheckbox_toggled(bool);
+  private: // NOLINT(readability-redundant-access-specifiers)
+	struct TextureTypeRow {
+		QLabel*    label;
+		QCheckBox* useCheckbox;
+		QCheckBox* inheritCheckbox;
+		QLineEdit* lineEdit;
+	};
 
-	void on_inheritMiscTexturecheckbox_toggled(bool);
-	void on_inheritGlowTexturecheckbox_toggled(bool);
-	void on_inheritShineTexturecheckbox_toggled(bool);
-	void on_inheritNormalTexturecheckbox_toggled(bool);
-	void on_inheritHeightTexturecheckbox_toggled(bool);
-	void on_inheritAmbiantTexturecheckbox_toggled(bool);
-	void on_inheritReflectTexturecheckbox_toggled(bool);
-
-  private:// NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipTextureReplacementDialog> ui;
 	std::unique_ptr<ShipTextureReplacementDialogModel> _model;
 	EditorViewport* _viewport;
-	int row = 0;
-	MapModel* listmodel;
-	void updateUI();
-	void updateUIFull();
+	int _selectedRow = 0;
+	MapModel* _listModel;
+	SCP_map<SCP_string, TextureTypeRow> _textureRows;
+	void updateUi();
+	void updateUiFull();
 };
 } // namespace fso::fred::dialogs

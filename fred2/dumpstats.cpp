@@ -132,7 +132,7 @@ void DumpStats::get_mission_stats(CString &buffer)
 	// Mission info
 	buffer += "\t MISSION INFO\r\n";
 
-	temp.Format("Title: %s\r\n", The_mission.name);
+	temp.Format("Title: %s\r\n", The_mission.name.c_str());
 	buffer += temp;
 
 	temp.Format("Filename: %s\r\n", Mission_filename);
@@ -395,9 +395,8 @@ void DumpStats::get_object_stats(CString &buffer)
 	// Jumpnodes
 	buffer += "\r\nJUMPNODES\r\n";
 
-	SCP_list<CJumpNode>::iterator jnp;
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-		temp.Format("\tJumpnode: %s\r\n", jnp->GetName());
+	for (auto &jnp : Jump_nodes) {
+		temp.Format("\tJumpnode: %s\r\n", jnp.GetName());
 		buffer += temp;
 	}
 
@@ -506,7 +505,7 @@ void DumpStats::get_objectives_and_goals(CString &buffer)
 void DumpStats::get_ship_weapon_selection(CString &buffer)
 {
 	CString temp;
-	int i,j;
+	int i;
 
 	buffer += "\r\nSHIP WEAPON/SELECTION\r\n";
 	buffer += "Reported numbers are in addition to assigned ships and their default weapons\r\n";
@@ -516,11 +515,12 @@ void DumpStats::get_ship_weapon_selection(CString &buffer)
 		buffer += temp;
 
 		// ships
-		for (j=0; j<Team_data[i].num_ship_choices; j++) {
-			temp.Format("\tShip name: %s, count %d", Ship_info[Ships[Team_data[i].ship_list[j]].ship_info_index].name, Team_data[i].ship_count[j]);
+		for (const auto &entry : Team_data[i].ship_choices) {
+			const char *entry_name = entry.class_variable.empty() ? Ship_info[entry.class_index].name : entry.class_variable.c_str();
+			temp.Format("\tShip name: %s, count %d", entry_name, entry.count);
 			buffer += temp;
 
-			if (Team_data[i].ship_list[j] == Team_data[i].default_ship) {
+			if (entry.class_index >= 0 && entry.class_index == Team_data[i].default_ship) {
 				temp = "  DEFAULT SHIP\r\n";
 			} else {
 				temp = "\r\n";
@@ -531,11 +531,10 @@ void DumpStats::get_ship_weapon_selection(CString &buffer)
 		buffer += "\r\n";
 
 		// weapons
-		for (j=0; j<Team_data[i].num_weapon_choices; j++) {
-			//if (Team_data[i].weaponry_pool[j] > 0) 
-			temp.Format("\tWeapon name: %s, count %d\r\n", Weapon_info[Team_data[i].weaponry_pool[j]].name, Team_data[i].weaponry_count[j]);
+		for (const auto &entry : Team_data[i].weapon_choices) {
+			const char *entry_name = entry.class_variable.empty() ? Weapon_info[entry.class_index].name : entry.class_variable.c_str();
+			temp.Format("\tWeapon name: %s, count %d\r\n", entry_name, entry.count);
 			buffer += temp;
-			
 		}
 	}
 

@@ -15,6 +15,7 @@ namespace api {
 
 //**********HANDLE: Wing
 ADE_OBJ(l_Wing, int, "wing", "Wing handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Wing, Num_wings);
 
 ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship handle, or invalid ship handle if index is invalid or wing handle is invalid")
 {
@@ -47,7 +48,7 @@ ADE_FUNC(__len, l_Wing, NULL, "Gets the number of ships in the wing", "number", 
 	return ade_set_args(L, "i", Wings[wdx].current_count);
 }
 
-ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or empty string if handle is invalid")
+ADE_VIRTVAR(Name, l_Wing, "string", "Wing name. This is the actual name of the wing. Use <i>getDisplayString</i> to get the string which should be displayed to the player.", "string", "Wing name, or empty string if handle is invalid")
 {
 	int wdx;
 	const char* s = nullptr;
@@ -63,16 +64,27 @@ ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or emp
 	return ade_set_args(L, "s", Wings[wdx].name);
 }
 
-ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+ADE_VIRTVAR(DisplayName, l_Wing, "string", "Wing display name", "string", "The display name of the wing or empty if there is no display string")
 {
-	int idx;
-	if(!ade_get_args(L, "o", l_Wing.Get(&idx)))
-		return ADE_RETURN_NIL;
+	int wingnum = -1;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Wing.Get(&wingnum), &s))
+		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_wings)
-		return ADE_RETURN_FALSE;
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ade_set_error(L, "s", "");
 
-	return ADE_RETURN_TRUE;
+	auto wingp = &Wings[wingnum];
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		wingp->display_name = s;
+
+		// for compatibility reasons, if we are setting this to the empty string, clear the flag
+		wingp->flags.set(Ship::Wing_Flags::Has_display_name, s[0] != 0);
+	}
+
+	return ade_set_args(L, "s", wingp->display_name.c_str());
 }
 
 ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string", "'Wing', or empty string if handle is invalid")
@@ -310,7 +322,7 @@ ADE_VIRTVAR(DepartureLocation, l_Wing, "string", "The wing's departure location"
 	return wing_getset_location_helper(L, &wing::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
 }
 
-static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
+static int wing_getset_anchor_helper(lua_State* L, anchor_t wing::* field)
 {
 	int wingnum;
 	const char* s = nullptr;
@@ -322,10 +334,11 @@ static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? anchor_t::invalid() : anchor_t(ship_registry_get_index(s));
 	}
 
-	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field].c_str() : "<no anchor>");
+	auto anchor_entry = ship_registry_get(Wings[wingnum].*field);
+	return ade_set_args(L, "s", anchor_entry ? anchor_entry->name : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Wing, "string", "The wing's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
@@ -371,6 +384,18 @@ ADE_VIRTVAR(WaveDelayMinimum, l_Wing, "number", "The wing's minimum wave delay",
 ADE_VIRTVAR(WaveDelayMaximum, l_Wing, "number", "The wing's maximum wave delay", "number", "Max wave delay, or nil if handle is invalid")
 {
 	return wing_getset_helper(L, &wing::wave_delay_max, true);
+}
+
+ADE_FUNC(getDisplayString, l_Wing, nullptr, "Returns the string which should be used when displaying the name of the wing to the player", "string", "The display string or empty if handle is invalid")
+{
+	int wingnum = -1;
+	if (!ade_get_args(L, "o", l_Wing.Get(&wingnum)))
+		return ade_set_error(L, "s", "");
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", Wings[wingnum].get_display_name());
 }
 
 

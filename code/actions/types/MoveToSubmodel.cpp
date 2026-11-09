@@ -70,7 +70,7 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 
 std::unique_ptr<Action> MoveToSubmodel::clone() const
 {
-	return std::unique_ptr<Action>(new MoveToSubmodel(*this));
+	return std::make_unique<MoveToSubmodel>(*this);
 }
 
 } // namespace types

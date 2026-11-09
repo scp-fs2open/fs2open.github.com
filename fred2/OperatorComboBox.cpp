@@ -73,7 +73,7 @@ BOOL OperatorComboBox::PreTranslateMessage(MSG* pMsg)
 		// keep track of whether Enter was the most recent key pressed
 		m_pressed_enter = (pMsg->wParam == VK_RETURN);
 
-		// when we press Escape, kill the focus so that the CBN_KILLFOCUS handler in sexp_tree.cpp will close the popup
+		// when we press Escape, kill the focus so that the CBN_KILLFOCUS handler in sexp_tree_view.cpp will close the popup
 		if (pMsg->wParam == VK_ESCAPE)
 			GetOwner()->SetFocus();
 
@@ -149,7 +149,7 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	}
 
 	// sort operators by cost
-	std::sort(filtered_operators.begin(), filtered_operators.end(), [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b)
+	std::stable_sort(filtered_operators.begin(), filtered_operators.end(), [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b)
 		{
 			// compare the size_t parts of both pairs
 			return std::get<1>(a) < std::get<1>(b);
@@ -300,7 +300,7 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 
 	// Get the mouse position
 	auto pMessage = GetCurrentMessage(); // get mouse pos
-	ASSERT(pMessage);
+	Assert(pMessage);
 	auto pt = pMessage->pt;
 
 	int item = LBItemFromPt(GetSafeHwnd(), pt, FALSE);
@@ -357,8 +357,8 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 
 void OperatorComboBoxList::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
-	ASSERT(lpDrawItemStruct->CtlType == ODT_LISTBOX);
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS));
+	Assert(lpDrawItemStruct->CtlType == ODT_LISTBOX);
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS));
 
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 

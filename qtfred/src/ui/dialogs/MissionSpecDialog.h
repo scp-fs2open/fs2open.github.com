@@ -47,12 +47,9 @@ private slots:
 	void on_squadronLogoButton_clicked();
 	void on_lowResScreenButton_clicked();
 	void on_highResScreenButton_clicked();
+	void on_supportRearmOptionsButton_clicked();
 
 	// Middle column
-	void on_toggleSupportShip_toggled(bool checked);
-	void on_toggleHullRepair_toggled(bool checked);
-	void on_hullRepairMax_valueChanged(double value);
-	void on_subsysRepairMax_valueChanged(double value);
 	void on_toggleTrail_toggled(bool checked);
 	void on_toggleSpeedDisplay_toggled(bool checked);
 	void on_minDisplaySpeed_valueChanged(int value);
@@ -64,6 +61,7 @@ private slots:
 
 	// Right column
 	// flags are dynamically generated and connected
+	void on_largeShipCollisionGroup_valueChanged(int value);
 	void on_aiProfileCombo_currentIndexChanged(int index);
 
 	// General
@@ -84,6 +82,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void initFlagList();
 	void updateFlags();
+	void updateLargeShipCollisionGroup();
 
 	void updateMissionType();
 	void updateCmdMessage();

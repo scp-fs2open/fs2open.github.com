@@ -453,7 +453,7 @@ DCF(mainhall, "Temporarily sets the player to be on any main hall.  Can be used 
 		dc_printf("Main hall not currently initialized.  Setting player select override main hall to %s%s%s.\n", quote, name.empty() ? "0" : name.c_str(), quote);
 
 		extern SCP_string Player_select_force_main_hall;
-		Player_select_force_main_hall = name;
+		Player_select_force_main_hall = std::move(name);
 		return;
 	}
 
@@ -512,7 +512,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", requested_hall.c_str());
 		main_hall_get_name(main_hall_to_load, 0);
 	} else {
-		main_hall_to_load = requested_hall;
+		main_hall_to_load = std::move(requested_hall);
 	}
 
 	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)

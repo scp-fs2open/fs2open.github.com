@@ -3,6 +3,7 @@
 
 float Font_Scale_Factor = 1.0;
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontScaleFactor",
 	std::pair<const char*, int>{"Font Scale Factor", 1862},
 	std::pair<const char*, int>{
@@ -93,6 +94,17 @@ namespace font
 	float FSFont::getTopOffset() const
 	{
 		return this->offsetTop;
+	}
+
+	float FSFont::getTabWidth() const
+	{
+		return this->tabWidth;
+	}
+
+	void FSFont::setTabWidth(float newTabWidth)
+	{
+		Assertion(newTabWidth >= 0.0f, "Invalid tab width passed!");
+		this->tabWidth = newTabWidth;
 	}
 
 	float FSFont::getHeight() const

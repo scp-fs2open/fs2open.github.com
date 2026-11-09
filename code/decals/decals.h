@@ -5,6 +5,7 @@
 #include "object/object.h"
 
 #include "utils/RandomRange.h"
+#include "utils/reset_on_move.h"
 
 namespace decals {
 
@@ -20,9 +21,12 @@ class DecalDefinition {
 	SCP_string _normalMapFilename;
 	bool _loopNormal = true;
 
-	int _diffuseBitmap = -1;
-	int _glowBitmap = -1;
-	int _normalBitmap = -1;
+	// reset_on_move so that the defaulted move operations below transfer the
+	// handles; the destructor bm_release()s them, so a moved-from element must
+	// not keep aliasing live handles
+	util::reset_on_move<int, -1> _diffuseBitmap;
+	util::reset_on_move<int, -1> _glowBitmap;
+	util::reset_on_move<int, -1> _normalBitmap;
 
  public:
 	explicit DecalDefinition(SCP_string name);
@@ -128,6 +132,8 @@ void loadBitmaps(const creation_info& info);
  * @param info The information to page in
  */
 void pageInDecal(const creation_info& info);
+
+bool decalSystemActive();
 
 /**
  * @brief Shut down the decal system. Must be called from game_shutdown

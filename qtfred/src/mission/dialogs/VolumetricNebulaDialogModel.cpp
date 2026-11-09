@@ -40,6 +40,7 @@ void VolumetricNebulaDialogModel::initializeData()
 		makeVolumetricsCopy(_volumetrics, volumetric_nebula{});
 		_volumetrics.enabled = false;
 	}
+	_modified = false;
 }
 
 bool VolumetricNebulaDialogModel::validate_data()

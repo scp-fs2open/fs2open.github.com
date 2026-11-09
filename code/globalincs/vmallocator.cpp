@@ -2,7 +2,24 @@
 
 #include "globalincs/vmallocator.h"
 
-std::locale SCP_default_locale("");
+// std::locale("") pulls in the process's environment locale categories (LC_CTYPE,
+// LC_MONETARY, LC_PAPER, etc.), any one of which can name a locale that isn't actually
+// installed on the host (e.g. mismatched regional-format overrides). That throws
+// std::runtime_error, and since this runs during static initialization -- before
+// main(), before any of our own exception handling exists -- an uncaught throw here
+// aborts the whole process before the game even starts. SCP_default_locale is only
+// ever used for plain ASCII case-folding (SCP_toupper/tolower/isdigit), so falling
+// back to the classic "C" locale is a safe, silent degradation.
+static std::locale make_scp_default_locale()
+{
+	try {
+		return std::locale("");
+	} catch (const std::runtime_error&) {
+		return std::locale::classic();
+	}
+}
+
+std::locale SCP_default_locale = make_scp_default_locale();
 
 void SCP_tolower(SCP_string &str)
 {

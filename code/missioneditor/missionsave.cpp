@@ -33,6 +33,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "missioneditor/common.h"
+#include "missioneditor/sexp_annotation_model.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
 #include "nebula/neb.h"
@@ -81,6 +82,7 @@
 			bypass_comment(expected_version " " property);                                            \
 	} while (false)
 
+
 int Fred_mission_save::autosave_mission_file(char* pathname)
 {
 	char backup_name[256], name2[256];
@@ -89,9 +91,9 @@ int Fred_mission_save::autosave_mission_file(char* pathname)
 	auto len = strlen(pathname);
 	strcpy_s(backup_name, pathname);
 	strcpy_s(name2, pathname);
-	sprintf(backup_name + len, ".%.3d", save_config.mission_backup_depth);
+	sprintf(backup_name + len, ".%.3d", MISSION_BACKUP_DEPTH);
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
-	for (i = save_config.mission_backup_depth; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		sprintf(backup_name + len, ".%.3d", i - 1);
 		sprintf(name2 + len, ".%.3d", i);
 		cf_rename(backup_name, name2, CF_TYPE_MISSIONS);
@@ -731,6 +733,8 @@ void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 
 				default:
 					UNREACHABLE("Goal %d not handled!", goalp[i].ai_mode);
+					valid = 0;
+					break;
 				}
 
 				if (valid)
@@ -1395,13 +1399,13 @@ void Fred_mission_save::fso_comment_push(const char* ver)
 		return;
 	}
 
-	SCP_string before = fso_ver_comment.back();
+	const auto &before = fso_ver_comment.back();
 
 	int major, minor, build, revis;
 	int in_major, in_minor, in_build, in_revis;
 	int elem1, elem2;
 
-	elem1 = scan_fso_version_string(fso_ver_comment.back().c_str(), &major, &minor, &build, &revis);
+	elem1 = scan_fso_version_string(before.c_str(), &major, &minor, &build, &revis);
 	elem2 = scan_fso_version_string(ver, &in_major, &in_minor, &in_build, &in_revis);
 
 	// check consistency
@@ -1442,6 +1446,10 @@ void Fred_mission_save::fso_comment_pop(bool pop_all)
 	fso_ver_comment.pop_back();
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_common_object_data(object* objp, ship* shipp)
 {
 	int j, z;
@@ -2158,8 +2166,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Font:");
 					fout(" %s", stage.font_filename);
-				} else
-					optional_string_fred("$Font:");
+				}
 
 				// save voice
 				if (strlen(stage.voice_filename) > 0) //-V805
@@ -2169,8 +2176,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Voice:");
 					fout(" %s", stage.voice_filename);
-				} else
-					optional_string_fred("$Voice:");
+				}
 
 				// save UI
 				if (strlen(stage.ui_name) > 0) {
@@ -2179,8 +2185,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$UI:");
 					fout(" %s", stage.ui_name);
-				} else
-					optional_string_fred("$UI:");
+				}
 
 				// save background
 				save_custom_bitmap("$Background 640:",
@@ -2198,8 +2203,7 @@ int Fred_mission_save::save_fiction()
 					else
 						fout("\n$Formula:");
 					fout(" %s", sexp_out.c_str());
-				} else
-					optional_string_fred("$Formula:");
+				}
 			}
 		} else {
 			SCP_string msg = "Warning: This mission contains fiction viewer data, but you are saving in the retail "
@@ -2398,12 +2402,12 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	char savepath[MAX_PATH_LEN];
 
 	strcpy_s(savepath, "");
-	auto p = strrchr(pathname, '\\');
+	auto p = strrchr(pathname, DIR_SEPARATOR_CHAR);
 	if (p) {
 		auto len = p - pathname;
 		strncpy(savepath, pathname, len);
 		savepath[len] = '\0';
-		strcat_s(savepath, "\\");
+		strcat_s(savepath, DIR_SEPARATOR_STR);
 	}
 	strcat_s(savepath, "saving.xxx");
 
@@ -2424,25 +2428,72 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	save_mission_internal(savepath);
 
 	if (!err) {
-		char backup_name[MAX_PATH_LEN];
+		if (save_config.create_bak_file) {
+			char backup_name[MAX_PATH_LEN];
 
-		strcpy_s(backup_name, pathname);
+			strcpy_s(backup_name, pathname);
 
-		// drop extension
-		auto ext_ch = strrchr(backup_name, '.');
-		if (ext_ch != nullptr)
-			*ext_ch = 0;
+			// drop extension
+			auto ext_ch = strrchr(backup_name, '.');
+			if (ext_ch != nullptr)
+				*ext_ch = 0;
 
-		strcat_s(backup_name, ".bak");
+			strcat_s(backup_name, ".bak");
 #ifdef _WIN32
-		cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
+			cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
 #endif
-		cf_delete(backup_name, CF_TYPE_MISSIONS);
-		cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
+			cf_delete(backup_name, CF_TYPE_MISSIONS);
+			cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		} else {
+			cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
+		}
+	}
+
+	return err;
+}
+
+int Fred_mission_save::save_autosave_file(const char* pathname)
+{
+	save_mission_internal(pathname);
+	return err;
+}
+
+int Fred_mission_save::save_template_file(const char* pathname)
+{
+	char savepath[MAX_PATH_LEN];
+
+	strcpy_s(savepath, "");
+	auto p = strrchr(pathname, DIR_SEPARATOR_CHAR);
+	if (p) {
+		auto len = p - pathname;
+		strncpy(savepath, pathname, len);
+		savepath[len] = '\0';
+		strcat_s(savepath, DIR_SEPARATOR_STR);
+	}
+	strcat_s(savepath, "saving.xxx");
+
+	save_mission_internal(savepath);
+
+	if (!err) {
+		// Templates don't get .bak backups; just overwrite directly
+		cf_delete(pathname, CF_TYPE_MISSIONS);
 		cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
 	}
 
 	return err;
+}
+
+void Fred_mission_save::save_template_info()
+{
+	const auto& ti = save_config.template_info;
+
+	fout("#Template Info\n");
+	fout("\n$Template Title: %s", ti.title.c_str());
+	fout("\n$Template Author: %s", ti.author.c_str());
+	fout("\n$Template Tags: %s", ti.tags.c_str());
+	fout("\n$Template Description:\n%s\n$end_template_desc", ti.description.c_str());
+	fout("\n\n#End Template Info\n\n");
 }
 
 int Fred_mission_save::save_mission_info()
@@ -2463,7 +2514,7 @@ int Fred_mission_save::save_mission_info()
 	// XSTR
 	required_string_fred("$Name:");
 	parse_comments();
-	fout_ext(" ", "%s", The_mission.name);
+	fout_ext(" ", "%s", The_mission.name.c_str());
 
 	required_string_fred("$Author:");
 	parse_comments();
@@ -2515,25 +2566,78 @@ int Fred_mission_save::save_mission_info()
 		fout("\n+Flags:");
 	}
 
-	fout(" %" PRIu64, The_mission.flags.to_u64());
+	fout(" " UINT64_T_ARG, The_mission.flags.to_u64());
 
-	// maybe write out Nebula intensity
+	// maybe write out Nebula values
 	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		Assert(Neb2_awacs > 0.0f);
-		fout("\n+NebAwacs: %f\n", Neb2_awacs);
+		if (optional_string_fred("+NebAwacs:"))
+			parse_comments(2);
+		else
+			fout("\n\n+NebAwacs:");
+		fout(" %f", Neb2_awacs);
 
 		// storm name
-		fout("\n+Storm: %s\n", Mission_parse_storm_name);
+		if (optional_string_fred("+Storm:"))
+			parse_comments();
+		else
+			fout("\n+Storm:");
+		fout(" %s", Mission_parse_storm_name);
+
+		// write out the nebula clipping multipliers...
+		if (save_config.save_format != MissionFormat::RETAIL) {
+			// legacy values
+			if (Neb2_fog_save_legacy_values)
+			{
+				if (optional_string_fred("+Fog Near Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Mult:");
+				fout(" %f", Neb2_fog_legacy_near_mult);
+
+				if (optional_string_fred("+Fog Far Mult:"))
+					parse_comments();
+				else
+					fout("\n+Fog Far Mult:");
+				fout(" %f", Neb2_fog_legacy_far_mult);
+			}
+			// Modern fogging values - note that the writing of these values signals to the parser that this mission was created with a version of FSO that has the modern fogging fixes.
+			// Per Lafiel, these should never be only-if-non-default, since the fogging converter is controlled by their presence or absence.
+			else
+			{
+				if (optional_string_fred("+Fog 1000m Visibility:"))
+					parse_comments();
+				else
+					fout("\n+Fog 1000m Visibility:");
+				fout(" %f", Neb2_fog_1000m_visibility);
+
+				if (optional_string_fred("+Fog Near Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Near Distance:");
+				fout(" %f", Neb2_fog_near_distance);
+
+				if (optional_string_fred("+Fog Skybox Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Skybox Clip Distance:");
+				fout(" %f", Neb2_fog_skybox_clip_distance);
+
+				if (optional_string_fred("+Fog Clip Distance:"))
+					parse_comments();
+				else
+					fout("\n+Fog Clip Distance:");
+				fout(" %f", Neb2_fog_clip_distance);
+			}
+		}
 	}
 
-	// Goober5000
 	if (save_config.save_format != MissionFormat::RETAIL) {
-		// write out the nebula clipping multipliers
-		fout("\n+Fog Near Mult: %f\n", Neb2_fog_near_mult);
-		fout("\n+Fog Far Mult: %f\n", Neb2_fog_far_mult);
-
 		if (The_mission.contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT) {
 			fout("\n$Contrail Speed Threshold: %d\n", The_mission.contrail_threshold);
+		}
+
+		if (The_mission.flags[Mission::Mission_Flags::Large_ships_no_collide_by_default]) {
+			fout("\n+Large Ship Collision Group: %d\n", The_mission.large_ship_no_collide_collision_group);
 		}
 	}
 
@@ -2757,6 +2861,31 @@ int Fred_mission_save::save_mission_info()
 	// this is compatible with non-SCP variants - Goober5000
 	fout(" %d", (The_mission.support_ships.max_support_ships == 0) ? 1 : 0);
 
+	// version-gated support options; see also check_for_25_1_data()
+	auto more_support_options_version = gameversion::version(25, 1);
+
+	if (save_config.save_format != MissionFormat::RETAIL) {
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Disallow Support Rearm:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Disallow Support Rearm:");
+			}
+
+			fout(" %d", The_mission.support_ships.disallow_rearm ? 1 : 0);
+		}
+
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Allow Support Rearm Weapon Precedence:")) {
+				parse_comments(2);
+			} else {
+				fout("\n+Allow Support Rearm Weapon Precedence:");
+			}
+
+			fout(" %d", The_mission.support_ships.allow_rearm_weapon_precedence ? 1 : 0);
+		}
+	}
+
 	// here be WMCoolmon's hull and subsys repair stuff
 	if (save_config.save_format != MissionFormat::RETAIL) {
 		if (optional_string_fred("+Hull Repair Ceiling:")) {
@@ -2772,6 +2901,15 @@ int Fred_mission_save::save_mission_info()
 			fout("\n+Subsystem Repair Ceiling:");
 		}
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
+
+		if (The_mission.required_fso_version >= more_support_options_version) {
+			if (optional_string_fred("+Support Rearm Pool From Loadout:")) {
+				parse_comments(1);
+			} else {
+				fout("\n+Support Rearm Pool From Loadout:");
+			}
+			fout(" %d", The_mission.support_ships.rearm_pool_from_loadout ? 1 : 0);
+		}
 	}
 
 	if (Mission_all_attack) {
@@ -2977,7 +3115,7 @@ int Fred_mission_save::save_mission_info()
 	fso_comment_pop();
 
 	// EatThePath's lighting profiles
-	if (The_mission.lighting_profile_name != lighting_profiles::default_name()) {
+	if (!The_mission.lighting_profile_name.empty() && The_mission.lighting_profile_name != lighting_profiles::default_name()) {
 		fso_comment_push(";;FSO 23.1.0;;");
 		if (optional_string_fred("$Lighting Profile:")) {
 			parse_comments(2);
@@ -3068,6 +3206,9 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		err = -1;
 		return;
 	}
+
+	if (!save_config.template_info.title.empty())
+		save_template_info();
 
 	// Goober5000
 	convert_special_tags_to_retail();
@@ -3385,6 +3526,10 @@ int Fred_mission_save::save_warp_params(WarpDirection direction, ship* shipp)
 	return err;
 }
 
+// Per-ship field handling here MUST stay in sync with:
+//   parse_create_object_sub() in missionparse.cpp
+//   clone_ship_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable ship field, touch all three.
 int Fred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
@@ -3418,7 +3563,8 @@ int Fred_mission_save::save_objects()
 		count++;
 
 		// Display name
-		// The display name is only written if there was one at the start to avoid introducing inconsistencies
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists and the ship is not part of a wing, to avoid introducing inconsistencies
 		if (save_config.save_format != MissionFormat::RETAIL && ((save_config.always_save_display_names && shipp->wingnum < 0) || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
@@ -3426,10 +3572,10 @@ int Fred_mission_save::save_objects()
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
 			if ((save_config.always_save_display_names && shipp->wingnum < 0) || strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				if (optional_string_fred("$Display name:", "$Class:")) {
+				if (optional_string_fred("$Display Name:", "$Class:")) {
 					parse_comments();
 				} else {
-					fout("\n$Display name:");
+					fout("\n$Display Name:");
 				}
 				fout_ext(" ", "%s", shipp->get_display_name());
 			}
@@ -3468,7 +3614,7 @@ int Fred_mission_save::save_objects()
 			fout(" %s", save_config.fred_alt_names[i]);
 		}
 
-		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_alt_names is null!");
+		Assertion(save_config.fred_callsigns != nullptr, "save_config.fred_callsigns is null!");
 
 		// optional callsign
 		if (save_config.save_format != MissionFormat::RETAIL && strlen(save_config.fred_callsigns[i])) {
@@ -3559,10 +3705,10 @@ int Fred_mission_save::save_objects()
 				fout("\n$Arrival Anchor:");
 			}
 
-			z = shipp->arrival_anchor;
+			z = shipp->arrival_anchor.value();
 			if (z < 0) {
 				fout(" <error>");
-			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			} else if (z & ANCHOR_SPECIAL_ARRIVAL) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, save_config.save_format == MissionFormat::RETAIL);
@@ -3570,22 +3716,20 @@ int Fred_mission_save::save_objects()
 				// save it
 				fout(" %s", tmp);
 			} else {
-				fout(" %s", Ships[z].ship_name);
+				auto anchor_entry = ship_registry_get(z);
+				fout(" %s", anchor_entry ? anchor_entry->name : "<error>");
 			}
 		}
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if ((shipp->arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (shipp->arrival_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel* pm;
-
-				anchor_shipnum = shipp->arrival_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(shipp->arrival_anchor);
+				Assertion(anchor_entry, "Could not find arrival anchor for ship %s!", shipp->ship_name);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (shipp->arrival_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -3622,24 +3766,19 @@ int Fred_mission_save::save_objects()
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 
-			if (shipp->departure_anchor >= 0)
-				fout(" %s", Ships[shipp->departure_anchor].ship_name);
-			else
-				fout(" <error>");
+			auto anchor_entry = ship_registry_get(shipp->departure_anchor);
+			fout(" %s", anchor_entry ? anchor_entry->name : "<error>");
 		}
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if ((shipp->departure_location == DepartureLocation::TO_DOCK_BAY) && (shipp->departure_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel* pm;
-
-				anchor_shipnum = shipp->departure_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(shipp->departure_anchor);
+				Assertion(anchor_entry, "Could not find departure anchor for ship %s!", shipp->ship_name);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (shipp->departure_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -3814,6 +3953,8 @@ int Fred_mission_save::save_objects()
 				fout(" \"cannot-perform-scan-show-cargo\"");
 			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
 				fout(" \"no-targeting-limits\"");
+			if (shipp->flags[Ship::Ship_Flags::No_scanned_cargo])
+				fout(" \"no-scanned-cargo\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -4068,6 +4209,17 @@ int Fred_mission_save::save_objects()
 			fout(" %d", shipp->group);
 		}
 
+		if (save_config.save_format != MissionFormat::RETAIL &&
+			!shipp->fred_layer.empty() &&
+			!lcase_equal(shipp->fred_layer, "Default")) {
+			if (optional_string_fred("+Layer:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Layer:");
+
+			fout(" %s", shipp->fred_layer.c_str());
+		}
+
 		// always write out the score to ensure backwards compatibility. If the score is the same as the value
 		// in the table write out a flag to tell the game to simply use whatever is in the table instead
 		if (Ship_info[shipp->ship_info_index].score == shipp->score) {
@@ -4174,9 +4326,9 @@ int Fred_mission_save::save_objects()
 int Fred_mission_save::save_players()
 {
 	bool wrote_fso_data = false;
-	int i, j;
+	int i;
 	int var_idx;
-	int used_pool[MAX_WEAPON_TYPES];
+	SCP_map<int, int> used_pool;
 
 	if (optional_string_fred("#Alternate Types:")) { // Make sure the parser doesn't get out of sync
 		required_string_fred("#end");
@@ -4250,8 +4402,7 @@ int Fred_mission_save::save_players()
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");
 		parse_comments();
-		Assert(Player_start_shipnum >= 0);
-		fout(" %s", Ships[Player_start_shipnum].ship_name);
+		fout(" %s", (Player_start_shipnum >= 0) ? Ships[Player_start_shipnum].ship_name : "<none>");
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if (Team_data[i].do_not_validate) {
@@ -4264,42 +4415,44 @@ int Fred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
-		int num_dogfight_weapons = 0;
-		SCP_vector<SCP_string> dogfight_ships;
+		SCP_vector<SCP_string> ships_without_dogfight_weapons;
 
-		for (j = 0; j < Team_data[i].num_ship_choices; j++) {
+		for (const auto &sc : Team_data[i].ship_choices) {
 			// Check to see if a variable name should be written for the class rather than a number
-			if (strlen(Team_data[i].ship_list_variables[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].ship_list_variables[j]);
+			if (!sc.class_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(sc.class_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name);
+				fout("\t\"%s\"\t", Ship_info[sc.class_index].name);
 			}
 
 			// Now check if we should write a variable or a number for the amount of ships available
-			if (strlen(Team_data[i].ship_count_variables[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].ship_count_variables[j]);
+			if (!sc.count_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(sc.count_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("%d\n", Team_data[i].ship_count[j]);
+				fout("%d\n", sc.count);
 			}
 
 			// Check the weapons pool for at least one dogfight weapon for this ship type
-			if (IS_MISSION_MULTI_DOGFIGHT) {
-				for (int wepCount = 0; wepCount < Team_data[i].num_weapon_choices; wepCount++) {
-					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] &
-						DOGFIGHT_WEAPON) {
-						num_dogfight_weapons++;
+			// (variable-specified classes can't be resolved at save time, so skip them)
+			if (IS_MISSION_MULTI_DOGFIGHT && sc.class_index >= 0) {
+				bool found_dogfight_weapon = false;
+				for (const auto &wc : Team_data[i].weapon_choices) {
+					if (wc.class_index >= 0 &&
+						(Ship_info[sc.class_index].allowed_weapons[wc.class_index] & DOGFIGHT_WEAPON)) {
+						found_dogfight_weapon = true;
 						break;
-					} else {
-						dogfight_ships.push_back(Ship_info[Team_data[i].ship_list[j]].name);
 					}
+				}
+				if (!found_dogfight_weapon) {
+					ships_without_dogfight_weapons.emplace_back(Ship_info[sc.class_index].name);
 				}
 			}
 		}
@@ -4307,8 +4460,8 @@ int Fred_mission_save::save_players()
 		fout(")");
 
 		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
-		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
-			for (const auto& d_ship : dogfight_ships) {
+		if (IS_MISSION_MULTI_DOGFIGHT && !ships_without_dogfight_weapons.empty()) {
+			for (const auto& d_ship : ships_without_dogfight_weapons) {
 				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", d_ship.c_str()));
 			}
 			SCP_string msg =
@@ -4327,47 +4480,79 @@ int Fred_mission_save::save_players()
 		fout(" (\n");
 		generate_weaponry_usage_list_team(i, used_pool);
 
-		for (j = 0; j < Team_data[i].num_weapon_choices; j++) {
+		for (const auto &wc : Team_data[i].weapon_choices) {
 			// first output the weapon name or a variable that sets it
-			if (strlen(Team_data[i].weaponry_pool_variable[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_pool_variable[j]);
+			if (!wc.class_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(wc.class_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
-				fout("\t\"%s\"\t", Weapon_info[Team_data[i].weaponry_pool[j]].name);
+				fout("\t\"%s\"\t", Weapon_info[wc.class_index].name);
 			}
 
 			// now output the amount of this weapon or a variable that sets it. If this weapon is in the used pool and
 			// isn't set by a variable we should add the amount of weapons used by the wings to it and zero the entry so
 			// we know that we have dealt with it
-			if (strlen(Team_data[i].weaponry_amount_variable[j])) {
-				var_idx = get_index_sexp_variable_name(Team_data[i].weaponry_amount_variable[j]);
+			if (!wc.count_variable.empty()) {
+				var_idx = get_index_sexp_variable_name(wc.count_variable.c_str());
 				Assert(var_idx > -1 && var_idx < MAX_SEXP_VARIABLES);
 				wrote_fso_data = true;
 
 				fout("@%s\n", Sexp_variables[var_idx].variable_name);
 			} else {
-				if (strlen(Team_data[i].weaponry_pool_variable[j])) {
-					fout("%d\n", Team_data[i].weaponry_count[j]);
+				if (!wc.class_variable.empty()) {
+					fout("%d\n", wc.count);
 				} else {
-					fout("%d\n", Team_data[i].weaponry_count[j] + used_pool[Team_data[i].weaponry_pool[j]]);
-					used_pool[Team_data[i].weaponry_pool[j]] = 0;
+					fout("%d\n", wc.count + used_pool.value_or(wc.class_index, 0));
+					used_pool.erase(wc.class_index);
 				}
 			}
 		}
 
 		// now we add anything left in the used pool as a static entry
 		if (!Team_data[i].do_not_validate) {
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (used_pool[j] > 0) {
-					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, used_pool[j]);
+			for (const auto &[weapon_class, count] : used_pool) {
+				if (count > 0) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[weapon_class].name, count);
 				}
 			}
 		}
 
 		fout(")");
+
+		// version-gated support options; see also check_for_25_1_data()
+		auto more_support_options_version = gameversion::version(25, 1);
+
+		// a savable pool entry is one on a rearmable player-allowed weapon with a non-default (!= -1) amount
+		auto is_savable_rearm_pool_entry = [](const std::pair<const int, int> &entry) {
+			return Weapon_info[entry.first].wi_flags[Weapon::Info_Flags::Player_allowed] &&
+				   !Weapon_info[entry.first].disallow_rearm && entry.second != -1;
+		};
+
+		const auto &team_rearm_pool = The_mission.support_ships.rearm_weapon_pool[i];
+
+		bool has_rearm_pool_entries = false;
+		if (save_config.save_format != MissionFormat::RETAIL && The_mission.required_fso_version >= more_support_options_version && !The_mission.support_ships.rearm_pool_from_loadout) {
+			has_rearm_pool_entries = std::any_of(team_rearm_pool.begin(), team_rearm_pool.end(), is_savable_rearm_pool_entry);
+		}
+		if (has_rearm_pool_entries) {
+			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
+				parse_comments(2);
+			} else {
+				fout("\n\n+Support Rearm Pool:");
+			}
+
+			// the map iterates in ascending weapon class order, matching the old full scan
+			fout(" (\n");
+			for (const auto &entry : team_rearm_pool) {
+				if (is_savable_rearm_pool_entry(entry)) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[entry.first].name, entry.second);
+				}
+			}
+			fout(")");
+		}
 
 		// sanity check
 		if (save_config.save_format == MissionFormat::RETAIL && wrote_fso_data) {
@@ -4378,23 +4563,15 @@ int Fred_mission_save::save_players()
 		}
 
 		// Goober5000 - mjn.mixael's required weapon feature
-		bool uses_required_weapon = false;
-		for (j = 0; j < weapon_info_size(); j++) {
-			if (Team_data[i].weapon_required[j]) {
-				uses_required_weapon = true;
-				break;
-			}
-		}
-		if (save_config.save_format != MissionFormat::RETAIL && uses_required_weapon) {
+		if (save_config.save_format != MissionFormat::RETAIL && !Team_data[i].required_weapons.empty()) {
 			if (optional_string_fred("+Required for mission:", "$Starting Shipname:"))
 				parse_comments(2);
 			else
 				fout("\n+Required for mission:");
 
 			fout(" (");
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (Team_data[i].weapon_required[j])
-					fout(" \"%s\"", Weapon_info[j].name);
+			for (int weapon_class : Team_data[i].required_weapons) {
+				fout(" \"%s\"", Weapon_info[weapon_class].name);
 			}
 			fout(" )");
 		}
@@ -4460,22 +4637,24 @@ int Fred_mission_save::save_plot_info()
 
 int Fred_mission_save::save_reinforcements()
 {
-	int i, j, type;
+	int j, type;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Reinforcements");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_reinforcements);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Reinforcements.size());
 
-	for (i = 0; i < Num_reinforcements; i++) {
+	bool first_r = true;
+	for (const auto &reinforcement: Reinforcements) {
 		required_string_either_fred("$Name:", "#Background bitmaps");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
-		fout(" %s", Reinforcements[i].name);
+		parse_comments(!first_r ? 2 : 1);
+		first_r = false;
+		fout(" %s", reinforcement.name);
 
 		type = TYPE_ATTACK_PROTECT;
 		for (j = 0; j < MAX_SHIPS; j++)
-			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, Reinforcements[i].name)) {
+			if ((Ships[j].objnum != -1) && !stricmp(Ships[j].ship_name, reinforcement.name)) {
 				if (Ship_info[Ships[j].ship_info_index].flags[Ship::Info_Flags::Support])
 					type = TYPE_REPAIR_REARM;
 				break;
@@ -4487,13 +4666,13 @@ int Fred_mission_save::save_reinforcements()
 
 		required_string_fred("$Num times:");
 		parse_comments();
-		fout(" %d", Reinforcements[i].uses);
+		fout(" %d", reinforcement.uses);
 
 		if (optional_string_fred("+Arrival Delay:", "$Name:"))
 			parse_comments();
 		else
 			fout("\n+Arrival Delay:");
-		fout(" %d", Reinforcements[i].arrival_delay);
+		fout(" %d", reinforcement.arrival_delay);
 
 		if (optional_string_fred("+No Messages:", "$Name:"))
 			parse_comments();
@@ -4501,8 +4680,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+No Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].no_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].no_messages[j]);
+			if (strlen(reinforcement.no_messages[j]))
+				fout(" \"%s\"", reinforcement.no_messages[j]);
 		}
 		fout(" )");
 
@@ -4512,8 +4691,8 @@ int Fred_mission_save::save_reinforcements()
 			fout("\n+Yes Messages:");
 		fout(" (");
 		for (j = 0; j < MAX_REINFORCEMENT_MESSAGES; j++) {
-			if (strlen(Reinforcements[i].yes_messages[j]))
-				fout(" \"%s\"", Reinforcements[i].yes_messages[j]);
+			if (strlen(reinforcement.yes_messages[j]))
+				fout(" \"%s\"", reinforcement.yes_messages[j]);
 		}
 		fout(" )");
 
@@ -4740,6 +4919,10 @@ int Fred_mission_save::save_vector(const vec3d& v)
 	return 0;
 }
 
+// The jump-node section of this function MUST stay in sync with:
+//   the "$Jump Node:" parse block in missionparse.cpp
+//   clone_jump_node_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable jump-node field, touch all three.
 int Fred_mission_save::save_waypoints()
 {
 	// object *ptr;
@@ -4749,56 +4932,59 @@ int Fred_mission_save::save_waypoints()
 	parse_comments(2);
 	fout("\t\t;! %d lists total\n", Waypoint_lists.size());
 
-	SCP_list<CJumpNode>::iterator jnp;
-	for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
+	for (auto &jn : Jump_nodes) {
+		if (jn.GetSCPObjectNumber() < 0)
+			continue;
+
 		required_string_fred("$Jump Node:", "$Jump Node Name:");
 		parse_comments(2);
-		save_vector(jnp->GetSCPObject()->pos);
+		save_vector(jn.GetSCPObject()->pos);
 
 		required_string_fred("$Jump Node Name:", "$Jump Node:");
 		parse_comments();
-		fout(" %s", jnp->GetName());
+		fout(" %s", jn.GetName());
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
 
-			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			if (save_config.always_save_display_names || jnp->HasDisplayName()) {
+			// (If we are always saving display names, the "only/not written" comments do not apply)
+			// The display name is only written if it currently exists, to avoid introducing inconsistencies
+			if (save_config.always_save_display_names || jn.HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
-				strcpy_s(truncated_name, jnp->GetName());
+				strcpy_s(truncated_name, jn.GetName());
 				end_string_at_first_hash_symbol(truncated_name);
 
 				// Also, the display name is not written if it's just the truncation of the name at the hash
-				if (save_config.always_save_display_names || strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
+				if (save_config.always_save_display_names || strcmp(jn.GetDisplayName(), truncated_name) != 0) {
 					if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 						parse_comments();
 					} else {
 						fout("\n+Display Name:");
 					}
 
-					fout_ext("", "%s", jnp->GetDisplayName());
+					fout_ext("", "%s", jn.GetDisplayName());
 				}
 			}
 
-			if (jnp->IsSpecialModel()) {
+			if (jn.IsSpecialModel()) {
 				if (optional_string_fred("+Model File:", "$Jump Node:")) {
 					parse_comments();
 				} else {
 					fout("\n+Model File:");
 				}
 
-				int model = jnp->GetModelNumber();
+				int model = jn.GetModelNumber();
 				polymodel* pm = model_get(model);
 				fout(" %s", pm->filename);
 			}
 
-			if (jnp->IsColored()) {
+			if (jn.IsColored()) {
 				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
 					parse_comments();
 				} else {
 					fout("\n+Alphacolor:");
 				}
 
-				const auto& jn_color = jnp->GetColor();
+				const auto& jn_color = jn.GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);
 			}
 
@@ -4806,26 +4992,69 @@ int Fred_mission_save::save_waypoints()
 			if (hidden_is_there)
 				parse_comments();
 
-			if (hidden_is_there || jnp->IsHidden()) {
+			if (hidden_is_there || jn.IsHidden()) {
 				if (!hidden_is_there)
 					fout("\n+Hidden:");
 
-				if (jnp->IsHidden())
+				if (jn.IsHidden())
 					fout(" %s", "true");
 				else
 					fout(" %s", "false");
+			}
+
+			const SCP_string& jn_layer = jn.GetFredLayer();
+			if (!jn_layer.empty() && !lcase_equal(jn_layer, "Default")) {
+				if (optional_string_fred("+Layer:", "$Jump Node:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", jn_layer.c_str());
 			}
 		}
 
 		fso_comment_pop();
 	}
 
+	// Per-waypoint-path field handling here MUST stay in sync with:
+	//   parse_waypoint_list() in missionparse.cpp
+	//   clone_waypoint_path_instance_data() in missioneditor/objectduplication.cpp
+	// When you add a new editable waypoint-path field, touch all three.
 	bool first_wpt_list = true;
 	for (const auto& ii : Waypoint_lists) {
 		required_string_either_fred("$Name:", "#Messages");
 		required_string_fred("$Name:");
 		parse_comments(first_wpt_list ? 1 : 2);
 		fout(" %s", ii.get_name());
+
+		if (save_config.save_format != MissionFormat::RETAIL) {
+
+			int nol_in_file = optional_string_fred("+No Draw Lines:", "$List:");
+			if (nol_in_file)
+				parse_comments();
+			if (nol_in_file || ii.get_no_draw_lines()) {
+				if (!nol_in_file)
+					fout("\n+No Draw Lines:");
+				fout(" %s", ii.get_no_draw_lines() ? "true" : "false");
+			}
+
+			if (ii.get_has_custom_color()) {
+				if (optional_string_fred("+Color:", "$List:")) {
+					parse_comments();
+				} else {
+					fout("\n+Color:");
+				}
+				fout(" %d %d %d", ii.get_color_r(), ii.get_color_g(), ii.get_color_b());
+			}
+
+			const SCP_string& wpt_layer = ii.get_fred_layer();
+			if (!wpt_layer.empty() && !lcase_equal(wpt_layer, "Default")) {
+				if (optional_string_fred("+Layer:", "$List:"))
+					parse_comments();
+				else
+					fout("\n+Layer:");
+				fout(" %s", wpt_layer.c_str());
+			}
+		}
 
 		required_string_fred("$List:");
 		parse_comments();
@@ -4875,6 +5104,25 @@ int Fred_mission_save::save_wings()
 		fout(" %s", w.name);
 
 		count++;
+
+		// Display name
+		// (If we are always saving display names, the "only/not written" comments do not apply)
+		// The display name is only written if it currently exists, to avoid introducing inconsistencies
+		if (save_config.save_format != MissionFormat::RETAIL && (save_config.always_save_display_names || w.has_display_name())) {
+			char truncated_name[NAME_LENGTH];
+			strcpy_s(truncated_name, w.name);
+			end_string_at_first_hash_symbol(truncated_name);
+
+			// Also, the display name is not written if it's just the truncation of the name at the hash
+			if (save_config.always_save_display_names || strcmp(w.get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display Name:", "$Waves:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display Name:");
+				}
+				fout_ext(" ", "%s", w.get_display_name());
+			}
+		}
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
@@ -4936,10 +5184,10 @@ int Fred_mission_save::save_wings()
 			else
 				fout("\n$Arrival Anchor:");
 
-			int z = w.arrival_anchor;
+			int z = w.arrival_anchor.value();
 			if (z < 0) {
 				fout(" <error>");
-			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			} else if (z & ANCHOR_SPECIAL_ARRIVAL) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, save_config.save_format == MissionFormat::RETAIL);
@@ -4947,22 +5195,20 @@ int Fred_mission_save::save_wings()
 				// save it
 				fout(" %s", tmp);
 			} else {
-				fout(" %s", Ships[z].ship_name);
+				auto anchor_entry = ship_registry_get(z);
+				fout(" %s", anchor_entry ? anchor_entry->name : "<error>");
 			}
 		}
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if ((w.arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (w.arrival_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel* pm;
-
-				anchor_shipnum = w.arrival_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(w.arrival_anchor);
+				Assertion(anchor_entry, "Could not find arrival anchor for wing %s!", w.name);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (w.arrival_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -4995,24 +5241,19 @@ int Fred_mission_save::save_wings()
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 
-			if (w.departure_anchor >= 0)
-				fout(" %s", Ships[w.departure_anchor].ship_name);
-			else
-				fout(" <error>");
+			auto anchor_entry = ship_registry_get(w.departure_anchor);
+			fout(" %s", anchor_entry ? anchor_entry->name : "<error>");
 		}
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if ((w.departure_location == DepartureLocation::TO_DOCK_BAY) && (w.departure_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel* pm;
-
-				anchor_shipnum = w.departure_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(w.departure_anchor);
+				Assertion(anchor_entry, "Could not find departure anchor for wing %s!", w.name);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (w.departure_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -5131,6 +5372,10 @@ int Fred_mission_save::save_wings()
 	return err;
 }
 
+// Per-prop field handling here MUST stay in sync with:
+//   parse_prop() in missionparse.cpp
+//   clone_prop_instance_data() in missioneditor/objectduplication.cpp
+// When you add a new editable prop field, touch all three.
 int Fred_mission_save::save_props()
 {
 	auto num_props = count_items_with_value(Props);
@@ -5176,6 +5421,17 @@ int Fred_mission_save::save_props()
 				if (!(Objects[p->objnum].flags[Object::Object_Flags::Collides]))
 					fout(" \"no_collide\"");
 				fout(" )");
+
+				if (save_config.save_format != MissionFormat::RETAIL &&
+					!p->fred_layer.empty() &&
+					!lcase_equal(p->fred_layer, "Default")) {
+					if (optional_string_fred("+Layer:", "$Name:"))
+						parse_comments();
+					else
+						fout("\n+Layer:");
+
+					fout(" %s", p->fred_layer.c_str());
+				}
 
 				fso_comment_pop();
 			}

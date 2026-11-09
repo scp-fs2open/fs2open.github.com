@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Variables &amp; Containers - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Variables &amp; Containers</nav>
+<h1>Variables &amp; Containers</h1>
+<p>Opens via <strong>Editors &rsaquo; Variables</strong>.</p>
+<p>Declares named variables and containers that <a href="../concepts/sexps.html">SEXPs</a>
+can read and write during the mission. Variables hold a single value; containers hold
+collections of values. Both are referenced in SEXPs by name and can be used throughout
+the event system to track state, accumulate data, and communicate between events.</p>
+
+<h2>Variables tab</h2>
+<p>The main list shows all variables in the mission with their name and default value.
+String type variables are colored blue while numeric type are color orange.
+The list is filterable. Use <strong>Add</strong>, <strong>Copy</strong>, and
+<strong>Delete</strong> to manage entries. Double-click a variable's name or value to
+edit it inline.</p>
+
+<h3>Variable properties</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>The identifier used to reference this variable in
+        SEXPs.</td></tr>
+    <tr><td>Default value</td><td>The value the variable starts with at the beginning
+        of the mission.</td></tr>
+    <tr><td>Type</td><td><em>Number</em> or <em>String</em>. Variables are explicitly
+        typed and the type cannot be changed at runtime.</td></tr>
+</table>
+
+<h3>Persistence</h3>
+<p>Controls when a variable's value is saved between missions. The
+<strong>Eternal</strong> checkbox (only available when a persistence mode is
+selected) controls <em>where</em> it is saved: unchecked saves to the campaign file
+(value is scoped to the current campaign); checked saves to the player's pilot file
+(value persists across all campaigns and is always available).</p>
+<table>
+    <tr><th>Setting</th><th>Description</th></tr>
+    <tr><td>No persistence</td><td>The variable exists only for the duration of this
+        mission. Its value is reset each time the mission starts. Eternal is not
+        available.</td></tr>
+    <tr><td>Save on Mission Completed</td><td>The variable's value is saved when the
+        player accepts the mission outcome in the debriefing. If the player quits
+        without accepting, the value is not saved.</td></tr>
+    <tr><td>Save on Mission Close</td><td>The variable's value is saved whenever the
+        mission closes, whether the player accepted, quit, or restarted.</td></tr>
+</table>
+
+<h3>Network variable</h3>
+<p>When checked, the variable's value is broadcast to all players whenever it is
+modified during a multiplayer mission, keeping it synchronized across the
+session.</p>
+
+<h2>Containers tab</h2>
+<p>Containers hold collections of values. The upper list shows all containers in the
+mission and is filterable. List containers are colored blue while map containers are
+colored orange. Use <strong>Add</strong>, <strong>Copy</strong>, and <strong>Delete</strong>
+to manage containers. Double-click a container's name to edit it inline. Containers
+have the same persistence and network settings as variables.</p>
+
+<h3>Container type</h3>
+<table>
+    <tr><th>Type</th><th>Description</th></tr>
+    <tr><td>List</td><td>An ordered sequence of values, all of the same type (Number
+        or String). Items can be added, removed, and iterated in SEXPs.</td></tr>
+    <tr><td>Map</td><td>A collection of key-value pairs where each key maps to a
+        value. Keys and values each have their own type (Number or String,
+        independently). For example, a map with string keys and number values can
+        associate ship names with scores, or a map with string keys and string values
+        can work like a set of named labels. SEXPs access map entries by key.</td></tr>
+</table>
+
+<h3>Container contents</h3>
+<p>The lower box shows the contents of the selected container and is also filterable.
+Use <strong>Add</strong>, <strong>Copy</strong>, and <strong>Delete</strong> to
+manage entries, and the arrow buttons to reorder them. Double-click a key or value to
+edit it inline. For Map containers, the <strong>Swap</strong> button exchanges a key
+and its value.</p>
+</body>
+</html>

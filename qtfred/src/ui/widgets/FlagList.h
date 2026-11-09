@@ -20,6 +20,7 @@ class FlagListWidget final : public QWidget {
 	Q_OBJECT
 	Q_PROPERTY(bool filterVisible READ filterVisible WRITE setFilterVisible)
 	Q_PROPERTY(bool toolbarVisible READ toolbarVisible WRITE setToolbarVisible)
+	Q_PROPERTY(bool tristate READ tristate WRITE setTristate)
 
   public:
 	explicit FlagListWidget(QWidget* parent = nullptr);
@@ -39,6 +40,9 @@ class FlagListWidget final : public QWidget {
 
 	void setToolbarVisible(bool visible);
 	bool toolbarVisible() const;
+
+	void setTristate(bool tristate);
+	bool tristate() const;
 
 	// Clear all items
 	void clear();
@@ -78,6 +82,7 @@ class FlagListWidget final : public QWidget {
 	bool _updating = false; // guards against emitting signals during programmatic changes
 	bool _filterVisible = true;
 	bool _toolbarVisible = true;
+	bool _tristate = false;
 };
 
 } // namespace fso::fred

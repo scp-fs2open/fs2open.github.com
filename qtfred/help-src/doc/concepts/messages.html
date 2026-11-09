@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Messages - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Concepts &rsaquo; Messages</nav>
+<h1>Messages</h1>
+<p>Messages are the in-mission communications the player sees and hears. These
+include wingmate callouts, command briefings, enemy taunts. Each message is
+defined once in the mission's global message list and can be triggered by any event.</p>
+
+<h2>Message anatomy</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Name</td><td>Internal identifier used to reference the message from
+        events and SEXPs.</td></tr>
+    <tr><td>Text</td><td>The text displayed in the message box.</td></tr>
+    <tr><td>Audio file</td><td>The voice file played with the message.</td></tr>
+    <tr><td>Persona</td><td>The voice persona associated with this message, used
+        to select the appropriate voice variant.</td></tr>
+    <tr><td>Sender</td><td>The ship that sends the message.</td></tr>
+</table>
+
+<h2>Priority</h2>
+<p>Each message has a priority - <strong>Low</strong>, <strong>Normal</strong>, or
+<strong>High</strong> - that controls how it interacts with other messages playing
+at the same time.</p>
+<table>
+    <tr><th>Priority</th><th>Behavior</th></tr>
+    <tr><td>Low</td><td>Queued behind any currently playing or queued messages.
+        Will not interrupt anything.</td></tr>
+    <tr><td>Normal</td><td>Queued behind messages of equal or higher priority.
+        Interrupts low-priority messages.</td></tr>
+    <tr><td>High</td><td>Interrupts any lower-priority message currently
+        playing.</td></tr>
+</table>
+<p>Within the same priority level, messages play in the order they were
+triggered.</p>
+
+<h2>Triggering messages</h2>
+<p>Messages are sent by events in the
+<a href="../dialogs/MissionEventsDialog.html">Mission Events</a> dialog using a
+send-message SEXP. The same message can be triggered by multiple events, and the
+same event can send multiple messages.</p>
+
+<h2>Personas</h2>
+<p>Personas are defined in the game tables and control the voice set used for a
+message. Assigning a persona to both a message and a ship creates a consistent
+"voice" for that character across the mission. A ship with a Command persona
+is eligible to serve as the Command sender in
+<a href="../dialogs/MissionSpecsDialog.html">Mission Specs</a>.</p>
+</body>
+</html>

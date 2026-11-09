@@ -12,7 +12,6 @@ class waypoint
 	public:
 		waypoint();
 		waypoint(const vec3d *pos);
-		~waypoint();
 
 		// accessors
 		const vec3d *get_pos() const;
@@ -26,7 +25,7 @@ class waypoint
 		void set_pos(const vec3d *pos);
 
 	private:
-		vec3d m_position;
+		vec3d m_parsed_position;	// only relevant until the game object is created, after which the waypoint delegates to the object position
 		int m_objnum;
 
 	friend void waypoint_create_game_object(waypoint *wpt, int list_index, int wpt_index);
@@ -37,7 +36,6 @@ class waypoint_list
 	public:
 		waypoint_list();
 		waypoint_list(const char *name);
-		~waypoint_list();
 
 		// accessors
 		const char *get_name() const;
@@ -46,10 +44,26 @@ class waypoint_list
 
 		// mutators
 		void set_name(const char *name);
+		void set_no_draw_lines(bool val);
+		void set_color(int r, int g, int b);
+		void clear_color();
+		void set_fred_layer(const SCP_string& layer) { m_fred_layer = layer; }
+
+		// display property accessors
+		bool get_no_draw_lines() const;
+		bool get_has_custom_color() const;
+		int get_color_r() const;
+		int get_color_g() const;
+		int get_color_b() const;
+		const SCP_string& get_fred_layer() const { return m_fred_layer; }
 
 	private:
 		char m_name[NAME_LENGTH];
 		SCP_vector<waypoint> m_waypoints;
+		bool m_no_draw_lines;
+		bool m_has_custom_color;
+		int m_color_r, m_color_g, m_color_b;
+		SCP_string m_fred_layer = "Default";	// FRED view layer assignment
 };
 
 //********************GLOBALS********************

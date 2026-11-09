@@ -11,6 +11,7 @@
 
 
 #include "cfile/cfile.h"
+#include "cmdline/cmdline.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -445,7 +446,7 @@ void hud_config_get_unique_huds()
 				}
 			}
 
-			HC_available_huds.push_back(newPair);
+			HC_available_huds.push_back(std::move(newPair));
 			seenHuds.insert(hudName);
 		}
 	}

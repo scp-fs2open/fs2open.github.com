@@ -1,6 +1,7 @@
 #pragma once
 
 #include "mission/dialogs/AbstractDialogModel.h"
+#include "missioneditor/common.h"
 
 namespace fso::fred::dialogs {
 
@@ -27,7 +28,6 @@ class RelativeCoordinatesDialogModel : public AbstractDialogModel {
   private:
 	void computeCoordinates();
 	static float to_degrees(float rad);
-	static float normalize_degrees(float deg);
 
 	int _originIndex = -1;
 	int _satelliteIndex = -1;

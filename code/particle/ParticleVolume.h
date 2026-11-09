@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
+#include "particle/EffectHost.h"
 
 #include <optional>
 
@@ -9,7 +10,7 @@ namespace particle {
 	class ParticleSource;
 	class ParticleVolume {
 	public:
-		virtual vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source, float particlesFraction) = 0;
+		virtual vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source, float particlesFraction, const EffectHost& host) = 0;
 
 		virtual void parse() = 0;
 
@@ -31,11 +32,13 @@ namespace particle {
 			vec3d outpnt = point;
 
 			if (rotOffset.has_value()) {
+				vm_vec_rotate(&outpnt, &outpnt, &orientation);
 				vec3d rot = *rotOffset;
 				vm_rot_point_around_line(&rot, &rot, rotOffsetRot, &vmd_zero_vector, &vmd_z_vector);
 				matrix orientUse;
 				vm_vector_2_matrix(&orientUse, &rot);
 				vm_vec_unrotate(&outpnt, &outpnt, &orientUse);
+				vm_vec_unrotate(&outpnt, &outpnt, &orientation);
 			}
 			if (posOffset.has_value()) {
 				vec3d pos = *posOffset;

@@ -147,18 +147,5 @@ ADE_FUNC(getCollisionNormal, l_ColInfo, "[boolean local]", "The collision normal
 	}
 }
 
-ADE_FUNC(isValid, l_ColInfo, NULL, "Detects if this handle is valid", "boolean", "true if valid false otherwise")
-{
-	mc_info_h* info;
-
-	if(!ade_get_args(L, "o", l_ColInfo.GetPtr(&info)))
-		return ADE_RETURN_FALSE;
-
-	if (info->isValid())
-		return ADE_RETURN_TRUE;
-	else
-		return ADE_RETURN_FALSE;
-}
-
 }
 }

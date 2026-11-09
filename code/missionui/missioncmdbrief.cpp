@@ -21,6 +21,7 @@
 #include "io/timer.h"
 #include "mission/missionparse.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missiontraining.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
@@ -190,6 +191,11 @@ static int Cmd_brief_paused = 0;
 static int Uses_scroll_buttons = 0;
 
 int Cmd_brief_overlay_id;
+
+// --------------------------------------------------------------------------------------
+// Forward declarations
+// --------------------------------------------------------------------------------------
+void cmd_brief_replace_stage_text(cmd_brief_stage &stage);
 
 void cmd_brief_init_voice()
 {
@@ -562,15 +568,12 @@ void cmd_brief_init(int team)
 	Cmd_brief_inited = 0;
 	Cur_cmd_brief = &Cmd_briefs[team];
 
-	// Goober5000 - replace any variables (probably persistent variables) with their values
-	// karajorma/jg18 - replace container references as well
-	for (i = 0; i < Cur_cmd_brief->num_stages; i++) {
-		sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text);
-		sexp_container_replace_refs_with_values(Cur_cmd_brief->stage[i].text);
-	}
-
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
+
+	for (i = 0; i < Cur_cmd_brief->num_stages; i++) {
+		cmd_brief_replace_stage_text(Cur_cmd_brief->stage[i]);
+	}
 
 	// for multiplayer, change the state in my netplayer structure
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -778,4 +781,14 @@ void cmd_brief_do_frame(float frametime)
 int mission_has_cmd_brief()
 {
 	return (Cur_cmd_brief != NULL && Cur_cmd_brief->num_stages > 0);
+}
+
+// Goober5000 - replace any variables (probably persistent variables) with their values
+// karajorma/jg18 - replace container references as well
+// Goober5000 - replace keybinds also
+void cmd_brief_replace_stage_text(cmd_brief_stage &stage)
+{
+	sexp_replace_variable_names_with_values(stage.text);
+	sexp_container_replace_refs_with_values(stage.text);
+	message_translate_tokens(stage.text);
 }

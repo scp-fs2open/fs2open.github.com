@@ -10,6 +10,7 @@
 
 
 
+#include "camera/photomode.h"
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "controlconfig/controlsconfig.h"
@@ -620,6 +621,11 @@ void control_config_conflict_check()
 				continue;
 			}
 
+			// Skip conflict check between items in different conflict groups
+			if ((item_i.conflict_groups & item_j.conflict_groups) == 0) {
+				continue;
+			}
+
 			if (item_i.disabled && (item_i.has_first_conflict(item_j) || item_i.has_second_conflict(item_j))) {
 				// item_i conflicts with item_j and is disabled.  Silently clear item_i
 				item_i.clear();
@@ -733,7 +739,7 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order, bool API
 	Undo_stack stack;
 	stack.save(Control_config[i].first);
 	stack.save(Control_config[i].second);
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	CCB old(Control_config[i]);
 
@@ -764,7 +770,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 			stack.save(Control_config[ctrl].first);
 			stack.save(Control_config[ctrl].second);
-			Undo_controls.save_stack(stack);
+			Undo_controls.save_stack(std::move(stack));
 
 			Control_config[ctrl].first.clear();
 			Control_config[ctrl].second.clear();
@@ -798,7 +804,7 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 
 	default:
 		// Coder forgot to add a case!
-		UNREACHABLE("Unhandled selItem case.");
+		UNREACHABLE("Unhandled selItem case: %i", static_cast<int>(item));
 	}
 
 	if (success)
@@ -867,7 +873,7 @@ bool control_config_clear_other(int ctrl, bool API_Access)
 		return false;
 	}
 
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 	control_config_conflict_check();
 
 	if (!API_Access) {
@@ -905,7 +911,7 @@ bool control_config_clear_all(bool API_Access)
 		return false;
 	}
 
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 	control_config_conflict_check();
 
 	if (!API_Access) {
@@ -969,7 +975,7 @@ bool control_config_do_reset(bool cycle, bool API_Access)
 		stack.save(item.first);
 		stack.save(item.second);
 	}
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	control_config_use_preset(Control_config_presets[Defaults_cycle_pos]);
 
@@ -1091,7 +1097,7 @@ bool control_config_toggle_modifier(int bit, int ctrl, bool API_Access)
 	Undo_stack stack;
 	stack.save(Control_config[ctrl].first);
 	stack.save(Control_config[ctrl].second);
-	Undo_controls.save_stack(stack);
+	Undo_controls.save_stack(std::move(stack));
 
 	Control_config[ctrl].take(CC_bind(CID_KEYBOARD, static_cast<short>(k ^ bit)), -1);
 	control_config_conflict_check();
@@ -1316,7 +1322,7 @@ bool control_config_accept(bool API_Access)
 
 			// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 			auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [str](CC_preset& p) {
-				return ((p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)));
+				return ((p.name == str) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode)));
 			});
 
 			if (it != Control_config_presets.end()) {
@@ -1347,15 +1353,14 @@ bool control_config_accept(bool API_Access)
 			}
 
 			// Pack the current bindings into a preset, then save the file
-			CC_preset preset;
-			preset.name = std::move(str);
+			CC_preset preset(std::move(str), Preset_t::pst);
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
 			save_preset_file(preset, true);
 
 			// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get
 			// consistant ordering
-			Control_config_presets.resize(1);
+			Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 			load_preset_files();
 
 			// finally, save the new preset so that changes will get saved to this preset
@@ -1772,7 +1777,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
-		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+		return (p.name == newName) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode));
 	});
 
 	if (it != Control_config_presets.end()) {
@@ -1785,9 +1790,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 	}
 
 	// Pack the current bindings into a preset, then save the file
-	CC_preset preset;
-	preset.name = newName;
-	preset.type = Preset_t::pst;
+	CC_preset preset(newName, Preset_t::pst);
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 
 	// Done with the file
@@ -1799,7 +1802,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 		save_preset_file(preset, true);
 
 		// Reload the presets from file.
-		Control_config_presets.resize(1);
+		Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 		load_preset_files(newName);
 
 		// use the newly created preset
@@ -1807,10 +1810,9 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 
 		return true;
 
-	} else if ((clone->name != preset.name) || (clone->type != Preset_t::pst)) {
+	} else if ((clone->name != preset.name) || (clone->get_type() != Preset_t::pst)) {
 		// Complain and ignore if the preset names or the type differs
 		return false;
-
 	}
 
 	return false; //should be unreachable, but just in case
@@ -1820,7 +1822,7 @@ bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newN
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
-		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+		return (p.name == newName) && ((p.get_type() == Preset_t::tbl) || (p.get_type() == Preset_t::hardcode));
 	});
 
 	if (it != Control_config_presets.end()) {
@@ -1832,13 +1834,13 @@ bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newN
 		return false;
 	}
 
-	CC_preset newPreset = preset;
-	newPreset.name = newName;
+	CC_preset newPreset(newName, Preset_t::pst);
+	newPreset.bindings = preset.bindings;
 
 	bool success = save_preset_file(newPreset, false);
 
 	// Reload the presets from file.
-	Control_config_presets.resize(1);
+	Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 	load_preset_files(newName);
 
 	// use the newly cloned preset
@@ -2718,8 +2720,7 @@ void control_config_do_frame(float frametime)
 			strcpy_s(buf, Control_config[i].text.c_str());
 		}
 
-		font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-		gr_get_string_size(&w, NULL, buf);
+		w = font::force_fit_string(buf, 255, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
 		gr_printf_menu(x - w / 2, y, "%s", buf);
 
 	} else if (*bound_string) {
@@ -2836,6 +2837,13 @@ int check_control_used(int id, int key)
 
 	if (item.disabled || item.locked)
 		return 0;
+
+	// Filter actions based on conflict groups and current mode
+	{
+		int active_group = game_is_photo_mode_active() ? CONFLICT_GROUP_PHOTO_MODE : CONFLICT_GROUP_DEFAULT;
+		if (!(item.conflict_groups & active_group))
+			return 0;
+	}
 
 	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
 
@@ -3108,7 +3116,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 			case CC_TYPE_AXIS_BTN_POS:
 			default:
 				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
-				UNREACHABLE("Unhandled control item type");
+				UNREACHABLE("Unhandled control item type %d", static_cast<int>(item.type));
 				break;
 			}
 		}

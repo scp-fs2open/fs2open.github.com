@@ -7,7 +7,7 @@ class EffectHostSubmodel : public EffectHost {
 
 	vec3d m_offset;
 
-	int m_objnum, m_objsig, m_submodel;
+	int m_objnum, m_objsig, m_submodel, m_modelnum;
 public:
 	EffectHostSubmodel(const object* objp, int submodel, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
@@ -15,7 +15,8 @@ public:
 
 	vec3d getVelocity() const override;
 
-	std::pair<int, int> getParentObjAndSig() const override;
+	effects::EffectAttachment getParentAttachment() const override;
+	int getParentSubmodel() const override;
 
 	float getHostRadius() const override;
 

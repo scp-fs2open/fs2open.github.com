@@ -1,16 +1,16 @@
 #pragma once
+
 #include <mission/dialogs/ShipEditor/ShipAltShipClassModel.h>
 
 #include <QtWidgets/QDialog>
 #include <qstandarditemmodel.h>
-#include<QSortFilterProxyModel>
+#include <QSortFilterProxyModel>
+
 namespace fso::fred::dialogs {
+
 namespace Ui {
 class ShipAltShipClass;
 }
-/**
- * @brief QtFRED's Alternate Ship Class Editor
- */
 
 class InverseSortFilterProxyModel : public QSortFilterProxyModel {
 	Q_OBJECT
@@ -19,16 +19,11 @@ class InverseSortFilterProxyModel : public QSortFilterProxyModel {
 
   protected:
 	bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
-
 };
+
 class ShipAltShipClass : public QDialog {
 	Q_OBJECT
   public:
-	/**
-	 * @brief Constructor
-	 * @param [in] parent The parent dialog.
-	 * @param [in] viewport The viewport this dialog is attatched to.
-	 */
 	explicit ShipAltShipClass(QDialog* parent, EditorViewport* viewport);
 	~ShipAltShipClass() override;
 
@@ -36,10 +31,6 @@ class ShipAltShipClass : public QDialog {
 	void reject() override;
 
   protected:
-	/**
-	 * @brief Overides the Dialogs Close event to add a confermation dialog
-	 * @param [in] *e The event.
-	 */
 	void closeEvent(QCloseEvent*) override;
 
   private:
@@ -48,19 +39,15 @@ class ShipAltShipClass : public QDialog {
 	EditorViewport* _viewport;
 
 	void initUI();
+	void updateUi();
 
-	/**
-	 * @brief Populates the UI
-	 */
-	void updateUI();
-
-	QStandardItemModel* alt_pool;
+	QStandardItemModel* _altPool;
 
 	void classListChanged(const QModelIndex& current);
-	static QStandardItem* generate_item(const int classid, const int variable, const bool default_ship);
-	static QString generate_name(const int classid, const int variable);
+	static QStandardItem* generateItem(int classid, int variable, bool defaultShip);
+	static QString generateName(int classid, int variable);
 
-	void sync_data();
+	void syncData();
 
   private slots: // NOLINT(readability-redundant-access-specifiers)
 	void on_buttonBox_accepted();
@@ -74,4 +61,5 @@ class ShipAltShipClass : public QDialog {
 	void on_variableCombo_currentIndexChanged(int);
 	void on_defaultCheckbox_toggled(bool);
 };
+
 } // namespace fso::fred::dialogs

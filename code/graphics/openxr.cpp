@@ -6,6 +6,7 @@
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
 #include "starfield/starfield.h"
+#include "hud/hudparse.h"
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
@@ -74,7 +75,27 @@ void openxr_prepare(float hudscale) {
 	openxr_req = true;
 }
 
+static void openxr_check_api_layers() {
+	uint32_t layerCount = 0;
+	if (xrEnumerateApiLayerProperties(0, &layerCount, nullptr) != XR_SUCCESS || layerCount == 0)
+		return;
+
+	SCP_vector<XrApiLayerProperties> layers(layerCount, XrApiLayerProperties { XR_TYPE_API_LAYER_PROPERTIES, nullptr, "", 0, 0, "" });
+	if (xrEnumerateApiLayerProperties(layerCount, &layerCount, layers.data()) != XR_SUCCESS)
+		return;
+
+	for (const auto& layer : layers) {
+		mprintf(("OpenXR API layer: %s (version %u)\n", layer.layerName, layer.layerVersion));
+
+		if (!strcmp(layer.layerName, "XR_APILAYER_NOVENDOR_toolkit")) {
+			ReleaseWarning(LOCATION, "OpenXR Toolkit is installed and active. There are known compatibility issues with FSO that will likely crash the game.\nPlease disable or uninstall OpenXR Toolkit to use VR with FSO.");
+		}
+	}
+}
+
 static bool openxr_init_instance() {
+	openxr_check_api_layers();
+
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -184,7 +205,10 @@ static bool openxr_init_swapchains() {
 			XR_TYPE_SWAPCHAIN_CREATE_INFO,
 			nullptr,
 			0,
-			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT,
+			//Vulkan runtimes hand back images they expect to receive again in
+			//VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, which requires the color
+			//attachment usage. Inert for OpenGL.
+			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT,
 			chosenFormat,
 			1,
 			xr_configurationviews[i].recommendedImageRectWidth,
@@ -525,9 +549,9 @@ void openxr_start_frame() {
 // Stubs for when building without OpenXR support.
 // NOTE: macOS has issues linking with OpenXR.
 
-void openxr_prepare(float hudscale) {}
+void openxr_prepare(float /*hudscale*/) {}
 
-float openxr_preinit(float req_ar, float scale) {
+float openxr_preinit(float /*req_ar*/, float /*scale*/) {
 	mprintf(("Cannot create OpenXR session. Not built with OpenXR support.\n"));
 	return 0.0f;
 }

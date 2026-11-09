@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Custom Data - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Custom Data</nav>
+<h1>Custom Data</h1>
+<p>Accessed via <strong>Custom Data</strong> in the
+<a href="MissionSpecsDialog.html">Mission Specs</a> dialog or the
+<a href="CampaignEditorDialog.html">Campaign Editor</a>.</p>
+<p>Attaches arbitrary key-value string pairs to a mission or campaign. Custom data
+has no built-in effect on gameplay; it is intended to be read by Lua scripts that
+know to look for specific keys.</p>
+
+<h2>Pre-defined keys</h2>
+<p>Lua scripts can register expected custom data keys by calling
+<code>mn.addDefaultCustomData(key, defaultValue, description)</code>. When a
+mission is opened in FRED, any registered key that is not already present in the
+mission is automatically added with its default value. This ensures the expected
+entries exist without the mission designer having to create them by hand.</p>
+<p>The <strong>Description</strong> box on the left of the dialog shows the
+description the script author provided for whichever entry is currently selected.
+If the selected key is not one registered by a script, the box reads
+<em>No help text provided</em>.</p>
+
+<h2>Adding an entry</h2>
+<p>Fill in the <strong>Key</strong> and <strong>Value</strong> fields and click
+<strong>Add</strong> to create a new entry.</p>
+
+<h2>Editing an entry</h2>
+<p>Select an entry in the list to load it into the Key and Value fields. Modify the
+fields as needed and click <strong>Update</strong> to apply the changes.</p>
+
+<h2>Removing an entry</h2>
+<p>Select an entry in the list and click <strong>Remove</strong> to delete it.</p>
+</body>
+</html>

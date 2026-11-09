@@ -65,6 +65,7 @@ void parse_sunglare_func()
 	Post_processing_enable_sunglare = enabled;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto LightshaftsOption = options::OptionBuilder<bool>("Graphics.Lightshafts",
                      std::pair<const char*, int>{"Lightshafts", 1724},
                      std::pair<const char*, int>{"Enables or disables lightshafts (requires post-processing)", 1725})
@@ -76,6 +77,7 @@ auto LightshaftsOption = options::OptionBuilder<bool>("Graphics.Lightshafts",
                      .parser(parse_lightshafts_func)
                      .finish();
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto SunglareOption = options::OptionBuilder<bool>("Graphics.Sunglare",
 					std::pair<const char*, int>{"Sunglare", 1880},
 					std::pair<const char*, int>{"Enables or disables glare from suns", 1881})
@@ -97,6 +99,7 @@ void parse_bloom_intensity_func()
 	Post_processing_bloom_intensity = value;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
                      std::pair<const char*, int>{"Bloom intensity", 1701},
                      std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
@@ -159,7 +162,7 @@ bool PostProcessingManager::parse_table()
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (m_postEffects.size() < 32) {
-					m_postEffects.push_back(eff);
+					m_postEffects.push_back(std::move(eff));
 				} else if (!warned) {
 					mprintf(("WARNING: post_processing.tbl can only have a max of 32 effects! Ignoring extra...\n"));
 					warned = true;
@@ -257,7 +260,7 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 
 bool gr_lightshafts_enabled()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return false;
 	}
 
@@ -275,7 +278,7 @@ bool gr_lightshafts_enabled()
 
 bool gr_sunglare_enabled()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return false;
 	}
 
@@ -289,7 +292,7 @@ bool gr_sunglare_enabled()
 
 int gr_bloom_intensity()
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return 0;
 	}
 
@@ -302,7 +305,7 @@ int gr_bloom_intensity()
 
 void gr_set_bloom_intensity(int intensity)
 {
-	if (gr_screen.mode == GR_STUB) {
+	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
 

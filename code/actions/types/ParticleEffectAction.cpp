@@ -61,7 +61,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	matrix orientation;
 	vm_vector_2_matrix_norm(&orientation, &direction);	// direction is normalized in SetDirectionAction::execute
 
-	source->setHost(make_unique<EffectHostObject>(locals.host.objp(), local_pos, orientation, true));
+	source->setHost(std::make_unique<EffectHostObject>(locals.host.objp(), local_pos, orientation, true));
 	source->finishCreation();
 
 	return ActionResult::Finished;
@@ -69,7 +69,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 
 std::unique_ptr<Action> ParticleEffectAction::clone() const
 {
-	return std::unique_ptr<Action>(new ParticleEffectAction(*this));
+	return std::make_unique<ParticleEffectAction>(*this);
 }
 
 } // namespace types

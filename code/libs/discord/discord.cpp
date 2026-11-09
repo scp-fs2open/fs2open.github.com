@@ -68,7 +68,7 @@ SCP_string get_details()
 	}
 
 	if (has_campaign && in_mission) {
-		sprintf(res, "%s: %s", get_current_campaign_name().c_str(), The_mission.name);
+		sprintf(res, "%s: %s", get_current_campaign_name().c_str(), The_mission.name.c_str());
 	} else if (has_campaign) {
 		sprintf(res, "Campaign %s", get_current_campaign_name().c_str());
 	} else if (in_mission) {

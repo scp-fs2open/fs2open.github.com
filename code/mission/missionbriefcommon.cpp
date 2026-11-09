@@ -51,6 +51,7 @@ brief_screen bscreen;
 
 float Briefing_Icon_Scale_Factor = 1.0;
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto IconScaleFactor __UNUSED = options::OptionBuilder<float>("Game.BriefIconScaleFactor",
                      std::pair<const char*, int>{"Briefing Icon Scale Factor", 1857},
                      std::pair<const char*, int>{"Scales the size of the briefing icons", 1858})
@@ -140,6 +141,7 @@ debriefing	*Debriefing;						// pointer to correct debriefing
 
 bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.BriefingVoice",
                      std::pair<const char*, int>{"Briefing voice", 1368},
                      std::pair<const char*, int>{"Enable or disable voice playback in the briefing", 1716})
@@ -663,7 +665,35 @@ void mission_debrief_common_reset()
 	}
 }
 
+/**
+ * Frees the briefing icon and line buffers that the mission editors allocate in mission_brief_common_init()
+ * and keep for their whole session.  Called at editor shutdown.
+ */
+void mission_brief_common_close()
+{
+	int i, j;
 
+	for (i = 0; i < MAX_TVT_TEAMS; i++)
+	{
+		for (j = 0; j < MAX_BRIEF_STAGES; j++)
+		{
+			if ( Briefings[i].stages[j].icons )
+			{
+				vm_free(Briefings[i].stages[j].icons);
+				Briefings[i].stages[j].icons = nullptr;
+			}
+
+			if ( Briefings[i].stages[j].lines )
+			{
+				vm_free(Briefings[i].stages[j].lines);
+				Briefings[i].stages[j].lines = nullptr;
+			}
+
+			Briefings[i].stages[j].num_icons = 0;
+			Briefings[i].stages[j].num_lines = 0;
+		}
+	}
+}
 
 
 // --------------------------------------------------------------------------------------
@@ -1256,6 +1286,8 @@ void brief_render_icons(int stage_num, float frametime)
 	}
 
 	for ( i = 0; i < num_icons; i++ ) {
+		Briefing->stages[stage_num].icons[i].w = 0;
+		Briefing->stages[stage_num].icons[i].h = 0;
 		brief_render_icon(stage_num, i, frametime, 0);
 	}
 }
@@ -1571,6 +1603,16 @@ void brief_reset_icons(int stage_num)
  * @param orient target orientation for the camera
  * @param time time in ms to reach target
  */
+vec3d brief_get_current_cam_pos()
+{
+	return Current_cam_pos;
+}
+
+matrix brief_get_current_cam_orient()
+{
+	return Current_cam_orient;
+}
+
 void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 {
 	float time_in_seconds;
@@ -1622,6 +1664,11 @@ void brief_set_camera_target(vec3d *pos, matrix *orient, int time)
 	vm_vec_zero(&W_init);
 
 	get_camera_limits(&Start_cam_orient, &Target_cam_orient, Total_move_time, &Acc_limit, &Vel_limit);
+}
+
+void brief_cancel_pending_highlight_anims()
+{
+	Play_highlight_flag = 0;
 }
 
 

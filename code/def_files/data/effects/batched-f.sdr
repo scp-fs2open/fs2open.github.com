@@ -1,10 +1,25 @@
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2DArray;
+#endif
 
 #include "gamma.sdr"
 
+layout(location=0) out vec4 fragOut0;
+
+#ifdef VULKAN
+layout (location = 0) in vec4 fragTexCoord;
+layout (location = 1) in vec4 fragColor;
+
+layout (set = 1, binding = 1) uniform sampler2DArray baseMap;
+
+layout (set = 2, binding = 0, std140) uniform genericData {
+	vec4 color;
+	float intensity;
+};
+#else
 in vec4 fragTexCoord;
 in vec4 fragColor;
-
-out vec4 fragOut0;
 
 uniform sampler2DArray baseMap;
 
@@ -12,6 +27,7 @@ layout (std140) uniform genericData {
 	vec4 color;
 	float intensity;
 };
+#endif
 
 void main()
 {

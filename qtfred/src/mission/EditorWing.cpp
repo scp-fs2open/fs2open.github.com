@@ -4,6 +4,8 @@
 #include "mission/dialogs/FormWingDialogModel.h"
 
 #include <globalincs/linklist.h>
+#include <globalincs/utility.h>
+#include <missioneditor/common.h>
 #include <ship/ship.h>
 
 namespace {
@@ -29,12 +31,7 @@ int Editor::delete_wing(int wing_num, int bypass)
 	}
 
 	already_deleting_wing = 1;
-	for (i = 0; i < Num_reinforcements; i++) {
-		if (!stricmp(Wings[wing_num].name, Reinforcements[i].name)) {
-			delete_reinforcement(i);
-			break;
-		}
-	}
+	delete_reinforcement(Wings[wing_num].name);
 
 	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
@@ -72,22 +69,6 @@ void Editor::set_cur_wing(int wing)
 			Assert(cur_wing == Ships[Objects[cur_object_index].instance].wingnum);*/
 	updateAllViewports();
 	// TODO: Add notification for a changed selection
-}
-void Editor::update_custom_wing_indexes()
-{
-	int i;
-
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	}
-
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
-	}
 }
 
 int Editor::create_wing()
@@ -194,6 +175,20 @@ int Editor::create_wing()
 		}
 
 		strcpy_s(Wings[wing].name, dlg->getModel()->getName().c_str());
+
+		// if this name has a hash, create a default display name
+		if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+		{
+			Wings[wing].display_name = Wings[wing].name;
+			end_string_at_first_hash_symbol(Wings[wing].display_name);
+			Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+		}
+		// otherwise reset the display name
+		else
+		{
+			Wings[wing].display_name = "";
+			Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+		}
 	}
 
 	setupCurrentObjectIndices(-1);
@@ -230,7 +225,8 @@ int Editor::create_wing()
 	}
 
 	count = 0;
-	if (Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
+	if ((Player_start_shipnum >= 0) && (Player_start_shipnum < MAX_SHIPS) && (Ships[Player_start_shipnum].objnum >= 0)
+		&& Objects[Ships[Player_start_shipnum].objnum].flags[Object::Object_Flags::Marked]) {
 		count = 1;
 	}
 
@@ -255,6 +251,8 @@ int Editor::create_wing()
 
 			wing_bash_ship_name(msg, Wings[wing].name, i + 1);
 			rename_ship(ship, msg);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship], &Wings[wing], i + 1, true);
 
 			Wings[wing].ship_index[i] = ship;
 			Ships[ship].wingnum = wing;
@@ -321,6 +319,7 @@ int Editor::create_wing()
 
 	update_custom_wing_indexes();
 
+	missionChanged();
 	return 0;
 }
 
@@ -358,12 +357,17 @@ void Editor::remove_ship_from_wing(int ship, int min)
 				if (Objects[obj].type == OBJ_SHIP) {
 					wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 					rename_ship(Wings[wing].ship_index[i], buf);
+					// bash it again for the display name
+					wing_bash_ship_name(&Ships[Wings[wing].ship_index[i]], &Wings[wing], i + 1, true);
 				}
 			}
 
 			Wings[wing].wave_count--;
-			if (Wings[wing].wave_count && (Wings[wing].threshold >= Wings[wing].wave_count)) {
-				Wings[wing].threshold = Wings[wing].wave_count - 1;
+			if (Wings[wing].wave_count) {
+				const auto max_threshold = MAX_SHIPS_PER_WING - Wings[wing].wave_count;
+				if (Wings[wing].threshold > max_threshold) {
+					Wings[wing].threshold = max_threshold;
+				}
 			}
 		}
 
@@ -448,7 +452,7 @@ bool Editor::wing_is_player_wing(int wing)
 		}
 	// Single player wing check
 	} else {
-		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS) {
+		if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS && Ships[Player_start_shipnum].objnum >= 0) {
 			const int pw = Ships[Player_start_shipnum].wingnum;
 			return pw >= 0 && pw == wing;
 		}
@@ -466,73 +470,24 @@ bool Editor::wing_contains_player_start(int wing)
 WingNameCheck Editor::validate_wing_name(const SCP_string& new_name, int ignore_wing)
 {
 	WingNameCheck r{false, WingNameError::None, {}};
-	if (new_name.empty()) {
-		r.error = WingNameError::Empty;
-		r.message = "Name is empty.";
-		return r;
-	}
 
-	if (new_name.empty()) {
-		r.error = WingNameError::Empty;
-		r.message = "Name is empty.";
-		return r;
-	}
 	if (new_name.size() >= NAME_LENGTH) {
 		r.error = WingNameError::TooLong;
 		r.message = "Name is too long.";
 		return r;
 	}
 
-	// Other wings
-	for (int i = 0; i < MAX_WINGS; ++i) {
-		if (i == ignore_wing)
-			continue;
-		if (Wings[i].wave_count <= 0)
-			continue;
-		if (!stricmp(new_name.c_str(), Wings[i].name)) {
-			r.error = WingNameError::DuplicateWing;
-			r.message = "This wing name is already used by another wing.";
-			return r;
-		}
-	}
-
-	// Ships
-	for (object* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START) {
-			const int si = get_ship_from_obj(ptr);
-			if (!stricmp(new_name.c_str(), Ships[si].ship_name)) {
-				r.error = WingNameError::DuplicateShip;
-				r.message = "This wing name is already used by a ship.";
-				return r;
-			}
-		}
-	}
-
-	// Target priority groups
-	for (auto& ai : Ai_tp_list) {
-		if (!stricmp(new_name.c_str(), ai.name)) {
-			r.error = WingNameError::DuplicateTargetPriority;
-			r.message = "This wing name is already used by a target priority group.";
-			return r;
-		}
-	}
-
-	// Waypoint paths
-	if (find_matching_waypoint_list(new_name.c_str()) != nullptr) {
-		r.error = WingNameError::DuplicateWaypointList;
-		r.message = "This wing name is already used by a waypoint path.";
-		return r;
-	}
-
-	// Jump nodes
-	if (jumpnode_get_by_name(new_name.c_str()) != nullptr) {
-		r.error = WingNameError::DuplicateJumpNode;
-		r.message = "This wing name is already used by a jump node.";
+	// check for an empty name, a name beginning with '<', or a conflict with an existing
+	// ship, wing, waypoint path, jump node, or target priority group
+	SCP_string reason = check_name_conflict("wing", new_name.c_str(), -1, ignore_wing);
+	if (!reason.empty()) {
+		// the enum is coarse now (only .ok is consumed), but the message is preserved
+		r.error = WingNameError::DuplicateWing;
+		r.message = reason;
 		return r;
 	}
 
 	r.ok = true;
-	r.message.clear();
 	return r;
 }
 
@@ -554,6 +509,20 @@ bool Editor::rename_wing(int wing, const SCP_string& new_name, bool rename_membe
 	strncpy(Wings[wing].name, new_name.c_str(), NAME_LENGTH - 1);
 	Wings[wing].name[NAME_LENGTH - 1] = '\0';
 
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(Wings[wing].name))
+	{
+		Wings[wing].display_name = Wings[wing].name;
+		end_string_at_first_hash_symbol(Wings[wing].display_name);
+		Wings[wing].flags.set(Ship::Wing_Flags::Has_display_name);
+	}
+	// otherwise reset the display name
+	else
+	{
+		Wings[wing].display_name = "";
+		Wings[wing].flags.remove(Ship::Wing_Flags::Has_display_name);
+	}
+
 	if (rename_members) {
 		for (int i = 0; i < Wings[wing].wave_count; ++i) {
 			const int ship_idx = Wings[wing].ship_index[i];
@@ -562,6 +531,8 @@ bool Editor::rename_wing(int wing, const SCP_string& new_name, bool rename_membe
 			char buf[NAME_LENGTH];
 			wing_bash_ship_name(buf, Wings[wing].name, i + 1);
 			rename_ship(ship_idx, buf);
+			// bash it again for the display name
+			wing_bash_ship_name(&Ships[ship_idx], &Wings[wing], i + 1, true);
 		}
 	}
 

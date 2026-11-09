@@ -635,7 +635,6 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 	for (int i=0; i<Num_wings; i++) {
 		bool add_it;
-		char wing_name[NAME_LENGTH];
 
 		// the wing has to be valid
 		if (Wings[i].current_count && Wings[i].ship_index[Wings[i].special_ship] >= 0) {
@@ -677,8 +676,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			if ( j < Wings[i].current_count )
 				continue;
 
-			strcpy_s(wing_name, Wings[i].name);
-			end_string_at_first_hash_symbol(wing_name);
+			auto wing_name = Wings[i].get_display_name();
 
 			int z = hotkey_line_add_sorted(wing_name, HotkeyLineType::WING, i, start);
 			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {

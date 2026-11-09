@@ -11,6 +11,7 @@ namespace api {
 
 //**********HANDLE: Team
 ADE_OBJ(l_Team, int, "team", "Team handle");
+ADE_OBJ_VALIDATOR(l_Team, idx, Iff_info.in_bounds(idx));
 
 ADE_FUNC(__eq, l_Team, "team, team", "Checks whether two teams are the same team", "boolean", "true if equal, false otherwise")
 {
@@ -62,18 +63,6 @@ ADE_FUNC(getColor,
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(*cur));
 	}
-}
-
-ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Team.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(!SCP_vector_inbounds(Iff_info, idx))
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getBreedName, l_Team, nullptr, "Gets the FreeSpace type name", "string", "'Team', or empty string if handle is invalid")

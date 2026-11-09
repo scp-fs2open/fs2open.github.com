@@ -15,9 +15,9 @@ ShipSpecialStatsDialog::ShipSpecialStatsDialog(QWidget* parent, EditorViewport* 
 {
 	ui->setupUi(this);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUi(false); });
 
-	updateUI(true);
+	updateUi(true);
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -30,7 +30,7 @@ void ShipSpecialStatsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ShipSpecialStatsDialog::reject()
@@ -46,7 +46,15 @@ void ShipSpecialStatsDialog::reject()
 void ShipSpecialStatsDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void ShipSpecialStatsDialog::on_buttonBox_accepted()
@@ -109,7 +117,7 @@ void ShipSpecialStatsDialog::on_explodeCheckBox_toggled(bool value)
 {
 	_model->setSpecialExp(value);
 }
-void ShipSpecialStatsDialog::updateUI(bool first)
+void ShipSpecialStatsDialog::updateUi(bool first)
 {
 	util::SignalBlockers blockers(this);
 	if (first) {

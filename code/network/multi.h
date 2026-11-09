@@ -76,9 +76,10 @@ class player;
 // Version 60 - 3/27/2023 - Added generic lua data packet
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
 // Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
+// Version 63 - 8/4/2026 - Added target forward speed to turret and flak fired packets
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							62
+#define MULTI_FS_SERVER_VERSION							63
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -134,7 +135,7 @@ class player;
 //
 
 // netplayer management
-#define NET_PLAYER_INDEX(np)	(static_cast<int>(np-Net_players))
+#define NET_PLAYER_INDEX(np)	(static_cast<int>((np)-Net_players))
 #define NET_PLAYER_NUM(np)		(NET_PLAYER_INDEX(np))
 #define MY_NET_PLAYER_NUM		(NET_PLAYER_INDEX(Net_player))
 
@@ -919,6 +920,12 @@ extern char Multi_tracker_id_string[255];
 // current file checksum
 extern ushort Multi_current_file_checksum;
 extern int Multi_current_file_length;
+
+// Set by multi_sexp_end_mission() so that process_endgame_packet() knows to call
+// send_debrief_event() immediately upon receiving MISSION_END, skipping warp-out.
+// Must be checked after stats have been broadcast by the server (which happens
+// in send_endgame_packet() before the MISSION_END packet is sent).
+extern bool Multi_sexp_end_mission_pending;
 
 // ip address list vars
 #define IP_STRING_LEN 60

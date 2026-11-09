@@ -25,18 +25,6 @@ ADE_FUNC(__tostring, l_Camera, NULL, "Camera name", "string", "Camera name, or a
 	return ade_set_args(L, "s", cid.getCamera()->get_name());
 }
 
-ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	camid cid;
-	if(!ade_get_args(L, "o", l_Camera.Get(&cid)))
-		return ADE_RETURN_NIL;
-
-	if(!cid.isValid())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
 ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name")
 {
 	camid cid;

@@ -22,7 +22,8 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void reject() override;
 
 	// limits
-	static std::pair<int, int> getOrientLimit() { return {0, 359}; }
+	static std::pair<int, int> getIntOrientLimit() { return {0, 359}; }
+	static std::pair<float, float> getFloatOrientLimit() { return {0.f, DEGREE_UB}; }
 	static std::pair<float,float> getBitmapScaleLimit() { return {0.001f, 18.0f}; }
 	static std::pair<float,float> getSunScaleLimit() { return {0.1f,   50.0f}; }
 	static std::pair<int, int> getDivisionLimit() { return {1, 5}; }
@@ -51,12 +52,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void removeMissionBitmap();
 	SCP_string getBitmapName() const;
 	void setBitmapName(const SCP_string& name);
-	int getBitmapPitch() const;
-	void setBitmapPitch(int deg);
-	int getBitmapBank() const;
-	void setBitmapBank(int deg);
-	int getBitmapHeading() const;
-	void setBitmapHeading(int deg);
+	float getBitmapPitch() const;
+	void setBitmapPitch(float deg);
+	float getBitmapBank() const;
+	void setBitmapBank(float deg);
+	float getBitmapHeading() const;
+	void setBitmapHeading(float deg);
 	float getBitmapScaleX() const;
 	void setBitmapScaleX(float v);
 	float getBitmapScaleY() const;
@@ -75,10 +76,10 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void removeMissionSun();
 	SCP_string getSunName() const;
 	void setSunName(const SCP_string& name);
-	int getSunPitch() const;
-	void setSunPitch(int deg);
-	int getSunHeading() const;
-	void setSunHeading(int deg);
+	float getSunPitch() const;
+	void setSunPitch(float deg);
+	float getSunHeading() const;
+	void setSunHeading(float deg);
 	float getSunScale() const; // uses scale_x for both x and y
 	void setSunScale(float v);
 
@@ -98,10 +99,16 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSelectedPoofs(const SCP_vector<SCP_string>& names);
 	static bool getShipTrailsToggled();
 	void setShipTrailsToggled(bool on);
-	static float getFogNearMultiplier();
-	void setFogNearMultiplier(float v);
-	static float getFogFarMultiplier();
-	void setFogFarMultiplier(float v);
+	static float getFog1000mVisibility();
+	void setFog1000mVisibility(float v);
+	static float getFogNearDistance();
+	void setFogNearDistance(float v);
+	static float getFogSkyboxClipDistance();
+	void setFogSkyboxClipDistance(float v);
+	static float getFogClipDistance();
+	void setFogClipDistance(float v);
+
+	void finalizeFogChanges();
 	static bool getDisplayBackgroundBitmaps();
 	void setDisplayBackgroundBitmaps(bool on);
 	static bool getFogPaletteOverride();
@@ -150,12 +157,12 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSkyboxNoGlowmaps(bool on);
 	static bool getSkyboxForceClamp();
 	void setSkyboxForceClamp(bool on);
-	static int getSkyboxPitch();
-	void setSkyboxPitch(int deg);
-	static int getSkyboxBank();
-	void setSkyboxBank(int deg);
-	static int getSkyboxHeading();
-	void setSkyboxHeading(int deg);
+	static float getSkyboxPitch();
+	void setSkyboxPitch(float deg);
+	static float getSkyboxBank();
+	void setSkyboxBank(float deg);
+	static float getSkyboxHeading();
+	void setSkyboxHeading(float deg);
 
 	// misc group
 	static SCP_vector<SCP_string> getLightingProfileOptions();
@@ -169,6 +176,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setLightingProfileName(const SCP_string& name);
 
   private:
+	void initializeData();
 	void refreshBackgroundPreview();
 	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;
@@ -177,6 +185,11 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	int _selectedBitmapIndex = -1; // index into Backgrounds[Cur_background].bitmaps
 	int _selectedSunIndex = -1;    // index into Backgrounds[Cur_background].suns
 	int _swapIndex = 0;            // index of background to swap with
+
+	float _initial_fog_1000m_vis = 0.0f;
+	float _initial_fog_near_dist = 0.0f;
+	float _initial_fog_skybox_clip = 0.0f;
+	float _initial_fog_clip = 0.0f;
 
 };
 } // namespace fso::fred::dialogs

@@ -36,6 +36,8 @@ namespace Mission {
 		Neb2_fog_color_override,	// Whether to use explicit fog colors instead of checking the palette - Goober5000
 		Fullneb_background_bitmaps, // Show background bitmaps despite fullneb
 		Preload_subspace,			// Preload the subspace tunnel for both the sexp and specs checkbox (for scripts) - MjnMixael
+		Large_ships_no_collide_by_default,	// Automatically puts all large ships in a shared collision group
+		Limited_support_rearm_pool, // Support ships can only rearm weapons while mission-level pool is available - MjnMixael
 		
 		NUM_VALUES
 	};
@@ -113,6 +115,7 @@ namespace Mission {
 		SF_Cannot_perform_scan_hide_cargo,	// Goober5000 - ship cannot scan other ships, and cargo will not be shown on the HUD
 		SF_Cannot_perform_scan_show_cargo,	// Goober5000 - ship cannot scan other ships, but cargo will be shown on the HUD
 		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
+		SF_No_scanned_cargo,			// MjnMixael - cargo is never revealed, only shows scanned/not scanned (requires unified scanning)
 		SF_From_player_wing,			// set for ships that are members of any player starting wing
 
 		NUM_VALUES

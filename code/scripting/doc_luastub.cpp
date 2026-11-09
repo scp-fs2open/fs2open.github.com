@@ -97,7 +97,7 @@ SCP_string create_function_alias(const ade_type_info& type_info, SCP_string alia
 		aliasName += "_" + std::to_string(dupCount++);
 	}
 
-	Aliases.emplace_back(aliasName, alias);
+	Aliases.emplace_back(aliasName, std::move(alias));
 
 	return aliasName;
 }
@@ -176,7 +176,7 @@ SCP_string get_output_type_link(const ade_type_info& type_info, SCP_string neste
 		return get_output_type_link(type_info.elements().front());
 
 	default:
-		Assertion(false, "Unhandled type!");
+		UNREACHABLE("Unhandled type %d!", static_cast<int>(type_info.getType()));
 		return "";
 	}
 }
@@ -619,12 +619,16 @@ void output_luastub_doc(const ScriptingDocumentation& doc, const SCP_string& fil
 
 	//***Enumerations
 	fprintf(fp, "-- Enumerations\n");
+	SCP_string current_group_id;
 	for (const auto& enumeration : doc.enumerations) {
-		// Cyborg17 -- Omit the deprecated flag
-		if (enumeration.name == "VM_EXTERNAL_CAMERA_LOCKED") {
-			continue;
+		if (enumeration.group_id != current_group_id) {
+			current_group_id = enumeration.group_id;
+			fputs("\n", fp);
+			fprintf(fp, "--- %s: %s\n", enumeration.group_title.c_str(), enumeration.group_description.c_str());
 		}
-		// WMC - For now, print to the file without the description.
+		if (!enumeration.description.empty()) {
+			fprintf(fp, "--- %s\n", enumeration.description.c_str());
+		}
 		fprintf(fp, "--- @const %s\n", enumeration.name.c_str());
 		fprintf(fp, "%s = enumeration\n", enumeration.name.c_str());
 	}

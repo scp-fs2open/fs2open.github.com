@@ -15,13 +15,13 @@
 #include "Management.h"
 #include "globalincs/linklist.h"
 #include "FREDView.h"
+#include "prop/prop.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
 
-constexpr auto INPUT_THRESHOLD = 0.01f;		// smallest increment of input box
 constexpr auto INPUT_FORMAT = "%.01f";
 
 static bool Select_set_relative = false;
@@ -137,6 +137,12 @@ BOOL orient_editor::OnInitDialog()
 				box->AddString(jumpnode_get_by_objnum(objnum)->GetName());
 				index[total++] = objnum;
 
+			} else if (ptr->type == OBJ_PROP) {
+				if (Props[ptr->instance].has_value()) {
+					box->AddString(Props[ptr->instance].value().prop_name);
+					index[total++] = objnum;
+				}
+
 			} else if (ptr->type != OBJ_POINT)
 				Warning(LOCATION, "Unknown object type %d", ptr->type);
 		}
@@ -205,7 +211,7 @@ bool orient_editor::is_close(float val, const CString &input_str) const
 	float input_val = convert(input_str);
 
 	float diff = val - input_val;
-	return abs(diff) < INPUT_THRESHOLD;
+	return abs(diff) < ORIENT_INPUT_THRESHOLD;
 }
 
 /**
@@ -217,7 +223,7 @@ bool orient_editor::is_angle_close(float rad, const CString &input_str) const
 	float input_deg = normalize_degrees(convert(input_str));
 
 	float diff = deg - input_deg;
-	return abs(diff) < INPUT_THRESHOLD;
+	return abs(diff) < ORIENT_INPUT_THRESHOLD;
 }
 
 bool orient_editor::query_modified()
@@ -416,18 +422,6 @@ float orient_editor::to_degrees(float rad)
 {
 	float deg = fl_degrees(rad);
 	return normalize_degrees(deg);
-}
-
-float orient_editor::normalize_degrees(float deg)
-{
-	while (deg < -180.0f)
-		deg += 180.0f;
-	while (deg > 180.0f)
-		deg -= 180.0f;
-	// check for negative zero...
-	if (deg == -0.0f)
-		return 0.0f;
-	return deg;
 }
 
 /**

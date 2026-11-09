@@ -18,6 +18,7 @@
 extern int radar_target_id_flags;
 
 SCP_vector<iff_info> Iff_info;
+SCP_vector<const char *> Iff_info_names;		// to be filled in from Iff_info
 
 int Iff_traitor;
 
@@ -46,6 +47,7 @@ static bool AccessiblitySupported = false;
 // used by In-Game Options menu
 static bool AccessibilityEnabled = false;
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto AccessibilityOption = options::OptionBuilder<bool>("Game.IffAccessibility",
 	std::pair<const char*, int>{"Accessibility IFF Colors", 1855},
 	std::pair<const char*, int>{"Enables or disables IFF Accessibility color overrides", 1856})
@@ -143,9 +145,13 @@ void resolve_iff_data()
 			Iff_info[Iff_traitor].iff_name);
 	}
 
+	Iff_info_names.clear();
+
 	// next get the attackees and colors
 	for (int cur_iff = 0; cur_iff < (int)Iff_info.size(); cur_iff++) {
 		iff_info* iff = &Iff_info[cur_iff];
+
+		Iff_info_names.push_back(iff->iff_name);
 
 		// clear the iffs to be attacked
 		iff->attackee_bitmask = 0;

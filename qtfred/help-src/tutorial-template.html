@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<!--
+    QTFRED MOD TUTORIAL TEMPLATE
+    =============================
+    Copy this file to your mod's  data/freddocs/  folder and rename it.
+    The filename (without extension) is NOT what shows in the Tutorials tab,
+    the <title> tag below is.  Keep filenames lowercase with hyphens.
+
+    FILES IN SUBFOLDERS ARE IGNORED.
+    Only HTML files placed directly in  data/freddocs/  appear in the list.
+    Use subfolders freely for images or other assets you link to from here.
+
+    LINKING TO BUILT-IN HELP PAGES
+    --------------------------------
+    Use the qthelp:// scheme with the full path:
+        qthelp://org.hard-light.qtfred/doc/<path>
+    Examples:
+        qthelp://org.hard-light.qtfred/doc/dialogs/ShipEditorDialog.html
+        qthelp://org.hard-light.qtfred/doc/concepts/sexps.html
+        qthelp://org.hard-light.qtfred/doc/quickstart.html
+    The full list of available pages is in the Contents tree of the Help dialog.
+
+    DARK / LIGHT THEME
+    -------------------
+    QtFRED injects a <style> block before </head> at load time when the editor
+    is in dark mode.  You do not need to do anything special. Just make sure
+    your file has a </head> closing tag (as this template does) and avoid
+    hard-coding colors in inline style attributes.  Use the CSS classes from
+    help.css (.note, .stub-notice, code, kbd, pre, th/td) and they will adapt
+    automatically.
+
+    STYLESHEET
+    -----------
+    The line below loads the same stylesheet used by the built-in help pages.
+    Leave it as-is; do not copy help.css into your mod folder.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <!-- The title tag is what appears in the Tutorials tab list. Make it descriptive. -->
+    <title>Your Tutorial Title Here</title>
+    <link rel="stylesheet" type="text/css"
+          href="qthelp://org.hard-light.qtfred/doc/css/help.css"/>
+</head>
+<body>
+
+<h1>Your Tutorial Title Here</h1>
+
+<p>
+    A short paragraph introducing what this tutorial covers and what the reader
+    will be able to do by the end of it.
+</p>
+
+<!-- ============================================================
+     NOTE BOX - use the .note class for tips and important info.
+     It adapts to dark mode automatically.
+     ============================================================ -->
+<div class="note">
+    This is a note box.  Use it for tips, prerequisites, or warnings that
+    should stand out from the body text.
+</div>
+
+<h2>1. First Step</h2>
+
+<p>
+    Walk through the first thing the reader needs to do.  Reference dialog names
+    in <strong>bold</strong>.  Use <kbd>Ctrl+Click</kbd> for keyboard shortcuts
+    and <code>inline code</code> for values the user types.
+</p>
+
+<!-- ============================================================
+     LINKING TO BUILT-IN HELP PAGES
+     Use qthelp:// URLs to send the reader to a built-in dialog page.
+     The link opens in the same help browser window.
+     ============================================================ -->
+<p>
+    Double-click the ship to open the
+    <a href="qthelp://org.hard-light.qtfred/doc/dialogs/ShipEditorDialog.html">Ship Editor</a>.
+    Set the team to <strong>Friendly</strong> and close the dialog.
+</p>
+
+<h2>2. Second Step</h2>
+
+<p>
+    Continue with the next task.  For multi-line commands or SEXP expressions,
+    use a <code>&lt;pre&gt;</code> block:
+</p>
+
+<pre><code>(has-time-elapsed 60)</code></pre>
+
+<!-- ============================================================
+     TABLES - border and header styles adapt to dark mode.
+     ============================================================ -->
+<h2>Reference Table (optional)</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Setting</th>
+            <th>Recommended value</th>
+            <th>Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Team</td>
+            <td>Friendly</td>
+            <td>Required for player ships</td>
+        </tr>
+        <tr>
+            <td>AI class</td>
+            <td>None</td>
+            <td>Player-controlled ships ignore AI class</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Next Steps</h2>
+
+<ul>
+    <li>
+        Learn about
+        <a href="qthelp://org.hard-light.qtfred/doc/concepts/sexps.html">SEXPs</a>
+        to drive mission logic with conditions and actions.
+    </li>
+    <li>
+        Set up arrival and departure cues in the
+        <a href="qthelp://org.hard-light.qtfred/doc/dialogs/ShipEditorDialog.html">Ship Editor</a>.
+    </li>
+    <li>
+        Add mission objectives in
+        <a href="qthelp://org.hard-light.qtfred/doc/dialogs/MissionGoalsDialog.html">Mission Goals</a>.
+    </li>
+</ul>
+
+</body>
+</html>

@@ -43,7 +43,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="fso::fred::sexp_tree" name="goalEventTree"/>
+        <widget class="fso::fred::sexp_tree_view" name="goalEventTree"/>
        </item>
        <item alignment="Qt::AlignTop">
         <widget class="QWidget" name="widget_2" native="true">
@@ -252,11 +252,24 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>newObjectiveBtn</tabstop>
+  <tabstop>goalTypeCombo</tabstop>
+  <tabstop>goalName</tabstop>
+  <tabstop>goalDescription</tabstop>
+  <tabstop>goalScore</tabstop>
+  <tabstop>goalTeamCombo</tabstop>
+  <tabstop>objectiveInvalidCheck</tabstop>
+  <tabstop>noCompletionMusicCheck</tabstop>
+  <tabstop>displayTypeCombo</tabstop>
+  <tabstop>goalEventTree</tabstop>
+  <tabstop>helpTextBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

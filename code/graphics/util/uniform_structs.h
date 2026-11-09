@@ -18,15 +18,7 @@ namespace graphics {
  */
 
 struct deferred_global_data {
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
-
 	matrix4 inv_view_matrix;
-
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
 
 	float invScreenWidth;
 	float invScreenHeight;
@@ -46,7 +38,7 @@ struct deferred_light_data {
 	float coneInnerAngle;
 
 	vec3d coneDir;
-	float dualCone;
+	int dualCone;
 
 	vec3d scale;
 	float lightRadius;
@@ -79,16 +71,14 @@ struct model_uniform_data {
 	matrix4 viewMatrix;
 	matrix4 projMatrix;
 	matrix4 textureMatrix;
-	matrix4 shadow_mv_matrix;
-	matrix4 shadow_proj_matrix[4];
 
 	vec4 color;
 
 	model_light lights[MAX_UNIFORM_LIGHTS];
 
 	float outlineWidth;
-	float fogStart;
-	float fogScale;
+	float fogNear;
+	float fogDensity;
 	int buffer_matrix_offset;
 
 	vec4 clip_equation;
@@ -110,7 +100,7 @@ struct model_uniform_data {
 	int gammaSpec;
 	int envGloss;
 	int effect_num;
-	int sBasemapIndex;  // moved up here to track alignment
+	int sBasemapIndex;
 
 	vec4 fogColor;
 
@@ -125,11 +115,6 @@ struct model_uniform_data {
 	float znear;
 	float zfar;
 
-	float veryneardist;
-	float neardist;
-	float middist;
-	float fardist;
-
 	int sGlowmapIndex;
 	int sSpecmapIndex;
 	int sNormalmapIndex;
@@ -143,6 +128,58 @@ struct model_uniform_data {
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
 const float mud_align = model_uniform_data_size / 16.0f;
+
+
+struct shadow_uniform_data {
+	matrix4 modelViewMatrix;
+	matrix4 modelMatrix;
+	vec4 clip_equation;
+	int use_clip_plane;
+	int buffer_matrix_offset;
+	float pad[2];
+};
+
+const size_t shadow_uniform_data_size = sizeof(shadow_uniform_data);
+
+struct shadow_cascade_static_data {
+	int cascade_offset;
+	int cascade_count;
+	float rtShadowBiasMin;
+	float rtShadowBiasMax;
+	matrix4 shadow_mv_matrix;
+
+	// Position of the view-space origin (the camera) in TLAS-relative space. The RT shadow
+	// ray origin is mat3(inverse(view)) * viewPos + shadow_ray_view_origin.
+	//
+	// The TLAS is not built in true world space: every instance is translated by
+	// -Shadow_rt_tlas_origin (shadows.h) so all coordinates near the viewer stay small.
+	// Float32 has ~1 mm steps at 10 km and ~8 mm at 100 km, which made cockpit-scale
+	// shadows shimmer far from the mission origin. The CPU computes this value from
+	// exact float differences instead of letting the shader add two large numbers. It is
+	// the camera position minus Shadow_rt_tlas_origin for ordinary passes; the cockpit
+	// pass renders in a different frame (view anchored at leaning_position, models offset
+	// in that same un-translated frame, never combined with objp->pos), so there it also
+	// includes the viewer ship's position -- see shadow_cascade_params_bind() (shadows.cpp)
+	// and its callers for where this is set.
+	//
+	// Declared before shadow_ray_cull_mask so the trailing int packs into this vec3's
+	// std140 alignment padding instead of needing a manual pad field (std140 gives a vec3
+	// 16-byte alignment but only 12-byte size, so a following scalar fills the gap for free).
+	vec3d shadow_ray_view_origin;
+
+	// Ray cull mask for raytraced shadow queries (traceShadowRay()/shadows.sdr). Excludes
+	// the viewer ship's own hull TLAS instance (TLAS_MASK_VIEWER_HULL, shadows.h) outside
+	// the cockpit pass, matching the rasterized path's exclusion of Viewer_obj from the
+	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
+	int shadow_ray_cull_mask;
+};
+// Must match the GLSL shadowCascadeParams block's implicit std140 padding
+// exactly (16 [4 leading scalars] + 64 [matrix4] + 12 [shadow_ray_view_origin]
+// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 96) --
+// shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
+// this struct via sizeof(), so a mismatch here silently shifts every cascade
+// matrix in the buffer, in both backends.
+static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
@@ -227,7 +264,10 @@ struct tonemapping_data {
 	float sh_lnA;
 	float sh_offsetX;
 	float sh_offsetY;
-	float pad[1];
+
+	float hdr_paperwhite_nits;
+	float hdr_peak_nits;
+	float pad[3];
 };
 
 struct smaa_data {
@@ -288,8 +328,10 @@ struct fog_data {
 	float fog_density;
 	float zNear;
 	float zFar;
+	float clip_inf_dist;
+	float clip_dist;
 
-	float pad[1];
+	float pad[3];
 };
 
 struct volumetric_fog_data {
@@ -404,6 +446,17 @@ struct post_data {
 
 struct irrmap_data {
 	int face;
+};
+
+// Final output-encode pass (gamma-correct-f.sdr). The SDR leg uses only `gamma`;
+// the HDR10 leg (SDR_FLAG_GAMMA_HDR10 / HDR10_OUTPUT variant) additionally uses
+// the paper-white and peak nits. `gamma` is field 0 so both legs read it from
+// the same std140 offset.
+struct gamma_encode_data {
+	float gamma;
+	float hdr_paperwhite_nits; // HDR10_OUTPUT only
+	float hdr_peak_nits;       // HDR10_OUTPUT only
+	float pad[1];
 };
 
 } // namespace generic_data

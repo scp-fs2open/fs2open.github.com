@@ -13,6 +13,7 @@ namespace api {
 
 //**********HANDLE: ShipRegistryEntry
 ADE_OBJ(l_ShipRegistryEntry, int, "ship_registry_entry", "Ship entry handle");
+ADE_OBJ_VALIDATOR(l_ShipRegistryEntry, idx, Ship_registry.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_ShipRegistryEntry, nullptr, "Name of ship", "string", "Ship name, or empty string if handle is invalid")
 {
@@ -29,19 +30,7 @@ ADE_VIRTVAR(Name, l_ShipRegistryEntry, nullptr, "Name of ship", "string", "Ship 
 	return ade_set_args(L, "s", Ship_registry[idx].name);
 }
 
-ADE_FUNC(isValid, l_ShipRegistryEntry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if (!ade_get_args(L, "o", l_ShipRegistryEntry.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if (idx < 0 || (size_t)idx >= Ship_registry.size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
-}
-
-ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration", "INVALID, NOT_YET_PRESENT, PRESENT, DEATH_ROLL, EXITED, or nil if handle is invalid")
+ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration", "A SHIP_STATUS_* enumeration, or nil if handle is invalid")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_ShipRegistryEntry.Get(&idx)))

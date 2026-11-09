@@ -14,7 +14,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Mission Objectives</string>
+   <string>Mission Cutscenes</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -43,7 +43,7 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="fso::fred::sexp_tree" name="cutsceneEventTree"/>
+        <widget class="fso::fred::sexp_tree_view" name="cutsceneEventTree"/>
        </item>
        <item>
         <widget class="QWidget" name="widget_2" native="true">
@@ -195,11 +195,19 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>fso::fred::sexp_tree</class>
+   <class>fso::fred::sexp_tree_view</class>
    <extends>QTreeView</extends>
-   <header>ui/widgets/sexp_tree.h</header>
+   <header>ui/widgets/sexp_tree_view.h</header>
   </customwidget>
  </customwidgets>
+ <tabstops>
+  <tabstop>newCutsceneBtn</tabstop>
+  <tabstop>cutsceneTypeCombo</tabstop>
+  <tabstop>cutsceneFilename</tabstop>
+  <tabstop>cutsceneEventTree</tabstop>
+  <tabstop>displayTypeCombo</tabstop>
+  <tabstop>helpTextBox</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

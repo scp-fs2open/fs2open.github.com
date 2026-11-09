@@ -1803,7 +1803,7 @@ void multi_join_cull_timeouts()
 
 	// traverse through the entire list if any items exist
 	int i = 0;
-	for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+	for (auto game = Active_games.begin(); game != Active_games.end(); ) {
 		if (game->heard_from_timer.isValid() && (ui_timestamp_elapsed(game->heard_from_timer))) {
 
 			// handle any gui details related to deleting this item
@@ -1815,9 +1815,10 @@ void multi_join_cull_timeouts()
 			}
 
 			// delete the item
-			Active_games.erase(game);
+			game = Active_games.erase(game);
 		} else {
 			++i;
+			++game;
 		}
 	}
 }
@@ -4792,7 +4793,8 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			ng->max_players = mission_parse_get_multi_mission_info(ng->mission_name);
 
 			Assert(ng->max_players > 0);
-			strcpy_s(ng->title, The_mission.name);
+			strncpy(ng->title, The_mission.name.c_str(), NAME_LENGTH);
+			ng->title[NAME_LENGTH] = '\0';
 
 			// set the information area text
 			Multi_netgame_common_description = The_mission.mission_desc;
@@ -7820,7 +7822,7 @@ void multi_sync_blit_screen_all()
 			// display his name and status
 			multi_sync_display_name(Net_players[idx].m_player->callsign,count,idx);
 
-			multi_sync_display_status(multi_sync_get_state_string(&Net_player[idx]).c_str(), count);
+			multi_sync_display_status(multi_sync_get_state_string(&Net_players[idx]).c_str(), count);
 			count++;
 		}
 	}	
@@ -8836,6 +8838,7 @@ void multi_debrief_esc_hit()
 						multi_sw_report(stats_saved);
 					}
 				}
+
 			}
 
 			multi_quit_game(PROMPT_HOST);

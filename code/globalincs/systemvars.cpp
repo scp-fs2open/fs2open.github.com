@@ -256,6 +256,7 @@ static void parse_model_detail_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",
                      std::pair<const char*, int>{"Model Detail", 1739},
                      std::pair<const char*, int>{"Detail level of models", 1740})
@@ -287,6 +288,7 @@ static void parse_texture_detail_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                      std::pair<const char*, int>{"3D Hardware Textures", 1362},
                      std::pair<const char*, int>{"Level of detail of textures", 1720})
@@ -318,6 +320,7 @@ static void parse_particles_detail_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                      std::pair<const char*, int>{"Particles", 1363},
                      std::pair<const char*, int>{"Level of detail for particles", 1717})
@@ -349,7 +352,8 @@ static void parse_debris_detail_func()
 	}
 }
 
-const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris",
                      std::pair<const char*, int>{"Impact Effects", 1364}, 
                      std::pair<const char*, int>{"Level of detail of impact effects", 1743})
                      .category(std::make_pair("Graphics", 1825))
@@ -380,6 +384,7 @@ static void parse_shield_detail_func()
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                      std::pair<const char*, int>{"Shield Hit Effects", 1718},
                      std::pair<const char*, int>{"Level of detail of shield impacts", 1719})
@@ -411,7 +416,8 @@ static void parse_stars_detail_func()
 	}
 }
 
-const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
                      std::pair<const char*, int>{"Stars", 1366}, 
                      std::pair<const char*, int>{"Number of stars in the mission", 1698})
                      .importance(2)
@@ -471,7 +477,7 @@ void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selec
 		Detail_defaults[static_cast<int>(preset)].lighting = value;
 		break;
 	default:
-		Assertion(false, "Invalid detail selection. Get a coder!");
+		UNREACHABLE("Invalid detail selection %d. Get a coder!", static_cast<int>(selection));
 	}
 }
 
@@ -491,7 +497,7 @@ void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selec
 		Detail_defaults[static_cast<int>(preset)].weapon_extras = value;
 		break;
 	default:
-		Assertion(false, "Invalid detail selection. Get a coder!");
+		UNREACHABLE("Invalid detail selection %d. Get a coder!", static_cast<int>(selection));
 	}
 }
 

@@ -32,6 +32,7 @@
 #include "sound/fsspeech.h"
 #include "sound/sound.h"
 #include "weapon/emp.h"
+#include "utils/string_utils.h"
 
 
 
@@ -64,7 +65,7 @@ typedef struct {
 	int num;
 	TIMESTAMP timestamp;
 	int length;
-	char *special_message;
+	std::unique_ptr<char[]> special_message;
 } training_message_queue;
 
 SCP_string Training_buf;
@@ -211,6 +212,19 @@ bool HudGaugeDirectives::canRender() const
 
 	if ((Viewer_mode & disabled_views)) {
 		return false;
+	}
+
+	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
+		return false;
+	}
+
+	if (render_for_cockpit_toggle > 0) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
 	}
 
 	if(pop_up) {
@@ -420,7 +434,7 @@ void training_mission_init()
 
 	// Goober5000
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
-		Training_message_queue[i].special_message = NULL;
+		Training_message_queue[i].special_message.reset();
 
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
@@ -693,13 +707,7 @@ void training_mission_shutdown()
 
 	// Goober5000
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
-	{
-		if (Training_message_queue[i].special_message != NULL)
-		{
-			vm_free(Training_message_queue[i].special_message);
-			Training_message_queue[i].special_message = NULL;
-		}
-	}
+		Training_message_queue[i].special_message.reset();
 
 	Training_voice = -1;
 	Training_num_lines = Training_obj_num_lines = 0;
@@ -720,7 +728,8 @@ char *translate_message_token(char *str)
 	return NULL;
 }
 
-void string_replace_tokens_with_keys(SCP_string& text) {
+void message_translate_tokens(SCP_string &text)
+{
 	text = message_translate_tokens(text.c_str());
 }
 
@@ -960,13 +969,8 @@ void message_training_queue(const char *text, TIMESTAMP timestamp, int length)
 		Training_message_queue[Training_message_queue_count].timestamp = timestamp;
 		Training_message_queue[Training_message_queue_count].length = length;
 
-		// Goober5000 - this shouldn't happen, but let's be safe
-		if (Training_message_queue[Training_message_queue_count].special_message != NULL)
-		{
-			Int3();
-			vm_free(Training_message_queue[Training_message_queue_count].special_message);
-			Training_message_queue[Training_message_queue_count].special_message = NULL;
-		}
+		// Goober5000 - this should already be freed here, but let's be safe
+		Training_message_queue[Training_message_queue_count].special_message.reset();
 
 		// Goober5000 - replace variables if necessary
 		// karajorma/jg18 - replace container references if necessary
@@ -974,7 +978,7 @@ void message_training_queue(const char *text, TIMESTAMP timestamp, int length)
 		const bool replace_var = sexp_replace_variable_names_with_values(temp_buf);
 		const bool replace_con = sexp_container_replace_refs_with_values(temp_buf);
 		if (replace_var || replace_con)
-			Training_message_queue[Training_message_queue_count].special_message = vm_strdup(temp_buf.c_str());
+			Training_message_queue[Training_message_queue_count].special_message = util::unique_copy(temp_buf.c_str(), false);
 
 		Training_message_queue_count++;
 	}
@@ -987,22 +991,18 @@ void message_training_remove_from_queue(int idx)
 {
 	// we're overwriting all messages with the next message, but to
 	// avoid memory leaks, we should free the special message entry
-	if (Training_message_queue[idx].special_message != NULL)
-	{
-		vm_free(Training_message_queue[idx].special_message);
-		Training_message_queue[idx].special_message = NULL;
-	}
+	Training_message_queue[idx].special_message.reset();
 
 	// replace current message with the one above it, etc.
 	for (int j=idx+1; j<Training_message_queue_count; j++)
-		Training_message_queue[j - 1] = Training_message_queue[j];
+		Training_message_queue[j - 1] = std::move(Training_message_queue[j]);
 
 	// delete the topmost message
 	Training_message_queue_count--;
 	Training_message_queue[Training_message_queue_count].length = -1;
 	Training_message_queue[Training_message_queue_count].num = -1;
 	Training_message_queue[Training_message_queue_count].timestamp = TIMESTAMP::invalid();
-	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
+	Training_message_queue[Training_message_queue_count].special_message.reset();
 }
 
 /**
@@ -1043,7 +1043,7 @@ void message_training_queue_check()
 
 	for (int i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
-			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
+			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message.get());
 
 			// remove this message from the queue now.
 			message_training_remove_from_queue(i);

@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "MainFrm.h"
+#include "management.h"
 #include "musicplayerdlg.h"
 #include "TextViewDlg.h"
 #include "mod_table/mod_table.h"
@@ -23,6 +24,10 @@ music_player_dlg::music_player_dlg(CWnd* pParent /*=nullptr*/)
 	m_cursor_pos = -1;
 	m_autoplay = FALSE;
 
+	m_play_icon = nullptr;
+	m_stop_icon = nullptr;
+	m_next_icon = nullptr;
+	m_prev_icon = nullptr;
 }
 
 void music_player_dlg::DoDataExchange(CDataExchange* pDX)
@@ -52,17 +57,17 @@ BOOL music_player_dlg::Create()
 	BOOL r;
 	r = CDialog::Create(IDD, Fred_main_wnd);
 
-	m_play_bm.LoadBitmap(IDB_PLAY);
-	((CButton*)GetDlgItem(IDC_BUTTON_PLAY_MUSIC))->SetBitmap(m_play_bm);
+	m_play_icon = load_button_icon(IDB_PLAY, RGB(192, 192, 192));
+	((CButton*)GetDlgItem(IDC_BUTTON_PLAY_MUSIC))->SetIcon(m_play_icon);
 
-	m_stop_bm.LoadBitmap(IDB_STOP);
-	((CButton*)GetDlgItem(IDC_BUTTON_STOP_MUSIC))->SetBitmap(m_stop_bm);
+	m_stop_icon = load_button_icon(IDB_STOP, RGB(192, 192, 192));
+	((CButton*)GetDlgItem(IDC_BUTTON_STOP_MUSIC))->SetIcon(m_stop_icon);
 
-	m_next_bm.LoadBitmap(IDB_NEXT);
-	((CButton*)GetDlgItem(IDC_BUTTON_NEXT_MUSIC))->SetBitmap(m_next_bm);
+	m_next_icon = load_button_icon(IDB_NEXT, RGB(192, 192, 192));
+	((CButton*)GetDlgItem(IDC_BUTTON_NEXT_MUSIC))->SetIcon(m_next_icon);
 
-	m_prev_bm.LoadBitmap(IDB_PREV);
-	((CButton*)GetDlgItem(IDC_BUTTON_PREV_MUSIC))->SetBitmap(m_prev_bm);
+	m_prev_icon = load_button_icon(IDB_PREV, RGB(192, 192, 192));
+	((CButton*)GetDlgItem(IDC_BUTTON_PREV_MUSIC))->SetIcon(m_prev_icon);
 
 	return r;
 }
@@ -217,6 +222,16 @@ void music_player_dlg::OnClose()
 	StopMusic();
 
 	CDialog::OnClose();
+}
+
+BOOL music_player_dlg::DestroyWindow()
+{
+	if (m_play_icon) { DestroyIcon(m_play_icon); m_play_icon = nullptr; }
+	if (m_stop_icon) { DestroyIcon(m_stop_icon); m_stop_icon = nullptr; }
+	if (m_next_icon) { DestroyIcon(m_next_icon); m_next_icon = nullptr; }
+	if (m_prev_icon) { DestroyIcon(m_prev_icon); m_prev_icon = nullptr; }
+
+	return CDialog::DestroyWindow();
 }
 
 void music_player_dlg::OnAutoplay()

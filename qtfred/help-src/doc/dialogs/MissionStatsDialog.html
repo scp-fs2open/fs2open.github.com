@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Mission Statistics - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Mission &rsaquo; Mission Statistics</nav>
+<h1>Mission Statistics</h1>
+<p>Opens via <strong>View &rsaquo; Mission Stats</strong>.</p>
+<p>Displays a read-only summary of everything currently in the mission. Use this to get a
+quick overview of mission complexity or verify counts before testing.</p>
+
+<h2>Tabs</h2>
+<table>
+    <tr><th>Tab</th><th>Contents</th></tr>
+    <tr><td>Summary</td><td>Total counts: ships, wings, waypoint paths, jump nodes,
+        mission events, mission goals, and messages.</td></tr>
+    <tr><td>Ships</td><td>Every ship in the mission listed with its name, class, team,
+        and wing assignment.</td></tr>
+    <tr><td>Escort</td><td>Ships with the escort flag enabled in the
+        <a href="ShipEditorDialog.html">Ship Editor</a>. Ships added to or removed
+        from the escort list at runtime via SEXPs are not reflected here.</td></tr>
+    <tr><td>Hotkeys</td><td>Hotkey assignments defined statically in the mission.
+        Assignments made at runtime via the <code>add-remove-hotkey</code> SEXP are
+        not reflected here.</td></tr>
+</table>
+
+<h2>Hard limits</h2>
+<table>
+    <tr><th>Limit</th><th>Value</th><th>Notes</th></tr>
+    <tr><td>Max ships</td><td>500</td><td>Maximum number of ship instances that can
+        exist in the mission at any one time.</td></tr>
+    <tr><td>Max objects</td><td>5000</td><td>Maximum total object count including
+        ships, props, weapons, and all other object types.</td></tr>
+</table>
+
+<div class="note">This dialog is read-only. To change anything shown here, open the
+relevant editor from the <strong>Editors</strong> or <strong>View</strong> menu.</div>
+</body>
+</html>

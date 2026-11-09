@@ -105,13 +105,15 @@ set(FRED2_SOURCES
 	propdlg.h
 	reinforcementeditordlg.cpp
 	reinforcementeditordlg.h
+	reorderdlg.cpp
+	reorderdlg.h
 	resource.h
 	restrictpaths.cpp
 	restrictpaths.h
 	setglobalshipflags.cpp
 	setglobalshipflags.h
-	sexp_tree.cpp
-	sexp_tree.h
+	sexp_tree_view.cpp
+	sexp_tree_view.h
 	shieldsysdlg.cpp
 	shieldsysdlg.h
 	ship_select.cpp
@@ -134,6 +136,8 @@ set(FRED2_SOURCES
 	shiptexturesdlg.h
 	soundenvironmentdlg.cpp
 	soundenvironmentdlg.h
+	supportrearmdlg.cpp
+	supportrearmdlg.h
 	starfieldeditor.cpp
 	starfieldeditor.h
 	stdafx.cpp
@@ -164,11 +168,11 @@ set_source_files_properties(fred.rc PROPERTIES
 	LANGUAGE RC
 )
 
-IF(MSVC_USE_RUNTIME_DLL)
+IF(FSO_MSVC_RUNTIME_DLL)
 	set(CMAKE_MFC_FLAG 2)
-ELSE(MSVC_USE_RUNTIME_DLL)
+ELSE()
 	set(CMAKE_MFC_FLAG 1)
-ENDIF(MSVC_USE_RUNTIME_DLL)
+ENDIF()
 
 IF(MSVC60)
 	link_directories(${STLPORT_INCLUDE_LIB_DIRS})
@@ -197,8 +201,15 @@ FIND_PACKAGE(OpenGL REQUIRED)
 target_link_libraries(FRED2 PUBLIC "${OPENGL_LIBRARY}")
 
 TARGET_LINK_LIBRARIES(FRED2 PUBLIC code) # This will also link all dependencies of code
-TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Release>>:nafxcwd.lib>")
-TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Release>:nafxcw.lib>")
+
+# When CMAKE_MFC_FLAG=2 (DLL MFC) MSBuild already links the DLL MFC stub libs (mfcs*.lib);
+# explicitly adding the static MFC libs (nafxcw*) on top causes IsDerivedFrom to be resolved
+# from the static MFC copy while CRuntimeClass structs are initialized in the DLL form,
+# crashing CDocTemplate's ctor on startup.
+IF(NOT FSO_MSVC_RUNTIME_DLL)
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<CONFIG:Debug>:nafxcwd.lib>")
+	TARGET_LINK_LIBRARIES(FRED2 PUBLIC "$<$<NOT:$<CONFIG:Debug>>:nafxcw.lib>")
+ENDIF()
 
 target_link_libraries(FRED2 PUBLIC glad_wgl)
 

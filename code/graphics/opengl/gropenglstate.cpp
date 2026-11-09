@@ -12,6 +12,9 @@
 #include "graphics/material.h"
 #include "gropenglstate.h"
 #include "math/vecmat.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern GLfloat GL_max_anisotropy;
 
@@ -357,6 +360,13 @@ GLboolean opengl_state::ClipDistance(GLint num, bool state)
 
 	GLboolean save_state = clipdistance_Status[num];
 
+#ifdef USE_OPENGL_ES
+	if (!GLAD_GL_EXT_clip_cull_distance) {
+		clipdistance_Status[num] = state;
+		return save_state;
+	}
+#endif
+
 	if (state != clipdistance_Status[num]) {
 		if (state) {
 			glEnable(GL_CLIP_DISTANCE0+num);
@@ -572,7 +582,7 @@ void opengl_state::BindFrameBuffer(GLuint name, GLenum mode) {
 			}
 			break;
 		default:
-			UNREACHABLE("Invalid BindFrameBuffer mode!");
+			UNREACHABLE("Invalid BindFrameBuffer mode %d!", mode);
 	}
 }
 void opengl_state::BindFrameBufferBoth(GLuint read, GLuint draw) {

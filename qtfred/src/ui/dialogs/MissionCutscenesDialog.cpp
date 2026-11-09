@@ -1,4 +1,5 @@
 #include <QtWidgets/QMessageBox>
+#include <QShortcut>
 #include "MissionCutscenesDialog.h"
 
 #include "ui/util/SignalBlockers.h"
@@ -15,14 +16,22 @@ MissionCutscenesDialog::MissionCutscenesDialog(QWidget* parent, EditorViewport* 
 
 	populateCutsceneCombos();
 
-	ui->cutsceneEventTree->initializeEditor(viewport->editor, this);
+	ui->cutsceneEventTree->initializeEditor(viewport->editor, this, viewport);
 	_model->setTreeControl(ui->cutsceneEventTree);
 
 	ui->cutsceneFilename->setMaxLength(NAME_LENGTH - 1);
 
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	ui->helpTextBox->setVisible(viewport->Show_sexp_help_mission_cutscenes);
+
+	// Shift+F1 toggles the sexp help pane for this session without changing the saved preference.
+	auto* helpToggle = new QShortcut(QKeySequence(QStringLiteral("Shift+F1")), this);
+	connect(helpToggle, &QShortcut::activated, this, [this] {
+		ui->helpTextBox->setVisible(!ui->helpTextBox->isVisible());
+	});
 
 	connect(_model.get(), &MissionCutscenesDialogModel::modelChanged, this, &MissionCutscenesDialog::updateUi);
+	connect(ui->cutsceneEventTree, &sexp_tree_view::modified, this, [this] { _model->setModified(); });
 
 	_model->initializeData();
 
@@ -39,7 +48,7 @@ void MissionCutscenesDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void MissionCutscenesDialog::reject()
@@ -56,7 +65,15 @@ void MissionCutscenesDialog::reject()
 void MissionCutscenesDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore(); // Don't let the base class close the window
+	// reject() hides the dialog when it actually closes. Let that close
+	// proceed (so a dialog created with WA_DeleteOnClose is destroyed),
+	// and only veto it when reject() decided to keep the dialog open (e.g.
+	// the user cancelled the unsaved-changes prompt).
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void MissionCutscenesDialog::updateUi()
@@ -89,9 +106,9 @@ void MissionCutscenesDialog::load_tree()
 	ui->cutsceneEventTree->clear_tree();
 	auto& cutscenes = _model->getCutscenes();
 	for (auto& scene : cutscenes) {
-		scene.formula = ui->cutsceneEventTree->load_sub_tree(scene.formula, true, "true");
+		scene.formula = ui->cutsceneEventTree->_model.load_sub_tree(scene.formula, true, "true");
 	}
-	ui->cutsceneEventTree->post_load();
+	ui->cutsceneEventTree->_model.post_load();
 }
 void MissionCutscenesDialog::recreate_tree()
 {
@@ -103,7 +120,7 @@ void MissionCutscenesDialog::recreate_tree()
 		}
 
 		auto h = ui->cutsceneEventTree->insert(scene.filename);
-		h->setData(0, sexp_tree::FormulaDataRole, scene.formula);
+		h->setData(0, sexp_tree_view::FormulaDataRole, scene.formula);
 		ui->cutsceneEventTree->add_sub_tree(scene.formula, h);
 	}
 
@@ -118,7 +135,7 @@ void MissionCutscenesDialog::createNewCutscene()
 	ui->cutsceneEventTree->setCurrentItemIndex(-1);
 	ui->cutsceneEventTree->add_operator("true", h);
 	auto index = scene.formula = ui->cutsceneEventTree->getCurrentItemIndex();
-	h->setData(0, sexp_tree::FormulaDataRole, index);
+	h->setData(0, sexp_tree_view::FormulaDataRole, index);
 
 	ui->cutsceneEventTree->setCurrentItem(h);
 }

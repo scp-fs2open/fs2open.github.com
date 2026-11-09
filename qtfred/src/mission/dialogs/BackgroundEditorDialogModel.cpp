@@ -7,17 +7,19 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "starfield/nebula.h"
-#include "lighting/lighting_profiles.h" 
-
-// TODO move this to common for both FREDs.
-const static float delta = .00001f;
-const static float default_nebula_range = 3000.0f;
+#include "lighting/lighting_profiles.h"
+#include "missioneditor/common.h"
 
 extern void parse_one_background(background_t* background);
 
 namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
+{
+	initializeData();
+}
+
+void BackgroundEditorDialogModel::initializeData()
 {
 	auto& bg = getActiveBackground();
 	auto& bm_list = bg.bitmaps;
@@ -29,6 +31,13 @@ BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, Editor
 	if (!sun_list.empty()) {
 		_selectedSunIndex = 0;
 	}
+
+	_initial_fog_1000m_vis = Neb2_fog_1000m_visibility;
+	_initial_fog_near_dist = Neb2_fog_near_distance;
+	_initial_fog_skybox_clip = Neb2_fog_skybox_clip_distance;
+	_initial_fog_clip = Neb2_fog_clip_distance;
+
+	_modified = false;
 }
 
 bool BackgroundEditorDialogModel::apply()
@@ -38,7 +47,7 @@ bool BackgroundEditorDialogModel::apply()
 	// ours is a limited spinbox so this probably isn't necessary anymore??
 	// Does this mean range can never be 0?????????
 	if (Neb2_awacs <= 0.00000001f) {
-		Neb2_awacs = 3000.0f;
+		Neb2_awacs = DEFAULT_NEBULA_RANGE;
 	}
 	return true;
 }
@@ -51,16 +60,22 @@ void BackgroundEditorDialogModel::reject()
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
 {
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
-	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
+
+	// The mission stores the base model name (no extension); the save code adds .pof when writing.
+	// model_load needs the .pof extension to find the file, so append it if missing.
+	SCP_string skybox_model = The_mission.skybox_model;
+	if (!skybox_model.empty() && skybox_model.find('.') == SCP_string::npos)
+		skybox_model += ".pof";
+
+	stars_set_background_model(skybox_model.c_str(), nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
-	// TODO make this actually show the stars in the background
 	_editor->missionChanged();
 }
 
 background_t& BackgroundEditorDialogModel::getActiveBackground()
 {
 	if (!SCP_vector_inbounds(Backgrounds, Cur_background)) {
-		// Fall back to first background if Cur_background isn’t set
+		// Fall back to first background if Cur_background isn't set
 		Cur_background = 0;
 	}
 	return Backgrounds[Cur_background];
@@ -404,64 +419,64 @@ void BackgroundEditorDialogModel::setBitmapName(const SCP_string& name)
 	}
 }
 
-int BackgroundEditorDialogModel::getBitmapPitch() const
+float BackgroundEditorDialogModel::getBitmapPitch() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.p) + delta);
+	return fl_degrees_100ths(bm->ang.p);
 }
 
-void BackgroundEditorDialogModel::setBitmapPitch(int deg)
+void BackgroundEditorDialogModel::setBitmapPitch(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.p, fl_radians(deg));
 
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getBitmapBank() const
+float BackgroundEditorDialogModel::getBitmapBank() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.b) + delta);
+	return fl_degrees_100ths(bm->ang.b);
 }
 
-void BackgroundEditorDialogModel::setBitmapBank(int deg)
+void BackgroundEditorDialogModel::setBitmapBank(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.b, fl_radians(deg));
 
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getBitmapHeading() const
+float BackgroundEditorDialogModel::getBitmapHeading() const
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return 0;
 
-	return fl2ir(fl_degrees(bm->ang.h) + delta);
+	return fl_degrees_100ths(bm->ang.h);
 }
 
-void BackgroundEditorDialogModel::setBitmapHeading(int deg)
+void BackgroundEditorDialogModel::setBitmapHeading(float deg)
 {
 	auto* bm = getActiveBitmap();
 	if (!bm)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(bm->ang.h, fl_radians(deg));
 
 	refreshBackgroundPreview();
@@ -655,42 +670,42 @@ void BackgroundEditorDialogModel::setSunName(const SCP_string& name)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getSunPitch() const
+float BackgroundEditorDialogModel::getSunPitch() const
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return 0;
 
-	return fl2ir(fl_degrees(s->ang.p) + delta);
+	return fl_degrees_100ths(s->ang.p);
 }
 
-void BackgroundEditorDialogModel::setSunPitch(int deg)
+void BackgroundEditorDialogModel::setSunPitch(float deg)
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(s->ang.p, fl_radians(deg));
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getSunHeading() const
+float BackgroundEditorDialogModel::getSunHeading() const
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return 0;
 
-	return fl2ir(fl_degrees(s->ang.h) + delta);
+	return fl_degrees_100ths(s->ang.h);
 }
 
-void BackgroundEditorDialogModel::setSunHeading(int deg)
+void BackgroundEditorDialogModel::setSunHeading(float deg)
 {
 	auto* s = getActiveSun();
 	if (!s)
 		return;
 
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
 	modify(s->ang.h, fl_radians(deg));
 	refreshBackgroundPreview();
 }
@@ -762,7 +777,7 @@ void BackgroundEditorDialogModel::setFullNebulaEnabled(bool enabled)
 
 		// Set defaults if needed
 		if (Neb2_awacs <= 0.0f) {
-			modify(Neb2_awacs, default_nebula_range);
+			modify(Neb2_awacs, DEFAULT_NEBULA_RANGE);
 		}
 	} else {
 		// Disable full nebula
@@ -859,24 +874,55 @@ void BackgroundEditorDialogModel::setShipTrailsToggled(bool on)
 	set_modified();
 }
 
-float BackgroundEditorDialogModel::getFogNearMultiplier()
+float BackgroundEditorDialogModel::getFog1000mVisibility()
 {
-	return Neb2_fog_near_mult;
+	return Neb2_fog_1000m_visibility;
 }
 
-void BackgroundEditorDialogModel::setFogNearMultiplier(float v)
+void BackgroundEditorDialogModel::setFog1000mVisibility(float v)
 {
-	modify(Neb2_fog_near_mult, v);
+	modify(Neb2_fog_1000m_visibility, v);
 }
 
-float BackgroundEditorDialogModel::getFogFarMultiplier()
+float BackgroundEditorDialogModel::getFogNearDistance()
 {
-	return Neb2_fog_far_mult;
+	return Neb2_fog_near_distance;
 }
 
-void BackgroundEditorDialogModel::setFogFarMultiplier(float v)
+void BackgroundEditorDialogModel::setFogNearDistance(float v)
 {
-	modify(Neb2_fog_far_mult, v);
+	modify(Neb2_fog_near_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
+{
+	return Neb2_fog_skybox_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogSkyboxClipDistance(float v)
+{
+	modify(Neb2_fog_skybox_clip_distance, v);
+}
+
+float BackgroundEditorDialogModel::getFogClipDistance()
+{
+	return Neb2_fog_clip_distance;
+}
+
+void BackgroundEditorDialogModel::setFogClipDistance(float v)
+{
+	modify(Neb2_fog_clip_distance, v);
+}
+
+void BackgroundEditorDialogModel::finalizeFogChanges()
+{
+	if (!fl_equal(Neb2_fog_1000m_visibility, _initial_fog_1000m_vis)
+		|| !fl_equal(Neb2_fog_near_distance, _initial_fog_near_dist)
+		|| !fl_equal(Neb2_fog_skybox_clip_distance, _initial_fog_skybox_clip)
+		|| !fl_equal(Neb2_fog_clip_distance, _initial_fog_clip))
+	{
+		modify(Neb2_fog_save_legacy_values, false);
+	}
 }
 
 bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()
@@ -1012,7 +1058,7 @@ int BackgroundEditorDialogModel::getOldNebulaPitch()
 
 void BackgroundEditorDialogModel::setOldNebulaPitch(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_pitch != deg) {
 		Nebula_pitch = deg;
 		modify(Nebula_pitch, deg);
@@ -1026,7 +1072,7 @@ int BackgroundEditorDialogModel::getOldNebulaBank()
 
 void BackgroundEditorDialogModel::setOldNebulaBank(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_bank != deg) {
 		Nebula_bank = deg;
 		modify(Nebula_bank, deg);
@@ -1040,7 +1086,7 @@ int BackgroundEditorDialogModel::getOldNebulaHeading()
 
 void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
 {
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	CLAMP(deg, getIntOrientLimit().first, getIntOrientLimit().second);
 	if (Nebula_heading != deg) {
 		Nebula_heading = deg;
 		modify(Nebula_heading, deg);
@@ -1213,22 +1259,21 @@ void BackgroundEditorDialogModel::setSkyboxForceClamp(bool on)
 	set_modified();
 }
 
-int BackgroundEditorDialogModel::getSkyboxPitch()
+float BackgroundEditorDialogModel::getSkyboxPitch()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.p)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.p);
 }
 
-void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
+void BackgroundEditorDialogModel::setSkyboxPitch(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.p)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.p);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.p = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();
@@ -1236,22 +1281,21 @@ void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxBank()
+float BackgroundEditorDialogModel::getSkyboxBank()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.b)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.b);
 }
 
-void BackgroundEditorDialogModel::setSkyboxBank(int deg)
+void BackgroundEditorDialogModel::setSkyboxBank(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.b)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.b);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.b = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();
@@ -1259,22 +1303,21 @@ void BackgroundEditorDialogModel::setSkyboxBank(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxHeading()
+float BackgroundEditorDialogModel::getSkyboxHeading()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	int d = static_cast<int>(fl2ir(fl_degrees(a.h)));
-	d = (d % 360 + 360) % 360; // wrap to [0, 359]
-	return d;
+	return fl_degrees_100ths(a.h);
 }
 
-void BackgroundEditorDialogModel::setSkyboxHeading(int deg)
+void BackgroundEditorDialogModel::setSkyboxHeading(float deg)
 {
-	CLAMP(deg, 0, 359);
+	CLAMP(deg, getFloatOrientLimit().first, getFloatOrientLimit().second);
+	const float deg_100ths = fl2ir(deg * 100.0f) / 100.0f;
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
-	const int cur = static_cast<int>(fl2ir(fl_degrees(a.h)));
-	if (cur != deg) {
+	const float cur = fl_degrees_100ths(a.h);
+	if (!fl_equal(cur, deg_100ths)) {
 		a.h = fl_radians(static_cast<float>(deg));
 		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
 		set_modified();

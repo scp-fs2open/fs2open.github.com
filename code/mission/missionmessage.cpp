@@ -41,6 +41,8 @@
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
 
+#include <utility>	// for std::exchange
+
 bool Allow_generic_backup_messages = false;
 bool Always_loop_head_anis = false;
 bool Use_newer_head_ani_suffix = false;
@@ -72,14 +74,44 @@ builtin_message::builtin_message(const builtin_message& other)
 
 builtin_message& builtin_message::operator=(const builtin_message& other)
 {
-	name = other.used_strdup ? vm_strdup(other.name) : other.name;
-	occurrence_chance = other.occurrence_chance;
-	max_count = other.max_count;
-	min_delay = other.min_delay;
-	priority = other.priority;
-	timing = other.timing;
-	fallback = other.fallback;
-	used_strdup = other.used_strdup;
+	if (this != &other)
+	{
+		const char* new_name = other.used_strdup ? vm_strdup(other.name) : other.name;
+		if (used_strdup)
+			vm_free(const_cast<char*>(name));
+
+		name = new_name;
+		occurrence_chance = other.occurrence_chance;
+		max_count = other.max_count;
+		min_delay = other.min_delay;
+		priority = other.priority;
+		timing = other.timing;
+		fallback = other.fallback;
+		used_strdup = other.used_strdup;
+	}
+	return *this;
+}
+
+builtin_message::builtin_message(builtin_message&& other) noexcept
+	: name(std::exchange(other.name, nullptr)), occurrence_chance(other.occurrence_chance), max_count(other.max_count), min_delay(other.min_delay), priority(other.priority), timing(other.timing), fallback(other.fallback), used_strdup(std::exchange(other.used_strdup, false))
+{}
+
+builtin_message& builtin_message::operator=(builtin_message&& other) noexcept
+{
+	if (this != &other)
+	{
+		if (used_strdup)
+			vm_free(const_cast<char*>(name));
+
+		name = std::exchange(other.name, nullptr);
+		occurrence_chance = other.occurrence_chance;
+		max_count = other.max_count;
+		min_delay = other.min_delay;
+		priority = other.priority;
+		timing = other.timing;
+		fallback = other.fallback;
+		used_strdup = std::exchange(other.used_strdup, false);
+	}
 	return *this;
 }
 
@@ -646,7 +678,7 @@ void message_parse(MessageFormat format) {
 	}
 
 	Num_messages++;
-	Messages.push_back(msg); 
+	Messages.push_back(std::move(msg));
 }
 
 void message_frequency_parse()
@@ -705,7 +737,7 @@ void message_moods_parse()
 		stuff_string(buf, F_NAME);
 
 		if (!message_moods_check_existing(buf)) {
-			Builtin_moods.push_back(buf);
+			Builtin_moods.push_back(std::move(buf));
 		} else {
 			mprintf(("Message mood %s already exists. Skipping!", buf.c_str()));
 		}
@@ -974,9 +1006,32 @@ void messages_init()
 	Next_mute_time = 1;
 
 	//wipe all the non-builtin messages
-	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end()); 
-	Message_avis.erase((Message_avis.begin()+Num_builtin_avis), Message_avis.end()); 
+	if (Fred_running) {
+		// in FRED the media unions hold strdup'd names which must be freed before the messages are discarded
+		for (auto it = Messages.begin() + Num_builtin_messages; it != Messages.end(); ++it)
+			message_free_media_names(*it);
+	}
+	Messages.erase((Messages.begin()+Num_builtin_messages), Messages.end());
+	Message_avis.erase((Message_avis.begin()+Num_builtin_avis), Message_avis.end());
 	Message_waves.erase((Message_waves.begin()+Num_builtin_waves), Message_waves.end());
+}
+
+// FRED stores strdup'd filenames in the message media unions (the game
+// stores indices, which must not be freed).  Frees and nulls both names.
+void message_free_media_names(MMessage &msg)
+{
+	Assertion(Fred_running, "message_free_media_names is only valid in FRED, where the media unions hold name pointers!");
+
+	if (msg.avi_info.name)
+	{
+		free(msg.avi_info.name);
+		msg.avi_info.name = nullptr;
+	}
+	if (msg.wave_info.name)
+	{
+		free(msg.wave_info.name);
+		msg.wave_info.name = nullptr;
+	}
 }
 
 // free a loaded avi
@@ -1007,6 +1062,7 @@ void message_mission_shutdown()
 			snd_unload( Message_waves[i].num );
 		}
 	}
+	snd_unload_cleanup();
 
 	fsspeech_stop();
 
@@ -2248,7 +2304,7 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		return filter_matches(it->ship_name, filter.ship_name)
 	      && filter_matches(hud_get_ship_callsign(it), filter.callsign)
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
-		    && filter_matches(wing_name, filter.wing_name)
+		    && filter_matches(std::move(wing_name), filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
 		    && (Ship_info[it->ship_info_index].class_type < 0 || filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield))
 		    && filter_matches(it->team, filter.team_bitfield);
@@ -2647,9 +2703,14 @@ bool add_message(const char* name, const char* message, int persona_index, int m
 	strcpy_s(msg.message, message);
 	msg.persona_index = persona_index;
 	msg.multi_team = multi_team;
-	msg.avi_info.index = -1;
-	msg.wave_info.index = -1;
-	Messages.push_back(msg);
+	if (Fred_running) {
+		msg.avi_info.name = nullptr;
+		msg.wave_info.name = nullptr;
+	} else {
+		msg.avi_info.index = -1;
+		msg.wave_info.index = -1;
+	}
+	Messages.push_back(std::move(msg));
 	Num_messages++;
 
 	return true;

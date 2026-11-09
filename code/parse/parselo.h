@@ -34,10 +34,6 @@ extern int fred_parse_flag;
 extern int Token_found_flag;
 
 
-#define	COMMENT_CHAR	(char)';'
-#define	EOLN			(char)0x0a
-#define CARRIAGE_RETURN (char)0x0d
-
 enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
 
 #define	F_NAME					1
@@ -168,6 +164,7 @@ extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for,
 extern int stuff_float(float *f, bool optional = false);
 extern int stuff_int(int *i, bool optional = false);
 extern int stuff_long(long *l, bool optional = false);
+extern int stuff_uint64(std::uint64_t *l, bool optional = false);
 extern void stuff_ubyte(ubyte *i);
 extern int stuff_int_optional(int *i);
 extern int stuff_float_optional(float *f);
@@ -250,17 +247,14 @@ void parse_string_flag_list_special(Flagset& dest, const special_flag_def_list_n
 }
 
 template<class T>
-void stuff_flagset(T *dest) {
-    long l = 0;
-    stuff_long(&l);
+void stuff_flagset(T *dest)
+{
+    std::uint64_t val = 0;
+    stuff_uint64(&val);
 
-	if (l < 0) {
-		error_display(0, "Expected flagset value but got negative value %lu!\n", l);
-		l = 0;
-	}
-    dest->from_u64((std::uint64_t) l);
+    dest->from_u64(val);
 
-    diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
+    diag_printf("Stuffed flagset: " UINT64_T_ARG "\n", dest->to_u64());
 }
 
 extern size_t stuff_int_list(int *ilp, size_t max_ints, ParseLookupType lookup_type = ParseLookupType::RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
@@ -415,8 +409,9 @@ extern char *stristr(char *str, const char *substr);
 extern bool can_construe_as_integer(const char *text);
 
 // Goober5000 (ditto for C++)
-extern void vsprintf(SCP_string &dest, const char *format, va_list ap);
+extern void vsprintf(SCP_string &dest, const char *format, va_list ap, size_t write_offset = 0);
 extern void sprintf(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
+extern void sprintf_concat(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
 // Goober5000
 extern int subsystem_stricmp(const char *str1, const char *str2);

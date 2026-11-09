@@ -233,13 +233,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
-							break;
-						}
-					}
-
-					reinforcement = (j < Num_reinforcements) ? 1 : 0;
+					j = find_item_with_string(Reinforcements, &reinforcements::name, shipp->ship_name);
+					reinforcement = (j >= 0) ? 1 : 0;
 
 					// check if ship in wing
 					ship_in_wing = (shipp->wingnum != -1);;
@@ -299,12 +294,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
-							break;
-						}
-					}
-					reinforcement = tristate_set(j < Num_reinforcements, reinforcement);
+					j = find_item_with_string(Reinforcements, &reinforcements::name, shipp->ship_name);
+					reinforcement = tristate_set(j >= 0, reinforcement);
 
 					// check if ship in wing
 					ship_in_wing = (shipp->wingnum != -1);;
@@ -438,20 +429,12 @@ void ship_flags_dlg::update_ship(int shipnum)
 	ship *shipp = &Ships[shipnum];
 	object *objp = &Objects[shipp->objnum];
 
-	if (m_reinforcement.GetCheck() != 2)
+	// skip this for player starts, which can be edited in a mixed multi-selection even though
+	// the checkbox is disabled when only players are selected; set_reinforcement would add a
+	// bogus reinforcement entry for the player, since ship_name_lookup skips player starts
+	if ((objp->type != OBJ_START) && (m_reinforcement.GetCheck() != 2))
 	{
-		//Check if we're trying to add more and we've got too many.
-		if( (Num_reinforcements >= MAX_REINFORCEMENTS) && (m_reinforcement.GetCheck() == 1))
-		{
-			char error_message[256];
-			sprintf(error_message, "Too many reinforcements; could not add ship '%s' to reinforcement list!", shipp->ship_name); 
-			MessageBox(error_message);
-		}
-		//Otherwise, just update as normal.
-		else
-		{
-			set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());	
-		}
+		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());
 	}
 
 	switch (m_cargo_known.GetCheck()) {
@@ -729,22 +712,26 @@ void ship_flags_dlg::update_ship(int shipnum)
 	}
 
 	// deal with updating the "destroy before the mission" stuff
-	switch (m_destroy.GetCheck()) {
-		case 0:  // this means no check in checkbox
-			if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] )
-				set_modified();
+	// (skip this for player starts, which can be edited in a mixed multi-selection even though
+	// the checkbox is disabled when only players are selected)
+	if (objp->type != OBJ_START) {
+		switch (m_destroy.GetCheck()) {
+			case 0:  // this means no check in checkbox
+				if ( shipp->flags[Ship::Ship_Flags::Kill_before_mission] )
+					set_modified();
 
-            shipp->flags.remove(Ship::Ship_Flags::Kill_before_mission);
-			break;
+				shipp->flags.remove(Ship::Ship_Flags::Kill_before_mission);
+				break;
 
-		case 1:  // this means checkbox is checked
-			if ( !(shipp->flags[Ship::Ship_Flags::Kill_before_mission]) )
-				set_modified();
+			case 1:  // this means checkbox is checked
+				if ( !(shipp->flags[Ship::Ship_Flags::Kill_before_mission]) )
+					set_modified();
 
-            shipp->flags.set(Ship::Ship_Flags::Kill_before_mission);
-			m_destroy_value.save(&shipp->final_death_time);
-			break;
-	}  // a mixed state is 2, and since it's not handled, it doesn't change
+				shipp->flags.set(Ship::Ship_Flags::Kill_before_mission);
+				m_destroy_value.save(&shipp->final_death_time);
+				break;
+		}  // a mixed state is 2, and since it's not handled, it doesn't change
+	}
 
 	switch (m_no_arrival_music.GetCheck()) {
 		case 0:

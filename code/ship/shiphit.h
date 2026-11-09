@@ -32,6 +32,19 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 // of whoever is calling these functions.  These functions are strictly
 // for damaging ship's hulls, shields, and subsystems.  Nothing more.
 
+// handle a -destroyed submodel in the special case where it is related to a special-point subsystem
+// (the usual submodel-submodel case is handled through the normal code paths)
+void check_subsystem_submodel_link(const ship *shipp, const ship_subsys *subsys, bool was_destroyed);
+
+// when a destroyed subsystem has been repaired, bring back its submodels in place of any -destroyed form
+void restore_subsystem_submodels(const ship *shipp, const ship_subsys *subsys);
+
+// hide a destroyed subsystem's submodels in favor of any -destroyed form, unless the subsystem is flagged not to disappear
+void blow_off_subsystem_submodels(const ship *shipp, const ship_subsys *subsys);
+
+// whether a subsystem's submodels are currently blown off, or its linked -destroyed submodel is shown
+bool subsystem_submodels_blown_off(const ship *shipp, const ship_subsys *subsys);
+
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d *hitpos, bool no_explosion = false );
 
@@ -41,12 +54,20 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 // (it might be possible to make `target` const, but that would set off another const-cascade)
 extern void ship_apply_tag(ship *ship_p, int tag_level, float tag_time, object *target, const vec3d *start, int ssm_index, int ssm_team);
 
+// Where a ship damage application came from, for the On Ship Damage hook.  Inferred uses the damaging object type and
+// the engine wash flag.  Collision and Explosion are for callers whose damaging object cannot tell them apart.
+enum class DamageSource {
+	Inferred,
+	Collision,
+	Explosion,
+};
+
 // This gets called to apply damage when something hits a particular point on a ship.
 // This assumes that whoever called this knows if the shield got hit or not.
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
 // (it might be possible to make `other_obj` const, but that would set off another const-cascade)
-void ship_apply_local_damage(object *ship_obj, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark=true, int submodel_num=-1, const vec3d *hit_normal=nullptr, float hit_dot = 1.f, const vec3d* local_hitpos = nullptr);
+void ship_apply_local_damage(object *ship_obj, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark=true, int submodel_num=-1, const vec3d *hit_normal=nullptr, float hit_dot = 1.f, const vec3d* local_hitpos = nullptr, DamageSource source = DamageSource::Inferred);
 
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the
@@ -54,7 +75,7 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, const vec3d *h
 // You can pass force_center==NULL if you the damage doesn't come from anywhere,
 // like for debug keys to damage an object or something.  It will 
 // assume damage is non-directional and will apply it correctly.   
-void ship_apply_global_damage(object *ship_obj, object *other_obj, const vec3d *force_center, float damage, int damage_type_idx);
+void ship_apply_global_damage(object *ship_obj, object *other_obj, const vec3d *force_center, float damage, int damage_type_idx, DamageSource source = DamageSource::Inferred);
 
 // like above, but does not apply damage to shields
 void ship_apply_wash_damage(object *ship_obj, object *other_obj, float damage);

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Volumetric Nebula - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Environment &rsaquo; Volumetric Nebula</nav>
+<h1>Volumetric Nebula</h1>
+<p>Opens via <strong>Editors &rsaquo; Volumetric Nebula</strong>.</p>
+<p>Configures the volumetric nebula renderer. Unlike the classic nebula in the
+<a href="BackgroundEditorDialog.html">Background Editor</a>, the volumetric nebula is
+rendered as a true 3D volume with light scattering, emissive glow, and procedural noise
+shaping.</p>
+
+<h2>Key fields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Enabled</td><td>Adds the volumetric nebula to the mission. Uncheck to
+        disable without losing settings.</td></tr>
+    <tr><td>Model</td><td>POF model that defines the outer boundary shape of the nebula
+        volume. The mesh must be watertight; multiple disjunct meshes are allowed as
+        long as their polygons do not intersect.</td></tr>
+    <tr><td>Position (X, Y, Z)</td><td>World-space position of the nebula
+        volume.</td></tr>
+    <tr><td>Color (RGB)</td><td>Primary color the nebula is rendered with.</td></tr>
+</table>
+
+<h2>Rendering</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Opacity</td><td>Target translucency - the maximum opacity the nebula
+        reaches at full depth. Cannot be set to 0.</td></tr>
+    <tr><td>Opacity distance</td><td>Distance in metres a viewer must be inside the
+        nebula before it reaches its target opacity.</td></tr>
+    <tr><td>Render quality steps</td><td>Number of steps used to accumulate nebula
+        density along each ray. Higher values reduce banding on objects inside the
+        volume; primarily affects frame rate.</td></tr>
+    <tr><td>Resolution</td><td>Resolution of the nebula's 3D density texture,
+        stored as a power of 2 (5&ndash;8 recommended). Higher values cost more
+        VRAM.</td></tr>
+    <tr><td>Oversampling</td><td>Oversampling factor for the 3D texture (1&ndash;3).
+        Each increment quadruples loading time but reduces edge banding, especially
+        at lower resolutions. Primarily affects load time.</td></tr>
+    <tr><td>Smoothing</td><td>Controls how softly the hull POF's edges blend into
+        the surrounding nebula. Expressed as a fraction of the nebula size.</td></tr>
+    <tr><td>Henyey-Greenstein coefficient</td><td>Controls light scattering
+        direction. Values greater than 0 produce a cloud-like shine-through effect;
+        values less than 0 produce a highly reflective nebula. Practical range is
+        roughly 0.05&ndash;0.75.</td></tr>
+    <tr><td>Sun falloff factor</td><td>Scales how the sun's illumination falls off
+        with nebula depth. Values greater than 1 make the nebula's interior brighter
+        than physically accurate; values less than 1 make it darker.</td></tr>
+    <tr><td>Sun quality steps</td><td>Number of steps taken toward the sun per
+        nebula slice when computing shadowing. Higher values reduce light/shadow
+        banding; primarily affects frame rate.</td></tr>
+</table>
+
+<h2>Emissive</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Emissive light</td><td>Intensity of the emissive glow added by light
+        sources inside the nebula. Higher values produce brighter
+        emissives.</td></tr>
+    <tr><td>Intensity</td><td>Controls how quickly an emissive light source widens
+        inside the nebula. Larger values spread the glow more broadly even where
+        there is little nebula to obscure it.</td></tr>
+    <tr><td>Emissive light falloff</td><td>Corrects emissive alpha near the source.
+        Values greater than 1 darken the emissive close to its origin, producing a
+        more even spread; values less than 1 brighten it near the origin, making it
+        more intense at the center.</td></tr>
+</table>
+
+<h2>Noise</h2>
+<p>Procedural noise is layered on top of the base volume to break up uniform density
+and create wispy internal structure.</p>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Enable noise</td><td>Toggles procedural noise on or off without losing
+        the noise settings.</td></tr>
+    <tr><td>Color (RGB)</td><td>Tint color applied to the noise layer.</td></tr>
+    <tr><td>Scale base</td><td>Size of the primary noise layer in metres. The ratio
+        between Scale base and Scale sub should have a large denominator to avoid
+        visible harmonic patterns in the result.</td></tr>
+    <tr><td>Scale sub</td><td>Size of the secondary noise layer in metres.</td></tr>
+    <tr><td>Intensity</td><td>Overall strength of the noise effect.</td></tr>
+    <tr><td>Resolution</td><td>Resolution of the noise 3D texture, stored as a
+        power of 2 (5&ndash;8 recommended). Higher values cost more VRAM.</td></tr>
+    <tr><td>Set Base Noise Function</td><td>Not yet implemented. Will allow a custom
+        ANL noise expression to replace the default base noise layer.</td></tr>
+    <tr><td>Set Sub Noise Function</td><td>Not yet implemented. Will allow a custom
+        ANL noise expression to replace the default sub noise layer.</td></tr>
+</table>
+</body>
+</html>

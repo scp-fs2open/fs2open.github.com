@@ -12,8 +12,8 @@ ReinforcementsDialogModel::ReinforcementsDialogModel(QObject* parent, EditorView
 
 void ReinforcementsDialogModel::initializeData()
 {
-	for (int i = 0; i < Num_reinforcements; i++) {
-		_reinforcementList.emplace_back(Reinforcements[i].name, Reinforcements[i].uses, Reinforcements[i].arrival_delay);
+	for (const auto &r : Reinforcements) {
+		_reinforcementList.emplace_back(r.name, r.uses, r.arrival_delay);
 	}
 
 	// add the wings to the model's internal storage
@@ -76,24 +76,18 @@ void ReinforcementsDialogModel::initializeData()
 
 	_selectedReinforcements.clear();
 	_selectedReinforcementIndices.clear();
+	_modified = false;
 }
 
 bool ReinforcementsDialogModel::apply() 
 {
-	Num_reinforcements = static_cast<int>(_reinforcementList.size());
-
-	int i = 0;
-
 	// Properly set all reinforcement info.
+	Reinforcements.clear();
 	for (auto& modelReinforcement : _reinforcementList) {
-		strcpy_s(Reinforcements[i].name, std::get<0>(modelReinforcement).c_str());
-		Reinforcements[i].uses = std::get<1>(modelReinforcement);
-		Reinforcements[i].arrival_delay = std::get<2>(modelReinforcement);
-		Reinforcements[i].type = 0;
-		memset( Reinforcements[i].no_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-		memset( Reinforcements[i].yes_messages, 0, MAX_REINFORCEMENT_MESSAGES * NAME_LENGTH );
-
-		i++;
+		reinforcements reinforcement(std::get<0>(modelReinforcement).c_str());
+		reinforcement.uses = std::get<1>(modelReinforcement);
+		reinforcement.arrival_delay = std::get<2>(modelReinforcement);
+		Reinforcements.push_back(std::move(reinforcement));
 	}
 
 	_shipWingPool.clear();
@@ -121,11 +115,6 @@ void ReinforcementsDialogModel::addToReinforcements(const SCP_vector<SCP_string>
 				break;
 			}
 		}
-	}
-
-	while (_reinforcementList.size() > MAX_REINFORCEMENTS) {
-		_shipWingPool.push_back(std::get<0>(_reinforcementList.back()));
-		_reinforcementList.pop_back();
 	}
 
 	set_modified();

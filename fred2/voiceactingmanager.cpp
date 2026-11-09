@@ -408,7 +408,7 @@ void VoiceActingManager::OnGenerateScript()
 	}
 
 	fout("%s\n", Mission_filename);
-	fout("%s\n\n", The_mission.name);
+	fout("%s\n\n", The_mission.name.c_str());
 
 	if (m_export_everything || m_export_command_briefings)
 	{

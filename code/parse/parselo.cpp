@@ -15,6 +15,7 @@
 #include <csetjmp>
 
 #include <cctype>
+#include "cmdline/cmdline.h"
 #include "globalincs/version.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
@@ -43,8 +44,7 @@ using namespace parse;
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
-char		Current_filename[MAX_PATH_LEN];
-char		Current_filename_sub[MAX_PATH_LEN];	//Last attempted file to load, don't know if ex or not.
+char		Current_filename[MAX_PATH_LEN];	// the file currently being read or parsed
 char		Error_str[ERROR_LENGTH];
 int		Warning_count, Error_count;
 int		fred_parse_flag = 0;
@@ -52,7 +52,7 @@ int		Token_found_flag;
 
 char 	*Parse_text = nullptr;
 char	*Parse_text_raw = nullptr;
-char	*Mp = NULL, *Mp_save = NULL;
+char	*Mp = nullptr;
 const char	*token_found;
 
 SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
@@ -2256,7 +2256,7 @@ int parse_get_line(char *lineout, int max_line_len, const char *textin, int inpu
 			else if (found_line_ending != file_line_ending_type && !warned_for_this_file)
 			{
 				// we can't use error_display() here because we're in the middle of reading the file
-				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename_sub, line_num);
+				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename, line_num);
 				warned_for_this_file = true;
 			}
 
@@ -2298,7 +2298,7 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
-	strcpy_s(Current_filename_sub, filename);
+	strcpy_s(Current_filename, filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2322,8 +2322,8 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 void read_file_text_from_default(const default_file& file, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy_s(Current_filename_sub, "internal default file ");
-	strcat_s(Current_filename_sub, file.filename);
+	strcpy_s(Current_filename, "internal default file ");
+	strcat_s(Current_filename, file.filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2370,6 +2370,9 @@ void stop_parse()
 	}
 
 	Parse_text_size = 0;
+	Mp = nullptr;
+
+	Current_filename[0] = '\0';
 }
 
 void allocate_parse_text(size_t size)
@@ -2568,6 +2571,7 @@ void coerce_to_utf8(SCP_string &buffer, const char *str)
 	if (isLatin1)
 	{
 		unicode::convert_encoding(buffer, str, unicode::Encoding::Encoding_iso8859_1, unicode::Encoding::Encoding_utf8);
+		return;
 	}
 
 	// unknown encoding, so just truncate
@@ -2696,7 +2700,7 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 		throw parse::FileOpenException("Filename must not be null!");
 
 	// copy the filename
-	strcpy_s(Current_filename_sub, filename);
+	strcpy_s(Current_filename, filename);
 
 	// if we are paused then raw_bytes must not be NULL!!
 	if ( !Bookmarks.empty() && (raw_bytes == nullptr) ) {
@@ -2978,6 +2982,79 @@ int stuff_long(long *l, bool optional)
 	{
 		retval = 2;
 		diag_printf("Stuffed long: %ld\n", *l);
+	}
+	else if (optional)
+		retval = comma ? 1 : 0;
+	else
+		skip_token();
+
+	return retval;
+}
+
+//	Stuff an unsigned 64-bit value pointed at by Mp.
+//	Advances past integer characters.
+int stuff_uint64(std::uint64_t *l, bool optional)
+{
+	char *str_start = Mp;
+
+	// since strtoull ignores white space anyway, might as well make it explicit
+	ignore_white_space();
+
+	// this is a bit cumbersome
+	size_t span;
+	if (*Mp == '+')
+	{
+		span = strspn(Mp + 1, "0123456789");
+
+		// account for the sign symbol, but not if it's the only valid character
+		if (span > 0)
+			++span;
+	}
+	else
+		span = strspn(Mp, "0123456789");
+
+	// don't call strtoull unless we found digits, because it will happily parse
+	// (and wrap around) a negative number
+	std::uint64_t result = (span > 0) ? strtoull(Mp, nullptr, 10) : 0;
+	bool success = false, comma = false;
+	int retval = 0;
+
+	// no number found?
+	if (span == 0)
+	{
+		if (!optional)
+			error_display(1, "Expected unsigned integer, found [%.32s].\n", next_tokens());
+	}
+	else
+	{
+		*l = result;
+		success = true;
+	}
+
+	if (success)
+		Mp += span;
+
+	// if an unexpected character is part of the number, warn about it
+	if (success && unexpected_numeric_char(*Mp))
+	{
+		error_display(0, "Expected unsigned integer, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
+	}
+
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
+		comma = true;
+
+	if (optional && !success)
+		Mp = str_start;
+
+	if (success)
+	{
+		retval = 2;
+		diag_printf("Stuffed uint64: " UINT64_T_ARG "\n", *l);
 	}
 	else if (optional)
 		retval = comma ? 1 : 0;
@@ -3648,7 +3725,7 @@ void pause_parse()
 	Mark.Warning_count = Warning_count;
 	Mark.Error_count = Error_count;
 
-	Bookmarks.push_back(Mark);
+	Bookmarks.push_back(std::move(Mark));
 }
 
 // unpause parsing to continue with previously parsing file
@@ -3679,8 +3756,6 @@ void reset_parse(char *text)
 
 	Warning_count = 0;
 	Error_count = 0;
-
-	strcpy_s(Current_filename, Current_filename_sub);
 }
 
 // Display number of warnings and errors at the end of a parse.
@@ -4400,18 +4475,10 @@ bool can_construe_as_integer(const char *text)
 
 // Goober5000
 // yoinked gratefully from dbugfile.cpp
-void vsprintf(SCP_string &dest, const char *format, va_list ap)
+void vsprintf(SCP_string &dest, const char *format, va_list ap, size_t write_offset)
 {
 	va_list copy;
-
-#if defined(_MSC_VER) && _MSC_VER < 1800
-	// Only Visual Studio >= 2013 supports va_copy
-	// This isn't portable but should work for Visual Studio
-	copy = ap;
-#else
 	va_copy(copy, ap);
-#endif
-
 	int needed_length = vsnprintf(nullptr, 0, format, copy);
 	va_end(copy);
 
@@ -4420,15 +4487,23 @@ void vsprintf(SCP_string &dest, const char *format, va_list ap)
 		return;
 	}
 
-	dest.resize(static_cast<size_t>(needed_length));
-	vsnprintf(&dest[0], dest.size() + 1, format, ap);
+	dest.resize(write_offset + i2sz(needed_length));
+	vsnprintf(&dest[write_offset], i2sz(needed_length) + 1, format, ap);
 }
 
-void sprintf(SCP_string &dest, const char *format, ...)
+void sprintf(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
 	va_start(args, format);
 	vsprintf(dest, format, args);
+	va_end(args);
+}
+
+void sprintf_concat(SCP_string &dest, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	vsprintf(dest, format, args, dest.size());
 	va_end(args);
 }
 
@@ -4977,8 +5052,8 @@ int parse_modular_table(const char *name_check, void (*parse_callback)(const cha
 	SCP_vector<SCP_string> tbl_file_names;
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
-		UNREACHABLE("parse_modular_table() called with invalid arguments; get a coder!\n");
+	Assertion( (name_check != nullptr) && (parse_callback != nullptr) && ((*name_check) == '*'), "parse_modular_table() called with invalid arguments; get a coder!\n");
+	if ( (name_check == nullptr) || (parse_callback == nullptr) || ((*name_check) != '*') ) {
 		return 0;
 	}
 

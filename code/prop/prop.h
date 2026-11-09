@@ -16,10 +16,10 @@ typedef struct prop_info {
 	SCP_string pof_file;                                        // Pof filename
 	vec3d closeup_pos;                                          // position for camera when using prop in closeup view (eg briefing and techroom)
 	float closeup_zoom;                                         // zoom when using prop in closeup view (eg briefing and techroom)
-	int model_num;                                              // The model number of the loaded POF
+	int model_num = -1;                                         // The model number of the loaded POF
 	int num_detail_levels;                                      // Detail levels of the model
 	int detail_distance[MAX_PROP_DETAIL_LEVELS];                // distance to change detail levels at
-	SCP_unordered_map<int, void*> glowpoint_bank_override_map;  // Glow point bank overrides currently unused
+	SCP_unordered_map<int, int> glowpoint_bank_override_map;    // Glow point bank overrides currently unused; values index glowpoint_bank_overrides
 	flagset<Prop::Info_Flags> flags;                            // Info flags
 	SCP_map<SCP_string, SCP_string> custom_data;                // Custom data for this prop
 	SCP_vector<custom_string> custom_strings;                   // Custom strings for this prop
@@ -33,6 +33,7 @@ typedef struct prop {
 	uint create_time;                     // time prop was created, set by gettime()
 	fix time_created;
 	float alpha_mult;
+	SCP_string fred_layer = "Default";
 	// glow points
 	SCP_deque<bool> glow_point_bank_active;
 	flagset<Prop::Prop_Flags> flags;
@@ -49,6 +50,7 @@ typedef struct parsed_prop {
 	matrix orientation;
 	vec3d position;
 	flagset<Mission::Parse_Object_Flags> flags;
+	SCP_string fred_layer = "Default";
 } parsed_prop;
 
 extern bool Props_inited;

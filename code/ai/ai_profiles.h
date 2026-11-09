@@ -17,6 +17,7 @@
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
 #define	AI_PATH_MODE_ALT1	1
+#define AI_PATH_MODE_ALT2   2
 
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL 0
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_AWARE 1
@@ -142,6 +143,8 @@ public:
 	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
 	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
 	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
+	float strafe_retreat_collide_time;		// When anticipated collision time is less than this, begin retreat from strafe
+	float strafe_retreat_collide_distance;	// When perpendicular distance to *surface* is less than this, begin retreat from strafe
 
 	// AI guard options  --wookieejedi
 	float guard_big_orbit_above_target_radius; // Radius of guardee that triggers ai_big_guard() 
@@ -160,10 +163,10 @@ extern int Num_ai_profiles;
 extern int Default_ai_profile;
 extern ai_profile_t Ai_profiles[MAX_AI_PROFILES];
 
-#define AI_PROFILES_INDEX(ai_p) ((int)((ai_p) - Ai_profiles))
+#define AI_PROFILES_INDEX(ai_p) (static_cast<int>((ai_p)-Ai_profiles))
 
 void ai_profiles_init();
 
-int ai_profile_lookup(char *name);
+int ai_profile_lookup(const char *name);
 
 #endif

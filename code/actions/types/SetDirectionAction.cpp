@@ -32,7 +32,7 @@ ActionResult SetDirectionAction::execute(ProgramLocals& locals) const
 
 std::unique_ptr<Action> SetDirectionAction::clone() const
 {
-	return std::unique_ptr<Action>(new SetDirectionAction(*this));
+	return std::make_unique<SetDirectionAction>(*this);
 }
 
 } // namespace types

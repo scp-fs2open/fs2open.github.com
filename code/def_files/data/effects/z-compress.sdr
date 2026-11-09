@@ -6,9 +6,11 @@ float compress_depth_value(float linear) {
 	linear = max(-linear, 0.0);
 
 	if(linear < 10.0) {
-		linear_mult = 0.00000999908;
-		exponent_mult = 1.32878452580;
-		offset = 0.0;
+	    //Special handling for very close values. For smooth shadows at very close distances, equidistant steps get too inaccurate.
+	    //Scaling this down linearly will push more accuracy to closer distances. Due to the scaling, this does not lose accuracy
+	    //at any point over the worse of uncompressed / z-compress, but it does trade the gained accuracy from compression at 10m
+	    //distance for accuracy lost due to compression below 0.5m (roughly)
+		return linear * 0.01;
 	}
 	else if (linear < 100.0) {
 		linear_mult = 0.05550473078;
@@ -70,9 +72,7 @@ float uncompress_depth_value(float compressed) {
 		offset = 3000.0;
 	}
 	else if (compressed < 0.1) {
-		linear_mult = 0.00000999908;
-		exponent_mult = 1.32878452580;
-		offset = 0.0;
+		return compressed * -100.0;
 	}
 	else if (compressed < 20.0) {
 		linear_mult = 0.05550473078;

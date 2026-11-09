@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Briefing Editor - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; Narrative &rsaquo; Briefing Editor</nav>
+<h1>Briefing Editor</h1>
+<p>Opens via <strong>Editors &rsaquo; Briefing</strong>.</p>
+<p>Sets up the pre-mission briefing shown to the player before launch. The briefing is
+made up of stages; each stage has its own camera view, map icons, text, and voice file.</p>
+
+<h2>Map view</h2>
+<p>The map is a top-down 2D projection of the mission space. Its aspect ratio matches
+the aspect ratio defined for the current mod. You can drag icons around directly on
+the map, and use the same camera controls as the main QtFRED viewport to adjust the
+view. Camera movement speed can be set via the drop-down; it only affects editing and
+has no in-game effect.</p>
+
+<h2>Teams</h2>
+<p>In multiplayer missions each team can have its own independent briefing. Use the
+team selector to switch which team's briefing you are editing. <strong>Copy to other
+team</strong> duplicates the entire briefing (all stages) to the other team, overwriting
+it.</p>
+
+<h2>Music</h2>
+<p><strong>Music</strong> and <strong>Alt music</strong> are briefing-wide; they are
+not per-stage. Music sets the track played throughout the entire briefing and the
+command briefing (if present). Alt music is used instead when that track is available
+in the currently loaded mod.</p>
+
+<h2>Stage controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Prev / Next</td><td>Navigate between stages.</td></tr>
+    <tr><td>Add stage</td><td>Appends a new stage at the end of the briefing.</td></tr>
+    <tr><td>Insert stage</td><td>Inserts a copy of the current stage immediately
+        after it.</td></tr>
+    <tr><td>Delete stage</td><td>Removes the current stage.</td></tr>
+</table>
+
+<h2>Camera controls</h2>
+<table>
+    <tr><th>Control</th><th>Description</th></tr>
+    <tr><td>Reset camera</td><td>Restores the stage's camera to the position it had
+        when you first navigated to it, discarding any unsaved
+        changes.</td></tr>
+    <tr><td>Copy / Paste</td><td>Copies the current stage's camera position and
+        orientation to the clipboard, then pastes it onto another
+        stage.</td></tr>
+    <tr><td>Camera coords</td><td>Manually enter the camera position and
+        orientation as numeric values.</td></tr>
+    <tr><td>Transition time</td><td>How long the camera takes to move to this stage's
+        position when advancing forward. When moving backward, the departing
+        stage's transition time is used instead.</td></tr>
+    <tr><td>Cut to next stage</td><td>Disables camera movement into the next stage;
+        the transition is an instant cut with a static effect
+        instead.</td></tr>
+    <tr><td>Cut to previous stage</td><td>Same, but applies to the transition coming
+        from the previous stage.</td></tr>
+    <tr><td>Disable grid rendering</td><td>Hides the map grid during this
+        stage.</td></tr>
+</table>
+
+<h2>Icon controls</h2>
+<p><strong>Make icon</strong> places a blank icon on the map. <strong>Make icon from
+ship</strong> lets you pick a ship from the mission and creates an icon preset to that
+ship's type, a shorthand for Make Icon followed by setting the ship type
+manually.</p>
+
+<h3>Icon properties</h3>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>ID</td><td>Links this icon to the same icon across other stages. Icons
+        with matching IDs are treated as the same object moving between
+        stages.</td></tr>
+    <tr><td>Label</td><td>Name visible on the map.</td></tr>
+    <tr><td>Closeup label</td><td>Name shown when the player clicks the icon to zoom
+        in.</td></tr>
+    <tr><td>Icon image</td><td>The 2D icon graphic from
+        <code>icons.tbl</code>.</td></tr>
+    <tr><td>Ship type</td><td>3D model shown when the player clicks the icon. If the
+        ship class has a special briefing icon defined, that is used instead of
+        the icon image.</td></tr>
+    <tr><td>Team</td><td>Tints the icon with that team's color.</td></tr>
+    <tr><td>Scale</td><td>Scales the icon up or down on the map.</td></tr>
+    <tr><td>Draw lines</td><td>Draws lines between icons that are marked for
+        it.</td></tr>
+    <tr><td>Flip icon</td><td>Mirrors the icon horizontally.</td></tr>
+    <tr><td>Use cargo icon</td><td>Uses the cargo variant of the ship type's icon, if
+        one exists. Only applies to Ship Type icons.</td></tr>
+    <tr><td>Wing icon</td><td>Uses the wing variant of the ship type's icon, if one
+        exists. Only applies to Ship Type icons.</td></tr>
+    <tr><td>Highlight</td><td>The icon receives an animated highlight effect during
+        this stage.</td></tr>
+    <tr><td>Change locally</td><td>When checked, changes to this icon apply only to
+        the current stage. When unchecked, changes propagate forward to all
+        later stages that share the same icon ID.</td></tr>
+</table>
+
+<h3>Icon actions</h3>
+<table>
+    <tr><th>Button</th><th>Description</th></tr>
+    <tr><td>Icon coords</td><td>Set the icon's map position as numeric
+        values.</td></tr>
+    <tr><td>Delete</td><td>Removes the icon from this stage.</td></tr>
+    <tr><td>Propagate</td><td>Copies this icon's current state to all following
+        stages that share the same icon ID.</td></tr>
+</table>
+
+<h2>Stage text</h2>
+<p>The text displayed in the briefing text box during this stage.</p>
+
+<h2>Voice file</h2>
+<p>Audio narration played during this stage.</p>
+
+<h2>Usage formula</h2>
+<p><a href="../concepts/sexps.html">SEXP</a> evaluated before the briefing plays. If
+true, this stage is shown; if false, it is skipped entirely.</p>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Ship Initial Status - QtFRED Help</title>
+    <link rel="stylesheet" type="text/css" href="../css/help.css"/>
+</head>
+<body>
+<nav class="breadcrumb"><a href="../index.html">QtFRED Help</a> &rsaquo; <a href="ShipEditorDialog.html">Ship Editor</a> &rsaquo; Initial Status</nav>
+<h1>Ship Initial Status</h1>
+<p>Accessed via the <strong>Initial Status</strong> button in the <a href="ShipEditorDialog.html">Ship Editor</a>.</p>
+<p>Sets the ship's condition at mission start.</p>
+
+<h2>Hull &amp; shields</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Velocity</td><td>The ship's speed at mission start.</td></tr>
+    <tr><td>Hull integrity</td><td>Starting hull strength as a percentage of
+        maximum.</td></tr>
+    <tr><td>Guardian threshold</td><td>Minimum hull percentage the ship can be
+        damaged down to. Once the ship's hull reaches this level, further damage is
+        absorbed without reducing it further. Set to 0 to disable. Applies to both
+        the hull and subsystems.</td></tr>
+    <tr><td>Has shield system</td><td>Whether this ship has an active shield system
+        at mission start.</td></tr>
+    <tr><td>Force shields on</td><td>Enables shields regardless of other flags that
+        would suppress them. Only takes effect if the ship's class defines a shield
+        strength; it cannot create shields for a class that has none.</td></tr>
+    <tr><td>Shield integrity</td><td>Starting shield strength as a percentage of
+        maximum.</td></tr>
+</table>
+
+<h2>Loadout locks</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Ship locked</td><td>Prevents the player from changing this ship in the
+        loadout screen.</td></tr>
+    <tr><td>Weapons locked</td><td>Prevents the player from changing this ship's
+        weapons in the loadout screen.</td></tr>
+</table>
+
+<h2>Disabled systems</h2>
+<table>
+    <tr><th>Field</th><th>Description</th></tr>
+    <tr><td>Primaries won't fire</td><td>Primary weapons are disabled at mission
+        start.</td></tr>
+    <tr><td>Secondaries won't fire</td><td>Secondary weapons are disabled at mission
+        start.</td></tr>
+    <tr><td>Turrets won't fire</td><td>All turrets are disabled at mission
+        start.</td></tr>
+    <tr><td>Afterburner disabled</td><td>Afterburner is disabled at mission
+        start.</td></tr>
+</table>
+
+<h2>Dockpoints</h2>
+<p>Lists all dockpoints defined on this ship. Select a dockpoint to set it as
+occupied by another ship and specify which dockpoint on that ship mates with this
+one.</p>
+
+<h2>Subsystems</h2>
+<p>Lists all subsystems on this ship. Select a subsystem to set its starting
+integrity as a percentage of maximum. For subsystems that can be scanned, a cargo
+field may also available to set what the player finds when scanning that
+subsystem. Additionally a cargo title field may be available which defaults to
+"Cargo:" if not set. The cargo fields are only visible if the ship has scannable
+subsystems. If the <code></code>Unify Scanning Behavior</code> mod flag is active then
+all ships can have scannable cargo by setting the <code></code>Toggle Subsystem Scanning</code>
+ship flag. If the mod flag is not set then huge ships always have scannable subsystems and
+other ships will require the ship flag to be enabled.</p>
+
+<h2>Team color</h2>
+<p>Assigns a team color to this ship. Requires the ship to have a
+<code>-misc</code> texture map and the desired colors to be defined in
+<code>colors.tbl</code>.</p>
+</body>
+</html>

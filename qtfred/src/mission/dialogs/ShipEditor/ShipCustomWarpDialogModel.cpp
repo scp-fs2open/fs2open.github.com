@@ -1,9 +1,11 @@
 #include "ShipCustomWarpDialogModel.h"
 
 #include "ship/shipfx.h"
+
 namespace fso::fred::dialogs {
+
 ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent, EditorViewport* viewport, bool departure)
-	: AbstractDialogModel(parent, viewport), _m_departure(departure), _target(Target::Selection)
+	: AbstractDialogModel(parent, viewport), _departure(departure), _target(Target::Selection)
 {
 	initializeData();
 }
@@ -13,7 +15,7 @@ ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent,
 	bool departure,
 	Target target,
 	int wingIndex)
-	: AbstractDialogModel(parent, viewport), _m_departure(departure), _target(target), _wingIndex(wingIndex)
+	: AbstractDialogModel(parent, viewport), _departure(departure), _target(target), _wingIndex(wingIndex)
 {
 	initializeData();
 }
@@ -21,53 +23,53 @@ ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent,
 bool ShipCustomWarpDialogModel::apply()
 {
 	WarpParams params;
-	params.direction = _m_departure ? WarpDirection::WARP_OUT : WarpDirection::WARP_IN;
+	params.direction = _departure ? WarpDirection::WARP_OUT : WarpDirection::WARP_IN;
 
-	if (_m_warp_type < Num_warp_types) {
-		params.warp_type = _m_warp_type;
+	if (_warpType < Num_warp_types) {
+		params.warp_type = _warpType;
 	} else {
-		params.warp_type = (_m_warp_type - Num_warp_types) | WT_DEFAULT_WITH_FIREBALL;
+		params.warp_type = (_warpType - Num_warp_types) | WT_DEFAULT_WITH_FIREBALL;
 	}
 
-	if (!_m_start_sound.empty()) {
-		gamesnd_id id = gamesnd_get_by_name(_m_start_sound.c_str());
+	if (!_startSound.empty()) {
+		gamesnd_id id = gamesnd_get_by_name(_startSound.c_str());
 		if (id.value() == -1) {
-			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _m_start_sound.c_str());
+			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _startSound.c_str());
 		} else {
 			params.snd_start = id;
 		}
 	}
 
-	if (!_m_end_sound.empty()) {
-		gamesnd_id id = gamesnd_get_by_name(_m_end_sound.c_str());
+	if (!_endSound.empty()) {
+		gamesnd_id id = gamesnd_get_by_name(_endSound.c_str());
 		if (id.value() == -1) {
-			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _m_end_sound.c_str());
+			Warning(LOCATION, "Game Sound \"%s\" does not exist. Skipping", _endSound.c_str());
 		} else {
 			params.snd_end = id;
 		}
 	}
 
-	if (_m_departure && _m_warpout_engage_time) {
-		params.warpout_engage_time = fl2i(_m_warpout_engage_time * 1000.0f);
+	if (_departure && _warpoutEngageTime) {
+		params.warpout_engage_time = fl2i(_warpoutEngageTime * 1000.0f);
 	}
-	if (_m_speed) {
-		params.speed = _m_speed;
+	if (_speed) {
+		params.speed = _speed;
 	}
-	if (_m_time) {
-		params.time = fl2i(_m_time * 1000.0f);
+	if (_time) {
+		params.time = fl2i(_time * 1000.0f);
 	}
-	if (_m_accel_exp) {
-		params.accel_exp = _m_accel_exp;
+	if (_accelExp) {
+		params.accel_exp = _accelExp;
 	}
-	if (_m_radius) {
-		params.radius = _m_radius;
+	if (_radius) {
+		params.radius = _radius;
 	}
-	if (!_m_anim.empty()) {
-		strcpy_s(params.anim, _m_anim.c_str());
+	if (!_anim.empty()) {
+		strcpy_s(params.anim, _anim.c_str());
 	}
-	params.supercap_warp_physics = _m_supercap_warp_physics;
-	if (_m_departure && _m_player_warpout_speed) {
-		params.warpout_player_speed = _m_player_warpout_speed;
+	params.supercap_warp_physics = _supercapWarpPhysics;
+	if (_departure && _playerWarpoutSpeed) {
+		params.warpout_player_speed = _playerWarpoutSpeed;
 	}
 	int index = find_or_add_warp_params(params);
 
@@ -77,7 +79,7 @@ bool ShipCustomWarpDialogModel::apply()
 				auto& sh = Ships[objp->instance];
 				if (sh.wingnum != _wingIndex)
 					continue;
-				if (!_m_departure)
+				if (!_departure)
 					sh.warpin_params_index = index;
 				else
 					sh.warpout_params_index = index;
@@ -88,7 +90,7 @@ bool ShipCustomWarpDialogModel::apply()
 			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 				if (objp->flags[Object::Object_Flags::Marked]) {
 					auto& sh = Ships[objp->instance];
-					if (!_m_departure)
+					if (!_departure)
 						sh.warpin_params_index = index;
 					else
 						sh.warpout_params_index = index;
@@ -104,67 +106,67 @@ void ShipCustomWarpDialogModel::reject() {}
 
 int ShipCustomWarpDialogModel::getType() const
 {
-	return _m_warp_type;
+	return _warpType;
 }
 
 SCP_string ShipCustomWarpDialogModel::getStartSound() const
 {
-	return _m_start_sound;
+	return _startSound;
 }
 
 SCP_string ShipCustomWarpDialogModel::getEndSound() const
 {
-	return _m_end_sound;
+	return _endSound;
 }
 
 float ShipCustomWarpDialogModel::getEngageTime() const
 {
-	return _m_warpout_engage_time;
+	return _warpoutEngageTime;
 }
 
 float ShipCustomWarpDialogModel::getSpeed() const
 {
-	return _m_speed;
+	return _speed;
 }
 
 float ShipCustomWarpDialogModel::getTime() const
 {
-	return _m_time;
+	return _time;
 }
 
 float ShipCustomWarpDialogModel::getExponent() const
 {
-	return _m_accel_exp;
+	return _accelExp;
 }
 
 float ShipCustomWarpDialogModel::getRadius() const
 {
-	return _m_radius;
+	return _radius;
 }
 
 SCP_string ShipCustomWarpDialogModel::getAnim() const
 {
-	return _m_anim;
+	return _anim;
 }
 
 bool ShipCustomWarpDialogModel::getSupercap() const
 {
-	return _m_supercap_warp_physics;
+	return _supercapWarpPhysics;
 }
 
 float ShipCustomWarpDialogModel::getPlayerSpeed() const
 {
-	return _m_player_warpout_speed;
+	return _playerWarpoutSpeed;
 }
 
 bool ShipCustomWarpDialogModel::departMode() const
 {
-	return _m_departure;
+	return _departure;
 }
 
 bool ShipCustomWarpDialogModel::isPlayer() const
 {
-	return _m_player;
+	return _player;
 }
 
 void ShipCustomWarpDialogModel::initializeData()
@@ -172,17 +174,17 @@ void ShipCustomWarpDialogModel::initializeData()
 	// find the params of the first marked ship
 	WarpParams* params = nullptr;
 	if (_target == Target::Wing && _wingIndex >= 0) {
-		// Use first ship in the wing for initial values; mark _m_player if the wing contains the player
+		// Use first ship in the wing for initial values; mark _player if the wing contains the player
 		for (object* objp : list_range(&obj_used_list)) {
 			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 				const auto& sh = Ships[objp->instance];
 				if (sh.wingnum == _wingIndex) {
-					if (!_m_departure)
+					if (!_departure)
 						params = &Warp_params[sh.warpin_params_index];
 					else
 						params = &Warp_params[sh.warpout_params_index];
 					if (objp->type == OBJ_START)
-						_m_player = true;
+						_player = true;
 					break;
 				}
 			}
@@ -192,12 +194,12 @@ void ShipCustomWarpDialogModel::initializeData()
 			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 				if (objp->flags[Object::Object_Flags::Marked]) {
 					const auto& sh = Ships[objp->instance];
-					if (!_m_departure)
+					if (!_departure)
 						params = &Warp_params[sh.warpin_params_index];
 					else
 						params = &Warp_params[sh.warpout_params_index];
 					if (objp->type == OBJ_START)
-						_m_player = true;
+						_player = true;
 					break;
 				}
 			}
@@ -206,106 +208,118 @@ void ShipCustomWarpDialogModel::initializeData()
 
 	if (params != nullptr) {
 		if (params->warp_type & WT_DEFAULT_WITH_FIREBALL) {
-			_m_warp_type = (params->warp_type & WT_FLAG_MASK) + Num_warp_types;
+			_warpType = (params->warp_type & WT_FLAG_MASK) + Num_warp_types;
 		} else if (params->warp_type >= 0 && params->warp_type < Num_warp_types) {
-			_m_warp_type = params->warp_type;
+			_warpType = params->warp_type;
 		}
 
 		if (params->snd_start.isValid()) {
-			_m_start_sound = gamesnd_get_game_sound(params->snd_start)->name;
+			_startSound = gamesnd_get_game_sound(params->snd_start)->name;
 		}
 		if (params->snd_end.isValid()) {
-			_m_end_sound = gamesnd_get_game_sound(params->snd_end)->name;
+			_endSound = gamesnd_get_game_sound(params->snd_end)->name;
 		}
 
 		if (params->warpout_engage_time > 0) {
-			_m_warpout_engage_time = i2fl(params->warpout_engage_time) / 1000.0f;
+			_warpoutEngageTime = i2fl(params->warpout_engage_time) / 1000.0f;
 		}
 
 		if (params->speed > 0.0f) {
-			_m_speed = params->speed;
+			_speed = params->speed;
 		}
 
 		if (params->time > 0.0f) {
-			_m_time = i2fl(params->time) / 1000.0f;
+			_time = i2fl(params->time) / 1000.0f;
 		}
 		if (params->accel_exp > 0.0f) {
-			_m_accel_exp = params->accel_exp;
+			_accelExp = params->accel_exp;
 		}
 
 		if (params->radius > 0.0f) {
-			_m_radius = params->radius;
+			_radius = params->radius;
 		}
 
 		if (strlen(params->anim) > 0) {
-			_m_anim = params->anim;
+			_anim = params->anim;
 		}
 
-		_m_supercap_warp_physics = params->supercap_warp_physics;
+		_supercapWarpPhysics = params->supercap_warp_physics;
 
 		if (params->warpout_player_speed > 0.0f) {
-			_m_player_warpout_speed = params->warpout_player_speed;
+			_playerWarpoutSpeed = params->warpout_player_speed;
 		}
+	}
+	_modified = false;
+}
+
+void ShipCustomWarpDialogModel::setType(int index)
+{
+	modify(_warpType, index);
+}
+
+void ShipCustomWarpDialogModel::setStartSound(const SCP_string& sound)
+{
+	if (!sound.empty()) {
+		modify(_startSound, sound);
+	} else {
+		_startSound = "";
+		set_modified();
 	}
 }
 
-void ShipCustomWarpDialogModel::setType(const int index)
+void ShipCustomWarpDialogModel::setEndSound(const SCP_string& sound)
 {
-	modify(_m_warp_type, index);
-}
-void ShipCustomWarpDialogModel::setStartSound(const SCP_string& newSound)
-{
-	if (!newSound.empty()) {
-		modify(_m_start_sound, newSound);
+	if (!sound.empty()) {
+		modify(_endSound, sound);
 	} else {
-		_m_start_sound = "";
+		_endSound = "";
 		set_modified();
 	}
 }
-void ShipCustomWarpDialogModel::setEndSound(const SCP_string& newSound)
+
+void ShipCustomWarpDialogModel::setEngageTime(double engageTime)
 {
-	if (!newSound.empty()) {
-		modify(_m_end_sound, newSound);
+	modify(_warpoutEngageTime, static_cast<float>(engageTime));
+}
+
+void ShipCustomWarpDialogModel::setSpeed(double speed)
+{
+	modify(_speed, static_cast<float>(speed));
+}
+
+void ShipCustomWarpDialogModel::setTime(double time)
+{
+	modify(_time, static_cast<float>(time));
+}
+
+void ShipCustomWarpDialogModel::setExponent(double exponent)
+{
+	modify(_accelExp, static_cast<float>(exponent));
+}
+
+void ShipCustomWarpDialogModel::setRadius(double radius)
+{
+	modify(_radius, static_cast<float>(radius));
+}
+
+void ShipCustomWarpDialogModel::setAnim(const SCP_string& anim)
+{
+	if (!anim.empty()) {
+		modify(_anim, anim);
 	} else {
-		_m_end_sound = "";
+		_anim = "";
 		set_modified();
 	}
 }
-void ShipCustomWarpDialogModel::setEngageTime(const double newValue)
+
+void ShipCustomWarpDialogModel::setSupercap(bool supercap)
 {
-	modify(_m_warpout_engage_time, static_cast<float>(newValue));
+	modify(_supercapWarpPhysics, supercap);
 }
-void ShipCustomWarpDialogModel::setSpeed(const double newValue)
+
+void ShipCustomWarpDialogModel::setPlayerSpeed(double playerSpeed)
 {
-	modify(_m_speed, static_cast<float>(newValue));
+	modify(_playerWarpoutSpeed, static_cast<float>(playerSpeed));
 }
-void ShipCustomWarpDialogModel::setTime(const double newValue)
-{
-	modify(_m_time, static_cast<float>(newValue));
-}
-void ShipCustomWarpDialogModel::setExponent(const double newValue)
-{
-	modify(_m_accel_exp, static_cast<float>(newValue));
-}
-void ShipCustomWarpDialogModel::setRadius(const double newValue)
-{
-	modify(_m_radius, static_cast<float>(newValue));
-}
-void ShipCustomWarpDialogModel::setAnim(const SCP_string& newAnim)
-{
-	if (!newAnim.empty()) {
-		modify(_m_anim, newAnim);
-	} else {
-		_m_anim = "";
-		set_modified();
-	}
-}
-void ShipCustomWarpDialogModel::setSupercap(const bool checked)
-{
-	modify(_m_supercap_warp_physics, checked);
-}
-void ShipCustomWarpDialogModel::setPlayerSpeed(const double newValue)
-{
-	modify(_m_player_warpout_speed, static_cast<float>(newValue));
-}
-} // namespace dialogs
+
+} // namespace fso::fred::dialogs

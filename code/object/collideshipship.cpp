@@ -19,6 +19,7 @@
 #include "hud/hudshield.h"
 #include "io/joy_ff.h"
 #include "io/timer.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_interpolate.h"
 #include "object/objcollide.h"
@@ -260,9 +261,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 			model_get_moving_submodel_list(submodel_vector, heavy_obj);
 
 			// turn off all moving submodels, collide against only 1 at a time.
-			// turn off collision detection for all moving submodels
+			mc.collision_checked.assign(pm->n_models, 0);
 			for (auto submodel : submodel_vector) {
-				pmi->submodel[submodel].collision_checked = true;
+				mc.collision_checked[submodel] = true;
 			}
 
 			// Only check single submodel now, since children of moving submodels are handled as moving as well
@@ -274,14 +275,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 
 			// check each submodel in turn
 			for (auto submodel : submodel_vector) {
-				auto smi = &pmi->submodel[submodel];
-
 				// turn on just one submodel for collision test
-				smi->collision_checked = false;
+				mc.collision_checked[submodel] = false;
 
-				if (smi->blown_off)
+				if (pmi->submodel[submodel].blown_off)
 				{
-					smi->collision_checked = true;
+					mc.collision_checked[submodel] = true;
 					continue;
 				}
 
@@ -315,8 +314,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 						model_instance_local_to_global_point(&ship_ship_hit_info->light_collision_cm_pos, &int_light_pos, pm, pmi, mc.hit_submodel, &heavy_obj->orient, &zero);
 					}
 				}
+
+				// re-disable this submodel before enabling the next one
+				mc.collision_checked[submodel] = true;
 			}
 
+			// Clear collision_checked before subsequent model_collide calls so it auto-inits fresh
+			mc.collision_checked.clear();
 		}
 
 		// Now complete base model collision checks that do not take into account rotating submodels.
@@ -355,9 +359,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		vec3d actual_world_hit_pos = mc.hit_point_world + heavy_obj->pos;
 
 		if (heavy_shipp->flags[Ship::Ship_Flags::Depart_warp] && heavy_shipp->warpout_effect != nullptr)
-			warp_effect = heavy_shipp->warpout_effect;
+			warp_effect = heavy_shipp->warpout_effect.get();
 		else if (heavy_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && heavy_shipp->warpin_effect != nullptr)
-			warp_effect = heavy_shipp->warpin_effect;
+			warp_effect = heavy_shipp->warpin_effect.get();
 
 		bool heavy_warp_no_collide = false;
 		if (warp_effect != nullptr)
@@ -365,9 +369,9 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 
 		warp_effect = nullptr;
 		if (light_shipp->flags[Ship::Ship_Flags::Depart_warp] && light_shipp->warpout_effect != nullptr)
-			warp_effect = light_shipp->warpout_effect;
+			warp_effect = light_shipp->warpout_effect.get();
 		else if (light_shipp->flags[Ship::Ship_Flags::Arriving_stage_2] && light_shipp->warpin_effect != nullptr)
-			warp_effect = light_shipp->warpin_effect;
+			warp_effect = light_shipp->warpin_effect.get();
 
 		bool light_warp_no_collide = false;
 		if (warp_effect != nullptr)
@@ -800,7 +804,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	if (should_collide && !lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]){
+	if (should_collide && lighter->flags.none_of(Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile)) {
 		vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
 	}
 
@@ -818,7 +822,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	}
 
 	if (should_collide){
-		if (!heavy->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
+		if (heavy->flags.none_of(Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile)) {
 			Assert(!vm_is_vec_nan(&direction_light));
 			vm_vec_scale_add2(&heavy->pos, &direction_light, 0.2f * (1.0f - heavy_light_mass_ratio));
 			vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * (1.0f - heavy_light_mass_ratio));
@@ -837,8 +841,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	//For landings, we want minimal movement on the light ship (just enough to keep the collision detection honest)
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
-	}
-	else if (!lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
+	} else if (lighter->flags.none_of(Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile)) {
 		vm_vec_scale_add2(&lighter->pos, &direction_light, -0.2f * heavy_light_mass_ratio);
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy_light_mass_ratio);
 	}
@@ -867,14 +870,17 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 //
 static void get_I_inv (matrix* I_inv, matrix* I_inv_body, matrix* orient)
 {
-	matrix Mtemp1, Mtemp2;
+	matrix orient_t;
 	// I_inv = (Rt)(I_inv_body)(R)
 	// This is opposite to what is commonly seen in books since we are rotating coordianates axes 
 	// which is equivalent to rotating in the opposite direction (or transpose)
 
-	vm_matrix_x_matrix(&Mtemp1, I_inv_body, orient);
-	vm_copy_transpose(&Mtemp2, orient);
-	vm_matrix_x_matrix(I_inv, &Mtemp2, &Mtemp1);
+	vm_copy_transpose(&orient_t, orient);
+
+	if (Fix_collision_moment_of_inertia)
+		*I_inv = orient_t * (*I_inv_body) * (*orient);
+	else
+		*I_inv = (*orient) * (*I_inv_body) * orient_t;	// retail multiplied in the opposite order
 }
 
 #define	PLANET_DAMAGE_SCALE	4.0f
@@ -1386,14 +1392,14 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 
 			float damage_heavy = (100.0f * damage / heavy_obj->phys_info.mass);
 			ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, damage_heavy, light_shipp->collision_damage_type_idx,
-									quadrant_num, CREATE_SPARKS, ship_ship_hit_info.heavy_submodel_num, &ship_ship_hit_info.collision_normal);
+									quadrant_num, CREATE_SPARKS, ship_ship_hit_info.heavy_submodel_num, &ship_ship_hit_info.collision_normal, 1.f, nullptr, DamageSource::Collision);
 
 			hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
 			// don't draw sparks (using sphere hitpos)
 			float damage_light = (100.0f * damage / light_obj->phys_info.mass);
 			ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, damage_light, heavy_shipp->collision_damage_type_idx,
-									MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+									MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal, 1.f, nullptr, DamageSource::Collision);
 
 			hud_shield_quadrant_hit(ship_ship_hit_info.light, -1);
 
@@ -1805,7 +1811,7 @@ int collide_prop_ship(obj_pair* pair)
 
 				// don't draw sparks (using sphere hitpos)
 				damage = (100.0f * damage / ship_objp->phys_info.mass);
-				ship_apply_local_damage(ship_objp, prop_objp, &world_hit_pos, damage, -1, MISS_SHIELDS, CREATE_SPARKS, -1, &prop_ship_hit_info.collision_normal);
+				ship_apply_local_damage(ship_objp, prop_objp, &world_hit_pos, damage, -1, MISS_SHIELDS, CREATE_SPARKS, -1, &prop_ship_hit_info.collision_normal, 1.f, nullptr, DamageSource::Collision);
 
 				hud_shield_quadrant_hit(ship_objp, -1);
 			}

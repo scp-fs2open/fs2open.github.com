@@ -116,6 +116,20 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QLabel" name="helpLabel">
+         <property name="text">
+          <string>Description</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPlainTextEdit" name="helpTextBrowser">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
@@ -154,6 +168,15 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>keyLineEdit</tabstop>
+  <tabstop>valueLineEdit</tabstop>
+  <tabstop>addButton</tabstop>
+  <tabstop>updateButton</tabstop>
+  <tabstop>removeButton</tabstop>
+  <tabstop>helpTextBrowser</tabstop>
+  <tabstop>stringsTableView</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

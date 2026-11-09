@@ -107,7 +107,7 @@ version::version(const SCP_string& semver, int missing) : major(missing), minor(
 			++has_fields;
 				break;
 			default:
-				UNREACHABLE("Version parsing broken, get a coder!");
+				Assertion(false, "Version parsing broken, get a coder!");
 				break;
 			}
 		}
@@ -200,14 +200,13 @@ SCP_string get_version_string()
 #endif
 
 	// Lets get some more info in here
-	switch (gr_screen.mode) {
-	case GR_OPENGL:
-		str += " OpenGL";
-		break;
-	case GR_VULKAN:
-		str += " Vulkan";
-		break;
+	str += " ";
+	str += gr_render_api_name(gr_screen.mode);
+	#ifdef USE_OPENGL_ES
+	if (gr_screen.mode == GraphicsAPI::OpenGL) {
+		str += " ES";
 	}
+	#endif
 
 	return str;
 }

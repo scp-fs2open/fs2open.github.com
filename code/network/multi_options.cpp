@@ -51,6 +51,7 @@ char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
 bool Multi_cfg_missing = true;
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 									std::pair<const char*, int>{"PXO", 1383},
 									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
@@ -88,6 +89,7 @@ static bool local_broadcast_change(bool val, bool initial)
 	}
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBroadcast",
 									std::pair<const char*, int>{"Broadcast Locally", 1387},
 									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
@@ -119,6 +121,7 @@ static bool flush_cache_change(bool val, bool initial)
 
 static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Before Game", 1401) : XSTR("Never", 1400); }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache",
 									std::pair<const char*, int>{"Flush Cache", 1399},
 									std::pair<const char*, int>{"Whether or not flush the multidata cache before games", 1810})
@@ -151,6 +154,7 @@ static bool transfer_missions_change(bool val, bool initial)
 
 static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/multidata", 1397) : XSTR("/missions", 1398); }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Multi.TransferMissions",
 									std::pair<const char*, int>{"Transfer Missions", 1396},
 									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
@@ -314,6 +318,19 @@ void multi_options_read_config()
 							Multi_options_g.webapiPort = (ushort) result;
 						}
 					}
+				} else
+				// set framerate for standalone
+				if ( SETTING("+fps_cap") ) {
+					NEXT_TOKEN();
+					if (tok != nullptr) {
+						if ((atoi(tok) >= 15) && (atoi(tok) <= 120)) {
+							Multi_options_g.std_framecap = atoi(tok);
+						}
+					}
+				} else
+				// disable rollback for primary/dumbfire weapons
+				if ( SETTING("+rollback_disabled") ) {
+					Multi_options_g.std_rollback = false;
 				}
 			}
 

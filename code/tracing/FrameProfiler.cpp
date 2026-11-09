@@ -53,7 +53,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	new_sample.parent = parent;
 	new_sample.num_parents = (parent >= 0) ? 1 : 0;
 
-	samples.push_back(new_sample);
+	samples.push_back(std::move(new_sample));
 }
 
 void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
@@ -227,7 +227,7 @@ void FrameProfiler::store_profile_in_history(SCP_string& name,
 	new_history.valid = true;
 	new_history.avg_micro_sec = new_history.min_micro_sec = new_history.max_micro_sec = time;
 
-	history.push_back(new_history);
+	history.push_back(std::move(new_history));
 }
 void FrameProfiler::dump_output(SCP_stringstream& out,
 								uint64_t  /*start_profile_time*/,
