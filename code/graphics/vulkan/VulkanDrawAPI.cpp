@@ -394,16 +394,6 @@ void vulkan_render_primitives(material* material_info,
 	drawManager->renderPrimitives(material_info, prim_type, layout, offset, n_verts, buffer_handle, buffer_offset);
 }
 
-// For the batched effect shaders, which write motion vectors for effects that supply their movement
-template <typename T>
-static void set_velocity_camera(T* data)
-{
-	float viewport_rect[4];
-	gr_get_velocity_camera(&data->velocityViewProj, &data->velocityPrevViewProj, viewport_rect);
-	data->velocityUvScale[0] = viewport_rect[2];
-	data->velocityUvScale[1] = viewport_rect[3];
-}
-
 void vulkan_render_primitives_particle(particle_material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,
@@ -439,7 +429,7 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 		// composition image while FSR upscales
 		data->window_width  = static_cast<float>(getStateTracker()->getRenderArea().width);
 		data->window_height = static_cast<float>(getStateTracker()->getRenderArea().height);
-		data->nearZ        = Min_draw_distance;
+		data->nearZ         = Min_draw_distance;
 		data->farZ          = Max_draw_distance;
 		data->srgb          = High_dynamic_range ? 1 : 0;
 		data->blend_alpha   = material_info->get_blend_mode() != ALPHA_BLEND_ADDITIVE ? 1 : 0;
@@ -447,7 +437,7 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 		// so linear_depth=1 reads .z directly (matches OpenGL behavior).
 		// Otherwise use the NDC conversion path with the hardware depth copy.
 		data->linear_depth  = usePosTexture ? 1 : 0;
-		set_velocity_camera(data);
+		gr_get_velocity_uniforms(&data->velocity);
 
 		buffer.submitData();
 		gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
@@ -498,7 +488,7 @@ void vulkan_render_primitives_distortion(distortion_material* material_info,
 
 		data->window_width  = static_cast<float>(getStateTracker()->getRenderArea().width);
 		data->window_height = static_cast<float>(getStateTracker()->getRenderArea().height);
-		data->use_offset   = material_info->get_thruster_rendering() ? 1.0f : 0.0f;
+		data->use_offset    = material_info->get_thruster_rendering() ? 1.0f : 0.0f;
 
 		buffer.submitData();
 		gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
@@ -583,7 +573,7 @@ void vulkan_render_primitives_batched(batched_bitmap_material* material_info,
 	auto* data = buffer.aligner().addTypedElement<graphics::generic_data::batched_data>();
 	data->intensity = material_info->get_color_scale();
 	data->color     = material_info->get_color();
-	set_velocity_camera(data);
+	gr_get_velocity_uniforms(&data->velocity);
 	buffer.submitData();
 	gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
 	                       sizeof(graphics::generic_data::batched_data), buffer.bufferHandle());

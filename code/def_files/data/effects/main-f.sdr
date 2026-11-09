@@ -108,6 +108,10 @@ uniform modelData {
 #endif
 };
 
+#ifdef VULKAN
+#include "motion-vectors.sdr"
+#endif
+
 #include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
 
@@ -539,11 +543,7 @@ void main()
 
 #ifdef VULKAN
 	// Alpha selects whether this replaces the motion already there: faint transparent surfaces keep what's behind them.
-	vec2 velocity = vec2(0.0);
-	if (vertIn.velocityPrevClip.w > 0.0) {
-		velocity = (vertIn.velocityPrevClip.xy / vertIn.velocityPrevClip.w - vertIn.velocityCurClip.xy / vertIn.velocityCurClip.w)
-			* vec2(0.5, -0.5) * velocityUvScale;
-	}
+	vec2 velocity = motion_uv(vertIn.velocityCurClip, vertIn.velocityPrevClip, velocityUvScale);
 	float velocityAlpha = baseColor.a >= 0.5 ? 1.0 : 0.0;
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		velocityAlpha = 1.0;
@@ -552,7 +552,7 @@ void main()
 #endif
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		fragOut1 =vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
+		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;

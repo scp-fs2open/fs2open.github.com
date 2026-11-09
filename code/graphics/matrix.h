@@ -3,6 +3,10 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 
+namespace graphics {
+struct velocity_camera_data;
+}
+
 extern transform_stack gr_model_matrix_stack;
 extern matrix4 gr_view_matrix;
 extern matrix4 gr_model_view_matrix;
@@ -22,6 +26,7 @@ void gr_begin_cockpit_camera(const matrix* ship_orient, const matrix* ship_last_
 void gr_end_cockpit_camera();
 // The camera that draws write motion vectors against, viewport_rect being xy offset and zw size as fractions of the target.
 void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, float viewport_rect[4]);
+void gr_get_velocity_uniforms(graphics::velocity_camera_data* out);
 // The camera moved discontinuously, so temporal effects must not reuse earlier frames.
 void gr_reset_temporal_history();
 bool gr_consume_temporal_reset();

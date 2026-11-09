@@ -159,8 +159,7 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_COPY_WORLD, false, SDR_FLAG_COPY_FROM_ARRAY, "COPY_ARRAY", {}, "Expects to copy from an array texture"},
 
-	{SDR_TYPE_MOTION_VECTORS, false, SDR_FLAG_MOTION_VECTORS_DEBUG, "DEBUG_VIEW", {}, "Visualizes motion vectors"},
-	{SDR_TYPE_COPY, false, SDR_FLAG_COPY_CLAMP01, "CLAMP01", {},"Clamp copy to [0,1] (HDR edge-detection proxy)"},
+	{SDR_TYPE_COPY, false, SDR_FLAG_COPY_CLAMP01, "CLAMP01", {}, "Clamp copy to [0,1] (HDR edge-detection proxy)"},
 
 	{SDR_TYPE_POST_PROCESS_TONEMAPPING, false, SDR_FLAG_TONEMAPPING_LINEAR_OUT, "LINEAR_OUT", {}, "Will make the tonemapper output in linear color space and not in sRGB"},
 

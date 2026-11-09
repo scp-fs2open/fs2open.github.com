@@ -1306,7 +1306,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	}
 
 	scene->push_transform(&submodel_offset, &submodel_orient, &prev_submodel_offset, &prev_submodel_orient);
-
+	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
 		color outline_color = interp->get_color();
@@ -1526,6 +1526,14 @@ void submodel_render_immediate(const model_render_params *render_info, const pol
 	gr_reset_lighting();
 }
 
+// Anything not drawn at its object's own position, like the player's hull in the cockpit, doesn't move with it.
+static void push_object_transform(model_draw_list* scene, int objnum, const vec3d* pos, const matrix* orient)
+{
+	const object* objp = objnum >= 0 ? &Objects[objnum] : nullptr;
+	const bool at_object_pos = objp != nullptr && pos == &objp->pos;
+	scene->push_transform(pos, orient, at_object_pos ? &objp->last_pos : pos, at_object_pos ? &objp->last_orient : orient);
+}
+
 void submodel_render_queue(const model_render_params *render_info, model_draw_list *scene, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert(!pmi || pm->id == pmi->model_num);
@@ -1573,10 +1581,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 	bool is_outlines_only_htl = (flags & MR_NO_POLYS) && (flags & MR_SHOW_OUTLINE_HTL);
 
 	//set to true since D3d and OGL need the api matrices set
-	// Anything not drawn at its object's own position doesn't move with it.
-	const object* objp = render_info->get_object_number() >= 0 ? &Objects[render_info->get_object_number()] : nullptr;
-	const bool at_object_pos = objp != nullptr && pos == &objp->pos;
-	scene->push_transform(pos, orient, at_object_pos ? &objp->last_pos : pos, at_object_pos ? &objp->last_orient : orient);
+	push_object_transform(scene, render_info->get_object_number(), pos, orient);
 	rendering_material.set_velocity_output(true);
 
 	
@@ -2802,9 +2807,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
 	}
 
-	// Anything not drawn at its object's own position, like the player's hull in the cockpit, doesn't move with it.
-	const bool at_object_pos = objp != nullptr && pos == &objp->pos;
-	scene->push_transform(pos, orient, at_object_pos ? &objp->last_pos : pos, at_object_pos ? &objp->last_orient : orient);
+	push_object_transform(scene, objnum, pos, orient);
 
 	// The skybox moves with the camera, so its pixels are better served by camera reprojection at the far plane.
 	rendering_material.set_velocity_output(model_num != Nmodel_num);

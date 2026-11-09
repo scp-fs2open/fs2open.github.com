@@ -1596,7 +1596,7 @@ void obj_move_all(float frametime)
 	SCP_vector<object*> cmeasure_list;
 	const bool global_cmeasure_timer = (Cmeasures_homing_check > 0);
 
-	Assertion(Cmeasures_homing_check >= 0,"Cmeasures_homing_check is %d in obj_move_all(); it should never be negative. Get a coder!\n", Cmeasures_homing_check);
+	Assertion(Cmeasures_homing_check >= 0, "Cmeasures_homing_check is %d in obj_move_all(); it should never be negative. Get a coder!\n", Cmeasures_homing_check);
 
 	if (global_cmeasure_timer)
 		Cmeasures_homing_check--;
@@ -1656,7 +1656,7 @@ void obj_move_all(float frametime)
 			}
 		}
 
-#ifdef OBJECT_CHECK
+#ifdef OBJECT_CHECK 
 			obj_check_object( objp );
 #endif
 

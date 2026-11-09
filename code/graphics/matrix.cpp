@@ -111,6 +111,14 @@ void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, flo
 	memcpy(viewport_rect, Scene_viewport_rect, sizeof(Scene_viewport_rect));
 }
 
+void gr_get_velocity_uniforms(graphics::velocity_camera_data* out)
+{
+	out->viewProj = Current_velocity_camera->view_proj;
+	out->prevViewProj = Current_velocity_camera->previous_view_proj;
+	out->uvScale[0] = Scene_viewport_rect[2];
+	out->uvScale[1] = Scene_viewport_rect[3];
+}
+
 static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
 	vec3d scaled_pos;

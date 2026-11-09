@@ -1,13 +1,9 @@
 #include "VulkanPostProcessing.h"
 
-#include "VulkanDescriptorManager.h"
 #include "gr_vulkan.h"
 #include "VulkanBarrier.h"
-#include "VulkanPipeline.h"
 #include "VulkanRenderer.h"
-#include "VulkanState.h"
 #include "VulkanTexture.h"
-#include "cmdline/cmdline.h"
 #include "graphics/matrix.h"
 #include "graphics/openxr.h"
 
@@ -32,7 +28,7 @@ bool VulkanMotionVectors::wanted()
 	if (!getRendererInstance()->supportsIndependentBlend() || openxr_requested()) {
 		return false;
 	}
-	return Cmdline_debug_motion_vectors || (Gr_fsr_mode != FsrMode::Off && gr_is_capable(gr_capability::CAPABILITY_FSR));
+	return Gr_fsr_mode != FsrMode::Off && gr_is_capable(gr_capability::CAPABILITY_FSR);
 }
 
 void VulkanMotionVectors::init(PostProcessContext& ctx)
@@ -158,7 +154,6 @@ void VulkanMotionVectors::destroyTargets()
 	m_ctx->destroyTarget(m_drawnMotion);
 	m_ctx->destroyTarget(m_depth);
 	m_ctx->destroyTarget(m_cockpitDepth);
-	m_valid = false;
 	m_cockpitDepthValid = false;
 }
 
@@ -216,70 +211,7 @@ void VulkanMotionVectors::execute(vk::CommandBuffer cmd, vk::ImageView sceneDept
 	m_ctx->drawFullscreenTriangleMulti(cmd, m_renderPass, m_framebuffer, m_ctx->sceneExtent,
 		SDR_TYPE_MOTION_VECTORS, inputs.data(), static_cast<uint32_t>(inputs.size()), &data, sizeof(data), nearestSampler, 2);
 
-	m_valid = true;
 	m_cockpitDepthValid = false;
-}
-
-void VulkanMotionVectors::drawDebug(vk::CommandBuffer cmd)
-{
-	if (!Cmdline_debug_motion_vectors || !m_valid) {
-		return;
-	}
-
-	auto* pipelineMgr = getPipelineManager();
-	auto* descriptorMgr = getDescriptorManager();
-	auto* stateTracker = getStateTracker();
-
-	GR_DEBUG_SCOPE("Motion vector debug view");
-
-	// Inside the caller's composition pass, like blitToSwapChain.
-	PipelineConfig config;
-	config.shaderType = SDR_TYPE_MOTION_VECTORS;
-	config.shaderFlags = SDR_FLAG_MOTION_VECTORS_DEBUG;
-	config.vertexLayoutHash = 0;
-	config.primitiveType = PRIM_TYPE_TRIS;
-	config.depthMode = ZBUFFER_TYPE_NONE;
-	config.blendMode = ALPHA_BLEND_NONE;
-	config.cullEnabled = false;
-	config.depthWriteEnabled = false;
-	config.renderPass = stateTracker->getCurrentRenderPass();
-
-	vertex_layout emptyLayout;
-	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
-	if (!pipeline) {
-		return;
-	}
-
-	stateTracker->bindPipeline(pipeline, pipelineMgr->getPipelineLayout());
-	stateTracker->applyDynamicState();
-
-	DescriptorWriter writer;
-	writer.reset(m_ctx->device, descriptorMgr->getFallbacks());
-
-	vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
-	Assert(materialSet);
-	writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
-	{
-		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> textures;
-		textures.fill(descriptorMgr->getFallbacks().texture2D);
-		textures[0].sampler = m_ctx->linearSampler;
-		textures[0].imageView = m_target.view;
-		writer.setImageArray(MaterialBinding::TextureArray, textures);
-	}
-
-	vk::DescriptorSet perDrawSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::PerDraw);
-	Assert(perDrawSet);
-	writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
-
-	MotionVectorData unused{};
-	vk::DeviceSize slotOffset = m_ctx->scratchRing.alloc(descriptorMgr->getCurrentFrame(), &unused, sizeof(unused));
-	writer.setBuffer(PerDrawBinding::GenericData, {m_ctx->scratchRing.buffer(), slotOffset, m_ctx->scratchRing.slotSize()});
-
-	writer.flush();
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::Material, materialSet);
-	stateTracker->bindDescriptorSet(DescriptorSetIndex::PerDraw, perDrawSet);
-
-	cmd.draw(3, 1, 0, 0);
 }
 
 } // namespace graphics::vulkan

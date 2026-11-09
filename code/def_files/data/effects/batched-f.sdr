@@ -26,7 +26,7 @@ layout (set = 2, binding = 0, std140) uniform genericData {
 	vec2 velocityUvScale;
 };
 
-#include "effect-motion.sdr"
+#include "motion-vectors.sdr"
 #else
 in vec4 fragTexCoord;
 in vec4 fragColor;

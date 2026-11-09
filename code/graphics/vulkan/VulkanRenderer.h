@@ -207,11 +207,7 @@ class VulkanRenderer {
 	 */
 	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
 
-	/**
-	 * @brief The size of the composition image: the render extent, times FSR's upscale factor while it upscales
-	 *
-	 * Everything after the scene draws at this size, scaled from gr_screen coordinates by the backend.
-	 */
+	// The render extent times FSR's upscale factor. Everything after the scene draws at this size.
 	vk::Extent2D getCompositionExtent() const { return m_compositionExtent; }
 
 	/**
@@ -473,6 +469,7 @@ class VulkanRenderer {
 	bool shouldRecreateSwapChain(SwapChainStatus status) const;
 
 	vk::Extent2D wantedCompositionExtent() const;
+	void setCompositionExtent(vk::Extent2D extent);
 	// Recreates the composition and output-sized targets when the FSR upscale factor changed. Outside a frame.
 	void updateCompositionExtent();
 

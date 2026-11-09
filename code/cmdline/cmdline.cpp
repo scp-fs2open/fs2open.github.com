@@ -533,7 +533,6 @@ cmdline_parm show_video_info("-show_video_info", NULL, AT_NONE); //Cmdline_show_
 cmdline_parm frame_profile_arg("-profile_frame_time", NULL, AT_NONE); //Cmdline_frame_profile
 cmdline_parm debug_window_arg("-debug_window", NULL, AT_NONE);	// Cmdline_debug_window
 cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdline_graphics_debug_output
-cmdline_parm debug_motion_vectors_arg("-gr_debug_motion_vectors", "Shows motion vectors instead of the scene. Vulkan only", AT_NONE); // Cmdline_debug_motion_vectors
 cmdline_parm gr_sync_validation_arg("-gr_sync_validation", nullptr, AT_NONE); // Cmdline_gr_sync_validation (implies -gr_debug)
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
@@ -581,7 +580,6 @@ bool Cmdline_frame_profile = false;
 bool Cmdline_show_video_info = false;
 bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
-bool Cmdline_debug_motion_vectors = false;
 bool Cmdline_gr_sync_validation = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
@@ -2443,10 +2441,6 @@ bool SetCmdlineParams()
 
 	if (debug_window_arg.found()) {
 		Cmdline_debug_window = true;
-	}
-
-	if (debug_motion_vectors_arg.found()) {
-		Cmdline_debug_motion_vectors = true;
 	}
 
 	if (graphics_debug_output_arg.found()) {

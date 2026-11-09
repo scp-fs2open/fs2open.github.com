@@ -19,6 +19,13 @@ namespace graphics {
  * but the TL;DR here is that everything in here must be 16-byte aligned.
  */
 
+// The camera that draws write motion vectors against. Only the Vulkan shaders declare it.
+struct velocity_camera_data {
+	matrix4 viewProj;
+	matrix4 prevViewProj;
+	float uvScale[2];
+};
+
 struct deferred_global_data {
 	matrix4 inv_view_matrix;
 
@@ -144,9 +151,7 @@ struct model_uniform_data {
 
 	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
 	matrix4 prevModelMatrix;
-	matrix4 velocityViewProj;
-	matrix4 velocityPrevViewProj;
-	float velocityUvScale[2];
+	velocity_camera_data velocity;
 	int prev_transform_stride;
 	float pad2;
 };
@@ -440,10 +445,8 @@ struct effect_data {
 
 	float pad[1];
 
-	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
-	matrix4 velocityViewProj;
-	matrix4 velocityPrevViewProj;
-	float velocityUvScale[2];
+	// Past the end of the OpenGL block
+	velocity_camera_data velocity;
 	float pad2[2];
 };
 
@@ -462,10 +465,8 @@ struct batched_data {
 
 	float pad[3];
 
-	// Only the Vulkan shaders declare these, and they're past the end of the OpenGL block.
-	matrix4 velocityViewProj;
-	matrix4 velocityPrevViewProj;
-	float velocityUvScale[2];
+	// Past the end of the OpenGL block
+	velocity_camera_data velocity;
 	float pad2[2];
 };
 

@@ -321,7 +321,7 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.framebuffer = pp->deferred().msaaResolveFramebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
-		// 6 attachments: 5 color + depth. loadOp=eDontCare for all (fully overwritten).
+		// 5 color, optionally motion vectors, then depth. Color and depth are fully overwritten.
 		std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
 		clearValues[pp->deferred().msaaDepthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -384,7 +384,7 @@ void vulkan_deferred_lighting_msaa()
 			writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 			// Material set: All 6 MSAA textures in binding 1 array (elements 0-5)
-			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
+			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth, [6]=motion vectors if active
 			vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 			Assert(materialSet);
 			writer.writeSet(DescriptorSetIndex::Material, materialSet);

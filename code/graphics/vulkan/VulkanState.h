@@ -69,25 +69,16 @@ class VulkanStateTracker {
 	 */
 	void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f);
 
-	/**
-	 * @brief Set the viewport in gr_screen units, scaled to the framebuffer by the screen scale
-	 */
+	// In gr_screen units, scaled by the screen scale
 	void setScreenViewport(float x, float y, float width, float height);
 
-	/**
-	 * @brief Ratio of framebuffer pixels to gr_screen units for engine-issued viewports, scissors and clears
-	 *
-	 * Above 1 only in the composition pass while FSR upscales. Every render pass begin resets it to 1.
-	 */
+	// Framebuffer pixels per gr_screen unit for engine-issued viewports, scissors and clears. Above 1 only in the
+	// composition pass while FSR upscales; every render pass begin resets it to 1.
 	void setScreenScale(float x, float y);
 	vk::Rect2D screenToFramebuffer(const vk::Rect2D& rect) const;
 
-	/**
-	 * @brief Sets the upscaler's subpixel image offset and texture LOD bias, which apply only to the scene's own passes
-	 *
-	 * Offsetting the viewport moves everything the scene draws, including its CPU-projected 2D backgrounds, and leaves
-	 * the camera matrices that motion vectors and the HUD rely on untouched.
-	 */
+	// FSR's subpixel jitter and texture LOD bias, applied only in the scene's own passes. Jittering the viewport rather
+	// than the projection also moves CPU-projected backgrounds, and leaves the matrices motion vectors and the HUD use.
 	void setUpscalerSceneState(float jitterX, float jitterY, float lodBias);
 	float getMaterialLodBias() const { return isUpscaledScenePass() ? m_upscalerLodBias : 0.0f; }
 

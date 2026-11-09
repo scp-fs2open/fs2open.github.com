@@ -9297,7 +9297,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 	case WRT_LASER:
 		{
 			const vec3d motion = obj->pos - obj->last_pos;
-			float length_mult =wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+			float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
 
 			if (wip->laser_length_by_frametime) {
 				length_mult *= flFrametime;

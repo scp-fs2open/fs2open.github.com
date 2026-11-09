@@ -690,7 +690,7 @@ void VulkanPostProcessor::prepareUpscaler()
 	if (active != m_upscalerActive) {
 		m_ctx.device.waitIdle();
 		m_upscalerActive = active;
-		setPostProcessInput(active ? m_upscaler.output() : m_sceneColor);
+		setPostProcessInput(postProcessInput());
 		gr_reset_temporal_history();
 	}
 
@@ -905,8 +905,7 @@ void VulkanPostProcessor::blitToSwapChain(vk::CommandBuffer cmd)
 		texArrayInfos[0].sampler = m_ctx.linearSampler;
 		texArrayInfos[0].imageView = m_ldr.postEffectsApplied() ? m_ldr.luminanceView()
 		                            : useLdr ? m_ldr.ldrView()
-		                            : m_upscalerActive ? m_upscaler.output().view
-		                            : m_sceneColor.view;
+		                            : postProcessInput().view;
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}
 

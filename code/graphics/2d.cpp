@@ -900,14 +900,11 @@ float gr_fsr_upscale_factor(FsrMode mode)
 	return mode == FsrMode::Upscale ? fsr_window_factor() : 1.0f;
 }
 
-// The option stores the major version times 10 plus the mode, so values saved before versions were selectable read
-// as the newest version.
 static int fsr_setting(FsrMode mode, int major_version)
 {
 	return mode == FsrMode::Off ? 0 : major_version * 10 + static_cast<int>(mode);
 }
 
-// The option framework has no disabled state, so values that can't be used aren't offered.
 static SCP_vector<int> fsr_setting_enumerator()
 {
 	SCP_vector<int> out{0};
@@ -946,7 +943,7 @@ static SCP_string fsr_setting_display(int setting)
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      std::pair<const char*, int>{"AMD FSR", -1},
-                     std::pair<const char*, int>{"AMD's temporal anti aliasing and upscaling. AA keeps the rendering resolution; Upscale renders the 3D scene at the chosen resolution and upscales it to the window resolution.", -1})
+                     std::pair<const char*, int>{"AMD's temporal anti aliasing and upscaling. AA keeps the rendering resolution. Upscale renders the 3D scene at the configured resolution and upscales it to the window/monitor resolution.", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .enumerator(fsr_setting_enumerator)

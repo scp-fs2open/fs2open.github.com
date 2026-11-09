@@ -158,14 +158,14 @@ uint batching_determine_vertex_layout(batch_info *info)
 	const uint motion = gr_screen.mode == GraphicsAPI::Vulkan ? vertex_format_data::mask(vertex_format_data::MOTION4) : 0;
 
 	if ( info->mat_type == batch_info::VOLUME_EMISSIVE || info->mat_type == batch_info::DISTORTION ) {
-		return vertex_format_data::mask(vertex_format_data::POSITION3)
-			| vertex_format_data::mask(vertex_format_data::COLOR4)
+		return vertex_format_data::mask(vertex_format_data::POSITION3) 
+			| vertex_format_data::mask(vertex_format_data::COLOR4) 
 			| vertex_format_data::mask(vertex_format_data::TEX_COORD4)
 			| vertex_format_data::mask(vertex_format_data::RADIUS)
 			| motion;
 	} else {
-		return vertex_format_data::mask(vertex_format_data::POSITION3)
-			| vertex_format_data::mask(vertex_format_data::COLOR4)
+		return vertex_format_data::mask(vertex_format_data::POSITION3) 
+			| vertex_format_data::mask(vertex_format_data::COLOR4) 
 			| vertex_format_data::mask(vertex_format_data::TEX_COORD4)
 			| motion;
 	}

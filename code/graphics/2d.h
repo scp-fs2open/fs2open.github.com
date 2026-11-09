@@ -279,8 +279,6 @@ enum shader_type {
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 #define SDR_FLAG_COPY_CLAMP01 (1 << 1)
 
-#define SDR_FLAG_MOTION_VECTORS_DEBUG (1 << 0)
-
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
 #define SDR_FLAG_GAMMA_HDR10 (1 << 0)

@@ -1,10 +1,8 @@
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 fragOut0;
-#ifndef DEBUG_VIEW
 layout(location = 1) out vec4 fragOut1;
-#endif
 
-// Scene depth, the drawn geometry's motion and cockpit depth, or just the final motion for the debug view
+// Scene depth, the drawn geometry's motion and cockpit depth
 layout(set = 1, binding = 1) uniform sampler2D inputs[3];
 
 layout(std140, set = 2, binding = 0) uniform genericData {
@@ -18,11 +16,6 @@ layout(std140, set = 2, binding = 0) uniform genericData {
 
 void main()
 {
-#ifdef DEBUG_VIEW
-	// Logarithmic in pixels, so that both a quarter pixel and a fast pan are visible: 1 px shows as about 0.17, 64 px as 1.
-	vec2 pixels = abs(texture(inputs[0], fragTexCoord).xy) * vec2(textureSize(inputs[0], 0));
-	fragOut0 = vec4(log2(1.0 + pixels) / 6.0, 0.0, 1.0);
-#else
 	// The scene's depth has the cockpit removed, for the effects that shouldn't see it. Consumers of motion do need it,
 	// so this combines both on the cockpit's projection: its nearer plane can express every scene distance, and the
 	// cockpit's own depth stays exactly as drawn.
@@ -58,5 +51,4 @@ void main()
 	vec2 previousUv = previousViewportUv * viewportRect.zw + viewportRect.xy;
 
 	fragOut0 = vec4(previousUv - fragTexCoord, 0.0, 0.0);
-#endif
 }

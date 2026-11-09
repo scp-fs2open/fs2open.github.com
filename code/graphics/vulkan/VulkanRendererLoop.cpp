@@ -107,6 +107,12 @@ vk::Extent2D VulkanRenderer::wantedCompositionExtent() const
 		static_cast<uint32_t>(std::lround(m_renderExtent.height * factor))};
 }
 
+void VulkanRenderer::setCompositionExtent(vk::Extent2D extent)
+{
+	m_compositionExtent = extent;
+	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+}
+
 void VulkanRenderer::updateCompositionExtent()
 {
 	const auto wanted = wantedCompositionExtent();
@@ -115,8 +121,7 @@ void VulkanRenderer::updateCompositionExtent()
 	}
 
 	m_device->waitIdle();
-	m_compositionExtent = wanted;
-	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+	setCompositionExtent(wanted);
 	mprintf(("Vulkan: Composition resolution %ux%u for render resolution %ux%u\n",
 		m_compositionExtent.width, m_compositionExtent.height, m_renderExtent.width, m_renderExtent.height));
 
@@ -421,7 +426,6 @@ void VulkanRenderer::endSceneRendering()
 
 	// Blit the HDR scene to swap chain through post-processing
 	m_postProcessor->blitToSwapChain(m_currentCommandBuffer);
-	m_postProcessor->drawMotionVectorDebug(m_currentCommandBuffer);
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,

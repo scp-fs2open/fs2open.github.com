@@ -1193,8 +1193,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	if (!Cmdline_window_res) {
 		m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 	}
-	m_compositionExtent = wantedCompositionExtent();
-	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+	setCompositionExtent(wantedCompositionExtent());
 
 	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",

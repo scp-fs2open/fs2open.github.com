@@ -54,7 +54,7 @@ uniform genericData {
 };
 
 #ifdef VULKAN
-#include "effect-motion.sdr"
+#include "motion-vectors.sdr"
 #endif
 
 

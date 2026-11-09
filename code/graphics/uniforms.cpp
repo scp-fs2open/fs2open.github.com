@@ -50,10 +50,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->prevModelMatrix = prev_model_transform;
 	scale_matrix(data_out->prevModelMatrix, scale);
 	data_out->prev_transform_stride = prev_transform_stride;
-	float viewport_rect[4];
-	gr_get_velocity_camera(&data_out->velocityViewProj, &data_out->velocityPrevViewProj, viewport_rect);
-	data_out->velocityUvScale[0] = viewport_rect[2];
-	data_out->velocityUvScale[1] = viewport_rect[3];
+	gr_get_velocity_uniforms(&data_out->velocity);
 	data_out->viewMatrix = gr_view_matrix;
 	vm_matrix4_x_matrix4(&data_out->modelViewMatrix, &gr_view_matrix, &scaled_matrix);
 	data_out->projMatrix = gr_projection_matrix;

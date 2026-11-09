@@ -25,13 +25,6 @@ ffxPortableVkRequirements Device_requirements;
 bool Upscaler_available = false;
 vk::PhysicalDevice Upscaler_gpu;
 
-// TODO: TESTING ONLY, DO NOT SHIP. Remove this and its two uses in createResources() and dispatch().
-// Replaces FSR's output with AMD's debug view of what it received and derived.
-constexpr bool FSR_DEBUG_VIEW_TEST = true;
-#ifdef NDEBUG
-static_assert(!FSR_DEBUG_VIEW_TEST, "The FSR debug view is for debug builds only");
-#endif
-
 struct fsr_version {
 	uint64_t id = 0;
 	SCP_string name;
@@ -73,7 +66,6 @@ int major_version(const SCP_string& name)
 	return std::atoi(name.c_str());
 }
 
-// The major versions offered as choices
 bool is_offered(int major)
 {
 	return major == 4 || major == 3;
@@ -225,13 +217,6 @@ bool VulkanUpscaler::createResources()
 	desc.header.type = FFX_API_CREATE_CONTEXT_DESC_TYPE_UPSCALE;
 	desc.header.pNext = &version.header;
 	desc.flags = FFX_UPSCALE_ENABLE_HIGH_DYNAMIC_RANGE | FFX_UPSCALE_ENABLE_AUTO_EXPOSURE;
-#ifndef NDEBUG
-	desc.flags |= FFX_UPSCALE_ENABLE_DEBUG_CHECKING;
-#endif
-	// TODO: TESTING ONLY, DO NOT SHIP.
-	if (FSR_DEBUG_VIEW_TEST) {
-		desc.flags |= FFX_UPSCALE_ENABLE_DEBUG_VISUALIZATION;
-	}
 	desc.maxRenderSize = {renderW, renderH};
 	desc.maxUpscaleSize = {w, h};
 	desc.fpMessage = log_ffx_message;
@@ -351,10 +336,6 @@ void VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	desc.cameraFar = Max_draw_distance;
 	desc.cameraFovAngleVertical = std::holds_alternative<float>(Proj_fov) ? std::get<float>(Proj_fov) : 1.0f;
 	desc.viewSpaceToMetersFactor = 1.0f;
-	// TODO: TESTING ONLY, DO NOT SHIP.
-	if (FSR_DEBUG_VIEW_TEST) {
-		desc.flags |= FFX_UPSCALE_FLAG_DRAW_DEBUG_VIEW;
-	}
 
 	const auto result = ffxDispatch(&m_context, &desc.header);
 	if (result != FFX_API_RETURN_OK) {

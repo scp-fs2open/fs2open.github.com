@@ -474,7 +474,7 @@ private:
 };
 
 /**
- * @brief Per-pixel screen motion for FSR and later effects
+ * @brief Per-pixel screen motion for FSR
  *
  * Holds the total motion of each pixel since last frame, in image UV units, unjittered, pointing at where the
  * pixel was. Resources are created on first use, because most configurations never need them.
@@ -500,8 +500,6 @@ public:
 	// Outside a render pass, with the drawn motion attachment still in eColorAttachmentOptimal and sceneDepthCopy
 	// holding this frame's final depth.
 	void execute(vk::CommandBuffer cmd, vk::ImageView sceneDepthCopy);
-	// Inside the composition pass.
-	void drawDebug(vk::CommandBuffer cmd);
 
 	const RenderTarget& motion() const { return m_target; }
 	const RenderTarget& depth() const { return m_depth; }
@@ -514,7 +512,6 @@ private:
 	RenderTarget m_cockpitDepth;
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
-	bool m_valid = false;
 	bool m_cockpitDepthValid = false;
 };
 
@@ -1063,7 +1060,6 @@ public:
 			m_motionVectors.execute(cmd, m_sceneDepthCopy.view);
 		}
 	}
-	void drawMotionVectorDebug(vk::CommandBuffer cmd) { m_motionVectors.drawDebug(cmd); }
 
 	// Selects whether FSR runs for this frame's scene. After prepareMotionVectors(), which it depends on.
 	void prepareUpscaler();
@@ -1075,7 +1071,6 @@ public:
 		}
 	}
 
-	// Color locations of the current forward pass
 	uint32_t sceneColorAttachmentCount() const
 	{
 		return m_velocityActive ? VulkanDeferredGBuffer::VELOCITY_COLOR_LOCATION_COUNT : 1;
@@ -1394,6 +1389,7 @@ private:
 	VulkanUpscaler m_upscaler;
 	bool m_upscalerActive = false;
 	// Bloom and tonemapping read from here, which is FSR's output while FSR runs
+	const RenderTarget& postProcessInput() const { return m_upscalerActive ? m_upscaler.output() : m_sceneColor; }
 	void setPostProcessInput(const RenderTarget& input);
 
 	// ---- Distortion (ping-pong textures, self-contained subsystem) ----

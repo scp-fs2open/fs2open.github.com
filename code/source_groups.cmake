@@ -242,7 +242,6 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/effect-distort-v.sdr
 	def_files/data/effects/effect-f.sdr
 	def_files/data/effects/effect-g.sdr
-	def_files/data/effects/effect-motion.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/envmap-sphere-warp-f.sdr
 	def_files/data/effects/fog-f.sdr
@@ -261,6 +260,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/motion-vector-f.sdr
+	def_files/data/effects/motion-vectors.sdr
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
