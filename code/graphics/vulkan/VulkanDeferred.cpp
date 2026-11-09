@@ -179,7 +179,7 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			if (pp->deferred().velocityActive()) {
-				clearValues[pp->deferred().msaaVelocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+				clearValues[VulkanDeferredGBuffer::msaaVelocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
 			}
 			clearValues[pp->deferred().msaaDepthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());

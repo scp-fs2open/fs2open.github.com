@@ -351,9 +351,9 @@ public:
 	uint32_t colorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : GBUF_COLOR_ATTACHMENT_COUNT; }
 	uint32_t msaaColorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : MSAA_COLOR_ATTACHMENT_COUNT; }
 	// Attachment indices into the clear values, since the unused MSAA location takes no attachment
-	uint32_t velocityAttachmentIndex() const { return GBUF_COLOR_ATTACHMENT_COUNT; }
+	static uint32_t velocityAttachmentIndex() { return GBUF_COLOR_ATTACHMENT_COUNT; }
 	uint32_t depthAttachmentIndex() const { return GBUF_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
-	uint32_t msaaVelocityAttachmentIndex() const { return MSAA_COLOR_ATTACHMENT_COUNT; }
+	static uint32_t msaaVelocityAttachmentIndex() { return MSAA_COLOR_ATTACHMENT_COUNT; }
 	uint32_t msaaDepthAttachmentIndex() const { return MSAA_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
 
 	// Mid-frame layout transitions / copies (all outside a render pass)

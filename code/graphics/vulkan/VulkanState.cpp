@@ -150,7 +150,7 @@ vk::Rect2D VulkanStateTracker::screenToFramebuffer(const vk::Rect2D& rect) const
 	const auto y0 = static_cast<int32_t>(std::lround(rect.offset.y * m_screenScaleY));
 	const auto x1 = static_cast<int32_t>(std::lround((rect.offset.x + static_cast<float>(rect.extent.width)) * m_screenScaleX));
 	const auto y1 = static_cast<int32_t>(std::lround((rect.offset.y + static_cast<float>(rect.extent.height)) * m_screenScaleY));
-	return vk::Rect2D({x0, y0}, {static_cast<uint32_t>(std::max(x1 - x0, 0)), static_cast<uint32_t>(std::max(y1 - y0, 0))});
+	return {{x0, y0}, {static_cast<uint32_t>(std::max(x1 - x0, 0)), static_cast<uint32_t>(std::max(y1 - y0, 0))}};
 }
 
 void VulkanStateTracker::invalidateExternalBindings()

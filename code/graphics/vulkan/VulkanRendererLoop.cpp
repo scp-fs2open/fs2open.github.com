@@ -349,7 +349,7 @@ void VulkanRenderer::beginSceneRendering()
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COMPOSITE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		if (gbuffer.velocityActive()) {
-			clearValues[gbuffer.velocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+			clearValues[VulkanDeferredGBuffer::velocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
 		}
 		clearValues[gbuffer.depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 

@@ -46,8 +46,9 @@ SCP_vector<fsr_version> query_fsr_versions(vk::Device device)
 		return {};
 	}
 
-	SCP_vector<uint64_t> ids(count);
-	SCP_vector<const char*> names(count);
+	const auto n = static_cast<size_t>(count);
+	SCP_vector<uint64_t> ids(n);
+	SCP_vector<const char*> names(n);
 	query.versionIds = ids.data();
 	query.versionNames = names.data();
 	if (ffxQuery(nullptr, &query.header) != FFX_API_RETURN_OK) {
@@ -55,7 +56,7 @@ SCP_vector<fsr_version> query_fsr_versions(vk::Device device)
 	}
 
 	SCP_vector<fsr_version> versions;
-	for (uint64_t i = 0; i < count; ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		versions.push_back({ids[i], names[i] ? names[i] : ""});
 	}
 	return versions;
