@@ -981,6 +981,11 @@ typedef struct screen {
 
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
 
+	// VR: draw the HUD into its own texture (see freespace.cpp). gf_vr_hud_begin() returns the bitmap handle of that
+	// texture, or -1 if the renderer does not support it (then the HUD is drawn directly). Both can be left empty.
+	std::function<int()> gf_vr_hud_begin;
+	std::function<void()> gf_vr_hud_end;
+
 	std::function<void(bool set_override)> gf_override_fog;
 
 	// ImGui backend integration
@@ -1457,6 +1462,19 @@ inline void gr_use_viewport(os::Viewport* view)
 inline void gr_set_viewport(int x, int y, int width, int height)
 {
 	gr_screen.gf_set_viewport(x, y, width, height);
+}
+
+// How many pixels per logical screen pixel the target has that the VR HUD pass is drawing into at the moment; 1 otherwise.
+extern float Gr_vr_hud_scale;
+
+inline int gr_vr_hud_begin()
+{
+	return gr_screen.gf_vr_hud_begin ? gr_screen.gf_vr_hud_begin() : -1;
+}
+inline void gr_vr_hud_end()
+{
+	if (gr_screen.gf_vr_hud_end)
+		gr_screen.gf_vr_hud_end();
 }
 
 inline void gr_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer)

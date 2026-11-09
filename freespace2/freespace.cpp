@@ -3604,8 +3604,6 @@ extern SCP_vector<object*> transparent_objects;
 // flat game. The texture is then shown as one panel that is fixed to the ship (see gr_vr_hud_draw()), so head
 // movement behaves the same for the HUD as for the cockpit.
 // ---------------------------------------------------------------------------------------------------------------------
-extern int gr_opengl_vr_hud_begin();
-extern void gr_opengl_vr_hud_end();
 extern vec3d Matrix_scale;
 
 static bool Vr_hud_pose_valid = false;	// camera poses below were recorded for the current eye pass
@@ -4309,13 +4307,13 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	// VR: from here on the HUD is drawn into its own texture, as seen from the virtual HUD camera. What the HUD looks
 	// like does not depend on the eye, so it is drawn only for the first eye of a frame; the second eye shows the same
 	// texture again.
-	// (the HUD texture is only implemented for the OpenGL renderer; with Vulkan the HUD is drawn directly, as before)
-	const bool vr_hud_candidate = openxr_enabled() && gr_screen.mode == GraphicsAPI::OpenGL && fov_override != nullptr && Vr_hud_pose_valid && std::holds_alternative<asymmetric_fov>(*fov_override);
+	// (renderers without a HUD texture return -1 from gr_vr_hud_begin() and then draw the HUD directly, as before)
+	const bool vr_hud_candidate = openxr_enabled() && fov_override != nullptr && Vr_hud_pose_valid && std::holds_alternative<asymmetric_fov>(*fov_override);
 	const bool vr_hud_reuse = vr_hud_candidate && Vr_hud_rendered_this_frame;
 
 	int vr_hud_texture = -1;
 	if (vr_hud_candidate && !vr_hud_reuse) {
-		vr_hud_texture = gr_opengl_vr_hud_begin();
+		vr_hud_texture = gr_vr_hud_begin();
 
 		if (vr_hud_texture >= 0) {
 			Vr_hud_active = true;
@@ -4374,7 +4372,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	// VR: the HUD is complete. Show its texture as a panel that is fixed to the ship, then give the g3 view back to the eye.
 	if (vr_hud_texture >= 0) {
 		Vr_hud_active = false;
-		gr_opengl_vr_hud_end();
+		gr_vr_hud_end();
 
 		// remember what the second eye needs to show the same HUD
 		Vr_hud_rendered_this_frame = true;

@@ -1,8 +1,5 @@
 #include "graphics/paths/PathRenderer.h"
 
-// defined in graphics/opengl/gropenglstate.cpp
-extern float Gr_vr_hud_scale;
-
 #include "graphics/paths/NanoVGRenderer.h"
 
 namespace {

@@ -93,6 +93,9 @@ const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
 
+// see 2d.h; only changes while the VR HUD pass draws into its own texture
+float Gr_vr_hud_scale = 1.0f;
+
 lua_screen gr_lua_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;

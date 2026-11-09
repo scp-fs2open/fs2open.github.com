@@ -21,7 +21,6 @@ extern GLfloat GL_max_anisotropy;
 
 opengl_state GL_state;
 
-float Gr_vr_hud_scale = 1.0f;
 float Gr_vr_hud_pass_scale = 1.0f;
 
 
