@@ -33,6 +33,8 @@ fov_t			Proj_fov = 0.0f;// The fov (for HTL projection matrix)
 
 vec3d		Window_scale;		// Scaling for window aspect
 vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
+float		Asym_shear_x = 0.0f;	// Frustum-center shear for asymmetric (VR) FOVs, in units of z. 0 for a symmetric FOV.
+float		Asym_shear_y = 0.0f;
 
 int			Canvas_width;		// The actual width
 int			Canvas_height;		// The actual height
@@ -139,13 +141,18 @@ float g3_get_hfov(const fov_t& fov, bool visible_fov) {
 	}
 }
 
-void g3_set_view(camera *cam)
+void g3_set_view(camera *cam, const fov_t* fov_override)
 {
 	vec3d pos;
 	matrix ori;
 	cam->get_info(&pos, &ori);
 
-	if(Sexp_fov <= 0.0f)
+	// An override (i.e. the per-eye FOV in VR) must go through g3_set_view_matrix() so that the matrix scaling
+	// is computed from it too. Calling g3_set_fov() afterwards only changes Proj_fov and leaves the matrix scaled
+	// for the camera's own FOV.
+	if (fov_override != nullptr)
+		g3_set_view_matrix(&pos, &ori, *fov_override);
+	else if(Sexp_fov <= 0.0f)
 		g3_set_view_matrix(&pos, &ori, cam->get_fov());
 	else
 		g3_set_view_matrix(&pos, &ori, Sexp_fov);
@@ -190,10 +197,35 @@ void scale_matrix(void)
 
 	Matrix_scale = Window_scale;
 
-	float s = 1.0f / tanf(g3_get_hfov(Proj_fov) * 0.5f);
+	if (std::holds_alternative<asymmetric_fov>(Proj_fov)) {
+		// Asymmetric (VR) frustum. This must reproduce *exactly* the off-axis projection that
+		// gr_set_proj_matrix() builds from the same angles, otherwise anything placed on screen via
+		// g3_project_vertex() (target brackets, lead indicator, slewed reticle, scripted HUD) drifts away
+		// from the rendered world as the head turns, and in a headset that shows up as the HUD "swimming".
+		//
+		// The frustum covers tan(left)..tan(right) horizontally and tan(down)..tan(up) vertically. Map that
+		// range to [-1, 1] with a per-axis scale plus a shear (the offset of the frustum center, in units of z).
+		// The aspect ratio is already encoded in the frustum extents, so Window_scale is not applied here.
+		const auto& afov = std::get<asymmetric_fov>(Proj_fov);
+		const float tl = tanf(afov.left);
+		const float tr = tanf(afov.right);
+		const float tu = tanf(afov.up);
+		const float td = tanf(afov.down);
 
-	Matrix_scale.xyz.x *= s;
-	Matrix_scale.xyz.y *= s;
+		Matrix_scale.xyz.x = 2.0f / (tr - tl);
+		Matrix_scale.xyz.y = 2.0f / (tu - td);
+
+		Asym_shear_x = (tr + tl) / (tr - tl);
+		Asym_shear_y = (tu + td) / (tu - td);
+	} else {
+		float s = 1.0f / tanf(g3_get_hfov(Proj_fov) * 0.5f);
+
+		Matrix_scale.xyz.x *= s;
+		Matrix_scale.xyz.y *= s;
+
+		Asym_shear_x = 0.0f;
+		Asym_shear_y = 0.0f;
+	}
 
 	//now scale matrix elements
 

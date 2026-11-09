@@ -26,6 +26,7 @@
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
+#include "osapi/osregistry.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 #ifdef USE_OPENGL_ES
@@ -1292,6 +1293,93 @@ void gr_opengl_stop_decal_pass() {
 		GL_COLOR_ATTACHMENT5,
 	};
 	glDrawBuffers(6, buffers2);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// VR HUD render target.
+//
+// In VR the whole HUD is drawn into its own RGBA texture, exactly like it would be drawn onto the screen in a flat
+// game (same pixel layout, same drawing code, same gr_screen state), and that texture is then shown as a single
+// panel by gr_vr_hud_draw(). This is deliberately *not* done through bm_set_render_target(), which changes the
+// screen size / render-to-texture state that all the HUD gauges depend on.
+// ---------------------------------------------------------------------------------------------------------------------
+static int Vr_hud_target = -1;
+static int Vr_hud_target_w = 0;			// size of the texture in pixels
+static int Vr_hud_target_h = 0;
+static int Vr_hud_target_for_w = 0;		// the logical screen size the texture was created for
+static int Vr_hud_target_for_h = 0;
+
+// How many pixels the HUD texture has per logical screen pixel. The HUD is laid out and drawn in logical screen
+// coordinates; a larger texture just means every line, shape and (TrueType) letter is rendered with more pixels.
+static float vr_hud_resolution_scale()
+{
+	return 2.0f;
+}
+
+int gr_opengl_vr_hud_begin()
+{
+	if (Vr_hud_target >= 0 && (Vr_hud_target_for_w != gr_screen.max_w || Vr_hud_target_for_h != gr_screen.max_h)) {
+		bm_release(Vr_hud_target, 1);
+		Vr_hud_target = -1;
+	}
+
+	if (Vr_hud_target < 0) {
+		const float wanted = vr_hud_resolution_scale();
+
+		// creating a render target leaves the default framebuffer bound afterwards, so protect the current state
+		GL_state.PushFramebufferState();
+		Vr_hud_target = bm_make_render_target(static_cast<int>(lroundf(gr_screen.max_w * wanted)), static_cast<int>(lroundf(gr_screen.max_h * wanted)),
+			BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
+		GL_state.PopFramebufferState();
+
+		if (Vr_hud_target < 0)
+			return -1;
+
+		// the texture size can have been limited by the graphics card
+		bm_get_info(Vr_hud_target, &Vr_hud_target_w, &Vr_hud_target_h);
+		Vr_hud_target_for_w = gr_screen.max_w;
+		Vr_hud_target_for_h = gr_screen.max_h;
+	}
+
+	GLuint fbo = opengl_get_render_target_framebuffer(Vr_hud_target);
+	if (fbo == 0)
+		return -1;
+
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(fbo);
+
+	glViewport(0, 0, Vr_hud_target_w, Vr_hud_target_h);
+
+	// start from a fully transparent texture
+	const GLboolean scissor = GL_state.ScissorTest(GL_FALSE);
+	GL_state.ColorMask(true, true, true, true);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_FULL);
+	// the vector lines of the HUD (NanoVG) test against the stencil buffer, so it has to start out at zero as well
+	GL_state.StencilTest(GL_FALSE);
+	GL_state.StencilMask(0xFFFFFFFF);
+	glClearStencil(0);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+	GL_state.ScissorTest(scissor);
+
+	GL_state.SetVrHudAlphaFix(true);
+	GL_vr_hud_framebuffer = fbo;
+	Gr_vr_hud_pass_scale = static_cast<float>(Vr_hud_target_w) / static_cast<float>(gr_screen.max_w);
+	Gr_vr_hud_scale = Gr_vr_hud_pass_scale;
+
+	return Vr_hud_target;
+}
+
+void gr_opengl_vr_hud_end()
+{
+	Gr_vr_hud_scale = 1.0f;
+	Gr_vr_hud_pass_scale = 1.0f;
+	GL_vr_hud_framebuffer = 0;
+	GL_state.SetVrHudAlphaFix(false);
+	GL_state.PopFramebufferState();
+
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 }
 
 void gr_opengl_calculate_irrmap()

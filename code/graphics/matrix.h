@@ -31,6 +31,11 @@ void gr_end_view_matrix();
 void gr_set_2d_matrix(/*int x, int y, int w, int h*/);
 void gr_end_2d_matrix();
 
+// VR: draw the HUD texture as a panel that is fixed to the ship. See the definition for the parameters.
+void gr_vr_hud_draw(int texture, const fov_t& eye_fov, const vec3d* eye_pos, const matrix* eye_orient,
+	const vec3d* hud_pos, const matrix* hud_orient, float distance,
+	float scale_x, float scale_y, float canvas_w, float canvas_h);
+
 void gr_push_scale_matrix(const vec3d *scale_factor);
 void gr_pop_scale_matrix();
 

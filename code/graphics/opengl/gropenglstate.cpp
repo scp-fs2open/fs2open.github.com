@@ -21,6 +21,9 @@ extern GLfloat GL_max_anisotropy;
 
 opengl_state GL_state;
 
+float Gr_vr_hud_scale = 1.0f;
+float Gr_vr_hud_pass_scale = 1.0f;
+
 
 opengl_texture_state::~opengl_texture_state()
 {
@@ -416,7 +419,11 @@ bvec4 opengl_state::ColorMask(bool red, bool green, bool blue, bool alpha)
 void opengl_state::BlendFunc(GLenum s_val, GLenum d_val)
 {
 	if (s_val != blendfunc_Value.first || d_val != blendfunc_Value.second) {
-		glBlendFunc(s_val, d_val);
+		if (vr_hud_alpha_fix) {
+			glBlendFuncSeparate(s_val, d_val, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+		} else {
+			glBlendFunc(s_val, d_val);
+		}
 		blendfunc_Value.first = s_val;
 		blendfunc_Value.second = d_val;
 
@@ -440,6 +447,15 @@ void opengl_state::BlendFunci(int buffer, GLenum s_val, GLenum d_val) {
 	state.first = s_val;
 	state.second = d_val;
 	// Set the non-buffer values to an invalid value to make sure that the next call to BlendFunc resets the state.
+	blendfunc_Value.first = GL_INVALID_ENUM;
+	blendfunc_Value.second = GL_INVALID_ENUM;
+}
+
+void opengl_state::SetVrHudAlphaFix(bool enable)
+{
+	vr_hud_alpha_fix = enable;
+
+	// Force the next BlendFunc call to actually issue the GL call with the new alpha handling.
 	blendfunc_Value.first = GL_INVALID_ENUM;
 	blendfunc_Value.second = GL_INVALID_ENUM;
 }
@@ -542,6 +558,9 @@ void opengl_state::SetZbufferType(gr_zbuffer_type zt)
 
 void opengl_state::SetLineWidth(GLfloat width)
 {
+	// the cached value is the width actually given to OpenGL, in render target pixels
+	width *= Gr_vr_hud_scale;
+
 	if ( width == line_width_Value ) {
 		return;
 	}

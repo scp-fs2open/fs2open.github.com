@@ -1651,6 +1651,10 @@ struct fbo_t {
 
 static SCP_vector<fbo_t> RenderTarget;
 static fbo_t *render_target = NULL;
+
+// Non-zero while the VR HUD is being drawn into its own texture (see gr_opengl_vr_hud_begin()). Other render-to-texture
+// work that happens in the middle of that (cockpit displays) has to return to this framebuffer, not the screen.
+GLuint GL_vr_hud_framebuffer = 0;
 static int next_fbo_id = 0;
 
 static fbo_t* opengl_get_fbo(int id) {
@@ -1811,7 +1815,14 @@ int opengl_set_render_target( int slot, int face, int is_static )
 			}
 		}
 
-		if(Cmdline_window_res) {
+		if (GL_vr_hud_framebuffer != 0) {
+			// The VR HUD is being drawn into its own texture; "back to the screen" means back to that texture,
+			// and back to its pixel scale.
+			GL_state.BindFrameBuffer(GL_vr_hud_framebuffer);
+			Gr_vr_hud_scale = Gr_vr_hud_pass_scale;
+			GL_state.SetVrHudAlphaFix(true);
+		}
+		else if(Cmdline_window_res) {
 			GL_state.BindFrameBuffer(Back_framebuffer);
 		}
 		else {
@@ -1849,6 +1860,13 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	if ( fbo->framebuffer_id == 0 ) {
 		Int3();
 		return 0;
+	}
+
+	// A normal render target (cockpit display, ...) used in the middle of the VR HUD pass is drawn exactly as it
+	// always was: no HUD texture pixel scale, no special alpha handling.
+	if (GL_vr_hud_framebuffer != 0) {
+		Gr_vr_hud_scale = 1.0f;
+		GL_state.SetVrHudAlphaFix(false);
 	}
 
 //	glBindRenderbuffer(GL_RENDERBUFFER, fbo->renderbuffer_id);
@@ -2052,6 +2070,24 @@ GLuint opengl_get_rtt_framebuffer()
 		return 0;
 	else
 		return render_target->framebuffer_id;
+}
+
+// Returns the OpenGL framebuffer object that renders into the given render target bitmap, or 0 if there is none.
+// Unlike opengl_set_render_target() this does not touch any other rendering state.
+GLuint opengl_get_render_target_framebuffer(int handle)
+{
+	if (handle < 0)
+		return 0;
+
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(handle);
+	if (ts == nullptr)
+		return 0;
+
+	auto fbo = opengl_get_fbo(ts->fbo_id);
+	if (fbo == nullptr)
+		return 0;
+
+	return fbo->framebuffer_id;
 }
 
 void gr_opengl_bm_generate_mip_maps(int handle)

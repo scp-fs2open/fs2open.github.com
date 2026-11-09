@@ -22,6 +22,7 @@ extern int free_point_num;
 
 extern fov_t View_zoom;
 extern vec3d View_position,Matrix_scale;
+extern float Asym_shear_x, Asym_shear_y;
 extern matrix View_matrix,Unscaled_matrix;
 
 extern void free_temp_point(vertex *p);

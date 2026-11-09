@@ -91,15 +91,12 @@ ubyte g3_transfer_vertex(vertex *dest, const vec3d *src)
 	return 0;
 }
 
+// For an asymmetric (VR) FOV, x and y arrive here already multiplied by Matrix_scale (see scale_matrix()), which maps
+// the frustum's extent to a width of 2. All that is left is to shift the frustum center back to the middle of the
+// canvas. This is an exact (linear) match for the projection matrix; the shear is 0 for a symmetric FOV.
 static void g3_compensate_asymmetric_fov(float& x, float& y, float z) {
-	if (std::holds_alternative<asymmetric_fov>(Proj_fov)) {
-		const auto& afov = std::get<asymmetric_fov>(Proj_fov);
-		float angle = atan2_safe(z, x) + (afov.left + afov.right);
-		x = angle == PI_2 ? 0.0f : z / tanf(angle);
-
-		angle = atan2_safe(z, y) + (afov.up + afov.down);
-		y = angle == PI_2 ? 0.0f : z / tanf(angle);
-	}
+	x -= Asym_shear_x * z;
+	y -= Asym_shear_y * z;
 }
 
 static inline void g3_compensate_asymmetric_fov(vec3d& rotated) {

@@ -838,6 +838,9 @@ static void set_dead_view_letterbox_clip()
 	gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, GR_RESIZE_NONE);
 }
 
+static bool Vr_hud_active = false;		// VR: the HUD is currently being drawn into the VR HUD texture
+static void game_flash_draw();
+
 /**
  * Call once a frame to diminish the flash effect to 0.
  * @param frametime Period over which to dimish at ::DIMINISH_RATE
@@ -895,7 +898,17 @@ static void game_flash_diminish(float frametime)
 	} else {
 		Big_expl_flash.cur_flash_intensity = 0.0f;
 	}
-	
+
+	// VR: the HUD is drawn into its own texture, and the flash covers the whole view, so it must not be drawn there
+	// (it would turn the entire HUD panel into one opaque grey/red rectangle). It is drawn per eye after the panel.
+	if (!Vr_hud_active) {
+		game_flash_draw();
+	}
+}
+
+// draws the full-screen flash (damage, sun glare, big explosions) on top of what has been rendered so far
+static void game_flash_draw()
+{
 	if ( Use_palette_flash )	{
 		int r,g,b;
 
@@ -3582,6 +3595,63 @@ void clip_frame_view();
 // Does everything needed to render a frame
 extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
+// ---------------------------------------------------------------------------------------------------------------------
+// VR HUD.
+//
+// In VR the HUD is not drawn on top of each eye's image. It is drawn once per eye pass into its own texture, from a
+// "virtual HUD camera" that sits where the ship's camera is and looks along the ship's axes, ignoring the head. That
+// is the view the HUD was designed for, so every gauge, bracket and script ends up exactly where it would be in a
+// flat game. The texture is then shown as one panel that is fixed to the ship (see gr_vr_hud_draw()), so head
+// movement behaves the same for the HUD as for the cockpit.
+// ---------------------------------------------------------------------------------------------------------------------
+extern int gr_opengl_vr_hud_begin();
+extern void gr_opengl_vr_hud_end();
+extern vec3d Matrix_scale;
+
+static bool Vr_hud_pose_valid = false;	// camera poses below were recorded for the current eye pass
+static vec3d Vr_hud_base_pos;			// camera position without the head offset
+static matrix Vr_hud_base_orient;		// camera orientation without the head rotation (= the ship's)
+static vec3d Vr_hud_eye_pos;			// the eye's position and orientation, head included
+static matrix Vr_hud_eye_orient;
+
+// (Vr_hud_active is declared near game_flash_diminish(), above)
+
+// The HUD texture is drawn for the first eye of a frame and shown again for the second; this is what the second eye needs.
+static bool Vr_hud_rendered_this_frame = false;
+static int Vr_hud_cached_texture = -1;
+static vec3d Vr_hud_cached_pos;
+static matrix Vr_hud_cached_orient;
+static float Vr_hud_cached_scale_x = 1.0f;
+static float Vr_hud_cached_scale_y = 1.0f;
+static float Vr_hud_scale_x = 1.0f;		// how the virtual HUD camera maps onto the HUD texture
+static float Vr_hud_scale_y = 1.0f;
+
+// How far in front of the pilot the HUD panel hangs, in meters. The panel always covers the same angle of the view,
+// so this only changes how far away it looks (its stereo depth), not its size. The default is far enough to be
+// effectively "at infinity", like the collimated HUD of a real fighter: the brackets then stay exactly on their targets
+// whatever the head does.
+static float vr_hud_get_distance()
+{
+	return 1000.0f;
+}
+
+// Puts the g3 view onto the virtual HUD camera. Must be called inside a g3 frame.
+static void vr_hud_set_virtual_view(const fov_t& eye_fov)
+{
+	// The eye's stored angles are in "zoom" units; the engine multiplies them by PROJ_FOV_FACTOR (g3_set_fov) to get
+	// the frustum it actually renders with.
+	const asymmetric_fov afov = std::get<asymmetric_fov>(eye_fov) * PROJ_FOV_FACTOR;
+
+	// Same angular size per pixel as the eye's own image, so the HUD keeps the size it always had.
+	const float scale = 0.5f * (2.0f / (tanf(afov.right) - tanf(afov.left)) + 2.0f / (tanf(afov.up) - tanf(afov.down)));
+	const float hfov = 2.0f * atanf(1.0f / scale);
+
+	g3_set_view_matrix(&Vr_hud_base_pos, &Vr_hud_base_orient, hfov / PROJ_FOV_FACTOR);
+
+	Vr_hud_scale_x = Matrix_scale.xyz.x;
+	Vr_hud_scale_y = Matrix_scale.xyz.y;
+}
+
 void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset, const fov_t* fov_override)
 {
 	GR_DEBUG_SCOPE("Main Frame");
@@ -3591,6 +3661,8 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	camera *cam = cid.getCamera();
 
+	Vr_hud_pose_valid = false;
+
 	if(cam != nullptr)
 	{
 		vec3d eye_pos;
@@ -3598,6 +3670,10 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 		//Get current camera info
 		cam->get_info(&eye_pos, &eye_orient);
+
+		Vr_hud_base_pos = eye_pos;
+		Vr_hud_base_orient = eye_orient;
+
 		if (offset != nullptr) {
 			vec3d offset_local;
 			vm_vec_unrotate(&offset_local, offset, &eye_orient);
@@ -3618,6 +3694,10 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		else if ( Game_shudder_everywhere ) {
 			apply_view_shake(&eye_orient);		// the camera rotation shouldn't be modified for cutscenes or it will produce feedback
 		}
+
+		Vr_hud_eye_pos = eye_pos;
+		Vr_hud_eye_orient = eye_orient;
+		Vr_hud_pose_valid = (rot_offset != nullptr);
 
 		//Maybe override FOV from SEXP
 		if(Sexp_fov <= 0.0f)
@@ -4035,14 +4115,19 @@ void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 	gr_reset_clip();
 
 	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
-	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+	// (not needed when the VR HUD texture is used: then the HUD is only drawn once per frame)
+	float frametime = (openxr_enabled() && !Vr_hud_active) ? flFrametime * 0.5f : flFrametime;
 
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
-		g3_set_view( cid.getCamera() );
 
-		if (fov_override)
-			g3_set_fov(*fov_override);
+		if (Vr_hud_active) {
+			// everything on the HUD is positioned as seen from the virtual HUD camera
+			vr_hud_set_virtual_view(*fov_override);
+			HUD_set_offsets();
+		} else {
+			g3_set_view( cid.getCamera(), fov_override );
+		}
 
 		hud_render_preprocess(frametime);
 
@@ -4221,44 +4306,99 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	//Cutscene bars
 	clip_frame_view();
 
+	// VR: from here on the HUD is drawn into its own texture, as seen from the virtual HUD camera. What the HUD looks
+	// like does not depend on the eye, so it is drawn only for the first eye of a frame; the second eye shows the same
+	// texture again.
+	// (the HUD texture is only implemented for the OpenGL renderer; with Vulkan the HUD is drawn directly, as before)
+	const bool vr_hud_candidate = openxr_enabled() && gr_screen.mode == GraphicsAPI::OpenGL && fov_override != nullptr && Vr_hud_pose_valid && std::holds_alternative<asymmetric_fov>(*fov_override);
+	const bool vr_hud_reuse = vr_hud_candidate && Vr_hud_rendered_this_frame;
+
+	int vr_hud_texture = -1;
+	if (vr_hud_candidate && !vr_hud_reuse) {
+		vr_hud_texture = gr_opengl_vr_hud_begin();
+
+		if (vr_hud_texture >= 0) {
+			Vr_hud_active = true;
+
+			// scripts that run later need the virtual camera as their view too
+			g3_start_frame(0);
+			vr_hud_set_virtual_view(*fov_override);
+			HUD_set_offsets();
+			g3_end_frame();
+		}
+	}
+
 	// save the eye position and orientation
 	if (Game_mode & GM_MULTIPLAYER) {
 		cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
 	}
 
-	Scripting_didnt_draw_hud = 1;
-	auto scripting_param_list = scripting::hook_param_list(
-		scripting::hook_param("Self", 'o', Viewer_obj),
-		scripting::hook_param("Player", 'o', Player_obj)
-	);
+	// (the second eye of a VR frame does not draw the HUD again, see above)
+	if (!vr_hud_reuse) {
+		Scripting_didnt_draw_hud = 1;
+		auto scripting_param_list = scripting::hook_param_list(
+			scripting::hook_param("Self", 'o', Viewer_obj),
+			scripting::hook_param("Player", 'o', Player_obj)
+		);
 
-	if (scripting::hooks::OnHudDraw->isActive()) {
-		Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
-	}
-
-	if (Scripting_didnt_draw_hud) {
-		GR_DEBUG_SCOPE("Render HUD");
-		TRACE_SCOPE(tracing::RenderHUD);
-
-		game_render_hud(cid, fov_override);
-	}
-	HUD_reset_clip();
-
-	if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
-		anim_render_all(0, flFrametime);
-	}
-
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
-	{
-		TRACE_SCOPE(tracing::RenderHUDHook);
-
-		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
-			if (fov_override)
-				g3_set_fov(*fov_override);
-
-			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+			Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
 		}
+
+		if (Scripting_didnt_draw_hud) {
+			GR_DEBUG_SCOPE("Render HUD");
+			TRACE_SCOPE(tracing::RenderHUD);
+
+			game_render_hud(cid, fov_override);
+		}
+		HUD_reset_clip();
+
+		if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
+			anim_render_all(0, flFrametime);
+		}
+
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+		{
+			TRACE_SCOPE(tracing::RenderHUDHook);
+
+			// see also hu.isOnHudDrawCalled()
+			if (scripting::hooks::OnHudDraw->isActive()) {
+				if (fov_override && !Vr_hud_active)
+					g3_set_fov(*fov_override);
+
+				scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, std::move(scripting_param_list));
+			}
+		}
+	}
+
+	// VR: the HUD is complete. Show its texture as a panel that is fixed to the ship, then give the g3 view back to the eye.
+	if (vr_hud_texture >= 0) {
+		Vr_hud_active = false;
+		gr_opengl_vr_hud_end();
+
+		// remember what the second eye needs to show the same HUD
+		Vr_hud_rendered_this_frame = true;
+		Vr_hud_cached_texture = vr_hud_texture;
+		Vr_hud_cached_pos = Vr_hud_base_pos;
+		Vr_hud_cached_orient = Vr_hud_base_orient;
+		Vr_hud_cached_scale_x = Vr_hud_scale_x;
+		Vr_hud_cached_scale_y = Vr_hud_scale_y;
+	}
+
+	if (vr_hud_texture >= 0 || vr_hud_reuse) {
+		gr_reset_clip();
+		gr_vr_hud_draw(Vr_hud_cached_texture, *fov_override, &Vr_hud_eye_pos, &Vr_hud_eye_orient,
+			&Vr_hud_cached_pos, &Vr_hud_cached_orient, vr_hud_get_distance(),
+			Vr_hud_cached_scale_x, Vr_hud_cached_scale_y, i2fl(gr_screen.max_w), i2fl(gr_screen.max_h));
+
+		// the damage / sun / explosion flash covers the whole view of each eye, on top of the HUD panel
+		if (Scripting_didnt_draw_hud) {
+			game_flash_draw();
+		}
+
+		g3_start_frame(0);
+		g3_set_view_matrix(&Vr_hud_eye_pos, &Vr_hud_eye_orient, *fov_override);
+		g3_end_frame();
 	}
 
 	// check to see if we should display the death died popup
@@ -4423,6 +4563,8 @@ void game_frame(bool paused)
 				SCP_vector<light> Lights_copy = Lights, Static_light_copy = Static_light;
 
 				const auto& pose = openxr_start_stereo_frame();
+
+				Vr_hud_rendered_this_frame = false;
 
 				util::Random::seed(random);
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation, &pose.eyes[0].zoom);

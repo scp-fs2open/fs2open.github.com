@@ -4212,6 +4212,11 @@ void HUD_set_clip(int x, int y, int w, int h)
 	gr_set_clip(x, y, w, h);
 }
 
+// The scaling that was baked into View_matrix (and the asymmetric-FOV shear that goes with it) must be saved and
+// restored together with View_matrix, or projecting after a closeup render (target box, shield, etc.) is wrong in VR.
+extern vec3d Matrix_scale;
+extern float Asym_shear_x, Asym_shear_y;
+
 /**
  * @brief Called to save and restore the 3D camera settings.
  * @param save Save global view variables if 1, restore them if not 1 
@@ -4224,6 +4229,9 @@ void hud_save_restore_camera_data(int save)
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
+	static vec3d	save_matrix_scale;
+	static float	save_asym_shear_x = 0.0f;
+	static float	save_asym_shear_y = 0.0f;
 
 	if ( save ) {
 		save_view_position		= View_position;
@@ -4232,6 +4240,9 @@ void hud_save_restore_camera_data(int save)
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
+		save_matrix_scale		= Matrix_scale;
+		save_asym_shear_x		= Asym_shear_x;
+		save_asym_shear_y		= Asym_shear_y;
 	}
 	else {
 		// restore global view variables
@@ -4241,6 +4252,9 @@ void hud_save_restore_camera_data(int save)
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;
+		Matrix_scale	= save_matrix_scale;
+		Asym_shear_x	= save_asym_shear_x;
+		Asym_shear_y	= save_asym_shear_y;
 	}
 }
 

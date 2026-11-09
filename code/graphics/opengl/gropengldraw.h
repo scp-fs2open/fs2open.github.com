@@ -154,6 +154,11 @@ void gr_opengl_stop_decal_pass();
 
 void gr_opengl_calculate_irrmap();
 
+// VR: draw the HUD into its own texture. Begin returns the bitmap handle of that texture (or -1 if unavailable),
+// and every begin that succeeded must be paired with an end.
+int gr_opengl_vr_hud_begin();
+void gr_opengl_vr_hud_end();
+
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;

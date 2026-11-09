@@ -773,8 +773,11 @@ void gr_opengl_shadow_map_end()
 	Glowpoint_override = Glowpoint_override_save;
 	gr_htl_projection_matrix_set = false;
 
-	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
-	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	const float vr_scale = Gr_vr_hud_scale;
+	auto px = [vr_scale](int v) { return static_cast<GLint>(lroundf(v * vr_scale)); };
+
+	glViewport(px(gr_screen.offset_x), px(gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), px(gr_screen.clip_width), px(gr_screen.clip_height));
+	glScissor(px(gr_screen.offset_x), px(gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), px(gr_screen.clip_width), px(gr_screen.clip_height));
 }
 
 void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping)
@@ -1222,7 +1225,10 @@ void opengl_tnl_set_rocketui_material(interface_material* material_info)
 }
 
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
-	glViewport(x, y, width, height);
+	// the VR HUD texture can have more pixels than the logical screen
+	const float scale = Gr_vr_hud_scale;
+	glViewport(static_cast<GLint>(lroundf(x * scale)), static_cast<GLint>(lroundf(y * scale)),
+		static_cast<GLsizei>(lroundf(width * scale)), static_cast<GLsizei>(lroundf(height * scale)));
 }
 
 void opengl_bind_vertex_component(const vertex_format_data &vert_component, size_t base_offset)

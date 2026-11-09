@@ -29,6 +29,16 @@ struct opengl_texture_unit {
 	GLuint texture_id;
 };
 
+// Pixel scale of the render target the VR HUD is currently being drawn into, relative to the logical screen size.
+// 1 whenever the HUD is not being drawn into its (supersampled) VR texture. Everything that talks to OpenGL in pixels
+// (viewport, scissor, line width, NanoVG) multiplies by this; everything else keeps working in logical coordinates.
+extern float Gr_vr_hud_scale;
+
+// The scale the VR HUD texture is drawn with while the HUD pass is running. Gr_vr_hud_scale only equals this while the
+// HUD texture itself is the render target; other render targets used in the middle of the HUD pass (cockpit
+// displays) are drawn at their own, normal scale.
+extern float Gr_vr_hud_pass_scale;
+
 class opengl_texture_state
 {
 	private:
@@ -214,6 +224,7 @@ class opengl_state
 		GLenum frontface_Value;
 		GLenum cullface_Value;
 		std::pair<GLenum, GLenum> blendfunc_Value;
+		bool vr_hud_alpha_fix = false;
 		std::array<std::pair<GLenum, GLenum>, material::NUM_BUFFER_BLENDS> buffer_blendfunc_Value;
 		GLenum depthfunc_Value;
 
@@ -258,6 +269,9 @@ class opengl_state
 
 		void SetAlphaBlendMode(gr_alpha_blend ab);
 		void SetAlphaBlendModei(int buffer, gr_alpha_blend ab);
+		// While enabled, blending accumulates the alpha channel as a proper "over" operation. Needed when drawing
+		// into an RGBA target that is composited later (the VR HUD texture).
+		void SetVrHudAlphaFix(bool enable);
 		void SetZbufferType(gr_zbuffer_type zt);
 		void SetPolygonOffset(GLfloat factor, GLfloat units);
 		void SetPolygonMode(GLenum face, GLenum mode);
