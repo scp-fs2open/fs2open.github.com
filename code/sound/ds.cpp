@@ -177,6 +177,10 @@ static bool Ds_disconnect_supported = false;
 static LPALCREOPENDEVICESOFT v_alcReopenDeviceSOFT = nullptr;
 static bool Ds_device_disconnected = false;
 static UI_TIMESTAMP Ds_reopen_timestamp;
+static int Ds_reopen_attempts = 0;
+
+// a re-enumerated device can come back within a few seconds, so don't fall back to the default device right away
+static const int DS_REOPEN_CONFIGURED_ONLY_ATTEMPTS = 3;
 
 /**
  * Query the playback device's connection state.  Safe to call from the stream service thread.
@@ -207,12 +211,9 @@ static bool ds_poll_disconnect()
 
 	Ds_device_disconnected = true;
 	Ds_reopen_timestamp = UI_TIMESTAMP::immediate();
+	Ds_reopen_attempts = 0;
 
-	if (v_alcReopenDeviceSOFT) {
-		mprintf(("OpenAL playback device disconnected; will try to reopen it.\n"));
-	} else {
-		mprintf(("OpenAL playback device disconnected, and ALC_SOFT_reopen_device is not available; audio will not recover until restart.\n"));
-	}
+	mprintf(("OpenAL playback device disconnected; will try to reopen it.\n"));
 
 	return true;
 }
@@ -518,16 +519,18 @@ int ds_init()
 	v_alcReopenDeviceSOFT = nullptr;
 	Ds_device_disconnected = false;
 
-	if ( alcIsExtensionPresent(ds_sound_device, (const ALCchar*)"ALC_EXT_disconnect") == ALC_TRUE ) {
-		mprintf(("  Found extension \"ALC_EXT_disconnect\".\n"));
-		Ds_disconnect_supported = true;
-	}
-
 	if ( alcIsExtensionPresent(ds_sound_device, (const ALCchar*)"ALC_SOFT_reopen_device") == ALC_TRUE ) {
 		v_alcReopenDeviceSOFT = reinterpret_cast<LPALCREOPENDEVICESOFT>(alcGetProcAddress(ds_sound_device, "alcReopenDeviceSOFT"));
 		if (v_alcReopenDeviceSOFT) {
 			mprintf(("  Found extension \"ALC_SOFT_reopen_device\".\n"));
 		}
+	}
+
+	if ( alcIsExtensionPresent(ds_sound_device, (const ALCchar*)"ALC_EXT_disconnect") == ALC_TRUE ) {
+		mprintf(("  Found extension \"ALC_EXT_disconnect\".\n"));
+
+		// holding streams and loops through an outage only helps if the device can be reopened afterward
+		Ds_disconnect_supported = (v_alcReopenDeviceSOFT != nullptr);
 	}
 
 	Ds_use_eax = 0;
@@ -1986,7 +1989,7 @@ int ds_eax_is_inited()
 }
 
 /**
- * Detect a lost playback device (e.g. unplugged headphones) and reopen it, or the current default device if it is gone
+ * Detect a lost playback device (e.g. unplugged headphones) and reopen it, or the current default device if it stays gone
  */
 static void ds_check_device_connected()
 {
@@ -1994,14 +1997,19 @@ static void ds_check_device_connected()
 		return;
 	}
 
-	if (!v_alcReopenDeviceSOFT || !ui_timestamp_elapsed(Ds_reopen_timestamp)) {
+	if (!ui_timestamp_elapsed(Ds_reopen_timestamp)) {
 		return;
 	}
 
 	Ds_reopen_timestamp = ui_timestamp(2 * MILLISECONDS_PER_SECOND);
+	Ds_reopen_attempts++;
 
 	const char *reopened_on = Ds_playback_device_name.c_str();
 	if (!v_alcReopenDeviceSOFT(ds_sound_device, Ds_playback_device_name.c_str(), Ds_context_attribs)) {
+		if (Ds_reopen_attempts <= DS_REOPEN_CONFIGURED_ONLY_ATTEMPTS) {
+			return;
+		}
+
 		reopened_on = "the default device";
 		if (!v_alcReopenDeviceSOFT(ds_sound_device, nullptr, Ds_context_attribs)) {
 			return;
