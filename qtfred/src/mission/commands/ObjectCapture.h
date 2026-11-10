@@ -50,6 +50,12 @@ int materializeSexpCue(int cue_dup);
 // Free an owned dup (no-op for sentinels) and reset to SHIP_CUE_NONE.
 void freeSexpCueDup(int& cue_dup);
 
+// Point Ship_registry_map[ship name] at the ship's own registry entry, fixing
+// keys that undo left pointing at the wrong entry (a restored ship can take
+// a name a wing survivor still had for a moment) or missing.
+void syncShipRegistryEntry(int shipIndex);
+void syncAllShipRegistryEntries();
+
 // Return saved object flags with the editor-state and runtime bits (Marked,
 // Hidden, Was_rendered, ...) taken from live instead. Use when restoring a
 // captured flagset so undo never brings back an old selection or visibility.

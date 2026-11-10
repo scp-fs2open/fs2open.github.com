@@ -386,6 +386,7 @@ void restoreWingIntoSlot(SavedWingData& wd, int slot, Editor* editor)
 	}
 	restoreWingReinforcement(wd, w);
 	Num_wings++;
+	syncAllShipRegistryEntries();
 }
 
 // Find a free wing slot, preferring preferredSlot if available.
@@ -807,6 +808,10 @@ void DeleteObjectsCommand::undo()
 			}
 		}
 	}
+
+	// Restoring a ship can briefly give it a name a wing survivor still had, and
+	// the renames above then move the wrong registry entries; repair the keys.
+	syncAllShipRegistryEntries();
 
 	// Phase 4: mark the restored objects.
 	for (const int n : _currentObjNums) {

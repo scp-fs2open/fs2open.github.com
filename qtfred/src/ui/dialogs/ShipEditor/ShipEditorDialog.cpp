@@ -687,7 +687,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 		}
 
 		auto* cmd = new FieldEditCommand<SnapshotVec>(
-			FieldId::Ship_InitialStatus, _viewport->editor, tr("Edit Ship Initial Status"), false);
+			FieldId::Ship_InitialStatus, _viewport->editor, tr("Edit Ship Initial Status"), true); // apply() already ran
 		cmd->setTargetKey(markedShipsKey());
 		cmd->setNoMerge();
 		cmd->addEntry(before, after, [](const SnapshotVec& v) {
@@ -1636,7 +1636,10 @@ void ShipEditorDialog::on_deleteButton_clicked()
 	if (_viewport->editor->getNumMarked() <= 0) return;
 	auto* cmd = new DeleteObjectsCommand(_viewport->editor, _viewport);
 	_model->onDeleteShip(); // calls delete_marked() + unmark_all()
-	if (!cmd->isEmpty() && _viewport->editor->getNumMarked() == 0) {
+	// Keep only what was really deleted (see FredView::on_actionDelete_triggered);
+	// the marked count can't tell, since onDeleteShip() unmarks everything.
+	cmd->dropSurvivors();
+	if (!cmd->isEmpty()) {
 		_fredView->mainUndoStack()->push(cmd); // first redo() is a no-op
 	} else {
 		delete cmd;

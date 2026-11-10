@@ -165,6 +165,66 @@ void freeSexpCueDup(int& cue_dup)
 	cue_dup = SHIP_CUE_NONE;
 }
 
+void syncShipRegistryEntry(int shipIndex)
+{
+	const ship& s = Ships[shipIndex];
+	auto owns = [&](int e) {
+		return Ship_registry[e].shipnum == shipIndex && Ship_registry[e].objnum == s.objnum;
+	};
+
+	// Already right: the ship's name is keyed to its own entry.
+	int entry = -1;
+	auto it = Ship_registry_map.find(s.ship_name);
+	if (it != Ship_registry_map.end() && owns(it->second))
+		entry = it->second;
+
+	// Otherwise prefer the ship's entry that some key still points at (it was
+	// renamed away or left behind), then any entry of the ship, then a new one.
+	if (entry < 0) {
+		for (const auto& [key, e] : Ship_registry_map) {
+			if (owns(e)) {
+				entry = e;
+				break;
+			}
+		}
+	}
+	if (entry < 0) {
+		for (int e = static_cast<int>(Ship_registry.size()) - 1; e >= 0; e--) {
+			if (owns(e)) {
+				entry = e;
+				break;
+			}
+		}
+	}
+	if (entry < 0) {
+		ship_registry_entry fresh(s.ship_name);
+		fresh.status  = ShipStatus::PRESENT;
+		fresh.objnum  = s.objnum;
+		fresh.shipnum = shipIndex;
+		Ship_registry.push_back(fresh);
+		entry = static_cast<int>(Ship_registry.size()) - 1;
+	}
+
+	// Drop other keys that still point at this entry, then key it by the name.
+	for (auto k = Ship_registry_map.begin(); k != Ship_registry_map.end();) {
+		if (k->second == entry && stricmp(k->first.c_str(), s.ship_name) != 0)
+			k = Ship_registry_map.erase(k);
+		else
+			++k;
+	}
+	strcpy_s(Ship_registry[entry].name, s.ship_name);
+	Ship_registry[entry].status = ShipStatus::PRESENT;
+	Ship_registry_map[s.ship_name] = entry;
+}
+
+void syncAllShipRegistryEntries()
+{
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			syncShipRegistryEntry(p->instance);
+	}
+}
+
 flagset<Object::Object_Flags> withLiveEditorObjectFlags(flagset<Object::Object_Flags> saved,
                                                         const flagset<Object::Object_Flags>& live)
 {
@@ -405,12 +465,10 @@ int restoreShip(CapturedShip& c, Editor* editor)
 		o.signature = c.signature;
 
 	// Identity. create_ship registered the ship under its generated name, so
-	// move that registry entry to the restored name (no sexp rewriting here,
-	// unlike Editor::rename_ship).
-	auto reg_it = Ship_registry_map.find(s.ship_name);
-	if (reg_it != Ship_registry_map.end())
-		ship_registry_rename(reg_it->second, c.ship_name, true);
+	// point the registry at the restored name (no sexp rewriting here, unlike
+	// Editor::rename_ship).
 	strcpy_s(s.ship_name, c.ship_name);
+	syncShipRegistryEntry(o.instance);
 	s.display_name   = c.display_name;
 	s.team           = c.team;
 	s.team_name      = c.team_name;
