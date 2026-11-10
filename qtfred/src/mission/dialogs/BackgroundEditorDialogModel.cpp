@@ -1102,6 +1102,7 @@ float BackgroundEditorDialogModel::getFog1000mVisibility()
 void BackgroundEditorDialogModel::setFog1000mVisibility(float v)
 {
 	modify(Neb2_fog_1000m_visibility, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogNearDistance()
@@ -1112,6 +1113,7 @@ float BackgroundEditorDialogModel::getFogNearDistance()
 void BackgroundEditorDialogModel::setFogNearDistance(float v)
 {
 	modify(Neb2_fog_near_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
@@ -1122,6 +1124,7 @@ float BackgroundEditorDialogModel::getFogSkyboxClipDistance()
 void BackgroundEditorDialogModel::setFogSkyboxClipDistance(float v)
 {
 	modify(Neb2_fog_skybox_clip_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 float BackgroundEditorDialogModel::getFogClipDistance()
@@ -1132,6 +1135,7 @@ float BackgroundEditorDialogModel::getFogClipDistance()
 void BackgroundEditorDialogModel::setFogClipDistance(float v)
 {
 	modify(Neb2_fog_clip_distance, v);
+	finalizeFogChanges(); // inside the edit, so its undo step covers the save format too
 }
 
 void BackgroundEditorDialogModel::finalizeFogChanges()

@@ -306,6 +306,7 @@ void JumpNodeEditorDialog::on_redSpinBox_valueChanged(int value)
 		const int objNum = kv.first;
 		CJumpNode* jnp = jumpnode_get_by_objnum(objNum);
 		if (!jnp) continue;
+		if (static_cast<int>(jnp->GetColor().red) == kv.second) continue; // unchanged
 		const int sig = Objects[objNum].signature;
 		cmd->addEntry(kv.second, static_cast<int>(jnp->GetColor().red),
 		    [sig](const int& r) {
@@ -341,6 +342,7 @@ void JumpNodeEditorDialog::on_greenSpinBox_valueChanged(int value)
 		const int objNum = kv.first;
 		CJumpNode* jnp = jumpnode_get_by_objnum(objNum);
 		if (!jnp) continue;
+		if (static_cast<int>(jnp->GetColor().green) == kv.second) continue; // unchanged
 		const int sig = Objects[objNum].signature;
 		cmd->addEntry(kv.second, static_cast<int>(jnp->GetColor().green),
 		    [sig](const int& g) {
@@ -376,6 +378,7 @@ void JumpNodeEditorDialog::on_blueSpinBox_valueChanged(int value)
 		const int objNum = kv.first;
 		CJumpNode* jnp = jumpnode_get_by_objnum(objNum);
 		if (!jnp) continue;
+		if (static_cast<int>(jnp->GetColor().blue) == kv.second) continue; // unchanged
 		const int sig = Objects[objNum].signature;
 		cmd->addEntry(kv.second, static_cast<int>(jnp->GetColor().blue),
 		    [sig](const int& b) {
@@ -411,6 +414,7 @@ void JumpNodeEditorDialog::on_alphaSpinBox_valueChanged(int value)
 		const int objNum = kv.first;
 		CJumpNode* jnp = jumpnode_get_by_objnum(objNum);
 		if (!jnp) continue;
+		if (static_cast<int>(jnp->GetColor().alpha) == kv.second) continue; // unchanged
 		const int sig = Objects[objNum].signature;
 		cmd->addEntry(kv.second, static_cast<int>(jnp->GetColor().alpha),
 		    [sig](const int& a) {

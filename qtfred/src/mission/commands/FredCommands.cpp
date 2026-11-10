@@ -1266,6 +1266,13 @@ void CloneMarkedObjectsCommand::redo()
 		}
 	}
 
+	// Nothing was cloned on the push: QUndoStack::push() drops an obsolete
+	// command instead of adding an empty undo step.
+	if (_cloneSignatures.empty()) {
+		setObsolete(true);
+		return;
+	}
+
 	_editor->missionChanged();
 	_viewport->needsUpdate();
 }

@@ -108,7 +108,8 @@ void BackgroundEditorDialog::changeEvent(QEvent* e)
 
 void BackgroundEditorDialog::closeEvent(QCloseEvent* e)
 {
-	_model->finalizeFogChanges();
+	// The fog save format is settled by each fog edit (setFog* in the model), inside
+	// that edit's undo step; changing it here would happen outside any undo step.
 	QDialog::closeEvent(e);
 }
 

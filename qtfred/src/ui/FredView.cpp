@@ -1529,6 +1529,7 @@ void FredView::initializeTransformBar() {
 		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
 			if (!p->flags[Object::Object_Flags::Marked]) continue;
 			if (p->type == OBJ_SHIP || p->type == OBJ_START) {
+				if (Ships[p->instance].team == idx) continue; // no change, no undo entry
 				changes.push_back({p->signature, Ships[p->instance].team, idx});
 				Ships[p->instance].team = idx;
 			}
