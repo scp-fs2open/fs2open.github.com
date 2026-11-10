@@ -3368,6 +3368,18 @@ void FredView::onGroupSelected(int group) {
 void FredView::onSetGroup(int group) {
 	bool err = false;
 
+	// +Group: is saved with each ship, so this is an undoable mission edit.
+	using GroupState = SCP_vector<std::pair<int, int>>; // (signature, group bits)
+	auto captureGroups = []() {
+		GroupState st;
+		for (int i = 0; i < MAX_SHIPS; i++) {
+			if (Ships[i].objnum >= 0)
+				st.emplace_back(Objects[Ships[i].objnum].signature, Ships[i].group);
+		}
+		return st;
+	};
+	const GroupState before = captureGroups();
+
 	for (auto i = 0; i < MAX_SHIPS; i++) {
 		Ships[i].group &= ~group;
 	}
@@ -3389,6 +3401,22 @@ void FredView::onSetGroup(int group) {
 	if (err) {
 		showButtonDialog(DialogType::Error, "Error", "Only ships can be in groups, and not players or waypoints, etc.\n"
 			"These illegal objects you marked were not placed in the group", { DialogButton::Ok });
+	}
+
+	const GroupState after = captureGroups();
+	if (after != before) {
+		auto* cmd = new fso::fred::FieldEditCommand<GroupState>(
+			fso::fred::FieldId::Main_SetGroup, fred, tr("Set Group"), true);
+		cmd->setNoMerge();
+		cmd->addEntry(before, after, [](const GroupState& v) {
+			for (const auto& [sig, bits] : v) {
+				const int objNum = obj_get_by_signature(sig);
+				if (objNum >= 0)
+					Ships[Objects[objNum].instance].group = bits;
+			}
+		});
+		_mainStack->push(cmd);
+		fred->missionChanged();
 	}
 
 	fred->updateAllViewports();

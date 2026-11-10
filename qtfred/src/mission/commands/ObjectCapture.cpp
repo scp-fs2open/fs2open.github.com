@@ -242,6 +242,41 @@ void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinfo
 		restoreReinforcement(item->first.c_str(), item->second);
 }
 
+// Editor-visible equality for one initial-orders slot. Strings are compared by
+// content (an apply can re-point target_name without changing it), and the
+// dock point unions are compared per their *_index_valid flags.
+bool aiGoalEditorEqual(const ai_goal& a, const ai_goal& b)
+{
+	auto strEq = [](const char* x, const char* y) {
+		if (x == y) return true;
+		if (!x || !y) return false;
+		return stricmp(x, y) == 0;
+	};
+
+	if (a.ai_mode != b.ai_mode)
+		return false;
+	if (a.ai_mode == AI_GOAL_NONE)
+		return true; // empty slots; remaining fields are meaningless
+	if (a.ai_submode != b.ai_submode || a.priority != b.priority)
+		return false;
+	if (!strEq(a.target_name, b.target_name))
+		return false;
+
+	const bool aDockerIdx = a.flags[AI::Goal_Flags::Docker_index_valid];
+	if (aDockerIdx != b.flags[AI::Goal_Flags::Docker_index_valid])
+		return false;
+	if (aDockerIdx ? (a.docker.index != b.docker.index) : !strEq(a.docker.name, b.docker.name))
+		return false;
+
+	const bool aDockeeIdx = a.flags[AI::Goal_Flags::Dockee_index_valid];
+	if (aDockeeIdx != b.flags[AI::Goal_Flags::Dockee_index_valid])
+		return false;
+	if (aDockeeIdx ? (a.dockee.index != b.dockee.index) : !strEq(a.dockee.name, b.dockee.name))
+		return false;
+
+	return true;
+}
+
 void syncShipRegistryEntry(int shipIndex, int preferredEntry)
 {
 	const ship& s = Ships[shipIndex];

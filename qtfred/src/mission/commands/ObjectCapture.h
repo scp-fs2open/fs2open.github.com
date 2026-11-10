@@ -77,6 +77,9 @@ void restoreReinforcement(const char* name, const CapturedReinforcement& r);
 // so restoring entries one by one in another order can't scramble the list.
 void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinforcement>>& items);
 
+// Editor-visible equality for one initial-orders (AI goal) slot.
+bool aiGoalEditorEqual(const ai_goal& a, const ai_goal& b);
+
 // Point Ship_registry_map[ship name] at the ship's own registry entry, fixing
 // keys that undo left pointing at the wrong entry (a restored ship can take
 // a name a wing survivor still had for a moment) or missing.

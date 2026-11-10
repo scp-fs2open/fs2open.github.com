@@ -950,6 +950,13 @@ void WingEditorDialog::on_initialOrdersButton_clicked()
 	for (int g = 0; g < MAX_AI_GOALS; ++g)
 		after[g] = Wings[wi].ai_goals[g];
 
+	// OK with no edits: push nothing (an empty step would clear the redo history).
+	bool changed = false;
+	for (int g = 0; g < MAX_AI_GOALS && !changed; ++g)
+		changed = !aiGoalEditorEqual(before[g], after[g]);
+	if (!changed)
+		return;
+
 	auto* cmd = new FieldEditCommand<std::array<ai_goal, MAX_AI_GOALS>>(
 	    FieldId::Wing_InitialOrders, _viewport->editor, tr("Edit Wing Initial Orders"), true);
 	cmd->setTargetKey(std::to_string(_model->getCurrentWingIndex()));

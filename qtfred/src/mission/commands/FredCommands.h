@@ -695,6 +695,8 @@ namespace FieldId {
     constexpr int JN_ColorB      = 3005;
     constexpr int JN_ColorA      = 3006;
     constexpr int JN_Hidden      = 3007;
+    // Main window             3901-3999
+    constexpr int Main_SetGroup  = 3901;
     // Waypoint Path editor    4001–4099
     constexpr int WP_NoDrawLines    = 4001;
     constexpr int WP_HasCustomColor = 4002;

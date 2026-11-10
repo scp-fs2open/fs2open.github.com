@@ -77,41 +77,6 @@ struct ShipFlagsSnapshot {
 	}
 };
 
-// Editor-visible equality for one initial-orders slot. Strings are compared by
-// content (an apply can re-point target_name without changing it), and the
-// dock point unions are compared per their *_index_valid flags.
-bool aiGoalEditorEqual(const ai_goal& a, const ai_goal& b)
-{
-	auto strEq = [](const char* x, const char* y) {
-		if (x == y) return true;
-		if (!x || !y) return false;
-		return stricmp(x, y) == 0;
-	};
-
-	if (a.ai_mode != b.ai_mode)
-		return false;
-	if (a.ai_mode == AI_GOAL_NONE)
-		return true; // empty slots; remaining fields are meaningless
-	if (a.ai_submode != b.ai_submode || a.priority != b.priority)
-		return false;
-	if (!strEq(a.target_name, b.target_name))
-		return false;
-
-	const bool aDockerIdx = a.flags[AI::Goal_Flags::Docker_index_valid];
-	if (aDockerIdx != b.flags[AI::Goal_Flags::Docker_index_valid])
-		return false;
-	if (aDockerIdx ? (a.docker.index != b.docker.index) : !strEq(a.docker.name, b.docker.name))
-		return false;
-
-	const bool aDockeeIdx = a.flags[AI::Goal_Flags::Dockee_index_valid];
-	if (aDockeeIdx != b.flags[AI::Goal_Flags::Dockee_index_valid])
-		return false;
-	if (aDockeeIdx ? (a.dockee.index != b.dockee.index) : !strEq(a.dockee.name, b.dockee.name))
-		return false;
-
-	return true;
-}
-
 struct ShipGoalsSnapshot {
 	int sig;
 	std::array<ai_goal, MAX_AI_GOALS> goals;
@@ -277,7 +242,33 @@ struct ShipResetSnapshot {
 	};
 	SCP_vector<float> subsysHits; // current_hits for every subsystem in list order
 	SCP_vector<TurretState> turrets; // one per SUBSYSTEM_TURRET in list order
-	bool operator==(const ShipResetSnapshot&) const { return false; } // always push
+	// Reset on a ship already at its defaults changes nothing: push no undo step.
+	bool operator==(const ShipResetSnapshot& o) const
+	{
+		if (sig != o.sig || cargo1 != o.cargo1 || team != o.team || aiClass != o.aiClass ||
+		    speed != o.speed || shieldQuadrant0 != o.shieldQuadrant0 || hullStrength != o.hullStrength ||
+		    memcmp(primaryBankWeapons, o.primaryBankWeapons, sizeof(primaryBankWeapons)) != 0 ||
+		    memcmp(secondaryBankWeapons, o.secondaryBankWeapons, sizeof(secondaryBankWeapons)) != 0 ||
+		    memcmp(secondaryBankCapacity, o.secondaryBankCapacity, sizeof(secondaryBankCapacity)) != 0 ||
+		    subsysHits != o.subsysHits || turrets.size() != o.turrets.size())
+			return false;
+		for (size_t i = 0; i < goals.size(); i++) {
+			if (!aiGoalEditorEqual(goals[i], o.goals[i]))
+				return false;
+		}
+		for (size_t i = 0; i < turrets.size(); i++) {
+			const auto& a = turrets[i];
+			const auto& b = o.turrets[i];
+			if (a.currentHits != b.currentHits || a.numPrimaryBanks != b.numPrimaryBanks ||
+			    a.numSecondaryBanks != b.numSecondaryBanks ||
+			    memcmp(a.primaryBankWeapons, b.primaryBankWeapons, sizeof(a.primaryBankWeapons)) != 0 ||
+			    memcmp(a.secondaryBankWeapons, b.secondaryBankWeapons, sizeof(a.secondaryBankWeapons)) != 0 ||
+			    memcmp(a.secondaryBankCapacity, b.secondaryBankCapacity, sizeof(a.secondaryBankCapacity)) != 0 ||
+			    memcmp(a.secondaryBankAmmo, b.secondaryBankAmmo, sizeof(a.secondaryBankAmmo)) != 0)
+				return false;
+		}
+		return true;
+	}
 };
 
 ShipResetSnapshot captureShipResetSnapshot(int sig, int inst)
@@ -370,6 +361,29 @@ int* findArrivalCue(const ShipInitialStatusSnapshot::ArrivalCue& c)
 			return &w.arrival_cue;
 	}
 	return nullptr;
+}
+
+// Which ships are player starts, and which start is primary (Player_start_shipnum,
+// saved as $Starting Shipname:). Demoting the primary start moves it to another.
+struct PlayerStartState {
+	SCP_vector<std::pair<int, bool>> ships; // (signature, is a player start)
+	int primarySig = -1;
+	bool operator==(const PlayerStartState& o) const { return ships == o.ships && primarySig == o.primarySig; }
+};
+
+int primaryStartSignature()
+{
+	if (Player_start_shipnum >= 0 && Player_start_shipnum < MAX_SHIPS && Ships[Player_start_shipnum].objnum >= 0)
+		return Objects[Ships[Player_start_shipnum].objnum].signature;
+	return -1;
+}
+
+void restorePrimaryStart(int sig)
+{
+	const int objNum = obj_get_by_signature(sig);
+	if (objNum >= 0 && Objects[objNum].type == OBJ_START)
+		Player_start_shipnum = Objects[objNum].instance;
+	ensure_valid_player_start_shipnum();
 }
 
 // Capture ShipInitialStatusSnapshot for one ship
@@ -1483,31 +1497,31 @@ void ShipEditorDialog::on_playerShipButton_clicked()
 	// "Set as Player Ship" in single-player mode: makeSolePlayerStart() makes
 	// this ship the one and only player start, demoting every other start —
 	// so capture the player state of ALL ships, not just the marked ones.
-	using PlayerStateVec = SCP_vector<std::pair<int,bool>>;
-	PlayerStateVec before;
-	for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-		if (p->type == OBJ_SHIP || p->type == OBJ_START)
-			before.emplace_back(p->signature, p->type == OBJ_START);
-	}
+	auto capture = []() {
+		PlayerStartState st;
+		for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (p->type == OBJ_SHIP || p->type == OBJ_START)
+				st.ships.emplace_back(p->signature, p->type == OBJ_START);
+		}
+		st.primarySig = primaryStartSignature();
+		return st;
+	};
+	const PlayerStartState before = capture();
 
 	_model->makeSolePlayerStart();
 
-	PlayerStateVec after;
-	for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-		if (p->type == OBJ_SHIP || p->type == OBJ_START)
-			after.emplace_back(p->signature, p->type == OBJ_START);
-	}
+	const PlayerStartState after = capture();
 
 	if (before == after)
 		return;
 
-	auto* cmd = new FieldEditCommand<PlayerStateVec>(FieldId::Ship_Player, _viewport->editor, tr("Set Player Ship"), true);
+	auto* cmd = new FieldEditCommand<PlayerStartState>(FieldId::Ship_Player, _viewport->editor, tr("Set Player Ship"), true);
 	cmd->setTargetKey(markedShipsKey());
 	// Never merge: the multiplayer checkbox pushes a marked-ships payload under
 	// the same fieldId; a merge would apply the wrong-shaped vector.
 	cmd->setNoMerge();
-	cmd->addEntry(before, after, [](const PlayerStateVec& v) {
-		for (const auto& [sig, isPlayer] : v) {
+	cmd->addEntry(before, after, [](const PlayerStartState& v) {
+		for (const auto& [sig, isPlayer] : v.ships) {
 			int o = obj_get_by_signature(sig);
 			if (o < 0) continue;
 			int inst = Objects[o].instance;
@@ -1523,7 +1537,7 @@ void ShipEditorDialog::on_playerShipButton_clicked()
 				Objects[Ships[inst].objnum].flags.remove(Object::Object_Flags::Player_ship);
 			}
 		}
-		ensure_valid_player_start_shipnum();
+		restorePrimaryStart(v.primarySig);
 	});
 	_fredView->mainUndoStack()->push(cmd);
 }
@@ -1588,6 +1602,8 @@ void ShipEditorDialog::on_resetButton_clicked()
 	forEachMarkedShip([&](int sig, int inst) {
 		after.push_back(captureShipResetSnapshot(sig, inst));
 	});
+	if (after == before)
+		return; // already at defaults
 
 	auto* cmd = new FieldEditCommand<SnapshotVec>(
 		FieldId::Ship_Reset, _viewport->editor, tr("Reset Ship"), true);
@@ -2395,33 +2411,34 @@ void ShipEditorDialog::on_assistEdit_valueChanged(int value)
 
 void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
 {
-	using PlayerStateVec = SCP_vector<std::pair<int,bool>>;
-	PlayerStateVec before;
-	forEachMarkedShip([&](int sig, int inst) {
-		before.emplace_back(sig, Objects[Ships[inst].objnum].type == OBJ_START);
-	});
+	auto capture = []() {
+		PlayerStartState st;
+		forEachMarkedShip([&](int sig, int inst) {
+			st.ships.emplace_back(sig, Objects[Ships[inst].objnum].type == OBJ_START);
+		});
+		st.primarySig = primaryStartSignature();
+		return st;
+	};
+	const PlayerStartState before = capture();
 
 	_model->setPlayer(value);
 
-	PlayerStateVec after;
-	forEachMarkedShip([&](int sig, int inst) {
-		after.emplace_back(sig, Objects[Ships[inst].objnum].type == OBJ_START);
-	});
+	const PlayerStartState after = capture();
 
 	bool anyChanged = false;
-	for (size_t i = 0; i < before.size() && i < after.size(); i++) {
-		if (before[i].second != after[i].second) { anyChanged = true; break; }
+	for (size_t i = 0; i < before.ships.size() && i < after.ships.size(); i++) {
+		if (before.ships[i].second != after.ships[i].second) { anyChanged = true; break; }
 	}
 	if (!anyChanged)
 		return;
 
-	auto* cmd = new FieldEditCommand<PlayerStateVec>(FieldId::Ship_Player, _viewport->editor, tr("Toggle Player Ship"), true);
+	auto* cmd = new FieldEditCommand<PlayerStartState>(FieldId::Ship_Player, _viewport->editor, tr("Toggle Player Ship"), true);
 	cmd->setTargetKey(markedShipsKey());
 	// Never merge: the single-player button pushes an all-ships payload under
 	// the same fieldId; a merge would apply the wrong-shaped vector.
 	cmd->setNoMerge();
-	cmd->addEntry(before, after, [](const PlayerStateVec& v) {
-		for (const auto& [sig, isPlayer] : v) {
+	cmd->addEntry(before, after, [](const PlayerStartState& v) {
+		for (const auto& [sig, isPlayer] : v.ships) {
 			int o = obj_get_by_signature(sig);
 			if (o < 0) continue;
 			int inst = Objects[o].instance;
@@ -2433,7 +2450,7 @@ void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
 				Objects[Ships[inst].objnum].type = OBJ_SHIP;
 			}
 		}
-		ensure_valid_player_start_shipnum();
+		restorePrimaryStart(v.primarySig);
 	});
 	_fredView->mainUndoStack()->push(cmd);
 }
