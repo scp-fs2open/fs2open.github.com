@@ -8593,9 +8593,9 @@ static void ship_set_hud_cockpit_targets()
 
 	auto& hud = Ship_info[Player_ship->ship_info_index].hud_gauges;
 
-	for ( int i = 0; i < (int)hud.size(); i++ ) {
-		for ( int j = 0; j < (int)Player_displays.size(); j++ ) {
-			hud[i]->setCockpitTarget(&Player_displays[j]);
+	for (const auto& gauge : hud) {
+		for (const auto& display : Player_displays) {
+			gauge->setCockpitTarget(&display);
 		}
 	}
 }

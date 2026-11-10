@@ -303,7 +303,8 @@ inline size_t dds_compressed_mip_size(int w, int h, int block_size) {
 //optional original dimensions are taken before conversion drops mip levels
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0,
+int dds_read_header(const char *filename, CFILE *img_cfp = nullptr, int *width = nullptr, int *height = nullptr,
+	int *bpp = nullptr, int *compression_type = nullptr, int *levels = nullptr, size_t *size = nullptr,
 	int *original_width = nullptr, int *original_height = nullptr);
 
 //reads bitmap
