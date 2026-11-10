@@ -171,12 +171,7 @@ void BackgroundEditorDialog::initializeUi()
 
 	updateNebulaControls();
 
-	// Old nebula — legacy FS1 system, collapsed by default
-	connect(ui->legacyNebulaToggle, &QToolButton::toggled, this, [this](bool expanded) {
-		ui->legacyNebulaToggle->setArrowType(expanded ? Qt::DownArrow : Qt::RightArrow);
-		ui->oldNebulaGroupBox->setVisible(expanded);
-		adjustSize();
-	});
+	// Old nebula
 
 	const auto& old_nebula_names = _model->getOldNebulaPatternOptions();
 	for (const auto& s : old_nebula_names) {
@@ -413,23 +408,14 @@ void BackgroundEditorDialog::updateOldNebulaControls()
 {
 	util::SignalBlockers blockers(this);
 
-	const bool fullNeb = _model->getFullNebulaEnabled();
-	const bool hasLegacy = !fullNeb && _model->getOldNebulaPattern() != "<None>";
-	const bool patternSet = _model->getOldNebulaPattern() != "<None>";
+	const bool enabled = !_model->getFullNebulaEnabled();
+	const bool old_enabled = _model->getOldNebulaPattern() != "<None>";
 
-	// Drive toggle button and group box visibility from the model.
-	// SignalBlockers prevents toggled from re-entering; sync arrow type manually.
-	ui->legacyNebulaToggle->setChecked(hasLegacy);
-	ui->legacyNebulaToggle->setArrowType(hasLegacy ? Qt::DownArrow : Qt::RightArrow);
-	ui->oldNebulaGroupBox->setVisible(hasLegacy);
-
-	// Always apply enabled states — controls must be correct if the user manually
-	// expanded the section while pattern is still <None>.
-	ui->oldNebulaPatternCombo->setEnabled(!fullNeb);
-	ui->oldNebulaColorCombo->setEnabled(!fullNeb && patternSet);
-	ui->oldNebulaPitchSpinBox->setEnabled(!fullNeb && patternSet);
-	ui->oldNebulaBankSpinBox->setEnabled(!fullNeb && patternSet);
-	ui->oldNebulaHeadingSpinBox->setEnabled(!fullNeb && patternSet);
+	ui->oldNebulaPatternCombo->setEnabled(enabled);
+	ui->oldNebulaColorCombo->setEnabled(enabled && old_enabled);
+	ui->oldNebulaPitchSpinBox->setEnabled(enabled && old_enabled);
+	ui->oldNebulaBankSpinBox->setEnabled(enabled && old_enabled);
+	ui->oldNebulaHeadingSpinBox->setEnabled(enabled && old_enabled);
 
 	ui->oldNebulaPatternCombo->setCurrentIndex(ui->oldNebulaPatternCombo->findText(QString::fromStdString(_model->getOldNebulaPattern())));
 	ui->oldNebulaColorCombo->setCurrentIndex(ui->oldNebulaColorCombo->findText(QString::fromStdString(_model->getOldNebulaColorName())));
