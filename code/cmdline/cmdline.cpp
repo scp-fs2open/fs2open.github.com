@@ -444,9 +444,11 @@ char *Cmdline_gateway_ip = nullptr;
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
 cmdline_parm joy_info("-joy_info", "Outputs SDL joystick info", AT_NONE);
 cmdline_parm lang_arg("-language", "Language name as defined in strings.tbl", AT_STRING);
+cmdline_parm voice_lang_arg("-voice_language", "Language name as defined in strings.tbl, for voice files only; or same-as-text, or original", AT_STRING);
 
 bool Cmdline_portable_mode = false;
 SCP_string Cmdline_lang;
+SCP_string Cmdline_voice_lang;
 
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
@@ -2225,6 +2227,11 @@ bool SetCmdlineParams()
 	if (lang_arg.found()) 
 	{
 		Cmdline_lang = lang_arg.str();
+	}
+
+	if (voice_lang_arg.found())
+	{
+		Cmdline_voice_lang = voice_lang_arg.str();
 	}
 
 	if (no_bsp_align_arg.found()) {

@@ -105,6 +105,7 @@ extern bool Splash_logo_center;
 extern bool Use_tabled_strings_for_default_language;
 extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
+extern SCP_string Default_voice_language;
 extern SCP_string Movie_subtitle_font;
 extern std::array<int, 4> Movie_subtitle_rgba;
 extern SCP_string ImGui_font;

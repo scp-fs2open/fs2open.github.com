@@ -65,6 +65,10 @@ add_file_folder("model"
     model/test_modelread.cpp
 )
 
+add_file_folder("Localization"
+    localization/test_voice_language.cpp
+)
+
 add_file_folder("network"
     network/test_multiutil.cpp
 )

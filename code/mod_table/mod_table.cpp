@@ -86,6 +86,7 @@ bool Splash_logo_center;
 bool Use_tabled_strings_for_default_language;
 bool No_built_in_languages;
 bool Dont_preempt_training_voice;
+SCP_string Default_voice_language;
 SCP_string Movie_subtitle_font;
 std::array<int, 4> Movie_subtitle_rgba;
 SCP_string ImGui_font;
@@ -359,6 +360,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Don't pre-empt training message voice:")) {
 				stuff_boolean(&Dont_preempt_training_voice);
+			}
+
+			if (optional_string("$Voice language:")) {
+				stuff_string(Default_voice_language, F_NAME);
 			}
 
 			optional_string("#CAMPAIGN SETTINGS");
@@ -1600,6 +1605,8 @@ static void mod_table_log_settings()
 	mprintf(("Game Settings Table: Use tabled strings (translations) for the default language: %s\n", Use_tabled_strings_for_default_language ? "yes" : "no"));
 	mprintf(("Game Settings Table: Don't initialize built-in languages by default: %s\n", No_built_in_languages ? "yes" : "no"));
 	mprintf(("Game Settings Table: %sre-empting training message voice\n", Dont_preempt_training_voice ? "Not p" : "P"));
+	if (!Default_voice_language.empty())
+		mprintf(("Game Settings Table: Default voice language: %s\n", Default_voice_language.c_str()));
 
 	if (Red_alert_applies_to_delayed_ships)
 		mprintf(("Game Settings Table: Red-alert stats will be loaded for ships that arrive later in missions\n"));
@@ -1928,6 +1935,7 @@ void mod_table_reset()
 	Use_tabled_strings_for_default_language = false;
 	No_built_in_languages = false;
 	Dont_preempt_training_voice = false;
+	Default_voice_language = "";
 	Movie_subtitle_font = "";
 	Movie_subtitle_rgba = std::array<int, 4>{-1, -1, -1, -1};
 	ImGui_font = "";

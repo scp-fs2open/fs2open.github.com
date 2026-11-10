@@ -21,8 +21,10 @@
 #include "playerman/player.h"
 #include "mod_table/mod_table.h"
 #include "options/Option.h"
+#include "sound/audiostr.h"
 
 #include <optional>
+#include <stdexcept>
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -65,7 +67,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1942 // This is the next available ID
+// #define XSTR_SIZE	1944 // This is the next available ID
 
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
@@ -156,6 +158,101 @@ auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 							   .default_val(0)
 							   .finish();
 
+// Besides a language, the voice language can be the files as named (LCL_VOICE_ORIGINAL) or the files of the text
+// language (LCL_VOICE_TEXT_LANGUAGE).  A language is stored like Game.Language, as {name, ext}; the two other
+// values as the strings "original" and "text".
+static json_t* voice_language_serializer(int lang)
+{
+	if (lang == LCL_VOICE_TEXT_LANGUAGE) {
+		return json_string("text");
+	}
+	if (lang < 0) {
+		return json_string("original");
+	}
+	return language_serializer(lang);
+}
+
+static int voice_language_deserializer(const json_t* value)
+{
+	if (json_is_string(value)) {
+		const char* name = json_string_value(value);
+		if (!stricmp(name, "text")) {
+			return LCL_VOICE_TEXT_LANGUAGE;
+		}
+		if (!stricmp(name, "original")) {
+			return LCL_VOICE_ORIGINAL;
+		}
+		// a hand-edited value: as if the player had not chosen
+		throw std::runtime_error("unknown voice language value");
+	}
+
+	int lang = language_deserializer(value);
+	if (lang < 0) {
+		// a language this mod does not have: as if the player had not chosen, so that the default applies
+		throw std::runtime_error("unknown voice language");
+	}
+	return lang;
+}
+
+static SCP_vector<int> voice_language_enumerator()
+{
+	auto vals = language_enumerator();
+	vals.insert(vals.begin(), {LCL_VOICE_ORIGINAL, LCL_VOICE_TEXT_LANGUAGE});
+	return vals;
+}
+
+static SCP_string voice_language_display(int value)
+{
+	if (value == LCL_VOICE_TEXT_LANGUAGE) {
+		return XSTR("Same as text language", 1942);
+	}
+	if (value < 0) {
+		return XSTR("Original voice", 1943);
+	}
+	return language_display(value);
+}
+
+// -voice_language and $Voice language: take a language name, "same-as-text" or "original"
+static std::optional<int> voice_language_from_name(const SCP_string& name)
+{
+	if (!stricmp(name.c_str(), "original")) {
+		return LCL_VOICE_ORIGINAL;
+	}
+	if (!stricmp(name.c_str(), "same-as-text")) {
+		return LCL_VOICE_TEXT_LANGUAGE;
+	}
+
+	int lang = lcl_find_lang_index_by_name(name);
+	if (lang < 0) {
+		return std::nullopt;
+	}
+	return lang;
+}
+
+// the mod default from $Voice language:, which the option also shows and uses while the player has not chosen
+static int voice_language_mod_default()
+{
+	if (Default_voice_language.empty()) {
+		return LCL_VOICE_ORIGINAL;
+	}
+	return voice_language_from_name(Default_voice_language).value_or(LCL_VOICE_ORIGINAL);
+}
+
+auto VoiceLanguageOption = options::OptionBuilder<int>("Audio.VoiceLanguage",
+							   std::pair<const char*, int>{"Voice Language", 1940},
+							   std::pair<const char*, int>{"The language of the voice files, when the mod has them in more than one language", 1941})
+							   .deserializer(voice_language_deserializer)
+							   .serializer(voice_language_serializer)
+							   .enumerator(voice_language_enumerator)
+							   .display(voice_language_display)
+							   .change_listener([](int, bool){
+							       return true; // voice files are looked up when they are loaded, so no restart is needed
+							   })
+							   .flags({options::OptionFlags::ForceMultiValueSelection})
+							   .category(std::make_pair("Audio", 1826))
+							   .default_func(voice_language_mod_default)
+							   .finish();
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE FUNCTIONS
@@ -182,6 +279,91 @@ int lcl_get_current_lang_index()
 		return Lcl_current_lang;
 
 	return LCL_DEFAULT;
+}
+
+// get the index of the language whose voice files are used, or LCL_VOICE_ORIGINAL for the files as named.  This is
+// the one place that decides the precedence: the -voice_language flag, then the player's choice, then the mod
+// default from $Voice language:, then the files as named.  "Same as text language" is a value each of them can
+// give; it is not the default, so that nothing changes while nothing is set.
+int lcl_get_voice_lang_index()
+{
+	std::optional<int> lang;
+
+	if (!Cmdline_voice_lang.empty()) {
+		// an unknown name was reported once by lcl_init() and does not count
+		lang = voice_language_from_name(Cmdline_voice_lang);
+	}
+
+	if (!lang.has_value() && Using_in_game_options) {
+		// the player's choice; while the player has not chosen, the option reports the mod default
+		lang = VoiceLanguageOption->getValue();
+	}
+
+	if (!lang.has_value()) {
+		lang = voice_language_mod_default();
+	}
+
+	if (*lang == LCL_VOICE_TEXT_LANGUAGE) {
+		lang = lcl_get_current_lang_index();
+	}
+
+	if (!Lcl_languages.in_bounds(*lang)) {
+		return LCL_VOICE_ORIGINAL;
+	}
+
+	return *lang;
+}
+
+// get the file to load for a voice.  Like movie subtitles and fiction files, a voice in another language is
+// "<name>-<ext>.<audio ext>" next to "<name>.<audio ext>"; the suffixed file is used only if it exists.
+SCP_string lcl_get_voice_filename(const char *filename, int dir_type)
+{
+	int lang = lcl_get_voice_lang_index();
+	if (!Lcl_languages.in_bounds(lang)) {
+		// the files as named (LCL_VOICE_ORIGINAL), or before lcl_init()
+		return filename;
+	}
+
+	const char *lang_ext = Lcl_languages[lang].lang_ext;
+	if (*lang_ext == '\0') {
+		return filename;
+	}
+
+	SCP_string localized = filename;
+
+	// strip the file extension the way cf_find_file_location_ext() does: look only after the last directory
+	// separator (cfile takes both kinds), and a dot starts an extension only when at least two characters
+	// follow it, so that a retail name like "x_1.5" keeps its ".5"
+	auto sep = localized.find_last_of("/\\");
+	auto name_start = (sep == SCP_string::npos) ? 0 : sep + 1;
+	auto dot = localized.rfind('.');
+	if (dot != SCP_string::npos && dot >= name_start && localized.length() - dot > 2) {
+		localized.erase(dot);
+	}
+	localized += "-";
+	localized += lang_ext;
+	// cf_find_file_location_ext() strips the last extension before it tries each audio extension; give it one
+	// to strip, or it takes "-<ext>" off a name like "x_1.5-tw"
+	localized += audio_ext_list[0];
+
+	// the sound code copies file names into MAX_FILENAME_LEN buffers, and cfile asserts on the length
+	if (localized.length() >= MAX_FILENAME_LEN) {
+		return filename;
+	}
+
+	auto res = cf_find_file_location_ext(localized.c_str(), NUM_AUDIO_EXT, audio_ext_list, dir_type);
+	if (!res.found) {
+		return filename;
+	}
+
+	// cfile looks a "dir/name" up in that directory but reports the name without it; keep the caller's directory
+	return localized.substr(0, name_start) + res.name_ext;
+}
+
+// whether a voice file exists: a file of the voice language counts, like the file as named
+bool lcl_voice_file_exists(const char *filename, int dir_type)
+{
+	return cf_exists_full_ext(lcl_get_voice_filename(filename, dir_type).c_str(), dir_type, NUM_AUDIO_EXT, audio_ext_list) != 0;
 }
 
 // initialize localization, if no language is passed - use the language specified in the registry
@@ -275,6 +457,23 @@ void lcl_init(int lang_init)
 
 	// set the language (this function takes care of setting up file pointers)
 	lcl_set_language(lang);
+
+	// Register -voice_language as an override of the in-game option, so that the options menu shows the value the
+	// game uses and disables the control.  lcl_get_voice_lang_index() reads the flag itself; this is only for the menu.
+	if (!Cmdline_voice_lang.empty()) {
+		auto voice_lang = voice_language_from_name(Cmdline_voice_lang);
+		if (voice_lang.has_value()) {
+			options::OptionsManager::instance()->setOverride("Audio.VoiceLanguage",
+				std::unique_ptr<json_t>(voice_language_serializer(*voice_lang)), "-voice_language");
+		} else {
+			Warning(LOCATION, "Unrecognized -voice_language value \"%s\"; ignoring.", Cmdline_voice_lang.c_str());
+		}
+	}
+
+	// a typo in $Voice language: can only be seen now that the languages are known
+	if (!Default_voice_language.empty() && !voice_language_from_name(Default_voice_language).has_value()) {
+		mprintf(("Game Settings Table: $Voice language: \"%s\" is not a language of this mod; voice files are used as named.\n", Default_voice_language.c_str()));
+	}
 }
 
 void lcl_close() {
