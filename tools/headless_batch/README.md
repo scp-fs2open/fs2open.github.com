@@ -70,11 +70,11 @@ the fiction and command briefing. At the briefing it takes the default loadout t
 call it uses for missions flagged no-briefing; at the red alert screen it continues into the mission as that
 screen's button does. When the mission ends it leaves the debriefing by quitting, so the result file is written.
 If the default loadout cannot be committed (for example a required weapon is not on any ship) the run ends with a
-warning in the engine log and `start_failed` in the result. The death popup cannot be answered either, so when the
+warning on stderr and `start_failed` in the result. The death popup cannot be answered either, so when the
 player dies the run ends with `player_died`. Any way out of gameplay other than the debriefing ends the run as
 `left_mission`, so a red alert does not play on into the next mission. Any other modal popup is answered as if
 cancelled and reported on stderr, unless a script handles `On Dialog Frame`; a popup that script has not answered
-after 600 frames is given up the same way.
+after 10 s of real time is given up the same way.
 
 Missile locks and cargo scans are processed in the HUD code that headless mode skips, so a scripted player never
 locks on and goals that need the player to scan cargo cannot complete.
