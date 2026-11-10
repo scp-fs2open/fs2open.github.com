@@ -363,6 +363,10 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 	SCP_string buffer;
 
 	while (0 > optional_string_either(end_tag.c_str(), "$Profile:", false)) {
+		// at the end of the file nothing below consumes input, so a missing end tag would loop forever
+		if (check_for_eof()) {
+			required_string(end_tag.c_str());
+		}
 		parsed = false;
 		if (optional_string("$Tonemapper:")) {
 			stuff_string(buffer, F_NAME);

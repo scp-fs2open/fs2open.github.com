@@ -3261,6 +3261,12 @@ void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_a
 	{
 		ignore_white_space();
 
+		if (check_for_eof_raw())
+		{
+			error_display(1, "Reading %s list.  Reached the end of the file.  Expected ')'.\n", type_as_string);
+			throw parse::ParseException("Syntax error");
+		}
+
 		T item;
 		if (stuff_one_token(&item))
 			list.push_back(std::move(item));
