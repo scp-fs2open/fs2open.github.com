@@ -689,6 +689,10 @@ void clear_texture_replacements();
 // Goober5000
 subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
+// wookieejedi
+void remove_subsys_status(p_object *pobjp, int index);
+void prune_subsys_status(p_object *pobjp);
+
 // MjnMixael
 custom_string* get_custom_string_by_name(SCP_string name);
 
