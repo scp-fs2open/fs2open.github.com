@@ -258,7 +258,7 @@ TEST(TracingCategory, name_outlives_the_category_object)
 		id = temporary.getId();
 
 		// A copy keeps the id of the original, which is how the Lua object gets a usable id.
-		const Category copy = temporary;
+		const Category copy = temporary; // NOLINT(performance-unnecessary-copy-initialization)
 		EXPECT_EQ(copy.getId(), id);
 	}
 

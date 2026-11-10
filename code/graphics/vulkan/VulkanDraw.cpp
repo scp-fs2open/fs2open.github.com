@@ -833,9 +833,13 @@ void VulkanDrawManager::renderShadowDraw(gr_buffer_handle ubo_handle,
 		// exists for: ImGui binds on the command buffer behind the tracker's back.)
 
 		// ShadowMapData is the one thing that moves per shadow draw; every other dynamic binding
-		// on this path holds the fallback buffer and so must stay at offset 0.
+		// on this path holds the fallback buffer and so must stay at offset 0. If the shadow UBO
+		// has no Vulkan buffer, ShadowMapData also holds the fallback buffer, so its offset stays
+		// at 0 too. This agrees with dynOffsetOf in applyMaterial.
 		uint32_t materialDynOffsets[MATERIAL_DYNAMIC_OFFSET_COUNT] = {};
-		materialDynOffsets[MaterialDynamicSlot::ShadowMapData] = static_cast<uint32_t>(ubo_offset);
+		if (bufferManager->getVkBuffer(ubo_handle)) {
+			materialDynOffsets[MaterialDynamicSlot::ShadowMapData] = static_cast<uint32_t>(ubo_offset);
+		}
 
 		static constexpr uint32_t perDrawDynOffsets[PERDRAW_DYNAMIC_OFFSET_COUNT] = {};
 
