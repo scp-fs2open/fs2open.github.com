@@ -185,9 +185,12 @@ void JumpNodeEditorDialog::on_nameLineEdit_editingFinished()
 		ui->nameLineEdit->setText(QString::fromStdString(_model->getName()));
 		return;
 	}
+	// Record the name the model stored (it trims), not what was typed.
+	const SCP_string appliedName = _model->getName();
+	if (appliedName == oldName) return;
 	const auto& objNums = _model->getSelectedObjNums();
 	if (objNums.empty()) return;
-	auto* cmd = new RenameObjectCommand(objNums[0], oldName, newName, _viewport->editor, true);
+	auto* cmd = new RenameObjectCommand(objNums[0], oldName, appliedName, _viewport->editor, true);
 	if (displayBefore)
 		cmd->setOldDisplayName(*displayBefore);
 	_fredView->mainUndoStack()->push(cmd);

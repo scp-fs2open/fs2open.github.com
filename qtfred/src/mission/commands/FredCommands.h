@@ -58,6 +58,7 @@ class CreateObjectCommand : public QUndoCommand {
 	int             _savedPropIndex;
 	int             _waypointInstance;
 	SCP_string      _waypointListName; // name of list to append to (empty = create new list)
+	int             _waypointIndex = -1; // the new waypoint's index in that list, for redo
 	SCP_string      _jumpNodeName;     // original JN name; restored on redo for stable identity
 	CreateKind      _createKind;
 	OtherKind       _otherKind;        // only meaningful when _createKind == Other
@@ -1207,6 +1208,9 @@ public:
 	void captureAfter(int afterCue);
 
 	bool isEmpty() const { return _owners.empty(); }
+	// After captureAfter(): true when every owner's formula is unchanged (the tree
+	// view reports modified() for edits that change nothing). Push nothing then.
+	bool isNoOp() const;
 
 	void undo() override;
 	void redo() override;

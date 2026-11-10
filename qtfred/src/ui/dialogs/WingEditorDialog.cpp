@@ -51,7 +51,7 @@ struct WingMemberWarpOut {
 
 struct WingArrivalBlock {
 	ArrivalLocation arrival_location;
-	int arrival_anchor_val; // anchor_to_target() int
+	AnchorRef arrival_anchor_val;
 	int arrival_distance;
 	int arrival_path_mask;
 	SCP_vector<WingMemberWarp> memberWarpin;
@@ -64,7 +64,7 @@ struct WingArrivalBlock {
 
 struct WingDepartureBlock {
 	DepartureLocation departure_location;
-	int departure_anchor_val;
+	AnchorRef departure_anchor_val;
 	int departure_path_mask;
 	SCP_vector<WingMemberWarpOut> memberWarpout;
 	bool operator==(const WingDepartureBlock& o) const {
@@ -74,13 +74,13 @@ struct WingDepartureBlock {
 };
 
 struct WingArrivalTargetState {
-	int arrival_anchor_val;
+	AnchorRef arrival_anchor_val;
 	int arrival_path_mask;
 	int arrival_distance;
 };
 
 struct WingDepartureTargetState {
-	int departure_anchor_val;
+	AnchorRef departure_anchor_val;
 	int departure_path_mask;
 };
 
@@ -98,7 +98,7 @@ WingArrivalBlock captureArrivalBlock(int wingIdx)
 	const auto& w = Wings[wingIdx];
 	WingArrivalBlock b;
 	b.arrival_location  = w.arrival_location;
-	b.arrival_anchor_val = anchor_to_target(w.arrival_anchor);
+	b.arrival_anchor_val = captureAnchor(w.arrival_anchor);
 	b.arrival_distance  = w.arrival_distance;
 	b.arrival_path_mask = w.arrival_path_mask;
 	for (int i = 0; i < w.wave_count; ++i) {
@@ -113,7 +113,7 @@ void restoreArrivalBlock(int wingIdx, const WingArrivalBlock& b)
 {
 	auto& w = Wings[wingIdx];
 	w.arrival_location  = b.arrival_location;
-	w.arrival_anchor    = target_to_anchor(b.arrival_anchor_val);
+	w.arrival_anchor    = b.arrival_anchor_val.toAnchor();
 	w.arrival_distance  = b.arrival_distance;
 	w.arrival_path_mask = b.arrival_path_mask;
 	for (const auto& mw : b.memberWarpin) {
@@ -128,7 +128,7 @@ WingDepartureBlock captureDepartureBlock(int wingIdx)
 	const auto& w = Wings[wingIdx];
 	WingDepartureBlock b;
 	b.departure_location  = w.departure_location;
-	b.departure_anchor_val = anchor_to_target(w.departure_anchor);
+	b.departure_anchor_val = captureAnchor(w.departure_anchor);
 	b.departure_path_mask = w.departure_path_mask;
 	for (int i = 0; i < w.wave_count; ++i) {
 		const int si = w.ship_index[i];
@@ -142,7 +142,7 @@ void restoreDepartureBlock(int wingIdx, const WingDepartureBlock& b)
 {
 	auto& w = Wings[wingIdx];
 	w.departure_location  = b.departure_location;
-	w.departure_anchor    = target_to_anchor(b.departure_anchor_val);
+	w.departure_anchor    = b.departure_anchor_val.toAnchor();
 	w.departure_path_mask = b.departure_path_mask;
 	for (const auto& mw : b.memberWarpout) {
 		const int n = obj_get_by_signature(mw.signature);
@@ -1120,13 +1120,13 @@ void WingEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int /*index*/)
 	const int wingIdx = _model->getCurrentWingIndex();
 
 	const WingArrivalTargetState before {
-	    anchor_to_target(Wings[wingIdx].arrival_anchor),
+	    captureAnchor(Wings[wingIdx].arrival_anchor),
 	    Wings[wingIdx].arrival_path_mask,
 	    Wings[wingIdx].arrival_distance
 	};
 	_model->setArrivalTarget(value);
 	const WingArrivalTargetState after {
-	    anchor_to_target(Wings[wingIdx].arrival_anchor),
+	    captureAnchor(Wings[wingIdx].arrival_anchor),
 	    Wings[wingIdx].arrival_path_mask,
 	    Wings[wingIdx].arrival_distance
 	};
@@ -1142,7 +1142,7 @@ void WingEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int /*index*/)
 	cmd->addEntry(before, after, [wingName](const WingArrivalTargetState& v) {
 		const int w = findWingByName(wingName);
 		if (w < 0) return;
-		Wings[w].arrival_anchor   = target_to_anchor(v.arrival_anchor_val);
+		Wings[w].arrival_anchor   = v.arrival_anchor_val.toAnchor();
 		Wings[w].arrival_path_mask = v.arrival_path_mask;
 		Wings[w].arrival_distance = v.arrival_distance;
 	});
@@ -1277,6 +1277,10 @@ void WingEditorDialog::on_arrivalTree_modified()
 	const int newFormula = ui->arrivalTree->_model.save_tree();
 	_model->setArrivalTree(newFormula);
 	cmd->captureAfter(newFormula);
+	if (cmd->isNoOp()) {
+		delete cmd; // the edit changed nothing
+		return;
+	}
 	_fredView->mainUndoStack()->push(cmd);
 }
 
@@ -1384,12 +1388,12 @@ void WingEditorDialog::on_departureTargetCombo_currentIndexChanged(int /*index*/
 	const int wingIdx = _model->getCurrentWingIndex();
 
 	const WingDepartureTargetState before {
-	    anchor_to_target(Wings[wingIdx].departure_anchor),
+	    captureAnchor(Wings[wingIdx].departure_anchor),
 	    Wings[wingIdx].departure_path_mask
 	};
 	_model->setDepartureTarget(value);
 	const WingDepartureTargetState after {
-	    anchor_to_target(Wings[wingIdx].departure_anchor),
+	    captureAnchor(Wings[wingIdx].departure_anchor),
 	    Wings[wingIdx].departure_path_mask
 	};
 
@@ -1403,7 +1407,7 @@ void WingEditorDialog::on_departureTargetCombo_currentIndexChanged(int /*index*/
 	cmd->addEntry(before, after, [wingName](const WingDepartureTargetState& v) {
 		const int w = findWingByName(wingName);
 		if (w < 0) return;
-		Wings[w].departure_anchor    = target_to_anchor(v.departure_anchor_val);
+		Wings[w].departure_anchor    = v.departure_anchor_val.toAnchor();
 		Wings[w].departure_path_mask = v.departure_path_mask;
 	});
 	_fredView->mainUndoStack()->push(cmd);
@@ -1517,6 +1521,10 @@ void WingEditorDialog::on_departureTree_modified()
 	const int newFormula = ui->departureTree->_model.save_tree();
 	_model->setDepartureTree(newFormula);
 	cmd->captureAfter(newFormula);
+	if (cmd->isNoOp()) {
+		delete cmd; // the edit changed nothing
+		return;
+	}
 	_fredView->mainUndoStack()->push(cmd);
 }
 

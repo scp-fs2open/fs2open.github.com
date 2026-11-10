@@ -27,6 +27,7 @@
 #include <prop/prop.h>
 #include <ship/ship.h>
 #include <model/modelreplace.h>
+#include <missioneditor/common.h>
 
 #include "../../ui/FredView.h"
 #include "../Editor.h"
@@ -166,6 +167,25 @@ void freeSexpCueDup(int& cue_dup)
 	if (cue_dup >= 0)
 		free_sexp2(cue_dup);
 	cue_dup = SHIP_CUE_NONE;
+}
+
+AnchorRef captureAnchor(anchor_t anchor)
+{
+	AnchorRef r;
+	r.target = anchor_to_target(anchor);
+	if (r.target >= 0 && r.target < MAX_SHIPS && Ships[r.target].objnum >= 0)
+		r.shipSig = Objects[Ships[r.target].objnum].signature;
+	return r;
+}
+
+anchor_t AnchorRef::toAnchor() const
+{
+	if (shipSig >= 0) {
+		const int objNum = obj_get_by_signature(shipSig);
+		if (objNum >= 0)
+			return target_to_anchor(Objects[objNum].instance);
+	}
+	return target_to_anchor(target);
 }
 
 CapturedReinforcement captureReinforcement(const char* name)

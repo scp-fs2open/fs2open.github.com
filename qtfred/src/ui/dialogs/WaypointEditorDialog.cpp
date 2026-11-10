@@ -195,10 +195,14 @@ void WaypointEditorDialog::on_nameEdit_editingFinished()
 		return;
 	}
 
+	// Record the name the model stored (it trims), not what was typed.
+	const SCP_string appliedName = _model->getCurrentName();
+	if (appliedName == oldName) return;
+
 	// Waypoint paths have no single object signature; pass objNum=-1 as sentinel.
 	// RenameObjectCommand::applyName() detects _signature==-1 and calls rename_waypoint_list().
 	_fredView->mainUndoStack()->push(
-	    new RenameObjectCommand(-1, oldName, newName, _viewport->editor, /*skipFirstRedo=*/true));
+	    new RenameObjectCommand(-1, oldName, appliedName, _viewport->editor, /*skipFirstRedo=*/true));
 
 	// Clear the field's text-undo history so Ctrl+Z hits the mission stack, not Qt's text widget.
 	util::SignalBlockers b(this);

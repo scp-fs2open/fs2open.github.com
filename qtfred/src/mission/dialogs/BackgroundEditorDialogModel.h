@@ -205,6 +205,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	float _initial_fog_near_dist = 0.0f;
 	float _initial_fog_skybox_clip = 0.0f;
 	float _initial_fog_clip = 0.0f;
+	bool _initial_fog_save_legacy = false;
 
 };
 } // namespace fso::fred::dialogs

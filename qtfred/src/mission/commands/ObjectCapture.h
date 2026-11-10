@@ -50,6 +50,18 @@ int materializeSexpCue(int cue_dup);
 // Free an owned dup (no-op for sentinels) and reset to SHIP_CUE_NONE.
 void freeSexpCueDup(int& cue_dup);
 
+// An arrival or departure anchor. The anchor is a ship registry index and the
+// dialogs' target a Ships[] slot; both change when the target ship is deleted
+// and restored, so a ship target is kept by object signature.
+struct AnchorRef {
+	int target  = -1; // anchor_to_target() value: a Ships[] slot or a special value
+	int shipSig = -1; // the target ship, when target is a ship
+	bool operator==(const AnchorRef& o) const { return target == o.target && shipSig == o.shipSig; }
+	bool operator!=(const AnchorRef& o) const { return !(*this == o); }
+	anchor_t toAnchor() const;
+};
+AnchorRef captureAnchor(anchor_t anchor);
+
 // A Reinforcements[] entry with its position in the list, so undo can put it
 // back where it was with its uses, delay and messages.
 struct CapturedReinforcement {

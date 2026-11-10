@@ -179,10 +179,13 @@ void PropEditorDialog::on_propNameLineEdit_editingFinished() {
 		updateUi();
 		return;
 	}
+	// Record the name the model stored (it trims), not what was typed.
+	const SCP_string appliedName = _model->getPropName();
+	if (appliedName == oldName) return;
 	const auto& selected = _model->getSelectedPropObjects();
 	if (selected.empty()) return;
 	_fredView->mainUndoStack()->push(
-		new RenameObjectCommand(selected.front(), oldName, newName, _viewport->editor, true));
+		new RenameObjectCommand(selected.front(), oldName, appliedName, _viewport->editor, true));
 
 	// Edit committed; clear the field's text-undo history so Ctrl+Z hits the mission stack.
 	util::SignalBlockers b(this);

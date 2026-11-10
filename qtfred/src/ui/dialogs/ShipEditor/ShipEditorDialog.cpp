@@ -2498,26 +2498,27 @@ void ShipEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int index)
 {
 	auto newTarget = ui->arrivalTargetCombo->itemData(index).toInt();
 
-	SCP_vector<std::pair<int, anchor_t>> beforeList;
+	// Targets kept by signature (see AnchorRef)
+	SCP_vector<std::pair<int, AnchorRef>> beforeList;
 	forEachMarkedShip([&](int sig, int inst) {
 		if (Ships[inst].wingnum < 0)
-			beforeList.emplace_back(sig, Ships[inst].arrival_anchor);
+			beforeList.emplace_back(sig, captureAnchor(Ships[inst].arrival_anchor));
 	});
 
 	_model->setArrivalTarget(newTarget);
 
-	auto* cmd = new FieldEditCommand<anchor_t>(FieldId::Ship_ArrivalTarget, _viewport->editor, tr("Change Arrival Target"), true);
+	auto* cmd = new FieldEditCommand<AnchorRef>(FieldId::Ship_ArrivalTarget, _viewport->editor, tr("Change Arrival Target"), true);
 	cmd->setTargetKey(markedShipsKey());
 	bool anyChanged = false;
 	for (const auto& [sig, before] : beforeList) {
 		int o = obj_get_by_signature(sig);
 		if (o < 0) continue;
-		anchor_t after = Ships[Objects[o].instance].arrival_anchor;
+		AnchorRef after = captureAnchor(Ships[Objects[o].instance].arrival_anchor);
 		if (before != after) {
 			anyChanged = true;
-			cmd->addEntry(before, after, [sig = sig](const anchor_t& v) {
+			cmd->addEntry(before, after, [sig = sig](const AnchorRef& v) {
 				int o2 = obj_get_by_signature(sig);
-				if (o2 >= 0) Ships[Objects[o2].instance].arrival_anchor = v;
+				if (o2 >= 0) Ships[Objects[o2].instance].arrival_anchor = v.toAnchor();
 			});
 		}
 	}
@@ -2663,14 +2664,25 @@ void ShipEditorDialog::on_arrivalTree_modified()
 	if (pending.empty())
 		return;
 
-	const bool grouped = pending.size() > 1;
-	if (grouped)
-		_fredView->mainUndoStack()->beginMacro(tr("Edit Arrival Cue"));
+	// Keep only ships whose cue really changed (the tree view reports modified()
+	// for edits that change nothing).
+	SCP_vector<SexpCueEditCommand*> changed;
 	for (auto& p : pending) {
 		const int n = obj_get_by_signature(p.sig);
 		p.cmd->captureAfter(n < 0 ? -1 : Ships[Objects[n].instance].arrival_cue);
-		_fredView->mainUndoStack()->push(p.cmd);
+		if (p.cmd->isNoOp())
+			delete p.cmd;
+		else
+			changed.push_back(p.cmd);
 	}
+	if (changed.empty())
+		return;
+
+	const bool grouped = changed.size() > 1;
+	if (grouped)
+		_fredView->mainUndoStack()->beginMacro(tr("Edit Arrival Cue"));
+	for (auto* cmd : changed)
+		_fredView->mainUndoStack()->push(cmd);
 	if (grouped)
 		_fredView->mainUndoStack()->endMacro();
 }
@@ -2758,26 +2770,27 @@ void ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index)
 {
 	auto newTarget = ui->departureTargetCombo->itemData(index).toInt();
 
-	SCP_vector<std::pair<int, anchor_t>> beforeList;
+	// Targets kept by signature (see AnchorRef)
+	SCP_vector<std::pair<int, AnchorRef>> beforeList;
 	forEachMarkedShip([&](int sig, int inst) {
 		if (Ships[inst].wingnum < 0)
-			beforeList.emplace_back(sig, Ships[inst].departure_anchor);
+			beforeList.emplace_back(sig, captureAnchor(Ships[inst].departure_anchor));
 	});
 
 	_model->setDepartureTarget(newTarget);
 
-	auto* cmd = new FieldEditCommand<anchor_t>(FieldId::Ship_DepartureTarget, _viewport->editor, tr("Change Departure Target"), true);
+	auto* cmd = new FieldEditCommand<AnchorRef>(FieldId::Ship_DepartureTarget, _viewport->editor, tr("Change Departure Target"), true);
 	cmd->setTargetKey(markedShipsKey());
 	bool anyChanged = false;
 	for (const auto& [sig, before] : beforeList) {
 		int o = obj_get_by_signature(sig);
 		if (o < 0) continue;
-		anchor_t after = Ships[Objects[o].instance].departure_anchor;
+		AnchorRef after = captureAnchor(Ships[Objects[o].instance].departure_anchor);
 		if (before != after) {
 			anyChanged = true;
-			cmd->addEntry(before, after, [sig = sig](const anchor_t& v) {
+			cmd->addEntry(before, after, [sig = sig](const AnchorRef& v) {
 				int o2 = obj_get_by_signature(sig);
-				if (o2 >= 0) Ships[Objects[o2].instance].departure_anchor = v;
+				if (o2 >= 0) Ships[Objects[o2].instance].departure_anchor = v.toAnchor();
 			});
 		}
 	}
@@ -2857,14 +2870,25 @@ void fred::dialogs::ShipEditorDialog::on_departureTree_modified()
 	if (pending.empty())
 		return;
 
-	const bool grouped = pending.size() > 1;
-	if (grouped)
-		_fredView->mainUndoStack()->beginMacro(tr("Edit Departure Cue"));
+	// Keep only ships whose cue really changed (the tree view reports modified()
+	// for edits that change nothing).
+	SCP_vector<SexpCueEditCommand*> changed;
 	for (auto& p : pending) {
 		const int n = obj_get_by_signature(p.sig);
 		p.cmd->captureAfter(n < 0 ? -1 : Ships[Objects[n].instance].departure_cue);
-		_fredView->mainUndoStack()->push(p.cmd);
+		if (p.cmd->isNoOp())
+			delete p.cmd;
+		else
+			changed.push_back(p.cmd);
 	}
+	if (changed.empty())
+		return;
+
+	const bool grouped = changed.size() > 1;
+	if (grouped)
+		_fredView->mainUndoStack()->beginMacro(tr("Edit Departure Cue"));
+	for (auto* cmd : changed)
+		_fredView->mainUndoStack()->push(cmd);
 	if (grouped)
 		_fredView->mainUndoStack()->endMacro();
 }

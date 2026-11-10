@@ -131,6 +131,11 @@ CreateObjectCommand::CreateObjectCommand(const vec3d&    pos,
 	if (query_valid_object(initialObjNum)) {
 		_originalSignature = Objects[initialObjNum].signature;
 
+		// A waypoint added to a path is inserted after the selected point, not
+		// appended; record where it landed so redo puts it back there.
+		if (Objects[initialObjNum].type == OBJ_WAYPOINT && !_waypointListName.empty())
+			_waypointIndex = calc_waypoint_index(Objects[initialObjNum].instance);
+
 		// Jump nodes are referenced by name; capture it so redo() can restore it
 		// instead of letting create_object() auto-name the recreated node.
 		if (Objects[initialObjNum].type == OBJ_JUMP_NODE) {
@@ -175,9 +180,13 @@ void CreateObjectCommand::redo()
 	if (!_waypointListName.empty()) {
 		const waypoint_list* wl = find_matching_waypoint_list(_waypointListName.c_str());
 		if (wl != nullptr && !wl->get_waypoints().empty()) {
-			// Use the last waypoint currently in the list as the anchor so waypoint_add
-			// appends to the end, preserving correct ordering.
-			waypointInstance = Objects[wl->get_waypoints().back().get_objnum()].instance;
+			// Anchor on the point before the recorded index so the waypoint goes back
+			// where it was; without one, append to the end.
+			const auto& wpts = wl->get_waypoints();
+			const size_t anchor = (_waypointIndex > 0)
+			                          ? std::min(static_cast<size_t>(_waypointIndex), wpts.size()) - 1
+			                          : wpts.size() - 1;
+			waypointInstance = Objects[wpts[anchor].get_objnum()].instance;
 		}
 	}
 	const OtherKind savedOther = _viewport->cur_other_kind;
@@ -1880,8 +1889,14 @@ void GenerateWaypointPathCommand::undo()
 	for (const auto& wp : wl->get_waypoints())
 		objnums.push_back(wp.get_objnum());
 
-	for (int objnum : objnums)
-		_editor->delete_object(objnum);
+	// No reference prompt in the middle of an undo (a sexp may already have named
+	// the path); cancelling it would leave the path half deleted.
+	{
+		AutoConfirmReferences guard(_editor);
+		for (int objnum : objnums)
+			_editor->delete_object(objnum);
+	}
+	_editor->missionChanged();
 }
 
 void GenerateWaypointPathCommand::redo()
@@ -2115,6 +2130,23 @@ void SexpCueEditCommand::captureAfter(int afterCue)
 {
 	freeSexpCueDup(_afterDup);
 	_afterDup = captureSexpCue(afterCue);
+}
+
+bool SexpCueEditCommand::isNoOp() const
+{
+	// Captured cues hold SHIP_CUE_* sentinels for the locked formulas.
+	auto liveForm = [](int dup) {
+		if (dup == SHIP_CUE_LOCKED_TRUE)  return Locked_sexp_true;
+		if (dup == SHIP_CUE_LOCKED_FALSE) return Locked_sexp_false;
+		if (dup == SHIP_CUE_NONE)         return -1;
+		return dup;
+	};
+	const QByteArray after = serializeCue(liveForm(_afterDup));
+	for (const auto& o : _owners) {
+		if (serializeCue(liveForm(o.beforeDup)) != after)
+			return false;
+	}
+	return true;
 }
 
 void SexpCueEditCommand::freeCurrentCues()
