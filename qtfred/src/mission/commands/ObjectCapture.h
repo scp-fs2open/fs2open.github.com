@@ -124,6 +124,7 @@ struct CapturedSpecialExplosion {
 struct CapturedShip {
 	// ---- Object ----
 	int    objType = OBJ_SHIP; // OBJ_SHIP or OBJ_START
+	bool   primaryPlayerStart = false; // was Player_start_shipnum; delete repoints it
 	// Original object signature, reapplied on restore. The pool slot (objNum)
 	// changes on recreation, but restoring the signature keeps every other
 	// command's obj_get_by_signature() lookups valid across undo cycles.

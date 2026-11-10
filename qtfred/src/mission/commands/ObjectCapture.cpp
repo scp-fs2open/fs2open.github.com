@@ -58,6 +58,7 @@ CapturedShip& CapturedShip::operator=(CapturedShip&& o) noexcept
 	if (departure_cue_dup >= 0) { free_sexp2(departure_cue_dup); departure_cue_dup = SHIP_CUE_NONE; }
 
 	objType           = o.objType;
+	primaryPlayerStart = o.primaryPlayerStart;
 	signature         = o.signature;
 	pos               = o.pos;
 	orient            = o.orient;
@@ -330,6 +331,7 @@ CapturedShip captureShip(int objNum)
 
 	// Object
 	c.objType   = o.type;
+	c.primaryPlayerStart = (o.type == OBJ_START && Player_start_shipnum == o.instance);
 	c.signature = o.signature;
 	c.pos       = o.pos;
 	c.orient    = o.orient;
@@ -632,6 +634,8 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	if (c.objType == OBJ_START) {
 		o.type = OBJ_START;
 		Player_starts++; // deleting the start decremented it
+		if (c.primaryPlayerStart)
+			Player_start_shipnum = o.instance; // deleting it moved this to another start
 	}
 
 	return newObj;

@@ -67,6 +67,9 @@ struct ShipFlagsSnapshot {
 	int kamikazeDamage;
 	int escortPriority;
 	int finalDeathTime;
+	// The Reinforcements[] entry (uses, delay, messages) behind the Reinforcement
+	// flag; set_reinforcement() would re-add it with defaults.
+	CapturedReinforcement reinforcement;
 	bool operator==(const ShipFlagsSnapshot& o) const {
 		return sig == o.sig && shipFlags == o.shipFlags && aiFlags == o.aiFlags &&
 		       objFlags == o.objFlags && kamikazeDamage == o.kamikazeDamage &&
@@ -329,6 +332,7 @@ ShipFlagsSnapshot captureShipFlagsSnapshot(int sig, int inst)
 	s.kamikazeDamage = Ai_info[Ships[inst].ai_index].kamikaze_damage;
 	s.escortPriority = Ships[inst].escort_priority;
 	s.finalDeathTime = Ships[inst].final_death_time;
+	s.reinforcement = captureReinforcement(Ships[inst].ship_name);
 	return s;
 }
 
@@ -595,7 +599,7 @@ void ShipEditorDialog::on_miscButton_clicked()
 			FieldId::Ship_Flags, _viewport->editor, tr("Edit Ship Flags"), false);
 		cmd->setTargetKey(markedShipsKey());
 		cmd->setNoMerge();
-		cmd->addEntry(before, after, [editor = _viewport->editor](const SnapshotVec& v) {
+		cmd->addEntry(before, after, [](const SnapshotVec& v) {
 			for (const auto& s : v) {
 				int o = obj_get_by_signature(s.sig);
 				if (o < 0) continue;
@@ -606,9 +610,8 @@ void ShipEditorDialog::on_miscButton_clicked()
 				Ai_info[Ships[inst].ai_index].kamikaze_damage = s.kamikazeDamage;
 				Ships[inst].escort_priority = s.escortPriority;
 				Ships[inst].final_death_time = s.finalDeathTime;
-				// sync Reinforcements[] vector via editor helper
-				editor->set_reinforcement(s.shipName.c_str(),
-					s.shipFlags[Ship::Ship_Flags::Reinforcement] ? 1 : 0);
+				// the Reinforcements[] entry, in place and with its settings
+				restoreReinforcement(Ships[inst].ship_name, s.reinforcement);
 			}
 		});
 		_fredView->mainUndoStack()->push(cmd);
@@ -2068,10 +2071,9 @@ void ShipEditorDialog::on_shipNameEdit_editingFinished()
 				_fredView->mainUndoStack()->endMacro();
 			}
 		}
-	} else {
-		// Name unchanged: keep the pre-existing derive/reset behavior.
-		_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
 	}
+	// Name unchanged: leave the display name alone. Re-deriving it from the name
+	// here cleared a custom display name just for leaving the field, with no undo step.
 
 	// sync the variable to the edit box
 	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
