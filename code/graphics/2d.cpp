@@ -62,6 +62,7 @@
 
 #include <algorithm>
 #include <climits>
+#include <cmath>
 #include <cstring>
 #include <limits>
 
@@ -3306,32 +3307,29 @@ void gr_init_imgui_font()
 
 	// Only TrueType fonts can reach this point.
 	const auto* trueTypeFont = static_cast<const font::NVGFont*>(selectedFont);
-	const float fontSize = trueTypeFont->getSize();
+	constexpr float minFontSize = 5.0f;
+	constexpr float maxFontSize = 100.0f;
+	constexpr float defaultFontSize = 13.0f;
 
-	// ImGui takes ownership of this copy, not of FSO's font data.
-	void* imguiFontData = ImGui::MemAlloc(fontData->size);
+	float fontSize = trueTypeFont->getSize();
 
-	if (imguiFontData == nullptr) {
+	if (!std::isfinite(fontSize) || fontSize < minFontSize || fontSize > maxFontSize) {
 		Warning(LOCATION,
-			"Failed to allocate memory for ImGui font '%s'. "
-			"Using the default ImGui font.",
-			ImGui_font.c_str());
-		return;
+			"ImGui font '%s' has an invalid size (%g). Using the default size of %.0f.",
+			ImGui_font.c_str(),
+			fontSize,
+			defaultFontSize);
+		fontSize = defaultFontSize;
 	}
 
-	std::memcpy(imguiFontData, fontData->data.get(), fontData->size);
+	// ImGui makes its own copy of FSO's font data.
+	ImFontConfig fontConfig;
+	fontConfig.FontDataOwnedByAtlas = false;
 
 	ImGuiIO& io = ImGui::GetIO();
 
-#if IMGUI_VERSION_NUM >= 19200
-	ImFont* imguiFont = io.Fonts->AddFontFromMemoryTTF(imguiFontData, static_cast<int>(fontData->size), fontSize);
-#else
-	ImFont* imguiFont = io.Fonts->AddFontFromMemoryTTF(imguiFontData,
-		static_cast<int>(fontData->size),
-		fontSize,
-		nullptr,
-		io.Fonts->GetGlyphRangesJapanese());
-#endif
+	ImFont* imguiFont =
+		io.Fonts->AddFontFromMemoryTTF(fontData->data.get(), static_cast<int>(fontData->size), fontSize, &fontConfig);
 
 	if (imguiFont != nullptr) {
 		io.FontDefault = imguiFont;
