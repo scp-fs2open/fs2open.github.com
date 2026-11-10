@@ -42,21 +42,6 @@ void mission_log_init()
 	Log_entries.clear();
 }
 
-// Several players can share a callsign (a standalone's own player is "server"), so use one that has a ship
-static int ship_by_player_callsign(const char *callsign)
-{
-	for (int idx = 0; idx < MAX_PLAYERS; idx++) {
-		if (MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign, Net_players[idx].m_player->callsign) == 0)) {
-			const int shipnum = multi_get_player_ship(idx);
-			if (shipnum >= 0) {
-				return shipnum;
-			}
-		}
-	}
-
-	return -1;
-}
-
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
@@ -109,16 +94,12 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	case LOG_SHIP_DISARMED:
 	case LOG_SELF_DESTRUCTED:
 		// multiplayer. callsign is passed in for ship destroyed and self destruct
-		index = (Game_mode & GM_MULTIPLAYER) ? ship_by_player_callsign(pname) : -1;
+		index = (Game_mode & GM_MULTIPLAYER) ? multi_find_player_by_callsign(pname, true).second : -1;
 		if (index < 0) {
 			index = ship_name_lookup( pname );
 		}
 
-		// without a ship there is no team to record, and reading Ships[-1] would crash
-		if (index < 0) {
-			Warning(LOCATION, "Mission log: no ship found for \"%s\", so the entry has no team", entry.pname);
-			break;
-		}
+		Assert (index >= 0);
 		entry.primary_team = Ships[index].team;
 		entry.pname_display = Ships[index].get_display_name();
 
@@ -137,7 +118,8 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 		} else if ( type == LOG_SHIP_DESTROYED ) {
 			if ( sname ) {
 				// multiplayer, player name will possibly be sent in
-				const int np_ship = (Game_mode & GM_MULTIPLAYER) ? ship_by_player_callsign(sname) : -1;
+				const int np_ship =
+					(Game_mode & GM_MULTIPLAYER) ? multi_find_player_by_callsign(sname, true).second : -1;
 				if (np_ship >= 0) {
 					entry.secondary_team = Ships[np_ship].team;
 					entry.sname_display = Ships[np_ship].get_display_name();

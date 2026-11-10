@@ -418,7 +418,7 @@ void multi_msg_perform_command(int command,char *param)
 	switch(command){
 	// kick a player
 	case MULTI_MSG_CMD_KICK:
-		int np_index = multi_find_player_by_callsign(param);
+		int np_index = multi_find_player_by_callsign(param).first;
 		if(np_index != -1){
 			multi_kick_player(np_index);
 		}

@@ -47,7 +47,7 @@ extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
 extern int multi_find_player_by_object( const object *obj );
 extern int multi_find_player_by_signature( int signature );
-extern int multi_find_player_by_callsign(const char *callsign);
+extern std::pair<int, int> multi_find_player_by_callsign(const char *callsign, bool requires_ship = false);
 extern int multi_find_player_by_net_signature(ushort net_signature);
 extern int multi_find_player_by_parse_object(p_object *p_objp );
 extern int multi_find_player_by_ship_name(const char *ship_name, bool inc_respawning = false);
