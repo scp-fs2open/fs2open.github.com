@@ -14,6 +14,7 @@
 #include "lz4.h"
 #include "cfilecompression.h"
 #include "cfilearchive.h"
+#include "cmdline/cmdline.h"
 #include "utils/threading.h"
 
 
@@ -87,14 +88,13 @@ int comp_fseek(CFILE* cf, int offset, int where)
 	return 0;
 }
 
-extern int Cmdline_multithreading;
 static int max_threads()
 {
 	if (Cmdline_multithreading != 0)
 		return Cmdline_multithreading;
 
-	static const auto physical_cores = static_cast<int>(threading::get_num_physical_cores());
-	return physical_cores;
+	static const auto auto_threads = static_cast<int>(threading::get_num_auto_threads());
+	return auto_threads;
 }
 
 // Seek within the stored file, which may be a member of a VP.

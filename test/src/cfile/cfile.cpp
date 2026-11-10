@@ -1,15 +1,19 @@
 
 #include <cfile/cfile.h>
 #include <cfile/cfilesystem.h>
+#include <cmdline/cmdline.h>
 #include <globalincs/systemvars.h>
 #include <graphics/font.h>
 #include <gtest/gtest.h>
 #include <osapi/dialogs.h>
 #include <utils/finally.h>
+#include <lz4.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <random>
+#include <vector>
 
 #include "util/FSTestFixture.h"
 
@@ -149,6 +153,48 @@ TEST_F(Lz41Test, reports_short_decoded_block_as_read_failure)
 	EXPECT_EQ(0, cfread(&buffer, 1, 1, file.get()));
 	EXPECT_EQ(0, cftell(file.get()));
 	EXPECT_TRUE(cfeof(file.get()));
+}
+
+TEST_F(Lz41Test, reads_valid_multiblock_file)
+{
+	constexpr int block_size = 1024 * 1024;
+	constexpr int original_size = 5 * block_size + 37;
+	std::string original(original_size, '\0');
+	for (int i = 0; i < original_size; ++i)
+		original[i] = static_cast<char>('!' + (i * 17 + i / block_size) % 90);
+
+	std::string bytes = "LZ41";
+	std::vector<char> compressed(LZ4_compressBound(block_size));
+	std::vector<uint32_t> offsets;
+	for (int offset = 0; offset < original_size; offset += block_size) {
+		offsets.push_back(static_cast<uint32_t>(bytes.size()));
+		const int input_size = std::min(block_size, original_size - offset);
+		const int compressed_size = LZ4_compress_default(
+			original.data() + offset, compressed.data(), input_size, static_cast<int>(compressed.size()));
+		ASSERT_GT(compressed_size, 0);
+		bytes.append(compressed.data(), compressed_size);
+	}
+	offsets.push_back(static_cast<uint32_t>(bytes.size()));
+	for (const auto offset : offsets)
+		append_words(bytes, {offset});
+	append_words(bytes, {static_cast<uint32_t>(offsets.size()), original_size, block_size});
+
+	const int saved_threads = Cmdline_multithreading;
+	auto restore_threads = util::finally([saved_threads] { Cmdline_multithreading = saved_threads; });
+	for (bool packed : {false, true}) {
+		const auto location = write_lz41(bytes, packed);
+		for (int thread_count : {1, 4}) {
+			SCOPED_TRACE(::testing::Message() << "packed=" << packed << ", threads=" << thread_count);
+			Cmdline_multithreading = thread_count;
+			const std::unique_ptr<CFILE> file(cfopen_special(location, "rb", CF_TYPE_TABLES));
+			ASSERT_NE(nullptr, file.get());
+
+			std::string decoded(original_size, '\0');
+			ASSERT_EQ(original_size, cfread(decoded.data(), 1, original_size, file.get()));
+			EXPECT_EQ(original, decoded);
+			EXPECT_TRUE(cfeof(file.get()));
+		}
+	}
 }
 
 } // namespace

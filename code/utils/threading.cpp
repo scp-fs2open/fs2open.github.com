@@ -206,7 +206,7 @@ namespace threading {
 			//At least given the current collision-detection threading, 8 cores (if available) seems like a sweetspot, with more cores adding too much overhead.
 			//This could be improved in the future.
 			//This could also be made task-dependant, if stuff like parallelized loading benefits from more cores.
-			num_threads = std::min(get_number_of_physical_cores() - 1, static_cast<size_t>(7));
+			num_threads = get_num_auto_threads() - 1;
 		}
 		else {
 			num_threads = Cmdline_multithreading - 1;
@@ -240,7 +240,7 @@ namespace threading {
 		return worker_threads.size();
 	}
 
-	size_t get_num_physical_cores() { 
-		return get_number_of_physical_cores(); 
+	size_t get_num_auto_threads() {
+		return std::min<size_t>(get_number_of_physical_cores(), 8);
 	}
 }
