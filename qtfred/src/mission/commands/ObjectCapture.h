@@ -73,6 +73,9 @@ CapturedReinforcement captureReinforcement(const char* name);
 // Make Reinforcements[] match: overwrite the entry for name in place, insert it
 // at its old position, or erase it. Does not touch the ship or wing flag.
 void restoreReinforcement(const char* name, const CapturedReinforcement& r);
+// The same for several entries at once. Inserts go in ascending old position,
+// so restoring entries one by one in another order can't scramble the list.
+void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinforcement>>& items);
 
 // Point Ship_registry_map[ship name] at the ship's own registry entry, fixing
 // keys that undo left pointing at the wrong entry (a restored ship can take

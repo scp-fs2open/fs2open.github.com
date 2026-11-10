@@ -1547,6 +1547,7 @@ void FormWingCommand::apply(const State& target, const State& other)
 		_editor->rename_ship(inst, ss->name, false);
 
 	// 3. The rest of each ship's state.
+	SCP_vector<std::pair<SCP_string, CapturedReinforcement>> reinfs;
 	for (const auto& [inst, ss] : live) {
 		ship& s = Ships[inst];
 		s.display_name = ss->displayName;
@@ -1554,9 +1555,10 @@ void FormWingCommand::apply(const State& target, const State& other)
 		replaceCue(s.arrival_cue, ss->arrivalCue);
 		replaceCue(s.departure_cue, ss->departureCue);
 
-		restoreReinforcement(s.ship_name, ss->reinforcement);
+		reinfs.emplace_back(s.ship_name, ss->reinforcement);
 		s.flags.set(Ship::Ship_Flags::Reinforcement, ss->reinforcement.present);
 	}
+	restoreReinforcements(reinfs); // together, so the list order comes back
 
 	// 4. Rebuild the target's wings.
 	SCP_vector<SCP_string> rebuilt;
@@ -1743,6 +1745,13 @@ void DeleteWingCommand::dropSurvivors()
 
 void DeleteWingCommand::undo()
 {
+	// If delete_wing() refused outright on redo, the wing is still there; don't
+	// build a second one with the same name.
+	for (int i = 0; i < MAX_WINGS; i++) {
+		if (Wings[i].wave_count > 0 && !stricmp(Wings[i].name, _savedWing.name))
+			return;
+	}
+
 	_currentObjNums.clear();
 
 	// Restore member ships.
@@ -1839,7 +1848,18 @@ void DeleteWingCommand::redo()
 		}
 	}
 	// Auto-confirming references doesn't get past every refusal (the last player
-	// start), so drop again whatever is still alive.
+	// start), so drop again whatever is still alive. Their texture replacements
+	// were taken out of the global list above; put them back first, since the
+	// capture being dropped holds the only copy.
+	for (const auto& cs : _savedShips) {
+		const int n = obj_get_by_signature(cs.signature);
+		if (n < 0 || cs.texture_replacements.empty()) continue;
+		for (auto tr : cs.texture_replacements) {
+			strcpy_s(tr.ship_name, Ships[Objects[n].instance].ship_name);
+			Fred_texture_replacements.push_back(tr);
+		}
+		rebuildShipPmiTextures(Objects[n].instance);
+	}
 	dropSurvivors();
 
 	_editor->missionChanged();

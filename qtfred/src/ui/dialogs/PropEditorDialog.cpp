@@ -181,7 +181,10 @@ void PropEditorDialog::on_propNameLineEdit_editingFinished() {
 	}
 	// Record the name the model stored (it trims), not what was typed.
 	const SCP_string appliedName = _model->getPropName();
-	if (appliedName == oldName) return;
+	if (appliedName == oldName) {
+		updateUi(); // show the trimmed name
+		return;
+	}
 	const auto& selected = _model->getSelectedPropObjects();
 	if (selected.empty()) return;
 	_fredView->mainUndoStack()->push(

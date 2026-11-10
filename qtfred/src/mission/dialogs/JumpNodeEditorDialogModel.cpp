@@ -173,6 +173,12 @@ bool JumpNodeEditorDialogModel::setName(const SCP_string& v) {
 		return false;
 	}
 
+	// Same name once trimmed: nothing to do. SetName() would reset the display name.
+	if (strcmp(jnp->GetName(), trimmed.c_str()) == 0) {
+		_name = trimmed;
+		return true;
+	}
+
 	char old_name[NAME_LENGTH];
 	std::strncpy(old_name, jnp->GetName(), NAME_LENGTH - 1);
 	old_name[NAME_LENGTH - 1] = '\0';

@@ -197,7 +197,11 @@ void WaypointEditorDialog::on_nameEdit_editingFinished()
 
 	// Record the name the model stored (it trims), not what was typed.
 	const SCP_string appliedName = _model->getCurrentName();
-	if (appliedName == oldName) return;
+	if (appliedName == oldName) {
+		util::SignalBlockers blockers(this);
+		ui->nameEdit->setText(QString::fromStdString(appliedName)); // show the trimmed name
+		return;
+	}
 
 	// Waypoint paths have no single object signature; pass objNum=-1 as sentinel.
 	// RenameObjectCommand::applyName() detects _signature==-1 and calls rename_waypoint_list().

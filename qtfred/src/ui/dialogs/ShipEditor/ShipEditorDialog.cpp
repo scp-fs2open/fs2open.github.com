@@ -600,6 +600,7 @@ void ShipEditorDialog::on_miscButton_clicked()
 		cmd->setTargetKey(markedShipsKey());
 		cmd->setNoMerge();
 		cmd->addEntry(before, after, [](const SnapshotVec& v) {
+			SCP_vector<std::pair<SCP_string, CapturedReinforcement>> reinfs;
 			for (const auto& s : v) {
 				int o = obj_get_by_signature(s.sig);
 				if (o < 0) continue;
@@ -610,9 +611,11 @@ void ShipEditorDialog::on_miscButton_clicked()
 				Ai_info[Ships[inst].ai_index].kamikaze_damage = s.kamikazeDamage;
 				Ships[inst].escort_priority = s.escortPriority;
 				Ships[inst].final_death_time = s.finalDeathTime;
-				// the Reinforcements[] entry, in place and with its settings
-				restoreReinforcement(Ships[inst].ship_name, s.reinforcement);
+				reinfs.emplace_back(Ships[inst].ship_name, s.reinforcement);
 			}
+			// the Reinforcements[] entries, in place and with their settings, restored
+			// together so the list order comes back
+			restoreReinforcements(reinfs);
 		});
 		_fredView->mainUndoStack()->push(cmd);
 	});
@@ -2038,8 +2041,11 @@ void ShipEditorDialog::on_shipNameEdit_editingFinished()
 		_model->setShipName(newName);
 		const SCP_string appliedName = _model->getShipName();
 
-		// automatically determine or reset the display name
-		_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
+		// automatically determine or reset the display name, but only when the name
+		// really changed: a rejected or trimmed-back name would otherwise clear a
+		// custom display name with no undo step
+		if (appliedName != oldName)
+			_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
 
 		// Only push undo if validation passed, name changed, and single-ship mode
 		if (appliedName != oldName && single) {

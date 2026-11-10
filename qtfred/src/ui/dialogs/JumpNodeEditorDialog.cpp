@@ -187,7 +187,11 @@ void JumpNodeEditorDialog::on_nameLineEdit_editingFinished()
 	}
 	// Record the name the model stored (it trims), not what was typed.
 	const SCP_string appliedName = _model->getName();
-	if (appliedName == oldName) return;
+	if (appliedName == oldName) {
+		util::SignalBlockers b(this);
+		ui->nameLineEdit->setText(QString::fromStdString(appliedName)); // show the trimmed name
+		return;
+	}
 	const auto& objNums = _model->getSelectedObjNums();
 	if (objNums.empty()) return;
 	auto* cmd = new RenameObjectCommand(objNums[0], oldName, appliedName, _viewport->editor, true);

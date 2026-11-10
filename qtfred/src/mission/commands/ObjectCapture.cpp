@@ -184,6 +184,8 @@ anchor_t AnchorRef::toAnchor() const
 		const int objNum = obj_get_by_signature(shipSig);
 		if (objNum >= 0)
 			return target_to_anchor(Objects[objNum].instance);
+		// The ship is gone: its old slot may hold another ship now.
+		return anchor_t::invalid();
 	}
 	return target_to_anchor(target);
 }
@@ -220,6 +222,24 @@ void restoreReinforcement(const char* name, const CapturedReinforcement& r)
 		const int at   = (r.index < 0) ? size : std::min(r.index, size);
 		Reinforcements.insert(Reinforcements.begin() + at, entry);
 	}
+}
+
+void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinforcement>>& items)
+{
+	// Erasures and in-place updates first, then inserts by ascending old index.
+	SCP_vector<const std::pair<SCP_string, CapturedReinforcement>*> inserts;
+	for (const auto& item : items) {
+		const bool listed = std::any_of(Reinforcements.begin(), Reinforcements.end(),
+		                                [&](const reinforcements& e) { return !stricmp(e.name, item.first.c_str()); });
+		if (item.second.present && !listed)
+			inserts.push_back(&item);
+		else
+			restoreReinforcement(item.first.c_str(), item.second);
+	}
+	std::sort(inserts.begin(), inserts.end(),
+	          [](const auto* a, const auto* b) { return a->second.index < b->second.index; });
+	for (const auto* item : inserts)
+		restoreReinforcement(item->first.c_str(), item->second);
 }
 
 void syncShipRegistryEntry(int shipIndex)
