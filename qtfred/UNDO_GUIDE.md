@@ -116,5 +116,4 @@ Snapshot the affected state before the action, run it, snapshot after, and push 
 - Undoing an object deletion does not reverse the sexp-reference invalidation the deletion performed (ship references stay bashed to `<name>`; mid-path waypoint deletions renumber references and the renumbering is not reversed). Fully-deleted wings are the exception.
 - Renaming or deleting events, goals, and messages rewrites references in foreign sexp trees (e.g. ship arrival cues) at apply time; those rewrites are outside the owning dialog's capture scope and survive an undo of the apply.
 - Undoing the deletion of docked ships does not restore the dock pairing (`TODO(docking-undo)`).
-- Undoing a wing formation cannot restore the members' pre-formation arrival/departure cues; `create_wing()` destroys them, matching original FRED behavior.
 - Text widgets keep Qt's internal text-undo history; Ctrl+Z with focus in a line edit undoes typing first, then mission edits. The two histories stay consistent through the read-back pattern.

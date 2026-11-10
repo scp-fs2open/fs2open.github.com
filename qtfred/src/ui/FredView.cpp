@@ -1405,6 +1405,9 @@ void FredView::quickRenameCurrentObject() {
 	if (type == OBJ_WAYPOINT) {
 		waypoint_list* wl = find_waypoint_list_with_instance(Objects[obj].instance, nullptr);
 		if (!wl) return;
+		// The old name goes to the command as raw bytes: mission names need not be
+		// UTF-8, and a QString round trip would mangle a Latin-1 one on undo.
+		const SCP_string currentBytes = wl->get_name();
 		const QString current = QString::fromUtf8(wl->get_name());
 		bool ok = false;
 		const QString newName = QInputDialog::getText(
@@ -1417,7 +1420,7 @@ void FredView::quickRenameCurrentObject() {
 		}
 		_mainStack->push(new fso::fred::RenameObjectCommand(
 		    -1,
-		    current.toUtf8().constData(),
+		    currentBytes,
 		    newName.toUtf8().constData(),
 		    fred));
 		return;
@@ -1428,6 +1431,8 @@ void FredView::quickRenameCurrentObject() {
 		return; // wings use their editor dialog
 	}
 
+	// Old name as raw bytes; see the waypoint path case above.
+	const SCP_string currentBytes = object_name(obj);
 	const QString current = QString::fromUtf8(object_name(obj));
 	bool ok = false;
 	const QString newName = QInputDialog::getText(
@@ -1442,7 +1447,7 @@ void FredView::quickRenameCurrentObject() {
 	// QUndoStack::push() calls redo() immediately, which applies the rename.
 	_mainStack->push(new fso::fred::RenameObjectCommand(
 	    obj,
-	    current.toUtf8().constData(),
+	    currentBytes,
 	    newName.toUtf8().constData(),
 	    fred));
 }
@@ -3117,6 +3122,27 @@ void FredView::onUpdateEditorActions() {
 	ui->menuSet_Group->setEnabled(hasMarked);
 }
 void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
+	// Undo snapshot, taken before the reinforcement flags are cleared below:
+	// the marked ships, every wing they are in, and those wings' other members
+	// (create_wing() renumbers the ones left behind, or dissolves the wing).
+	SCP_vector<int> shipSigs;
+	SCP_vector<SCP_string> wingNames;
+	for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if ((p->type != OBJ_SHIP && p->type != OBJ_START) || !p->flags[Object::Object_Flags::Marked])
+			continue;
+		const int w = Ships[p->instance].wingnum;
+		if (w < 0) {
+			shipSigs.push_back(p->signature);
+			continue;
+		}
+		if (std::find(wingNames.begin(), wingNames.end(), SCP_string(Wings[w].name)) != wingNames.end())
+			continue;
+		wingNames.emplace_back(Wings[w].name);
+		for (int i = 0; i < Wings[w].wave_count; i++)
+			shipSigs.push_back(Objects[Ships[Wings[w].ship_index[i]].objnum].signature);
+	}
+	auto before = FormWingCommand::capture(shipSigs, wingNames);
+
 	object* ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -3151,30 +3177,18 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		}
 	}
 
-	// Capture pre-formation ship names BEFORE create_wing() renames them.
-	SCP_map<int, SCP_string> preFormationNames;
-	for (object* pIter = GET_FIRST(&obj_used_list);
-	     pIter != END_OF_LIST(&obj_used_list);
-	     pIter = GET_NEXT(pIter))
-	{
-		if ((pIter->type == OBJ_SHIP || pIter->type == OBJ_START)
-		    && pIter->flags[Object::Object_Flags::Marked]) {
-			preFormationNames[pIter->instance] = Ships[pIter->instance].ship_name;
-		}
-	}
-
 	if (fred->create_wing() == 0 && fred->cur_wing >= 0) {
+		// The new wing and its members join what was captured before.
 		const int wingNum = fred->cur_wing;
-		SCP_vector<WingMemberPreState> members;
+		wingNames.emplace_back(Wings[wingNum].name);
 		for (int i = 0; i < Wings[wingNum].wave_count; i++) {
-			WingMemberPreState m;
-			m.shipIndex = Wings[wingNum].ship_index[i];
-			strcpy_s(m.preName, preFormationNames.count(m.shipIndex)
-			         ? preFormationNames[m.shipIndex].c_str()
-			         : Ships[m.shipIndex].ship_name);
-			members.push_back(m);
+			const int sig = Objects[Ships[Wings[wingNum].ship_index[i]].objnum].signature;
+			if (std::find(shipSigs.begin(), shipSigs.end(), sig) == shipSigs.end())
+				shipSigs.push_back(sig);
 		}
-		_mainStack->push(new FormWingCommand(wingNum, std::move(members), fred, _viewport));
+		auto after = FormWingCommand::capture(shipSigs, wingNames);
+		_mainStack->push(new FormWingCommand(std::move(before), std::move(after), Wings[wingNum].name,
+		                                     fred, _viewport));
 	}
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {

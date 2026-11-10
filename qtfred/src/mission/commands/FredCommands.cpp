@@ -20,6 +20,10 @@
 #include "mission/dialogs/ReorderDialogModel.h"
 #include "mission/object.h"
 #include <missioneditor/common.h>
+#include "mission/dialogs/state/DialogStateHelpers.h"
+
+#include <QDataStream>
+#include <QIODevice>
 
 namespace fso::fred {
 
@@ -265,6 +269,7 @@ void captureWingToData(int wingNum, SavedWingData& wd, bool captureCues)
 	wd.special_ship       = w.special_ship;
 	wd.entirelyDeleted    = false;
 	strcpy_s(wd.name, w.name);
+	wd.display_name        = w.display_name;
 	wd.hotkey             = w.hotkey;
 	wd.reinforcement_index = w.reinforcement_index;
 	wd.num_waves          = w.num_waves;
@@ -296,6 +301,8 @@ void captureWingToData(int wingNum, SavedWingData& wd, bool captureCues)
 		slot.shipIndex = w.ship_index[i];
 		slot.signature = Objects[Ships[slot.shipIndex].objnum].signature;
 		strcpy_s(slot.name, Ships[slot.shipIndex].ship_name);
+		slot.display_name     = Ships[slot.shipIndex].display_name;
+		slot.has_display_name = Ships[slot.shipIndex].flags[Ship::Ship_Flags::Has_display_name];
 		slot.wasDeleted = false;
 		wd.members.push_back(slot);
 	}
@@ -309,6 +316,13 @@ void captureWingToData(int wingNum, SavedWingData& wd, bool captureCues)
 			break;
 		}
 	}
+}
+
+// rename_ship() resets a ship's display name; put back the one captured with the wing.
+void restoreMemberDisplayName(int shipIdx, const SavedWingMemberSlot& m)
+{
+	Ships[shipIdx].display_name = m.display_name;
+	Ships[shipIdx].flags.set(Ship::Ship_Flags::Has_display_name, m.has_display_name);
 }
 
 // Re-add the wing's Reinforcements[] entry that delete_wing()/disband_wing()
@@ -341,14 +355,13 @@ int resolveMemberInstance(const SavedWingMemberSlot& m)
 	return m.shipIndex;
 }
 
-// Restore a wing into the given slot from saved data. Members are resolved by
-// object signature (falling back to wd.members[i].shipIndex); callers that
-// recreate deleted member ships must restore them before calling this.
-void restoreWingIntoSlot(SavedWingData& wd, int slot, Editor* editor)
+// Clear a wing slot and copy the saved wing fields into it: everything except
+// its cues, members and wave count, which callers fill in.
+void fillWingFromData(wing& w, const SavedWingData& wd)
 {
-	wing& w = Wings[slot];
 	w.clear();
 	strcpy_s(w.name, wd.name);
+	w.display_name        = wd.display_name;
 	w.hotkey              = wd.hotkey;
 	w.reinforcement_index = wd.reinforcement_index;
 	w.num_waves           = wd.num_waves;
@@ -370,10 +383,19 @@ void restoreWingIntoSlot(SavedWingData& wd, int slot, Editor* editor)
 	w.wing_insignia_texture = wd.wing_insignia_texture;
 	w.formation           = wd.formation;
 	w.formation_scale     = wd.formation_scale;
+	w.special_ship        = wd.special_ship;
+}
+
+// Restore a wing into the given slot from saved data. Members are resolved by
+// object signature (falling back to wd.members[i].shipIndex); callers that
+// recreate deleted member ships must restore them before calling this.
+void restoreWingIntoSlot(SavedWingData& wd, int slot, Editor* editor)
+{
+	wing& w = Wings[slot];
+	fillWingFromData(w, wd);
 	w.arrival_cue         = restoreWingCue(wd.arrival_cue_dup);
 	w.departure_cue       = restoreWingCue(wd.departure_cue_dup);
 	w.wave_count          = (int)wd.members.size();
-	w.special_ship        = wd.special_ship;
 
 	for (int i = 0; i < (int)wd.members.size(); i++) {
 		const int shipIdx = resolveMemberInstance(wd.members[i]);
@@ -383,6 +405,7 @@ void restoreWingIntoSlot(SavedWingData& wd, int slot, Editor* editor)
 		Ships[shipIdx].arrival_cue  = Locked_sexp_false;
 		Ships[shipIdx].departure_cue = Locked_sexp_false;
 		editor->rename_ship(shipIdx, wd.members[i].name);
+		restoreMemberDisplayName(shipIdx, wd.members[i]);
 	}
 	restoreWingReinforcement(wd, w);
 	Num_wings++;
@@ -749,6 +772,7 @@ void DeleteObjectsCommand::undo()
 			wing& w = Wings[slot];
 			w.clear();
 			strcpy_s(w.name, wd.name);
+			w.display_name        = wd.display_name;
 			w.hotkey              = wd.hotkey;
 			w.reinforcement_index = wd.reinforcement_index;
 			w.num_waves           = wd.num_waves;
@@ -782,6 +806,7 @@ void DeleteObjectsCommand::undo()
 				Ships[shipIdx].arrival_cue       = Locked_sexp_false;
 				Ships[shipIdx].departure_cue     = Locked_sexp_false;
 				_editor->rename_ship(shipIdx, wd.members[j].name);
+				restoreMemberDisplayName(shipIdx, wd.members[j]);
 			}
 			restoreWingReinforcement(wd, w);
 			Num_wings++;
@@ -805,6 +830,7 @@ void DeleteObjectsCommand::undo()
 					Ships[shipIdx].departure_cue = Locked_sexp_false;
 				}
 				_editor->rename_ship(shipIdx, wd.members[j].name);
+				restoreMemberDisplayName(shipIdx, wd.members[j]);
 			}
 		}
 	}
@@ -840,21 +866,73 @@ RenameObjectCommand::RenameObjectCommand(int        objNum,
     , _newName(std::move(newName))
     , _editor(editor)
     , _skipFirstRedo(skipFirstRedo)
-{}
+{
+	// Record the display name of the side the object is on now.
+	if (objNum >= 0) {
+		auto current = readDisplayName(objNum);
+		if (skipFirstRedo)
+			_newDisplay = std::move(current);
+		else
+			_oldDisplay = std::move(current);
+	}
+}
 
-void RenameObjectCommand::applyName(const SCP_string& name, const SCP_string& current)
+std::optional<RenameObjectCommand::DisplayNameState> RenameObjectCommand::readDisplayName(int objNum)
+{
+	const int type = Objects[objNum].type;
+	if (type == OBJ_SHIP || type == OBJ_START) {
+		const ship& s = Ships[Objects[objNum].instance];
+		return DisplayNameState{ s.display_name, s.flags[Ship::Ship_Flags::Has_display_name] };
+	}
+	if (type == OBJ_JUMP_NODE) {
+		for (const auto& jn : Jump_nodes) {
+			if (jn.GetSCPObjectNumber() == objNum)
+				return DisplayNameState{ jn.HasDisplayName() ? jn.GetDisplayName() : "", jn.HasDisplayName() };
+		}
+	}
+	return std::nullopt;
+}
+
+void RenameObjectCommand::writeDisplayName(int objNum, const DisplayNameState& d)
+{
+	const int type = Objects[objNum].type;
+	if (type == OBJ_SHIP || type == OBJ_START) {
+		ship& s = Ships[Objects[objNum].instance];
+		s.display_name = d.name;
+		s.flags.set(Ship::Ship_Flags::Has_display_name, d.has);
+	} else if (type == OBJ_JUMP_NODE) {
+		for (auto& jn : Jump_nodes) {
+			if (jn.GetSCPObjectNumber() == objNum) {
+				// SetDisplayName() clears it when given the node's own name
+				jn.SetDisplayName(d.has ? d.name.c_str() : jn.GetName());
+				break;
+			}
+		}
+	}
+}
+
+void RenameObjectCommand::applyName(const SCP_string& name, const SCP_string& current,
+                                    std::optional<DisplayNameState>& target,
+                                    std::optional<DisplayNameState>& leaving)
 {
 	if (_signature >= 0) {
 		const int objNum = obj_get_by_signature(_signature);
 		if (objNum < 0) return; // object doesn't exist in this undo state
+		if (!leaving)
+			leaving = readDisplayName(objNum);
 		const int type = Objects[objNum].type;
 		if (type == OBJ_SHIP || type == OBJ_START) {
-			_editor->rename_ship(Objects[objNum].instance, name.c_str());
+			// Leave the display name alone when there is a recorded one to put back.
+			_editor->rename_ship(Objects[objNum].instance, name.c_str(), !target.has_value());
 		} else if (type == OBJ_JUMP_NODE) {
 			_editor->rename_jump_node(objNum, name.c_str());
 		} else if (type == OBJ_PROP) {
 			_editor->rename_prop(objNum, name.c_str());
 		}
+		if (target)
+			writeDisplayName(objNum, *target);
+		else
+			target = readDisplayName(objNum);
 	} else {
 		// Waypoint path: current holds the name it has right now; name is what to rename to.
 		_editor->rename_waypoint_list(current.c_str(), name.c_str());
@@ -864,14 +942,14 @@ void RenameObjectCommand::applyName(const SCP_string& name, const SCP_string& cu
 void RenameObjectCommand::undo()
 {
 	// Object is currently named _newName; rename it back to _oldName.
-	applyName(_oldName, _newName);
+	applyName(_oldName, _newName, _oldDisplay, _newDisplay);
 }
 
 void RenameObjectCommand::redo()
 {
 	if (_skipFirstRedo) { _skipFirstRedo = false; return; }
 	// Object is currently named _oldName; rename it to _newName.
-	applyName(_newName, _oldName);
+	applyName(_newName, _oldName, _newDisplay, _oldDisplay);
 }
 
 // ===========================================================================
@@ -1319,56 +1397,210 @@ void CloneDragCommand::recordWingAdd(int wingNum)
 // FormWingCommand
 // ===========================================================================
 
-FormWingCommand::FormWingCommand(int                            wingNum,
-                                 SCP_vector<WingMemberPreState> members,
-                                 Editor*                        editor,
-                                 EditorViewport*                viewport,
-                                 QUndoCommand*                  parent)
+namespace {
+
+QByteArray serializeCue(int cue)
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+	state::writeSexp(ds, cue);
+	return data;
+}
+
+// Replace a live cue with a fresh copy of a serialized one.
+void replaceCue(int& cue, const QByteArray& data)
+{
+	state::freeSexpFormula(cue);
+	QDataStream ds(data);
+	cue = state::readSexp(ds);
+}
+
+int liveWingSlot(const char* name)
+{
+	for (int i = 0; i < MAX_WINGS; i++) {
+		if (Wings[i].wave_count > 0 && !stricmp(Wings[i].name, name))
+			return i;
+	}
+	return -1;
+}
+
+bool nameInList(const SCP_vector<SCP_string>& list, const char* name)
+{
+	return std::any_of(list.begin(), list.end(), [&](const SCP_string& n) { return !stricmp(n.c_str(), name); });
+}
+
+} // namespace
+
+FormWingCommand::State FormWingCommand::capture(const SCP_vector<int>& shipSignatures,
+                                                const SCP_vector<SCP_string>& wingNames)
+{
+	State st;
+	for (const auto& name : wingNames) {
+		const int slot = liveWingSlot(name.c_str());
+		if (slot < 0) continue;
+		WingState ws;
+		captureWingToData(slot, ws.data, /*captureCues=*/false);
+		ws.arrivalCue   = serializeCue(Wings[slot].arrival_cue);
+		ws.departureCue = serializeCue(Wings[slot].departure_cue);
+		st.wings.push_back(std::move(ws));
+	}
+	for (const int sig : shipSignatures) {
+		const int objNum = obj_get_by_signature(sig);
+		if (objNum < 0) continue;
+		const ship& s = Ships[Objects[objNum].instance];
+		ShipState ss;
+		ss.signature      = sig;
+		strcpy_s(ss.name, s.ship_name);
+		ss.displayName    = s.display_name;
+		ss.hasDisplayName = s.flags[Ship::Ship_Flags::Has_display_name];
+		ss.arrivalCue     = serializeCue(s.arrival_cue);
+		ss.departureCue   = serializeCue(s.departure_cue);
+		for (const auto& r : Reinforcements) {
+			if (!stricmp(r.name, s.ship_name)) {
+				ss.isReinforcement    = true;
+				ss.reinforcementEntry = r;
+				break;
+			}
+		}
+		st.ships.push_back(std::move(ss));
+	}
+	return st;
+}
+
+FormWingCommand::FormWingCommand(State before, State after, SCP_string newWingName,
+                                 Editor* editor, EditorViewport* viewport, QUndoCommand* parent)
     : QUndoCommand(QObject::tr("Form Wing"), parent)
-    , _wingNum(wingNum)
-    , _special_ship(Wings[wingNum].special_ship)
-    , _members(std::move(members))
+    , _before(std::move(before))
+    , _after(std::move(after))
+    , _newWingName(std::move(newWingName))
     , _editor(editor)
     , _viewport(viewport)
+{}
+
+void FormWingCommand::apply(const State& target, const State& other)
 {
-	strcpy_s(_wingName, Wings[wingNum].name);
+	// Every wing either state knows about is taken apart and rebuilt from target.
+	SCP_vector<SCP_string> names;
+	for (const State* st : { &target, &other }) {
+		for (const auto& ws : st->wings) {
+			if (!nameInList(names, ws.data.name))
+				names.emplace_back(ws.data.name);
+		}
+	}
+
+	// 1. Detach the live wings: members become loose ships, the wing slot is freed.
+	SCP_vector<SCP_string> wasLive;
+	for (const auto& name : names) {
+		const int slot = liveWingSlot(name.c_str());
+		if (slot < 0) continue;
+		wing& w = Wings[slot];
+		for (int i = 0; i < w.wave_count; i++) {
+			Ships[w.ship_index[i]].wingnum = -1;
+			_editor->wing_objects[slot][i] = -1;
+		}
+		state::freeSexpFormula(w.arrival_cue);
+		state::freeSexpFormula(w.departure_cue);
+		w.arrival_cue   = Locked_sexp_true;
+		w.departure_cue = Locked_sexp_false;
+		w.wave_count    = 0;
+		Num_wings--;
+		wasLive.push_back(name);
+	}
+
+	// 2. Ship names, in two passes through unique temporary names so names that
+	// trade places (a wing's renumbered survivors) never collide. rename_ship()
+	// carries sexp references, goals, texture replacements and the registry along.
+	SCP_vector<std::pair<int, const ShipState*>> live;
+	for (const auto& ss : target.ships) {
+		const int objNum = obj_get_by_signature(ss.signature);
+		if (objNum >= 0)
+			live.emplace_back(Objects[objNum].instance, &ss);
+	}
+	for (size_t i = 0; i < live.size(); i++) {
+		char tmp[NAME_LENGTH];
+		sprintf(tmp, "__undo_form_wing_%d", static_cast<int>(i));
+		_editor->rename_ship(live[i].first, tmp, false);
+	}
+	for (const auto& [inst, ss] : live)
+		_editor->rename_ship(inst, ss->name, false);
+
+	// 3. The rest of each ship's state.
+	for (const auto& [inst, ss] : live) {
+		ship& s = Ships[inst];
+		s.display_name = ss->displayName;
+		s.flags.set(Ship::Ship_Flags::Has_display_name, ss->hasDisplayName);
+		replaceCue(s.arrival_cue, ss->arrivalCue);
+		replaceCue(s.departure_cue, ss->departureCue);
+
+		Reinforcements.erase(std::remove_if(Reinforcements.begin(), Reinforcements.end(),
+		                                    [&](const reinforcements& r) { return !stricmp(r.name, s.ship_name); }),
+		                     Reinforcements.end());
+		if (ss->isReinforcement)
+			Reinforcements.push_back(ss->reinforcementEntry);
+		s.flags.set(Ship::Ship_Flags::Reinforcement, ss->isReinforcement);
+	}
+
+	// 4. Rebuild the target's wings.
+	SCP_vector<SCP_string> rebuilt;
+	for (const auto& ws : target.wings) {
+		const SavedWingData& wd = ws.data;
+		const int slot = findFreeWingSlot(wd.wingNum);
+		if (slot < 0) continue;
+		wing& w = Wings[slot];
+		fillWingFromData(w, wd);
+		replaceCue(w.arrival_cue, ws.arrivalCue);
+		replaceCue(w.departure_cue, ws.departureCue);
+		int count = 0;
+		for (const auto& m : wd.members) {
+			const int objNum = obj_get_by_signature(m.signature);
+			if (objNum < 0) continue;
+			const int inst = Objects[objNum].instance;
+			w.ship_index[count]                = inst;
+			_editor->wing_objects[slot][count] = objNum;
+			Ships[inst].wingnum                = slot;
+			count++;
+		}
+		w.wave_count = count;
+		if (w.special_ship >= count)
+			w.special_ship = 0;
+		restoreWingReinforcement(wd, w);
+		Num_wings++;
+		rebuilt.emplace_back(wd.name);
+	}
+
+	// 5. Wing references: a wing that stops existing is invalidated the way
+	// delete_wing() does it (<Name>); one that comes back is un-invalidated.
+	for (const auto& name : names) {
+		const bool before = nameInList(wasLive, name.c_str());
+		const bool after  = nameInList(rebuilt, name.c_str());
+		const SCP_string invalidated = "<" + name + ">";
+		if (before && !after) {
+			update_sexp_references(name.c_str(), invalidated.c_str());
+			_editor->ai_update_goal_references(sexp_ref_type::WING, name.c_str(), invalidated.c_str());
+			Reinforcements.erase(std::remove_if(Reinforcements.begin(), Reinforcements.end(),
+			                                    [&](const reinforcements& r) { return !stricmp(r.name, name.c_str()); }),
+			                     Reinforcements.end());
+		} else if (!before && after) {
+			update_sexp_references(invalidated.c_str(), name.c_str());
+			_editor->ai_update_goal_references(sexp_ref_type::WING, invalidated.c_str(), name.c_str());
+		}
+	}
+
+	update_custom_wing_indexes();
+	syncAllShipRegistryEntries();
 }
 
 void FormWingCommand::undo()
 {
-	// Locate the wing by name — the slot may differ from _wingNum if other wings
-	// have been created/deleted between formation and this undo call.
-	int slot = -1;
-	for (int i = 0; i < MAX_WINGS; i++) {
-		if (Wings[i].wave_count > 0 && !stricmp(Wings[i].name, _wingName)) {
-			slot = i;
-			break;
-		}
-	}
-	if (slot < 0) return;
+	apply(_before, _after);
 
-	// Snapshot member instances from the live wing before disband_wing() clears
-	// it — the instances captured at formation time can go stale if a member
-	// was deleted and restored by an intervening undo cycle.
-	SCP_vector<int> memberInst;
-	for (int i = 0; i < Wings[slot].wave_count; i++) {
-		memberInst.push_back(Wings[slot].ship_index[i]);
+	// Select the ships that formed the wing.
+	_editor->unmark_all();
+	for (const auto& ss : _after.ships) {
+		const int objNum = obj_get_by_signature(ss.signature);
+		if (objNum >= 0)
+			_editor->markObject(objNum);
 	}
-
-	// Disband the wing (keeps ships, renames them to generic names).
-	{
-		AutoConfirmReferences guard(_editor);
-		_editor->disband_wing(slot);
-	}
-
-	// Restore each ship's pre-formation name via rename_ship (updates SEXP refs).
-	// memberInst and _members are both in wing slot order.
-	for (size_t i = 0; i < memberInst.size() && i < _members.size(); i++) {
-		if (Ships[memberInst[i]].wingnum == -1) {
-			_editor->rename_ship(memberInst[i], _members[i].preName);
-		}
-	}
-
 	_editor->missionChanged();
 	_viewport->needsUpdate();
 }
@@ -1380,50 +1612,11 @@ void FormWingCommand::redo()
 		return; // wing was already formed by the caller
 	}
 
-	const int slot = findFreeWingSlot(_wingNum);
-	if (slot < 0) return;
+	apply(_after, _before);
 
-	// Resolve members by pre-formation name — undo() renamed them back, and the
-	// Ships[] instances captured at formation time can move across undo cycles.
-	SCP_vector<int> memberInst;
-	memberInst.reserve(_members.size());
-	for (const auto& m : _members) {
-		const int inst = ship_name_lookup(m.preName, 1);
-		if (inst < 0) return; // a member no longer exists; cannot re-form the wing
-		memberInst.push_back(inst);
-	}
-
-	Wings[slot].clear();
-	strcpy_s(Wings[slot].name, _wingName);
-	Wings[slot].arrival_cue    = Locked_sexp_true;
-	Wings[slot].departure_cue  = Locked_sexp_false;
-	Wings[slot].wave_count     = (int)_members.size();
-	Wings[slot].special_ship   = _special_ship;
-	Wings[slot].hotkey         = -1;
-
-	// Assign hotkey if this is a starting wing.
-	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-		if (!stricmp(_wingName, Starting_wing_names[i])) {
-			Wings[slot].hotkey = i;
-			break;
-		}
-	}
-
-	for (int i = 0; i < (int)_members.size(); i++) {
-		const int shipIdx = memberInst[i];
-		Wings[slot].ship_index[i]       = shipIdx;
-		_editor->wing_objects[slot][i]  = Ships[shipIdx].objnum;
-		Ships[shipIdx].wingnum          = slot;
-		Ships[shipIdx].arrival_cue      = Locked_sexp_false;
-		Ships[shipIdx].departure_cue    = Locked_sexp_false;
-		char buf[NAME_LENGTH];
-		wing_bash_ship_name(buf, _wingName, i + 1);
-		_editor->rename_ship(shipIdx, buf);
-	}
-
-	Num_wings++;
-	_editor->mark_wing(slot);
-	update_custom_wing_indexes();
+	const int slot = liveWingSlot(_newWingName.c_str());
+	if (slot >= 0)
+		_editor->mark_wing(slot);
 	_editor->missionChanged();
 	_viewport->needsUpdate();
 }
@@ -1634,12 +1827,14 @@ void DeleteWingCommand::redo()
 
 GenerateWaypointPathCommand::GenerateWaypointPathCommand(SCP_string        pathName,
                                                           SCP_vector<vec3d> positions,
+                                                          SCP_vector<int>   signatures,
                                                           Editor*           editor,
                                                           const QString&    text,
                                                           QUndoCommand*     parent)
     : QUndoCommand(text, parent)
     , _pathName(std::move(pathName))
     , _positions(std::move(positions))
+    , _signatures(std::move(signatures))
     , _editor(editor)
 {}
 
@@ -1683,10 +1878,16 @@ void GenerateWaypointPathCommand::redo()
 		return;
 
 	int listIndex = static_cast<int>(Waypoint_lists.size());
-	waypoint_add(_positions.data(), -1);
+	// Give each point the signature it had when generated, so later commands
+	// (moves, path color or layer) still find it.
+	auto setSignature = [this](int objNum, size_t i) {
+		if (objNum >= 0 && i < _signatures.size() && _signatures[i] > 0)
+			Objects[objNum].signature = _signatures[i];
+	};
+	setSignature(waypoint_add(_positions.data(), -1), 0);
 	Waypoint_lists[static_cast<size_t>(listIndex)].set_name(_pathName.c_str());
 	for (int i = 1; i < static_cast<int>(_positions.size()); ++i)
-		waypoint_add(&_positions[i], calc_waypoint_instance(listIndex, i - 1));
+		setSignature(waypoint_add(&_positions[i], calc_waypoint_instance(listIndex, i - 1)), static_cast<size_t>(i));
 
 	obj_merge_created_list();
 	_editor->missionChanged();

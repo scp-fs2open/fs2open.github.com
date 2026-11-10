@@ -2048,8 +2048,9 @@ void ShipEditorDialog::on_shipNameEdit_editingFinished()
 
 			if (dnChanged)
 				_fredView->mainUndoStack()->beginMacro(tr("Rename Ship"));
-			_fredView->mainUndoStack()->push(
-				new RenameObjectCommand(Ships[si].objnum, oldName, appliedName, _viewport->editor, true));
+			auto* renameCmd = new RenameObjectCommand(Ships[si].objnum, oldName, appliedName, _viewport->editor, true);
+			renameCmd->setOldDisplayName({dnBefore.displayName, dnBefore.hasFlag});
+			_fredView->mainUndoStack()->push(renameCmd);
 			if (dnChanged) {
 				auto* cmd = new FieldEditCommand<ShipDisplayNameState>(
 					FieldId::Ship_DisplayName, _viewport->editor, tr("Edit Ship Display Name"), true);

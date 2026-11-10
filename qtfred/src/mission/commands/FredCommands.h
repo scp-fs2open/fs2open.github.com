@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <typeinfo>
 
 #include <QByteArray>
@@ -93,6 +94,8 @@ struct SavedWingMemberSlot {
 	int  shipIndex;            // Ships[] instance at capture time (can go stale — prefer signature)
 	int  signature = -1;       // object signature at capture time (stable across undo cycles)
 	char name[NAME_LENGTH];    // ship name at capture time
+	SCP_string display_name;   // rename_ship() resets it, so it is put back after
+	bool has_display_name = false;
 	bool wasDeleted;           // true if this member is being deleted (DeleteObjectsCommand only)
 };
 
@@ -109,6 +112,7 @@ struct SavedWingData {
 	int   special_ship;
 	bool  entirelyDeleted;        // true = all members are being deleted (DeleteObjectsCommand only)
 	char  name[NAME_LENGTH];
+	SCP_string display_name;    // wing.clear() empties it on restore
 	int   hotkey;
 	int   reinforcement_index;
 	int   num_waves;
@@ -239,10 +243,28 @@ class RenameObjectCommand : public QUndoCommand {
 	Editor*    _editor;
 	bool       _skipFirstRedo = false; // set when rename already applied by caller
 
+public:
+	// Ship and jump node display name. rename_ship() and CJumpNode::SetName()
+	// reset it, so each side's is recorded and put back after the rename.
+	struct DisplayNameState {
+		SCP_string name;
+		bool       has = false;
+	};
+
+private:
+	std::optional<DisplayNameState> _oldDisplay;
+	std::optional<DisplayNameState> _newDisplay;
+
+	static std::optional<DisplayNameState> readDisplayName(int objNum);
+	static void writeDisplayName(int objNum, const DisplayNameState& d);
+
 	// name    = the name to apply
 	// current = the name the object currently has (lookup key for waypoint paths;
 	//           also passed to SEXP update functions as the "old" value)
-	void applyName(const SCP_string& name, const SCP_string& current);
+	// target  = display name to put back after the rename (recorded if unset)
+	// leaving = display name of the side being left (recorded if unset)
+	void applyName(const SCP_string& name, const SCP_string& current,
+	               std::optional<DisplayNameState>& target, std::optional<DisplayNameState>& leaving);
 
 public:
 	// skipFirstRedo: pass true when the rename has already been applied by the
@@ -254,6 +276,9 @@ public:
 	                    Editor*    editor,
 	                    bool       skipFirstRedo = false,
 	                    QUndoCommand* parent = nullptr);
+	// For callers that renamed before constructing (skipFirstRedo): the display
+	// name the object had before their rename, which the rename already reset.
+	void setOldDisplayName(DisplayNameState state) { _oldDisplay = std::move(state); }
 	void undo() override;
 	void redo() override;
 };
@@ -424,37 +449,55 @@ public:
 };
 
 // ---------------------------------------------------------------------------
-// FormWingCommand — form a wing from marked ships
+// FormWingCommand - form a wing from marked ships
 //
-// KNOWN LIMITATION: create_wing() frees each member's arrival/departure cues,
-// and only the pre-formation names are captured here — so undoing a wing
-// formation leaves ex-members with default (locked-false) cues rather than
-// their originals. This matches FRED2's destructive formation behavior.
+// create_wing() can take ships out of other wings (renaming the ships left
+// behind), dissolve or reform a wing, and free the members' cues, and the
+// caller may clear reinforcement flags first. So the command keeps a snapshot
+// of every involved wing and ship from before and after, and undo/redo apply
+// one or the other.
 // ---------------------------------------------------------------------------
 
-struct WingMemberPreState {
-	int  shipIndex;
-	char preName[NAME_LENGTH];  // ship name before wing formation
-};
-
 class FormWingCommand : public QUndoCommand {
-	int  _wingNum;
-	char _wingName[NAME_LENGTH];
-	int  _special_ship;
-	SCP_vector<WingMemberPreState> _members; // in wing slot order
+public:
+	struct ShipState {
+		int        signature = -1;
+		char       name[NAME_LENGTH] = {};
+		SCP_string displayName;
+		bool       hasDisplayName = false;
+		QByteArray arrivalCue;   // state::writeSexp
+		QByteArray departureCue;
+		bool           isReinforcement = false;
+		reinforcements reinforcementEntry;
+	};
+	struct WingState {
+		SavedWingData data;      // captured without cue dups
+		QByteArray    arrivalCue;
+		QByteArray    departureCue;
+	};
+	struct State {
+		SCP_vector<WingState> wings;
+		SCP_vector<ShipState> ships;
+	};
+
+	// Snapshot the given ships and every live wing with one of the given names.
+	static State capture(const SCP_vector<int>& shipSignatures, const SCP_vector<SCP_string>& wingNames);
+
+	// Construct AFTER create_wing() succeeds. First redo() is a no-op.
+	FormWingCommand(State before, State after, SCP_string newWingName,
+	                Editor* editor, EditorViewport* viewport, QUndoCommand* parent = nullptr);
+	void undo() override;
+	void redo() override;
+
+private:
+	void apply(const State& target, const State& other);
+
+	State           _before;
+	State           _after;
+	SCP_string      _newWingName;
 	Editor*         _editor;
 	EditorViewport* _viewport;
 	bool            _firstRedo = true;
-
-public:
-	// Construct AFTER create_wing() succeeds. First redo() is a no-op.
-	FormWingCommand(int                            wingNum,
-	                SCP_vector<WingMemberPreState> members,
-	                Editor*                        editor,
-	                EditorViewport*                viewport,
-	                QUndoCommand*                  parent = nullptr);
-	void undo() override;
-	void redo() override;
 };
 
 // ---------------------------------------------------------------------------
@@ -513,6 +556,7 @@ public:
 class GenerateWaypointPathCommand : public QUndoCommand {
 	SCP_string        _pathName;
 	SCP_vector<vec3d> _positions; // exact positions from initial generation
+	SCP_vector<int>   _signatures; // the points' object signatures, reapplied on redo
 	bool              _firstRedo = true;
 	Editor*           _editor;
 
@@ -520,6 +564,7 @@ public:
 	// Construct AFTER apply() succeeds. First redo() is a no-op.
 	GenerateWaypointPathCommand(SCP_string        pathName,
 	                            SCP_vector<vec3d> positions,
+	                            SCP_vector<int>   signatures,
 	                            Editor*           editor,
 	                            const QString&    text   = {},
 	                            QUndoCommand*     parent = nullptr);

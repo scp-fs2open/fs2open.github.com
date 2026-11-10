@@ -237,15 +237,18 @@ void WaypointPathGeneratorDialog::on_varianceZSpinBox_valueChanged(double value)
 void WaypointPathGeneratorDialog::on_buttonBox_accepted()
 {
 	if (_model->apply()) {
-		// Collect exact positions from the just-created path (always appended last).
+		// Collect exact positions and signatures from the just-created path (always appended last).
 		SCP_string pathName = _model->getPathName();
 		SCP_vector<vec3d> positions;
+		SCP_vector<int> signatures;
 		if (!Waypoint_lists.empty()) {
-			for (const auto& wp : Waypoint_lists.back().get_waypoints())
+			for (const auto& wp : Waypoint_lists.back().get_waypoints()) {
 				positions.push_back(*wp.get_pos());
+				signatures.push_back(Objects[wp.get_objnum()].signature);
+			}
 		}
 		_fredView->mainUndoStack()->push(
-			new GenerateWaypointPathCommand(pathName, std::move(positions),
+			new GenerateWaypointPathCommand(pathName, std::move(positions), std::move(signatures),
 			                               _viewport->editor,
 			                               tr("Generate Waypoint Path")));
 		_dialogStack->clear();

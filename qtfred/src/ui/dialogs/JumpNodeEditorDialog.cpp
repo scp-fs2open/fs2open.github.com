@@ -173,6 +173,13 @@ void JumpNodeEditorDialog::on_nameLineEdit_editingFinished()
 	const SCP_string newName = ui->nameLineEdit->text().toUtf8().constData();
 	const SCP_string oldName = _model->getName();
 	if (newName == oldName) return;
+	// The rename resets the display name, so record it first for undo.
+	std::optional<RenameObjectCommand::DisplayNameState> displayBefore;
+	if (!_model->getSelectedObjNums().empty()) {
+		if (const auto* jn = jumpnode_get_by_objnum(_model->getSelectedObjNums().front()))
+			displayBefore = RenameObjectCommand::DisplayNameState{
+				jn->HasDisplayName() ? jn->GetDisplayName() : "", jn->HasDisplayName()};
+	}
 	if (!_model->setName(newName)) {
 		util::SignalBlockers b(this);
 		ui->nameLineEdit->setText(QString::fromStdString(_model->getName()));
@@ -180,8 +187,10 @@ void JumpNodeEditorDialog::on_nameLineEdit_editingFinished()
 	}
 	const auto& objNums = _model->getSelectedObjNums();
 	if (objNums.empty()) return;
-	_fredView->mainUndoStack()->push(
-	    new RenameObjectCommand(objNums[0], oldName, newName, _viewport->editor, true));
+	auto* cmd = new RenameObjectCommand(objNums[0], oldName, newName, _viewport->editor, true);
+	if (displayBefore)
+		cmd->setOldDisplayName(*displayBefore);
+	_fredView->mainUndoStack()->push(cmd);
 
 	// Edit is committed to the mission undo stack; clear the field's own text-undo history
 	// (re-setting the text clears it) so a following Ctrl+Z undoes the mission edit, not the typing.
