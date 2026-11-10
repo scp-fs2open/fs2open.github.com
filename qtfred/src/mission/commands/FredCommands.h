@@ -141,8 +141,7 @@ struct SavedWingData {
 
 	// The wing's Reinforcements[] entry, if any — delete_wing()/disband_wing()
 	// erase it, so undo must re-add it.
-	bool           hadReinforcement = false;
-	reinforcements reinforcementEntry;
+	CapturedReinforcement reinforcement; // with its place in the list
 };
 
 class DeleteObjectsCommand : public QUndoCommand {
@@ -375,8 +374,12 @@ class ReorderCommand : public QUndoCommand {
 	int             _type;    // dialogs::ReorderDialogModel::Type, stored as int to avoid the include
 	int             _fromPos;
 	int             _toPos;
+	SCP_string      _itemName; // the moved item: positions shift when objects are deleted and restored
 	EditorViewport* _viewport;
 	bool            _skipFirstRedo;
+
+	// The moved item's current display position, or -1.
+	int currentPos() const;
 
 public:
 	// Construct AFTER the move has been applied; the first redo() is a no-op.

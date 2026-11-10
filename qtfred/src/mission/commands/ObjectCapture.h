@@ -80,7 +80,10 @@ void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinfo
 // Point Ship_registry_map[ship name] at the ship's own registry entry, fixing
 // keys that undo left pointing at the wrong entry (a restored ship can take
 // a name a wing survivor still had for a moment) or missing.
-void syncShipRegistryEntry(int shipIndex);
+// preferredEntry: the ship's entry from before it was deleted. FRED keeps that entry
+// (ship_delete only drops the key) and other ships' anchors still point at it,
+// so a restored ship takes it back rather than the new one create_ship() made.
+void syncShipRegistryEntry(int shipIndex, int preferredEntry = -1);
 void syncAllShipRegistryEntries();
 
 // Return saved object flags with the editor-state and runtime bits (Marked,
@@ -140,6 +143,7 @@ struct CapturedShip {
 	// ---- Object ----
 	int    objType = OBJ_SHIP; // OBJ_SHIP or OBJ_START
 	bool   primaryPlayerStart = false; // was Player_start_shipnum; delete repoints it
+	int    registryIndex = -1; // Ship_registry entry; kept by FRED after delete, anchors use it
 	// Original object signature, reapplied on restore. The pool slot (objNum)
 	// changes on recreation, but restoring the signature keeps every other
 	// command's obj_get_by_signature() lookups valid across undo cycles.
@@ -242,8 +246,7 @@ struct CapturedShip {
 	// ---- Reinforcement ----
 	// The ship's Reinforcements[] entry, if any — delete_object() erases it,
 	// so undo must re-add it.
-	bool           hadReinforcement = false;
-	reinforcements reinforcementEntry;
+	CapturedReinforcement reinforcement; // with its place in the list
 
 	// ---- Texture replacements ----
 	// Entries from the global Fred_texture_replacements[] that belong to this ship.
@@ -298,6 +301,7 @@ struct CapturedWaypointList {
 	SCP_string                        listName;
 	SCP_vector<CapturedWaypointPoint> points;
 	bool                              entirePath = false; // true = all waypoints in list deleted
+	int                               listIndex  = -1;    // position in Waypoint_lists, for an entire path
 
 	// Visual / organizational properties (absent from the old SavedWaypointGroup)
 	bool       no_lines  = false;
@@ -324,6 +328,7 @@ void restoreWaypointListProperties(const CapturedWaypointList& data);
 // ===========================================================================
 
 struct CapturedJumpNode {
+	int    listIndex                    = -1; // position in Jump_nodes (save order)
 	int    signature                    = -1; // reapplied on restore; see CapturedShip::signature
 	vec3d  pos                          = vmd_zero_vector;
 	char   name[NAME_LENGTH]            = {};

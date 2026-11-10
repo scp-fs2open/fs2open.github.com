@@ -317,14 +317,7 @@ void captureWingToData(int wingNum, SavedWingData& wd, bool captureCues)
 	}
 
 	// Reinforcement entry (erased by delete_wing/disband_wing; re-added on undo)
-	wd.hadReinforcement = false;
-	for (const auto& r : Reinforcements) {
-		if (!stricmp(r.name, w.name)) {
-			wd.hadReinforcement   = true;
-			wd.reinforcementEntry = r;
-			break;
-		}
-	}
+	wd.reinforcement = captureReinforcement(w.name);
 }
 
 // rename_ship() resets a ship's display name; put back the one captured with the wing.
@@ -338,20 +331,16 @@ void restoreMemberDisplayName(int shipIdx, const SavedWingMemberSlot& m)
 // erased, and point the restored wing at it.
 void restoreWingReinforcement(const SavedWingData& wd, wing& w)
 {
-	if (!wd.hadReinforcement)
+	if (!wd.reinforcement.present)
 		return;
-	int idx = -1;
+	// back in its old place in the list, with its settings
+	restoreReinforcement(wd.name, wd.reinforcement);
 	for (int i = 0; i < (int)Reinforcements.size(); i++) {
 		if (!stricmp(Reinforcements[i].name, wd.name)) {
-			idx = i;
+			w.reinforcement_index = i;
 			break;
 		}
 	}
-	if (idx < 0) {
-		Reinforcements.push_back(wd.reinforcementEntry);
-		idx = (int)Reinforcements.size() - 1;
-	}
-	w.reinforcement_index = idx;
 }
 
 // Resolve a wing member to its current Ships[] instance. The instance captured
@@ -688,6 +677,15 @@ void DeleteObjectsCommand::undo()
 						wl->set_name(group.listName.c_str());
 					renamedList = true;
 				}
+			}
+			// The path was recreated at the end of Waypoint_lists; move it back to its
+			// old place, which is the save order. Groups are in ascending list order,
+			// so each lands where it was. rotate_waypoint_lists() renumbers instances.
+			if (const waypoint_list* wl = find_matching_waypoint_list(group.listName.c_str())) {
+				const int from = find_index_of_waypoint_list(wl);
+				const int to   = std::min(group.listIndex, static_cast<int>(Waypoint_lists.size()) - 1);
+				if (from >= 0 && group.listIndex >= 0 && from != to)
+					rotate_waypoint_lists(from, to);
 			}
 		} else {
 			// Partial deletion: reinsert each waypoint back into the surviving path.
@@ -1097,12 +1095,31 @@ ReorderCommand::ReorderCommand(int             type,
     , _toPos(toPos)
     , _viewport(viewport)
     , _skipFirstRedo(true)
-{}
+{
+	using Model = dialogs::ReorderDialogModel;
+	const auto names = Model::getItemNames(static_cast<Model::Type>(_type));
+	if (toPos >= 0 && toPos < static_cast<int>(names.size()))
+		_itemName = names[toPos];
+}
+
+int ReorderCommand::currentPos() const
+{
+	using Model = dialogs::ReorderDialogModel;
+	const auto names = Model::getItemNames(static_cast<Model::Type>(_type));
+	for (int i = 0; i < static_cast<int>(names.size()); i++) {
+		if (!stricmp(names[i].c_str(), _itemName.c_str()))
+			return i;
+	}
+	return -1;
+}
 
 void ReorderCommand::undo()
 {
 	using Model = dialogs::ReorderDialogModel;
-	Model::applyMove(_viewport, static_cast<Model::Type>(_type), _toPos, _fromPos);
+	// Move the item itself back; whatever now sits at _toPos may be another one.
+	const int cur = currentPos();
+	if (cur >= 0)
+		Model::applyMove(_viewport, static_cast<Model::Type>(_type), cur, _fromPos);
 	_viewport->editor->missionChanged();
 }
 
@@ -1110,7 +1127,9 @@ void ReorderCommand::redo()
 {
 	if (_skipFirstRedo) { _skipFirstRedo = false; return; }
 	using Model = dialogs::ReorderDialogModel;
-	Model::applyMove(_viewport, static_cast<Model::Type>(_type), _fromPos, _toPos);
+	const int cur = currentPos();
+	if (cur >= 0)
+		Model::applyMove(_viewport, static_cast<Model::Type>(_type), cur, _toPos);
 	_viewport->editor->missionChanged();
 }
 

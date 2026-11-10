@@ -60,6 +60,7 @@ CapturedShip& CapturedShip::operator=(CapturedShip&& o) noexcept
 
 	objType           = o.objType;
 	primaryPlayerStart = o.primaryPlayerStart;
+	registryIndex = o.registryIndex;
 	signature         = o.signature;
 	pos               = o.pos;
 	orient            = o.orient;
@@ -126,8 +127,7 @@ CapturedShip& CapturedShip::operator=(CapturedShip&& o) noexcept
 	persona_index    = o.persona_index;
 	texture_replacements = std::move(o.texture_replacements);
 
-	hadReinforcement   = o.hadReinforcement;
-	reinforcementEntry = o.reinforcementEntry;
+	reinforcement      = o.reinforcement;
 
 	originalShipIndex = o.originalShipIndex;
 	wingNum           = o.wingNum;
@@ -242,18 +242,40 @@ void restoreReinforcements(const SCP_vector<std::pair<SCP_string, CapturedReinfo
 		restoreReinforcement(item->first.c_str(), item->second);
 }
 
-void syncShipRegistryEntry(int shipIndex)
+void syncShipRegistryEntry(int shipIndex, int preferredEntry)
 {
 	const ship& s = Ships[shipIndex];
 	auto owns = [&](int e) {
 		return Ship_registry[e].shipnum == shipIndex && Ship_registry[e].objnum == s.objnum;
 	};
+	int entry = -1;
+
+	// Reclaim the entry the ship had before it was deleted, if it still carries the
+	// ship's name and no other name is keyed to it.
+	if (preferredEntry >= 0 && preferredEntry < static_cast<int>(Ship_registry.size())
+	    && !stricmp(Ship_registry[preferredEntry].name, s.ship_name)
+	    && std::none_of(Ship_registry_map.begin(), Ship_registry_map.end(), [&](const auto& kv) {
+		       return kv.second == preferredEntry && stricmp(kv.first.c_str(), s.ship_name) != 0;
+	       })) {
+		// Disown any other entry of this ship (the one create_ship() made) and drop its keys.
+		for (int e = 0; e < static_cast<int>(Ship_registry.size()); e++) {
+			if (e == preferredEntry || !owns(e)) continue;
+			for (auto k = Ship_registry_map.begin(); k != Ship_registry_map.end();)
+				k = (k->second == e) ? Ship_registry_map.erase(k) : std::next(k);
+			Ship_registry[e].objnum  = -1;
+			Ship_registry[e].shipnum = -1;
+		}
+		Ship_registry[preferredEntry].objnum  = s.objnum;
+		Ship_registry[preferredEntry].shipnum = shipIndex;
+		entry = preferredEntry;
+	}
 
 	// Already right: the ship's name is keyed to its own entry.
-	int entry = -1;
-	auto it = Ship_registry_map.find(s.ship_name);
-	if (it != Ship_registry_map.end() && owns(it->second))
-		entry = it->second;
+	if (entry < 0) {
+		auto it = Ship_registry_map.find(s.ship_name);
+		if (it != Ship_registry_map.end() && owns(it->second))
+			entry = it->second;
+	}
 
 	// Otherwise prefer the ship's entry that some key still points at (it was
 	// renamed away or left behind), then any entry of the ship, then a new one.
@@ -372,6 +394,7 @@ CapturedShip captureShip(int objNum)
 	// Object
 	c.objType   = o.type;
 	c.primaryPlayerStart = (o.type == OBJ_START && Player_start_shipnum == o.instance);
+	c.registryIndex = ship_registry_get_index(s.ship_name);
 	c.signature = o.signature;
 	c.pos       = o.pos;
 	c.orient    = o.orient;
@@ -495,13 +518,7 @@ CapturedShip captureShip(int objNum)
 	c.persona_index = s.persona_index;
 
 	// Reinforcement entry (erased by delete_object; re-added on restore)
-	for (const auto& r : Reinforcements) {
-		if (!stricmp(r.name, s.ship_name)) {
-			c.hadReinforcement   = true;
-			c.reinforcementEntry = r;
-			break;
-		}
-	}
+	c.reinforcement = captureReinforcement(s.ship_name);
 
 	// Texture replacements — filtered from the global Fred_texture_replacements
 	for (const auto& tr : Fred_texture_replacements) {
@@ -546,7 +563,7 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	// point the registry at the restored name (no sexp rewriting here, unlike
 	// Editor::rename_ship).
 	strcpy_s(s.ship_name, c.ship_name);
-	syncShipRegistryEntry(o.instance);
+	syncShipRegistryEntry(o.instance, c.registryIndex);
 	s.display_name   = c.display_name;
 	s.team           = c.team;
 	s.team_name      = c.team_name;
@@ -647,17 +664,9 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	s.persona_index = c.persona_index;
 
 	// Re-add the Reinforcements[] entry that delete_object() erased.
-	if (c.hadReinforcement) {
-		bool present = false;
-		for (const auto& r : Reinforcements) {
-			if (!stricmp(r.name, c.ship_name)) {
-				present = true;
-				break;
-			}
-		}
-		if (!present)
-			Reinforcements.push_back(c.reinforcementEntry);
-	}
+	// Back in its old place in the list, with its settings.
+	if (c.reinforcement.present)
+		restoreReinforcement(c.ship_name, c.reinforcement);
 
 	// Texture replacements — add this ship's entries back to the global list,
 	// then rebuild the model instance's textures so the viewport shows them.
@@ -787,6 +796,7 @@ CapturedWaypointList captureWaypointList(int listIndex,
 
 	CapturedWaypointList cwl;
 	cwl.listName   = wl.get_name();
+	cwl.listIndex  = listIndex;
 	cwl.entirePath = entireList;
 	cwl.no_lines   = wl.get_no_draw_lines();
 	cwl.has_color  = wl.get_has_custom_color();
@@ -836,8 +846,11 @@ void restoreWaypointListProperties(const CapturedWaypointList& data)
 CapturedJumpNode captureJumpNode(int objNum)
 {
 	CapturedJumpNode cjn{};
-	for (const auto& jn : Jump_nodes) {
+	for (int i = 0; i < static_cast<int>(Jump_nodes.size()); i++) {
+		const auto& jn = Jump_nodes[i];
 		if (jn.GetSCPObjectNumber() != objNum) continue;
+
+		cjn.listIndex = i;
 
 		cjn.signature = Objects[objNum].signature;
 		cjn.pos = *jn.GetPosition();
@@ -889,7 +902,10 @@ int restoreJumpNode(const CapturedJumpNode& data, Editor* /*editor*/)
 	jn.SetFredLayer(data.fred_layer);
 
 	const int newObj = jn.GetSCPObjectNumber();
-	Jump_nodes.push_back(std::move(jn));
+	// Back at its old place in the list, which is the save order.
+	const int size = static_cast<int>(Jump_nodes.size());
+	const int at   = (data.listIndex < 0) ? size : std::min(data.listIndex, size);
+	Jump_nodes.insert(Jump_nodes.begin() + at, std::move(jn));
 
 	// Reapply the original signature so signature-keyed commands stay valid.
 	if (newObj >= 0 && data.signature > 0)
