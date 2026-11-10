@@ -42,7 +42,7 @@
 #define POPUP_ABORT					101
 
 // real time a headless run waits for an On Dialog Frame script to answer a popup (headless frames don't sleep)
-#define HEADLESS_POPUP_TIMEOUT_MS	10000
+constexpr int HEADLESS_POPUP_TIMEOUT_MS = 10000;
 
 int Popup_max_display[GR_NUM_RESOLUTIONS] = {
 	11,

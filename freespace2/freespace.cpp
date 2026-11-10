@@ -368,10 +368,10 @@ extern uint Cmdline_rng_seed;
 // The -sim_result outcome as it stands now; wall_seconds is added when it is written.
 static json_t* sim_run_snapshot(const char* termination)
 {
-	const char* mission = Sim_run_mission.empty() ? Game_current_mission_filename : Sim_run_mission.c_str();
+	const char* mission_name = Sim_run_mission.empty() ? Game_current_mission_filename : Sim_run_mission.c_str();
 	json_t* result = json_pack("{s:i,s:s,s:i,s:f,s:f,s:f,s:b,s:s}",
 		"schema", 1,
-		"mission", mission,
+		"mission", mission_name,
 		"seed", static_cast<int>(Cmdline_rng_seed),
 		"fixed_dt", Cmdline_fixed_dt,
 		"max_sim_time", Cmdline_max_sim_time,
@@ -1094,7 +1094,6 @@ void game_level_close()
 time_t load_gl_init;
 uint load_post_level_init;
 extern bool Cmdline_reuse_rng_seed;
-extern uint Cmdline_rng_seed;
 /**
  * Intializes game stuff.  
  *
