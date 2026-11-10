@@ -47,7 +47,7 @@ QByteArray MissionCutscenesDialogModel::captureWorkingState() const
 		const mission_cutscene& c = m_cutscenes[i];
 		ds << static_cast<qint32>(m_sig[i]);
 		ds << static_cast<qint32>(c.type);
-		ds << QString::fromUtf8(c.filename);
+		ds << QByteArray(c.filename);
 		// c.formula is a tree-widget node id; round-trip the branch through
 		// Sexp_nodes to serialize its content.
 		const int sexp = _sexp_tree->_model.save_tree(c.formula);
@@ -71,7 +71,7 @@ void MissionCutscenesDialogModel::restoreWorkingState(const QByteArray& state)
 	for (int i = 0; i < count; ++i) {
 		mission_cutscene c;
 		qint32 sig, type;
-		QString filename;
+		QByteArray filename;
 
 		ds >> sig >> type >> filename;
 		const int sexp = fso::fred::state::readSexp(ds);
@@ -79,7 +79,7 @@ void MissionCutscenesDialogModel::restoreWorkingState(const QByteArray& state)
 		fso::fred::state::freeSexpFormula(sexp);
 
 		c.type = static_cast<int>(type);
-		strcpy_s(c.filename, NAME_LENGTH, filename.toUtf8().constData());
+		strcpy_s(c.filename, NAME_LENGTH, filename.constData());
 
 		m_cutscenes.push_back(c);
 		m_sig.push_back(static_cast<int>(sig));

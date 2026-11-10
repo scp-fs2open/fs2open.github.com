@@ -21,6 +21,8 @@
 #include <math/vecmat.h>
 #include <ship/ship.h>
 #include <ai/aigoals.h>
+#include <ai/ai_flags.h>
+#include <object/object_flags.h>
 #include <mission/missionparse.h>
 
 namespace fso::fred {
@@ -47,6 +49,12 @@ int materializeSexpCue(int cue_dup);
 
 // Free an owned dup (no-op for sentinels) and reset to SHIP_CUE_NONE.
 void freeSexpCueDup(int& cue_dup);
+
+// Return saved object flags with the editor-state and runtime bits (Marked,
+// Hidden, Was_rendered, ...) taken from live instead. Use when restoring a
+// captured flagset so undo never brings back an old selection or visibility.
+flagset<Object::Object_Flags> withLiveEditorObjectFlags(flagset<Object::Object_Flags> saved,
+                                                        const flagset<Object::Object_Flags>& live);
 
 // ===========================================================================
 // Ship / Player-Start (OBJ_SHIP / OBJ_START)
@@ -153,7 +161,15 @@ struct CapturedShip {
 	SCP_vector<CapturedSubsys> subsystems;
 
 	// ---- Flags ----
-	flagset<Ship::Ship_Flags> flags;
+	flagset<Ship::Ship_Flags>     flags;
+	flagset<Object::Object_Flags> obj_flags; // editor-state bits are ignored on restore
+	flagset<AI::AI_Flags>         ai_flags;  // Kamikaze, No_dynamic, ...
+
+	// ---- FRED alt name / callsign ----
+	// After load these live only in Fred_alt_names[] / Fred_callsigns[], keyed
+	// by Ships[] slot, so they must follow the ship to its new slot.
+	char fred_alt_name[NAME_LENGTH + 1] = {};
+	char fred_callsign[NAME_LENGTH + 1] = {};
 
 	// ---- Misc ----
 	int   respawn_priority    = 0;

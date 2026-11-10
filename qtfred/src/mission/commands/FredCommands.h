@@ -159,6 +159,10 @@ public:
 	void undo() override;
 	void redo() override;
 	bool isEmpty() const;
+	// Call AFTER delete_marked(). Drops every captured object that still
+	// exists (the delete was refused, or stopped at a reference), so undo
+	// only recreates what was really deleted.
+	void dropSurvivors();
 };
 
 // ---------------------------------------------------------------------------
@@ -528,6 +532,7 @@ class ApplyDialogCommand : public QUndoCommand {
     QByteArray                                               _stateBefore;
     QByteArray                                               _stateAfter;
     Editor*                                                  _editor;
+    bool                                                     _firstRedo = true; // apply() already ran; push must not re-restore
 
 public:
     ApplyDialogCommand(std::unique_ptr<fso::fred::dialogs::AbstractDialogModel> model,

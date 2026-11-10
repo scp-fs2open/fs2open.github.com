@@ -20,10 +20,10 @@ QByteArray MissionGoalsDialogModel::captureState() const
 
 	ds << static_cast<qint32>(static_cast<int>(Mission_goals.size()));
 	for (const mission_goal& g : Mission_goals) {
-		ds << QString::fromStdString(g.name);
+		ds << QByteArray::fromStdString(g.name);
 		ds << static_cast<qint32>(g.type);
 		ds << static_cast<qint32>(g.satisfied);
-		ds << QString::fromStdString(g.message);
+		ds << QByteArray::fromStdString(g.message);
 		fso::fred::state::writeSexp(ds, g.formula);
 		ds << static_cast<qint32>(g.score);
 		ds << static_cast<qint32>(g.flags);
@@ -47,7 +47,7 @@ void MissionGoalsDialogModel::restoreState(const QByteArray& state)
 
 	for (int i = 0; i < static_cast<int>(count); ++i) {
 		mission_goal& g = Mission_goals[static_cast<size_t>(i)];
-		QString name, message;
+		QByteArray name, message;
 		qint32 type, satisfied, score, flags, team;
 
 		ds >> name >> type >> satisfied >> message;

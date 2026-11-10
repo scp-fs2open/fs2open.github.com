@@ -23,13 +23,13 @@ QByteArray CommandBriefingDialogModel::captureState() const
 		ds << static_cast<qint32>(cb.num_stages);
 
 		for (const auto& stage : cb.stage) {
-			ds << QString::fromStdString(stage.text);
-			ds << QString::fromLatin1(stage.ani_filename);
-			ds << QString::fromLatin1(stage.wave_filename);
+			ds << QByteArray::fromStdString(stage.text);
+			ds << QByteArray(stage.ani_filename);
+			ds << QByteArray(stage.wave_filename);
 		}
 
 		for (const auto& background : cb.background)
-			ds << QString::fromLatin1(background);
+			ds << QByteArray(background);
 	}
 
 	return data;
@@ -45,20 +45,20 @@ void CommandBriefingDialogModel::restoreState(const QByteArray& state)
 		cb.num_stages = static_cast<int>(numStages);
 
 		for (auto& stage : cb.stage) {
-			QString text, ani, wave;
+			QByteArray text, ani, wave;
 			ds >> text >> ani >> wave;
 			stage.text = text.toStdString();
-			strncpy(stage.ani_filename, ani.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(stage.ani_filename, ani.constData(), MAX_FILENAME_LEN - 1);
 			stage.ani_filename[MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(stage.wave_filename, wave.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(stage.wave_filename, wave.constData(), MAX_FILENAME_LEN - 1);
 			stage.wave_filename[MAX_FILENAME_LEN - 1] = '\0';
 			stage.wave = -1; // runtime field, not persisted
 		}
 
 		for (auto& background : cb.background) {
-			QString bg;
+			QByteArray bg;
 			ds >> bg;
-			strncpy(background, bg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(background, bg.constData(), MAX_FILENAME_LEN - 1);
 			background[MAX_FILENAME_LEN - 1] = '\0';
 		}
 	}
@@ -79,13 +79,13 @@ QByteArray CommandBriefingDialogModel::captureWorkingState() const
 		ds << static_cast<qint32>(cb.num_stages);
 
 		for (const auto& stage : cb.stage) {
-			ds << QString::fromStdString(stage.text);
-			ds << QString::fromLatin1(stage.ani_filename);
-			ds << QString::fromLatin1(stage.wave_filename);
+			ds << QByteArray::fromStdString(stage.text);
+			ds << QByteArray(stage.ani_filename);
+			ds << QByteArray(stage.wave_filename);
 		}
 
 		for (const auto& background : cb.background)
-			ds << QString::fromLatin1(background);
+			ds << QByteArray(background);
 	}
 
 	ds << static_cast<qint32>(_currentTeam);
@@ -104,20 +104,20 @@ void CommandBriefingDialogModel::restoreWorkingState(const QByteArray& state)
 		cb.num_stages = static_cast<int>(numStages);
 
 		for (auto& stage : cb.stage) {
-			QString text, ani, wave;
+			QByteArray text, ani, wave;
 			ds >> text >> ani >> wave;
 			stage.text = text.toStdString();
-			strncpy(stage.ani_filename, ani.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(stage.ani_filename, ani.constData(), MAX_FILENAME_LEN - 1);
 			stage.ani_filename[MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(stage.wave_filename, wave.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(stage.wave_filename, wave.constData(), MAX_FILENAME_LEN - 1);
 			stage.wave_filename[MAX_FILENAME_LEN - 1] = '\0';
 			stage.wave = -1; // runtime field, not persisted
 		}
 
 		for (auto& background : cb.background) {
-			QString bg;
+			QByteArray bg;
 			ds >> bg;
-			strncpy(background, bg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(background, bg.constData(), MAX_FILENAME_LEN - 1);
 			background[MAX_FILENAME_LEN - 1] = '\0';
 		}
 	}

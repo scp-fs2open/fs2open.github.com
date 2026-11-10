@@ -31,8 +31,8 @@ static void writeIcon(QDataStream& ds, const brief_icon& ic)
 	ds << static_cast<qint32>(ic.team);
 	ds << static_cast<qint32>(ic.ship_class);
 	ds << ic.pos.xyz.x << ic.pos.xyz.y << ic.pos.xyz.z;
-	ds << QString::fromLatin1(ic.label);
-	ds << QString::fromLatin1(ic.closeup_label);
+	ds << QByteArray(ic.label);
+	ds << QByteArray(ic.closeup_label);
 	ds << static_cast<qint32>(ic.flags);
 	ds << ic.scale_factor;
 }
@@ -48,7 +48,7 @@ static void readIcon(QDataStream& ds, brief_icon& ic)
 
 	qint32 type, id, team, shipClass, flags;
 	float px, py, pz, scale;
-	QString label, closeupLabel;
+	QByteArray label, closeupLabel;
 
 	ds >> type >> id >> team >> shipClass;
 	ds >> px >> py >> pz;
@@ -59,9 +59,9 @@ static void readIcon(QDataStream& ds, brief_icon& ic)
 	ic.team       = static_cast<int>(team);
 	ic.ship_class = static_cast<int>(shipClass);
 	vm_vec_make(&ic.pos, px, py, pz);
-	strncpy(ic.label,         label.toLatin1().constData(),        MAX_LABEL_LEN - 1);
+	strncpy(ic.label,         label.constData(),        MAX_LABEL_LEN - 1);
 	ic.label[MAX_LABEL_LEN - 1] = '\0';
-	strncpy(ic.closeup_label, closeupLabel.toLatin1().constData(), MAX_LABEL_LEN - 1);
+	strncpy(ic.closeup_label, closeupLabel.constData(), MAX_LABEL_LEN - 1);
 	ic.closeup_label[MAX_LABEL_LEN - 1] = '\0';
 	ic.flags        = static_cast<int>(flags);
 	ic.scale_factor = scale;
@@ -69,8 +69,8 @@ static void readIcon(QDataStream& ds, brief_icon& ic)
 
 static void writeStage(QDataStream& ds, const brief_stage& s)
 {
-	ds << QString::fromStdString(s.text);
-	ds << QString::fromLatin1(s.voice);
+	ds << QByteArray::fromStdString(s.text);
+	ds << QByteArray(s.voice);
 	ds << s.camera_pos.xyz.x << s.camera_pos.xyz.y << s.camera_pos.xyz.z;
 	// camera_orient: row-major rvec/uvec/fvec
 	ds << s.camera_orient.vec.rvec.xyz.x << s.camera_orient.vec.rvec.xyz.y << s.camera_orient.vec.rvec.xyz.z;
@@ -109,10 +109,10 @@ static void writeStage(QDataStream& ds, const brief_stage& s)
 
 static void readStage(QDataStream& ds, brief_stage& s)
 {
-	QString text, voice;
+	QByteArray text, voice;
 	ds >> text >> voice;
 	s.text = text.toStdString();
-	strncpy(s.voice, voice.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+	strncpy(s.voice, voice.constData(), MAX_FILENAME_LEN - 1);
 	s.voice[MAX_FILENAME_LEN - 1] = '\0';
 
 	ds >> s.camera_pos.xyz.x >> s.camera_pos.xyz.y >> s.camera_pos.xyz.z;
@@ -180,14 +180,14 @@ QByteArray BriefingEditorDialogModel::captureState() const
 			writeStage(ds, stage);
 
 		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
-			ds << QString::fromLatin1(b.background[r]);
-			ds << QString::fromLatin1(b.ship_select_background[r]);
-			ds << QString::fromLatin1(b.weapon_select_background[r]);
+			ds << QByteArray(b.background[r]);
+			ds << QByteArray(b.ship_select_background[r]);
+			ds << QByteArray(b.weapon_select_background[r]);
 		}
 	}
 
 	ds << static_cast<qint32>(Mission_music[SCORE_BRIEFING]);
-	ds << QString::fromLatin1(The_mission.substitute_briefing_music_name);
+	ds << QByteArray(The_mission.substitute_briefing_music_name);
 
 	return data;
 }
@@ -211,14 +211,14 @@ QByteArray BriefingEditorDialogModel::captureWorkingState() const
 			writeStage(ds, stage);
 
 		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
-			ds << QString::fromLatin1(b.background[r]);
-			ds << QString::fromLatin1(b.ship_select_background[r]);
-			ds << QString::fromLatin1(b.weapon_select_background[r]);
+			ds << QByteArray(b.background[r]);
+			ds << QByteArray(b.ship_select_background[r]);
+			ds << QByteArray(b.weapon_select_background[r]);
 		}
 	}
 
 	ds << static_cast<qint32>(_briefingMusicIndex);
-	ds << QString::fromStdString(_subBriefingMusic);
+	ds << QByteArray::fromStdString(_subBriefingMusic);
 	ds << static_cast<qint32>(_currentTeam);
 	ds << static_cast<qint32>(_currentStage);
 	ds << static_cast<qint32>(_currentIcon);
@@ -239,19 +239,19 @@ void BriefingEditorDialogModel::restoreWorkingState(const QByteArray& state)
 			readStage(ds, stage); // frees and replaces the stage's formula
 
 		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
-			QString bg, shipBg, wpnBg;
+			QByteArray bg, shipBg, wpnBg;
 			ds >> bg >> shipBg >> wpnBg;
-			strncpy(b.background[r],              bg.toLatin1().constData(),    MAX_FILENAME_LEN - 1);
+			strncpy(b.background[r],              bg.constData(),    MAX_FILENAME_LEN - 1);
 			b.background[r][MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(b.ship_select_background[r],   shipBg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(b.ship_select_background[r],   shipBg.constData(), MAX_FILENAME_LEN - 1);
 			b.ship_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(b.weapon_select_background[r], wpnBg.toLatin1().constData(),  MAX_FILENAME_LEN - 1);
+			strncpy(b.weapon_select_background[r], wpnBg.constData(),  MAX_FILENAME_LEN - 1);
 			b.weapon_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
 		}
 	}
 
 	qint32 music, team, stage, icon;
-	QString subMusic;
+	QByteArray subMusic;
 	ds >> music >> subMusic >> team >> stage >> icon;
 	_briefingMusicIndex = static_cast<int>(music);
 	_subBriefingMusic   = subMusic.toStdString();
@@ -275,13 +275,13 @@ void BriefingEditorDialogModel::restoreState(const QByteArray& state)
 			readStage(ds, stage);
 
 		for (int r = 0; r < GR_NUM_RESOLUTIONS; ++r) {
-			QString bg, shipBg, wpnBg;
+			QByteArray bg, shipBg, wpnBg;
 			ds >> bg >> shipBg >> wpnBg;
-			strncpy(b.background[r],              bg.toLatin1().constData(),    MAX_FILENAME_LEN - 1);
+			strncpy(b.background[r],              bg.constData(),    MAX_FILENAME_LEN - 1);
 			b.background[r][MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(b.ship_select_background[r],   shipBg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(b.ship_select_background[r],   shipBg.constData(), MAX_FILENAME_LEN - 1);
 			b.ship_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
-			strncpy(b.weapon_select_background[r], wpnBg.toLatin1().constData(),  MAX_FILENAME_LEN - 1);
+			strncpy(b.weapon_select_background[r], wpnBg.constData(),  MAX_FILENAME_LEN - 1);
 			b.weapon_select_background[r][MAX_FILENAME_LEN - 1] = '\0';
 		}
 	}
@@ -290,10 +290,10 @@ void BriefingEditorDialogModel::restoreState(const QByteArray& state)
 	ds >> music;
 	Mission_music[SCORE_BRIEFING] = static_cast<int>(music);
 
-	QString subMusic;
+	QByteArray subMusic;
 	ds >> subMusic;
 	strncpy(The_mission.substitute_briefing_music_name,
-	        subMusic.toLatin1().constData(), NAME_LENGTH - 1);
+	        subMusic.constData(), NAME_LENGTH - 1);
 	The_mission.substitute_briefing_music_name[NAME_LENGTH - 1] = '\0';
 }
 

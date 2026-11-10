@@ -29,8 +29,8 @@ QByteArray CampaignEditorDialogModel::captureWorkingState() const
 	QByteArray data;
 	QDataStream ds(&data, QIODevice::WriteOnly);
 
-	ds << QString::fromStdString(m_campaign_name);
-	ds << QString::fromStdString(m_campaign_descr);
+	ds << QByteArray::fromStdString(m_campaign_name);
+	ds << QByteArray::fromStdString(m_campaign_descr);
 	ds << static_cast<qint32>(m_campaign_type);
 	ds << static_cast<qint32>(m_num_players);
 	ds << static_cast<qint32>(m_flags);
@@ -38,8 +38,8 @@ QByteArray CampaignEditorDialogModel::captureWorkingState() const
 
 	ds << static_cast<qint32>(m_custom_data.size());
 	for (const auto& [key, value] : m_custom_data) {
-		ds << QString::fromStdString(key);
-		ds << QString::fromStdString(value);
+		ds << QByteArray::fromStdString(key);
+		ds << QByteArray::fromStdString(value);
 	}
 
 	// the allowed lists are sets of class indices; absent = not allowed
@@ -52,27 +52,27 @@ QByteArray CampaignEditorDialogModel::captureWorkingState() const
 
 	ds << static_cast<qint32>(m_missions.size());
 	for (const auto& mission : m_missions) {
-		ds << QString::fromStdString(mission.filename);
+		ds << QByteArray::fromStdString(mission.filename);
 		ds << static_cast<qint32>(mission.level);
 		ds << static_cast<qint32>(mission.position);
 		ds << static_cast<qint32>(mission.graph_x);
 		ds << static_cast<qint32>(mission.graph_y);
 		ds << static_cast<qint32>(mission.graph_color);
-		ds << QString::fromStdString(mission.briefing_cutscene);
-		ds << QString::fromStdString(mission.main_hall);
-		ds << QString::fromStdString(mission.substitute_main_hall);
+		ds << QByteArray::fromStdString(mission.briefing_cutscene);
+		ds << QByteArray::fromStdString(mission.main_hall);
+		ds << QByteArray::fromStdString(mission.substitute_main_hall);
 		ds << static_cast<qint32>(mission.debrief_persona_index);
 		ds << static_cast<qint32>(mission.special_mode_hint);
 
 		ds << static_cast<qint32>(mission.branches.size());
 		for (const auto& branch : mission.branches) {
 			ds << static_cast<qint32>(branch.id);
-			ds << QString::fromStdString(branch.next_mission_name);
+			ds << QByteArray::fromStdString(branch.next_mission_name);
 			ds << static_cast<quint8>(branch.is_loop ? 1 : 0);
 			ds << static_cast<quint8>(branch.is_fork ? 1 : 0);
-			ds << QString::fromStdString(branch.loop_description);
-			ds << QString::fromStdString(branch.loop_briefing_anim);
-			ds << QString::fromStdString(branch.loop_briefing_sound);
+			ds << QByteArray::fromStdString(branch.loop_description);
+			ds << QByteArray::fromStdString(branch.loop_briefing_anim);
+			ds << QByteArray::fromStdString(branch.loop_briefing_sound);
 			// branch.sexp_formula is an internal tree id; round-trip the
 			// condition through Sexp_nodes to serialize its content.
 			const int sexp = m_tree_ops.saveSexp(branch.sexp_formula);
@@ -93,7 +93,7 @@ void CampaignEditorDialogModel::restoreWorkingState(const QByteArray& state)
 	m_tree_ops.clearTree();
 	m_missions.clear();
 
-	QString name, descr;
+	QByteArray name, descr;
 	qint32 type, numPlayers, flags, saveFormat;
 	ds >> name >> descr >> type >> numPlayers >> flags >> saveFormat;
 	m_campaign_name  = name.toStdString();
@@ -107,7 +107,7 @@ void CampaignEditorDialogModel::restoreWorkingState(const QByteArray& state)
 	qint32 customCount;
 	ds >> customCount;
 	for (int i = 0; i < customCount; ++i) {
-		QString key, value;
+		QByteArray key, value;
 		ds >> key >> value;
 		m_custom_data[key.toStdString()] = value.toStdString();
 	}
@@ -131,7 +131,7 @@ void CampaignEditorDialogModel::restoreWorkingState(const QByteArray& state)
 	for (int i = 0; i < missionCount; ++i) {
 		auto& mission = m_missions.emplace_back();
 
-		QString filename, cutscene, hall, subHall;
+		QByteArray filename, cutscene, hall, subHall;
 		qint32 level, position, graphX, graphY, graphColor, persona, modeHint;
 		ds >> filename >> level >> position >> graphX >> graphY >> graphColor;
 		ds >> cutscene >> hall >> subHall >> persona >> modeHint;
@@ -154,7 +154,7 @@ void CampaignEditorDialogModel::restoreWorkingState(const QByteArray& state)
 		for (int j = 0; j < branchCount; ++j) {
 			auto& branch = mission.branches.emplace_back();
 
-			QString nextName, loopDescr, loopAnim, loopVoice;
+			QByteArray nextName, loopDescr, loopAnim, loopVoice;
 			qint32 id;
 			quint8 isLoop, isFork;
 			ds >> id >> nextName >> isLoop >> isFork;

@@ -66,7 +66,7 @@ QByteArray MissionEventsDialogModel::captureState() const
 	// --- Mission_events ---
 	ds << static_cast<qint32>(Mission_events.size());
 	for (const mission_event& e : Mission_events) {
-		ds << QString::fromStdString(e.name);
+		ds << QByteArray::fromStdString(e.name);
 		fso::fred::state::writeSexp(ds, e.formula);
 		ds << static_cast<qint32>(e.repeat_count);
 		ds << static_cast<qint32>(e.trigger_count);
@@ -74,8 +74,8 @@ QByteArray MissionEventsDialogModel::captureState() const
 		ds << static_cast<qint32>(e.score);
 		ds << static_cast<qint32>(e.chain_delay);
 		ds << static_cast<qint32>(e.flags);
-		ds << QString::fromStdString(e.objective_text);
-		ds << QString::fromStdString(e.objective_key_text);
+		ds << QByteArray::fromStdString(e.objective_text);
+		ds << QByteArray::fromStdString(e.objective_key_text);
 		ds << static_cast<qint32>(e.team);
 		ds << static_cast<qint32>(e.mission_log_flags);
 	}
@@ -85,11 +85,11 @@ QByteArray MissionEventsDialogModel::captureState() const
 	ds << static_cast<qint32>(nonBuiltin);
 	for (int i = Num_builtin_messages; i < Num_messages; ++i) {
 		const MMessage& m = Messages[i];
-		ds << QString::fromLatin1(m.name);
-		ds << QString::fromLatin1(m.message);
-		ds << QString::fromStdString(m.note);
-		ds << QString::fromLatin1(m.avi_info.name  ? m.avi_info.name  : "");
-		ds << QString::fromLatin1(m.wave_info.name ? m.wave_info.name : "");
+		ds << QByteArray(m.name);
+		ds << QByteArray(m.message);
+		ds << QByteArray::fromStdString(m.note);
+		ds << QByteArray(m.avi_info.name  ? m.avi_info.name  : "");
+		ds << QByteArray(m.wave_info.name ? m.wave_info.name : "");
 		ds << static_cast<qint32>(m.persona_index);
 		ds << static_cast<qint32>(m.multi_team);
 		writeMessageExtras(ds, m);
@@ -101,7 +101,7 @@ QByteArray MissionEventsDialogModel::captureState() const
 		ds << static_cast<qint32>(ea.path.size());
 		for (int idx : ea.path)
 			ds << static_cast<qint32>(idx);
-		ds << QString::fromStdString(ea.comment);
+		ds << QByteArray::fromStdString(ea.comment);
 		ds << static_cast<quint8>(ea.r);
 		ds << static_cast<quint8>(ea.g);
 		ds << static_cast<quint8>(ea.b);
@@ -125,7 +125,7 @@ void MissionEventsDialogModel::restoreState(const QByteArray& state)
 
 	for (int i = 0; i < eventCount; ++i) {
 		mission_event& e = Mission_events[static_cast<size_t>(i)];
-		QString name, objText, objKeyText;
+		QByteArray name, objText, objKeyText;
 		qint32 repeat, trigger, interval, score, chainDelay, flags, team, logFlags;
 
 		ds >> name;
@@ -165,22 +165,22 @@ void MissionEventsDialogModel::restoreState(const QByteArray& state)
 		m.avi_info.name  = nullptr;
 		m.wave_info.name = nullptr;
 
-		QString name, message, note, avi, wave;
+		QByteArray name, message, note, avi, wave;
 		qint32 persona, team;
 		ds >> name >> message >> note >> avi >> wave >> persona >> team;
 
-		strncpy(m.name,    name.toLatin1().constData(),    NAME_LENGTH    - 1);
+		strncpy(m.name,    name.constData(),    NAME_LENGTH    - 1);
 		m.name[NAME_LENGTH - 1] = '\0';
-		strncpy(m.message, message.toLatin1().constData(), MESSAGE_LENGTH - 1);
+		strncpy(m.message, message.constData(), MESSAGE_LENGTH - 1);
 		m.message[MESSAGE_LENGTH - 1] = '\0';
 		m.note          = note.toStdString();
 		m.persona_index = static_cast<int>(persona);
 		m.multi_team    = static_cast<int>(team);
 
 		if (!avi.isEmpty())
-			m.avi_info.name  = strdup(avi.toLatin1().constData());
+			m.avi_info.name  = strdup(avi.constData());
 		if (!wave.isEmpty())
-			m.wave_info.name = strdup(wave.toLatin1().constData());
+			m.wave_info.name = strdup(wave.constData());
 
 		readMessageExtras(ds, m);
 	}
@@ -202,7 +202,7 @@ void MissionEventsDialogModel::restoreState(const QByteArray& state)
 			ds >> idx;
 			ea.path.push_back(static_cast<int>(idx));
 		}
-		QString comment;
+		QByteArray comment;
 		quint8 r, g, b;
 		ds >> comment >> r >> g >> b;
 		ea.comment    = comment.toStdString();
@@ -229,7 +229,7 @@ static void writeMessageFilter(QDataStream& ds, const MessageFilter& f)
 	auto writeNames = [&ds](const SCP_vector<SCP_string>& names) {
 		ds << static_cast<qint32>(names.size());
 		for (const auto& n : names)
-			ds << QString::fromStdString(n);
+			ds << QByteArray::fromStdString(n);
 	};
 	writeNames(f.ship_name);
 	writeNames(f.callsign);
@@ -247,7 +247,7 @@ static void readMessageFilter(QDataStream& ds, MessageFilter& f)
 		qint32 count;
 		ds >> count;
 		for (int i = 0; i < count; ++i) {
-			QString n;
+			QByteArray n;
 			ds >> n;
 			names.push_back(n.toStdString());
 		}
@@ -272,7 +272,7 @@ QByteArray MissionEventsDialogModel::captureEventWorkingState() const
 	for (size_t i = 0; i < m_events.size(); ++i) {
 		const mission_event& e = m_events[i];
 		ds << static_cast<qint32>(m_sig[i]);
-		ds << QString::fromStdString(e.name);
+		ds << QByteArray::fromStdString(e.name);
 		// e.formula is a tree-widget node id; round-trip the branch through
 		// Sexp_nodes to serialize its content.
 		const int sexp = m_tree_model.save_tree(e.formula);
@@ -284,8 +284,8 @@ QByteArray MissionEventsDialogModel::captureEventWorkingState() const
 		ds << static_cast<qint32>(e.score);
 		ds << static_cast<qint32>(e.chain_delay);
 		ds << static_cast<qint32>(e.flags);
-		ds << QString::fromStdString(e.objective_text);
-		ds << QString::fromStdString(e.objective_key_text);
+		ds << QByteArray::fromStdString(e.objective_text);
+		ds << QByteArray::fromStdString(e.objective_key_text);
 		ds << static_cast<qint32>(e.team);
 		ds << static_cast<qint32>(e.mission_log_flags);
 	}
@@ -316,7 +316,7 @@ QByteArray MissionEventsDialogModel::captureEventWorkingState() const
 		ds << static_cast<qint32>(path.size());
 		for (int p : path)
 			ds << static_cast<qint32>(p);
-		ds << QString::fromStdString(ea->comment);
+		ds << QByteArray::fromStdString(ea->comment);
 		ds << static_cast<quint8>(ea->r) << static_cast<quint8>(ea->g) << static_cast<quint8>(ea->b);
 	}
 
@@ -336,7 +336,7 @@ void MissionEventsDialogModel::restoreEventWorkingState(const QByteArray& state)
 	for (int i = 0; i < count; ++i) {
 		mission_event e{};
 		qint32 sig, repeat, trigger, interval, score, chainDelay, flags, team, logFlags;
-		QString name, objText, objKeyText;
+		QByteArray name, objText, objKeyText;
 
 		ds >> sig >> name;
 		const int sexp = fso::fred::state::readSexp(ds);
@@ -387,7 +387,7 @@ void MissionEventsDialogModel::restoreEventWorkingState(const QByteArray& state)
 			ds >> idx;
 			path.push_back(static_cast<int>(idx));
 		}
-		QString comment;
+		QByteArray comment;
 		quint8 r, g, b;
 		ds >> comment >> r >> g >> b;
 
@@ -413,11 +413,11 @@ QByteArray MissionEventsDialogModel::captureMessageWorkingState() const
 
 	ds << static_cast<qint32>(m_messages.size());
 	for (const MMessage& m : m_messages) {
-		ds << QString::fromLatin1(m.name);
-		ds << QString::fromLatin1(m.message);
-		ds << QString::fromStdString(m.note);
-		ds << QString::fromLatin1(m.avi_info.name  ? m.avi_info.name  : "");
-		ds << QString::fromLatin1(m.wave_info.name ? m.wave_info.name : "");
+		ds << QByteArray(m.name);
+		ds << QByteArray(m.message);
+		ds << QByteArray::fromStdString(m.note);
+		ds << QByteArray(m.avi_info.name  ? m.avi_info.name  : "");
+		ds << QByteArray(m.wave_info.name ? m.wave_info.name : "");
 		ds << static_cast<qint32>(m.persona_index);
 		ds << static_cast<qint32>(m.multi_team);
 		writeMessageExtras(ds, m);
@@ -447,13 +447,13 @@ void MissionEventsDialogModel::restoreMessageWorkingState(const QByteArray& stat
 		m.avi_info.name  = nullptr;
 		m.wave_info.name = nullptr;
 
-		QString name, message, note, avi, wave;
+		QByteArray name, message, note, avi, wave;
 		qint32 persona, team;
 		ds >> name >> message >> note >> avi >> wave >> persona >> team;
 
-		strncpy(m.name,    name.toLatin1().constData(),    NAME_LENGTH    - 1);
+		strncpy(m.name,    name.constData(),    NAME_LENGTH    - 1);
 		m.name[NAME_LENGTH - 1] = '\0';
-		strncpy(m.message, message.toLatin1().constData(), MESSAGE_LENGTH - 1);
+		strncpy(m.message, message.constData(), MESSAGE_LENGTH - 1);
 		m.message[MESSAGE_LENGTH - 1] = '\0';
 		m.note          = note.toStdString();
 		m.persona_index = static_cast<int>(persona);
@@ -462,9 +462,9 @@ void MissionEventsDialogModel::restoreMessageWorkingState(const QByteArray& stat
 		readMessageExtras(ds, m);
 
 		if (!avi.isEmpty())
-			m.avi_info.name  = strdup(avi.toLatin1().constData());
+			m.avi_info.name  = strdup(avi.constData());
 		if (!wave.isEmpty())
-			m.wave_info.name = strdup(wave.toLatin1().constData());
+			m.wave_info.name = strdup(wave.constData());
 
 		m_messages.push_back(std::move(m));
 	}

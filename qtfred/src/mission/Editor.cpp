@@ -1137,6 +1137,13 @@ int Editor::common_object_delete(int obj) {
 			[obj](const CJumpNode &jn) { return jn.GetSCPObjectNumber() == obj; });
 	}
 
+	// the alt name and callsign are kept per Ships[] slot; clear them so a ship
+	// created in this slot later does not inherit them
+	if (Objects[obj].type == OBJ_SHIP) {
+		Fred_alt_names[Objects[obj].instance][0] = '\0';
+		Fred_callsigns[Objects[obj].instance][0] = '\0';
+	}
+
 	unmarkObject(obj);
 
 	//obj_delete() handles all type-specific cleanup and frees up the object slot where the object used to reside

@@ -99,6 +99,10 @@ CapturedShip& CapturedShip::operator=(CapturedShip&& o) noexcept
 
 	subsystems = std::move(o.subsystems);
 	flags      = o.flags;
+	obj_flags  = o.obj_flags;
+	ai_flags   = o.ai_flags;
+	memcpy(fred_alt_name, o.fred_alt_name, sizeof(fred_alt_name));
+	memcpy(fred_callsign, o.fred_callsign, sizeof(fred_callsign));
 
 	respawn_priority   = o.respawn_priority;
 	escort_priority    = o.escort_priority;
@@ -159,6 +163,25 @@ void freeSexpCueDup(int& cue_dup)
 	if (cue_dup >= 0)
 		free_sexp2(cue_dup);
 	cue_dup = SHIP_CUE_NONE;
+}
+
+flagset<Object::Object_Flags> withLiveEditorObjectFlags(flagset<Object::Object_Flags> saved,
+                                                        const flagset<Object::Object_Flags>& live)
+{
+	static const Object::Object_Flags liveBits[] = {
+		Object::Object_Flags::Marked,
+		Object::Object_Flags::Temp_marked,
+		Object::Object_Flags::Hidden,
+		Object::Object_Flags::Locked_from_editing,
+		Object::Object_Flags::Should_be_dead,
+		Object::Object_Flags::Was_rendered,
+		Object::Object_Flags::Not_in_coll,
+		Object::Object_Flags::Docked_already_handled,
+		Object::Object_Flags::Collision_cache_stale,
+	};
+	for (const auto f : liveBits)
+		saved.set(f, live[f]);
+	return saved;
 }
 
 CapturedShip captureShip(int objNum)
@@ -242,7 +265,13 @@ CapturedShip captureShip(int objNum)
 	}
 
 	// Flags
-	c.flags = s.flags;
+	c.flags     = s.flags;
+	c.obj_flags = o.flags;
+	c.ai_flags  = ai.ai_flags;
+
+	// FRED alt name / callsign (slot-keyed; see CapturedShip)
+	strcpy_s(c.fred_alt_name, Fred_alt_names[o.instance]);
+	strcpy_s(c.fred_callsign, Fred_callsigns[o.instance]);
 
 	// Misc
 	c.respawn_priority   = s.respawn_priority;
@@ -346,7 +375,12 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	if (c.signature > 0)
 		o.signature = c.signature;
 
-	// Identity
+	// Identity. create_ship registered the ship under its generated name, so
+	// move that registry entry to the restored name (no sexp rewriting here,
+	// unlike Editor::rename_ship).
+	auto reg_it = Ship_registry_map.find(s.ship_name);
+	if (reg_it != Ship_registry_map.end())
+		ship_registry_rename(reg_it->second, c.ship_name, true);
 	strcpy_s(s.ship_name, c.ship_name);
 	s.display_name   = c.display_name;
 	s.team           = c.team;
@@ -411,7 +445,14 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	}
 
 	// Flags
-	s.flags = c.flags;
+	s.flags     = c.flags;
+	o.flags     = withLiveEditorObjectFlags(c.obj_flags, o.flags);
+	ai.ai_flags = c.ai_flags;
+
+	// FRED alt name / callsign, written into the new slot (which may hold a
+	// stale value from an earlier ship)
+	strcpy_s(Fred_alt_names[o.instance], c.fred_alt_name);
+	strcpy_s(Fred_callsigns[o.instance], c.fred_callsign);
 
 	// Misc
 	s.respawn_priority        = c.respawn_priority;

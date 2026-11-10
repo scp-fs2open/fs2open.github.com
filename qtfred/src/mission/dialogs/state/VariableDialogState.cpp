@@ -31,24 +31,24 @@ QByteArray VariableDialogModel::captureState() const
 	for (const auto& v : Sexp_variables) {
 		if (v.type & SEXP_VARIABLE_NOT_USED)
 			continue;
-		ds << static_cast<qint32>(v.type) << QString::fromLatin1(v.variable_name)
-		   << QString::fromLatin1(v.text);
+		ds << static_cast<qint32>(v.type) << QByteArray(v.variable_name)
+		   << QByteArray(v.text);
 	}
 
 	// Containers
 	const auto& containers = get_all_sexp_containers();
 	ds << static_cast<qint32>(containers.size());
 	for (const auto& c : containers) {
-		ds << QString::fromStdString(c.container_name);
+		ds << QByteArray::fromStdString(c.container_name);
 		ds << static_cast<qint32>(static_cast<ContainerTypeInt>(c.type));
 
 		ds << static_cast<qint32>(c.list_data.size());
 		for (const auto& s : c.list_data)
-			ds << QString::fromStdString(s);
+			ds << QByteArray::fromStdString(s);
 
 		ds << static_cast<qint32>(c.map_data.size());
 		for (const auto& [k, v] : c.map_data)
-			ds << QString::fromStdString(k) << QString::fromStdString(v);
+			ds << QByteArray::fromStdString(k) << QByteArray::fromStdString(v);
 	}
 
 	return data;
@@ -69,14 +69,14 @@ void VariableDialogModel::restoreState(const QByteArray& state)
 	ds >> var_count;
 	for (int i = 0; i < static_cast<int>(var_count) && i < MAX_SEXP_VARIABLES; ++i) {
 		qint32 type;
-		QString name, text;
+		QByteArray name, text;
 		ds >> type >> name >> text;
 
 		auto& v     = Sexp_variables[i];
 		v.type      = static_cast<int>(type);
-		strncpy(v.variable_name, name.toLatin1().constData(), TOKEN_LENGTH - 1);
+		strncpy(v.variable_name, name.constData(), TOKEN_LENGTH - 1);
 		v.variable_name[TOKEN_LENGTH - 1] = '\0';
-		strncpy(v.text, text.toLatin1().constData(), TOKEN_LENGTH - 1);
+		strncpy(v.text, text.constData(), TOKEN_LENGTH - 1);
 		v.text[TOKEN_LENGTH - 1] = '\0';
 	}
 
@@ -89,7 +89,7 @@ void VariableDialogModel::restoreState(const QByteArray& state)
 
 	for (int i = 0; i < static_cast<int>(cont_count); ++i) {
 		sexp_container c;
-		QString name;
+		QByteArray name;
 		qint32 type_int;
 		ds >> name >> type_int;
 
@@ -99,7 +99,7 @@ void VariableDialogModel::restoreState(const QByteArray& state)
 		qint32 list_count;
 		ds >> list_count;
 		for (int j = 0; j < static_cast<int>(list_count); ++j) {
-			QString s;
+			QByteArray s;
 			ds >> s;
 			c.list_data.push_back(s.toStdString());
 		}
@@ -107,7 +107,7 @@ void VariableDialogModel::restoreState(const QByteArray& state)
 		qint32 map_count;
 		ds >> map_count;
 		for (int j = 0; j < static_cast<int>(map_count); ++j) {
-			QString k, v;
+			QByteArray k, v;
 			ds >> k >> v;
 			c.map_data[k.toStdString()] = v.toStdString();
 		}
@@ -143,7 +143,7 @@ static void writeStringVector(QDataStream& ds, const SCP_vector<SCP_string>& v)
 {
 	ds << static_cast<qint32>(v.size());
 	for (const auto& s : v)
-		ds << QString::fromStdString(s);
+		ds << QByteArray::fromStdString(s);
 }
 
 static void readStringVector(QDataStream& ds, SCP_vector<SCP_string>& v)
@@ -153,7 +153,7 @@ static void readStringVector(QDataStream& ds, SCP_vector<SCP_string>& v)
 	ds >> count;
 	v.reserve(count);
 	for (int i = 0; i < count; ++i) {
-		QString s;
+		QByteArray s;
 		ds >> s;
 		v.push_back(s.toStdString());
 	}
@@ -166,18 +166,18 @@ QByteArray VariableDialogModel::captureWorkingState() const
 
 	ds << static_cast<qint32>(m_variables.size());
 	for (const auto& var : m_variables) {
-		ds << QString::fromStdString(var.name);
-		ds << QString::fromStdString(var.originalName);
+		ds << QByteArray::fromStdString(var.name);
+		ds << QByteArray::fromStdString(var.originalName);
 		ds << static_cast<quint8>(var.is_string ? 1 : 0);
 		ds << static_cast<qint32>(var.flags);
 		ds << static_cast<qint32>(var.numberValue);
-		ds << QString::fromStdString(var.stringValue);
+		ds << QByteArray::fromStdString(var.stringValue);
 	}
 
 	ds << static_cast<qint32>(m_containers.size());
 	for (const auto& cont : m_containers) {
-		ds << QString::fromStdString(cont.name);
-		ds << QString::fromStdString(cont.originalName);
+		ds << QByteArray::fromStdString(cont.name);
+		ds << QByteArray::fromStdString(cont.originalName);
 		ds << static_cast<quint8>(cont.is_list ? 1 : 0);
 		ds << static_cast<quint8>(cont.values_are_strings ? 1 : 0);
 		ds << static_cast<quint8>(cont.keys_are_strings ? 1 : 0);
@@ -204,7 +204,7 @@ void VariableDialogModel::restoreWorkingState(const QByteArray& state)
 	m_variables.reserve(varCount);
 	for (int i = 0; i < varCount; ++i) {
 		auto& var = m_variables.emplace_back();
-		QString name, originalName, stringValue;
+		QByteArray name, originalName, stringValue;
 		quint8 isString;
 		qint32 flags, numberValue;
 		ds >> name >> originalName >> isString >> flags >> numberValue >> stringValue;
@@ -222,7 +222,7 @@ void VariableDialogModel::restoreWorkingState(const QByteArray& state)
 	m_containers.reserve(contCount);
 	for (int i = 0; i < contCount; ++i) {
 		auto& cont = m_containers.emplace_back();
-		QString name, originalName;
+		QByteArray name, originalName;
 		quint8 isList, valuesAreStrings, keysAreStrings;
 		qint32 flags;
 		ds >> name >> originalName >> isList >> valuesAreStrings >> keysAreStrings >> flags;

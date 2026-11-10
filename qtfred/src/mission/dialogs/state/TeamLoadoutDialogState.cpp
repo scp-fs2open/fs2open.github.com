@@ -19,8 +19,8 @@ static void writeLoadoutEntries(QDataStream& ds, const SCP_vector<loadout_entry>
 	for (const auto& entry : entries) {
 		ds << static_cast<qint32>(entry.class_index);
 		ds << static_cast<qint32>(entry.count);
-		ds << QString::fromStdString(entry.class_variable);
-		ds << QString::fromStdString(entry.count_variable);
+		ds << QByteArray::fromStdString(entry.class_variable);
+		ds << QByteArray::fromStdString(entry.count_variable);
 	}
 }
 
@@ -33,7 +33,7 @@ static void readLoadoutEntries(QDataStream& ds, SCP_vector<loadout_entry>& entri
 	for (int i = 0; i < count; ++i) {
 		auto& entry = entries.emplace_back();
 		qint32 classIndex, entryCount;
-		QString classVar, countVar;
+		QByteArray classVar, countVar;
 		ds >> classIndex >> entryCount >> classVar >> countVar;
 		entry.class_index    = static_cast<int>(classIndex);
 		entry.count          = static_cast<int>(entryCount);
@@ -119,7 +119,7 @@ static void writeLoadoutItems(QDataStream& ds, const SCP_vector<LoadoutItem>& it
 		ds << static_cast<qint32>(item.countInWings);
 		ds << static_cast<qint32>(item.extraAllocated);
 		ds << static_cast<qint32>(item.varCountIndex);
-		ds << QString::fromStdString(item.name);
+		ds << QByteArray::fromStdString(item.name);
 	}
 }
 
@@ -133,7 +133,7 @@ static void readLoadoutItems(QDataStream& ds, SCP_vector<LoadoutItem>& items)
 		auto& item = items.emplace_back();
 		qint32 infoIndex, countInWings, extraAllocated, varCountIndex;
 		quint8 enabled, required, fromVariable;
-		QString name;
+		QByteArray name;
 		ds >> infoIndex >> enabled >> required >> fromVariable;
 		ds >> countInWings >> extraAllocated >> varCountIndex >> name;
 		item.infoIndex      = static_cast<int>(infoIndex);

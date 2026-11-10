@@ -42,7 +42,7 @@ For in-dialog edits where per-field commands don't fit: sexp tree mutations, lis
 
 ### `ApplyDialogCommand` - Modal edit accept
 
-The accept flow of every Modal edit dialog: capture model state, `apply()`, capture again, push one `ApplyDialogCommand` to the main stack, clear the dialog's own stack. The command takes ownership of the dialog model (call `setParent(nullptr)` before moving it in) and restores via the model's `captureState()`/`restoreState()`, implemented in `qtfred/src/mission/dialogs/state/<Name>State.cpp`. Sexp formulas serialize for real via `DialogStateHelpers::writeSexp`/`readSexp`.
+The accept flow of every Modal edit dialog: capture model state, `apply()`, capture again, push one `ApplyDialogCommand` to the main stack, clear the dialog's own stack. The command takes ownership of the dialog model (call `setParent(nullptr)` before moving it in) and restores via the model's `captureState()`/`restoreState()`, implemented in `qtfred/src/mission/dialogs/state/<Name>State.cpp`. Sexp formulas serialize for real via `DialogStateHelpers::writeSexp`/`readSexp`. Strings stream as `QByteArray`, never `QString`, so non-UTF-8 mission text survives byte for byte. `apply()` has already written the after-state, so the command skips its first redo; restoring there would push every OK through the serializer.
 
 The shared `rejectOrCloseHandler()` routes "keep your changes? → Yes" through the dialog's `accept()` so a close-with-save is exactly as undoable as OK. Never call `model->apply()` outside the accept flow.
 

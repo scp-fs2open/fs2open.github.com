@@ -25,7 +25,7 @@ QByteArray VolumetricNebulaDialogModel::captureState() const
 
 	const volumetric_nebula& v = *The_mission.volumetrics;
 
-	ds << QString::fromStdString(v.hullPof);
+	ds << QByteArray::fromStdString(v.hullPof);
 	ds << v.pos.xyz.x << v.pos.xyz.y << v.pos.xyz.z;
 
 	const auto& [cr, cg, cb] = v.nebulaColor;
@@ -55,11 +55,11 @@ QByteArray VolumetricNebulaDialogModel::captureState() const
 
 	const bool hasFunc1 = v.noiseColorFunc1.has_value();
 	ds << hasFunc1;
-	if (hasFunc1) ds << QString::fromStdString(*v.noiseColorFunc1);
+	if (hasFunc1) ds << QByteArray::fromStdString(*v.noiseColorFunc1);
 
 	const bool hasFunc2 = v.noiseColorFunc2.has_value();
 	ds << hasFunc2;
-	if (hasFunc2) ds << QString::fromStdString(*v.noiseColorFunc2);
+	if (hasFunc2) ds << QByteArray::fromStdString(*v.noiseColorFunc2);
 
 	const auto& [nr, ng, nb] = v.noiseColor;
 	ds << nr << ng << nb;
@@ -86,7 +86,7 @@ void VolumetricNebulaDialogModel::restoreState(const QByteArray& state)
 
 	volumetric_nebula& v = *The_mission.volumetrics;
 
-	QString hullPof;
+	QByteArray hullPof;
 	ds >> hullPof;
 	v.hullPof = hullPof.toStdString();
 
@@ -98,12 +98,12 @@ void VolumetricNebulaDialogModel::restoreState(const QByteArray& state)
 
 	ds >> v.doEdgeSmoothing;
 	qint32 steps, glSteps, res, oversamp, noiseRes;
-	ds >> steps >> glSteps >> res >> oversamp >> noiseRes;
+	ds >> steps >> glSteps >> res >> oversamp;
 	v.steps = static_cast<int>(steps);
 	v.globalLightSteps = static_cast<int>(glSteps);
 	v.resolution = static_cast<int>(res);
 	v.oversampling = static_cast<int>(oversamp);
-	ds >> v.smoothing;
+	ds >> v.smoothing >> noiseRes;
 	v.noiseResolution = static_cast<int>(noiseRes);
 
 	ds >> v.opacityDistance;
@@ -124,7 +124,7 @@ void VolumetricNebulaDialogModel::restoreState(const QByteArray& state)
 	bool hasFunc1;
 	ds >> hasFunc1;
 	if (hasFunc1) {
-		QString f;
+		QByteArray f;
 		ds >> f;
 		v.noiseColorFunc1 = f.toStdString();
 	} else {
@@ -134,7 +134,7 @@ void VolumetricNebulaDialogModel::restoreState(const QByteArray& state)
 	bool hasFunc2;
 	ds >> hasFunc2;
 	if (hasFunc2) {
-		QString f;
+		QByteArray f;
 		ds >> f;
 		v.noiseColorFunc2 = f.toStdString();
 	} else {

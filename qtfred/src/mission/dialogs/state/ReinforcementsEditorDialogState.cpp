@@ -21,15 +21,15 @@ QByteArray ReinforcementsDialogModel::captureState() const
 	ds << static_cast<qint32>(Reinforcements.size());
 
 	for (const auto& r : Reinforcements) {
-		ds << QString::fromLatin1(r.name);
+		ds << QByteArray(r.name);
 		ds << static_cast<qint32>(r.type);
 		ds << static_cast<qint32>(r.uses);
 		ds << static_cast<qint32>(r.arrival_delay);
 
 		for (const auto& msg : r.no_messages)
-			ds << QString::fromLatin1(msg);
+			ds << QByteArray(msg);
 		for (const auto& msg : r.yes_messages)
-			ds << QString::fromLatin1(msg);
+			ds << QByteArray(msg);
 	}
 
 	return data;
@@ -44,26 +44,26 @@ void ReinforcementsDialogModel::restoreState(const QByteArray& state)
 	Reinforcements.resize(static_cast<size_t>(num));
 
 	for (auto& r : Reinforcements) {
-		QString name;
+		QByteArray name;
 		qint32 type, uses, arrival_delay;
 		ds >> name >> type >> uses >> arrival_delay;
 
-		strncpy(r.name, name.toLatin1().constData(), NAME_LENGTH - 1);
+		strncpy(r.name, name.constData(), NAME_LENGTH - 1);
 		r.name[NAME_LENGTH - 1] = '\0';
 		r.type          = static_cast<int>(type);
 		r.uses          = static_cast<int>(uses);
 		r.arrival_delay = static_cast<int>(arrival_delay);
 
 		for (auto& slot : r.no_messages) {
-			QString msg;
+			QByteArray msg;
 			ds >> msg;
-			strncpy(slot, msg.toLatin1().constData(), NAME_LENGTH - 1);
+			strncpy(slot, msg.constData(), NAME_LENGTH - 1);
 			slot[NAME_LENGTH - 1] = '\0';
 		}
 		for (auto& slot : r.yes_messages) {
-			QString msg;
+			QByteArray msg;
 			ds >> msg;
-			strncpy(slot, msg.toLatin1().constData(), NAME_LENGTH - 1);
+			strncpy(slot, msg.constData(), NAME_LENGTH - 1);
 			slot[NAME_LENGTH - 1] = '\0';
 		}
 	}
@@ -83,14 +83,14 @@ QByteArray ReinforcementsDialogModel::captureWorkingState() const
 
 	ds << static_cast<qint32>(_reinforcementList.size());
 	for (const auto& r : _reinforcementList) {
-		ds << QString::fromStdString(std::get<0>(r));
+		ds << QByteArray::fromStdString(std::get<0>(r));
 		ds << static_cast<qint32>(std::get<1>(r));
 		ds << static_cast<qint32>(std::get<2>(r));
 	}
 
 	ds << static_cast<qint32>(_shipWingPool.size());
 	for (const auto& name : _shipWingPool)
-		ds << QString::fromStdString(name);
+		ds << QByteArray::fromStdString(name);
 
 	return data;
 }
@@ -104,7 +104,7 @@ void ReinforcementsDialogModel::restoreWorkingState(const QByteArray& state)
 	_reinforcementList.clear();
 	_reinforcementList.reserve(count);
 	for (int i = 0; i < count; ++i) {
-		QString name;
+		QByteArray name;
 		qint32 uses, delay;
 		ds >> name >> uses >> delay;
 		_reinforcementList.emplace_back(name.toStdString(), static_cast<int>(uses), static_cast<int>(delay));
@@ -115,7 +115,7 @@ void ReinforcementsDialogModel::restoreWorkingState(const QByteArray& state)
 	_shipWingPool.clear();
 	_shipWingPool.reserve(poolCount);
 	for (int i = 0; i < poolCount; ++i) {
-		QString name;
+		QByteArray name;
 		ds >> name;
 		_shipWingPool.push_back(name.toStdString());
 	}

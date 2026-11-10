@@ -16,6 +16,7 @@
 #include <ui/util/SignalBlockers.h>
 #include <ui/util/menu.h>
 #include <mission/commands/FredCommands.h>
+#include <mission/dialogs/state/DialogStateHelpers.h>
 
 #include <ui/dialogs/General/CheckBoxListDialog.h>
 #include <QVariant>
@@ -132,7 +133,6 @@ struct ShipInitialStatusSnapshot {
 	flagset<Ship::Ship_Flags> shipFlags;
 	flagset<Object::Object_Flags> objFlags;
 	SCP_string teamName;
-	int arrivalCue;
 	struct SubsysState {
 		float currentHits;
 		int subsysCargoName;
@@ -154,13 +154,19 @@ struct ShipInitialStatusSnapshot {
 	// pre-apply positions in the undo snapshot, post-apply ones in the redo snapshot.
 	struct ExtraPosition { int sig; vec3d pos; matrix orient; };
 	SCP_vector<ExtraPosition> extraPositions;
+	// Arrival cues apply() changed. Docking sets the ship's cue, its wing's and
+	// every wingmate's to false and frees the old formulas, so each one is kept
+	// as a self-contained copy (state::writeSexp), never a node index. Like
+	// extraPositions, they all go on the first snapshot.
+	struct ArrivalCue { int shipSig; SCP_string wingName; QByteArray cue; };
+	SCP_vector<ArrivalCue> arrivalCues;
 	// pos/orient are excluded from equality: they change as a consequence of
 	// dock changes, which are already compared via dockLinks.
 	bool operator==(const ShipInitialStatusSnapshot& o) const {
 		if (sig != o.sig || speed != o.speed || shieldQuadrant0 != o.shieldQuadrant0 ||
 		    hullStrength != o.hullStrength || guardianThreshold != o.guardianThreshold ||
 		    shipFlags != o.shipFlags || objFlags != o.objFlags ||
-		    teamName != o.teamName || arrivalCue != o.arrivalCue)
+		    teamName != o.teamName)
 			return false;
 		if (subsystems.size() != o.subsystems.size()) return false;
 		for (size_t i = 0; i < subsystems.size(); i++) {
@@ -326,6 +332,42 @@ ShipFlagsSnapshot captureShipFlagsSnapshot(int sig, int inst)
 	return s;
 }
 
+QByteArray serializeCue(int cue)
+{
+	QByteArray data;
+	QDataStream ds(&data, QIODevice::WriteOnly);
+	state::writeSexp(ds, cue);
+	return data;
+}
+
+// Every ship's and wing's arrival cue, for the Initial Status dialog to diff
+SCP_vector<ShipInitialStatusSnapshot::ArrivalCue> captureAllArrivalCues()
+{
+	SCP_vector<ShipInitialStatusSnapshot::ArrivalCue> out;
+	for (auto* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			out.push_back({ p->signature, {}, serializeCue(Ships[p->instance].arrival_cue) });
+	}
+	for (const auto& w : Wings) {
+		if (w.wave_count > 0)
+			out.push_back({ -1, w.name, serializeCue(w.arrival_cue) });
+	}
+	return out;
+}
+
+int* findArrivalCue(const ShipInitialStatusSnapshot::ArrivalCue& c)
+{
+	if (c.shipSig >= 0) {
+		const int o = obj_get_by_signature(c.shipSig);
+		return (o >= 0) ? &Ships[Objects[o].instance].arrival_cue : nullptr;
+	}
+	for (auto& w : Wings) {
+		if (w.wave_count > 0 && !stricmp(w.name, c.wingName.c_str()))
+			return &w.arrival_cue;
+	}
+	return nullptr;
+}
+
 // Capture ShipInitialStatusSnapshot for one ship
 ShipInitialStatusSnapshot captureShipInitialStatusSnapshot(int sig, int inst)
 {
@@ -341,7 +383,6 @@ ShipInitialStatusSnapshot captureShipInitialStatusSnapshot(int sig, int inst)
 	s.shipFlags = Ships[inst].flags;
 	s.objFlags = obj.flags;
 	s.teamName = Ships[inst].team_name;
-	s.arrivalCue = Ships[inst].arrival_cue;
 	// subsystems
 	for (auto* ss = GET_FIRST(&Ships[inst].subsys_list); ss != END_OF_LIST(&Ships[inst].subsys_list); ss = GET_NEXT(ss)) {
 		ShipInitialStatusSnapshot::SubsysState ss_state;
@@ -581,6 +622,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 	forEachMarkedShip([&](int sig, int inst) {
 		before.push_back(captureShipInitialStatusSnapshot(sig, inst));
 	});
+	auto cuesBefore = captureAllArrivalCues();
 
 	auto* dlg = new dialogs::ShipInitialStatusDialog(this, _viewport, getIfMultipleShips());
 	dlg->setAttribute(Qt::WA_DeleteOnClose);
@@ -597,7 +639,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 	}, Qt::DirectConnection);
 
 	connect(dlg, &QObject::destroyed, this,
-		[this, before = std::move(before), preApply]() mutable {
+		[this, before = std::move(before), cuesBefore = std::move(cuesBefore), preApply]() mutable {
 
 		SnapshotVec after;
 		for (const auto& b : before) {
@@ -608,6 +650,21 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 		for (size_t i = 0; i < before.size() && i < after.size(); i++) {
 			if (!(before[i] == after[i])) { anyChanged = true; break; }
 		}
+
+		// Arrival cues the dialog changed (see ShipInitialStatusSnapshot::arrivalCues)
+		SCP_vector<ShipInitialStatusSnapshot::ArrivalCue> cuesChangedBefore, cuesChangedAfter;
+		for (const auto& c : cuesBefore) {
+			const int* live = findArrivalCue(c);
+			if (live == nullptr)
+				continue;
+			QByteArray now = serializeCue(*live);
+			if (now == c.cue)
+				continue;
+			cuesChangedBefore.push_back(c);
+			cuesChangedAfter.push_back({ c.shipSig, c.wingName, std::move(now) });
+		}
+		if (!cuesChangedBefore.empty())
+			anyChanged = true;
 		if (!anyChanged) return;
 
 		// Docking moves the other ship's whole dock tree, and undocking can move a ship with its
@@ -625,6 +682,8 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 				before.front().extraPositions.push_back(pre);
 				after.front().extraPositions.push_back({ pre.sig, obj.pos, obj.orient });
 			}
+			before.front().arrivalCues = std::move(cuesChangedBefore);
+			after.front().arrivalCues  = std::move(cuesChangedAfter);
 		}
 
 		auto* cmd = new FieldEditCommand<SnapshotVec>(
@@ -654,7 +713,6 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 				Ships[inst].flags = s.shipFlags;
 				Objects[o].flags = s.objFlags;
 				Ships[inst].team_name = s.teamName;
-				Ships[inst].arrival_cue = s.arrivalCue;
 				int ss_idx = 0;
 				for (auto* ss = GET_FIRST(&Ships[inst].subsys_list);
 				     ss != END_OF_LIST(&Ships[inst].subsys_list) && ss_idx < static_cast<int>(s.subsystems.size());
@@ -679,6 +737,15 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 						Objects[ep_o].pos = ep.pos;
 						Objects[ep_o].orient = ep.orient;
 					}
+				}
+				// Arrival cues: replace the live formula with a fresh copy
+				for (const auto& c : s.arrivalCues) {
+					int* cue = findArrivalCue(c);
+					if (cue == nullptr)
+						continue;
+					state::freeSexpFormula(*cue);
+					QDataStream ds(c.cue);
+					*cue = state::readSexp(ds);
 				}
 			}
 			// Re-establish dock links. Each link is established at most once:

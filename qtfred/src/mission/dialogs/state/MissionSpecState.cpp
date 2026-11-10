@@ -16,7 +16,6 @@
 #include <QByteArray>
 #include <QDataStream>
 #include <QIODevice>
-#include <QString>
 
 namespace fso::fred::dialogs {
 
@@ -26,14 +25,14 @@ QByteArray MissionSpecDialogModel::captureState() const
 	QDataStream ds(&data, QIODevice::WriteOnly);
 
 	// Mission identity strings
-	ds << QString::fromStdString(The_mission.name);
-	ds << QString::fromStdString(The_mission.author);
-	ds << QString(The_mission.notes);
-	ds << QString(The_mission.mission_desc);
-	ds << QString(The_mission.loading_screen[GR_640]);
-	ds << QString(The_mission.loading_screen[GR_1024]);
-	ds << QString(The_mission.squad_name);
-	ds << QString(The_mission.squad_filename);
+	ds << QByteArray::fromStdString(The_mission.name);
+	ds << QByteArray::fromStdString(The_mission.author);
+	ds << QByteArray(The_mission.notes);
+	ds << QByteArray(The_mission.mission_desc);
+	ds << QByteArray(The_mission.loading_screen[GR_640]);
+	ds << QByteArray(The_mission.loading_screen[GR_1024]);
+	ds << QByteArray(The_mission.squad_name);
+	ds << QByteArray(The_mission.squad_filename);
 
 	// Game type and multiplayer
 	ds << static_cast<qint32>(The_mission.game_type);
@@ -72,11 +71,11 @@ QByteArray MissionSpecDialogModel::captureState() const
 
 	// Music
 	ds << static_cast<qint32>(Current_soundtrack_num);
-	ds << QString(The_mission.substitute_event_music_name);
+	ds << QByteArray(The_mission.substitute_event_music_name);
 
 	// Command persona / sender
 	ds << static_cast<qint32>(The_mission.command_persona);
-	ds << QString(The_mission.command_sender);
+	ds << QByteArray(The_mission.command_sender);
 
 	// Mission all attack
 	ds << static_cast<qint32>(Mission_all_attack);
@@ -84,12 +83,12 @@ QByteArray MissionSpecDialogModel::captureState() const
 	// Custom data (map<SCP_string, SCP_string>)
 	ds << static_cast<qint32>(static_cast<int>(The_mission.custom_data.size()));
 	for (const auto& [k, v] : The_mission.custom_data)
-		ds << QString(k.c_str()) << QString(v.c_str());
+		ds << QByteArray(k.c_str()) << QByteArray(v.c_str());
 
 	// Custom strings (vector<custom_string>: name, value, text)
 	ds << static_cast<qint32>(static_cast<int>(The_mission.custom_strings.size()));
 	for (const auto& cs : The_mission.custom_strings)
-		ds << QString(cs.name.c_str()) << QString(cs.value.c_str()) << QString(cs.text.c_str());
+		ds << QByteArray(cs.name.c_str()) << QByteArray(cs.value.c_str()) << QByteArray(cs.text.c_str());
 
 	// Sound environment
 	ds << static_cast<qint32>(The_mission.sound_environment.id);
@@ -99,11 +98,11 @@ QByteArray MissionSpecDialogModel::captureState() const
 
 	// Wing name arrays
 	for (const auto& name : Starting_wing_names)
-		ds << QString(name);
+		ds << QByteArray(name);
 	for (const auto& name : Squadron_wing_names)
-		ds << QString(name);
+		ds << QByteArray(name);
 	for (const auto& name : TVT_wing_names)
-		ds << QString(name);
+		ds << QByteArray(name);
 
 	return data;
 }
@@ -112,29 +111,29 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 {
 	QDataStream ds(state);
 
-	QString str;
+	QByteArray str;
 	qint32  i32;
 	quint32 u32;
 	quint64 u64;
 	float   f;
 
 	// Mission identity strings
-	QString name, author, notes, desc, loading640, loading1024, squad_name, squad_filename;
+	QByteArray name, author, notes, desc, loading640, loading1024, squad_name, squad_filename;
 	ds >> name >> author >> notes >> desc >> loading640 >> loading1024 >> squad_name >> squad_filename;
 
 	The_mission.name   = name.toStdString();
 	The_mission.author = author.toStdString();
-	strncpy(The_mission.notes, notes.toUtf8().constData(), NOTES_LENGTH - 1);
+	strncpy(The_mission.notes, notes.constData(), NOTES_LENGTH - 1);
 	The_mission.notes[NOTES_LENGTH - 1] = '\0';
-	strncpy(The_mission.mission_desc, desc.toUtf8().constData(), MISSION_DESC_LENGTH - 1);
+	strncpy(The_mission.mission_desc, desc.constData(), MISSION_DESC_LENGTH - 1);
 	The_mission.mission_desc[MISSION_DESC_LENGTH - 1] = '\0';
-	strncpy(The_mission.loading_screen[GR_640], loading640.toUtf8().constData(), NAME_LENGTH - 1);
+	strncpy(The_mission.loading_screen[GR_640], loading640.constData(), NAME_LENGTH - 1);
 	The_mission.loading_screen[GR_640][NAME_LENGTH - 1] = '\0';
-	strncpy(The_mission.loading_screen[GR_1024], loading1024.toUtf8().constData(), NAME_LENGTH - 1);
+	strncpy(The_mission.loading_screen[GR_1024], loading1024.constData(), NAME_LENGTH - 1);
 	The_mission.loading_screen[GR_1024][NAME_LENGTH - 1] = '\0';
-	strncpy(The_mission.squad_name, squad_name.toUtf8().constData(), NAME_LENGTH - 1);
+	strncpy(The_mission.squad_name, squad_name.constData(), NAME_LENGTH - 1);
 	The_mission.squad_name[NAME_LENGTH - 1] = '\0';
-	strncpy(The_mission.squad_filename, squad_filename.toUtf8().constData(), MAX_FILENAME_LEN - 1);
+	strncpy(The_mission.squad_filename, squad_filename.constData(), MAX_FILENAME_LEN - 1);
 	The_mission.squad_filename[MAX_FILENAME_LEN - 1] = '\0';
 
 	// Game type and multiplayer
@@ -185,11 +184,11 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 
 	// Music
 	ds >> i32; Current_soundtrack_num = i32;
-	ds >> str; strcpy_s(The_mission.substitute_event_music_name, str.toUtf8().constData());
+	ds >> str; strcpy_s(The_mission.substitute_event_music_name, str.constData());
 
 	// Command persona / sender
 	ds >> i32; The_mission.command_persona = i32;
-	ds >> str; strcpy_s(The_mission.command_sender, str.toUtf8().constData());
+	ds >> str; strcpy_s(The_mission.command_sender, str.constData());
 
 	// Mission all attack
 	ds >> i32; Mission_all_attack = i32;
@@ -198,9 +197,9 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 	ds >> i32;
 	The_mission.custom_data.clear();
 	for (int j = 0; j < i32; j++) {
-		QString k, v;
+		QByteArray k, v;
 		ds >> k >> v;
-		The_mission.custom_data[k.toUtf8().constData()] = v.toUtf8().constData();
+		The_mission.custom_data[k.constData()] = v.constData();
 	}
 
 	// Custom strings
@@ -208,12 +207,12 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 	The_mission.custom_strings.clear();
 	The_mission.custom_strings.reserve(static_cast<size_t>(i32));
 	for (int j = 0; j < i32; j++) {
-		QString nm, val, txt;
+		QByteArray nm, val, txt;
 		ds >> nm >> val >> txt;
 		custom_string cs;
-		cs.name  = nm.toUtf8().constData();
-		cs.value = val.toUtf8().constData();
-		cs.text  = txt.toUtf8().constData();
+		cs.name  = nm.constData();
+		cs.value = val.constData();
+		cs.text  = txt.constData();
 		The_mission.custom_strings.push_back(std::move(cs));
 	}
 
@@ -226,15 +225,15 @@ void MissionSpecDialogModel::restoreState(const QByteArray& state)
 	// Wing name arrays
 	for (auto& wingName : Starting_wing_names) {
 		ds >> str;
-		strcpy_s(wingName, str.toUtf8().constData());
+		strcpy_s(wingName, str.constData());
 	}
 	for (auto& wingName : Squadron_wing_names) {
 		ds >> str;
-		strcpy_s(wingName, str.toUtf8().constData());
+		strcpy_s(wingName, str.constData());
 	}
 	for (auto& wingName : TVT_wing_names) {
 		ds >> str;
-		strcpy_s(wingName, str.toUtf8().constData());
+		strcpy_s(wingName, str.constData());
 	}
 
 	update_custom_wing_indexes();

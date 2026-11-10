@@ -26,13 +26,13 @@ QByteArray DebriefingDialogModel::captureState() const
 
 		for (const auto& stage : deb.stages) {
 			fso::fred::state::writeSexp(ds, stage.formula);
-			ds << QString::fromStdString(stage.text);
-			ds << QString::fromLatin1(stage.voice);
-			ds << QString::fromStdString(stage.recommendation_text);
+			ds << QByteArray::fromStdString(stage.text);
+			ds << QByteArray(stage.voice);
+			ds << QByteArray::fromStdString(stage.recommendation_text);
 		}
 
 		for (const auto& background : deb.background)
-			ds << QString::fromLatin1(background);
+			ds << QByteArray(background);
 	}
 
 	ds << static_cast<qint32>(Mission_music[SCORE_DEBRIEFING_SUCCESS]);
@@ -52,20 +52,20 @@ void DebriefingDialogModel::restoreState(const QByteArray& state)
 		deb.num_stages = static_cast<int>(numStages);
 
 		for (auto& stage : deb.stages) {
-			QString text, voice, recText;
+			QByteArray text, voice, recText;
 			fso::fred::state::freeSexpFormula(stage.formula);
 			stage.formula = fso::fred::state::readSexp(ds);
 			ds >> text >> voice >> recText;
 			stage.text = text.toStdString();
-			strncpy(stage.voice, voice.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(stage.voice, voice.constData(), MAX_FILENAME_LEN - 1);
 			stage.voice[MAX_FILENAME_LEN - 1] = '\0';
 			stage.recommendation_text = recText.toStdString();
 		}
 
 		for (auto& background : deb.background) {
-			QString bg;
+			QByteArray bg;
 			ds >> bg;
-			strncpy(background, bg.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+			strncpy(background, bg.constData(), MAX_FILENAME_LEN - 1);
 			background[MAX_FILENAME_LEN - 1] = '\0';
 		}
 	}

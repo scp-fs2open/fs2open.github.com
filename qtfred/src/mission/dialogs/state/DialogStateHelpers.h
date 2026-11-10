@@ -13,6 +13,11 @@
 // blob is a self-contained copy with no live node references. readSexp()
 // allocates a fresh chain in Sexp_nodes on every call; restore code must
 // free the formula it is about to overwrite via freeSexpFormula() first.
+//
+// Strings are streamed as QByteArray, never QString. Mission text is raw
+// bytes (Latin-1 unless the mission is in Unicode mode), and QString's
+// std::string and const char* conversions assume UTF-8, so a QString round
+// trip would mangle any byte above 0x7F.
 // ---------------------------------------------------------------------------
 
 #include <QByteArray>

@@ -75,14 +75,14 @@ QByteArray BackgroundEditorDialogModel::captureState() const
 		ds << bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file];
 		ds << (qint32)bg.bitmaps.size();
 		for (const auto& bm : bg.bitmaps) {
-			ds << QString::fromUtf8(bm.filename);
+			ds << QByteArray(bm.filename);
 			ds << bm.scale_x << bm.scale_y;
 			ds << (qint32)bm.div_x << (qint32)bm.div_y;
 			ds << bm.ang.p << bm.ang.b << bm.ang.h;
 		}
 		ds << (qint32)bg.suns.size();
 		for (const auto& s : bg.suns) {
-			ds << QString::fromUtf8(s.filename);
+			ds << QByteArray(s.filename);
 			ds << s.scale_x << s.scale_y;
 			ds << (qint32)s.div_x << (qint32)s.div_y;
 			ds << s.ang.p << s.ang.b << s.ang.h;
@@ -98,12 +98,12 @@ QByteArray BackgroundEditorDialogModel::captureState() const
 
 	// Nebula globals
 	ds << Neb2_awacs;
-	ds << QString::fromUtf8(Neb2_texture_name);
-	ds << QString::fromUtf8(Mission_parse_storm_name);
+	ds << QByteArray(Neb2_texture_name);
+	ds << QByteArray(Mission_parse_storm_name);
 	const auto poofs = getSelectedPoofs();
 	ds << (qint32)poofs.size();
 	for (const auto& p : poofs)
-		ds << QString::fromStdString(p);
+		ds << QByteArray::fromStdString(p);
 	ds << Neb2_fog_1000m_visibility;
 	ds << Neb2_fog_near_distance;
 	ds << Neb2_fog_skybox_clip_distance;
@@ -124,7 +124,7 @@ QByteArray BackgroundEditorDialogModel::captureState() const
 	ds << (qint32)The_mission.ambient_light_level;
 
 	// Skybox
-	ds << QString::fromUtf8(The_mission.skybox_model);
+	ds << QByteArray(The_mission.skybox_model);
 	for (const auto& row : The_mission.skybox_orientation.a2d)
 		for (const float val : row)
 			ds << val;
@@ -132,8 +132,8 @@ QByteArray BackgroundEditorDialogModel::captureState() const
 
 	// Misc
 	ds << (qint32)Num_stars;
-	ds << QString::fromUtf8(The_mission.envmap_name);
-	ds << QString::fromStdString(The_mission.lighting_profile_name);
+	ds << QByteArray(The_mission.envmap_name);
+	ds << QByteArray::fromStdString(The_mission.lighting_profile_name);
 
 	return data;
 }
@@ -166,10 +166,10 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 		ds >> numBm;
 		bg.bitmaps.resize(static_cast<size_t>(numBm));
 		for (auto& bm : bg.bitmaps) {
-			QString qs;
+			QByteArray qs;
 			ds >> qs;
 			std::memset(bm.filename, 0, MAX_FILENAME_LEN);
-			std::strncpy(bm.filename, qs.toUtf8().constData(), MAX_FILENAME_LEN - 1);
+			std::strncpy(bm.filename, qs.constData(), MAX_FILENAME_LEN - 1);
 			ds >> bm.scale_x >> bm.scale_y;
 			ds >> i32; bm.div_x = i32;
 			ds >> i32; bm.div_y = i32;
@@ -180,10 +180,10 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 		ds >> numSun;
 		bg.suns.resize(static_cast<size_t>(numSun));
 		for (auto& s : bg.suns) {
-			QString qs;
+			QByteArray qs;
 			ds >> qs;
 			std::memset(s.filename, 0, MAX_FILENAME_LEN);
-			std::strncpy(s.filename, qs.toUtf8().constData(), MAX_FILENAME_LEN - 1);
+			std::strncpy(s.filename, qs.constData(), MAX_FILENAME_LEN - 1);
 			ds >> s.scale_x >> s.scale_y;
 			ds >> i32; s.div_x = i32;
 			ds >> i32; s.div_y = i32;
@@ -201,9 +201,9 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 
 	// Nebula globals
 	ds >> Neb2_awacs;
-	QString qs;
-	ds >> qs; std::memset(Neb2_texture_name, 0, MAX_FILENAME_LEN); std::strncpy(Neb2_texture_name, qs.toUtf8().constData(), MAX_FILENAME_LEN - 1);
-	ds >> qs; std::memset(Mission_parse_storm_name, 0, sizeof(Mission_parse_storm_name)); std::strncpy(Mission_parse_storm_name, qs.toUtf8().constData(), sizeof(Mission_parse_storm_name) - 1);
+	QByteArray qs;
+	ds >> qs; std::memset(Neb2_texture_name, 0, MAX_FILENAME_LEN); std::strncpy(Neb2_texture_name, qs.constData(), MAX_FILENAME_LEN - 1);
+	ds >> qs; std::memset(Mission_parse_storm_name, 0, sizeof(Mission_parse_storm_name)); std::strncpy(Mission_parse_storm_name, qs.constData(), sizeof(Mission_parse_storm_name) - 1);
 	qint32 numPoofs;
 	ds >> numPoofs;
 	SCP_vector<SCP_string> poofNames;
@@ -247,7 +247,7 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 	// Skybox
 	ds >> qs;
 	std::memset(The_mission.skybox_model, 0, sizeof(The_mission.skybox_model));
-	std::strncpy(The_mission.skybox_model, qs.toUtf8().constData(), sizeof(The_mission.skybox_model) - 1);
+	std::strncpy(The_mission.skybox_model, qs.constData(), sizeof(The_mission.skybox_model) - 1);
 	for (auto& row : The_mission.skybox_orientation.a2d)
 		for (float& val : row)
 			ds >> val;
@@ -257,7 +257,7 @@ std::pair<int, int> BackgroundEditorDialogModel::restoreGlobalState(const QByteA
 	ds >> i32; Num_stars = i32;
 	ds >> qs;
 	std::memset(The_mission.envmap_name, 0, sizeof(The_mission.envmap_name));
-	std::strncpy(The_mission.envmap_name, qs.toUtf8().constData(), sizeof(The_mission.envmap_name) - 1);
+	std::strncpy(The_mission.envmap_name, qs.constData(), sizeof(The_mission.envmap_name) - 1);
 	ds >> qs; The_mission.lighting_profile_name = qs.toStdString();
 
 	refreshPreview(editor); // rebuilds starfield + skybox, fires missionChanged()

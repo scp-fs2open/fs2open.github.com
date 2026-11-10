@@ -142,11 +142,14 @@ CreateObjectCommand::CreateObjectCommand(const vec3d&    pos,
 
 void CreateObjectCommand::undo()
 {
-	if (_createdObjNum >= 0 && query_valid_object(_createdObjNum)) {
+	// Find the object by signature: a later delete + undo recreates it in a
+	// different slot, and its old slot may now hold an unrelated object.
+	const int objNum = (_originalSignature > 0) ? obj_get_by_signature(_originalSignature) : _createdObjNum;
+	if (objNum >= 0 && query_valid_object(objNum)) {
 		AutoConfirmReferences guard(_editor);
-		_editor->delete_object(_createdObjNum);
-		_createdObjNum = -1;
+		_editor->delete_object(objNum);
 	}
+	_createdObjNum = -1;
 }
 
 void CreateObjectCommand::redo()
@@ -500,6 +503,69 @@ DeleteObjectsCommand::~DeleteObjectsCommand()
 bool DeleteObjectsCommand::isEmpty() const
 {
 	return _ships.empty() && _waypointGroups.empty() && _jumpNodes.empty() && _props.empty();
+}
+
+void DeleteObjectsCommand::dropSurvivors()
+{
+	auto survived = [](int sig) { return sig > 0 && obj_get_by_signature(sig) >= 0; };
+
+	SCP_vector<int> survivingShipInsts;
+	for (auto it = _ships.begin(); it != _ships.end();) {
+		if (survived(it->signature)) {
+			survivingShipInsts.push_back(it->originalShipIndex);
+			it = _ships.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	for (auto it = _affectedWings.begin(); it != _affectedWings.end();) {
+		bool anyDeleted = false;
+		bool allDeleted = true;
+		for (auto& mem : it->members) {
+			if (mem.wasDeleted && std::find(survivingShipInsts.begin(), survivingShipInsts.end(), mem.shipIndex)
+			                          != survivingShipInsts.end())
+				mem.wasDeleted = false;
+			if (mem.wasDeleted)
+				anyDeleted = true;
+			else
+				allDeleted = false;
+		}
+		if (it->entirelyDeleted && !allDeleted) {
+			// The wing survived, so the cue copies taken for recreating it are not needed.
+			freeCueDup(it->arrival_cue_dup);
+			freeCueDup(it->departure_cue_dup);
+			it->entirelyDeleted = false;
+		}
+		if (!anyDeleted) {
+			freeCueDup(it->arrival_cue_dup);
+			freeCueDup(it->departure_cue_dup);
+			it = _affectedWings.erase(it);
+		} else {
+			++it;
+		}
+	}
+
+	for (auto it = _waypointGroups.begin(); it != _waypointGroups.end();) {
+		auto& pts = it->points;
+		const auto before = pts.size();
+		pts.erase(std::remove_if(pts.begin(), pts.end(),
+		                         [&](const CapturedWaypointPoint& pt) { return survived(pt.signature); }),
+		          pts.end());
+		if (pts.size() != before)
+			it->entirePath = false;
+		if (pts.empty())
+			it = _waypointGroups.erase(it);
+		else
+			++it;
+	}
+
+	_jumpNodes.erase(std::remove_if(_jumpNodes.begin(), _jumpNodes.end(),
+	                                [&](const CapturedJumpNode& jn) { return survived(jn.signature); }),
+	                 _jumpNodes.end());
+	_props.erase(std::remove_if(_props.begin(), _props.end(),
+	                            [&](const CapturedProp& p) { return survived(p.signature); }),
+	             _props.end());
 }
 
 void DeleteObjectsCommand::redo()
@@ -1711,6 +1777,13 @@ void ApplyDialogCommand::undo()
 
 void ApplyDialogCommand::redo()
 {
+    // The dialog's apply() has already written stateAfter, so the push does
+    // nothing. Restoring here would round-trip every OK through the
+    // serializer and turn any serialization flaw into data loss.
+    if (_firstRedo) {
+        _firstRedo = false;
+        return;
+    }
     _model->restoreState(_stateAfter);
     _editor->missionChanged();
 }

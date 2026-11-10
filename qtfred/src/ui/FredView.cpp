@@ -3235,8 +3235,10 @@ void FredView::on_actionDelete_triggered(bool) {
 	if (fred->getNumMarked() <= 0) return;
 	auto* cmd = new fso::fred::DeleteObjectsCommand(fred, _viewport);
 	fred->delete_marked();
-	// Only push undo if all marked objects were actually removed (no reference-check abort).
-	if (!cmd->isEmpty() && fred->getNumMarked() == 0) {
+	// A refused delete (the last player start, or a reference the user kept)
+	// leaves objects alive, and may unmark them, so check what really went.
+	cmd->dropSurvivors();
+	if (!cmd->isEmpty()) {
 		_mainStack->push(cmd); // first redo() is a no-op
 	} else {
 		delete cmd;

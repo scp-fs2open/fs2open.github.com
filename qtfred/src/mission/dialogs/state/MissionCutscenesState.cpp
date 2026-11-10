@@ -22,7 +22,7 @@ QByteArray MissionCutscenesDialogModel::captureState() const
 	ds << static_cast<qint32>(static_cast<int>(The_mission.cutscenes.size()));
 	for (const mission_cutscene& c : The_mission.cutscenes) {
 		ds << static_cast<qint32>(c.type);
-		ds << QString::fromLatin1(c.filename);
+		ds << QByteArray(c.filename);
 		fso::fred::state::writeSexp(ds, c.formula);
 	}
 
@@ -44,13 +44,13 @@ void MissionCutscenesDialogModel::restoreState(const QByteArray& state)
 	for (int i = 0; i < static_cast<int>(count); ++i) {
 		mission_cutscene& c = The_mission.cutscenes[static_cast<size_t>(i)];
 		qint32 type;
-		QString filename;
+		QByteArray filename;
 
 		ds >> type >> filename;
 		c.formula = fso::fred::state::readSexp(ds);
 
 		c.type = static_cast<int>(type);
-		strncpy(c.filename, filename.toLatin1().constData(), MAX_FILENAME_LEN - 1);
+		strncpy(c.filename, filename.constData(), MAX_FILENAME_LEN - 1);
 		c.filename[MAX_FILENAME_LEN - 1] = '\0';
 	}
 }

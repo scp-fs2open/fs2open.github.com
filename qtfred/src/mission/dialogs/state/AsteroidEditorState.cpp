@@ -9,7 +9,6 @@
 #include <QByteArray>
 #include <QDataStream>
 #include <QIODevice>
-#include <QString>
 
 namespace fso::fred::dialogs {
 
@@ -52,12 +51,12 @@ QByteArray AsteroidEditorDialogModel::captureState() const
 	// field_asteroid_type: vector<SCP_string>
 	ds << static_cast<qint32>(static_cast<int>(f.field_asteroid_type.size()));
 	for (const auto& s : f.field_asteroid_type)
-		ds << QString(s.c_str());
+		ds << QByteArray(s.c_str());
 
 	// target_names: vector<SCP_string>
 	ds << static_cast<qint32>(static_cast<int>(f.target_names.size()));
 	for (const auto& s : f.target_names)
-		ds << QString(s.c_str());
+		ds << QByteArray(s.c_str());
 
 	return data;
 }
@@ -101,9 +100,9 @@ void AsteroidEditorDialogModel::restoreState(const QByteArray& state)
 	f.field_asteroid_type.clear();
 	f.field_asteroid_type.reserve(static_cast<size_t>(i32));
 	for (int j = 0; j < i32; j++) {
-		QString s;
+		QByteArray s;
 		ds >> s;
-		f.field_asteroid_type.emplace_back(s.toUtf8().constData());
+		f.field_asteroid_type.emplace_back(s.constData());
 	}
 
 	// target_names
@@ -111,9 +110,9 @@ void AsteroidEditorDialogModel::restoreState(const QByteArray& state)
 	f.target_names.clear();
 	f.target_names.reserve(static_cast<size_t>(i32));
 	for (int j = 0; j < i32; j++) {
-		QString s;
+		QByteArray s;
 		ds >> s;
-		f.target_names.emplace_back(s.toUtf8().constData());
+		f.target_names.emplace_back(s.constData());
 	}
 }
 

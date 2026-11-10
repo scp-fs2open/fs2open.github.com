@@ -76,10 +76,10 @@ QByteArray MissionGoalsDialogModel::captureWorkingState() const
 	for (size_t i = 0; i < m_goals.size(); ++i) {
 		const mission_goal& g = m_goals[i];
 		ds << static_cast<qint32>(m_sig[i]);
-		ds << QString::fromStdString(g.name);
+		ds << QByteArray::fromStdString(g.name);
 		ds << static_cast<qint32>(g.type);
 		ds << static_cast<qint32>(g.satisfied);
-		ds << QString::fromStdString(g.message);
+		ds << QByteArray::fromStdString(g.message);
 		// g.formula is a tree-widget node id; round-trip the branch through
 		// Sexp_nodes to serialize its content.
 		const int sexp = _sexp_tree->_model.save_tree(g.formula);
@@ -106,7 +106,7 @@ void MissionGoalsDialogModel::restoreWorkingState(const QByteArray& state)
 	for (int i = 0; i < count; ++i) {
 		mission_goal g;
 		qint32 sig, type, satisfied, score, flags, team;
-		QString name, message;
+		QByteArray name, message;
 
 		ds >> sig >> name >> type >> satisfied >> message;
 		const int sexp = fso::fred::state::readSexp(ds);
