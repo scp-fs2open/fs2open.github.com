@@ -583,20 +583,33 @@ bool in(char *&p, char *str, const char *substr)
 	return p != nullptr;
 }
 
+// copy the model's turret FOVs into the live values, except for any that ships.tbl has overridden
+static void model_apply_pof_turret_fovs(model_subsystem *subsystemp)
+{
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden])
+		subsystemp->turret_fov = subsystemp->pof_turret_fov;
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden])
+		subsystemp->turret_base_fov = subsystemp->pof_turret_base_fov;
+	if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden])
+		subsystemp->turret_max_fov = subsystemp->pof_turret_max_fov;
+}
+
 const Model::Subsystem_Flags carry_flags[] = { Model::Subsystem_Flags::Crewpoint, Model::Subsystem_Flags::Rotates, Model::Subsystem_Flags::Translates, Model::Subsystem_Flags::Triggered, Model::Subsystem_Flags::Artillery, Model::Subsystem_Flags::Stepped_rotate, Model::Subsystem_Flags::Stepped_translate };
 // Function to copy model data from one subsystem set to another subsystem set.  This function
 // is called when two ships use the same model data, but since the model only gets read in one time,
 // the subsystem data is only present in one location.  The ship code will call this routine to fix
 // this situation by copying stuff from the source subsystem set to the dest subsystem set.
-void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp )
+void model_copy_subsystems( int n_dest, model_subsystem *d_sp, int n_source, const model_subsystem *s_sp )
 {
 	int i, j;
-	model_subsystem *source, *dest;
+	const model_subsystem *source;
+	model_subsystem *dest;
 
-	for (i = 0; i < n_subsystems; i++ ) {
-		source = &s_sp[i];
-		for ( j = 0; j < n_subsystems; j++ ) {
-			dest = &d_sp[j];
+	// a destination subsystem with no match in the source stays unlinked, which is reported when a ship of that class is created
+	for (i = 0; i < n_dest; i++ ) {
+		dest = &d_sp[i];
+		for ( j = 0; j < n_source; j++ ) {
+			source = &s_sp[j];
 			if ( !subsystem_stricmp( source->subobj_name, dest->subobj_name) ) {
 				for (auto const &flag : carry_flags) {
 					if (source->flags[flag])
@@ -609,13 +622,21 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				dest->radius = source->radius;
 				dest->type = source->type;
 				dest->turret_gun_sobj = source->turret_gun_sobj;
+				dest->path_num = source->path_num;
+				dest->weapon_rotation_pbank = source->weapon_rotation_pbank;
+				dest->stepped_rotation = source->stepped_rotation;
+				dest->stepped_translation = source->stepped_translation;
 
                 strcpy_s(dest->name, source->name);
 
 				if ( dest->type == SUBSYSTEM_TURRET ) {
 					int nfp;
 
-					dest->turret_fov = source->turret_fov;
+					dest->pof_turret_fov = source->pof_turret_fov;
+					dest->pof_turret_base_fov = source->pof_turret_base_fov;
+					dest->pof_turret_max_fov = source->pof_turret_max_fov;
+					model_apply_pof_turret_fovs(dest);
+
 					dest->turret_num_firing_points = source->turret_num_firing_points;
 					dest->turret_norm = source->turret_norm;
 
@@ -628,13 +649,6 @@ void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsy
 				break;
 			}
 		}
-		if ( j == n_subsystems )
-			Error(LOCATION, "Subsystem '%s' could not be matched between two ship classes that share a model. "
-				"The destination ship will be missing this subsystem at runtime. "
-				"Check that subsystem names are spelled identically on both ship classes, "
-				"and that any modular table extensions to one ship are mirrored on the other.",
-				source->subobj_name);
-
 	}
 }
 
@@ -669,39 +683,34 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 
 		subsystemp->type = SUBSYSTEM_TURRET;
 
-		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
-			if (in(p, props, "$fov")) {
-				get_user_prop_value(p + 4, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value) / 2.0f;
-				subsystemp->turret_fov = cosf(angle);
-			} else
-				subsystemp->turret_fov = 0.0f;
-		}		
+		if (in(p, props, "$fov")) {
+			get_user_prop_value(p + 4, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 360.0f);
+			float angle = fl_radians(value) / 2.0f;
+			subsystemp->pof_turret_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_fov = 0.0f;
 
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
-			if (in(p, props, "$base_fov")) {
-				get_user_prop_value(p + 9, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 360.0f);
-				float angle = fl_radians(value) / 2.0f;
-				subsystemp->turret_base_fov = cosf(angle);
-			} else
-				subsystemp->turret_base_fov = -1.0f;
-		}
+		if (in(p, props, "$base_fov")) {
+			get_user_prop_value(p + 9, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 360.0f);
+			float angle = fl_radians(value) / 2.0f;
+			subsystemp->pof_turret_base_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_base_fov = -1.0f;
 
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
-			if (in(p, props, "$max_fov")) {
-				get_user_prop_value(p + 8, buf);			// get the value of the fov
-				float value = (float)atoi(buf);
-				CLAMP(value, 0.0f, 90.0f);
-				float angle = PI_2 - fl_radians(value);
-				subsystemp->turret_max_fov = cosf(angle);
-			} else
-				subsystemp->turret_max_fov = 1.0f;
-		}
+		if (in(p, props, "$max_fov")) {
+			get_user_prop_value(p + 8, buf);			// get the value of the fov
+			float value = i2fl(atoi(buf));
+			CLAMP(value, 0.0f, 90.0f);
+			float angle = PI_2 - fl_radians(value);
+			subsystemp->pof_turret_max_fov = cosf(angle);
+		} else
+			subsystemp->pof_turret_max_fov = 1.0f;
+
+		model_apply_pof_turret_fovs(subsystemp);
 
 		subsystemp->turret_num_firing_points = 0;
 
@@ -2527,9 +2536,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						if (bank->num_points > 0)
 							bank->points = make_shared<glow_point[]>(bank->num_points);
 
+						bank->subsys_num = -1;
 						bank->obj_num = -1;
 						bank->submodel_num = -1;
-						bank->wash_info_pointer = nullptr;
 
 						if (pm->version >= 2117) {
 							cfread_string_len( props, MAX_PROP_LEN, fp );
@@ -3142,13 +3151,15 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 		// start off assuming the subsys is invalid
 		int table_error = 1;
 		auto bank = &pm->thrusters[subsystem.first];
+		int wash_index = -1;
 
 		for (int k = 0; k < n_subsystems; k++) {
 			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.second.subsystem_name.c_str())) {
 				bank->submodel_num = subsystems[k].subobj_num;
+				bank->subsys_num = k;
 
-				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-				if (bank->wash_info_pointer != nullptr) {
+				wash_index = subsystems[k].engine_wash_index;
+				if (wash_index >= 0) {
 					table_error = 0;
 				}
 				// also set what subsystem this is attached to but not if we only have one thruster bank
@@ -3160,7 +3171,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 			}
 		}
 
-		if ((bank->wash_info_pointer == nullptr) && (n_subsystems > 0)) {
+		if ((wash_index < 0) && (n_subsystems > 0)) {
 			if (table_error) {
 				//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
 			}
@@ -6218,6 +6229,9 @@ void model_subsystem::reset()
     turret_fov = 0;
     turret_max_fov = 1;
     turret_base_fov = -1;
+    pof_turret_fov = 0;
+    pof_turret_max_fov = 1;
+    pof_turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
@@ -6232,7 +6246,7 @@ void model_subsystem::reset()
     dead_snd = gamesnd_id();
     rotation_snd = gamesnd_id();
 
-    engine_wash_pointer = NULL;
+    engine_wash_index = -1;
 
     weapon_rotation_pbank = 0;
     stepped_rotation.reset();
