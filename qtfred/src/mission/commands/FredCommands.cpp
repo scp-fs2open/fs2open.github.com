@@ -1292,6 +1292,11 @@ void CloneDragCommand::redo()
 			if (objNum < 0) continue;
 			const int ship = Objects[objNum].instance;
 			if (Ships[ship].wingnum != -1) continue;
+			// As the clone gesture does: rename_ship keeps sexps and the ship registry
+			// in step, then bash again for the display name.
+			char newName[NAME_LENGTH];
+			wing_bash_ship_name(newName, Wings[_wingNum].name, Wings[_wingNum].wave_count + 1);
+			_editor->rename_ship(ship, newName);
 			wing_bash_ship_name(&Ships[ship], &Wings[_wingNum], Wings[_wingNum].wave_count + 1, true);
 			Wings[_wingNum].ship_index[Wings[_wingNum].wave_count] = ship;
 			Ships[ship].wingnum = _wingNum;
@@ -1512,6 +1517,15 @@ DeleteWingCommand::~DeleteWingCommand()
 	freeCueDup(_savedWing.departure_cue_dup);
 }
 
+void DeleteWingCommand::dropSurvivors()
+{
+	_savedShips.erase(std::remove_if(_savedShips.begin(), _savedShips.end(),
+	                                 [](const CapturedShip& cs) {
+		                                 return cs.signature > 0 && obj_get_by_signature(cs.signature) >= 0;
+	                                 }),
+	                  _savedShips.end());
+}
+
 void DeleteWingCommand::undo()
 {
 	_currentObjNums.clear();
@@ -1580,21 +1594,27 @@ void DeleteWingCommand::redo()
 	// Re-capture wing cues before delete_wing frees them.
 	recaptureCues(_savedWing, _currentWingNum);
 
-	// Restore saved ships' original indices (they now have new instances from undo).
-	// The _savedShips vector still has originalShipIndex from the first capture.
-	// After undo restored them, those ship instances changed. We need to update
-	// _savedShips.originalShipIndex to the current instances for future undo cycles.
-	for (size_t i = 0; i < _savedWing.members.size() && i < _savedShips.size(); i++) {
-		_savedShips[i].originalShipIndex = _savedWing.members[i].shipIndex;
-	}
-
 	// Re-capture ship SEXP cues and texture replacements before delete_wing() frees them.
 	// restoreShip() transferred cue ownership into the live ships (setting cue_dup to
-	// SHIP_CUE_NONE), so we must re-dup now before the ships are destroyed.
+	// SHIP_CUE_NONE), so we must re-dup now before the ships are destroyed. Ships are
+	// found by signature: undo recreated them in new slots, and _savedShips no longer
+	// lines up with the wing slots once survivors are dropped.
 	for (auto& cs : _savedShips) {
-		const int si = cs.originalShipIndex;
-		if (si >= 0 && si < MAX_SHIPS && Ships[si].objnum >= 0)
-			recaptureShipForRedo(cs, Ships[si].objnum);
+		const int n = obj_get_by_signature(cs.signature);
+		if (n < 0) continue;
+		cs.originalShipIndex = Objects[n].instance;
+		recaptureShipForRedo(cs, n);
+	}
+	// Members that survived the original delete (dropSurvivors) are deleted this
+	// time, since redo confirms references; capture them so undo can bring them back.
+	for (const auto& mem : _savedWing.members) {
+		const int n = obj_get_by_signature(mem.signature);
+		if (n < 0) continue;
+		const bool captured = std::any_of(_savedShips.begin(), _savedShips.end(),
+		                                  [&](const CapturedShip& cs) { return cs.signature == mem.signature; });
+		if (captured) continue;
+		doCaptureShip(n, _savedShips);
+		removeShipTextureReplacements(Ships[Objects[n].instance].ship_name); // as recaptureShipForRedo does
 	}
 
 	{

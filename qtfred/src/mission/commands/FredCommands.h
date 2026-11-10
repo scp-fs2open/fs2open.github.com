@@ -500,6 +500,10 @@ public:
 	~DeleteWingCommand() override;
 	void undo() override;
 	void redo() override;
+	// Call AFTER delete_wing(). delete_wing() carries on when a member's delete
+	// is refused (a reference the user kept), so drop the members that still
+	// exist; undo puts them back into the restored wing instead of recreating them.
+	void dropSurvivors();
 };
 
 // ---------------------------------------------------------------------------

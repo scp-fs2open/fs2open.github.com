@@ -2157,6 +2157,7 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 		// reference check (first redo() is a no-op either way).
 		auto* cmd = new DeleteWingCommand(wingIndex, fred, _viewport);
 		if (fred->delete_wing(wingIndex, 0) == 0) {
+			cmd->dropSurvivors(); // members whose delete was refused stay alive
 			_mainStack->push(cmd);
 		} else {
 			delete cmd;
@@ -3302,6 +3303,7 @@ void FredView::on_actionDelete_Wing_triggered(bool) {
 		const int wingNum = fred->cur_wing;
 		auto* cmd = new DeleteWingCommand(wingNum, fred, _viewport);
 		if (fred->delete_wing(wingNum, 0) == 0) {
+			cmd->dropSurvivors(); // members whose delete was refused stay alive
 			_mainStack->push(cmd);
 		} else {
 			delete cmd;

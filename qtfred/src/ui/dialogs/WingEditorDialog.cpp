@@ -905,6 +905,7 @@ void WingEditorDialog::on_deleteWingButton_clicked()
 		// reference check (first redo() is a no-op either way).
 		auto* cmd = new DeleteWingCommand(wingIndex, _viewport->editor, _viewport);
 		if (_viewport->editor->delete_wing(wingIndex, 0) == 0) {
+			cmd->dropSurvivors(); // members whose delete was refused stay alive
 			_fredView->mainUndoStack()->push(cmd);
 		} else {
 			delete cmd;

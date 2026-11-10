@@ -593,8 +593,10 @@ int restoreShip(CapturedShip& c, Editor* editor)
 
 	// OBJ_START (player start): create_ship creates OBJ_SHIP; fix the type if needed.
 	// This mirrors what missionparse does when OF_Player_start is set.
-	if (c.objType == OBJ_START)
+	if (c.objType == OBJ_START) {
 		o.type = OBJ_START;
+		Player_starts++; // deleting the start decremented it
+	}
 
 	return newObj;
 }
