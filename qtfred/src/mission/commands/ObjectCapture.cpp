@@ -357,7 +357,10 @@ static void transferSexpCue(int& cue_dup, int& dest)
 	if      (cue_dup == SHIP_CUE_LOCKED_TRUE)  dest = Locked_sexp_true;
 	else if (cue_dup == SHIP_CUE_LOCKED_FALSE) dest = Locked_sexp_false;
 	else if (cue_dup == SHIP_CUE_NONE)         { /* keep create_ship default */ }
-	else { dest = cue_dup; cue_dup = SHIP_CUE_NONE; } // transfer ownership
+	else dest = cue_dup; // transfer ownership
+	// The ship now holds the cue, sentinels included, so this capture holds
+	// nothing (recaptureShipForRedo requires SHIP_CUE_NONE).
+	cue_dup = SHIP_CUE_NONE;
 }
 
 int restoreShip(CapturedShip& c, Editor* editor)
@@ -649,7 +652,9 @@ CapturedWaypointList captureWaypointList(int listIndex,
 		}
 		CapturedWaypointPoint pt;
 		pt.pos = Objects[objNum].pos;
-		pt.predecessorInstance = (i == 0) ? -1 : Objects[wpts[i - 1].get_objnum()].instance;
+		// Not the predecessor's instance: instances encode the path's list index,
+		// which shifts when an earlier path is deleted.
+		pt.indexInPath = i;
 		pt.signature = Objects[objNum].signature;
 		cwl.points.push_back(pt);
 	}

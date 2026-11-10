@@ -79,6 +79,7 @@
 #include "mission/commands/FredCommands.h"
 #include "mission/management.h"
 #include "ui/Theme.h"
+#include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
 #include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
@@ -169,14 +170,9 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	_undoAction  = _undoGroup->createUndoAction(this, tr("&Undo"));
 	_undoAction->setShortcuts(QKeySequence::Undo);
 	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
-	_redoAction->setShortcuts(QKeySequence::Redo);
-	// QKeySequence::Redo includes Ctrl+Shift+Z on Windows and Linux, which conflicts
-	// with the camera undo shortcut below. Strip it so only Ctrl+Y remains.
-	{
-		QList<QKeySequence> redoShortcuts = _redoAction->shortcuts();
-		redoShortcuts.removeAll(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
-		_redoAction->setShortcuts(redoShortcuts);
-	}
+	// Ctrl+Y explicitly, as in the dialogs. QKeySequence::Redo is only
+	// Ctrl+Shift+Z on Linux, and that key is camera undo here.
+	_redoAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Y));
 
 	// Text editors (QLineEdit, and the editors inside spin boxes / editable combos) claim
 	// Ctrl+Z/Y by accepting the ShortcutOverride event, which would shadow the mission undo.
@@ -1355,6 +1351,46 @@ void FredView::onUpdateContextToolbar() {
 	}
 }
 
+// The checks the object's own editor dialog makes before a rename. Returns
+// the reason the name cannot be used, or an empty string.
+static SCP_string quickRenameConflict(int obj, const SCP_string& name)
+{
+	if (name.size() >= NAME_LENGTH)
+		return "This name is too long (" + std::to_string(NAME_LENGTH - 1) + " characters at most)";
+
+	switch (Objects[obj].type) {
+	case OBJ_WAYPOINT: {
+		const int wl = calc_waypoint_list_index(Objects[obj].instance);
+		return check_name_conflict("waypoint path", name.c_str(), -1, -1, wl);
+	}
+	case OBJ_JUMP_NODE: {
+		int jn = -1;
+		for (int i = 0; i < static_cast<int>(Jump_nodes.size()); i++) {
+			if (Jump_nodes[i].GetSCPObjectNumber() == obj) {
+				jn = i;
+				break;
+			}
+		}
+		return check_name_conflict("jump node", name.c_str(), -1, -1, -1, jn);
+	}
+	case OBJ_SHIP:
+	case OBJ_START: {
+		const int inst = Objects[obj].instance;
+		if (Ships[inst].wingnum >= 0)
+			return "This ship is part of a wing, and its name cannot be changed";
+		return check_name_conflict("ship", name.c_str(), inst);
+	}
+	case OBJ_PROP:
+		for (const auto& p : Props) {
+			if (p.has_value() && p->objnum != obj && !stricmp(p->prop_name, name.c_str()))
+				return "This prop name is already being used by another prop";
+		}
+		return "";
+	default:
+		return "";
+	}
+}
+
 void FredView::quickRenameCurrentObject() {
 	const int obj = fred->currentObject;
 	if (!query_valid_object(obj)) return;
@@ -1372,6 +1408,11 @@ void FredView::quickRenameCurrentObject() {
 		const QString newName = QInputDialog::getText(
 		    this, tr("Rename"), tr("New path name:"), QLineEdit::Normal, current, &ok).trimmed();
 		if (!ok || newName.isEmpty() || newName == current) return;
+		const SCP_string conflict = quickRenameConflict(obj, newName.toUtf8().constData());
+		if (!conflict.empty()) {
+			QMessageBox::warning(this, tr("Rename"), QString::fromStdString(conflict));
+			return;
+		}
 		_mainStack->push(new fso::fred::RenameObjectCommand(
 		    -1,
 		    current.toUtf8().constData(),
@@ -1390,6 +1431,11 @@ void FredView::quickRenameCurrentObject() {
 	const QString newName = QInputDialog::getText(
 	    this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
 	if (!ok || newName.isEmpty() || newName == current) return;
+	const SCP_string conflict = quickRenameConflict(obj, newName.toUtf8().constData());
+	if (!conflict.empty()) {
+		QMessageBox::warning(this, tr("Rename"), QString::fromStdString(conflict));
+		return;
+	}
 
 	// QUndoStack::push() calls redo() immediately, which applies the rename.
 	_mainStack->push(new fso::fred::RenameObjectCommand(
@@ -2514,13 +2560,18 @@ bool FredView::eventFilter(QObject* watched, QEvent* event) {
 	if (event->type() == QEvent::ShortcutOverride) {
 		auto* keyEvent = static_cast<QKeyEvent*>(event);
 		const bool isUndo = keyEvent->matches(QKeySequence::Undo);
-		const bool isRedo = keyEvent->matches(QKeySequence::Redo);
+		// Mission redo is Ctrl+Y on every platform, but a text field only redoes on the
+		// platform's own key (QKeySequence::Redo, which on Linux is Ctrl+Shift+Z alone).
+		const bool isFieldRedo = keyEvent->matches(QKeySequence::Redo);
+		const bool isCtrlY = keyEvent->key() == Qt::Key_Y && keyEvent->modifiers() == Qt::ControlModifier;
+		const bool isRedo = isFieldRedo || isCtrlY;
 		if (isUndo || isRedo) {
 			// Spin boxes and editable combos delegate focus to an internal QLineEdit, so the
 			// focus widget is the line edit in all three cases.
 			auto* lineEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
 			if (lineEdit != nullptr) {
-				const bool fieldCanHandle = isUndo ? lineEdit->isUndoAvailable() : lineEdit->isRedoAvailable();
+				const bool fieldCanHandle = isUndo ? lineEdit->isUndoAvailable()
+				                                   : (isFieldRedo && lineEdit->isRedoAvailable());
 				if (!fieldCanHandle) {
 					// Field has nothing to undo/redo: swallow the override so Qt activates the
 					// application-wide undo/redo action instead of handing the key to the field.

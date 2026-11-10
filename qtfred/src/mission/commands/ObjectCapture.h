@@ -251,7 +251,7 @@ void rebuildShipPmiTextures(int shipIndex);
 
 struct CapturedWaypointPoint {
 	vec3d pos                 = vmd_zero_vector;
-	int   predecessorInstance = -1; // instance of preceding waypoint; -1 = was first
+	int   indexInPath         = 0;  // position in its path at capture time
 	int   signature           = -1; // reapplied on restore; see CapturedShip::signature
 };
 

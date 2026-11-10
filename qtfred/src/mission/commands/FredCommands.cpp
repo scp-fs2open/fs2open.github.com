@@ -658,23 +658,24 @@ void DeleteObjectsCommand::undo()
 			}
 		} else {
 			// Partial deletion: reinsert each waypoint back into the surviving path.
-			// Points are in ascending original-index order. Reinserting in this order
-			// progressively restores the instances of higher-index waypoints, so the
-			// stored predecessorInstance is valid by the time each point is reinserted.
+			// Points are in ascending original-index order, so reinserting in this
+			// order puts each one back at its original index. The path is found by
+			// name and the predecessor by index at this point, because waypoint
+			// instances shift when an earlier path is deleted or recreated.
 			for (const auto& pt : group.points) {
 				vec3d pos = pt.pos;
+				waypoint_list* wl = find_matching_waypoint_list(group.listName.c_str());
+				if (wl == nullptr || wl->get_waypoints().empty()) continue;
+				const auto& wpts = wl->get_waypoints();
 				int newObj;
-				if (pt.predecessorInstance < 0) {
-					// This was the first waypoint in the list — insert at front.
-					waypoint_list* wl = find_matching_waypoint_list(group.listName.c_str());
-					if (wl == nullptr || wl->get_waypoints().empty()) continue;
-					const int anyInst = Objects[wl->get_waypoints().front().get_objnum()].instance;
+				if (pt.indexInPath <= 0) {
+					// This was the first waypoint in the list: insert at front.
+					const int anyInst = Objects[wpts.front().get_objnum()].instance;
 					newObj = waypoint_add(&pos, anyInst, /*first_waypoint_in_list=*/true);
 					_editor->missionChanged();
 				} else {
-					// Insert after the predecessor (whose instance has been restored
-					// by the previous reinsertions in this group).
-					newObj = _editor->create_waypoint(&pos, pt.predecessorInstance);
+					const size_t predIndex = std::min(static_cast<size_t>(pt.indexInPath), wpts.size()) - 1;
+					newObj = _editor->create_waypoint(&pos, Objects[wpts[predIndex].get_objnum()].instance);
 				}
 				if (newObj >= 0) {
 					if (pt.signature > 0)

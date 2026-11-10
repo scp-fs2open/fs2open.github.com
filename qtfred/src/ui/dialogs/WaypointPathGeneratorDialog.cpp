@@ -49,7 +49,14 @@ void WaypointPathGeneratorDialog::reject()
 void WaypointPathGeneratorDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
-	e->ignore();
+	// reject() hides the dialog, so let the close proceed (a dialog created with
+	// WA_DeleteOnClose is destroyed and can be reopened). Ignoring it left a
+	// hidden dialog that showSingleInstanceDialog would not show again.
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
 }
 
 void WaypointPathGeneratorDialog::focusInEvent(QFocusEvent* e)
