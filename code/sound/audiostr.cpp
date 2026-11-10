@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/pstypes.h"
 #include "io/timer.h"
+#include "localization/localize.h"
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/IAudioFile.h"
@@ -1012,18 +1013,23 @@ static int audiostream_use_next_free( int type )
 //								ASF_EVENTMUSIC
 //								ASF_MENUMUSIC
 //								ASF_VOICE
-//	
+//			localize_voice	=>	false if an ASF_VOICE filename already came from lcl_get_voice_filename()
+//
 // returns:	success => handle to identify streaming sound
 //				failure => -1
-int audiostream_open( const char *filename, int type )
+int audiostream_open( const char *filename, int type, bool localize_voice )
 {
 	int i = audiostream_use_next_free(type);
 	if ( i == -1 )
 		return -1;
 
 	char fname[MAX_FILENAME_LEN];
-	// copy filename, since we might modify it
-	strcpy_s(fname, filename);
+	// copy filename, since we might modify it; a voice may have a file in the voice language
+	if (type == ASF_VOICE && localize_voice) {
+		strcpy_s(fname, lcl_get_voice_filename(filename, CF_TYPE_ANY).c_str());
+	} else {
+		strcpy_s(fname, filename);
+	}
 
 	switch (type)
 	{

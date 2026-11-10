@@ -924,8 +924,8 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 		// get voice file, also check for too long base file names via the return value of snprintf
 		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
 		{
-			// if it exists, we're done
-			if (cf_exists_full_ext(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS, NUM_AUDIO_EXT, audio_ext_list))
+			// if it exists, as named or in the voice language, we're done
+			if (lcl_voice_file_exists(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
 				return;
 		}
 

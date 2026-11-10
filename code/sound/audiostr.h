@@ -35,8 +35,9 @@ void audiostream_init();
 // Closes down the audio streaming library
 void audiostream_close();
 
-// Opens a wave file but doesn't play it.
-int audiostream_open( const char * filename, int type );
+// Opens a wave file but doesn't play it.  An ASF_VOICE name is first passed through lcl_get_voice_filename(),
+// unless the caller already did that (localize_voice = false).
+int audiostream_open( const char * filename, int type, bool localize_voice = true );
 
 // Opens wave file contents previously loaded into memory but doesn't play them.
 int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type );

@@ -16,6 +16,7 @@
 #include "globalincs/utility.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
+#include "localization/localize.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
@@ -845,7 +846,14 @@ int message_play_training_voice(int index)
 	}
 
 	if (!Message_waves[index].num.isValid()) {
-		fp = cfopen(Message_waves[index].name, "rb");
+		// the file of the voice language, if there is one; its length decides between streaming and loading.
+		// "none" means no voice, so no file of the voice language is looked up for it
+		SCP_string voice_filename = Message_waves[index].name;
+		if (strnicmp(voice_filename.c_str(), NOX("none.wav"), 4) != 0) {
+			voice_filename = lcl_get_voice_filename(voice_filename.c_str(), CF_TYPE_ANY);
+		}
+
+		fp = cfopen(voice_filename.c_str(), "rb");
 		if (!fp)
 			return -1;
 
@@ -864,9 +872,10 @@ int message_play_training_voice(int index)
 				}
 
 				if (strnicmp(Message_waves[index].name, NOX("none.wav"), 4) != 0) {
-					Training_voice_soundstream = audiostream_open(Message_waves[index].name, ASF_VOICE);
+					// the name is already the voice language file: the one whose length was just checked
+					Training_voice_soundstream = audiostream_open(voice_filename.c_str(), ASF_VOICE, false);
 					if (Training_voice_soundstream < 0) {
-						nprintf(("Warning", "Unable to load voice file %s\n", Message_waves[index].name));
+						nprintf(("Warning", "Unable to load voice file %s\n", voice_filename.c_str()));
 					}
 				}
 			}  // Training_voice should be valid and loaded now
@@ -880,10 +889,10 @@ int message_play_training_voice(int index)
 
 		} else {
 			game_snd_entry tmp_gse;
-			strcpy_s(tmp_gse.filename, Message_waves[index].name);
+			strcpy_s(tmp_gse.filename, voice_filename.c_str());
 			Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 			if (!Message_waves[index].num.isValid()) {
-				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
+				nprintf(("Warning", "Cannot load message wave: %s.  Will not play\n", voice_filename.c_str()));
 				return -1;
 			}
 		}
