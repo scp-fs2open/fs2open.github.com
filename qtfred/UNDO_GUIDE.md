@@ -42,7 +42,7 @@ For in-dialog edits where per-field commands don't fit: sexp tree mutations, lis
 
 ### `ApplyDialogCommand` - Modal edit accept
 
-The accept flow of every Modal edit dialog: capture model state, `apply()`, capture again, push one `ApplyDialogCommand` to the main stack, clear the dialog's own stack. The command takes ownership of the dialog model (call `setParent(nullptr)` before moving it in) and restores via the model's `captureState()`/`restoreState()`, implemented in `qtfred/src/mission/dialogs/state/<Name>State.cpp`. Sexp formulas serialize for real via `DialogStateHelpers::writeSexp`/`readSexp`. Strings stream as `QByteArray`, never `QString`, so non-UTF-8 mission text survives byte for byte. `apply()` has already written the after-state, so the command skips its first redo; restoring there would push every OK through the serializer.
+The accept flow of every Modal edit dialog: capture model state, `apply()`, capture again, push one `ApplyDialogCommand` to the main stack (or, when the two captures are equal, push nothing and reset the model), clear the dialog's own stack. The command takes ownership of the dialog model (call `setParent(nullptr)` before moving it in) and restores via the model's `captureState()`/`restoreState()`, implemented in `qtfred/src/mission/dialogs/state/<Name>State.cpp`. Sexp formulas serialize for real via `DialogStateHelpers::writeSexp`/`readSexp`. Strings stream as `QByteArray`, never `QString`, so non-UTF-8 mission text survives byte for byte. `apply()` has already written the after-state, so the command skips its first redo; restoring there would push every OK through the serializer.
 
 The shared `rejectOrCloseHandler()` routes "keep your changes? → Yes" through the dialog's `accept()` so a close-with-save is exactly as undoable as OK. Never call `model->apply()` outside the accept flow.
 
@@ -96,7 +96,7 @@ Snapshot the affected state before the action, run it, snapshot after, and push 
 
 1. Give it a `QUndoStack` and call `util::setupDialogUndo()` in the constructor.
 2. Implement `captureState()`/`restoreState()` in a new `state/<Name>State.cpp` (add it to `qtfred/source_groups.cmake`), restoring **everything** `apply()` can change - including apply-time side effects such as reference renames, which must be inverted on undo.
-3. Implement the accept flow (capture → `apply()` → capture → push `ApplyDialogCommand` → clear dialog stack → reactivate main stack) and route `reject()`/`closeEvent()` through `rejectOrCloseHandler()`.
+3. Implement the accept flow (capture → `apply()` → capture → push `ApplyDialogCommand` if anything changed → clear dialog stack → reactivate main stack) and route `reject()`/`closeEvent()` through `rejectOrCloseHandler()`.
 4. Add working-state capture/restore for the in-dialog stack, then wire each control as above.
 5. Open it via `showSingleInstanceDialog<T>()` from the `FredView` action - two live instances of the same editor would interleave apply commands.
 

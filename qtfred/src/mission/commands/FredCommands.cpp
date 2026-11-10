@@ -1164,16 +1164,22 @@ void CloneMarkedObjectsCommand::redo()
 	}
 
 	if (_editor->getNumMarked() > 0 && _viewport->duplicate_marked_objects() >= 0) {
-		_cloneSignatures.clear();
 		// After duplicate_marked_objects(), the newly created objects are marked.
-		// The originals are unmarked.
-		for (const object* p = GET_FIRST(&obj_used_list);
+		// The originals are unmarked. The first redo records the clones'
+		// signatures; later redos give the new clones those same signatures
+		// (in creation order), so commands pushed after this one still find them.
+		const bool firstClone = _cloneSignatures.empty();
+		size_t i = 0;
+		for (object* p = GET_FIRST(&obj_used_list);
 		     p != END_OF_LIST(&obj_used_list);
 		     p = GET_NEXT(p))
 		{
-			if (p->flags[Object::Object_Flags::Marked]) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			if (firstClone)
 				_cloneSignatures.push_back(p->signature);
-			}
+			else if (i < _cloneSignatures.size())
+				p->signature = _cloneSignatures[i];
+			i++;
 		}
 	}
 
@@ -1257,7 +1263,9 @@ void CloneDragCommand::redo()
 	_viewport->duplicate_marked_objects(_insert);
 
 	// Pair clones with entries by creation order (matches source iteration order
-	// inside duplicate_marked_objects), then apply final positions.
+	// inside duplicate_marked_objects), give each clone the signature recorded
+	// when it was first made (so later commands still find it), then apply
+	// final positions.
 	int ei = 0;
 	for (object* p = GET_FIRST(&obj_used_list);
 	     p != END_OF_LIST(&obj_used_list) && ei < static_cast<int>(_entries.size());
@@ -1265,7 +1273,7 @@ void CloneDragCommand::redo()
 	{
 		if (!p->flags[Object::Object_Flags::Marked]) continue;
 		auto& e = _entries[ei++];
-		e.cloneSignature = p->signature;
+		p->signature = e.cloneSignature;
 		const int n = OBJ_INDEX(p);
 		Objects[n].pos    = e.finalPos;
 		Objects[n].orient = e.finalOrient;
@@ -1736,7 +1744,7 @@ void BatchFlagCommand::restore(const SCP_vector<ShipSnapshot>& snaps)
     for (const auto& snap : snaps) {
         const int objNum = obj_get_by_signature(snap.sig);
         if (objNum < 0) continue;
-        Objects[objNum].flags = snap.objFlags;
+        Objects[objNum].flags = withLiveEditorObjectFlags(snap.objFlags, Objects[objNum].flags);
         Ships[Objects[objNum].instance].flags = snap.shipFlags;
     }
 }

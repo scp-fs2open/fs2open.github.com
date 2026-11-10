@@ -184,6 +184,46 @@ flagset<Object::Object_Flags> withLiveEditorObjectFlags(flagset<Object::Object_F
 	return saved;
 }
 
+SCP_vector<CapturedSubsys> captureSubsystemOverrides(const ship& s)
+{
+	// Only record entries that deviate from class-table defaults
+	SCP_vector<CapturedSubsys> out;
+	const ship_subsys* ss = GET_FIRST(&s.subsys_list);
+	while (ss != END_OF_LIST(&s.subsys_list)) {
+		const bool is_turret = (ss->system_info && ss->system_info->type == SUBSYSTEM_TURRET);
+		if (ss->current_hits || is_turret || ss->subsys_cargo_name > 0) {
+			CapturedSubsys css{};
+			strcpy_s(css.name, ss->system_info->subobj_name);
+			css.current_hits   = ss->current_hits;
+			css.cargo_name_idx = ss->subsys_cargo_name;
+			strcpy_s(css.cargo_title, ss->subsys_cargo_title);
+			css.is_turret      = is_turret;
+			if (is_turret) css.turret_weapons = ss->weapons;
+			out.push_back(css);
+		}
+		ss = GET_NEXT(ss);
+	}
+	return out;
+}
+
+void restoreSubsystemOverrides(ship& s, const SCP_vector<CapturedSubsys>& subsystems)
+{
+	// Apply stored overrides by matching subobj_name
+	for (const auto& css : subsystems) {
+		ship_subsys* ptr = GET_FIRST(&s.subsys_list);
+		while (ptr != END_OF_LIST(&s.subsys_list)) {
+			if (ptr->system_info && !stricmp(ptr->system_info->subobj_name, css.name)) {
+				ptr->current_hits      = css.current_hits;
+				ptr->subsys_cargo_name = css.cargo_name_idx;
+				strcpy_s(ptr->subsys_cargo_title, css.cargo_title);
+				if (css.is_turret) ptr->weapons = css.turret_weapons;
+				break;
+			}
+			ptr = GET_NEXT(ptr);
+		}
+	}
+}
+
 CapturedShip captureShip(int objNum)
 {
 	const object&   o  = Objects[objNum];
@@ -247,22 +287,8 @@ CapturedShip captureShip(int objNum)
 	c.cargo1 = s.cargo1;
 	strcpy_s(c.cargo_title, s.cargo_title);
 
-	// Subsystems — only record entries that deviate from class-table defaults
-	const ship_subsys* ss = GET_FIRST(&s.subsys_list);
-	while (ss != END_OF_LIST(&s.subsys_list)) {
-		const bool is_turret = (ss->system_info && ss->system_info->type == SUBSYSTEM_TURRET);
-		if (ss->current_hits || is_turret || ss->subsys_cargo_name > 0) {
-			CapturedSubsys css{};
-			strcpy_s(css.name, ss->system_info->subobj_name);
-			css.current_hits   = ss->current_hits;
-			css.cargo_name_idx = ss->subsys_cargo_name;
-			strcpy_s(css.cargo_title, ss->subsys_cargo_title);
-			css.is_turret      = is_turret;
-			if (is_turret) css.turret_weapons = ss->weapons;
-			c.subsystems.push_back(css);
-		}
-		ss = GET_NEXT(ss);
-	}
+	// Subsystems
+	c.subsystems = captureSubsystemOverrides(s);
 
 	// Flags
 	c.flags     = s.flags;
@@ -432,20 +458,8 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	s.cargo1 = c.cargo1;
 	strcpy_s(s.cargo_title, c.cargo_title);
 
-	// Subsystems — apply stored overrides by matching subobj_name
-	for (const auto& css : c.subsystems) {
-		ship_subsys* ptr = GET_FIRST(&s.subsys_list);
-		while (ptr != END_OF_LIST(&s.subsys_list)) {
-			if (ptr->system_info && !stricmp(ptr->system_info->subobj_name, css.name)) {
-				ptr->current_hits      = css.current_hits;
-				ptr->subsys_cargo_name = css.cargo_name_idx;
-				strcpy_s(ptr->subsys_cargo_title, css.cargo_title);
-				if (css.is_turret) ptr->weapons = css.turret_weapons;
-				break;
-			}
-			ptr = GET_NEXT(ptr);
-		}
-	}
+	// Subsystems
+	restoreSubsystemOverrides(s, c.subsystems);
 
 	// Flags
 	s.flags     = c.flags;

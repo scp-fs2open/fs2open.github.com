@@ -550,12 +550,44 @@ void WingEditorDialog::on_hideCuesButton_clicked()
 // Top section, first column
 // ---------------------------------------------------------------------------
 
+namespace {
+
+// A wing's name and every display name rename_wing() resets: the wing's own
+// and its members' (rebuilt from the new name).
+struct WingNameState {
+	SCP_string name;
+	SCP_string displayName;
+	bool hasDisplayName = false;
+	struct Member { int sig; SCP_string displayName; bool hasDisplayName; };
+	SCP_vector<Member> members;
+};
+
+WingNameState captureWingNameState(int wing)
+{
+	WingNameState s;
+	const auto& w = Wings[wing];
+	s.name = w.name;
+	s.displayName = w.display_name;
+	s.hasDisplayName = w.flags[Ship::Wing_Flags::Has_display_name];
+	for (int i = 0; i < w.wave_count; ++i) {
+		const ship& sh = Ships[w.ship_index[i]];
+		s.members.push_back({ Objects[sh.objnum].signature, sh.display_name,
+		                      sh.flags[Ship::Ship_Flags::Has_display_name] });
+	}
+	return s;
+}
+
+} // anonymous namespace
+
 void WingEditorDialog::on_wingNameEdit_editingFinished()
 {
 	if (!_model->wingIsValid()) return;
 	const SCP_string newName = ui->wingNameEdit->text().toStdString();
 	const SCP_string oldName = _model->getWingName();
 	if (newName == oldName) return;
+
+	const int wingIndex = _model->getCurrentWingIndex();
+	const WingNameState before = captureWingNameState(wingIndex);
 
 	_model->setWingName(newName);
 	const SCP_string actualNewName = _model->getWingName();
@@ -568,19 +600,30 @@ void WingEditorDialog::on_wingNameEdit_editingFinished()
 	}
 
 	// Build undo command.  On undo find wing by actualNewName; on redo find by oldName.
-	auto* cmd = new FieldEditCommand<SCP_string>(
+	// rename_wing() resets the wing's and members' display names, so they are
+	// captured on both sides and put back after the rename.
+	auto* cmd = new FieldEditCommand<WingNameState>(
 	    FieldId::Wing_Name, _viewport->editor, tr("Rename Wing"), true);
-	cmd->setTargetKey(std::to_string(_model->getCurrentWingIndex()));
+	cmd->setTargetKey(std::to_string(wingIndex));
 	// Never merge renames: the setter locates the wing by the names captured at
 	// push time, so a merged A->B->C command would look for "B" which no longer
 	// exists after the second rename.
 	cmd->setNoMerge();
-	cmd->addEntry(oldName, actualNewName,
-	    [editor = _viewport->editor, oldName, actualNewName](const SCP_string& v) {
-		    const SCP_string& findBy = (v == oldName) ? actualNewName : oldName;
+	cmd->addEntry(before, captureWingNameState(wingIndex),
+	    [editor = _viewport->editor, oldName, actualNewName](const WingNameState& v) {
+		    const SCP_string& findBy = (v.name == oldName) ? actualNewName : oldName;
 		    for (int i = 0; i < MAX_WINGS; ++i) {
 			    if (Wings[i].wave_count > 0 && stricmp(Wings[i].name, findBy.c_str()) == 0) {
-				    editor->rename_wing(i, v);
+				    editor->rename_wing(i, v.name);
+				    Wings[i].display_name = v.displayName;
+				    Wings[i].flags.set(Ship::Wing_Flags::Has_display_name, v.hasDisplayName);
+				    for (const auto& m : v.members) {
+					    const int o = obj_get_by_signature(m.sig);
+					    if (o < 0) continue;
+					    ship& sh = Ships[Objects[o].instance];
+					    sh.display_name = m.displayName;
+					    sh.flags.set(Ship::Ship_Flags::Has_display_name, m.hasDisplayName);
+				    }
 				    return;
 			    }
 		    }

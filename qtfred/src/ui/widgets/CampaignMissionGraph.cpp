@@ -148,6 +148,9 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 
 void MissionNodeItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
+	// A new gesture; clear anything left from being moved as part of a
+	// multi-select drag, where this node got no release event.
+	m_dragEmitStarted = false;
 	if (m_badgeRect.contains(e->pos())) {
 		if (m_specCount == 0) {
 			if (m_style.forksEnabled) {
@@ -182,10 +185,11 @@ QVariant MissionNodeItem::itemChange(GraphicsItemChange change, const QVariant& 
 		return snapped;
 	}
 	if (change == ItemPositionHasChanged) {
-		// First movement of a gesture: announce the drag before the position
-		// reaches the model (via nodeMoved), so listeners can capture the
-		// pre-drag state.
-		if (!m_dragEmitStarted) {
+		// A user drag: announce it before the position reaches the model (via
+		// nodeMoved), so listeners can capture the pre-drag state. Listeners keep
+		// only the first one per node and gesture. Moves with no button held are
+		// the graph being built or refreshed (setPos), which are not drags.
+		if (QApplication::mouseButtons() & Qt::LeftButton) {
 			m_dragEmitStarted = true;
 			Q_EMIT nodeDragStarted(m_idx);
 		}

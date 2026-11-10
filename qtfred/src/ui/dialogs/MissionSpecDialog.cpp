@@ -55,10 +55,14 @@ void MissionSpecDialog::accept()
 	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		QByteArray stateAfter = _model->captureState();
-		_model->setParent(nullptr); // detach from Qt parent before transferring ownership
-		_fredView->mainUndoStack()->push(
-			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
-			                       _viewport->editor, tr("Edit Mission Specs")));
+		if (stateAfter != stateBefore) {
+			_model->setParent(nullptr); // detach from Qt parent before transferring ownership
+			_fredView->mainUndoStack()->push(
+				new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+				                       _viewport->editor, tr("Edit Mission Specs")));
+		} else {
+			_model.reset(); // nothing changed: no undo step
+		}
 		_dialogStack->clear();
 		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();

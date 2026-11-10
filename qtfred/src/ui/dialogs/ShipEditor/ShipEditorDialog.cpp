@@ -325,7 +325,7 @@ ShipFlagsSnapshot captureShipFlagsSnapshot(int sig, int inst)
 	s.shipName = Ships[inst].ship_name;
 	s.shipFlags = Ships[inst].flags;
 	s.aiFlags = Ai_info[Ships[inst].ai_index].ai_flags;
-	s.objFlags = Objects[Ships[inst].objnum].flags;
+	s.objFlags = withLiveEditorObjectFlags(Objects[Ships[inst].objnum].flags, {}); // editor-state bits cleared
 	s.kamikazeDamage = Ai_info[Ships[inst].ai_index].kamikaze_damage;
 	s.escortPriority = Ships[inst].escort_priority;
 	s.finalDeathTime = Ships[inst].final_death_time;
@@ -381,7 +381,7 @@ ShipInitialStatusSnapshot captureShipInitialStatusSnapshot(int sig, int inst)
 	s.hullStrength = obj.hull_strength;
 	s.guardianThreshold = Ships[inst].ship_guardian_threshold;
 	s.shipFlags = Ships[inst].flags;
-	s.objFlags = obj.flags;
+	s.objFlags = withLiveEditorObjectFlags(obj.flags, {}); // editor-state bits cleared
 	s.teamName = Ships[inst].team_name;
 	// subsystems
 	for (auto* ss = GET_FIRST(&Ships[inst].subsys_list); ss != END_OF_LIST(&Ships[inst].subsys_list); ss = GET_NEXT(ss)) {
@@ -602,7 +602,7 @@ void ShipEditorDialog::on_miscButton_clicked()
 				int inst = Objects[o].instance;
 				Ships[inst].flags = s.shipFlags;
 				Ai_info[Ships[inst].ai_index].ai_flags = s.aiFlags;
-				Objects[o].flags = s.objFlags;
+				Objects[o].flags = withLiveEditorObjectFlags(s.objFlags, Objects[o].flags);
 				Ai_info[Ships[inst].ai_index].kamikaze_damage = s.kamikazeDamage;
 				Ships[inst].escort_priority = s.escortPriority;
 				Ships[inst].final_death_time = s.finalDeathTime;
@@ -711,7 +711,7 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 				Objects[o].hull_strength = s.hullStrength;
 				Ships[inst].ship_guardian_threshold = s.guardianThreshold;
 				Ships[inst].flags = s.shipFlags;
-				Objects[o].flags = s.objFlags;
+				Objects[o].flags = withLiveEditorObjectFlags(s.objFlags, Objects[o].flags);
 				Ships[inst].team_name = s.teamName;
 				int ss_idx = 0;
 				for (auto* ss = GET_FIRST(&Ships[inst].subsys_list);
@@ -2108,31 +2108,68 @@ void ShipEditorDialog::on_shipDisplayNameEdit_editingFinished()
 	_fredView->mainUndoStack()->push(cmd);
 }
 
+namespace {
+
+// What change_ship_type() resets to class defaults, so undoing a class change
+// brings back the ship's own weapons, hull, shields and subsystem settings.
+struct ShipClassState {
+	int shipClass = -1;
+	ship_weapon weapons;
+	float hullStrength = 0.0f;
+	float shieldQuadrant0 = 0.0f;
+	SCP_vector<CapturedSubsys> subsystems;
+};
+
+ShipClassState captureShipClassState(int inst)
+{
+	ShipClassState s;
+	const object& obj = Objects[Ships[inst].objnum];
+	s.shipClass = Ships[inst].ship_info_index;
+	s.weapons = Ships[inst].weapons;
+	s.hullStrength = obj.hull_strength;
+	s.shieldQuadrant0 = obj.shield_quadrant.empty() ? 0.0f : obj.shield_quadrant[0];
+	s.subsystems = captureSubsystemOverrides(Ships[inst]);
+	return s;
+}
+
+void restoreShipClassState(int inst, const ShipClassState& s)
+{
+	change_ship_type(inst, s.shipClass);
+	object& obj = Objects[Ships[inst].objnum];
+	Ships[inst].weapons = s.weapons;
+	obj.hull_strength = s.hullStrength;
+	if (!obj.shield_quadrant.empty())
+		obj.shield_quadrant[0] = s.shieldQuadrant0;
+	restoreSubsystemOverrides(Ships[inst], s.subsystems);
+}
+
+} // anonymous namespace
+
 void ShipEditorDialog::on_shipClassCombo_currentIndexChanged(int index)
 {
 	auto newClass = ui->shipClassCombo->itemData(index).toInt();
 	if (newClass < 0) return;
 
-	// Capture before (ship_info_index per marked ship)
-	SCP_vector<std::pair<int,int>> beforeList;
+	// Capture before (class and what a class change resets, per marked ship)
+	SCP_vector<std::pair<int, ShipClassState>> beforeList;
 	forEachMarkedShip([&](int sig, int inst) {
-		beforeList.emplace_back(sig, Ships[inst].ship_info_index);
+		beforeList.emplace_back(sig, captureShipClassState(inst));
 	});
 
 	_model->setShipClass(newClass);
 
-	auto* cmd = new FieldEditCommand<int>(FieldId::Ship_Class, _viewport->editor, tr("Change Ship Class"), true);
+	auto* cmd = new FieldEditCommand<ShipClassState>(FieldId::Ship_Class, _viewport->editor, tr("Change Ship Class"), true);
 	cmd->setTargetKey(markedShipsKey());
 	bool anyChanged = false;
 	for (const auto& [sig, before] : beforeList) {
 		int o = obj_get_by_signature(sig);
 		if (o < 0) continue;
-		int after = Ships[Objects[o].instance].ship_info_index;
-		if (before != after) {
+		ShipClassState after = captureShipClassState(Objects[o].instance);
+		if (before.shipClass != after.shipClass) {
 			anyChanged = true;
-			cmd->addEntry(before, after, [sig = sig](const int& v) {
+			cmd->addEntry(before, after, [sig = sig](const ShipClassState& v) {
 				int o2 = obj_get_by_signature(sig);
-				if (o2 >= 0) change_ship_type(Objects[o2].instance, v);
+				if (o2 >= 0) restoreShipClassState(Objects[o2].instance, v);
 			});
 		}
 	}

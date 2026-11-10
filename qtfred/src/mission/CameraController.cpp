@@ -113,8 +113,10 @@ bool CameraController::processControls(vec3d* pos, matrix* orient, float frameti
 	if (wantsUpdate)
 		_orbitActive = false;
 
-	if (onViewChanged && (vm_vec_cmp(pos, &posBefore) || vm_matrix_cmp(orient, &orientBefore))) {
-		onViewChanged();
+	// Only camera moves count; processControls also flies objects.
+	if (onViewChanged && pos == &view_pos && orient == &view_orient &&
+	    (vm_vec_cmp(pos, &posBefore) || vm_matrix_cmp(orient, &orientBefore))) {
+		onViewChanged(posBefore, orientBefore);
 	}
 
 	return wantsUpdate;
@@ -146,6 +148,9 @@ void CameraController::orbitCameraInitFromCurrentView(const vec3d *pivot, const 
 
 void CameraController::orbitCameraApply()
 {
+	const vec3d  posBefore    = view_pos;
+	const matrix orientBefore = view_orient;
+
 	float sp = sinf(_orbitPhi);
 
 	// Build offset in grid-local coordinates (Y = up/normal)
@@ -170,7 +175,7 @@ void CameraController::orbitCameraApply()
 	}
 
 	if (onViewChanged)
-		onViewChanged();
+		onViewChanged(posBefore, orientBefore);
 }
 
 void CameraController::orbitCameraRotate(int dx, int dy)

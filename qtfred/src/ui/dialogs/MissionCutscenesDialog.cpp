@@ -67,10 +67,14 @@ void MissionCutscenesDialog::accept()
 	QByteArray stateBefore = _model->captureState();
 	if (_model->apply()) {
 		QByteArray stateAfter = _model->captureState();
-		_model->setParent(nullptr);
-		_fredView->mainUndoStack()->push(
-			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
-			                       _viewport->editor, tr("Edit Mission Cutscenes")));
+		if (stateAfter != stateBefore) {
+			_model->setParent(nullptr);
+			_fredView->mainUndoStack()->push(
+				new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+				                       _viewport->editor, tr("Edit Mission Cutscenes")));
+		} else {
+			_model.reset(); // nothing changed: no undo step
+		}
 		_dialogStack->clear();
 		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();

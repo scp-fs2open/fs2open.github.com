@@ -369,7 +369,7 @@ public:
 
 class CloneMarkedObjectsCommand : public QUndoCommand {
 	SCP_vector<int> _originalSignatures; // marked objects at construction (stable identity)
-	SCP_vector<int> _cloneSignatures;    // refreshed on each redo() — clones are new objects
+	SCP_vector<int> _cloneSignatures;    // recorded on the first redo, reapplied to the clones on later ones
 	int             _previousCurrentObj;
 	Editor*         _editor;
 	EditorViewport* _viewport;
@@ -393,7 +393,7 @@ public:
 
 struct CloneDragEntry {
 	int    sourceSignature; // source object (stable, never deleted on undo)
-	int    cloneSignature;  // updated each redo() call
+	int    cloneSignature;  // set when the clone is made; reapplied to the new clone on redo
 	vec3d  initialPos;      // position right after cloning (= source pos at drag start)
 	matrix initialOrient;
 	vec3d  finalPos;        // position after user finished dragging

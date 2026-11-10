@@ -117,10 +117,14 @@ void BriefingEditorDialog::accept()
 		ui->defaultMusicWidget->stopPlayback();
 		ui->musicPackWidget->stopPlayback();
 		QByteArray stateAfter = _model->captureState();
-		_model->setParent(nullptr);
-		_fredView->mainUndoStack()->push(
-			new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
-			                       _viewport->editor, tr("Edit Briefing")));
+		if (stateAfter != stateBefore) {
+			_model->setParent(nullptr);
+			_fredView->mainUndoStack()->push(
+				new ApplyDialogCommand(std::move(_model), stateBefore, stateAfter,
+				                       _viewport->editor, tr("Edit Briefing")));
+		} else {
+			_model.reset(); // nothing changed: no undo step
+		}
 		_dialogStack->clear();
 		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 		QDialog::accept();

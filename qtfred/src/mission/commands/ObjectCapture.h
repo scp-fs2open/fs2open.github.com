@@ -71,6 +71,11 @@ struct CapturedSubsys {
 	ship_weapon turret_weapons;         // only valid when is_turret == true
 };
 
+// The subsystems of s that deviate from class defaults, and the reverse:
+// apply them to a ship whose subsystems are at class defaults.
+SCP_vector<CapturedSubsys> captureSubsystemOverrides(const ship& s);
+void restoreSubsystemOverrides(ship& s, const SCP_vector<CapturedSubsys>& subsystems);
+
 struct CapturedAltClass {
 	int  ship_class           = -1;
 	int  variable_index       = -1;

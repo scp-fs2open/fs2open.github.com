@@ -376,10 +376,12 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	_cameraIdleTimer->setSingleShot(true);
 	_cameraIdleTimer->setInterval(250);
 
-	_viewport->camera.onViewChanged = [this]() {
+	_viewport->camera.onViewChanged = [this](const vec3d& posBefore, const matrix& orientBefore) {
+		// The callback runs after the camera moved, so the gesture's start is the
+		// pose from before this first move, not the current one.
 		if (!_cameraIdleTimer->isActive()) {
-			_cameraPosBeforeGesture    = _viewport->camera.view_pos;
-			_cameraOrientBeforeGesture = _viewport->camera.view_orient;
+			_cameraPosBeforeGesture    = posBefore;
+			_cameraOrientBeforeGesture = orientBefore;
 		}
 		_cameraIdleTimer->start();
 	};
