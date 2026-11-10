@@ -12,6 +12,8 @@
 
 #include "ObjectCapture.h"
 
+#include <algorithm>
+
 #include <ai/ai.h>
 #include <globalincs/linklist.h>
 #include <jumpnode/jumpnode.h>
@@ -163,6 +165,40 @@ void freeSexpCueDup(int& cue_dup)
 	if (cue_dup >= 0)
 		free_sexp2(cue_dup);
 	cue_dup = SHIP_CUE_NONE;
+}
+
+CapturedReinforcement captureReinforcement(const char* name)
+{
+	CapturedReinforcement r;
+	for (int i = 0; i < static_cast<int>(Reinforcements.size()); i++) {
+		if (!stricmp(Reinforcements[i].name, name)) {
+			r.present = true;
+			r.index   = i;
+			r.entry   = Reinforcements[i];
+			break;
+		}
+	}
+	return r;
+}
+
+void restoreReinforcement(const char* name, const CapturedReinforcement& r)
+{
+	auto it = std::find_if(Reinforcements.begin(), Reinforcements.end(),
+	                       [&](const reinforcements& e) { return !stricmp(e.name, name); });
+	if (!r.present) {
+		if (it != Reinforcements.end())
+			Reinforcements.erase(it);
+		return;
+	}
+	reinforcements entry = r.entry;
+	strcpy_s(entry.name, name); // the entry is keyed by the current name
+	if (it != Reinforcements.end()) {
+		*it = entry;
+	} else {
+		const int size = static_cast<int>(Reinforcements.size());
+		const int at   = (r.index < 0) ? size : std::min(r.index, size);
+		Reinforcements.insert(Reinforcements.begin() + at, entry);
+	}
 }
 
 void syncShipRegistryEntry(int shipIndex)

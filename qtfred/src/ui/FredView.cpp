@@ -3157,6 +3157,7 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		ptr = GET_NEXT(ptr);
 	}
 
+	bool clearReinforcements = false;
 	if (found) {
 		auto button = showButtonDialog(DialogType::Warning,
 									   "Reinforcement conflict",
@@ -3164,15 +3165,9 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 										   "Press Ok to clear the flag on all selected ships. Press Cancel to not create the wing.",
 									   { DialogButton::Ok, DialogButton::Cancel });
 		if (button == DialogButton::Ok) {
-			ptr = GET_FIRST(&obj_used_list);
-			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
-					&& (ptr->flags[Object::Object_Flags::Marked])) {
-					fred->set_reinforcement(Ships[ptr->instance].ship_name, 0);
-				}
-
-				ptr = GET_NEXT(ptr);
-			}
+			// Cleared below, once the wing exists: if forming is cancelled or fails,
+			// the ships keep their flags, since nothing would be pushed to undo it.
+			clearReinforcements = true;
 		} else {
 			return;
 		}
@@ -3181,7 +3176,13 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 	if (fred->create_wing() == 0 && fred->cur_wing >= 0) {
 		// The new wing and its members join what was captured before.
 		const int wingNum = fred->cur_wing;
-		wingNames.emplace_back(Wings[wingNum].name);
+		if (clearReinforcements) {
+			for (int i = 0; i < Wings[wingNum].wave_count; i++)
+				fred->set_reinforcement(Ships[Wings[wingNum].ship_index[i]].ship_name, 0);
+		}
+		// A reformed wing keeps its name and is already in the list.
+		if (std::find(wingNames.begin(), wingNames.end(), SCP_string(Wings[wingNum].name)) == wingNames.end())
+			wingNames.emplace_back(Wings[wingNum].name);
 		for (int i = 0; i < Wings[wingNum].wave_count; i++) {
 			const int sig = Objects[Ships[Wings[wingNum].ship_index[i]].objnum].signature;
 			if (std::find(shipSigs.begin(), shipSigs.end(), sig) == shipSigs.end())
@@ -3297,7 +3298,10 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
 		auto* cmd = new fso::fred::CloneMarkedObjectsCommand(fred, _viewport);
-		_mainStack->push(cmd); // redo() calls duplicate_marked_objects()
+		if (cmd->cloneNow())
+			_mainStack->push(cmd); // first redo() is a no-op
+		else
+			delete cmd;
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {

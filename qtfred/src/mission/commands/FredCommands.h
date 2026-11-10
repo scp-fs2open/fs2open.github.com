@@ -394,16 +394,22 @@ public:
 
 class CloneMarkedObjectsCommand : public QUndoCommand {
 	SCP_vector<int> _originalSignatures; // marked objects at construction (stable identity)
-	SCP_vector<int> _cloneSignatures;    // recorded on the first redo, reapplied to the clones on later ones
+	SCP_vector<int> _cloneSignatures;    // recorded on the first clone, reapplied to the clones on redo
 	int             _previousCurrentObj;
 	Editor*         _editor;
 	EditorViewport* _viewport;
+	bool            _skipFirstRedo = false;
+
+	void doClone();
 
 public:
 	// Construct while the objects to clone are still marked.
 	CloneMarkedObjectsCommand(Editor*         editor,
 	                          EditorViewport* viewport,
 	                          QUndoCommand*   parent = nullptr);
+	// Clone now, before pushing; returns false when nothing was cloned (push
+	// nothing then, so the redo history is kept). The push's redo is a no-op.
+	bool cloneNow();
 	void undo() override;
 	void redo() override;
 };
@@ -467,8 +473,7 @@ public:
 		bool       hasDisplayName = false;
 		QByteArray arrivalCue;   // state::writeSexp
 		QByteArray departureCue;
-		bool           isReinforcement = false;
-		reinforcements reinforcementEntry;
+		CapturedReinforcement reinforcement;
 	};
 	struct WingState {
 		SavedWingData data;      // captured without cue dups

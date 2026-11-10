@@ -50,6 +50,18 @@ int materializeSexpCue(int cue_dup);
 // Free an owned dup (no-op for sentinels) and reset to SHIP_CUE_NONE.
 void freeSexpCueDup(int& cue_dup);
 
+// A Reinforcements[] entry with its position in the list, so undo can put it
+// back where it was with its uses, delay and messages.
+struct CapturedReinforcement {
+	bool           present = false;
+	int            index   = -1;
+	reinforcements entry;
+};
+CapturedReinforcement captureReinforcement(const char* name);
+// Make Reinforcements[] match: overwrite the entry for name in place, insert it
+// at its old position, or erase it. Does not touch the ship or wing flag.
+void restoreReinforcement(const char* name, const CapturedReinforcement& r);
+
 // Point Ship_registry_map[ship name] at the ship's own registry entry, fixing
 // keys that undo left pointing at the wrong entry (a restored ship can take
 // a name a wing survivor still had for a moment) or missing.

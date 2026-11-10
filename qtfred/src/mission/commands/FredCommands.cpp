@@ -1235,7 +1235,23 @@ CloneMarkedObjectsCommand::CloneMarkedObjectsCommand(Editor*         editor,
 	}
 }
 
+bool CloneMarkedObjectsCommand::cloneNow()
+{
+	doClone();
+	_skipFirstRedo = true;
+	return !_cloneSignatures.empty();
+}
+
 void CloneMarkedObjectsCommand::redo()
+{
+	if (_skipFirstRedo) {
+		_skipFirstRedo = false;
+		return;
+	}
+	doClone();
+}
+
+void CloneMarkedObjectsCommand::doClone()
 {
 	// Restore the original selection so duplicate_marked_objects knows what to clone.
 	_editor->unmark_all();
@@ -1264,13 +1280,6 @@ void CloneMarkedObjectsCommand::redo()
 				p->signature = _cloneSignatures[i];
 			i++;
 		}
-	}
-
-	// Nothing was cloned on the push: QUndoStack::push() drops an obsolete
-	// command instead of adding an empty undo step.
-	if (_cloneSignatures.empty()) {
-		setObsolete(true);
-		return;
 	}
 
 	_editor->missionChanged();
@@ -1445,6 +1454,9 @@ FormWingCommand::State FormWingCommand::capture(const SCP_vector<int>& shipSigna
 	for (const auto& name : wingNames) {
 		const int slot = liveWingSlot(name.c_str());
 		if (slot < 0) continue;
+		if (std::any_of(st.wings.begin(), st.wings.end(),
+		                [&](const WingState& w) { return w.data.wingNum == slot; }))
+			continue; // named twice
 		WingState ws;
 		captureWingToData(slot, ws.data, /*captureCues=*/false);
 		ws.arrivalCue   = serializeCue(Wings[slot].arrival_cue);
@@ -1462,13 +1474,7 @@ FormWingCommand::State FormWingCommand::capture(const SCP_vector<int>& shipSigna
 		ss.hasDisplayName = s.flags[Ship::Ship_Flags::Has_display_name];
 		ss.arrivalCue     = serializeCue(s.arrival_cue);
 		ss.departureCue   = serializeCue(s.departure_cue);
-		for (const auto& r : Reinforcements) {
-			if (!stricmp(r.name, s.ship_name)) {
-				ss.isReinforcement    = true;
-				ss.reinforcementEntry = r;
-				break;
-			}
-		}
+		ss.reinforcement  = captureReinforcement(s.ship_name);
 		st.ships.push_back(std::move(ss));
 	}
 	return st;
@@ -1539,12 +1545,8 @@ void FormWingCommand::apply(const State& target, const State& other)
 		replaceCue(s.arrival_cue, ss->arrivalCue);
 		replaceCue(s.departure_cue, ss->departureCue);
 
-		Reinforcements.erase(std::remove_if(Reinforcements.begin(), Reinforcements.end(),
-		                                    [&](const reinforcements& r) { return !stricmp(r.name, s.ship_name); }),
-		                     Reinforcements.end());
-		if (ss->isReinforcement)
-			Reinforcements.push_back(ss->reinforcementEntry);
-		s.flags.set(Ship::Ship_Flags::Reinforcement, ss->isReinforcement);
+		restoreReinforcement(s.ship_name, ss->reinforcement);
+		s.flags.set(Ship::Ship_Flags::Reinforcement, ss->reinforcement.present);
 	}
 
 	// 4. Rebuild the target's wings.
@@ -1601,12 +1603,16 @@ void FormWingCommand::undo()
 {
 	apply(_before, _after);
 
-	// Select the ships that formed the wing.
+	// Select the ships that formed the wing (the new wing's members, not every
+	// involved ship).
 	_editor->unmark_all();
-	for (const auto& ss : _after.ships) {
-		const int objNum = obj_get_by_signature(ss.signature);
-		if (objNum >= 0)
-			_editor->markObject(objNum);
+	for (const auto& ws : _after.wings) {
+		if (stricmp(ws.data.name, _newWingName.c_str()) != 0) continue;
+		for (const auto& m : ws.data.members) {
+			const int objNum = obj_get_by_signature(m.signature);
+			if (objNum >= 0)
+				_editor->markObject(objNum);
+		}
 	}
 	_editor->missionChanged();
 	_viewport->needsUpdate();
@@ -1823,6 +1829,9 @@ void DeleteWingCommand::redo()
 			_currentWingNum = -1;
 		}
 	}
+	// Auto-confirming references doesn't get past every refusal (the last player
+	// start), so drop again whatever is still alive.
+	dropSurvivors();
 
 	_editor->missionChanged();
 	_viewport->needsUpdate();
