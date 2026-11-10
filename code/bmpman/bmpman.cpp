@@ -959,6 +959,23 @@ int bm_get_info(int handle, int *w, int * h, uint* flags, int *nframes, int *fps
 	}
 }
 
+int bm_get_original_size(int handle, int* w, int* h)
+{
+	const int result = bm_get_info(handle, w, h);
+	if (result < 0) {
+		return result;
+	}
+
+	const auto* entry = bm_get_entry(handle);
+	if (w && entry->original_width > 0) {
+		*w = entry->original_width;
+	}
+	if (h && entry->original_height > 0) {
+		*h = entry->original_height;
+	}
+	return result;
+}
+
 int bm_get_depth(int handle, int* depth) {
 	bitmap* bmp;
 
@@ -1132,12 +1149,13 @@ int bm_is_valid(int handle) {
 //			c_type		= output for an updated BM_TYPE_*
 //			mm_lvl		= number of mipmap levels for the image
 //			size		= size of the data contained in the image
-static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, size_t *size)
+static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, BM_TYPE *c_type, int *mm_lvl, size_t *size,
+	int *original_width = nullptr, int *original_height = nullptr)
 {
 	int dds_ct;
 
 	if (type == BM_TYPE_DDS) {
-		int dds_error = dds_read_header(filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size);
+		int dds_error = dds_read_header(filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size, original_width, original_height);
 
 		if (dds_error != DDS_ERROR_NONE) {
 			mprintf(("DDS ERROR: Couldn't open '%s' -- %s\n", filename, dds_error_string(dds_error)));
@@ -1248,6 +1266,7 @@ static int bm_load_info(BM_TYPE type, const char *filename, CFILE *img_cfp, int 
 int bm_load(const char *real_filename, int dir_type) {
 	int free_slot = -1;
 	int w, h, bpp = 8;
+	int original_width = 0, original_height = 0;
 	int rc = 0;
 	size_t bm_size = 0;
 	int mm_lvl = 0;
@@ -1315,7 +1334,8 @@ int bm_load(const char *real_filename, int dir_type) {
 		return -1;
 	}
 
-	rc = bm_load_info(type, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size);
+	rc = bm_load_info(type, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size,
+		&original_width, &original_height);
 
 	if (rc != 0) {
 		if (img_cfp != nullptr)
@@ -1340,6 +1360,8 @@ int bm_load(const char *real_filename, int dir_type) {
 	entry->type = type;
 	entry->comp_type = c_type;
 	entry->signature = Bm_next_signature++;
+	entry->original_width = original_width;
+	entry->original_height = original_height;
 	entry->bm.w = (short)w;
 	entry->bm.rowsize = (short)w;
 	entry->bm.h = (short)h;
@@ -1794,7 +1816,8 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 
 			// bm_load_info() returns non-0 on failure
 			if (bm_load_info(eff_type, entry->info.ani.eff.filename,
-							 nullptr, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size)) {
+							 nullptr, &anim_width, &anim_height, &bpp, &c_type, &mm_lvl, &img_size,
+							 &entry->original_width, &entry->original_height)) {
 				// if we didn't get anything then bail out now
 				if (i == 0) {
 					Warning(LOCATION, "EFF: No frame images were found.  EFF, %s, is invalid.\n", filename);

@@ -298,7 +298,8 @@ static int get_bit_count(const DDS_HEADER &dds_header)
 	return 0;
 }
 
-int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, size_t *size)
+int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *height, int *bpp, int *compression_type, int *levels, size_t *size,
+	int *original_width, int *original_height)
 {
 	DDS_HEADER dds_header;
 	DDS_HEADER_DXT10 dds_header_dx10;
@@ -336,6 +337,12 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	if (retval != DDS_ERROR_NONE) {
 		goto Done;
 	}
+
+	// Preserve the file dimensions before either conversion path drops mip levels.
+	if (original_width)
+		*original_width = dds_header.dwWidth;
+	if (original_height)
+		*original_height = dds_header.dwHeight;
 
 	// check for valid cubemap (we require all 6 faces)
 	if (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP) {

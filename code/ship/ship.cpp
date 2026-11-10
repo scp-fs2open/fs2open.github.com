@@ -8547,7 +8547,7 @@ static void ship_add_cockpit_display(cockpit_display_info *display, int cockpit_
 	// create a render target for this cockpit texture
 	auto& glow_texture = (*Player_cockpit_textures)[glow_target];
 	if ( glow_texture == -1) {
-		bm_get_info(diffuse_handle, &w, &h);
+		bm_get_original_size(diffuse_handle, &w, &h);
 		glow_texture = bm_make_render_target(w, h, BMP_FLAG_RENDER_TARGET_DYNAMIC | BMP_FLAG_RENDER_TARGET_DEPTH_ATTACHMENT);
 
 		// if no render target was made, bail
@@ -8600,6 +8600,26 @@ static void ship_set_hud_cockpit_targets()
 	}
 }
 
+// Draw in the source image's original pixel coordinates. Background/foreground
+// rectangles crop the image rather than stretching the whole image into the display.
+static void ship_render_cockpit_display_bitmap(int bitmap, int x, int y, int w = -1, int h = -1)
+{
+	int original_w = 0, original_h = 0;
+	if (bm_get_original_size(bitmap, &original_w, &original_h) < 0 || original_w <= 0 || original_h <= 0) {
+		return;
+	}
+
+	w = w < 0 ? original_w : std::min(w, original_w);
+	h = h < 0 ? original_h : std::min(h, original_h);
+	if (w <= 0 || h <= 0) {
+		return;
+	}
+
+	gr_set_bitmap(bitmap);
+	gr_bitmap_uv(x, y, w, h, 0.0f, 0.0f,
+		static_cast<float>(w) / original_w, static_cast<float>(h) / original_h, GR_RESIZE_NONE);
+}
+
 int ship_start_render_cockpit_display(size_t cockpit_display_num)
 {
 	// make sure this thing even has a cockpit
@@ -8632,13 +8652,12 @@ int ship_start_render_cockpit_display(size_t cockpit_display_num)
 	gr_clear();
 	
 	if ( display->source >= 0 ) {
-		gr_set_bitmap(display->source);
-		gr_bitmap(0, 0, GR_RESIZE_NONE);
+		ship_render_cockpit_display_bitmap(display->source, 0, 0);
 	}
 
 	if ( display->background >= 0 ) {
-		gr_set_bitmap(display->background);
-		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
+		ship_render_cockpit_display_bitmap(display->background, display->offset[0], display->offset[1],
+			display->size[0], display->size[1]);
 	}
 
 	gr_set_cull(cull);
@@ -8667,8 +8686,8 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num)
 	int cull = gr_set_cull(0);
 	if ( display->foreground >= 0 ) {
 		gr_reset_clip();
-		gr_set_bitmap(display->foreground);
-		gr_bitmap_ex(display->offset[0], display->offset[1], display->size[0], display->size[1], 0, 0, GR_RESIZE_NONE);
+		ship_render_cockpit_display_bitmap(display->foreground, display->offset[0], display->offset[1],
+			display->size[0], display->size[1]);
 	}
 
 	gr_set_cull(cull);

@@ -300,9 +300,11 @@ inline size_t dds_compressed_mip_size(int w, int h, int block_size) {
 #define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
 //reads a dds header
+//optional original dimensions are taken before conversion drops mip levels
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0);
+int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0,
+	int *original_width = nullptr, int *original_height = nullptr);
 
 //reads bitmap
 //size of the data it stored in size

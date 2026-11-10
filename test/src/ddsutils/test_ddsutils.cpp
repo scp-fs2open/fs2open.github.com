@@ -1,10 +1,15 @@
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
+#include "globalincs/systemvars.h"
 #include "ddsutils/ddsutils.h"
 #include "graphics/2d.h"
 #include "util/FSTestFixture.h"
 
 class DDSConversionResizeTest : public test::FSTestFixture {
 protected:
+	explicit DDSConversionResizeTest(uint64_t init_flags = test::INIT_CFILE)
+		: test::FSTestFixture(init_flags) {}
+
 	std::function<bool(gr_capability)> saved_capability_query;
 	bool saved_no_cache = false;
 	const char* source_name = "unittest-dds-resize.dds";
@@ -57,8 +62,11 @@ protected:
 		write_header(fp.get(), width, height, input_mips);
 		cfseek(fp.get(), 0, CF_SEEK_SET);
 		int actual_width, actual_height, actual_mips, actual_format;
+		int original_width = 0, original_height = 0;
 		ASSERT_EQ(DDS_ERROR_NONE, dds_read_header(nullptr, fp.get(), &actual_width, &actual_height,
-			nullptr, &actual_format, &actual_mips));
+			nullptr, &actual_format, &actual_mips, nullptr, &original_width, &original_height));
+		EXPECT_EQ(width, original_width);
+		EXPECT_EQ(height, original_height);
 		EXPECT_EQ(expected_width, actual_width);
 		EXPECT_EQ(expected_height, actual_height);
 		EXPECT_EQ(expected_mips, actual_mips);
@@ -120,4 +128,73 @@ TEST_F(DDSConversionResizeTest, small_etc2_bitmap_matches_the_reported_header_si
 	for (size_t i = size; i < data.size(); ++i) {
 		EXPECT_EQ(0xcd, data[i]);
 	}
+}
+
+
+class DDSBitmapOriginalSizeTest : public DDSConversionResizeTest {
+protected:
+	DDSBitmapOriginalSizeTest() : DDSConversionResizeTest(test::INIT_CFILE) {}
+	std::function<void(bitmap_slot*)> saved_bm_init;
+	std::function<void(bitmap_slot*, bool)> saved_bm_free_data;
+	std::function<bool(int, bitmap*)> saved_bm_data;
+	int saved_standalone = 0;
+
+	void SetUp() override
+	{
+		DDSConversionResizeTest::SetUp();
+		saved_standalone = Is_standalone;
+		Is_standalone = 0; // Load the fixture instead of the standalone placeholder bitmap.
+		saved_bm_init = gr_screen.gf_bm_init;
+		saved_bm_free_data = gr_screen.gf_bm_free_data;
+		saved_bm_data = gr_screen.gf_bm_data;
+		gr_screen.gf_bm_init = [](bitmap_slot*) {};
+		gr_screen.gf_bm_free_data = [](bitmap_slot*, bool) {};
+		gr_screen.gf_bm_data = [](int, bitmap*) { return true; };
+		bm_init();
+	}
+
+	void TearDown() override
+	{
+		bm_close();
+		gr_screen.gf_bm_init = saved_bm_init;
+		gr_screen.gf_bm_free_data = saved_bm_free_data;
+		gr_screen.gf_bm_data = saved_bm_data;
+		Is_standalone = saved_standalone;
+		DDSConversionResizeTest::TearDown();
+	}
+};
+
+TEST_F(DDSBitmapOriginalSizeTest, original_size_is_available_before_pixel_loading_and_survives_reload)
+{
+	std::unique_ptr<CFILE> fp(cfopen(source_name, "wb", CF_TYPE_CACHE));
+	ASSERT_NE(nullptr, fp);
+	write_header(fp.get(), 1024, 1024, 3);
+	for (uint level = 0; level < 3; ++level) {
+		SCP_vector<ubyte> blocks(dds_compressed_mip_size(1024 >> level, 1024 >> level, 8), 0);
+		ASSERT_EQ(static_cast<int>(blocks.size()), cfwrite(blocks.data(), 1, static_cast<int>(blocks.size()), fp.get()));
+	}
+	fp.reset();
+
+	const int handle = bm_load(source_name, CF_TYPE_CACHE);
+	ASSERT_GE(handle, 0);
+	int width = 0, height = 0, original_width = 0, original_height = 0;
+	ASSERT_GE(bm_get_info(handle, &width, &height), 0);
+	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
+	EXPECT_EQ(512, width);
+	EXPECT_EQ(512, height);
+	EXPECT_EQ(1024, original_width);
+	EXPECT_EQ(1024, original_height);
+
+	ASSERT_NE(nullptr, bm_lock(handle, 24, BMP_TEX_ETC2_RGB8));
+	bm_unlock(handle);
+	bm_unload(handle);
+	ASSERT_NE(nullptr, bm_lock(handle, 24, BMP_TEX_ETC2_RGB8));
+	bm_unlock(handle);
+	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
+	EXPECT_EQ(1024, original_width);
+	EXPECT_EQ(1024, original_height);
+	ASSERT_GE(bm_get_info(handle, &width, &height), 0);
+	EXPECT_EQ(512, width);
+	EXPECT_EQ(512, height);
+	bm_release(handle);
 }
