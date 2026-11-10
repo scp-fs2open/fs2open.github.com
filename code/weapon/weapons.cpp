@@ -11031,3 +11031,25 @@ float weapon_get_apparent_size(const weapon& wp) {
 		g3_get_hfov(Eye_fov),
 		gr_screen.max_w) / i2fl(gr_screen.max_w);
 }
+
+float weapon_get_target_dot(const weapon& wp) {
+	const object* wep_objp = &Objects[wp.objnum];
+
+	vec3d target_pos;
+
+	if (wp.homing_object != &obj_used_list && (wp.homing_object->type != OBJ_NONE) && (!IS_VEC_NULL(&wp.homing_pos))) {
+		target_pos = wp.homing_pos;
+	} else if(wp.target_num > -1 && Objects[wp.target_num].type != OBJ_NONE && Objects[wp.target_num].signature == wp.target_sig)	{
+		target_pos = Objects[wp.target_num].pos;
+	} else {
+		return 1.f;
+	}
+	vec3d dir;
+	vm_vec_sub(&dir, &target_pos, &wep_objp->pos);
+	if (vm_vec_mag(&dir) == 0) {
+		return 1.f;
+	} else {
+		vm_vec_normalize(&dir);
+		return vm_vec_dot(&dir, &wep_objp->orient.vec.fvec);	
+	}
+}
