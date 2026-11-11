@@ -170,7 +170,8 @@ bool VulkanBloom::createTargets()
 			return false;
 		}
 
-		if (!m_ctx->memoryManager->allocateImageMemory(m_tex[i].image, MemoryUsage::GpuOnly, m_tex[i].allocation)) {
+		if (!m_ctx->memoryManager->allocateImageMemory(
+				m_tex[i].image, MemoryUsage::GpuOnly, m_tex[i].allocation, MemoryPurpose::RenderTarget)) {
 			nprintf(("vulkan", "VulkanBloom: Failed to allocate bloom image %zu memory!\n", i));
 			return false;
 		}

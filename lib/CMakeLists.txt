@@ -52,6 +52,7 @@ add_subdirectory(accidental-noise)
 ADD_SUBDIRECTORY(lz4)
 
 ADD_SUBDIRECTORY(imgui)
+ADD_SUBDIRECTORY(implot)
 
 ADD_SUBDIRECTORY(etcpak)
 
