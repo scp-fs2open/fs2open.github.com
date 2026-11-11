@@ -10,6 +10,7 @@
                 <section title="Concepts">
                     <section title="AI"              ref="concepts/ai.html"/>
                     <section title="Campaign Flow"   ref="concepts/campaign-flow.html"/>
+                    <section title="Custom Data"     ref="concepts/custom-data.html"/>
                     <section title="IFF &amp; Teams" ref="concepts/iff.html"/>
                     <section title="Messages"        ref="concepts/messages.html"/>
                     <section title="SEXPs"           ref="concepts/sexps.html"/>
@@ -93,6 +94,7 @@
             <keyword name="AI"                      id="concept.ai"                 ref="concepts/ai.html"/>
             <keyword name="Messages"                id="concept.messages"           ref="concepts/messages.html"/>
             <keyword name="Campaign Flow"           id="concept.campaignflow"       ref="concepts/campaign-flow.html"/>
+            <keyword name="Custom Data Concepts"    id="concept.customdata"         ref="concepts/custom-data.html"/>
             <keyword name="Viewport"                id="concept.viewport"           ref="general/Viewport.html"/>
             <keyword name="Toolbars"                id="concept.toolbar"            ref="general/Toolbars.html"/>
             <keyword name="Custom Data"             id="CustomDataDialog"           ref="dialogs/CustomDataDialog.html"/>
@@ -158,6 +160,7 @@
             <file>concepts/ai.html</file>
             <file>concepts/messages.html</file>
             <file>concepts/campaign-flow.html</file>
+            <file>concepts/custom-data.html</file>
             <file>dialogs/CustomDataDialog.html</file>
             <file>css/help.css</file>
             <file>dialogs/AsteroidEditorDialog.html</file>
