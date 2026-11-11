@@ -491,7 +491,7 @@ public:
 	util::reset_on_move<p_dock_instance *> dock_list;	// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
 	int collision_group_id = 0;							// Goober5000
-	int	group = -1;								// group object is within or -1 if none.
+	int	group = 0;								// one bit per group the object is in, 0 if none.
 	SCP_string fred_layer = "Default";
 	int	persona_index = -1;
 	int	kamikaze_damage = 0;					// base damage for a kamikaze attack
