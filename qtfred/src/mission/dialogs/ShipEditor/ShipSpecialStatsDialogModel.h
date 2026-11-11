@@ -44,7 +44,6 @@ class ShipSpecialStatsDialogModel : public AbstractDialogModel {
 	void initializeData();
 
 	int _ship;
-	int _numSelectedShips;
 	SCP_vector<int> _selectedShips;
 
 	bool _specialExp;
