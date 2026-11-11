@@ -1703,10 +1703,10 @@ void auto_shield_equalize_init_control()
 // off by default so retail play is unchanged; a mod can preset or enforce it in default_settings.tbl
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto AutoShieldEqualizeOption __UNUSED = options::OptionBuilder<bool>("Game.AutoShieldEqualize",
-	std::pair<const char*, int>{"Auto Shield Equalization", 1944},
+	std::pair<const char*, int>{"Auto Shield Equalization", 1946},
 	std::pair<const char*, int>{
 		"Allows the Toggle Auto Shield Equalization control, which equalizes your shields after hits",
-		1945})
+		1947})
 													.category(std::make_pair("Game", 1824))
 													.default_func([]() { return Auto_shield_equalize_allowed; })
 													.level(options::ExpertLevel::Beginner)
@@ -2655,9 +2655,9 @@ int button_function(int n)
 			// without the indicator on screen, the message is the only way to see the new state
 			if (!hud_player_gauge_can_render(HUD_OBJECT_AUTO_SHIELDS)) {
 				if (Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization activated", 1942));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization activated", 1944));
 				} else {
-					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization deactivated", 1943));
+					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Auto shield equalization deactivated", 1945));
 				}
 			}
 			break;

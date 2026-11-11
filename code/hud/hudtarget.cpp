@@ -5350,7 +5350,7 @@ void HudGaugeAutoShields::render(float /*frametime*/, bool config)
 		config);
 	renderString(x + fl2i(Shields_text_offsets[0] * scale),
 		y + fl2i(Shields_text_offsets[1] * scale),
-		XSTR("shields", 1941),
+		XSTR("shields", 1943),
 		scale,
 		config);
 }
