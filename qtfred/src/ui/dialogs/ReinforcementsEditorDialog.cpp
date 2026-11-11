@@ -65,20 +65,6 @@ void ReinforcementsDialog::closeEvent(QCloseEvent* e)
 }
 
 
-static inline void setSpinMixed(QSpinBox* sb)
-{
-	sb->setSpecialValueText(QStringLiteral("-"));    // special text for mixed values
-	sb->setMinimum(std::numeric_limits<int>::min()); // sentinel below real min
-	sb->setValue(sb->minimum());                     // triggers special text display
-}
-
-static inline void setSpinNormal(QSpinBox* sb, int min, int max, int value)
-{
-	sb->setSpecialValueText(QString()); // disable special text
-	sb->setRange(min, max);
-	sb->setValue(value);
-}
-
 void ReinforcementsDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
@@ -129,17 +115,17 @@ void ReinforcementsDialog::updateUi()
 	int use = _model->getUseCount();
 
 	if (use < 0) {
-		setSpinMixed(ui->useSpinBox); 
+		ui->useSpinBox->setMixed();
 	} else {
-		setSpinNormal(ui->useSpinBox, 0, 16777215, use);
+		ui->useSpinBox->setSingleValue(use);
 	}
 	
 	int delay = _model->getBeforeArrivalDelay();
 
 	if (delay < 0) {
-		setSpinMixed(ui->delaySpinBox); 
+		ui->delaySpinBox->setMixed();
 	} else {
-		setSpinNormal(ui->delaySpinBox, 0, 16777215, delay);
+		ui->delaySpinBox->setSingleValue(delay);
 	}
 }
 
@@ -219,12 +205,7 @@ void ReinforcementsDialog::on_useSpinBox_valueChanged(int val)
 {
 	// need to check that it's not empty so as not to pass nonsense values back to the model.
 	if (ui->chosenShipsList->selectedItems().count() > 0) {
-		if (val < 0) {
-			val = 0;
-
-			util::SignalBlockers blockers(this);
-			ui->useSpinBox->setValue(val);
-		}
+		// MixedValueSpinBox keeps each value that the user enters in the real range (0 or more).
 		_model->setUseCount(val);
 	}
 }
@@ -233,12 +214,7 @@ void ReinforcementsDialog::on_delaySpinBox_valueChanged(int val)
 {
 	// need to check that it's not empty so as not to pass nonsense values back to the model.
 	if (ui->chosenShipsList->selectedItems().count() > 0) {
-		if (val < 0) {
-			val = 0;
-
-			util::SignalBlockers blockers(this);
-			ui->delaySpinBox->setValue(val);
-		}
+		// MixedValueSpinBox keeps each value that the user enters in the real range (0 or more).
 		_model->setBeforeArrivalDelay(val);
 	}
 }

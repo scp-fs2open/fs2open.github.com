@@ -4,6 +4,7 @@
 
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QListWidget>
+#include <ui/widgets/MixedValueSpinBox.h>
 
 namespace fso::fred::dialogs {
 
@@ -54,6 +55,7 @@ class ShipInitialStatusDialog : public QDialog {
 	EditorViewport* _viewport;
 
 	void updateUi();
+	void setSpinBoxValueOrBlank(MixedValueSpinBox* spinBox, int value);
 	void updateFlags();
 	void updateDocks();
 	void updateDockee();
