@@ -25,14 +25,17 @@ class PilotCampaignFileTest : public test::FSTestFixture {
 		FSTestFixture::TearDown();
 	}
 
-	static bool load_short_save()
+	static bool load_short_save(player* plr = nullptr)
 	{
-		player plr;
-		plr.reset();
-		strcpy_s(plr.callsign, "short");
+		player local;
+		if (plr == nullptr) {
+			plr = &local;
+		}
+		plr->reset();
+		strcpy_s(plr->callsign, "short");
 
 		pilotfile loader;
-		return loader.load_savefile(&plr, "stub");
+		return loader.load_savefile(plr, "stub");
 	}
 };
 
@@ -61,6 +64,26 @@ void write_save(Section id, int count)
 	cfwrite_int(count, fp);
 	cfclose(fp);
 }
+
+// Flags, then Info with empty lists
+void write_flags_and_info(CFILE* fp, int last_ship, int missions_completed)
+{
+	cfwrite_ushort(static_cast<ushort>(Section::Flags), fp);
+	cfwrite_uint(5, fp);
+	cfwrite_ubyte(0, fp);
+	cfwrite_int(0, fp);
+
+	cfwrite_ushort(static_cast<ushort>(Section::Info), fp);
+	cfwrite_uint(48, fp);
+	for (int i = 0; i < 4; ++i) {
+		cfwrite_int(0, fp);
+	}
+	for (int value : {last_ship, -1, 0, -1, 0, missions_completed}) {
+		cfwrite_int(value, fp);
+	}
+	cfwrite_string_len("", fp);
+	cfwrite_string_len("", fp);
+}
 } // namespace
 
 TEST_F(PilotCampaignFileTest, recent_missions_without_names_are_not_counted)
@@ -86,22 +109,7 @@ TEST_F(PilotCampaignFileTest, missions_completed_counts_only_the_missions_read)
 {
 	auto fp = start_save();
 	ASSERT_NE(fp, nullptr);
-	cfwrite_ushort(static_cast<ushort>(Section::Flags), fp);
-	cfwrite_uint(5, fp);
-	cfwrite_ubyte(0, fp);
-	cfwrite_int(0, fp);
-
-	// Info with empty lists, no last ship, and 1000 missions completed
-	cfwrite_ushort(static_cast<ushort>(Section::Info), fp);
-	cfwrite_uint(48, fp);
-	for (int i = 0; i < 4; ++i) {
-		cfwrite_int(0, fp);
-	}
-	for (int value : {-1, -1, 0, -1, 0, 1000}) {
-		cfwrite_int(value, fp);
-	}
-	cfwrite_string_len("", fp);
-	cfwrite_string_len("", fp);
+	write_flags_and_info(fp, -1, 1000);
 
 	// Missions as the last section, holding the record of mission 0 only
 	cfwrite_ushort(static_cast<ushort>(Section::Missions), fp);
@@ -114,4 +122,17 @@ TEST_F(PilotCampaignFileTest, missions_completed_counts_only_the_missions_read)
 	ASSERT_TRUE(load_short_save());
 
 	EXPECT_EQ(Campaign.num_missions_completed, 1);
+}
+
+TEST_F(PilotCampaignFileTest, last_ship_outside_the_ship_list_is_cleared)
+{
+	auto fp = start_save();
+	ASSERT_NE(fp, nullptr);
+	write_flags_and_info(fp, 0, 0);
+	cfclose(fp);
+
+	player plr;
+	ASSERT_TRUE(load_short_save(&plr));
+
+	EXPECT_EQ(plr.last_ship_flown_si_index, -1);
 }
