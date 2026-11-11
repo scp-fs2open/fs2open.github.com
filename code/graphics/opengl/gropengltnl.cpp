@@ -59,7 +59,21 @@ extern vec3d G3_user_clip_point;
 extern bool Envmap_override;
 extern bool Shadow_override;
 
-size_t GL_vertex_data_in = 0;
+// Running total of the bytes held by live vertex and index buffers, for the profiler overlay's
+// memory panel (see opengl_get_geometry_bytes()). Uniform buffers and texture buffers stay out of
+// this total, which keeps it equal to the "geometry" group of the Vulkan backend.
+static size_t GL_geometry_bytes_used = 0;
+
+// Tells if a buffer of this OpenGL type counts as geometry for GL_geometry_bytes_used.
+static bool opengl_buffer_is_geometry(GLenum type)
+{
+	return (type == GL_ARRAY_BUFFER) || (type == GL_ELEMENT_ARRAY_BUFFER);
+}
+
+size_t opengl_get_geometry_bytes()
+{
+	return GL_geometry_bytes_used;
+}
 
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
@@ -67,6 +81,11 @@ GLint GL_max_elements_indices = 4096;
 GLuint Shadow_map_depth_texture = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
+
+// Number of layers in the shadow map texture array, kept from the moment
+// opengl_init_shadow_framebuffer() created the array. opengl_get_shadow_map_bytes() uses it, thus
+// a later change of the cascade counts cannot make that value wrong.
+static int Shadow_texture_layers = 0;
 
 gr_buffer_handle Transform_buffer_handle;
 
@@ -275,9 +294,11 @@ void gr_opengl_update_buffer_data(gr_buffer_handle handle, size_t size, const vo
 		glBufferData(buffer_obj.type, size, data, buffer_obj.gl_usage);
 	}
 
-	GL_vertex_data_in -= buffer_obj.size;
+	if (opengl_buffer_is_geometry(buffer_obj.type)) {
+		GL_geometry_bytes_used -= buffer_obj.size;
+		GL_geometry_bytes_used += size;
+	}
 	buffer_obj.size = size;
-	GL_vertex_data_in += buffer_obj.size;
 }
 
 void gr_opengl_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
@@ -365,7 +386,12 @@ void gr_opengl_delete_buffer(gr_buffer_handle handle)
 		glDeleteTextures(1, &buffer_obj.texture);
 	}
 
-	GL_vertex_data_in -= buffer_obj.size;
+	if (opengl_buffer_is_geometry(buffer_obj.type)) {
+		GL_geometry_bytes_used -= buffer_obj.size;
+	}
+	// The size must go to 0 here. opengl_destroy_all_buffers() calls this function for every
+	// handle, thus a buffer that the game already deleted comes through a second time.
+	buffer_obj.size = 0;
 
 	glDeleteBuffers(1, &buffer_obj.buffer_id);
 }
@@ -487,6 +513,7 @@ static bool opengl_init_shadow_framebuffer(int size)
 		// Everything is fine
 		mprintf(("Shadow framebuffer created successfully.\n"));
 		Shadow_texture_size = size;
+		Shadow_texture_layers = Num_shadow_cascades + Num_cockpit_shadow_cascades;
 		return true;
 	}
 
@@ -515,6 +542,22 @@ static bool opengl_init_shadow_framebuffer(int size)
 
 	mprintf(("Failed to create framebuffer: %s\n", error));
 	return false;
+}
+
+size_t opengl_get_shadow_map_bytes()
+{
+	if (Shadow_map_depth_texture == 0) {
+		return 0;
+	}
+
+	// opengl_init_shadow_framebuffer() gives the texture array the internal format
+	// GL_DEPTH_COMPONENT24, which the driver holds in 4 bytes for each texel.
+	constexpr size_t DEPTH_COMPONENT24_BYTES = 4;
+
+	const auto size = static_cast<size_t>(Shadow_texture_size);
+	const auto layers = static_cast<size_t>(Shadow_texture_layers);
+
+	return size * size * layers * DEPTH_COMPONENT24_BYTES;
 }
 
 void opengl_tnl_init()

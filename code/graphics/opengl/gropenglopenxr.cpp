@@ -72,7 +72,7 @@ bool gr_opengl_openxr_test_capabilities() {
 #ifdef WIN32
 bool gr_opengl_openxr_create_session() {
 	auto hdc = static_cast<HDC>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
-													   SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+													   SDL_PROP_WINDOW_WIN32_HDC_POINTER,
 													   nullptr));
 
 	XrGraphicsBindingOpenGLWin32KHR graphicsBinding{
