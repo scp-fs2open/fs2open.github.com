@@ -2468,7 +2468,6 @@ void game_show_framerate()
 	modelstats_num_polys = 0;
 	modelstats_num_polys_drawn = 0;
 	modelstats_num_verts = 0;
-	modelstats_num_sortnorms = 0;
 #endif
 }
 
@@ -7522,7 +7521,6 @@ void Time_model( int modelnum )
 
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
-		model_set_detail_level(0);		// use highest detail level
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();

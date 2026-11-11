@@ -1075,22 +1075,14 @@ polymodel_instance* model_get_instance(int model_instance_num);
 // routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
 
-// If MR_FLAG_OUTLINE bit set this color will be used for outlines.
-// This defaults to black.
-void model_set_outline_color(int r, int g, int b);
-
-// IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
-// This defaults to 0. (0=highest, larger=lower)
-void model_set_detail_level(int n);
-
 // Flags you can pass to model_render
 #define MR_NORMAL					(0)			// Draw a normal object
-#define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
+#define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_render_params::set_color
 #define MR_SKYBOX					(1<<1)		// Draw as a skybox
 #define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
 #define MR_STENCIL_WRITE			(1<<3)		// Write stencil buffere where the model was rendered
 #define MR_STENCIL_READ				(1<<4)		// Only draw pixels of the model where the stencil buffer has the right value (see MR_STENCIL_WRITE)
-#define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
+#define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_render_params::set_thruster_info for how long it draws.
 #define MR_NO_COLOR_WRITES			(1<<6)		// Don't write anything to the color buffers (used when setting the stencil buffer)
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
@@ -1181,7 +1173,6 @@ bool submodel_is_destroyed_form(const char *name);
 extern int modelstats_num_polys;
 extern int modelstats_num_polys_drawn;
 extern int modelstats_num_verts;
-extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
@@ -1470,10 +1461,6 @@ typedef struct mst_info {
 					draw_distortion(true)
 				{}
 } mst_info;
-
-// scale the engines thrusters by this much
-// Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
 
 
 //=======================================================================================

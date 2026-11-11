@@ -5138,8 +5138,6 @@ void model_clear_instance(int model_num)
 		pm->maps[i].ResetToOriginal();
 	}
 	// ---- end of stuff that should be moved into model instances at some point
-
-	interp_clear_instance();
 }
 
 void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)

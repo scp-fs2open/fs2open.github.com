@@ -47,8 +47,6 @@
 int modelstats_num_polys = 0;
 int modelstats_num_polys_drawn = 0;
 int modelstats_num_verts = 0;
-int modelstats_num_sortnorms = 0;
-int modelstats_num_boxes = 0;
 #endif
 
 struct bsp_vertex
@@ -120,115 +118,11 @@ struct interp_vertex {
 // Local variables
 //
 
-static float Interp_box_scale = 1.0f; // this is used to scale both detail boxes and spheres
-
-// Stuff to control rendering parameters
-static color Interp_outline_color;
-static int Interp_detail_level_locked = -1;
-
-float Interp_thrust_scale = 0.1f;
-static float Interp_thrust_scale_x = 0.0f;//added -bobboau
-static float Interp_thrust_scale_y = 0.0f;//added -bobboau
-
-static int Interp_thrust_bitmap = -1;
-static int Interp_thrust_glow_bitmap = -1;
-static float Interp_thrust_glow_noise = 1.0f;
-static bool Interp_afterburner = false;
-
-// Bobboau's thruster stuff
-static int Interp_secondary_thrust_glow_bitmap = -1;
-static int Interp_tertiary_thrust_glow_bitmap = -1;
-static int Interp_distortion_thrust_bitmap = -1;
-static float Interp_thrust_glow_rad_factor = 1.0f;
-static float Interp_secondary_thrust_glow_rad_factor = 1.0f;
-static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
-static float Interp_distortion_thrust_rad_factor = 1.0f;
-static float Interp_distortion_thrust_length_factor = 1.0f;
-static float Interp_thrust_glow_len_factor = 1.0f;
-static vec3d Interp_thrust_rotvel = ZERO_VECTOR;
-static bool Interp_draw_distortion = true;
-
-// if != -1, use this bitmap when rendering ship insignias
-static int Interp_insignia_bitmap = -1;
-
-// if != -1, use this bitmap when rendering with a forced texture
-static int Interp_forced_bitmap = -1;
-
 // our current level of detail (LOD)
 int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-
-void interp_clear_instance()
-{
-	Interp_thrust_scale = 0.1f;
-	Interp_thrust_scale_x = 0.0f;//added-Bobboau
-	Interp_thrust_scale_y = 0.0f;//added-Bobboau
-	Interp_thrust_bitmap = -1;
-	Interp_thrust_glow_bitmap = -1;
-	Interp_thrust_glow_noise = 1.0f;
-	Interp_insignia_bitmap = -1;
-	Interp_afterburner = false;
-
-	// Bobboau's thruster stuff
-	{
-		Interp_thrust_glow_rad_factor = 1.0f;
-
-		Interp_secondary_thrust_glow_bitmap = -1;
-		Interp_secondary_thrust_glow_rad_factor = 1.0f;
-
-		Interp_tertiary_thrust_glow_bitmap = -1;
-		Interp_tertiary_thrust_glow_rad_factor = 1.0f;
-
-		Interp_thrust_glow_len_factor = 1.0f;
-
-		vm_vec_zero(&Interp_thrust_rotvel);
-	}
-
-	Interp_box_scale = 1.0f;
-
-	Interp_detail_level_locked = -1;
-
-	Interp_forced_bitmap = -1;
-}
-
-/**
- * Scales the engines thrusters by this much
- */
-void model_set_thrust(int  /*model_num*/, mst_info *mst)
-{
-	if (mst == NULL) {
-		Int3();
-		return;
-	}
-
-	Interp_thrust_scale = mst->length.xyz.z;
-	Interp_thrust_scale_x = mst->length.xyz.x;
-	Interp_thrust_scale_y = mst->length.xyz.y;
-
-	CLAMP(Interp_thrust_scale, 0.1f, 1.0f);
-
-	Interp_thrust_bitmap = mst->primary_bitmap;
-	Interp_thrust_glow_bitmap = mst->primary_glow_bitmap;
-	Interp_secondary_thrust_glow_bitmap = mst->secondary_glow_bitmap;
-	Interp_tertiary_thrust_glow_bitmap = mst->tertiary_glow_bitmap;
-	Interp_distortion_thrust_bitmap = mst->distortion_bitmap;
-
-	Interp_thrust_glow_noise = mst->glow_noise;
-	Interp_afterburner = mst->use_ab;
-
-	Interp_thrust_rotvel = mst->rotvel;
-
-	Interp_thrust_glow_rad_factor = mst->glow_rad_factor;
-	Interp_secondary_thrust_glow_rad_factor = mst->secondary_glow_rad_factor;
-	Interp_tertiary_thrust_glow_rad_factor = mst->tertiary_glow_rad_factor;
-	Interp_thrust_glow_len_factor = mst->glow_length_factor;
-	Interp_distortion_thrust_rad_factor = mst->distortion_rad_factor;
-	Interp_distortion_thrust_length_factor = mst->distortion_length_factor;
-
-	Interp_draw_distortion = mst->draw_distortion;
-}
 
 void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false)
 {
@@ -919,21 +813,6 @@ void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, fl
 
 		vm_vec_avg(pos, &best1, &best2);
 	}
-}
-
-// If MR_FLAG_OUTLINE bit set this color will be used for outlines.
-// This defaults to black.
-void model_set_outline_color(int r, int g, int b )
-{
-	gr_init_color( &Interp_outline_color, r, g, b );
-
-}
-
-// IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
-// This defaults to 0. (0=highest, larger=lower)
-void model_set_detail_level(int n)
-{
-	Interp_detail_level_locked = n;
 }
 
 /**
