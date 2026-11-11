@@ -1073,12 +1073,29 @@ void CampaignMissionGraph::applyFocusEmphasis()
 
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
 {
+	// A view on a hidden tab may not have been laid out yet, so the fit waits until it is shown.
+	if (!isVisible()) {
+		m_fitPending = true;
+		m_pendingFitMargin = margin;
+		return;
+	}
+	m_fitPending = false;
+
 	if (!m_scene || m_scene->items().isEmpty())
 		return;
 	const QRectF itemsRect = m_scene->itemsBoundingRect().adjusted(-margin, -margin, margin, margin);
 	if (!itemsRect.isEmpty()) {
 		fitInView(itemsRect, Qt::KeepAspectRatio);
 		m_currentScale = transform().m11();
+	}
+}
+
+void CampaignMissionGraph::showEvent(QShowEvent* e)
+{
+	QGraphicsView::showEvent(e);
+
+	if (m_fitPending) {
+		zoomToFitAll(m_pendingFitMargin);
 	}
 }
 

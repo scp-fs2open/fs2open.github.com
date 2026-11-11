@@ -173,6 +173,8 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void mouseReleaseEvent(QMouseEvent* e) override;
 	// Context menu
 	void contextMenuEvent(QContextMenuEvent* e) override;
+	// Deferred fit
+	void showEvent(QShowEvent* e) override;
 
   private slots:
 	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
@@ -220,6 +222,8 @@ class CampaignMissionGraph final : public QGraphicsView {
 	qreal m_currentScale{1.0};
 	const qreal kMinScale{0.2};
 	const qreal kMaxScale{3.0};
+	bool m_fitPending{false};
+	qreal m_pendingFitMargin{0.0};
 
 	bool m_updatingSceneRect{false};
 	bool m_spawnPending{false};
