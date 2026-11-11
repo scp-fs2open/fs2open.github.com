@@ -50,7 +50,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	~FredView() override;
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
-	void loadMissionFile(const QString& pathName, int flags = 0);
+	/**
+	 * @brief Loads a mission file after the prompt to save the current mission.
+	 * @param offerAutosaveRecovery false if the load must not offer a newer autosave (for example Revert).
+	 */
+	void loadMissionFile(const QString& pathName, int flags = 0, bool offerAutosaveRecovery = true);
 
 	QSurface* getRenderSurface();
 	RenderWidget* getRenderWidget();
@@ -221,7 +225,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
 	bool isMissionModified() const;
 
-	void on_mission_loaded(const std::string& filepath);
+	void on_mission_loaded(const std::string& filepath, bool hasUnsavedContent);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
 	void connectActionToViewSetting(QAction* option, std::vector<bool>* vector, size_t idx);
