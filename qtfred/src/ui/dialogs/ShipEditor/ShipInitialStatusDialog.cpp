@@ -171,35 +171,29 @@ void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
 {
 	_model->setMoveShipsWhenUndocking(value);
 }
+// Shows the value, or "-" when the model value is BLANKFIELD (the marked ships have different values).
+void ShipInitialStatusDialog::setSpinBoxValueOrBlank(MixedValueSpinBox* spinBox, int value)
+{
+	if (value == BLANKFIELD) {
+		spinBox->setMixed();
+	} else {
+		spinBox->setSingleValue(value);
+	}
+}
 void ShipInitialStatusDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
-	auto value = _model->getVelocity();
-	if (value != BLANKFIELD) {
-		ui->velocitySpinBox->setValue(value);
-	} else {
-		ui->velocitySpinBox->setSpecialValueText("-");
-	}
-	value = _model->getHull();
-	if (value != BLANKFIELD) {
-		ui->hullSpinBox->setValue(value);
-	} else {
-		ui->hullSpinBox->setSpecialValueText("-");
-	}
-	value = _model->getHasShield();
+	setSpinBoxValueOrBlank(ui->velocitySpinBox, _model->getVelocity());
+	setSpinBoxValueOrBlank(ui->hullSpinBox, _model->getHull());
+	auto value = _model->getHasShield();
 	ui->hasShieldCheckBox->setCheckState(Qt::CheckState(value));
 	if (_model->getHasShield()) {
 		ui->shieldHullSpinBox->setEnabled(true);
 	} else {
 		ui->shieldHullSpinBox->setEnabled(false);
 	}
-	value = _model->getShieldHull();
-	if (value != BLANKFIELD) {
-		ui->shieldHullSpinBox->setValue(value);
-	} else {
-		ui->shieldHullSpinBox->setSpecialValueText("-");
-	}
-	ui->guardianSpinBox->setValue(_model->getGuardian());
+	setSpinBoxValueOrBlank(ui->shieldHullSpinBox, _model->getShieldHull());
+	setSpinBoxValueOrBlank(ui->guardianSpinBox, _model->getGuardian());
 	updateFlags();
 	updateDocks();
 	updateDockee();
