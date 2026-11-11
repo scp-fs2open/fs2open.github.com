@@ -1,5 +1,6 @@
 #include "VariableDialogModel.h"
 
+#include "missioneditor/sexp_tree_model.h"
 #include "parse/sexp.h"
 
 #include <algorithm>
@@ -50,7 +51,8 @@ bool VariableDialogModel::apply()
 						renamedVariables.emplace_back(i, var_info.originalName);
 					}
 					strcpy_s(Sexp_variables[i].variable_name, var_info.name.c_str());
-					Sexp_variables[i].type = var_info.flags;
+					// the stored flags still hold the type the variable was loaded with; the dialog's type is set below
+					Sexp_variables[i].type = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
 
 					if (var_info.is_string) {
 						strcpy_s(Sexp_variables[i].text, var_info.stringValue.c_str());
@@ -67,7 +69,7 @@ bool VariableDialogModel::apply()
 
 		// New variable
 		if (!found) {
-			int flags = var_info.flags;
+			int flags = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
 			const char* value_str;
 			SCP_string num_val_str;
 
@@ -237,6 +239,14 @@ bool VariableDialogModel::checkValidity()
 		}
 		if (!names_taken.insert(var.name).second) {
 			error_message += "Duplicate variable name found: \"" + var.name + "\"\n";
+		}
+
+		// the team loadout reads its variables by type, and a mission saved with the wrong one does not load
+		const int idx = var.originalName.empty() ? -1 : get_index_sexp_variable_name(var.originalName.c_str());
+		if (idx >= 0 && var.is_string != ((Sexp_variables[idx].type & SEXP_VARIABLE_STRING) != 0) &&
+			SexpTreeModel::get_loadout_variable_count(idx) > 0) {
+			error_message +=
+				"The type of variable \"" + var.name + "\" cannot change while the team loadout uses it.\n";
 		}
 	}
 
