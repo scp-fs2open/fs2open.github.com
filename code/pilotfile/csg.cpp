@@ -81,7 +81,8 @@ void pilotfile::csg_read_info()
 	// ship list (NOTE: may contain more ship classes than this mod defines)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	// reads at the end of the file return 0 without failing, so loops over a count from the file also stop there
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -93,7 +94,7 @@ void pilotfile::csg_read_info()
 	// weapon list (NOTE: may contain more weapon classes than this mod defines)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -105,7 +106,7 @@ void pilotfile::csg_read_info()
 	// intel list (NOTE: may contain more than MAX_INTEL_ENTRIES)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -117,7 +118,7 @@ void pilotfile::csg_read_info()
 	// medals list (NOTE: may contain more than Num_medals)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -286,7 +287,7 @@ void pilotfile::csg_read_missions()
 		throw "Missions before Info!";
 	}
 
-	for (i = 0; i < Campaign.num_missions_completed; i++) {
+	for (i = 0; i < Campaign.num_missions_completed && !cfeof(cfp); i++) {
 		idx = cfread_int(cfp);
 		if ((idx < 0) || (idx >= MAX_CAMPAIGN_MISSIONS)) {
 			mprintf(("CSG => Parse Warning: Invalid mission index (%d), discarding its record.\n", idx));
@@ -305,7 +306,7 @@ void pilotfile::csg_read_missions()
 		missionp->goals.clear();
 		int num_goals = cfread_int(cfp);
 
-		for (j = 0; j < num_goals; j++) {
+		for (j = 0; j < num_goals && !cfeof(cfp); j++) {
 			missionp->goals.emplace_back();
 			auto& stored_goal = missionp->goals.back();
 
@@ -317,7 +318,7 @@ void pilotfile::csg_read_missions()
 		missionp->events.clear();
 		int num_events = cfread_int(cfp);
 
-		for (j = 0; j < num_events; j++) {
+		for (j = 0; j < num_events && !cfeof(cfp); j++) {
 			missionp->events.emplace_back();
 			auto& stored_event = missionp->events.back();
 
@@ -329,7 +330,7 @@ void pilotfile::csg_read_missions()
 		missionp->variables.clear();
 		int num_variables = cfread_int(cfp);
 
-		for (j = 0; j < num_variables; j++) {
+		for (j = 0; j < num_variables && !cfeof(cfp); j++) {
 			missionp->variables.emplace_back();
 			auto& stored_variable = missionp->variables.back();
 
@@ -642,7 +643,7 @@ void pilotfile::csg_read_loadout()
 		// primary weapons
 		count = cfread_int(cfp);
 
-		for (j = 0; j < count; j++) {
+		for (j = 0; j < count && !cfeof(cfp); j++) {
 			wep_idx = cfread_int(cfp);
 
 			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
@@ -669,7 +670,7 @@ void pilotfile::csg_read_loadout()
 		// secondary weapons
 		count = cfread_int(cfp);
 
-		for (j = 0; j < count; j++) {
+		for (j = 0; j < count && !cfeof(cfp); j++) {
 			wep_idx = cfread_int(cfp);
 
 			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
@@ -853,7 +854,7 @@ void pilotfile::csg_read_redalert()
 
 		Red_alert_precursor_mission = t_string;
 
-		for (idx = 0; idx < ship_list_size; idx++) {
+		for (idx = 0; idx < ship_list_size && !cfeof(cfp); idx++) {
 			red_alert_ship_status ras;
 
 			cfread_string_len(t_string, NAME_LENGTH, cfp);
@@ -875,7 +876,7 @@ void pilotfile::csg_read_redalert()
 			// subsystem hits
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				hit = cfread_float(cfp);
 				ras.subsys_current_hits.push_back( hit );
 			}
@@ -883,7 +884,7 @@ void pilotfile::csg_read_redalert()
 			// subsystem aggregate hits
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				hit = cfread_float(cfp);
 				ras.subsys_aggregate_current_hits.push_back( hit );
 			}
@@ -891,7 +892,7 @@ void pilotfile::csg_read_redalert()
 			// primary weapon loadout and status
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				i = cfread_int(cfp);
 				weapons.count = cfread_int(cfp);
 
@@ -912,7 +913,7 @@ void pilotfile::csg_read_redalert()
 			// secondary weapon loadout and status
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				i = cfread_int(cfp);
 				weapons.count = cfread_int(cfp);
 
@@ -947,7 +948,7 @@ void pilotfile::csg_read_redalert()
 	wing_list_size = cfread_int(cfp);
 
 	if (wing_list_size > 0) {
-		for (idx = 0; idx < wing_list_size; idx++) {
+		for (idx = 0; idx < wing_list_size && !cfeof(cfp); idx++) {
 			red_alert_wing_status rws;
 
 			cfread_string_len(t_string, NAME_LENGTH, cfp);
@@ -1118,7 +1119,7 @@ void pilotfile::csg_read_hud()
 	// gauge-specific colors
 	int num_gauges = cfread_int(cfp);
 
-	for (int idx = 0; idx < num_gauges; idx++) {
+	for (int idx = 0; idx < num_gauges && !cfeof(cfp); idx++) {
 		ubyte red = cfread_ubyte(cfp);
 		ubyte green = cfread_ubyte(cfp);
 		ubyte blue = cfread_ubyte(cfp);
@@ -1214,7 +1215,7 @@ void pilotfile::csg_read_variables()
 
 	if (num_variables > 0) {
 
-		for (idx = 0; idx < num_variables; idx++) {
+		for (idx = 0; idx < num_variables && !cfeof(cfp); idx++) {
 			sexp_variable temp_var;
 			memset(&temp_var, 0, sizeof(sexp_variable));
 			temp_var.type = cfread_int(cfp);
@@ -1239,7 +1240,7 @@ void pilotfile::csg_read_variables()
 		int redalert_num_variables = cfread_int(cfp);
 
 		if (redalert_num_variables > 0) {
-			for (idx = 0; idx < redalert_num_variables; idx++) {
+			for (idx = 0; idx < redalert_num_variables && !cfeof(cfp); idx++) {
 				sexp_variable temp_var;
 				memset(&temp_var, 0, sizeof(sexp_variable));
 				temp_var.type = cfread_int(cfp);
@@ -1459,7 +1460,7 @@ void pilotfile::csg_write_controls()
 void pilotfile::csg_read_cutscenes() {
 	size_t list_size = cfread_uint(cfp);
 
-	for(size_t i = 0; i < list_size; i++) {
+	for (size_t i = 0; i < list_size && !cfeof(cfp); i++) {
 		char tempFilename[MAX_FILENAME_LEN];
 
 		cfread_string_len(tempFilename, MAX_FILENAME_LEN, cfp);
@@ -1511,7 +1512,7 @@ void pilotfile::csg_read_lastmissions()
 			MAX_RECENT_MISSIONS);
 		count = std::clamp(count, 0, MAX_RECENT_MISSIONS);
 	}
-	for ( i = 0; i < count; i++ ) {
+	for (i = 0; i < count && !cfeof(cfp); i++) {
 		char *cp;
 
 		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, cfp);
@@ -1546,7 +1547,7 @@ void pilotfile::csg_read_containers()
 {
 	const int num_containers = cfread_int(cfp);
 
-	for (int idx = 0; idx < num_containers; idx++) {
+	for (int idx = 0; idx < num_containers && !cfeof(cfp); idx++) {
 		Campaign.persistent_containers.emplace_back();
 		auto& container = Campaign.persistent_containers.back();
 		csg_read_container(container);
@@ -1562,7 +1563,7 @@ void pilotfile::csg_read_containers()
 
 	const int redalert_num_containers = cfread_int(cfp);
 
-	for (int idx = 0; idx < redalert_num_containers; idx++) {
+	for (int idx = 0; idx < redalert_num_containers && !cfeof(cfp); idx++) {
 		Campaign.red_alert_containers.emplace_back();
 		auto& ra_container = Campaign.red_alert_containers.back();
 		csg_read_container(ra_container);
@@ -1583,7 +1584,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 	const int size = cfread_int(cfp);
 
 	if (container.is_list()) {
-		for (int i = 0; i < size; ++i) {
+		for (int i = 0; i < size && !cfeof(cfp); ++i) {
 			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
 			container.list_data.emplace_back(temp_buf);
 		}
@@ -1591,7 +1592,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 		char temp_key[NAME_LENGTH];
 		memset(temp_key, 0, sizeof(temp_key));
 
-		for (int i = 0; i < size; ++i) {
+		for (int i = 0; i < size && !cfeof(cfp); ++i) {
 			cfread_string_len(temp_key, sizeof(temp_key), cfp);
 			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
 			container.map_data.emplace(temp_key, temp_buf);
