@@ -26,7 +26,7 @@ TEST(PolymorphicTests, defaultIsEmpty) {
 	ASSERT_FALSE(empty);
 	ASSERT_EQ(nullptr, empty.get());
 
-	SCP_polymorphic<Base> copy(empty);
+	SCP_polymorphic<Base> copy(empty); // NOLINT(performance-unnecessary-copy-initialization) - testing the copy
 	ASSERT_FALSE(copy);
 }
 
@@ -41,7 +41,7 @@ TEST(PolymorphicTests, makeForwardsArguments) {
 TEST(PolymorphicTests, copyKeepsDynamicType) {
 	auto original = SCP_polymorphic<Base>::make<Derived>(42);
 
-	SCP_polymorphic<Base> copy(original);
+	SCP_polymorphic<Base> copy(original); // NOLINT(performance-unnecessary-copy-initialization) - testing the copy
 
 	ASSERT_TRUE(copy);
 	ASSERT_NE(original.get(), copy.get());
@@ -75,7 +75,7 @@ TEST(PolymorphicTests, vectorCopyKeepsTypes) {
 	original.push_back(SCP_polymorphic<Base>::make<Base>());
 	original.push_back(SCP_polymorphic<Base>::make<Derived>());
 
-	auto copy = original;
+	auto copy = original; // NOLINT(performance-unnecessary-copy-initialization) - testing the copy
 
 	ASSERT_EQ(0, copy[0]->kind());
 	ASSERT_EQ(1, copy[1]->kind());
