@@ -3991,6 +3991,33 @@ polymodel_instance* model_get_instance(int model_instance_num)
 	return Polygon_model_instances[model_instance_num];
 }
 
+void model_instance_snapshot_prev_all()
+{
+	for (auto pmi : Polygon_model_instances) {
+		if (!pmi)
+			continue;
+
+		// Submodels that can't move only change pose when set directly, which updates their previous pose right away
+		const auto pm = model_get(pmi->model_num);
+		for (int i = 0; i < pm->n_models; ++i) {
+			if (pm->submodel[i].flags[Model::Submodel_flags::Can_move]) {
+				pmi->submodel[i].canonical_prev_orient = pmi->submodel[i].canonical_orient;
+				pmi->submodel[i].canonical_prev_offset = pmi->submodel[i].canonical_offset;
+			}
+		}
+	}
+}
+
+void model_set_submodel_can_move(polymodel* pm, int submodel_num)
+{
+	auto sm = &pm->submodel[submodel_num];
+	sm->flags.set(Model::Submodel_flags::Can_move);
+
+	// Can_move covers moving because of a parent, too
+	for (int child = sm->first_child; child >= 0; child = pm->submodel[child].next_sibling)
+		model_set_submodel_can_move(pm, child);
+}
+
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
@@ -4193,8 +4220,6 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 // Normalize the submodel angle and convert float angle to angles struct
 void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp)
 {
-	smi->canonical_prev_orient = smi->canonical_orient;
-
 	if (clamp)
 	{
 		// normalize the angle so that we are within a valid range:
@@ -4242,8 +4267,6 @@ void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool c
 // Convert float displacement to vector, but no normalization (clamping) is needed
 void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
 {
-	smi->canonical_prev_offset = smi->canonical_offset;
-
 	// get the vector
 	switch (sm->translation_axis_id)
 	{
@@ -4430,7 +4453,6 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	// save last angles
 	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
 
 	//------------
 	// Calculate the destination point in world coordinates

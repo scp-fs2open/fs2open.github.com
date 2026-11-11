@@ -1608,6 +1608,11 @@ void obj_move_all(float frametime)
 
 	obj_merge_created_list();
 
+	// The submodel pose from last frame, which collision sweeps and motion vectors start from. Taken before anything
+	// moves this frame (turrets can move as early as obj_move_all_pre under framerate independent turning), and for
+	// all instances rather than just objects', since cockpits, skyboxes and external weapons move too.
+	model_instance_snapshot_prev_all();
+
 	// Clear the table that tells which groups of weapons have cast light so far.
 	if(!(Game_mode & GM_MULTIPLAYER) || (MULTIPLAYER_MASTER)) {
 		obj_clear_weapon_group_id_list();
@@ -1645,16 +1650,6 @@ void obj_move_all(float frametime)
 		}
 
 		vec3d cur_pos = objp->pos;			// Save the current position
-
-		// Likewise for submodels, whose movers only record this when they actually move. It has to happen before
-		// obj_move_all_pre, because turrets can move in there under framerate independent turning.
-		if (int instance_num = object_get_model_instance_num(objp); instance_num >= 0) {
-			auto pmi = model_get_instance(instance_num);
-			for (int i = 0; i < model_get(pmi->model_num)->n_models; ++i) {
-				pmi->submodel[i].canonical_prev_orient = pmi->submodel[i].canonical_orient;
-				pmi->submodel[i].canonical_prev_offset = pmi->submodel[i].canonical_offset;
-			}
-		}
 
 #ifdef OBJECT_CHECK 
 			obj_check_object( objp );

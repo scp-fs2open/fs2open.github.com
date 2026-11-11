@@ -211,7 +211,7 @@ bool vulkan_upscaler_usable()
 	return Upscaler_available && !failed_for_current_setting();
 }
 
-bool VulkanUpscaler::wanted() const
+bool VulkanUpscaler::wanted()
 {
 	return vulkan_upscaler_usable() && Gr_fsr_mode != FsrMode::Off;
 }
@@ -417,7 +417,7 @@ bool vulkan_upscaler_usable()
 	return false;
 }
 
-bool VulkanUpscaler::wanted() const
+bool VulkanUpscaler::wanted()
 {
 	return false;
 }

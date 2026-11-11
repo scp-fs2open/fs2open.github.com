@@ -142,6 +142,8 @@ struct submodel_instance
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
 	matrix	canonical_orient = vmd_identity_matrix;
+	// The pose at the end of last frame; written only by model_instance_snapshot_prev_all (for Can_move submodels),
+	// by direct pose setters (for others, which the snapshot skips) and copies/resets of a whole pose, never by code that moves the submodel
 	matrix	canonical_prev_orient = vmd_identity_matrix;
 	// similarly for translation
 	vec3d	canonical_offset = vmd_zero_vector;
@@ -1071,6 +1073,12 @@ model_memory_stats model_get_memory_stats();
 
 int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
+
+// Records every instance's movable submodel poses as the previous frame's. This is the only per-frame writer of the
+// canonical_prev_* members; anything that moves a submodel only writes the current pose.
+void model_instance_snapshot_prev_all();
+// Flags a submodel, and with it all its children, as Can_move
+void model_set_submodel_can_move(polymodel* pm, int submodel_num);
 
 // routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);

@@ -524,7 +524,7 @@ public:
 	void init(PostProcessContext& ctx) { m_ctx = &ctx; }
 	void destroyTargets();
 
-	bool wanted() const;
+	static bool wanted();
 	// The context was made for a different version than the one now chosen
 	bool versionChanged() const { return m_context && m_contextMajorVersion != Gr_fsr_major_version; }
 	bool createResources();

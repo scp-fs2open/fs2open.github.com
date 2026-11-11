@@ -21931,8 +21931,6 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 					angles angs = vmd_zero_angles;
 					angs.b = swp->primary_bank_external_weapon[i].rotate_ang;
 					vm_angles_2_matrix(&pmi->submodel[mn].canonical_orient, &angs);
-					// runs during rendering, possibly more than once per frame, so there is no meaningful previous value
-					pmi->submodel[mn].canonical_prev_orient = pmi->submodel[mn].canonical_orient;
 				}
 			}
 		}
