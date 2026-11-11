@@ -1,7 +1,9 @@
+#include "cmdline/cmdline.h"
 #include "io/timer.h"
 #include "network/multi_time_manager.h"
 #include "network/multi_turret_manager.h"
 #include "object/object.h"
+#include "osapi/dialogs.h"
 #include "util/FSTestFixture.h"
 #include "utils/finally.h"
 
@@ -28,18 +30,24 @@ class MultiTurretManagerTest : public test::FSTestFixture {
   protected:
 	void SetUp() override
 	{
-		startGameClock();
-		FSTestFixture::SetUp();
-		// a mission started in the clock's first two milliseconds gets a never or immediate start time
-		timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
-		++m_steps;
 		m_saved_timing = Multi_Timing_Info;
 		m_saved_sig = Objects[PARENT_OBJNUM].net_signature;
 		Objects[PARENT_OBJNUM].net_signature = PARENT_SIG;
+		FSTestFixture::SetUp();
+		m_clock_step = startGameClock();
+		// a mission started in the clock's first two milliseconds gets a never or immediate start time
+		ASSERT_GE(_timestamp().value(), 2);
 	}
 
 	void TearDown() override
 	{
+		// an adjustment below can assert, and the timer has to be closed for the next test even then
+		auto base_teardown = util::finally([this] {
+			Multi_Turret_Manager.reset();
+			Objects[PARENT_OBJNUM].net_signature = m_saved_sig;
+			Multi_Timing_Info = m_saved_timing;
+			FSTestFixture::TearDown();
+		});
 		if (timestamp_is_paused()) {
 			resume_game();
 		}
@@ -48,11 +56,8 @@ class MultiTurretManagerTest : public test::FSTestFixture {
 		}
 		// the unpause added the paused time to the counter offset, which timer_init keeps; give it back
 		timestamp_adjust_microseconds(m_paused_us, TIMER_DIRECTION::FORWARD);
+		undoGameClock(m_clock_step);
 		timer_start_frame();
-		Multi_Turret_Manager.reset();
-		Objects[PARENT_OBJNUM].net_signature = m_saved_sig;
-		Multi_Timing_Info = m_saved_timing;
-		FSTestFixture::TearDown();
 	}
 
 	static void start_mission()
@@ -92,6 +97,8 @@ class MultiTurretManagerTest : public test::FSTestFixture {
 		return Multi_Turret_Manager.get_latest_packet(PARENT_SIG, SUBSYS_INDEX, packet);
 	}
 
+	ClockStep m_clock_step;
+
   private:
 	multiplayer_timing_info m_saved_timing;
 	ushort m_saved_sig = 0;
@@ -99,6 +106,43 @@ class MultiTurretManagerTest : public test::FSTestFixture {
 	uint64_t m_pause_started_us = 0;
 	uint64_t m_paused_us = 0;
 };
+
+class TurretFixtureProbe : public MultiTurretManagerTest {
+  public:
+	using MultiTurretManagerTest::m_clock_step;
+	using MultiTurretManagerTest::primeGameClock;
+	using MultiTurretManagerTest::SetUp;
+	using MultiTurretManagerTest::TearDown;
+	using MultiTurretManagerTest::undoGameClock;
+
+	void TestBody() override {}
+};
+
+TEST(MultiTurretManagerFixture, tearDownReachesTheBaseWhenAStepThrows)
+{
+	TurretFixtureProbe fixture;
+	fixture.SetUp();
+	ASSERT_NE(Cmdline_mod, nullptr);
+
+	// with the timer closed, TearDown's clock adjustments assert in debug builds
+	timer_close();
+#ifdef NDEBUG
+	fixture.TearDown();
+#else
+	EXPECT_THROW(fixture.TearDown(), os::dialogs::AssertException);
+	// TearDown threw before it could take the fixture's clock step back
+	timer_init();
+	TurretFixtureProbe::primeGameClock();
+	TurretFixtureProbe::undoGameClock(fixture.m_clock_step);
+	timer_close();
+#endif
+	EXPECT_EQ(Cmdline_mod, nullptr);
+
+	TurretFixtureProbe next;
+	next.SetUp();
+	next.TearDown();
+	EXPECT_EQ(Cmdline_mod, nullptr);
+}
 
 TEST_F(MultiTurretManagerTest, packetAppliesOnceMissionTimeReachesSendTime)
 {
