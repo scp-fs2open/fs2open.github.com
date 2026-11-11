@@ -3491,11 +3491,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_int(&p_objp->arrival_distance);
 
 		// Goober5000
-		if ((p_objp->arrival_distance <= 0) && (
-			   (p_objp->arrival_location == ArrivalLocation::NEAR_SHIP)
-			|| (p_objp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
-			|| (p_objp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (p_objp->arrival_location == ArrivalLocation::BELOW_SHIP)
-			|| (p_objp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
+		if ((p_objp->arrival_distance <= 0) && arrival_location_uses_distance(p_objp->arrival_location))
 		{
 			parse_warning_or_record("Arrival distance for ship %s cannot be %d — corrected to 1.", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
@@ -4955,11 +4951,7 @@ void parse_wing(mission *pm)
 		stuff_int( &wingp->arrival_distance );
 
 		// Goober5000
-		if ((wingp->arrival_distance <= 0) && (
-			   (wingp->arrival_location == ArrivalLocation::NEAR_SHIP)
-			|| (wingp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
-			|| (wingp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (wingp->arrival_location == ArrivalLocation::BELOW_SHIP)
-			|| (wingp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
+		if ((wingp->arrival_distance <= 0) && arrival_location_uses_distance(wingp->arrival_location))
 		{
 			parse_warning_or_record("Arrival distance for wing %s cannot be %d — corrected to 1.", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
@@ -8979,6 +8971,24 @@ continue_outer_loop:
 /**
  * Look for \<any friendly\>, \<any hostile player\>, etc.
  */
+bool arrival_location_uses_distance(ArrivalLocation location)
+{
+	switch (location) {
+		case ArrivalLocation::NEAR_SHIP:
+		case ArrivalLocation::IN_FRONT_OF_SHIP:
+		case ArrivalLocation::IN_BACK_OF_SHIP:
+		case ArrivalLocation::ABOVE_SHIP:
+		case ArrivalLocation::BELOW_SHIP:
+		case ArrivalLocation::TO_LEFT_OF_SHIP:
+		case ArrivalLocation::TO_RIGHT_OF_SHIP:
+			return true;
+		case ArrivalLocation::AT_LOCATION:
+		case ArrivalLocation::FROM_DOCK_BAY:
+			return false;
+	}
+	return false;
+}
+
 anchor_t get_special_anchor(const char *name)
 {
 	char tmp[NAME_LENGTH + 15];

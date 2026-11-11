@@ -290,6 +290,9 @@ enum class ArrivalLocation : int
 	FROM_DOCK_BAY = 8
 };
 
+// True for each arrival location near a target ship. Such a location needs an arrival distance greater than 0.
+bool arrival_location_uses_distance(ArrivalLocation location);
+
 // enums for departure locations.  The integer values of these enums should match their counterparts in the departure location array
 #define MAX_DEPARTURE_NAMES			2
 enum class DepartureLocation : int

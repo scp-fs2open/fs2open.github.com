@@ -21,6 +21,7 @@
 #include "weapon/weapon.h"
 
 #include <algorithm>
+#include <cmath>
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -108,6 +109,22 @@ anchor_t target_to_anchor(int target)
 		return anchor_t(ship_registry_get_index(Ships[target].ship_name));
 	else
 		return anchor_t(target);
+}
+
+int arrival_min_distance(ArrivalLocation location, anchor_t anchor)
+{
+	if (!arrival_location_uses_distance(location))
+		return 0;
+
+	if (!anchor.isValid() || (anchor.value() & ANCHOR_SPECIAL_ARRIVAL))
+		return 1;
+
+	const int shipnum = anchor_to_target(anchor);
+	if (shipnum < 0 || shipnum >= MAX_SHIPS || Ships[shipnum].objnum < 0)
+		return 1;
+
+	const float radius_distance = std::round(MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[shipnum].objnum].radius);
+	return std::max(1, static_cast<int>(std::min(MIN_TARGET_ARRIVAL_DISTANCE, radius_distance)));
 }
 
 bool ship_in_editor_group(const ship& shipp, int group_bit)
