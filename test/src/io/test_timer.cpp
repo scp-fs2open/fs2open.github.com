@@ -221,6 +221,39 @@ TEST_F(TimerTest, uiStampsPastThirtyTwoBitsStayPending)
 	EXPECT_EQ(ui_timestamp_since(far), INT_MIN);
 }
 
+TEST_F(TimerTest, reopenedTimerStartsAFreshGameClock)
+{
+	const fix old_compression = Game_time_compression;
+	auto restore_compression = util::finally([old_compression] { Game_time_compression = old_compression; });
+	// leave every part of the clock's state far from where a new timer starts it
+	Game_time_compression = 2 * F1_0;
+	timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::FORWARD);
+	timestamp_update_time_compression();
+	timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::FORWARD);
+	timer_start_frame();
+	timestamp_start_mission();
+	timestamp_pause(true);
+	timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::FORWARD);
+
+	timer_close();
+	timer_init();
+
+	EXPECT_LT(_timestamp().value(), 200);
+	EXPECT_GE(timestamp_get_mission_time_in_milliseconds(), 0);
+	EXPECT_LT(timestamp_get_mission_time_in_milliseconds(), 200);
+
+	timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
+	timer_start_frame();
+	EXPECT_GE(_timestamp().value(), 600);
+	EXPECT_LT(_timestamp().value(), 800);
+
+	timestamp_update_time_compression();
+	timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
+	timer_start_frame();
+	EXPECT_GE(_timestamp().value(), 1800);
+	EXPECT_LT(_timestamp().value(), 2000);
+}
+
 TEST_F(TimerTest, uiClockReadsZeroWhileTheTimerIsClosed)
 {
 	// without some uptime an unguarded read would also round down to 0 ms

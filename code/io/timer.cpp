@@ -68,10 +68,19 @@ void timer_init()
 		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_inited = true;
 
+		// a timer opened again after timer_close() must not count from the closed timer's base
+		Timestamp_offset_from_counter = 0;
+		Timestamp_current_time_compression = F1_0;
+		Timestamp_time_compression_multiplier = 1.0f;
+		Timestamp_time_compression_microseconds_offset = 0;
+		Timestamp_is_paused = false;
+		Timestamp_microseconds_at_mission_start = 0;
+
 		// set up the config so that timestamps are usable
 		// (timestamps are used in the UI and in some init functions, not just within the mission)
 		timestamp_pause(true);
 		timestamp_unpause(true);
+		timer_start_frame();
 
 		atexit(timer_close);
 	}
@@ -603,12 +612,8 @@ void timestamp_unpause(bool sudo)
 
 	auto counter = get_performance_counter();
 
-	if (Timestamp_offset_from_counter == 0) {
-		Timestamp_offset_from_counter = counter;
-	} else {
-		// update our offset to take into account the time we were paused
-		Timestamp_offset_from_counter += (counter - Timestamp_paused_at_counter);
-	}
+	// update our offset to take into account the time we were paused
+	Timestamp_offset_from_counter += (counter - Timestamp_paused_at_counter);
 }
 
 bool timestamp_is_paused()
@@ -622,11 +627,7 @@ void timestamp_adjust_pause_offset(int delta_milliseconds)
 	Assertion(delta_milliseconds > 0, "Pausing for a negative amount of time doesn't make sense.  Also, negative numbers won't work with uint64_t.");
 
 	// act like we were paused for a certain period of time, even though we weren't
-	if (Timestamp_offset_from_counter == 0) {
-		Timestamp_offset_from_counter = get_performance_counter();
-	} else {
-		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * MICROSECONDS_PER_MILLISECOND / Timer_to_microseconds);
-	}
+	Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * MICROSECONDS_PER_MILLISECOND / Timer_to_microseconds);
 }
 
 void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir)
@@ -637,7 +638,6 @@ void timestamp_adjust_seconds(float delta_seconds, TIMER_DIRECTION dir)
 void timestamp_adjust_microseconds(uint64_t delta_microseconds, TIMER_DIRECTION dir)
 {
 	Assertion(Timer_inited, "Timer should be initialized at this point!");
-	Assertion(Timestamp_offset_from_counter != 0 && Timestamp_paused_at_counter != 0, "Warranty void if these variables have not been set!");
 
 	auto delta_timer = static_cast<uint64_t>(delta_microseconds / Timer_to_microseconds);
 
