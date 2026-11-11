@@ -833,7 +833,7 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		_tbLayerComboDirty = true;
 	}
 
-	// filepath is Editor::currentMissionPath(). It is empty for a new mission and a template.
+	// filepath is Editor::currentMissionPath(). It is empty for a new mission, a template, and an FS1 import.
 	showCurrentMissionFile();
 	if (!filepath.empty())
 		addToRecentFiles(QString::fromStdString(filepath));
