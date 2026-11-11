@@ -1,6 +1,5 @@
 #include "VariableDialogModel.h"
 
-#include "mission/missionparse.h"
 #include "missioneditor/sexp_tree_model.h"
 #include "parse/sexp.h"
 
@@ -93,32 +92,7 @@ bool VariableDialogModel::apply()
 			new_names[renamed.second] = Sexp_variables[renamed.first].variable_name;
 		}
 
-		for (int i = 0; i < Num_sexp_nodes; i++) {
-			auto& node = Sexp_nodes[i];
-			if (node.type & SEXP_FLAG_VARIABLE) {
-				const auto it = new_names.find(node.text);
-				if (it != new_names.cend()) {
-					strcpy_s(node.text, it->second.c_str());
-				}
-			}
-		}
-
-		const auto follow_rename = [&new_names](SCP_string& name) {
-			const auto it = new_names.find(name);
-			if (it != new_names.cend()) {
-				name = it->second;
-			}
-		};
-		for (auto& team : Team_data) {
-			for (auto& entry : team.ship_choices) {
-				follow_rename(entry.class_variable);
-				follow_rename(entry.count_variable);
-			}
-			for (auto& entry : team.weapon_choices) {
-				follow_rename(entry.class_variable);
-				follow_rename(entry.count_variable);
-			}
-		}
+		SexpTreeModel::rename_variable_references(new_names);
 	}
 
 	// Apply Container Changes
