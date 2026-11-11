@@ -3959,7 +3959,7 @@ polymodel * model_get(int model_num)
 {
 	if ( model_num < 0 ) {
 		Warning(LOCATION, "Invalid model number %d requested. Please post the call stack where an SCP coder can see it.\n", model_num);
-		return NULL;
+		return nullptr;
 	}
 
 	int num = model_num % MAX_POLYGON_MODELS;
@@ -3970,7 +3970,7 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
 	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
-		return NULL;
+		return nullptr;
 
 	return Polygon_models[num];
 }
@@ -3985,7 +3985,7 @@ polymodel_instance* model_get_instance(int model_instance_num)
 	Assert( model_instance_num >= 0 );
 	Assert( model_instance_num < (int)Polygon_model_instances.size() );
 	if ( model_instance_num < 0 || model_instance_num >= (int)Polygon_model_instances.size() ) {
-		return NULL;
+		return nullptr;
 	} 
 
 	return Polygon_model_instances[model_instance_num];

@@ -685,7 +685,7 @@ void VulkanPostProcessor::prepareUpscaler()
 		m_upscalerActive = false;
 	}
 
-	const bool active = m_velocityActive && m_upscaler.wanted() && m_upscaler.createResources();
+	const bool active = m_velocityActive && VulkanUpscaler::wanted() && m_upscaler.createResources();
 
 	if (active != m_upscalerActive) {
 		m_ctx.device.waitIdle();
