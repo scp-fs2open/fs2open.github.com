@@ -131,11 +131,14 @@ void pilotfile::csg_read_info()
 	idx = cfread_int(cfp);
 
 	// check the idx is within bounds
-	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
-	if ((idx >= 0) && (idx < (int)ship_list.size()))
+	if ((idx >= 0) && (idx < (int)ship_list.size())) {
 		p->last_ship_flown_si_index = ship_list[idx].index;
-	else
+	} else {
+		if (idx != -1) {
+			mprintf(("CSG => Parse Warning: Invalid last flown ship index (%d), clearing it.\n", idx));
+		}
 		p->last_ship_flown_si_index = -1;
+	}
 
 	// progression state
 	Campaign.prev_mission = cfread_int(cfp);
