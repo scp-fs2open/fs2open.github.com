@@ -28,6 +28,9 @@ struct player_order_lua {
 };
 
 
+// One-time setup of the Lua AI code. ai_init() calls it.
+void ai_lua_init();
+
 void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode);
 bool ai_lua_add_order(int sexp_op, player_order_lua order);
 bool ai_lua_has_mode(int sexp_op);

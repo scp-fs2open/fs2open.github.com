@@ -13,6 +13,28 @@
 static std::unordered_map<int, ai_mode_lua> Lua_ai_modes;
 static std::unordered_map<int, player_order_lua> Lua_player_orders;
 
+// The goals of Lua AI modes keep Lua values. Free them while the Lua state still exists. Otherwise their
+// destructors run later (for example at program exit) and release references in a closed Lua state.
+static void ai_lua_free_goal_values(lua_State*)
+{
+	// Only the arguments are Lua values. The target is plain data.
+	for (int i = 0; i < MAX_AI_INFO; ++i) {
+		Ai_info[i].lua_ai_target.arguments.clear();
+		for (auto& goal : Ai_info[i].goals)
+			goal.lua_ai_target.arguments.clear();
+	}
+
+	for (auto& wingp : Wings) {
+		for (auto& goal : wingp.ai_goals)
+			goal.lua_ai_target.arguments.clear();
+	}
+}
+
+void ai_lua_init()
+{
+	Script_system.OnStateDestroy.add(ai_lua_free_goal_values);
+}
+
 void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode) {
 	Lua_ai_modes.emplace(sexp_op, mode);
 }
