@@ -319,7 +319,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!fred->currentMissionPath().isEmpty()); });
 	// Scene Browser dock panel
 	_browserPanel = new SceneBrowserPanel(this, _viewport);
 	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
@@ -482,7 +482,8 @@ bool FredView::performPreSaveCheck(int* outFixCount) {
 }
 
 bool FredView::saveMissionToCurrentPath() {
-	if (saveName.isEmpty())
+	const QString path = fred->currentMissionPath();
+	if (path.isEmpty())
 		return saveMissionAs();
 
 	int fixCount = -1;
@@ -498,7 +499,7 @@ bool FredView::saveMissionToCurrentPath() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	save.save_mission_file(path.toUtf8().constData());
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 
@@ -524,11 +525,13 @@ bool FredView::saveMissionAs() {
 		return false;
 
 	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
-	if (saveName.isEmpty())
+	// Use a local variable, so that a cancelled dialog does not clear the current file name.
+	QString newSaveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (newSaveName.isEmpty())
 		return false;
 
-	fso::fred::util::saveLastDir("missions/saveMission", saveName);
+	fso::fred::util::saveLastDir("missions/saveMission", newSaveName);
+	newSaveName.replace('/', DIR_SEPARATOR_CHAR);
 
 	Fred_mission_save save;
 	save.set_save_format(_missionSaveFormat);
@@ -539,7 +542,7 @@ bool FredView::saveMissionAs() {
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+	save.save_mission_file(newSaveName.toUtf8().constData());
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
 
@@ -554,8 +557,9 @@ bool FredView::saveMissionAs() {
 	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
 		_errorCheckerDialog->runCheck();
 
-	fred->setCurrentMissionPath(saveName);
-	restartAutosaveTimer();
+	fred->setCurrentMissionPath(newSaveName);
+	showCurrentMissionFile();
+	addToRecentFiles(newSaveName);
 	return true;
 }
 
@@ -646,7 +650,9 @@ void FredView::on_actionSave_As_Template_triggered(bool) {
 }
 
 void FredView::on_actionRevert_triggered(bool) {
-	if (saveName.isEmpty()) {
+	// A copy, because the load changes the current mission path.
+	const QString path = fred->currentMissionPath();
+	if (path.isEmpty()) {
 		QMessageBox::information(this, tr("Revert"), tr("Mission has not been saved yet."));
 		return;
 	}
@@ -658,7 +664,7 @@ void FredView::on_actionRevert_triggered(bool) {
 		return;
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
-	loadMissionFile(saveName);
+	loadMissionFile(path);
 }
 
 void FredView::on_actionFS2_Open_triggered(bool) {
@@ -827,32 +833,10 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		_tbLayerComboDirty = true;
 	}
 
-	QString filename = "Untitled";
-	if (!filepath.empty()) {
-		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
-	}
-
-	// The "[*]" is the placeholder for showing the modified state of the window
-	auto title = tr("%1[*]").arg(filename);
-
-	setWindowTitle(title);
-	// This will add some additional features on platforms that make use of this information
-	setWindowFilePath(QString::fromStdString(filepath));
-
-	if (!filepath.empty()) {
-		auto qpath = QString::fromStdString(filepath);
-		// Templates are loaded to edit, not saved back to their original path
-		if (!qpath.endsWith(".fst", Qt::CaseInsensitive)) {
-			saveName = qpath;
-		}
-		addToRecentFiles(qpath);
-	} else {
-		saveName = QString();
-	}
-
-	// Update autosave path and start/stop timer based on whether we have a named file.
-	fred->setCurrentMissionPath(saveName);
-	restartAutosaveTimer();
+	// filepath is Editor::currentMissionPath(). It is empty for a new mission and a template.
+	showCurrentMissionFile();
+	if (!filepath.empty())
+		addToRecentFiles(QString::fromStdString(filepath));
 
 	_missionModified = false;
 
@@ -861,6 +845,19 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	} else {
 		statusBar()->clearMessage();
 	}
+}
+
+void FredView::showCurrentMissionFile() {
+	const QString& path = fred->currentMissionPath();
+	const QString filename = path.isEmpty() ? QStringLiteral("Untitled") : QFileInfo(path).fileName();
+
+	// The "[*]" is the placeholder for showing the modified state of the window
+	setWindowTitle(tr("%1[*]").arg(filename));
+	// This will add some additional features on platforms that make use of this information
+	setWindowFilePath(path);
+
+	// The autosave file name depends on the mission path, so start the interval again.
+	restartAutosaveTimer();
 }
 
 QSurface* FredView::getRenderSurface() {
