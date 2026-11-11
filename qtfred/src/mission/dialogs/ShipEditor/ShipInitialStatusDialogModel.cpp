@@ -109,7 +109,6 @@ ShipInitialStatusDialogModel::ShipInitialStatusDialogModel(QObject* parent, Edit
 void ShipInitialStatusDialogModel::initializeData(bool multi)
 {
 	_multiEdit = multi;
-	int vflag, sflag, hflag;
 	object* objp = nullptr;
 	_ship = _editor->cur_ship;
 	if (_ship == -1) {
@@ -137,7 +136,6 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 			}
 		}
 	}
-	vflag = sflag = hflag = 0;
 	_velocity = static_cast<int>(Objects[_editor->currentObject].phys_info.speed);
 	_shields = static_cast<int>(Objects[_editor->currentObject].shield_quadrant[0]);
 	_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
@@ -187,107 +185,60 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 		_afterburnerLocked = Qt::Unchecked;
 	}
 
-	if (_multiEdit) {
-		objp = GET_FIRST(&obj_used_list);
-		while (objp != END_OF_LIST(&obj_used_list)) {
-			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
-				(objp->flags[Object::Object_Flags::Marked])) {
-				if (objp->phys_info.speed != _velocity)
-					vflag = 1;
-				if (static_cast<int>(objp->shield_quadrant[0]) != _shields)
-					sflag = 1;
-				if (static_cast<int>(objp->hull_strength) != _hull)
-					hflag = 1;
-				if (objp->flags[Object::Object_Flags::No_shields]) {
-					if (_hasShields)
-						_hasShields = Qt::PartiallyChecked;
-
-				} else {
-					if (!_hasShields)
-						_hasShields = Qt::PartiallyChecked;
-				}
-
-				Assert((objp->type == OBJ_SHIP) || (objp->type == OBJ_START));
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Force_shields_on]) {
-					if (!_forceShields)
-						_forceShields = Qt::PartiallyChecked;
-
-				} else {
-					if (_forceShields)
-						_forceShields = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Ship_locked]) {
-					if (!_shipLocked)
-						_shipLocked = Qt::PartiallyChecked;
-
-				} else {
-					if (_shipLocked)
-						_shipLocked = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Weapons_locked]) {
-					if (!_weaponsLocked)
-						_weaponsLocked = Qt::PartiallyChecked;
-
-				} else {
-					if (_weaponsLocked)
-						_weaponsLocked = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Primaries_locked]) {
-					if (!_primariesLocked)
-						_primariesLocked = Qt::PartiallyChecked;
-				} else {
-					if (_primariesLocked)
-						_primariesLocked = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Secondaries_locked]) {
-					if (!_secondariesLocked)
-						_secondariesLocked = Qt::PartiallyChecked;
-				} else {
-					if (_secondariesLocked)
-						_secondariesLocked = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Lock_all_turrets_initially]) {
-					if (!_turretsLocked)
-						_turretsLocked = Qt::PartiallyChecked;
-				} else {
-					if (_turretsLocked)
-						_turretsLocked = Qt::PartiallyChecked;
-				}
-
-				if (Ships[get_ship_from_obj(objp)].flags[Ship::Ship_Flags::Afterburner_locked]) {
-					if (!_afterburnerLocked)
-						_afterburnerLocked = Qt::PartiallyChecked;
-				} else {
-					if (_afterburnerLocked)
-						_afterburnerLocked = Qt::PartiallyChecked;
-				}
-			}
-
-			objp = GET_NEXT(objp);
-		}
-	}
-
 	if (Ship_info[Ships[_ship].ship_info_index].uses_team_colors) {
 		_useTeams = true;
 		_teamColorSetting = Ships[_ship].team_name;
 	}
+
+	if (_multiEdit) {
+		// Merges the flag of one more ship into a check box state: a difference gives PartiallyChecked.
+		auto mergeFlag = [](int& state, bool set) {
+			if (state != (set ? Qt::Checked : Qt::Unchecked))
+				state = Qt::PartiallyChecked;
+		};
+
+		// A field that has different values on the marked ships shows blank. The apply step keeps the
+		// values of the ships for a blank field. Compare with the values of the current ship.
+		const int refVelocity = _velocity;
+		const int refShields = _shields;
+		const int refHull = _hull;
+		const int refGuardian = _guardianThreshold;
+		const SCP_string refTeamColor = _teamColorSetting;
+
+		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (((objp->type != OBJ_SHIP) && (objp->type != OBJ_START)) ||
+				!(objp->flags[Object::Object_Flags::Marked])) {
+				continue;
+			}
+
+			const ship& other = Ships[get_ship_from_obj(objp)];
+
+			if (static_cast<int>(objp->phys_info.speed) != refVelocity)
+				_velocity = BLANKFIELD;
+			if (static_cast<int>(objp->shield_quadrant[0]) != refShields)
+				_shields = BLANKFIELD;
+			if (static_cast<int>(objp->hull_strength) != refHull)
+				_hull = BLANKFIELD;
+			if (other.ship_guardian_threshold != refGuardian)
+				_guardianThreshold = BLANKFIELD;
+			// Only ships that use team colors take part in the team color comparison.
+			if (_useTeams && Ship_info[other.ship_info_index].uses_team_colors &&
+				!lcase_equal(other.team_name, refTeamColor))
+				_teamColorSetting.clear();
+
+			mergeFlag(_hasShields, !objp->flags[Object::Object_Flags::No_shields]);
+			mergeFlag(_forceShields, other.flags[Ship::Ship_Flags::Force_shields_on]);
+			mergeFlag(_shipLocked, other.flags[Ship::Ship_Flags::Ship_locked]);
+			mergeFlag(_weaponsLocked, other.flags[Ship::Ship_Flags::Weapons_locked]);
+			mergeFlag(_primariesLocked, other.flags[Ship::Ship_Flags::Primaries_locked]);
+			mergeFlag(_secondariesLocked, other.flags[Ship::Ship_Flags::Secondaries_locked]);
+			mergeFlag(_turretsLocked, other.flags[Ship::Ship_Flags::Lock_all_turrets_initially]);
+			mergeFlag(_afterburnerLocked, other.flags[Ship::Ship_Flags::Afterburner_locked]);
+		}
+	}
+
 	changeSubsys(0);
 
-	if (vflag) {
-		_velocity = BLANKFIELD;
-	}
-	if (vflag) {
-		_velocity = BLANKFIELD;
-	}
-	if (vflag) {
-		_velocity = BLANKFIELD;
-	}
 	_modified = false;
 	modelChanged();
 	_modified = false;
@@ -587,11 +538,14 @@ bool ShipInitialStatusDialogModel::apply()
 		while (objp != END_OF_LIST(&obj_used_list)) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) &&
 				(objp->flags[Object::Object_Flags::Marked])) {
-				modify(objp->phys_info.speed, (float)_velocity);
+				if (_velocity != BLANKFIELD)
+					modify(objp->phys_info.speed, (float)_velocity);
 
-				modify(objp->shield_quadrant[0], (float)_shields);
+				if (_shields != BLANKFIELD)
+					modify(objp->shield_quadrant[0], (float)_shields);
 
-				modify(objp->hull_strength, (float)_hull);
+				if (_hull != BLANKFIELD)
+					modify(objp->hull_strength, (float)_hull);
 
 				if (_hasShields == Qt::Checked) {
 					objp->flags.remove(Object::Object_Flags::No_shields);
@@ -599,7 +553,8 @@ bool ShipInitialStatusDialogModel::apply()
 					objp->flags.set(Object::Object_Flags::No_shields);
 				}
 				auto shipp = &Ships[get_ship_from_obj(objp)];
-				shipp->ship_guardian_threshold = _guardianThreshold;
+				if (_guardianThreshold != BLANKFIELD)
+					shipp->ship_guardian_threshold = _guardianThreshold;
 				// We need to ensure that we handle the inconsistent "boolean" value correctly
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, _forceShields);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, _shipLocked);
@@ -608,7 +563,8 @@ bool ShipInitialStatusDialogModel::apply()
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Secondaries_locked, _secondariesLocked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Lock_all_turrets_initially, _turretsLocked);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
-				shipp->team_name = _teamColorSetting;
+				if (!_teamColorSetting.empty() && Ship_info[shipp->ship_info_index].uses_team_colors)
+					shipp->team_name = _teamColorSetting;
 			}
 
 			objp = GET_NEXT(objp);
@@ -630,9 +586,12 @@ bool ShipInitialStatusDialogModel::apply()
 		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Secondaries_locked, _secondariesLocked);
 		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Lock_all_turrets_initially, _turretsLocked);
 		handle_inconsistent_flag(Ships[_ship].flags, Ship::Ship_Flags::Afterburner_locked, _afterburnerLocked);
-		Ships[_ship].team_name = _teamColorSetting;
+		if (_useTeams)
+			Ships[_ship].team_name = _teamColorSetting;
+
+		// Dockpoint data exists only when the dialog edits one ship.
+		updateDockingInfo();
 	}
-	updateDockingInfo();
 	_editor->missionChanged();
 	return true;
 }
