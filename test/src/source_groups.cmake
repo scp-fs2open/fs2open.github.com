@@ -65,6 +65,8 @@ add_file_folder("Parse"
 )
 
 add_file_folder("Pilotfile"
+    pilotfile/BinaryFileHandler.cpp
+    pilotfile/csg.cpp
     pilotfile/plr.cpp
 )
 

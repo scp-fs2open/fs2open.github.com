@@ -17,6 +17,7 @@ class PilotPlayerFileTest: public test::FSTestFixture {
 	void TearDown() override {
 		// Delete the converted files
 		cf_delete("asdf.json", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("cut.plr", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 		FSTestFixture::TearDown();
 	}
@@ -280,5 +281,60 @@ TEST_F(PilotPlayerFileTest, binaryToJSONConversion) {
 	ASSERT_EQ(binary_plr, json_plr);
 
 	// Close control_config stuff
+	control_config_common_close();
+}
+
+namespace {
+// Writes a binary player file whose last section holds one container that claims 1000 entries and has none
+void write_player_with_cut_container(ContainerType type)
+{
+	auto fp = cfopen("cut.plr",
+		"wb",
+		CF_TYPE_PLAYERS,
+		false,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	ASSERT_NE(fp, nullptr);
+	cfwrite_uint(PLR_FILE_ID, fp);
+	cfwrite_ubyte(PLR_VERSION, fp);
+	cfwrite_ushort(static_cast<ushort>(Section::Containers), fp);
+	cfwrite_uint(21, fp);
+	cfwrite_int(1, fp);
+	cfwrite_string_len("c", fp);
+	cfwrite_int(static_cast<int>(type | ContainerType::STRING_DATA | ContainerType::SAVE_TO_PLAYER_FILE), fp);
+	cfwrite_int(0, fp);
+	cfwrite_int(1000, fp);
+	cfclose(fp);
+}
+} // namespace
+
+TEST_F(PilotPlayerFileTest, list_container_without_data_stays_empty)
+{
+	control_config_common_init();
+	write_player_with_cut_container(ContainerType::LIST);
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &plr, true));
+
+	ASSERT_EQ(plr.containers.size(), static_cast<size_t>(1));
+	EXPECT_TRUE(plr.containers[0].list_data.empty());
+
+	control_config_common_close();
+}
+
+TEST_F(PilotPlayerFileTest, map_container_without_data_stays_empty)
+{
+	control_config_common_init();
+	write_player_with_cut_container(ContainerType::MAP | ContainerType::STRING_KEYS);
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &plr, true));
+
+	ASSERT_EQ(plr.containers.size(), static_cast<size_t>(1));
+	EXPECT_TRUE(plr.containers[0].map_data.empty());
+
 	control_config_common_close();
 }
