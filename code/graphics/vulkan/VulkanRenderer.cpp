@@ -63,7 +63,7 @@ void VulkanRenderer::createCompositionResources()
 		auto image = m_device->createImageUnique(imageInfo);
 
 		VulkanAllocation alloc{};
-		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc);
+		m_memoryManager->allocateImageMemory(image.get(), MemoryUsage::GpuOnly, alloc, MemoryPurpose::RenderTarget);
 
 		vk::ImageViewCreateInfo viewInfo;
 		viewInfo.image = image.get();
@@ -279,7 +279,8 @@ void VulkanRenderer::createDepthResources()
 	m_depthImage = m_device->createImageUnique(imageInfo);
 
 	// Allocate GPU memory for the depth image
-	m_memoryManager->allocateImageMemory(m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory);
+	m_memoryManager->allocateImageMemory(
+		m_depthImage.get(), MemoryUsage::GpuOnly, m_depthImageMemory, MemoryPurpose::RenderTarget);
 
 	// Create depth image view
 	vk::ImageViewCreateInfo viewInfo;
@@ -430,6 +431,15 @@ void VulkanRenderer::createPresentSyncObjects()
 	}
 
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+	createRenderingFinishedSemaphores();
+}
+void VulkanRenderer::createRenderingFinishedSemaphores()
+{
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	m_renderingFinishedSemaphores.clear();
+	for (size_t i = 0; i < m_swapChainImages.size(); ++i) {
+		m_renderingFinishedSemaphores.push_back(m_device->createSemaphoreUnique(semaphoreCreateInfo));
+	}
 }
 
 bool VulkanRenderer::readbackFramebuffer(ubyte** outPixels, uint32_t* outWidth, uint32_t* outHeight)

@@ -57,6 +57,15 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
+if (ANDROID)
+    message(STATUS "Building for Android (NDK)")
+	set(FSO_BUILD_INCLUDED_LIBS ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_LIBS ON CACHE BOOL "" FORCE)
+	set(SDL3_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(OPENAL_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_VULKAN ON CACHE BOOL "" FORCE)
+endif()
+
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/libRocket/Build")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
@@ -109,8 +118,8 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-IF(WIN32 OR APPLE)
-	# On windows and mac the default should be to always build the included libraries
+IF(WIN32 OR APPLE OR ANDROID)
+	# On windows, mac and android the default should be to always build the included libraries
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT ON)
 ELSE()
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT OFF)
@@ -138,13 +147,13 @@ OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
-OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer (External shaders only!)" OFF)
+OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
 
 if(NOT FSO_BUILD_WITH_OPENGL AND FSO_BUILD_WITH_OPENGL_ES)
 	# Disable GLES if not building with OpenGL
-	set(FSO_BUILD_WITH_OPENGL_ES OFF FORCE)
+	set(FSO_BUILD_WITH_OPENGL_ES OFF CACHE BOOL "" FORCE)
 endif()
 
 

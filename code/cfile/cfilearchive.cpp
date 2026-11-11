@@ -193,6 +193,29 @@ int cfseek( CFILE *cfile, int offset, int where )
 }
 
 
+size_t cf_check_read_size(CFILE* cfile, size_t size)
+{
+	if ( (cfile->raw_position+size) > cfile->size ) {
+		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
+		size = cfile->size - cfile->raw_position;
+		if ( size < 1 ) {
+			return 0;
+		}
+		//mprintf(( "CFILE: EOF encountered in file\n" ));
+	}
+
+	if (cfile->max_read_len) {
+		if ( cfile->raw_position+size > cfile->max_read_len ) {
+			std::ostringstream s_buf;
+			s_buf << "Attempted to read " << size << "-byte(s) beyond length limit";
+
+			throw cfile::max_read_length(s_buf.str());
+		}
+	}
+
+	return size;
+}
+
 // cfread() reads from a file
 //
 // returns:   returns the number of full elements read
@@ -205,26 +228,12 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 	size_t size = elsize*nelem;
 
-	if(buf == NULL || size <= 0)
+	if(buf == nullptr || size <= 0)
 		return 0;
 
-	// the limit is checked first so that a limited read can't come back short at the end of the file
-	if (cfile->max_read_len) {
-		if ( cfile->raw_position+size > cfile->max_read_len ) {
-			std::ostringstream s_buf;
-			s_buf << "Attempted to read " << size << "-byte(s) beyond length limit";
-
-			throw cfile::max_read_length(s_buf.str());
-		}
-	}
-
-	if ( (cfile->raw_position+size) > cfile->size ) {
-		Assertion(cfile->raw_position <= cfile->size, "Invalid raw_position value detected!");
-		size = cfile->size - cfile->raw_position;
-		if ( size < 1 ) {
-			return 0;
-		}
-		//mprintf(( "CFILE: EOF encountered in file\n" ));
+	size = cf_check_read_size(cfile, size);
+	if (size < 1) {
+		return 0;
 	}
 
 	size_t bytes_read;

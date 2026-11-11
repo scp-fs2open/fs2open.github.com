@@ -364,6 +364,7 @@ float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
 float weapon_get_viewing_angle(const weapon& wp);
 float weapon_get_apparent_size(const weapon& wp);
+float weapon_get_target_dot(const weapon& wp);
 
 float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
@@ -834,7 +835,8 @@ struct weapon_info
 			>{}},
 			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
 			std::pair {"Viewing Angle", modular_curves_functional_input<weapon_get_viewing_angle>{}},
-			std::pair {"Apparent Size", modular_curves_functional_input<weapon_get_apparent_size>{}}
+			std::pair {"Apparent Size", modular_curves_functional_input<weapon_get_apparent_size>{}},
+			std::pair {"Dot To Target", modular_curves_functional_input<weapon_get_target_dot>{}}
 	);
 
   public:
@@ -961,6 +963,7 @@ struct weapon_info
 	bool has_display_name() const;
 
 	void reset();
+	void clone(const weapon_info& other);
 };
 
 extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];
