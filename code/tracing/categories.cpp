@@ -1,12 +1,56 @@
-
 #include "tracing/categories.h"
+
+#include <algorithm>
+#include <mutex>
 
 namespace tracing {
 
-Category::Category(const char* name, bool is_graphics) : _name(name), _graphics_category(is_graphics) {
+namespace {
+// Maps a category id to its name. A Meyers singleton, because the categories are global statics too.
+// The mutex is necessary because the JSON writer thread reads names while Lua can add categories.
+struct category_registry_t {
+	std::mutex mutex;
+	SCP_vector<SCP_string> names;
+};
+
+category_registry_t& category_registry()
+{
+	static category_registry_t registry;
+	return registry;
+}
+
+// Categories with the same name share an id, so a script that makes a category each frame does not
+// make the registry grow.
+int register_category_name(const SCP_string& name)
+{
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
+
+	const auto it = std::find(names.begin(), names.end(), name);
+	if (it == names.end()) {
+		names.push_back(name);
+		return static_cast<int>(names.size()) - 1;
+	}
+	return static_cast<int>(std::distance(names.begin(), it));
+}
+} // namespace
+
+Category::Category(const char* name, const bool is_graphics)
+	: _name(name), _graphics_category(is_graphics), _id(register_category_name(_name)) {
 }
 const char* Category::getName() const {
 	return _name.c_str();
+}
+size_t Category::getCount() {
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
+	return names.size();
+}
+SCP_string Category::getNameById(const int id) {
+	auto& [mutex, names] = category_registry();
+	std::scoped_lock lock(mutex);
+	Assertion(id >= 0 && id < static_cast<int>(names.size()), "Category id %d is out of range!", id);
+	return names[id];
 }
 bool Category::usesGPUCounter() const {
 	return _graphics_category;

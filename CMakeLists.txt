@@ -29,23 +29,42 @@ ENDIF(NOT DEFINED CMAKE_INSTALL_PREFIX)
 SET(TARGET_COPY_FILES "" CACHE INTERNAL "" FORCE)
 SET(TARGET_COPY_DIRS "" CACHE INTERNAL "" FORCE)
 
-### Define options and editable variables in the section below:
-# This is only needed for single configuration generators so don't annoy others
-if(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
-	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
-	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
-endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
+get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 # Override standard CMake configurations
-set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
+set(FSO_BUILD_TYPES Debug Release FastDebug)
+
+if(is_multi_config)
+	set(CMAKE_CONFIGURATION_TYPES "${FSO_BUILD_TYPES}" CACHE STRING "Configuration types" FORCE)
+elseif(NOT CMAKE_BUILD_TYPE)
+	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Default build configuration used." FORCE)
+	message(WARNING "CMAKE_BUILD_TYPE was not specified, defaulting to Release configuration.")
+	set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${FSO_BUILD_TYPES}")
+endif()
 
 set(FSO_LANGUAGES C CXX)
 
 if(APPLE)
 	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+
+	# 10.15 for c++17 std::filesystem
+	# NOTE: this must be set *before* the project() call to work properly!!
+	set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "macOS deployment target")
+
+	# fix all targets in scheme (so it's not just qtfred)
+	set(CMAKE_XCODE_GENERATE_SCHEME TRUE)
 endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
+
+if (ANDROID)
+    message(STATUS "Building for Android (NDK)")
+	set(FSO_BUILD_INCLUDED_LIBS ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_LIBS ON CACHE BOOL "" FORCE)
+	set(SDL3_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(OPENAL_USE_PRECOMPILED ON CACHE BOOL "" FORCE)
+	set(USING_PREBUILT_VULKAN ON CACHE BOOL "" FORCE)
+endif()
 
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/lib/libRocket/Build")
@@ -99,8 +118,8 @@ OPTION(FSO_BUILD_TESTS "Build unit tests" OFF)
 
 OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if you know what you're doing!" OFF)
 
-IF(WIN32 OR APPLE)
-	# On windows and mac the default should be to always build the included libraries
+IF(WIN32 OR APPLE OR ANDROID)
+	# On windows, mac and android the default should be to always build the included libraries
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT ON)
 ELSE()
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT OFF)
@@ -128,13 +147,13 @@ OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
-OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer (External shaders only!)" OFF)
+OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
 
 if(NOT FSO_BUILD_WITH_OPENGL AND FSO_BUILD_WITH_OPENGL_ES)
 	# Disable GLES if not building with OpenGL
-	set(FSO_BUILD_WITH_OPENGL_ES OFF FORCE)
+	set(FSO_BUILD_WITH_OPENGL_ES OFF CACHE BOOL "" FORCE)
 endif()
 
 
@@ -196,11 +215,11 @@ include(clang-tidy)
 
 include(CheckIPOSupported)
 check_ipo_supported(RESULT LTO_AVAILABLE)
-if (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+if (FSO_USE_LTO AND LTO_AVAILABLE)
 	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-	message("Enabled LTO")
-	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+	message("Enabled LTO for Release builds")
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+endif (FSO_USE_LTO AND LTO_AVAILABLE)
 
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)

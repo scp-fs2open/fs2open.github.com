@@ -213,6 +213,7 @@
 #include <stdexcept>
 
 #include "imgui.h"
+#include "implot.h"
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -1893,6 +1894,7 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 
 	Framerate_delay = 0;
 
@@ -2360,27 +2362,9 @@ void game_show_framerate()
 	}
 #endif
 
-	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
+	if ((Show_framerate && HUD_draw) || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
-
-		if (Cmdline_frame_profile) {
-			// Split frame profile into two columns if necessary to avoid losing trace data
-			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
-			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
-			size_t fp_column_break = 0;
-			auto fp_trace_str = tracing::get_frame_profile_output();
-
-			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
-				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
-			}
-
-			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
-
-			if (fp_column_break < fp_trace_str.length()) {
-				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
-			}
-		}
 
 		if (Show_framerate) {
 			if (frametotal != 0.0f)
@@ -4456,10 +4440,6 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	if (Cmdline_frame_profile) {
-		tracing::frame_profile_process_frame();
-	}
-
 	DEBUG_GET_TIME( total_time2 )
 
 #ifndef NDEBUG
@@ -4762,6 +4742,11 @@ int game_check_key()
 
 bool pause_if_unfocused()
 {
+	// nobody is at the keyboard in a noninteractive run, so losing focus must not stop it
+	if (Cmdline_noninteractive) {
+		return false;
+	}
+
 	if (Using_in_game_options) {
 		return UnfocusedPauseOption->getValue();
 	} else {
@@ -5301,8 +5286,8 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act accordingly
-			if( player_select_get_last_pilot() ) {	
+			// see if the command line has been set to select a pilot automatically, and act accordingly
+			if( player_select_try_auto_select() ) {
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
@@ -5928,6 +5913,13 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
+	// consume the flag before any script override, so that it can't remain set for a later main hall entry
+	bool pilot_just_committed = false;
+	if (new_state == GS_STATE_MAIN_MENU) {
+		pilot_just_committed = Player_select_pilot_just_committed;
+		Player_select_pilot_just_committed = false;
+	}
+
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
 			scripting::hooks::OnStateStart->run(std::move(script_param_list));
@@ -5956,8 +5948,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
-			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
+			// if we have just selected a pilot, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(pilot_just_committed);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
@@ -7062,7 +7054,7 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !skip_intro && !player_select_auto_select_requested()) {
 		movie::play("intro.mve");
 	}
 
@@ -7195,6 +7187,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
 	os_cleanup();
@@ -8298,3 +8291,10 @@ int main(int argc, char *argv[])
 
 	return result;
 }
+
+#ifdef __ANDROID__
+extern "C" int android_main(int argc, char* argv[])
+{
+	return main(argc, argv);
+}
+#endif
