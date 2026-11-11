@@ -216,6 +216,7 @@ void TeamLoadoutDialogModel::initializeData()
 
 		// now merge in the data from Team_data
 		const auto& teamData = Team_data[i];
+		team.skipValidation = teamData.do_not_validate;
 
 		// first the ships
 		for (const auto &sc : teamData.ship_choices) {
