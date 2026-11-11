@@ -1,5 +1,24 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+#endif
+
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+#ifdef VULKAN
+layout(location = 0) in VertexOutput {
+	float vClipDist;
+} vertIn;
+#else
+in VertexOutput {
+	float vClipDist;
+} vertIn;
+#endif
+#endif
 
 void main()
 {
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+	if (vertIn.vClipDist < 0.0) discard;
+#endif
 }
