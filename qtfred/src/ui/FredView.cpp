@@ -22,6 +22,7 @@
 
 #include <project.h>
 #include <array>
+#include <utils/finally.h>
 
 #include <qevent.h>
 #include <FredApplication.h>
@@ -282,6 +283,11 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
 	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
+		// Write an autosave only for unsaved changes. Otherwise the autosave is newer than the mission
+		// file, and the next load offers a recovery of content that is already in the file.
+		if (!_missionModified)
+			return;
+
 		Fred_mission_save save;
 		save.set_save_format(_missionSaveFormat);
 		save.set_always_save_display_names(_viewport->Always_save_display_names);
@@ -294,7 +300,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
-	on_mission_loaded("");
+	on_mission_loaded("", false);
 
 	syncViewOptions();
 
@@ -362,30 +368,22 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	_contextToolBar->setFixedHeight(qMax(28, ui->toolBar->sizeHint().height()));
 }
 
-void FredView::loadMissionFile(const QString& pathName, int flags) {
+void FredView::loadMissionFile(const QString& pathName, int flags, bool offerAutosaveRecovery) {
 	if (!maybePromptToSaveMissionChanges(tr("loading another mission"))) {
 		return;
 	}
 
 	statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
-	try {
-		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	auto restoreCursor = ::util::finally([] { QApplication::restoreOverrideCursor(); });
 
-		// probably good to clear selections in qtFRED too
-		fred->clean_up_selections();
+	// probably good to clear selections in qtFRED too
+	fred->clean_up_selections();
 
-		auto pathToLoad = pathName.toStdString();
-		if (!(flags & MPF_IS_TEMPLATE) && _viewport->Offer_autosave_recovery)
-			fred->maybeUseAutosave(pathToLoad);
-
-		fred->loadMission(pathToLoad, flags);
-
-		QApplication::restoreOverrideCursor();
+	// On failure, loadMission() shows the error and creates a new, untitled mission.
+	if (fred->loadMission(pathName.toStdString(), flags, offerAutosaveRecovery && _viewport->Offer_autosave_recovery)) {
 		autoRunErrorChecker();
-	} catch (const fso::fred::mission_load_error&) {
-		QApplication::restoreOverrideCursor();
-
-		QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
+	} else {
 		statusBar()->clearMessage();
 	}
 }
@@ -664,7 +662,8 @@ void FredView::on_actionRevert_triggered(bool) {
 		return;
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
-	loadMissionFile(path);
+	// Revert discards the changes. Do not offer the autosave, because it can contain those changes.
+	loadMissionFile(path, 0, false);
 }
 
 void FredView::on_actionFS2_Open_triggered(bool) {
@@ -817,7 +816,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 	}
 }
 
-void FredView::on_mission_loaded(const std::string& filepath) {
+void FredView::on_mission_loaded(const std::string& filepath, bool hasUnsavedContent) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
@@ -838,7 +837,8 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 	if (!filepath.empty())
 		addToRecentFiles(QString::fromStdString(filepath));
 
-	_missionModified = false;
+	// A recovered autosave is not in the mission file yet.
+	_missionModified = hasUnsavedContent;
 
 	if (filepath.empty()) {
 		statusBar()->showMessage(tr("Every great mission starts here. No pressure."));
