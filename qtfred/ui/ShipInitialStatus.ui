@@ -20,7 +20,7 @@
    <item>
     <layout class="QGridLayout" name="topGrid">
      <item row="1" column="1">
-      <widget class="QSpinBox" name="hullSpinBox">
+      <widget class="fso::fred::MixedValueSpinBox" name="hullSpinBox">
        <property name="minimumSize">
         <size>
          <width>70</width>
@@ -49,7 +49,7 @@
       </spacer>
      </item>
      <item row="0" column="1">
-      <widget class="QSpinBox" name="velocitySpinBox">
+      <widget class="fso::fred::MixedValueSpinBox" name="velocitySpinBox">
        <property name="minimumSize">
         <size>
          <width>70</width>
@@ -134,7 +134,7 @@
       </widget>
      </item>
      <item row="2" column="1">
-      <widget class="QSpinBox" name="guardianSpinBox"/>
+      <widget class="fso::fred::MixedValueSpinBox" name="guardianSpinBox"/>
      </item>
     </layout>
    </item>
@@ -172,7 +172,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="shieldHullSpinBox">
+      <widget class="fso::fred::MixedValueSpinBox" name="shieldHullSpinBox">
        <property name="minimumSize">
         <size>
          <width>70</width>
@@ -456,6 +456,11 @@
    <class>fso::fred::ShipFlagCheckbox</class>
    <extends>QCheckBox</extends>
    <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::MixedValueSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>ui/widgets/MixedValueSpinBox.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>
