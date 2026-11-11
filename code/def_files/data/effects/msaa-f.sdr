@@ -211,7 +211,7 @@ void main()
 	vec4 emissive = vec4(0);
 	float depth = 0.0;
 #ifdef VULKAN
-	vec2 velocity = vec2(0.0);
+	vec3 velocity = vec3(0.0);
 	float velocityWeight = 0.0;
 #endif
 
@@ -234,7 +234,7 @@ void main()
 		weight += localWeight;
 #ifdef VULKAN
 		// Samples still holding the "no motion written" clear value mustn't average into real ones.
-		vec2 localVelocity = texelFetch(texVelocity, texel, i).xy;
+		vec3 localVelocity = texelFetch(texVelocity, texel, i).xyz;
 		if (abs(localVelocity.x) < 100.0) {
 			velocity += localVelocity * localWeight;
 			velocityWeight += localWeight;
@@ -253,6 +253,6 @@ void main()
 	gl_FragDepth = depth / weight;
 #ifdef VULKAN
 	// Alpha 0 keeps what's there: the cockpit's pass mustn't erase the main scene's motion around it.
-	fragOut6 = velocityWeight > 0.0f ? vec4(velocity / velocityWeight, 0.0, 1.0) : vec4(0.0);
+	fragOut6 = velocityWeight > 0.0f ? vec4(velocity / velocityWeight, 1.0) : vec4(0.0);
 #endif
 }

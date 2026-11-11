@@ -113,6 +113,10 @@ void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, flo
 
 void gr_get_velocity_uniforms(graphics::velocity_camera_data* out)
 {
+	// Only shaders writing motion vectors read this, and those only run in a scene that has them
+	if (!Gr_motion_vectors_active) {
+		return;
+	}
 	out->viewProj = Current_velocity_camera->view_proj;
 	out->prevViewProj = Current_velocity_camera->previous_view_proj;
 	out->uvScale[0] = Scene_viewport_rect[2];

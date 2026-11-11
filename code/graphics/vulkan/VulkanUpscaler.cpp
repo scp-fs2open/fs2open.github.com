@@ -12,6 +12,8 @@
 #include <ffx_portable.h>
 #endif
 
+#include <optional>
+
 extern float flRealframetime;
 
 namespace graphics::vulkan {
@@ -24,6 +26,26 @@ namespace {
 ffxPortableVkRequirements Device_requirements;
 bool Upscaler_available = false;
 vk::PhysicalDevice Upscaler_gpu;
+
+// The mode and version FSR failed with. Choosing anything else gives it another try.
+struct failed_setting {
+	FsrMode mode;
+	int majorVersion;
+};
+std::optional<failed_setting> Failed_setting;
+
+bool failed_for_current_setting()
+{
+	if (Failed_setting && (Failed_setting->mode != Gr_fsr_mode || Failed_setting->majorVersion != Gr_fsr_major_version)) {
+		Failed_setting.reset();
+	}
+	return Failed_setting.has_value();
+}
+
+void mark_failed()
+{
+	Failed_setting = failed_setting{Gr_fsr_mode, Gr_fsr_major_version};
+}
 
 struct fsr_version {
 	uint64_t id = 0;
@@ -160,10 +182,19 @@ void vulkan_upscaler_device_created(vk::Device device)
 
 	Gr_fsr_max_output_size = static_cast<int>(Upscaler_gpu.getProperties().limits.maxImageDimension2D);
 	Gr_fsr_versions.clear();
-	for (const auto& version : query_fsr_versions(device)) {
+	const auto versions = query_fsr_versions(device);
+	for (const auto& version : versions) {
 		mprintf(("Vulkan: FSR version available: %s\n", version.name.c_str()));
 		if (is_offered(major_version(version.name))) {
 			Gr_fsr_versions.push_back(version.name);
+		}
+	}
+	// FSR 2 is only the fallback for hardware where neither of the newer versions is available
+	if (Gr_fsr_versions.empty()) {
+		for (const auto& version : versions) {
+			if (major_version(version.name) == 2) {
+				Gr_fsr_versions.push_back(version.name);
+			}
 		}
 	}
 	std::sort(Gr_fsr_versions.begin(), Gr_fsr_versions.end(),
@@ -175,9 +206,14 @@ bool vulkan_upscaler_available()
 	return Upscaler_available;
 }
 
+bool vulkan_upscaler_usable()
+{
+	return Upscaler_available && !failed_for_current_setting();
+}
+
 bool VulkanUpscaler::wanted() const
 {
-	return Upscaler_available && !m_failed && Gr_fsr_mode != FsrMode::Off;
+	return vulkan_upscaler_usable() && Gr_fsr_mode != FsrMode::Off;
 }
 
 bool VulkanUpscaler::createResources()
@@ -199,7 +235,7 @@ bool VulkanUpscaler::createResources()
 	                        vk::ImageAspectFlagBits::eColor,
 	                        m_output.image, m_output.view, m_output.allocation)) {
 		mprintf(("Vulkan: FSR disabled: could not create its output image\n"));
-		m_failed = true;
+		mark_failed();
 		return false;
 	}
 
@@ -223,7 +259,8 @@ bool VulkanUpscaler::createResources()
 	desc.fpMessage = log_ffx_message;
 
 	ffxOverrideVersion chosenVersion{};
-	if (const auto* chosen = find_chosen_version(query_fsr_versions(m_ctx->device))) {
+	const auto versions = query_fsr_versions(m_ctx->device);
+	if (const auto* chosen = find_chosen_version(versions)) {
 		chosenVersion.header.type = FFX_API_DESC_TYPE_OVERRIDE_VERSION;
 		chosenVersion.header.pNext = desc.header.pNext;
 		chosenVersion.versionId = chosen->id;
@@ -236,7 +273,7 @@ bool VulkanUpscaler::createResources()
 		mprintf(("Vulkan: FSR disabled: creating its context failed with code %u\n", result));
 		m_context = nullptr;
 		m_ctx->destroyTarget(m_output);
-		m_failed = true;
+		mark_failed();
 		return false;
 	}
 
@@ -294,7 +331,7 @@ void VulkanUpscaler::beginFrame(float& imageOffsetX, float& imageOffsetY, float&
 	lodBias = std::log2(static_cast<float>(m_ctx->sceneExtent.width) / static_cast<float>(m_output.width)) - 1.0f;
 }
 
-void VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion)
+bool VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion)
 {
 	GR_DEBUG_SCOPE("FSR");
 
@@ -339,9 +376,10 @@ void VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	desc.viewSpaceToMetersFactor = 1.0f;
 
 	const auto result = ffxDispatch(&m_context, &desc.header);
-	if (result != FFX_API_RETURN_OK) {
+	const bool dispatched = result == FFX_API_RETURN_OK;
+	if (!dispatched) {
 		mprintf(("Vulkan: FSR disabled: dispatch failed with code %u\n", result));
-		m_failed = true;
+		mark_failed();
 	}
 
 	barrier.oldLayout = vk::ImageLayout::eGeneral;
@@ -351,6 +389,8 @@ void VulkanUpscaler::dispatch(vk::CommandBuffer cmd, const RenderTarget& color, 
 	barrier.dstStage = vk::PipelineStageFlagBits2::eFragmentShader;
 	barrier.dstAccess = vk::AccessFlagBits2::eShaderSampledRead;
 	cmdImageBarrier(cmd, barrier);
+
+	return dispatched;
 }
 
 #else // WITH_FFX
@@ -368,6 +408,11 @@ void vulkan_upscaler_device_created(vk::Device /*device*/)
 }
 
 bool vulkan_upscaler_available()
+{
+	return false;
+}
+
+bool vulkan_upscaler_usable()
 {
 	return false;
 }
@@ -390,8 +435,9 @@ void VulkanUpscaler::beginFrame(float& /*imageOffsetX*/, float& /*imageOffsetY*/
 {
 }
 
-void VulkanUpscaler::dispatch(vk::CommandBuffer /*cmd*/, const RenderTarget& /*color*/, const RenderTarget& /*depth*/, const RenderTarget& /*motion*/)
+bool VulkanUpscaler::dispatch(vk::CommandBuffer /*cmd*/, const RenderTarget& /*color*/, const RenderTarget& /*depth*/, const RenderTarget& /*motion*/)
 {
+	return false;
 }
 
 #endif // WITH_FFX

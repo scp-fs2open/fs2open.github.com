@@ -930,9 +930,10 @@ static SCP_string fsr_setting_display(int setting)
 		return "Off";
 	}
 
+	// Major version 0, as from -fsr, means the newest offered one
 	SCP_string label = "FSR";
 	for (const auto& name : Gr_fsr_versions) {
-		if (atoi(name.c_str()) == setting / 10) {
+		if (setting / 10 == 0 || atoi(name.c_str()) == setting / 10) {
 			label += " " + name;
 			break;
 		}
@@ -2141,10 +2142,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 			default:
 				Int3();		// Invalid graphics mode
 		}
-	}
-
-	if (Cmdline_fsr_mode >= static_cast<int>(FsrMode::Off) && Cmdline_fsr_mode <= static_cast<int>(FsrMode::Upscale)) {
-		Gr_fsr_mode = static_cast<FsrMode>(Cmdline_fsr_mode);
 	}
 
 	if (Using_in_game_options) {

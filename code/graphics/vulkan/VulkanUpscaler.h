@@ -20,5 +20,7 @@ void vulkan_upscaler_prepare_device(vk::Instance instance,
 void vulkan_upscaler_device_created(vk::Device device);
 
 bool vulkan_upscaler_available();
+// Available, and hasn't failed with the currently chosen mode and version
+bool vulkan_upscaler_usable();
 
 } // namespace graphics::vulkan

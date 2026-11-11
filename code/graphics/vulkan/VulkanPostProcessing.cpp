@@ -551,7 +551,7 @@ bool VulkanPostProcessor::createVelocitySceneResources()
 			attachments[0].initialLayout = colorInitial;
 			attachments[0].finalLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-			attachments[1].format = VulkanMotionVectors::FORMAT;
+			attachments[1].format = VulkanMotionVectors::DRAWN_FORMAT;
 			attachments[1].loadOp = loadOp;
 			attachments[1].storeOp = vk::AttachmentStoreOp::eStore;
 			attachments[1].stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
@@ -703,6 +703,20 @@ void VulkanPostProcessor::prepareUpscaler()
 	getStateTracker()->setUpscalerSceneState(imageOffsetX, imageOffsetY, lodBias);
 }
 
+void VulkanPostProcessor::executeUpscaler(vk::CommandBuffer cmd)
+{
+	if (!m_upscalerActive) {
+		return;
+	}
+	if (!m_upscaler.dispatch(cmd, m_sceneColor, m_motionVectors.depth(), m_motionVectors.motion())) {
+		// The rest of this frame must not read the output FSR never wrote. Bloom hasn't been recorded yet, and
+		// the frames still in flight may use its targets, which rebuilding them around the scene color replaces.
+		m_ctx.device.waitIdle();
+		m_upscalerActive = false;
+		setPostProcessInput(m_sceneColor);
+	}
+}
+
 std::array<vk::ClearValue, 3> VulkanPostProcessor::sceneClearValues() const
 {
 	std::array<vk::ClearValue, 3> clearValues;
@@ -819,12 +833,8 @@ void VulkanPostProcessor::saveSceneDepth(vk::CommandBuffer cmd) const
 		imageAspectFromFormat(m_ctx.depthFormat));
 }
 
-void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd)
+void VulkanPostProcessor::restoreSceneDepth(vk::CommandBuffer cmd) const
 {
-	if (m_velocityActive) {
-		m_motionVectors.captureCockpitDepth(cmd, m_sceneDepth.image);
-	}
-
 	// The backup was left in eTransferSrcOptimal by saveSceneDepth() and stays there --
 	// the next save transitions it from eUndefined anyway.
 	copyImageToImage(cmd,

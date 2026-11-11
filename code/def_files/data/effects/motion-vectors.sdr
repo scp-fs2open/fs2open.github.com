@@ -7,6 +7,13 @@ vec2 motion_uv(vec4 curClip, vec4 prevClip, vec2 uvScale)
 	return (prevClip.xy / prevClip.w - curClip.xy / curClip.w) * vec2(0.5, -0.5) * uvScale;
 }
 
+// The depth stored with drawn motion: the inverse of the view depth, so that it can't overflow half floats and maps
+// linearly onto the depth buffer of any projection.
+float motion_depth(vec4 curClip)
+{
+	return 1.0 / curClip.w;
+}
+
 // Motion vector output of the batched effect shaders, for location 6. Alpha 0 keeps the motion already there, through
 // the attachment's blend state: effects without movement of their own, and fragments too faint to matter.
 const float EFFECT_MOTION_MIN_CONTRIBUTION = 0.1;
@@ -17,5 +24,5 @@ vec4 effect_motion(vec4 curClip, vec4 prevClip, float hasMotion, vec2 uvScale, v
 	if (hasMotion < 0.5 || contribution < EFFECT_MOTION_MIN_CONTRIBUTION || prevClip.w <= 0.0) {
 		return vec4(0.0);
 	}
-	return vec4(motion_uv(curClip, prevClip, uvScale), 0.0, 1.0);
+	return vec4(motion_uv(curClip, prevClip, uvScale), motion_depth(curClip), 1.0);
 }

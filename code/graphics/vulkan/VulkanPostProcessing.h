@@ -482,6 +482,9 @@ private:
 class VulkanMotionVectors {
 public:
 	static constexpr vk::Format FORMAT = vk::Format::eR16G16Sfloat;
+	// What geometry draws: its motion in xy, and in z the inverse of its view depth, 1/w of its clip position. The
+	// depth comes along so that it always belongs to whatever drew the motion, on any projection.
+	static constexpr vk::Format DRAWN_FORMAT = vk::Format::eR16G16B16A16Sfloat;
 	static constexpr vk::Format DEPTH_FORMAT = vk::Format::eR32Sfloat;
 	// Well outside any real motion. Tested in motion-vector-f.sdr and msaa-f.sdr.
 	static constexpr float NO_MOTION_WRITTEN = 1000.0f;
@@ -495,8 +498,6 @@ public:
 	bool createResources();
 	const RenderTarget& drawnMotion() const { return m_drawnMotion; }
 
-	// Before the scene's depth is restored, while it still holds the cockpit's.
-	void captureCockpitDepth(vk::CommandBuffer cmd, vk::Image sceneDepth);
 	// Outside a render pass, with the drawn motion attachment still in eColorAttachmentOptimal and sceneDepthCopy
 	// holding this frame's final depth.
 	void execute(vk::CommandBuffer cmd, vk::ImageView sceneDepthCopy);
@@ -509,10 +510,8 @@ private:
 	RenderTarget m_drawnMotion;  // what geometry wrote during the scene
 	RenderTarget m_target;       // the drawn motion, with camera motion filled in everywhere else
 	RenderTarget m_depth;        // the depth that motion belongs to, including the cockpit, on the cockpit's projection
-	RenderTarget m_cockpitDepth;
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
-	bool m_cockpitDepthValid = false;
 };
 
 /**
@@ -534,7 +533,8 @@ public:
 	// Before the scene's first pass. The image offset to draw this frame with, and the texture LOD bias to go with it.
 	void beginFrame(float& imageOffsetX, float& imageOffsetY, float& lodBias);
 	// Outside a render pass, with all inputs in eShaderReadOnlyOptimal. Leaves the output in eShaderReadOnlyOptimal.
-	void dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion);
+	// False if FSR failed, in which case the output holds nothing usable.
+	bool dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion);
 
 private:
 	PostProcessContext* m_ctx = nullptr;
@@ -545,7 +545,6 @@ private:
 	int m_jitterIndex = 0;
 	float m_jitterX = 0.0f;
 	float m_jitterY = 0.0f;
-	bool m_failed = false;
 };
 
 /**
@@ -1064,12 +1063,7 @@ public:
 	// Selects whether FSR runs for this frame's scene. After prepareMotionVectors(), which it depends on.
 	void prepareUpscaler();
 
-	void executeUpscaler(vk::CommandBuffer cmd)
-	{
-		if (m_upscalerActive) {
-			m_upscaler.dispatch(cmd, m_sceneColor, m_motionVectors.depth(), m_motionVectors.motion());
-		}
-	}
+	void executeUpscaler(vk::CommandBuffer cmd);
 
 	uint32_t sceneColorAttachmentCount() const
 	{
@@ -1166,7 +1160,7 @@ public:
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
-	void restoreSceneDepth(vk::CommandBuffer cmd);
+	void restoreSceneDepth(vk::CommandBuffer cmd) const;
 
 	/**
 	 * @brief Check if LDR targets are available (tonemapping + FXAA ready)

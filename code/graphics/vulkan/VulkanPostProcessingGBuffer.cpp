@@ -60,7 +60,7 @@ vk::RenderPass VulkanDeferredGBuffer::createGbufRenderPass(const GbufRenderPassC
 	// to transition them around each pass end and resume.
 	if (config.includeVelocity) {
 		auto& velocity = attachments[velocityIndex];
-		velocity.format = VulkanMotionVectors::FORMAT;
+		velocity.format = VulkanMotionVectors::DRAWN_FORMAT;
 		velocity.samples = config.samples;
 		velocity.loadOp = config.velocityLoadOp;
 		velocity.storeOp = vk::AttachmentStoreOp::eStore;
@@ -396,7 +396,7 @@ bool VulkanDeferredGBuffer::createVelocityTargets(const RenderTarget& drawnMotio
 		m_velocityFramebuffer = createGbufFramebuffer(m_velocityRenderPass, true, false, &drawnMotion);
 
 		if (m_msaaInitialized) {
-			if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, VulkanMotionVectors::FORMAT,
+			if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, VulkanMotionVectors::DRAWN_FORMAT,
 			                        vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 			                        vk::ImageAspectFlagBits::eColor,
 			                        m_msaaVelocity.image, m_msaaVelocity.view, m_msaaVelocity.allocation,
@@ -405,7 +405,7 @@ bool VulkanDeferredGBuffer::createVelocityTargets(const RenderTarget& drawnMotio
 				destroyVelocityTargets();
 				return false;
 			}
-			m_msaaVelocity.format = VulkanMotionVectors::FORMAT;
+			m_msaaVelocity.format = VulkanMotionVectors::DRAWN_FORMAT;
 			m_msaaVelocity.width = m_ctx->sceneExtent.width;
 			m_msaaVelocity.height = m_ctx->sceneExtent.height;
 

@@ -2811,6 +2811,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	// The skybox moves with the camera, so its pixels are better served by camera reprojection at the far plane.
 	rendering_material.set_velocity_output(model_num != Nmodel_num);
+	// Detailed star textures on the skybox alias under a negative bias
+	rendering_material.set_texture_lod_bias(!(model_flags & MR_SKYBOX));
 
 	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
 

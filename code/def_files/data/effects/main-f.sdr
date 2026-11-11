@@ -548,7 +548,7 @@ void main()
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		velocityAlpha = 1.0;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
-	fragOut6 = vec4(velocity, 0.0, velocityAlpha);
+	fragOut6 = vec4(velocity, motion_depth(vertIn.velocityCurClip), velocityAlpha);
 #endif
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED

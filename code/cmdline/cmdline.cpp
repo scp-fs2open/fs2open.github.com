@@ -380,7 +380,6 @@ int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
 int Cmdline_msaa_enabled = 0;
-int Cmdline_fsr_mode = -1;
 
 // Game Speed related
 cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
@@ -2130,7 +2129,13 @@ bool SetCmdlineParams()
 	}
 
 	if (fsr_mode_arg.found()) {
-		Cmdline_fsr_mode = fsr_mode_arg.get_int();
+		const int mode = fsr_mode_arg.get_int();
+		if (mode >= static_cast<int>(FsrMode::Off) && mode <= static_cast<int>(FsrMode::Upscale)) {
+			// The version is left to the newest one offered, which is only known once the renderer is up
+			Gr_fsr_mode = static_cast<FsrMode>(mode);
+			Gr_fsr_major_version = 0;
+			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
+		}
 	}
 
 	if (msaa_enabled_arg.found()) {

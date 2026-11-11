@@ -56,6 +56,12 @@ if (FSO_BUILD_WITH_VULKAN AND FSO_BUILD_WITH_FFX)
 	foreach(ffx_runtime_file IN LISTS FFX_RUNTIME_FILES)
 		add_target_copy_files("${ffx_runtime_file}")
 	endforeach()
+	if (FFX_RUNTIME_FILES)
+		# AMD's license has to ship with its binaries. Nothing else from the SDK is redistributed.
+		set(ffx_license "${CMAKE_CURRENT_SOURCE_DIR}/ffx/third_party/amd/Kits/FidelityFX/docs/license.md")
+		set_property(GLOBAL PROPERTY FSO_FFX_LICENSE_FILE "${ffx_license}")
+		install(FILES "${ffx_license}" DESTINATION "${BINARY_DESTINATION}/license" RENAME amd_ffx.txt)
+	endif()
 endif()
 
 add_subdirectory(mdns)

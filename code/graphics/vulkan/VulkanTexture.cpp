@@ -2163,7 +2163,10 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
                                               bool enableAnisotropy, float maxAnisotropy,
                                               bool enableMipmaps, float negativeLodBias)
 {
-	const float lodBias = std::max(negativeLodBias, -m_maxLodBias);
+	// The bias is quantized to the eighths the key can hold, so that the key always matches the sampler it caches
+	const int maxLodBiasEighths = std::min(static_cast<int>(m_maxLodBias * 8.0f), 63);
+	const int lodBiasEighths = std::clamp(static_cast<int>(std::lround(negativeLodBias * -8.0f)), 0, maxLodBiasEighths);
+	const float lodBias = static_cast<float>(lodBiasEighths) / -8.0f;
 
 	// Create a key from sampler state
 	uint64_t key = 0;
@@ -2172,7 +2175,7 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	key |= static_cast<uint64_t>(addressMode) << 8;
 	key |= static_cast<uint64_t>(enableAnisotropy) << 16;
 	key |= static_cast<uint64_t>(enableMipmaps) << 17;
-	key |= static_cast<uint64_t>(lodBias * -8.0f) << 18; // 6 bits, in eighths
+	key |= static_cast<uint64_t>(lodBiasEighths & 0x3F) << 18; // 6 bits, in eighths
 	key |= static_cast<uint64_t>(maxAnisotropy * 10) << 24;
 
 	auto it = m_samplerCache.find(key);

@@ -8,6 +8,7 @@
 
 #include "backends/imgui_impl_vulkan.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting.h"
 
 extern float flFrametime;
@@ -102,7 +103,7 @@ void VulkanRenderer::acquireNextSwapChainImage()
 }
 vk::Extent2D VulkanRenderer::wantedCompositionExtent() const
 {
-	const float factor = vulkan_upscaler_available() ? gr_fsr_upscale_factor(Gr_fsr_mode) : 1.0f;
+	const float factor = vulkan_upscaler_usable() ? gr_fsr_upscale_factor(Gr_fsr_mode) : 1.0f;
 	return {static_cast<uint32_t>(std::lround(m_renderExtent.width * factor)),
 		static_cast<uint32_t>(std::lround(m_renderExtent.height * factor))};
 }
@@ -392,6 +393,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// End HDR scene render pass (transitions scene color to eShaderReadOnlyOptimal)
 	m_currentCommandBuffer.endRenderPass();
+
+	// Nothing drawn after the scene, like the HUD, has motion vectors
+	Gr_motion_vectors_active = false;
 
 	m_postProcessor->executeMotionVectors(m_currentCommandBuffer);
 	m_postProcessor->executeUpscaler(m_currentCommandBuffer);

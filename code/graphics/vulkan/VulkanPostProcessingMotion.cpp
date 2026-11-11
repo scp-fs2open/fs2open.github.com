@@ -17,7 +17,7 @@ struct MotionVectorData {
 	float sceneNear;
 	float cockpitNear;
 	float farPlane;
-	float cockpitDrawn;
+	float pad;
 };
 
 } // namespace
@@ -101,9 +101,8 @@ bool VulkanMotionVectors::createResources()
 
 	const auto renderable = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
 	if (!createTarget(m_target, FORMAT, renderable, vk::ImageAspectFlagBits::eColor)
-		|| !createTarget(m_drawnMotion, FORMAT, renderable, vk::ImageAspectFlagBits::eColor)
-		|| !createTarget(m_depth, DEPTH_FORMAT, renderable, vk::ImageAspectFlagBits::eColor)
-		|| !createTarget(m_cockpitDepth, m_ctx->depthFormat, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::ImageAspectFlagBits::eDepth)) {
+		|| !createTarget(m_drawnMotion, DRAWN_FORMAT, renderable, vk::ImageAspectFlagBits::eColor)
+		|| !createTarget(m_depth, DEPTH_FORMAT, renderable, vk::ImageAspectFlagBits::eColor)) {
 		nprintf(("vulkan", "VulkanMotionVectors: Failed to create image!\n"));
 		destroyTargets();
 		return false;
@@ -130,16 +129,6 @@ bool VulkanMotionVectors::createResources()
 	return true;
 }
 
-void VulkanMotionVectors::captureCockpitDepth(vk::CommandBuffer cmd, vk::Image sceneDepth)
-{
-	copyImageToImage(cmd,
-		sceneDepth, vk::ImageLayout::eDepthStencilAttachmentOptimal, vk::ImageLayout::eDepthStencilAttachmentOptimal,
-		m_cockpitDepth.image, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal,
-		m_ctx->sceneExtent,
-		imageAspectFromFormat(m_ctx->depthFormat));
-	m_cockpitDepthValid = true;
-}
-
 void VulkanMotionVectors::destroyTargets()
 {
 	if (!m_ctx || !m_ctx->device) {
@@ -153,8 +142,6 @@ void VulkanMotionVectors::destroyTargets()
 	m_ctx->destroyTarget(m_target);
 	m_ctx->destroyTarget(m_drawnMotion);
 	m_ctx->destroyTarget(m_depth);
-	m_ctx->destroyTarget(m_cockpitDepth);
-	m_cockpitDepthValid = false;
 }
 
 void VulkanMotionVectors::shutdown()
@@ -205,13 +192,11 @@ void VulkanMotionVectors::execute(vk::CommandBuffer cmd, vk::ImageView sceneDept
 	data.sceneNear = Min_draw_distance;
 	data.cockpitNear = Min_draw_distance_cockpit;
 	data.farPlane = Max_draw_distance;
-	data.cockpitDrawn = m_cockpitDepthValid ? 1.0f : 0.0f;
+	data.pad = 0.0f;
 
-	const std::array<vk::ImageView, 3> inputs = {sceneDepthCopy, m_drawnMotion.view, m_cockpitDepthValid ? m_cockpitDepth.view : sceneDepthCopy};
+	const std::array<vk::ImageView, 2> inputs = {sceneDepthCopy, m_drawnMotion.view};
 	m_ctx->drawFullscreenTriangleMulti(cmd, m_renderPass, m_framebuffer, m_ctx->sceneExtent,
 		SDR_TYPE_MOTION_VECTORS, inputs.data(), static_cast<uint32_t>(inputs.size()), &data, sizeof(data), nearestSampler, 2);
-
-	m_cockpitDepthValid = false;
 }
 
 } // namespace graphics::vulkan

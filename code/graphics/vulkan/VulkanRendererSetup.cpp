@@ -536,9 +536,12 @@ bool VulkanRenderer::initialize()
 	                           m_renderExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
+	} else if (!m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
+		mprintf(("Warning: Failed to size the Vulkan post-processor, post-processing will be disabled\n"));
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
 	} else {
 		setPostProcessor(m_postProcessor.get());
-		m_postProcessor->resize(m_renderExtent, m_compositionExtent);
 	}
 
 	// Initialize shared post-processing manager (bloom/lightshaft settings, post-effect table)

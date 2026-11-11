@@ -470,7 +470,7 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 			velocity.srcAlphaBlendFactor = vk::BlendFactor::eOne;
 			velocity.dstAlphaBlendFactor = vk::BlendFactor::eZero;
 			velocity.alphaBlendOp = vk::BlendOp::eAdd;
-			velocity.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG;
+			velocity.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB;
 		}
 	}
 
