@@ -45,6 +45,12 @@ int anchor_to_target(anchor_t anchor);
 
 anchor_t target_to_anchor(int target);
 
+// ship::group holds the editor selection groups, one bit for each group. The value -1 means "in no group":
+// a mission without +Group gives -1, and the mission save writes +Group only for a value of 0 or more.
+class ship;
+bool ship_in_editor_group(const ship& shipp, int group_bit);
+void ship_set_editor_group(ship& shipp, int group_bit, bool in_group);
+
 // Rebuild Starting_wings[], Squadron_wings[], TVT_wings[] from their parallel
 // name arrays via wing_name_lookup.
 void update_custom_wing_indexes();

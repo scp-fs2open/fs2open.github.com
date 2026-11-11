@@ -4494,7 +4494,7 @@ void CFREDView::OnGroup(UINT nID)
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list))	{
 		if (objp->type == OBJ_SHIP) {
-			if (Ships[objp->instance].group & n)
+			if (ship_in_editor_group(Ships[objp->instance], n))
 				mark_object(OBJ_INDEX(objp));
 		}
 
@@ -4510,13 +4510,13 @@ void CFREDView::OnSetGroup(UINT nID)
 	object *objp;
 
 	for (i=0; i<MAX_SHIPS; i++)
-		Ships[i].group &= ~n;
+		ship_set_editor_group(Ships[i], n, false);
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
-				Ships[objp->instance].group |= n;
+				ship_set_editor_group(Ships[objp->instance], n, true);
 
 			} else
 				err = 1;
