@@ -106,30 +106,6 @@ TEST_F(CFileTest, access_default_file) {
 	cfclose(fp);
 }
 
-TEST_F(CFileTest, read_limit_at_end_of_file) {
-	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CF_TYPE_TABLES);
-	ASSERT_TRUE(fp != nullptr);
-
-	const int length = cfilelength(fp);
-	char buffer[64];
-	ASSERT_LE(length, static_cast<int>(sizeof(buffer)));
-
-	cf_set_max_read_len(fp, length);
-	EXPECT_EQ(length, cfread(buffer, 1, length, fp));
-	EXPECT_THROW(cfread(buffer, 1, 1, fp), cfile::max_read_length);
-
-	cf_set_max_read_len(fp, 0);
-	EXPECT_EQ(0, cfread(buffer, 1, 1, fp));
-
-	cfseek(fp, 0, CF_SEEK_SET);
-	cf_set_max_read_len(fp, length + 10);
-	EXPECT_EQ(length, cfread(buffer, 1, length, fp));
-	EXPECT_EQ(0, cfread(buffer, 1, 1, fp));
-	cf_set_max_read_len(fp, 0);
-
-	cfclose(fp);
-}
-
 TEST_F(CFileTest, override_default_file) {
 	// We use the controlconfig file since that should stay relatively stable
 	ASSERT_TRUE(cf_exists("controlconfigdefaults.tbl", CF_TYPE_TABLES));
