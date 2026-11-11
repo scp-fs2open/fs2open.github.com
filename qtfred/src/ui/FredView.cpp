@@ -1180,7 +1180,8 @@ void FredView::onUpdateContextToolbar() {
 	const bool anythingSelected = valid || numMarked > 0;
 
 	if (effectiveIsShip) {
-		if (numMarked <= 1)
+		// a wing member is named by its wing, so it gets no Rename
+		if (numMarked <= 1 && !effectiveInWing)
 			addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Ship"),            &FredView::on_actionShips_triggered);
 		if (effectiveInWing) {
@@ -1220,7 +1221,17 @@ void FredView::quickRenameCurrentObject() {
 	if (!ok || newName.isEmpty() || newName == current) return;
 
 	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
-		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
+		// the ship editor refuses these names as well, and a longer one does not fit the ship's name field
+		const SCP_string name = newName.toUtf8().constData();
+		SCP_string reason = check_name_conflict("ship", name.c_str(), Objects[obj].instance);
+		if (reason.empty() && name.size() >= NAME_LENGTH) {
+			reason = "This ship name is too long";
+		}
+		if (!reason.empty()) {
+			showButtonDialog(DialogType::Error, "Ship Name Error", reason, { DialogButton::Ok });
+			return;
+		}
+		fred->rename_ship(Objects[obj].instance, name.c_str());
 	}
 	// Waypoints, props, and jump nodes open their editor (name field is front-and-center)
 	// Wing rename goes through Edit Wing since wings have no standalone scene object
