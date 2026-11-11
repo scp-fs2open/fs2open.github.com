@@ -90,6 +90,8 @@ class BinaryFileHandler: public FileHandler {
 	void nextArraySection() override;
 
 	void endArrayRead() override;
+
+	bool atEndOfFile() override;
 };
 }
 

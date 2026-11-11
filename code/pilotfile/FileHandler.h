@@ -109,6 +109,11 @@ class FileHandler {
 	virtual void nextArraySection() = 0;
 
 	virtual void endArrayRead() = 0;
+
+	// only the binary format hands back empty values once its data has run out
+	virtual bool atEndOfFile() {
+		return false;
+	}
 };
 }
 

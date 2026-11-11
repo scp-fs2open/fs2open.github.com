@@ -401,12 +401,12 @@ void pilotfile::plr_read_containers()
 		Assert(size >= 0);
 
 		if (container.is_list()) {
-			for (int i = 0; i < size; ++i) {
+			for (int i = 0; i < size && !handler->atEndOfFile(); ++i) {
 				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
 				container.list_data.emplace_back(handler->readString(data_idx_str.c_str()));
 			}
 		} else if (container.is_map()) {
-			for (int i = 0; i < size; ++i) {
+			for (int i = 0; i < size && !handler->atEndOfFile(); ++i) {
 				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
 				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
 				SCP_string key = handler->readString(key_idx_str.c_str());
