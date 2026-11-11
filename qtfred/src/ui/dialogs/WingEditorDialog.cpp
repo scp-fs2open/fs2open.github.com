@@ -405,10 +405,13 @@ void WingEditorDialog::on_hideCuesButton_clicked()
 void WingEditorDialog::on_wingNameEdit_editingFinished()
 {
 	const auto newName = ui->wingNameEdit->text().toStdString();
+	const SCP_string oldName = _model->getWingName();
 	_model->setWingName(newName);
 
 	// rename_wing already auto-sets the display name from the hash; just sync the edit box
-	ui->wingDisplayNameEdit->setText(Editor::get_display_name_for_text_box(_model->getWingName()).c_str());
+	if (_model->getWingName() != oldName) {
+		ui->wingDisplayNameEdit->setText(Editor::get_display_name_for_text_box(_model->getWingName()).c_str());
+	}
 }
 
 void WingEditorDialog::on_wingDisplayNameEdit_editingFinished()
