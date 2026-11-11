@@ -71,10 +71,21 @@ class Editor : public QObject {
 
 	void startAutosaveTimer(int intervalSeconds);
 	void stopAutosaveTimer();
+	/**
+	 * @brief The file that Save writes to. It is empty for a new mission, a template, and an FS1 import.
+	 * @details loadMission() and createNewMission() set it. Save As sets it with setCurrentMissionPath().
+	 */
+	const QString& currentMissionPath() const { return _currentMissionPath; }
 	void setCurrentMissionPath(const QString& path);
 	const QString& autosaveDirectory() const { return _autosaveDirectory; }
 
-	/*! Load a mission. */
+	/**
+	 * @brief Loads a mission.
+	 * @param filepath The file to load.
+	 * @param flags The MPF_* parse flags. A file with the .fst extension always loads as a template.
+	 * @details On success, currentMissionPath() is the file that Save writes to, and missionLoaded() sends it.
+	 * @return true if the mission loaded. On failure, the editor shows an error and creates a new mission.
+	 */
 	bool loadMission(const std::string& filepath, int flags = 0);
 
 	void markObject(int objId);
@@ -139,6 +150,9 @@ class Editor : public QObject {
 	/**
 	 * @brief Signal for when a new mission has been loaded
 	 * @param filepath The path of the mission file, empty if new mission
+	 */
+	/**
+	 * @param filepath The value of currentMissionPath().
 	 */
 	void missionLoaded(const std::string& filepath);
 

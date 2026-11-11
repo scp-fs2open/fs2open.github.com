@@ -230,6 +230,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionControlModeCurrentShip_triggered(bool enabled);
 
 	void addToRecentFiles(const QString& path);
+	// Shows the current mission file (Editor::currentMissionPath()) in the window title.
+	void showCurrentMissionFile();
 	// The editor dialogs and the campaign editor that are open as children of this window.
 	QList<QWidget*> editorWindows() const;
 	void updateRecentFileList();
@@ -285,7 +287,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QAction* _controlModeCamera = nullptr;
 	QAction* _controlModeCurrentShip = nullptr;
 
-	QString saveName = nullptr;
 	MissionFormat _missionSaveFormat = MissionFormat::STANDARD;
 
 	std::unique_ptr<Ui::FredView> ui;
