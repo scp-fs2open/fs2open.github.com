@@ -235,6 +235,11 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Briefing = briefPtr;
 
 	auto& stage = briefPtr->stages[stageNum];
+	// Start fresh on an instant change, because the engine divides icon movement by the transition time, and on
+	// an unchanged index, which holds a different stage after a delete or a team switch.
+	if (transitionTime <= 0 || stageNum == _currentStage) {
+		brief_reset_last_new_stage();
+	}
 	brief_set_new_stage(&stage.camera_pos, &stage.camera_orient, transitionTime, stageNum);
 	// Editor behavior: start highlights as soon as the camera reaches its target
 	// instead of waiting for briefing text wipe timing.
