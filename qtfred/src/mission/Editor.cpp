@@ -187,7 +187,7 @@ void Editor::stopAutosaveTimer() {
 }
 
 void Editor::setCurrentMissionPath(const QString& path) {
-	_currentMissionPath = path;
+	_currentMissionPath = QDir::toNativeSeparators(path);
 }
 
 void Editor::performTimedAutosave() {
@@ -207,6 +207,11 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	// activate the localizer hash table
 	fhash_flush();
+
+	// A .fst file is always a template, from each caller (recent files, -start_mission). Without the template
+	// flag, Save writes a plain mission over the template file.
+	if (QString::fromStdString(mission_name).endsWith(".fst", Qt::CaseInsensitive))
+		flags |= MPF_IS_TEMPLATE;
 
 	clearMission(flags & MPF_FAST_RELOAD);
 
@@ -417,7 +422,13 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	stars_post_level_init();
 
-	missionLoaded(filepath);
+	// The path that Save writes to. A template has no such file: the user must give a name with Save As.
+	if (flags & MPF_IS_TEMPLATE)
+		setCurrentMissionPath({});
+	else
+		setCurrentMissionPath(QString::fromStdString(filepath));
+
+	missionLoaded(_currentMissionPath.toStdString());
 
 	// This hook will allow for scripts to know when a mission has been loaded
 	// which will then allow them to update any LuaEnums that may be related to sexps
@@ -830,6 +841,7 @@ void Editor::createNewMission() {
 	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 	stars_post_level_init();
 	// TODO(Phase 3): _undoStack->clear()
+	setCurrentMissionPath({});
 	missionLoaded("");
 }
 void Editor::hideMarkedObjects() {
