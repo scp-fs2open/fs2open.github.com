@@ -289,12 +289,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			return;
 
 		Fred_mission_save save;
-		save.set_save_format(_missionSaveFormat);
-		save.set_always_save_display_names(_viewport->Always_save_display_names);
-		save.set_view_pos(_viewport->camera.view_pos);
-		save.set_view_orient(_viewport->camera.view_orient);
-		save.set_fred_alt_names(Fred_alt_names);
-		save.set_fred_callsigns(Fred_callsigns);
+		configureMissionSave(save);
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
@@ -479,16 +474,7 @@ bool FredView::performPreSaveCheck(int* outFixCount) {
 	}
 }
 
-bool FredView::saveMissionToCurrentPath() {
-	const QString path = fred->currentMissionPath();
-	if (path.isEmpty())
-		return saveMissionAs();
-
-	int fixCount = -1;
-	if (!performPreSaveCheck(&fixCount))
-		return false;
-
-	Fred_mission_save save;
+void FredView::configureMissionSave(Fred_mission_save& save) const {
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
 	save.set_create_bak_file(_viewport->Create_bak_on_save);
@@ -496,11 +482,25 @@ bool FredView::saveMissionToCurrentPath() {
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
+}
 
-	save.save_mission_file(path.toUtf8().constData());
+bool FredView::writeMissionFile(const QString& path) {
+	Fred_mission_save save;
+	configureMissionSave(save);
+
+	// save_mission_file() returns 0 on success. On failure it only writes to the log, so tell the user here.
+	if (save.save_mission_file(path.toUtf8().constData()) != 0) {
+		QMessageBox::critical(this, tr("Save Failed"),
+			tr("QtFRED could not write the mission to\n%1\n\nThe mission is not saved.").arg(path));
+		return false;
+	}
+
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
+	return true;
+}
 
+void FredView::reportPreSaveFixes(int fixCount) {
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
 			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
@@ -511,7 +511,21 @@ bool FredView::saveMissionToCurrentPath() {
 	// Keep the persistent error checker in sync if it is already open.
 	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
 		_errorCheckerDialog->runCheck();
+}
 
+bool FredView::saveMissionToCurrentPath() {
+	const QString path = fred->currentMissionPath();
+	if (path.isEmpty())
+		return saveMissionAs();
+
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
+	if (!writeMissionFile(path))
+		return false;
+
+	reportPreSaveFixes(fixCount);
 	return true;
 }
 
@@ -531,30 +545,11 @@ bool FredView::saveMissionAs() {
 	fso::fred::util::saveLastDir("missions/saveMission", newSaveName);
 	newSaveName.replace('/', DIR_SEPARATOR_CHAR);
 
-	Fred_mission_save save;
-	save.set_save_format(_missionSaveFormat);
-	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_create_bak_file(_viewport->Create_bak_on_save);
-	save.set_view_pos(_viewport->camera.view_pos);
-	save.set_view_orient(_viewport->camera.view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
+	// On failure, keep the old file name and the modified flag.
+	if (!writeMissionFile(newSaveName))
+		return false;
 
-	save.save_mission_file(newSaveName.toUtf8().constData());
-	_missionModified = false;
-	setLastSaved(QDateTime::currentDateTime());
-
-	if (fixCount > 0)
-		QMessageBox::information(this, tr("Auto-corrections Applied"),
-			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
-	else if (fixCount == 0)
-		QMessageBox::information(this, tr("No Auto-corrections Applied"),
-			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
-
-	// Keep the persistent error checker in sync if it is already open.
-	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
-		_errorCheckerDialog->runCheck();
-
+	reportPreSaveFixes(fixCount);
 	fred->setCurrentMissionPath(newSaveName);
 	showCurrentMissionFile();
 	addToRecentFiles(newSaveName);
@@ -729,13 +724,7 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		destPath += filename;
 
 		Fred_mission_save fileSave;
-		fileSave.set_save_format(_missionSaveFormat);
-		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
-		fileSave.set_create_bak_file(_viewport->Create_bak_on_save);
-		fileSave.set_view_pos(_viewport->camera.view_pos);
-		fileSave.set_view_orient(_viewport->camera.view_orient);
-		fileSave.set_fred_alt_names(Fred_alt_names);
-		fileSave.set_fred_callsigns(Fred_callsigns);
+		configureMissionSave(fileSave);
 
 		if (fileSave.save_mission_file(destPath.c_str()) == 0) {
 			++successes;

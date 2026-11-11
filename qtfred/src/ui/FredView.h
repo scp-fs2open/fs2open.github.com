@@ -238,6 +238,10 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void showCurrentMissionFile();
 	// The editor dialogs and the campaign editor that are open as children of this window.
 	QList<QWidget*> editorWindows() const;
+	// Sets the save options from the user preferences. Mission saves, autosaves, and FS1 imports use it.
+	void configureMissionSave(Fred_mission_save& save) const;
+	bool writeMissionFile(const QString& path);
+	void reportPreSaveFixes(int fixCount);
 	void updateRecentFileList();
 
 	void recentFileOpened();
