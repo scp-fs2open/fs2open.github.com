@@ -19,6 +19,7 @@ add_file_folder("CFile"
 
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
+    globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
     globalincs/test_version.cpp
 )
@@ -93,6 +94,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Thread.cpp
     scripting/lua/Util.cpp
     scripting/lua/Value.cpp
+)
+
+add_file_folder("Ship"
+    ship/ship_info.cpp
 )
 
 add_file_folder("Test Util"

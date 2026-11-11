@@ -1083,371 +1083,6 @@ const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which shi
 const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
 
-void ship_info::clone(const ship_info& other)
-{
-	strcpy_s(name, other.name);
-	display_name = other.display_name;
-	strcpy_s(short_name, other.short_name);
-	species = other.species;
-	class_type = other.class_type;
-
-	CLONE_UNIQUE_PTR(type_str);
-	CLONE_UNIQUE_PTR(maneuverability_str);
-	CLONE_UNIQUE_PTR(armor_str);
-	CLONE_UNIQUE_PTR(manufacturer_str);
-	CLONE_UNIQUE_PTR(desc);
-	CLONE_UNIQUE_PTR(tech_desc);
-
-	strcpy_s(tech_title, other.tech_title);
-
-	CLONE_UNIQUE_PTR(ship_length);
-	CLONE_UNIQUE_PTR(gun_mounts);
-	CLONE_UNIQUE_PTR(missile_banks);
-
-	strcpy_s(cockpit_pof_file, other.cockpit_pof_file);
-	cockpit_offset = other.cockpit_offset;
-	cockpit_sway_val = other.cockpit_sway_val;
-	strcpy_s(pof_file, other.pof_file);
-	strcpy_s(pof_file_hud, other.pof_file_hud);
-	strcpy_s(pof_file_tech, other.pof_file_tech);
-	num_detail_levels = other.num_detail_levels;
-	memcpy(detail_distance, other.detail_distance, sizeof(int) * MAX_SHIP_DETAIL_LEVELS);
-	collision_lod = other.collision_lod;
-
-	// I'm not sure if these three are A) a good idea or B) relevant at all. -MageKing17
-	cockpit_model_num = other.cockpit_model_num;
-	model_num = other.model_num;
-	model_num_hud = other.model_num_hud;
-
-	hud_target_lod = other.hud_target_lod;
-	density = other.density;
-	damp = other.damp;
-	rotdamp = other.rotdamp;
-	delta_bank_const = other.delta_bank_const;
-	max_vel = other.max_vel;
-	min_vel = other.min_vel;
-	max_rotvel = other.max_rotvel;
-	rotation_time = other.rotation_time;
-	srotation_time = other.srotation_time;
-	max_rear_vel = other.max_rear_vel;
-	forward_accel = other.forward_accel;
-	forward_decel = other.forward_decel;
-	slide_accel = other.slide_accel;
-	slide_decel = other.slide_decel;
-	gravity_const = other.gravity_const;
-	dying_gravity_const = other.dying_gravity_const;
-
-	warpin_params_index = other.warpin_params_index;
-	warpout_params_index = other.warpout_params_index;
-
-	flags = other.flags;
-	ai_class = other.ai_class;
-	max_speed = other.max_speed;
-	min_speed = other.min_speed;
-	max_accel = other.max_accel;
-
-	collision_damage_type_idx = other.collision_damage_type_idx;
-	collision_physics = other.collision_physics;
-
-	memcpy(&shockwave, &other.shockwave, sizeof(shockwave_create_info));
-	explosion_propagates = other.explosion_propagates;
-	explosion_splits_ship = other.explosion_splits_ship;
-	big_exp_visual_rad = other.big_exp_visual_rad;
-	prop_exp_rad_mult = other.prop_exp_rad_mult;
-	death_roll_r_mult = other.death_roll_r_mult;
-	death_fx_r_mult = other.death_fx_r_mult;
-	death_roll_time_mult = other.death_roll_time_mult;
-	death_roll_rotation_mult = other.death_roll_rotation_mult;
-	death_roll_xrotation_cap = other.death_roll_xrotation_cap;
-	death_roll_yrotation_cap = other.death_roll_yrotation_cap;
-	death_roll_zrotation_cap = other.death_roll_zrotation_cap;
-	death_roll_base_time = other.death_roll_base_time;
-	death_fx_count = other.death_fx_count;
-	shockwave_count = other.shockwave_count;
-	explosion_bitmap_anims = other.explosion_bitmap_anims;
-	disable_main_fireball = other.disable_main_fireball;
-	skip_deathroll_chance = other.skip_deathroll_chance;
-
-	impact_spew = other.impact_spew;
-	damage_spew = other.damage_spew;
-	death_roll_exp_particles = other.death_roll_exp_particles;
-	pre_death_exp_particles = other.pre_death_exp_particles;
-	propagating_exp_particles = other.propagating_exp_particles;
-	split_particles = other.split_particles;
-	knossos_end_particles = other.knossos_end_particles;
-	regular_end_particles = other.regular_end_particles;
-	debris_flame_particles = other.debris_flame_particles;
-	shrapnel_flame_particles = other.shrapnel_flame_particles;
-	debris_end_particles = other.debris_end_particles;
-	shrapnel_end_particles = other.shrapnel_end_particles;
-	default_subsys_debris_flame_particles = other.default_subsys_debris_flame_particles;
-	default_subsys_shrapnel_flame_particles = other.default_subsys_shrapnel_flame_particles;
-
-	debris_min_lifetime = other.debris_min_lifetime;
-	debris_max_lifetime = other.debris_max_lifetime;
-	debris_min_speed = other.debris_min_speed;
-	debris_max_speed = other.debris_max_speed;
-	debris_min_rotspeed = other.debris_min_rotspeed;
-	debris_max_rotspeed = other.debris_max_rotspeed;
-	debris_damage_type_idx = other.debris_damage_type_idx;
-	debris_min_hitpoints = other.debris_min_hitpoints;
-	debris_max_hitpoints = other.debris_max_hitpoints;
-	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
-	debris_damage_mult = other.debris_damage_mult;
-	debris_arc_percent = other.debris_arc_percent;
-	debris_gravity_const = other.debris_gravity_const;
-	debris_density = other.debris_density;
-	debris_ambient_sound = other.debris_ambient_sound;
-	debris_collision_sound_light = other.debris_collision_sound_light;
-	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
-	debris_explosion_sound = other.debris_explosion_sound;
-	strcpy_s(generic_debris_pof_file, other.generic_debris_pof_file);
-	generic_debris_model_num = other.generic_debris_model_num;
-	generic_debris_num_submodels = other.generic_debris_num_submodels;
-	generic_debris_spew_num = other.generic_debris_spew_num;
-
-	if ( other.n_subsystems > 0 ) {
-		subsystems.reset(new model_subsystem[other.n_subsystems]);
-		std::copy(other.subsystems.get(), other.subsystems.get() + other.n_subsystems, subsystems.get());
-	} else {
-		subsystems.reset();
-	}
-	n_subsystems = other.n_subsystems;
-
-	animations = other.animations;
-	cockpit_animations = other.cockpit_animations;
-
-	power_output = other.power_output;
-	max_overclocked_speed = other.max_overclocked_speed;
-	max_weapon_reserve = other.max_weapon_reserve;
-	max_shield_regen_per_second = other.max_shield_regen_per_second;
-	shield_regen_hit_delay = other.shield_regen_hit_delay;
-	max_weapon_regen_per_second = other.max_weapon_regen_per_second;
-
-	shield_weap_amount = other.shield_weap_amount;
-	shield_weap_efficiency = other.shield_weap_efficiency;
-	shield_weap_speed = other.shield_weap_speed;
-	weap_shield_amount = other.weap_shield_amount;
-	weap_shield_efficiency = other.weap_shield_efficiency;
-	weap_shield_speed = other.weap_shield_speed;
-
-	afterburner_max_vel = other.afterburner_max_vel;
-	afterburner_forward_accel = other.afterburner_forward_accel;
-	afterburner_fuel_capacity = other.afterburner_fuel_capacity;
-	afterburner_burn_rate = other.afterburner_burn_rate;
-	afterburner_recover_rate = other.afterburner_recover_rate;
-	afterburner_max_reverse_vel = other.afterburner_max_reverse_vel;
-	afterburner_reverse_accel = other.afterburner_reverse_accel;
-	afterburner_min_start_fuel = other.afterburner_min_start_fuel;
-	afterburner_min_fuel_to_burn = other.afterburner_min_fuel_to_burn;
-	afterburner_cooldown_time = other.afterburner_cooldown_time;
-
-	cmeasure_type = other.cmeasure_type;
-	cmeasure_max = other.cmeasure_max;
-
-	num_primary_banks = other.num_primary_banks;
-	memcpy(primary_bank_weapons, other.primary_bank_weapons, sizeof(int) * MAX_SHIP_PRIMARY_BANKS);
-	memcpy(primary_bank_ammo_capacity, other.primary_bank_ammo_capacity, sizeof(int) * MAX_SHIP_PRIMARY_BANKS);
-
-	num_secondary_banks = other.num_secondary_banks;
-	memcpy(secondary_bank_weapons, other.secondary_bank_weapons, sizeof(int) * MAX_SHIP_SECONDARY_BANKS);
-	memcpy(secondary_bank_ammo_capacity, other.secondary_bank_ammo_capacity, sizeof(int) * MAX_SHIP_SECONDARY_BANKS);
-
-	memcpy(draw_primary_models, other.draw_primary_models, sizeof(bool) * MAX_SHIP_PRIMARY_BANKS);
-	memcpy(draw_secondary_models, other.draw_secondary_models, sizeof(bool) * MAX_SHIP_SECONDARY_BANKS);
-	weapon_model_draw_distance = other.weapon_model_draw_distance;
-
-	max_hull_strength = other.max_hull_strength;
-	ship_recoil_modifier = other.ship_recoil_modifier;
-	ship_shudder_modifier = other.ship_shudder_modifier;
-
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		dyn_firing_patterns_allowed[i] = other.dyn_firing_patterns_allowed[i];
-	}
-
-	max_shield_strength = other.max_shield_strength;
-	max_shield_recharge = other.max_shield_recharge;
-	auto_shield_spread = other.auto_shield_spread;
-	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
-	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
-	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
-	max_shield_impact_effect_radius = other.max_shield_impact_effect_radius;
-
-	// ...Hmm. A memcpy() seems slightly overkill here, but I've settled into the pattern of "array gets memcpy'd", so... -MageKing17
-	memcpy(shield_point_augment_ctrls, other.shield_point_augment_ctrls, sizeof(int) * 4);
-
-	hull_repair_rate = other.hull_repair_rate;
-	subsys_repair_rate = other.subsys_repair_rate;
-
-	hull_repair_max = other.hull_repair_max;
-	subsys_repair_max = other.subsys_repair_max;
-
-	sup_hull_repair_rate = other.sup_hull_repair_rate;
-	sup_shield_repair_rate = other.sup_shield_repair_rate;
-	sup_subsys_repair_rate = other.sup_subsys_repair_rate;
-
-	closeup_pos = other.closeup_pos;
-	closeup_zoom = other.closeup_zoom;
-	icon_closeup_pos = other.icon_closeup_pos;
-	icon_closeup_zoom = other.icon_closeup_zoom;
-
-	closeup_pos_targetbox = other.closeup_pos_targetbox;
-	closeup_zoom_targetbox = other.closeup_zoom_targetbox;
-
-	chase_view_offset = other.chase_view_offset;
-	chase_view_rigidity = other.chase_view_rigidity;
-
-	allowed_weapons = other.allowed_weapons;
-
-	restricted_loadout_flag = other.restricted_loadout_flag;
-	allowed_bank_restricted_weapons = other.allowed_bank_restricted_weapons;
-
-	shield_icon_index = other.shield_icon_index;
-	strcpy_s(icon_filename, other.icon_filename);
-	model_icon_angles = other.model_icon_angles;
-	strcpy_s(anim_filename, other.anim_filename);
-	strcpy_s(overhead_filename, other.overhead_filename);
-	selection_effect = other.selection_effect;
-	fs2_effect_grid_color = other.fs2_effect_grid_color;
-	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
-	fs2_effect_grid_density = other.fs2_effect_grid_density;
-	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
-
-	wingmen_status_dot_override = other.wingmen_status_dot_override;
-
-	bii_index_ship = other.bii_index_ship;
-	bii_index_ship_with_cargo = other.bii_index_ship_with_cargo;
-	bii_index_wing = other.bii_index_wing;
-	bii_index_wing_with_cargo = other.bii_index_wing_with_cargo;
-
-	score = other.score;
-
-	scan_time = other.scan_time;
-	scan_range_normal = other.scan_range_normal;
-	scan_range_capital = other.scan_range_capital;
-	scanning_time_multiplier = other.scanning_time_multiplier;
-	scanning_range_multiplier = other.scanning_range_multiplier;
-
-	ask_help_shield_percent = other.ask_help_shield_percent;
-	ask_help_hull_percent = other.ask_help_hull_percent;
-
-	memcpy(ct_info, other.ct_info, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
-	ct_count = other.ct_count;
-
-	memcpy(shield_color, other.shield_color, sizeof(ubyte) * 3);
-
-	uses_team_colors = other.uses_team_colors;
-	default_team_name = other.default_team_name;
-
-	afterburner_trail = other.afterburner_trail; 
-	afterburner_trail_tex_stretch = other.afterburner_trail_tex_stretch;
-	afterburner_trail_width_factor = other.afterburner_trail_width_factor;
-	afterburner_trail_alpha_factor = other.afterburner_trail_alpha_factor;
-	afterburner_trail_alpha_end_factor = other.afterburner_trail_alpha_end_factor;
-	afterburner_trail_alpha_decay_exponent = other.afterburner_trail_alpha_decay_exponent;
-	afterburner_trail_life = other.afterburner_trail_life;
-	afterburner_trail_faded_out_sections = other.afterburner_trail_faded_out_sections;
-	afterburner_trail_spread = other.afterburner_trail_spread;
-
-	normal_thruster_particles = other.normal_thruster_particles;
-	afterburner_thruster_particles = other.afterburner_thruster_particles;
-
-	memcpy(&thruster_flame_info, &other.thruster_flame_info, sizeof(thrust_pair));
-	memcpy(&thruster_glow_info, &other.thruster_glow_info, sizeof(thrust_pair));
-	memcpy(&thruster_secondary_glow_info, &other.thruster_secondary_glow_info, sizeof(thrust_pair_bitmap));
-	memcpy(&thruster_tertiary_glow_info, &other.thruster_tertiary_glow_info, sizeof(thrust_pair_bitmap));
-	memcpy(&thruster_distortion_info, &other.thruster_distortion_info, sizeof(thrust_pair_bitmap));
-
-	thruster01_glow_rad_factor = other.thruster01_glow_rad_factor;
-	thruster02_glow_rad_factor = other.thruster02_glow_rad_factor;
-	thruster03_glow_rad_factor = other.thruster03_glow_rad_factor;
-	thruster02_glow_len_factor = other.thruster02_glow_len_factor;
-	thruster_dist_rad_factor = other.thruster_dist_rad_factor;
-	thruster_dist_len_factor = other.thruster_dist_len_factor;
-	thruster_glow_noise_mult = other.thruster_glow_noise_mult;
-
-	draw_distortion = other.draw_distortion;
-
-	replacement_textures = other.replacement_textures;
-
-	armor_type_idx = other.armor_type_idx;
-	shield_armor_type_idx = other.shield_armor_type_idx;
-	
-	can_glide = other.can_glide;
-	glide_cap = other.glide_cap;
-	glide_dynamic_cap = other.glide_dynamic_cap;
-	glide_accel_mult = other.glide_accel_mult;
-	use_newtonian_damp = other.use_newtonian_damp;
-	newtonian_damp_override = other.newtonian_damp_override;
-
-	autoaim_fov = other.autoaim_fov;
-	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
-	}
-	autoaim_lock_snd = other.autoaim_lock_snd;
-	autoaim_lost_snd = other.autoaim_lost_snd;
-
-	aims_at_flight_cursor = other.aims_at_flight_cursor;
-	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
-	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
-
-	topdown_offset_def = other.topdown_offset_def;
-	topdown_offset = other.topdown_offset;
-
-	engine_snd = other.engine_snd;
-	min_engine_vol = other.min_engine_vol;
-	glide_start_snd = other.glide_start_snd;
-	glide_end_snd = other.glide_end_snd;
-	flyby_snd = other.flyby_snd;
-
-	ship_sounds = other.ship_sounds;
-
-	custom_data = other.custom_data;
-
-	custom_strings = other.custom_strings;
-
-	rcs_thrusters = other.rcs_thrusters;
-
-	radar_image_2d_idx = other.radar_image_2d_idx;
-	radar_color_image_2d_idx = other.radar_color_image_2d_idx;
-	radar_image_size = other.radar_image_size;
-	radar_projection_size_mult = other.radar_projection_size_mult;
-
-	ship_iff_info = other.ship_iff_info;
-
-	aiming_flags = other.aiming_flags;
-	minimum_convergence_distance = other.minimum_convergence_distance;
-	convergence_distance = other.convergence_distance;
-	convergence_offset = other.convergence_offset;
-
-	emp_resistance_mod = other.emp_resistance_mod;
-
-	piercing_damage_draw_limit = other.piercing_damage_draw_limit;
-
-	damage_lightning_type = other.damage_lightning_type;
-
-	shield_impact_explosion_anim = other.shield_impact_explosion_anim;
-
-	// We can't copy the HUD gauge vector here since we can't construct a copy of every HUD gauge since the type
-	// information is not available anymore when we are at this point. Since this function is only needed before HUD
-	// gauge parsing it should be save to assume that the other HUD gauge vector is empty
-	Assertion(other.hud_gauges.empty(), "Ship_info cloning is only possible if there are no HUD gauges in the ship class.");
-	hud_gauges.clear();
-
-	hud_enabled = other.hud_enabled;
-	hud_retail = other.hud_retail;
-
-	displays = other.displays;
-
-	pathMetadata = other.pathMetadata;
-
-	ship_passive_arcs = other.ship_passive_arcs;
-
-	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
-
-	default_subsys_death_effect = other.default_subsys_death_effect; 
-}
-
 ship_info::ship_info()
 {
 	name[0] = '\0';
@@ -2742,23 +2377,23 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	diag_printf ("Ship species -- %s\n", Species_info[sip->species].species_name);
 
 	if (optional_string("+Type:")) {
-		stuff_string(sip->type_str, F_TRIMMED, true);
+		stuff_string(sip->type_str, F_TRIMMED);
 	}
 
 	if (optional_string("+Maneuverability:")) {
-		stuff_string(sip->maneuverability_str, F_TRIMMED, true);
+		stuff_string(sip->maneuverability_str, F_TRIMMED);
 	}
 
 	if (optional_string("+Armor:")) {
-		stuff_string(sip->armor_str, F_TRIMMED, true);
+		stuff_string(sip->armor_str, F_TRIMMED);
 	}
 
 	if (optional_string("+Manufacturer:")) {
-		stuff_string(sip->manufacturer_str, F_TRIMMED, true);
+		stuff_string(sip->manufacturer_str, F_TRIMMED);
 	}
 
 	if (optional_string("+Description:")) {
-		stuff_string(sip->desc, F_MULTITEXT, true);
+		stuff_string(sip->desc, F_MULTITEXT);
 	}
 	
 	if (optional_string("+Tech Title:")) {
@@ -2766,19 +2401,19 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if (optional_string("+Tech Description:")) {
-		stuff_string(sip->tech_desc, F_MULTITEXT, true);
+		stuff_string(sip->tech_desc, F_MULTITEXT);
 	}
 
 	if (optional_string("+Length:")) {
-		stuff_string(sip->ship_length, F_TRIMMED, true);
+		stuff_string(sip->ship_length, F_TRIMMED);
 	}
 	
 	if (optional_string("+Gun Mounts:")) {
-		stuff_string(sip->gun_mounts, F_TRIMMED, true);
+		stuff_string(sip->gun_mounts, F_TRIMMED);
 	}
 	
 	if (optional_string("+Missile Banks:")) {
-		stuff_string(sip->missile_banks, F_TRIMMED, true);
+		stuff_string(sip->missile_banks, F_TRIMMED);
 	}
 
 	// Ship fadein effect, used when no ani is specified or ship_select_3d is active
@@ -5708,22 +5343,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		Warning(LOCATION, "For %s '%s', number of existing subsystems (%d) plus additional subsystems (%d) exceeds max of %d; only the first %d additional subsystems will be used", info_type_name, sip->name, static_cast<int>(sip->n_subsystems), n_subsystems + n_excess_subsystems, MAX_MODEL_SUBSYSTEMS, n_subsystems);
 	}
 
-	// when done reading subsystems, malloc and copy the subsystem data to the ship info structure
+	// when done reading subsystems, copy the subsystem data to the ship info structure
 	int orig_n_subsystems = sip->n_subsystems;
 	if ( n_subsystems > 0 ) {
 		// Let's make sure that n_subsystems is not negative
 		Assertion(sip->n_subsystems >= 0, "Invalid n_subsystems detected!");
 		auto new_n = sip->n_subsystems + n_subsystems;
 
-		std::unique_ptr<model_subsystem[]> subsys_storage(new model_subsystem[new_n]);
-
-		// This used realloc originally so we need to copy the existing subsystems to the new storage
-		if (sip->n_subsystems > 0)
-			std::copy(sip->subsystems.get(), sip->subsystems.get() + sip->n_subsystems, subsys_storage.get());
-
+		sip->subsystems.resize(new_n);
 		sip->n_subsystems = new_n;
-		// the old storage (if any) is released by the assignment
-		sip->subsystems = std::move(subsys_storage);
 	}
 		
 	for ( int i = 0; i < n_subsystems; i++ ){
@@ -7654,7 +7282,7 @@ static void ship_copy_subsystem_fixup(ship_info *sip)
 
 	// if we need to get information for all our subsystems, we need to find another ship with the same model
 	// number as our own and that has the model information
-	for ( auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it ) {
+	for ( auto it = Ship_info.begin(); it != Ship_info.end(); ++it ) {
 		model_subsystem *source_msp, *dest_msp;
 
 		if ( (it->model_num != model_num) || (&(*it) == sip) ){

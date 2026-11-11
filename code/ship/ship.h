@@ -1262,17 +1262,17 @@ public:
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
 
-	std::unique_ptr<char[]> type_str;							// type string used by tooltips
-	std::unique_ptr<char[]> maneuverability_str;			// string used by tooltips
-	std::unique_ptr<char[]> armor_str;							// string used by tooltips
-	std::unique_ptr<char[]> manufacturer_str;				// string used by tooltips
-	std::unique_ptr<char[]> desc;								// string used by tooltips
-	std::unique_ptr<char[]> tech_desc;							// string used by tech database
+	SCP_string type_str;							// type string used by tooltips
+	SCP_string maneuverability_str;			// string used by tooltips
+	SCP_string armor_str;							// string used by tooltips
+	SCP_string manufacturer_str;				// string used by tooltips
+	SCP_string desc;								// string used by tooltips
+	SCP_string tech_desc;							// string used by tech database
 	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
-	std::unique_ptr<char[]> ship_length;						// string used by multiplayer ship desc
-	std::unique_ptr<char[]> gun_mounts;			         // string used by multiplayer ship desc
-	std::unique_ptr<char[]> missile_banks;					// string used by multiplayer ship desc
+	SCP_string ship_length;						// string used by multiplayer ship desc
+	SCP_string gun_mounts;			         // string used by multiplayer ship desc
+	SCP_string missile_banks;					// string used by multiplayer ship desc
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
@@ -1378,7 +1378,7 @@ public:
 	// (n_subsystems describes the subsystems array; the wrapper keeps it
 	// consistent with the array by resetting it to 0 in a moved-from ship_info)
 	util::reset_on_move<int> n_subsystems;			// this number comes from ships.tbl
-	std::unique_ptr<model_subsystem[]> subsystems;	// see model.h for structure definition
+	SCP_vector<model_subsystem> subsystems;	// see model.h for structure definition
 	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
@@ -1604,7 +1604,7 @@ public:
 
 	int damage_lightning_type;
 
-	SCP_vector<std::unique_ptr<HudGauge>> hud_gauges;
+	SCP_vector<SCP_polymorphic<HudGauge>> hud_gauges;
 	bool hud_enabled;
 	bool hud_retail;
 
@@ -1621,14 +1621,17 @@ public:
 
 	ship_info();
 	~ship_info() = default;
-	void clone(const ship_info& other);
+	void clone(const ship_info& other) { *this = other; }
 
 	ship_info(ship_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
 	ship_info &operator=(ship_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
 
-	// Deleted so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
-	ship_info(const ship_info& other) = delete;
-	ship_info &operator=(const ship_info& other) = delete;
+  private:
+	// Private so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
+	ship_info(const ship_info& other) = default;
+	ship_info &operator=(const ship_info& other) = default;
+
+  public:
 
     //Helper functions
     

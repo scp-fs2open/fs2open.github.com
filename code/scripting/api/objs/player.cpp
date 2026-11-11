@@ -375,7 +375,7 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 scoring_stats_h::scoring_stats_h() = default;
 scoring_stats_h::scoring_stats_h(const scoring_struct& stats, player *player)
 {
-	_score.assign(stats);
+	_score = stats;
 	_valid = true;
 	_plr = player;
 }

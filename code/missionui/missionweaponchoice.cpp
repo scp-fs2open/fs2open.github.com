@@ -506,7 +506,7 @@ const char *wl_tooltip_handler(const char *str)
 		const char *str2;
 		int x, y, w, h;
 
-		str2 = coalesce(Weapon_info[Selected_wl_class].desc.get(), "");
+		str2 = Weapon_info[Selected_wl_class].desc.c_str();
 		gr_get_string_size(&w, &h, str2);
 		x = Wl_weapon_desc_coords[gr_screen.res][0] - w / 2;
 		y = Wl_weapon_desc_coords[gr_screen.res][1] - h / 2;
@@ -2541,8 +2541,8 @@ void wl_weapon_desc_start_wipe()
 	
 	// break current description into lines (break at the /n's)
 	currchar_src = 0;
-	if (Weapon_info[Selected_wl_class].desc) {
-		auto desc = Weapon_info[Selected_wl_class].desc.get();
+	if (!Weapon_info[Selected_wl_class].desc.empty()) {
+		auto desc = Weapon_info[Selected_wl_class].desc.c_str();
 		while (desc[currchar_src] != '\0') {
 			if (desc[currchar_src] == '\n') {
 				// break here

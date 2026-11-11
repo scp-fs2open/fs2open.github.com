@@ -30,10 +30,5 @@ ActionResult SetDirectionAction::execute(ProgramLocals& locals) const
 	return ActionResult::Finished;
 }
 
-std::unique_ptr<Action> SetDirectionAction::clone() const
-{
-	return std::make_unique<SetDirectionAction>(*this);
-}
-
 } // namespace types
 } // namespace actions

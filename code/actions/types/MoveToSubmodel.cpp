@@ -68,10 +68,5 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 	return ActionResult::Errored;
 }
 
-std::unique_ptr<Action> MoveToSubmodel::clone() const
-{
-	return std::make_unique<MoveToSubmodel>(*this);
-}
-
 } // namespace types
 } // namespace actions

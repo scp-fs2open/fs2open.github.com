@@ -19,8 +19,6 @@ class WaitAction : public Action {
 
 	ActionResult execute(ProgramLocals& locals) const override;
 
-	std::unique_ptr<Action> clone() const override;
-
   private:
 	expression::TypedActionExpression<ValueType> _waitTimeExpression;
 };

@@ -54,7 +54,7 @@ void ActionDefinitionManager::addDefinition(std::unique_ptr<ActionDefinition> de
 {
 	m_definitions.push_back(std::move(def));
 }
-std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<ProgramContextFlags>& context_flags,
+SCP_polymorphic<Action> ActionDefinitionManager::parseAction(const flagset<ProgramContextFlags>& context_flags,
 	const expression::ParseContext& context) const
 {
 	// We search through all definitions for every time we want to check for an action. This is not the most efficient
@@ -125,7 +125,7 @@ std::unique_ptr<Action> ActionDefinitionManager::parseAction(const flagset<Progr
 		return actionInstance;
 	}
 
-	return std::unique_ptr<Action>();
+	return {};
 }
 ActionDefinitionManager::ActionDefinitionManager()
 {

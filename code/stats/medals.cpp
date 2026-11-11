@@ -581,7 +581,7 @@ void medal_main_init(player *pl, int mode)
 	scoring_struct pstats;
 	Pilot.export_stats(&pstats);
 
-	Medals_stats.assign(pstats);	// or *Medals_player->stats for the campaign all-time stats
+	Medals_stats = pstats;	// or *Medals_player->stats for the campaign all-time stats
 
 	for (idx = 0; idx < static_cast<int>(Medals.size()); idx++) {
 		if ((Medals[idx].available_from_start) && (Medals_player->stats.medal_counts[idx] < 1)) {

@@ -384,7 +384,7 @@ struct weapon_info
 	char	name[NAME_LENGTH];				// name of this weapon
 	SCP_string display_name;				// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
-	std::unique_ptr<char[]> desc;				// weapon's description (used by tooltips)
+	SCP_string desc;				// weapon's description (used by tooltips)
 	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
 
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
@@ -392,7 +392,7 @@ struct weapon_info
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
 	int		external_model_num;					// modelnum of the model rendered on the weapon points of a ship; -1 if $External Model File: was not given
 
-	std::unique_ptr<char[]> tech_desc;		// weapon's description (in tech database)
+	SCP_string tech_desc;		// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
@@ -703,7 +703,7 @@ struct weapon_info
 
 	// Optional weapon failures
 	float failure_rate;
-	std::unique_ptr<char[]> failure_sub_name;
+	SCP_string failure_sub_name;
 	int failure_sub;
 
 	// the optional pattern of weapons that this weapon will fire
@@ -961,7 +961,15 @@ struct weapon_info
 	bool has_display_name() const;
 
 	void reset();
-	void clone(const weapon_info& other);
+	void clone(const weapon_info& other) { *this = other; }
+
+	weapon_info(weapon_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
+	weapon_info &operator=(weapon_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
+
+  private:
+	// Private so nobody copies a weapon class by accident; use clone() for a deliberate deep copy.
+	weapon_info(const weapon_info& other) = default;
+	weapon_info &operator=(const weapon_info& other) = default;
 };
 
 extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];

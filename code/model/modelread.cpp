@@ -3371,7 +3371,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	if (sip != nullptr) {
 		n_subsystems = sip->n_subsystems;
-		subsystems = sip->subsystems.get();
+		subsystems = sip->subsystems.data();
 	}
 
 	num = -1;

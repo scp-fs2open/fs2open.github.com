@@ -634,7 +634,7 @@ public:
 	/*!
 	 * Assigns the contents of the given CCI to this CCI
 	 */
-	CCI& operator=(const CCI&);
+	CCI& operator=(const CCI&) = default;
 
 	/*!
 	 * @brief Takes the bindings of the given CCB, but leaves all other members alone

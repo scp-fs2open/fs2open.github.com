@@ -4,7 +4,6 @@
 #include "util/FSTestFixture.h"
 #include "util/test_util.h"
 
-#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 class WeaponsParseTest : public test::FSTestFixture {
@@ -40,8 +39,8 @@ TEST(WeaponInfoCloneTest, copies_members) {
 	weapon_info src;
 	strcpy_s(src.name, "Template Laser");
 	src.display_name = "Shown Name";
-	src.desc = util::unique_copy("a description", true);
-	src.failure_sub_name = util::unique_copy("Sub Weapon", true);
+	src.desc = "a description";
+	src.failure_sub_name = "Sub Weapon";
 	src.detail_distance[2] = 1234;
 	strcpy_s(src.weapon_substitution_pattern_names[1], "Other Laser");
 	src.spawn_info[1].spawn_count = 7;
@@ -57,10 +56,8 @@ TEST(WeaponInfoCloneTest, copies_members) {
 
 	EXPECT_STREQ(dest.name, "Template Laser");
 	EXPECT_EQ(dest.display_name, "Shown Name");
-	ASSERT_NE(dest.desc, nullptr);
-	EXPECT_STREQ(dest.desc.get(), "a description");
-	ASSERT_NE(dest.failure_sub_name, nullptr);
-	EXPECT_STREQ(dest.failure_sub_name.get(), "Sub Weapon");
+	EXPECT_EQ(dest.desc, "a description");
+	EXPECT_EQ(dest.failure_sub_name, "Sub Weapon");
 	EXPECT_EQ(dest.detail_distance[2], 1234);
 	EXPECT_STREQ(dest.weapon_substitution_pattern_names[1], "Other Laser");
 	EXPECT_EQ(dest.spawn_info[1].spawn_count, 7);
