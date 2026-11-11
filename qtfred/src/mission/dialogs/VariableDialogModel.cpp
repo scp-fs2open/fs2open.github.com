@@ -34,11 +34,9 @@ bool VariableDialogModel::apply()
 
 	// Loop through our new list of deleted variables and remove them from the global state.
 	for (const auto& original_name : m_deleted_variables) {
-		for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-			if (!stricmp(Sexp_variables[i].variable_name, original_name.c_str())) {
-				sexp_variable_delete(i);
-				break;
-			}
+		const int i = get_index_sexp_variable_name(original_name.c_str());
+		if (i >= 0) {
+			sexp_variable_delete(i);
 		}
 	}
 
@@ -47,12 +45,7 @@ bool VariableDialogModel::apply()
 	SCP_vector<int> existing_index(m_variables.size(), -1);
 	for (size_t v = 0; v < m_variables.size(); ++v) {
 		if (!m_variables[v].originalName.empty()) {
-			for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-				if (!stricmp(Sexp_variables[i].variable_name, m_variables[v].originalName.c_str())) {
-					existing_index[v] = i;
-					break;
-				}
-			}
+			existing_index[v] = get_index_sexp_variable_name(m_variables[v].originalName.c_str());
 		}
 	}
 
