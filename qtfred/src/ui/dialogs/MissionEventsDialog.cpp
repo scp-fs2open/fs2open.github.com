@@ -522,6 +522,8 @@ void MissionEventsDialog::initWaveFilenames() {
 void MissionEventsDialog::initPersonas() {
 	auto list = _model->getPersonaList();
 
+	// filling the list selects its first entry, which must not be stored as the current message's persona
+	QSignalBlocker blocker(ui->personaCombo);
 	ui->personaCombo->clear();
 
 	for (auto&& [name, id] : _model->getPersonaList()) {
@@ -532,6 +534,8 @@ void MissionEventsDialog::initPersonas() {
 void MissionEventsDialog::initMessageTeams() {
 	auto list = _model->getTeamList();
 
+	// as with the personas: filling the list must not store its first entry as the current message's team
+	QSignalBlocker blocker(ui->messageTeamCombo);
 	ui->messageTeamCombo->clear();
 
 	for (const auto& team : list) {
@@ -553,6 +557,9 @@ void MissionEventsDialog::initEventTeams()
 
 void MissionEventsDialog::updateMessageUi()
 {
+	// filling the fields from the model is not an edit, so the edit handlers must not run
+	util::SignalBlockers blockers(this);
+
 	bool enable = true;
 
 	if (!_model->messageIsValid()) {

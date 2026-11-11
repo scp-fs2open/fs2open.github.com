@@ -129,7 +129,7 @@ void MissionEventsDialogModel::initializeEvents()
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission
-		if (m_events[i].repeat_count <= 0) {
+		if (m_events[i].repeat_count == 0) {
 			m_events[i].repeat_count = 1;
 		}
 	}
