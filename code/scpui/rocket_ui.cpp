@@ -542,44 +542,18 @@ bool text_input_handler(const SDL_Event& evt)
 		return false;
 	}
 
-#ifdef __ANDROID__
-	// Decode directly: Android's system iconv does not support the UCS-2 encoding names.
-	// libRocket accepts one UCS-2 character at a time, so replace codepoints outside the BMP.
+	// libRocket accepts one UCS-2 character at a time, so codepoints outside the BMP are replaced
 	const char* text = evt.text.text;
-	bool consumed = true;
-	while (*text != '\0') {
+	bool not_consumed = true;
+	while (*text != '\0')
+	{
 		auto codepoint = SDL_StepUTF8(&text, nullptr);
-		auto character = static_cast<word>(codepoint > 0xFFFF ? SDL_INVALID_UNICODE_CODEPOINT : codepoint);
-		// Always deliver the entire commit, even if an earlier character stopped propagation.
-		consumed = input_context->ProcessTextInput(character) && consumed;
-	}
-#else
-	// libRocket expects UCS-2 so we first need to convert to that
-	// NOTE: not using SDL_iconv_utf8_ucs2() macro here due to Linux compatiblity issue
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	const char *tocode = "UCS-2BE";
-#else
-	const char *tocode = "UCS-2LE";
-#endif
-
-	auto text = reinterpret_cast<char16_t *>(SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1));
-
-	if ( !text ) {
-		// encoding failed
-		return false;
+		if (codepoint > 0xFFFF)
+			codepoint = SDL_INVALID_UNICODE_CODEPOINT;
+		not_consumed = input_context->ProcessTextInput(static_cast<word>(codepoint)) && not_consumed;
 	}
 
-	auto ucs2String = std::u16string(text);
-
-	SDL_free(text);
-
-	bool consumed = true;
-	for (auto& c : ucs2String) {
-		consumed = consumed && input_context->ProcessTextInput(c);
-	}
-#endif
-
-	return consumed;
+	return not_consumed;
 }
 
 } // namespace
