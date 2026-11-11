@@ -3,7 +3,6 @@
 #include "network/multi_turret_manager.h"
 #include "object/object.h"
 #include "util/FSTestFixture.h"
-#include "utils/finally.h"
 
 #include <gtest/gtest.h>
 
@@ -12,6 +11,7 @@
 
 namespace {
 constexpr std::int64_t MS_2_31 = 2'147'483'648LL;
+constexpr uint64_t CLOCK_START_US = 1'000'000ULL;
 constexpr uint64_t JUMP_US = 25ULL * 86'400ULL * MICROSECONDS_PER_SECOND;
 constexpr uint64_t STEP_US = 300'000ULL;
 constexpr int PACKET_AHEAD_MS = 500;
@@ -28,23 +28,18 @@ class MultiTurretManagerTest : public test::FSTestFixture {
   protected:
 	void SetUp() override
 	{
-		FSTestFixture::SetUp();
 		m_saved_timing = Multi_Timing_Info;
 		m_saved_sig = Objects[PARENT_OBJNUM].net_signature;
 		Objects[PARENT_OBJNUM].net_signature = PARENT_SIG;
+		FSTestFixture::SetUp();
+		// a mission started in the clock's first two milliseconds gets a never or immediate start time
+		timestamp_adjust_microseconds(CLOCK_START_US, TIMER_DIRECTION::FORWARD);
+		timer_start_frame();
+		ASSERT_GE(_timestamp().value(), 2);
 	}
 
 	void TearDown() override
 	{
-		if (timestamp_is_paused()) {
-			resume_game();
-		}
-		for (int i = 0; i < m_steps; ++i) {
-			timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::BACKWARD);
-		}
-		// the unpause added the paused time to the counter offset, which timer_init keeps; give it back
-		timestamp_adjust_microseconds(m_paused_us, TIMER_DIRECTION::FORWARD);
-		timer_start_frame();
 		Multi_Turret_Manager.reset();
 		Objects[PARENT_OBJNUM].net_signature = m_saved_sig;
 		Multi_Timing_Info = m_saved_timing;
@@ -57,25 +52,22 @@ class MultiTurretManagerTest : public test::FSTestFixture {
 		Multi_Timing_Info.update_current_time();
 	}
 
-	void step_clock()
+	static void step_clock()
 	{
 		timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
-		++m_steps;
 		timer_start_frame();
 		Multi_Timing_Info.update_current_time();
 	}
 
 	// game_stop_time() pauses this way when a multiplayer game enters GS_STATE_MULTI_PAUSED
-	void pause_game()
+	static void pause_game()
 	{
-		m_pause_started_us = timer_get_microseconds();
 		timestamp_pause(true);
 	}
 
-	void resume_game()
+	static void resume_game()
 	{
 		timestamp_unpause(true);
-		m_paused_us += timer_get_microseconds() - m_pause_started_us;
 	}
 
 	static void add_packet(int sent_ms, float angle)
@@ -91,9 +83,6 @@ class MultiTurretManagerTest : public test::FSTestFixture {
   private:
 	multiplayer_timing_info m_saved_timing;
 	ushort m_saved_sig = 0;
-	int m_steps = 0;
-	uint64_t m_pause_started_us = 0;
-	uint64_t m_paused_us = 0;
 };
 
 TEST_F(MultiTurretManagerTest, packetAppliesOnceMissionTimeReachesSendTime)
@@ -114,10 +103,6 @@ TEST_F(MultiTurretManagerTest, packetAppliesOnceMissionTimeReachesSendTime)
 TEST_F(MultiTurretManagerTest, packetsApplyPastThirtyTwoBitGameClock)
 {
 	timestamp_adjust_microseconds(JUMP_US, TIMER_DIRECTION::FORWARD);
-	auto restore_clock = util::finally([] {
-		timestamp_adjust_microseconds(JUMP_US, TIMER_DIRECTION::BACKWARD);
-		timer_start_frame();
-	});
 	timer_start_frame();
 	ASSERT_GT(_timestamp().value(), MS_2_31);
 

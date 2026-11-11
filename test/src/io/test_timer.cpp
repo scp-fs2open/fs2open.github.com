@@ -122,23 +122,10 @@ TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 	// a raw clock below zero reads as about 1.8e13 ms and would be folded into the compression offset for good
 	ASSERT_LT(_timestamp().value(), MS_2_32 * 1000);
 	const fix old_compression = Game_time_compression;
+	auto restore_compression = util::finally([old_compression] { Game_time_compression = old_compression; });
 	Game_time_compression = 2 * F1_0;
 	timestamp_update_time_compression();
 	timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::FORWARD);
-	bool stepped = false;
-	// the counter is moved back before the multiplier, so each restore step undoes exactly what it moved
-	auto restore_clock = util::finally([&stepped, old_compression] {
-		if (stepped) {
-			timestamp_adjust_microseconds(COMPRESSED_STEP_US, TIMER_DIRECTION::BACKWARD);
-		}
-		timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::BACKWARD);
-		Game_time_compression = F1_0;
-		timestamp_update_time_compression();
-		Game_time_compression = old_compression;
-		// compression changes grew the counter offset, which timer_init keeps; the next test's clock would go negative
-		timestamp_adjust_microseconds(2 * timer_get_microseconds(), TIMER_DIRECTION::FORWARD);
-		timer_start_frame();
-	});
 	timer_start_frame();
 	ASSERT_GT(_timestamp().value(), MS_2_31);
 
@@ -148,7 +135,6 @@ TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 	EXPECT_LE(timestamp_until(stamp), 500);
 
 	timestamp_adjust_microseconds(COMPRESSED_STEP_US, TIMER_DIRECTION::FORWARD);
-	stepped = true;
 	timer_start_frame();
 
 	EXPECT_TRUE(timestamp_elapsed(stamp));
@@ -159,34 +145,13 @@ TEST_F(TimerTest, gameClockPausedAcrossThirtyTwoBits)
 {
 	timer_start_frame();
 	const std::int64_t start_ms = _timestamp().value();
-	// other tests may leave the clock ahead of the target, so approach it from whichever side the clock is on
-	const bool behind = start_ms < PAUSE_TARGET_MS;
-	const auto jump_dir = behind ? TIMER_DIRECTION::FORWARD : TIMER_DIRECTION::BACKWARD;
-	const auto back_dir = behind ? TIMER_DIRECTION::BACKWARD : TIMER_DIRECTION::FORWARD;
-	const std::int64_t gap_ms = behind ? PAUSE_TARGET_MS - start_ms : start_ms - PAUSE_TARGET_MS;
-	const auto jump_us = static_cast<uint64_t>(gap_ms) * MICROSECONDS_PER_MILLISECOND;
-	timestamp_adjust_microseconds(jump_us, jump_dir);
-	bool stepped = false;
-	uint64_t pause_started_us = 0;
-	// unpause first: an adjustment made while paused is discarded by the unpause
-	auto restore_clock = util::finally([&stepped, &pause_started_us, jump_us, back_dir] {
-		if (timestamp_is_paused()) {
-			timestamp_unpause(true);
-		}
-		if (stepped) {
-			timestamp_adjust_microseconds(PAUSE_STEP_US, TIMER_DIRECTION::BACKWARD);
-		}
-		timestamp_adjust_microseconds(jump_us, back_dir);
-		// the unpause added the paused time to the counter offset; give it back, as in the compression test
-		timestamp_adjust_microseconds(timer_get_microseconds() - pause_started_us, TIMER_DIRECTION::FORWARD);
-		timer_start_frame();
-	});
+	timestamp_adjust_microseconds(static_cast<uint64_t>(PAUSE_TARGET_MS - start_ms) * MICROSECONDS_PER_MILLISECOND,
+		TIMER_DIRECTION::FORWARD);
 	timer_start_frame();
 	ASSERT_GT(_timestamp().value(), PAUSE_TARGET_MS - 1000);
 	ASSERT_LT(_timestamp().value(), PAUSE_TARGET_MS + 1000);
 	const TIMESTAMP stamp = _timestamp(PAUSE_STAMP_MS);
 
-	pause_started_us = timer_get_microseconds();
 	timestamp_pause(true);
 	timer_start_frame();
 	const std::int64_t paused_ms = _timestamp().value();
@@ -202,7 +167,6 @@ TEST_F(TimerTest, gameClockPausedAcrossThirtyTwoBits)
 	EXPECT_FALSE(timestamp_elapsed(stamp));
 
 	timestamp_adjust_microseconds(PAUSE_STEP_US, TIMER_DIRECTION::FORWARD);
-	stepped = true;
 	timer_start_frame();
 
 	EXPECT_GT(_timestamp().value(), MS_2_31);
