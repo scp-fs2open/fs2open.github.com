@@ -41,34 +41,41 @@ bool VariableDialogModel::apply()
 		}
 	}
 
-	for (const auto& var_info : m_variables) {
-		bool found = false;
-		// Existing variable that might be modified or deleted
-		if (!var_info.originalName.empty()) {
+	// find every existing variable by its old name before any is renamed, or two variables that swap names
+	// would both find the first one
+	SCP_vector<int> existing_index(m_variables.size(), -1);
+	for (size_t v = 0; v < m_variables.size(); ++v) {
+		if (!m_variables[v].originalName.empty()) {
 			for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-				if (!stricmp(Sexp_variables[i].variable_name, var_info.originalName.c_str())) {
-					if (var_info.name != var_info.originalName) {
-						renamedVariables.emplace_back(i, var_info.originalName);
-					}
-					strcpy_s(Sexp_variables[i].variable_name, var_info.name.c_str());
-					// the stored flags still hold the type the variable was loaded with; the dialog's type is set below
-					Sexp_variables[i].type = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
-
-					if (var_info.is_string) {
-						strcpy_s(Sexp_variables[i].text, var_info.stringValue.c_str());
-						Sexp_variables[i].type |= SEXP_VARIABLE_STRING;
-					} else {
-						strcpy_s(Sexp_variables[i].text, std::to_string(var_info.numberValue).c_str());
-						Sexp_variables[i].type |= SEXP_VARIABLE_NUMBER;
-					}
-					found = true;
+				if (!stricmp(Sexp_variables[i].variable_name, m_variables[v].originalName.c_str())) {
+					existing_index[v] = i;
 					break;
 				}
 			}
 		}
+	}
 
-		// New variable
-		if (!found) {
+	for (size_t v = 0; v < m_variables.size(); ++v) {
+		const auto& var_info = m_variables[v];
+		const int i = existing_index[v];
+		// Existing variable that might be modified
+		if (i >= 0) {
+			if (var_info.name != var_info.originalName) {
+				renamedVariables.emplace_back(i, var_info.originalName);
+			}
+			strcpy_s(Sexp_variables[i].variable_name, var_info.name.c_str());
+			// the stored flags still hold the type the variable was loaded with; the dialog's type is set below
+			Sexp_variables[i].type = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
+
+			if (var_info.is_string) {
+				strcpy_s(Sexp_variables[i].text, var_info.stringValue.c_str());
+				Sexp_variables[i].type |= SEXP_VARIABLE_STRING;
+			} else {
+				strcpy_s(Sexp_variables[i].text, std::to_string(var_info.numberValue).c_str());
+				Sexp_variables[i].type |= SEXP_VARIABLE_NUMBER;
+			}
+		} else {
+			// New variable
 			int flags = var_info.flags & ~(SEXP_VARIABLE_NUMBER | SEXP_VARIABLE_STRING);
 			const char* value_str;
 			SCP_string num_val_str;
