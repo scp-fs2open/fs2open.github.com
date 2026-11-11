@@ -350,7 +350,7 @@ void pilotfile::plr_read_variables()
 	auto list_size = handler->startArrayRead("variables");
 
 	p->variables.reserve(list_size);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+	for (size_t idx = 0; idx < list_size && !handler->atEndOfFile(); idx++, handler->nextArraySection()) {
 		sexp_variable n_var;
 		n_var.type = handler->readInt("type");
 		handler->readString("text", n_var.text, TOKEN_LENGTH);
@@ -388,7 +388,7 @@ void pilotfile::plr_read_containers()
 	const size_t list_size = handler->startArrayRead("containers");
 
 	p->containers.reserve(list_size);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+	for (size_t idx = 0; idx < list_size && !handler->atEndOfFile(); idx++, handler->nextArraySection()) {
 		p->containers.emplace_back();
 		auto& container = p->containers.back();
 
