@@ -436,6 +436,7 @@ BEGIN
         MENUITEM "Adjust Grid",                 33032
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Rotate Around Selection Midpoint", ID_MISC_ROTATE_SELECTION_MIDPOINT
         MENUITEM SEPARATOR
         MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
@@ -664,6 +665,7 @@ BEGIN
         MENUITEM "Calculate Relative Coordinates", 33030
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Rotate Around Selection Midpoint", ID_MISC_ROTATE_SELECTION_MIDPOINT
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
@@ -3891,6 +3893,8 @@ STRINGTABLE
 BEGIN
     ID_MISC_MOVESHIPSWHENUNDOCKING 
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
+    ID_MISC_ROTATE_SELECTION_MIDPOINT
+                            "When several objects are marked, rotate the view around the midpoint of the selection instead of the current object"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
     ID_EDIT_LOCK_MARKED_OBJECTS
