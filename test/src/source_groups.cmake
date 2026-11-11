@@ -26,6 +26,8 @@ add_file_folder("Globalincs"
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
 	   graphics/test_texture_material.cpp
+	   graphics/test_material.cpp
+	   graphics/test_shader_types.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
@@ -44,6 +46,10 @@ add_file_folder("Math"
 
 add_file_folder("menuui"
     menuui/test_intel_parse.cpp
+)
+
+add_file_folder("missioneditor"
+    missioneditor/test_object_bounds.cpp
 )
 
 add_file_folder("mod"
@@ -100,6 +106,10 @@ add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
+)
+
+add_file_folder("Tracing"
+    tracing/test_frame_profiler.cpp
 )
 
 add_file_folder("Utils"

@@ -185,6 +185,16 @@
             </property>
            </widget>
           </item>
+          <item row="5" column="0" colspan="2">
+           <widget class="QCheckBox" name="classicMenuLayout">
+            <property name="toolTip">
+             <string>Replace the Objects, Environment, Mission, Narrative and Tools menus with FRED2's classic Editors and Misc menus.</string>
+            </property>
+            <property name="text">
+             <string>Classic menu layout</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -567,6 +577,16 @@
            </widget>
           </item>
          </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="orbitSelectionMidpoint">
+         <property name="toolTip">
+          <string>When several objects are marked, rotate the view around the midpoint of the selection instead of the current object.</string>
+         </property>
+         <property name="text">
+          <string>Rotate Around Selection Midpoint</string>
+         </property>
         </widget>
        </item>
        <item>

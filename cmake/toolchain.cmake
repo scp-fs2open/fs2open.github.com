@@ -3,7 +3,13 @@
 
 add_library(compiler INTERFACE)
 
-target_compile_definitions(compiler INTERFACE "$<$<CONFIG:Release>:NDEBUG>;$<$<CONFIG:Debug>:_DEBUG>;$<$<CONFIG:FastDebug>:_DEBUG>")
+set(FSO_CONFIG_DEFINITIONS "$<$<CONFIG:Release>:NDEBUG>" "$<$<CONFIG:Debug>:_DEBUG>")
+if(NOT MSVC)
+	# On MSVC the debug runtime flags (/MTd, /MDd) define _DEBUG themselves, and a FastDebug
+	# build on the release runtime must not have it
+	list(APPEND FSO_CONFIG_DEFINITIONS "$<$<CONFIG:FastDebug>:_DEBUG>")
+endif()
+target_compile_definitions(compiler INTERFACE ${FSO_CONFIG_DEFINITIONS})
 
 set(FORCED_NATIVE_SIMD_INSTRUCTIONS ON CACHE BOOL "Override instruction set detection and compile with the maximum possible instructions for the current system.")
 IF(IS_X86)
@@ -74,12 +80,3 @@ set(CMAKE_C_FLAGS_FASTDEBUG "${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_FASTDEBUG "${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_EXE_LINKER_FLAGS_FASTDEBUG "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
 set(CMAKE_STATIC_LINKER_FLAGS_FASTDEBUG "${CMAKE_STATIC_LINKER_FLAGS_RELEASE}")
-
-if (MSVC)
-	# Adjust runtime library
-	string(REPLACE "/MD" "/MDd" CMAKE_C_FLAGS_FASTDEBUG "${CMAKE_C_FLAGS_FASTDEBUG}")
-	string(REPLACE "/MT" "/MTd" CMAKE_C_FLAGS_FASTDEBUG "${CMAKE_C_FLAGS_FASTDEBUG}")
-	
-	string(REPLACE "/MD" "/MDd" CMAKE_CXX_FLAGS_FASTDEBUG "${CMAKE_CXX_FLAGS_FASTDEBUG}")
-	string(REPLACE "/MT" "/MTd" CMAKE_CXX_FLAGS_FASTDEBUG "${CMAKE_CXX_FLAGS_FASTDEBUG}")
-endif()

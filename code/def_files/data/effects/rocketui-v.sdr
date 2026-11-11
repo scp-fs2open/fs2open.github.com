@@ -1,3 +1,7 @@
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+#endif
 
 #ifdef VULKAN
 layout(location = 0) in vec2 vertPosition;
