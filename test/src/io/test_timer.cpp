@@ -14,6 +14,13 @@ extern fix Game_time_compression;
 class TimerTest : public test::FSTestFixture {
   public:
 	TimerTest() : test::FSTestFixture(INIT_NONE) {}
+
+  protected:
+	void SetUp() override
+	{
+		startGameClock();
+		FSTestFixture::SetUp();
+	}
 };
 
 namespace {

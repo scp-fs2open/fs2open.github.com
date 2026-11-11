@@ -8,6 +8,7 @@
 #include <io/timer.h>
 #include <localization/localize.h>
 #include <mod_table/mod_table.h>
+#include <osapi/dialogs.h>
 #include <osapi/outwnd.h>
 #include <ship/ship.h>
 
@@ -108,6 +109,23 @@ void test::FSTestFixture::TearDown() {
 		delete[] Cmdline_mod;
 		Cmdline_mod = NULL;
 	}
+}
+// Call before SetUp(): the clock's zero point is set by its first unpause and survives a timer restart.
+void test::FSTestFixture::startGameClock() {
+	timer_init();
+
+	// on a coarse counter the pause counter or clock offset can stay 0, which means "not set" to the adjust assert
+	for (int tries = 0; tries < 1000; ++tries) {
+		timestamp_pause(true);
+		timestamp_unpause(true);
+		try {
+			timestamp_adjust_microseconds(0, TIMER_DIRECTION::FORWARD);
+			return;
+		} catch (const os::dialogs::AssertException&) {
+			// not set yet
+		}
+	}
+	FAIL() << "The game clock could not be set";
 }
 void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);

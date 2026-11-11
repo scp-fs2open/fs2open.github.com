@@ -28,7 +28,11 @@ class MultiTurretManagerTest : public test::FSTestFixture {
   protected:
 	void SetUp() override
 	{
+		startGameClock();
 		FSTestFixture::SetUp();
+		// a mission started in the clock's first two milliseconds gets a never or immediate start time
+		timestamp_adjust_microseconds(STEP_US, TIMER_DIRECTION::FORWARD);
+		++m_steps;
 		m_saved_timing = Multi_Timing_Info;
 		m_saved_sig = Objects[PARENT_OBJNUM].net_signature;
 		Objects[PARENT_OBJNUM].net_signature = PARENT_SIG;

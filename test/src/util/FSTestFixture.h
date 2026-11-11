@@ -32,6 +32,8 @@ class FSTestFixture: public ::testing::Test {
 
 	void pushModDir(const SCP_string& mod);
 
+	static void startGameClock();
+
 	virtual void SetUp();
 
 	virtual void TearDown();
