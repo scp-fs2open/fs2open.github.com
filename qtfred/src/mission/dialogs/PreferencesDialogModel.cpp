@@ -24,11 +24,13 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _showSexpHelpWingEditor(viewport->Show_sexp_help_wing_editor)
 	, _themeMode(viewport->Theme_mode)
 	, _dataMenuStyle(viewport->Data_menu_style)
+	, _classicMenuLayout(viewport->Classic_menu_layout)
 	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _outlineLod(viewport->view.Outline_lod)
 	, _labelFontScale(viewport->view.Label_font_scale)
 	, _invertOrbitX(viewport->camera.getInvertOrbitX())
 	, _invertOrbitY(viewport->camera.getInvertOrbitY())
+	, _orbitSelectionMidpoint(viewport->camera.getOrbitSelectionMidpoint())
 	, _gridCenterX(static_cast<int>(viewport->The_grid->center.xyz.x))
 	, _gridCenterY(static_cast<int>(viewport->The_grid->center.xyz.y))
 	, _gridCenterZ(static_cast<int>(viewport->The_grid->center.xyz.z))
@@ -67,11 +69,13 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Show_sexp_help_wing_editor       = _showSexpHelpWingEditor;
 	_viewport->Theme_mode                       = _themeMode;
 	_viewport->Data_menu_style                  = _dataMenuStyle;
+	_viewport->Classic_menu_layout              = _classicMenuLayout;
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 	_viewport->view.Outline_lod                 = _outlineLod;
 	_viewport->view.Label_font_scale            = _labelFontScale;
 	_viewport->camera.setInvertOrbitX(_invertOrbitX);
 	_viewport->camera.setInvertOrbitY(_invertOrbitY);
+	_viewport->camera.setOrbitSelectionMidpoint(_orbitSelectionMidpoint);
 
 	_viewport->saveSettings();
 	if (themeModeChanged) {
@@ -176,6 +180,9 @@ void PreferencesDialogModel::setThemeMode(ThemeMode value) { modify(_themeMode, 
 DataMenuStyle PreferencesDialogModel::getDataMenuStyle() const { return _dataMenuStyle; }
 void PreferencesDialogModel::setDataMenuStyle(DataMenuStyle value) { modify(_dataMenuStyle, value); }
 
+bool PreferencesDialogModel::getClassicMenuLayout() const { return _classicMenuLayout; }
+void PreferencesDialogModel::setClassicMenuLayout(bool value) { modify(_classicMenuLayout, value); }
+
 int  PreferencesDialogModel::getToolbarIconSize() const { return _toolbarIconSize; }
 void PreferencesDialogModel::setToolbarIconSize(int size) { modify(_toolbarIconSize, size); }
 
@@ -202,6 +209,9 @@ void PreferencesDialogModel::setInvertOrbitX(bool value) { modify(_invertOrbitX,
 
 bool PreferencesDialogModel::getInvertOrbitY() const { return _invertOrbitY; }
 void PreferencesDialogModel::setInvertOrbitY(bool value) { modify(_invertOrbitY, value); }
+
+bool PreferencesDialogModel::getOrbitSelectionMidpoint() const { return _orbitSelectionMidpoint; }
+void PreferencesDialogModel::setOrbitSelectionMidpoint(bool value) { modify(_orbitSelectionMidpoint, value); }
 
 void PreferencesDialogModel::resetControlDefaults() {
 	auto& bindings = ControlBindings::instance();

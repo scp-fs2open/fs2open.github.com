@@ -51,6 +51,7 @@
 #include <ui/dialogs/GlobalShipFlagsDialog.h>
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
+#include <missioneditor/common.h>
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/DebriefingDialog.h>
@@ -142,6 +143,7 @@ namespace fred {
 
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
+	applyMenuLayout(false);
 	enforceSideDockAreas();
 
 	setFocusPolicy(Qt::NoFocus);
@@ -222,6 +224,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	_viewport = viewport;
 
 	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
+	applyMenuLayout(_viewport->Classic_menu_layout);
 
 	// Let the viewport use us for displaying dialogs
 	_viewport->dialogProvider = this;
@@ -558,6 +561,20 @@ void FredView::restartAutosaveTimer() {
 	if (!fred || !_viewport)
 		return;
 	fred->startAutosaveTimer(_viewport->autosave_interval_seconds);
+}
+
+void FredView::applyMenuLayout(bool classic) {
+	// Both layouts are in FredView.ui and share the same actions, so shortcuts and checked
+	// states carry over; this only picks which menus are shown.
+	QMenu* const groupedMenus[] = { ui->menuObjects, ui->menuEnvironment, ui->menuMission, ui->menuNarrative, ui->menuTools };
+	QMenu* const classicMenus[] = { ui->menuClassicEditors, ui->menuClassicMisc };
+
+	for (auto* menu : groupedMenus) {
+		menu->menuAction()->setVisible(!classic);
+	}
+	for (auto* menu : classicMenus) {
+		menu->menuAction()->setVisible(classic);
+	}
 }
 
 void FredView::saveAsTemplate() {
@@ -1461,28 +1478,10 @@ void FredView::onUpdateTransformBar() {
 	if (valid && numMarked <= 1) {
 		_transformRadiusLabel->setText(QString::number(static_cast<double>(Objects[curObj].radius), 'f', 1));
 	} else if (numMarked > 1 && obj_used_list.next != nullptr) {
-		// Bounding radius of the selection: distance from centroid to the farthest object.
-		float cx = 0.0f, cy = 0.0f, cz = 0.0f;
-		int   cnt = 0;
-		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			cx += p->pos.xyz.x;
-			cy += p->pos.xyz.y;
-			cz += p->pos.xyz.z;
-			++cnt;
-		}
-		if (cnt > 0) {
-			cx /= cnt; cy /= cnt; cz /= cnt;
-			float maxDist = 0.0f;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				float dx = p->pos.xyz.x - cx;
-				float dy = p->pos.xyz.y - cy;
-				float dz = p->pos.xyz.z - cz;
-				float d  = sqrtf(dx*dx + dy*dy + dz*dz);
-				if (d > maxDist) maxDist = d;
-			}
-			_transformRadiusLabel->setText(QString::number(static_cast<double>(maxDist), 'f', 1));
+		vec3d center;
+		float radius;
+		if (get_object_bounds(true, &center, &radius)) {
+			_transformRadiusLabel->setText(QString::number(static_cast<double>(radius), 'f', 1));
 		} else {
 			_transformRadiusLabel->setText(tr("--"));
 		}
@@ -2879,7 +2878,7 @@ void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 		vec3d v, loc;
 		matrix m;
 
-		loc = Objects[fred->currentObject].pos;
+		loc = _viewport->selectionMidpoint(fred->currentObject);
 		vm_vec_sub(&v, &loc, &_viewport->camera.view_pos);
 
 		if (v.xyz.x || v.xyz.y || v.xyz.z) {
