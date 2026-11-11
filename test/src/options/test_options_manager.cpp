@@ -106,10 +106,10 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 // type) rather than getCurrentValueDescription(), because several options' display functions call XSTR() for
 // localized display strings (e.g. "On"/"Off", the shadow quality tiers). XSTR() hits an Int3() unless
 // lcl_xstr_init() ran first, and the OptionsManagerOverride fixture never runs it. Only FSTestFixture does,
-// and Xstr_inited stays set for the rest of the process afterwards, so under --gtest_shuffle a display call
-// from this fixture crashes or passes purely by test order. getValue() only exercises the deserializer, which
-// is exactly the contract these tests are checking anyway. The one test that must go through a display
-// function uses the OptionsManagerOverrideLocalized fixture below instead.
+// and its teardown resets Xstr_inited, so a display call from this fixture would hit the Int3() regardless
+// of test order. getValue() only exercises the deserializer, which is exactly the contract these tests are
+// checking anyway. The one test that must go through a display function uses the
+// OptionsManagerOverrideLocalized fixture below instead.
 
 TEST_F(OptionsManagerOverride, BoolOverrideRoundTrips)
 {

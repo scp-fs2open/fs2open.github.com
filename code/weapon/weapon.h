@@ -1000,7 +1000,7 @@ inline int weapon_info_size()
 
 void weapon_init();					// called at game startup
 void weapon_post_ship_init();		// called after ship_init() to resolve mine proximity ship type/class names
-void weapon_close();				// called at game shutdown
+void weapon_close();				// frees the weapon tables
 void weapon_level_init();			// called before the start of each level
 void weapon_render(object* obj, model_draw_list *scene);
 void weapon_delete( object * obj );
