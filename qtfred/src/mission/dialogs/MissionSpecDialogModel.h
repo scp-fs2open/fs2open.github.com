@@ -64,7 +64,6 @@ private:
 	SCP_string	_m_substitute_event_music;
 	int		_m_command_persona;
 	SCP_string	_m_command_sender;
-	bool		_m_full_war;
 	uint		_m_num_respawns;
 	int			_m_max_respawn_delay;
 	float       _m_player_entry_delay;
@@ -160,8 +159,6 @@ public:
 	bool getMissionFlag(Mission::Mission_Flags flag) const;
 	const SCP_vector<std::pair<SCP_string, bool>>& getMissionFlagsList();
 	static SCP_vector<std::pair<SCP_string, SCP_string>> getMissionFlagDescriptions();
-
-	void setMissionFullWar(bool enabled);
 
 	void setAIProfileIndex(int m_ai_profile);
 	int getAIProfileIndex() const;

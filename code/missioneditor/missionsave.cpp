@@ -2912,7 +2912,7 @@ int Fred_mission_save::save_mission_info()
 		}
 	}
 
-	if (Mission_all_attack) {
+	if (The_mission.flags[Mission::Mission_Flags::All_attack]) {
 		if (optional_string_fred("+All Teams Attack")) {
 			parse_comments();
 		} else {

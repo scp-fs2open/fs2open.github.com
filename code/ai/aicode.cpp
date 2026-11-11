@@ -209,7 +209,6 @@ int	Num_ai_classes;
 
 int	AI_FrameCount = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
-int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 //	Constant for flag,				Name of flag
 ai_flag_name Ai_flag_names[] = {
