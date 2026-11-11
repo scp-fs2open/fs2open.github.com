@@ -185,6 +185,18 @@ TEST_F(TimerTest, uiStampsPastThirtyTwoBitsStayPending)
 	EXPECT_EQ(ui_timestamp_since(far), INT_MIN);
 }
 
+TEST_F(TimerTest, pauseOffsetMovesTheGameClockBack)
+{
+	timestamp_adjust_microseconds(MICROSECONDS_PER_SECOND, TIMER_DIRECTION::FORWARD);
+	timer_start_frame();
+	const std::int64_t before_ms = _timestamp().value();
+
+	timestamp_adjust_pause_offset(500);
+	timer_start_frame();
+	EXPECT_GE(_timestamp().value(), before_ms - 500);
+	EXPECT_LT(_timestamp().value(), before_ms - 300);
+}
+
 TEST_F(TimerTest, reopenedTimerStartsAFreshGameClock)
 {
 	const fix old_compression = Game_time_compression;

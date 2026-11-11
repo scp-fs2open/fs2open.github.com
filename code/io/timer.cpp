@@ -68,7 +68,7 @@ void timer_init()
 		Timer_to_microseconds = (long double) MICROSECONDS_PER_SECOND / (long double) Timer_perf_counter_freq;
 		Timer_inited = true;
 
-		// a timer opened again after timer_close() must not count from the closed timer's base
+		// a timer opened again after timer_close() must not keep the closed timer's offsets
 		Timestamp_offset_from_counter = 0;
 		Timestamp_current_time_compression = F1_0;
 		Timestamp_time_compression_multiplier = 1.0f;
