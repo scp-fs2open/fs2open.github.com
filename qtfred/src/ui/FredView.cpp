@@ -2933,11 +2933,14 @@ void FredView::initializeGroupActions() {
 	connect(ui->actionSetGroup_9, &QAction::triggered, this, [this]() { onSetGroup(9); });
 }
 void FredView::onGroupSelected(int group) {
+	// a ship's group field holds one bit per group, as FRED writes it
+	const int mask = 1 << (group - 1);
+
 	fred->unmark_all();
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->type == OBJ_SHIP) {
-			if (Ships[objp->instance].group & group) {
+			if (Ships[objp->instance].group & mask) {
 				fred->markObject(OBJ_INDEX(objp));
 			}
 		}
@@ -2946,17 +2949,18 @@ void FredView::onGroupSelected(int group) {
 	}
 }
 void FredView::onSetGroup(int group) {
+	const int mask = 1 << (group - 1);
 	bool err = false;
 
 	for (auto i = 0; i < MAX_SHIPS; i++) {
-		Ships[i].group &= ~group;
+		Ships[i].group &= ~mask;
 	}
 
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
-				Ships[objp->instance].group |= group;
+				Ships[objp->instance].group |= mask;
 
 			} else {
 				err = true;
