@@ -36,11 +36,10 @@ void MissionSpecDialogModel::initializeData() {
 	_m_mission_notes = The_mission.notes;
 	_m_mission_desc = The_mission.mission_desc;
 
+	_m_full_war = Mission_all_attack;
 	_m_disallow_support = (The_mission.support_ships.max_support_ships == 0);
 
 	_m_flags = The_mission.flags;
-	// the game and the save code read Mission_all_attack, not this flag, so the checkbox has to follow it
-	_m_flags.set(Mission::Mission_Flags::All_attack, Mission_all_attack != 0);
 
 	_m_loading_640 = The_mission.loading_screen[GR_640];
 	_m_loading_1024 = The_mission.loading_screen[GR_1024];
@@ -147,8 +146,6 @@ bool MissionSpecDialogModel::apply() {
 	
 	// Copy mission flags
 	The_mission.flags = _m_flags;
-	// all-attack is saved as its own line, as FRED does; the flag bit itself stays out of the file
-	The_mission.flags.remove(Mission::Mission_Flags::All_attack);
 
 	// set ship trail threshold
 	if (_m_contrail_threshold_flag) {
@@ -195,7 +192,7 @@ bool MissionSpecDialogModel::apply() {
 	else
 		strcpy_s(The_mission.command_sender, _m_command_sender.c_str());
 
-	Mission_all_attack = _m_flags[Mission::Mission_Flags::All_attack] ? 1 : 0;
+	Mission_all_attack = (int)_m_full_war;
 
 	// update the Num_teams variable accoriding to mission types
 	Num_teams = 1;
@@ -512,7 +509,8 @@ SCP_vector<std::pair<SCP_string, SCP_string>> MissionSpecDialogModel::getMission
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
-	if (_m_flags[Mission::Mission_Flags::All_attack] != enabled) {
+	if (_m_full_war != enabled) {
+		_m_full_war = enabled;
 		_m_flags.set(Mission::Mission_Flags::All_attack, enabled);
 		set_modified();
 		modelChanged();
