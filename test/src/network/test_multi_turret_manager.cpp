@@ -11,7 +11,7 @@
 
 namespace {
 constexpr std::int64_t MS_2_31 = 2'147'483'648LL;
-constexpr uint64_t CLOCK_START_US = 1'000'000ULL;
+constexpr std::int64_t CLOCK_START_MS = 1000;
 constexpr uint64_t JUMP_US = 25ULL * 86'400ULL * MICROSECONDS_PER_SECOND;
 constexpr uint64_t STEP_US = 300'000ULL;
 constexpr int PACKET_AHEAD_MS = 500;
@@ -28,14 +28,16 @@ class MultiTurretManagerTest : public test::FSTestFixture {
   protected:
 	void SetUp() override
 	{
+		FSTestFixture::SetUp();
 		m_saved_timing = Multi_Timing_Info;
 		m_saved_sig = Objects[PARENT_OBJNUM].net_signature;
 		Objects[PARENT_OBJNUM].net_signature = PARENT_SIG;
-		FSTestFixture::SetUp();
 		// a mission started in the clock's first two milliseconds gets a never or immediate start time
-		timestamp_adjust_microseconds(CLOCK_START_US, TIMER_DIRECTION::FORWARD);
+		timestamp_adjust_microseconds(static_cast<uint64_t>(CLOCK_START_MS) * MICROSECONDS_PER_MILLISECOND,
+			TIMER_DIRECTION::FORWARD);
 		timer_start_frame();
-		ASSERT_GE(_timestamp().value(), 2);
+		// the step is rounded down to whole counter ticks
+		ASSERT_GE(_timestamp().value(), CLOCK_START_MS - 1);
 	}
 
 	void TearDown() override
