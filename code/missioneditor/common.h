@@ -3,6 +3,8 @@
 #include "mission/missionmessage.h"
 #include "ship/anchor_t.h"
 
+enum class ArrivalLocation;
+
 // Default AWACS range applied when the nebula intensity is unset or invalid
 constexpr float DEFAULT_NEBULA_RANGE = 3000.0f;
 
@@ -44,6 +46,11 @@ void stuff_special_arrival_anchor_name(char* buf, int anchor_num, bool retail_fo
 int anchor_to_target(anchor_t anchor);
 
 anchor_t target_to_anchor(int target);
+
+// The smallest arrival distance that the editors accept for an arrival location and anchor.
+// It is 0 for a location that uses no distance. Near a ship it is min(500, 2 * radius of the target ship).
+// For a special anchor (for example "<any friendly>") it is 1, because the distance must be greater than 0.
+int arrival_min_distance(ArrivalLocation location, anchor_t anchor);
 
 // ship::group holds the editor selection groups, one bit for each group. The value -1 means "in no group":
 // a mission without +Group gives -1, and the mission save writes +Group only for a value of 0 or more.

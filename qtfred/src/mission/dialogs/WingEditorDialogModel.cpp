@@ -199,13 +199,7 @@ bool WingEditorDialogModel::arrivalNeedsDistance() const
 	if (!w)
 		return false;
 
-	switch (w->arrival_location) {
-		case ArrivalLocation::AT_LOCATION:
-		case ArrivalLocation::FROM_DOCK_BAY:
-			return false;
-		default:
-			return true;
-	}
+	return arrival_location_uses_distance(w->arrival_location);
 }
 
 
@@ -254,41 +248,8 @@ int WingEditorDialogModel::getMaxWaveThreshold() const
 
 int WingEditorDialogModel::getMinArrivalDistance() const
 {
-	if (!wingIsValid())
-		return 0;
-
-	const auto w = getCurrentWing();
-	if (!w)
-		return 0;
-
-	switch (w->arrival_location) {
-		case ArrivalLocation::AT_LOCATION:
-		case ArrivalLocation::FROM_DOCK_BAY:
-			return 0;
-		default:
-			break;
-	}
-
-	const anchor_t anchor = w->arrival_anchor;
-
-	// If special anchor or invalid, no radius to enforce
-	if (!anchor.isValid() || (anchor.value() & ANCHOR_SPECIAL_ARRIVAL))
-		return 0;
-
-	// Anchor should be a real ship
-	const int shipnum = anchor_to_target(anchor);
-	if (shipnum >= 0 && shipnum < MAX_SHIPS) {
-		const int objnum = Ships[shipnum].objnum;
-		if (objnum >= 0) {
-			const object& obj = Objects[objnum];
-
-			// Enforce at least min(500, 2.0 * target_radius)
-			float min_rad = std::round(MIN_TARGET_ARRIVAL_MULTIPLIER * obj.radius);
-			return std::min(MIN_TARGET_ARRIVAL_DISTANCE, min_rad);
-		}
-	}
-
-	return 0;
+	const auto w = wingIsValid() ? getCurrentWing() : nullptr;
+	return w ? arrival_min_distance(w->arrival_location, w->arrival_anchor) : 0;
 }
 
 std::pair<int, SCP_vector<SCP_string>> WingEditorDialogModel::getLeaderList() const
@@ -1035,9 +996,9 @@ void WingEditorDialogModel::setArrivalDistance(int newDistance)
 		newDistance = 0;
 	}
 
-	// Enforce safe min distance
+	// Enforce the minimum distance. It is 0 for a location that uses no distance.
 	const int minD = getMinArrivalDistance();
-	if (newDistance != 0 && std::abs(newDistance) < minD) {
+	if (newDistance < minD) {
 		newDistance = minD;
 	}
 
