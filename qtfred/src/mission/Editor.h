@@ -67,7 +67,12 @@ class Editor : public QObject {
 
 	void createNewMission();
 
-	void maybeUseAutosave(std::string& filepath);
+	/**
+	 * @brief Returns the autosave file for a mission path, or the untitled autosave file for an empty path.
+	 * @details The name contains a hash of the full path. Thus two missions with the same file name in
+	 * different folders do not share an autosave.
+	 */
+	QString autosavePathFor(const QString& missionPath) const;
 
 	void startAutosaveTimer(int intervalSeconds);
 	void stopAutosaveTimer();
@@ -83,10 +88,12 @@ class Editor : public QObject {
 	 * @brief Loads a mission.
 	 * @param filepath The file to load.
 	 * @param flags The MPF_* parse flags. A file with the .fst extension always loads as a template.
+	 * @param offerAutosaveRecovery If true and a newer autosave exists, ask the user to load the autosave.
 	 * @details On success, currentMissionPath() is the file that Save writes to, and missionLoaded() sends it.
+	 * A recovered autosave belongs to filepath, and its content is not saved yet.
 	 * @return true if the mission loaded. On failure, the editor shows an error and creates a new mission.
 	 */
-	bool loadMission(const std::string& filepath, int flags = 0);
+	bool loadMission(const std::string& filepath, int flags = 0, bool offerAutosaveRecovery = false);
 
 	void markObject(int objId);
 	void unmarkObject(int objId);
@@ -153,8 +160,9 @@ class Editor : public QObject {
 	 */
 	/**
 	 * @param filepath The value of currentMissionPath().
+	 * @param hasUnsavedContent true if the mission content is not in that file (a recovered autosave).
 	 */
-	void missionLoaded(const std::string& filepath);
+	void missionLoaded(const std::string& filepath, bool hasUnsavedContent);
 
 	/**
 	 * @brief A signal emitted when the mission has changed somehow
@@ -278,6 +286,12 @@ class Editor : public QObject {
 
   private slots:
 	void performTimedAutosave();
+
+	/**
+	 * @brief Asks the user to load the autosave of a mission if the autosave is newer than the mission file.
+	 * @return The autosave path with native separators, or an empty string if the mission file stays.
+	 */
+	QString askToUseNewerAutosave(const QString& missionPath);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	QTimer*  _autosaveTimer        = nullptr;
