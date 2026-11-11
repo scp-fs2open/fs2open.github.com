@@ -608,7 +608,9 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	// default stuff according to species and IFF
 	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
-	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags);
+	resolve_parse_flags(Iff_info[shipp->team].default_parse_flags, *shipp, (shipp->ship_max_shield_strength == 0.0f));
+	if (Iff_info[shipp->team].default_parse_flags[Mission::Parse_Object_Flags::SF_Guardian])
+		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
 	// default shield setting
 	shipp->special_shield = -1;

@@ -264,6 +264,13 @@ void model_unload(int modelnum, int force)
 		return;
 	}
 
+	// a full id that doesn't match the slot's occupant is a stale handle to a model that has already been
+	// freed; the slot has since been reused, so unloading it would take out an unrelated model
+	if ( modelnum >= MAX_POLYGON_MODELS && pm->id != modelnum )	{
+		Warning(LOCATION, "Ignoring unload of stale model id %d: slot %d now holds '%s' (id %d). Please backtrace and investigate.\n", modelnum, num, pm->filename, pm->id);
+		return;
+	}
+
 	Assert( pm->used_this_mission >= 0 );
 
 	if (!force && (--pm->used_this_mission > 0))
@@ -402,6 +409,28 @@ void model_page_in_stop()
 	
 		model_unload(i);
 	}
+}
+
+model_memory_stats model_get_memory_stats()
+{
+	model_memory_stats stats;
+	stats.valid = true;
+
+	for (const auto pm : Polygon_models) {
+			if (pm == nullptr) {
+			continue;
+		}
+
+		stats.model_count++;
+		stats.vertex_bytes += pm->vert_source.Vertex_list_size;
+		stats.index_bytes += pm->vert_source.Index_list_size;
+
+		for (int j = 0; j < pm->n_models; j++) {
+			stats.bsp_data_bytes += pm->submodel[j].bsp_data_size;
+		}
+	}
+
+	return stats;
 }
 
 void model_init()
@@ -3449,7 +3478,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	pm->used_this_mission++;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
 		char buffer[100];

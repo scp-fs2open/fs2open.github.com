@@ -2048,16 +2048,13 @@ void weapon_select_init_team(int team_num)
 }
 
 /**
- * Close out what weapon_select_init_team() set up but only when we are not acutally
- * in the weapon select screen - taylor
+ * Release the icons, anims, and ship class data that weapon_select_init_team() set up
  */
-void weapon_select_close_team()
+void weapon_select_common_close()
 {
-	if (Weapon_select_open)
-		return;
-
 	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
+	wl_free_ship_class_data();
 }
 
 /**
@@ -3013,11 +3010,6 @@ void weapon_select_close()
 
 	// unload bitmaps
 	bm_release(WeaponSelectMaskBitmap);
-
-	wl_unload_all_teams_icons();
-	wl_unload_all_anims();
-	// ...must be last...
-	wl_free_ship_class_data();
 
 	Selected_wl_class = -1;
 	Weapon_select_open = 0;

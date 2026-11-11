@@ -7,15 +7,16 @@ set(CMAKE_MACOSX_RPATH OFF)
 
 set(ANTLR_BUILD_SHARED OFF)
 
-# Detect build type, fallback to release and throw a warning if use didn't specify any
-if(NOT CMAKE_BUILD_TYPE)
+get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+
+if(NOT CMAKE_BUILD_TYPE AND NOT is_multi_config)
   message(WARNING "Build type not set, falling back to Release mode.
  To specify build type use:
  -DCMAKE_BUILD_TYPE=<mode> where <mode> is Debug or Release.")
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
        "Choose the type of build, options are: Debug Release."
        FORCE)
-endif(NOT CMAKE_BUILD_TYPE)
+endif(NOT CMAKE_BUILD_TYPE AND NOT is_multi_config)
 
 if(NOT WITH_DEMO)
   message(STATUS "Building without demo. To enable demo build use: -DWITH_DEMO=True")

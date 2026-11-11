@@ -381,7 +381,7 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 
 		wsprintf(DebugMessage, "%s location %08x caused an access violation.\r\n", readwrite, Exception->ExceptionInformation[1]);
 
-#ifdef	_DEBUG
+#ifndef NDEBUG
 		// The VisualC++ debugger doesn't actually tell you whether a read
 		// or a write caused the access violation, nor does it tell what
 		// address was being read or written. So I fixed that.

@@ -292,10 +292,8 @@ void control_config_common_init_bindings() {
 	// init default preset
 	Control_config_presets.clear();
 
-	CC_preset preset;
+	CC_preset preset("default", Preset_t::hardcode);
 	preset.bindings.reserve(Control_config.size());
-	preset.name = "default";
-	preset.type = Preset_t::hardcode;
 
 	for (auto &item : Control_config) {
 		preset.bindings.push_back(CCB(item));
@@ -1733,14 +1731,13 @@ size_t read_bind_1(CC_preset &preset) {
  */
 void control_config_common_read_section(int s, bool first_override) {
 	Assertion((s == 0) || (s == 1), "Expected value of s to be either 0 or 1, found %i instead.", s);
-	CC_preset new_preset;
+	CC_preset new_preset("", Preset_t::tbl);
 
 	// Set references to the default preset and bindings
 	auto& default_preset = Control_config_presets[0];
 	auto& default_bindings = default_preset.bindings;
 
 	new_preset.bindings.clear();
-	new_preset.type = Preset_t::tbl;
 
 	if (s == 0) {
 		// #ControlConfigOverride
@@ -3002,23 +2999,22 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 	return *this;
 }
 
-CC_preset& CC_preset::operator=(const CC_preset& A) {
-	name = A.name;
-	type = A.type;
-
-	std::copy(A.bindings.begin(), A.bindings.end(), bindings.begin());
-
+CC_preset& CC_preset::operator=(const CC_preset& other)
+{
+	if (this != &other) {
+		bindings = other.bindings;
+		name = other.name;
+		// 'type' is intentionally preserved to maintain instance identity
+	}
 	return *this;
-};
+}
 
-bool CC_preset::is_duplicate_of(CC_preset& A) {
-	for (size_t i = 0; i < A.bindings.size(); ++i) {
-		if (bindings[i] != A.bindings[i]) {
-			// Found a binding that's different.  Thus, this preset is not a duplicate
+bool CC_preset::is_duplicate_of(const CC_preset& other) const
+{
+	for (size_t i = 0; i < other.bindings.size(); ++i) {
+		if (bindings[i] != other.bindings[i]) {
 			return false;
 		}
 	}
-
-	// Else, did not find any differences in the bindings.  Thus, this preset is a duplicate
 	return true;
 }
