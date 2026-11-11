@@ -1631,6 +1631,18 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
 		// Raytraced shadows are only implemented for the Vulkan backend.
 		return false;
+	case gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING:
+		// Needs a second sampler object (compare mode off) on the shadow map. Sampler
+		// objects are technically also available pre-3.3 via ARB_sampler_objects, but this
+		// project's glad build only wires glGenSamplers/glBindSampler/glSamplerParameteri
+		// up behind the core GL_VERSION_3_3 flag, not a separate ARB entry point -- so that's
+		// the check that actually reflects whether those functions are non-null here.
+#ifdef USE_OPENGL_ES
+		// GLES has no GLAD_GL_VERSION_3_3 symbol, and the sampler setup here is desktop GL only.
+		return false;
+#else
+		return GLAD_GL_VERSION_3_3 != 0;
+#endif
 	}
 
 
