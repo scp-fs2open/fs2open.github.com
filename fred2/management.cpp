@@ -480,11 +480,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 // called when FRED closes, after the document has been closed
 void fred_shutdown()
 {
-	editor_free_engine_data();
-
-	gr_close();
-
-	os_cleanup();
+	editor_shutdown();
 }
 
 void set_physics_controls()

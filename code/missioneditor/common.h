@@ -86,9 +86,11 @@ bool set_single_player_start(int objnum);
 // against the entity currently being renamed.
 SCP_string check_name_conflict(const char *entity_type, const char *name, int exclude_ship = -1, int exclude_wing = -1, int exclude_waypoint_list = -1, int exclude_jump_node = -1);
 
-// Free the engine data that the editors keep for their whole session.  Call at shutdown, while the graphics
-// system is still up, since models own GPU buffers and cursors own bitmaps.
-void editor_free_engine_data();
+
+// The shutdown of the engine systems, for FRED2 and QtFRED. The order is the same as in game_shutdown():
+// first the engine data, the SEXP data, and the Lua state, then sound, then graphics.
+// Call it after you close the editor windows, because they can use mission and SEXP data.
+void editor_shutdown();
 
 // Bounding-box midpoint of all (or only marked) objects and the farthest distance from it; false if there are none.
 bool get_object_bounds(bool marked_only, vec3d* center, float* radius);

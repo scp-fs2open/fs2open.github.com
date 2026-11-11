@@ -515,6 +515,20 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	// Recolor graph when the application theme changes
 	qApp->installEventFilter(this);
 }
+CampaignMissionGraph::~CampaignMissionGraph()
+{
+	// The scene is a child object, so ~QObject deletes it after this destructor. At that time this object is
+	// only a QGraphicsView, and a selectionChanged signal to a member slot triggers the Qt assert
+	// "Called object is not of the correct type". Disconnect the scene and the mission nodes now. The nodes
+	// are the only items with connections to this object.
+	if (m_scene) {
+		m_scene->disconnect(this);
+	}
+	for (auto* node : m_nodeItems) {
+		node->disconnect(this);
+	}
+}
+
 bool CampaignMissionGraph::eventFilter(QObject* watched, QEvent* event)
 {
 	if (event->type() == QEvent::ApplicationPaletteChange) {

@@ -17,6 +17,11 @@
 #include "parse/sexp.h"
 #include "prop/prop.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
+#include "sound/audiostr.h"
+#include "sound/sound.h"
+#include "graphics/2d.h"
+#include "osapi/osapi.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
@@ -388,7 +393,9 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 	return "";	// no error
 }
 
-void editor_free_engine_data()
+// Free the engine data that the editors keep for their whole session. Call it while the graphics system is
+// still up, because models own GPU buffers and cursors own bitmaps.
+static void editor_free_engine_data()
 {
 	// models, model instances, and collision trees; done before ship_close() because model_unload() walks Ship_info
 	model_free_all();
@@ -406,6 +413,11 @@ void editor_free_engine_data()
 	fhash_flush();
 	control_config_common_close();
 	sexp_shutdown();
+
+	// Use the same order as game_shutdown(). The SEXP data (Lua SEXPs) holds Lua references, so free it first.
+	// After this call, scripting is not available.
+	Script_system.Clear();
+
 	batching_shutdown();
 
 	// the cursors hold bitmaps, so this must happen before the graphics system shuts down
@@ -416,6 +428,19 @@ void editor_free_engine_data()
 		delete[] Cmdline_mod;
 		Cmdline_mod = nullptr;
 	}
+}
+
+void editor_shutdown()
+{
+	// Lua objects can hold sound handles, so free the Lua state before the sound system.
+	editor_free_engine_data();
+
+	audiostream_close();
+	snd_close();
+
+	gr_close();
+
+	os_cleanup();
 }
 
 int load_and_find_campaign_mission(const char *mission_filename)
