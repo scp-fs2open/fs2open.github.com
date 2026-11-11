@@ -422,8 +422,9 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	stars_post_level_init();
 
-	// The path that Save writes to. A template has no such file: the user must give a name with Save As.
-	if (flags & MPF_IS_TEMPLATE)
+	// The path that Save writes to. A template and an FS1 import have no such file: the user must give a
+	// name with Save As.
+	if (flags & (MPF_IS_TEMPLATE | MPF_IMPORT_FSM))
 		setCurrentMissionPath({});
 	else
 		setCurrentMissionPath(QString::fromStdString(filepath));
