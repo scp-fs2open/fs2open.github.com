@@ -5582,11 +5582,8 @@ void model_remove_bsp_collision_tree(int tree_index)
 
 #if BYTE_ORDER == BIG_ENDIAN
 
-// vertex_list holds the current submodel's (already swapped) vertices, for chunks that need them
-static void swap_bsp_data_sub(polymodel *pm, ubyte *p, SCP_vector<vec3d> *vertex_list);
-
 // tigital -
-void swap_bsp_defpoints(ubyte * p, SCP_vector<vec3d> *vertex_list)
+void swap_bsp_defpoints(ubyte * p)
 {
 	int n, i;
 	int nverts = INTEL_INT( w(p+8) );		//tigital
@@ -5600,15 +5597,11 @@ void swap_bsp_defpoints(ubyte * p, SCP_vector<vec3d> *vertex_list)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	vertex_list->clear();
-	vertex_list->reserve(nverts);
-
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
 		src->xyz.y = INTEL_FLOAT( &src->xyz.y );
 		src->xyz.z = INTEL_FLOAT( &src->xyz.z );
 
-		vertex_list->push_back(*src);
 		src++;	//tigital
 
 		for (i=0; i<normcount[n]; i++){
@@ -5684,7 +5677,7 @@ void swap_bsp_tmap2poly(polymodel* pm, ubyte* p)
 	}
 }
 
-void swap_bsp_flatpoly( polymodel * pm, ubyte * p, const SCP_vector<vec3d> *vertex_list )
+void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 {
 	uint i, nv;
 	short *verts;
@@ -5711,35 +5704,9 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p, const SCP_vector<vec3d> *vert
 	for (i=0; i<nv*2; i++){
 		verts[i] = INTEL_SHORT( verts[i] );
 	}
-
-	if ( pm->version < 2003 )	{
-		// Set the "normal_point" part of field to be the center of the polygon
-		vec3d center_point;
-		vm_vec_zero( &center_point );
-
-		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, &(*vertex_list)[verts[i*2]] );
-		}
-
-		center_point.xyz.x /= nv;
-		center_point.xyz.y /= nv;
-		center_point.xyz.z /= nv;
-
-		*vp(p+20) = center_point;
-
-		float rad = 0.0f;
-
-		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, &(*vertex_list)[verts[i*2]] );
-			if ( dist > rad )	{
-				rad = dist;
-			}
-		}
-		fl(p+32) = rad;
-	}
 }
 
-void swap_bsp_sortnorm2(polymodel* pm, ubyte* p, SCP_vector<vec3d>* vertex_list)
+void swap_bsp_sortnorm2(polymodel* pm, ubyte* p)
 {
 	int frontlist = INTEL_INT(w(p + 8));	//tigital
 	int backlist = INTEL_INT(w(p + 12));
@@ -5757,11 +5724,11 @@ void swap_bsp_sortnorm2(polymodel* pm, ubyte* p, SCP_vector<vec3d>* vertex_list)
 	bmax->xyz.y = INTEL_FLOAT(&bmax->xyz.y);
 	bmax->xyz.z = INTEL_FLOAT(&bmax->xyz.z);
 
-	if (backlist) swap_bsp_data_sub(pm, p + backlist, vertex_list);
-	if (frontlist) swap_bsp_data_sub(pm, p + frontlist, vertex_list);
+	if (backlist) swap_bsp_data(pm, p + backlist);
+	if (frontlist) swap_bsp_data(pm, p + frontlist);
 }
 
-void swap_bsp_sortnorm( polymodel * pm, ubyte * p, SCP_vector<vec3d> *vertex_list )
+void swap_bsp_sortnorm( polymodel * pm, ubyte * p )
 {
 	int frontlist = INTEL_INT( w(p+36) );	//tigital
 	int backlist = INTEL_INT( w(p+40) );
@@ -5798,15 +5765,18 @@ void swap_bsp_sortnorm( polymodel * pm, ubyte * p, SCP_vector<vec3d> *vertex_lis
 	bmax->xyz.y = INTEL_FLOAT( &bmax->xyz.y );
 	bmax->xyz.z = INTEL_FLOAT( &bmax->xyz.z );
 
-	if (prelist) swap_bsp_data_sub(pm,p+prelist,vertex_list);
-	if (backlist) swap_bsp_data_sub(pm,p+backlist,vertex_list);
-	if (onlist) swap_bsp_data_sub(pm,p+onlist,vertex_list);
-	if (frontlist) swap_bsp_data_sub(pm,p+frontlist,vertex_list);
-	if (postlist) swap_bsp_data_sub(pm,p+postlist,vertex_list);
+	if (prelist) swap_bsp_data(pm,p+prelist);
+	if (backlist) swap_bsp_data(pm,p+backlist);
+	if (onlist) swap_bsp_data(pm,p+onlist);
+	if (frontlist) swap_bsp_data(pm,p+frontlist);
+	if (postlist) swap_bsp_data(pm,p+postlist);
 }
+#endif // BIG_ENDIAN
 
-static void swap_bsp_data_sub(polymodel *pm, ubyte *p, SCP_vector<vec3d> *vertex_list)
+void swap_bsp_data( polymodel * pm, void * model_ptr )
 {
+#if BYTE_ORDER == BIG_ENDIAN
+	ubyte *p = (ubyte *)model_ptr;
 	int chunk_type, chunk_size;
 	vec3d * min;
 	vec3d * max;
@@ -5822,19 +5792,19 @@ static void swap_bsp_data_sub(polymodel *pm, ubyte *p, SCP_vector<vec3d> *vertex
 			case OP_EOF:
 				return;
 			case OP_DEFPOINTS:
-				swap_bsp_defpoints(p, vertex_list);
+				swap_bsp_defpoints(p); 
 				break;
 			case OP_FLATPOLY:
-				swap_bsp_flatpoly(pm, p, vertex_list);
+				swap_bsp_flatpoly(pm, p);
 				break;
 			case OP_TMAPPOLY:
 				swap_bsp_tmappoly(pm, p);
 				break;
-			case OP_SORTNORM:
-				swap_bsp_sortnorm(pm, p, vertex_list);
+			case OP_SORTNORM:	
+				swap_bsp_sortnorm(pm, p);
 				break;
 			case OP_SORTNORM2:
-				swap_bsp_sortnorm2(pm, p, vertex_list);
+				swap_bsp_sortnorm2(pm, p);
 				end = true; // should not continue after this chunk
 				break;
 			case OP_BOUNDBOX:
@@ -5867,14 +5837,8 @@ static void swap_bsp_data_sub(polymodel *pm, ubyte *p, SCP_vector<vec3d> *vertex
 		if (chunk_type == OP_EOF)
 			end = true;
 	}
-}
-#endif // BIG_ENDIAN
 
-void swap_bsp_data( polymodel * pm, void * model_ptr )
-{
-#if BYTE_ORDER == BIG_ENDIAN
-	SCP_vector<vec3d> vertex_list;
-	swap_bsp_data_sub(pm, (ubyte *)model_ptr, &vertex_list);
+	return;
 #else
 (void)pm;
 (void)model_ptr;
