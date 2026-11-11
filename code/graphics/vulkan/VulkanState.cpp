@@ -351,9 +351,9 @@ void vulkan_zbias(int bias)
 	if (bias) {
 		drawManager->setDepthBiasEnabled(true);
 		if (bias < 0) {
-			stateTracker->setDepthBias(1.0f, static_cast<float>(-bias));
+			stateTracker->setDepthBias(static_cast<float>(-bias), 1.0f);
 		} else {
-			stateTracker->setDepthBias(0.0f, static_cast<float>(-bias));
+			stateTracker->setDepthBias(static_cast<float>(-bias), 0.0f);
 		}
 	} else {
 		drawManager->setDepthBiasEnabled(false);

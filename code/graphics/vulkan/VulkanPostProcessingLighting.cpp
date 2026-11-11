@@ -486,6 +486,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	tcache_slot_vulkan* envMapSlot = nullptr;
 	tcache_slot_vulkan* irrMapSlot = nullptr;
 	if (envMapAvailable) {
+		texMgr->ensureCubemapUploaded(ENVMAP);
 		envMapSlot = texMgr->getTextureSlot(ENVMAP);
 		if (!envMapSlot || !envMapSlot->imageView || !envMapSlot->isCubemap) {
 			envMapAvailable = false;
