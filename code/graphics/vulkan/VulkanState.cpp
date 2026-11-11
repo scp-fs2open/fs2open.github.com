@@ -253,7 +253,7 @@ void VulkanStateTracker::bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout 
 
 void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
 	vk::DescriptorSet set,
-	const uint32_t* dynamicOffsets)
+	ArrayView<uint32_t> dynamicOffsets)
 {
 	Assertion(m_cmdBuffer, "bindDescriptorSet called without active command buffer!");
 	Assertion(m_currentPipelineLayout, "bindDescriptorSet called without bound pipeline layout!");
@@ -261,10 +261,15 @@ void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
 
 	auto index = static_cast<uint32_t>(setIndex);
 	const uint32_t dynCount = VulkanDescriptorManager::getDynamicOffsetCount(setIndex);
-	Assertion(dynCount == 0 || dynamicOffsets != nullptr,
-		"bindDescriptorSet: set %u declares %u dynamic descriptors but no offsets were supplied!",
+	// vkCmdBindDescriptorSets reads exactly dynCount entries, so a caller that hands over
+	// fewer would have it read past the end of their array. The view carries its own length,
+	// so that is a check rather than a convention.
+	Assertion(dynamicOffsets.size >= dynCount,
+		"bindDescriptorSet: set %u declares %u dynamic descriptors but only " SIZE_T_ARG
+		" offsets were supplied!",
 		index,
-		dynCount);
+		dynCount,
+		dynamicOffsets.size);
 
 	// The redundancy check has to cover the dynamic offsets too, not just the set
 	// handle: with dynamic UBOs the common case is the *same* set rebound with a new
@@ -273,7 +278,7 @@ void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
 	auto& boundDyn = m_boundDynamicOffsets[index];
 	bool offsetsChanged = false;
 	for (uint32_t i = 0; i < dynCount; ++i) {
-		if (boundDyn[i] != dynamicOffsets[i]) {
+		if (boundDyn[i] != dynamicOffsets.data[i]) {
 			offsetsChanged = true;
 			break;
 		}
@@ -286,11 +291,11 @@ void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
 			1,
 			&set,
 			dynCount,
-			dynCount > 0 ? dynamicOffsets : nullptr);
+			dynCount > 0 ? dynamicOffsets.data : nullptr);
 
 		m_boundDescriptorSets[index] = set;
 		for (uint32_t i = 0; i < dynCount; ++i) {
-			boundDyn[i] = dynamicOffsets[i];
+			boundDyn[i] = dynamicOffsets.data[i];
 		}
 	}
 }
