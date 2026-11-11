@@ -434,6 +434,9 @@ int gameseq_get_state_idx(int state)
 }
 
 int gameseq_get_state_instance_id(int depth) {
+	if (!GameState_Stack_Valid())
+		return 0;
+
 	Assert(depth <= gs_current_stack);
 
 	return gs[gs_current_stack - depth].instance_id;
