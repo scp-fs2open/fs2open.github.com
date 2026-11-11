@@ -379,7 +379,7 @@ void pilotfile::csg_read_missions()
 		}
 	}
 
-	Campaign.num_missions_completed -= num_discarded;
+	Campaign.num_missions_completed = i - num_discarded;
 }
 
 void pilotfile::csg_write_missions()
