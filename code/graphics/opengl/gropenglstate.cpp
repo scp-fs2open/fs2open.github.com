@@ -360,6 +360,13 @@ GLboolean opengl_state::ClipDistance(GLint num, bool state)
 
 	GLboolean save_state = clipdistance_Status[num];
 
+#ifdef USE_OPENGL_ES
+	if (!GLAD_GL_EXT_clip_cull_distance) {
+		clipdistance_Status[num] = state;
+		return save_state;
+	}
+#endif
+
 	if (state != clipdistance_Status[num]) {
 		if (state) {
 			glEnable(GL_CLIP_DISTANCE0+num);

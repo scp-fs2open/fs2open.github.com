@@ -30,7 +30,7 @@ class VulkanRenderFrame {
 
 	void onFrameFinished(std::function<void()> finishFunc);
 
-	SwapChainStatus submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers);
+	SwapChainStatus submitAndPresent(const SCP_vector<vk::CommandBuffer>& cmdBuffers, vk::Semaphore renderingFinished);
 
 	void updateSwapChain(vk::SwapchainKHR swapChain);
 
@@ -50,7 +50,6 @@ class VulkanRenderFrame {
 	vk::Queue m_presentQueue;
 
 	vk::UniqueSemaphore m_imageAvailableSemaphore;
-	vk::UniqueSemaphore m_renderingFinishedSemaphore;
 	vk::UniqueFence m_frameInFlightFence;
 	SCP_vector<std::function<void()>> m_frameFinishedCallbacks;
 

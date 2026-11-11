@@ -6,7 +6,7 @@
 #include <direct.h>
 #endif
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 //Required because X defines none and always, which is used later
 #undef None
@@ -974,7 +974,7 @@ void gr_opengl_use_viewport(os::Viewport* view) {
 
 int opengl_init_display_device()
 {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	attrs.enable_opengl = true;
 
 	attrs.gl_attributes.major_version = MIN_REQUIRED_GL_VERSION / 10;
@@ -1182,6 +1182,7 @@ void gr_opengl_init_function_pointers()
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 	gr_screen.gf_get_property = gr_opengl_get_property;
+	gr_screen.gf_get_memory_stats = gr_opengl_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
@@ -1412,7 +1413,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
 		Error(LOCATION, "Failed to load GLX!");
 	}
@@ -1476,7 +1477,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 			"Deferred lightning is enabled in settings but the gpu does not support the minimum of 6 draw buffers. "
 			"This will result in rendering errors.");
 	}
-
+	
+	mprintf(("  Depth Clamp support : %s\n", GLAD_GL_EXT_depth_clamp ? NOX("YES") : NOX("NO")));
+	mprintf(("  HW Cull distance support : %s\n", GLAD_GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
 	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
 	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
 	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
