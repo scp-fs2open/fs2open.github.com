@@ -272,8 +272,7 @@ vk::DescriptorImageInfo VulkanDistortion::getTextureInfo() const
 	// Distortion_texture[!Distortion_switch] binding for thrusters).
 	// After update() toggles the switch, m_switch points to the old read
 	// source, which is the texture that was just written.
-	return {m_ctx->linearSampler, m_tex[m_switch].view,
-	        vk::ImageLayout::eShaderReadOnlyOptimal};
+	return {m_sampler, m_tex[m_switch].view, vk::ImageLayout::eShaderReadOnlyOptimal};
 }
 
 } // namespace graphics::vulkan
