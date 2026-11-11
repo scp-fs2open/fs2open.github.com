@@ -20,6 +20,7 @@
 #include <QEasingCurve>
 
 #include <project.h>
+#include <array>
 
 #include <qevent.h>
 #include <FredApplication.h>
@@ -2910,34 +2911,26 @@ void FredView::on_actionDelete_Wing_triggered(bool) {
 	}
 }
 void FredView::initializeGroupActions() {
-	// This is a bit ugly but it's easier than iterating though all actions in the menu...
-	connect(ui->actionGroup_1, &QAction::triggered, this, [this]() { onGroupSelected(1); });
-	connect(ui->actionGroup_2, &QAction::triggered, this, [this]() { onGroupSelected(2); });
-	connect(ui->actionGroup_3, &QAction::triggered, this, [this]() { onGroupSelected(3); });
-	connect(ui->actionGroup_4, &QAction::triggered, this, [this]() { onGroupSelected(4); });
-	connect(ui->actionGroup_5, &QAction::triggered, this, [this]() { onGroupSelected(5); });
-	connect(ui->actionGroup_6, &QAction::triggered, this, [this]() { onGroupSelected(6); });
-	connect(ui->actionGroup_7, &QAction::triggered, this, [this]() { onGroupSelected(7); });
-	connect(ui->actionGroup_8, &QAction::triggered, this, [this]() { onGroupSelected(8); });
-	connect(ui->actionGroup_9, &QAction::triggered, this, [this]() { onGroupSelected(9); });
+	const std::array<QAction*, 9> selectActions{ui->actionGroup_1, ui->actionGroup_2, ui->actionGroup_3,
+		ui->actionGroup_4, ui->actionGroup_5, ui->actionGroup_6, ui->actionGroup_7, ui->actionGroup_8,
+		ui->actionGroup_9};
+	const std::array<QAction*, 9> setActions{ui->actionSetGroup_1, ui->actionSetGroup_2, ui->actionSetGroup_3,
+		ui->actionSetGroup_4, ui->actionSetGroup_5, ui->actionSetGroup_6, ui->actionSetGroup_7, ui->actionSetGroup_8,
+		ui->actionSetGroup_9};
 
-
-	connect(ui->actionSetGroup_1, &QAction::triggered, this, [this]() { onSetGroup(1); });
-	connect(ui->actionSetGroup_2, &QAction::triggered, this, [this]() { onSetGroup(2); });
-	connect(ui->actionSetGroup_3, &QAction::triggered, this, [this]() { onSetGroup(3); });
-	connect(ui->actionSetGroup_4, &QAction::triggered, this, [this]() { onSetGroup(4); });
-	connect(ui->actionSetGroup_5, &QAction::triggered, this, [this]() { onSetGroup(5); });
-	connect(ui->actionSetGroup_6, &QAction::triggered, this, [this]() { onSetGroup(6); });
-	connect(ui->actionSetGroup_7, &QAction::triggered, this, [this]() { onSetGroup(7); });
-	connect(ui->actionSetGroup_8, &QAction::triggered, this, [this]() { onSetGroup(8); });
-	connect(ui->actionSetGroup_9, &QAction::triggered, this, [this]() { onSetGroup(9); });
+	// Each group is one bit of ship::group, the same as in FRED2.
+	for (size_t i = 0; i < selectActions.size(); ++i) {
+		const int bit = 1 << static_cast<int>(i);
+		connect(selectActions[i], &QAction::triggered, this, [this, bit]() { onGroupSelected(bit); });
+		connect(setActions[i], &QAction::triggered, this, [this, bit]() { onSetGroup(bit); });
+	}
 }
 void FredView::onGroupSelected(int group) {
 	fred->unmark_all();
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->type == OBJ_SHIP) {
-			if (Ships[objp->instance].group & group) {
+			if (ship_in_editor_group(Ships[objp->instance], group)) {
 				fred->markObject(OBJ_INDEX(objp));
 			}
 		}
@@ -2948,15 +2941,15 @@ void FredView::onGroupSelected(int group) {
 void FredView::onSetGroup(int group) {
 	bool err = false;
 
-	for (auto i = 0; i < MAX_SHIPS; i++) {
-		Ships[i].group &= ~group;
+	for (auto& shipp : Ships) {
+		ship_set_editor_group(shipp, group, false);
 	}
 
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
-				Ships[objp->instance].group |= group;
+				ship_set_editor_group(Ships[objp->instance], group, true);
 
 			} else {
 				err = true;

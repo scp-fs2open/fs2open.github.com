@@ -110,6 +110,22 @@ anchor_t target_to_anchor(int target)
 		return anchor_t(target);
 }
 
+bool ship_in_editor_group(const ship& shipp, int group_bit)
+{
+	// -1 has all bits set, so test it first.
+	return shipp.group >= 0 && (shipp.group & group_bit) != 0;
+}
+
+void ship_set_editor_group(ship& shipp, int group_bit, bool in_group)
+{
+	if (in_group) {
+		shipp.group = (shipp.group < 0 ? 0 : shipp.group) | group_bit;
+	} else if (shipp.group >= 0) {
+		// A ship in no group keeps -1, so that the mission save writes no group data for it.
+		shipp.group &= ~group_bit;
+	}
+}
+
 void update_custom_wing_indexes()
 {
 	int i;
