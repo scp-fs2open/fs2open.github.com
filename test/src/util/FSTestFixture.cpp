@@ -11,13 +11,6 @@
 #include <osapi/outwnd.h>
 #include <ship/ship.h>
 
-#include <chrono>
-#include <thread>
-
-namespace {
-constexpr int OFFSET_NUDGE_MS = 3'600'000;
-}
-
 test::FSTestFixture::FSTestFixture(uint64_t init_flags) : testing::Test(), _initFlags(init_flags) {
 	addCommandlineArg("-parse_cmdline_only");
 	addCommandlineArg("-standalone");
@@ -115,36 +108,6 @@ void test::FSTestFixture::TearDown() {
 		delete[] Cmdline_mod;
 		Cmdline_mod = NULL;
 	}
-}
-void test::FSTestFixture::primeGameClock() {
-	// timer_init pauses on the counter's first tick, which can read 0, and adjusting the clock asserts on that 0
-	std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	timestamp_pause(true);
-	timestamp_unpause(true);
-	// the unpause can land the clock offset on exactly 0, which asserts too; a pretend pause and equal skip clear it
-	timestamp_adjust_pause_offset(OFFSET_NUDGE_MS);
-	timestamp_adjust_microseconds(static_cast<std::uint64_t>(OFFSET_NUDGE_MS) * MICROSECONDS_PER_MILLISECOND,
-		TIMER_DIRECTION::FORWARD);
-}
-test::FSTestFixture::ClockStep test::FSTestFixture::startGameClock() {
-	primeGameClock();
-	timer_start_frame();
-	const std::int64_t now_ms = _timestamp().value();
-
-	ClockStep step;
-	if (now_ms < GAME_CLOCK_START_MS) {
-		step.microseconds = static_cast<std::uint64_t>(GAME_CLOCK_START_MS - now_ms) * MICROSECONDS_PER_MILLISECOND;
-	} else {
-		step.microseconds = static_cast<std::uint64_t>(now_ms - GAME_CLOCK_START_MS) * MICROSECONDS_PER_MILLISECOND;
-		step.direction = TIMER_DIRECTION::BACKWARD;
-	}
-	timestamp_adjust_microseconds(step.microseconds, step.direction);
-	timer_start_frame();
-	return step;
-}
-void test::FSTestFixture::undoGameClock(const ClockStep& step) {
-	const bool forward = step.direction == TIMER_DIRECTION::FORWARD;
-	timestamp_adjust_microseconds(step.microseconds, forward ? TIMER_DIRECTION::BACKWARD : TIMER_DIRECTION::FORWARD);
 }
 void test::FSTestFixture::addCommandlineArg(const SCP_string& arg) {
 	_cmdlineArgs.push_back(arg);

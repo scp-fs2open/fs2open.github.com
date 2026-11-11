@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 #include <globalincs/vmallocator.h>
-#include <io/timer.h>
 
 #include <cstdint>
 
@@ -32,19 +31,6 @@ class FSTestFixture: public ::testing::Test {
 	void addCommandlineArg(const SCP_string& arg);
 
 	void pushModDir(const SCP_string& mod);
-
-	struct ClockStep {
-		std::uint64_t microseconds = 0;
-		TIMER_DIRECTION direction = TIMER_DIRECTION::FORWARD;
-	};
-
-	static constexpr std::int64_t GAME_CLOCK_START_MS = 10'000;
-
-	static void primeGameClock();
-
-	static ClockStep startGameClock();
-
-	static void undoGameClock(const ClockStep& step);
 
 	virtual void SetUp();
 

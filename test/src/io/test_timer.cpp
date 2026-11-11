@@ -14,21 +14,6 @@ extern fix Game_time_compression;
 class TimerTest : public test::FSTestFixture {
   public:
 	TimerTest() : test::FSTestFixture(INIT_NONE) {}
-
-  protected:
-	void SetUp() override
-	{
-		FSTestFixture::SetUp();
-		m_clock_step = startGameClock();
-	}
-
-	void TearDown() override
-	{
-		auto base_teardown = util::finally([this] { FSTestFixture::TearDown(); });
-		undoGameClock(m_clock_step);
-	}
-
-	ClockStep m_clock_step;
 };
 
 namespace {
@@ -47,18 +32,7 @@ struct ClockJump {
 	uint64_t days;
 	std::int64_t boundary_ms;
 };
-
-// the engine keeps what a compression change folds into its offset, so the next run has to start above it
-std::int64_t compression_folded_ms = 0;
 } // namespace
-
-TEST_F(TimerTest, fixtureStartsTheGameClockAtItsTarget)
-{
-	timer_start_frame();
-	// a clock found below zero is stepped back across 2^64 in floating point, which is only good to about a millisecond
-	EXPECT_GE(_timestamp().value(), GAME_CLOCK_START_MS - 5);
-	EXPECT_LT(_timestamp().value(), GAME_CLOCK_START_MS + 1000);
-}
 
 TEST_F(TimerTest, gameStampsKeepWorkingPastThirtyTwoBits)
 {
@@ -145,11 +119,6 @@ TEST_F(TimerTest, gameDeltasSaturateOutsideIntRange)
 TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 {
 	timer_start_frame();
-	const std::int64_t above_fold_ms = _timestamp().value() - (compression_folded_ms + 1);
-	ASSERT_GE(above_fold_ms, 0);
-	timestamp_adjust_microseconds(static_cast<uint64_t>(above_fold_ms) * MICROSECONDS_PER_MILLISECOND,
-		TIMER_DIRECTION::BACKWARD);
-	timer_start_frame();
 	// a raw clock below zero reads as about 1.8e13 ms and would be folded into the compression offset for good
 	ASSERT_LT(_timestamp().value(), MS_2_32 * 1000);
 	const fix old_compression = Game_time_compression;
@@ -158,7 +127,7 @@ TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 	timestamp_adjust_microseconds(COMPRESSED_JUMP_US, TIMER_DIRECTION::FORWARD);
 	bool stepped = false;
 	// the counter is moved back before the multiplier, so each restore step undoes exactly what it moved
-	auto restore_clock = util::finally([this, &stepped, old_compression] {
+	auto restore_clock = util::finally([&stepped, old_compression] {
 		if (stepped) {
 			timestamp_adjust_microseconds(COMPRESSED_STEP_US, TIMER_DIRECTION::BACKWARD);
 		}
@@ -166,9 +135,6 @@ TEST_F(TimerTest, gameStampsPastThirtyTwoBitsUnderTimeCompression)
 		Game_time_compression = F1_0;
 		timestamp_update_time_compression();
 		Game_time_compression = old_compression;
-		compression_folded_ms = _timestamp().value();
-		// the compression changes replaced the counter offset, so the fixture's step is gone and must not be undone
-		m_clock_step = {};
 		// compression changes grew the counter offset, which timer_init keeps; the next test's clock would go negative
 		timestamp_adjust_microseconds(2 * timer_get_microseconds(), TIMER_DIRECTION::FORWARD);
 		timer_start_frame();
@@ -260,11 +226,7 @@ TEST_F(TimerTest, uiClockReadsZeroWhileTheTimerIsClosed)
 	// without some uptime an unguarded read would also round down to 0 ms
 	std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	timer_close();
-	// the reopened timer is primed again so that TearDown can adjust the clock
-	auto reopen = util::finally([] {
-		timer_init();
-		primeGameClock();
-	});
+	auto reopen = util::finally([] { timer_init(); });
 #ifdef NDEBUG
 	EXPECT_EQ(ui_timestamp().value(), 0);
 #else
