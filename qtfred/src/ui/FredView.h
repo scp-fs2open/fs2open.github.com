@@ -230,6 +230,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionControlModeCurrentShip_triggered(bool enabled);
 
 	void addToRecentFiles(const QString& path);
+	// The editor dialogs and the campaign editor that are open as children of this window.
+	QList<QWidget*> editorWindows() const;
 	void updateRecentFileList();
 
 	void recentFileOpened();

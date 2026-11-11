@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QFileInfo>
 #include <QInputDialog>
+#include <QDialog>
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
@@ -2261,6 +2262,17 @@ void FredView::changeEvent(QEvent* event) {
 		menuBar()->update();
 	}
 }
+QList<QWidget*> FredView::editorWindows() const {
+	// Only dialogs and the campaign editor (a QMainWindow) are editor windows. Menus and floating dock
+	// widgets are also top-level children, but this window owns them until it is destroyed.
+	QList<QWidget*> windows;
+	for (auto* child : findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+		if (child->isWindow() && (qobject_cast<QDialog*>(child) != nullptr || qobject_cast<QMainWindow*>(child) != nullptr))
+			windows.append(child);
+	}
+	return windows;
+}
+
 void FredView::closeEvent(QCloseEvent* event) {
 	QSettings settings;
 	settings.setValue("FredView/mainWindowState",      saveState());
@@ -2269,12 +2281,27 @@ void FredView::closeEvent(QCloseEvent* event) {
 	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
 	// Camera speeds are persisted on change in onUpdateViewSpeeds(), so no need to save them here.
 
+	// Close the editor windows before the mission prompt. A window can ask about its own unsaved changes.
+	// If the user keeps the changes, they go into the mission, and the mission prompt then includes them.
+	// A cancel in a window stops the exit. A window that closed before the cancel stays closed, because
+	// the user already answered its prompt, and its model is not usable again after apply() or reject().
+	for (auto* window : editorWindows()) {
+		if (window->isVisible() && !window->close()) {
+			event->ignore();
+			return;
+		}
+	}
+
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
 		return;
 	}
 	disconnect();
 	QMainWindow::closeEvent(event);
+
+	// The editor windows hold SEXP trees and pointers into mission data. WA_DeleteOnClose only schedules a
+	// deferred delete, which runs after shutdown() frees that data. Delete them now.
+	qDeleteAll(editorWindows());
 
 	// gr_close() destroys this window, so this must be the last thing we do here
 	shutdown();

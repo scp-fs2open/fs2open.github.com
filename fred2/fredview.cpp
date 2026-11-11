@@ -5082,9 +5082,7 @@ void CFREDView::OnEditorsFiction()
 
 void CFREDView::OnDestroy() 
 {
-	audiostream_close();
-	snd_close();
-
+	// fred_shutdown() closes the sound system after the Lua state, the same as QtFRED and the game.
 	CView::OnDestroy();
 }
 

@@ -162,7 +162,13 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* view
 	initializeUi();
 	updateUi();
 }
-CampaignEditorDialog::~CampaignEditorDialog() = default;
+CampaignEditorDialog::~CampaignEditorDialog()
+{
+	// ~QWidget deletes the child widgets after this destructor, and after _model. Disconnect the SEXP tree
+	// now, so that a signal from its destruction cannot reach this dialog or the deleted model. The graph
+	// disconnects its own scene in ~CampaignMissionGraph.
+	ui->sxtBranches->disconnect(this);
+}
 
 SCP_vector<SCP_string> CampaignEditorDialog::getMissionNames()
 {
