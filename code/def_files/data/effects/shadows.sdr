@@ -318,7 +318,7 @@ float traceShadowRayCone(accelerationStructureEXT tlas, vec3 worldPos, vec3 worl
 // sampleCount < 1, radius <= 0, or strength <= 0 returns 1.0 (no occlusion) --
 // callers gate on the RTAO shader variant, this just keeps bad uniforms benign.
 float traceAmbientOcclusion(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal,
-	float radius, float strength, int sampleCount, float bias, vec2 noiseSeed)
+	float radius, float strength, int sampleCount, float bias, uint cullMask, vec2 noiseSeed)
 {
 	if (sampleCount < 1 || radius <= 0.0 || strength <= 0.0) {
 		return 1.0;
@@ -343,7 +343,7 @@ float traceAmbientOcclusion(accelerationStructureEXT tlas, vec3 worldPos, vec3 w
 
 		rayQueryEXT rq;
 		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT,
-			0xFF, origin, 0.001, sampleDir, radius);
+			cullMask, origin, 0.001, sampleDir, radius);
 		while (rayQueryProceedEXT(rq)) {}
 
 		if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {

@@ -319,7 +319,7 @@ void main()
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
 			float rtaoBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
 			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
-				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, gl_FragCoord.xy);
+				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(shadow_ray_cull_mask), gl_FragCoord.xy);
 		}
 #endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
