@@ -47,6 +47,10 @@ add_file_folder("menuui"
     menuui/test_intel_parse.cpp
 )
 
+add_file_folder("mission"
+    mission/test_briefing_move_list.cpp
+)
+
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
 )

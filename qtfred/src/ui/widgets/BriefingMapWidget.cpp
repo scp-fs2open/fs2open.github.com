@@ -235,8 +235,8 @@ void BriefingMapWidget::applyStageTransition(int stageNum, int transitionTime) {
 	Briefing = briefPtr;
 
 	auto& stage = briefPtr->stages[stageNum];
-	// Start fresh on an instant change, because the engine divides icon movement by the transition time, and on
-	// an unchanged index, which holds a different stage after a delete or a team switch.
+	// Start fresh on an instant change, as the game does before a cut or a jump, and on an unchanged index,
+	// which holds a different stage after a delete or a team switch.
 	if (transitionTime <= 0 || stageNum == _currentStage) {
 		brief_reset_last_new_stage();
 	}
