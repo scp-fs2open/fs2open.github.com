@@ -906,22 +906,20 @@ void FredView::updateRecentFileList() {
 	QSettings settings;
 	auto recentFiles = settings.value("FredView/recentFiles").toStringList();
 
-	if (recentFiles.empty()) {
-		// If there are no files, clear the menu and disable it
-		ui->menuRe_cent_Files->clear();
-		ui->menuRe_cent_Files->setEnabled(false);
-	} else {
-		// Reset the menu in case there was something there before and enable it
-		ui->menuRe_cent_Files->clear();
-		ui->menuRe_cent_Files->setEnabled(true);
+	// Remove the old actions. A recent-file action can call this function while it sends its own triggered()
+	// signal, so use a deferred delete. Before, the actions had this window as parent, and each update leaked them.
+	for (auto* action : ui->menuRe_cent_Files->actions()) {
+		ui->menuRe_cent_Files->removeAction(action);
+		action->deleteLater();
+	}
+	ui->menuRe_cent_Files->setEnabled(!recentFiles.empty());
 
-		// Now add the individual files as actions
-		for (auto& path : recentFiles) {
-			auto action = new QAction(path, this);
-			connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
+	// Now add the individual files as actions
+	for (auto& path : recentFiles) {
+		auto action = new QAction(path, ui->menuRe_cent_Files);
+		connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
 
-			ui->menuRe_cent_Files->addAction(action);
-		}
+		ui->menuRe_cent_Files->addAction(action);
 	}
 }
 
