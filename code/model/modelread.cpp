@@ -2128,7 +2128,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (sm->bsp_data_size > 0) {
 						sm->bsp_data = make_shared<ubyte[]>(sm->bsp_data_size);
 						cfread(sm->bsp_data.get(), 1, sm->bsp_data_size, fp);
+						Macro_ubyte_bounds = sm->bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, sm->bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 					}
 					else {
 						sm->bsp_data = nullptr;
@@ -2144,7 +2146,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread(bsp_data.get(), 1, sm->bsp_data_size, fp);
 
 						// byte swap first thing
+						Macro_ubyte_bounds = bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 
 						extern bool Cmdline_no_bsp_align;
 						if (Cmdline_no_bsp_align) {
