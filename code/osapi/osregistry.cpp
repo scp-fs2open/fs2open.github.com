@@ -773,6 +773,9 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 	}
 
 	/* section not found */
+	if (value == nullptr)
+		return profile;
+
 	sp = (IniSection *)vm_malloc(sizeof(IniSection));
 	sp->next = nullptr;
 	sp->name = vm_strdup(section);
