@@ -27,6 +27,18 @@ void object_moved(object *objp)
 	}
 }
 
+int marked_objects_moved()
+{
+	int count = 0;
+	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			object_moved(objp);
+			count++;
+		}
+	}
+	return count;
+}
+
 bool query_valid_object(int index)
 {
 	bool obj_found = false;
