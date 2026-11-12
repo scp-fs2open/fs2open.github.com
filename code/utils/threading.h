@@ -19,4 +19,6 @@ namespace threading {
 
 	bool is_threading();
 	size_t get_num_workers();
+	// Automatic thread limit, including the calling thread.
+	size_t get_num_auto_threads();
 }
