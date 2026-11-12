@@ -425,15 +425,11 @@ void VulkanRaytracingManager::buildTlas()
 		return;
 	}
 
-	// Idempotence guard: both the shadow path (shadows_render_all ->
-	// gr_build_shadow_tlas) and the RTAO fallback trigger
-	// (vulkan_deferred_lighting_finish, for when shadow rendering is disabled)
-	// may request a TLAS in the same frame -- only the first request builds.
-	const uint64_t frameNumber = m_bufferManager->getCurrentFrameNumber();
-	if (m_lastTlasBuildFrame == frameNumber) {
+	// Build only one time in each frame. See isTlasBuiltThisFrame().
+	if (isTlasBuiltThisFrame()) {
 		return;
 	}
-	m_lastTlasBuildFrame = frameNumber;
+	m_lastTlasBuildFrame = m_bufferManager->getCurrentFrameNumber();
 
 	// Each frame-in-flight slot owns its own instance/TLAS/scratch buffers (see
 	// FrameTlasResources' declaration for why a single shared set would race

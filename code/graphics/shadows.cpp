@@ -333,29 +333,27 @@ static float shadow_smoothness_reference_tangent()
 	return sun_disc_tangent_from_diameter(SUN_ANGULAR_SIZE_SOL);
 }
 
-// Softness of the shadow-mapped sun relative to that reference, i.e. the factor the tabled
-// smoothness values get scaled by.
+// Returns the softness of the shadow-mapped sun, relative to the reference above. The tabled
+// smoothness values are multiplied by this factor.
 //
-// This is what makes shadow softness method-agnostic: the shadow map and the raytracer are
-// driven by the same number -- the tangent of the sun's angular radius, from $SunAngularSize:
-// or measured off the sun bitmap (see sun_angular_radius_tangent() in starfield.cpp). Doubling
-// a sun's apparent size doubles the raytraced penumbra cone and this filter width alike, so a
-// mission author tunes one parameter and both methods follow.
+// The shadow map and the raytracer both use the same value: the tangent of the angular radius
+// of the sun. This value comes from $SunAngularSize: or from a measurement of the sun bitmap
+// (see sun_angular_radius_tangent() in starfield.cpp). When the sun becomes two times larger,
+// the raytraced penumbra cone and this filter width also become two times larger. Thus a
+// mission author sets one value, and both methods follow it.
 //
-// Where shadow_contact_hardening_supported() is true, the value returned here no longer *is*
-// the penumbra radius -- it's the ceiling pcssPenumbraRadius() (shadows.sdr) clamps a real,
-// per-pixel, blocker-search-driven radius to (see Shadow_penumbra_scale). Where it's false
-// (GL below 3.3), it's still used directly as the fixed radius, exactly
-// as before contact hardening existed -- this function's output means "the widest the penumbra
-// is allowed to get" either way, which is why the tabled values keep their old meaning for mods
-// that already tuned them.
+// When shadow_contact_hardening_supported() is true, this value is the maximum penumbra radius.
+// pcssPenumbraRadius() (shadows.sdr) calculates a radius for each pixel from the blocker search,
+// and clamps it to this maximum (see Shadow_penumbra_scale). When contact hardening is not
+// supported (OpenGL before 3.3), this value is the fixed penumbra radius. In both cases the
+// tabled values keep their old meaning, so mods that tuned them see no change.
 //
-// Uses Static_light.front(), the same light shadows_start_render() builds the cascades from.
-// Every directional light that reaches this point carries a source radius: suns get theirs in
-// stars_draw_sun(), and common_setup_room_lights() -- the only other producer -- gives its
-// stand-in lights a sun's. A zero radius therefore means a genuinely sizeless source (a mod's
-// deliberately blank sun bitmap, say), which asks for a hard edge; the shadow map answers with
-// the narrowest filter it can, see shadow_clamp_smoothness().
+// This function uses Static_light.front(), which is also the light of the cascades in
+// shadows_start_render(). Each directional light at this point has a source radius: suns get
+// it in stars_draw_sun(), and common_setup_room_lights() gives its lights the radius of a sun.
+// Thus a radius of 0 is a source with no size, for example a blank sun bitmap of a mod. Such a
+// source must have a hard edge, so the shadow map uses its narrowest filter
+// (see shadow_clamp_smoothness()).
 static float shadow_smoothness_scale()
 {
 	if (Static_light.empty()) {
@@ -429,6 +427,11 @@ void shadows_remove_unsupported_options()
 bool shadows_use_raytracing()
 {
 	return Shadow_render_method == ShadowRenderMethod::Raytraced && shadows_raytracing_supported();
+}
+
+bool shadows_rt_scene_needed()
+{
+	return rtao_enabled() || (shadows_use_raytracing() && Shadow_quality != ShadowQuality::Disabled);
 }
 
 bool shadows_use_raytraced_local_lights()
@@ -1011,6 +1014,10 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 	GR_DEBUG_SCOPE("Render shadows");
 	TRACE_SCOPE(tracing::BuildShadowMap);
 
+	// The deferred pass reads this matrix in each frame, also when no shadow map renders (for
+	// example, RTAO in a mission with no sun). Thus write it before the early returns below.
+	Shadow_view_matrix_render = gr_view_matrix;
+
 	if ( Static_light.empty() ) {
 		return;
 	}
@@ -1019,14 +1026,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		return;
 	}
 
-	// Rebuilds the raytraced-shadow TLAS alongside the cascaded shadow map below
-	// -- Vulkan-only, no-op everywhere else. Which one shading actually samples
-	// is decided per shadows_use_raytracing(). See VulkanRaytracingManager::buildTlas().
-	gr_build_shadow_tlas();
-
 	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
-
-	Shadow_view_matrix_render = gr_view_matrix;
 
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
@@ -1266,9 +1266,6 @@ void shadow_cascade_params_bind(int cascade_offset, int cascade_count, const sha
 	static_data.rtShadowBiasMin = Rt_shadow_bias_min;
 	static_data.rtShadowBiasMax = Rt_shadow_bias_max;
 	static_data.rtShadowSampleCount = shadows_rt_sample_count();
-	static_data.rtaoSampleCount = Rtao_samples;
-	static_data.rtaoRadius = lighting_profiles::current_rtao_radius();
-	static_data.rtaoStrength = lighting_profiles::current_rtao_strength();
 	static_data.shadow_mv_matrix = Shadow_view_matrix_light;
 
 	static_data.shadow_ray_cull_mask = ray.cull_mask;
@@ -1315,20 +1312,39 @@ shadow_ray_params shadow_ray_params_cockpit(const object* viewer) {
 	return ray;
 }
 
+// The ray origin and cull mask of the current deferred lighting pass: the cockpit pass or the
+// main scene pass.
+static shadow_ray_params shadow_ray_params_deferred() {
+	if (Lighting_mode == lighting_mode::COCKPIT && Viewer_obj != nullptr) {
+		shadow_ray_params ray = shadow_ray_params_cockpit(Viewer_obj);
+		if (ship_render_player_ship_casts_shadow_on_cockpit()) {
+			ray.cull_mask = TLAS_MASK_ALL;
+		}
+		return ray;
+	}
+	return shadow_ray_params{shadow_rt_relative(Eye_position)};
+}
+
 void shadow_cascade_params_bind_deferred() {
 	const bool cockpit = Lighting_mode == lighting_mode::COCKPIT;
 	const int offset = cockpit ? 0 : Num_cockpit_shadow_cascades;
 	const int count  = cockpit ? Num_cockpit_shadow_cascades : Num_shadow_cascades;
 
-	if (cockpit && Viewer_obj != nullptr) {
-		shadow_ray_params ray = shadow_ray_params_cockpit(Viewer_obj);
-		if (ship_render_player_ship_casts_shadow_on_cockpit()) {
-			ray.cull_mask = TLAS_MASK_ALL;
-		}
-		shadow_cascade_params_bind(offset, count, ray);
-	} else {
-		shadow_cascade_params_bind(offset, count);
-	}
+	shadow_cascade_params_bind(offset, count, shadow_ray_params_deferred());
+}
+
+void shadows_fill_deferred_global_data(graphics::deferred_global_data& data) {
+	vm_inverse_matrix4(&data.inv_view_matrix, &Shadow_view_matrix_render);
+
+	const shadow_ray_params ray = shadow_ray_params_deferred();
+	data.rayViewOrigin = ray.view_origin;
+	data.rayCullMask = ray.cull_mask;
+	data.rayBiasMin = Rt_shadow_bias_min;
+	data.rayBiasMax = Rt_shadow_bias_max;
+
+	data.rtaoSampleCount = Rtao_samples;
+	data.rtaoRadius = lighting_profiles::current_rtao_radius();
+	data.rtaoStrength = lighting_profiles::current_rtao_strength();
 }
 
 bool shadows_cockpit_casts_shadow(const ship_info* sip) {

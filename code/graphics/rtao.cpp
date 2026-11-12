@@ -1,7 +1,6 @@
 #include "graphics/rtao.h"
 
 #include "graphics/2d.h"
-#include "graphics/shadows.h"
 #include "options/Option.h"
 
 int Rtao_samples = 0;
@@ -37,8 +36,9 @@ bool rtao_supported()
 
 bool rtao_enabled()
 {
-	// The shadow cascade parameters that RTAO reads are only created when shadows are on.
-	return Rtao_samples > 0 && rtao_supported() && Shadow_quality != ShadowQuality::Disabled;
+	// RTAO reads its inputs from the deferred global data, and the frame TLAS build also
+	// runs for RTAO alone. So RTAO does not depend on the shadow settings.
+	return Rtao_samples > 0 && rtao_supported();
 }
 
 void rtao_remove_unsupported_options()

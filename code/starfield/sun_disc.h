@@ -8,11 +8,16 @@
 // in starfield.cpp for how the measurement becomes a shadow penumbra, and $SunAngularSize: in
 // stars.tbl for how a table opts out of it.
 
-// Pixels at or above this fraction of the brightest pixel count as part of the disc.
-// The measurement is only weakly sensitive to it -- across the shipped sun art of retail,
-// the MediaVPs and several mods, moving this to 0.5 rescales every bitmap by ~1.37x while
-// preserving their order almost exactly (Spearman rho 0.96) -- so it behaves as a constant
-// factor that the calibration in starfield.cpp absorbs, not as a per-bitmap judgement call.
+// Radius of the drawn sun quad at +Scale: 1.0. stars_draw_sun() draws the quad with this radius
+// times the scale, and g3_render_rect_screen_aligned_2d() makes that radius the tangent of the
+// half angle that the quad subtends, for all FOVs, resolutions and aspect ratios.
+constexpr float SUN_QUAD_RADIUS = 0.05f;
+
+// Pixels at or above this fraction of the brightest pixel are part of the disc. The
+// measurement changes only a small quantity with this value. We tested the sun art of retail,
+// the MediaVPs and several mods. A value of 0.5 makes each bitmap approximately 1.37 times
+// larger, and keeps their order almost the same (Spearman rank correlation 0.96). Thus the
+// value acts as a constant factor, and the calibration in sun_disc.cpp compensates for it.
 constexpr float SUN_DISC_THRESHOLD = 0.9f;
 
 // Sun bitmaps whose brightest pixel is dimmer than this are treated as having no disc at
@@ -86,7 +91,8 @@ float sun_disc_tangent_from_fraction(float disc_fraction, float scale_x);
  * @brief Measures the disc fraction of a loaded sun bitmap
  *
  * Reads the bitmap's pixels on the CPU, so this is a one-shot operation -- callers must
- * cache the result rather than calling it per frame. For animated sun bitmaps this measures
+ * cache the result rather than calling it per frame. It frees the CPU copy of the pixels
+ * after the measurement, so call it when the bitmap loads, before page-in. For animated sun bitmaps this measures
  * the first frame, which is the handle bm_load_animation() returns.
  *
  * @return the disc fraction, or a negative value if the bitmap could not be read

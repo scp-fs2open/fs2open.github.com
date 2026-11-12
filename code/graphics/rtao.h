@@ -19,7 +19,8 @@ extern int Rtao_samples;
 bool rtao_supported();
 
 // Whether the deferred ambient pass should trace AO this frame, i.e. the user has
-// enabled it, the hardware supports it, AND shadows are on. This is the single source of truth --
+// enabled it and the hardware supports it. The shadow settings have no effect on RTAO.
+// This is the single source of truth --
 // gate any RTAO shader-flag, TLAS-build, or uniform code on this, not on
 // Rtao_samples/rtao_supported() separately.
 bool rtao_enabled();

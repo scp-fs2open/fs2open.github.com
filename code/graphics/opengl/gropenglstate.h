@@ -65,15 +65,22 @@ class opengl_texture_state
 		 * @warning This may not actually set the active texture unit to the specified value! If you require that then
 		 * you need to call SetActiveUnit!
 		 *
+		 * The sampler object is part of the unit binding: each call also sets it. So a later bind of
+		 * a different texture on this unit removes a sampler that an earlier bind set.
+		 *
 		 * @param unit The texture unit to use
 		 * @param tex_target The texture target of the texture id
 		 * @param tex_id The ID of the texture to enable
+		 * @param sampler The sampler object for this unit, or 0 for the texture's own sampling state
 		 */
-		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id);
+		void Enable(GLuint unit, GLenum tex_target, GLuint tex_id, GLuint sampler = 0);
 		void Delete(GLuint tex_id);
 
 		/**
 		 * @brief Binds a sampler object to the specified unit, or unbinds one if sampler is 0
+		 *
+		 * Prefer the sampler argument of Enable(). Use this function directly only to clear a
+		 * sampler before it is deleted.
 		 *
 		 * Sampler objects override the bound texture's own filter/compare-mode state for
 		 * that unit only, which is otherwise impossible to vary per-unit in this codebase

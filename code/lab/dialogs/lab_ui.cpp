@@ -540,7 +540,7 @@ void LabUi::build_rt_shadow_quality_combobox()
 		return;
 	}
 
-	with_Combo("RT Shadow Quality", rt_shadow_quality_settings[static_cast<int>(Rt_shadow_quality)])
+	with_Combo("Raytraced Shadow Quality", rt_shadow_quality_settings[static_cast<int>(Rt_shadow_quality)])
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(rt_shadow_quality_settings); n++) {
 			bool is_selected = static_cast<int>(Rt_shadow_quality) == n;
@@ -606,7 +606,7 @@ void LabUi::build_shadow_penumbra_sliders()
 		// Starts at whatever Shadow_quality implies; moving it pins a session-only
 		// override, so the slider stops tracking the quality tier from then on.
 		int samples = shadows_rt_sample_count();
-		if (SliderInt("RT Shadow Samples", &samples, 1, 16)) {
+		if (SliderInt("Raytraced Shadow Samples", &samples, 1, 16)) {
 			LabRenderer::setRtShadowSamples(samples);
 		}
 	}
@@ -643,7 +643,7 @@ void LabUi::build_shadow_penumbra_sliders()
 	}
 	if (override_sun) {
 		float sun_size = Sun_angular_size_override;
-		if (SliderFloat("Sun Angular Size (deg)", &sun_size, 0.0f, 10.0f)) {
+		if (SliderFloat("Sun Angular Size (degrees)", &sun_size, 0.0f, 10.0f)) {
 			LabRenderer::setSunAngularSizeOverride(sun_size);
 		}
 	}
@@ -651,14 +651,14 @@ void LabUi::build_shadow_penumbra_sliders()
 
 void LabUi::build_rtao_sliders()
 {
-	// Unlike the RT shadow sliders, RTAO is independent of the shadow method --
-	// it only needs ray-query support.
+	// Unlike the RT shadow sliders, RTAO (raytraced ambient occlusion) does not depend on
+	// the shadow method or the shadow quality. It only needs ray-query support.
 	if (!rtao_supported()) {
 		return;
 	}
 
 	int samples = Rtao_samples;
-	if (SliderInt("RTAO Samples", &samples, 0, 16)) {
+	if (SliderInt("Ambient Occlusion Rays", &samples, 0, 16)) {
 		LabRenderer::setRtaoSamples(samples);
 	}
 
@@ -666,12 +666,12 @@ void LabUi::build_rtao_sliders()
 	// $RTAO Strength); these override the active profile for this session only,
 	// same as the exposure/tonemapper controls below.
 	float radius = lighting_profiles::current_rtao_radius();
-	if (SliderFloat("RTAO Radius", &radius, 0.0f, 200.0f)) {
+	if (SliderFloat("Ambient Occlusion Radius", &radius, 0.0f, 200.0f)) {
 		lighting_profiles::lab_set_rtao_radius(radius);
 	}
 
 	float strength = lighting_profiles::current_rtao_strength();
-	if (SliderFloat("RTAO Strength", &strength, 0.0f, 2.0f)) {
+	if (SliderFloat("Ambient Occlusion Strength", &strength, 0.0f, 2.0f)) {
 		lighting_profiles::lab_set_rtao_strength(strength);
 	}
 }

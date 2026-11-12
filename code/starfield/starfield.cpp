@@ -96,9 +96,8 @@ typedef struct starfield_bitmap {
 	float r, g, b, i;		// only for suns
 	float angular_size;								// only for suns -- this sun's apparent diameter from stars.tbl;
 													// see SUN_ANGULAR_SIZE_UNSPECIFIED
-	float disc_fraction;							// only for suns -- cached sun_disc_measure_bitmap() result for
-													// disc_measured_for; negative means "not measured yet"
-	int disc_measured_for;							// only for suns -- bitmap_id disc_fraction was measured from
+	float disc_fraction;							// only for suns -- sun_disc_measure_bitmap() result for bitmap_id,
+													// set by sun_bitmap_load(); negative means "not measured"
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
@@ -414,7 +413,6 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	sbm->glow_n_frames = 1;
 	sbm->angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
 	sbm->disc_fraction = -1.0f;
-	sbm->disc_measured_for = -1;
 
 	for (i = 0; i < MAX_FLARE_BMP; i++) {
 		sbm->flare_bitmaps[i].bitmap_id = -1;
@@ -512,17 +510,14 @@ void parse_startbl(const char *filename)
 						Warning(LOCATION, "%s", warning.c_str());		// customized case is significant
 				}
 
-				// apparent diameter of the sun's disc in degrees (Sol is ~0.53). Only affects
-				// raytraced shadows, which get a penumbra sized to match. Left out, the size is
+				// apparent diameter of the sun's disc in degrees (Sol is ~0.53). It sets the
+				// shadow softness of both shadow methods. Left out, the size is
 				// measured from the sun bitmap instead -- see sun_angular_radius_tangent() -- so
 				// use 0 to ask for hard shadows and "derived" to say "measure it" outright.
 				if (optional_string("$SunAngularSize:")) {
 					if ( !optional_string("derived") ) {
 						stuff_float(&sbm.angular_size);
-						if (sbm.angular_size < 0.0f) {
-							error_display(0, "$SunAngularSize: for sun '%s' must be >= 0 (got %f); measuring the bitmap instead.", sbm.filename, sbm.angular_size);
-							sbm.angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
-						}
+						sbm.angular_size = stars_check_angular_size(sbm.angular_size, "$SunAngularSize:", sbm.filename);
 					}
 				}
 
@@ -730,6 +725,77 @@ void parse_startbl(const char *filename)
 	}
 }
 
+/**
+ * @brief Measures how much of a sun's bitmap is its emitting disc, and stores it in disc_fraction
+ *
+ * This reads the bitmap's pixels on the CPU, so it runs once, when the bitmap loads, and never
+ * in the draw path. The size only softens shadows, so with shadows off it does not read the
+ * bitmap. A sun whose stars.tbl entry gives a size also does not need the measurement.
+ */
+static void sun_measure_disc(starfield_bitmap& sb)
+{
+	sb.disc_fraction = 0.0f;
+
+	if ((sb.bitmap_id < 0) || (Shadow_quality == ShadowQuality::Disabled) || (sb.angular_size >= 0.0f)) {
+		return;
+	}
+
+	const float measured = sun_disc_measure_bitmap(sb.bitmap_id);
+
+	// both a bitmap we couldn't read and one with no drawn disc at all fall back to hard
+	// shadows, but they are very different things -- keep them apart in the log, or a broken
+	// read reads as "working as intended". Neither is worth a Warning(): this runs for every
+	// sun in every mission, not just for content that asked for it, and hard shadows are a
+	// perfectly serviceable outcome
+	if (measured < 0.0f) {
+		mprintf(("Sun '%s': could not read the bitmap to measure it, using hard shadows\n", sb.filename));
+	} else if (measured == 0.0f) {
+		// mods ship blank sun bitmaps to get a light source without a visible sun
+		mprintf(("Sun '%s': no drawn disc, using hard shadows\n", sb.filename));
+	} else {
+		// logged once per sun bitmap load -- this is what a mod tunes its suns against. The
+		// size is quoted at +Scale: 1.0 since the measurement is a property of the bitmap; a
+		// mission scaling its sun scales this with it.
+		mprintf(("Sun '%s': measured disc fraction %.3f (%.2f degrees at +Scale: 1.0)\n", sb.filename, measured,
+			fl_degrees(2.0f * atanf(sun_disc_tangent_from_fraction(measured, 1.0f)))));
+	}
+
+	sb.disc_fraction = (measured > 0.0f) ? measured : 0.0f;
+}
+
+/**
+ * @brief Loads the main bitmap of a sun if it is not loaded, then measures its disc
+ *
+ * Tries a static image first, then an animation. All sun bitmap loads go through this
+ * function, so disc_fraction always belongs to the loaded bitmap_id.
+ *
+ * @param warn whether to show a Warning() when the bitmap does not load
+ * @return true if the sun has a loaded bitmap
+ */
+static bool sun_bitmap_load(starfield_bitmap& sb, bool warn)
+{
+	if (sb.bitmap_id >= 0) {
+		return true;
+	}
+
+	sb.bitmap_id = bm_load(sb.filename);
+
+	// maybe didn't load a static image so try for an animated one
+	if (sb.bitmap_id < 0) {
+		sb.bitmap_id = bm_load_animation(sb.filename, &sb.n_frames, &sb.fps, nullptr, nullptr, true);
+
+		if (sb.bitmap_id < 0) {
+			if (warn) {
+				Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb.filename);
+			}
+			return false;
+		}
+	}
+
+	sun_measure_disc(sb);
+	return true;
+}
+
 void stars_load_all_bitmaps()
 {
 	static int Star_bitmaps_loaded = 0;
@@ -762,18 +828,7 @@ void stars_load_all_bitmaps()
 
 	for (auto &sb : Sun_bitmaps) {
 		// normal bitmap
-		if (sb.bitmap_id < 0) {
-			sb.bitmap_id = bm_load(sb.filename);
-
-			// maybe didn't load a static image so try for an animated one
-			if (sb.bitmap_id < 0) {
-				sb.bitmap_id = bm_load_animation(sb.filename, &sb.n_frames, &sb.fps, nullptr, nullptr, true);
-
-				if (sb.bitmap_id < 0) {
-					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb.filename);
-				}
-			}
-		}
+		sun_bitmap_load(sb, true);
 
 		// glow bitmap
 		if (sb.glow_bitmap < 0) {
@@ -884,13 +939,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 				sb.bitmap_id = -1;
 			}
 
-			// drop any derived angular size along with the bitmap it was measured from. The
-			// handle check in sun_angular_radius_tangent() can't be relied on for this: bm_load()
-			// hands back a recycled slot index, so a reloaded bitmap can come back on the handle
-			// it had before. This is what makes a size change take effect when the background
-			// changes -- which, outside of a mission, is every time the lab switches backgrounds.
+			// the measurement belongs to the released bitmap; sun_bitmap_load() measures again
 			sb.disc_fraction = -1.0f;
-			sb.disc_measured_for = -1;
 
 			if (sb.glow_bitmap > 0) {
 				bm_release(sb.glow_bitmap);
@@ -1325,43 +1375,18 @@ static float sun_explicit_angular_size(const starfield_bitmap *bm, float mission
 	return SUN_ANGULAR_SIZE_UNSPECIFIED;
 }
 
-/**
- * @brief How much of this sun's bitmap is its emitting disc, measuring it on first use
- *
- * @return the disc fraction, or 0 for a sun whose bitmap has no measurable disc
- */
-static float sun_measured_disc_fraction(starfield_bitmap *bm)
+float stars_check_angular_size(float degrees, const char* field, const char* sun_filename)
 {
-	// measuring reads the bitmap's pixels, so it happens once and is cached against the
-	// handle it was measured from
-	if ( (bm->disc_fraction >= 0.0f) && (bm->disc_measured_for == bm->bitmap_id) ) {
-		return bm->disc_fraction;
+	if (degrees < 0.0f) {
+		error_display(0, "%s for sun '%s' must be >= 0 (got %f); ignoring it.", field, sun_filename, degrees);
+		return SUN_ANGULAR_SIZE_UNSPECIFIED;
 	}
-
-	const float measured = sun_disc_measure_bitmap(bm->bitmap_id);
-
-	// both a bitmap we couldn't read and one with no drawn disc at all fall back to hard
-	// shadows, but they are very different things -- keep them apart in the log, or a broken
-	// read reads as "working as intended". Neither is worth a Warning(): this runs for every
-	// sun in every mission, not just for content that asked for it, and hard shadows are a
-	// perfectly serviceable outcome
-	if (measured < 0.0f) {
-		mprintf(("Sun '%s': could not read the bitmap to measure it, using hard shadows\n", bm->filename));
-	} else if (measured == 0.0f) {
-		// mods ship blank sun bitmaps to get a light source without a visible sun
-		mprintf(("Sun '%s': no drawn disc, using hard shadows\n", bm->filename));
-	} else {
-		// logged once per sun bitmap, not per frame -- this is what a mod tunes its suns
-		// against. The size is quoted at +Scale: 1.0 since the measurement is a property of
-		// the bitmap; a mission scaling its sun scales this with it.
-		mprintf(("Sun '%s': measured disc fraction %.3f (%.2f degrees at +Scale: 1.0)\n", bm->filename, measured,
-			fl_degrees(2.0f * atanf(sun_disc_tangent_from_fraction(measured, 1.0f)))));
+	if (degrees > SUN_ANGULAR_SIZE_MAX) {
+		error_display(0, "%s for sun '%s' must be <= %.0f (got %f); using %.0f.", field, sun_filename,
+			SUN_ANGULAR_SIZE_MAX, degrees, SUN_ANGULAR_SIZE_MAX);
+		return SUN_ANGULAR_SIZE_MAX;
 	}
-
-	bm->disc_fraction = (measured > 0.0f) ? measured : 0.0f;
-	bm->disc_measured_for = bm->bitmap_id;
-
-	return bm->disc_fraction;
+	return degrees;
 }
 
 /**
@@ -1382,12 +1407,9 @@ static float sun_angular_radius_tangent(starfield_bitmap *bm, float scale_x, flo
 		return sun_disc_tangent_from_diameter(specified);
 	}
 
-	// the size is only used to soften shadows, so do not read the bitmap when shadows are off
-	if (Shadow_quality == ShadowQuality::Disabled) {
-		return 0.0f;
-	}
-
-	return sun_disc_tangent_from_fraction(sun_measured_disc_fraction(bm), scale_x);
+	// sun_bitmap_load() measured the disc when the bitmap loaded. A sun that was not
+	// measured (for example, with shadows off) gets hard shadows.
+	return sun_disc_tangent_from_fraction(std::max(bm->disc_fraction, 0.0f), scale_x);
 }
 
 // draw sun
@@ -1438,19 +1460,20 @@ void stars_draw_sun(int show_sun)
 		sun_dir = sun_pos;
 		vm_vec_normalize(&sun_dir);
 
-		// add the light source corresponding to the sun, except when rendering to an envmap.
-		// For directional lights, source_radius carries the tangent of the sun's angular
-		// radius (see traceShadowRayCone() in shadows.sdr), sizing its shadow penumbra.
-		if ( !Rendering_to_env ) {
-			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b,
-				sun_angular_radius_tangent(bm, Suns[idx].scale_x, Suns[idx].angular_size));
-		}
-
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
 			local_scale = 1.0f + (SUPERNOVA_SUN_SCALE * supernova_pct_complete());
 		else
 			local_scale = 1.0f;
+
+		// add the light source corresponding to the sun, except when rendering to an envmap.
+		// For directional lights, source_radius carries the tangent of the sun's angular
+		// radius (see traceShadowRayCone() in shadows.sdr), sizing its shadow penumbra.
+		// A measured size uses the drawn scale, so a growing supernova also softens its shadows.
+		if ( !Rendering_to_env ) {
+			light_add_directional(&sun_dir, idx, !bm->glare, bm->i, bm->r, bm->g, bm->b,
+				sun_angular_radius_tangent(bm, Suns[idx].scale_x * local_scale, Suns[idx].angular_size));
+		}
 
 		// draw the sun itself, keep track of how many we drew
 		int bitmap_id = -1;
@@ -1476,7 +1499,7 @@ void stars_draw_sun(int show_sun)
 
 		material mat_params;
 		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
-		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
+		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, SUN_QUAD_RADIUS * Suns[idx].scale_x * local_scale, true);
 		Sun_drew++;
 
 // 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
@@ -2273,18 +2296,7 @@ void stars_page_in()
 
 		if (sb.preload) {
 			// normal bitmap
-			if (sb.bitmap_id < 0) {
-				sb.bitmap_id = bm_load(sb.filename);
-
-				// maybe didn't load a static image so try for an animated one
-				if (sb.bitmap_id < 0) {
-					sb.bitmap_id = bm_load_animation(sb.filename, &sb.n_frames, &sb.fps, nullptr, nullptr, true);
-
-					if (sb.bitmap_id < 0) {
-						Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb.filename);
-					}
-				}
-			}
+			sun_bitmap_load(sb, true);
 
 			// glow bitmap
 			if (sb.glow_bitmap < 0) {
@@ -2369,18 +2381,7 @@ void stars_page_in()
 			continue;
 
 		// normal bitmap
-		if (sb.bitmap_id < 0) {
-			sb.bitmap_id = bm_load(sb.filename);
-
-			// maybe didn't load a static image so try for an animated one
-			if (sb.bitmap_id < 0) {
-				sb.bitmap_id = bm_load_animation(sb.filename, &sb.n_frames, &sb.fps, nullptr, nullptr, true);
-
-				if (sb.bitmap_id < 0) {
-					Warning(LOCATION, "Unable to load sun bitmap: '%s'!\n", sb.filename);
-				}
-			}
-		}
+		sun_bitmap_load(sb, true);
 
 		// glow bitmap
 		if (sb.glow_bitmap < 0) {
@@ -2574,7 +2575,7 @@ int stars_find_bitmap(const char *name)
 }
 
 // The mission-side list entry and the in-world instance carry the same fields, so keeping the
-// copy in one place is what stops the three call sites drifting apart. angular_size is only
+// copy in one place is what stops the call sites drifting apart. angular_size is only
 // meaningful for suns, but copying it for bitmaps too is harmless and keeps every caller
 // identical -- which beats being selectively correct in a way no reader can verify.
 static void starfield_copy_entry_to_instance(const starfield_list_entry *sle, starfield_bitmap_instance &sbi)
@@ -2629,14 +2630,7 @@ void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle)
 	if (!SCP_vector_inbounds(collection, idx))
 		return;
 
-	auto& item = collection[idx];
-
-	item.ang = sle.ang;
-	item.div_x = sle.div_x;
-	item.div_y = sle.div_y;
-	item.scale_x = sle.scale_x;
-	item.scale_y = sle.scale_y;
-	item.angular_size = sle.angular_size;
+	starfield_copy_entry_to_instance(&sle, collection[idx]);
 
 	// this is necessary when modifying bitmaps, but not when modifying suns
 	if (!is_sun)
@@ -2668,16 +2662,9 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr)
 	// make sure any needed bitmaps are loaded
 	if (Sun_bitmaps[idx].bitmap_id < 0) {
 		// normal bitmap
-		Sun_bitmaps[idx].bitmap_id = bm_load(Sun_bitmaps[idx].filename);
-
-			// maybe didn't load a static image so try for an animated one
-		if (Sun_bitmaps[idx].bitmap_id < 0) {
-			Sun_bitmaps[idx].bitmap_id = bm_load_animation(Sun_bitmaps[idx].filename, &Sun_bitmaps[idx].n_frames, &Sun_bitmaps[idx].fps, nullptr, nullptr, true);
-
-			if (Sun_bitmaps[idx].bitmap_id < 0) {
-				// failed
-				return -1;
-			}
+		if (!sun_bitmap_load(Sun_bitmaps[idx], false)) {
+			// failed
+			return -1;
 		}
 
 		// glow bitmap

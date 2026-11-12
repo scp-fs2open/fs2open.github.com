@@ -614,8 +614,7 @@ void opengl_tnl_shutdown()
 		// Clear the tracked bindings before deleting -- glDeleteSamplers silently unbinds
 		// the sampler from every unit on the GL side, which would leave GL_state's tracking
 		// stale (BindSampler() would then skip a rebind of a since-deleted sampler name).
-		GL_state.Texture.BindSampler(7, 0);
-		GL_state.Texture.BindSampler(11, 0);
+		GL_state.Texture.BindSampler(SHADOW_MAP_RAW_TEXTURE_UNIT, 0);
 		glDeleteSamplers(1, &Shadow_map_raw_sampler);
 		Shadow_map_raw_sampler = 0;
 	}
@@ -974,11 +973,11 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SHADOWS)) {
 			Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
-			// Unit 11 is reserved for this -- see the raw-sampler bind alongside "shadow_map"
-			// below. Set unconditionally (even when contact hardening is unsupported) for the
+			// SHADOW_MAP_RAW_TEXTURE_UNIT is reserved for this -- see the raw-sampler bind alongside
+			// "shadow_map" below. Set unconditionally (even when contact hardening is unsupported) for the
 			// same AMD unbound-uniform reason as the rest of this block; the shader's own
 			// penumbra_scale sentinel check is what prevents the read at runtime.
-			Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", 11);
+			Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", SHADOW_MAP_RAW_TEXTURE_UNIT);
 		}
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_TRANSFORM))
@@ -1063,8 +1062,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		if (material_info->is_shadow_receiving()) {
 			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 			if (Shadow_map_raw_sampler) {
-				GL_state.Texture.Enable(11, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
-				GL_state.Texture.BindSampler(11, Shadow_map_raw_sampler);
+				GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
 			}
 		}
 

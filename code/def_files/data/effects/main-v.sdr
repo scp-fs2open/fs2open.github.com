@@ -7,6 +7,7 @@
 precision highp float;
 precision highp int;
 precision highp samplerBuffer;
+precision highp sampler2DArray;
 precision highp sampler2DArrayShadow;
 #else
 #extension GL_ARB_gpu_shader5: enable
@@ -115,31 +116,7 @@ uniform modelData {
 	int flags;
 };
 
-#ifdef VULKAN
-layout(set = 0, binding = 6, std140)
-#else
-layout(std140)
-#endif
-uniform shadowCascadeParams {
-	int cascade_offset;
-	int cascade_count;
-	float rtShadowBiasMin;
-	float rtShadowBiasMax;
-	int rtShadowSampleCount;
-	int rtaoSampleCount;
-	float rtaoRadius;
-	float rtaoStrength;
-
-	mat4 shadow_mv_matrix;
-
-	// See shadow_cascade_static_data (uniform_structs.h). Unused here; declared for block layout.
-	vec3 shadow_ray_view_origin;
-	int shadow_ray_cull_mask;
-	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 penumbra_scale[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-};
+#include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
 #ifdef VULKAN
 // Transform buffer for batched submodel rendering

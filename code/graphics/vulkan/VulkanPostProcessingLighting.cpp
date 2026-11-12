@@ -510,9 +510,9 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
 		header->nearPlane = gr_near_plane;
+		shadows_fill_deferred_global_data(*header);
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
-			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 			shadow_cascade_params_bind_deferred();
 		}
 	}

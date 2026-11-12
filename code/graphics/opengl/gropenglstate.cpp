@@ -94,17 +94,20 @@ void opengl_texture_state::Enable(GLuint tex_id)
 		return;
 	}
 
-	if (units[active_texture_unit].texture_id != tex_id) {
-		glBindTexture(units[active_texture_unit].texture_target, tex_id);
-		units[active_texture_unit].texture_id = tex_id;
-	}
+	glBindTexture(units[active_texture_unit].texture_target, tex_id);
+	units[active_texture_unit].texture_id = tex_id;
+
+	// A sampler that an earlier bind set belongs to the earlier texture. No GL call when
+	// the unit has no sampler.
+	BindSampler(active_texture_unit, 0);
 }
 
-void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id) {
+void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id, GLuint sampler) {
 	Assertion(unit < num_texture_units, "Invalid texture unit value!");
 
-	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id) {
-		// The texture unit already uses this texture. There is no need to change it
+	if (units[unit].texture_target == tex_target && units[unit].texture_id == tex_id
+		&& units[unit].bound_sampler == sampler) {
+		// The texture unit already uses this texture and sampler. There is no need to change it
 		return;
 	}
 
@@ -112,6 +115,7 @@ void opengl_texture_state::Enable(GLuint unit, GLenum tex_target, GLuint tex_id)
 	SetActiveUnit(unit);
 	SetTarget(tex_target);
 	Enable(tex_id);
+	BindSampler(unit, sampler);
 }
 
 void opengl_texture_state::BindSampler(GLuint unit, GLuint sampler)
@@ -141,6 +145,7 @@ void opengl_texture_state::Delete(GLuint tex_id)
 
 			glBindTexture(units[i].texture_target, 0);
 			units[i].texture_id = 0;
+			BindSampler(i, 0);
 
 			default_values(i, units[i].texture_target);
 

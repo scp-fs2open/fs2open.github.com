@@ -481,7 +481,6 @@ void init_function_pointers()
 
 	gr_screen.gf_model_loaded = vulkan_model_loaded;
 	gr_screen.gf_model_unloaded = vulkan_model_unloaded;
-	gr_screen.gf_build_shadow_tlas = vulkan_build_shadow_tlas;
 
 	gr_screen.gf_update_transform_buffer = vulkan_update_transform_buffer;
 	gr_screen.gf_update_buffer_data = vulkan_update_buffer_data;
@@ -579,33 +578,28 @@ void init_function_pointers()
 
 } // anonymous namespace
 
-// Outside the anonymous namespace: declared in gr_vulkan.h so the RTAO fallback
-// trigger in vulkan_deferred_lighting_finish() (VulkanDeferred.cpp) can call it
-// when shadow rendering didn't build this frame's TLAS.
-void vulkan_build_shadow_tlas()
+bool vulkan_frame_tlas_pending()
 {
-	if (auto* rt = getRaytracingManager()) {
-		// vkCmdBuildAccelerationStructuresKHR (and the memory barrier that follows
-		// it in buildTlas()) must be recorded outside any render pass instance.
-		// This is called once per frame, before the shadow map render pass begins,
-		// while the previous render pass (G-buffer/scene) is typically still
-		// active -- end it here. vulkan_shadow_map_start()'s first_pass branch
-		// skips its own endRenderPass() call when it finds none active.
-		auto* stateTracker = getStateTracker();
-		if (stateTracker->getCurrentRenderPass()) {
-			stateTracker->getCommandBuffer().endRenderPass();
-			stateTracker->setRenderPass(vk::RenderPass());
-		}
+	auto* rt = getRaytracingManager();
+	return rt != nullptr && rt->isEnabled() && shadows_rt_scene_needed() && !rt->isTlasBuiltThisFrame();
+}
 
-		rt->buildTlas();
-		// Refresh the Global set's live TLAS fallback so every writeSet(Global)
-		// this frame picks up the freshly built TLAS automatically -- see
-		// DescriptorFallbacks::shadowTlas.
-		getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
-		// The memoized per-frame Global set (VulkanDrawManager) must rebuild so the
-		// new TLAS reaches subsequent draws' Set 0 instead of a cached stale one.
-		getDrawManager()->invalidateGlobalSet();
+void vulkan_build_frame_tlas()
+{
+	auto* rt = getRaytracingManager();
+	if (rt == nullptr) {
+		return;
 	}
+
+	// vkCmdBuildAccelerationStructuresKHR and the barrier after it must be recorded outside a
+	// render pass instance. The caller makes sure that no render pass is open.
+	rt->buildTlas();
+	// Refresh the live TLAS value of the Global set, so that each writeSet(Global) in this
+	// frame gets the new TLAS. See DescriptorFallbacks::shadowTlas.
+	getDescriptorManager()->setCurrentShadowTlas(rt->getTlasForShaderBinding());
+	// The memoized Global set of VulkanDrawManager must rebuild, so that the next draws get
+	// the new TLAS and not a stale cached set.
+	getDrawManager()->invalidateGlobalSet();
 }
 
 void initialize_function_pointers() {

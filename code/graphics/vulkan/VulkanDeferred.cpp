@@ -19,7 +19,6 @@
 #include "graphics/matrix.h"
 #include "graphics/material.h"
 #include "graphics/grinternal.h"
-#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "lighting/lighting.h"
 #include "mission/missionparse.h"
@@ -539,23 +538,10 @@ void vulkan_deferred_lighting_finish()
 	auto* stateTracker = getStateTracker();
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
 
-	// TLAS for RTAO: when shadow rendering is off (Shadow_quality Disabled, or a
-	// frame that skips shadows_render_all entirely), nothing has built this
-	// frame's TLAS yet -- request it here. No-op when the shadow path already
-	// built it (buildTlas()'s per-frame guard). Acceleration-structure builds
-	// must be recorded outside a render pass, so this ends the G-buffer pass and
-	// clears it from the state tracker -- which is why step 1 below only ends
-	// the pass when it is still active.
-	if (rtao_enabled()) {
-		vulkan_build_shadow_tlas();
-	}
-
-	// 1. End G-buffer render pass (unless the RTAO TLAS build above already did)
+	// 1. End G-buffer render pass
 	// All 6 color attachments → eShaderReadOnlyOptimal
 	// Depth → eDepthStencilAttachmentOptimal
-	if (stateTracker->getCurrentRenderPass()) {
-		cmd.endRenderPass();
-	}
+	cmd.endRenderPass();
 
 	// 2. Copy emissive → composite (the emissive data becomes the base for light accumulation)
 	// Emissive → eShaderReadOnlyOptimal (done), composite → eColorAttachmentOptimal (for light accum)
@@ -697,10 +683,7 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 			}
 		}
 
-		// vulkan_build_shadow_tlas() (called just before this, every frame shadows
-		// are enabled) already ends whatever render pass was active -- TLAS builds
-		// are illegal inside a render pass instance -- and nulls out the tracked
-		// render pass. Only end it here if that didn't already happen.
+		// End the active render pass, if the state tracker has one.
 		if (stateTracker->getCurrentRenderPass()) {
 			cmd.endRenderPass();
 		}
@@ -845,22 +828,26 @@ void vulkan_shadow_map_end()
 		renderer->resumeSceneRendering();
 	}
 
-	// Restore viewport and scissor to scene size
-	{
-		vk::Viewport viewport;
-		viewport.x = static_cast<float>(gr_screen.offset_x);
-		viewport.y = static_cast<float>(gr_screen.offset_y);
-		viewport.width = static_cast<float>(gr_screen.clip_width);
-		viewport.height = static_cast<float>(gr_screen.clip_height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		cmd.setViewport(0, viewport);
+	vulkan_restore_scene_viewport();
+}
 
-		vk::Rect2D scissor;
-		scissor.offset = vk::Offset2D(gr_screen.offset_x, gr_screen.offset_y);
-		scissor.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.clip_width), static_cast<uint32_t>(gr_screen.clip_height));
-		cmd.setScissor(0, scissor);
-	}
+void vulkan_restore_scene_viewport()
+{
+	vk::CommandBuffer cmd = getStateTracker()->getCommandBuffer();
+
+	vk::Viewport viewport;
+	viewport.x = static_cast<float>(gr_screen.offset_x);
+	viewport.y = static_cast<float>(gr_screen.offset_y);
+	viewport.width = static_cast<float>(gr_screen.clip_width);
+	viewport.height = static_cast<float>(gr_screen.clip_height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(gr_screen.offset_x, gr_screen.offset_y);
+	scissor.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.clip_width), static_cast<uint32_t>(gr_screen.clip_height));
+	cmd.setScissor(0, scissor);
 }
 
 // ========== Decal Pass ==========

@@ -6186,10 +6186,7 @@ void parse_one_background(background_t *background)
 		// written before 26.3 simply don't have it
 		if (optional_string("+AngularSize:")) {
 			stuff_float(&sle.angular_size);
-			if (sle.angular_size < 0.0f) {
-				error_display(0, "+AngularSize: for sun '%s' must be >= 0 (got %f); ignoring it.", sle.filename, sle.angular_size);
-				sle.angular_size = SUN_ANGULAR_SIZE_UNSPECIFIED;
-			}
+			sle.angular_size = stars_check_angular_size(sle.angular_size, "+AngularSize:", sle.filename);
 		}
 
 		// add it

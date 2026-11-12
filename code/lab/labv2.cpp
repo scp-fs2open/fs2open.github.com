@@ -18,8 +18,12 @@ const std::unique_ptr<LabManager> &getLabManager() {
 
 namespace {
 // The lab changes these settings directly, so we save them when the lab opens and restore them when it closes.
+// Each LabRenderer setter that writes a game global must have a field here.
 struct LabSavedSettings {
+	ShadowRenderMethod shadow_render_method;
 	RTShadowQuality rt_shadow_quality;
+	int max_rt_shadow_lights;
+	int max_rt_shadow_local_lights;
 	float rt_shadow_bias_min;
 	float rt_shadow_bias_max;
 	int rt_shadow_samples_override;
@@ -35,7 +39,10 @@ LabSavedSettings Lab_saved_settings;
 void lab_init() {
 	gr_set_clear_color(0, 0, 0);
 
-	Lab_saved_settings = {Rt_shadow_quality,
+	Lab_saved_settings = {Shadow_render_method,
+		Rt_shadow_quality,
+		Max_rt_shadow_lights,
+		Max_rt_shadow_local_lights,
 		Rt_shadow_bias_min,
 		Rt_shadow_bias_max,
 		Rt_shadow_samples_override,
@@ -47,7 +54,10 @@ void lab_init() {
 
 void lab_close(bool reset) {
 	if (Lab_settings_saved) {
+		Shadow_render_method = Lab_saved_settings.shadow_render_method;
 		Rt_shadow_quality = Lab_saved_settings.rt_shadow_quality;
+		Max_rt_shadow_lights = Lab_saved_settings.max_rt_shadow_lights;
+		Max_rt_shadow_local_lights = Lab_saved_settings.max_rt_shadow_local_lights;
 		Rt_shadow_bias_min = Lab_saved_settings.rt_shadow_bias_min;
 		Rt_shadow_bias_max = Lab_saved_settings.rt_shadow_bias_max;
 		Rt_shadow_samples_override = Lab_saved_settings.rt_shadow_samples_override;

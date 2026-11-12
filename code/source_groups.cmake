@@ -269,6 +269,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_cascade_params.sdr
 	def_files/data/effects/shadow_map-f.sdr
 	def_files/data/effects/shadow_map-g.sdr
 	def_files/data/effects/shadow_map-v.sdr

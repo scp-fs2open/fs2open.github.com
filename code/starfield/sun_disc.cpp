@@ -8,12 +8,7 @@
 
 #include <cmath>
 
-// The sun quad is drawn with rad = 0.05f * scale_x (see stars_draw_sun()), and
-// g3_render_rect_screen_aligned_2d() sizes it so that rad is exactly the tangent of the
-// half-angle it subtends, independent of FOV, resolution and aspect ratio.
-static const float Sun_quad_tan_half_angle = 0.05f;
-
-// How much of that drawn size to believe. The drawn sun is an art decision rather than a
+// How much of the drawn size (SUN_QUAD_RADIUS, sun_disc.h) to believe. The drawn sun is an art decision rather than a
 // physical one: measured across the sun art of retail, the MediaVPs and several mods, the
 // emitting disc subtends a median of ~3.9x Sol's 0.53 degrees once the mission's +Scale: is
 // applied, and up to 26x in the worst retail mission. Taken literally that gives shadow edges
@@ -39,7 +34,7 @@ float sun_disc_tangent_from_fraction(float disc_fraction, float scale_x)
 		return 0.0f;
 	}
 
-	return MIN(Sun_quad_tan_half_angle * scale_x * disc_fraction * Sun_derived_size_calibration,
+	return MIN(SUN_QUAD_RADIUS * scale_x * disc_fraction * Sun_derived_size_calibration,
 		sun_disc_tangent_from_diameter(Sun_derived_max_diameter));
 }
 
@@ -208,10 +203,16 @@ float sun_disc_measure_bitmap(int bitmap_handle)
 			sun_disc_build_weights_16(pixels, width, height, has_alpha, weights);
 		} else {
 			bm_unlock(bitmap_handle);
+			bm_unload_fast(bitmap_handle);
 			return -1.0f;
 		}
 
 		bm_unlock(bitmap_handle);
+
+		// The measurement runs when the bitmap loads, before page-in. Free the CPU copy that
+		// bm_lock() made, so that page-in loads the texture in its usual format. This frees
+		// only CPU memory. A texture that the GPU already has stays as it is.
+		bm_unload_fast(bitmap_handle);
 	}
 
 	if (weights.empty()) {

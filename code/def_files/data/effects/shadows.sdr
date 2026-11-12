@@ -171,7 +171,7 @@ const float RT_SHADOW_MAX_DISTANCE = 10000.0;
 #extension GL_EXT_ray_query : require
 
 // Ray origin bias grows with distance from the camera, between the rtShadowBiasMin/
-// rtShadowBiasMax bounds (see shadowCascadeParams uniform block, and the Min/Max
+// rtShadowBiasMax bounds (see the shadowCascadeParams and globalDeferredData blocks, and the Min/Max
 // Raytraced Shadow Bias options in shadows.cpp). Empirically, geometry close to the
 // camera only needs biasMin worth of offset to clear self-intersection acne, while
 // distant geometry needs more -- consistent with the error source being G-buffer/
@@ -186,6 +186,20 @@ const float RT_SHADOW_BIAS_RAMP_DISTANCE = 2000.0;
 float computeRtShadowBias(float cameraDist, float biasMin, float biasMax)
 {
 	return mix(biasMin, biasMax, clamp(cameraDist / RT_SHADOW_BIAS_RAMP_DISTANCE, 0.0, 1.0));
+}
+
+// Traces one occlusion ray. traceShadowRay() and traceShadowRayCone() both use this function.
+// The origin must already include the bias. The direction must be a unit vector. cullMask has
+// the same meaning as in traceShadowRay(). Returns 1.0 when the ray reaches tMax with no hit, and
+// 0.0 when it hits an instance.
+float traceVisibilityRay(accelerationStructureEXT tlas, vec3 origin, vec3 direction, float tMax, uint cullMask)
+{
+	rayQueryEXT rq;
+	rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+		cullMask, origin, 0.001, direction, tMax);
+	while (rayQueryProceedEXT(rq)) {}
+
+	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;
 }
 
 // worldPos/worldNormal/worldLightDir must all be in the same world space the
@@ -205,26 +219,18 @@ float computeRtShadowBias(float cameraDist, float biasMin, float biasMax)
 //
 // cullMask selects which TLAS instances this ray can hit (Vulkan spec: an instance
 // is a candidate iff (cullMask & instance.mask) != 0). Callers should pass
-// shadow_ray_cull_mask (shadowCascadeParams uniform block) rather than a literal --
+// the shadow ray cull mask from a uniform block rather than a literal --
 // see SHADOW_RAY_CULL_MASK_EXCLUDE_VIEWER_HULL/TLAS_MASK_VIEWER_HULL (shadows.h)
 // for how it excludes the viewer ship's own hull outside the cockpit pass.
 float traceShadowRay(accelerationStructureEXT tlas, vec3 worldPos, vec3 worldNormal, vec3 worldLightDir, float tMax, float bias, uint cullMask)
 {
-	vec3 origin = worldPos + worldNormal * bias;
-	vec3 direction = normalize(worldLightDir);
-
-	rayQueryEXT rq;
-	rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
-		cullMask, origin, 0.001, direction, tMax);
-	while (rayQueryProceedEXT(rq)) {}
-
-	return (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) ? 1.0 : 0.0;
+	return traceVisibilityRay(tlas, worldPos + worldNormal * bias, normalize(worldLightDir), tMax, cullMask);
 }
 
 // Penumbra/AO sampling: at most this many rays per fragment per light, matching the size of
 // poissonDisc16 above (the RT cone/AO sampling below always wants the full 16-tap spread,
-// independent of SAMPLES_PCSS/SMOOTH_PCSS -- see the comment on poissonDisc16). rtShadowSampleCount/
-// rtaoSampleCount (shadowCascadeParams) are clamped against it, so a bad uniform value can't
+// independent of SAMPLES_PCSS/SMOOTH_PCSS -- see the comment on poissonDisc16). The
+// rtShadowSampleCount and rtaoSampleCount uniforms are clamped against it, so a bad uniform value can't
 // index out of the pattern.
 #define RT_SHADOW_MAX_SAMPLES 16
 
@@ -287,15 +293,7 @@ float traceShadowRayCone(accelerationStructureEXT tlas, vec3 worldPos, vec3 worl
 		vec2 p = poissonDisc16[i];
 		p = vec2(p.x * cosR - p.y * sinR, p.x * sinR + p.y * cosR);
 		vec3 sampleDir = normalize(direction + (tangent * p.x + bitangent * p.y) * coneHalfAngleTan);
-
-		rayQueryEXT rq;
-		rayQueryInitializeEXT(rq, tlas, gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
-			cullMask, origin, 0.001, sampleDir, tMax);
-		while (rayQueryProceedEXT(rq)) {}
-
-		if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-			visibility += 1.0;
-		}
+		visibility += traceVisibilityRay(tlas, origin, sampleDir, tMax, cullMask);
 	}
 	return visibility / float(samples);
 }
