@@ -237,8 +237,8 @@ bool ObjectOrientEditorDialogModel::apply()
 		}
 	}
 
-	// Notify the engine about moved objects
-	if (change_pos || relativeToOrigin) {
+	// Notify the engine about moved objects. A rotation also moves the docked partners.
+	if (change_pos || change_orient || _pointTo || relativeToOrigin) {
 		for (auto ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 			if (ptr->flags[Object::Object_Flags::Marked]) {
 				object_moved(ptr);

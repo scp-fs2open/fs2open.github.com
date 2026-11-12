@@ -1756,6 +1756,12 @@ void EditorViewport::cancel_drag() {
 		objp = GET_NEXT(objp);
 	}
 
+	// Put the docked partners back with the restored objects
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked])
+			object_moved(objp);
+	}
+
 	button_down = false;
 	moved = false;
 	Dup_drag = 0;

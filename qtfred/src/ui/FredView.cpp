@@ -1624,6 +1624,16 @@ void FredView::onTransformEditingFinished() {
 		}
 	}
 
+	// Move the docked partners with the changed objects
+	if (isMulti) {
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (p->flags[Object::Object_Flags::Marked])
+				object_moved(p);
+		}
+	} else {
+		object_moved(&Objects[curObj]);
+	}
+
 	fred->missionChanged();
 }
 
