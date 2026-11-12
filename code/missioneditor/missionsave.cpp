@@ -3163,6 +3163,19 @@ int Fred_mission_save::save_mission_info()
 		fso_comment_pop();
 	}
 
+	if (The_mission.gravity.xyz.y != 0.0f) {
+		fso_comment_push(";;FSO 23.0.0;;");
+		if (optional_string_fred("$Gravity Acceleration:")) {
+			parse_comments(2);
+			fout(" %f", -The_mission.gravity.xyz.y);
+		} else {
+			fout_version("\n\n$Gravity Acceleration: %f", -The_mission.gravity.xyz.y);
+		}
+		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 23.0.0;; $Gravity Acceleration:");
+	}
+
 	return err;
 }
 
@@ -3954,6 +3967,8 @@ int Fred_mission_save::save_objects()
 				fout(" \"no_collide\"");
 			if (shipp->flags[Ship::Ship_Flags::No_disabled_self_destruct])
 				fout(" \"no-disabled-self-destruct\"");
+			if (shipp->flags[Ship::Ship_Flags::Hide_mission_log])
+				fout(" \"hide-in-mission-log\"");
 			if (shipp->flags[Ship::Ship_Flags::Same_arrival_warp_when_docked])
 				fout(" \"same-arrival-warp-when-docked\"");
 			if (shipp->flags[Ship::Ship_Flags::Same_departure_warp_when_docked])

@@ -11,15 +11,13 @@ ShipSpecialStatsDialogModel::ShipSpecialStatsDialogModel(QObject* parent, Editor
 void ShipSpecialStatsDialogModel::initializeData()
 {
 	object* objp;
-	_numSelectedShips = 0;
-	_selectedShips.resize(MAX_SHIPS);
+	_selectedShips.clear();
 
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags[Object::Object_Flags::Marked]) {
-				_selectedShips[_numSelectedShips] = objp->instance;
-				_numSelectedShips++;
+				_selectedShips.push_back(objp->instance);
 			}
 		}
 		objp = GET_NEXT(objp);

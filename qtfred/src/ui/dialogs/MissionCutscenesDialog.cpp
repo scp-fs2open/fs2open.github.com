@@ -200,6 +200,9 @@ void MissionCutscenesDialog::on_cutsceneFilename_textChanged(const QString& text
 		_model->setCurrentCutsceneFilename(text.toUtf8().constData());
 
 		auto item = ui->cutsceneEventTree->currentItem();
+		if (item == nullptr) {
+			return;
+		}
 		while (item->parent() != nullptr) {
 			item = item->parent();
 		}
@@ -219,9 +222,11 @@ void MissionCutscenesDialog::on_cutsceneEventTree_selectedRootChanged(int formul
 	for (size_t i = 0; i < cutscenes.size(); ++i) {
 		if (cutscenes[i].formula == formula) {
 			_model->setCurrentCutscene(static_cast<int>(i));
-			break;
+			return;
 		}
 	}
+	// the tree reports no row after a delete; without this the fields would keep editing another cutscene
+	_model->setCurrentCutscene(-1);
 }
 
 void MissionCutscenesDialog::on_cutsceneEventTree_rootNodeDeleted(int node)
