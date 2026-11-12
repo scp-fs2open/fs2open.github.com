@@ -16238,8 +16238,9 @@ bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_cl
 	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
 		return false;
 
-	// allowed_weapons is built from the bank lists, so a class without them never gets here
-	if (bank < 0 || !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
+	// no bank given, or no per-bank lists: the class list decides
+	if (bank < 0 || sip->restricted_loadout_flag.empty() ||
+		!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
 		return true;
 
 	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]);

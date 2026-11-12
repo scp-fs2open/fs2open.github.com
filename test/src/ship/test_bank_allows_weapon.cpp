@@ -9,12 +9,15 @@ namespace {
 
 const int FIRST_SECONDARY = MAX_SHIP_PRIMARY_BANKS;
 
+using bank_lists_t = SCP_vector<std::pair<int, SCP_vector<int>>>;
+
 // mirrors parse_allowed_weapons: a bank is restricted only when its bank type has two or more lists
-ship_info make_class(const SCP_vector<std::pair<int, SCP_vector<int>>>& bank_lists, ubyte flag = REGULAR_WEAPON)
+void add_lists(ship_info& sip, const bank_lists_t& bank_lists, ubyte flag)
 {
-	ship_info sip;
-	sip.restricted_loadout_flag.resize(MAX_SHIP_WEAPONS);
-	sip.allowed_bank_restricted_weapons.resize(MAX_SHIP_WEAPONS);
+	if (sip.restricted_loadout_flag.empty()) {
+		sip.restricted_loadout_flag.resize(MAX_SHIP_WEAPONS);
+		sip.allowed_bank_restricted_weapons.resize(MAX_SHIP_WEAPONS);
+	}
 
 	int primary_lists = 0;
 	int secondary_lists = 0;
@@ -36,7 +39,12 @@ ship_info make_class(const SCP_vector<std::pair<int, SCP_vector<int>>>& bank_lis
 			sip.allowed_weapons.set_flag(weapon_class, flag);
 		}
 	}
+}
 
+ship_info make_class(const bank_lists_t& bank_lists, ubyte flag = REGULAR_WEAPON)
+{
+	ship_info sip;
+	add_lists(sip, bank_lists, flag);
 	return sip;
 }
 
@@ -91,6 +99,16 @@ TEST_F(ShipClassBankAllowsWeaponTest, class_without_lists_allows_nothing)
 	EXPECT_FALSE(ship_class_bank_allows_weapon(&sip, -1, 0));
 }
 
+TEST_F(ShipClassBankAllowsWeaponTest, class_list_without_bank_lists_decides_alone)
+{
+	ship_info sip;
+	sip.allowed_weapons.set_flag(1, REGULAR_WEAPON);
+
+	EXPECT_TRUE(ship_class_bank_allows_weapon(&sip, -1, 1));
+	EXPECT_TRUE(ship_class_bank_allows_weapon(&sip, 0, 1));
+	EXPECT_FALSE(ship_class_bank_allows_weapon(&sip, 0, 0));
+}
+
 TEST_F(ShipClassBankAllowsWeaponTest, empty_bank_is_always_allowed)
 {
 	const auto restricted = make_class({{0, {0}}, {1, {1}}});
@@ -120,4 +138,18 @@ TEST_F(ShipClassBankAllowsWeaponTest, dogfight_lists_apply_only_in_dogfight)
 
 	const auto regular = make_class({{0, {3}}});
 	EXPECT_FALSE(ship_class_bank_allows_weapon(&regular, 0, 3));
+}
+
+TEST_F(ShipClassBankAllowsWeaponTest, restrictions_follow_the_game_type)
+{
+	auto regular_restricted = make_class({{0, {0}}, {1, {1}}});
+	add_lists(regular_restricted, {{0, {0, 1}}}, DOGFIGHT_WEAPON);
+
+	auto dogfight_restricted = make_class({{0, {0, 1}}});
+	add_lists(dogfight_restricted, {{0, {1}}, {1, {0}}}, DOGFIGHT_WEAPON);
+
+	Game_mode = GM_MULTIPLAYER;
+	Netgame.type_flags = NG_TYPE_DOGFIGHT;
+	EXPECT_TRUE(ship_class_bank_allows_weapon(&regular_restricted, 1, 0));
+	EXPECT_FALSE(ship_class_bank_allows_weapon(&dogfight_restricted, 0, 0));
 }
