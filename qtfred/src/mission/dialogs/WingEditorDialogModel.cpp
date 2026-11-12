@@ -1013,8 +1013,8 @@ void WingEditorDialogModel::setArrivalTarget(int targetIndex)
 
 	// Set the distance to minimum if current is smaller
 	int minDistance = getMinArrivalDistance();
-	if (w->arrival_distance < minDistance) {
-		setArrivalDistance(minDistance);
+	if (minDistance < w->arrival_distance) {
+		setArrivalDistance(0);
 	}
 
 	modify(w->arrival_path_mask, 0);
