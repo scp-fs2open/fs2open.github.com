@@ -5,10 +5,7 @@
 #include <QActionGroup>
 #include <QtGui/QSurfaceFormat>
 #include <QtWidgets/QLabel>
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QDoubleSpinBox>
 #include <QtWidgets/QToolBar>
-#include <QtWidgets/QToolButton>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
 
@@ -37,6 +34,7 @@ class PropEditorDialog;
 }
 
 class SceneBrowserPanel;
+class TransformToolBar;
 
 namespace Ui {
 class FredView;
@@ -319,14 +317,6 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void onUpdateContextToolbar();
 	void quickRenameCurrentObject();
 
-	void initializeTransformBar();
-	void onUpdateTransformBar();
-	bool eventFilter(QObject* watched, QEvent* event) override;
-	// Returns 0, 1, or 2 for the X/Y/Z (or H/P/B) box of the transform toolbar, and -1 for all other objects
-	int transformBoxAxis(const QObject* object) const;
-	bool transformEditIsCurrent() const;
-	void applyTransformValue(int axis, double value);
-
 	QToolBar* _contextToolBar = nullptr;
 	QLabel*   _contextLabel   = nullptr;
 
@@ -338,36 +328,10 @@ class FredView: public QMainWindow, public IDialogProvider {
 	int            _ctxCachedSharedWing         = -2;     // multi-select: shared wing index (-1=none, -2=N/A)
 	waypoint_list* _ctxCachedSharedWaypointList = nullptr;
 
-	QToolBar*       _transformToolBar    = nullptr;
-	QLabel*         _transformLabel      = nullptr;
-	QLabel*         _transformLabelA     = nullptr;
-	QLabel*         _transformLabelB     = nullptr;
-	QLabel*         _transformLabelC     = nullptr;
-	QDoubleSpinBox* _transformA          = nullptr;
-	QDoubleSpinBox* _transformB          = nullptr;
-	QDoubleSpinBox* _transformC          = nullptr;
-	// The state when a transform box got the focus. Enter applies the typed value only if the current object
-	// and the mode did not change, and only if the value is different from the start value.
-	struct TransformEdit {
-		int        object     = -1;
-		CursorMode mode       = CursorMode::Selecting;
-		double     startValue = 0.0;
-	};
-	TransformEdit   _transformEdit;
-	QComboBox*      _transformMoveSpeedCombo = nullptr;
-	QComboBox*      _transformRotSpeedCombo  = nullptr;
+	TransformToolBar* _transformBar = nullptr;
 	// Last camera speeds written to QSettings; lets us persist on change instead of only on close.
 	int             _lastSavedCameraSpeedMove = -1;
 	int             _lastSavedCameraSpeedRot  = -1;
-	QComboBox*      _transformIffCombo   = nullptr;
-	QLabel*         _transformRadiusLabel = nullptr;
-	QToolButton*    _transformLocalBtn   = nullptr;
-	QComboBox*      _transformLayerCombo = nullptr;
-	bool            _tbLayerComboDirty   = true;  // rebuild layer combo only when layer structure changes
-	bool            _tbIffPopulated      = false; // IFF items are populated lazily (tables load after init)
-	bool            _tbLocalMove         = false; // remembered Local preference while in move mode
-	bool            _tbLocalRotate       = false; // remembered Local preference while in rotate mode
-	int             _tbCachedCursorMode  = -1;    // -1 forces per-mode restore on first update
 
 	void onShipClassSelected(int ship_class);
 	void onPropClassSelected(int prop_class);
