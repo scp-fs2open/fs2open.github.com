@@ -39,7 +39,9 @@ void PathRenderer::beginFrame() {
 	Assertion(!m_inFrame,
 			  "beginFrame() was called withoug ending previous frame! Check your path renderer calls or get a coder!");
 
-	nvgBeginFrame(m_context, gr_screen.max_w, gr_screen.max_h, 1.0f);
+	// While the VR HUD is drawn into its supersampled texture the logical size stays the same, but text and edges
+	// need to be rendered with proportionally more pixels.
+	nvgBeginFrame(m_context, gr_screen.max_w, gr_screen.max_h, Gr_vr_hud_scale);
 	m_inFrame = true;
 }
 

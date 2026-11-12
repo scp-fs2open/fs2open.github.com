@@ -283,10 +283,15 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 	}
 
 	GL_state.ScissorTest(GL_TRUE);
+
+	// the VR HUD texture can have more pixels than the logical screen; the clip rectangle is in logical pixels
+	const float scale = Gr_vr_hud_scale;
+	auto px = [scale](int v) { return static_cast<GLint>(lroundf(v * scale)); };
+
 	if(GL_rendering_to_texture) {
-		glScissor(x, y, w, h);
+		glScissor(px(x), px(y), px(w), px(h));
 	} else {
-		glScissor(x, gr_screen.max_h-y-h, w, h);
+		glScissor(px(x), px(gr_screen.max_h-y-h), px(w), px(h));
 	}
 }
 
@@ -1183,6 +1188,9 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_sync_delete = gr_opengl_sync_delete;
 
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
+
+	gr_screen.gf_vr_hud_begin = gr_opengl_vr_hud_begin;
+	gr_screen.gf_vr_hud_end = gr_opengl_vr_hud_end;
 
 	gr_screen.gf_override_fog = gr_opengl_override_fog;
 

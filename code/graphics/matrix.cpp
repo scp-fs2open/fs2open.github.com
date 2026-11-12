@@ -1,8 +1,13 @@
 
 #include "matrix.h"
 
+#include "graphics/material.h"
+#include "graphics/render.h"
 #include "graphics/util/UniformBuffer.h"
 #include "cmdline/cmdline.h"
+
+#include <array>
+#include <variant>
 
 #include <graphics/util/uniform_structs.h>
 
@@ -327,6 +332,109 @@ void gr_end_2d_matrix()
 }
 
 static bool scale_matrix_set = false;
+
+// Draw the VR HUD texture as one flat panel that is fixed to the ship: it hangs 'distance' in front of the virtual
+// HUD camera along the ship's axes, so it stays put relative to the cockpit when the head turns, tilts or moves.
+// The panel always covers the same angle as seen from the virtual HUD camera, so the HUD keeps the layout it was
+// designed with (brackets sit on their targets) whatever the distance. The distance only sets how far away the panel
+// looks and how much stereo depth it has; the further it is, the less the head position matters for the brackets.
+//
+//  texture        bitmap handle of the HUD render target (drawn upright, like the normal screen, y pointing down)
+//  eye_fov        the asymmetric frustum of the eye being rendered
+//  eye_pos/orient position and orientation of that eye in the world (head included)
+//  hud_pos/orient position and orientation of the virtual HUD camera (ship orientation, no head rotation)
+//  distance       how far in front of the virtual HUD camera the panel hangs, in world units (meters)
+//  scale_x/y      Matrix_scale of the virtual HUD camera, i.e. how its view maps onto the HUD texture
+//  canvas_w/h     size of the HUD texture in pixels
+void gr_vr_hud_draw(int texture, const fov_t& eye_fov, const vec3d* eye_pos, const matrix* eye_orient,
+	const vec3d* hud_pos, const matrix* hud_orient, float distance,
+	float scale_x, float scale_y, float canvas_w, float canvas_h)
+{
+	if (texture < 0 || !std::holds_alternative<asymmetric_fov>(eye_fov))
+		return;
+
+	const float z_near = distance * 0.1f;
+	const float z_far = distance * 10.0f;
+
+	// where the virtual HUD camera is, relative to the eye (the head can be away from the camera's resting position)
+	vec3d hud_offset;
+	vm_vec_sub(&hud_offset, hud_pos, eye_pos);
+
+	// The eye's projection, built the same way as gr_set_proj_matrix() does it. The stored angles are in "zoom" units;
+	// the frustum the engine really renders the world with is those angles times PROJ_FOV_FACTOR (see g3_set_fov()).
+	const asymmetric_fov afov = std::get<asymmetric_fov>(eye_fov) * PROJ_FOV_FACTOR;
+	matrix4 proj;
+	create_perspective_projection_matrix(&proj,
+		tanf(afov.left) * z_near, tanf(afov.right) * z_near,
+		tanf(afov.down) * z_near, tanf(afov.up) * z_near,
+		z_near, z_far);
+
+	// only the eye's rotation matters: the panel is far enough away that head movement is irrelevant
+	const matrix4 view = create_view_matrix(&vmd_zero_vector, eye_orient);
+
+	// where the corners of the HUD texture are, relative to the eye. A HUD pixel (px,py) sits in the direction
+	//   forward + (px - w/2) * 2 / (w * scale_x) * right - (py - h/2) * 2 / (h * scale_y) * up
+	// of the virtual HUD camera.
+	const float kx = distance * 2.0f / (canvas_w * scale_x);
+	const float ky = distance * 2.0f / (canvas_h * scale_y);
+
+	struct hud_vertex {
+		float x, y, z;
+		float u, v;
+	};
+
+	auto corner = [&](float px, float py, float u, float v) {
+		hud_vertex vert;
+
+		vec3d p = hud_orient->vec.fvec;
+		vm_vec_scale(&p, distance);
+		vm_vec_add2(&p, &hud_offset);
+		vm_vec_scale_add2(&p, &hud_orient->vec.rvec, (px - canvas_w * 0.5f) * kx);
+		vm_vec_scale_add2(&p, &hud_orient->vec.uvec, -(py - canvas_h * 0.5f) * ky);
+
+		vert.x = p.xyz.x;
+		vert.y = p.xyz.y;
+		vert.z = p.xyz.z;
+		vert.u = u;
+		vert.v = v;
+		return vert;
+	};
+
+	// the texture was rendered like the normal screen, so its first row is the bottom of the HUD
+	auto verts = std::array<hud_vertex, 4>{
+		corner(0.0f, 0.0f, 0.0f, 1.0f),
+		corner(canvas_w, 0.0f, 1.0f, 1.0f),
+		corner(0.0f, canvas_h, 0.0f, 0.0f),
+		corner(canvas_w, canvas_h, 1.0f, 0.0f)
+	};
+
+	vertex_layout layout;
+	layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(hud_vertex), offsetof(hud_vertex, x));
+	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(hud_vertex), offsetof(hud_vertex, u));
+
+	material mat;
+	material_set_interface(&mat, texture, true, 1.0f);
+	// the HUD texture holds colors that were already multiplied by their alpha while it was drawn
+	mat.set_blend_mode(ALPHA_BLEND_PREMULTIPLIED);
+
+	const matrix4 saved_projection = gr_projection_matrix;
+	const matrix4 saved_view = gr_view_matrix;
+	const matrix4 saved_model_view = gr_model_view_matrix;
+
+	gr_set_viewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+	gr_projection_matrix = proj;
+	gr_view_matrix = view;
+	gr_model_view_matrix = view;
+	matrix_uniform_up_to_date = false;
+
+	gr_render_primitives_immediate(&mat, PRIM_TYPE_TRISTRIP, &layout, 4, verts.data(), sizeof(verts));
+
+	gr_projection_matrix = saved_projection;
+	gr_view_matrix = saved_view;
+	gr_model_view_matrix = saved_model_view;
+	matrix_uniform_up_to_date = false;
+}
 
 void gr_push_scale_matrix(const vec3d *scale_factor)
 {

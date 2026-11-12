@@ -67,7 +67,7 @@ float g3_get_hfov(const fov_t& fov, bool visible_fov = true);
 /**
  * Set view from camera
  */
-void g3_set_view(camera *cam);
+void g3_set_view(camera *cam, const fov_t* fov_override = nullptr);
 
 /**
  * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
