@@ -14,6 +14,8 @@
 
 #include "network/psnet2.h"
 
+#include <utility>
+
 // prototypes instead of headers :)
 struct net_player;
 struct net_addr;
