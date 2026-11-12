@@ -168,6 +168,9 @@ bool ShipFlagsDialogModel::apply()
 		objp = GET_NEXT(objp);
 	}
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

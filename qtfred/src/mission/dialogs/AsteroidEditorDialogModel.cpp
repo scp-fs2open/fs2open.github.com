@@ -35,6 +35,9 @@ bool AsteroidEditorDialogModel::apply()
 		return false;
 	}
 	Asteroid_field = _a_field;
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

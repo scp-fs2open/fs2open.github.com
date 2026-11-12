@@ -25,6 +25,9 @@ bool ShipAltShipClassModel::apply()
 	for (int i = 0; i < _numSelectedShips; i++) {
 		Ships[_selectedShips[i]].s_alt_classes = _altClassPool;
 	}
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

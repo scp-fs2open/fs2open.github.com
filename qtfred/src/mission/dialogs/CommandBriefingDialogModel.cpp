@@ -19,6 +19,9 @@ bool CommandBriefingDialogModel::apply()
 		Cmd_briefs[i] = _wipCommandBrief[i];
 	}
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 
