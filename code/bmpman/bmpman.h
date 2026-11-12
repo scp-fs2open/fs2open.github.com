@@ -389,6 +389,15 @@ void bm_unlock(int handle);
  */
 int bm_is_valid(int handle);
 
+struct texture_material;
+
+/**
+ * @brief Gets the settings from the bitmap's .mat file
+ *
+ * @returns The settings, or nullptr if the handle is invalid or the bitmap has no .mat file
+ */
+const texture_material* bm_get_texture_material(int handle);
+
 /**
  * @brief Gets info on the bitmap indexed by handle.
  *

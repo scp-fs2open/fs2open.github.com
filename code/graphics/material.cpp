@@ -737,6 +737,18 @@ void model_material::reset_alpha_mult() {
 	Alpha_mult = 1.0f;
 }
 
+void model_material::set_glow(const texture_glow_settings& glow) {
+	Glow = glow;
+}
+
+float model_material::get_glow_intensity() const {
+	return texture_glow_intensity(Glow);
+}
+
+float model_material::get_glow_hdr_multiplier() const {
+	return texture_glow_hdr_multiplier(Glow);
+}
+
 uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;

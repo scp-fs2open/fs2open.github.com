@@ -1,0 +1,9 @@
+#PROFILES
+
+$Profile: Glow Negative
+$Glow Map Intensity: -1.0
+
+$Profile: Glow Negative HDR
+$Glow Map HDR Multiplier: -2.0
+
+#END PROFILES

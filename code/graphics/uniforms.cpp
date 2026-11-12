@@ -222,6 +222,9 @@ void convert_model_material(model_uniform_data* data_out,
 	if (material.is_alpha_mult_active()) {
 		data_out->alphaMult = material.get_alpha_mult();
 	}
+
+	data_out->glowIntensity = material.get_glow_intensity();
+	data_out->glowHdrMultiplier = material.get_glow_hdr_multiplier();
 }
 
 void convert_shadow_material(shadow_uniform_data* data_out,

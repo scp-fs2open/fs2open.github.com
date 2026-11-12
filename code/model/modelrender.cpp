@@ -1065,8 +1065,11 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
 		texture_maps[TM_AMBIENT_TYPE] = -1;
 
+		int material_base = -1;
+
 		if (forced_texture != -2) {
 			texture_maps[TM_BASE_TYPE] = forced_texture;
+			material_base = forced_texture;
 			alpha = forced_alpha;
 
 			if (interp->get_warp_bitmap() >= 0) {
@@ -1093,6 +1096,9 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			if ( texture_maps[TM_BASE_TYPE] < 0 ) {
 				continue;
 			}
+
+			// the .mat still applies to the glow map when the lab hides the diffuse map
+			material_base = texture_maps[TM_BASE_TYPE];
 
 			// doing glow maps?
 			if ( !(model_flags & MR_NO_GLOWMAPS) ) {
@@ -1215,6 +1221,9 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		color clr = interp->get_color();
 		model_render_determine_color(&clr, alpha, blend_mode, no_texturing ? true : false, rendering_material->is_desaturated());
 		rendering_material->set_color(clr);
+
+		const auto mat = bm_get_texture_material(material_base);
+		rendering_material->set_glow(mat != nullptr ? mat->glow : texture_glow_settings());
 
 		if ( (tmap_flags & TMAP_FLAG_TEXTURED) && (buffer->flags & VB_FLAG_UV1) ) {
 			rendering_material->set_texture_map(TM_BASE_TYPE,	texture_maps[TM_BASE_TYPE]);

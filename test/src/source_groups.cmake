@@ -25,6 +25,7 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_texture_material.cpp
 	   graphics/test_material.cpp
 	   graphics/test_shader_types.cpp
 )
@@ -34,6 +35,10 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()
+
+add_file_folder("Lighting"
+    lighting/test_glow_settings.cpp
+)
 
 add_file_folder("Math"
     math/test_vecmat.cpp

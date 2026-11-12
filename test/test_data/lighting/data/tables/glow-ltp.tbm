@@ -1,0 +1,12 @@
+#PROFILES
+
+$Profile: Glow Default
+
+$Profile: Glow Intensity
+$Glow Map Intensity: 2.0
+
+$Profile: Glow Both
+$Glow Map Intensity: 2.0
+$Glow Map HDR Multiplier: 5.0
+
+#END PROFILES
