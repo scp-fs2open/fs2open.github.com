@@ -4160,7 +4160,8 @@ void CFREDView::OnRunFreeSpace()
 	PROCESS_INFORMATION pi;
 	char *lpMsgBuf;
 
-	if (!FREDDoc_ptr->SaveModified())
+	// running does not replace the mission, so open editors keep their unapplied edits
+	if (!FREDDoc_ptr->CDocument::SaveModified())
 		return;
 
 	ZeroMemory(&si, sizeof(si));
