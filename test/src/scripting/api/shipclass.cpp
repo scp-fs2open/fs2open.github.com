@@ -142,3 +142,17 @@ TEST_F(ScriptingShipclassTest, loadoutWeapon_missingPrimaryBank)
 
 	EXPECT_EQ(-1, Wss_slots[0].wep[2]);
 }
+
+TEST_F(ScriptingShipclassTest, loadoutWeapon_weaponPastEnd)
+{
+	try {
+		this->EvalTestScript();
+		FAIL() << "Expected a Lua error for a weapon index one past the end";
+	} catch (const os::dialogs::LuaErrorException& e) {
+		EXPECT_NE(SCP_string(e.what()).find("The provided bank or weapon index is invalid!"), SCP_string::npos)
+			<< e.what();
+	}
+
+	EXPECT_EQ(-1, Wss_slots[0].wep[1]);
+	EXPECT_EQ(-1, Wss_slots[0].wep_count[1]);
+}

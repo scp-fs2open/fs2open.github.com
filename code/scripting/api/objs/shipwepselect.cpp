@@ -334,7 +334,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
 		}
-		if (bankType == -1 || wepIndex > weapon_info_size()) {
+		if (bankType == -1 || wepIndex >= weapon_info_size()) {
 			LuaError(L, "The provided bank or weapon index is invalid!");
 		} else {
 			bool valid = false;
@@ -357,10 +357,10 @@ ADE_INDEXER(l_Loadout_Weapon,
 				weapon_info* wip = &Weapon_info[wepIndex];
 				if (wip->subtype == bankType) {
 					current.getBank()->wep[bank] = wepIndex;
+					current.getBank()->wep_count[bank] = 0;
 				} else {
 					LuaError(L, "Cannot put a primary in a secondary bank or a secondary in a primary bank!");
 				}
-				current.getBank()->wep_count[bank] = 0;
 			}
 			else {
 				//If the ship cannot carry this weapon in this bank then we set it to -1 and the amount to -1
