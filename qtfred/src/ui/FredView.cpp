@@ -20,6 +20,7 @@
 #include <QEasingCurve>
 
 #include <project.h>
+#include <utils/finally.h>
 
 #include <qevent.h>
 #include <FredApplication.h>
@@ -361,7 +362,9 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 }
 
 void FredView::loadMissionFile(const QString& pathName, int flags) {
-	if (!maybePromptToSaveMissionChanges(tr("loading another mission"))) {
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs) || !maybePromptToSaveMissionChanges(tr("loading another mission"))) {
 		return;
 	}
 
@@ -654,6 +657,12 @@ void FredView::on_actionRevert_triggered(bool) {
 		QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
 	if (result != QMessageBox::Yes)
 		return;
+	// tools close before the flag is cleared, or a tool's "keep your changes?" would bring the save prompt back
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs)) {
+		return;
+	}
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
 	loadMissionFile(saveName);
@@ -672,7 +681,9 @@ void FredView::on_actionFS2_Compatibility_triggered(bool) {
 }
 
 void FredView::on_actionFS1_Mission_triggered(bool) {
-	if (!maybePromptToSaveMissionChanges(tr("importing an FS1 mission"))) {
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs) || !maybePromptToSaveMissionChanges(tr("importing an FS1 mission"))) {
 		return;
 	}
 	// Mark as unmodified so loadMissionFile won't prompt again after import
@@ -865,7 +876,9 @@ QSurface* FredView::getRenderSurface() {
 	return ui->centralWidget->getRenderSurface();
 }
 void FredView::newMission() {
-	if (!maybePromptToSaveMissionChanges(tr("creating a new mission"))) {
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs) || !maybePromptToSaveMissionChanges(tr("creating a new mission"))) {
 		return;
 	}
 
@@ -1707,6 +1720,43 @@ bool FredView::isMissionModified() const {
 	return _missionModified;
 }
 
+void FredView::registerMissionToolDialog(QWidget* dialog, std::function<QWidget*()> reopen)
+{
+	_missionToolDialogs.erase(std::remove_if(_missionToolDialogs.begin(),
+								  _missionToolDialogs.end(),
+								  [](const MissionToolDialog& tool) { return tool.dialog.isNull(); }),
+		_missionToolDialogs.end());
+	_missionToolDialogs.push_back({dialog, std::move(reopen)});
+}
+
+// tool models copy the mission when built, so open tools are rebuilt around a load instead of kept
+bool FredView::closeMissionToolDialogs(SCP_vector<ClosedToolDialog>& closed)
+{
+	const auto open = _missionToolDialogs;
+	for (const auto& tool : open) {
+		if (tool.dialog.isNull()) {
+			continue;
+		}
+		const auto geometry = tool.dialog->saveGeometry();
+		if (!tool.dialog->close()) {
+			return false;
+		}
+		closed.push_back({tool.reopen, geometry});
+		// delete now, not at the next event loop pass, or the reopen would find this instance still alive
+		delete tool.dialog.data();
+	}
+	return true;
+}
+
+void FredView::reopenMissionToolDialogs(const SCP_vector<ClosedToolDialog>& closed)
+{
+	for (const auto& tool : closed) {
+		if (auto* dialog = tool.reopen()) {
+			dialog->restoreGeometry(tool.geometry);
+		}
+	}
+}
+
 bool FredView::maybePromptToSaveMissionChanges(const QString& actionDescription) {
 	if (!isMissionModified()) {
 		return true;
@@ -2268,10 +2318,14 @@ void FredView::closeEvent(QCloseEvent* event) {
 	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
 	// Camera speeds are persisted on change in onUpdateViewSpeeds(), so no need to save them here.
 
-	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
+	// tools close first so their unapplied edits are offered before the save question, as on New/Open
+	SCP_vector<ClosedToolDialog> toolDialogs;
+	auto reopenToolDialogs = ::util::finally([&toolDialogs]() { reopenMissionToolDialogs(toolDialogs); });
+	if (!closeMissionToolDialogs(toolDialogs) || !maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
 		return;
 	}
+	reopenToolDialogs.disable();
 	disconnect();
 	QMainWindow::closeEvent(event);
 
@@ -2476,10 +2530,14 @@ namespace {
 // Opens a single instance of a dialog parented to `parent`, wired for
 // delete-on-close.  If an instance is already open, it is raised and focused
 // rather than creating a second one.  Returns the newly-created dialog, or
-// nullptr if an existing instance was reused (so callers can do extra one-time
-// setup only on first open).
+// nullptr if an existing instance was reused.  First-open setup belongs in
+// `setup`, which also runs when the dialog is reopened after a mission load.
 template <typename DialogT>
-DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
+DialogT* showSingleInstanceDialog(FredView* parent,
+	EditorViewport* viewport,
+	bool showsMissionData = true,
+	const std::function<void(DialogT*)>& setup = {})
+{
 	if (auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly)) {
 		existing->raise();
 		existing->activateWindow();
@@ -2487,6 +2545,14 @@ DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
 	}
 	auto* dialog = new DialogT(parent, viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	if (setup) {
+		setup(dialog);
+	}
+	if (showsMissionData) {
+		parent->registerMissionToolDialog(dialog, [parent, viewport, setup]() -> QWidget* {
+			return showSingleInstanceDialog<DialogT>(parent, viewport, true, setup);
+		});
+	}
 	dialog->show();
 	return dialog;
 }
@@ -2527,9 +2593,12 @@ void FredView::onOtherKindSelected(int other_kind) {
 	_viewport->cur_other_kind = static_cast<OtherKind>(other_kind);
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
-	if (auto* asteroidFieldEditor = showSingleInstanceDialog<dialogs::AsteroidEditorDialog>(this, _viewport)) {
-		connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
-	}
+	showSingleInstanceDialog<dialogs::AsteroidEditorDialog>(this,
+		_viewport,
+		true,
+		[this](dialogs::AsteroidEditorDialog* asteroidFieldEditor) {
+			connect(asteroidFieldEditor, &QDialog::finished, this, [this]() { fred->updateAllViewports(); });
+		});
 }
 void FredView::on_actionVolumetric_Nebula_triggered(bool)
 {
@@ -2594,7 +2663,7 @@ void FredView::on_actionProps_triggered(bool)
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
-	showSingleInstanceDialog<dialogs::CampaignEditorDialog>(this, _viewport);
+	showSingleInstanceDialog<dialogs::CampaignEditorDialog>(this, _viewport, false);
 }
 void FredView::on_actionObject_Orientation_triggered(bool) {
 	orientEditorTriggered();
@@ -3088,7 +3157,7 @@ void FredView::on_actionHelp_Topics_triggered(bool) {
 }
 
 void FredView::on_actionAbout_triggered(bool) {
-	showSingleInstanceDialog<dialogs::AboutDialog>(this, _viewport);
+	showSingleInstanceDialog<dialogs::AboutDialog>(this, _viewport, false);
 }
 void FredView::on_actionMission_Statistics_triggered(bool) {
 	showSingleInstanceDialog<dialogs::MissionStatsDialog>(this, _viewport);
@@ -3115,7 +3184,7 @@ void FredView::on_actionMission_Goals_triggered(bool) {
 
 void FredView::on_actionMusic_Player_triggered(bool)
 {
-	showSingleInstanceDialog<dialogs::MusicPlayerDialog>(this, _viewport);
+	showSingleInstanceDialog<dialogs::MusicPlayerDialog>(this, _viewport, false);
 }
 
 void FredView::on_actionCalculate_Relative_Coordinates_triggered(bool) {
