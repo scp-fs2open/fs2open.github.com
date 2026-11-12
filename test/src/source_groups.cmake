@@ -55,6 +55,10 @@ add_file_folder("model"
     model/test_modelread.cpp
 )
 
+add_file_folder("network"
+    network/test_multiutil.cpp
+)
+
 add_file_folder("Options"
     options/test_options_manager.cpp
 )
