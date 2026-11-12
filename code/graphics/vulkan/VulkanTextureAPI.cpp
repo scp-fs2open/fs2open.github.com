@@ -91,13 +91,16 @@ int vulkan_preload(int bitmap_num, int /*is_aabitmap*/)
 		return 0;
 	}
 
-	// Upload the texture
-	bool success = texManager->bm_data(bitmap_num, bmp, compType);
+	// bm_lock() already uploads through gr_bm_data(). Repeating that call
+	// recreates a resident 2D image and retains another copy until retirement.
+	slot = texManager->getTextureSlot(bitmap_num);
+	bool success = slot != nullptr && slot->imageView;
 
 	// Unlock bitmap
 	bm_unlock(bitmap_num);
 
 	if (success) {
+		texManager->releaseCpuBitmapData(bitmap_num);
 		static int successCount = 0;
 		if (successCount < 10) {
 			nprintf(("vulkan", "vulkan_preload: Successfully uploaded texture %d (compressed=%d)\n",

@@ -132,6 +132,9 @@ public:
 	 */
 	bool bm_data(int handle, bitmap* bm, int compType);
 
+	// Call after unlocking an uploaded bitmap; animations may have loaded every frame.
+	void releaseCpuBitmapData(int handle);
+
 	/**
 	 * @brief Create a render target
 	 */
@@ -304,8 +307,8 @@ private:
 	/**
 	 * @brief Submit an upload command buffer asynchronously and defer resource cleanup
 	 *
-	 * Submits without waitIdle. Queues staging buffer and command buffer for
-	 * deferred destruction/free after enough frames have elapsed.
+	 * Owns staging resources until the submission's fence signals, even when
+	 * level loading does not advance render frames.
 	 */
 	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
@@ -383,9 +386,12 @@ private:
 	// Deferred command buffer free list
 	struct PendingCommandBuffer {
 		vk::CommandBuffer cb;
-		uint32_t framesRemaining;
+		vk::Buffer stagingBuffer;
+		VulkanAllocation stagingAllocation;
+		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
+	size_t m_pendingUploadBytes = 0;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;

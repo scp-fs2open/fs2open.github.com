@@ -299,6 +299,10 @@ void VulkanTextureManager::shutdown()
 	if (!m_initialized) {
 		return;
 	}
+	// Upload ownership is independent of frame retirement. Complete and reclaim
+	// it before destroying the command pool or allocator during shutdown.
+	m_graphicsQueue.waitIdle();
+	processPendingCommandBuffers();
 
 	// Destroy fallback 3D texture
 	if (m_fallback3DView) {
@@ -2235,6 +2239,23 @@ tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
 	return static_cast<tcache_slot_vulkan*>(slot->gr_info);
 }
 
+void VulkanTextureManager::releaseCpuBitmapData(int handle)
+{
+	int numFrames = 1;
+	const int baseFrame = bm_get_base_frame(handle, &numFrames);
+	if (baseFrame < 0) {
+		return;
+	}
+	for (int frame = baseFrame; frame < baseFrame + numFrames; ++frame) {
+		const auto* ts = getTextureSlot(frame);
+		if (ts != nullptr && ts->imageView) {
+			// The staging copy owns the upload data now. This keeps the Vulkan
+			// image alive and respects other CPU locks and user-owned bitmaps.
+			bm_unload_fast(frame);
+		}
+	}
+}
+
 bool VulkanTextureManager::ensureCubemapUploaded(int handle)
 {
 	if (handle < 0) {
@@ -2264,6 +2285,9 @@ bool VulkanTextureManager::ensureCubemapUploaded(int handle)
 			ts = getTextureSlot(handle);
 			uploaded = (ts != nullptr && ts->imageView && ts->isCubemap) || uploadCubemap(handle, bmp, compType);
 			bm_unlock(handle);
+			if (uploaded) {
+				releaseCpuBitmapData(handle);
+			}
 		}
 	}
 
@@ -2715,6 +2739,19 @@ bool VulkanTextureManager::createStaticTexture2D(uint32_t width, uint32_t height
 bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffer,
                                                VulkanAllocation& outAllocation)
 {
+	processPendingCommandBuffers();
+	constexpr size_t maxPendingUploadBytes = 64 * 1024 * 1024;
+	constexpr size_t maxPendingUploads = 64;
+	// A single large upload may exceed this limit, but never accumulate more
+	// uploads behind it. Waiting on an upload fence does not submit or retire
+	// the render command buffer currently being recorded.
+	while (!m_pendingCommandBuffers.empty() &&
+	       (m_pendingCommandBuffers.size() >= maxPendingUploads || m_pendingUploadBytes >= maxPendingUploadBytes ||
+	        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
+		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
+		Assertion(result == vk::Result::eSuccess, "Failed waiting for a texture upload fence");
+		processPendingCommandBuffers();
+	}
 	vk::BufferCreateInfo bufferInfo;
 	bufferInfo.size = size;
 	bufferInfo.usage = vk::BufferUsageFlagBits::eTransferSrc;
@@ -2880,27 +2917,33 @@ void VulkanTextureManager::submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer s
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &cmd;
 
-	m_graphicsQueue.submit(submitInfo, nullptr);
-
-	// Defer staging buffer destruction (2 frames matches MAX_FRAMES_IN_FLIGHT)
-	auto* deletionQueue = getDeletionQueue();
-	deletionQueue->queueBuffer(stagingBuffer, stagingAllocation);
-
-	// Defer command buffer free
-	m_pendingCommandBuffers.push_back({cmd, VulkanDeletionQueue::FRAMES_TO_WAIT});
+	auto fence = m_device.createFence(vk::FenceCreateInfo{});
+	try {
+		m_graphicsQueue.submit(submitInfo, fence);
+	} catch (...) {
+		m_device.destroyFence(fence);
+		throw;
+	}
+	m_pendingCommandBuffers.push_back({cmd, stagingBuffer, stagingAllocation, fence});
+	m_pendingUploadBytes += static_cast<size_t>(stagingAllocation.size);
 }
 
 void VulkanTextureManager::processPendingCommandBuffers()
 {
-	auto it = m_pendingCommandBuffers.begin();
-	while (it != m_pendingCommandBuffers.end()) {
-		if (it->framesRemaining == 0) {
-			m_device.freeCommandBuffers(m_commandPool, it->cb);
-			it = m_pendingCommandBuffers.erase(it);
-		} else {
-			it->framesRemaining--;
-			++it;
+	size_t completed = 0;
+	for (auto& pending : m_pendingCommandBuffers) {
+		if (m_device.getFenceStatus(pending.fence) != vk::Result::eSuccess) {
+			break;
 		}
+		m_pendingUploadBytes -= static_cast<size_t>(pending.stagingAllocation.size);
+		m_device.destroyBuffer(pending.stagingBuffer);
+		m_memoryManager->freeAllocation(pending.stagingAllocation);
+		m_device.freeCommandBuffers(m_commandPool, pending.cb);
+		m_device.destroyFence(pending.fence);
+		++completed;
+	}
+	if (completed != 0) {
+		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin(), m_pendingCommandBuffers.begin() + completed);
 	}
 }
 
