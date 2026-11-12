@@ -93,7 +93,14 @@ extern void mission_log_init();
 
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
-extern void mission_log_add_entry(LogType type, const char *pname, const char *sname, int index = -1, int flags = 0);
+// pname_ship and sname_ship are the Ships[] indices behind the names when known; a callsign doesn't map back to a ship.
+extern void mission_log_add_entry(LogType type,
+	const char* pname,
+	const char* sname,
+	int index = -1,
+	int flags = 0,
+	int pname_ship = -1,
+	int sname_ship = -1);
 extern void mission_log_add_entry_multi(LogType type, const char *pname, const char *sname, int index, fix timestamp,
                                         int flags);
 
