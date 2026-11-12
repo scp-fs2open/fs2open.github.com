@@ -892,12 +892,21 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	{
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
+		int new_subtype = WP_UNUSED;
 		if(!stricmp("Primary", fname)) {
-			wip->subtype = WP_LASER;
+			new_subtype = WP_LASER;
 		} else if(!stricmp("Secondary", fname)) {
-			wip->subtype = WP_MISSILE;
+			new_subtype = WP_MISSILE;
 		} else {
 			Warning(LOCATION, "Unknown subtype on weapon '%s'", wip->name);
+		}
+
+		// primary/secondary defaults (such as the firing pattern) are assigned on the first entry, so a later
+		// entry can't switch between the two
+		if (new_subtype != WP_UNUSED && !first_time && wip->subtype != WP_UNUSED && ((new_subtype == WP_MISSILE) != wip->is_secondary())) {
+			error_display(0, "Weapon %s cannot be changed between a primary and a secondary by a later entry.  Keeping it as a %s.", wip->name, wip->is_secondary() ? "secondary" : "primary");
+		} else if (new_subtype != WP_UNUSED) {
+			wip->subtype = new_subtype;
 		}
 	}
 	else if(wip->subtype != WP_UNUSED && !first_time)
@@ -4677,6 +4686,15 @@ void weapon_post_process_entries()
 			if (wi.b_info.beam_num_sections == 0) {
 				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wi.name);
 			}
+
+			// a tabled pattern takes the place of the legacy fighter beam mapping, in which +Shots: was the number of
+			// firing points (for antifighter beams, +Shots: is the turret's aim vector count, which is unaffected)
+			if (wi.wi_flags[Weapon::Info_Flags::Firing_pattern_specified] && wi.b_info.beam_type != BeamType::ANTIFIGHTER
+				&& wi.b_info.beam_shots > 1 && wi.b_info.beam_shots != wi.shots) {
+				Warning(LOCATION, "Beam '%s' has both a $Firing Pattern: and a +Shots: of %d.  When fired as a fighter beam, the firing pattern takes precedence, "
+					"so $Shots: (currently %d) is the number of firing points per shot and +Shots: is ignored.  "
+					"Set $Shots: to %d to keep the previous number of firing points.", wi.name, wi.b_info.beam_shots, wi.shots, wi.b_info.beam_shots);
+			}
 		}
 
 		// if detonation range and lifetime range are the same, detonate on expiration
@@ -7091,51 +7109,21 @@ static size_t *get_pointer_to_weapon_fire_pattern_index(ship_weapon *ship_weapon
 	return nullptr;
 }
 
-// gets the substitution pattern pointer for a given weapon
-// returns [use_substitution, substituted_weapon_info_index]
-std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check)
+int weapon_resolve_substitution(int weapon_info_index, ship_weapon *swp, int pbank, int sbank)
 {
 	auto wip = &Weapon_info[weapon_info_index];
 	if (wip->num_substitution_patterns == 0)
-		return { false, -1 };
-
-	bool paired_shot = false;
-	if (shipp_to_check)
-	{
-		// only advance the pattern once per linked/paired shot rather than once per projectile
-		if (wip->subtype == WP_LASER)
-		{
-			paired_shot = shipp_to_check->flags[Ship::Ship_Flags::Primary_linked];
-		}
-		else if (wip->subtype == WP_MISSILE && shipp_to_check->flags[Ship::Ship_Flags::Secondary_dual_fire])
-		{
-			// for dual fire, also check whether the armed bank can actually use it, since the flag is ignored rather than cleared for banks that can't
-			paired_shot = ship_secondary_bank_can_dual_fire(shipp_to_check, sbank);
-		}
-	}
+		return weapon_info_index;
 
 	auto position = get_pointer_to_weapon_fire_pattern_index(swp, pbank, sbank);
-	if (position)
-	{
-		size_t curr_pos = *position;
-		if (paired_shot && curr_pos > 0)
-			curr_pos--;
-		++(*position);
-		*position = (*position) % wip->num_substitution_patterns;
+	if (!position)
+		return weapon_info_index;
 
-		if (wip->weapon_substitution_pattern[curr_pos] == -1)
-		{
-			// weapon doesn't want any sub
-			return { true, -1 };
-		}
-		else if (wip->weapon_substitution_pattern[curr_pos] != weapon_info_index)
-		{
-			// weapon wants to sub with weapon other than me
-			return { true, wip->weapon_substitution_pattern[curr_pos] };
-		}
-	}
+	size_t curr_pos = *position;
+	*position = (*position + 1) % wip->num_substitution_patterns;
 
-	return { false, -1 };
+	// an entry of -1 means this step of the pattern fires nothing
+	return wip->weapon_substitution_pattern[curr_pos];
 }
 
 /**
@@ -7144,7 +7132,7 @@ std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, ship_weapon *src_swp, int src_pbank, int src_sbank, const WeaponLaunchCurveData& launch_curve_data )
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, ship_weapon *src_swp, int src_pbank, int src_sbank, const WeaponLaunchCurveData& launch_curve_data, bool resolve_substitution )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -7167,20 +7155,13 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		parent_objp = &Objects[parent_objnum];
 	}
 
-	if ( (wip->num_substitution_patterns > 0) && (parent_objp != NULL)) {
-		// using substitution
-		// linked/dual fire pairing only applies to ship-level fire, not to turrets or non-ship parents
-		ship *parent_shipp = nullptr;
-		if (parent_objp->type == OBJ_SHIP && src_swp == &Ships[parent_objp->instance].weapons)
-			parent_shipp = &Ships[parent_objp->instance];
-		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(weapon_type, src_swp, src_pbank, src_sbank, parent_shipp);
+	if ( resolve_substitution && (wip->num_substitution_patterns > 0) && (parent_objp != nullptr)) {
+		int substituted_weapon_type = weapon_resolve_substitution(weapon_type, src_swp, src_pbank, src_sbank);
+		if (substituted_weapon_type < 0)
+			return -1;
 
-		if (use_substitution) {
-			if (substituted_weapon_info_index < 0)
-				return -1;
-
-			return weapon_create(pos, porient, substituted_weapon_info_index, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
-		}
+		if (substituted_weapon_type != weapon_type)
+			return weapon_create(pos, porient, substituted_weapon_type, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
 	}
 
 	float failure_rate = wip->failure_rate * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FAILURE_RATE_MULT, launch_curve_data);
@@ -7191,7 +7172,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		float test = rng.next();
 		if (test < failure_rate) {
 			if (wip->failure_sub != -1) {
-				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data);
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, src_swp, src_pbank, src_sbank, launch_curve_data, resolve_substitution);
 			} else {
 				return -1;
 			}

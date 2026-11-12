@@ -36,7 +36,6 @@
 #include "utils/modular_curves.h"
 
 #include <optional>
-#include <tuple>
 
 class object;
 class ship;
@@ -1058,7 +1057,8 @@ int weapon_create( const vec3d *pos,
 		0.f,
 		0.f,
 		0.f
-	});
+	},
+	bool resolve_substitution = true);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, tracking_info &tinfo)
@@ -1066,9 +1066,10 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 	weapon_set_tracking_info(weapon_objnum, parent_objnum, tinfo.objnum, tinfo.locked, tinfo.subsys);
 }
 
-// gets the substitution pattern pointer for a given weapon
-// returns [use_substitution, substituted_weapon_info_index]
-std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check);
+// Steps the bank's $Substitute: pattern and returns the weapon class to fire: weapon_info_index itself if the
+// weapon has no pattern, or -1 if this step fires nothing.  Ship banks call this once per volley, so that every
+// projectile in a volley is the same class, and then pass resolve_substitution = false to weapon_create.
+int weapon_resolve_substitution(int weapon_info_index, ship_weapon *swp, int pbank, int sbank);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);

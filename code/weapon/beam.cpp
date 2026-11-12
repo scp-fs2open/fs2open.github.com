@@ -364,29 +364,18 @@ int beam_fire(beam_fire_info *fire_info)
 	wip = &Weapon_info[fire_info->beam_info_index];	
 
 	// copied from weapon_create()
-	// (a beam whose info was dictated by the server has already had its substitution resolved there)
-	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr) && (fire_info->beam_info_override == nullptr)) {
-		// using substitution
+	// (a beam whose info was dictated by the server has already had its substitution resolved there, and
+	// fighter beams have theirs resolved once per volley by ship_fire_primary)
+	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr) && (fire_info->beam_info_override == nullptr)
+		&& (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED)) {
+		// the fire method and the turret are set independently, so the turret can be null here
+		ship_weapon *swp = (fire_info->turret != nullptr) ? &fire_info->turret->weapons : nullptr;
 
-		// the turret and fighter firing code both tell us which bank the beam is in
-		int pbank = fire_info->bank;
-		ship *parent_shipp = nullptr;
-		ship_weapon* swp = nullptr;
-		if (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED) {
-			// the fire method and the turret are set independently, so the turret can be null here
-			if (fire_info->turret != nullptr)
-				swp = &fire_info->turret->weapons;
-		} else if (fire_info->fire_method == BFM_FIGHTER_FIRED && fire_info->shooter->type == OBJ_SHIP) {
-			parent_shipp = &Ships[fire_info->shooter->instance];
-			swp = &parent_shipp->weapons;
-		}
+		int substituted_weapon_info_index = weapon_resolve_substitution(fire_info->beam_info_index, swp, fire_info->bank, -1);
+		if (substituted_weapon_info_index < 0)
+			return -1;
 
-		auto [use_substitution, substituted_weapon_info_index] = get_weapon_substitution_tuple(fire_info->beam_info_index, swp, pbank, -1, parent_shipp);
-
-		if (use_substitution) {
-			if (substituted_weapon_info_index < 0)
-				return -1;
-
+		if (substituted_weapon_info_index != fire_info->beam_info_index) {
 			fire_info->beam_info_index = substituted_weapon_info_index;
 			return beam_fire(fire_info);
 		}

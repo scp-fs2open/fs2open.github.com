@@ -13581,7 +13581,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					}
 					ship_stop_fire_primary_bank(obj, bank_to_fire);
 					continue;
-				}			
+				}
+
+				int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
 
 				for (int shot_index = 0; shot_index < shot_count; shot_index++) {
 					int pt = swp->primary_firepoint_state[bank_to_fire].next(firing_pattern, shot_index, num_slots);
@@ -13602,7 +13604,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				    	shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
 
     					fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
-    					fbfire_info.beam_info_index = shipp->weapons.primary_bank_weapons[bank_to_fire];
+    					fbfire_info.beam_info_index = volley_weapon_idx;
     					fbfire_info.beam_info_override = nullptr;
     					fbfire_info.shooter = &Objects[shipp->objnum];
 
@@ -13623,7 +13625,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[pt];
 						fbfire_info.point = pt;
 						fbfire_info.fire_method = BFM_FIGHTER_FIRED;
-						beam_fire(&fbfire_info);
+						if (volley_weapon_idx >= 0)
+							beam_fire(&fbfire_info);
 						has_fired = true;
 						num_fired++;
 					}
@@ -13738,6 +13741,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					vm_vec_zero(&total_impulse);
 				}
 
+				int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
+				weapon_info *fired_winfo_p = winfo_p;
+
 				for (int shot_index = 0; shot_index < shot_count; shot_index++) {
 					int pt = swp->primary_firepoint_state[bank_to_fire].next(firing_pattern, shot_index, num_slots);
 
@@ -13821,8 +13827,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
-							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
-								false, false, swp, bank_to_fire, -1, launch_curve_data );
+							weapon_objnum = (volley_weapon_idx < 0) ? -1 : weapon_create( &firing_pos, &firing_orient, volley_weapon_idx, OBJ_INDEX(obj), new_group_id,
+								false, false, swp, bank_to_fire, -1, launch_curve_data, false );
 
 							if (weapon_objnum == -1) {
 								// Weapon most likely failed to fire
@@ -13832,16 +13838,16 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								continue;
 							}
 
-							winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
+							fired_winfo_p = &Weapon_info[Weapons[Objects[weapon_objnum].instance].weapon_info_index];
 							has_fired = true;
 
 							weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 
-							if (winfo_p->wi_flags[Weapon::Info_Flags::Flak])
+							if (fired_winfo_p->wi_flags[Weapon::Info_Flags::Flak])
 							{
 								object *target;
 								vec3d predicted_pos;
-								float flak_range=(winfo_p->lifetime)*(winfo_p->max_speed);
+								float flak_range=(fired_winfo_p->lifetime)*(fired_winfo_p->max_speed);
 								float range_to_target = flak_range;
 								float wepstr=ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS);
 
@@ -13864,17 +13870,17 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								}
 								else
 								{
-									flak_set_range(&Objects[weapon_objnum], flak_range - winfo_p->untargeted_flak_range_penalty);
+									flak_set_range(&Objects[weapon_objnum], flak_range - fired_winfo_p->untargeted_flak_range_penalty);
 								}
 							}
 							// create the muzzle flash effect
 							shipfx_flash_create( obj, sip->model_num, &pnt, &dir, 1, weapon_idx, weapon_objnum );
 
 							// maybe shudder the ship - if its me
-							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
+							if((fired_winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 								// calculate some arbitrary value between 100
 								// (mass * velocity) / 10
-								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f * sip->ship_shudder_modifier * winfo_p->shudder_modifier);
+								game_shudder_apply(500, (fired_winfo_p->mass * fired_winfo_p->max_speed) * 0.1f * sip->ship_shudder_modifier * fired_winfo_p->shudder_modifier);
 							}
 
 							num_fired++;
@@ -13897,6 +13903,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						ship_apply_whack(&total_impulse, &avg_firepoint, obj);
 					}
 				}
+
+				// the launch sound below is the fired weapon's
+				winfo_p = fired_winfo_p;
 			}
 
 			CLAMP(shipp->weapon_energy, 0.0f, sip->max_weapon_reserve);
@@ -14593,6 +14602,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 		}
 
+		int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, -1, bank);
+
 		for ( int shot_index = 0; shot_index < shot_count; shot_index++ ) {
 			int pt = swp->secondary_firepoint_state[bank].next(firing_pattern, shot_index, num_slots);
 
@@ -14640,7 +14651,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 				// create the weapon -- for multiplayer, the net_signature is assigned inside
 				// of weapon_create
-				weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, swp, -1, bank, launch_curve_data);
+				weapon_num = (volley_weapon_idx < 0) ? -1 : weapon_create( &firing_pos, &firing_orient, volley_weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, swp, -1, bank, launch_curve_data, false);
 
 				if (weapon_num == -1) {
 					// Weapon most likely failed to fire
@@ -14651,9 +14662,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				}
 
 				if (weapon_num >= 0) {
-					// note that this is the class that was actually created, which can differ from the bank's
-					// class via $Substitute:; weapon_idx itself must not change, or the next shot in this volley
-					// would have its substitution resolved from the substituted class rather than the bank's
+					// this can differ from the bank's class via $Substitute: or a failure substitution
 					fired_weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
 					weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
 					has_fired = true;
