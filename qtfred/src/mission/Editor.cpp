@@ -1727,9 +1727,26 @@ void Editor::select_next_object()
 		}
 		setupCurrentObjectIndices(OBJ_INDEX(ptr));
 	} else {
+		// Skip the locked objects. Like a click in the viewport, this command does not select them.
+		const object* start = ptr;
+		while (ptr->flags[Object::Object_Flags::Locked_from_editing]) {
+			ptr = GET_NEXT(ptr);
+			if (ptr == END_OF_LIST(&obj_used_list))
+				ptr = GET_NEXT(ptr);
+			if (ptr == start)
+				return;  // all objects are locked
+		}
+
 		if (getNumMarked())
 			unmarkObject(currentObject);
 		markObject(OBJ_INDEX(ptr));
+	}
+}
+void Editor::unmarkLockedObjects()
+{
+	for (auto ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (ptr->flags[Object::Object_Flags::Marked] && ptr->flags[Object::Object_Flags::Locked_from_editing])
+			unmarkObject(OBJ_INDEX(ptr));
 	}
 }
 void Editor::select_previous_object()
@@ -1766,6 +1783,16 @@ void Editor::select_previous_object()
 		}
 		setupCurrentObjectIndices(arr[i]);
 	} else {
+		// Skip the locked objects. Like a click in the viewport, this command does not select them.
+		const int start = i;
+		while (Objects[arr[i]].flags[Object::Object_Flags::Locked_from_editing]) {
+			i--;
+			if (i < 0)
+				i = n - 1;
+			if (i == start)
+				return;  // all objects are locked
+		}
+
 		if (getNumMarked())
 			unmarkObject(currentObject);
 		markObject(arr[i]);

@@ -247,6 +247,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void populateCreatePropSubmenu();
 	void openLayerManagerDialog();
 	void ensureViewportFocus();
+	void selectWing(int wing);
 	void enforceSideDockAreas();
 
 	void onGroupSelected(int group);

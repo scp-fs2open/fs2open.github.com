@@ -209,6 +209,9 @@ class Editor : public QObject {
 	 * @param[in] wing Index of the wing to mark
 	 */
 	void mark_wing(int wing);
+	// Unmark the marked objects that are locked. The Select Wing commands call this function after mark_wing(),
+	// because like a click in the viewport, they do not select a locked object.
+	void unmarkLockedObjects();
 
 	bool query_single_wing_marked();
 
