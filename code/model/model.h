@@ -121,7 +121,6 @@ struct model_electrical_arc : electrical_arc
 struct submodel_instance
 {
 	float	cur_angle = 0.0f;							// The current angle this thing is turned to.
-	float	prev_angle = 0.0f;
 	float	turret_idle_angle = 0.0f;				// If this is a turret, this is the expected idling angle of the submodel
 
 	float	current_turn_rate = 0.0f;
@@ -130,7 +129,6 @@ struct submodel_instance
 	TIMESTAMP stepped_rotation_started;
 
 	float	cur_offset = 0.0f;
-	float	prev_offset = 0.0f;
 
 	float	current_shift_rate = 0.0f;
 	float	desired_shift_rate = 0.0f;
@@ -140,7 +138,7 @@ struct submodel_instance
 	bool	blown_off = false;						// If set, this subobject is not rendered or used for collision
 
 	// These fields are the true standard reference for submodel rotation.  They should seldom be read directly
-	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
+	// and should almost never be written directly.  In most cases, coders should prefer cur_angle.
 	matrix	canonical_orient = vmd_identity_matrix;
 	// The pose at the end of last frame; written only by model_instance_snapshot_prev_all (for Can_move submodels),
 	// by direct pose setters (for others, which the snapshot skips) and copies/resets of a whole pose, never by code that moves the submodel

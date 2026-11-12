@@ -1017,24 +1017,19 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 	}
 }
 
-// used in collision code to check if submodel rotates too far
-float get_submodel_delta_angle(const submodel_instance *smi)
+// used in collision code to check if submodel rotates too far since last frame
+static bool submodel_rotated_less_than(const submodel_instance *smi, float max_angle)
 {
-	// find the angle
-	float delta_angle = smi->cur_angle - smi->prev_angle;
-
-	// make sure we get the short way around
-	if (delta_angle > PI) {
-		delta_angle = (PI2 - delta_angle);
-	}
-
-	return delta_angle;
+	// The rotation since last frame is cur * prev^T, and a rotation by angle a has trace 1 + 2cos(a)
+	const auto& cur = smi->canonical_orient;
+	const auto& prev = smi->canonical_prev_orient;
+	const float trace = vm_vec_dot(&cur.vec.rvec, &prev.vec.rvec) + vm_vec_dot(&cur.vec.uvec, &prev.vec.uvec) + vm_vec_dot(&cur.vec.fvec, &prev.vec.fvec);
+	return trace > 1.0f + 2.0f * cosf(max_angle);
 }
 
-float get_submodel_delta_shift(const submodel_instance *smi)
+static bool submodel_shifted_less_than(const submodel_instance *smi, float max_distance)
 {
-	// this is a bit simpler
-	return std::abs(smi->cur_offset - smi->prev_offset);
+	return vm_vec_dist_squared(&smi->canonical_offset, &smi->canonical_prev_offset) < max_distance * max_distance;
 }
 
 void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
@@ -4305,9 +4300,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 
 	float elapsed_time = timestamp_since(smi->stepped_rotation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
 
-	// save last angles
-	smi->prev_angle = smi->cur_angle;
-
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
 
@@ -4375,9 +4367,6 @@ void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi)
 		smi->stepped_translation_started = _timestamp();
 
 	float elapsed_time = timestamp_since(smi->stepped_translation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
-
-	// save last offset
-	smi->prev_offset = smi->cur_offset;
 
 	// linear displacement of one step
 	float step_size = psub->stepped_translation->step_distance;
@@ -4451,8 +4440,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	Assert(sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
 	Assert(sm->look_at_submodel >= 0);
 
-	// save last angles
-	smi->prev_angle = smi->cur_angle;
+	const float old_angle = smi->cur_angle;
 
 	//------------
 	// Calculate the destination point in world coordinates
@@ -4488,8 +4476,8 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	// calculate turn rate
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
-	if (std::abs(smi->cur_angle - smi->prev_angle) < PI)
-		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
+	if (std::abs(smi->cur_angle - old_angle) < PI)
+		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - old_angle) / flFrametime;
 
 	// and now set the other submodel fields
 	submodel_canonicalize_rotation(sm, smi, true);
@@ -4526,11 +4514,8 @@ void submodel_translate(model_subsystem *psub, submodel_instance *smi)
 }
 
 // Helper function for both rotation and translation
-void submodel_movement_calc(float &prev_value, float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
+void submodel_movement_calc(float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
 {
-	// save last value
-	prev_value = cur_value;
-
 	float delta;
 
 	if (instant_accel) {
@@ -4564,13 +4549,13 @@ void submodel_movement_calc(float &prev_value, float &cur_value, float &current_
 }
 void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 {
-	submodel_movement_calc(smi->prev_angle, smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
+	submodel_movement_calc(smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
 	submodel_canonicalize_rotation(sm, smi, true);
 }
 
 void submodel_translate(bsp_info *sm, submodel_instance *smi)
 {
-	submodel_movement_calc(smi->prev_offset, smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
+	submodel_movement_calc(smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
 	submodel_canonicalize_translation(sm, smi);
 }
 
@@ -5071,11 +5056,9 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		}
 
 		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
-			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
-			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
+			isMoving |= submodel_rotated_less_than(&child_submodel_instance, MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY);
 		} else if (child_submodel.translation_type == MOVEMENT_TYPE_REGULAR || child_submodel.translation_type == MOVEMENT_TYPE_INTRINSIC) {
-			float delta_shift = get_submodel_delta_shift(&child_submodel_instance);
-			isMoving |= delta_shift < MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY;
+			isMoving |= submodel_shifted_less_than(&child_submodel_instance, MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY);
 		} else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
 			isMoving = true;
 		}
