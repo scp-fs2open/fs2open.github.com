@@ -2561,11 +2561,11 @@ void vm_vec_unit_sphere_point(vec3d *out, float z_scale, float phi_scale)
 
 // given a start vector and a radius, generate a point in a spherical volume
 // if on_surface is true, the point will be on the surface of the sphere
-namespace {
-	util::UniformFloatRange float_range(0.0f, 1.0f);
-}
 void vm_vec_random_in_sphere(vec3d *out, const vec3d *in, float radius, bool on_surface, bool bias_towards_center)
 {
+	// Built on first use, so with -seed it takes its generator after Random::seed_ranges() has run.
+	static util::UniformFloatRange float_range(0.0f, 1.0f);
+
 	vec3d temp;
 
 	vm_vec_unit_sphere_point(&temp, float_range.next(), float_range.next());

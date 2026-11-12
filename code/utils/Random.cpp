@@ -7,6 +7,9 @@
 #include <cstdint>
 
 #include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
+
+extern bool Cmdline_reuse_rng_seed;
 
 namespace util {
 
@@ -52,6 +55,23 @@ void Random::seed(unsigned int val)
 {
 	Assert(val > 0);
 	SCP_rng.seed(val);
+}
+
+void Random::seed_ranges(unsigned int val)
+{
+	Assert(val > 0);
+	seeder.seed(val);
+}
+
+unsigned int Random::shuffle_seed()
+{
+	// multiplayer seeds the main RNG from the netgame and ignores -seed, so don't draw from it there
+	if (Cmdline_reuse_rng_seed && !(Game_mode & GM_MULTIPLAYER)) {
+		return static_cast<unsigned int>(next());
+	}
+
+	std::random_device rd;
+	return rd();
 }
 
 int Random::next()

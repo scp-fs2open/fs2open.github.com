@@ -10,6 +10,12 @@ public:
 
 	// seed(1) will result in RNG using its default seed
 	static void seed(unsigned int val);
+	// Seed independent RandomRange instances created after this call.
+	static void seed_ranges(unsigned int val);
+
+	// Seed for a one-off generator handed to std::shuffle. With -seed (outside multiplayer) it is drawn
+	// from the main RNG, so shuffles repeat from run to run; otherwise it comes from the OS, as before.
+	static unsigned int shuffle_seed();
 
 	// return a value in [0, MAX_VALUE]
 	static int next(); // uniformly between 0 and MAX_VALUE
