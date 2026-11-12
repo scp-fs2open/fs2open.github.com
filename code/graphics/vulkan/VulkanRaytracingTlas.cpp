@@ -425,6 +425,12 @@ void VulkanRaytracingManager::buildTlas()
 		return;
 	}
 
+	// Build only one time in each frame. See isTlasBuiltThisFrame().
+	if (isTlasBuiltThisFrame()) {
+		return;
+	}
+	m_lastTlasBuildFrame = m_bufferManager->getCurrentFrameNumber();
+
 	// Each frame-in-flight slot owns its own instance/TLAS/scratch buffers (see
 	// FrameTlasResources' declaration for why a single shared set would race
 	// across overlapping in-flight frames).

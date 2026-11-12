@@ -24,6 +24,7 @@ PreferencesDialogModel::PreferencesDialogModel(QObject* parent, EditorViewport* 
 	, _showSexpHelpWingEditor(viewport->Show_sexp_help_wing_editor)
 	, _themeMode(viewport->Theme_mode)
 	, _dataMenuStyle(viewport->Data_menu_style)
+	, _classicMenuLayout(viewport->Classic_menu_layout)
 	, _toolbarIconSize(viewport->toolbar_icon_size)
 	, _outlineLod(viewport->view.Outline_lod)
 	, _labelFontScale(viewport->view.Label_font_scale)
@@ -68,6 +69,7 @@ bool PreferencesDialogModel::apply() {
 	_viewport->Show_sexp_help_wing_editor       = _showSexpHelpWingEditor;
 	_viewport->Theme_mode                       = _themeMode;
 	_viewport->Data_menu_style                  = _dataMenuStyle;
+	_viewport->Classic_menu_layout              = _classicMenuLayout;
 	_viewport->toolbar_icon_size                = _toolbarIconSize;
 	_viewport->view.Outline_lod                 = _outlineLod;
 	_viewport->view.Label_font_scale            = _labelFontScale;
@@ -177,6 +179,9 @@ void PreferencesDialogModel::setThemeMode(ThemeMode value) { modify(_themeMode, 
 
 DataMenuStyle PreferencesDialogModel::getDataMenuStyle() const { return _dataMenuStyle; }
 void PreferencesDialogModel::setDataMenuStyle(DataMenuStyle value) { modify(_dataMenuStyle, value); }
+
+bool PreferencesDialogModel::getClassicMenuLayout() const { return _classicMenuLayout; }
+void PreferencesDialogModel::setClassicMenuLayout(bool value) { modify(_classicMenuLayout, value); }
 
 int  PreferencesDialogModel::getToolbarIconSize() const { return _toolbarIconSize; }
 void PreferencesDialogModel::setToolbarIconSize(int size) { modify(_toolbarIconSize, size); }

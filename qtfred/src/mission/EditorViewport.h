@@ -244,6 +244,8 @@ class EditorViewport {
 
 	DataMenuStyle Data_menu_style = DataMenuStyle::Auto;
 
+	bool Classic_menu_layout = false; // FRED2's Editors and Misc menus instead of the grouped ones
+
 	void saveSettings() const;
 
 	Editor* editor = nullptr;

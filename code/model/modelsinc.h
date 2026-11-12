@@ -88,14 +88,10 @@ extern const ubyte* Macro_ubyte_bounds;
 
 void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
-void interp_clear_instance();
-
 // endian swapping stuff - tigital
 void swap_bsp_data( polymodel *pm, void *model_ptr );
 
 // endian swapping stuff - kaz
 void swap_sldc_data(ubyte *buffer);
-
-extern vec3d **Interp_verts;
 
 #endif

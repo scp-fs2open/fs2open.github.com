@@ -411,6 +411,28 @@ void model_page_in_stop()
 	}
 }
 
+model_memory_stats model_get_memory_stats()
+{
+	model_memory_stats stats;
+	stats.valid = true;
+
+	for (const auto pm : Polygon_models) {
+			if (pm == nullptr) {
+			continue;
+		}
+
+		stats.model_count++;
+		stats.vertex_bytes += pm->vert_source.Vertex_list_size;
+		stats.index_bytes += pm->vert_source.Index_list_size;
+
+		for (int j = 0; j < pm->n_models; j++) {
+			stats.bsp_data_bytes += pm->submodel[j].bsp_data_size;
+		}
+	}
+
+	return stats;
+}
+
 void model_init()
 {
 	int i;
@@ -2106,7 +2128,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (sm->bsp_data_size > 0) {
 						sm->bsp_data = make_shared<ubyte[]>(sm->bsp_data_size);
 						cfread(sm->bsp_data.get(), 1, sm->bsp_data_size, fp);
+						Macro_ubyte_bounds = sm->bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, sm->bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 					}
 					else {
 						sm->bsp_data = nullptr;
@@ -2122,7 +2146,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread(bsp_data.get(), 1, sm->bsp_data_size, fp);
 
 						// byte swap first thing
+						Macro_ubyte_bounds = bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 
 						extern bool Cmdline_no_bsp_align;
 						if (Cmdline_no_bsp_align) {
@@ -5116,8 +5142,6 @@ void model_clear_instance(int model_num)
 		pm->maps[i].ResetToOriginal();
 	}
 	// ---- end of stuff that should be moved into model instances at some point
-
-	interp_clear_instance();
 }
 
 void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
@@ -5577,14 +5601,11 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, n_norms);
-
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
 		src->xyz.y = INTEL_FLOAT( &src->xyz.y );
 		src->xyz.z = INTEL_FLOAT( &src->xyz.z );
 
-		Interp_verts[n] = src;
 		src++;	//tigital
 
 		for (i=0; i<normcount[n]; i++){
@@ -5686,32 +5707,6 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	verts = (short *)(p+44);
 	for (i=0; i<nv*2; i++){
 		verts[i] = INTEL_SHORT( verts[i] );
-	}
-
-	if ( pm->version < 2003 )	{
-		// Set the "normal_point" part of field to be the center of the polygon
-		vec3d center_point;
-		vm_vec_zero( &center_point );
-
-		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
-		}
-
-		center_point.xyz.x /= nv;
-		center_point.xyz.y /= nv;
-		center_point.xyz.z /= nv;
-
-		*vp(p+20) = center_point;
-
-		float rad = 0.0f;
-
-		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i*2]] );
-			if ( dist > rad )	{
-				rad = dist;
-			}
-		}
-		fl(p+32) = rad;
 	}
 }
 

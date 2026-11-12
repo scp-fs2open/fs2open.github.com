@@ -3144,6 +3144,62 @@ ADE_FUNC(getMissileList,
 	}));
 }
 
+ADE_FUNC(getWeaponList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of weapons in this mission",
+	"iterator<weapon>",
+	"An iterator across all weapons in the mission, including lasers, missiles, and flak. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	int idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Weapons array to find the next live weapon
+		while (idx < MAX_WEAPONS) {
+			const weapon& wp = Weapons[idx];
+			idx++;
+
+			// unused slots have objnum -1
+			if (wp.objnum >= 0) {
+				if (!Objects[wp.objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Weapon.Set(object_h(wp.objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more live weapons found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+	}));
+}
+
+ADE_FUNC(getBeamList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of beams in this mission",
+	"iterator<beam>",
+	"An iterator across all beams in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	size_t idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Beams array to find the next active beam
+		while (idx < Beams.size()) {
+			const beam& b = Beams[idx];
+			idx++;
+
+			// inactive and freed beams both have objnum -1
+			if (b.objnum >= 0) {
+				if (!Objects[b.objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Beam.Set(object_h(b.objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more active beams found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+	}));
+}
+
 ADE_FUNC(getAsteroidList,
 	l_Mission,
 	nullptr,
@@ -3200,6 +3256,62 @@ ADE_FUNC(getDebrisList,
 		}
 
 		// end of list or no more valid debris found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+	}));
+}
+
+ADE_FUNC(getFireballList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of fireballs in this mission",
+	"iterator<fireball>",
+	"An iterator across all fireballs in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	size_t idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Fireballs vector to find the next live fireball
+		while (idx < Fireballs.size()) {
+			const fireball& fb = Fireballs[idx];
+			idx++;
+
+			// deleted fireballs keep their slot with objnum -1
+			if (fb.objnum >= 0) {
+				if (!Objects[fb.objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Fireball.Set(object_h(fb.objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more live fireballs found
+		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+	}));
+}
+
+ADE_FUNC(getPropList,
+	l_Mission,
+	nullptr,
+	"Get an iterator to the list of props in this mission",
+	"iterator<prop>",
+	"An iterator across all props in the mission. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	size_t idx = 0;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [idx](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		// iterate through the Props vector to find the next live prop
+		while (idx < Props.size()) {
+			const auto& opt_prop = Props[idx];
+			idx++;
+
+			// deleted props leave an empty optional behind
+			if (opt_prop.has_value() && opt_prop->objnum >= 0) {
+				if (!Objects[opt_prop->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Prop.Set(object_h(opt_prop->objnum))) };
+				}
+			}
+		}
+
+		// end of list or no more live props found
 		return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 	}));
 }

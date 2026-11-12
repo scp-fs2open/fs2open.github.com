@@ -11,6 +11,7 @@
 #include "VulkanTexture.h"
 #include "VulkanRenderer.h"
 #include "VulkanPostProcessing.h"
+#include "VulkanDeferred.h"
 #include "VulkanDescriptorManager.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanMemory.h"
@@ -98,8 +99,7 @@ void vulkan_set_default_material_uniforms(material* material_info)
 		                              (clip_plane.normal.xyz.y * clip_plane.position.xyz.y) +
 		                              (clip_plane.normal.xyz.z * clip_plane.position.xyz.z));
 
-		// Model matrix (identity for now, material doesn't provide one)
-		vm_matrix4_set_identity(&data->modelMatrix);
+		data->modelMatrix = gr_model_matrix_stack.get_transform();
 	} else {
 		data->clipEnabled = 0;
 		vm_matrix4_set_identity(&data->modelMatrix);
@@ -217,7 +217,30 @@ void vulkan_scene_texture_begin()
 
 	// Switch to HDR scene render pass when post-processing is enabled
 	auto* pp = getPostProcessor();
-	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override) {
+	const bool useSceneTarget = pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override;
+
+	// Build the ray-tracing TLAS for this frame here, one time, before the scene draws start.
+	// The camera and the objects are final at this point. A TLAS build must be outside a render
+	// pass. The scene pass starts below, so the build adds no pass break to that path.
+	if (vulkan_frame_tlas_pending() && !renderer->isSceneRendering()) {
+		renderer->endCurrentRenderPass();
+		vulkan_build_frame_tlas();
+
+		if (!useSceneTarget) {
+			// No scene pass follows, so resume the pass that the build interrupted.
+			auto* texMgr = getTextureManager();
+			const int rtHandle = (renderer->isRenderTargetActive() && texMgr) ? texMgr->getCurrentRenderTarget() : -1;
+			auto* rtSlot = rtHandle >= 0 ? texMgr->getTextureSlot(rtHandle) : nullptr;
+			if (rtSlot != nullptr) {
+				renderer->resumeRenderTargetPass(rtSlot);
+			} else {
+				renderer->resumeSwapChainPass();
+			}
+			vulkan_restore_scene_viewport();
+		}
+	}
+
+	if (useSceneTarget) {
 		renderer->beginSceneRendering();
 		High_dynamic_range = true;
 	} else {
@@ -613,6 +636,9 @@ void vulkan_calculate_irrmap()
 	}
 
 	// Get envmap cubemap view
+	if (!texManager->ensureCubemapUploaded(ENVMAP)) {
+		return;
+	}
 	auto* envSlot = bm_get_slot(ENVMAP, true);
 	if (!envSlot || !envSlot->gr_info) {
 		return;
@@ -637,9 +663,6 @@ void vulkan_calculate_irrmap()
 	}
 
 	vk::CommandBuffer cmd = stateTracker->getCommandBuffer();
-
-	// End the current swap chain render pass
-	cmd.endRenderPass();
 
 	// Create pipeline for irradiance map generation
 	PipelineConfig config;
@@ -711,6 +734,9 @@ void vulkan_calculate_irrmap()
 
 	vk::Extent2D irrExtent(irrTs->width, irrTs->height);
 
+	// End the swap chain pass only after the early returns above, which never resume it
+	cmd.endRenderPass();
+
 	for (size_t face = 0; face < irrTs->cubeFaceFramebuffers.size(); face++) {
 		vk::Framebuffer fb = irrTs->cubeFaceFramebuffers[face];
 		if (!fb) {
@@ -753,15 +779,16 @@ void vulkan_calculate_irrmap()
 		// Set 0: Global (all fallback)
 		vk::DescriptorSet globalSet = descManager->allocateFrameSet(DescriptorSetIndex::Global);
 		Assert(globalSet);
-		writer.writeSet(globalSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Global));
+		writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 		// Set 1: Material (envmap cubemap at element 0 of texture array)
 		vk::DescriptorSet materialSet = descManager->allocateFrameSet(DescriptorSetIndex::Material);
 		Assert(materialSet);
-		writer.writeSet(materialSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::Material));
+		writer.writeSet(DescriptorSetIndex::Material, materialSet);
 		{
 			std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texImages;
-			texImages.fill(descManager->getFallbacks().texture2D);
+			// irrmap-f.sdr declares this binding as samplerCube, so every element needs a cube view
+			texImages.fill(descManager->getFallbacks().textureCube);
 			texImages[0].imageView = envmapView;
 			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 		}
@@ -769,14 +796,14 @@ void vulkan_calculate_irrmap()
 		// Set 2: PerDraw (face UBO at binding 0)
 		vk::DescriptorSet perDrawSet = descManager->allocateFrameSet(DescriptorSetIndex::PerDraw);
 		Assert(perDrawSet);
-		writer.writeSet(perDrawSet, VulkanDescriptorManager::getSetTemplate(DescriptorSetIndex::PerDraw));
+		writer.writeSet(DescriptorSetIndex::PerDraw, perDrawSet);
 		writer.setBuffer(PerDrawBinding::GenericData, {faceUBO,
 			static_cast<vk::DeviceSize>(face) * UBO_SLOT_SIZE, UBO_SLOT_SIZE});
 		writer.flush();
 
 		// Bind all descriptor sets
-		cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout,
-			0, {globalSet, materialSet, perDrawSet}, {});
+		const vk::DescriptorSet sets[] = {globalSet, materialSet, perDrawSet};
+		writer.bindSets(cmd, pipelineLayout, DescriptorSetIndex::Global, sets);
 
 		// Draw fullscreen triangle
 		cmd.draw(3, 1, 0, 0);

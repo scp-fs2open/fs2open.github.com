@@ -6,7 +6,7 @@
 #include <direct.h>
 #endif
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 //Required because X defines none and always, which is used later
 #undef None
@@ -1164,6 +1164,7 @@ void gr_opengl_init_function_pointers()
 
 	gr_screen.gf_is_capable = gr_opengl_is_capable;
 	gr_screen.gf_get_property = gr_opengl_get_property;
+	gr_screen.gf_get_memory_stats = gr_opengl_get_memory_stats;
 
 	gr_screen.gf_push_debug_group = gr_opengl_push_debug_group;
 	gr_screen.gf_pop_debug_group = gr_opengl_pop_debug_group;
@@ -1394,7 +1395,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
 		Error(LOCATION, "Failed to load GLX!");
 	}
@@ -1630,6 +1631,18 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case gr_capability::CAPABILITY_RAYTRACED_SHADOWS:
 		// Raytraced shadows are only implemented for the Vulkan backend.
 		return false;
+	case gr_capability::CAPABILITY_SHADOW_CONTACT_HARDENING:
+		// Needs a second sampler object (compare mode off) on the shadow map. Sampler
+		// objects are technically also available pre-3.3 via ARB_sampler_objects, but this
+		// project's glad build only wires glGenSamplers/glBindSampler/glSamplerParameteri
+		// up behind the core GL_VERSION_3_3 flag, not a separate ARB entry point -- so that's
+		// the check that actually reflects whether those functions are non-null here.
+#ifdef USE_OPENGL_ES
+		// GLES has no GLAD_GL_VERSION_3_3 symbol, and the sampler setup here is desktop GL only.
+		return false;
+#else
+		return GLAD_GL_VERSION_3_3 != 0;
+#endif
 	}
 
 

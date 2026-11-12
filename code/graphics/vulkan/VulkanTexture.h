@@ -195,6 +195,13 @@ public:
 	tcache_slot_vulkan* getTextureSlot(int handle);
 
 	/**
+	 * @brief Upload a cubemap bitmap as a cubemap if it has not been uploaded yet
+	 * @param[in] handle bitmap handle of a DDS cubemap (compressed or not) or a cubemap render target
+	 * @return true if the handle now has a cubemap image view
+	 */
+	bool ensureCubemapUploaded(int handle);
+
+	/**
 	 * @brief Bitmap handle of the render target currently bound via bm_set_render_target,
 	 *        or -1 when rendering to the default framebuffer. Used by gr.screenToBlob so a
 	 *        capture reads the active render target instead of the on-screen framebuffer.
@@ -382,6 +389,7 @@ private:
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
+	uint m_failedCubemapSignature = 0;
 	VulkanMemoryManager* m_memoryManager = nullptr;
 	vk::CommandPool m_commandPool;
 	vk::Queue m_graphicsQueue;

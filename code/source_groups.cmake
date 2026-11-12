@@ -269,6 +269,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_cascade_params.sdr
 	def_files/data/effects/shadow_map-f.sdr
 	def_files/data/effects/shadow_map-g.sdr
 	def_files/data/effects/shadow_map-v.sdr
@@ -481,6 +482,8 @@ add_file_folder("Graphics"
 	graphics/shader_types.cpp
 	graphics/shader_types.h
 	graphics/render_queue.h
+	graphics/rtao.cpp
+	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -1760,6 +1763,8 @@ add_file_folder("Starfield"
 	starfield/nebula.h
 	starfield/starfield.cpp
 	starfield/starfield.h
+	starfield/sun_disc.cpp
+	starfield/sun_disc.h
 	starfield/supernova.cpp
 	starfield/supernova.h
 	starfield/starfield_flags.h
@@ -1791,6 +1796,8 @@ add_file_folder("Tracing"
 	tracing/MainFrameTimer.cpp
 	tracing/Monitor.h
 	tracing/Monitor.cpp
+	tracing/ProfilerOverlay.h
+	tracing/ProfilerOverlay.cpp
 	tracing/scopes.cpp
 	tracing/scopes.h
 	tracing/ThreadedEventProcessor.h

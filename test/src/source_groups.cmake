@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Bmpman"
+    bmpman/test_eff.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
@@ -26,6 +30,8 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
+	   graphics/test_material.cpp
+	   graphics/test_shader_types.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
@@ -82,6 +88,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
     scripting/api/hookvars.cpp
+    scripting/api/shipclass.cpp
 )
 
 add_file_folder("Scripting\\\\Lua"
@@ -100,10 +107,18 @@ add_file_folder("Ship"
     ship/ship_info.cpp
 )
 
+add_file_folder("Starfield"
+    starfield/test_sun_disc.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
     util/test_util.h
+)
+
+add_file_folder("Tracing"
+    tracing/test_frame_profiler.cpp
 )
 
 add_file_folder("Utils"

@@ -1056,28 +1056,33 @@ void model_load_texture(polymodel *pm, int i, const char *file);
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
 
+/**
+ * @brief Memory usage summary across all currently loaded polygon models, for the profiler
+ * overlay's memory panel
+ */
+struct model_memory_stats {
+	bool valid = false;
+	int model_count = 0;
+	size_t vertex_bytes = 0;   // sum of vert_source.Vertex_list_size across loaded models
+	size_t index_bytes = 0;    // sum of vert_source.Index_list_size across loaded models
+	size_t bsp_data_bytes = 0; // sum of submodel[].bsp_data_size (collision/interp tree data)
+};
+model_memory_stats model_get_memory_stats();
+
 int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
 
 // routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
 void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
 
-// If MR_FLAG_OUTLINE bit set this color will be used for outlines.
-// This defaults to black.
-void model_set_outline_color(int r, int g, int b);
-
-// IF MR_LOCK_DETAIL is set, then it will always draw detail level 'n'
-// This defaults to 0. (0=highest, larger=lower)
-void model_set_detail_level(int n);
-
 // Flags you can pass to model_render
 #define MR_NORMAL					(0)			// Draw a normal object
-#define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
+#define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_render_params::set_color
 #define MR_SKYBOX					(1<<1)		// Draw as a skybox
 #define MR_DESATURATED				(1<<2)		// Draw model in monochrome using outline color
 #define MR_STENCIL_WRITE			(1<<3)		// Write stencil buffere where the model was rendered
 #define MR_STENCIL_READ				(1<<4)		// Only draw pixels of the model where the stencil buffer has the right value (see MR_STENCIL_WRITE)
-#define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
+#define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_render_params::set_thruster_info for how long it draws.
 #define MR_NO_COLOR_WRITES			(1<<6)		// Don't write anything to the color buffers (used when setting the stencil buffer)
 #define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
 #define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
@@ -1168,7 +1173,6 @@ bool submodel_is_destroyed_form(const char *name);
 extern int modelstats_num_polys;
 extern int modelstats_num_polys_drawn;
 extern int modelstats_num_verts;
-extern int modelstats_num_sortnorms;
 #endif
 
 // Tries to move joints so that the turret points to the point dst.
@@ -1458,10 +1462,6 @@ typedef struct mst_info {
 				{}
 } mst_info;
 
-// scale the engines thrusters by this much
-// Only enabled if MR_SHOW_THRUSTERS is on
-void model_set_thrust(int model_num = -1, mst_info *mst = NULL);
-
 
 //=======================================================================================
 // Finds the closest point on a model to a point in space.  Actually only finds a point
@@ -1522,7 +1522,6 @@ void model_draw_dock_points_htl(int model_num);
 bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb, bool update_ibuffer_only);
 bool model_interp_pack_buffer(indexed_vertex_source *vert_src, vertex_buffer *vb);
 void model_interp_submit_buffers(indexed_vertex_source *vert_src, size_t vertex_stride);
-void model_allocate_interp_data(uint n_verts = 0, uint n_norms = 0);
 
 void glowpoint_init();
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name);

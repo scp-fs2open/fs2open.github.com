@@ -143,6 +143,7 @@ namespace fred {
 
 FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()) {
 	ui->setupUi(this);
+	applyMenuLayout(false);
 	enforceSideDockAreas();
 
 	setFocusPolicy(Qt::NoFocus);
@@ -223,6 +224,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	_viewport = viewport;
 
 	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
+	applyMenuLayout(_viewport->Classic_menu_layout);
 
 	// Let the viewport use us for displaying dialogs
 	_viewport->dialogProvider = this;
@@ -559,6 +561,20 @@ void FredView::restartAutosaveTimer() {
 	if (!fred || !_viewport)
 		return;
 	fred->startAutosaveTimer(_viewport->autosave_interval_seconds);
+}
+
+void FredView::applyMenuLayout(bool classic) {
+	// Both layouts are in FredView.ui and share the same actions, so shortcuts and checked
+	// states carry over; this only picks which menus are shown.
+	QMenu* const groupedMenus[] = { ui->menuObjects, ui->menuEnvironment, ui->menuMission, ui->menuNarrative, ui->menuTools };
+	QMenu* const classicMenus[] = { ui->menuClassicEditors, ui->menuClassicMisc };
+
+	for (auto* menu : groupedMenus) {
+		menu->menuAction()->setVisible(!classic);
+	}
+	for (auto* menu : classicMenus) {
+		menu->menuAction()->setVisible(classic);
+	}
 }
 
 void FredView::saveAsTemplate() {

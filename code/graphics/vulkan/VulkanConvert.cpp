@@ -132,6 +132,20 @@ vk::PrimitiveTopology convertPrimitiveType(primitive_type type)
 	}
 }
 
+bool topologySupportsPrimitiveRestart(vk::PrimitiveTopology topology)
+{
+	switch (topology) {
+	case vk::PrimitiveTopology::eLineStrip:
+	case vk::PrimitiveTopology::eTriangleStrip:
+	case vk::PrimitiveTopology::eTriangleFan:
+	case vk::PrimitiveTopology::eLineStripWithAdjacency:
+	case vk::PrimitiveTopology::eTriangleStripWithAdjacency:
+		return true;
+	default:
+		return false;
+	}
+}
+
 vk::CullModeFlags convertCullMode(bool cullEnabled)
 {
 	return cullEnabled ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
