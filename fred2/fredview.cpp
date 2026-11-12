@@ -4308,13 +4308,15 @@ void CFREDView::OnRevert()
 	if (!FREDDoc_ptr->SaveModified())
 		return;
 
+	const CString path = FREDDoc_ptr->GetPathName();
 	FREDDoc_ptr->DeleteContents();
-	FREDDoc_ptr->OnOpenDocument(NULL);
+	FREDDoc_ptr->OnOpenDocument(path);
 }
 
 void CFREDView::OnUpdateRevert(CCmdUI* pCmdUI) 
 {
-	pCmdUI->Enable(*Mission_filename);
+	// New clears only the path; a multi-file import or a failed load clears only the name
+	pCmdUI->Enable(*Mission_filename && !FREDDoc_ptr->GetPathName().IsEmpty());
 }
 
 BOOL CFREDView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
