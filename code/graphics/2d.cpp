@@ -3327,14 +3327,22 @@ void gr_init_imgui_font()
 		fontSize = defaultFontSize;
 	}
 
-	// ImGui makes its own copy of FSO's font data.
-	ImFontConfig fontConfig;
-	fontConfig.FontDataOwnedByAtlas = false;
+	// ImGui takes ownership of this copy, not of FSO's font data.
+	void* imguiFontData = ImGui::MemAlloc(fontData->size);
+
+	if (imguiFontData == nullptr) {
+		Warning(LOCATION,
+			"Failed to allocate memory for ImGui font '%s'. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+		return;
+	}
+
+	std::memcpy(imguiFontData, fontData->data.get(), fontData->size);
 
 	ImGuiIO& io = ImGui::GetIO();
 
-	ImFont* imguiFont =
-		io.Fonts->AddFontFromMemoryTTF(fontData->data.get(), static_cast<int>(fontData->size), fontSize, &fontConfig);
+	ImFont* imguiFont = io.Fonts->AddFontFromMemoryTTF(imguiFontData, static_cast<int>(fontData->size), fontSize);
 
 	if (imguiFont != nullptr) {
 		io.FontDefault = imguiFont;
