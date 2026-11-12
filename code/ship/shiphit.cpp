@@ -1993,6 +1993,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 	int killer_damage_percent = 0;
 	int killer_index = -1;
 	object *killer_objp = NULL;
+	int killer_shipnum = -1;
 
 	show_dead_message(ship_objp, other_obj);
 
@@ -2035,6 +2036,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 				killer_ship_name = Ships[objp->instance].ship_name;
 
 				killer_objp = objp;
+				// a dead player's ghost is no longer a ship
+				if (objp->type == OBJ_SHIP) {
+					killer_shipnum = objp->instance;
+				}
 			} else {
 				int ei;
 
@@ -2055,6 +2060,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 			}
 			if (named_objp->type == OBJ_SHIP) {
 				killer_objp = nullptr;
+				killer_shipnum = named_objp->instance;
 				killer_ship_name = Ships[named_objp->instance].ship_name;
 				killer_damage_percent = (int)(percent_killed * 100.0f);
 			}
@@ -2065,7 +2071,12 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 			if(Game_mode & GM_MULTIPLAYER){
 				int np_index = multi_find_player_by_object(ship_objp);
 				if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-					mission_log_add_entry(LOG_SELF_DESTRUCTED, Net_players[np_index].m_player->callsign, NULL );
+					mission_log_add_entry(LOG_SELF_DESTRUCTED,
+						Net_players[np_index].m_player->callsign,
+						nullptr,
+						-1,
+						0,
+						ship_objp->instance);
 				} else {
 					mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
 				}
@@ -2103,7 +2114,13 @@ void ship_hit_kill(object *ship_objp, object *other_obj, const vec3d *hitpos, fl
 					}					
 				}
 
-				mission_log_add_entry(LOG_SHIP_DESTROYED, name1, name2, killer_damage_percent);
+				mission_log_add_entry(LOG_SHIP_DESTROYED,
+					name1,
+					name2,
+					killer_damage_percent,
+					0,
+					ship_objp->instance,
+					killer_shipnum);
 			} else {
 				// DKA: 8/23/99 allow message log in single player with no killer name
 				//if(killer_ship_name != NULL){
