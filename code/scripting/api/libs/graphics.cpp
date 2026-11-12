@@ -2002,7 +2002,8 @@ ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number
 ADE_FUNC(flashScreen,
 	l_Graphics,
 	"number|color /* red value or color object */, number Green, number Blue",
-	"Flashes the screen",
+	"Flashes the screen by adding the given color (0-255 per channel) to every pixel. "
+	"Bright parts of the scene can clip to white; see flashScreenAlpha for a blended flash.",
 	nullptr,
 	nullptr)
 {
@@ -2029,6 +2030,43 @@ ADE_FUNC(flashScreen,
 	}
 
 	gr_flash(r,g,b);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(flashScreenAlpha,
+	l_Graphics,
+	"number|color /* red value or color object */, number Green, number Blue, number Alpha",
+	"Flashes the screen by blending every pixel toward the given color by Alpha (0-255), "
+	"so bright parts of the scene keep their detail instead of clipping as with flashScreen. "
+	"When a color object is passed, its alpha is used.",
+	nullptr,
+	nullptr)
+{
+	if(!Gr_inited)
+		return ADE_RETURN_NIL;
+
+	int r, g, b, a;
+
+	if (lua_isnumber(L, 1)) {
+		if (!ade_get_args(L, "iiii", &r, &g, &b, &a))
+			return ADE_RETURN_NIL;
+
+	} else {
+		color col;
+
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		if (!ade_get_args(L, "o", l_Color.Get(&col)))
+			return ADE_RETURN_NIL;
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
+
+	gr_flash_alpha(r, g, b, a);
 
 	return ADE_RETURN_NIL;
 }
