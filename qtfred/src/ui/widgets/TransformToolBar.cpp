@@ -166,13 +166,17 @@ void TransformToolBar::addWidgets()
 		_editor->missionChanged();
 	});
 
+	// QToolBar aligns the tops of its widgets, and the widget types have different heights. Give the Local button
+	// and the boxes the height of the combo boxes, so that the bottom edges also align.
+	const int rowHeight = _iffCombo->sizeHint().height();
+
 	addFixedSpacer(8);
 
 	// ---- Local-axes toggle ----
 	_localButton = new QToolButton(_toolbar);
 	_localButton->setCheckable(true);
 	_localButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
-	_localButton->setFixedSize(28, 24);
+	_localButton->setFixedSize(28, rowHeight);
 	_localButton->setToolTip(tr("Local mode: in multi-selection, apply position/orientation as a delta to each object rather than setting all to the same absolute value. (X)"));
 	// FRED2 bound "Rotate Locally" to the X key; route it through the button so the per-mode local memory stays in sync.
 	_localButton->setShortcut(QKeySequence(Qt::Key_X));
@@ -205,6 +209,7 @@ void TransformToolBar::addWidgets()
 		box->setDecimals(BOX_DECIMALS);
 		box->setRange(-POSITION_LIMIT, POSITION_LIMIT);
 		box->setFixedWidth(90);
+		box->setFixedHeight(rowHeight);
 		box->setKeyboardTracking(false);
 		_toolbar->addWidget(box);
 		box->installEventFilter(this);
