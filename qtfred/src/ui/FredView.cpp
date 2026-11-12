@@ -686,8 +686,6 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 	if (!closeMissionToolDialogs(toolDialogs) || !maybePromptToSaveMissionChanges(tr("importing an FS1 mission"))) {
 		return;
 	}
-	// Mark as unmodified so loadMissionFile won't prompt again after import
-	_missionModified = false;
 
 	QStringList srcPaths = QFileDialog::getOpenFileNames(this,
 		tr("Select FS1 mission(s) to import"),
@@ -707,6 +705,9 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		return;
 
 	fso::fred::util::saveLastDir("missions/importFS1Dest", destDir);
+
+	// unmodified so loadMissionFile won't prompt again; not before the pickers, or cancelling one loses unsaved work
+	_missionModified = false;
 
 	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
