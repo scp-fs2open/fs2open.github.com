@@ -1461,8 +1461,12 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	}
 }
 
-void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *filename, bool is_rotation, bool is_turret)
+void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bool is_turret)
 {
+	auto sm = &pm->submodel[submodel];
+	auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
+	auto filename = pm->filename;
+
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
 
@@ -1493,6 +1497,9 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 			base->rotation_axis = vmd_y_vector;
 			base->rotation_type = MOVEMENT_TYPE_TURRET;
 			maybe_adjust_movement_axis(true, base);
+
+			// the base was already checked before this barrel, so its branch, including children checked since, wasn't flagged then
+			model_set_submodel_can_move(pm, sm->parent);
 		}
 
 		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
@@ -1526,11 +1533,10 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 		*movement_axis = vmd_zero_vector;
 	}
 
-	// Set the can_move field on submodels which are of a moving type or which have such a parent somewhere down the hierarchy
-	if (*movement_type != MOVEMENT_TYPE_NONE)
-		sm->flags.set(Model::Submodel_flags::Can_move);
-	else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move])
-		sm->flags.set(Model::Submodel_flags::Can_move);
+	// Set the can_move field on submodels which are of a moving type, and on everything below them. A flagged parent has already
+	// flagged this submodel; Can_move set during parsing (e.g. gun_rotation) predates the family tree, so pass that down here.
+	if (*movement_type != MOVEMENT_TYPE_NONE || sm->flags[Model::Submodel_flags::Can_move])
+		model_set_submodel_can_move(pm, submodel);
 }
 
 void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list)
@@ -3016,7 +3022,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
 				{
 					auto sm = &pm->submodel[submodel];
-					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
 
 					bool is_turret = false;
 					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
@@ -3026,8 +3031,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 					}
 
-					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
-					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+					do_movement_sanity_checks(pm, submodel, true, is_turret);
+					do_movement_sanity_checks(pm, submodel, false, is_turret);
 				});
 		}
 	}

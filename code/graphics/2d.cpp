@@ -37,6 +37,7 @@
 #include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "popup/popup.h"
@@ -930,15 +931,50 @@ static SCP_string fsr_setting_display(int setting)
 		return "Off";
 	}
 
-	// Major version 0, as from -fsr, means the newest offered one
 	SCP_string label = "FSR";
 	for (const auto& name : Gr_fsr_versions) {
-		if (setting / 10 == 0 || atoi(name.c_str()) == setting / 10) {
+		if (atoi(name.c_str()) == setting / 10) {
 			label += " " + name;
 			break;
 		}
 	}
 	return label + (mode == FsrMode::AA ? " AA" : " Upscale");
+}
+
+static void fsr_apply_setting(int setting)
+{
+	const int mode = setting % 10;
+	Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
+	Gr_fsr_major_version = setting / 10;
+}
+
+// -fsr only names a mode, and what of it can run is only known once the renderer is up. Settle it on the closest
+// setting that is offered (the newest version, Upscale dropping to AA, or Off), so that both the FSR state and the
+// locked option show what actually runs.
+static void fsr_resolve_cmdline_setting()
+{
+	const auto options = options::OptionsManager::instance();
+	if (options->getOverrideReason("Graphics.FSR") != "-fsr") {
+		return;
+	}
+
+	int resolved = 0;
+	if (Gr_fsr_mode != FsrMode::Off) {
+		// The offered settings are ordered newest version first
+		const auto offered = fsr_setting_enumerator();
+		const auto newest = [&offered](FsrMode mode) {
+			const auto it = std::find_if(offered.begin(), offered.end(), [mode](int setting) { return setting % 10 == static_cast<int>(mode); });
+			return it == offered.end() ? 0 : *it;
+		};
+		resolved = newest(Gr_fsr_mode);
+		if (resolved == 0) {
+			// Upscale is only offered with a larger window
+			resolved = newest(FsrMode::AA);
+		}
+	}
+
+	fsr_apply_setting(resolved);
+	options->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(resolved)), "-fsr");
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -952,9 +988,7 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      .flags({options::OptionFlags::ForceMultiValueSelection})
                      .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_fsr_major_version); } )
                      .change_listener([](const int& setting, bool) {
-                         const int mode = setting % 10;
-                         Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
-                         Gr_fsr_major_version = setting / 10;
+                         fsr_apply_setting(setting);
                          return true;
                      })
                      .importance(77)
@@ -2405,6 +2439,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
+
+	fsr_resolve_cmdline_setting();
 
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 

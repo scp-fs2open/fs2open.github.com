@@ -94,17 +94,15 @@ bool is_offered(int major)
 	return major == 4 || major == 3;
 }
 
-// The version the user chose, falling back to the newest offered one
+// The version the user chose
 const fsr_version* find_chosen_version(const SCP_vector<fsr_version>& versions)
 {
-	const int wanted = Gr_fsr_major_version != 0 || Gr_fsr_versions.empty() ? Gr_fsr_major_version
-		: major_version(Gr_fsr_versions.front());
 	for (const auto& version : versions) {
-		if (major_version(version.name) == wanted) {
+		if (major_version(version.name) == Gr_fsr_major_version) {
 			return &version;
 		}
 	}
-	mprintf(("Vulkan: FSR %d isn't available, leaving the version to AMD's selection\n", wanted));
+	mprintf(("Vulkan: FSR %d isn't available, leaving the version to AMD's selection\n", Gr_fsr_major_version));
 	return nullptr;
 }
 
