@@ -2,6 +2,8 @@
 
 #include "globalincs/pstypes.h"
 
+#include <cstddef>
+
 using SPIRV_FLOAT_MAT_4x4 = matrix4;
 using SPIRV_FLOAT_VEC4 = vec4;
 
@@ -23,9 +25,24 @@ struct deferred_global_data {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
+	// RTAO rays for each pixel. 0 when RTAO is off.
+	int rtaoSampleCount;
 
-	float pad;
+	// The ray-tracing inputs of the deferred pass, for raytraced shadows and RTAO. They are
+	// here and not in shadowCascadeParams, because the deferred pass always binds this block,
+	// also when shadows are off. shadows_fill_deferred_global_data() (shadows.cpp) sets them.
+	// rayViewOrigin has the same meaning as shadow_cascade_static_data::shadow_ray_view_origin.
+	// The int after the vec3 fills the std140 padding of the vec3.
+	vec3d rayViewOrigin;
+	int rayCullMask;
+
+	float rayBiasMin;
+	float rayBiasMax;
+	float rtaoRadius;
+	float rtaoStrength;
 };
+static_assert(offsetof(deferred_global_data, rayViewOrigin) == 80 && sizeof(deferred_global_data) == 112,
+	"deferred_global_data must match the std140 layout of the globalDeferredData block in deferred-f.sdr");
 
 /**
  * @brief Data for one deferred light rendering call
@@ -146,6 +163,11 @@ struct shadow_cascade_static_data {
 	int cascade_count;
 	float rtShadowBiasMin;
 	float rtShadowBiasMax;
+	int rtShadowSampleCount;
+	// Padding. The scalars must fill 32 bytes, so that std140 puts the following mat4
+	// directly after them. Keep this struct and the shadowCascadeParams block in
+	// shadow_cascade_params.sdr the same.
+	int pad[3];
 	matrix4 shadow_mv_matrix;
 
 	// Position of the view-space origin (the camera) in TLAS-relative space. The RT shadow
@@ -173,13 +195,17 @@ struct shadow_cascade_static_data {
 	// main shadow cascades. Set in shadow_cascade_params_bind() (shadows.cpp).
 	int shadow_ray_cull_mask;
 };
+static_assert(offsetof(shadow_cascade_static_data, shadow_mv_matrix) == 32,
+	"shadow_cascade_static_data's scalar fields must total exactly 32 bytes to match std140's "
+	"mat4 alignment -- update the shadowCascadeParams block in shadow_cascade_params.sdr "
+	"if this changes.");
 // Must match the GLSL shadowCascadeParams block's implicit std140 padding
-// exactly (16 [4 leading scalars] + 64 [matrix4] + 12 [shadow_ray_view_origin]
-// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 96) --
+// exactly (32 [5 leading scalars + 3 padding] + 64 [matrix4] + 12 [shadow_ray_view_origin]
+// + 4 [shadow_ray_cull_mask, packed into the vec3's alignment padding] = 112) --
 // shadow_cascade_params_bind() packs shadow_proj_matrix[] immediately after
 // this struct via sizeof(), so a mismatch here silently shifts every cascade
 // matrix in the buffer, in both backends.
-static_assert(sizeof(shadow_cascade_static_data) == 96, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
+static_assert(sizeof(shadow_cascade_static_data) == 112, "shadow_cascade_static_data must match the GLSL shadowCascadeParams layout (see comment above)");
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

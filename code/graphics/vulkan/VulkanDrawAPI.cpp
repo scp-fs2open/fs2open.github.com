@@ -11,6 +11,7 @@
 #include "VulkanTexture.h"
 #include "VulkanRenderer.h"
 #include "VulkanPostProcessing.h"
+#include "VulkanDeferred.h"
 #include "VulkanDescriptorManager.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanMemory.h"
@@ -216,7 +217,30 @@ void vulkan_scene_texture_begin()
 
 	// Switch to HDR scene render pass when post-processing is enabled
 	auto* pp = getPostProcessor();
-	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override) {
+	const bool useSceneTarget = pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override;
+
+	// Build the ray-tracing TLAS for this frame here, one time, before the scene draws start.
+	// The camera and the objects are final at this point. A TLAS build must be outside a render
+	// pass. The scene pass starts below, so the build adds no pass break to that path.
+	if (vulkan_frame_tlas_pending() && !renderer->isSceneRendering()) {
+		renderer->endCurrentRenderPass();
+		vulkan_build_frame_tlas();
+
+		if (!useSceneTarget) {
+			// No scene pass follows, so resume the pass that the build interrupted.
+			auto* texMgr = getTextureManager();
+			const int rtHandle = (renderer->isRenderTargetActive() && texMgr) ? texMgr->getCurrentRenderTarget() : -1;
+			auto* rtSlot = rtHandle >= 0 ? texMgr->getTextureSlot(rtHandle) : nullptr;
+			if (rtSlot != nullptr) {
+				renderer->resumeRenderTargetPass(rtSlot);
+			} else {
+				renderer->resumeSwapChainPass();
+			}
+			vulkan_restore_scene_viewport();
+		}
+	}
+
+	if (useSceneTarget) {
 		renderer->beginSceneRendering();
 		High_dynamic_range = true;
 	} else {

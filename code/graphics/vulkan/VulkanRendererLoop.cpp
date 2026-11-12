@@ -273,8 +273,9 @@ void VulkanRenderer::beginSceneRendering()
 		return;
 	}
 
-	// End the current swap chain render pass
-	m_currentCommandBuffer.endRenderPass();
+	// End the current swap chain render pass. vulkan_scene_texture_begin() can end it before
+	// this call, for the TLAS build, so end it only when it is still open.
+	endCurrentRenderPass();
 
 	// Use G-buffer render pass when deferred lighting is enabled and G-buffer is ready
 	m_useGbufRenderPass = m_postProcessor->deferred().isInitialized() && light_deferred_enabled();

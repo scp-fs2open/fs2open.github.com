@@ -262,6 +262,7 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -370,7 +371,12 @@ enum class gr_capability {
 	CAPABILITY_INSTANCED_RENDERING,
 	CAPABILITY_FAST_SHADOWS,
 	CAPABILITY_QUERIES_REUSABLE,
-	CAPABILITY_RAYTRACED_SHADOWS
+	CAPABILITY_RAYTRACED_SHADOWS,
+	// A second, non-compare sampler bound to the shadow map for raw depth reads, needed by
+	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
+	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
+	// otherwise texture-object state shared by every sampler bound to that texture.
+	CAPABILITY_SHADOW_CONTACT_HARDENING
 };
 
 struct gr_capability_def {
@@ -879,13 +885,6 @@ typedef struct screen {
 	std::function<void(int pm_id)> gf_model_loaded = [](int) {};
 	std::function<void(int pm_id)> gf_model_unloaded = [](int) {};
 
-	// Rebuilds the raytraced-shadow top-level acceleration structure for the
-	// current frame from the live shadow-casting object set. Called once per
-	// frame from shadows_render_all(), alongside the cascaded shadow map pass --
-	// the shading pass picks between the two per shadows_use_raytracing().
-	// No-op default.
-	std::function<void()> gf_build_shadow_tlas = []() {};
-
 	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
 	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
 		gf_update_buffer_data_offset;
@@ -1326,8 +1325,6 @@ inline void gr_model_unloaded(int pm_id)
 {
 	gr_screen.gf_model_unloaded(pm_id);
 }
-
-#define gr_build_shadow_tlas GR_CALL(gr_screen.gf_build_shadow_tlas)
 
 #define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)

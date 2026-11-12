@@ -120,6 +120,15 @@ public:
 	bool isEnabled() const { return m_enabled; }
 
 	/**
+	 * @brief Whether buildTlas() already ran in the current frame. game_render_frame() can run
+	 * more than once in a frame (for example, one time for each OpenXR eye), but one build in
+	 * each frame is sufficient.
+	 */
+	bool isTlasBuiltThisFrame() const {
+		return m_bufferManager != nullptr && m_lastTlasBuildFrame == m_bufferManager->getCurrentFrameNumber();
+	}
+
+	/**
 	 * @brief A permanent, 0-instance TLAS built once at init(). Used as a
 	 * valid (non-null) descriptor value in place of getTlasForShaderBinding()
 	 * whenever no real TLAS has been built yet -- VK_NULL_HANDLE is not a legal
@@ -274,6 +283,10 @@ private:
 	// queried before init() (m_bufferManager not yet set); real usage is always
 	// gated behind m_enabled/m_initialized so this only matters defensively.
 	uint32_t currentFrameIndex() const { return m_bufferManager != nullptr ? m_bufferManager->getCurrentFrame() : 0; }
+
+	// Monotonic frame number of the last buildTlas() that ran. buildTlas() uses it to build
+	// only one time in each frame. See isTlasBuiltThisFrame().
+	uint64_t m_lastTlasBuildFrame = UINT64_MAX;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
