@@ -180,11 +180,9 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 			if (!it)
 				return;
 
-			const QString q = QString::fromStdString(note);
-			it->setData(0, sexp_tree_view::NoteRole, q);
-			it->setToolTip(0, q);
-			it->setData(0, sexp_tree_view::BgColorRole, QColor(r, g, b));
-			it->setBackground(0, has_color ? QBrush(QColor(r, g, b)) : QBrush());
+			it->setData(0, sexp_tree_view::NoteRole, QString::fromStdString(note));
+			// An annotation with only a note has no color. An invalid color keeps the theme colors.
+			it->setData(0, sexp_tree_view::BgColorRole, has_color ? QColor(r, g, b) : QColor());
 			sexp_tree_view::applyVisuals(it);
 		});
 
