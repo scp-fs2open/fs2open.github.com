@@ -25,6 +25,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "jpgutils/jpgutils.h"
+#include "mod_table/mod_table.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
@@ -1361,12 +1362,20 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
 	BM_TYPE c_type = BM_TYPE_NONE;
-	char file_text[1024];
-	char file_text_raw[1024];
 
 	memset(ext, 0, sizeof(ext));
-	memset(file_text, 0, sizeof(file_text));
-	memset(file_text_raw, 0, sizeof(file_text_raw));
+
+	// cf_find_file_location reports the stored size, which is smaller than the text for a compressed file
+	CFILE* eff_cfp = cfopen(filename, "rb", dir_type);
+	const size_t file_len = (eff_cfp != nullptr) ? static_cast<size_t>(std::max(cfilelength(eff_cfp), 0)) : 0;
+	if (eff_cfp != nullptr) {
+		cfclose(eff_cfp);
+	}
+
+	// encrypted text unpacks 7 bytes into 8, and outside Unicode mode processing can turn one character into two
+	const size_t raw_len = file_len + file_len / 7 + 16;
+	SCP_vector<char> file_text_raw(raw_len, '\0');
+	SCP_vector<char> file_text(Unicode_text_mode ? raw_len : raw_len * 2, '\0');
 
 	// pause anything that may happen to be parsing right now
 	pause_parse();
@@ -1374,8 +1383,8 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	try
 	{
 		// now start parsing the EFF
-		read_file_text(filename, dir_type, file_text, file_text_raw);
-		reset_parse(file_text);
+		read_file_text(filename, dir_type, file_text.data(), file_text_raw.data());
+		reset_parse(file_text.data());
 
 		required_string("$Type:");
 		stuff_string(ext, F_NAME, sizeof(ext));
