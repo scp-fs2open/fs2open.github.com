@@ -76,6 +76,7 @@ private slots:
 	void on_oldNebulaPitchSpinBox_valueChanged(int arg1);
 	void on_oldNebulaBankSpinBox_valueChanged(int arg1);
 	void on_oldNebulaHeadingSpinBox_valueChanged(int arg1);
+	void on_fs1NebulaMissionCombo_currentIndexChanged(int index);
 
 	// Ambient Light
 	void on_ambientLightRedSlider_valueChanged(int value);

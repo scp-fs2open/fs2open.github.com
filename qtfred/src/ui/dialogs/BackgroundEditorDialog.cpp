@@ -106,6 +106,10 @@ void BackgroundEditorDialog::initializeUi()
 		ui->oldNebulaColorCombo->addItem(QString::fromStdString(s));
 	}
 
+	ui->fs1NebulaMissionCombo->addItem("Default (game_settings.tbl)");
+	ui->fs1NebulaMissionCombo->addItem("On");
+	ui->fs1NebulaMissionCombo->addItem("Off");
+
 	updateOldNebulaControls();
 
 	// Ambient light
@@ -337,12 +341,16 @@ void BackgroundEditorDialog::updateOldNebulaControls()
 	ui->oldNebulaPitchSpinBox->setEnabled(enabled && old_enabled);
 	ui->oldNebulaBankSpinBox->setEnabled(enabled && old_enabled);
 	ui->oldNebulaHeadingSpinBox->setEnabled(enabled && old_enabled);
+	ui->fs1NebulaMissionCombo->setEnabled(enabled && old_enabled);
 
 	ui->oldNebulaPatternCombo->setCurrentIndex(ui->oldNebulaPatternCombo->findText(QString::fromStdString(_model->getOldNebulaPattern())));
 	ui->oldNebulaColorCombo->setCurrentIndex(ui->oldNebulaColorCombo->findText(QString::fromStdString(_model->getOldNebulaColorName())));
 	ui->oldNebulaPitchSpinBox->setValue(_model->getOldNebulaPitch());
 	ui->oldNebulaBankSpinBox->setValue(_model->getOldNebulaBank());
 	ui->oldNebulaHeadingSpinBox->setValue(_model->getOldNebulaHeading());
+	// combo rows: 0 default, 1 on, 2 off; the model's -1/1/0
+	const int sw = _model->getFs1NebulaMissionSwitch();
+	ui->fs1NebulaMissionCombo->setCurrentIndex(sw < 0 ? 0 : (sw == 1 ? 1 : 2));
 }
 
 void BackgroundEditorDialog::updateAmbientLightControls()
@@ -811,6 +819,13 @@ void BackgroundEditorDialog::on_oldNebulaColorCombo_currentIndexChanged(int inde
 		return;
 	const QString text = ui->oldNebulaColorCombo->itemText(index);
 	_model->setOldNebulaColorName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_fs1NebulaMissionCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	_model->setFs1NebulaMissionSwitch(index == 0 ? -1 : (index == 1 ? 1 : 0));
 }
 
 void BackgroundEditorDialog::on_oldNebulaPitchSpinBox_valueChanged(int arg1)
