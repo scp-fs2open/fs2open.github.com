@@ -1250,10 +1250,14 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 
 static bool wl_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
 {
-	// allowed_weapons is built from the bank lists, so a class without them allows no weapons
-	if (sip->restricted_loadout_flag.empty())
-		return eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]) != 0;
+	// an empty bank has nothing to place; this check runs on the weapon coming back from a swap
+	if (weapon_class < 0)
+		return true;
 
+	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
+		return false;
+
+	// allowed_weapons is built from the bank lists, so a class without them never gets here
 	if (!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
 		return true;
 
