@@ -689,7 +689,7 @@ int iff_get_attackee_mask(int attacker_team)
 		return 0;
 
 	//	All teams attack all other teams.
-	if (Mission_all_attack)
+	if (The_mission.flags[Mission::Mission_Flags::All_attack])
 	{
 		return Iff_info[attacker_team].attackee_bitmask_all_teams_at_war;
 	}

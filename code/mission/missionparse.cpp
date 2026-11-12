@@ -1106,7 +1106,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	if (optional_string("+All Teams Attack")){
-		Mission_all_attack = 1;
+		pm->flags.set(Mission::Mission_Flags::All_attack);
 	}
 
 	//	Maybe delay the player's entry.
@@ -7328,7 +7328,6 @@ void mission_init(mission *pm, bool quick_init)
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
 	Entry_delay_time = 0;
 
-	Mission_all_attack = 0;
 	Num_teams = 1;				// assume 1
 
 	// sometimes we don't need to run through the entire initialization,
