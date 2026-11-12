@@ -50,6 +50,8 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		return true;
 	}
 
+	Gr_aa_mode_last_frame = Gr_aa_mode;
+
 	m_ctx.device = device;
 	m_ctx.memoryManager = memMgr;
 	m_ctx.sceneExtent = extent;

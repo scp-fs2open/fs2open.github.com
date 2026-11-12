@@ -21,7 +21,7 @@ namespace graphics::vulkan {
 //
 // Unlike OpenGL, Vulkan can't read and write the same attachment within one
 // render pass, so neighborhood blending writes to Scene_luminance (safe to
-// reuse as scratch: FXAA and SMAA are mutually exclusive via Gr_aa_mode) and
+// reuse as scratch: FXAA and SMAA are mutually exclusive via the preset latched at frame start) and
 // a final resolve pass copies that back into Scene_ldr.
 
 bool VulkanSMAA::init(PostProcessContext& ctx, const VulkanLDR& ldr)
@@ -187,7 +187,8 @@ void VulkanSMAA::shutdown()
 
 void VulkanSMAA::execute(vk::CommandBuffer cmd)
 {
-	if (!m_initialized || !m_ldr->isInitialized() || !gr_is_smaa_mode(Gr_aa_mode)) {
+	// the preset this frame started with; a change made during the frame waits for the next setupFrame
+	if (!m_initialized || !m_ldr->isInitialized() || !gr_is_smaa_mode(Gr_aa_mode_last_frame)) {
 		return;
 	}
 
