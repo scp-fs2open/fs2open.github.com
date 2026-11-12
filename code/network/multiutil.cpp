@@ -1274,12 +1274,17 @@ std::pair<int, int> multi_find_player_by_callsign(const char *callsign, bool req
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
+		// the standalone's own player is named "server", and a pilot can have that callsign too
+		if (MULTI_STANDALONE(Net_players[idx])) {
+			continue;
+		}
+
 		if(MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign,Net_players[idx].m_player->callsign)==0)){
 			if (!requires_ship) {
 				return {idx, -1};
 			}
 
-			// callsigns are not unique (a standalone's own player is "server"), so skip a match that has no ship
+			// two pilots can share a callsign, so skip a match that has no ship
 			const int shipnum = multi_get_player_ship(idx);
 			if (shipnum >= 0) {
 				return {idx, shipnum};
