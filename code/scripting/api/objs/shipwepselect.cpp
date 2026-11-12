@@ -323,7 +323,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 	// Decide if we're setting a valid primary or secondary bank on the current ship class
 	if (bank <= sip->num_primary_banks) {
 		bankType = WP_LASER;
-	} else if (bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
+	} else if (bank > MAX_SHIP_PRIMARY_BANKS && bank <= (sip->num_secondary_banks + MAX_SHIP_PRIMARY_BANKS)) {
 		bankType = WP_MISSILE;
 	}
 
@@ -334,14 +334,15 @@ ADE_INDEXER(l_Loadout_Weapon,
 			LuaError(L, "This property may not be modified in multiplayer.");
 			return ADE_RETURN_NIL;
 		}
-		if (bankType == -1 || wepIndex > weapon_info_size()) {
+		if (bankType == -1 || wepIndex >= weapon_info_size()) {
 			LuaError(L, "The provided bank or weapon index is invalid!");
 		} else {
 			bool valid = false;
 			//First we check that this is a valid bank for the ship and that the script is not trying to empty the bank
 			if (wepIndex > -1) {
 				// Next we check that this is a weapon the ship can carry
-				if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank])) {
+				if (!sip->restricted_loadout_flag.empty() &&
+					eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank])) {
 					if (eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][wepIndex])) {
 						valid = true;
 					}
@@ -356,10 +357,10 @@ ADE_INDEXER(l_Loadout_Weapon,
 				weapon_info* wip = &Weapon_info[wepIndex];
 				if (wip->subtype == bankType) {
 					current.getBank()->wep[bank] = wepIndex;
+					current.getBank()->wep_count[bank] = 0;
 				} else {
 					LuaError(L, "Cannot put a primary in a secondary bank or a secondary in a primary bank!");
 				}
-				current.getBank()->wep_count[bank] = 0;
 			}
 			else {
 				//If the ship cannot carry this weapon in this bank then we set it to -1 and the amount to -1
