@@ -1248,6 +1248,20 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 	return rval;
 }
 
+static bool wl_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
+{
+	// Only classes with $Allowed PBanks/SBanks get per-bank lists; without them, fall back to the class-wide list
+	if (sip->restricted_loadout_flag.empty()) {
+		return eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]) != 0;
+	}
+
+	if (!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank])) {
+		return true;
+	}
+
+	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]) != 0;
+}
+
 /**
  * Return the weapon class shown at the given on-screen row of a scrolling icon list,
  * or -1 if that row is past the end of the list.
@@ -3684,8 +3698,9 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		ship_info *sip = &Ship_info[slot->ship_class];
 
 		// check the to-bank first
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
+		if (sip->restricted_loadout_flag.empty() ||
+			eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+			if (!wl_bank_allows_weapon(sip, to_bank, slot->wep[from_bank])) {
 				SCP_string txt;
 				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
 
@@ -3700,8 +3715,9 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		}
 
 		// check the from-bank
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[from_bank][slot->wep[to_bank]])) {
+		if (sip->restricted_loadout_flag.empty() ||
+			eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank])) {
+			if (!wl_bank_allows_weapon(sip, from_bank, slot->wep[to_bank])) {
 				// going from "from" to "to" is valid (from previous if), but going the other way isn't...
 				// so return the "to" to the list and just move the "from"
 
@@ -3839,8 +3855,8 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon...
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
+	if (sip->restricted_loadout_flag.empty() || eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+		if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
 			SCP_string txt;
 			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
@@ -3917,8 +3933,8 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
+	if (sip->restricted_loadout_flag.empty() || eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
+		if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
 			SCP_string txt;
 			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
