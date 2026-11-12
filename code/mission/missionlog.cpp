@@ -44,13 +44,8 @@ void mission_log_init()
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(LogType type,
-	const char* pname,
-	const char* sname,
-	int info_index,
-	int flags,
-	int pname_ship,
-	int sname_ship)
+void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags,
+	int pname_ship, int sname_ship)
 {
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
