@@ -77,7 +77,6 @@ void wl_reset_selected_slot();
 void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class);
 void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count);
 void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_count);
-int eval_weapon_flag_for_game_type(int weapon_flags);
 int wl_calc_missile_fit(int wi_index, int capacity);
 
 void wl_synch_interface();

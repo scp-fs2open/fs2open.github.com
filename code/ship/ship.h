@@ -1888,6 +1888,19 @@ extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(const char *name);
 
+/**
+ * @brief Whether REGULAR_WEAPON / DOGFIGHT_WEAPON flags allow a weapon in the current game type
+ */
+bool eval_weapon_flag_for_game_type(int weapon_flags);
+
+/**
+ * @brief Whether a ship class can load a weapon in one of its banks, in the current game type
+ * @param[in] bank Index into the class's bank lists, secondaries starting at MAX_SHIP_PRIMARY_BANKS; -1 checks only
+ * the class-wide list
+ * @param[in] weapon_class Weapon_info index; -1 (an empty bank) is always allowed
+ */
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class);
+
 inline int ship_info_size()
 {
 	return static_cast<int>(Ship_info.size());

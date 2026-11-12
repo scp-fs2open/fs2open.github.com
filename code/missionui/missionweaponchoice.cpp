@@ -1229,42 +1229,6 @@ int wl_get_ship_class(int wl_slot)
 }
 
 /**
- * Return true if weapon_flags indicates a weapon that is legal for use in current game type.
- * Function added by MK on 9/6/99 to support separate legal loadouts for dogfight missions.
- * name changed by Goober5000 to better reflect what it actually does
- */
-int eval_weapon_flag_for_game_type(int weapon_flags)
-{
-	int	rval = 0;
-
-	if (MULTI_DOGFIGHT) {
-		if (weapon_flags & DOGFIGHT_WEAPON)
-			rval = 1;
-	}
-	else
-		if (weapon_flags & REGULAR_WEAPON)
-			rval  = 1;
-
-	return rval;
-}
-
-static bool wl_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
-{
-	// an empty bank has nothing to place; this check runs on the weapon coming back from a swap
-	if (weapon_class < 0)
-		return true;
-
-	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
-		return false;
-
-	// allowed_weapons is built from the bank lists, so a class without them never gets here
-	if (!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
-		return true;
-
-	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]) != 0;
-}
-
-/**
  * Return the weapon class shown at the given on-screen row of a scrolling icon list,
  * or -1 if that row is past the end of the list.
  */
@@ -3700,7 +3664,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		ship_info *sip = &Ship_info[slot->ship_class];
 
 		// check the to-bank first
-		if (!wl_bank_allows_weapon(sip, to_bank, slot->wep[from_bank])) {
+		if (!ship_class_bank_allows_weapon(sip, to_bank, slot->wep[from_bank])) {
 			SCP_string txt;
 			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
 
@@ -3714,7 +3678,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		}
 
 		// check the from-bank
-		if (!wl_bank_allows_weapon(sip, from_bank, slot->wep[to_bank])) {
+		if (!ship_class_bank_allows_weapon(sip, from_bank, slot->wep[to_bank])) {
 			// going from "from" to "to" is valid (from previous if), but going the other way isn't...
 			// so return the "to" to the list and just move the "from"
 
@@ -3851,7 +3815,7 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon...
-	if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
+	if (!ship_class_bank_allows_weapon(sip, to_bank, from_list)) {
 		SCP_string txt;
 		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
@@ -3927,7 +3891,7 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon
-	if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
+	if (!ship_class_bank_allows_weapon(sip, to_bank, from_list)) {
 		SCP_string txt;
 		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
