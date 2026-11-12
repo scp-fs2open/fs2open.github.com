@@ -1024,7 +1024,6 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	//Draw the ship!!
 	model_clear_instance(model_num);
-	model_set_detail_level(0);
 	model_render_params render_info;
 
 	render_info.set_detail_level_lock(0);

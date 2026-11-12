@@ -5142,8 +5142,6 @@ void model_clear_instance(int model_num)
 		pm->maps[i].ResetToOriginal();
 	}
 	// ---- end of stuff that should be moved into model instances at some point
-
-	interp_clear_instance();
 }
 
 void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
@@ -5603,14 +5601,11 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, n_norms);
-
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
 		src->xyz.y = INTEL_FLOAT( &src->xyz.y );
 		src->xyz.z = INTEL_FLOAT( &src->xyz.z );
 
-		Interp_verts[n] = src;
 		src++;	//tigital
 
 		for (i=0; i<normcount[n]; i++){
@@ -5712,32 +5707,6 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	verts = (short *)(p+44);
 	for (i=0; i<nv*2; i++){
 		verts[i] = INTEL_SHORT( verts[i] );
-	}
-
-	if ( pm->version < 2003 )	{
-		// Set the "normal_point" part of field to be the center of the polygon
-		vec3d center_point;
-		vm_vec_zero( &center_point );
-
-		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
-		}
-
-		center_point.xyz.x /= nv;
-		center_point.xyz.y /= nv;
-		center_point.xyz.z /= nv;
-
-		*vp(p+20) = center_point;
-
-		float rad = 0.0f;
-
-		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i*2]] );
-			if ( dist > rad )	{
-				rad = dist;
-			}
-		}
-		fl(p+32) = rad;
 	}
 }
 
