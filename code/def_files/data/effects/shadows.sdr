@@ -138,7 +138,7 @@ vec4 transformToShadowMap(mat4 shadow_proj_matrix, int i, vec4 pos)
 {
 	vec4 shadow_proj;
 	shadow_proj = shadow_proj_matrix * pos;
-#ifdef VULKAN
+#if defined(VULKAN) || defined(REVERSED_Z)
 	// Vulkan shadow projection: XY is [-1,1] → [0,1], Z is already [0,1]
 	shadow_proj.xy = shadow_proj.xy * 0.5 + 0.5;
 #else

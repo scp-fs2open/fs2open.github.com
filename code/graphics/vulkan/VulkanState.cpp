@@ -371,11 +371,13 @@ void vulkan_zbias(int bias)
 	auto* drawManager = getDrawManager();
 
 	if (bias) {
+		// with reversed depth, closer means larger depth, so the bias changes sign
+		const float sign = Gr_reversed_depth_active ? -1.0f : 1.0f;
 		drawManager->setDepthBiasEnabled(true);
 		if (bias < 0) {
-			stateTracker->setDepthBias(static_cast<float>(-bias), 1.0f);
+			stateTracker->setDepthBias(sign * static_cast<float>(-bias), sign * 1.0f);
 		} else {
-			stateTracker->setDepthBias(static_cast<float>(-bias), 0.0f);
+			stateTracker->setDepthBias(sign * static_cast<float>(-bias), 0.0f);
 		}
 	} else {
 		drawManager->setDepthBiasEnabled(false);

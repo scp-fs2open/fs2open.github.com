@@ -47,7 +47,7 @@ void convertDepthMode(gr_zbuffer_type type, vk::CompareOp& compareOp, bool& writ
 		writeEnable = false;
 		break;
 	case ZBUFFER_TYPE_READ:
-		compareOp = vk::CompareOp::eLess;
+		compareOp = Gr_reversed_depth_active ? vk::CompareOp::eGreater : vk::CompareOp::eLess;
 		writeEnable = false;
 		break;
 	case ZBUFFER_TYPE_WRITE:
@@ -55,7 +55,7 @@ void convertDepthMode(gr_zbuffer_type type, vk::CompareOp& compareOp, bool& writ
 		writeEnable = true;
 		break;
 	case ZBUFFER_TYPE_FULL:
-		compareOp = vk::CompareOp::eLess;
+		compareOp = Gr_reversed_depth_active ? vk::CompareOp::eGreater : vk::CompareOp::eLess;
 		writeEnable = true;
 		break;
 	default:

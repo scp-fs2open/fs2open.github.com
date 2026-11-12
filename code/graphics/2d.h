@@ -77,6 +77,17 @@ extern bool Gr_enable_vsync;
 
 // HDR10 (PQ/ST.2084 + BT.2020) output. Currently only honored by the Vulkan renderer.
 extern bool Gr_enable_hdr;
+
+// Reversed depth: the request (an option, read at startup) and whether the renderer turned it on.
+// With it active, the near plane is depth 1, the far plane depth 0, and closer surfaces pass with GREATER.
+extern bool Gr_enable_reversed_depth;
+extern bool Gr_reversed_depth_active;
+
+// the depth of an empty pixel: what the depth buffer is cleared to
+inline float gr_far_depth()
+{
+	return Gr_reversed_depth_active ? 0.0f : 1.0f;
+}
 // True once the renderer has actually negotiated an HDR10 swap chain (read-only,
 // set by the active renderer). Distinct from Gr_enable_hdr, which is the request.
 extern bool Gr_hdr_output_active;

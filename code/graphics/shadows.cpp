@@ -305,14 +305,20 @@ void shadows_construct_light_proj(light_frustum_info *shadow_data)
 	shadow_data->proj_matrix.a1d[13] = -(shadow_data->max.xyz.y + shadow_data->min.xyz.y) / ( shadow_data->max.xyz.y - shadow_data->min.xyz.y );
 	shadow_data->proj_matrix.a1d[15] = 1.0f;
 
-	if (gr_screen.mode == GraphicsAPI::Vulkan) {
-		// Vulkan uses [0, 1] depth range
+	if (gr_screen.mode == GraphicsAPI::Vulkan || Gr_reversed_depth_active) {
+		// Vulkan uses [0, 1] depth range, and so does OpenGL with reversed depth
 		shadow_data->proj_matrix.a1d[10] = -1.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 		shadow_data->proj_matrix.a1d[14] = -shadow_data->min.xyz.z / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 	} else {
 		// OpenGL uses [-1, 1] depth range
 		shadow_data->proj_matrix.a1d[10] = -2.0f / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
 		shadow_data->proj_matrix.a1d[14] = -(shadow_data->max.xyz.z + shadow_data->min.xyz.z) / ( shadow_data->max.xyz.z - shadow_data->min.xyz.z );
+	}
+
+	// shadow maps share the depth test with everything else, so they are reversed as well
+	if (Gr_reversed_depth_active) {
+		shadow_data->proj_matrix.a1d[10] = -shadow_data->proj_matrix.a1d[10];
+		shadow_data->proj_matrix.a1d[14] = 1.0f - shadow_data->proj_matrix.a1d[14];
 	}
 }
 

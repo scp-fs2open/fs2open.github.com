@@ -154,6 +154,9 @@ SCP_string shader_preprocess_defines(const SCP_string& filename, const SCP_strin
 
 	//In any shader, define GLOBAL_FAR_Z
 	output << "#define GLOBAL_FAR_Z " << std::fixed << std::setprecision(2) << Max_draw_distance << std::defaultfloat << '\n';
+	if (Gr_reversed_depth_active) {
+		output << "#define REVERSED_Z\n";
+	}
 
 	const char* PREDEFINE_STRING = "#predefine";
 	const char* PREREPLACE_STRING = "#prereplace";
