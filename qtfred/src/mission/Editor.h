@@ -278,6 +278,8 @@ class Editor : public QObject {
 	void initialSetup();
 
 	void setupCurrentObjectIndices(int obj);
+	// Next or previous object: moves the selection one object forward or back in obj_used_list
+	void select_adjacent_object(bool forward);
 
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;
