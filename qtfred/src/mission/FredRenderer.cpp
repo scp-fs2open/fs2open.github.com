@@ -43,7 +43,8 @@ const int FRED_COLOUR_WHITE = 0xffffff;
 const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
 
 void enable_htl() {
-	gr_set_proj_matrix((4.0f / 9.0f) * PI * EDITOR_DEFAULT_FOV,
+	// g3_set_view_matrix() sets Proj_fov from its zoom, so the projection always uses the field of view of the g3 view
+	gr_set_proj_matrix(Proj_fov,
 					   gr_screen.aspect * static_cast<float>(gr_screen.clip_width)
 						   / static_cast<float>(gr_screen.clip_height),
 					   1.0f,

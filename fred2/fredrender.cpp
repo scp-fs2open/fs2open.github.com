@@ -843,7 +843,8 @@ void fred_disable_htl() {
 }
 
 void fred_enable_htl() {
-	gr_set_proj_matrix((4.0f / 9.0f) * PI * (Briefing_dialog ? Briefing_window_FOV : EDITOR_DEFAULT_FOV), gr_screen.aspect*(float) gr_screen.clip_width / (float) gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
+	// g3_set_view_matrix() sets Proj_fov from its zoom, so the projection always uses the field of view of the g3 view
+	gr_set_proj_matrix(Proj_fov, gr_screen.aspect*(float) gr_screen.clip_width / (float) gr_screen.clip_height, 1.0f, FRED_DEAFULT_HTL_DRAW_DIST);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 }
 
