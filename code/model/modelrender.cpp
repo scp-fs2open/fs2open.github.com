@@ -2782,16 +2782,6 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		Lab_object_detail_level = detail_level;
 	}
 
-// #ifndef NDEBUG
-// 	if ( Interp_detail_level == 0 )	{
-// 		MONITOR_INC( NumHiModelsRend, 1 );
-// 	} else if ( Interp_detail_level == pm->n_detail_levels-1 ) {
-// 		MONITOR_INC( NumLowModelsRend, 1 );
-// 	}  else {
-// 		MONITOR_INC( NumMedModelsRend, 1 );
-// 	}
-// #endif
-	
 	vec3d auto_back = ZERO_VECTOR;
 	bool set_autocen = model_render_determine_autocenter(&auto_back, pm, detail_level, model_flags);
 	

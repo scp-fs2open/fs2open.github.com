@@ -118,9 +118,6 @@ struct interp_vertex {
 // Local variables
 //
 
-// our current level of detail (LOD)
-int Interp_detail_level = 0;
-
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
