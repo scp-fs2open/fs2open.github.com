@@ -77,6 +77,8 @@ bool shadows_raytracing_supported();
 // clutter the UI with settings that have no effect. Call once after the renderer is up
 // (gr_init), when shadows_raytracing_supported() is meaningful.
 void shadows_remove_unsupported_options();
+// -get_options only: what a launcher shows as the reason these ray-traced shadow options are greyed
+void shadows_mark_launcher_requirements(bool card_has_raytracing);
 
 // Whether shading should actually sample the raytraced-shadow TLAS right now, i.e. both
 // the user has selected it AND the hardware supports it. This is the single source of

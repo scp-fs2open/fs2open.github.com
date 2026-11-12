@@ -10,15 +10,24 @@ namespace options {
 // Forward declaration
 class OptionBase;
 
+enum class OverrideSource {
+	CommandLine,
+	Mod
+};
+
+// A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
+json_t* json_text(const SCP_string& text);
+
 class OptionsManager {
 	OptionsManager();
 
-	// A value forced by something outside of the options system itself (currently only the command line).
+	// A value forced by something outside of the options system itself: a command line flag, or a mod's own tables.
 	// This takes priority over the persisted config value and over any in-session edit. The options UI shows
 	// an overridden option as a disabled control with the reason in its tooltip.
 	struct OverrideEntry {
 		std::unique_ptr<json_t> value;
 		SCP_string reason; // human-readable source, e.g. "-no_vsync", shown in the options UI
+		OverrideSource source;
 	};
 	SCP_unordered_map<SCP_string, OverrideEntry> _config_overrides;
 
@@ -30,6 +39,12 @@ class OptionsManager {
 	SCP_unordered_set<SCP_string> _enforcedOptions;
 
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
+
+	// what loadInitialValues() found: enforced and renderer-pruned options leave _options afterwards
+	SCP_vector<std::shared_ptr<const OptionBase>> _describedAtLoad;
+
+	// options the current renderer drops, for a launcher: what the player needs to use them, and a sentence saying so
+	SCP_unordered_map<SCP_string, std::pair<SCP_string, SCP_string>> _requirements;
 	bool _optionsSorted = false;
 
   public:
@@ -41,18 +56,27 @@ class OptionsManager {
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
-	void setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason);
+	void setOverride(const SCP_string& key,
+		const SCP_string& json,
+		const SCP_string& reason,
+		OverrideSource source = OverrideSource::CommandLine);
 
 	// Overload that takes an already-built JSON value. Prefer this one: it lets a caller reuse the option's
 	// own serializer instead of formatting the JSON by hand, which can produce a value the option's
 	// deserializer then rejects.
-	void setOverride(const SCP_string& key, std::unique_ptr<json_t>&& value, const SCP_string& reason);
+	void setOverride(const SCP_string& key,
+		std::unique_ptr<json_t>&& value,
+		const SCP_string& reason,
+		OverrideSource source = OverrideSource::CommandLine);
 
 	// Returns true if this key currently has an override.
 	bool isOverridden(const SCP_string& key) const;
 
 	// Returns the reason string passed to setOverride() for this key, if it is currently overridden.
 	std::optional<SCP_string> getOverrideReason(const SCP_string& key) const;
+
+	// Returns where this key's override came from, if it is currently overridden.
+	std::optional<OverrideSource> getOverrideSource(const SCP_string& key) const;
 
 	// Removes all overrides. For tests, so that one test's overrides do not leak into the next.
 	void clearOverrides();
@@ -89,6 +113,20 @@ class OptionsManager {
 	void loadInitialValues();
 
 	void printValues();
+
+	/**
+	 * @brief Describes every option for a launcher: key, title, description, category, type, allowed values or range,
+	 * default and current value, override source and reason, whether a mod enforces it, and whether a change needs a
+	 * restart (true unless the option is known to apply at once).
+	 * @return A new JSON array the caller owns
+	 */
+	json_t* describeOptions();
+
+	// Notes what a player needs to use an option ("vulkan", "raytracing"), for describeOptions()
+	void setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation);
+
+	// Puts back what loadInitialValues() removed and forgets its record. For tests, which share this singleton.
+	void forgetLoadedOptions();
 
 	void set_ingame_binary_option(SCP_string key, bool value);
 	void set_ingame_multi_option(SCP_string key, int value);

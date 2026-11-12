@@ -248,6 +248,30 @@ bool shadows_raytracing_supported()
 	return gr_is_capable(gr_capability::CAPABILITY_RAYTRACED_SHADOWS);
 }
 
+static SCP_vector<std::shared_ptr<const options::OptionBase>> raytracing_options()
+{
+	return {ShadowRenderMethodOption,
+		MaxRtShadowLightsOption,
+		RTShadowQualityOption,
+		MaxRtShadowLocalLightsOption,
+		RtShadowBiasMinOption,
+		RtShadowBiasMaxOption};
+}
+
+void shadows_mark_launcher_requirements(bool card_has_raytracing)
+{
+	auto* mgr = options::OptionsManager::instance();
+	for (const auto& option : raytracing_options()) {
+		if (card_has_raytracing) {
+			mgr->setRequirement(option->getConfigKey(), "vulkan", XSTR("Needs the Vulkan renderer", -1));
+		} else {
+			mgr->setRequirement(option->getConfigKey(),
+				"raytracing",
+				XSTR("Needs the Vulkan renderer and a graphics card with ray tracing; stays off on other hardware", -1));
+		}
+	}
+}
+
 void shadows_remove_unsupported_options()
 {
 	if (shadows_raytracing_supported()) {
@@ -258,13 +282,14 @@ void shadows_remove_unsupported_options()
 	// degenerates to a single value and every raytraced-shadow tuning option is inert, so
 	// drop them all. The bound globals keep their defaults, so shadow-map rendering is
 	// unaffected. Graphics.Shadows (base shadow quality) is deliberately kept.
+	if (Cmdline_get_options) {
+		// a launcher shows these greyed, with this as the reason; -get_options may relax it after asking Vulkan
+		shadows_mark_launcher_requirements(false);
+	}
 	auto* mgr = options::OptionsManager::instance();
-	mgr->removeOption(ShadowRenderMethodOption);
-	mgr->removeOption(MaxRtShadowLightsOption);
-	mgr->removeOption(RTShadowQualityOption);
-	mgr->removeOption(MaxRtShadowLocalLightsOption);
-	mgr->removeOption(RtShadowBiasMinOption);
-	mgr->removeOption(RtShadowBiasMaxOption);
+	for (const auto& option : raytracing_options()) {
+		mgr->removeOption(option);
+	}
 }
 
 bool shadows_use_raytracing()

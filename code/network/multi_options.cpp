@@ -424,7 +424,8 @@ void multi_options_read_config()
 	multi_fs_tracker_verify_options();
 
 #ifndef _WIN32
-	if (Is_standalone) {
+	// this starts the standalone web panel, which a -get_options query must never open
+	if (Is_standalone && !Cmdline_get_options) {
 		std_configLoaded(&Multi_options_g);
 	}
 #endif
