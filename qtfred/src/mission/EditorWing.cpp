@@ -315,7 +315,7 @@ int Editor::create_wing()
 		}
 	}
 
-	mark_wing(wing);
+	mark_wing(wing, LockedObjects::Include);
 
 	update_custom_wing_indexes();
 
@@ -391,15 +391,23 @@ int Editor::find_free_wing()
 
 	return -1;
 }
-void Editor::mark_wing(int wing)
+void Editor::mark_wing(int wing, LockedObjects locked)
 {
-	int i;
+	auto skip = [locked](int obj) {
+		return locked == LockedObjects::Skip && Objects[obj].flags[Object::Object_Flags::Locked_from_editing];
+	};
 
 	unmark_all();
 	Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
-	setupCurrentObjectIndices(wing_objects[wing][Wings[wing].special_ship]);
-	for (i = 0; i < Wings[wing].wave_count; i++) {
-		markObject(wing_objects[wing][i]);
+	// The leader is the current object. If the leader is skipped, markObject() makes the first marked ship current.
+	const int leader = wing_objects[wing][Wings[wing].special_ship];
+	if (!skip(leader)) {
+		setupCurrentObjectIndices(leader);
+	}
+	for (int i = 0; i < Wings[wing].wave_count; i++) {
+		if (!skip(wing_objects[wing][i])) {
+			markObject(wing_objects[wing][i]);
+		}
 	}
 }
 

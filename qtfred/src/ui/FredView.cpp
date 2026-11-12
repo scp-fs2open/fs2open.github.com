@@ -1191,7 +1191,9 @@ void FredView::onUpdateContextToolbar() {
 			addBtn(tr("Edit Wing"), &FredView::on_actionWings_triggered);
 			auto* selWingAct = new QAction(tr("Select Wing"), _contextToolBar);
 			int capturedWing = effectiveWingNum;
-			connect(selWingAct, &QAction::triggered, this, [this, capturedWing]() { selectWing(capturedWing); });
+			connect(selWingAct, &QAction::triggered, this, [this, capturedWing]() {
+				fred->mark_wing(capturedWing, Editor::LockedObjects::Skip);
+			});
 			_contextToolBar->addAction(selWingAct);
 		}
 	} else if (effectiveType == OBJ_WAYPOINT) {
@@ -2107,7 +2109,7 @@ void FredView::initializePopupMenus() {
 		if (query_valid_object(obj) && (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START)) {
 			int wing = Ships[Objects[obj].instance].wingnum;
 			if (wing >= 0) {
-				selectWing(wing);
+				fred->mark_wing(wing, Editor::LockedObjects::Skip);
 			}
 		}
 	});
@@ -3002,10 +3004,6 @@ void FredView::onGroupSelected(int group) {
 		objp = GET_NEXT(objp);
 	}
 }
-void FredView::selectWing(int wing) {
-	fred->mark_wing(wing);
-	fred->unmarkLockedObjects();
-}
 void FredView::onSetGroup(int group) {
 	bool err = false;
 
@@ -3060,7 +3058,7 @@ void FredView::on_actionPrev_Object_triggered(bool) {
 }
 void FredView::on_actionMark_Wing_triggered(bool) {
 	if (fred->cur_wing != -1) {
-		selectWing(fred->cur_wing);
+		fred->mark_wing(fred->cur_wing, Editor::LockedObjects::Skip);
 	}
 }
 void FredView::on_actionError_Checker_triggered(bool) {

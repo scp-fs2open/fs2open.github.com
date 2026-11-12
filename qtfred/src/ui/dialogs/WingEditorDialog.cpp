@@ -78,7 +78,7 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 			return entries;
 		},
 		[editor]() { return editor->cur_wing; },
-		[editor](int wing) { editor->mark_wing(wing); },
+		[editor](int wing) { editor->mark_wing(wing, Editor::LockedObjects::Include); },
 		tr("&Select Wing"));
 
 	initializeUi();

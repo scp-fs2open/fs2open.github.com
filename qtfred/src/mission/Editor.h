@@ -203,15 +203,16 @@ class Editor : public QObject {
 	 */
 	int create_wing();
 
+	enum class LockedObjects { Include, Skip };
+
 	/**
 	 * @brief Mark all ships within this wing
 	 *
 	 * @param[in] wing Index of the wing to mark
+	 * @param[in] locked Skip for the Select Wing commands: like a click in the viewport, they do not select
+	 *                   a locked ship. Include for a selection of the wing by name, for example in the Wing Editor.
 	 */
-	void mark_wing(int wing);
-	// Unmark the marked objects that are locked. The Select Wing commands call this function after mark_wing(),
-	// because like a click in the viewport, they do not select a locked object.
-	void unmarkLockedObjects();
+	void mark_wing(int wing, LockedObjects locked);
 
 	bool query_single_wing_marked();
 

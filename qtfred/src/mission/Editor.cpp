@@ -1750,13 +1750,6 @@ void Editor::select_adjacent_object(bool forward)
 		unmarkObject(currentObject);
 	markObject(OBJ_INDEX(ptr));
 }
-void Editor::unmarkLockedObjects()
-{
-	for (auto ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
-		if (ptr->flags[Object::Object_Flags::Marked] && ptr->flags[Object::Object_Flags::Locked_from_editing])
-			unmarkObject(OBJ_INDEX(ptr));
-	}
-}
 int Editor::get_visible_sub_system_count(ship * shipp) {
 	int count = 0;
 	ship_subsys* cur_subsys;
