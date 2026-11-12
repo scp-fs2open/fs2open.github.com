@@ -1175,6 +1175,39 @@ int SexpTreeModel::get_loadout_variable_count(int var_index)
 	return count;
 }
 
+void SexpTreeModel::rename_variable_references(const SCP_unordered_map<SCP_string, SCP_string>& new_names)
+{
+	// all renames are looked up in one pass, so two variables that trade names do not collide
+	for (int i = 0; i < Num_sexp_nodes; i++) {
+		auto& node = Sexp_nodes[i];
+		if (node.type & SEXP_FLAG_VARIABLE) {
+			const auto it = new_names.find(node.text);
+			if (it != new_names.cend()) {
+				strcpy_s(node.text, it->second.c_str());
+			}
+		}
+	}
+
+	const auto follow_rename = [&new_names](SCP_string& name) {
+		const auto it = new_names.find(name);
+		if (it != new_names.cend()) {
+			name = it->second;
+		}
+	};
+
+	for (auto& team_datum : Team_data) {
+		for (auto& entry : team_datum.ship_choices) {
+			follow_rename(entry.class_variable);
+			follow_rename(entry.count_variable);
+		}
+
+		for (auto& entry : team_datum.weapon_choices) {
+			follow_rename(entry.class_variable);
+			follow_rename(entry.count_variable);
+		}
+	}
+}
+
 // Count how many tree nodes are container name or container data references
 // matching the given container_name.
 int SexpTreeModel::get_container_usage_count(const SCP_string& container_name) const

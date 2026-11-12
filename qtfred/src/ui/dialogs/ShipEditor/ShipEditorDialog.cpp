@@ -768,11 +768,14 @@ void ShipEditorDialog::on_shipNameEdit_editingFinished()
 	if (!entry.isEmpty() && entry != _model->getShipName().c_str()) {
 		const auto textBytes = entry.toUtf8();
 		const std::string NewShipName = textBytes.toStdString();
+		const SCP_string oldShipName = _model->getShipName();
 		_model->setShipName(NewShipName);
-	}
 
-	// automatically determine or reset the display name
-	_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
+		// a refused rename leaves the ship name as it was, and its display name with it
+		if (_model->getShipName() != oldShipName) {
+			_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
+		}
+	}
 
 	// sync the variable to the edit box
 	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());

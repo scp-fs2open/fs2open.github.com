@@ -921,6 +921,7 @@ BOOL sexp_tree_view::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			// Don't sort until after modify, since modify uses index
 			if (dlg.m_modified_name) {
+				SexpTreeModel::rename_variable_references({{old_name, Sexp_variables[sexp_var_index].variable_name}});
 				sexp_variable_sort();
 			}
 

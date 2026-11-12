@@ -451,6 +451,10 @@ void WingEditorDialogModel::setWingName(const SCP_string& name)
 	if (!wingIsValid())
 		return;
 
+	// rename_wing resets the display name, so it only runs for a real rename
+	if (name == _currentWingName)
+		return;
+
 	if (_editor->rename_wing(_currentWingIndex, name)) {
 		modify(_currentWingName, name);
 		Q_EMIT modelChanged();
