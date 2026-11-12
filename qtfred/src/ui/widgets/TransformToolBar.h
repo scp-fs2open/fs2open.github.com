@@ -23,7 +23,8 @@ class EditorViewport;
  * X/Y/Z (or H/P/B) boxes of the current object, its radius, and its layer.
  *
  * A box keeps the focus while the user types. Enter applies the typed value to the edited axis only. Escape and all
- * other focus changes discard it.
+ * other focus changes discard it. A step with the mouse wheel, the arrow buttons, or the Up and Down keys applies at
+ * once.
  */
 class TransformToolBar : public QObject {
 	Q_OBJECT
@@ -68,6 +69,8 @@ class TransformToolBar : public QObject {
 	// Returns 0, 1, or 2 for a box, and -1 for all other objects
 	int boxAxis(const QObject* object) const;
 	bool editIsCurrent() const;
+	// A step changed the value of a box. Apply it at once.
+	void applyStep(int axis);
 	void applyValue(int axis, double value);
 
 	QToolBar* _toolbar;

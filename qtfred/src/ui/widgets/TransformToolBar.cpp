@@ -24,6 +24,7 @@
 #include "ui/Theme.h"
 
 #include <cmath>
+#include <functional>
 
 namespace fso::fred {
 
@@ -52,6 +53,24 @@ void selectByData(QComboBox* combo, int value)
 		combo->setCurrentIndex(index);
 	}
 }
+
+// A spin box that reports each step that changes its value: the mouse wheel, the arrow buttons, and the Up, Down,
+// Page Up, and Page Down keys. A step does not interpret typed text, so the toolbar can apply it at once.
+class StepSpinBox : public QDoubleSpinBox {
+  public:
+	using QDoubleSpinBox::QDoubleSpinBox;
+
+	std::function<void()> onStep;
+
+	void stepBy(int steps) override
+	{
+		const double before = value();
+		QDoubleSpinBox::stepBy(steps);
+		if (value() != before && onStep) {
+			onStep();
+		}
+	}
+};
 
 } // namespace
 
@@ -205,7 +224,9 @@ void TransformToolBar::addWidgets()
 		label->setContentsMargins(4, 0, 2, 0);
 		_toolbar->addWidget(label);
 
-		box = new QDoubleSpinBox(_toolbar);
+		auto* stepBox = new StepSpinBox(_toolbar);
+		stepBox->onStep = [this, axis]() { applyStep(axis); };
+		box = stepBox;
 		box->setDecimals(BOX_DECIMALS);
 		box->setRange(-POSITION_LIMIT, POSITION_LIMIT);
 		box->setFixedWidth(90);
@@ -465,6 +486,19 @@ bool TransformToolBar::eventFilter(QObject* watched, QEvent* event)
 bool TransformToolBar::editIsCurrent() const
 {
 	return _editor->currentObject == _edit.object && _viewport->Editing_mode == _edit.mode;
+}
+
+void TransformToolBar::applyStep(int axis)
+{
+	// The box shows the value of the current object: the update gives a box with the focus back to the viewport
+	// when the object or the mode changes. Thus the step is for the current object, also if the box did not have
+	// the focus before the step.
+	_edit.object = _editor->currentObject;
+	_edit.mode = _viewport->Editing_mode;
+	applyValue(axis, _boxes[axis]->value());
+
+	// A later Enter must not apply the same value again
+	_edit.startValue = _boxes[axis]->value();
 }
 
 void TransformToolBar::applyValue(int axis, double value)
