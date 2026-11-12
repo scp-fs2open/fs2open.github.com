@@ -322,7 +322,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void initializeTransformBar();
 	void onUpdateTransformBar();
-	void onTransformEditingFinished();
+	bool eventFilter(QObject* watched, QEvent* event) override;
+	// Returns 0, 1, or 2 for the X/Y/Z (or H/P/B) box of the transform toolbar, and -1 for all other objects
+	int transformBoxAxis(const QObject* object) const;
+	bool transformEditIsCurrent() const;
+	void applyTransformValue(int axis, double value);
 
 	QToolBar* _contextToolBar = nullptr;
 	QLabel*   _contextLabel   = nullptr;
@@ -343,6 +347,14 @@ class FredView: public QMainWindow, public IDialogProvider {
 	QDoubleSpinBox* _transformA          = nullptr;
 	QDoubleSpinBox* _transformB          = nullptr;
 	QDoubleSpinBox* _transformC          = nullptr;
+	// The state when a transform box got the focus. Enter applies the typed value only if the current object
+	// and the mode did not change, and only if the value is different from the start value.
+	struct TransformEdit {
+		int        object     = -1;
+		CursorMode mode       = CursorMode::Selecting;
+		double     startValue = 0.0;
+	};
+	TransformEdit   _transformEdit;
 	QComboBox*      _transformMoveSpeedCombo = nullptr;
 	QComboBox*      _transformRotSpeedCombo  = nullptr;
 	// Last camera speeds written to QSettings; lets us persist on change instead of only on close.

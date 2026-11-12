@@ -87,6 +87,9 @@ SCP_string cmdline_build_string();
 
 namespace {
 
+// Number of decimals in the X/Y/Z boxes of the transform toolbar
+constexpr int TRANSFORM_BOX_DECIMALS = 2;
+
 template<typename T>
 void copyActionSettings(QAction* action, T* target) {
 	Q_ASSERT(action->isCheckable());
@@ -1341,12 +1344,12 @@ void FredView::initializeTransformBar() {
 		lbl->setContentsMargins(4, 0, 2, 0);
 		_transformToolBar->addWidget(lbl);
 		sb = new QDoubleSpinBox(_transformToolBar);
-		sb->setDecimals(1);
-		sb->setRange(-99999.9, 99999.9);
+		sb->setDecimals(TRANSFORM_BOX_DECIMALS);
+		sb->setRange(-99999.99, 99999.99);
 		sb->setFixedWidth(90);
 		sb->setKeyboardTracking(false);
 		_transformToolBar->addWidget(sb);
-		connect(sb, &QDoubleSpinBox::editingFinished, this, &FredView::onTransformEditingFinished);
+		sb->installEventFilter(this);
 	};
 
 	makeSpinBox(_transformLabelA, tr("X"), _transformA);
@@ -1397,6 +1400,12 @@ void FredView::onUpdateTransformBar() {
 	const int  rawType    = valid ? Objects[curObj].type : -1;
 	const bool isShip     = valid && (rawType == OBJ_SHIP || rawType == OBJ_START);
 
+	// A change of the current object or of the mode makes the typed value incorrect. Give the focus back to
+	// the viewport before the code below changes the ranges, so that the box shows the new value.
+	if (transformBoxAxis(QApplication::focusWidget()) >= 0 && !transformEditIsCurrent()) {
+		ui->centralWidget->setFocus(Qt::OtherFocusReason);
+	}
+
 	// ---- Spin box labels and ranges ----------------------------------------
 	if (rotateMode) {
 		_transformLabel->setText(tr("Ori"));
@@ -1411,9 +1420,9 @@ void FredView::onUpdateTransformBar() {
 		_transformLabelA->setText(tr("X"));
 		_transformLabelB->setText(tr("Y"));
 		_transformLabelC->setText(tr("Z"));
-		_transformA->setRange(-99999.9, 99999.9);
-		_transformB->setRange(-99999.9, 99999.9);
-		_transformC->setRange(-99999.9, 99999.9);
+		_transformA->setRange(-99999.99, 99999.99);
+		_transformB->setRange(-99999.99, 99999.99);
+		_transformC->setRange(-99999.99, 99999.99);
 	}
 
 	const bool editable = valid && !selectMode;
@@ -1547,90 +1556,124 @@ void FredView::onUpdateTransformBar() {
 	}
 }
 
-void FredView::onTransformEditingFinished() {
-	const int  curObj      = fred->currentObject;
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
+	const int axis = transformBoxAxis(watched);
+	if (axis < 0) {
+		return QMainWindow::eventFilter(watched, event);
+	}
+	auto* box = static_cast<QDoubleSpinBox*>(watched);
+
+	switch (event->type()) {
+	case QEvent::FocusIn: {
+		// The focus also comes back after a popup or a window change. The edit then continues, so keep the record.
+		const auto reason = static_cast<QFocusEvent*>(event)->reason();
+		if (reason != Qt::PopupFocusReason && reason != Qt::ActiveWindowFocusReason) {
+			_transformEdit = {fred->currentObject, _viewport->Editing_mode, box->value()};
+		}
+		break;
+	}
+	case QEvent::ShortcutOverride: {
+		// Do not let a menu shortcut or a control binding take Enter or Escape from the box
+		const int key = static_cast<QKeyEvent*>(event)->key();
+		if (key == Qt::Key_Return || key == Qt::Key_Enter || key == Qt::Key_Escape) {
+			event->accept();
+			return true;
+		}
+		break;
+	}
+	case QEvent::KeyPress: {
+		// Enter applies the value. Escape discards it. Both give the focus back to the viewport, so that the
+		// keyboard controls work again. All other focus changes discard the value.
+		const int key = static_cast<QKeyEvent*>(event)->key();
+		if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+			box->interpretText();
+			applyTransformValue(axis, box->value());
+		} else if (key != Qt::Key_Escape) {
+			break;
+		}
+		ui->centralWidget->setFocus(Qt::OtherFocusReason);
+		return true;
+	}
+	default:
+		break;
+	}
+	return QMainWindow::eventFilter(watched, event);
+}
+
+int FredView::transformBoxAxis(const QObject* object) const {
+	if (object == nullptr) return -1;
+	if (object == _transformA) return 0;
+	if (object == _transformB) return 1;
+	if (object == _transformC) return 2;
+	return -1;
+}
+
+bool FredView::transformEditIsCurrent() const {
+	return fred->currentObject == _transformEdit.object && _viewport->Editing_mode == _transformEdit.mode;
+}
+
+void FredView::applyTransformValue(int axis, double value) {
+	// The selection or the mode can change while the box has the focus. Then the value is not for this object.
+	if (!transformEditIsCurrent()) return;
+
+	const int curObj = fred->currentObject;
 	if (!query_valid_object(curObj)) return;
 
-	const bool rotateMode  = _viewport->Editing_mode == CursorMode::Rotating;
-	const bool localMode   = !_viewport->Group_rotate;  // Local ON = individual = !Group_rotate
-	const int  numMarked   = fred->getNumMarked();
-	const bool isMulti     = numMarked > 1;
+	// Change only the axis of the edited box. The other boxes show rounded values. If the code also wrote them,
+	// the object would move on the axes that the user did not change.
+	const bool rotateMode = _viewport->Editing_mode == CursorMode::Rotating;
+	const bool isMulti    = fred->getNumMarked() > 1;
+	// Local ON (= !Group_rotate) with more than one object: add the change of the current object to
+	// each marked object. Otherwise, set the value on each marked object.
+	const bool relative   = isMulti && !_viewport->Group_rotate;
 
+	// More than one object with Local OFF: Enter sets the value on all the marked objects, also if it did not change
+	const bool alignAll   = isMulti && !relative;
+
+	// If the user did not change the value, do not write the rounded value back to the object
+	const double scale     = std::pow(10.0, TRANSFORM_BOX_DECIMALS);
+	const bool   unchanged = std::abs(value - _transformEdit.startValue) < 0.5 / scale;
+	if (unchanged && !alignAll) return;
+
+	auto angleOf = [axis](angles& a) -> float& { return (axis == 0) ? a.h : (axis == 1) ? a.p : a.b; };
+
+	float current;
 	if (rotateMode) {
-		if (isMulti && localMode) {
-			// Local delta: compute angle delta from curObj, apply to every marked object.
-			angles oldAng{};
-			vm_extract_angles_matrix(&oldAng, &Objects[curObj].orient);
-			const float dh = fl_radians(static_cast<float>(_transformA->value())) - oldAng.h;
-			const float dp = fl_radians(static_cast<float>(_transformB->value())) - oldAng.p;
-			const float db = fl_radians(static_cast<float>(_transformC->value())) - oldAng.b;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				angles a{};
-				vm_extract_angles_matrix(&a, &p->orient);
-				a.h += dh; a.p += dp; a.b += db;
-				vm_angles_2_matrix(&p->orient, &a);
-			}
-		} else if (isMulti) {
-			// Global multi: align every marked object to the same absolute orientation.
-			angles ang{};
-			ang.h = fl_radians(static_cast<float>(_transformA->value()));
-			ang.p = fl_radians(static_cast<float>(_transformB->value()));
-			ang.b = fl_radians(static_cast<float>(_transformC->value()));
-			matrix m{};
-			vm_angles_2_matrix(&m, &ang);
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->orient = m;
-			}
-		} else {
-			// Single object.
-			angles ang{};
-			ang.h = fl_radians(static_cast<float>(_transformA->value()));
-			ang.p = fl_radians(static_cast<float>(_transformB->value()));
-			ang.b = fl_radians(static_cast<float>(_transformC->value()));
-			vm_angles_2_matrix(&Objects[curObj].orient, &ang);
-		}
+		angles ang{};
+		vm_extract_angles_matrix(&ang, &Objects[curObj].orient);
+		current = fl_degrees(angleOf(ang));
 	} else {
-		if (isMulti && localMode) {
-			// Local delta: shift every marked object by the same offset relative to curObj.
-			const float dx = static_cast<float>(_transformA->value()) - Objects[curObj].pos.xyz.x;
-			const float dy = static_cast<float>(_transformB->value()) - Objects[curObj].pos.xyz.y;
-			const float dz = static_cast<float>(_transformC->value()) - Objects[curObj].pos.xyz.z;
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->pos.xyz.x += dx;
-				p->pos.xyz.y += dy;
-				p->pos.xyz.z += dz;
-			}
-		} else if (isMulti) {
-			// Global multi: move every marked object to the same absolute position.
-			const auto nx = static_cast<float>(_transformA->value());
-			const auto ny = static_cast<float>(_transformB->value());
-			const auto nz = static_cast<float>(_transformC->value());
-			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-				if (!p->flags[Object::Object_Flags::Marked]) continue;
-				p->pos.xyz.x = nx;
-				p->pos.xyz.y = ny;
-				p->pos.xyz.z = nz;
-			}
-		} else {
-			// Single object.
-			Objects[curObj].pos.xyz.x = static_cast<float>(_transformA->value());
-			Objects[curObj].pos.xyz.y = static_cast<float>(_transformB->value());
-			Objects[curObj].pos.xyz.z = static_cast<float>(_transformC->value());
-		}
+		current = Objects[curObj].pos.a1d[axis];
 	}
 
-	// Move the docked partners with the changed objects
-	if (isMulti) {
-		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
-			if (p->flags[Object::Object_Flags::Marked])
-				object_moved(p);
+	const auto newValue = static_cast<float>(value);
+	const float delta   = newValue - current;
+
+	auto apply = [&](object* p) {
+		if (rotateMode) {
+			angles a{};
+			vm_extract_angles_matrix(&a, &p->orient);
+			angleOf(a) = relative ? angleOf(a) + fl_radians(delta) : fl_radians(newValue);
+			vm_angles_2_matrix(&p->orient, &a);
+		} else {
+			p->pos.a1d[axis] = relative ? p->pos.a1d[axis] + delta : newValue;
 		}
-	} else {
-		object_moved(&Objects[curObj]);
-	}
+	};
+
+	auto forEachTarget = [&](auto&& fn) {
+		if (isMulti) {
+			for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+				if (p->flags[Object::Object_Flags::Marked])
+					fn(p);
+			}
+		} else {
+			fn(&Objects[curObj]);
+		}
+	};
+
+	forEachTarget(apply);
+	// Move the docked partners after all the objects changed
+	forEachTarget(object_moved);
 
 	fred->missionChanged();
 }
@@ -1679,6 +1722,12 @@ void FredView::ensureViewportFocus() {
 	if (focusedWidget != nullptr) {
 		auto* focusedWindow = focusedWidget->window();
 		if (focusedWindow != nullptr && focusedWindow != this) {
+			return;
+		}
+
+		// Do not take the focus from a transform bar box while the user types a value. The toolbar is not a
+		// dock widget. Enter, Escape, or a click in the viewport gives the focus back.
+		if (transformBoxAxis(focusedWidget) >= 0) {
 			return;
 		}
 
