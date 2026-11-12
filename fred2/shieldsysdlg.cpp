@@ -11,6 +11,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "FREDDoc.h"
 #include "ShieldSysDlg.h"
 #include "ship/ship.h"
 #include "mission/missionparse.h"
@@ -105,6 +106,7 @@ void shield_sys_dlg::OnOK()
 
 	OnSelchangeTeam();
 	OnSelchangeType();
+	bool changed = false;
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
 			z = Shield_sys_teams[Ships[i].team];
@@ -114,11 +116,17 @@ void shield_sys_dlg::OnOK()
 			else if (type_z == 1)
 				z = 1;
 
+			const bool had_no_shields = Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields];
 			if (!z)
                 Objects[Ships[i].objnum].flags.remove(Object::Object_Flags::No_shields);
 			else if (z == 1)
                 Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
+			if (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields] != had_no_shields)
+				changed = true;
 		}
+
+	if (changed)
+		set_modified();
 
 	CDialog::OnOK();
 }
