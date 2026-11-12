@@ -7038,7 +7038,7 @@ void ship::clear()
 	num_turret_swarm_info = 0;
 	swarm_missile_bank = -1;
 
-	group = 0;
+	group = -1;
 	fred_layer = "Default";
 	death_roll_snd  = sound_handle::invalid();
 	ship_list_index = -1;

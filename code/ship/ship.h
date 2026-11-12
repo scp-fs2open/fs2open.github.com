@@ -783,7 +783,7 @@ public:
 	int	num_turret_swarm_info;			// number of turrets in process of launching swarm
 	int swarm_missile_bank;				// The missilebank the swarm was originally launched from
 
-	int	group;								// one bit per group the ship is in, 0 if none.  Fred thing
+	int	group;								// group ship is in, or -1 if none.  Fred thing
 	SCP_string fred_layer = "Default";		// FRED view layer assignment
 	sound_handle death_roll_snd;            // id of death roll sound, may need to be stopped early
 	int	ship_list_index;					// index of ship in Ship_objs[] array
