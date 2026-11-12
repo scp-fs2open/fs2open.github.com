@@ -1778,7 +1778,7 @@ void EditorViewport::view_universe(bool just_marked) {
 
 	dist = std::max(radius, fl_sqrt(20.0f)) + 1.0f;
 	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1791,7 +1791,7 @@ void EditorViewport::view_universe(bool just_marked) {
 			while (v.codes & CC_OFF) {
 				dist += 5.0f;
 				vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-				g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+				g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 				g3_rotate_vertex(&v, &ptr->pos);
 				if (g3_project_vertex(&v) & PF_OVERFLOW)
 					Int3();
@@ -1803,7 +1803,7 @@ void EditorViewport::view_universe(bool just_marked) {
 
 	dist *= 1.1f;
 	vm_vec_scale_add(&camera.view_pos, &center, &camera.view_orient.vec.fvec, -dist);
-	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, 0.5f);
+	g3_set_view_matrix(&camera.view_pos, &camera.view_orient, EDITOR_DEFAULT_FOV);
 
 	needsUpdate();
 }
