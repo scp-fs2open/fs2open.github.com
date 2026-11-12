@@ -605,6 +605,7 @@ void CFREDDoc::OnFileImportFSM() {
 		{
 			// these aren't done automatically for imports
 			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetPathName((LPCTSTR)dest_path, FALSE);
 			SetTitle((LPCTSTR)Mission_filename);
 		}
 	}
