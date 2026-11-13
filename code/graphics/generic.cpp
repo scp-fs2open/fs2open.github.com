@@ -376,8 +376,10 @@ void generic_render_eff_stream(generic_anim *ga)
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
+			// the frame's data keeps its own depth (24-bit DDS, JPG, TGA), which renderers need to read it
+			const int frame_bpp = (bpp == 8) ? bpp : next_frame_bmp->bpp;
 			if(next_frame_bmp->data)
-				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
+				gr_update_texture(ga->bitmap_id, frame_bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
 			bm_unlock(ga->eff.next_frame);
 			bm_unload(ga->eff.next_frame, 0, true);
 			if (ga->current_frame == ga->num_frames-1)
