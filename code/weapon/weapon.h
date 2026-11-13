@@ -1067,8 +1067,8 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 }
 
 // Steps the bank's $Substitute: pattern and returns the weapon class to fire: weapon_info_index itself if the
-// weapon has no pattern, or -1 if this step fires nothing.  Ship banks call this once per volley, so that every
-// projectile in a volley is the same class, and then pass resolve_substitution = false to weapon_create.
+// weapon has no pattern, or -1 if this step fires nothing.  Ship banks call this themselves (primaries once per
+// projectile, secondaries once per volley) and then pass resolve_substitution = false to weapon_create.
 int weapon_resolve_substitution(int weapon_info_index, ship_weapon *swp, int pbank, int sbank);
 
 bool weapon_armed(weapon *wp, bool hit_target);

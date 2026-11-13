@@ -13583,12 +13583,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					continue;
 				}
 
-				int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
-
 				for (int shot_index = 0; shot_index < shot_count; shot_index++) {
 					int pt = swp->primary_firepoint_state[bank_to_fire].next(firing_pattern, shot_index, num_slots);
 
 					for (int w = 0; w < multishot_count; w++) {
+						// primaries step the substitution pattern once per beam
+						int beam_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
+
 						beam_fire_info fbfire_info;
 						shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 				    	shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
@@ -13604,7 +13605,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				    	shipp->fighter_beam_turret_data.system_info = &shipp->beam_sys_info;
 
     					fbfire_info.target_subsys = Ai_info[shipp->ai_index].targeted_subsys;
-    					fbfire_info.beam_info_index = volley_weapon_idx;
+    					fbfire_info.beam_info_index = beam_weapon_idx;
     					fbfire_info.beam_info_override = nullptr;
     					fbfire_info.shooter = &Objects[shipp->objnum];
 
@@ -13625,7 +13626,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 						shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[pt];
 						fbfire_info.point = pt;
 						fbfire_info.fire_method = BFM_FIGHTER_FIRED;
-						if (volley_weapon_idx >= 0)
+						if (beam_weapon_idx >= 0)
 							beam_fire(&fbfire_info);
 						has_fired = true;
 						num_fired++;
@@ -13741,7 +13742,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					vm_vec_zero(&total_impulse);
 				}
 
-				int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
 				weapon_info *fired_winfo_p = winfo_p;
 
 				for (int shot_index = 0; shot_index < shot_count; shot_index++) {
@@ -13825,9 +13825,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vm_vec_add2(&total_impulse, &local_impulse);
 							}
 
+							// primaries step the substitution pattern once per projectile
+							int shot_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, bank_to_fire, -1);
+
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
-							weapon_objnum = (volley_weapon_idx < 0) ? -1 : weapon_create( &firing_pos, &firing_orient, volley_weapon_idx, OBJ_INDEX(obj), new_group_id,
+							weapon_objnum = (shot_weapon_idx < 0) ? -1 : weapon_create( &firing_pos, &firing_orient, shot_weapon_idx, OBJ_INDEX(obj), new_group_id,
 								false, false, swp, bank_to_fire, -1, launch_curve_data, false );
 
 							if (weapon_objnum == -1) {
@@ -14602,6 +14605,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 		}
 
+		// secondaries step the substitution pattern once per volley, so dual fire launches a matched pair
 		int volley_weapon_idx = weapon_resolve_substitution(weapon_idx, swp, -1, bank);
 
 		for ( int shot_index = 0; shot_index < shot_count; shot_index++ ) {

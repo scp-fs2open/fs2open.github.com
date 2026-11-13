@@ -365,7 +365,7 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// copied from weapon_create()
 	// (a beam whose info was dictated by the server has already had its substitution resolved there, and
-	// fighter beams have theirs resolved once per volley by ship_fire_primary)
+	// fighter beams have theirs resolved by ship_fire_primary)
 	if ((wip->num_substitution_patterns > 0) && (fire_info->shooter != nullptr) && (fire_info->beam_info_override == nullptr)
 		&& (fire_info->fire_method == BFM_TURRET_FIRED || fire_info->fire_method == BFM_TURRET_FORCE_FIRED)) {
 		// the fire method and the turret are set independently, so the turret can be null here

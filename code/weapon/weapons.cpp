@@ -4689,7 +4689,9 @@ void weapon_post_process_entries()
 
 			// a tabled pattern takes the place of the legacy fighter beam mapping, in which +Shots: was the number of
 			// firing points (for antifighter beams, +Shots: is the turret's aim vector count, which is unaffected)
+			// (ALL_AT_ONCE fires every point, so $Shots: is beams per point and the advice doesn't apply)
 			if (wi.wi_flags[Weapon::Info_Flags::Firing_pattern_specified] && wi.b_info.beam_type != BeamType::ANTIFIGHTER
+				&& wi.firing_pattern != FiringPattern::ALL_AT_ONCE
 				&& wi.b_info.beam_shots > 1 && wi.b_info.beam_shots != wi.shots) {
 				Warning(LOCATION, "Beam '%s' has both a $Firing Pattern: and a +Shots: of %d.  When fired as a fighter beam, the firing pattern takes precedence, "
 					"so $Shots: (currently %d) is the number of firing points per shot and +Shots: is ignored.  "
