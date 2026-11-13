@@ -2,6 +2,8 @@
 #include "options/Option.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
+#include "cmdline/cmdline.h"
+#include "hud/hud.h"
 #include "localization/localize.h"
 #include "math/floating.h"
 
@@ -405,4 +407,111 @@ TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 		"-lang");
 
 	ASSERT_EQ(typedOpt->getValue(), expected_idx);
+}
+
+// Restores the HUD globals these options write, so a failing assertion can't leak a value into later tests.
+class HudOptionGlobalsGuard {
+  public:
+	HudOptionGlobalsGuard()
+		: _orb(Cmdline_orb_radar), _scan(Cmdline_dualscanlines), _rearm(Cmdline_rearm_timer),
+		  _ballistic(Cmdline_ballistic_gauge), _targetInfo(Extra_target_info)
+	{
+	}
+	~HudOptionGlobalsGuard()
+	{
+		Cmdline_orb_radar = _orb;
+		Cmdline_dualscanlines = _scan;
+		Cmdline_rearm_timer = _rearm;
+		Cmdline_ballistic_gauge = _ballistic;
+		Extra_target_info = _targetInfo;
+	}
+
+  private:
+	int _orb;
+	int _scan;
+	int _rearm;
+	int _ballistic;
+	bool _targetInfo;
+};
+
+// cmdline.cpp overrides these keys by name; a typo there would leave an override no option ever reads.
+TEST_F(OptionsManagerOverride, HudFlagOptionsAreRegistered)
+{
+	for (const char* key :
+		{"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer", "HUD.TargetInfo", "HUD.BallisticGauge"}) {
+		ASSERT_NE(OptionsManager::instance()->getOptionByKey(key), nullptr) << key;
+	}
+}
+
+// These four are read once when the HUD is built, so a change after startup must ask for a restart.
+TEST_F(OptionsManagerOverride, HudStartupOptionsApplyOnlyOnInitialLoad)
+{
+	HudOptionGlobalsGuard guard;
+	Cmdline_orb_radar = 0;
+	Cmdline_dualscanlines = 0;
+	Cmdline_rearm_timer = 0;
+	Extra_target_info = false;
+
+	for (const char* key : {"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer", "HUD.TargetInfo"}) {
+		auto* opt = OptionsManager::instance()->getOptionByKey(key);
+		ASSERT_NE(opt, nullptr) << key;
+		OptionsManager::instance()->setOverride(key, std::unique_ptr<json_t>(json_true()), "-test_flag");
+		opt->loadInitial();
+		ASSERT_FALSE(opt->valueChanged(json_false())) << key;
+	}
+
+	ASSERT_EQ(Cmdline_orb_radar, 1);
+	ASSERT_EQ(Cmdline_dualscanlines, 1);
+	ASSERT_EQ(Cmdline_rearm_timer, 1);
+	ASSERT_TRUE(Extra_target_info);
+}
+
+TEST_F(OptionsManagerOverride, BallisticGaugeOptionAppliesLive)
+{
+	HudOptionGlobalsGuard guard;
+	auto* opt = OptionsManager::instance()->getOptionByKey("HUD.BallisticGauge");
+	ASSERT_NE(opt, nullptr);
+
+	Cmdline_ballistic_gauge = 0;
+	ASSERT_TRUE(opt->valueChanged(json_true()));
+	ASSERT_EQ(Cmdline_ballistic_gauge, 1);
+	ASSERT_TRUE(opt->valueChanged(json_false()));
+	ASSERT_EQ(Cmdline_ballistic_gauge, 0);
+}
+
+// The options UI words the tooltip by source, so a mod's override must not read as a command line flag
+TEST_F(OptionsManagerOverride, OverrideRemembersItsSource)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.Flag", std::unique_ptr<json_t>(json_true()), "-test_flag");
+	mgr->setOverride("Test.OverrideSource.Mod",
+		std::unique_ptr<json_t>(json_true()),
+		"an active mod",
+		OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Flag"), OverrideSource::CommandLine);
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Mod"), OverrideSource::Mod);
+	ASSERT_FALSE(mgr->getOverrideSource("Test.OverrideSource.Missing").has_value());
+}
+
+// Flags are read before the HUD tables, so a mod's override replaces a flag's and must carry the mod's source
+TEST_F(OptionsManagerOverride, ModOverrideReplacesFlagOverride)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.Replaced", std::unique_ptr<json_t>(json_true()), "-test_flag");
+	mgr->setOverride("Test.OverrideSource.Replaced",
+		std::unique_ptr<json_t>(json_false()),
+		"an active mod",
+		OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.Replaced"), OverrideSource::Mod);
+	ASSERT_EQ(mgr->getOverrideReason("Test.OverrideSource.Replaced"), SCP_string("an active mod"));
+}
+
+TEST_F(OptionsManagerOverride, StringOverrideKeepsItsSource)
+{
+	auto* mgr = OptionsManager::instance();
+	mgr->setOverride("Test.OverrideSource.String", "true", "an active mod", OverrideSource::Mod);
+
+	ASSERT_EQ(mgr->getOverrideSource("Test.OverrideSource.String"), OverrideSource::Mod);
 }
