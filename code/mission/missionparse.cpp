@@ -666,7 +666,7 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
     { Mission::Parse_Object_Flags::SF_Nav_needslink,				"This ship requires \"linking\" for autopilot ."},
     { Mission::Parse_Object_Flags::SF_Hide_ship_name,				"If set, the ship name can't be seen when the ship is targeted."},
     { Mission::Parse_Object_Flags::SF_Set_class_dynamically,		"This ship should have its class assigned rather than simply read from the mission file."},
-    { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start or on arrival."},
+    { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start, on arrival, or on a class change."},
     { Mission::Parse_Object_Flags::SF_Afterburner_locked,			"Will stop a ship from firing their afterburner."},
     { Mission::Parse_Object_Flags::OF_Force_shields_on,				"Shields will be activated regardless of other flags."},
     { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
@@ -2818,15 +2818,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		if (!ptr)
 			continue;
 
-		if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
-		{
-			// mark all turrets as locked
-			if(ptr->system_info->type == SUBSYSTEM_TURRET)
-			{
-				ptr->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
-			}
-		}
-
 		if (Fred_running)
 		{
 			ptr->current_hits = sssp->percent;
@@ -2862,6 +2853,16 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		ptr->turret_animation_done_time = 0;
 	}
 	
+	// this covers every turret, including any the mission file has no entry for (e.g. after a ship class change)
+	if (shipp->flags[Ship::Ship_Flags::Lock_all_turrets_initially])
+	{
+		for (auto ss : list_range(&shipp->subsys_list))
+		{
+			if (ss->system_info->type == SUBSYSTEM_TURRET)
+				ss->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
+		}
+	}
+
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
 	// so a initial_hull value of 90% means 90% of max.  This way is opposite of how subsystems are dealt
 	// with
@@ -8883,6 +8884,10 @@ int insert_subsys_status(p_object *pobjp)
 	// (each p_object's subsys_index points to subsystem 0 in its list)
 	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
+		// skip this p_object: if it had no subsystems, its base index equals new_index but must stay put
+		if (&*ii == pobjp)
+			continue;
+
 		// bump up base index to accommodate inserted subsystem
 		if (ii->subsys_index >= new_index)
 			ii->subsys_index++;

@@ -101,7 +101,7 @@ namespace Ship {
 		Hide_ship_name,				// Karajorma - Hides the ships name (like the -wcsaga command line used to but for any selected ship)
 		Afterburner_locked,			// KeldorKatarn - This ship can't use its afterburners
 		Set_class_dynamically,		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-		Lock_all_turrets_initially,	// Karajorma - Lock all turrets on this ship at mission start or on arrival
+		Lock_all_turrets_initially,	// Karajorma - Lock all turrets on this ship at mission start, on arrival, or on a class change
 		Force_shields_on,
 		No_ets,						// The E - This ship does not have an ETS
 		Cloaked,					// The E - This ship will not be rendered
