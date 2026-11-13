@@ -910,6 +910,8 @@ add_file_folder("Mission"
 	mission/missionhotkey.h
 	mission/missionload.cpp
 	mission/missionload.h
+	mission/missionjournal.cpp
+	mission/missionjournal.h
 	mission/missionlog.cpp
 	mission/missionlog.h
 	mission/missionmessage.cpp
