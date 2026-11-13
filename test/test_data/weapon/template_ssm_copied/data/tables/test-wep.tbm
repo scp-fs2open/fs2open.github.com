@@ -1,0 +1,13 @@
+#Weapon Templates
+
+$Template:	Artillery Base
+$SSM:	Some Strike
+
+#End
+
+#Secondary Weapons
+
+$Name:	Artillery Derived
++Use Template:	Artillery Base
+
+#End

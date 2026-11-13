@@ -1,0 +1,14 @@
+#Weapon Templates
+
+$Template:	Flak Base
+$Proximity Radius:	50
+	+Proximity Type:	( "fighter" )
+
+#End
+
+#Secondary Weapons
+
+$Name:	Flak Derived
++Use Template:	Flak Base
+
+#End

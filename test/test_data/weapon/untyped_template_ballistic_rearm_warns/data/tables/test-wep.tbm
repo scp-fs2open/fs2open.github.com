@@ -1,0 +1,13 @@
+#Weapon Templates
+
+$Template:	Gun Base
+$Flags:	( "ballistic" "player allowed" )
+
+#End
+
+#Primary Weapons
+
+$Name:	Gun Derived
++Use Template:	Gun Base
+
+#End
