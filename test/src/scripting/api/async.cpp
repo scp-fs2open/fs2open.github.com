@@ -1,4 +1,5 @@
 
+#include "executor/global_executors.h"
 #include "scripting/ScriptingTestFixture.h"
 
 class ScriptingAsyncTest : public test::scripting::ScriptingTestFixture {
@@ -64,4 +65,13 @@ TEST_F(ScriptingAsyncRunTest, runWithResolvedAwait)
 TEST_F(ScriptingAsyncRunTest, runWithErroredAwait)
 {
 	this->EvalTestScript();
+}
+
+TEST_F(ScriptingAsyncRunTest, runOnFrameExecutorWithoutGameState)
+{
+	this->EvalTestScript();
+
+	executor::OnFrameExecutor->process();
+
+	ASSERT_TRUE(_state->EvalString("assert(function_was_run and asyncPromise:isResolved())"));
 }

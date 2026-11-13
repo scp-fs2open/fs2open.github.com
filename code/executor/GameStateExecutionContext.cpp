@@ -12,6 +12,11 @@ GameStateExecutionContext::~GameStateExecutionContext() = default;
 
 IExecutionContext::State GameStateExecutionContext::determineContextState() const
 {
+	// FRED never starts the game state machine, so a context captured there has no state to leave.
+	if (!GameState_Stack_Valid()) {
+		return m_contextState == GS_STATE_INVALID ? State::Valid : State::Invalid;
+	}
+
 	const auto depth = gameseq_get_state_idx(m_contextState);
 
 	if (depth < 0) {

@@ -21,6 +21,10 @@ add_file_folder("CFile"
     cfile/cfile.cpp
 )
 
+add_file_folder("Executor"
+    executor/test_game_state_execution_context.cpp
+)
+
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
@@ -45,6 +49,10 @@ add_file_folder("Math"
 
 add_file_folder("menuui"
     menuui/test_intel_parse.cpp
+)
+
+add_file_folder("mission"
+    mission/test_briefing_move_list.cpp
 )
 
 add_file_folder("missioneditor"
