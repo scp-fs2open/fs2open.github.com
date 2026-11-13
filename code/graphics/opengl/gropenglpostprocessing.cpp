@@ -1013,8 +1013,10 @@ static GLuint load_smaa_texture(GLsizei width, GLsizei height, GLenum format, co
 	} else {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, Post_texture_width, Post_texture_height, 0, GL_BGRA, GL_UNSIGNED_BYTE,
-		             nullptr);
+		// Use the size of the lookup table, not Post_texture_width/height. The lookup tables are
+		// loaded before the render targets get their size, so the Post_texture values are 0 here.
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format == GL_RG8 ? GL_RG : GL_RED,
+		             GL_UNSIGNED_BYTE, nullptr);
 	}
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, format == GL_RG8 ? GL_RG : GL_RED, GL_UNSIGNED_BYTE, pixels);
 

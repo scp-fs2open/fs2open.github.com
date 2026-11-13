@@ -448,20 +448,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="msaaLabel">
-            <property name="text">
-             <string>MSAA:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QComboBox" name="msaaCombo">
-            <property name="toolTip">
-             <string>Multisample anti-aliasing used for the viewport's 3D scene. Requires post-processing to be enabled. Restarting qtFRED is required for a change to take effect.</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>

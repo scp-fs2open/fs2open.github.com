@@ -43,7 +43,6 @@ struct GraphicsSettings {
 	ShadowQuality shadowQuality = ShadowQuality::Disabled;
 	AntiAliasMode aaMode = AntiAliasMode::None;
 
-	int msaaSamples = 0; //!< 0 (off), 4, or 8; see validMsaaSampleCounts()
 	float gamma = 3.0f;  //!< matches the brightness qtFRED has always launched with
 
 	int textureFilter = NO_TEXTURE_FILTER_CHOICE; //!< 0 = bilinear, 1 = trilinear
@@ -51,11 +50,6 @@ struct GraphicsSettings {
 
 	bool operator==(const GraphicsSettings& rhs) const;
 	bool operator!=(const GraphicsSettings& rhs) const { return !(*this == rhs); }
-
-	/**
-	 * @brief The MSAA sample counts the Preferences combo offers, in combo order.
-	 */
-	static SCP_vector<int> validMsaaSampleCounts();
 
 	static GraphicsSettings load();
 	void save() const;

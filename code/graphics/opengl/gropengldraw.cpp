@@ -889,26 +889,17 @@ void gr_opengl_scene_texture_begin()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, Scene_depth_texture, 0);
 
-	if (GL_rendering_to_texture)
-	{
-		Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
-		Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
+	// This is the part of the scene textures that this frame renders into. Calculate it on each
+	// frame, also when the target is the screen. The resize only makes the targets larger, so
+	// after the viewport becomes smaller, the frame uses only a part of each target. qtFRED also
+	// starts with targets that are larger than its viewport. Every pass that samples these
+	// textures must stay in this part. Use opengl_draw_full_screen_scene_texture() for that.
+	Scene_texture_u_scale = i2fl(gr_screen.max_w) / i2fl(Scene_texture_width);
+	Scene_texture_v_scale = i2fl(gr_screen.max_h) / i2fl(Scene_texture_height);
 
-		CLAMP(Scene_texture_u_scale, 0.0f, 1.0f);
-		CLAMP(Scene_texture_v_scale, 0.0f, 1.0f);
-	}
-	else
-	{
-		Scene_texture_u_scale = 1.0f;
-		Scene_texture_v_scale = 1.0f;
-	}
-
-	// A ratio above 1.0 means the viewport outgrew the allocation after the fact -- the scene
-	// texture can't be resized, so all we can do is render the part that fits and let the blit
-	// stretch it back out, which misaligns everything by a different amount on each axis. The
-	// floor above is meant to make this unreachable; if it does happen (a display hotplug or
-	// resolution change after gr_init(), or an allocation clamped by GL_max_renderbuffer_size on
-	// low-end hardware) say so once rather than every frame.
+	// A value above 1.0 means that the viewport is larger than the targets. This occurs only when
+	// GL_max_renderbuffer_size limited the targets. Render the part that fits, and let the blit
+	// stretch it. Write the message one time, not on each frame.
 	if (Scene_texture_u_scale > 1.0f || Scene_texture_v_scale > 1.0f) {
 		static bool reported_undersized_scene_texture = false;
 

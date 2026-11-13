@@ -22,15 +22,42 @@ namespace {
 // The values are enumerated in declaration order, which for these three is enum order, so a combo
 // index is the enum value. Returns empty if the option isn't registered, in which case the caller
 // leaves the combo alone rather than showing a half-populated list.
-SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
+const options::OptionBase* findEngineOption(const char* configKey)
 {
 	for (const auto& option : options::OptionsManager::instance()->getOptions()) {
 		if (option->getConfigKey() == configKey && option->getType() == options::OptionType::Selection) {
-			return option->getValidValues();
+			return option.get();
 		}
 	}
 
-	return {};
+	return nullptr;
+}
+
+SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
+{
+	const auto* option = findEngineOption(configKey);
+	return option ? option->getValidValues() : SCP_vector<options::ValueDescription>{};
+}
+
+// The combo index of the value that the engine uses now. This index agrees with the list that
+// engineOptionValues() gives. Returns the fallback if the option is not registered, or if its
+// value is not in the list.
+int engineOptionCurrentIndex(const char* configKey, int fallback)
+{
+	const auto* option = findEngineOption(configKey);
+	if (!option) {
+		return fallback;
+	}
+
+	const auto current = option->getCurrentValueDescription();
+	const auto values = option->getValidValues();
+	for (size_t i = 0; i < values.size(); ++i) {
+		if (values[i].serialized == current.serialized) {
+			return static_cast<int>(i);
+		}
+	}
+
+	return fallback;
 }
 
 void populateFromEngineOption(QComboBox* combo, const char* configKey)
@@ -153,13 +180,11 @@ void PreferencesDialog::initializeUi() {
 	// options screen offers. Empty means the hardware can't do it; leave the combo disabled.
 	_anisotropyLevels = gr_get_supported_anisotropy_levels();
 	for (float level : _anisotropyLevels) {
-		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(level, 0, 'g', 0));
+		// The levels are powers of two, so show them as integers. The 'g' format with precision 0
+		// shows 16 as "2e+01".
+		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(static_cast<int>(level)));
 	}
 	ui->anisotropyCombo->setEnabled(!_anisotropyLevels.empty());
-
-	for (int samples : GraphicsSettings::validMsaaSampleCounts()) {
-		ui->msaaCombo->addItem(samples == 0 ? tr("Off") : tr("%1x").arg(samples));
-	}
 
 	// Build the controls key-binding form dynamically from the registered bindings
 	auto* form = new QFormLayout(ui->controlsFormWidget);
@@ -203,21 +228,23 @@ void PreferencesDialog::updateUi() {
 	ui->aaModeCombo->setCurrentIndex(static_cast<int>(graphics.aaMode));
 	ui->gammaSpin->setValue(graphics.gamma);
 
-	const auto msaaCounts = GraphicsSettings::validMsaaSampleCounts();
-	ui->msaaCombo->setCurrentIndex(
-		static_cast<int>(std::find(msaaCounts.begin(), msaaCounts.end(), graphics.msaaSamples) - msaaCounts.begin()));
-
-	// Both of these can be "not chosen", in which case the engine picks: trilinear, and the
-	// hardware's maximum anisotropy. Show what will actually be used rather than a blank.
-	ui->textureFilterCombo->setCurrentIndex(
-		graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE ? 1 : graphics.textureFilter);
+	// The user can leave these two settings unset. Then the engine selects the value. Show the
+	// value that the engine uses, not a value that qtFRED guesses.
+	ui->textureFilterCombo->setCurrentIndex(graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE
+		? engineOptionCurrentIndex("Graphics.TextureFilter", 1)
+		: graphics.textureFilter);
 
 	if (!_anisotropyLevels.empty()) {
-		int index = static_cast<int>(_anisotropyLevels.size()) - 1;
-		for (size_t i = 0; i < _anisotropyLevels.size(); ++i) {
-			if (_anisotropyLevels[i] == graphics.anisotropy) {
-				index = static_cast<int>(i);
-				break;
+		// The engine option gets its list from gr_get_supported_anisotropy_levels(), the same as
+		// _anisotropyLevels. Thus the indices agree.
+		const int lastIndex = static_cast<int>(_anisotropyLevels.size()) - 1;
+		int index = engineOptionCurrentIndex("Graphics.Anisotropy", lastIndex);
+		if (graphics.anisotropy != GraphicsSettings::NO_ANISOTROPY_CHOICE) {
+			for (size_t i = 0; i < _anisotropyLevels.size(); ++i) {
+				if (_anisotropyLevels[i] == graphics.anisotropy) {
+					index = static_cast<int>(i);
+					break;
+				}
 			}
 		}
 		ui->anisotropyCombo->setCurrentIndex(index);
@@ -315,15 +342,6 @@ void PreferencesDialog::on_shadowQualityCombo_currentIndexChanged(int index) {
 
 void PreferencesDialog::on_aaModeCombo_currentIndexChanged(int index) {
 	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.aaMode = static_cast<AntiAliasMode>(index); });
-}
-
-void PreferencesDialog::on_msaaCombo_currentIndexChanged(int index) {
-	const auto counts = GraphicsSettings::validMsaaSampleCounts();
-	if (index < 0 || static_cast<size_t>(index) >= counts.size()) {
-		return;
-	}
-
-	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.msaaSamples = counts[index]; });
 }
 
 void PreferencesDialog::on_textureFilterCombo_currentIndexChanged(int index) {
