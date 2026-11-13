@@ -863,6 +863,7 @@ typedef struct screen {
 	std::function<void(bitmap_slot* slot)> gf_bm_create;
 	std::function<void(bitmap_slot* slot)> gf_bm_init;
 	std::function<void()> gf_bm_page_in_start;
+	std::function<void()> gf_bm_page_in_prepare;
 	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;

@@ -1149,7 +1149,6 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				bitmap* bmp = bm_lock(handle, 8, BMP_AABITMAP);
 				if (bmp) {
 					bm_unlock(handle);
-					texManager->releaseCpuBitmapData(handle);
 					texSlot = texManager->getTextureSlot(handle);
 					m_frameStats.onDemandTextureUploads++;
 				}

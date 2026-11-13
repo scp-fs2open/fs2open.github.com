@@ -148,6 +148,7 @@ void tcache_slot_vulkan::reset()
 	bitmapHandle = -1;
 	arrayIndex = 0;
 	used = false;
+	pendingPageOut = false;
 	framebuffer = nullptr;
 	framebufferView = nullptr;
 	renderPass = nullptr;
@@ -372,7 +373,7 @@ void VulkanTextureManager::shutdown()
 bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts)
 {
 	// Non-array textures own their image outright — nothing to ref-count.
-	if (ts->arrayLayers <= 1 || ts->bitmapHandle < 0) {
+	if (ts->arrayLayers <= 1 || ts->isCubemap || ts->bitmapHandle < 0) {
 		return true;
 	}
 
@@ -417,54 +418,58 @@ bool VulkanTextureManager::releaseAnimationSlotRef(tcache_slot_vulkan* ts)
 	return true;
 }
 
-void VulkanTextureManager::flushTextures() const
+void VulkanTextureManager::keepTexture(tcache_slot_vulkan& texture)
 {
-	if (!m_initialized) {
+	if (!texture.pendingPageOut) {
+		return;
+	}
+	texture.pendingPageOut = false;
+	if (texture.isCubemap || texture.arrayLayers <= 1) {
 		return;
 	}
 
-	int flushed = 0;
-	auto* deletionQueue = getDeletionQueue();
+	// One marked frame keeps the whole shared image.
+	const int first = texture.bitmapHandle - static_cast<int>(texture.arrayIndex);
+	for (int frame = first; frame < first + static_cast<int>(texture.arrayLayers); ++frame) {
+		auto* other = bm_get_gr_info<tcache_slot_vulkan>(frame, true);
+		if (other && other->image == texture.image) {
+			other->pendingPageOut = false;
+		}
+	}
+}
 
+void VulkanTextureManager::pageInStart() const
+{
 	for (auto& block : bm_blocks) {
 		for (auto& slot : block) {
-			if (!slot.gr_info) {
-				continue;
+			if (auto* ts = static_cast<tcache_slot_vulkan*>(slot.gr_info)) {
+				ts->pendingPageOut = ts->imageView && !ts->isRenderTarget &&
+					slot.entry.type != BM_TYPE_USER && slot.entry.type != BM_TYPE_3D;
 			}
+		}
+	}
+}
 
+void VulkanTextureManager::pageInPrepare() const
+{
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
 			auto* ts = static_cast<tcache_slot_vulkan*>(slot.gr_info);
-
-			if (!ts->image) {
-				continue;
+			if (ts && (slot.entry.preloaded || slot.entry.ref_count > 0)) {
+				keepTexture(*ts);
 			}
-
-			// Skip render targets — they are managed by the post-processor
-			// and scene texture system, not by the bitmap paging system
-			if (ts->isRenderTarget) {
-				continue;
-			}
-
-			// For shared animation texture arrays: only destroy the actual image
-			// when no other frame references it (detaches this slot in place and
-			// returns false otherwise).
-			if (!releaseAnimationSlotRef(ts)) {
-				continue;
-			}
-
-			// Queue deferred destruction of GPU resources
-			if (ts->imageView) {
-				deletionQueue->queueImageView(ts->imageView);
-			}
-			if (ts->image) {
-				deletionQueue->queueImage(ts->image, ts->allocation);
-			}
-
-			ts->reset();
-			flushed++;
 		}
 	}
 
-	nprintf(("vulkan", "VulkanTextureManager: Flushed %d textures for level transition\n", flushed));
+	// Retire unused images through the normal deferred deletion path before precaching.
+	for (auto& block : bm_blocks) {
+		for (auto& slot : block) {
+			const auto* ts = static_cast<const tcache_slot_vulkan*>(slot.gr_info);
+			if (ts && ts->pendingPageOut) {
+				bm_free_data(&slot, false);
+			}
+		}
+	}
 }
 
 void VulkanTextureManager::bm_init(bitmap_slot* slot) const
@@ -1086,6 +1091,16 @@ bool VulkanTextureManager::bm_data(int handle, bitmap* bm, int compType)
 	// Guard: nested bm_lock→bm_data calls during animation upload are no-ops
 	if (m_uploadingAnimation) {
 		return true;
+	}
+
+	// A CPU lock can recover file pixels after upload. Reuse the existing image
+	// until the bitmap is explicitly invalidated or released.
+	const auto type = bm_get_entry(handle)->type;
+	if (type != BM_TYPE_USER && type != BM_TYPE_3D) {
+		const auto* ts = getTextureSlot(handle);
+		if (ts && ts->imageView) {
+			return true;
+		}
 	}
 
 	// Detect animated texture arrays
@@ -1855,7 +1870,7 @@ ubyte* VulkanTextureManager::get_bitmap_from_texture(int bitmap_num, int* width_
 	*width_out = 0;
 	*height_out = 0;
 
-	auto* ts = bm_get_gr_info<tcache_slot_vulkan>(bitmap_num, true);
+	auto* ts = getTextureSlot(bitmap_num);
 	if (!ts) {
 		return nullptr;
 	}
@@ -2236,7 +2251,9 @@ tcache_slot_vulkan* VulkanTextureManager::getTextureSlot(int handle)
 	if (!slot || !slot->gr_info) {
 		return nullptr;
 	}
-	return static_cast<tcache_slot_vulkan*>(slot->gr_info);
+	auto* texture = static_cast<tcache_slot_vulkan*>(slot->gr_info);
+	keepTexture(*texture);
+	return texture;
 }
 
 void VulkanTextureManager::releaseCpuBitmapData(int handle)
@@ -2249,8 +2266,7 @@ void VulkanTextureManager::releaseCpuBitmapData(int handle)
 	for (int frame = baseFrame; frame < baseFrame + numFrames; ++frame) {
 		const auto* ts = getTextureSlot(frame);
 		if (ts != nullptr && ts->imageView) {
-			// The staging copy owns the upload data now. This keeps the Vulkan
-			// image alive and respects other CPU locks and user-owned bitmaps.
+			// Drawing can reuse the GPU image. A later CPU lock may reread the file.
 			bm_unload_fast(frame);
 		}
 	}
@@ -2748,6 +2764,8 @@ bool VulkanTextureManager::createStagingBuffer(size_t size, vk::Buffer& outBuffe
 	while (!m_pendingCommandBuffers.empty() &&
 	       (m_pendingCommandBuffers.size() >= maxPendingUploads || m_pendingUploadBytes >= maxPendingUploadBytes ||
 	        size > maxPendingUploadBytes - m_pendingUploadBytes)) {
+		nprintf(("vulkan", "Texture upload budget: waiting with %zu uploads and %zu staging bytes pending\n",
+			m_pendingCommandBuffers.size(), m_pendingUploadBytes));
 		const auto result = m_device.waitForFences(m_pendingCommandBuffers.front().fence, VK_TRUE, UINT64_MAX);
 		Assertion(result == vk::Result::eSuccess, "Failed waiting for a texture upload fence");
 		processPendingCommandBuffers();
@@ -2945,6 +2963,7 @@ void VulkanTextureManager::processPendingCommandBuffers()
 	if (completed != 0) {
 		m_pendingCommandBuffers.erase(m_pendingCommandBuffers.begin(), m_pendingCommandBuffers.begin() + completed);
 	}
+	Assert(m_pendingCommandBuffers.empty() == (m_pendingUploadBytes == 0));
 }
 
 uint32_t VulkanTextureManager::calculateMipLevels(uint32_t width, uint32_t height)

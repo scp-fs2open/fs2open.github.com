@@ -139,14 +139,12 @@ bool vulkan_bm_data(int handle, bitmap* bm)
 
 void vulkan_bm_page_in_start()
 {
-	// Flush all GPU texture resources so that textures not needed in the next
-	// mission are freed. Matches the OpenGL pattern (opengl_tcache_flush in
-	// opengl_preload_init, currently commented out there). Textures that ARE
-	// needed will be re-uploaded on demand during level load / first use.
-	// Without this, Vulkan VkImage/VMA allocations accumulate across missions
-	// because bm_unload_fast() only frees CPU-side pixel data.
-	auto* texManager = getTextureManager();
-	texManager->flushTextures();
+	getTextureManager()->pageInStart();
+}
+
+void vulkan_bm_page_in_prepare()
+{
+	getTextureManager()->pageInPrepare();
 }
 
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)

@@ -483,6 +483,7 @@ void init_function_pointers()
 	gr_screen.gf_bm_create = vulkan_bm_create;
 	gr_screen.gf_bm_init = vulkan_bm_init;
 	gr_screen.gf_bm_page_in_start = vulkan_bm_page_in_start;
+	gr_screen.gf_bm_page_in_prepare = vulkan_bm_page_in_prepare;
 	gr_screen.gf_bm_data = vulkan_bm_data;
 	gr_screen.gf_bm_make_render_target = vulkan_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target = vulkan_bm_set_render_target;
