@@ -9162,6 +9162,14 @@ void process_sexp_packet(ubyte *data, header *hinfo)
 	ubyte received_packet[MAX_PACKET_SIZE]; 
 
 	GET_USHORT(num_ubytes);
+
+	// only the server sends SEXP packets, so one arriving at the server did not come from the game
+	if (MULTIPLAYER_MASTER) {
+		offset += num_ubytes;
+		PACKET_SET_SIZE();
+		return;
+	}
+
 	GET_DATA_BLOCK(received_packet, num_ubytes);
 
 	PACKET_SET_SIZE();
