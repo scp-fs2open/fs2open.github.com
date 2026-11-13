@@ -35,6 +35,7 @@ public:
 	int bitmapHandle = -1;
 	uint32_t arrayIndex = 0;
 	bool used = false;
+	bool pendingPageOut = false;
 
 	// For render targets
 	vk::Framebuffer framebuffer;
@@ -100,14 +101,10 @@ public:
 	 */
 	void shutdown();
 
-	/**
-	 * @brief Flush all GPU texture resources from bitmap slots
-	 *
-	 * Called between missions (from vulkan_bm_page_in_start) to release
-	 * VkImage/VMA allocations for textures that won't be needed.
-	 * Textures are re-uploaded on demand when accessed again.
-	 */
-	void flushTextures() const;
+	// Mark resident images for paging, then retire unused images once bitmap
+	// paging has identified the next mission's texture set.
+	void pageInStart() const;
+	void pageInPrepare() const;
 
 	// Bitmap management functions (implement gr_screen function pointers)
 
@@ -131,6 +128,9 @@ public:
 	 * @param compType Compression type (DDS_DXT1/3/5, DDS_BC7) or 0 for uncompressed
 	 */
 	bool bm_data(int handle, bitmap* bm, int compType);
+
+	// Call after unlocking an uploaded bitmap; animations may have loaded every frame.
+	void releaseCpuBitmapData(int handle);
 
 	/**
 	 * @brief Create a render target
@@ -289,6 +289,7 @@ private:
 	 * Creates the buffer and allocates CpuOnly memory for it. On failure the
 	 * buffer is destroyed and false is returned (outBuffer left null). Callers
 	 * remain responsible for any image/view they allocated beforehand.
+	 * May wait on the oldest upload fence when the staging budget is full.
 	 */
 	bool createStagingBuffer(size_t size, vk::Buffer& outBuffer, VulkanAllocation& outAllocation);
 
@@ -305,14 +306,14 @@ private:
 	/**
 	 * @brief Submit an upload command buffer asynchronously and defer resource cleanup
 	 *
-	 * Submits without waitIdle. Queues staging buffer and command buffer for
-	 * deferred destruction/free after enough frames have elapsed.
+	 * Owns staging resources until the submission's fence signals, even when
+	 * level loading does not advance render frames.
 	 */
 	void submitUploadAsync(vk::CommandBuffer cmd, vk::Buffer stagingBuffer,
 	                       VulkanAllocation stagingAllocation);
 
 	/**
-	 * @brief Free command buffers whose GPU work has completed
+	 * @brief Reclaim completed uploads, including their staging memory and fences
 	 */
 	void processPendingCommandBuffers();
 
@@ -359,6 +360,7 @@ private:
 	 * decision.
 	 */
 	static bool releaseAnimationSlotRef(tcache_slot_vulkan* ts);
+	static void keepTexture(tcache_slot_vulkan& texture);
 
 	/**
 	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
@@ -381,12 +383,15 @@ private:
 	int m_uploadFmtLogCount = 0;    // uploadTexture2D format trace
 	int m_reuploadLogCount = 0;     // uploadTexture2D resident-texture re-upload notice
 
-	// Deferred command buffer free list
+	// In-flight uploads in submission order, each with its own completion fence.
 	struct PendingCommandBuffer {
 		vk::CommandBuffer cb;
-		uint32_t framesRemaining;
+		vk::Buffer stagingBuffer;
+		VulkanAllocation stagingAllocation;
+		vk::Fence fence;
 	};
 	SCP_vector<PendingCommandBuffer> m_pendingCommandBuffers;
+	size_t m_pendingUploadBytes = 0;
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
@@ -452,6 +457,7 @@ void vulkan_bm_free_data(bitmap_slot* slot, bool release);
 void vulkan_bm_init(bitmap_slot* slot);
 bool vulkan_bm_data(int handle, bitmap* bm);
 void vulkan_bm_page_in_start();
+void vulkan_bm_page_in_prepare();
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags);
 int vulkan_bm_set_render_target(int handle, int face);
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);

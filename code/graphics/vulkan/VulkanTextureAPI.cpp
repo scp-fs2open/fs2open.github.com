@@ -97,13 +97,16 @@ int vulkan_preload(int bitmap_num, int is_aabitmap)
 		return 0;
 	}
 
-	// Upload the texture
-	bool success = texManager->bm_data(bitmap_num, bmp, compType);
+	// bm_lock() already uploads through gr_bm_data(). Repeating that call
+	// recreates a resident 2D image and retains another copy until retirement.
+	slot = texManager->getTextureSlot(bitmap_num);
+	bool success = slot != nullptr && slot->imageView;
 
 	// Unlock bitmap
 	bm_unlock(bitmap_num);
 
 	if (success) {
+		texManager->releaseCpuBitmapData(bitmap_num);
 		static int successCount = 0;
 		// AABITMAP uploads bypass the cap so a playtest can confirm R8 for HUD handles,
 		// which page in long after the first few textures.
@@ -146,14 +149,12 @@ bool vulkan_bm_data(int handle, bitmap* bm)
 
 void vulkan_bm_page_in_start()
 {
-	// Flush all GPU texture resources so that textures not needed in the next
-	// mission are freed. Matches the OpenGL pattern (opengl_tcache_flush in
-	// opengl_preload_init, currently commented out there). Textures that ARE
-	// needed will be re-uploaded on demand during level load / first use.
-	// Without this, Vulkan VkImage/VMA allocations accumulate across missions
-	// because bm_unload_fast() only frees CPU-side pixel data.
-	auto* texManager = getTextureManager();
-	texManager->flushTextures();
+	getTextureManager()->pageInStart();
+}
+
+void vulkan_bm_page_in_prepare()
+{
+	getTextureManager()->pageInPrepare();
 }
 
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)

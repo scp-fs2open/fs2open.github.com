@@ -680,14 +680,12 @@ void bm_convert_format(bitmap *bmp, uint flags) {
 	}
 }
 
-void bm_free_data(bitmap_slot* bs, bool release)
+static void bm_free_pixel_data(bitmap_slot* bs)
 {
 	bitmap *bmp;
 
 	auto be = &bs->entry;
 	bmp = &be->bm;
-
-	gr_bm_free_data(bs, release);
 
 	// If there isn't a bitmap in this structure, don't
 	// do anything but clear out the bitmap info
@@ -735,6 +733,12 @@ SkipFree:
 	be->data_size = 0;
 #endif
 	be->signature = Bm_next_signature++;
+}
+
+void bm_free_data(bitmap_slot* bs, bool release)
+{
+	gr_bm_free_data(bs, release);
+	bm_free_pixel_data(bs);
 }
 
 void bm_free_data_fast(int handle)
@@ -2155,7 +2159,7 @@ void bm_lock_ani(int /*handle*/, bitmap_slot *bs, bitmap* /*bmp*/, int bpp, uint
 		bm = &be->bm;
 
 		// Unload any existing data
-		bm_free_data(slot);
+		bm_free_pixel_data(slot);
 
 		bm->flags = 0;
 
@@ -2259,7 +2263,7 @@ void bm_lock_apng(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, uint /*
 		bitmap* bm = &be->bm;
 
 		// Unload any existing data
-		bm_free_data(slot);
+		bm_free_pixel_data(slot);
 
 		ubyte* data = static_cast<ubyte*>(bm_malloc(first_frame + i, be->mem_taken));
 		try {
@@ -2296,7 +2300,7 @@ void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*f
 	auto be = &bs->entry;
 
 	// free any existing data
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	Assert(be->mem_taken > 0);
 	Assert(&be->bm == bmp);
@@ -2342,7 +2346,7 @@ void bm_lock_dds(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*f
 	bmp->flags = 0;
 
 	if (error != DDS_ERROR_NONE) {
-		bm_free_data(bs);
+		bm_free_pixel_data(bs);
 		return;
 	}
 
@@ -2360,7 +2364,7 @@ void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint /*flags
 	auto be = &bs->entry;
 
 	// Unload any existing data
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	// JPEG actually only support 24 bits per pixel so we enforce that here
 	bpp = 24;
@@ -2389,7 +2393,7 @@ void bm_lock_jpg(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint /*flags
 	jpg_error = jpeg_read_bitmap(filename, data, NULL, d_size, be->dir_type);
 
 	if (jpg_error != JPEG_ERROR_NONE) {
-		bm_free_data(bs);
+		bm_free_pixel_data(bs);
 		return;
 	}
 
@@ -2406,7 +2410,7 @@ void bm_lock_pcx(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags) 
 	auto be = &bs->entry;
 
 	// Unload any existing data
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	be->mem_taken = (bmp->w * bmp->h * (bpp >> 3));
 	data = (ubyte *)bm_malloc(handle, be->mem_taken);
@@ -2453,7 +2457,7 @@ void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*f
 	auto be = &bs->entry;
 
 	// Unload any existing data
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	// allocate bitmap data
 	Assert(bmp->w * bmp->h > 0);
@@ -2479,7 +2483,7 @@ void bm_lock_png(int handle, bitmap_slot *bs, bitmap *bmp, int /*bpp*/, uint /*f
 	png_error = png_read_bitmap(filename, data, &bmp->bpp, d_size, be->dir_type);
 
 	if (png_error != PNG_ERROR_NONE) {
-		bm_free_data(bs);
+		bm_free_pixel_data(bs);
 		return;
 	}
 
@@ -2496,7 +2500,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags) 
 	auto be = &bs->entry;
 
 	// Unload any existing data
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	bpp = be->bm.true_bpp;
 
@@ -2538,7 +2542,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, uint flags) 
 	tga_error = targa_read_bitmap(filename, data, nullptr, byte_size, be->dir_type);
 
 	if (tga_error != TARGA_ERROR_NONE) {
-		bm_free_data(bs);
+		bm_free_pixel_data(bs);
 		return;
 	}
 
@@ -2708,6 +2712,9 @@ void bm_page_in_start() {
 
 void bm_page_in_stop() {
 	TRACE_SCOPE(tracing::PageInStop);
+	if (gr_screen.gf_bm_page_in_prepare) {
+		gr_screen.gf_bm_page_in_prepare();
+	}
 
 #ifndef NDEBUG
 	char busy_text[60];
@@ -3084,7 +3091,11 @@ int bm_reload(int bitmap_handle, const char* filename) {
 		return -1;
 	}
 
-	strcpy_s(entry->filename, filename);
+	if (strcmp(entry->filename, filename) != 0) {
+		// A different file invalidates any GPU image for this bitmap handle.
+		bm_free_data(bm_get_slot(bitmap_handle));
+		strcpy_s(entry->filename, filename);
+	}
 	return bitmap_handle;
 }
 
@@ -3533,7 +3544,7 @@ void bm_lock_ktx1(int handle, bitmap_slot* bs, bitmap* bmp, int bpp, uint flags)
 
 	auto be = &bs->entry;
 
-	bm_free_data(bs);
+	bm_free_pixel_data(bs);
 
 	Assert(be->mem_taken > 0);
 	Assert(&be->bm == bmp);
@@ -3552,7 +3563,7 @@ void bm_lock_ktx1(int handle, bitmap_slot* bs, bitmap* bmp, int bpp, uint flags)
 	if (ktx_error != KTX1_ERROR_NONE) 
 	{
 		mprintf(("KTX: read_bitmap error=%d file='%s'\n", ktx_error, filename));
-		bm_free_data(bs);
+		bm_free_pixel_data(bs);
 		return;
 	}
 

@@ -1153,7 +1153,6 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 				// Load on demand - YUV planes are 8bpp grayscale
 				bitmap* bmp = bm_lock(handle, 8, BMP_AABITMAP);
 				if (bmp) {
-					texManager->bm_data(handle, bmp, bm_is_compressed(handle));
 					bm_unlock(handle);
 					texSlot = texManager->getTextureSlot(handle);
 					m_frameStats.onDemandTextureUploads++;
@@ -1273,9 +1272,9 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 			// Lock bitmap with appropriate flags
 			bitmap* bmp = bm_lock(textureHandle, bpp, lockFlags);
 			if (bmp) {
-				// Upload texture
-				texManager->bm_data(textureHandle, bmp, bm_is_compressed(textureHandle));
+				// bm_lock() has already uploaded the texture through gr_bm_data().
 				bm_unlock(textureHandle);
+				texManager->releaseCpuBitmapData(textureHandle);
 				m_frameStats.onDemandTextureUploads++;
 
 				// Re-get the slot after upload
