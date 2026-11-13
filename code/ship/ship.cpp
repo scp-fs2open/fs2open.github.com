@@ -16220,7 +16220,7 @@ static int get_mission_rearm_pool_for_weapon(int weapon_class, int team)
 	return The_mission.support_ships.rearm_weapon_pool[team].value_or(weapon_class, The_mission.support_ships.rearm_pool_default());
 }
 
-static bool weapon_allowed_for_current_game_type(int weapon_flags)
+bool eval_weapon_flag_for_game_type(int weapon_flags)
 {
 	if (MULTI_DOGFIGHT) {
 		return (weapon_flags & DOGFIGHT_WEAPON) != 0;
@@ -16229,22 +16229,20 @@ static bool weapon_allowed_for_current_game_type(int weapon_flags)
 	return (weapon_flags & REGULAR_WEAPON) != 0;
 }
 
-static bool support_rearm_bank_allows_weapon(const ship_info* sip, int bank_index, int weapon_class)
+bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
 {
-	if (!weapon_allowed_for_current_game_type(sip->allowed_weapons[weapon_class])) {
+	if (weapon_class < 0)
+		return true;
+
+	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
 		return false;
-	}
 
-	if (bank_index >= 0 && !sip->restricted_loadout_flag.empty()) {
-		if (weapon_allowed_for_current_game_type(sip->restricted_loadout_flag[bank_index])) {
-			if (sip->allowed_bank_restricted_weapons.empty() ||
-				!weapon_allowed_for_current_game_type(sip->allowed_bank_restricted_weapons[bank_index][weapon_class])) {
-				return false;
-			}
-		}
-	}
+	// no bank given, or no per-bank lists: the class list decides
+	if (bank < 0 || sip->restricted_loadout_flag.empty() ||
+		!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
+		return true;
 
-	return true;
+	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]);
 }
 
 static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool is_secondary_bank)
@@ -16272,7 +16270,7 @@ static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool 
 			}
 		}
 
-		if (!support_rearm_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
+		if (!ship_class_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
 			continue;
 		}
 

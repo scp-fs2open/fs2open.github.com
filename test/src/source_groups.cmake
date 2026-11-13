@@ -102,6 +102,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Ship"
+    ship/test_bank_allows_weapon.cpp
+)
+
 add_file_folder("Starfield"
     starfield/test_sun_disc.cpp
 )
