@@ -1084,7 +1084,7 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      })
                      .importance(77)
                      .finish();
-static SCP_vector<float> anisotropic_value_enumerator()
+SCP_vector<float> gr_get_supported_anisotropy_levels()
 {
 	float max;
 	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
@@ -1129,7 +1129,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
