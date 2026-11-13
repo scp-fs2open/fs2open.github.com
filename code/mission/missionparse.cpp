@@ -8884,6 +8884,10 @@ int insert_subsys_status(p_object *pobjp)
 	// (each p_object's subsys_index points to subsystem 0 in its list)
 	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
+		// skip this p_object: if it had no subsystems, its base index equals new_index but must stay put
+		if (&*ii == pobjp)
+			continue;
+
 		// bump up base index to accommodate inserted subsystem
 		if (ii->subsys_index >= new_index)
 			ii->subsys_index++;
