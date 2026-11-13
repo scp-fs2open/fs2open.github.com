@@ -117,6 +117,12 @@ GraphicsSettings GraphicsSettings::applyBeforeGrInit()
 	// config file the game reads its own graphics settings from.
 	if (settings.textureFilter != NO_TEXTURE_FILTER_CHOICE) {
 		options->setOverride("Graphics.TextureFilter", std::to_string(settings.textureFilter), "qtFRED Preferences");
+
+		// When a mod turns off the in-game options, the engine does not read the override. It
+		// reads Gr_texture_filter_override, so set that value also. It is in memory only.
+		if (!Using_in_game_options) {
+			Gr_texture_filter_override = settings.textureFilter;
+		}
 	}
 
 	if (settings.anisotropy != NO_ANISOTROPY_CHOICE) {
