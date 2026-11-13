@@ -236,7 +236,7 @@ void VulkanDrawManager::clear()
 	// gr_screen dimensions can exceed the active render pass when rendering to a
 	// smaller off-screen target; vkCmdClearAttachments requires rects inside the
 	// render area.
-	clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+	clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 	if (clearRect.rect.extent.width == 0 || clearRect.rect.extent.height == 0) {
 		return;
 	}
@@ -422,7 +422,7 @@ void VulkanDrawManager::zbufferClear(int mode)
 		clearRect.rect.offset = vk::Offset2D(0, 0);
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
-		clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+		clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
@@ -1116,6 +1116,10 @@ PipelineConfig VulkanDrawManager::buildPipelineConfig(material* mat, primitive_t
 	config.renderPass = stateTracker->getCurrentRenderPass();
 	config.colorAttachmentCount = stateTracker->getColorAttachmentCount();
 	config.sampleCount = stateTracker->getCurrentSampleCount();
+	config.writesVelocity = mat->get_velocity_output()
+		&& (config.shaderType == SDR_TYPE_MODEL || config.shaderType == SDR_TYPE_BATCHED_BITMAP
+			|| config.shaderType == SDR_TYPE_EFFECT_PARTICLE)
+		&& config.colorWriteMask.x;
 
 	return config;
 }
@@ -1127,7 +1131,8 @@ bool VulkanDrawManager::bindMaterialTextures(material* mat, DescriptorWriter* wr
 	// Get sampler matching current texture addressing mode and fallback texture
 	vk::SamplerAddressMode addressMode = convertTextureAddressing(m_textureAddressing);
 	vk::Sampler sampler = texManager->getSampler(
-		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true);
+		vk::Filter::eLinear, vk::Filter::eLinear, addressMode, true, 0.0f, true,
+		mat->get_texture_lod_bias() ? getStateTracker()->getMaterialLodBias() : 0.0f, true);
 	// OpenGL skips applying texture addressing for AABITMAP, INTERFACE, and CUBEMAP
 	// types - they always stay clamped. We need a clamp sampler for those cases.
 	vk::Sampler clampSampler = texManager->getSampler(
@@ -1437,6 +1442,7 @@ bool VulkanDrawManager::applyMaterial(material* mat, primitive_type prim_type, v
 			bindPendingUBOs(DescriptorSetIndex::Global);
 			if (shadowReady) {
 				writer.setImage(GlobalBinding::ShadowMap, pp->getShadowTextureInfo());
+				writer.setImage(GlobalBinding::ShadowMapRaw, pp->getShadowRawTextureInfo());
 			}
 			m_cachedGlobalHadShadow = shadowReady;
 			m_globalSetDirty = false;

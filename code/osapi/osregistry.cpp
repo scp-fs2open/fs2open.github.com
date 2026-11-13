@@ -12,6 +12,7 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 #include "osregistry.h"
+#include "utils/encoding.h"
 
 
 #ifdef WIN32
@@ -613,6 +614,16 @@ static Profile *profile_read(const char *file)
 
 	if (fp == nullptr)
 		return nullptr;
+
+	// Defaults aren't a safe fallback here, since the next settings save would overwrite the file
+	char probe[4];
+	auto probe_len = fread(probe, 1, sizeof(probe), fp);
+	auto encoding = util::guess_encoding(probe, probe_len, false);
+	if (encoding != util::Encoding::ASCII && encoding != util::Encoding::UTF8)
+		Error(LOCATION, "%s is in an Unicode/UTF format that cannot be read by FreeSpace Open. Please convert it to UTF-8\n", file);
+
+	// some editors save a UTF-8 byte order mark, which would hide the first section header
+	fseek(fp, static_cast<long>(util::bom_length(probe, probe_len)), SEEK_SET);
 
 	Profile *profile = (Profile *)vm_malloc(sizeof(Profile));
 	profile->sections = nullptr;

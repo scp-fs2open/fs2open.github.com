@@ -194,11 +194,18 @@ bool VulkanTextureManager::init(vk::Device device, vk::PhysicalDevice physicalDe
 	// Query device limits
 	auto properties = physicalDevice.getProperties();
 	m_maxTextureSize = properties.limits.maxImageDimension2D;
-	m_maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+	// samplers may only enable anisotropy when the device has the samplerAnisotropy feature
+	const float deviceMaxAnisotropy =
+		physicalDevice.getFeatures().samplerAnisotropy ? properties.limits.maxSamplerAnisotropy : 1.0f;
+	m_maxAnisotropy = std::max(1.0f, std::min(gr_anisotropy_setting(), deviceMaxAnisotropy));
+	m_maxLodBias = properties.limits.maxSamplerLodBias;
+
+	m_trilinearFiltering = gr_texture_filter_setting() != 0;
 
 	nprintf(("vulkan", "Vulkan Texture Manager initialized\n"));
 	nprintf(("vulkan", "  Max texture size: %u\n", m_maxTextureSize));
-	nprintf(("vulkan", "  Max anisotropy: %.1f\n", m_maxAnisotropy));
+	nprintf(("vulkan", "  Max anisotropy: %.1f (device %.1f)\n", m_maxAnisotropy, deviceMaxAnisotropy));
+	nprintf(("vulkan", "  Texture filter: %s\n", m_trilinearFiltering ? "trilinear" : "bilinear"));
 
 	// Create default sampler
 	vk::SamplerCreateInfo samplerInfo;
@@ -676,12 +683,15 @@ bool VulkanTextureManager::uploadAnimationFrames(int handle, bitmap* bm, int com
 	// Build per-layer copy regions and upload each frame's data
 	SCP_vector<vk::BufferImageCopy> copyRegions;
 
-	// Use the same lock parameters that were used for the triggering frame.
-	// bm->flags contains the lock flags (BMP_AABITMAP, BMP_TEX_OTHER, BMP_TEX_DXT*, etc.)
-	// bm->bpp contains the requested bpp. Using these ensures all frames are locked
-	// consistently (e.g., 8bpp for aabitmaps, 32bpp for RGBA textures).
+	// BMPMAN's bitmap flags describe converted pixel data and do not retain the
+	// BMP_AABITMAP lock flag. EFF animations load each frame separately, so an
+	// 8-bit PCX sibling locked with flags 0 would trip the bpp assert in
+	// bm_convert_format. ANI and APNG decode every frame in the triggering lock,
+	// so their sibling locks load nothing. Other 8bpp sources are safe to treat
+	// the same way: the standalone server never runs Vulkan, user bitmaps are
+	// never multi-frame, and the PNG and DDS loaders ignore lock flags.
 	auto lockBpp = bm->bpp;
-	auto lockFlags = bm->flags;
+	auto lockFlags = (lockBpp == 8) ? BMP_AABITMAP : bm->flags;
 
 	// Set guard flag to make recursive bm_data calls no-ops
 	m_uploadingAnimation = true;
@@ -2157,8 +2167,14 @@ void VulkanTextureManager::decodeReadbackBuffer(const void* mapped, vk::Format f
 vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter minFilter,
                                               vk::SamplerAddressMode addressMode,
                                               bool enableAnisotropy, float maxAnisotropy,
-                                              bool enableMipmaps)
+                                              bool enableMipmaps, float negativeLodBias,
+                                              bool followTextureFilter)
 {
+	// The bias is quantized to the eighths the key can hold, so that the key always matches the sampler it caches
+	const int maxLodBiasEighths = std::min(static_cast<int>(m_maxLodBias * 8.0f), 63);
+	const int lodBiasEighths = std::clamp(static_cast<int>(std::lround(negativeLodBias * -8.0f)), 0, maxLodBiasEighths);
+	const float lodBias = static_cast<float>(lodBiasEighths) / -8.0f;
+
 	// Create a key from sampler state
 	uint64_t key = 0;
 	key |= static_cast<uint64_t>(magFilter) << 0;
@@ -2166,7 +2182,9 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	key |= static_cast<uint64_t>(addressMode) << 8;
 	key |= static_cast<uint64_t>(enableAnisotropy) << 16;
 	key |= static_cast<uint64_t>(enableMipmaps) << 17;
+	key |= static_cast<uint64_t>(lodBiasEighths & 0x3F) << 18; // 6 bits, in eighths
 	key |= static_cast<uint64_t>(maxAnisotropy * 10) << 24;
+	key |= static_cast<uint64_t>(followTextureFilter) << 32;
 
 	auto it = m_samplerCache.find(key);
 	if (it != m_samplerCache.end()) {
@@ -2186,8 +2204,11 @@ vk::Sampler VulkanTextureManager::getSampler(vk::Filter magFilter, vk::Filter mi
 	samplerInfo.unnormalizedCoordinates = false;
 	samplerInfo.compareEnable = false;
 	samplerInfo.compareOp = vk::CompareOp::eAlways;
-	samplerInfo.mipmapMode = enableMipmaps ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest;
-	samplerInfo.mipLodBias = 0.0f;
+	// only material textures follow the setting; cubemaps, interface art and render targets stay trilinear
+	samplerInfo.mipmapMode = enableMipmaps && (m_trilinearFiltering || !followTextureFilter)
+		? vk::SamplerMipmapMode::eLinear
+		: vk::SamplerMipmapMode::eNearest;
+	samplerInfo.mipLodBias = lodBias;
 	samplerInfo.minLod = 0.0f;
 	samplerInfo.maxLod = enableMipmaps ? VK_LOD_CLAMP_NONE : 0.0f;
 

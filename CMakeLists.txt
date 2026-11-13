@@ -150,6 +150,7 @@ OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES compatibility layer" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
+OPTION(FSO_BUILD_WITH_FFX "Enable AMD FSR in the Vulkan renderer. Downloads AMD's binaries at configure time" ON)
 
 if(NOT FSO_BUILD_WITH_OPENGL AND FSO_BUILD_WITH_OPENGL_ES)
 	# Disable GLES if not building with OpenGL
@@ -194,6 +195,7 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_ES)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_FFX)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 

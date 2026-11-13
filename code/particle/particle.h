@@ -97,6 +97,8 @@ namespace particle
 		bool	use_angle;			// whether this particle can be rotated
 
 		ParticleSubeffectHandle parent_effect;
+
+		vec3d	last_pos{};			// position before the last move, in the same frame as pos
 	} particle;
 
 	/**

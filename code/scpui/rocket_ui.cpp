@@ -542,31 +542,18 @@ bool text_input_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	// libRocket expects UCS-2 so we first need to convert to that
-	// NOTE: not using SDL_iconv_utf8_ucs2() macro here due to Linux compatiblity issue
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-	const char *tocode = "UCS-2BE";
-#else
-	const char *tocode = "UCS-2LE";
-#endif
-
-	auto text = reinterpret_cast<char16_t *>(SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1));
-
-	if ( !text ) {
-		// encoding failed
-		return false;
+	// libRocket accepts one UCS-2 character at a time, so codepoints outside the BMP are replaced
+	const char* text = evt.text.text;
+	bool not_consumed = true;
+	while (*text != '\0')
+	{
+		auto codepoint = SDL_StepUTF8(&text, nullptr);
+		if (codepoint > 0xFFFF)
+			codepoint = SDL_INVALID_UNICODE_CODEPOINT;
+		not_consumed = input_context->ProcessTextInput(static_cast<word>(codepoint)) && not_consumed;
 	}
 
-	auto ucs2String = std::u16string(text);
-
-	SDL_free(text);
-
-	bool consumed = true;
-	for (auto& c : ucs2String) {
-		consumed = consumed && input_context->ProcessTextInput(c);
-	}
-
-	return consumed;
+	return not_consumed;
 }
 
 } // namespace

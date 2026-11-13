@@ -13,15 +13,17 @@ layout(location = 3) out vec4 fragOut3;
 layout(location = 4) out vec4 fragOut4;
 
 #ifdef VULKAN
+layout(location = 6) out vec4 fragOut6;
 layout(location = 0) in vec2 fragTexCoord;
 
-layout(set = 1, binding = 1) uniform sampler2DMS msaaTex[6];
+layout(set = 1, binding = 1) uniform sampler2DMS msaaTex[7];
 #define texColor    msaaTex[0]
 #define texPos      msaaTex[1]
 #define texNormal   msaaTex[2]
 #define texSpecular msaaTex[3]
 #define texEmissive msaaTex[4]
 #define texDepth    msaaTex[5]
+#define texVelocity msaaTex[6]
 
 layout(std140, set = 2, binding = 0) uniform genericData {
 	int samples;
@@ -208,6 +210,10 @@ void main()
 	vec4 specular = vec4(0);
 	vec4 emissive = vec4(0);
 	float depth = 0.0;
+#ifdef VULKAN
+	vec3 velocity = vec3(0.0);
+	float velocityWeight = 0.0;
+#endif
 
 	for(int i = 0; i < SAMPLE_CNT; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
@@ -226,6 +232,14 @@ void main()
 		emissive += texelFetch(texEmissive, texel, i) * localWeight;
 		depth += texelFetch(texDepth, texel, i).x * localWeight;
 		weight += localWeight;
+#ifdef VULKAN
+		// Samples still holding the "no motion written" clear value mustn't average into real ones.
+		vec3 localVelocity = texelFetch(texVelocity, texel, i).xyz;
+		if (abs(localVelocity.x) < 100.0) {
+			velocity += localVelocity * localWeight;
+			velocityWeight += localWeight;
+		}
+#endif
 	}
 
     pos /= weight;
@@ -237,4 +251,8 @@ void main()
 	fragOut3 = specular / weight;
 	fragOut4 = emissive / weight;
 	gl_FragDepth = depth / weight;
+#ifdef VULKAN
+	// Alpha 0 keeps what's there: the cockpit's pass mustn't erase the main scene's motion around it.
+	fragOut6 = velocityWeight > 0.0f ? vec4(velocity / velocityWeight, 1.0) : vec4(0.0);
+#endif
 }

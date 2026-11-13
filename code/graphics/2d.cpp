@@ -40,6 +40,7 @@
 #include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "popup/popup.h"
@@ -90,6 +91,8 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 	GR_CAPABILITY_ENTRY(FAST_SHADOWS),
 	GR_CAPABILITY_ENTRY(RAYTRACED_SHADOWS),
+	GR_CAPABILITY_ENTRY(SHADOW_CONTACT_HARDENING),
+	GR_CAPABILITY_ENTRY(FSR),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -302,23 +305,7 @@ os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 os::ViewportState Gr_configured_window_state = os::ViewportState::Borderless;
 #endif
 
-static bool mode_change_func(os::ViewportState state, bool initial)
-{
-	Gr_configured_window_state = state;
-
-	if (initial) {
-		return false;
-	}
-
-	auto window = os::getMainViewport();
-	if (window == nullptr) {
-		return false;
-	}
-
-	window->setState(state);
-
-	return true;
-}
+static bool mode_change_func(os::ViewportState state, bool initial);
 
 static void parse_window_mode_func()
 {
@@ -336,7 +323,7 @@ static void parse_window_mode_func()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
+static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
                      .category(std::make_pair("Graphics", 1825))
@@ -518,21 +505,103 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
+static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SDL_DisplayID display)
+{
+	const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+	const auto original = SDL_GetDisplayForWindow(window);
+	if (original == display) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+		}
+		return true;
+	}
+
+	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
+	// Scaled size, not pixels: SDL lists display modes in scaled units
+	int width, height;
+	SDL_DisplayMode target;
+	if (!SDL_GetWindowSize(window, &width, &height) ||
+		!SDL_GetClosestFullscreenDisplayMode(display, width, height, 0.0f, true, &target) || target.w != width ||
+		target.h != height) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+		}
+		return false;
+	}
+
+	if (fullscreen) {
+		// KWin keeps a fullscreen window on its screen when asked to fullscreen it on another one
+		if (!SDL_SetWindowFullscreen(window, false)) {
+			return false;
+		}
+
+		// KWin puts the window back on its old screen when it is fullscreened again too soon; a sync that times out
+		// changes nothing here
+		SDL_SyncWindow(window);
+		SDL_Delay(100);
+		SDL_PumpEvents();
+	}
+
+	// KWin on X11 fullscreens a window on the screen it is over; Wayland ignores this and uses the mode's display
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	SDL_SyncWindow(window);
+
+	if (SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true)) {
+		const bool synced = SDL_SyncWindow(window);
+		if ((SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0) {
+			return synced && SDL_GetDisplayForWindow(window) == display;
+		}
+	}
+
+	// Fullscreen on the starting display beats a window until the restart moves it
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(original), SDL_WINDOWPOS_CENTERED_DISPLAY(original));
+	SDL_SyncWindow(window);
+	viewport->setState(os::ViewportState::Fullscreen);
+	return false;
+}
+
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
 		return false;
 	}
 
+	auto viewport = os::getMainViewport();
 	auto window = os::getSDLMainWindow();
-	if (window == nullptr) {
+	if (viewport == nullptr || window == nullptr) {
 		return false;
 	}
 
 	set_preferred_display(display);
 
-	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
-	return true;
+	// One Apply can also change the window mode, and the two listeners run in no fixed order, so take the new mode
+	// first; when the mode listener runs second it finds the window already in place
+	const auto state = WindowModeOption->getCommittedValue();
+	if (state == os::ViewportState::Fullscreen) {
+		return fullscreen_on_display(viewport, window, display);
+	}
+
+	const auto flags = SDL_GetWindowFlags(window);
+	auto current = os::ViewportState::Windowed;
+	if (flags & SDL_WINDOW_FULLSCREEN) {
+		current = os::ViewportState::Fullscreen;
+	} else if (flags & SDL_WINDOW_BORDERLESS) {
+		current = os::ViewportState::Borderless;
+	}
+	if (current != state) {
+		viewport->setState(state);
+		SDL_SyncWindow(window);
+	}
+
+	if (!SDL_SetWindowPosition(window,
+			SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+			SDL_WINDOWPOS_CENTERED_DISPLAY(display))) {
+		return false;
+	}
+
+	// Wayland never lets a window place itself, so a windowed move there fails this check; a move SDL could not
+	// confirm in time is reported the same way
+	return SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
 }
 
 static SDL_DisplayID videodisplay_default()
@@ -570,6 +639,31 @@ static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics
                      .change_listener(videodisplay_change)
                      .importance(99)
                      .finish();
+
+static bool mode_change_func(os::ViewportState state, bool initial)
+{
+	Gr_configured_window_state = state;
+
+	if (initial) {
+		return false;
+	}
+
+	auto window = os::getMainViewport();
+	auto sdl_window = os::getSDLMainWindow();
+	if (window == nullptr || sdl_window == nullptr) {
+		return false;
+	}
+
+	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach
+	const auto display = VideoDisplayOption->getCommittedValue();
+	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(sdl_window) != display) {
+		return fullscreen_on_display(window, sdl_window, display);
+	}
+
+	window->setState(state);
+
+	return true;
+}
 
 struct ResolutionInfo {
 	uint32_t width  = 0;
@@ -878,6 +972,235 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .importance(79)
                      .parser(parse_anti_aliasing_func)
                      .finish();
+
+FsrMode Gr_fsr_mode = FsrMode::Off;
+int Gr_fsr_major_version = 0;
+SCP_vector<SCP_string> Gr_fsr_versions;
+int Gr_fsr_max_output_size = 0;
+float Gr_composition_scale = 1.0f;
+
+static float fsr_window_factor()
+{
+	if (!Cmdline_window_res.has_value()) {
+		return 1.0f;
+	}
+	const float factor = std::max(i2fl(Cmdline_window_res->first) / i2fl(gr_screen.max_w),
+		i2fl(Cmdline_window_res->second) / i2fl(gr_screen.max_h));
+	if (factor <= 1.0f || std::max(gr_screen.max_w, gr_screen.max_h) * factor > Gr_fsr_max_output_size) {
+		return 1.0f;
+	}
+	return factor;
+}
+
+float gr_fsr_upscale_factor(FsrMode mode)
+{
+	return mode == FsrMode::Upscale ? fsr_window_factor() : 1.0f;
+}
+
+static int fsr_setting(FsrMode mode, int major_version)
+{
+	return mode == FsrMode::Off ? 0 : major_version * 10 + static_cast<int>(mode);
+}
+
+static SCP_vector<int> fsr_setting_enumerator()
+{
+	SCP_vector<int> out{0};
+
+	// Options are also enumerated before gr_init has set up the renderer.
+	if (gr_screen.gf_is_capable && gr_is_capable(gr_capability::CAPABILITY_FSR)) {
+		for (const auto& version : Gr_fsr_versions) {
+			const int major = atoi(version.c_str());
+			out.push_back(fsr_setting(FsrMode::AA, major));
+			if (fsr_window_factor() > 1.0f) {
+				out.push_back(fsr_setting(FsrMode::Upscale, major));
+			}
+		}
+	}
+
+	return out;
+}
+
+static SCP_string fsr_setting_display(int setting)
+{
+	const auto mode = static_cast<FsrMode>(setting % 10);
+	if (mode == FsrMode::Off) {
+		return "Off";
+	}
+
+	SCP_string label = "FSR";
+	for (const auto& name : Gr_fsr_versions) {
+		if (atoi(name.c_str()) == setting / 10) {
+			label += " " + name;
+			break;
+		}
+	}
+	return label + (mode == FsrMode::AA ? " AA" : " Upscale");
+}
+
+static void fsr_apply_setting(int setting)
+{
+	const int mode = setting % 10;
+	Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
+	Gr_fsr_major_version = setting / 10;
+}
+
+// -fsr only names a mode, and what of it can run is only known once the renderer is up. Settle it on the closest
+// setting that is offered (the newest version, Upscale dropping to AA, or Off), so that both the FSR state and the
+// locked option show what actually runs.
+static void fsr_resolve_cmdline_setting()
+{
+	const auto options = options::OptionsManager::instance();
+	if (options->getOverrideReason("Graphics.FSR") != "-fsr") {
+		return;
+	}
+
+	int resolved = 0;
+	if (Gr_fsr_mode != FsrMode::Off) {
+		// The offered settings are ordered newest version first
+		const auto offered = fsr_setting_enumerator();
+		const auto newest = [&offered](FsrMode mode) {
+			const auto it = std::find_if(offered.begin(), offered.end(), [mode](int setting) { return setting % 10 == static_cast<int>(mode); });
+			return it == offered.end() ? 0 : *it;
+		};
+		resolved = newest(Gr_fsr_mode);
+		if (resolved == 0) {
+			// Upscale is only offered with a larger window
+			resolved = newest(FsrMode::AA);
+		}
+	}
+
+	fsr_apply_setting(resolved);
+	options->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(resolved)), "-fsr");
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
+                     std::pair<const char*, int>{"AMD FSR", -1},
+                     std::pair<const char*, int>{"AMD's temporal anti aliasing and upscaling. AA keeps the rendering resolution. Upscale renders the 3D scene at the configured resolution and upscales it to the window/monitor resolution.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(fsr_setting_enumerator)
+                     .display(fsr_setting_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_fsr_major_version); } )
+                     .change_listener([](const int& setting, bool) {
+                         fsr_apply_setting(setting);
+                         return true;
+                     })
+                     .importance(77)
+                     .finish();
+static SCP_vector<float> anisotropic_value_enumerator()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+static SCP_string anisotropic_display(float val)
+{
+	if (val < 2.0f) {
+		return "None";
+	}
+
+	SCP_string out;
+	sprintf(out, "%.0fx", val);
+	return out;
+}
+static float anisotropic_default()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return 1.0f;
+	}
+	return max;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
+                     std::pair<const char*, int>{"Anistropic filtering", 1736},
+                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
+                     .enumerator(anisotropic_value_enumerator)
+                     .category(std::make_pair("Graphics", 1825))
+                     .display(anisotropic_display)
+                     .default_func(anisotropic_default)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(78)
+                     .finish();
+
+float gr_anisotropy_setting()
+{
+	if (Using_in_game_options) {
+		return AnisotropyOption->getValue();
+	}
+	if (Cmdline_aniso_level != 0) {
+		return static_cast<float>(Cmdline_aniso_level);
+	}
+	return anisotropic_default();
+}
+
+// trilinear, which the launcher setting has always defaulted to
+static int Texture_filter = 1;
+
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
+																		                { 1, {"Trilinear", 1678}}};
+
+static void parse_texture_filtering_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	SCP_tolower(mode);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"bilinear", []() { Texture_filter = 0; }},
+		{"trilinear", []() { Texture_filter = 1; }}};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
+	}
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter",
+                     std::pair<const char*, int>{"Texture Filtering", 1763},
+                     std::pair<const char*, int>{"Texture filtering option", 1764})
+                     .importance(1)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(TextureFilteringValues)
+                     .default_func([]() {return Texture_filter;})
+                     .bind_to_once(&Texture_filter)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_texture_filtering_func)
+                     .finish();
+
+int gr_texture_filter_setting()
+{
+	if (Using_in_game_options) {
+		// read live: qtFRED sets an override and never loads initial values into the bound copy
+		return TextureFilteringOption->getValue();
+	}
+	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
+}
 
 extern int Cmdline_msaa_enabled;
 
@@ -2324,6 +2647,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
 	}
+
+	fsr_resolve_cmdline_setting();
 
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
