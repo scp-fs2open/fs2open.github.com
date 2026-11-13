@@ -421,6 +421,10 @@ void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 	vk::CommandPoolCreateInfo poolCreate;
 	poolCreate.queueFamilyIndex = values.graphicsQueueIndex.index;
 	poolCreate.flags |= vk::CommandPoolCreateFlagBits::eTransient;
+	// Buffers are allocated and individually freed throughout loading and each
+	// frame. Allow their backing storage to be recycled without resetting the
+	// entire shared pool while other command buffers are still in flight.
+	poolCreate.flags |= vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
 	m_graphicsCommandPool = m_device->createCommandPoolUnique(poolCreate);
 }
