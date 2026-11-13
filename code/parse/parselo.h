@@ -452,7 +452,7 @@ struct loadout_row
 
 //Karajorma/Goober5000 - Parses mission and campaign ship loadouts.
 void stuff_loadout_list(SCP_vector<loadout_row> &list, ParseLookupType lookup_type);
-int get_string_or_variable (char *str);
+int get_string_or_variable (char *str, int max);
 int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0
 #define PARSING_FOUND_VARIABLE		1
