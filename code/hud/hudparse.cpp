@@ -201,7 +201,8 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Hardpoints",			HUD_OBJECT_HARDPOINTS,			0},		// Not in legacy list
 	{ "Primary weapons",	HUD_OBJECT_PRIMARY_WEAPONS,		0},		// Not in legacy list
 	{ "Secondary weapons",	HUD_OBJECT_SECONDARY_WEAPONS,	0},		// Not in legacy list
-	{ "Scripting",			HUD_OBJECT_SCRIPTING,			0}		// Not in legacy list
+	{ "Scripting",			HUD_OBJECT_SCRIPTING,			0},		// Not in legacy list
+	{ "Auto shields",		HUD_OBJECT_AUTO_SHIELDS,		0}		// Not in legacy list
 };
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
@@ -894,12 +895,14 @@ void init_hud() {
 			config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
 			SCP_string config_id = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigId();
 
-			if ( !Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && HUD_config.is_gauge_visible(config_id) )
+			if ( !Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() &&
+				(!hud_config_controls_gauge(Ship_info[Player_ship->ship_info_index].hud_gauges[i].get()) || HUD_config.is_gauge_visible(config_id)) )
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
 			else
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
 
-			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(
+				hud_config_controls_gauge(Ship_info[Player_ship->ship_info_index].hud_gauges[i].get()) && HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
 				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
@@ -916,12 +919,14 @@ void init_hud() {
 			config_type = default_hud_gauges[i]->getConfigType();
 			SCP_string config_id = default_hud_gauges[i]->getConfigId();
 
-			if ( !default_hud_gauges[i]->isOffbyDefault() && HUD_config.is_gauge_visible(config_id) )
+			if ( !default_hud_gauges[i]->isOffbyDefault() &&
+				(!hud_config_controls_gauge(default_hud_gauges[i].get()) || HUD_config.is_gauge_visible(config_id)) )
 				default_hud_gauges[i]->updateActive(true);
 			else
 				default_hud_gauges[i]->updateActive(false);
 
-			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			default_hud_gauges[i]->updatePopUp(
+				hud_config_controls_gauge(default_hud_gauges[i].get()) && HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
 				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
@@ -953,13 +958,14 @@ void set_current_hud()
 			config_type = hgp->getConfigType();
 			SCP_string config_id = hgp->getConfigId();
 
-			if ( ( (!hgp->isOffbyDefault() || hgp->isActive()) && HUD_config.is_gauge_visible(config_id)) )
+			if ( ( (!hgp->isOffbyDefault() || hgp->isActive()) &&
+				(!hud_config_controls_gauge(hgp) || HUD_config.is_gauge_visible(config_id))) )
 				hgp->updateActive(true);
 			else
 				hgp->updateActive(false);
 
 			//hgp->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
-			hgp->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			hgp->updatePopUp(hud_config_controls_gauge(hgp) && HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
 				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
@@ -976,13 +982,15 @@ void set_current_hud()
 			config_type = default_hud_gauges[i]->getConfigType();
 			SCP_string config_id = default_hud_gauges[i]->getConfigId();
 
-			if ( ( (!default_hud_gauges[i]->isOffbyDefault() || default_hud_gauges[i]->isActive()) &&HUD_config.is_gauge_visible(config_id)) )
+			if ( ( (!default_hud_gauges[i]->isOffbyDefault() || default_hud_gauges[i]->isActive()) &&
+				(!hud_config_controls_gauge(default_hud_gauges[i].get()) || HUD_config.is_gauge_visible(config_id))) )
 				default_hud_gauges[i]->updateActive(true);
 			else
 				default_hud_gauges[i]->updateActive(false);
 
 			//default_hud_gauges[i]->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
-			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			default_hud_gauges[i]->updatePopUp(
+				hud_config_controls_gauge(default_hud_gauges[i].get()) && HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
 				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
@@ -1019,6 +1027,9 @@ int parse_gauge_type()
 
 	if(optional_string("+Auto Speed:")) 
 		return HUD_OBJECT_AUTO_SPEED;
+
+	if (optional_string("+Auto Shields:"))
+		return HUD_OBJECT_AUTO_SHIELDS;
 
 	if(optional_string("+Auto Target:")) 
 		return HUD_OBJECT_AUTO_TARGET;
@@ -1201,6 +1212,9 @@ void load_gauge(int gauge, gauge_settings* settings)
 		break;
 	case HUD_OBJECT_AUTO_SPEED:
 		load_gauge_auto_speed(settings);
+		break;
+	case HUD_OBJECT_AUTO_SHIELDS:
+		load_gauge_auto_shields(settings);
 		break;
 	case HUD_OBJECT_AUTO_TARGET:
 		load_gauge_auto_target(settings);
@@ -4240,6 +4254,63 @@ void load_gauge_auto_speed(gauge_settings* settings)
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHiRes(fname);
 	hud_gauge->initSpeedTextOffsets(speed_text_offset[0], speed_text_offset[1]);
+	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
+	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
+
+	gauge_assign_common(settings, std::move(hud_gauge));
+}
+
+void load_gauge_auto_shields(gauge_settings* settings)
+{
+	int auto_text_offset[2];
+	int shields_text_offset[2];
+	char fname[MAX_FILENAME_LEN] = "toggle1";
+	int on_color[4] = {0, 0, 0, 255};
+	int off_color[4] = {-1, -1, -1, -1};
+
+	// one toggle-box step (24) below Auto Speed, so a table can list it without offsets
+	settings->origin[0] = 1.0f;
+	settings->origin[1] = 1.0f;
+
+	if (gr_screen.res == GR_640) {
+		settings->offset[0] = -63;
+		settings->offset[1] = -52;
+	} else {
+		settings->offset[0] = -64;
+		settings->offset[1] = -72;
+	}
+
+	auto_text_offset[0] = 13;
+	auto_text_offset[1] = 2;
+	shields_text_offset[0] = 2;
+	shields_text_offset[1] = 10;
+
+	auto hud_gauge = gauge_load_common<HudGaugeAutoShields>(settings);
+	// the in-game option decides whether it shows, so HUD Config never draws it, whatever the table says
+	hud_gauge->initVisible_in_config(false);
+
+	if (optional_string("Filename:")) {
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+	}
+	if (optional_string("Auto Offsets:")) {
+		stuff_int_list(auto_text_offset, 2);
+	}
+	if (optional_string("Shields Offsets:")) {
+		stuff_int_list(shields_text_offset, 2);
+	}
+
+	if (optional_string_either("On Text Color:", "On Text Colour:") >= 0) {
+		stuff_int_list(on_color, 4);
+	}
+
+	if (optional_string_either("Off Text Color:", "Off Text Colour:") >= 0) {
+		stuff_int_list(off_color, 4);
+	}
+
+	hud_gauge->initAutoTextOffsets(auto_text_offset[0], auto_text_offset[1]);
+	hud_gauge->initBitmaps(fname);
+	hud_gauge->initHiRes(fname);
+	hud_gauge->initShieldsTextOffsets(shields_text_offset[0], shields_text_offset[1]);
 	hud_gauge->initOnColor(on_color[0], on_color[1], on_color[2], on_color[3]);
 	hud_gauge->initOffColor(off_color[0], off_color[1], off_color[2], off_color[3]);
 

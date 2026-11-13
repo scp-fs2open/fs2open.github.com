@@ -1407,6 +1407,10 @@ void player_save_target_and_weapon_link_prefs()
 		}		
 	}
 
+	if (Player->flags & PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE) {
+		Player->save_flags |= PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE;
+	}
+
 	// if we're in multiplayer mode don't do this because we will desync ourselves with the server
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {

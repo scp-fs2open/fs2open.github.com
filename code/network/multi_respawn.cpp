@@ -464,6 +464,9 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	memset(&pl->m_player->bi, 0, sizeof(pl->m_player->bi));
 	memset(&pl->m_player->ci, 0, sizeof(pl->m_player->ci));
 
+	// a shield transfer made on the old ship no longer applies to the new one
+	pl->m_player->flags &= ~PLAYER_FLAGS_AUTO_SHIELD_EQUALIZE_PAUSED;
+
 	// set throttle based on initial velocity specified in mission (the vel gets calculated
 	//   like a percentage of our max speed, so we can just use it as-is for the throttle)
 	pl->m_player->ci.forward_cruise_percent = (float)pobjp->initial_velocity;
