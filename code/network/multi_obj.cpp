@@ -2011,24 +2011,19 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 						Interp_info[objnum].set_subsystem_animation_frame(i, seq_num);						
 					}
 
-					angles prev_angs_1 = vmd_zero_angles;
-					angles prev_angs_2 = vmd_zero_angles;
 					angles angs_1 = vmd_zero_angles;
 					angles angs_2 = vmd_zero_angles;
 
 					if (subsysp->submodel_instance_1) {
-						vm_extract_angles_matrix_alternate(&prev_angs_1, &subsysp->submodel_instance_1->canonical_prev_orient);
 						vm_extract_angles_matrix_alternate(&angs_1, &subsysp->submodel_instance_1->canonical_orient);
 					}
 
 					if (subsysp->submodel_instance_2) {
-						vm_extract_angles_matrix_alternate(&prev_angs_2, &subsysp->submodel_instance_2->canonical_prev_orient);
 						vm_extract_angles_matrix_alternate(&angs_2, &subsysp->submodel_instance_2->canonical_orient);
 					}
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1b) {
 						if (animations_valid) {
-							prev_angs_1.b = angs_1.b;
 							angs_1.b = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2037,7 +2032,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1h) {
 						if (animations_valid) {
-							prev_angs_1.h = angs_1.h;
 							angs_1.h = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2046,7 +2040,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_1p) {
 						if (animations_valid) {
-							prev_angs_1.p = angs_1.p;
 							angs_1.p = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2055,7 +2048,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2b) {
 						if (animations_valid) {
-							prev_angs_2.b = angs_2.b;
 							angs_2.b = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2064,7 +2056,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2h) {
 						if (animations_valid) {						
-							prev_angs_2.h = angs_2.h;
 							angs_2.h = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2073,7 +2064,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_ROTATION_2p) {
 						if (animations_valid) {						
-							prev_angs_2.p = angs_2.p;
 							angs_2.p = (subsys_data[data_idx] * PI2);
 						}
 
@@ -2082,19 +2072,16 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					// fix up the subsystem orientation matrixes based on received data
 					if (flags[i] & OO_SUBSYS_ROTATION_1) {
-						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, &prev_angs_1);
 						vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_orient, &angs_1);
 					}
 
 					// fix up the subsystem orientation matrixes based on received data
 					if (flags[i] & OO_SUBSYS_ROTATION_2) {
-						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_prev_orient, &prev_angs_2);
 						vm_angles_2_matrix(&subsysp->submodel_instance_2->canonical_orient, &angs_2);
 					}
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
 						if (animations_valid) {
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
 							subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
 						}
 
@@ -2103,7 +2090,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
 						if (animations_valid) {						
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
 							subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
 						}
 
@@ -2112,7 +2098,6 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
 						if (animations_valid) {						
-							subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
 							subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
 						}
 

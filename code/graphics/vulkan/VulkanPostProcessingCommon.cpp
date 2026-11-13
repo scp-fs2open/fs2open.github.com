@@ -220,7 +220,8 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
                                                        vk::Framebuffer framebuffer, vk::Extent2D extent,
                                                        int shaderType,
                                                        const vk::ImageView* views, uint32_t viewCount,
-                                                       const void* uboData, size_t uboSize)
+                                                       const void* uboData, size_t uboSize,
+                                                       vk::Sampler sampler, uint32_t colorAttachmentCount)
 {
 	GR_DEBUG_SCOPE("Draw full screen triangle (multi-view)");
 
@@ -242,6 +243,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 	config.cullEnabled = false;
 	config.depthWriteEnabled = false;
 	config.renderPass = renderPass;
+	config.colorAttachmentCount = colorAttachmentCount;
 
 	vertex_layout emptyLayout;
 	vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
@@ -284,7 +286,7 @@ void PostProcessContext::drawFullscreenTriangleMulti(vk::CommandBuffer cmd, vk::
 		std::array<vk::DescriptorImageInfo, VulkanDescriptorManager::MAX_TEXTURE_BINDINGS> texArrayInfos;
 		texArrayInfos.fill(descriptorMgr->getFallbacks().texture2D);
 		for (uint32_t i = 0; i < viewCount; i++) {
-			texArrayInfos[i] = {linearSampler, views[i], vk::ImageLayout::eShaderReadOnlyOptimal};
+			texArrayInfos[i] = {sampler ? sampler : linearSampler, views[i], vk::ImageLayout::eShaderReadOnlyOptimal};
 		}
 		writer.setImageArray(MaterialBinding::TextureArray, texArrayInfos);
 	}

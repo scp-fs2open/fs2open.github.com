@@ -1273,6 +1273,7 @@ void debris_render(object * obj, model_draw_list *scene)
 	}
 
 	model_render_params render_info;
+	render_info.set_object_number(OBJ_INDEX(obj));
 
 	if ( db->is_hull ) {
 		MONITOR_INC(NumHullDebrisRend, 1);

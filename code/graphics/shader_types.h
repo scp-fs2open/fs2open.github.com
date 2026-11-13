@@ -18,6 +18,9 @@ enum VertexAttributeLocation : uint32_t {
 	VATTRIB_MODEL_MATRIX = 8,   // Occupies locations 8-11
 
 	NUM_VERTEX_ATTRIBS   = 9,
+
+	// Vulkan only, and not listed in ShaderTypeInfo::attributes, which OpenGL indexes its attribute tables with
+	VATTRIB_EFFECT_MOTION = 12, // vec4
 };
 
 // Shared shader type info — matches the original opengl_shader_type_t layout.

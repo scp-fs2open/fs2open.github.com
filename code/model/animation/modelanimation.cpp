@@ -440,7 +440,6 @@ namespace animation {
 
 		// rotation -----
 
-		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		matrix delta;
@@ -453,7 +452,6 @@ namespace animation {
 
 		// translation -----
 
-		submodel->canonical_prev_offset = submodel->canonical_offset;
 		submodel->canonical_offset = data.position;
 		
 		vec3d delta_vec;
@@ -471,7 +469,6 @@ namespace animation {
 		if (!submodel)
 			return;
 
-		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->current_turn_rate = 0.0f;
 	}
 
@@ -485,7 +482,8 @@ namespace animation {
 
 		if(!submodel.second->flags[Model::Submodel_flags::Can_move]){
 			mprintf(("Submodel %s of model %s is animated and has movement enabled.\n", submodel.second->name, model_get(pmi->model_num)->filename));
-			submodel.second->flags.set(Model::Submodel_flags::Can_move);
+			auto pm = model_get(pmi->model_num);
+			model_set_submodel_can_move(pm, static_cast<int>(submodel.second - pm->submodel.get()));
 
 			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
 				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
@@ -618,7 +616,6 @@ namespace animation {
 
 		// rotation -----
 
-		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
 		submodel->rotation_axis = sm->rotation_axis;
@@ -631,7 +628,6 @@ namespace animation {
 
 		// translation -----
 
-		submodel->canonical_prev_offset = submodel->canonical_offset;
 		submodel->canonical_offset = data.position;
 
 		submodel->translation_axis = sm->translation_axis;

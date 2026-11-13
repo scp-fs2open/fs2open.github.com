@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanOpenXR.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 #include "cmdline/cmdline.h"
 #include "globalincs/version.h"
@@ -535,6 +536,10 @@ bool VulkanRenderer::initialize()
 	                           m_renderExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
+	} else if (!m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
+		mprintf(("Warning: Failed to size the Vulkan post-processor, post-processing will be disabled\n"));
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
 	} else {
 		setPostProcessor(m_postProcessor.get());
 	}
@@ -1057,6 +1062,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 	}
 
+	// FSR adds to the feature set audited above, for AMD's shaders and host code. It's disabled in VR for now.
+	if (!openxr_requested()) {
+		vulkan_upscaler_prepare_device(m_vkInstance.get(),
+			deviceValues.device,
+			deviceValues.graphicsQueueIndex.index,
+			supportedFeatures,
+			deviceCreateChain.get<vk::DeviceCreateInfo>());
+	}
+
 	if (openxr_requested())
 		m_device = vulkan_openxr_create_device(deviceValues.device, deviceCreateChain.get<vk::DeviceCreateInfo>());
 	else
@@ -1064,6 +1078,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Load device-level function pointers for the dynamic dispatcher
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device.get());
+	vulkan_upscaler_device_created(m_device.get());
 
 	// Create queues
 	m_graphicsQueue = m_device->getQueue(deviceValues.graphicsQueueIndex.index, 0);
@@ -1181,6 +1196,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	if (!Cmdline_window_res) {
 		m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 	}
+	setCompositionExtent(wantedCompositionExtent());
 
 	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",
@@ -1325,7 +1341,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();

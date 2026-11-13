@@ -309,8 +309,10 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 
 	if (ADE_SETTING_VAR && mh != nullptr)
 	{
-		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+		// the per-frame snapshot skips submodels that can't move
+		if (!smih->GetSubmodel()->flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_orient = smi->canonical_orient;
 
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&smi->canonical_orient, &smih->GetSubmodel()->rotation_axis, &angle);
@@ -341,8 +343,10 @@ ADE_VIRTVAR(TranslationOffset,
 	{
 		auto smi = smih->Get();
 
-		smi->canonical_prev_offset = smi->canonical_offset;
 		smi->canonical_offset = *vec;
+		// the per-frame snapshot skips submodels that can't move
+		if (!smih->GetSubmodel()->flags[Model::Submodel_flags::Can_move])
+			smi->canonical_prev_offset = smi->canonical_offset;
 
 		smi->cur_offset = vm_vec_mag(vec);
 	}

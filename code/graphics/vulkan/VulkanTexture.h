@@ -165,7 +165,7 @@ public:
 	vk::Sampler getSampler(vk::Filter magFilter, vk::Filter minFilter,
 	                       vk::SamplerAddressMode addressMode,
 	                       bool enableAnisotropy, float maxAnisotropy,
-	                       bool enableMipmaps);
+	                       bool enableMipmaps, float negativeLodBias = 0.0f);
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the 2D fallback texture
@@ -420,6 +420,7 @@ private:
 	// Device limits
 	uint32_t m_maxTextureSize = 4096;
 	float m_maxAnisotropy = 1.0f;
+	float m_maxLodBias = 0.0f;
 
 	// Current render target state
 	int m_currentRenderTarget = -1;

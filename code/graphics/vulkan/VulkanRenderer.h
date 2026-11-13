@@ -184,6 +184,7 @@ class VulkanRenderer {
 	vk::CommandBuffer getCurrentCommandBuffer() const { return m_currentCommandBuffer; }
 
 	vk::Instance getVkInstance() const { return m_vkInstance.get(); }
+	bool supportsIndependentBlend() const { return m_deviceFeatures.independentBlend == VK_TRUE; }
 	vk::PhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
 	vk::Device getDevice() const { return m_device.get(); }
 	vk::Queue getGraphicsQueue() const { return m_graphicsQueue; }
@@ -205,6 +206,9 @@ class VulkanRenderer {
 	 * chain image. OpenGL does the same thing with Back_framebuffer.
 	 */
 	vk::Extent2D getRenderExtent() const { return m_renderExtent; }
+
+	// The render extent times FSR's upscale factor. Everything after the scene draws at this size.
+	vk::Extent2D getCompositionExtent() const { return m_compositionExtent; }
 
 	/**
 	 * @brief Get the composition image the frame is currently being rendered into
@@ -464,6 +468,11 @@ class VulkanRenderer {
 	bool recreateSwapChain();
 	bool shouldRecreateSwapChain(SwapChainStatus status) const;
 
+	vk::Extent2D wantedCompositionExtent() const;
+	void setCompositionExtent(vk::Extent2D extent);
+	// Recreates the composition and output-sized targets when the FSR upscale factor changed. Outside a frame.
+	void updateCompositionExtent();
+
 	void createImGuiDescriptorPool();
 	void initImGui();
 	void shutdownImGui();
@@ -496,6 +505,7 @@ class VulkanRenderer {
 	// option), so treating the two as one is what put whole frames in the
 	// upper-left corner of the screen.
 	vk::Extent2D m_renderExtent;
+	vk::Extent2D m_compositionExtent;
 	SCP_vector<vk::Image> m_swapChainImages;
 	SCP_vector<vk::UniqueImageView> m_swapChainImageViews;
 	SCP_vector<vk::UniqueFramebuffer> m_swapChainFramebuffers;

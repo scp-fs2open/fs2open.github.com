@@ -64,15 +64,15 @@ bool VulkanSMAA::init(PostProcessContext& ctx, const VulkanLDR& ldr)
 
 	m_initialized = true;
 	nprintf(("vulkan", "VulkanSMAA: SMAA initialized (%ux%u)\n",
-		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height));
+		m_ctx->outputExtent.width, m_ctx->outputExtent.height));
 	return true;
 }
 
 bool VulkanSMAA::createTargets()
 {
 	const vk::Format ldrFormat = m_ctx->ldrFormat;
-	const uint32_t w = m_ctx->sceneExtent.width;
-	const uint32_t h = m_ctx->sceneExtent.height;
+	const uint32_t w = m_ctx->outputExtent.width;
+	const uint32_t h = m_ctx->outputExtent.height;
 
 	if (!m_ctx->createImage(w, h, ldrFormat,
 	                       vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
@@ -194,8 +194,8 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 	GR_DEBUG_SCOPE("SMAA");
 
 	graphics::generic_data::smaa_data smaaData;
-	smaaData.smaa_rt_metrics.x = static_cast<float>(m_ctx->sceneExtent.width);
-	smaaData.smaa_rt_metrics.y = static_cast<float>(m_ctx->sceneExtent.height);
+	smaaData.smaa_rt_metrics.x = static_cast<float>(m_ctx->outputExtent.width);
+	smaaData.smaa_rt_metrics.y = static_cast<float>(m_ctx->outputExtent.height);
 	smaaData.pad[0] = 0.0f;
 	smaaData.pad[1] = 0.0f;
 
@@ -210,7 +210,7 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 		// the render pass's own loadOp=eDontCare, which leaves those pixels undefined.
 		static const std::array<float, 4> kClearColor = {0.0f, 0.0f, 0.0f, 1.0f};
 		m_ctx->drawFullscreenTriangle(cmd, m_ldr->renderPass(),
-			m_smaaEdgesFB, m_ctx->sceneExtent,
+			m_smaaEdgesFB, m_ctx->outputExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_EDGE,
 			m_ldr->getAADetectionView(), m_ctx->linearSampler,
 			&smaaData, sizeof(smaaData),
@@ -224,7 +224,7 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 		GR_DEBUG_SCOPE("SMAA Blending Weights calculation");
 
 		std::array<vk::ImageView, 3> views = {m_smaaEdges.view, m_smaaAreaTexView, m_smaaSearchTexView};
-		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_smaaBlendFB, m_ctx->sceneExtent,
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_smaaBlendFB, m_ctx->outputExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}
@@ -235,7 +235,7 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 		GR_DEBUG_SCOPE("SMAA Neighborhood Blending");
 
 		std::array<vk::ImageView, 2> views = {m_ldr->ldrView(), m_smaaBlend.view};
-		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_ldr->luminanceFramebuffer(), m_ctx->sceneExtent,
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldr->renderPass(), m_ldr->luminanceFramebuffer(), m_ctx->outputExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING, views.data(), static_cast<uint32_t>(views.size()),
 			&smaaData, sizeof(smaaData));
 	}
@@ -245,7 +245,7 @@ void VulkanSMAA::execute(vk::CommandBuffer cmd)
 		GR_DEBUG_SCOPE("SMAA Resolve");
 
 		m_ctx->drawFullscreenTriangle(cmd, m_ldr->renderPass(),
-			m_ldr->ldrFramebuffer(), m_ctx->sceneExtent,
+			m_ldr->ldrFramebuffer(), m_ctx->outputExtent,
 			SDR_TYPE_POST_PROCESS_SMAA_RESOLVE,
 			m_ldr->luminanceView(), m_ctx->linearSampler,
 			nullptr, 0,

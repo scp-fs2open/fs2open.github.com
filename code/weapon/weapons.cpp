@@ -9248,7 +9248,8 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 
 	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
 
-	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
+	const vec3d motion = wep_objp->pos - wep_objp->last_pos;
+	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b, &motion);
 
 	return side_alpha;
 }
@@ -9295,6 +9296,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
+			const vec3d motion = obj->pos - obj->last_pos;
 			float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
 
 			if (wip->laser_length_by_frametime) {
@@ -9445,7 +9447,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 					scaled_head_radius,
 					&tailp,
 					scaled_tail_radius,
-					bitmap_r, bitmap_g, bitmap_b);
+					bitmap_r, bitmap_g, bitmap_b,
+					&motion);
 			}
 
 			// maybe draw laser glow bitmap
@@ -9543,7 +9546,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius * wip->laser_glow_head_scale,
 						&tailp2,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
-						r, g, b);
+						r, g, b,
+						&motion);
 					r = fl2i(i2fl(c.red) * glow_r_mult * alphaf * main_bitmap_alpha_mult);
 					g = fl2i(i2fl(c.green) * glow_g_mult * alphaf * main_bitmap_alpha_mult);
 					b = fl2i(i2fl(c.blue) * glow_b_mult * alphaf * main_bitmap_alpha_mult);
@@ -9555,7 +9559,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 					scaled_head_radius * wip->laser_glow_head_scale,
 					&tailp2,
 					scaled_tail_radius * wip->laser_glow_tail_scale,
-					r, g, b);
+					r, g, b,
+					&motion);
 			}
 
 			break;

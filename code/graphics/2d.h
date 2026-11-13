@@ -68,6 +68,27 @@ enum class AntiAliasMode {
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
+// AA renders at 1:1. Upscale upscales the scene from the render resolution to the window resolution, and everything
+// drawn after it then draws at that size.
+enum class FsrMode {
+	Off = 0,
+	AA = 1,
+	Upscale = 2,
+};
+extern FsrMode Gr_fsr_mode;
+// The chosen FSR major version, or 0 for the newest the renderer offers
+extern int Gr_fsr_major_version;
+// The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
+extern SCP_vector<SCP_string> Gr_fsr_versions;
+// The largest image side the renderer supports, which limits the upscale factor. 0 without FSR.
+extern int Gr_fsr_max_output_size;
+
+// Scales the render resolution to cover the window in both axes, keeping its aspect ratio; the final blit squeezes the
+// rest. 1 for Off and AA, and when the window isn't larger than the render resolution.
+float gr_fsr_upscale_factor(FsrMode mode);
+// Framebuffer pixels per gr_screen unit for what's drawn after the scene. Above 1 only while FSR upscales.
+extern float Gr_composition_scale;
+
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
 
@@ -232,6 +253,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_MOTION_VECTORS,
+
 	NUM_SHADER_TYPES
 };
 
@@ -302,6 +325,7 @@ struct vertex_format_data
 		RADIUS,
 		UVEC,
 		MATRIX4,
+		MOTION4, // Vulkan only. OpenGL's attribute tables have no slot for it.
 	};
 
 	vertex_format format_type;
@@ -376,7 +400,8 @@ enum class gr_capability {
 	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
 	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
 	// otherwise texture-object state shared by every sampler bound to that texture.
-	CAPABILITY_SHADOW_CONTACT_HARDENING
+	CAPABILITY_SHADOW_CONTACT_HARDENING,
+	CAPABILITY_FSR
 };
 
 struct gr_capability_def {
