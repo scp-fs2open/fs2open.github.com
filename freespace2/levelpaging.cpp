@@ -12,8 +12,8 @@
 #include "freespace.h"
 #include "levelpaging.h"
 
-#include "tracing/tracing.h"
 #include "texcache/tex_cache.h"
+#include "tracing/tracing.h"
 
 
 // All the page in functions

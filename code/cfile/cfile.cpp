@@ -544,33 +544,6 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 }
 #endif
 
-int cf_rename(const char *old_name, const char *name, int dir_type)
-{
-	Assert( CF_TYPE_SPECIFIED(dir_type) );
-
-	int ret_code;
-	SCP_string old_longname;
-	SCP_string new_longname;
-	
-	cf_create_default_path_string(old_longname, dir_type, old_name);
-	cf_create_default_path_string(new_longname, dir_type, name);
-
-	ret_code = rename(old_longname.c_str(), new_longname.c_str());
-	if(ret_code != 0){
-		switch(errno){
-		case EACCES :
-			return CF_RENAME_FAIL_ACCESS;
-		case ENOENT :
-		default:
-			return CF_RENAME_FAIL_EXIST;
-		}
-	}
-
-	return CF_RENAME_SUCCESS;
-	
-
-}
-
 int cf_rename(const char* old_name, const char* name, int dir_type, int location_flags)
 {
 	Assert(CF_TYPE_SPECIFIED(dir_type));
