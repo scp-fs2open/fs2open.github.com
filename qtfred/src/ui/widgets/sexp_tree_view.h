@@ -228,6 +228,9 @@ class sexp_tree_view: public QTreeWidget, public ISexpTreeUI {
 	//! Space opens the node editor on the current item. Otherwise delegates to QTreeWidget.
 	void keyPressEvent(QKeyEvent* e) override;
 
+	//! Resets _currently_editing when an inline edit closes (including Escape), keeping it only if another edit opened.
+	void closeEditor(QWidget* editor, QAbstractItemDelegate::EndEditHint hint) override;
+
 	//! Watches the operator popup for Hide/Close/Deactivate events to clear popup state.
 	bool eventFilter(QObject* obj, QEvent* ev) override;
 
