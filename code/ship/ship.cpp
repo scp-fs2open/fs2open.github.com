@@ -16231,7 +16231,6 @@ bool eval_weapon_flag_for_game_type(int weapon_flags)
 
 bool ship_class_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
 {
-	// an empty bank has nothing to place; this check runs on the weapon coming back from a swap
 	if (weapon_class < 0)
 		return true;
 
@@ -16271,9 +16270,7 @@ static int find_precedence_rearm_weapon(const ship* shipp, int bank_index, bool 
 			}
 		}
 
-		if (!ship_class_bank_allows_weapon(sip,
-				(is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index,
-				weapon_id)) {
+		if (!ship_class_bank_allows_weapon(sip, (is_secondary_bank ? MAX_SHIP_PRIMARY_BANKS : 0) + bank_index, weapon_id)) {
 			continue;
 		}
 
