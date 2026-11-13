@@ -97,6 +97,12 @@ float gr_anisotropy_setting();
 
 int gr_texture_filter_setting();
 
+// A texture filter that a caller sets in memory only: 0 = bilinear, 1 = trilinear, -1 = no value.
+// gr_texture_filter_setting() reads it when the in-game options are off, the same as
+// gr_anisotropy_setting() reads Cmdline_aniso_level. qtFRED uses it, because qtFRED must not
+// write to the config that the game reads. With the in-game options on, use an option override.
+extern int Gr_texture_filter_override;
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;

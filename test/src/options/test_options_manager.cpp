@@ -565,16 +565,22 @@ class TextureFilterSetting : public OptionsManagerOverride {
 		OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter")->parseDefaultSetting();
 		reset_parse(nullptr);
 	}
-	void SetUp() override { _saved_ingame = Using_in_game_options; }
+	void SetUp() override
+	{
+		_saved_ingame = Using_in_game_options;
+		_saved_filter_override = Gr_texture_filter_override;
+	}
 	void TearDown() override
 	{
 		parseDefault("Trilinear");
 		Using_in_game_options = _saved_ingame;
+		Gr_texture_filter_override = _saved_filter_override;
 		OptionsManagerOverride::TearDown();
 	}
 
   private:
 	bool _saved_ingame = true;
+	int _saved_filter_override = -1;
 };
 
 TEST_F(TextureFilterSetting, InGameDefaultIsTrilinear)
@@ -603,6 +609,21 @@ TEST_F(TextureFilterSetting, OverrideIsReadWithoutALoad)
 	Using_in_game_options = true;
 	parseDefault("Bilinear");
 	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+// qtFRED sets this value when a mod turns off the in-game options
+TEST_F(TextureFilterSetting, WithoutInGameOptionsTheMemoryValueWins)
+{
+	Using_in_game_options = false;
+	Gr_texture_filter_override = 0;
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, InGameOptionsIgnoreTheMemoryValue)
+{
+	Using_in_game_options = true;
+	Gr_texture_filter_override = 0;
 	ASSERT_EQ(gr_texture_filter_setting(), 1);
 }
 

@@ -1151,6 +1151,8 @@ float gr_anisotropy_setting()
 // trilinear, which the launcher setting has always defaulted to
 static int Texture_filter = 1;
 
+int Gr_texture_filter_override = -1;
+
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
 																		                { 1, {"Trilinear", 1678}}};
 
@@ -1193,6 +1195,9 @@ int gr_texture_filter_setting()
 	if (Using_in_game_options) {
 		// read live: qtFRED sets an override and never loads initial values into the bound copy
 		return TextureFilteringOption->getValue();
+	}
+	if (Gr_texture_filter_override >= 0) {
+		return std::min(Gr_texture_filter_override, 1);
 	}
 	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
 }
