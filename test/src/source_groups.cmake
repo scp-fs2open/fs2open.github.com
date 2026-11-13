@@ -63,6 +63,10 @@ add_file_folder("Options"
     options/test_options_manager.cpp
 )
 
+add_file_folder("OSAPI"
+    osapi/test_osregistry.cpp
+)
+
 add_file_folder("Parse"
     parse/test_parselo.cpp
     parse/test_replace.cpp
