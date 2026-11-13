@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "fred.h"
 #include "SetGlobalShipFlags.h"
+#include "FREDDoc.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -47,54 +48,73 @@ END_MESSAGE_MAP()
 void SetGlobalShipFlags::OnNoShields() 
 {
 	int i;
+	bool changed = false;
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum >= 0)
 		{
+			changed |= !Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields];
             Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields); 
 		}
 	}
+	if (changed)
+		set_modified();
 }
 
 void SetGlobalShipFlags::OnNoSubspaceDrive() 
 {
 	int i;
+	bool changed = false;
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::No_subspace_drive, Ship_info[Ships[i].ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[Ships[i].ship_info_index].is_fighter_bomber();
+			changed |= Ships[i].flags[Ship::Ship_Flags::No_subspace_drive] != value;
+            Ships[i].flags.set(Ship::Ship_Flags::No_subspace_drive, value);
 		}
 	}
+	if (changed)
+		set_modified();
 }
 
 void SetGlobalShipFlags::OnPrimitiveSensors() 
 {
 	int i;
+	bool changed = false;
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::Primitive_sensors, Ship_info[Ships[i].ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[Ships[i].ship_info_index].is_fighter_bomber();
+			changed |= Ships[i].flags[Ship::Ship_Flags::Primitive_sensors] != value;
+            Ships[i].flags.set(Ship::Ship_Flags::Primitive_sensors, value);
 		}
 	}
+	if (changed)
+		set_modified();
 }
 
 void SetGlobalShipFlags::OnAffectedByGravity() 
 {
 	int i;
+	bool changed = false;
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum >= 0)
 		{
 			// only for fighters and bombers
-            Ships[i].flags.set(Ship::Ship_Flags::Affected_by_gravity, Ship_info[Ships[i].ship_info_index].is_fighter_bomber());
+			const bool value = Ship_info[Ships[i].ship_info_index].is_fighter_bomber();
+			changed |= Ships[i].flags[Ship::Ship_Flags::Affected_by_gravity] != value;
+            Ships[i].flags.set(Ship::Ship_Flags::Affected_by_gravity, value);
 		}
 	}
+	if (changed)
+		set_modified();
 }

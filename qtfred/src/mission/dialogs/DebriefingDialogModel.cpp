@@ -53,6 +53,9 @@ bool DebriefingDialogModel::apply()
 	Mission_music[SCORE_DEBRIEFING_AVERAGE] = _averageMusic;
 	Mission_music[SCORE_DEBRIEFING_FAILURE] = _failureMusic;
 
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

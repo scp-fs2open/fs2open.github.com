@@ -856,6 +856,8 @@ void event_editor::OnButtonCancel()
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
+	// copy the fields on screen into the editor's own lists first, or an edit to the selected event goes unnoticed
+	save();
 	if (query_modified()) {
 		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL){
@@ -868,6 +870,17 @@ void event_editor::OnButtonCancel()
 		}
 	}
 
+	close_discarding_changes();
+}
+
+void event_editor::close_discarding_changes()
+{
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+	// the media names were copied for this editor and only OK hands them to the mission
+	for (auto& msg : m_messages) {
+		message_free_media_names(msg);
+	}
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;

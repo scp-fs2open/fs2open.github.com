@@ -22,6 +22,9 @@ bool VolumetricNebulaDialogModel::apply()
 		}
 		makeVolumetricsCopy(*The_mission.volumetrics, _volumetrics);
 	}
+	if (query_modified()) {
+		_editor->missionChanged();
+	}
 	return true;
 }
 

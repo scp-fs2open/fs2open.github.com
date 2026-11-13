@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "fred.h"
+#include "FREDDoc.h"
 #include "FictionViewerDlg.h"
 #include "missionui/fictionviewer.h"
 #include "gamesnd/eventmusic.h"
@@ -84,6 +85,9 @@ void FictionViewerDlg::OnOK()
 {
 	UpdateData(TRUE);
 
+	const auto old_stages = Fiction_viewer_stages;
+	const int old_music = Mission_music[SCORE_FICTION_VIEWER];
+
 	// remove whitespace
 	m_story_file.Trim();
 	m_font_file.Trim();
@@ -120,6 +124,15 @@ void FictionViewerDlg::OnOK()
 
 		// set music
 		Mission_music[SCORE_FICTION_VIEWER] = m_fiction_music - 1;
+	}
+
+	const auto same_stage = [](const fiction_viewer_stage& a, const fiction_viewer_stage& b) {
+		return !strcmp(a.story_filename, b.story_filename) && !strcmp(a.font_filename, b.font_filename) &&
+			   !strcmp(a.voice_filename, b.voice_filename);
+	};
+	if (Mission_music[SCORE_FICTION_VIEWER] != old_music || old_stages.size() != Fiction_viewer_stages.size() ||
+		(!old_stages.empty() && !same_stage(old_stages.front(), Fiction_viewer_stages.front()))) {
+		set_modified();
 	}
 
 	CDialog::OnOK();

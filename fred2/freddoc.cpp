@@ -114,6 +114,7 @@ bool CFREDDoc::autoload() {
 
 	// Load Backup.002
 	r = load_mission(name, MPF_FAST_RELOAD);
+	recreate_event_editors();
 	Update_window = 1;
 
 	// Delete Backup.001
@@ -221,6 +222,7 @@ void CFREDDoc::editor_init_mission() {
 	reset_mission();
 	SetModifiedFlag(FALSE);
 	recreate_dialogs();
+	recreate_event_editors();
 }
 
 bool CFREDDoc::load_mission(const char *pathname, int flags) {
@@ -410,6 +412,9 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	Ship_editor_dialog.bypass_all--;
 
 	recreate_dialogs();
+	if (!(flags & MPF_FAST_RELOAD)) {
+		recreate_event_editors();
+	}
 
 	// This hook will allow for scripts to know when a mission has been loaded
 	// which will then allow them to update any LuaEnums that may be related to sexps
@@ -600,11 +605,13 @@ void CFREDDoc::OnFileImportFSM() {
 		{
 			// these aren't done automatically for imports
 			theApp.AddToRecentFileList((LPCTSTR)dest_path);
+			SetPathName((LPCTSTR)dest_path, FALSE);
 			SetTitle((LPCTSTR)Mission_filename);
 		}
 	}
 
 	recreate_dialogs();
+	recreate_event_editors();
 }
 
 BOOL CFREDDoc::OnNewDocument() {
@@ -797,6 +804,61 @@ void CFREDDoc::Serialize(CArchive& ar) {
 	cfile_serialize(fp, rw_flag);
 	cfile_serialize_editor(fp, rw_flag);
 	*/
+}
+
+static void open_event_editor()
+{
+	Event_editor_dlg = new event_editor;
+	Event_editor_dlg->Create(event_editor::IDD);
+	Event_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Event_editor_dlg->ShowWindow(SW_RESTORE);
+}
+
+static void open_message_editor()
+{
+	Message_editor_dlg = new CMessageEditorDlg;
+	Message_editor_dlg->Create(CMessageEditorDlg::IDD);
+	Message_editor_dlg->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Message_editor_dlg->ShowWindow(SW_RESTORE);
+}
+
+// Only when the mission is replaced, never on the reload after a save, which keeps the open editors' edits.
+void CFREDDoc::recreate_event_editors() {
+	if (Event_editor_dlg) {
+		Event_editor_dlg->close_discarding_changes();
+		open_event_editor();
+	}
+
+	if (Message_editor_dlg) {
+		Message_editor_dlg->OnCancel();
+		open_message_editor();
+	}
+}
+
+// an editor's own close prompt deletes it on Yes and No, so a pointer still set means the user chose Cancel
+BOOL CFREDDoc::SaveModified()
+{
+	const bool had_event_editor = Event_editor_dlg != nullptr;
+	const bool had_message_editor = Message_editor_dlg != nullptr;
+
+	if (had_event_editor) {
+		Event_editor_dlg->close_offering_changes();
+	}
+	if (had_message_editor) {
+		Message_editor_dlg->close_offering_changes();
+	}
+	if (Event_editor_dlg != nullptr || Message_editor_dlg != nullptr) {
+		return FALSE;
+	}
+
+	const BOOL result = CDocument::SaveModified();
+	if (had_event_editor) {
+		open_event_editor();
+	}
+	if (had_message_editor) {
+		open_message_editor();
+	}
+	return result;
 }
 
 void CFREDDoc::recreate_dialogs() {

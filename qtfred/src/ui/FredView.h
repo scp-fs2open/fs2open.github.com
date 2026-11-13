@@ -11,12 +11,14 @@
 #include <QtWidgets/QToolButton>
 #include <QtGui/QSurface>
 #include <QCloseEvent>
+#include <QPointer>
 
 #include "missioneditor/missionsave.h"
 
 #include <mission/FredRenderer.h>
 #include <mission/IDialogProvider.h>
 
+#include <functional>
 #include <memory>
 #include <ui/widgets/ObjectComboBox.h>
 
@@ -51,6 +53,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void setEditor(Editor* editor, EditorViewport* viewport);
 
 	void loadMissionFile(const QString& pathName, int flags = 0);
+	void registerMissionToolDialog(QWidget* dialog, std::function<QWidget*()> reopen);
 
 	QSurface* getRenderSurface();
 	RenderWidget* getRenderWidget();
@@ -221,6 +224,13 @@ class FredView: public QMainWindow, public IDialogProvider {
 	bool maybePromptToSaveMissionChanges(const QString& actionDescription);
 	bool isMissionModified() const;
 
+	struct ClosedToolDialog {
+		std::function<QWidget*()> reopen;
+		QByteArray geometry;
+	};
+	bool closeMissionToolDialogs(SCP_vector<ClosedToolDialog>& closed);
+	static void reopenMissionToolDialogs(const SCP_vector<ClosedToolDialog>& closed);
+
 	void on_mission_loaded(const std::string& filepath);
 
 	void connectActionToViewSetting(QAction* option, bool* destination);
@@ -287,6 +297,12 @@ class FredView: public QMainWindow, public IDialogProvider {
 	MissionFormat _missionSaveFormat = MissionFormat::STANDARD;
 
 	std::unique_ptr<Ui::FredView> ui;
+
+	struct MissionToolDialog {
+		QPointer<QWidget> dialog;
+		std::function<QWidget*()> reopen;
+	};
+	SCP_vector<MissionToolDialog> _missionToolDialogs;
 
 	ObjectComboBox* _shipClassBox = nullptr;
 	ObjectComboBox* _propClassBox = nullptr;
