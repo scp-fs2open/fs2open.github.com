@@ -293,8 +293,8 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 
 			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
 
-			ma->h = -PI2*(status->yaw);
-			ma->p = PI2*(status->pitch);
+			ma->h = -PI*(status->yaw);
+			ma->p = PI*(status->pitch);
 
 			trans.xyz.x = -0.4f*status->x;
 			trans.xyz.y = 0.4f*status->y;
