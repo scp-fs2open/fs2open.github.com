@@ -47,6 +47,10 @@ add_file_folder("menuui"
     menuui/test_intel_parse.cpp
 )
 
+add_file_folder("Mission"
+    mission/test_missionlog.cpp
+)
+
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
 )
@@ -57,6 +61,10 @@ add_file_folder("mod"
 
 add_file_folder("model"
     model/test_modelread.cpp
+)
+
+add_file_folder("network"
+    network/test_multiutil.cpp
 )
 
 add_file_folder("Options"

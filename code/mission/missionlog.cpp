@@ -16,7 +16,6 @@
 #include "mission/missionparse.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
-#include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
@@ -45,7 +44,8 @@ void mission_log_init()
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
-void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags)
+void mission_log_add_entry(LogType type, const char *pname, const char *sname, int info_index, int flags,
+	int pname_ship, int sname_ship)
 {
 	// multiplayer clients don't use this function to add log entries -- they will get
 	// all their info from the host
@@ -93,13 +93,7 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	case LOG_SHIP_DISABLED:
 	case LOG_SHIP_DISARMED:
 	case LOG_SELF_DESTRUCTED:
-		// multiplayer. callsign is passed in for ship destroyed and self destruct
-		if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(pname) >= 0)){
-			int np_index = multi_find_player_by_callsign(pname);
-			index = multi_get_player_ship( np_index );
-		} else {
-			index = ship_name_lookup( pname );
-		}
+		index = (pname_ship >= 0) ? pname_ship : ship_name_lookup(pname);
 
 		Assert (index >= 0);
 		entry.primary_team = Ships[index].team;
@@ -119,23 +113,9 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 			}
 		} else if ( type == LOG_SHIP_DESTROYED ) {
 			if ( sname ) {
-				// multiplayer, player name will possibly be sent in
-				if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(sname) >= 0)) {
-					// get the player's ship
-					int np_index = multi_find_player_by_callsign(sname);
-					int np_ship = multi_get_player_ship(np_index);
-
-					if(np_ship < 0)
-					{
-						// argh. badness
-						Int3();
-						entry.secondary_team = Player_ship->team;
-					}
-					else
-					{
-						entry.secondary_team = Ships[Objects[Net_players[np_index].m_player->objnum].instance].team;
-						entry.sname_display = Ships[Objects[Net_players[np_index].m_player->objnum].instance].get_display_name();
-					}
+				if (sname_ship >= 0) {
+					entry.secondary_team = Ships[sname_ship].team;
+					entry.sname_display = Ships[sname_ship].get_display_name();
 				}
 				else 
 				{
