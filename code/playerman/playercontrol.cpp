@@ -872,6 +872,9 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		// Set bank
 		ci->bank -= f2fl( axis[Action::BANK] ) * 1.5f;
 
+		ci->sideways += f2fl( axis[Action::LATERAL_THRUST] );
+		ci->vertical -= f2fl( axis[Action::VERTICAL_THRUST] );
+
 		if (!Control_config[JOY_ABS_THROTTLE_AXIS].empty()) {
 			scaled = (float) axis[Action::ABS_THROTTLE] * 1.2f / (float) F1_0 - 0.1f;  // convert to -0.1 - 1.1 range
 			oldspeed = ci->forward_cruise_percent;
