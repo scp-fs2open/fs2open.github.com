@@ -650,10 +650,13 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
                 char entityBuffer[1024];
                 memset(entityBuffer, 0, sizeof(entityBuffer));
 
-                /*int readBytes = */mg_read(conn, &entityBuffer, sizeof(entityBuffer));
+                int readBytes = mg_read(conn, &entityBuffer, sizeof(entityBuffer));
 
                 json_error_t parseError;
-                context.requestEntity = json_loads((const char*) &entityBuffer, JSON_DISABLE_EOF_CHECK, &parseError);
+                // a full buffer has no terminator, so parse only the bytes read
+                context.requestEntity = (readBytes > 0)
+                    ? json_loadb(entityBuffer, static_cast<size_t>(readBytes), JSON_DISABLE_EOF_CHECK, &parseError)
+                    : nullptr;
 
 
                 SDL_LockMutex(webapi_dataMutex);
