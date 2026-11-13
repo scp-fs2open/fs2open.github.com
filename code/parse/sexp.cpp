@@ -23361,7 +23361,7 @@ void sexp_set_subsys_motion_lock_free(int node, bool is_rotation, bool locked)
 			// and restore the timestamp from the delta
 			auto &stamp = is_rotation ? subsys->submodel_instance_1->stepped_rotation_started : subsys->submodel_instance_1->stepped_translation_started;
 			if (stamp.isValid())
-				stamp = timestamp_delta(_timestamp(), -stamp.value());
+				stamp = timestamp_delta(_timestamp(), -static_cast<int>(stamp.value()));
 		}
 	}
 }

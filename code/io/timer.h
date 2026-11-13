@@ -35,7 +35,7 @@ struct timestamp_tag {};
 
 // Timestamp measuring real time.  Runs regardless of time compression or pausing.
 // Useful for timing real-world events and UI features like cursor blinking.
-class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, int, -1>
+class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, std::int64_t, -1>
 {
 public:
 	static UI_TIMESTAMP invalid() { return {}; }
@@ -43,7 +43,7 @@ public:
 	static UI_TIMESTAMP immediate() { return UI_TIMESTAMP(1); }
 
 	UI_TIMESTAMP() = default;
-	explicit UI_TIMESTAMP(int val) : ID(val) { }
+	explicit UI_TIMESTAMP(std::int64_t val) : ID(val) { }
 
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }
@@ -52,7 +52,7 @@ public:
 
 // Timestamp measuring game time.  Sensitive to time compression and pausing.
 // Useful for timing in-mission events.
-class TIMESTAMP : public util::ID<timestamp_tag, int, -1>
+class TIMESTAMP : public util::ID<timestamp_tag, std::int64_t, -1>
 {
 public:
 	static TIMESTAMP invalid() { return {}; }
@@ -60,7 +60,7 @@ public:
 	static TIMESTAMP immediate() { return TIMESTAMP(1); }
 
 	TIMESTAMP() = default;
-	explicit TIMESTAMP(int val) : ID(val) { }
+	explicit TIMESTAMP(std::int64_t val) : ID(val) { }
 
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }

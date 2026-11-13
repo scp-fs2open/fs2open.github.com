@@ -230,7 +230,7 @@ void interpolation_manager::add_packet(int objnum, int frame, int packet_timesta
 
 				// whenenver the server gets a player packet, we need to update the ship record, since the old info is now stale
 				if (Objects[objnum].flags[Object::Object_Flags::Player_ship]){
-					int start_time = Multi_Timing_Info.get_mission_start_time();
+					auto start_time = Multi_Timing_Info.get_mission_start_time();
 
 					multi_ship_record_signal_update(objnum, TIMESTAMP(start_time + _packets[_prev_packet_index].remote_missiontime), TIMESTAMP(start_time + _packets[_upcoming_packet_index].remote_missiontime), _prev_packet_index, _upcoming_packet_index);
 
