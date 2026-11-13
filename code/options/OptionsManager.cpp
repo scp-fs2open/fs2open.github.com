@@ -5,6 +5,7 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
+#include <algorithm>
 #include <optional>
 
 namespace {
@@ -37,8 +38,7 @@ OptionsManager* options::OptionsManager::instance()
 }
 
 //Gets the value of an option from the Config using the option key
-std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key,
-	PendingEdits pending) const
+std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
 	// An override always wins. The options UI disables the control for an overridden option, and
 	// setConfigValue() rejects writes to one, so no edit can be pending here anyway.
@@ -50,7 +50,7 @@ std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const 
 		return std::unique_ptr<json_t>(override_iter->second.value.get());
 	}
 
-	auto changed_iter = pending == PendingEdits::Include ? _changed_values.find(key) : _changed_values.end();
+	auto changed_iter = _changed_values.find(key);
 	if (changed_iter != _changed_values.end()) {
 		json_incref(changed_iter->second.get());
 		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
@@ -223,6 +223,11 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 	// Always erase even if it wasn't actually changed so later persistChanges() calls don't try to save the value again
 	_changed_values.erase(iter);
 
+	const auto unapplied = runPostPersistHooks();
+	if (std::find(unapplied.begin(), unapplied.end(), option) != unapplied.end()) {
+		changed = false;
+	}
+
 	return changed;
 }
 
@@ -253,7 +258,25 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 	}
 	_changed_values.clear();
 
+	const auto unapplied = runPostPersistHooks();
+	unchanged.insert(unchanged.end(), unapplied.begin(), unapplied.end());
+
 	return unchanged;
+}
+
+void OptionsManager::addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook)
+{
+	_post_persist_hooks.push_back(std::move(hook));
+}
+
+SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks() const
+{
+	SCP_vector<const options::OptionBase*> unapplied;
+	for (const auto& hook : _post_persist_hooks) {
+		auto result = hook();
+		unapplied.insert(unapplied.end(), result.begin(), result.end());
+	}
+	return unapplied;
 }
 
 //Discard changes and restore the option to initial value

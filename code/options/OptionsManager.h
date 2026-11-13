@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -9,11 +10,6 @@ namespace options {
 
 // Forward declaration
 class OptionBase;
-
-enum class PendingEdits {
-	Include,
-	Ignore
-};
 
 class OptionsManager {
 	OptionsManager();
@@ -37,13 +33,16 @@ class OptionsManager {
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
+	SCP_vector<std::function<SCP_vector<const OptionBase*>()>> _post_persist_hooks;
+
+	SCP_vector<const OptionBase*> runPostPersistHooks() const;
+
   public:
 	static OptionsManager* instance();
 
 	~OptionsManager();
 
-	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key,
-		PendingEdits pending = PendingEdits::Include) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
@@ -89,6 +88,16 @@ class OptionsManager {
 	 * @return A vector of options that did not support changing the value
 	 */
 	SCP_vector<const options::OptionBase*> persistChanges();
+
+	/**
+	 * @brief Adds a function that runs after every persist, once all changed options have been notified
+	 *
+	 * Lets several options that act on one thing apply together, whatever order their listeners ran in.
+	 *
+	 * @param hook Returns the options whose new value it could not apply; they are reported like options whose
+	 * listener returned false
+	 */
+	void addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook);
 
 	void discardChanges();
 

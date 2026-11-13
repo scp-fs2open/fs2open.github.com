@@ -435,20 +435,15 @@ static void set_preferred_display(SDL_DisplayID display_id)
 	SDL_free(displays);
 }
 
-static SDL_DisplayID videodisplay_deserializer(const json_t* value)
+static SDL_DisplayID display_at_index(int index)
 {
 	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
-	int index = 0, count = 0;
-
-	json_error_t err;
-	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
-		throw json_exception(err);
-	}
+	int count = 0;
 
 	auto displays = SDL_GetDisplays(&count);
 
 	if (displays) {
-		if (index < count) {
+		if (index >= 0 && index < count) {
 			display_id = displays[index];
 		}
 
@@ -458,7 +453,7 @@ static SDL_DisplayID videodisplay_deserializer(const json_t* value)
 	return display_id;
 }
 
-static json_t* videodisplay_serializer(SDL_DisplayID id)
+static int index_of_display(SDL_DisplayID id)
 {
 	int value = 0;
 
@@ -475,7 +470,24 @@ static json_t* videodisplay_serializer(SDL_DisplayID id)
 		SDL_free(displays);
 	}
 
-	return json_pack("i", value);
+	return value;
+}
+
+static SDL_DisplayID videodisplay_deserializer(const json_t* value)
+{
+	int index = 0;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
+		throw json_exception(err);
+	}
+
+	return display_at_index(index);
+}
+
+static json_t* videodisplay_serializer(SDL_DisplayID id)
+{
+	return json_pack("i", index_of_display(id));
 }
 
 static SCP_vector<SDL_DisplayID> videodisplay_enumerator()
@@ -502,13 +514,15 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 }
 static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SDL_DisplayID display)
 {
-	const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+	const bool fullscreen = viewport->getState() == os::ViewportState::Fullscreen;
 	const auto original = SDL_GetDisplayForWindow(window);
+	bool settled = true;
 	if (original == display) {
 		if (!fullscreen) {
 			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
 		}
-		return true;
+		return settled;
 	}
 
 	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
@@ -520,40 +534,47 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 		target.h != height) {
 		if (!fullscreen) {
 			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
 		}
-		return false;
+		return settled;
 	}
 
 	if (fullscreen) {
-		// KWin keeps a fullscreen window on its screen when asked to fullscreen it on another one
+		// KWin ignores a fullscreen move to another screen, and undoes one made too soon after leaving fullscreen
+		mprintf(("Leaving fullscreen to move the window to display %u\n", display));
 		if (!SDL_SetWindowFullscreen(window, false)) {
-			return false;
+			return settled;
 		}
-
-		// KWin puts the window back on its old screen when it is fullscreened again too soon; a sync that times out
-		// changes nothing here
-		SDL_SyncWindow(window);
+		settled = SDL_SyncWindow(window);
 		SDL_Delay(100);
 		SDL_PumpEvents();
 	}
 
 	// KWin on X11 fullscreens a window on the screen it is over; Wayland ignores this and uses the mode's display
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
-	SDL_SyncWindow(window);
+	settled = SDL_SyncWindow(window) && settled;
 
 	if (SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true)) {
 		const bool synced = SDL_SyncWindow(window);
-		if ((SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0) {
-			return synced && SDL_GetDisplayForWindow(window) == display;
+		// A request still pending after a timed-out sync is left to finish
+		if (!synced || viewport->getState() == os::ViewportState::Fullscreen) {
+			return synced && settled;
 		}
 	}
 
 	// Fullscreen on the starting display beats a window until the restart moves it
+	mprintf(("Could not go fullscreen on display %u; going back to display %u\n", display, original));
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(original), SDL_WINDOWPOS_CENTERED_DISPLAY(original));
-	SDL_SyncWindow(window);
+	settled = SDL_SyncWindow(window) && settled;
 	viewport->setState(os::ViewportState::Fullscreen);
-	return false;
+	return SDL_SyncWindow(window) && settled;
 }
+
+// The listeners run in no fixed order, so they only note a change and apply_window_placement() acts after the persist
+static bool Display_change_pending = false;
+static bool Mode_change_pending = false;
+// A position in SDL's display list, as the option stores it: ids change when a display is added again
+static int Chosen_display_index = 0;
 
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
@@ -561,42 +582,10 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 		return false;
 	}
 
-	auto viewport = os::getMainViewport();
-	auto window = os::getSDLMainWindow();
-	if (viewport == nullptr || window == nullptr) {
-		return false;
-	}
-
+	Chosen_display_index = index_of_display(display);
 	set_preferred_display(display);
-
-	// One Apply can also change the window mode, and the two listeners run in no fixed order, so take the new mode
-	// first; when the mode listener runs second it finds the window already in place
-	const auto state = WindowModeOption->getCommittedValue();
-	if (state == os::ViewportState::Fullscreen) {
-		return fullscreen_on_display(viewport, window, display);
-	}
-
-	const auto flags = SDL_GetWindowFlags(window);
-	auto current = os::ViewportState::Windowed;
-	if (flags & SDL_WINDOW_FULLSCREEN) {
-		current = os::ViewportState::Fullscreen;
-	} else if (flags & SDL_WINDOW_BORDERLESS) {
-		current = os::ViewportState::Borderless;
-	}
-	if (current != state) {
-		viewport->setState(state);
-		SDL_SyncWindow(window);
-	}
-
-	if (!SDL_SetWindowPosition(window,
-			SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-			SDL_WINDOWPOS_CENTERED_DISPLAY(display))) {
-		return false;
-	}
-
-	// Wayland never lets a window place itself, so a windowed move there fails this check; a move SDL could not
-	// confirm in time is reported the same way
-	return SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
+	Display_change_pending = true;
+	return true;
 }
 
 static SDL_DisplayID videodisplay_default()
@@ -643,21 +632,74 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 		return false;
 	}
 
-	auto window = os::getMainViewport();
-	auto sdl_window = os::getSDLMainWindow();
-	if (window == nullptr || sdl_window == nullptr) {
-		return false;
-	}
-
-	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach
-	const auto display = VideoDisplayOption->getCommittedValue();
-	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(sdl_window) != display) {
-		return fullscreen_on_display(window, sdl_window, display);
-	}
-
-	window->setState(state);
-
+	Mode_change_pending = true;
 	return true;
+}
+
+static SCP_vector<const options::OptionBase*> apply_window_placement()
+{
+	if (!Display_change_pending && !Mode_change_pending) {
+		return {};
+	}
+	const bool display_changed = Display_change_pending;
+	const bool mode_changed = Mode_change_pending;
+	Display_change_pending = false;
+	Mode_change_pending = false;
+
+	auto viewport = os::getMainViewport();
+	auto window = os::getSDLMainWindow();
+	const auto state = Gr_configured_window_state;
+	// Fullscreen picked alone stays on the monitor the player moved the window to
+	const auto display = (display_changed || window == nullptr) ? display_at_index(Chosen_display_index)
+																: SDL_GetDisplayForWindow(window);
+	bool settled = true;
+	if (viewport != nullptr && window != nullptr) {
+		if (state == os::ViewportState::Fullscreen) {
+			// A window may not have been able to reach the target display, so fullscreen can move it
+			settled = fullscreen_on_display(viewport, window, display);
+		} else {
+			if (viewport->getState() != state) {
+				viewport->setState(state);
+				settled = SDL_SyncWindow(window);
+			}
+			if (display_changed) {
+				SDL_SetWindowPosition(window,
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+				settled = SDL_SyncWindow(window) && settled;
+			}
+		}
+	}
+
+	// Each option is judged by where the window ended up
+	const auto not_applied = [&]() {
+		SCP_vector<const options::OptionBase*> unapplied;
+		const bool on_display = window != nullptr && SDL_GetDisplayForWindow(window) == display;
+		if (display_changed && !on_display) {
+			unapplied.push_back(VideoDisplayOption.get());
+		}
+		// A monitor with no mode of the window's size leaves fullscreen on the display of the last fullscreen mode
+		const bool fullscreen_elsewhere =
+			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
+		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
+		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
+		if ((mode_changed && viewport == nullptr) || wrong_mode || fullscreen_elsewhere) {
+			unapplied.push_back(WindowModeOption.get());
+		}
+		return unapplied;
+	};
+
+	// SDL gives up after 100 ms on X11, so a slow window manager gets up to half a second more
+	auto unapplied = not_applied();
+	for (int wait = 0; !settled && wait < 10 && !unapplied.empty(); ++wait) {
+		SDL_Delay(50);
+		SDL_PumpEvents();
+		unapplied = not_applied();
+	}
+	for (const auto* option : unapplied) {
+		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
+	}
+	return unapplied;
 }
 
 struct ResolutionInfo {
@@ -2715,6 +2757,12 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	}
 
 	Gr_inited = 1;
+
+	static bool placement_hook_added = false;
+	if (!placement_hook_added) {
+		options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
+		placement_hook_added = true;
+	}
 
 	if (!gr_is_capable(gr_capability::CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");

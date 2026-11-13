@@ -7,7 +7,6 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "math/floating.h"
-#include "osapi/osregistry.h"
 
 #include "util/FSTestFixture.h"
 
@@ -100,143 +99,6 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 	ASSERT_EQ(*reason, "-second_flag");
 }
 
-// A script can persist one option while another still has an edit pending, so a listener that reads another
-// option has to see only what was persisted.
-TEST_F(OptionsManagerOverride, CommittedValueIgnoresPendingEdit)
-{
-	auto* mgr = OptionsManager::instance();
-
-	mgr->setConfigValue("Test.Committed.Pending", std::unique_ptr<json_t>(json_integer(7)));
-
-	auto pending = mgr->getValueFromConfig("Test.Committed.Pending");
-	ASSERT_TRUE(pending.has_value());
-	ASSERT_EQ(json_integer_value(pending->get()), 7);
-
-	ASSERT_FALSE(mgr->getValueFromConfig("Test.Committed.Pending", PendingEdits::Ignore).has_value());
-}
-
-TEST_F(OptionsManagerOverride, CommittedValueStillHonorsOverride)
-{
-	auto* mgr = OptionsManager::instance();
-
-	mgr->setOverride("Test.Committed.Override", "42", "-test_flag");
-
-	auto result = mgr->getValueFromConfig("Test.Committed.Override", PendingEdits::Ignore);
-	ASSERT_TRUE(result.has_value());
-	ASSERT_EQ(json_integer_value(result->get()), 42);
-}
-
-TEST_F(OptionsManagerOverride, WindowModeCommittedValueIgnoresPendingEdit)
-{
-	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.WindowMode");
-	ASSERT_NE(opt, nullptr);
-	auto* typedOpt = static_cast<const Option<os::ViewportState>*>(opt);
-
-	class WindowStateGuard {
-	  public:
-		WindowStateGuard() : _original(Gr_configured_window_state) {}
-		~WindowStateGuard() { Gr_configured_window_state = _original; }
-
-	  private:
-		os::ViewportState _original;
-	};
-	WindowStateGuard guard;
-
-	// No override and no persisted ini value, so the committed value is the default
-	Gr_configured_window_state = os::ViewportState::Fullscreen;
-	OptionsManager::instance()->setConfigValue("Graphics.WindowMode",
-		std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))));
-
-	ASSERT_EQ(typedOpt->getValue(), os::ViewportState::Windowed);
-	ASSERT_EQ(typedOpt->getCommittedValue(), os::ViewportState::Fullscreen);
-}
-
-// The display and window mode listeners read each other's committed value, which needs a real settings profile to
-// write to and read back from. FSTestFixture runs in portable mode, so the file is test_data/data/options_settings.ini.
-class OptionsManagerPersist : public test::FSTestFixture {
-  public:
-	OptionsManagerPersist() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
-
-  protected:
-	void SetUp() override
-	{
-		_save_found = Ingame_options_save_found;
-		test::FSTestFixture::SetUp();
-
-		// On a fresh checkout the first init found no settings file and loaded no profile; it created the file, so
-		// load again from it
-		Ingame_options_save_found = true;
-		os_deinit_registry_stuff();
-		os_init_registry_stuff(nullptr, "Test");
-
-		_first = makeOption("Test.Persist.First", &_second_seen_by_first, "Test.Persist.Second");
-		_second = makeOption("Test.Persist.Second", &_first_seen_by_second, "Test.Persist.First");
-
-		// Start from known committed values; the file keeps whatever an earlier run wrote
-		OptionsManager::instance()->discardChanges();
-		setBoth(1);
-		ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
-		ASSERT_EQ(_first->getCommittedValue(), 1);
-		ASSERT_EQ(_second->getCommittedValue(), 1);
-		_first_seen_by_second = 0;
-		_second_seen_by_first = 0;
-	}
-	void TearDown() override
-	{
-		OptionsManager::instance()->discardChanges();
-		OptionsManager::instance()->removeOption(_first);
-		OptionsManager::instance()->removeOption(_second);
-		Ingame_options_save_found = _save_found;
-
-		test::FSTestFixture::TearDown();
-	}
-
-	static std::shared_ptr<const Option<int>> makeOption(const char* key, int* seen, const char* other_key)
-	{
-		return OptionBuilder<int>(key, SCP_string(key), SCP_string(key))
-			.default_val(0)
-			.change_listener([seen, other_key](const int&, bool) {
-				auto* other = static_cast<const Option<int>*>(OptionsManager::instance()->getOptionByKey(other_key));
-				*seen = other->getCommittedValue();
-				return true;
-			})
-			.finish();
-	}
-	static void setBoth(int value)
-	{
-		OptionsManager::instance()->setConfigValue("Test.Persist.First", std::unique_ptr<json_t>(json_integer(value)));
-		OptionsManager::instance()->setConfigValue("Test.Persist.Second", std::unique_ptr<json_t>(json_integer(value)));
-	}
-
-	std::shared_ptr<const Option<int>> _first;
-	std::shared_ptr<const Option<int>> _second;
-	int _first_seen_by_second = 0;
-	int _second_seen_by_first = 0;
-	bool _save_found = true;
-};
-
-// One Apply of several options: persistChanges() writes every value before it notifies any listener, so either
-// listener, whichever runs first, sees the other option's new value
-TEST_F(OptionsManagerPersist, PersistChangesShowsEveryNewValueToEveryListener)
-{
-	setBoth(2);
-	ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
-
-	ASSERT_EQ(_first_seen_by_second, 2);
-	ASSERT_EQ(_second_seen_by_first, 2);
-}
-
-// A script can persist one option alone; another option's edit stays pending and its committed value stays old
-TEST_F(OptionsManagerPersist, PersistOneOptionKeepsTheOtherCommittedValueOld)
-{
-	setBoth(2);
-	ASSERT_TRUE(OptionsManager::instance()->persistOptionChanges(_second.get()));
-
-	ASSERT_EQ(_first_seen_by_second, 1);
-	ASSERT_EQ(_first->getValue(), 2);
-	ASSERT_EQ(_first->getCommittedValue(), 1);
-}
-
 // The tests above exercise getValueFromConfig() directly with synthetic keys and integer payloads. The
 // tests below instead go through real, statically-registered Option<T> instances (confirmed live by the
 // probe test above), each with the same JSON value cmdline.cpp builds for that option, so a malformed value
@@ -251,6 +113,40 @@ TEST_F(OptionsManagerPersist, PersistOneOptionKeepsTheOtherCommittedValueOld)
 // from this fixture crashes or passes purely by test order. getValue() only exercises the deserializer, which
 // is exactly the contract these tests are checking anyway. The one test that must go through a display
 // function uses the OptionsManagerOverrideLocalized fixture below instead.
+
+namespace {
+// Read by the hook below, which stays registered for the rest of the run because hooks cannot be removed
+const OptionBase* Unapplied_by_hook = nullptr;
+} // namespace
+
+// The display and window mode apply in a hook after the persist; what it could not apply must reach the restart prompt
+// like an option whose listener returned false. Nothing is pending, so the test writes no settings.
+TEST_F(OptionsManagerOverride, PostPersistHookReportsWhatItCouldNotApply)
+{
+	static bool hook_added = false;
+	if (!hook_added) {
+		OptionsManager::instance()->addPostPersistHook([]() {
+			SCP_vector<const OptionBase*> unapplied;
+			if (Unapplied_by_hook != nullptr) {
+				unapplied.push_back(Unapplied_by_hook);
+			}
+			return unapplied;
+		});
+		hook_added = true;
+	}
+
+	OptionsManager::instance()->discardChanges();
+	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(opt, nullptr);
+
+	Unapplied_by_hook = opt;
+	const auto unchanged = OptionsManager::instance()->persistChanges();
+	Unapplied_by_hook = nullptr;
+
+	ASSERT_EQ(unchanged.size(), 1u);
+	EXPECT_EQ(unchanged[0], opt);
+	EXPECT_TRUE(OptionsManager::instance()->persistChanges().empty());
+}
 
 TEST_F(OptionsManagerOverride, BoolOverrideRoundTrips)
 {
