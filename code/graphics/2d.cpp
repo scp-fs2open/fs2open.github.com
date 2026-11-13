@@ -68,7 +68,6 @@
 #include <cstring>
 #include <limits>
 
-
 #define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
 
 gr_capability_def gr_capabilities[] = {
@@ -3312,13 +3311,11 @@ void gr_init_imgui_font()
 
 	// Only TrueType fonts can reach this point.
 	const auto* trueTypeFont = static_cast<const font::NVGFont*>(selectedFont);
-	constexpr float minFontSize = 5.0f;
-	constexpr float maxFontSize = 100.0f;
 	constexpr float defaultFontSize = 13.0f;
 
 	float fontSize = trueTypeFont->getSize();
 
-	if (!std::isfinite(fontSize) || fontSize < minFontSize || fontSize > maxFontSize) {
+	if (!std::isfinite(fontSize) || fontSize <= 0.0f) {
 		Warning(LOCATION,
 			"ImGui font '%s' has an invalid size (%g). Using the default size of %.0f.",
 			ImGui_font.c_str(),
@@ -3346,6 +3343,7 @@ void gr_init_imgui_font()
 
 	if (imguiFont != nullptr) {
 		io.FontDefault = imguiFont;
+
 		mprintf(("ImGui font '%s' registered successfully.\n", ImGui_font.c_str()));
 	} else {
 		Warning(LOCATION,
@@ -3354,6 +3352,7 @@ void gr_init_imgui_font()
 			ImGui_font.c_str());
 	}
 }
+
 static bool Imgui_frame_active = false;
 
 void gr_imgui_begin_frame()
