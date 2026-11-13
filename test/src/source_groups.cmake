@@ -47,6 +47,10 @@ add_file_folder("menuui"
     menuui/test_intel_parse.cpp
 )
 
+add_file_folder("bmpman"
+    bmpman/test_bmpman_evict.cpp
+)
+
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
 )
