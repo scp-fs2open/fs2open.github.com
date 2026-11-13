@@ -1671,8 +1671,13 @@ void multi_standalone_reset_all()
 	// NETLOG
 	ml_string(NOX("Standalone resetting"));
 	
-	// shut all game stuff down
-	game_level_close();
+	// shut all game stuff down -- but only if a mission was actually in progress,
+	// otherwise scripting hooks in game_level_close() may fire into uninitialized
+	// subsystems (e.g. SEXP nodes never allocated because no mission was loaded)
+	if (Game_mode & GM_IN_MISSION) {
+		game_level_close();
+		Game_mode &= ~GM_IN_MISSION;
+	}
 
 	// reinitialize the gui
 	std_reset_standalone_gui();	
