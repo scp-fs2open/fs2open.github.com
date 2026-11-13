@@ -207,6 +207,13 @@ void resolve_iff_data()
 			}
 		}
 
+		// an IFF that no table gave an accessibility color, such as one a mod adds in a tbm, keeps its normal colors
+		if (iff->accessibility_color_index < 0) {
+			iff->accessibility_color_index = iff->color_index;
+			iff->accessibility_observed_color_map.insert(iff->observed_color_map.begin(),
+				iff->observed_color_map.end());
+		}
+
 		// resolve the all teams at war relationships
 		if (iff->flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR) {
 			// exempt, so use standard attacks
@@ -484,8 +491,8 @@ void parse_iff_table(const char* filename)
 				iffp = &Iff_info[Iff_info.size() - 1];
 				//Initialize this to white for new IFFs
 				iffp->color_index = iff_init_color(255, 255, 255);
-				// Initialize this to white for new IFFs
-				iffp->accessibility_color_index = iff_init_color(255, 255, 255);
+				// -1 until a table sets it; resolve_iff_data() falls back to the normal colors
+				iffp->accessibility_color_index = -1;
 				//Make sure flags are reset for new IFFs
 				iffp->default_parse_flags.reset();
 			}

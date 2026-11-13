@@ -39,6 +39,10 @@ if (FSO_BUILD_WITH_VULKAN)
 	)
 endif()
 
+add_file_folder("IffDefs"
+    iff_defs/test_iff_accessibility.cpp
+)
+
 add_file_folder("Math"
     math/test_vecmat.cpp
 )

@@ -1,0 +1,11 @@
+#IFFs
+
+$IFF Name: Pirate
+$Color: ( 200, 0, 200 )
+$Attacks: ( "Friendly" )
++Sees Friendly As: ( 250, 250, 0 )
+
+$IFF Name: Unknown
+$Color: ( 0, 0, 255 )
+
+#End
