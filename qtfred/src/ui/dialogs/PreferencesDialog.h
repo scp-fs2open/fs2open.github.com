@@ -39,7 +39,6 @@ private slots:
 	void on_enablePostProcessing_toggled(bool checked);
 	void on_shadowQualityCombo_currentIndexChanged(int index);
 	void on_aaModeCombo_currentIndexChanged(int index);
-	void on_msaaCombo_currentIndexChanged(int index);
 	void on_textureFilterCombo_currentIndexChanged(int index);
 	void on_anisotropyCombo_currentIndexChanged(int index);
 	void on_gammaSpin_valueChanged(double value);
