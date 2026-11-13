@@ -154,24 +154,87 @@ int generic_anim_load(generic_anim *ga)
 	return 0;
 }
 
+// Ends a failed EFF stream: releases the pair and next-frame load the stream owns and leaves the struct as an unloaded
+// one (num_frames 0, type NONE, as the APNG branch does), since generic_anim_unload would otherwise release handle -1.
+static void eff_stream_drop(generic_anim* ga, bool owned)
+{
+	if (owned) {
+		if (bm_is_valid(ga->eff.next_frame)) {
+			bm_release(ga->eff.next_frame);
+		}
+		if (bm_is_valid(ga->bitmap_id)) {
+			bm_release(ga->bitmap_id);
+		}
+		vm_free(ga->buffer);
+	}
+	ga->buffer = nullptr;
+	ga->bitmap_id = -1;
+	ga->eff.next_frame = -1;
+	ga->num_frames = 0;
+	ga->type = BM_TYPE_NONE;
+}
+
+// Loaders keep a frame at its file depth whatever was asked for, so a 24 bpp frame gains alpha for a 32 bpp stream and
+// color folds to luminance for an 8 bpp HUD-color stream (the OpenGL update path's formula). False means nothing was
+// copied: no lock, a compressed payload (a DDS decoded on read is recorded as uncompressed), another size or depth.
+static bool eff_copy_frame(const generic_anim* ga, int handle, const bitmap* bmp, int bpp)
+{
+	if (bmp == nullptr || bmp->data == 0 || bm_is_compressed(handle) || bmp->w != ga->width || bmp->h != ga->height) {
+		return false;
+	}
+	auto src = reinterpret_cast<const ubyte*>(bmp->data);
+	size_t pixels = static_cast<size_t>(ga->width) * ga->height;
+	int src_bytes = bmp->bpp / 8;
+	if (bmp->bpp == bpp) {
+		memcpy(ga->buffer, src, pixels * src_bytes);
+		return true;
+	}
+	if (bpp == 32 && bmp->bpp == 24) {
+		for (size_t px = 0; px < pixels; px++) {
+			ga->buffer[px * 4] = src[px * 3];
+			ga->buffer[px * 4 + 1] = src[px * 3 + 1];
+			ga->buffer[px * 4 + 2] = src[px * 3 + 2];
+			ga->buffer[px * 4 + 3] = 255;
+		}
+		return true;
+	}
+	if (bpp == 8 && (bmp->bpp == 24 || bmp->bpp == 32)) {
+		for (size_t px = 0; px < pixels; px++) {
+			int luminance = src[px * src_bytes] + src[px * src_bytes + 1] + src[px * src_bytes + 2];
+			auto value = static_cast<ubyte>(luminance / 3);
+			if (src_bytes == 4) {
+				value = static_cast<ubyte>((luminance / 3) * (src[px * 4 + 3] / 255.0f));
+			}
+			ga->buffer[px] = value;
+		}
+		return true;
+	}
+	return false;
+}
+
 int generic_anim_stream(generic_anim *ga, const bool cache)
 {
 	CFILE *img_cfp = NULL;
 	int anim_fps = 0;
 	int bpp;
+	// what this struct streamed last: only a buffer the EFF path allocated is the EFF path's to reuse or free
+	BM_TYPE previous_type = ga->type;
 
 	ga->type = BM_TYPE_NONE;
 
 	auto res = cf_find_file_location_ext(ga->filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, CF_TYPE_ANY);
 
-	// could not be found, or is invalid for some reason
-	if ( !res.found )
+	// could not be found, or is invalid for some reason; a failed attempt must not change what the struct still owns
+	if ( !res.found ) {
+		ga->type = previous_type;
 		return -1;
+	}
 
 	//make sure we can open it
 	img_cfp = cfopen_special(res, "rb", CF_TYPE_ANY);
 
 	if (img_cfp == NULL) {
+		ga->type = previous_type;
 		return -1;
 	}
 
@@ -249,17 +312,76 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 			// Make sure the string is null terminated
 			frame_name[MAX_FILENAME_LEN - 1] = '\0';
 		}
-		ga->bitmap_id = bm_load(frame_name);
-		if(ga->bitmap_id < 0) {
+		// the talking-head code streams the same generic_anim again without unloading it, so what the previous EFF run
+		// owns is reused when it still fits and released when it does not
+		bool owned = (previous_type == BM_TYPE_EFF) && (ga->buffer != nullptr);
+		if (!owned) {
+			// the union field still holds another member's bytes on a fresh struct; nothing is loaded yet
+			ga->eff.next_frame = -1;
+		}
+		// a private slot: bm_load would hand back another stream's next-frame slot when that one sits on frame 0
+		// (bm_reload names the slot after the frame it holds), and releasing it below would freeze that stream
+		int first_frame = bm_load_duplicate(frame_name);
+		if(first_frame < 0) {
 			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s\n", ga->filename));
+			eff_stream_drop(ga, owned);
 			return -1;
+		}
+		// the stream draws from a user bitmap over its own buffer, like the ANI and APNG streams, so the current frame
+		// survives any renderer-side texture flush
+		int frame_w = 0, frame_h = 0;
+		bm_get_info(first_frame, &frame_w, &frame_h);
+		size_t frame_bytes = static_cast<size_t>(frame_w) * frame_h * (bpp / 8);
+		bool reuse = owned && bm_is_valid(ga->bitmap_id) && (ga->width == frame_w) && (ga->height == frame_h)
+			&& (ga->eff.bpp == bpp);
+		if (!reuse) {
+			if (owned) {
+				if (bm_is_valid(ga->bitmap_id)) {
+					bm_release(ga->bitmap_id);
+				}
+				vm_free(ga->buffer);
+			}
+			ga->width = frame_w;
+			ga->height = frame_h;
+			ga->eff.bpp = bpp;
+			ga->buffer = static_cast<ubyte*>(vm_malloc(frame_bytes));
+			ga->bitmap_id = bm_create(bpp, frame_w, frame_h, ga->buffer, (bpp==8)?BMP_AABITMAP:0);
+			if (ga->bitmap_id < 0) {
+				mprintf(("Cannot create the stream bitmap for eff streaming. eff Filename: %s\n", ga->filename));
+				bm_release(first_frame);
+				eff_stream_drop(ga, true);
+				return -1;
+			}
+		}
+		bitmap* first_bmp = bm_lock(first_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
+		if (first_bmp == nullptr) {
+			// the failed lock has unloaded the private slot already; the release frees it
+			mprintf(("Cannot read first frame for eff streaming. eff Filename: %s\n", ga->filename));
+			bm_release(first_frame);
+			eff_stream_drop(ga, true);
+			return -1;
+		}
+		if (!eff_copy_frame(ga, first_frame, first_bmp, bpp)) {
+			mprintf(("eff stream %s: first frame could not be copied, the stream starts blank\n", ga->filename));
+			memset(ga->buffer, 0, frame_bytes);
+		}
+		bm_unlock(first_frame);
+		bm_release(first_frame);
+		if (reuse) {
+			// the kept bitmap still holds the previous run's last frame on the GPU
+			gr_update_texture(ga->bitmap_id, bpp, ga->buffer, ga->width, ga->height);
 		}
 		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
 			// Make sure the string is null terminated
 			frame_name[MAX_FILENAME_LEN - 1] = '\0';
 		}
-		ga->eff.next_frame = bm_load(frame_name);
-		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
+		if (owned && bm_is_valid(ga->eff.next_frame)) {
+			// the restart loads the next-frame file again below; drop the previous run's load first
+			bm_release(ga->eff.next_frame);
+		}
+		// private for the same reason as frame 0: bm_reload renames this slot every advance, and a second stream of the
+		// file would otherwise share it and lose it when the first stream unloads
+		ga->eff.next_frame = bm_load_duplicate(frame_name);
 		ga->previous_frame = 0;
 	}
 
@@ -331,6 +453,10 @@ void generic_anim_unload(generic_anim *ga)
 					bm_release(ga->eff.next_frame);
 				if(ga->bitmap_id >= 0)
 					bm_release(ga->bitmap_id);
+				if (ga->buffer != nullptr) {
+					vm_free(ga->buffer);
+					ga->buffer = nullptr;
+				}
 			}
 			if(ga->type == BM_TYPE_PNG) {
 				if(ga->bitmap_id >= 0)
@@ -376,9 +502,19 @@ void generic_render_eff_stream(generic_anim *ga)
 		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
-			if(next_frame_bmp->data)
-				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
-			bm_unlock(ga->eff.next_frame);
+			if (eff_copy_frame(ga, ga->eff.next_frame, next_frame_bmp, bpp)) {
+				gr_update_texture(ga->bitmap_id, bpp, ga->buffer, ga->width, ga->height);
+			} else {
+				bool unread = (next_frame_bmp == nullptr);
+				nprintf(("Warning",
+					"eff stream %s: frame %d %s (%dx%d at %d bpp%s, stream is %dx%d at %d bpp); frame kept\n",
+					ga->filename, ga->current_frame, unread ? "could not be read" : "could not be copied",
+					unread ? 0 : next_frame_bmp->w, unread ? 0 : next_frame_bmp->h, unread ? 0 : next_frame_bmp->bpp,
+					bm_is_compressed(ga->eff.next_frame) ? " compressed" : "", ga->width, ga->height, bpp));
+			}
+			if (next_frame_bmp != nullptr) {
+				bm_unlock(ga->eff.next_frame);
+			}
 			bm_unload(ga->eff.next_frame, 0, true);
 			if (ga->current_frame == ga->num_frames-1)
 			{

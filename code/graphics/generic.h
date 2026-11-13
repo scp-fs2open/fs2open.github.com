@@ -37,6 +37,7 @@ typedef struct generic_anim {
 		} ani;
 		struct {
 			int next_frame;
+			int bpp;		// depth of buffer and bitmap_id, so a restart can tell whether they still fit
 		} eff;
 		struct {
 			apng::apng_ani* anim;
