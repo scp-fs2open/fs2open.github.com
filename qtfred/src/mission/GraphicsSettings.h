@@ -41,6 +41,8 @@ struct GraphicsSettings {
 	bool enablePostProcessing = false;
 
 	ShadowQuality shadowQuality = ShadowQuality::Disabled;
+	//! Size each shadow's penumbra from the distance to its occluder. Same default as the game.
+	bool shadowContactHardening = true;
 	AntiAliasMode aaMode = AntiAliasMode::None;
 
 	float gamma = 3.0f;  //!< matches the brightness qtFRED has always launched with

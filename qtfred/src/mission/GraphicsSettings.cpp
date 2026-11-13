@@ -14,6 +14,7 @@ const char* SETTINGS_GROUP = "Preferences";
 
 const char* KEY_POST_PROCESSING = "view_enable_post_processing";
 const char* KEY_SHADOW_QUALITY = "view_graphics_shadow_quality";
+const char* KEY_SHADOW_CONTACT_HARDENING = "view_graphics_shadow_contact_hardening";
 const char* KEY_AA_MODE = "view_graphics_aa_mode";
 const char* KEY_TEXTURE_FILTER = "view_graphics_texture_filter";
 const char* KEY_ANISOTROPY = "view_graphics_anisotropy";
@@ -38,6 +39,7 @@ T readEnum(const QSettings& settings, const char* key, T fallback, T highest)
 bool GraphicsSettings::operator==(const GraphicsSettings& rhs) const
 {
 	return enablePostProcessing == rhs.enablePostProcessing && shadowQuality == rhs.shadowQuality &&
+	       shadowContactHardening == rhs.shadowContactHardening &&
 	       aaMode == rhs.aaMode && gamma == rhs.gamma &&
 	       textureFilter == rhs.textureFilter && anisotropy == rhs.anisotropy;
 }
@@ -51,6 +53,8 @@ GraphicsSettings GraphicsSettings::load()
 
 	out.enablePostProcessing = settings.value(KEY_POST_PROCESSING, out.enablePostProcessing).toBool();
 	out.shadowQuality = readEnum(settings, KEY_SHADOW_QUALITY, out.shadowQuality, ShadowQuality::Ultra);
+	out.shadowContactHardening =
+		settings.value(KEY_SHADOW_CONTACT_HARDENING, out.shadowContactHardening).toBool();
 	out.aaMode = readEnum(settings, KEY_AA_MODE, out.aaMode, AntiAliasMode::SMAA_Ultra);
 	out.gamma = settings.value(KEY_GAMMA, out.gamma).toFloat();
 
@@ -74,6 +78,7 @@ void GraphicsSettings::save() const
 
 	settings.setValue(KEY_POST_PROCESSING, enablePostProcessing);
 	settings.setValue(KEY_SHADOW_QUALITY, static_cast<int>(shadowQuality));
+	settings.setValue(KEY_SHADOW_CONTACT_HARDENING, shadowContactHardening);
 	settings.setValue(KEY_AA_MODE, static_cast<int>(aaMode));
 	settings.setValue(KEY_GAMMA, gamma);
 
@@ -92,6 +97,11 @@ void GraphicsSettings::save() const
 void GraphicsSettings::applyLive() const
 {
 	Gr_aa_mode = aaMode;
+
+	// qtFRED does not load the engine options, so nothing else writes this global. The shadow
+	// code reads it on each frame, thus the change applies immediately. If the GPU cannot do
+	// contact hardening, shadow_contact_hardening_enabled() ignores this value.
+	Shadow_contact_hardening_enabled = shadowContactHardening;
 	gr_set_gamma(gamma);
 }
 

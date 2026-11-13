@@ -173,6 +173,9 @@ void PreferencesDialog::initializeUi() {
 	util::SignalBlockers blockers(this);
 
 	populateFromEngineOption(ui->shadowQualityCombo, "Graphics.Shadows");
+
+	// Contact hardening needs a GPU feature. Without it, the setting has no effect.
+	ui->shadowContactHardening->setEnabled(shadow_contact_hardening_supported());
 	populateFromEngineOption(ui->aaModeCombo, "Graphics.AAMode");
 	populateFromEngineOption(ui->textureFilterCombo, "Graphics.TextureFilter");
 
@@ -225,6 +228,7 @@ void PreferencesDialog::updateUi() {
 
 	ui->enablePostProcessing->setChecked(graphics.enablePostProcessing);
 	ui->shadowQualityCombo->setCurrentIndex(static_cast<int>(graphics.shadowQuality));
+	ui->shadowContactHardening->setChecked(graphics.shadowContactHardening);
 	ui->aaModeCombo->setCurrentIndex(static_cast<int>(graphics.aaMode));
 	ui->gammaSpin->setValue(graphics.gamma);
 
@@ -338,6 +342,10 @@ void PreferencesDialog::on_enablePostProcessing_toggled(bool checked) {
 
 void PreferencesDialog::on_shadowQualityCombo_currentIndexChanged(int index) {
 	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowQuality = static_cast<ShadowQuality>(index); });
+}
+
+void PreferencesDialog::on_shadowContactHardening_toggled(bool checked) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowContactHardening = checked; });
 }
 
 void PreferencesDialog::on_aaModeCombo_currentIndexChanged(int index) {
