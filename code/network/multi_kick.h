@@ -24,6 +24,7 @@ struct net_player;
 #define KICK_REASON_BAD_XFER			1				// error xferring mission
 #define KICK_REASON_CANT_XFER			2				// can't xfer a builtin mission
 #define KICK_REASON_INGAME_ENDED		3				// kicked while ingame joining a mission about to end
+#define KICK_REASON_SEXP_MISMATCH		4				// different list of SEXP operators
 
 
 // ----------------------------------------------------------------------------------

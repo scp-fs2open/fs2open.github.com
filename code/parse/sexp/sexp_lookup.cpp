@@ -1,5 +1,6 @@
 
 #include "ai/ailua.h"
+#include "cfile/cfile.h"
 #include "mission/missionmessage.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "parse/parselo.h"
@@ -8,6 +9,7 @@
 #include "parse/sexp/LuaAISEXP.h"
 #include "scripting/scripting.h"
 
+#include <algorithm>
 #include <memory>
 
 namespace {
@@ -249,6 +251,61 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 
 	return free_op_index;
 }
+static uint add_int_to_fingerprint(uint fingerprint, int value)
+{
+	auto little_endian = INTEL_INT(value);
+	return cf_add_chksum_long(fingerprint, reinterpret_cast<ubyte*>(&little_endian), sizeof(little_endian));
+}
+
+uint builtin_operator_fingerprint()
+{
+	uint fingerprint = 0;
+	for (auto& op : Operators) {
+		if (get_dynamic_sexp(op.value) != nullptr) {
+			continue;
+		}
+		fingerprint = cf_add_chksum_long(fingerprint, reinterpret_cast<ubyte*>(op.text.data()), op.text.size());
+		fingerprint = add_int_to_fingerprint(fingerprint, op.value);
+	}
+	return fingerprint;
+}
+
+bool dynamic_sexps_must_match()
+{
+	return std::any_of(Operators.begin(), Operators.end(), [](const sexp_oper& op) {
+		auto dynamic_sexp = get_dynamic_sexp(op.value);
+		return (dynamic_sexp != nullptr) && (dynamic_sexp->runsOnClients() || ai_lua_has_mode(op.value));
+	});
+}
+
+uint dynamic_operator_fingerprint()
+{
+	// a varargs SEXP has no maximum, and its pattern repeats well within this many arguments
+	constexpr int MAX_FINGERPRINT_ARGUMENTS = 64;
+
+	uint fingerprint = 0;
+	for (auto& op : Operators) {
+		auto dynamic_sexp = get_dynamic_sexp(op.value);
+		if (dynamic_sexp == nullptr) {
+			continue;
+		}
+		fingerprint = cf_add_chksum_long(fingerprint, reinterpret_cast<ubyte*>(op.text.data()), op.text.size());
+		fingerprint = add_int_to_fingerprint(fingerprint, op.value);
+		fingerprint = add_int_to_fingerprint(fingerprint, dynamic_sexp->getMinimumArguments());
+		fingerprint = add_int_to_fingerprint(fingerprint, dynamic_sexp->getMaximumArguments());
+		fingerprint = add_int_to_fingerprint(fingerprint, dynamic_sexp->getReturnType());
+		fingerprint = add_int_to_fingerprint(fingerprint, dynamic_sexp->runsOnClients() ? 1 : 0);
+
+		const int typed_arguments = std::min(dynamic_sexp->getMaximumArguments(), MAX_FINGERPRINT_ARGUMENTS);
+		for (int argnum = 0; argnum < typed_arguments; ++argnum) {
+			fingerprint = add_int_to_fingerprint(fingerprint, dynamic_sexp->getArgumentType(argnum));
+		}
+		auto layout = dynamic_sexp->getArgumentLayout();
+		fingerprint = cf_add_chksum_long(fingerprint, reinterpret_cast<ubyte*>(layout.data()), layout.size());
+	}
+	return fingerprint;
+}
+
 DynamicSEXP* get_dynamic_sexp(int operator_const)
 {
 	auto& global = globals();
@@ -307,6 +364,12 @@ void dynamic_sexp_init()
 		global.subcategory_to_category.emplace(item.id, category);
 	}
 
+	// registration order differs between platforms and compilers, and multiplayer needs the same numbers everywhere
+	std::sort(global.pending_sexps.begin(),
+		global.pending_sexps.end(),
+		[](const std::unique_ptr<DynamicSEXP>& left, const std::unique_ptr<DynamicSEXP>& right) {
+			return left->getName() < right->getName();
+		});
 	// Add pending sexps now when it is safe to do so
 	for (auto&& pending : global.pending_sexps) {
 		add_dynamic_sexp(std::move(pending));

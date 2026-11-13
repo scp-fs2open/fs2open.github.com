@@ -31179,7 +31179,13 @@ void multi_sexp_eval()
 				break;
 
 			// bad sexp in the packet
-			default: 
+			default: {
+				// a Lua SEXP the server ran with "$Run On Multiplayer Clients" set
+				auto dynamic_sexp = (op_num >= First_available_operator_id) ? sexp::get_dynamic_sexp(op_num) : nullptr;
+				if ((dynamic_sexp != nullptr) && dynamic_sexp->executeMulti()) {
+					break;
+				}
+
 				// probably just a version error where the host supports a SEXP but a client does not
 				if (Current_sexp_network_packet.sexp_discard_operator()) {
 					Warning(LOCATION, "Received invalid SEXP operator number from host. Operator number %d is not supported by this version.", op_num); 
@@ -31189,6 +31195,7 @@ void multi_sexp_eval()
 					Warning(LOCATION, "Received invalid SEXP packet from host. Function involving operator %d lacks termination. Entire packet may be corrupt. Discarding remaining packet", op_num); 
 					return; 
 				}			
+			}
 		}
 
 		Current_sexp_network_packet.finished_callback();

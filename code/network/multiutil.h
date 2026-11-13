@@ -98,7 +98,12 @@ void multi_apply_ship_status(net_player *p,button_info *bi, int locally);
 
 void multiplayer_match_target_speed(net_player *p);
 
-void server_verify_filesig(short player_id, ushort sum_sig, int length_sig);
+void server_verify_filesig(short player_id,
+	ushort sum_sig,
+	int length_sig,
+	uint builtin_fingerprint,
+	uint dynamic_fingerprint,
+	bool client_dynamic_must_match);
 int server_all_filesigs_ok();
 
 void multi_untag_player_ships();

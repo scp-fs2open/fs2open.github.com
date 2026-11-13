@@ -50,6 +50,7 @@
 #include "menuui/optionsmenu.h"
 #include "mission/missionhotkey.h"
 #include "mission/missiongoals.h"
+#include "parse/sexp/sexp_lookup.h"
 #include "ship/afterburner.h"
 #include "missionui/chatbox.h"
 #include "osapi/osregistry.h"
@@ -1303,7 +1304,12 @@ int multi_is_builtin_mission()
 }
 
 // verify that the player has a valid mission file and do 1 of 3 things
-void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
+void server_verify_filesig(short player_id,
+	ushort sum_sig,
+	int length_sig,
+	uint builtin_fingerprint,
+	uint dynamic_fingerprint,
+	bool client_dynamic_must_match)
 {   	
 	net_player *pl;
    int player;
@@ -1316,6 +1322,16 @@ void server_verify_filesig(short player_id, ushort sum_sig, int length_sig)
 		return;
 	}
 	pl = &Net_players[player];
+
+	// SEXP packets name operators by number; dynamic SEXPs only matter in the cases dynamic_sexps_must_match names,
+	// on either side (a client's own Lua AI orders shift the order numbers it sends)
+	const bool builtin_differs = (builtin_fingerprint != sexp::builtin_operator_fingerprint());
+	const bool dynamic_differs = (client_dynamic_must_match || sexp::dynamic_sexps_must_match()) &&
+		(dynamic_fingerprint != sexp::dynamic_operator_fingerprint());
+	if (builtin_differs || dynamic_differs) {
+		multi_kick_player(player, 0, KICK_REASON_SEXP_MISMATCH);
+		return;
+	}
 
 	// if the current mission is a builtin mission, check stuff out
 	is_builtin = multi_is_builtin_mission();
