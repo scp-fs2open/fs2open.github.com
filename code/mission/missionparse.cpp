@@ -2266,6 +2266,8 @@ void position_ship_for_knossos_warpin(object *objp)
 		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
 		vm_vec_add2(&objp->pos, &offset);
 	}
+
+	dock_move_docked_objects_to(objp);
 }
 
 /**
@@ -7532,6 +7534,10 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		leader_objp = &Objects[Ships[wingp->ship_index[index]].objnum];
 		anchor_objnum = mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient);
 		if (anchor_objnum != -1) {
+			// the warp-in is sized based on the entire docked group, so they must all be in their proper positions
+			if (Game_mode & GM_IN_MISSION)
+				dock_move_docked_objects_to(leader_objp);
+
 			// modify the remaining ships created
 			index++;
 			wing_index = 1;
@@ -7544,6 +7550,8 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 				// Mike K wrote to give new positions to the wing members.
 				get_absolute_wing_pos( &objp->pos, leader_objp, WING_INDEX(wingp), wing_index++, false);
 				memcpy( &objp->orient, &orient, sizeof(matrix) );
+				if (Game_mode & GM_IN_MISSION)
+					dock_move_docked_objects_to(objp);
 
 				index++;
 			}

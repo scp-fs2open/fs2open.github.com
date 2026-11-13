@@ -127,6 +127,9 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 // moves all docked objects; called only from obj_move_all in object.cpp
 void dock_move_docked_objects(object *objp);
 
+// moves all objects docked to root_objp so they align with it, leaving root_objp in place
+void dock_move_docked_objects_to(object *root_objp);
+
 // add objp1 and objp2 to each others' dock lists; currently only called by ai_do_objects_docked_stuff
 void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoint2);
 
