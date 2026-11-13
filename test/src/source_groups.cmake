@@ -118,6 +118,7 @@ add_file_folder("Tracing"
 
 add_file_folder("Utils"
     utils/HeapAllocatorTest.cpp
+    utils/test_encoding.cpp
 )
 
 add_file_folder("Weapon"
