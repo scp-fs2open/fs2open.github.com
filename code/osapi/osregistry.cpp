@@ -1083,18 +1083,18 @@ void os_config_write_string(const char* section, const char* name, const char* v
 		return;
 	}
 #endif
-	Profile* profile = Osreg_profile;
+	Profile** profile = &Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_settings_profile;
+		profile = &Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
 	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	profile = profile_update(profile, section, name, value);
-	profile_save(profile, file);
+	*profile = profile_update(*profile, section, name, value);
+	profile_save(*profile, file);
 }
 
 void os_config_write_uint(const char* section, const char* name, unsigned int value, bool use_mod_file)
@@ -1107,10 +1107,10 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 		return;
 	}
 #endif
-	Profile* profile = Osreg_profile;
+	Profile** profile = &Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_settings_profile;
+		profile = &Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
@@ -1121,7 +1121,7 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 
 	snprintf(buf, 21, "%u", value);
 
-	profile = profile_update(profile, section, name, buf);
-	profile_save(profile, file);
+	*profile = profile_update(*profile, section, name, buf);
+	profile_save(*profile, file);
 }
 
