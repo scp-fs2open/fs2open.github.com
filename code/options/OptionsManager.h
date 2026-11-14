@@ -49,6 +49,14 @@ class OptionsManager {
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
+	/**
+	 * @brief Checks whether an option has an edit that no persist has written yet
+	 *
+	 * @param key The option's config key
+	 * @return true if setConfigValue() stored a value for this key that is still pending
+	 */
+	bool hasPendingEdit(const SCP_string& key) const;
+
 	void setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason);
 
 	// Overload that takes an already-built JSON value. Prefer this one: it lets a caller reuse the option's
@@ -105,6 +113,8 @@ class OptionsManager {
 
 	/**
 	 * @brief Removes a function added with addPostPersistHook()
+	 *
+	 * @note Must not be called from inside a hook while the hooks run; a hook cannot remove itself.
 	 *
 	 * @param id The id addPostPersistHook() returned
 	 */

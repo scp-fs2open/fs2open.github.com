@@ -91,6 +91,11 @@ void OptionsManager::setConfigValue(const SCP_string& key,std::unique_ptr<json_t
 	_changed_values[key] = std::move(value);
 }
 
+bool OptionsManager::hasPendingEdit(const SCP_string& key) const
+{
+	return _changed_values.count(key) > 0;
+}
+
 //Provides a method for overriding a built-in option setting
 //Generally used for commandline settings
 void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason)
