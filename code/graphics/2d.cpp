@@ -435,10 +435,15 @@ static void set_preferred_display(SDL_DisplayID display_id)
 	SDL_free(displays);
 }
 
-static SDL_DisplayID display_at_index(int index)
+static SDL_DisplayID videodisplay_deserializer(const json_t* value)
 {
 	SDL_DisplayID display_id = SDL_GetPrimaryDisplay();
-	int count = 0;
+	int index = 0, count = 0;
+
+	json_error_t err;
+	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
+		throw json_exception(err);
+	}
 
 	auto displays = SDL_GetDisplays(&count);
 
@@ -453,7 +458,7 @@ static SDL_DisplayID display_at_index(int index)
 	return display_id;
 }
 
-static int index_of_display(SDL_DisplayID id)
+static json_t* videodisplay_serializer(SDL_DisplayID id)
 {
 	int value = 0;
 
@@ -470,24 +475,7 @@ static int index_of_display(SDL_DisplayID id)
 		SDL_free(displays);
 	}
 
-	return value;
-}
-
-static SDL_DisplayID videodisplay_deserializer(const json_t* value)
-{
-	int index = 0;
-
-	json_error_t err;
-	if (json_unpack_ex((json_t*)value, &err, 0, "i", &index) != 0) {
-		throw json_exception(err);
-	}
-
-	return display_at_index(index);
-}
-
-static json_t* videodisplay_serializer(SDL_DisplayID id)
-{
-	return json_pack("i", index_of_display(id));
+	return json_pack("i", value);
 }
 
 static SCP_vector<SDL_DisplayID> videodisplay_enumerator()
@@ -573,8 +561,7 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 // The listeners run in no fixed order, so they only note a change and apply_window_placement() acts after the persist
 static bool Display_change_pending = false;
 static bool Mode_change_pending = false;
-// A position in SDL's display list, as the option stores it: ids change when a display is added again
-static int Chosen_display_index = 0;
+static SDL_DisplayID Chosen_display = 0;
 
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
@@ -582,7 +569,7 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 		return false;
 	}
 
-	Chosen_display_index = index_of_display(display);
+	Chosen_display = display;
 	set_preferred_display(display);
 	Display_change_pending = true;
 	return true;
@@ -650,8 +637,7 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 	auto window = os::getSDLMainWindow();
 	const auto state = Gr_configured_window_state;
 	// Fullscreen picked alone stays on the monitor the player moved the window to
-	const auto display = (display_changed || window == nullptr) ? display_at_index(Chosen_display_index)
-																: SDL_GetDisplayForWindow(window);
+	const auto display = (display_changed || window == nullptr) ? Chosen_display : SDL_GetDisplayForWindow(window);
 	bool settled = true;
 	if (viewport != nullptr && window != nullptr) {
 		if (state == os::ViewportState::Fullscreen) {
