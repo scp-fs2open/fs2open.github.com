@@ -448,7 +448,7 @@ static SDL_DisplayID videodisplay_deserializer(const json_t* value)
 	auto displays = SDL_GetDisplays(&count);
 
 	if (displays) {
-		if (index < count) {
+		if (index >= 0 && index < count) {
 			display_id = displays[index];
 		}
 
@@ -502,13 +502,15 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 }
 static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SDL_DisplayID display)
 {
-	const bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+	const bool fullscreen = viewport->getState() == os::ViewportState::Fullscreen;
 	const auto original = SDL_GetDisplayForWindow(window);
+	bool settled = true;
 	if (original == display) {
 		if (!fullscreen) {
 			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
 		}
-		return true;
+		return settled;
 	}
 
 	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
@@ -520,83 +522,52 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 		target.h != height) {
 		if (!fullscreen) {
 			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
 		}
-		return false;
+		return settled;
 	}
 
 	if (fullscreen) {
-		// KWin keeps a fullscreen window on its screen when asked to fullscreen it on another one
+		// KWin ignores a fullscreen move to another screen, and undoes one made too soon after leaving fullscreen
+		mprintf(("Leaving fullscreen to move the window to display %u\n", display));
 		if (!SDL_SetWindowFullscreen(window, false)) {
-			return false;
+			return settled;
 		}
-
-		// KWin puts the window back on its old screen when it is fullscreened again too soon; a sync that times out
-		// changes nothing here
-		SDL_SyncWindow(window);
+		settled = SDL_SyncWindow(window);
 		SDL_Delay(100);
 		SDL_PumpEvents();
 	}
 
 	// KWin on X11 fullscreens a window on the screen it is over; Wayland ignores this and uses the mode's display
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
-	SDL_SyncWindow(window);
+	settled = SDL_SyncWindow(window) && settled;
 
 	if (SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true)) {
 		const bool synced = SDL_SyncWindow(window);
-		if ((SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0) {
-			return synced && SDL_GetDisplayForWindow(window) == display;
+		// A request still pending after a timed-out sync is left to finish
+		if (!synced || viewport->getState() == os::ViewportState::Fullscreen) {
+			return synced && settled;
 		}
 	}
 
 	// Fullscreen on the starting display beats a window until the restart moves it
+	mprintf(("Could not go fullscreen on display %u; going back to display %u\n", display, original));
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(original), SDL_WINDOWPOS_CENTERED_DISPLAY(original));
-	SDL_SyncWindow(window);
+	settled = SDL_SyncWindow(window) && settled;
 	viewport->setState(os::ViewportState::Fullscreen);
-	return false;
+	return SDL_SyncWindow(window) && settled;
 }
 
+// The listeners run in no fixed order, so they only record the new values and apply_window_placement() acts after the
+// persist
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
 		return false;
 	}
 
-	auto viewport = os::getMainViewport();
-	auto window = os::getSDLMainWindow();
-	if (viewport == nullptr || window == nullptr) {
-		return false;
-	}
-
 	set_preferred_display(display);
-
-	// One Apply can also change the window mode, and the two listeners run in no fixed order, so take the new mode
-	// first; when the mode listener runs second it finds the window already in place
-	const auto state = WindowModeOption->getCommittedValue();
-	if (state == os::ViewportState::Fullscreen) {
-		return fullscreen_on_display(viewport, window, display);
-	}
-
-	const auto flags = SDL_GetWindowFlags(window);
-	auto current = os::ViewportState::Windowed;
-	if (flags & SDL_WINDOW_FULLSCREEN) {
-		current = os::ViewportState::Fullscreen;
-	} else if (flags & SDL_WINDOW_BORDERLESS) {
-		current = os::ViewportState::Borderless;
-	}
-	if (current != state) {
-		viewport->setState(state);
-		SDL_SyncWindow(window);
-	}
-
-	if (!SDL_SetWindowPosition(window,
-			SDL_WINDOWPOS_CENTERED_DISPLAY(display),
-			SDL_WINDOWPOS_CENTERED_DISPLAY(display))) {
-		return false;
-	}
-
-	// Wayland never lets a window place itself, so a windowed move there fails this check; a move SDL could not
-	// confirm in time is reported the same way
-	return SDL_SyncWindow(window) && SDL_GetDisplayForWindow(window) == display;
+	return true;
 }
 
 static SDL_DisplayID videodisplay_default()
@@ -643,22 +614,108 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 		return false;
 	}
 
-	auto window = os::getMainViewport();
-	auto sdl_window = os::getSDLMainWindow();
-	if (window == nullptr || sdl_window == nullptr) {
-		return false;
-	}
-
-	// Fullscreen belongs on the display the player chose, which a window may not have been able to reach
-	const auto display = VideoDisplayOption->getCommittedValue();
-	if (state == os::ViewportState::Fullscreen && SDL_GetDisplayForWindow(sdl_window) != display) {
-		return fullscreen_on_display(window, sdl_window, display);
-	}
-
-	window->setState(state);
-
 	return true;
 }
+
+static void save_fullscreen_display(SDL_DisplayID display)
+{
+	auto manager = options::OptionsManager::instance();
+	const auto& key = VideoDisplayOption->getConfigKey();
+	// 0 is SDL's unknown monitor, and a pending Display edit is the player's own choice still waiting to be persisted
+	if (display == 0 || manager->hasPendingEdit(key)) {
+		return;
+	}
+	const auto saved_display = VideoDisplayOption->getValue();
+	if (saved_display == display) {
+		return;
+	}
+
+	mprintf(("Fullscreen landed on display %u; saving it as the display option in place of display %u\n",
+		display,
+		saved_display));
+	manager->setConfigValue(key, std::unique_ptr<json_t>(videodisplay_serializer(display)));
+	if (!manager->persistOptionChanges(VideoDisplayOption.get())) {
+		mprintf(("Could not save display %u as the display option\n", display));
+	}
+}
+
+static SCP_vector<const options::OptionBase*> apply_window_placement(
+	const SCP_vector<const options::OptionBase*>& changed)
+{
+	const bool display_changed = std::find(changed.begin(), changed.end(), VideoDisplayOption.get()) != changed.end();
+	const bool mode_changed = std::find(changed.begin(), changed.end(), WindowModeOption.get()) != changed.end();
+	if (!display_changed && !mode_changed) {
+		return {};
+	}
+
+	auto viewport = os::getMainViewport();
+	auto window = os::getSDLMainWindow();
+	const auto state = Gr_configured_window_state;
+	SDL_DisplayID display = 0;
+	if (display_changed) {
+		display = VideoDisplayOption->getValue();
+	} else if (window != nullptr) {
+		// Fullscreen picked alone stays on the monitor the player moved the window to
+		display = SDL_GetDisplayForWindow(window);
+	}
+	bool settled = true;
+	if (viewport != nullptr && window != nullptr) {
+		if (state == os::ViewportState::Fullscreen) {
+			// A window may not have been able to reach the target display, so fullscreen can move it
+			settled = fullscreen_on_display(viewport, window, display);
+		} else {
+			if (viewport->getState() != state) {
+				viewport->setState(state);
+				settled = SDL_SyncWindow(window);
+			}
+			if (display_changed) {
+				SDL_SetWindowPosition(window,
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+				settled = SDL_SyncWindow(window) && settled;
+			}
+		}
+	}
+
+	// Each option is judged by where the window ended up
+	const auto not_applied = [&]() {
+		SCP_vector<const options::OptionBase*> unapplied;
+		const bool on_display = window != nullptr && SDL_GetDisplayForWindow(window) == display;
+		// A monitor with no mode of the window's size leaves fullscreen on the display of the last fullscreen mode
+		const bool fullscreen_elsewhere =
+			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
+		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
+		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
+		// The prompt names only options in this persist, so a mode the move broke counts against Display
+		if (display_changed && (!on_display || (wrong_mode && !mode_changed))) {
+			unapplied.push_back(VideoDisplayOption.get());
+		}
+		if (mode_changed && (viewport == nullptr || wrong_mode || fullscreen_elsewhere)) {
+			unapplied.push_back(WindowModeOption.get());
+		}
+		return unapplied;
+	};
+
+	// SDL gives up after 100 ms on X11, so a slow window manager gets up to half a second more
+	auto unapplied = not_applied();
+	for (int wait = 0; !settled && wait < 10 && !unapplied.empty(); ++wait) {
+		SDL_Delay(50);
+		SDL_PumpEvents();
+		unapplied = not_applied();
+	}
+	for (const auto* option : unapplied) {
+		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
+	}
+	// The saved Display follows where the game actually is, even over a Display choice waiting on a restart
+	if (!display_changed && unapplied.empty() && state == os::ViewportState::Fullscreen) {
+		save_fullscreen_display(display);
+	}
+	return unapplied;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionsManager::instance() is a Meyers singleton
+static const int Window_placement_hook __UNUSED =
+	options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
 
 struct ResolutionInfo {
 	uint32_t width  = 0;

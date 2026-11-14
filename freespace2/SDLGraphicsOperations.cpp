@@ -153,6 +153,16 @@ class SDLWindowViewPort: public os::Viewport {
 				break;
 		}
 	}
+	os::ViewportState getState() const override {
+		const auto flags = SDL_GetWindowFlags(_window);
+		if (flags & SDL_WINDOW_FULLSCREEN) {
+			return os::ViewportState::Fullscreen;
+		}
+		if (flags & SDL_WINDOW_BORDERLESS) {
+			return os::ViewportState::Borderless;
+		}
+		return os::ViewportState::Windowed;
+	}
 	void minimize() override {
 		// lets not minimize if we are in windowed mode
 		if (!(SDL_GetWindowFlags(_window) & SDL_WINDOW_FULLSCREEN)) {

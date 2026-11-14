@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -10,10 +11,7 @@ namespace options {
 // Forward declaration
 class OptionBase;
 
-enum class PendingEdits {
-	Include,
-	Ignore
-};
+using PostPersistHook = std::function<SCP_vector<const OptionBase*>(const SCP_vector<const OptionBase*>& changed)>;
 
 class OptionsManager {
 	OptionsManager();
@@ -37,15 +35,27 @@ class OptionsManager {
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
+	SCP_map<int, PostPersistHook> _post_persist_hooks;
+	int _next_post_persist_hook = 0;
+
+	SCP_vector<const OptionBase*> runPostPersistHooks(const SCP_vector<const OptionBase*>& changed) const;
+
   public:
 	static OptionsManager* instance();
 
 	~OptionsManager();
 
-	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key,
-		PendingEdits pending = PendingEdits::Include) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
+
+	/**
+	 * @brief Checks whether an option has an edit that no persist has written yet
+	 *
+	 * @param key The option's config key
+	 * @return true if setConfigValue() stored a value for this key that is still pending
+	 */
+	bool hasPendingEdit(const SCP_string& key) const;
 
 	void setOverride(const SCP_string& key, const SCP_string& json, const SCP_string& reason);
 
@@ -89,6 +99,26 @@ class OptionsManager {
 	 * @return A vector of options that did not support changing the value
 	 */
 	SCP_vector<const options::OptionBase*> persistChanges();
+
+	/**
+	 * @brief Adds a function that runs after every persist, once all changed options have been notified
+	 *
+	 * Lets several options that act on one thing apply together, whatever order their listeners ran in.
+	 *
+	 * @param hook Receives the options whose listener this persist notified, and returns the options whose new value
+	 * it could not apply; those are reported like options whose listener returned false
+	 * @return An id to pass to removePostPersistHook()
+	 */
+	int addPostPersistHook(PostPersistHook hook);
+
+	/**
+	 * @brief Removes a function added with addPostPersistHook()
+	 *
+	 * @note Must not be called from inside a hook while the hooks run; a hook cannot remove itself.
+	 *
+	 * @param id The id addPostPersistHook() returned
+	 */
+	void removePostPersistHook(int id);
 
 	void discardChanges();
 
