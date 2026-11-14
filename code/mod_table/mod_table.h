@@ -214,6 +214,7 @@ extern bool Render_insignias_as_decals;
 extern bool Link_special_point_subsystems_to_destroyed_submodels;
 extern bool Fix_density_moment_of_inertia;
 extern bool Fix_collision_moment_of_inertia;
+extern bool Negate_warpout_jostle;
 
 void mod_table_init();
 void mod_table_post_process();
