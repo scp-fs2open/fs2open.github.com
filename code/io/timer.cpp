@@ -39,6 +39,10 @@ static bool Timestamp_sudo_paused = false;
 
 static uint64_t Timestamp_microseconds_at_mission_start = 0;
 
+static bool Simulation_clock_enabled = false;
+static uint64_t Simulation_clock_microseconds = 0;
+static uint64_t Simulation_clock_fraction = 0;
+
 
 static uint64_t timestamp_get_raw(bool start_frame = false);
 
@@ -137,6 +141,26 @@ std::uint64_t timer_get_nanoseconds()
     return static_cast<uint64_t>(time * Timer_to_nanoseconds);
 }
 
+void timer_set_simulation_clock_enabled(bool enabled)
+{
+	Simulation_clock_enabled = enabled;
+	// Start well past zero, as a real session's clock is by the time a mission starts: TIMESTAMP values 0 and 1
+	// mean "never" and "immediate", and cooldowns measured from a zero-initialised time assume a running clock.
+	Simulation_clock_microseconds = 3600 * MICROSECONDS_PER_SECOND;
+	Simulation_clock_fraction = 0;
+}
+
+void timer_advance_simulation_clock(fix delta)
+{
+	if (!Simulation_clock_enabled || delta <= 0) {
+		return;
+	}
+
+	const auto fixed_microseconds = static_cast<uint64_t>(delta) * MICROSECONDS_PER_SECOND + Simulation_clock_fraction;
+	Simulation_clock_microseconds += fixed_microseconds / F1_0;
+	Simulation_clock_fraction = fixed_microseconds % F1_0;
+}
+
 static uint64_t timestamp_get_raw(bool start_frame)
 {
 	static uint64_t timestamp_raw = 0;
@@ -158,6 +182,10 @@ static uint64_t timestamp_get_raw(bool start_frame)
 
 static uint64_t timestamp_get_microseconds()
 {
+	if (Simulation_clock_enabled) {
+		return Simulation_clock_microseconds;
+	}
+
 	return Timestamp_time_compression_microseconds_offset + static_cast<uint64_t>(timestamp_get_raw() * Timer_to_microseconds * Timestamp_time_compression_multiplier);
 }
 
