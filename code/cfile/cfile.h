@@ -420,6 +420,10 @@ struct CFileLocationExt : public CFileLocation {
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
 CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype);
 
+// Strip a file extension the way cf_find_file_location_ext() does: after the last directory separator (either kind),
+// a dot starts an extension only when at least two characters follow it, so that "x_1.5" keeps its ".5".
+void cf_strip_extension(SCP_string& filename);
+
 // Functions to change directories
 int cfile_chdir(const char *dir);
 

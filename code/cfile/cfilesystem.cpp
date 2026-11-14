@@ -1436,6 +1436,19 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 // -- from parselo.cpp --
 extern char *stristr(char *str, const char *substr);
 
+// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
+//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
+void cf_strip_extension(SCP_string& filename)
+{
+	auto sep = filename.find_last_of("/\\");
+	auto name_start = (sep == SCP_string::npos) ? 0 : sep + 1;
+	auto dot = filename.rfind('.');
+
+	if ( (dot != SCP_string::npos) && (dot >= name_start) && ((filename.length() - dot) > 2) ) {
+		filename.erase(dot);
+	}
+}
+
 /**
  * Searches for a file.
  *
@@ -1493,14 +1506,7 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 		filespec.erase(0, seperator+1);
 	}
 
-	// strip any existing extension
-	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
-	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-	auto dot = filespec.rfind('.');
-
-	if ( (dot != SCP_string::npos) && ((filespec.length() - dot) > 2) ) {
-		filespec.erase(dot);
-	}
+	cf_strip_extension(filespec);
 
 	SCP_string filespec_ext;
 
