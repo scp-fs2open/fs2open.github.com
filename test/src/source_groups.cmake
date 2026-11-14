@@ -29,7 +29,6 @@ add_file_folder("Globalincs"
 
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
-	   graphics/test_lightshafts.cpp
 	   graphics/test_material.cpp
 	   graphics/test_shader_types.cpp
 )

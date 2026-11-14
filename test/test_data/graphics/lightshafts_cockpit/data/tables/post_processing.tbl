@@ -1,9 +1,0 @@
-#Light Shafts
-$AlwaysOn:		YES
-$Density:		0.5
-$Falloff:		0.9
-$Weight:		0.1
-$Intensity:		0.3
-$Sample Number:		4
-
-#End
