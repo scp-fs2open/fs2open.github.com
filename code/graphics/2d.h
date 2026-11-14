@@ -97,6 +97,12 @@ float gr_anisotropy_setting();
 
 int gr_texture_filter_setting();
 
+// A texture filter that a caller sets in memory only: 0 = bilinear, 1 = trilinear, -1 = no value.
+// gr_texture_filter_setting() reads it when the in-game options are off, the same as
+// gr_anisotropy_setting() reads Cmdline_aniso_level. qtFRED uses it, because qtFRED must not
+// write to the config that the game reads. With the in-game options on, use an option override.
+extern int Gr_texture_filter_override;
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
@@ -940,6 +946,12 @@ typedef struct screen {
 	std::function<void()> gf_scene_texture_end;
 	std::function<void()> gf_copy_effect_texture;
 
+	// Grow the offscreen render targets that back the scene/post-processing pipeline to cover the
+	// current gr_screen, if they don't already. Called from gr_screen_resize(). Optional: the
+	// Vulkan backend leaves this unset because VulkanRenderer::recreateSwapChain() already owns
+	// resizing its extent-sized targets.
+	std::function<void()> gf_resize_render_targets;
+
 	std::function<void(int zbias)> gf_zbias;
 
 	std::function<void(int)> gf_set_fill_mode;
@@ -1522,6 +1534,12 @@ inline bool gr_get_property(gr_property property, void* destination)
 {
 	return gr_screen.gf_get_property(property, destination);
 }
+
+// Anisotropic filtering levels the current hardware supports: 1.0 (off), then powers of two up to
+// the reported maximum. Empty if anisotropy is unavailable or the hardware caps out below 4x, in
+// which case there is nothing meaningful to offer. Backs both the in-game option's enumerator and
+// qtFRED's Preferences combo, so the two can't drift.
+SCP_vector<float> gr_get_supported_anisotropy_levels();
 
 inline void gr_push_debug_group(const char* name)
 {

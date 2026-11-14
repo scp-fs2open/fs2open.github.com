@@ -1084,7 +1084,7 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      })
                      .importance(77)
                      .finish();
-static SCP_vector<float> anisotropic_value_enumerator()
+SCP_vector<float> gr_get_supported_anisotropy_levels()
 {
 	float max;
 	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
@@ -1129,7 +1129,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
@@ -1150,6 +1150,8 @@ float gr_anisotropy_setting()
 
 // trilinear, which the launcher setting has always defaulted to
 static int Texture_filter = 1;
+
+int Gr_texture_filter_override = -1;
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
 																		                { 1, {"Trilinear", 1678}}};
@@ -1193,6 +1195,9 @@ int gr_texture_filter_setting()
 	if (Using_in_game_options) {
 		// read live: qtFRED sets an override and never loads initial values into the bound copy
 		return TextureFilteringOption->getValue();
+	}
+	if (Gr_texture_filter_override >= 0) {
+		return std::min(Gr_texture_filter_override, 1);
 	}
 	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
 }
@@ -2032,6 +2037,13 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	gr_setup_viewport();
+
+	// The offscreen targets that back the scene/post-processing pipeline were sized for the old
+	// gr_screen; give the backend a chance to grow them before anything renders at the new size.
+	// Backends that already handle this elsewhere (Vulkan, via recreateSwapChain()) leave it unset.
+	if (gr_screen.gf_resize_render_targets) {
+		gr_screen.gf_resize_render_targets();
+	}
 }
 
 void gr_window_to_render_pos(float& x, float& y)

@@ -8,8 +8,80 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/sexp_tree_view.h"
 
+#include <options/Option.h>
+#include <options/OptionsManager.h>
+
 namespace fso::fred::dialogs {
 namespace {
+
+// The engine already describes each of these settings once, with its own value list and display
+// names (Graphics.Shadows in shadows.cpp, Graphics.AAMode and Graphics.TextureFilter in 2d.cpp and
+// gropengltexture.cpp). Reading the labels back out of those definitions keeps this dialog from
+// carrying a second, silently-diverging copy of them.
+//
+// The values are enumerated in declaration order, which for these three is enum order, so a combo
+// index is the enum value. Returns empty if the option isn't registered, in which case the caller
+// leaves the combo alone rather than showing a half-populated list.
+const options::OptionBase* findEngineOption(const char* configKey)
+{
+	for (const auto& option : options::OptionsManager::instance()->getOptions()) {
+		if (option->getConfigKey() == configKey && option->getType() == options::OptionType::Selection) {
+			return option.get();
+		}
+	}
+
+	return nullptr;
+}
+
+SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
+{
+	const auto* option = findEngineOption(configKey);
+	return option ? option->getValidValues() : SCP_vector<options::ValueDescription>{};
+}
+
+// The combo index of the value that the engine uses now. This index agrees with the list that
+// engineOptionValues() gives. Returns the fallback if the option is not registered, or if its
+// value is not in the list.
+int engineOptionCurrentIndex(const char* configKey, int fallback)
+{
+	const auto* option = findEngineOption(configKey);
+	if (!option) {
+		return fallback;
+	}
+
+	const auto current = option->getCurrentValueDescription();
+	const auto values = option->getValidValues();
+	for (size_t i = 0; i < values.size(); ++i) {
+		if (values[i].serialized == current.serialized) {
+			return static_cast<int>(i);
+		}
+	}
+
+	return fallback;
+}
+
+void populateFromEngineOption(QComboBox* combo, const char* configKey)
+{
+	const auto values = engineOptionValues(configKey);
+
+	for (const auto& value : values) {
+		combo->addItem(QString::fromStdString(value.display));
+	}
+
+	// Nothing to choose from means the option isn't registered in this build (a renderer compiled
+	// out, say). Grey the control out rather than leaving an empty combo that looks broken.
+	combo->setEnabled(!values.empty());
+}
+
+// The model stores graphics settings as one struct, so an edit is read-modify-write. Doing it this
+// way keeps every control's slot to the one line that actually differs.
+template <typename F>
+void editGraphics(PreferencesDialogModel* model, F&& mutate)
+{
+	GraphicsSettings graphics = model->getGraphics();
+	mutate(graphics);
+	model->setGraphics(graphics);
+}
 
 int themeModeToIndex(ThemeMode mode)
 {
@@ -95,6 +167,28 @@ void PreferencesDialog::applyChanges() {
 }
 
 void PreferencesDialog::initializeUi() {
+	// setupUi() has already run connectSlotsByName(), so filling a combo here would fire its
+	// currentIndexChanged slot and mark the model modified before the user has touched anything.
+	// (Items declared in the .ui file were added before the connections existed and so were safe.)
+	util::SignalBlockers blockers(this);
+
+	populateFromEngineOption(ui->shadowQualityCombo, "Graphics.Shadows");
+
+	// Contact hardening needs a GPU feature. Without it, the setting has no effect.
+	ui->shadowContactHardening->setEnabled(shadow_contact_hardening_supported());
+	populateFromEngineOption(ui->aaModeCombo, "Graphics.AAMode");
+	populateFromEngineOption(ui->textureFilterCombo, "Graphics.TextureFilter");
+
+	// Anisotropy levels are hardware-dependent, so ask the engine for the same list its own
+	// options screen offers. Empty means the hardware can't do it; leave the combo disabled.
+	_anisotropyLevels = gr_get_supported_anisotropy_levels();
+	for (float level : _anisotropyLevels) {
+		// The levels are powers of two, so show them as integers. The 'g' format with precision 0
+		// shows 16 as "2e+01".
+		ui->anisotropyCombo->addItem(level <= 1.0f ? tr("Off") : tr("%1x").arg(static_cast<int>(level)));
+	}
+	ui->anisotropyCombo->setEnabled(!_anisotropyLevels.empty());
+
 	// Build the controls key-binding form dynamically from the registered bindings
 	auto* form = new QFormLayout(ui->controlsFormWidget);
 	auto& bindings = ControlBindings::instance();
@@ -128,6 +222,38 @@ void PreferencesDialog::updateUi() {
 	ui->toolbarIconSizeCombo->setCurrentIndex(iconSize <= 16 ? 0 : iconSize >= 32 ? 2 : 1);
 	ui->outlineLodCombo->setCurrentIndex(_model->getOutlineLod());
 	ui->labelFontScaleSpin->setValue(_model->getLabelFontScale());
+
+	// Graphics
+	const GraphicsSettings& graphics = _model->getGraphics();
+
+	ui->enablePostProcessing->setChecked(graphics.enablePostProcessing);
+	ui->shadowQualityCombo->setCurrentIndex(static_cast<int>(graphics.shadowQuality));
+	ui->shadowContactHardening->setChecked(graphics.shadowContactHardening);
+	ui->aaModeCombo->setCurrentIndex(static_cast<int>(graphics.aaMode));
+	ui->gammaSpin->setValue(graphics.gamma);
+
+	// The user can leave these two settings unset. Then the engine selects the value. Show the
+	// value that the engine uses, not a value that qtFRED guesses.
+	ui->textureFilterCombo->setCurrentIndex(graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE
+		? engineOptionCurrentIndex("Graphics.TextureFilter", 1)
+		: graphics.textureFilter);
+
+	if (!_anisotropyLevels.empty()) {
+		// The engine option gets its list from gr_get_supported_anisotropy_levels(), the same as
+		// _anisotropyLevels. Thus the indices agree.
+		const int lastIndex = static_cast<int>(_anisotropyLevels.size()) - 1;
+		int index = engineOptionCurrentIndex("Graphics.Anisotropy", lastIndex);
+		if (graphics.anisotropy != GraphicsSettings::NO_ANISOTROPY_CHOICE) {
+			for (size_t i = 0; i < _anisotropyLevels.size(); ++i) {
+				if (_anisotropyLevels[i] == graphics.anisotropy) {
+					index = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		ui->anisotropyCombo->setCurrentIndex(index);
+	}
+
 	ui->showSexpHelpMissionEvents->setChecked(_model->getShowSexpHelpMissionEvents());
 	ui->showSexpHelpMissionGoals->setChecked(_model->getShowSexpHelpMissionGoals());
 	ui->showSexpHelpMissionCutscenes->setChecked(_model->getShowSexpHelpMissionCutscenes());
@@ -208,6 +334,38 @@ void PreferencesDialog::on_labelFontScaleSpin_valueChanged(double value) {
 
 void PreferencesDialog::on_themeCombo_currentIndexChanged(int index) {
 	_model->setThemeMode(themeModeFromIndex(index));
+}
+
+void PreferencesDialog::on_enablePostProcessing_toggled(bool checked) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.enablePostProcessing = checked; });
+}
+
+void PreferencesDialog::on_shadowQualityCombo_currentIndexChanged(int index) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowQuality = static_cast<ShadowQuality>(index); });
+}
+
+void PreferencesDialog::on_shadowContactHardening_toggled(bool checked) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.shadowContactHardening = checked; });
+}
+
+void PreferencesDialog::on_aaModeCombo_currentIndexChanged(int index) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.aaMode = static_cast<AntiAliasMode>(index); });
+}
+
+void PreferencesDialog::on_textureFilterCombo_currentIndexChanged(int index) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.textureFilter = index; });
+}
+
+void PreferencesDialog::on_anisotropyCombo_currentIndexChanged(int index) {
+	if (index < 0 || static_cast<size_t>(index) >= _anisotropyLevels.size()) {
+		return;
+	}
+
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.anisotropy = _anisotropyLevels[index]; });
+}
+
+void PreferencesDialog::on_gammaSpin_valueChanged(double value) {
+	editGraphics(_model.get(), [=](GraphicsSettings& g) { g.gamma = static_cast<float>(value); });
 }
 
 void PreferencesDialog::on_dataMenuStyleCombo_currentIndexChanged(int index) {
