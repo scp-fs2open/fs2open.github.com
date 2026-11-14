@@ -787,9 +787,11 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			override_analog_throttle = 1;
 		}
 
+		bool has_min_speed = false;
 		// allow a minimum speed to be set for the player ship (only)
 		if ( Player_ship != nullptr && Player_ship->ship_info_index >= 0 ) {
 			float z_min = Ship_info[Player_ship->ship_info_index].min_vel.xyz.z;
+			has_min_speed = z_min > 0.0f;
 			if (z_min > 0.0f && pi->speed <= z_min) {
 				ci->forward = MAX(ci->forward, 0.0f);
 				ci->forward_cruise_percent = MAX(ci->forward_cruise_percent, z_min / Ship_info[Player_ship->ship_info_index].max_vel.xyz.z * 100.0f);
@@ -802,7 +804,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			ci->forward = 1.0f;
 		}
 
-		if ( reverse_time > 0.0f && afterburner_down ) {
+		// With a minimum speed this acts as afterburner alone; a reverse burn would flip every frame at the minimum
+		if ( reverse_time > 0.0f && afterburner_down && !has_min_speed ) {
 			// Full reverse with a reverse afterburner; other ships keep the old value that retail fuel-out cruise uses
 			ci->forward = (pi->afterburner_max_reverse_vel > 0.0f) ? -1.0f : -pi->max_rear_vel;
 		}
