@@ -771,11 +771,11 @@ void AudioStream::Fade_and_Destroy (void)
 	}
 }
 
-// Fade_and_Destroy
+// Fade_and_Stop
 void AudioStream::Fade_and_Stop (void)
 {
+	// leave m_bDestroy_when_faded alone; a pending Fade_and_Destroy must still free the stream
 	m_bFade = true;
-	m_bDestroy_when_faded = false;
 }
 
 // Restart a stream that a lost playback device stopped; playback resumes from the start of the queued buffers
