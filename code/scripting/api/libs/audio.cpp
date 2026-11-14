@@ -3,7 +3,9 @@
 
 #include "audio.h"
 
+#include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/systemvars.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
 #include "mission/missionmessage.h"
@@ -20,6 +22,33 @@ extern float Master_event_music_volume;
 
 namespace scripting {
 namespace api {
+
+// Signatures of streams opened by scripts during a mission (including its briefings and debriefing)
+static SCP_vector<int> Script_music_signatures;
+
+void script_music_track(int signature)
+{
+	// the debriefing comes after the level is closed, so its streams are swept at the next level close
+	if (Game_level_loaded || (gameseq_get_state() == GS_STATE_DEBRIEF))
+		Script_music_signatures.push_back(signature);
+}
+
+void script_music_close()
+{
+	// a stream that is still playing was presumably meant to continue, so check it again next time
+	auto it = std::remove_if(Script_music_signatures.begin(), Script_music_signatures.end(), [](int signature)
+	{
+		int handle = audiostream_get_by_signature(signature);
+		if (handle < 0)
+			return true;
+		if (audiostream_is_playing(handle))
+			return false;
+
+		audiostream_close_file(handle, false);
+		return true;
+	});
+	Script_music_signatures.erase(it, Script_music_signatures.end());
+}
 
 //**********LIBRARY: Audio
 ADE_LIB(l_Audio, "Audio", "ad", "Sound/Music Library");
@@ -269,7 +298,10 @@ ADE_FUNC(playMusic, l_Audio, "string Filename, [number volume = 1.0, boolean loo
 	volume = Master_event_music_volume;
 
 	audiostream_play(ah, volume, loop ? 1 : 0);
-	return ade_set_args(L, "i", audiostream_get_signature(ah));
+
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "i", signature);
 }
 
 ADE_FUNC(stopMusic,
@@ -374,7 +406,9 @@ ADE_FUNC(openAudioStream,
 	if (ah < 0)
 		return ade_set_args(L, "o", l_AudioStream.Set(-1));
 
-	return ade_set_args(L, "o", l_AudioStream.Set(audiostream_get_signature(ah)));
+	int signature = audiostream_get_signature(ah);
+	script_music_track(signature);
+	return ade_set_args(L, "o", l_AudioStream.Set(signature));
 }
 
 ADE_FUNC(pauseWeaponSounds,

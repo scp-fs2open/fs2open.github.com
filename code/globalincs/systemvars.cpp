@@ -21,6 +21,8 @@ int	Framecount=0;
 
 int Game_mode;
 
+bool Game_level_loaded = false;
+
 int Game_restoring = 0;		// If set, this means we are restoring data from disk
 
 int	Viewer_mode;		//	Viewer's mode, see VM_xxxx flags.
