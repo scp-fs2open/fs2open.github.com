@@ -81,7 +81,7 @@ class OptionBase {
 
 	flagset<OptionFlags> _flags;
 
-	std::optional<std::unique_ptr<json_t>> getConfigValue(PendingEdits pending = PendingEdits::Include) const;
+	std::optional<std::unique_ptr<json_t>> getConfigValue() const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
 
@@ -216,21 +216,6 @@ class Option : public OptionBase {
 		return el;
 	}
 
-	T readValue(PendingEdits pending) const
-	{
-		try {
-			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue(pending);
-			//missing keys are signalled via the optional
-			if (!config_value.has_value()) {
-				return _defaultValueFunc();
-			}
-			return _deserializer(config_value->get());
-		} catch (const std::exception&) {
-			// deserializers are allowed to throw on error
-			return _defaultValueFunc();
-		}
-	}
-
   public:
 	Option(const SCP_string& config_key, const SCP_string& title, const SCP_string& description)
 	    : OptionBase(config_key, title, description)
@@ -291,11 +276,17 @@ class Option : public OptionBase {
 	}
 	T getValue() const
 	{
-		return readValue(PendingEdits::Include);
-	}
-	T getCommittedValue() const
-	{
-		return readValue(PendingEdits::Ignore);
+		try {
+			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
+			//missing keys are signalled via the optional
+			if (!config_value.has_value()) {
+				return _defaultValueFunc();
+			}
+			return _deserializer(config_value->get());
+		} catch (const std::exception&) {
+			// deserializers are allowed to throw on error
+			return _defaultValueFunc();
+		}
 	}
 	ValueDescription getCurrentValueDescription() const override
 	{

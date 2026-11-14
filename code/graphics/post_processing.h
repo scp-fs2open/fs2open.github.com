@@ -34,6 +34,7 @@ struct post_effect_t {
 	float add{0.0f};
 
 	vec3d rgb = vmd_zero_vector;
+	vec3d default_rgb = vmd_zero_vector;
 
 	bool always_on{false};
 };
@@ -44,7 +45,7 @@ struct lightshaft_parameters {
 	float weight = 0.02f;
 	float falloff = 1.0f;
 	float intensity = 0.5f;
-	float cpintensity = 0.5f * 50 * 0.02f;
+	float cpweight = 50 * 0.02f; // weight as applied to cockpit models
 	int samplenum = 50;
 };
 
@@ -59,6 +60,7 @@ class PostProcessingManager {
 
 	const lightshaft_parameters& getLightshaftParams() const;
 	lightshaft_parameters& getLightshaftParams();
+	void resetLightshaftParams();
 
 	bool bloomShadersOk() const;
 	void setBloomShadersOk(bool ok);
@@ -67,10 +69,13 @@ class PostProcessingManager {
 	SCP_vector<post_effect_t> m_postEffects;
 
 	lightshaft_parameters m_lightshaftParams;
+	lightshaft_parameters m_defaultLightshaftParams;
 	bool m_bloomShadersOk = true;
 };
 
 } // namespace graphics
+
+extern bool Lightshafts_override;
 
 bool gr_lightshafts_enabled();
 bool gr_sunglare_enabled();

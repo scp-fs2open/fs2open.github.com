@@ -588,7 +588,7 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 	lsData.weight = ls_params.weight;
 	lsData.falloff = ls_params.falloff;
 	lsData.intensity = Sun_spot * ls_params.intensity;
-	lsData.cp_intensity = Sun_spot * ls_params.cpintensity;
+	lsData.cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 	lsData.pad[0] = 0.0f;
 
 	// Additive blend lightshafts onto Scene_ldr
