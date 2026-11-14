@@ -752,7 +752,7 @@ void hud_config_render_gauges(bool API_Access)
 		ship_info* sip = &Ship_info[HC_available_huds[HC_chosen_hud].first];
 		hud_name = HC_available_huds[HC_chosen_hud].second;
 
-		for (const std::unique_ptr<HudGauge>& gauge : sip->hud_gauges) {
+		for (const auto& gauge : sip->hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
 			if (gauge->getVisibleInConfig()) {
 				gauge->setFont();
@@ -765,7 +765,7 @@ void hud_config_render_gauges(bool API_Access)
 	} else {
 		hud_name = XSTR("Default HUD", 1876);
 
-		for (const std::unique_ptr<HudGauge>& gauge : default_hud_gauges) {
+		for (const auto& gauge : default_hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
 			if (gauge->getVisibleInConfig()) {
 				gauge->setFont();

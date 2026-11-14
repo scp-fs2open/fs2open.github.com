@@ -28,27 +28,11 @@ typedef struct mflash_blob_info {
 	float offset;
 	float radius;
 
-	mflash_blob_info( const mflash_blob_info& mbi )
-	{
-		strcpy_s( name, mbi.name );
-		offset = mbi.offset;
-		radius = mbi.radius;
-	}
-
 	mflash_blob_info() :
 		offset( 0.0 ),
 		radius( 0.0 )
 	{ 
 		name[ 0 ] = '\0';
-	}
-
-	mflash_blob_info& operator=( const mflash_blob_info& r )
-	{
-		strcpy_s( name, r.name );
-		offset = r.offset;
-		radius = r.radius;
-
-		return *this;
 	}
 } mflash_blob_info;
 
@@ -59,20 +43,6 @@ typedef struct mflash_info {
 	mflash_info()
 	{ 
 		name[ 0 ] = '\0';
-	}
-
-	mflash_info( const mflash_info& mi )
-	{
-		strcpy_s( name, mi.name );
-		blobs = mi.blobs;
-	}
-
-	mflash_info& operator=( const mflash_info& r )
-	{
-		strcpy_s( name, r.name );
-		blobs = r.blobs;
-
-		return *this;
 	}
 } mflash_info;
 

@@ -22,7 +22,7 @@ class ActionDefinition {
 
 	virtual flagset<ProgramContextFlags> getRequiredContext() const = 0;
 
-	virtual std::unique_ptr<Action> createAction(
+	virtual SCP_polymorphic<Action> createAction(
 		const SCP_unordered_map<SCP_string, expression::ActionExpression>& parameterExpressions) const = 0;
 
   private:

@@ -44,18 +44,12 @@ class ProgramInstance {
  * A program is a sequential collection of Actions which are executed in sequence.
  */
 class Program {
-	SCP_vector<std::unique_ptr<Action>> _actions;
+	SCP_vector<SCP_polymorphic<Action>> _actions;
 
   public:
 	Program();
 
-	Program(const Program& other);
-	Program& operator=(const Program& other);
-
-	Program(Program&& other) noexcept;
-	Program& operator=(Program&& other) noexcept;
-
-	const SCP_vector<std::unique_ptr<actions::Action>>& getActions() const;
+	const SCP_vector<SCP_polymorphic<actions::Action>>& getActions() const;
 
 	/**
 	 * @brief Creates a new program instance from this program

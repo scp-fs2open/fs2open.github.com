@@ -1421,8 +1421,28 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 	}
 }
 
+// A gauge being set up, accessed as type T.  The gauge itself always keeps its exact type, so it may be accessed as a
+// base class of it without copies made of it for ship classes being sliced.
 template<class T>
-std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated = NULL)
+struct new_gauge {
+	SCP_polymorphic<HudGauge> gauge;
+
+	explicit new_gauge(SCP_polymorphic<HudGauge>&& g) : gauge(std::move(g)) {}
+
+	template<class U, typename = std::enable_if_t<std::is_base_of<T, U>::value>>
+	new_gauge(new_gauge<U>&& other) : gauge(std::move(other.gauge)) {}
+
+	T* operator->() const { return static_cast<T*>(gauge.get()); }
+};
+
+template<class T, typename... Args>
+new_gauge<T> gauge_create(Args&&... args)
+{
+	return new_gauge<T>(SCP_polymorphic<HudGauge>::make<T>(std::forward<Args>(args)...));
+}
+
+template<class T, typename... Args>
+new_gauge<T> gauge_load_common(gauge_settings* settings, Args&&... args)
 {
 	int colors[3] = {255, 255, 255};
 	bool lock_color = false;
@@ -1568,12 +1588,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		stuff_boolean(&visible_in_config);
 	}
 
-	std::unique_ptr<T> instance(preAllocated);
-
-	if (instance == NULL)
-	{
-		instance.reset(new T());
-	}
+	auto instance = gauge_create<T>(std::forward<Args>(args)...);
 
 	instance->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	instance->initFont(settings->font_num);
@@ -1602,16 +1617,14 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 }
 
 template<typename T>
-void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hud_gauge) {
+void gauge_assign_common(const gauge_settings* settings, new_gauge<T>&& hud_gauge) {
+	auto& gauge = hud_gauge.gauge;
 	if(settings->ship_idx && !settings->ship_idx->empty() && settings->ship_idx->at(0) >= 0) {
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
-			std::unique_ptr<T> instance(new T());
-			*instance = *hud_gauge;
-			Ship_info[*ship_index].hud_gauges.push_back(std::move(instance));
+			Ship_info[*ship_index].hud_gauges.push_back(gauge);
 		}
-		// Previous instance goes out of scope here and is destructed
 	} else {
-		default_hud_gauges.push_back(std::move(hud_gauge));
+		default_hud_gauges.push_back(std::move(gauge));
 	}
 }
 
@@ -1784,7 +1797,7 @@ void load_gauge_custom(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGauge> hud_gauge(new HudGauge(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y));
+	auto hud_gauge = gauge_create<HudGauge>(gauge_type, settings->slew, settings->message_gauge, r, g, b, name, text, filename, txtoffset_x, txtoffset_y);
 
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
@@ -3037,13 +3050,13 @@ void load_gauge_radar_std(gauge_settings* settings)
 	// Cyborg17 - not using auto here is a huge pain to get exactly right and to read. If we put this in a
 	// normal if block, either auto will break or hud_gauge will go out of scope before the last block below.
 	// The ternery operator lets us circumvent this problem by allowing us to use auto, while also loading
-	// the radar, creating the unique_ptr, and staying in scope.
+	// the radar, creating the gauge, and staying in scope.
 
 	// did we have a normal radar? If so, load the regular radar.
 	auto hud_gauge = (num_sides == 0)
 	                     ? gauge_load_common<HudGaugeRadarStd>(settings)
-	                     // if not *construct* and then load the ngon radar
-	                     : gauge_load_common<HudGaugeRadarNgon>(settings, new HudGaugeRadarNgon(num_sides, offset));
+	                     // if not load the ngon radar
+	                     : gauge_load_common<HudGaugeRadarNgon>(settings, num_sides, offset);
 
 	if(optional_string("Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
@@ -3356,7 +3369,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 		}
 	}
 
-	std::unique_ptr<HudGaugeRadarDradis> hud_gauge(new HudGaugeRadarDradis());
+	auto hud_gauge = gauge_create<HudGaugeRadarDradis>();
 	hud_gauge->initBaseResolution(settings->base_res[0], settings->base_res[1], settings->aspect_quotient);
 	hud_gauge->initPosition(settings->coords[0], settings->coords[1]);
 	hud_gauge->initFont(settings->font_num);

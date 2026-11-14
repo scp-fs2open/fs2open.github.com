@@ -59,7 +59,7 @@
 #include "weapon/weapon.h"
 
 // This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
-SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
+SCP_vector<SCP_polymorphic<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	

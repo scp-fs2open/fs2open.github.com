@@ -13,7 +13,7 @@ class ActionDefinitionManager {
 	ActionDefinitionManager(ActionDefinitionManager&&) noexcept = default;
 	ActionDefinitionManager& operator=(ActionDefinitionManager&&) noexcept = default;
 
-	std::unique_ptr<Action> parseAction(const flagset<ProgramContextFlags>& context_flags,
+	SCP_polymorphic<Action> parseAction(const flagset<ProgramContextFlags>& context_flags,
 		const expression::ParseContext& context) const;
 
 	static const ActionDefinitionManager& instance();

@@ -2859,24 +2859,6 @@ bool CCB::has_second_conflict(const CCB& A) const {
 	return !second.empty() && (second.conflicts_with(A.first) || second.conflicts_with(A.second));
 }
 
-CCI& CCI::operator=(const CCI& A) {
-	first = A.first;
-	second = A.second;
-	tab = A.tab;
-	indexXSTR = A.indexXSTR;
-	text = A.text;
-	type = A.type;
-	analog_value = A.analog_value;
-	digital_used = A.digital_used;
-	disabled = A.disabled;
-	locked = A.locked;
-	scriptEnabledByDefault = A.scriptEnabledByDefault;
-	continuous_ongoing = A.continuous_ongoing;
-	conflict_groups = A.conflict_groups;
-
-	return *this;
-};
-
 CCI& CCI::operator=(const CCB& A) {
 	first = A.first;
 	second = A.second;

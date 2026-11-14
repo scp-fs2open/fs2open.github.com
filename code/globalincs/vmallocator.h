@@ -278,6 +278,56 @@ public:
 };
 template<typename T> SCP_unordered_set(std::initializer_list<T>) -> SCP_unordered_set<T>;
 
+//This mirrors C++26 std::polymorphic, except that it can be empty and keeps the unique_ptr-style get() and * operator bool.
+template <typename T>
+class SCP_polymorphic
+{
+	using copy_func = T* (*)(const T&);
+
+	std::unique_ptr<T> m_ptr;
+	copy_func m_copy = nullptr;
+
+	template <typename U>
+	static T* copy_as(const T& source)
+	{
+		return new U(static_cast<const U&>(source));
+	}
+
+	SCP_polymorphic(T* ptr, copy_func copy) : m_ptr(ptr), m_copy(copy) {}
+
+  public:
+	template <typename U, typename... Args>
+	static SCP_polymorphic make(Args&&... args)
+	{
+		static_assert(std::is_base_of<T, U>::value, "SCP_polymorphic can only own objects derived from its type!");
+		return SCP_polymorphic(new U(std::forward<Args>(args)...), &copy_as<U>);
+	}
+
+	SCP_polymorphic() = default;
+
+	SCP_polymorphic(const SCP_polymorphic& other)
+		: m_ptr(other.m_ptr ? other.m_copy(*other.m_ptr) : nullptr), m_copy(other.m_copy)
+	{
+	}
+	SCP_polymorphic& operator=(const SCP_polymorphic& other)
+	{
+		if (this != &other) {
+			*this = SCP_polymorphic(other);
+		}
+		return *this;
+	}
+
+	SCP_polymorphic(SCP_polymorphic&&) noexcept = default;
+	SCP_polymorphic& operator=(SCP_polymorphic&&) noexcept = default;
+
+	T* get() const { return m_ptr.get(); }
+	T* operator->() const { return m_ptr.get(); }
+	T& operator*() const { return *m_ptr; }
+	explicit operator bool() const { return static_cast<bool>(m_ptr); }
+
+	void reset() { m_ptr.reset(); }
+};
+
 template <typename T, typename... Args>
 typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
 	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());

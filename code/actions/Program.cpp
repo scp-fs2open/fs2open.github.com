@@ -82,7 +82,7 @@ const ProgramLocals& ProgramInstance::locals() const
 	return _locals;
 }
 
-const SCP_vector<std::unique_ptr<actions::Action>>& Program::getActions() const
+const SCP_vector<SCP_polymorphic<actions::Action>>& Program::getActions() const
 {
 	return _actions;
 }
@@ -106,22 +106,6 @@ void Program::parseActions(const flagset<ProgramContextFlags>& context_flags, co
 		_actions.push_back(std::move(action));
 	}
 }
-
-Program::Program(const Program& other) { *this = other; }
-Program& Program::operator=(const Program& other)
-{
-	_actions.clear();
-	_actions.reserve(other._actions.size());
-
-	for (auto& action : other._actions) {
-		_actions.emplace_back(action->clone());
-	}
-
-	return *this;
-}
-
-Program& Program::operator=(Program&&) noexcept = default;
-Program::Program(Program&&) noexcept = default;
 
 bool ProgramSet::isEmpty() const
 {

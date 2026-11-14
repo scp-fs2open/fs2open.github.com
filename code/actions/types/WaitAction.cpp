@@ -39,10 +39,5 @@ ActionResult WaitAction::execute(actions::ProgramLocals& locals) const
 	locals.waitTimestamp = TIMESTAMP::invalid();
 	return ActionResult::Finished;
 }
-std::unique_ptr<Action> WaitAction::clone() const
-{
-	return std::make_unique<WaitAction>(*this);
-}
-
 } // namespace types
 } // namespace actions

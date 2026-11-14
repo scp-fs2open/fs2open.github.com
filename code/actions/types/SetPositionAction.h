@@ -18,8 +18,6 @@ class SetPositionAction : public Action {
 
 	ActionResult execute(ProgramLocals& locals) const override;
 
-	std::unique_ptr<Action> clone() const override;
-
   private:
 	expression::TypedActionExpression<vec3d> m_newPosExpression;
 };
