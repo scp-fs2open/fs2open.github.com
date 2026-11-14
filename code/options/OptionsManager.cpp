@@ -223,7 +223,7 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 	_changed_values.erase(iter);
 
 	// This call can only report on its own option, so anything else the hooks could not apply only reaches the log
-	for (const auto* unapplied : runPostPersistHooks()) {
+	for (const auto* unapplied : runPostPersistHooks({option})) {
 		if (unapplied == option) {
 			changed = false;
 		} else {
@@ -251,11 +251,13 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 	}
 	SCP_vector<const options::OptionBase*> unchanged;
+	SCP_vector<const options::OptionBase*> notified;
 
 	// Only notify options once all values have been written to config
 	for (auto& entry : _changed_values) {
 		auto iter = _optionsMapping.find(entry.first);
 		if (iter != _optionsMapping.end()) {
+			notified.push_back(iter->second);
 			if (!iter->second->valueChanged(entry.second.get())) {
 				unchanged.push_back(iter->second);
 			}
@@ -263,13 +265,13 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 	}
 	_changed_values.clear();
 
-	const auto unapplied = runPostPersistHooks();
+	const auto unapplied = runPostPersistHooks(notified);
 	unchanged.insert(unchanged.end(), unapplied.begin(), unapplied.end());
 
 	return unchanged;
 }
 
-int OptionsManager::addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook)
+int OptionsManager::addPostPersistHook(PostPersistHook hook)
 {
 	const int id = _next_post_persist_hook++;
 	_post_persist_hooks.emplace(id, std::move(hook));
@@ -281,11 +283,12 @@ void OptionsManager::removePostPersistHook(int id)
 	_post_persist_hooks.erase(id);
 }
 
-SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks() const
+SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks(
+	const SCP_vector<const options::OptionBase*>& changed) const
 {
 	SCP_vector<const options::OptionBase*> unapplied;
 	for (const auto& hook : _post_persist_hooks) {
-		auto result = hook.second();
+		auto result = hook.second(changed);
 		unapplied.insert(unapplied.end(), result.begin(), result.end());
 	}
 	return unapplied;

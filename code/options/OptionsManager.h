@@ -11,6 +11,8 @@ namespace options {
 // Forward declaration
 class OptionBase;
 
+using PostPersistHook = std::function<SCP_vector<const OptionBase*>(const SCP_vector<const OptionBase*>& changed)>;
+
 class OptionsManager {
 	OptionsManager();
 
@@ -33,10 +35,10 @@ class OptionsManager {
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
-	SCP_map<int, std::function<SCP_vector<const OptionBase*>()>> _post_persist_hooks;
+	SCP_map<int, PostPersistHook> _post_persist_hooks;
 	int _next_post_persist_hook = 0;
 
-	SCP_vector<const OptionBase*> runPostPersistHooks() const;
+	SCP_vector<const OptionBase*> runPostPersistHooks(const SCP_vector<const OptionBase*>& changed) const;
 
   public:
 	static OptionsManager* instance();
@@ -95,11 +97,11 @@ class OptionsManager {
 	 *
 	 * Lets several options that act on one thing apply together, whatever order their listeners ran in.
 	 *
-	 * @param hook Returns the options whose new value it could not apply; they are reported like options whose
-	 * listener returned false
+	 * @param hook Receives the options whose listener this persist notified, and returns the options whose new value
+	 * it could not apply; those are reported like options whose listener returned false
 	 * @return An id to pass to removePostPersistHook()
 	 */
-	int addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook);
+	int addPostPersistHook(PostPersistHook hook);
 
 	/**
 	 * @brief Removes a function added with addPostPersistHook()

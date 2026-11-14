@@ -124,7 +124,10 @@ TEST_F(OptionsManagerOverride, PostPersistHookReportsWhatItCouldNotApply)
 	ASSERT_NE(opt, nullptr);
 
 	const OptionBase* unapplied_by_hook = opt;
-	const int hook = mgr->addPostPersistHook([&unapplied_by_hook]() {
+	int calls = 0;
+	const int hook = mgr->addPostPersistHook([&](const SCP_vector<const OptionBase*>& changed) {
+		++calls;
+		EXPECT_TRUE(changed.empty());
 		SCP_vector<const OptionBase*> unapplied;
 		if (unapplied_by_hook != nullptr) {
 			unapplied.push_back(unapplied_by_hook);
@@ -140,6 +143,7 @@ TEST_F(OptionsManagerOverride, PostPersistHookReportsWhatItCouldNotApply)
 
 	unapplied_by_hook = nullptr;
 	EXPECT_TRUE(mgr->persistChanges().empty());
+	EXPECT_EQ(calls, 2);
 }
 
 TEST_F(OptionsManagerOverride, RemovedPostPersistHookNoLongerRuns)
@@ -148,7 +152,8 @@ TEST_F(OptionsManagerOverride, RemovedPostPersistHookNoLongerRuns)
 	auto* opt = mgr->getOptionByKey("Graphics.VSync");
 	ASSERT_NE(opt, nullptr);
 
-	const int hook = mgr->addPostPersistHook([opt]() { return SCP_vector<const OptionBase*>{opt}; });
+	const int hook = mgr->addPostPersistHook(
+		[opt](const SCP_vector<const OptionBase*>&) { return SCP_vector<const OptionBase*>{opt}; });
 	mgr->removePostPersistHook(hook);
 
 	mgr->discardChanges();
@@ -313,6 +318,55 @@ TEST_F(OptionsManagerOverrideLocalized, MsaaOverrideAcceptsEverySampleCountTheFl
 			values.end())
 			<< "MSAA sample count " << samples << " is accepted by -msaa but is not a valid option value.";
 	}
+}
+
+// Persisting writes the settings file, so this needs FSTestFixture's portable profile
+// (test_data/data/options_settings.ini, ignored by git); the value written is the same on every run.
+class OptionsManagerPersistHook : public test::FSTestFixture {
+  public:
+	OptionsManagerPersistHook() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
+
+  protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+		_option =
+			OptionBuilder<int>("Test.Hook.Changed", SCP_string("Test.Hook.Changed"), SCP_string("Test.Hook.Changed"))
+				.default_val(0)
+				.change_listener([](const int&, bool) { return true; })
+				.finish();
+	}
+	void TearDown() override
+	{
+		OptionsManager::instance()->discardChanges();
+		OptionsManager::instance()->removeOption(_option);
+
+		test::FSTestFixture::TearDown();
+	}
+
+	std::shared_ptr<const Option<int>> _option;
+};
+
+TEST_F(OptionsManagerPersistHook, HookReceivesTheOptionsThisPersistNotified)
+{
+	auto* mgr = OptionsManager::instance();
+	SCP_vector<const OptionBase*> received;
+	const int hook = mgr->addPostPersistHook([&received](const SCP_vector<const OptionBase*>& changed) {
+		received = changed;
+		return SCP_vector<const OptionBase*>();
+	});
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
+
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistChanges().empty());
+	ASSERT_EQ(received.size(), 1u);
+	EXPECT_EQ(received[0], _option.get());
+
+	received.clear();
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistOptionChanges(_option.get()));
+	ASSERT_EQ(received.size(), 1u);
+	EXPECT_EQ(received[0], _option.get());
 }
 
 // Graphics.RenderAPI only exists in builds compiled with Vulkan support (code/graphics/2d.cpp gates the whole

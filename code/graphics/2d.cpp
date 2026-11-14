@@ -558,9 +558,8 @@ static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SD
 	return SDL_SyncWindow(window) && settled;
 }
 
-// The listeners run in no fixed order, so they only note a change and apply_window_placement() acts after the persist
-static bool Display_change_pending = false;
-static bool Mode_change_pending = false;
+// The listeners run in no fixed order, so they only record the new values and apply_window_placement() acts after the
+// persist
 static SDL_DisplayID Chosen_display = 0;
 
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
@@ -571,7 +570,6 @@ static bool videodisplay_change(SDL_DisplayID display, bool initial)
 
 	Chosen_display = display;
 	set_preferred_display(display);
-	Display_change_pending = true;
 	return true;
 }
 
@@ -619,19 +617,17 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 		return false;
 	}
 
-	Mode_change_pending = true;
 	return true;
 }
 
-static SCP_vector<const options::OptionBase*> apply_window_placement()
+static SCP_vector<const options::OptionBase*> apply_window_placement(
+	const SCP_vector<const options::OptionBase*>& changed)
 {
-	if (!Display_change_pending && !Mode_change_pending) {
+	const bool display_changed = std::find(changed.begin(), changed.end(), VideoDisplayOption.get()) != changed.end();
+	const bool mode_changed = std::find(changed.begin(), changed.end(), WindowModeOption.get()) != changed.end();
+	if (!display_changed && !mode_changed) {
 		return {};
 	}
-	const bool display_changed = Display_change_pending;
-	const bool mode_changed = Mode_change_pending;
-	Display_change_pending = false;
-	Mode_change_pending = false;
 
 	auto viewport = os::getMainViewport();
 	auto window = os::getSDLMainWindow();
@@ -666,7 +662,7 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
 		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
 		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
-		// The prompt names only options the player changed, so a mode the move broke counts against Display
+		// The prompt names only options in this persist, so a mode the move broke counts against Display
 		if (display_changed && (!on_display || (wrong_mode && !mode_changed))) {
 			unapplied.push_back(VideoDisplayOption.get());
 		}
@@ -690,7 +686,7 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionsManager::instance() is a Meyers singleton
-static const int Window_placement_hook =
+static const int Window_placement_hook __UNUSED =
 	options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
 
 struct ResolutionInfo {
