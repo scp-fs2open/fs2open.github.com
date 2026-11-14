@@ -49,6 +49,7 @@ class LabUi {
 	static void build_rt_shadow_bias_sliders();
 	static void build_shadow_penumbra_sliders();
 	static void build_rtao_sliders();
+	void build_ssao_controls();
 	void build_tone_mapper_combobox();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
@@ -110,6 +111,7 @@ class LabUi {
 	bool animate_subsystems = false;
 	bool hide_post_processing = false;
 	bool no_particles = false;
+	bool show_ssao_buffer = false;
 	bool diffuse_map = true;
 	bool glow_map = true;
 	bool spec_map = true;

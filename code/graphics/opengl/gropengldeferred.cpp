@@ -799,6 +799,16 @@ void gr_opengl_deferred_lighting_finish()
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 	}
 
+	if (gtao && Gtao_show_buffer) {
+		// Lab debug view: the blurred AO buffer (in the red channel) in place of the lit scene
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY, 0));
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Gtao_textures[0]);
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+	}
+
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 

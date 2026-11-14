@@ -676,6 +676,19 @@ void LabUi::build_rtao_sliders()
 	}
 }
 
+// Screen-space AO (GTAO) is the OpenGL counterpart of RTAO. These change the session
+// values only; lab_close() restores them.
+void LabUi::build_ssao_controls()
+{
+	if (!gtao_supported(gr_screen.mode)) {
+		return;
+	}
+
+	SliderInt("Screen-Space AO Quality", &Gtao_quality, 0, 3);
+	SliderFloat("Screen-Space AO Radius", &Gtao_radius_scale, 0.25f, 3.0f);
+	SliderFloat("Screen-Space AO Intensity", &Gtao_intensity, 0.5f, 4.0f);
+	Checkbox("Show screen-space AO buffer", &show_ssao_buffer);
+}
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -784,6 +797,8 @@ void LabUi::show_render_options()
 			build_shadow_penumbra_sliders();
 
 			build_rtao_sliders();
+
+			build_ssao_controls();
 
 			build_tone_mapper_combobox();
 
@@ -894,6 +909,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowSsaoBuffer, show_ssao_buffer);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::UseOrthographicProjection, use_orthographic_projection);
 		getLabManager()->Renderer->setShowOrientationWidget(show_orientation_widget);
 		LabRenderer::setEmissiveFactor(emissive_factor);

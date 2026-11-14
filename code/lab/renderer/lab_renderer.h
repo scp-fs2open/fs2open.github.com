@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
+#include "graphics/gtao.h"
 #include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "lighting/lighting_profiles.h"
@@ -40,6 +41,7 @@ FLAG_LIST(LabRenderFlag) {
 	TimeStopped,
 	NoParticles,
 	UseOrthographicProjection,
+	ShowSsaoBuffer,
 
 	NUM_VALUES
 };
