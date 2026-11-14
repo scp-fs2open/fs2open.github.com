@@ -671,10 +671,15 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
+	// Read once per frame: a read clears the press count, so a second read on the release frame returns false
+	const bool bank_when_pressed = check_control(BANK_WHEN_PRESSED) != 0;
+	const float reverse_time = check_control_timef(REVERSE_THRUST);
+	const bool afterburner_down = check_control(AFTERBURNER) != 0;
+
 	// Ship controls
 	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
-		if ( check_control(BANK_WHEN_PRESSED) ) {
+		if ( bank_when_pressed ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
 			ci->heading = 0.0f;
 		} else {
@@ -713,7 +718,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	if (!(Game_mode & GM_DEAD)) {
 		// Thrust controls
-		ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
+		ci->forward = check_control_timef(FORWARD_THRUST) - reverse_time;
 		ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST)); // for slideing-Bobboau
 		ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST)); // for slideing-Bobboau
 
@@ -782,10 +787,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			override_analog_throttle = 1;
 		}
 
+		bool has_min_speed = false;
 		// allow a minimum speed to be set for the player ship (only)
 		if ( Player_ship != nullptr && Player_ship->ship_info_index >= 0 ) {
 			float z_min = Ship_info[Player_ship->ship_info_index].min_vel.xyz.z;
-			if (z_min > 0.0f && pi->speed <= z_min) {
+			has_min_speed = z_min > 0.0f;
+			if (has_min_speed && pi->speed <= z_min) {
 				ci->forward = MAX(ci->forward, 0.0f);
 				ci->forward_cruise_percent = MAX(ci->forward_cruise_percent, z_min / Ship_info[Player_ship->ship_info_index].max_vel.xyz.z * 100.0f);
 				override_analog_throttle = 1;
@@ -793,12 +800,14 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// AL 12-29-97: If afterburner key is down, player should have full forward thrust (even if afterburners run out)
-		if ( check_control(AFTERBURNER) ) {
+		if ( afterburner_down ) {
 			ci->forward = 1.0f;
 		}
 
-		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
-			ci->forward = -pi->max_rear_vel * 1.0f;
+		// Reverse ignored with a minimum speed: thrust would swing between reverse and forward each frame at that speed
+		if ( reverse_time > 0.0f && afterburner_down && !has_min_speed ) {
+			// 0 for ships that can't reverse keeps throttle cruise after fuel runs out, as retail ship data expects
+			ci->forward = (pi->afterburner_max_reverse_vel > 0.0f || pi->max_rear_vel > 0.0f) ? -1.0f : 0.0f;
 		}
 
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
@@ -852,7 +861,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (Viewer_mode & VM_CAMERA_LOCKED) {
 			// Player has control of the ship
 			// Set heading
-			if ( check_control(BANK_WHEN_PRESSED) ) {
+			if ( bank_when_pressed ) {
 				delta = f2fl( axis[Action::HEADING] );
 				if ( (delta > 0.05f) || (delta < -0.05f) ) {
 					ci->bank -= delta;
@@ -925,7 +934,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// see if the afterburner has been started (keyboard + joystick)
-		if (check_control(AFTERBURNER) && !Player_use_ai) {
+		if (afterburner_down && !Player_use_ai) {
 			if (!afterburner_last) {
 				Assert(Player_ship);
 				if ( !(Ship_info[Player_ship->ship_info_index].flags[Ship::Info_Flags::Afterburner]) ) {
