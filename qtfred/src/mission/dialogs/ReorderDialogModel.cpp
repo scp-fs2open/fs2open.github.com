@@ -85,7 +85,7 @@ SCP_vector<SCP_string> ReorderDialogModel::getItemNames(Type type)
 	return names;
 }
 
-void ReorderDialogModel::moveItem(Type type, int from_pos, int to_pos)
+void ReorderDialogModel::applyMove(EditorViewport* viewport, Type type, int from_pos, int to_pos)
 {
 	if (from_pos == to_pos)
 		return;
@@ -95,19 +95,21 @@ void ReorderDialogModel::moveItem(Type type, int from_pos, int to_pos)
 	if (from_pos < 0 || from_pos >= count || to_pos < 0 || to_pos >= count)
 		return;
 
+	Editor* editor = viewport->editor;
+
 	switch (type) {
 	case Type::Ships: {
 		FredShipSlotConfig cfg;
 		cfg.fred_alt_names = Fred_alt_names;
 		cfg.fred_callsigns = Fred_callsigns;
-		cfg.cur_ship = &_editor->cur_ship;
+		cfg.cur_ship = &editor->cur_ship;
 		rotate_ship_slots(slotList, from_pos, to_pos, cfg);
 		break;
 	}
 	case Type::Wings: {
 		FredWingSlotConfig cfg;
-		cfg.wing_objects = _editor->wing_objects;
-		cfg.cur_wing = &_editor->cur_wing;
+		cfg.wing_objects = editor->wing_objects;
+		cfg.cur_wing = &editor->cur_wing;
 		rotate_wing_slots(slotList, from_pos, to_pos, cfg);
 		break;
 	}
@@ -121,6 +123,11 @@ void ReorderDialogModel::moveItem(Type type, int from_pos, int to_pos)
 		rotate_jump_nodes(slotList, from_pos, to_pos);
 		break;
 	}
+}
+
+void ReorderDialogModel::moveItem(Type type, int from_pos, int to_pos)
+{
+	applyMove(_viewport, type, from_pos, to_pos);
 
 	set_modified();
 	_editor->missionChanged();

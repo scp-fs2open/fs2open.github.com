@@ -742,6 +742,7 @@ void BriefingMapWidget::mousePressEvent(QMouseEvent* event) {
 	_dragStartIconPos = stage.icons[pickedIndex].pos;
 	brief_move_icon_reset();
 	Q_EMIT iconSelected(pickedIndex, shiftHeld);
+	Q_EMIT iconDragStarted(pickedIndex);
 }
 
 void BriefingMapWidget::mouseMoveEvent(QMouseEvent* event) {
@@ -787,8 +788,13 @@ void BriefingMapWidget::mouseReleaseEvent(QMouseEvent* event) {
 	if (!_initialized || event->button() != Qt::LeftButton)
 		return;
 
+	const bool wasDragging = _draggingIcon;
+	const int draggedIndex = _dragIconIndex;
 	_draggingIcon = false;
 	_dragIconIndex = -1;
+
+	if (wasDragging && draggedIndex >= 0)
+		Q_EMIT iconDragFinished(draggedIndex);
 }
 
 } // namespace fso::fred

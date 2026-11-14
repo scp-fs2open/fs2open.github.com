@@ -1,22 +1,68 @@
 #include "ui/dialogs/WaypointPathGeneratorDialog.h"
+#include "mission/commands/FredCommands.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_WaypointPathGeneratorDialog.h"
 
+#include <object/waypoint.h>
+
+#include <QCloseEvent>
 #include <QDialogButtonBox>
+#include <QFocusEvent>
 #include <QPushButton>
 
 namespace fso::fred::dialogs {
 
 WaypointPathGeneratorDialog::WaypointPathGeneratorDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), _viewport(viewport), ui(new Ui::WaypointPathGeneratorDialog()),
+	: QDialog(parent), _viewport(viewport), _fredView(parent), ui(new Ui::WaypointPathGeneratorDialog()),
 	  _model(new WaypointPathGeneratorDialogModel(this, viewport))
 {
 	this->setFocus();
 	ui->setupUi(this);
 
+	_dialogStack = new QUndoStack(this);
+	_fredView->undoGroup()->addStack(_dialogStack);
+
 	initializeUi();
 
 	resize(QDialog::sizeHint());
+}
+
+void WaypointPathGeneratorDialog::accept()
+{
+	// Not called directly — on_buttonBox_accepted handles the full undo wiring.
+	// This override exists so closeEvent can funnel through reject() cleanly.
+	_dialogStack->clear();
+	_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::accept();
+}
+
+void WaypointPathGeneratorDialog::reject()
+{
+	if (_model) {
+		_model->reject();
+	}
+	_dialogStack->clear();
+	_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::reject();
+}
+
+void WaypointPathGeneratorDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	// reject() hides the dialog, so let the close proceed (a dialog created with
+	// WA_DeleteOnClose is destroyed and can be reopened). Ignoring it left a
+	// hidden dialog that showSingleInstanceDialog would not show again.
+	if (isVisible()) {
+		e->ignore();
+	} else {
+		e->accept();
+	}
+}
+
+void WaypointPathGeneratorDialog::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_dialogStack);
+	QDialog::focusInEvent(e);
 }
 
 WaypointPathGeneratorDialog::~WaypointPathGeneratorDialog() = default;
@@ -191,13 +237,28 @@ void WaypointPathGeneratorDialog::on_varianceZSpinBox_valueChanged(double value)
 void WaypointPathGeneratorDialog::on_buttonBox_accepted()
 {
 	if (_model->apply()) {
-		accept();
+		// Collect exact positions and signatures from the just-created path (always appended last).
+		SCP_string pathName = _model->getPathName();
+		SCP_vector<vec3d> positions;
+		SCP_vector<int> signatures;
+		if (!Waypoint_lists.empty()) {
+			for (const auto& wp : Waypoint_lists.back().get_waypoints()) {
+				positions.push_back(*wp.get_pos());
+				signatures.push_back(Objects[wp.get_objnum()].signature);
+			}
+		}
+		_fredView->mainUndoStack()->push(
+			new GenerateWaypointPathCommand(pathName, std::move(positions), std::move(signatures),
+			                               _viewport->editor,
+			                               tr("Generate Waypoint Path")));
+		_dialogStack->clear();
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+		QDialog::accept();
 	}
 }
 
 void WaypointPathGeneratorDialog::on_buttonBox_rejected()
 {
-	_model->reject();
 	reject();
 }
 

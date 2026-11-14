@@ -24,6 +24,11 @@ public:
 	ReorderDialog(FredView* parent, EditorViewport* viewport);
 	~ReorderDialog() override;
 
+protected:
+	// Moves push to the main stack, so focusing this window makes that the undo
+	// group's active stack (drives the main window's Edit menu and scope indicator).
+	void changeEvent(QEvent* e) override;
+
 private: // NOLINT(readability-redundant-access-specifiers)
 	struct Tab {
 		ReorderDialogModel::Type type;
@@ -39,6 +44,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	static void updateButtons(const Tab& tab);
 	void move(const Tab& tab, bool up, bool all_the_way);
 
+	FredView*       _fredView = nullptr;
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::ReorderDialog> ui;
 	std::unique_ptr<ReorderDialogModel> _model;

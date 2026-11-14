@@ -31,6 +31,12 @@ public:
 	// or either position is out of range.
 	void moveItem(Type type, int from_pos, int to_pos);
 
+	// The reorder itself, without the modified/changed bookkeeping.  Shared with
+	// ReorderCommand so undo/redo can replay a move without standing up a model.
+	// rotate_*_slots() preserves the set of occupied slots, so applyMove(to, from)
+	// is an exact inverse of applyMove(from, to).
+	static void applyMove(EditorViewport* viewport, Type type, int from_pos, int to_pos);
+
 private: // NOLINT(readability-redundant-access-specifiers)
 	// The occupied storage indices for the given type, in display order.  For
 	// ships/wings/props/jump nodes these are the live Ships[]/Wings[]/Props[]/

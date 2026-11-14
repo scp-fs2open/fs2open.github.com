@@ -732,6 +732,76 @@ void BriefingEditorDialogModel::setDisableGrid(bool disabled)
 	modify(b.stages[_currentStage].draw_grid, !disabled);
 }
 
+bool BriefingEditorDialogModel::stageExistsAt(int team, int stage) const
+{
+	return team >= 0 && team < MAX_TVT_TEAMS && stage >= 0 && stage < _wipBriefings[team].num_stages;
+}
+
+void BriefingEditorDialogModel::setStageTextAt(int team, int stage, const SCP_string& text)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	modify(_wipBriefings[team].stages[stage].text, text);
+}
+
+void BriefingEditorDialogModel::setSpeechFilenameAt(int team, int stage, const SCP_string& speechFilename)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	strcpy_s(_wipBriefings[team].stages[stage].voice, speechFilename.c_str());
+	set_modified();
+}
+
+void BriefingEditorDialogModel::setCameraTransitionTimeAt(int team, int stage, int ms)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	modify(_wipBriefings[team].stages[stage].camera_time, ms);
+}
+
+void BriefingEditorDialogModel::setCutToNextAt(int team, int stage, bool enabled)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	auto& s = _wipBriefings[team].stages[stage];
+	int flags = s.flags;
+	if (enabled)
+		flags |= BS_FORWARD_CUT;
+	else
+		flags &= ~BS_FORWARD_CUT;
+	modify(s.flags, flags);
+}
+
+void BriefingEditorDialogModel::setCutFromPrevAt(int team, int stage, bool enabled)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	auto& s = _wipBriefings[team].stages[stage];
+	int flags = s.flags;
+	if (enabled)
+		flags |= BS_BACKWARD_CUT;
+	else
+		flags &= ~BS_BACKWARD_CUT;
+	modify(s.flags, flags);
+}
+
+void BriefingEditorDialogModel::setDisableGridAt(int team, int stage, bool disabled)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	modify(_wipBriefings[team].stages[stage].draw_grid, !disabled);
+}
+
+void BriefingEditorDialogModel::setStageCameraAt(int team, int stage, const vec3d& pos, const matrix& orient)
+{
+	if (!stageExistsAt(team, stage))
+		return;
+	auto& s = _wipBriefings[team].stages[stage];
+	s.camera_pos = pos;
+	s.camera_orient = orient;
+	set_modified();
+}
+
 int BriefingEditorDialogModel::getCurrentIconIndex() const
 {
 	return _currentIcon; // -1 means no icon selected
@@ -1127,8 +1197,9 @@ bool BriefingEditorDialogModel::getChangeLocally() const
 
 void BriefingEditorDialogModel::setChangeLocally(bool enabled)
 {
-	// Editor-only; do not mark modified
-	modify(_changeLocally, enabled);
+	// Editor-only view option; assign directly so toggling it alone doesn't
+	// mark the model modified and trigger the "keep changes?" prompt.
+	_changeLocally = enabled;
 }
 
 TriStateBool BriefingEditorDialogModel::getSelectedIconFlagState(int flag) const

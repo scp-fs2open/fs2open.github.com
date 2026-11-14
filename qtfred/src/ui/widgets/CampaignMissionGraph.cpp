@@ -148,6 +148,9 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 
 void MissionNodeItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
+	// A new gesture; clear anything left from being moved as part of a
+	// multi-select drag, where this node got no release event.
+	m_dragEmitStarted = false;
 	if (m_badgeRect.contains(e->pos())) {
 		if (m_specCount == 0) {
 			if (m_style.forksEnabled) {
@@ -162,6 +165,10 @@ void MissionNodeItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 
 void MissionNodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 {
+	if (m_dragEmitStarted) {
+		m_dragEmitStarted = false;
+		Q_EMIT nodeDragFinished(m_idx);
+	}
 	if (e->button() == Qt::LeftButton) {
 		Q_EMIT missionSelected(m_idx);
 	}
@@ -178,6 +185,14 @@ QVariant MissionNodeItem::itemChange(GraphicsItemChange change, const QVariant& 
 		return snapped;
 	}
 	if (change == ItemPositionHasChanged) {
+		// A user drag: announce it before the position reaches the model (via
+		// nodeMoved), so listeners can capture the pre-drag state. Listeners keep
+		// only the first one per node and gesture. Moves with no button held are
+		// the graph being built or refreshed (setPos), which are not drags.
+		if (QApplication::mouseButtons() & Qt::LeftButton) {
+			m_dragEmitStarted = true;
+			Q_EMIT nodeDragStarted(m_idx);
+		}
 		// Emit scenespace topleft for persistence
 		Q_EMIT nodeMoved(m_idx, mapToScene(QPointF(0, 0)));
 	}
@@ -774,6 +789,8 @@ void CampaignMissionGraph::buildMissionNodes()
 			this,
 			&CampaignMissionGraph::specialModeToggleRequested);
 		connect(item, &MissionNodeItem::nodeMoved, this, &CampaignMissionGraph::onNodeMoved);
+		connect(item, &MissionNodeItem::nodeDragStarted, this, &CampaignMissionGraph::nodeDragStarted);
+		connect(item, &MissionNodeItem::nodeDragFinished, this, &CampaignMissionGraph::nodeDragFinished);
 		connect(item, &detail::MissionNodeItem::missionSelected, this, [this](int idx) {
 			setSelectedMission(idx, /*makeVisible=*/true, /*centerOnItem=*/false);
 		});
@@ -990,7 +1007,10 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 	if (!m_drag.isSpecial && m_endSink) {
 		const QPointF anchor = m_endSink->inboundAnchorScenePos();
 		if (QLineF(scenePt, anchor).length() <= hitR) {
-			m_model->addEndBranch(m_drag.fromIndex);
+			// The dialog performs the model change (wrapped for undo); the
+			// signal is delivered synchronously, so the edge rebuild after
+			// this return sees the new branch.
+			Q_EMIT endBranchConnectRequested(m_drag.fromIndex);
 			return true;
 		}
 	}
@@ -1000,11 +1020,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 		const QPointF anchor = dst->inboundPortScenePos();
 		if (QLineF(scenePt, anchor).length() <= hitR) {
 			const int toIdx = dst->missionIndex();
-			if (m_drag.isSpecial) {
-				m_model->addSpecialBranch(m_drag.fromIndex, toIdx);
-			} else {
-				m_model->addBranch(m_drag.fromIndex, toIdx);
-			}
+			Q_EMIT branchConnectRequested(m_drag.fromIndex, toIdx, m_drag.isSpecial);
 			return true;
 		}
 	}

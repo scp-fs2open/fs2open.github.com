@@ -37,6 +37,34 @@ add_file_folder("Source/Mission"
     src/mission/util.h
 )
 
+add_file_folder("Source/Mission/Commands"
+    src/mission/commands/CameraTransformCommand.cpp
+    src/mission/commands/CameraTransformCommand.h
+    src/mission/commands/FredCommands.cpp
+    src/mission/commands/FredCommands.h
+    src/mission/commands/ObjectCapture.cpp
+    src/mission/commands/ObjectCapture.h
+)
+
+add_file_folder("Source/Mission/Dialogs/State"
+    src/mission/dialogs/state/DialogStateHelpers.h
+    src/mission/dialogs/state/AsteroidEditorState.cpp
+    src/mission/dialogs/state/BriefingEditorState.cpp
+    src/mission/dialogs/state/CampaignEditorState.cpp
+    src/mission/dialogs/state/CommandBriefingState.cpp
+    src/mission/dialogs/state/DebriefingState.cpp
+    src/mission/dialogs/state/FictionViewerState.cpp
+    src/mission/dialogs/state/MissionCutscenesState.cpp
+    src/mission/dialogs/state/MissionEventsDialogState.cpp
+    src/mission/dialogs/state/MissionGoalsState.cpp
+    src/mission/dialogs/state/MissionSpecState.cpp
+    src/mission/dialogs/state/ObjectOrientEditorState.cpp
+    src/mission/dialogs/state/ReinforcementsEditorDialogState.cpp
+    src/mission/dialogs/state/TeamLoadoutDialogState.cpp
+    src/mission/dialogs/state/VariableDialogState.cpp
+    src/mission/dialogs/state/VolumetricNebulaState.cpp
+)
+
 add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.cpp
     src/mission/dialogs/AbstractDialogModel.h
@@ -296,6 +324,8 @@ add_file_folder("Source/UI/Panels"
 add_file_folder("Source/UI/Util"
 	src/ui/util/default_dir.cpp
 	src/ui/util/default_dir.h
+	src/ui/util/DialogUndo.cpp
+	src/ui/util/DialogUndo.h
 	src/ui/util/ErrorChecker.cpp
 	src/ui/util/ErrorChecker.h
 	src/ui/util/ImageRenderer.cpp

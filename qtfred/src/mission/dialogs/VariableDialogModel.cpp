@@ -87,11 +87,13 @@ bool VariableDialogModel::apply()
 	SCP_vector<sexp_container> new_containers;
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamed_containers;
 
+	m_applied_container_renames.clear();
 	for (const auto& cont_info : m_containers) {
 		new_containers.push_back(createSexpContainerFromInfo(cont_info));
 
 		if (!cont_info.originalName.empty() && cont_info.name != cont_info.originalName) {
 			renamed_containers[cont_info.originalName] = cont_info.name;
+			m_applied_container_renames.emplace_back(cont_info.originalName, cont_info.name);
 		}
 	}
 
@@ -570,6 +572,14 @@ void VariableDialogModel::setVariablePersistenceType(int index, int type)
 	modify(m_variables[index].flags, flags);
 }
 
+void VariableDialogModel::setVariableFlagsAt(int index, int flags)
+{
+	if (!SCP_vector_inbounds(m_variables, index)) {
+		return;
+	}
+	modify(m_variables[index].flags, flags);
+}
+
 void VariableDialogModel::addNewContainer()
 {
 	ContainerInfo new_cont;
@@ -866,6 +876,14 @@ void VariableDialogModel::setContainerPersistenceType(int index, int type)
 		// If persistence is set to "None", the "Eternal" flag must also be cleared.
 		flags &= ~SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
 		break;
+	}
+	modify(m_containers[index].flags, flags);
+}
+
+void VariableDialogModel::setContainerFlagsAt(int index, int flags)
+{
+	if (!SCP_vector_inbounds(m_containers, index)) {
+		return;
 	}
 	modify(m_containers[index].flags, flags);
 }

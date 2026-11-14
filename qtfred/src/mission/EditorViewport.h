@@ -147,10 +147,6 @@ class EditorViewport {
 	bool moveObjectToLayer(int objectIndex, const SCP_string& layerName, SCP_string* errorMessage = nullptr);
 	void moveMarkedObjectsToLayer(const SCP_string& layerName, SCP_string* errorMessage = nullptr);
 
-	// Sync the _objectLayers map for a freshly-created object by reading its
-	// per-object fred_layer string (or the parent waypoint list's, for waypoints).
-	// Call this after creating a new ship/prop/jump-node/waypoint outside of
-	// the normal mission-load path (e.g. when duplicating objects).
 	void registerObjectInLayer(int objectIndex);
 
 	bool isObjectVisibleInLayer(const object* objp) const;
@@ -225,6 +221,9 @@ class EditorViewport {
 	bool Offer_autosave_recovery   = true;
 	int  autosave_interval_seconds = 300;  // 5 minutes; 0 = disabled
 	bool Create_bak_on_save        = true;
+	// QUndoStack limit; 0 = unlimited, but we default to 200 until memory impact
+	// of large object/dialog commands on big missions has been measured.
+	int  undo_stack_depth          = 200;
 	bool Move_ships_when_undocking = true;
 	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;
@@ -253,6 +252,22 @@ class EditorViewport {
 	IDialogProvider* dialogProvider = nullptr;
 
 private:
+	// Flying an object with the camera controls (the current object, or the one being viewed
+	// through) is one undo step per flight: where the objects were when it started, recorded once
+	// the controls have been still for a moment
+	struct ObjectFlyStart {
+		int    signature;
+		vec3d  pos;
+		matrix orient;
+	};
+	bool _objFlying = false;
+	SCP_vector<ObjectFlyStart> _objFlyStart;
+	int _objFlyLastMove = 0; // timer_get_milliseconds()
+	// flown: the object the controls move, with where it was before this frame's move; input:
+	// whether a fly control was held this frame
+	void noteObjectFly(const object* flown, const vec3d& oldPos, const matrix& oldOrient, bool input);
+	void commitObjectFly();
+
 	fix _lasttime = 0;
 	vec3d Last_control_pos = vmd_zero_vector;
 	matrix Last_control_orient = vmd_identity_matrix;

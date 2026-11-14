@@ -16,6 +16,7 @@ public:
 	bool hasMultipleSelection() const;
 	static bool hasAnyPathsInMission();
 	int getSelectionCount() const;
+	const SCP_vector<int>& getSelectedPathIndices() const;
 
 	const SCP_string& getCurrentName() const;
 	bool setCurrentName(const SCP_string& name);

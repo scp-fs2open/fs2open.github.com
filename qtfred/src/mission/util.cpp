@@ -7,9 +7,11 @@
 #include <ship/ship.h>
 #include <weapon/weapon.h>
 
+#include <QDialog>
+
 #include "util.h"
 
-bool rejectOrCloseHandler(__UNUSED QDialog* dialog,
+bool rejectOrCloseHandler(QDialog* dialog,
 	fso::fred::dialogs::AbstractDialogModel* model,
 	fso::fred::EditorViewport* viewport)
 {
@@ -24,7 +26,13 @@ bool rejectOrCloseHandler(__UNUSED QDialog* dialog,
 		}
 
 		if (button == fso::fred::DialogButton::Yes) {
-			return model->apply(); // only close if apply was successful
+			// Route through the dialog's accept() rather than calling
+			// model->apply() directly — the accept flow is what pushes the
+			// apply-undo command and cleans up the dialog's undo stack.
+			// accept() closes the dialog on success and keeps it open on
+			// failure, so the caller must not close it again.
+			dialog->accept();
+			return false;
 		}
 		if (button == fso::fred::DialogButton::No) {
 			model->reject();

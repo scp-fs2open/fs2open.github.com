@@ -1,5 +1,7 @@
+#include "mission/commands/FredCommands.h"
 #include "ui/dialogs/ReorderDialog.h"
 #include "ui/Theme.h"
+#include "ui/util/DialogUndo.h"
 #include "ui_ReorderDialog.h"
 
 #include <QListWidget>
@@ -12,11 +14,13 @@ namespace fso::fred::dialogs {
 
 ReorderDialog::ReorderDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
+	_fredView(parent),
 	_viewport(viewport),
 	ui(new Ui::ReorderDialog()),
 	_model(new ReorderDialogModel(this, viewport))
 {
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	using Type = ReorderDialogModel::Type;
 	_tabs = {
@@ -30,9 +34,25 @@ ReorderDialog::ReorderDialog(FredView* parent, EditorViewport* viewport) :
 	for (const auto& tab : _tabs) {
 		setupTab(tab);
 	}
+
+	// Undo/redo reorders the mission behind our back, so rebuild from the model
+	// whenever the mission changes rather than only after our own move buttons.
+	connect(_viewport->editor, &Editor::missionChanged, this, [this] {
+		for (const auto& tab : _tabs) {
+			rebuildList(tab);
+			updateButtons(tab);
+		}
+	});
 }
 
 ReorderDialog::~ReorderDialog() = default;
+
+void ReorderDialog::changeEvent(QEvent* e)
+{
+	if (e->type() == QEvent::ActivationChange && isActiveWindow())
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::changeEvent(e);
+}
 
 void ReorderDialog::setupTab(const Tab& tab)
 {
@@ -102,6 +122,10 @@ void ReorderDialog::move(const Tab& tab, bool up, bool all_the_way)
 		return;
 
 	_model->moveItem(tab.type, from, to);
+
+	// The move is already applied, so the command's first redo() is a no-op.
+	_fredView->mainUndoStack()->push(
+		new ReorderCommand(static_cast<int>(tab.type), from, to, _viewport));
 
 	rebuildList(tab);
 	tab.list->setCurrentRow(to);

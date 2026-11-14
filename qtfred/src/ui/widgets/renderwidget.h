@@ -11,6 +11,7 @@
 namespace fso::fred {
 
 class Editor;
+class FredView;
 class RenderWidget;
 
 class RenderWindow: public QWindow {
@@ -52,6 +53,7 @@ class RenderWidget: public QWidget {
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
+	FredView* _fredView = nullptr;
 
 	CursorMode _cursorMode = CursorMode::Selecting;
 
@@ -69,6 +71,12 @@ class RenderWidget: public QWidget {
 
 	void handleOrbitDrag(QPoint point, Qt::KeyboardModifiers modifiers);
 
+	// Ctrl+drag clone tracking — set on press, consumed on release.
+	bool            _wasDupDrag              = false;
+	bool            _wasInsertDrag           = false;
+	int             _preCloneCurrentObj      = -1;
+	SCP_vector<int> _preCloneSourceSignatures;
+
  public:
 	explicit RenderWidget(QWidget* parent);
 
@@ -84,6 +92,7 @@ class RenderWidget: public QWidget {
 	void keyPressEvent(QKeyEvent*) override;
 	void keyReleaseEvent(QKeyEvent*) override;
 	bool event(QEvent* evt) override;
+	void focusInEvent(QFocusEvent* event) override;
 
 	void mouseDoubleClickEvent(QMouseEvent* event) override;
 	void mouseMoveEvent(QMouseEvent* event) override;

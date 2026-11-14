@@ -5,23 +5,53 @@
 #include <QInputDialog>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QUndoStack>
+
+#include "mission/commands/FredCommands.h"
+#include "ui/util/DialogUndo.h"
 
 namespace fso::fred::dialogs {
 
-LayerManagerDialog::LayerManagerDialog(EditorViewport* viewport, QWidget* parent)
+LayerManagerDialog::LayerManagerDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent)
+	, _fredView(parent)
+	, _viewport(viewport)
 	, ui(new Ui::LayerManagerDialog())
 	, _model(new LayerManagerDialogModel(this, viewport))
 {
 	ui->setupUi(this);
+	util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	initializeUi();
 	updateUi();
 
 	connect(_model.get(), &LayerManagerDialogModel::modelChanged, this, &LayerManagerDialog::updateUi);
+
+	// Undo/redo rewrites the layer structure behind our back, so refresh on any
+	// mission change rather than only on our own model's signal.
+	connect(_viewport->editor, &Editor::missionChanged, this, &LayerManagerDialog::updateUi);
 }
 
 LayerManagerDialog::~LayerManagerDialog() = default;
+
+void LayerManagerDialog::changeEvent(QEvent* e)
+{
+	if (e->type() == QEvent::ActivationChange && isActiveWindow())
+		_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::changeEvent(e);
+}
+
+bool LayerManagerDialog::runStructureOp(const QString& text, const std::function<bool()>& op)
+{
+	auto* cmd = new LayerStructureCommand(_viewport, _viewport->editor, text);
+	if (!op()) {
+		delete cmd;
+		return false;
+	}
+	cmd->captureAfter();
+	_fredView->mainUndoStack()->push(cmd);
+	return true;
+}
 
 void LayerManagerDialog::initializeUi() {
 	// Populate IFF team checkboxes dynamically; insert before the spacer at the end of iffLayout
@@ -94,7 +124,7 @@ void LayerManagerDialog::on_addLayerButton_clicked() {
 	}
 
 	SCP_string error;
-	if (!_model->addLayer(name.toUtf8().constData(), &error)) {
+	if (!runStructureOp(tr("Add Layer"), [&] { return _model->addLayer(name.toUtf8().constData(), &error); })) {
 		QMessageBox::warning(this, tr("Layer Error"), QString::fromStdString(error));
 		return;
 	}
@@ -130,7 +160,9 @@ void LayerManagerDialog::on_renameLayerButton_clicked() {
 	}
 
 	SCP_string error;
-	if (!_model->renameLayer(oldName.toUtf8().constData(), newName.toUtf8().constData(), &error)) {
+	if (!runStructureOp(tr("Rename Layer"), [&] {
+		    return _model->renameLayer(oldName.toUtf8().constData(), newName.toUtf8().constData(), &error);
+	    })) {
 		QMessageBox::warning(this, tr("Layer Error"), QString::fromStdString(error));
 		return;
 	}
@@ -157,7 +189,7 @@ void LayerManagerDialog::on_deleteLayerButton_clicked() {
 	}
 
 	SCP_string error;
-	if (!_model->deleteLayer(layerName, &error)) {
+	if (!runStructureOp(tr("Delete Layer"), [&] { return _model->deleteLayer(layerName, &error); })) {
 		QMessageBox::warning(this, tr("Layer Error"), QString::fromStdString(error));
 	}
 }

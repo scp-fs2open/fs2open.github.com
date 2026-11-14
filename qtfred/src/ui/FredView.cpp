@@ -1,6 +1,8 @@
 #include "FredView.h"
 #include "ui_FredView.h"
 
+#include <algorithm>
+
 #include <ui/util/default_dir.h>
 
 #include <QDir>
@@ -11,6 +13,8 @@
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
+#include <QLineEdit>
+#include <QApplication>
 #include <QProcess>
 #include <QSignalBlocker>
 #include <QSettings>
@@ -34,6 +38,7 @@
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/ReorderDialog.h>
+#include <object/object.h>
 #include <object/waypoint.h>
 #include <ui/dialogs/WaypointPathGeneratorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
@@ -70,8 +75,11 @@
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
+#include "mission/commands/CameraTransformCommand.h"
+#include "mission/commands/FredCommands.h"
 #include "mission/management.h"
 #include "ui/Theme.h"
+#include <jumpnode/jumpnode.h>
 #include <prop/prop.h>
 #include "mission/missionparse.h"
 #include "missioneditor/missionsave.h"
@@ -149,6 +157,61 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	setFocusPolicy(Qt::NoFocus);
 	setFocusProxy(ui->centralWidget);
 
+	// Undo/Redo infrastructure — stacks created here so dialogs can register before setEditor() is called
+	_undoGroup   = new QUndoGroup(this);
+	_mainStack   = new QUndoStack(_undoGroup);
+	_cameraStack = new QUndoStack(this);
+	_undoGroup->setActiveStack(_mainStack);
+
+	// These actions' shortcuts are window-scoped (the default): every editing
+	// window owns its own Ctrl+Z/Ctrl+Y — modal dialogs via setupDialogUndo(),
+	// direct-edit dialogs via installMainStackUndoShortcuts() — so shortcut
+	// delivery never depends on reaching another window's actions.
+	_undoAction  = _undoGroup->createUndoAction(this, tr("&Undo"));
+	_undoAction->setShortcuts(QKeySequence::Undo);
+	_redoAction  = _undoGroup->createRedoAction(this, tr("&Redo"));
+	// Ctrl+Y explicitly, as in the dialogs. QKeySequence::Redo is only
+	// Ctrl+Shift+Z on Linux, and that key is camera undo here.
+	_redoAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Y));
+
+	// Text editors (QLineEdit, and the editors inside spin boxes / editable combos) claim
+	// Ctrl+Z/Y by accepting the ShortcutOverride event, which would shadow the mission undo.
+	// This filter lets a focused field keep its own text undo only while it actually has
+	// something to undo; once its local history is empty the keystroke falls through to the
+	// window's mission/dialog undo actions. See eventFilter() below.
+	qApp->installEventFilter(this);
+
+	// Camera undo/redo are plain actions (not createUndoAction) so their
+	// enabled state can be gated: camera history is main-viewport state, so
+	// the shortcuts and menu items are only live while the main stack is
+	// active — a focused dialog must not move the camera behind itself.
+	_undoCameraAction = new QAction(tr("Undo View Change"), this);
+	_undoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+	connect(_undoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->undo(); });
+	_redoCameraAction = new QAction(tr("Redo View Change"), this);
+	_redoCameraAction->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Y));
+	connect(_redoCameraAction, &QAction::triggered, this, [this]() { _cameraStack->redo(); });
+
+	auto updateCameraUndoActions = [this]() {
+		const bool mainActive = _undoGroup->activeStack() == _mainStack;
+		_undoCameraAction->setEnabled(mainActive && _cameraStack->canUndo());
+		_redoCameraAction->setEnabled(mainActive && _cameraStack->canRedo());
+	};
+	connect(_cameraStack, &QUndoStack::canUndoChanged, this, updateCameraUndoActions);
+	connect(_cameraStack, &QUndoStack::canRedoChanged, this, updateCameraUndoActions);
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, updateCameraUndoActions);
+	updateCameraUndoActions();
+
+	// Insert Undo/Redo before the first item in menuEdit
+	ui->menuEdit->insertAction(ui->menuEdit->actions().first(), _redoAction);
+	ui->menuEdit->insertAction(_redoAction, _undoAction);
+	ui->menuEdit->insertSeparator(ui->menuEdit->actions().at(2)); // separator after Redo
+
+	// Insert camera undo/redo after actionRestore_Camera_Pos in menuView
+	QAction* insertAfter = ui->actionRestore_Camera_Pos;
+	ui->menuView->insertAction(ui->menuView->actions().at(ui->menuView->actions().indexOf(insertAfter) + 1), _redoCameraAction);
+	ui->menuView->insertAction(_redoCameraAction, _undoCameraAction);
+
 	// This is not possible to do with the designer
 	ui->actionNew->setShortcuts(QKeySequence::New);
 	ui->actionOpen->setShortcuts(QKeySequence::Open);
@@ -180,6 +243,17 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	connect(ui->actionPreferences, &QAction::triggered, this, [this]() {
 		dialogs::PreferencesDialog preferencesDialog(this, _viewport);
 		preferencesDialog.exec();
+		if (_viewport) {
+			// Qt ignores setUndoLimit() on a non-empty stack; a new depth takes
+			// effect at the next mission load (see on_mission_loaded), which is
+			// the only point the stacks are guaranteed empty.
+			if (_mainStack->count() == 0) {
+				_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+			if (_cameraStack->count() == 0) {
+				_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+			}
+		}
 	});
 
 	connect(ui->actionManage_Layers, &QAction::triggered, this, [this]() { openLayerManagerDialog(); });
@@ -222,6 +296,10 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 
 	fred = editor;
 	_viewport = viewport;
+
+	fred->setUndoStack(_mainStack);
+	_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+	_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
 
 	setIconSize(QSize(_viewport->toolbar_icon_size, _viewport->toolbar_icon_size));
 	applyMenuLayout(_viewport->Classic_menu_layout);
@@ -290,6 +368,33 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
+
+	// Camera undo: fires from any input source (keyboard, SpaceMouse, future mouse camera)
+	// via CameraController::onViewChanged. An idle timer collapses continuous movement
+	// (held key, SpaceMouse pan) into a single undo step.
+	_cameraIdleTimer = new QTimer(this);
+	_cameraIdleTimer->setSingleShot(true);
+	_cameraIdleTimer->setInterval(250);
+
+	_viewport->camera.onViewChanged = [this](const vec3d& posBefore, const matrix& orientBefore) {
+		// The callback runs after the camera moved, so the gesture's start is the
+		// pose from before this first move, not the current one.
+		if (!_cameraIdleTimer->isActive()) {
+			_cameraPosBeforeGesture    = posBefore;
+			_cameraOrientBeforeGesture = orientBefore;
+		}
+		_cameraIdleTimer->start();
+	};
+
+	connect(_cameraIdleTimer, &QTimer::timeout, this, [this]() {
+		if (vm_vec_cmp(&_viewport->camera.view_pos, &_cameraPosBeforeGesture)
+			|| vm_matrix_cmp(&_viewport->camera.view_orient, &_cameraOrientBeforeGesture)) {
+			_cameraStack->push(new CameraTransformCommand(
+				&_viewport->camera,
+				_cameraPosBeforeGesture, _cameraOrientBeforeGesture,
+				_viewport->camera.view_pos, _viewport->camera.view_orient));
+		}
+	});
 
 	// Sets the initial window title
 	on_mission_loaded("");
@@ -810,6 +915,15 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 }
 
 void FredView::on_mission_loaded(const std::string& filepath) {
+	_cameraStack->clear();
+
+	// Both stacks are empty now (the editor cleared the main stack before
+	// teardown), so a preferences change made mid-session can be applied.
+	if (_viewport != nullptr) {
+		_mainStack->setUndoLimit(_viewport->undo_stack_depth);
+		_cameraStack->setUndoLimit(_viewport->undo_stack_depth);
+	}
+
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
@@ -985,6 +1099,31 @@ void FredView::initializeStatusBar() {
 	_statusBarUnitsLabel = new QLabel();
 	_statusBarUnitsLabel->setContentsMargins(16, 0, 0, 0);
 	statusBar()->addPermanentWidget(_statusBarUnitsLabel);
+
+	// Passive indicator of which undo stack Ctrl+Z currently targets — the
+	// main mission stack or a focused dialog's internal stack (named via
+	// setupDialogUndo).
+	_statusBarUndoScope = new QLabel();
+	_statusBarUndoScope->setContentsMargins(16, 0, 0, 0);
+	statusBar()->addPermanentWidget(_statusBarUndoScope);
+
+	connect(_undoGroup, &QUndoGroup::activeStackChanged, this, &FredView::updateUndoStatusIndicator);
+	updateUndoStatusIndicator();
+}
+
+void FredView::updateUndoStatusIndicator()
+{
+	auto* stack = _undoGroup->activeStack();
+	if (stack == nullptr) {
+		_statusBarUndoScope->clear();
+		return;
+	}
+
+	QString scope = (stack == _mainStack) ? tr("Mission") : stack->objectName();
+	if (scope.isEmpty())
+		scope = tr("Dialog");
+
+	_statusBarUndoScope->setText(tr("Undo: %1").arg(scope));
 }
 
 void FredView::setLastSaved(const QDateTime& when) {
@@ -1194,10 +1333,14 @@ void FredView::onUpdateContextToolbar() {
 			_contextToolBar->addAction(selWingAct);
 		}
 	} else if (effectiveType == OBJ_WAYPOINT) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Waypoint Path"),   &FredView::on_actionWaypoint_Paths_triggered);
 	} else if (effectiveType == OBJ_JUMP_NODE) {
+		addBtn(tr("Rename"),               &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Jump Node"),       &FredView::on_actionJump_Nodes_triggered);
 	} else if (effectiveType == OBJ_PROP) {
+		if (numMarked <= 1)
+			addBtn(tr("Rename"),           &FredView::quickRenameCurrentObject);
 		addBtn(tr("Edit Prop"),            &FredView::on_actionProps_triggered);
 	}
 
@@ -1210,20 +1353,103 @@ void FredView::onUpdateContextToolbar() {
 	}
 }
 
+// The checks the object's own editor dialog makes before a rename. Returns
+// the reason the name cannot be used, or an empty string.
+static SCP_string quickRenameConflict(int obj, const SCP_string& name)
+{
+	if (name.size() >= NAME_LENGTH)
+		return "This name is too long (" + std::to_string(NAME_LENGTH - 1) + " characters at most)";
+
+	switch (Objects[obj].type) {
+	case OBJ_WAYPOINT: {
+		const int wl = calc_waypoint_list_index(Objects[obj].instance);
+		return check_name_conflict("waypoint path", name.c_str(), -1, -1, wl);
+	}
+	case OBJ_JUMP_NODE: {
+		int jn = -1;
+		for (int i = 0; i < static_cast<int>(Jump_nodes.size()); i++) {
+			if (Jump_nodes[i].GetSCPObjectNumber() == obj) {
+				jn = i;
+				break;
+			}
+		}
+		return check_name_conflict("jump node", name.c_str(), -1, -1, -1, jn);
+	}
+	case OBJ_SHIP:
+	case OBJ_START: {
+		const int inst = Objects[obj].instance;
+		if (Ships[inst].wingnum >= 0)
+			return "This ship is part of a wing, and its name cannot be changed";
+		return check_name_conflict("ship", name.c_str(), inst);
+	}
+	case OBJ_PROP:
+		for (const auto& p : Props) {
+			if (p.has_value() && p->objnum != obj && !stricmp(p->prop_name, name.c_str()))
+				return "This prop name is already being used by another prop";
+		}
+		return "";
+	default:
+		return "";
+	}
+}
+
 void FredView::quickRenameCurrentObject() {
 	const int obj = fred->currentObject;
 	if (!query_valid_object(obj)) return;
 
+	const int type = Objects[obj].type;
+
+	// For waypoint paths, rename the whole path (not the individual waypoint point).
+	// The path has no single object number, so we pass -1 to RenameObjectCommand and
+	// identify it by name.
+	if (type == OBJ_WAYPOINT) {
+		waypoint_list* wl = find_waypoint_list_with_instance(Objects[obj].instance, nullptr);
+		if (!wl) return;
+		// The old name goes to the command as raw bytes: mission names need not be
+		// UTF-8, and a QString round trip would mangle a Latin-1 one on undo.
+		const SCP_string currentBytes = wl->get_name();
+		const QString current = QString::fromUtf8(wl->get_name());
+		bool ok = false;
+		const QString newName = QInputDialog::getText(
+		    this, tr("Rename"), tr("New path name:"), QLineEdit::Normal, current, &ok).trimmed();
+		if (!ok || newName.isEmpty() || newName == current) return;
+		const SCP_string conflict = quickRenameConflict(obj, newName.toUtf8().constData());
+		if (!conflict.empty()) {
+			QMessageBox::warning(this, tr("Rename"), QString::fromStdString(conflict));
+			return;
+		}
+		_mainStack->push(new fso::fred::RenameObjectCommand(
+		    -1,
+		    currentBytes,
+		    newName.toUtf8().constData(),
+		    fred));
+		return;
+	}
+
+	if (type != OBJ_SHIP && type != OBJ_START &&
+	    type != OBJ_JUMP_NODE && type != OBJ_PROP) {
+		return; // wings use their editor dialog
+	}
+
+	// Old name as raw bytes; see the waypoint path case above.
+	const SCP_string currentBytes = object_name(obj);
 	const QString current = QString::fromUtf8(object_name(obj));
 	bool ok = false;
-	QString newName = QInputDialog::getText(this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
+	const QString newName = QInputDialog::getText(
+	    this, tr("Rename"), tr("New name:"), QLineEdit::Normal, current, &ok).trimmed();
 	if (!ok || newName.isEmpty() || newName == current) return;
-
-	if (Objects[obj].type == OBJ_SHIP || Objects[obj].type == OBJ_START) {
-		fred->rename_ship(Objects[obj].instance, newName.toUtf8().constData());
+	const SCP_string conflict = quickRenameConflict(obj, newName.toUtf8().constData());
+	if (!conflict.empty()) {
+		QMessageBox::warning(this, tr("Rename"), QString::fromStdString(conflict));
+		return;
 	}
-	// Waypoints, props, and jump nodes open their editor (name field is front-and-center)
-	// Wing rename goes through Edit Wing since wings have no standalone scene object
+
+	// QUndoStack::push() calls redo() immediately, which applies the rename.
+	_mainStack->push(new fso::fred::RenameObjectCommand(
+	    obj,
+	    currentBytes,
+	    newName.toUtf8().constData(),
+	    fred));
 }
 
 
@@ -1299,10 +1525,17 @@ void FredView::initializeTransformBar() {
 	_transformToolBar->addWidget(_transformIffCombo);
 	connect(_transformIffCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
+		SCP_vector<fso::fred::ShipIFFChange> changes;
 		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
 			if (!p->flags[Object::Object_Flags::Marked]) continue;
-			if (p->type == OBJ_SHIP || p->type == OBJ_START)
+			if (p->type == OBJ_SHIP || p->type == OBJ_START) {
+				if (Ships[p->instance].team == idx) continue; // no change, no undo entry
+				changes.push_back({p->signature, Ships[p->instance].team, idx});
 				Ships[p->instance].team = idx;
+			}
+		}
+		if (!changes.empty()) {
+			_mainStack->push(new fso::fred::ChangeIFFCommand(std::move(changes), fred));
 		}
 		fred->missionChanged();
 	});
@@ -1381,8 +1614,18 @@ void FredView::initializeTransformBar() {
 	connect(_transformLayerCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int idx) {
 		if (idx < 0 || !_viewport) return;
 		SCP_string layerName = _transformLayerCombo->itemText(idx).toUtf8().constData();
+		SCP_vector<fso::fred::ObjectLayerChange> changes;
+		for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+			if (!p->flags[Object::Object_Flags::Marked]) continue;
+			SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+			if (before != layerName)
+				changes.push_back({p->signature, std::move(before), layerName});
+		}
 		_viewport->moveMarkedObjectsToLayer(layerName, nullptr);
-		fred->missionChanged();
+		if (!changes.empty())
+			_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+		else
+			fred->missionChanged();
 	});
 
 	addFixedSpacer(12);
@@ -1558,6 +1801,17 @@ void FredView::onTransformEditingFinished() {
 	const int  numMarked   = fred->getNumMarked();
 	const bool isMulti     = numMarked > 1;
 
+	// Snapshot before-state for all marked objects.
+	SCP_vector<fso::fred::ObjectTransform> transforms;
+	for (const object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if (!p->flags[Object::Object_Flags::Marked]) continue;
+		fso::fred::ObjectTransform t{};
+		t.signature    = p->signature;
+		t.posBefore    = p->pos;
+		t.orientBefore = p->orient;
+		transforms.push_back(t);
+	}
+
 	if (rotateMode) {
 		if (isMulti && localMode) {
 			// Local delta: compute angle delta from curObj, apply to every marked object.
@@ -1624,7 +1878,25 @@ void FredView::onTransformEditingFinished() {
 		}
 	}
 
-	fred->missionChanged();
+	// Capture after-state and discard entries where nothing changed.
+	for (auto& t : transforms) {
+		const int cur = obj_get_by_signature(t.signature);
+		if (cur >= 0) {
+			t.posAfter    = Objects[cur].pos;
+			t.orientAfter = Objects[cur].orient;
+		}
+	}
+	transforms.erase(std::remove_if(transforms.begin(), transforms.end(),
+	    [](const fso::fred::ObjectTransform& t) {
+	        return vm_vec_cmp(&t.posBefore, &t.posAfter) == 0 &&
+	               vm_matrix_cmp(&t.orientBefore, &t.orientAfter) == 0;
+	    }), transforms.end());
+
+	if (!transforms.empty()) {
+		_mainStack->push(new fso::fred::MoveObjectsCommand(std::move(transforms), fred, _viewport));
+	} else {
+		fred->missionChanged();
+	}
 }
 
 void FredView::updateUI() {
@@ -1887,7 +2159,15 @@ void FredView::showWingContextMenu(int wingIndex, const QPoint& globalPos)
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(wingName));
 	connect(deleteAction, &QAction::triggered, this, [this, wingIndex]() {
-		fred->delete_wing(wingIndex, 0);
+		// Capture before the delete, push only if it wasn't canceled at the
+		// reference check (first redo() is a no-op either way).
+		auto* cmd = new DeleteWingCommand(wingIndex, fred, _viewport);
+		if (fred->delete_wing(wingIndex, 0) == 0) {
+			cmd->dropSurvivors(); // members whose delete was refused stay alive
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	});
 
 	menu.exec(globalPos);
@@ -1939,7 +2219,7 @@ void FredView::showWaypointPathContextMenu(int pathIndex, const QPoint& globalPo
 
 	auto* deleteAction = menu.addAction(tr("Delete %1").arg(pathName));
 	connect(deleteAction, &QAction::triggered, this, [this]() {
-		fred->delete_marked();
+		on_actionDelete_triggered(false);
 	});
 
 	menu.exec(globalPos);
@@ -1998,16 +2278,26 @@ void FredView::initializePopupMenus() {
 		if (fred->cur_waypoint != nullptr) {
 			waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 		}
-		_viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createWaypointAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 			waypoint_instance);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, waypoint_instance,
+				CreateKind::Other, OtherKind::Waypoint, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createWaypointAction);
 
 	auto* createJumpNodeAction = new QAction(tr("Jump Node"), createOtherSubmenu);
 	connect(createJumpNodeAction, &QAction::triggered, this, [this]() {
-		_viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createJumpNodeAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio());
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, _viewport->cur_prop_index, -1,
+				CreateKind::Other, OtherKind::JumpNode, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 	createOtherSubmenu->addAction(createJumpNodeAction);
 
@@ -2089,8 +2379,13 @@ void FredView::populateCreateShipSubmenu() {
 		entries.push_back({QString::fromUtf8(Ship_info[i].name), i});
 	}
 	populateDataListMenu(_createShipSubmenu, entries, _viewport->Data_menu_style, [this](int shipClass) {
-		_viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createShipAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(), shipClass);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				shipClass, _viewport->cur_prop_index, -1,
+				CreateKind::Ship, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 }
 
@@ -2103,9 +2398,14 @@ void FredView::populateCreatePropSubmenu() {
 		entries.push_back({QString::fromStdString(Prop_info[i].name), i});
 	}
 	populateDataListMenu(_createPropSubmenu, entries, _viewport->Data_menu_style, [this](int propClass) {
-		_viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
+		const int objNum = _viewport->createPropAtScreenPos(_lastContextMenuLocalPos.x() * this->devicePixelRatio(),
 			_lastContextMenuLocalPos.y() * this->devicePixelRatio(),
 			propClass);
+		if (objNum >= 0) {
+			_mainStack->push(new fso::fred::CreateObjectCommand(Objects[objNum].pos,
+				_viewport->cur_model_index, propClass, -1,
+				CreateKind::Prop, _viewport->cur_other_kind, objNum, fred, _viewport)); // first redo() is a no-op
+		}
 	});
 }
 
@@ -2127,17 +2427,28 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 		layerAction->setEnabled(visible);
 
 		connect(layerAction, &QAction::triggered, this, [this, layerName, targetObject]() {
+			SCP_vector<fso::fred::ObjectLayerChange> changes;
 			SCP_string error;
 			if (Objects[targetObject].flags[Object::Object_Flags::Marked] && fred->getNumMarked() > 1) {
+				for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+					if (!p->flags[Object::Object_Flags::Marked]) continue;
+					SCP_string before = _viewport->getObjectLayerName(OBJ_INDEX(p));
+					if (before != layerName)
+						changes.push_back({p->signature, std::move(before), layerName});
+				}
 				_viewport->moveMarkedObjectsToLayer(layerName, &error);
 			} else {
+				SCP_string before = _viewport->getObjectLayerName(targetObject);
+				if (before != layerName)
+					changes.push_back({Objects[targetObject].signature, std::move(before), layerName});
 				_viewport->moveObjectToLayer(targetObject, layerName, &error);
 			}
-
-				if (!error.empty()) {
-					showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
-				}
-			});
+			if (!error.empty()) {
+				showButtonDialog(DialogType::Error, "Layer Error", error, { DialogButton::Ok });
+			} else if (!changes.empty()) {
+				_mainStack->push(new fso::fred::MoveLayerCommand(std::move(changes), _viewport, fred));
+			}
+		});
 		dest->addAction(layerAction);
 	}
 
@@ -2147,7 +2458,7 @@ void FredView::populateMoveToLayerMenu(int targetObject, QMenu* targetMenu) {
 }
 
 void FredView::openLayerManagerDialog() {
-	dialogs::LayerManagerDialog dialog(_viewport, this);
+	dialogs::LayerManagerDialog dialog(this, _viewport);
 	dialog.exec();
 }
 
@@ -2252,12 +2563,46 @@ bool FredView::event(QEvent* event) {
 		return QMainWindow::event(event);
 	}
 }
+bool FredView::eventFilter(QObject* watched, QEvent* event) {
+	// Decide, per Ctrl+Z/Y press, whether a focused text editor should keep the key for its own
+	// text undo or whether it should fall through to the application-wide mission undo/redo.
+	if (event->type() == QEvent::ShortcutOverride) {
+		auto* keyEvent = static_cast<QKeyEvent*>(event);
+		const bool isUndo = keyEvent->matches(QKeySequence::Undo);
+		// Mission redo is Ctrl+Y on every platform, but a text field only redoes on the
+		// platform's own key (QKeySequence::Redo, which on Linux is Ctrl+Shift+Z alone).
+		const bool isFieldRedo = keyEvent->matches(QKeySequence::Redo);
+		const bool isCtrlY = keyEvent->key() == Qt::Key_Y && keyEvent->modifiers() == Qt::ControlModifier;
+		const bool isRedo = isFieldRedo || isCtrlY;
+		if (isUndo || isRedo) {
+			// Spin boxes and editable combos delegate focus to an internal QLineEdit, so the
+			// focus widget is the line edit in all three cases.
+			auto* lineEdit = qobject_cast<QLineEdit*>(QApplication::focusWidget());
+			if (lineEdit != nullptr) {
+				const bool fieldCanHandle = isUndo ? lineEdit->isUndoAvailable()
+				                                   : (isFieldRedo && lineEdit->isRedoAvailable());
+				if (!fieldCanHandle) {
+					// Field has nothing to undo/redo: swallow the override so Qt activates the
+					// application-wide undo/redo action instead of handing the key to the field.
+					return true;
+				}
+				// Otherwise let the field accept the override and undo/redo its own text.
+			}
+		}
+	}
+	return QMainWindow::eventFilter(watched, event);
+}
 void FredView::changeEvent(QEvent* event) {
 	QMainWindow::changeEvent(event);
 	// Force menubar repaint when reenabled after a modal dialog closes.
 	// Without this, menu items stay grey until the user mouses over them.
 	if (event->type() == QEvent::EnabledChange && isEnabled()) {
 		menuBar()->update();
+	}
+	// When the main window regains focus, point undo/redo back at the main stack. This restores
+	// main-stack undo after interacting with a modeless dialog that may have changed the active stack.
+	if (event->type() == QEvent::ActivationChange && isActiveWindow()) {
+		_undoGroup->setActiveStack(_mainStack);
 	}
 }
 void FredView::closeEvent(QCloseEvent* event) {
@@ -2274,6 +2619,20 @@ void FredView::closeEvent(QCloseEvent* event) {
 	}
 	disconnect();
 	QMainWindow::closeEvent(event);
+
+	// shutdown() frees the engine data (sexp nodes, models, ship data) before
+	// gr_close() destroys this window. Open editor dialogs and undo commands free
+	// sexp nodes they own in their destructors, so release them now while that
+	// data still exists; otherwise exiting crashes in free_sexp2.
+	for (auto* dialog : findChildren<QDialog*>(QString(), Qt::FindDirectChildrenOnly)) {
+		delete dialog;
+	}
+	_shipEditorDialog = nullptr;
+	_wingEditorDialog = nullptr;
+	_propEditorDialog = nullptr;
+	for (auto* stack : findChildren<QUndoStack*>()) {
+		stack->clear();
+	}
 
 	// gr_close() destroys this window, so this must be the last thing we do here
 	shutdown();
@@ -2478,14 +2837,16 @@ namespace {
 // rather than creating a second one.  Returns the newly-created dialog, or
 // nullptr if an existing instance was reused (so callers can do extra one-time
 // setup only on first open).
-template <typename DialogT>
-DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport) {
+// Any constructor arguments beyond the viewport (e.g. the FredView* that
+// VariableDialog needs for undo-group access) are forwarded after `viewport`.
+template <typename DialogT, typename... Args>
+DialogT* showSingleInstanceDialog(FredView* parent, EditorViewport* viewport, Args&&... args) {
 	if (auto* existing = parent->findChild<DialogT*>(QString(), Qt::FindDirectChildrenOnly)) {
 		existing->raise();
 		existing->activateWindow();
 		return nullptr;
 	}
-	auto* dialog = new DialogT(parent, viewport);
+	auto* dialog = new DialogT(parent, viewport, std::forward<Args>(args)...);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 	return dialog;
@@ -2613,7 +2974,7 @@ void FredView::on_actionLoadout_triggered(bool) {
 	showSingleInstanceDialog<dialogs::TeamLoadoutDialog>(this, _viewport);
 }
 void FredView::on_actionVariables_triggered(bool) {
-	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport);
+	showSingleInstanceDialog<dialogs::VariableDialog>(this, _viewport, this);
 }
 
 DialogButton FredView::showButtonDialog(DialogType type,
@@ -2762,6 +3123,27 @@ void FredView::onUpdateEditorActions() {
 	ui->menuSet_Group->setEnabled(hasMarked);
 }
 void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
+	// Undo snapshot, taken before the reinforcement flags are cleared below:
+	// the marked ships, every wing they are in, and those wings' other members
+	// (create_wing() renumbers the ones left behind, or dissolves the wing).
+	SCP_vector<int> shipSigs;
+	SCP_vector<SCP_string> wingNames;
+	for (object* p = GET_FIRST(&obj_used_list); p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p)) {
+		if ((p->type != OBJ_SHIP && p->type != OBJ_START) || !p->flags[Object::Object_Flags::Marked])
+			continue;
+		const int w = Ships[p->instance].wingnum;
+		if (w < 0) {
+			shipSigs.push_back(p->signature);
+			continue;
+		}
+		if (std::find(wingNames.begin(), wingNames.end(), SCP_string(Wings[w].name)) != wingNames.end())
+			continue;
+		wingNames.emplace_back(Wings[w].name);
+		for (int i = 0; i < Wings[w].wave_count; i++)
+			shipSigs.push_back(Objects[Ships[Wings[w].ship_index[i]].objnum].signature);
+	}
+	auto before = FormWingCommand::capture(shipSigs, wingNames);
+
 	object* ptr = GET_FIRST(&obj_used_list);
 	bool found = false;
 	while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -2775,6 +3157,7 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 		ptr = GET_NEXT(ptr);
 	}
 
+	bool clearReinforcements = false;
 	if (found) {
 		auto button = showButtonDialog(DialogType::Warning,
 									   "Reinforcement conflict",
@@ -2782,25 +3165,43 @@ void FredView::on_actionWingForm_triggered(bool  /*enabled*/) {
 										   "Press Ok to clear the flag on all selected ships. Press Cancel to not create the wing.",
 									   { DialogButton::Ok, DialogButton::Cancel });
 		if (button == DialogButton::Ok) {
-			ptr = GET_FIRST(&obj_used_list);
-			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START))
-					&& (ptr->flags[Object::Object_Flags::Marked])) {
-					fred->set_reinforcement(Ships[ptr->instance].ship_name, 0);
-				}
-
-				ptr = GET_NEXT(ptr);
-			}
+			// Cleared below, once the wing exists: if forming is cancelled or fails,
+			// the ships keep their flags, since nothing would be pushed to undo it.
+			clearReinforcements = true;
 		} else {
 			return;
 		}
 	}
 
-	fred->create_wing();
+	if (fred->create_wing() == 0 && fred->cur_wing >= 0) {
+		// The new wing and its members join what was captured before.
+		const int wingNum = fred->cur_wing;
+		if (clearReinforcements) {
+			for (int i = 0; i < Wings[wingNum].wave_count; i++)
+				fred->set_reinforcement(Ships[Wings[wingNum].ship_index[i]].ship_name, 0);
+		}
+		// A reformed wing keeps its name and is already in the list.
+		if (std::find(wingNames.begin(), wingNames.end(), SCP_string(Wings[wingNum].name)) == wingNames.end())
+			wingNames.emplace_back(Wings[wingNum].name);
+		for (int i = 0; i < Wings[wingNum].wave_count; i++) {
+			const int sig = Objects[Ships[Wings[wingNum].ship_index[i]].objnum].signature;
+			if (std::find(shipSigs.begin(), shipSigs.end(), sig) == shipSigs.end())
+				shipSigs.push_back(sig);
+		}
+		auto after = FormWingCommand::capture(shipSigs, wingNames);
+		_mainStack->push(new FormWingCommand(std::move(before), std::move(after), Wings[wingNum].name,
+		                                     fred, _viewport));
+	}
 }
 void FredView::on_actionWingDisband_triggered(bool  /*enabled*/) {
 	if (fred->query_single_wing_marked()) {
-		fred->disband_wing(fred->cur_wing);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DisbandWingCommand(wingNum, fred, _viewport);
+		if (fred->disband_wing(wingNum) == 0) {
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	} else {
 		showButtonDialog(DialogType::Error,
 						 "Error",
@@ -2896,17 +3297,36 @@ void FredView::on_actionRestore_Camera_Pos_triggered(bool) {
 }
 void FredView::on_actionClone_Marked_Objects_triggered(bool) {
 	if (fred->getNumMarked() > 0) {
-		_viewport->duplicate_marked_objects();
+		auto* cmd = new fso::fred::CloneMarkedObjectsCommand(fred, _viewport);
+		if (cmd->cloneNow())
+			_mainStack->push(cmd); // first redo() is a no-op
+		else
+			delete cmd;
 	}
 }
 void FredView::on_actionDelete_triggered(bool) {
-	if (fred->getNumMarked() > 0) {
-		fred->delete_marked();
+	if (fred->getNumMarked() <= 0) return;
+	auto* cmd = new fso::fred::DeleteObjectsCommand(fred, _viewport);
+	fred->delete_marked();
+	// A refused delete (the last player start, or a reference the user kept)
+	// leaves objects alive, and may unmark them, so check what really went.
+	cmd->dropSurvivors();
+	if (!cmd->isEmpty()) {
+		_mainStack->push(cmd); // first redo() is a no-op
+	} else {
+		delete cmd;
 	}
 }
 void FredView::on_actionDelete_Wing_triggered(bool) {
 	if (fred->cur_wing >= 0) {
-		fred->delete_wing(fred->cur_wing, 0);
+		const int wingNum = fred->cur_wing;
+		auto* cmd = new DeleteWingCommand(wingNum, fred, _viewport);
+		if (fred->delete_wing(wingNum, 0) == 0) {
+			cmd->dropSurvivors(); // members whose delete was refused stay alive
+			_mainStack->push(cmd);
+		} else {
+			delete cmd;
+		}
 	}
 }
 void FredView::initializeGroupActions() {
@@ -2948,6 +3368,18 @@ void FredView::onGroupSelected(int group) {
 void FredView::onSetGroup(int group) {
 	bool err = false;
 
+	// +Group: is saved with each ship, so this is an undoable mission edit.
+	using GroupState = SCP_vector<std::pair<int, int>>; // (signature, group bits)
+	auto captureGroups = []() {
+		GroupState st;
+		for (const auto& shipp : Ships) {
+			if (shipp.objnum >= 0)
+				st.emplace_back(Objects[shipp.objnum].signature, shipp.group);
+		}
+		return st;
+	};
+	const GroupState before = captureGroups();
+
 	for (auto i = 0; i < MAX_SHIPS; i++) {
 		Ships[i].group &= ~group;
 	}
@@ -2971,16 +3403,72 @@ void FredView::onSetGroup(int group) {
 			"These illegal objects you marked were not placed in the group", { DialogButton::Ok });
 	}
 
+	const GroupState after = captureGroups();
+	if (after != before) {
+		auto* cmd = new fso::fred::FieldEditCommand<GroupState>(
+			fso::fred::FieldId::Main_SetGroup, fred, tr("Set Group"), true);
+		cmd->setNoMerge();
+		cmd->addEntry(before, after, [](const GroupState& v) {
+			for (const auto& [sig, bits] : v) {
+				const int objNum = obj_get_by_signature(sig);
+				if (objNum >= 0)
+					Ships[Objects[objNum].instance].group = bits;
+			}
+		});
+		_mainStack->push(cmd);
+		fred->missionChanged();
+	}
+
 	fred->updateAllViewports();
 }
 void FredView::on_actionControl_Object_triggered(bool) {
 	_viewport->camera.toggleControlMode();
 }
 void FredView::on_actionLevel_Object_triggered(bool) {
+	// Snapshot before state for all marked objects.
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->level_controlled();
+	// Capture after state and filter unchanged entries.
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::LevelObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionAlign_Object_triggered(bool) {
+	SCP_vector<fso::fred::ObjectOrientChange> changes;
+	for (const object* p = GET_FIRST(&obj_used_list);
+	     p != END_OF_LIST(&obj_used_list); p = GET_NEXT(p))
+	{
+		if (p->flags[Object::Object_Flags::Marked]) {
+			changes.push_back({p->signature, p->orient, {}});
+		}
+	}
 	_viewport->verticalize_controlled();
+	for (auto& c : changes) {
+		const int cur = obj_get_by_signature(c.signature);
+		if (cur >= 0) c.orientAfter = Objects[cur].orient;
+	}
+	changes.erase(std::remove_if(changes.begin(), changes.end(),
+	    [](const fso::fred::ObjectOrientChange& c) {
+	        return vm_matrix_cmp(&c.orientBefore, &c.orientAfter) == 0;
+	    }), changes.end());
+	if (!changes.empty()) {
+		_mainStack->push(new fso::fred::AlignObjectsCommand(std::move(changes), fred, _viewport));
+	}
 }
 void FredView::on_actionNext_Subsystem_triggered(bool) {
 	fred->select_next_subsystem();

@@ -56,6 +56,12 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CommandBriefingDialog> ui;
 	std::unique_ptr<CommandBriefingDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
+
+	void pushWorkingStateSnapshot(const QByteArray& before, const QString& label);
+	void changeAnimationFilename(const SCP_string& newFilename);
+	void changeSpeechFilename(const SCP_string& newFilename);
 
 	void initializeUi();
 	void updateUi();

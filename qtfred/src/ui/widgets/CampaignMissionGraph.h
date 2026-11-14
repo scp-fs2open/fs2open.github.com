@@ -161,6 +161,14 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
 	// Emitted when a request is made to make the current mission the first campaign mission
 	void setFirstMissionRequested(int missionIndex);
+	// Emitted when an outbound connection drag ends on a mission's inbound port
+	void branchConnectRequested(int fromIndex, int toIndex, bool isSpecial);
+	// Emitted when an outbound connection drag ends on the END sink
+	void endBranchConnectRequested(int fromIndex);
+	// Bracket a node drag gesture: positions stream into the model while
+	// dragging (via nodeMoved), these mark the gesture boundaries
+	void nodeDragStarted(int missionIndex);
+	void nodeDragFinished(int missionIndex);
 
   protected:
 	// Pan/zoom
@@ -277,6 +285,8 @@ class MissionNodeItem final : public QGraphicsObject {
 	void missionSelected(int missionIndex);
 	void specialModeToggleRequested(int missionIndex);
 	void nodeMoved(int missionIndex, QPointF sceneTopLeft);
+	void nodeDragStarted(int missionIndex);
+	void nodeDragFinished(int missionIndex);
 
   protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
@@ -287,6 +297,7 @@ class MissionNodeItem final : public QGraphicsObject {
 	void updateGeometry();
 
 	int m_idx{-1};
+	bool m_dragEmitStarted{false};
 	QString m_file;
 	QString m_name;
 	int m_graphColor{-1}; // TODO future ability for users to arbitrarily color mission nodes. Will add when missionsave is refactored

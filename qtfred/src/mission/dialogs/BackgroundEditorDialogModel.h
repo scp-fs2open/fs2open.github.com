@@ -6,6 +6,7 @@
 
 #include "starfield/starfield.h"
 #include <globalincs/linklist.h>
+#include <QByteArray>
 
 namespace fso::fred::dialogs {
 
@@ -20,6 +21,16 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
+
+	// Undo support: snapshot the full background-editor state to/from a QByteArray
+	QByteArray captureState() const override;
+	// Restore the (global) background state from a snapshot, rebuild the
+	// starfield/skybox preview, and fire missionChanged(). Static because the
+	// undo command must keep working after the dialog (and this model) are
+	// destroyed. Returns the {bitmap, sun} selection stored in the snapshot.
+	static std::pair<int, int> restoreGlobalState(const QByteArray& data, Editor* editor);
+	// Sync an open dialog to a snapshot just restored by restoreGlobalState().
+	void applyRestoredSelection(int bitmapIndex, int sunIndex);
 
 	// limits
 	static std::pair<int, int> getIntOrientLimit() { return {0, 359}; }
@@ -182,9 +193,13 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static SCP_string getLightingProfileName();
 	void setLightingProfileName(const SCP_string& name);
 
+  signals:
+	void modelDataChanged();
+
   private:
 	void initializeData();
 	void refreshBackgroundPreview();
+	static void refreshPreview(Editor* editor);
 	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;
 	starfield_list_entry* getActiveSun() const;
@@ -197,6 +212,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	float _initial_fog_near_dist = 0.0f;
 	float _initial_fog_skybox_clip = 0.0f;
 	float _initial_fog_clip = 0.0f;
+	bool _initial_fog_save_legacy = false;
 
 };
 } // namespace fso::fred::dialogs

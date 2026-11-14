@@ -18,6 +18,16 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
+	// Serialize/restore the dialog's WORKING state (_wipDebriefing, music,
+	// current team/stage) for the in-dialog undo stack. Unlike captureState(),
+	// which snapshots the live globals for the main stack's ApplyDialogCommand,
+	// these never touch mission data.
+	QByteArray captureWorkingState() const;
+	void restoreWorkingState(const QByteArray& state);
+
 	int getCurrentTeam() const;
 	void setCurrentTeam(int teamIn);
 	int getCurrentStage() const;
@@ -30,6 +40,12 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	SCP_string getSpeechFilename();
 	void setSpeechFilename(const SCP_string& speechFilename);
 	int getFormula() const;
+
+	// Indexed setters for undo commands: a command captured on one stage must
+	// still restore that stage after the user navigates elsewhere.
+	void setStageTextAt(int team, int stage, const SCP_string& text);
+	void setRecommendationTextAt(int team, int stage, const SCP_string& text);
+	void setSpeechFilenameAt(int team, int stage, const SCP_string& speechFilename);
 
 	void setTreeControl(sexp_tree_view* tree) { _sexpTree = tree; }
 	void setModified() { set_modified(); }

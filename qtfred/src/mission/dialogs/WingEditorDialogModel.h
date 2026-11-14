@@ -79,8 +79,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 	// Top section, third column
 	void selectPreviousWing();
 	void selectNextWing();
-	void deleteCurrentWing();
-	void disbandCurrentWing();
+	// Wing delete/disband go through FredView's undo commands, not the model
 	// Initial orders is handled by its own dialog, so no model function here
 	SCP_vector<std::pair<SCP_string, bool>> getWingFlags() const;
 	void setWingFlags(const SCP_vector<std::pair<SCP_string, bool>>& newFlags);

@@ -156,6 +156,12 @@ Avoid long constructor blocks that manually connect every static button, checkbo
 - Emit `Editor::missionChanged()` after successful changes to mission state, not before.
 - Keep temporary preview state reversible if the user can still cancel the dialog.
 
+## Undo integration
+
+Every control that mutates mission data or a dialog's working state must have an undo path — a control without one silently desynchronizes the undo history from the mission. Each dialog interaction type maps to a specific pattern: Modal edit dialogs push granular commands to their own undo stack and collapse into one apply command on accept, Direct Edit dialogs push to the main stack per edit, and Bulk actions snapshot before/after around the operation.
+
+See `UNDO_GUIDE.md` for the architecture, the command classes, the invariants (identity, merging, capture parity), and step-by-step instructions for wiring new controls and new dialogs.
+
 ## Adding new files
 
 - New source files need to be added to the appropriate folders in `qtfred/source_groups.cmake`. If a new source folder is created, add it there with an appropriate name.
@@ -191,5 +197,6 @@ Before review, verify the following:
 - [ ] `accept()`, `reject()`, and `closeEvent()` preserve dirty-change behavior.
 - [ ] `apply()` or the explicit bulk action validates and reports failure without committing partial mission changes.
 - [ ] Mission changes emit `missionChanged()` only after mission data is updated.
+- [ ] Every mutating control has an undo path per `UNDO_GUIDE.md`, and undo/redo visually refreshes the affected widgets.
 - [ ] The relevant help page and contents tree are updated.
 - [ ] New source files are added to `qtfred/source_groups.cmake`, and new `.ui` form files are placed in `qtfred/ui`, when required.

@@ -3,6 +3,7 @@
 
 #include <ui/FredView.h>
 
+#include <mission/commands/FredCommands.h>
 #include <mission/dialogs/MissionSpecDialogModel.h>
 
 namespace fso::fred::dialogs {
@@ -45,7 +46,9 @@ private slots:
 	void on_customWingNameButton_clicked();
 	void on_squadronName_textChanged(const QString& string);
 	void on_squadronLogoButton_clicked();
+	void on_lowResScreen_textChanged(const QString& string);
 	void on_lowResScreenButton_clicked();
+	void on_highResScreen_textChanged(const QString& string);
 	void on_highResScreenButton_clicked();
 	void on_supportRearmOptionsButton_clicked();
 
@@ -76,6 +79,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::MissionSpecDialog> ui;
 	std::unique_ptr<MissionSpecDialogModel> _model;
 	EditorViewport* _viewport;
+	FredView*       _fredView    = nullptr;
+	QUndoStack*     _dialogStack = nullptr;
 
 	void initializeUi();
 	void updateUi();
@@ -90,37 +95,33 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateAIProfiles();
 	void updateTextEditors();
 
-	void missionTitleChanged(const QString &);
-	void missionDesignerChanged(const QString &);
+	// Shared by the type radios (each maps to one mission-type value) and by
+	// the loading screen line edits and their browse buttons.
+	void changeMissionType(int type);
+	void changeLowResScreen(const SCP_string& name);
+	void changeHighResScreen(const SCP_string& name);
 
-	void missionTypeToggled(bool, int);
+	// Every control here is a flat single value: after the live setter ran,
+	// this pushes one merging command whose apply re-runs the setter and
+	// refreshes the whole (signal-blocked) UI.
+	template <typename T, typename Setter>
+	void pushValueCommand(int fieldId, const QString& label, const T& before, const T& after, Setter&& setter,
+		bool noMerge = false)
+	{
+		if (before == after) {
+			return;
+		}
 
-	void maxRespawnChanged(int);
-	void respawnDelayChanged(int);
-
-	void squadronNameChanged(const QString &);
-
-	void disallowSupportChanged(bool);
-	void hullRepairMaxChanged(double);
-	void subsysRepairMaxChanged(double);
-
-	void trailDisplaySpeedToggled(bool);
-	void minTrailDisplaySpeedChanged(int);
-
-	void cmdSenderChanged(int);
-	void cmdPersonaChanged(int);
-
-	void eventMusicChanged(int);
-	void subEventMusicChanged(int);
-
-	void flagToggled(bool enabled, Mission::Mission_Flags flag);
-
-	void missionDescChanged();
-	void designerNotesChanged();
-
-	void aiProfileIndexChanged(int index);
-	void lightProfileIndexChanged(int index);
-	
+		auto* cmd = new FieldEditCommand<T>(fieldId, nullptr, label, true);
+		if (noMerge) {
+			cmd->setNoMerge(); // subdialog visits are discrete actions
+		}
+		cmd->addEntry(before, after, [this, setter](const T& v) {
+			setter(v);
+			updateUi();
+		});
+		_dialogStack->push(cmd);
+	}
 };
 
 } // namespace fso::fred::dialogs

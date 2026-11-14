@@ -21,6 +21,9 @@ public:
 	bool apply() override;
 	void reject() override;
 
+	QByteArray captureState() const override;
+	void restoreState(const QByteArray& state) override;
+
 	// limits
 	static std::pair<float, float> getOpacityLimit()                { return {0.0001f, 1.0f}; }
 	static std::pair<float, float> getOpacityDistanceLimit()        { return {0.1f, 16777215.0f}; } // Qt max

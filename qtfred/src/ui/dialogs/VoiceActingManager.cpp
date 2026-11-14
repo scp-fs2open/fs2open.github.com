@@ -1,24 +1,66 @@
 #include "VoiceActingManager.h"
+#include <ui/util/DialogUndo.h>
 
 #include "ui_VoiceActingManager.h"
 
 #include "missioneditor/common.h"
+#include "mission/commands/FredCommands.h"
 
 #include <ui/util/default_dir.h>
 
+#include <ship/ship.h>
+#include <object/object.h>
+#include <mission/missionmessage.h>
+#include <mission/missionbriefcommon.h>
+#include <missionui/missioncmdbrief.h>
+
 #include <QDir>
 #include <QFileInfo>
+#include <QFocusEvent>
 #include <QMessageBox>
 #include <QFileDialog>
 
 
 namespace fso::fred::dialogs {
 
+namespace {
+VoiceActingBatchCommand::Snapshot captureVoiceActingSnapshot()
+{
+	VoiceActingBatchCommand::Snapshot snap;
+
+	for (int i = 0; i < Cmd_briefs[0].num_stages; ++i)
+		snap.cmdBriefFilenames.push_back({i, Cmd_briefs[0].stage[i].wave_filename});
+
+	for (int i = 0; i < Briefings[0].num_stages; ++i)
+		snap.briefingVoices.push_back({i, Briefings[0].stages[i].voice});
+
+	for (int i = 0; i < Debriefings[0].num_stages; ++i)
+		snap.debriefingVoices.push_back({i, Debriefings[0].stages[i].voice});
+
+	for (int i = Num_builtin_messages; i < Num_messages; ++i) {
+		const auto* msg = &Messages[i];
+		snap.messages.push_back({msg->name,
+			msg->wave_info.name ? SCP_string(msg->wave_info.name) : SCP_string(),
+			msg->avi_info.name  ? SCP_string(msg->avi_info.name)  : SCP_string(),
+			msg->persona_index});
+	}
+
+	for (const auto& ship : Ships) {
+		if (ship.objnum >= 0)
+			snap.ships.push_back({Objects[ship.objnum].signature, ship.persona_index});
+	}
+
+	return snap;
+}
+} // namespace
+
 VoiceActingManager::VoiceActingManager(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), _viewport(viewport), ui(new Ui::VoiceActingManager()),
+	: QDialog(parent), _fredView(parent), _viewport(viewport), ui(new Ui::VoiceActingManager()),
 	  _model(new VoiceActingManagerModel(this, viewport))
 {
+
     ui->setupUi(this);
+    util::installMainStackUndoShortcuts(this, _fredView->mainUndoStack());
 
 	ui->abbrevBriefingLineEdit->setMaxLength(NAME_LENGTH - 1);
 	ui->abbrevCampaignLineEdit->setMaxLength(NAME_LENGTH - 1);
@@ -48,8 +90,15 @@ VoiceActingManager::~VoiceActingManager() = default;
 
 void VoiceActingManager::closeEvent(QCloseEvent* e)
 {
+	_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
 	_model->apply();
 	e->accept(); //close
+}
+
+void VoiceActingManager::focusInEvent(QFocusEvent* e)
+{
+	_fredView->undoGroup()->setActiveStack(_fredView->mainUndoStack());
+	QDialog::focusInEvent(e);
 }
 
 bool VoiceActingManager::eventFilter(QObject* obj, QEvent* ev)
@@ -291,7 +340,13 @@ void VoiceActingManager::on_personaSyncComboBox_currentIndexChanged(int index)
 
 void VoiceActingManager::on_generateFilenamesButton_clicked()
 {
+	auto before = captureVoiceActingSnapshot();
 	const int count = _model->generateFilenames();
+	if (count > 0) {
+		_fredView->mainUndoStack()->push(
+			new VoiceActingBatchCommand(std::move(before), captureVoiceActingSnapshot(),
+			                           _viewport->editor, tr("Generate Voice Filenames")));
+	}
 	QMessageBox::information(this, tr("Generate Filenames"), tr("%1 filename(s) updated.").arg(count));
 	refreshExampleFilename();
 }
@@ -317,22 +372,46 @@ void VoiceActingManager::on_generateScriptButton_clicked()
 }
 void VoiceActingManager::on_copyMsgToShipsButton_clicked()
 {
+	auto before = captureVoiceActingSnapshot();
 	const int n = _model->copyMessagePersonasToShips();
+	if (n > 0) {
+		_fredView->mainUndoStack()->push(
+			new VoiceActingBatchCommand(std::move(before), captureVoiceActingSnapshot(),
+			                           _viewport->editor, tr("Copy Message Personas to Ships")));
+	}
 	QMessageBox::information(this, tr("Copy"), tr("Personas copied to %1 ship(s).").arg(n));
 }
 void VoiceActingManager::on_copyShipsToMsgsButton_clicked()
 {
+	auto before = captureVoiceActingSnapshot();
 	const int n = _model->copyShipPersonasToMessages();
+	if (n > 0) {
+		_fredView->mainUndoStack()->push(
+			new VoiceActingBatchCommand(std::move(before), captureVoiceActingSnapshot(),
+			                           _viewport->editor, tr("Copy Ship Personas to Messages")));
+	}
 	QMessageBox::information(this, tr("Copy"), tr("Personas copied to %1 message(s).").arg(n));
 }
 void VoiceActingManager::on_clearNonSendersButton_clicked()
 {
+	auto before = captureVoiceActingSnapshot();
 	const int n = _model->clearPersonasFromNonSenders();
+	if (n > 0) {
+		_fredView->mainUndoStack()->push(
+			new VoiceActingBatchCommand(std::move(before), captureVoiceActingSnapshot(),
+			                           _viewport->editor, tr("Clear Personas from Non-Senders")));
+	}
 	QMessageBox::information(this, tr("Clear"), tr("Cleared %1 ship(s).").arg(n));
 }
 void VoiceActingManager::on_setHeadAnisButton_clicked()
 {
+	auto before = captureVoiceActingSnapshot();
 	const int n = _model->setHeadAnisUsingMessagesTbl();
+	if (n > 0) {
+		_fredView->mainUndoStack()->push(
+			new VoiceActingBatchCommand(std::move(before), captureVoiceActingSnapshot(),
+			                           _viewport->editor, tr("Set Head ANIs from messages.tbl")));
+	}
 	QMessageBox::information(this, tr("Set Head ANIs"), tr("Updated %1 message(s).").arg(n));
 }
 void VoiceActingManager::on_checkAnyWingmanButton_clicked()
