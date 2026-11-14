@@ -792,12 +792,15 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			}
 		}
 
+		// Read once: the first read clears the press count, so a second read on the release frame returns false
+		const bool afterburner_down = check_control(AFTERBURNER) != 0;
+
 		// AL 12-29-97: If afterburner key is down, player should have full forward thrust (even if afterburners run out)
-		if ( check_control(AFTERBURNER) ) {
+		if ( afterburner_down ) {
 			ci->forward = 1.0f;
 		}
 
-		if ( check_control(REVERSE_THRUST) && check_control(AFTERBURNER) ) {
+		if ( check_control(REVERSE_THRUST) && afterburner_down ) {
 			ci->forward = -pi->max_rear_vel * 1.0f;
 		}
 
