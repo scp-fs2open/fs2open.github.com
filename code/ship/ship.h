@@ -936,7 +936,7 @@ public:
 	// its bookend nodes, and the owning pointers are unique_ptrs.  Callers must
 	// still fix up external back-references (Objects[].instance,
 	// Ai_info[].shipnum, etc.) -- see reassign_ship_slot in
-	// missioneditor/common.cpp.
+	// missioneditor/slot_operations.cpp.
 	// All the defaulted special member functions are defaulted in ship.cpp
 	// rather than here because they need the complete WarpEffect type.
 	// The moves are not declared noexcept because the implicit exception

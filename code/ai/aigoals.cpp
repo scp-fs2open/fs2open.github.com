@@ -2893,7 +2893,7 @@ void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *o
 		{
 			if (!stricmp(goals[i].target_name, old_name))
 			{
-				if (*new_name == '<')  // target was just deleted..
+				if (new_name == nullptr)  // target was just deleted..
 					goals[i].ai_mode = AI_GOAL_NONE;
 				else
 					goals[i].target_name = ai_get_goal_target_name(new_name, &dummy);
