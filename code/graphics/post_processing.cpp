@@ -225,6 +225,7 @@ bool PostProcessingManager::parse_table()
 
 			m_lightshaftParams.cpintensity *= m_lightshaftParams.intensity;
 		}
+		m_defaultLightshaftParams = m_lightshaftParams;
 
 		required_string("#End");
 
@@ -239,6 +240,7 @@ void PostProcessingManager::clear()
 {
 	m_postEffects.clear();
 	m_lightshaftParams = lightshaft_parameters();
+	m_defaultLightshaftParams = lightshaft_parameters();
 }
 
 const SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() const { return m_postEffects; }
@@ -246,6 +248,7 @@ SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() { r
 
 const lightshaft_parameters& PostProcessingManager::getLightshaftParams() const { return m_lightshaftParams; }
 lightshaft_parameters& PostProcessingManager::getLightshaftParams() { return m_lightshaftParams; }
+void PostProcessingManager::resetLightshaftParams() { m_lightshaftParams = m_defaultLightshaftParams; }
 
 bool PostProcessingManager::bloomShadersOk() const
 {

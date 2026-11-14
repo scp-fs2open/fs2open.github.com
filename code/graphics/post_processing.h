@@ -59,6 +59,7 @@ class PostProcessingManager {
 
 	const lightshaft_parameters& getLightshaftParams() const;
 	lightshaft_parameters& getLightshaftParams();
+	void resetLightshaftParams();
 
 	bool bloomShadersOk() const;
 	void setBloomShadersOk(bool ok);
@@ -67,6 +68,7 @@ class PostProcessingManager {
 	SCP_vector<post_effect_t> m_postEffects;
 
 	lightshaft_parameters m_lightshaftParams;
+	lightshaft_parameters m_defaultLightshaftParams;
 	bool m_bloomShadersOk = true;
 };
 

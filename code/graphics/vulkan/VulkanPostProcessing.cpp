@@ -1155,6 +1155,7 @@ void vulkan_post_process_set_defaults()
 	for (auto& effect : postEffects) {
 		effect.intensity = effect.default_intensity;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 }
 
 } // namespace graphics::vulkan
