@@ -159,6 +159,7 @@ bool PostProcessingManager::parse_table()
 				if (optional_string("$RGB:")) {
 					stuff_vec3d(&eff.rgb);
 				}
+				eff.default_rgb = eff.rgb;
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (m_postEffects.size() < 32) {

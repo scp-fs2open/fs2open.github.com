@@ -34,6 +34,7 @@ struct post_effect_t {
 	float add{0.0f};
 
 	vec3d rgb = vmd_zero_vector;
+	vec3d default_rgb = vmd_zero_vector;
 
 	bool always_on{false};
 };
