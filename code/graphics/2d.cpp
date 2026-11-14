@@ -238,6 +238,17 @@ const char* gr_render_api_name(GraphicsAPI api)
 	}
 }
 
+bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api)
+{
+	if (requirement == "opengl") {
+		return api == GraphicsAPI::OpenGL;
+	}
+	if (requirement == "vulkan") {
+		return api == GraphicsAPI::Vulkan;
+	}
+	return true;
+}
+
 // The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
 // In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
 // with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.

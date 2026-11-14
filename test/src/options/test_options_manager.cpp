@@ -25,6 +25,7 @@ class OptionsManagerOverride : public ::testing::Test {
 	{
 		OptionsManager::instance()->clearOverrides();
 		OptionsManager::instance()->discardChanges();
+		OptionsManager::instance()->clearRequirements();
 	}
 };
 
@@ -977,4 +978,38 @@ TEST_F(OptionsManagerOverrideLocalized, DescribedHardwareListsFollowTheQuery)
 	ASSERT_EQ(json_array_size(json_object_get(aniso_after, "values")), 4u);
 	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_before, "default"))), 1.0f);
 	ASSERT_FLOAT_EQ(static_cast<float>(json_number_value(json_object_get(aniso_after, "default"))), 8.0f);
+}
+
+// The in-game options dialog reads this record to grey out an option whose requirement the running renderer
+// does not meet. This test checks only the record; the dialog is ImGui code with no test.
+TEST_F(OptionsManagerOverride, RequirementIsQueryable)
+{
+	auto* mgr = OptionsManager::instance();
+
+	ASSERT_FALSE(mgr->getRequirement("Test.Requirement.NeverSet").has_value());
+
+	mgr->setRequirement("Test.Requirement.Set", "opengl", "Needs the OpenGL renderer");
+	auto requirement = mgr->getRequirement("Test.Requirement.Set");
+	ASSERT_TRUE(requirement.has_value());
+	ASSERT_EQ(requirement->first, "opengl");
+	ASSERT_EQ(requirement->second, "Needs the OpenGL renderer");
+
+	mgr->clearRequirements();
+	ASSERT_FALSE(mgr->getRequirement("Test.Requirement.Set").has_value());
+}
+
+TEST(OptionRequirement, MetByTheMatchingRendererOnly)
+{
+	ASSERT_TRUE(gr_option_requirement_met("opengl", GraphicsAPI::OpenGL));
+	ASSERT_FALSE(gr_option_requirement_met("opengl", GraphicsAPI::Vulkan));
+	ASSERT_TRUE(gr_option_requirement_met("vulkan", GraphicsAPI::Vulkan));
+	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::OpenGL));
+	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::Stub));
+}
+
+// A requirement the UI cannot judge (e.g. "raytracing") must never grey out a control.
+TEST(OptionRequirement, UnknownRequirementCountsAsMet)
+{
+	ASSERT_TRUE(gr_option_requirement_met("raytracing", GraphicsAPI::OpenGL));
+	ASSERT_TRUE(gr_option_requirement_met("", GraphicsAPI::Vulkan));
 }
