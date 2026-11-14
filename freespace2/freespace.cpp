@@ -5506,7 +5506,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
 
-				if ( going_to_menu_state(new_state) ) {
+				if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 					freespace_stop_mission();
 				}
 			}
@@ -5551,7 +5551,7 @@ void game_leave_state( int old_state, int new_state )
 				if ( !going_to_briefing_state(new_state) ) {
 					common_select_close();
 
-					if ( going_to_menu_state(new_state) ) {
+					if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 						freespace_stop_mission();
 					}
 				}
@@ -5564,7 +5564,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( !going_to_briefing_state(new_state) ) {
 				common_select_close();
 
-				if ( going_to_menu_state(new_state) ) {
+				if ( going_to_menu_state(new_state) || (new_state == GS_STATE_START_GAME) ) {
 					freespace_stop_mission();
 				}
 			}
