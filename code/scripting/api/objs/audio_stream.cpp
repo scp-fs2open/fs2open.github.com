@@ -8,7 +8,7 @@ namespace api {
 
 //**********HANDLE: Asteroid
 ADE_OBJ_NO_MULTI(l_AudioStream, int, "audio_stream", "An audio stream handle");
-ADE_OBJ_VALIDATOR(l_AudioStream, idx, idx >= 0);
+ADE_OBJ_VALIDATOR(l_AudioStream, signature, audiostream_get_by_signature(signature) >= 0);
 
 ADE_FUNC(play,
 	l_AudioStream,
@@ -17,13 +17,14 @@ ADE_FUNC(play,
 	"boolean",
 	"true on success, false otherwise")
 {
-	int streamHandle = -1;
+	int signature = -1;
 	float volume = -1.0f;
 	bool loop = false;
-	if (!ade_get_args(L, "o|fb", l_AudioStream.Get(&streamHandle), &volume, &loop)) {
+	if (!ade_get_args(L, "o|fb", l_AudioStream.Get(&signature), &volume, &loop)) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ade_set_args(L, "b", false);
 	}
@@ -34,11 +35,12 @@ ADE_FUNC(play,
 
 ADE_FUNC(pause, l_AudioStream, nullptr, "Pauses the audio stream", "boolean", "true on success, false otherwise")
 {
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+	int signature = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&signature))) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
@@ -49,11 +51,12 @@ ADE_FUNC(pause, l_AudioStream, nullptr, "Pauses the audio stream", "boolean", "t
 
 ADE_FUNC(unpause, l_AudioStream, nullptr, "Unpauses the audio stream", "boolean", "true on success, false otherwise")
 {
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+	int signature = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&signature))) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
@@ -69,11 +72,12 @@ ADE_FUNC(stop,
 	"boolean",
 	"true on success, false otherwise")
 {
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+	int signature = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&signature))) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
@@ -92,24 +96,25 @@ ADE_FUNC(close,
 {
 	// We get ourself a pointer here so that we can invalidate the passed handle since otherwise it might be possible to
 	// still call functions on that handle
-	int* streamHandlePointer = nullptr;
+	int* signaturePointer = nullptr;
 	bool fade = true;
-	if (!ade_get_args(L, "o|b", l_AudioStream.GetPtr(&streamHandlePointer), &fade)) {
+	if (!ade_get_args(L, "o|b", l_AudioStream.GetPtr(&signaturePointer), &fade)) {
 		return ADE_RETURN_FALSE;
 	}
 
-	if (streamHandlePointer == nullptr) {
+	if (signaturePointer == nullptr) {
 		return ADE_RETURN_FALSE;
 	}
 
-	if (*streamHandlePointer < 0) {
+	int streamHandle = audiostream_get_by_signature(*signaturePointer);
+	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
 
-	audiostream_close_file(*streamHandlePointer, fade);
+	audiostream_close_file(streamHandle, fade);
 
 	// Invalidate the handle so that it cannot be reused
-	*streamHandlePointer = -1;
+	*signaturePointer = -1;
 
 	return ade_set_args(L, "b", true);
 }
@@ -121,11 +126,12 @@ ADE_FUNC(isPlaying,
 	"boolean",
 	"true when still playing, false otherwise")
 {
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+	int signature = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&signature))) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
@@ -135,12 +141,13 @@ ADE_FUNC(isPlaying,
 
 ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audio stream, 0 - 1", "boolean", "true on success, false otherwise")
 {
-	int streamHandle = -1;
+	int signature = -1;
 	float volume = -1.0f;
-	if (!ade_get_args(L, "of", l_AudioStream.Get(&streamHandle), &volume)) {
+	if (!ade_get_args(L, "of", l_AudioStream.Get(&signature), &volume)) {
 		return ADE_RETURN_FALSE;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_FALSE;
 	}
@@ -150,11 +157,12 @@ ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audi
 
 ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream", "number", "the duration in float seconds or nil if invalid")
 {
-	int streamHandle = -1;
-	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+	int signature = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&signature))) {
 		return ADE_RETURN_NIL;
 	}
 
+	int streamHandle = audiostream_get_by_signature(signature);
 	if (streamHandle < 0) {
 		return ADE_RETURN_NIL;
 	}

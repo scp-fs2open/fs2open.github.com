@@ -79,7 +79,7 @@ ADE_FUNC(openAudioStreamMem,
         return ade_set_args(L, "o", l_AudioStream.Set(-1));
     }
 
-	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+	return ade_set_args(L, "o", l_AudioStream.Set(audiostream_get_signature(ah)));
 }
 
 
