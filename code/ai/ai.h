@@ -548,6 +548,7 @@ extern void ai_level_init(void);		//	Call before each level to reset AI
 extern int ai_set_attack_subsystem(object *objp, int subnum);
 extern int ai_issue_rearm_request(object *requester_objp);		//	Object requests rearm/repair.
 extern int ai_abort_rearm_request(object *requester_objp);		//	Object aborts rearm/repair.
+extern void ai_release_queued_rearm_target(const ai_goal *goal, int how);
 extern void ai_do_repair_frame(object *objp, ai_info *aip, float frametime);		//	Repair a ship object, player or AI.
 extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 

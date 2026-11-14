@@ -773,6 +773,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
 
+				set_flag(profile, "$fix stranded rearm queue:", AI::Profile_Flags::Fix_stranded_rearm_queue);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -1010,5 +1012,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_model_path_refresh_randomization);
 		flags.set(AI::Profile_Flags::Fix_bay_speed_ramp);
 		flags.set(AI::Profile_Flags::Fix_stale_ai_order_state);
+	}
+	if (mod_supports_version(27, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_stranded_rearm_queue);
 	}
 }
