@@ -338,6 +338,9 @@ class OptionsManagerPersistHook : public test::FSTestFixture {
 		Ingame_options_save_found = true;
 		os_init_registry_stuff(nullptr, "Test");
 
+		// A pilot load in an earlier test leaves pending edits whose listeners dereference Player
+		OptionsManager::instance()->discardChanges();
+
 		_option =
 			OptionBuilder<int>("Test.Hook.Changed", SCP_string("Test.Hook.Changed"), SCP_string("Test.Hook.Changed"))
 				.default_val(0)
