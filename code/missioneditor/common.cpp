@@ -17,10 +17,16 @@
 #include "parse/sexp.h"
 #include "prop/prop.h"
 #include "render/batching.h"
+#include "scripting/scripting.h"
+#include "sound/audiostr.h"
+#include "sound/sound.h"
+#include "graphics/2d.h"
+#include "osapi/osapi.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
 #include <algorithm>
+#include <cmath>
 
 // to keep track of data
 char Voice_abbrev_briefing[NAME_LENGTH];
@@ -108,6 +114,38 @@ anchor_t target_to_anchor(int target)
 		return anchor_t(ship_registry_get_index(Ships[target].ship_name));
 	else
 		return anchor_t(target);
+}
+
+int arrival_min_distance(ArrivalLocation location, anchor_t anchor)
+{
+	if (!arrival_location_uses_distance(location))
+		return 0;
+
+	if (!anchor.isValid() || (anchor.value() & ANCHOR_SPECIAL_ARRIVAL))
+		return 1;
+
+	const int shipnum = anchor_to_target(anchor);
+	if (shipnum < 0 || shipnum >= MAX_SHIPS || Ships[shipnum].objnum < 0)
+		return 1;
+
+	const float radius_distance = std::round(MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[shipnum].objnum].radius);
+	return std::max(1, static_cast<int>(std::min(MIN_TARGET_ARRIVAL_DISTANCE, radius_distance)));
+}
+
+bool ship_in_editor_group(const ship& shipp, int group_bit)
+{
+	// -1 has all bits set, so test it first.
+	return shipp.group >= 0 && (shipp.group & group_bit) != 0;
+}
+
+void ship_set_editor_group(ship& shipp, int group_bit, bool in_group)
+{
+	if (in_group) {
+		shipp.group = (shipp.group < 0 ? 0 : shipp.group) | group_bit;
+	} else if (shipp.group >= 0) {
+		// A ship in no group keeps -1, so that the mission save writes no group data for it.
+		shipp.group &= ~group_bit;
+	}
 }
 
 void update_custom_wing_indexes()
@@ -355,7 +393,9 @@ SCP_string check_name_conflict(const char *entity_type, const char *name, int ex
 	return "";	// no error
 }
 
-void editor_free_engine_data()
+// Free the engine data that the editors keep for their whole session. Call it while the graphics system is
+// still up, because models own GPU buffers and cursors own bitmaps.
+static void editor_free_engine_data()
 {
 	// models, model instances, and collision trees; done before ship_close() because model_unload() walks Ship_info
 	model_free_all();
@@ -373,6 +413,11 @@ void editor_free_engine_data()
 	fhash_flush();
 	control_config_common_close();
 	sexp_shutdown();
+
+	// Use the same order as game_shutdown(). The SEXP data (Lua SEXPs) holds Lua references, so free it first.
+	// After this call, scripting is not available.
+	Script_system.Clear();
+
 	batching_shutdown();
 
 	// the cursors hold bitmaps, so this must happen before the graphics system shuts down
@@ -383,6 +428,19 @@ void editor_free_engine_data()
 		delete[] Cmdline_mod;
 		Cmdline_mod = nullptr;
 	}
+}
+
+void editor_shutdown()
+{
+	// Lua objects can hold sound handles, so free the Lua state before the sound system.
+	editor_free_engine_data();
+
+	audiostream_close();
+	snd_close();
+
+	gr_close();
+
+	os_cleanup();
 }
 
 int load_and_find_campaign_mission(const char *mission_filename)

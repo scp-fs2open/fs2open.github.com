@@ -115,6 +115,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	Q_OBJECT
   public:
 	explicit CampaignMissionGraph(QWidget* parent = nullptr);
+	~CampaignMissionGraph() override;
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 

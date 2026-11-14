@@ -323,7 +323,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="useSpinBox">
+      <widget class="fso::fred::MixedValueSpinBox" name="useSpinBox">
        <property name="maximum">
         <number>16777215</number>
        </property>
@@ -337,7 +337,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="delaySpinBox">
+      <widget class="fso::fred::MixedValueSpinBox" name="delaySpinBox">
        <property name="maximum">
         <number>16777215</number>
        </property>
@@ -376,6 +376,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::MixedValueSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>ui/widgets/MixedValueSpinBox.h</header>
+  </customwidget>
+ </customwidgets>
  <tabstops>
   <tabstop>possibleShipsList</tabstop>
   <tabstop>actionAddShip</tabstop>

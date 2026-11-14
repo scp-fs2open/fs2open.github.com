@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QFileInfo>
 #include <QInputDialog>
+#include <QDialog>
 #include <QMessageBox>
 #include <QDebug>
 #include <QKeyEvent>
@@ -20,6 +21,8 @@
 #include <QEasingCurve>
 
 #include <project.h>
+#include <array>
+#include <utils/finally.h>
 
 #include <qevent.h>
 #include <FredApplication.h>
@@ -280,19 +283,19 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
 	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
+		// Write an autosave only for unsaved changes. Otherwise the autosave is newer than the mission
+		// file, and the next load offers a recovery of content that is already in the file.
+		if (!_missionModified)
+			return;
+
 		Fred_mission_save save;
-		save.set_save_format(_missionSaveFormat);
-		save.set_always_save_display_names(_viewport->Always_save_display_names);
-		save.set_view_pos(_viewport->camera.view_pos);
-		save.set_view_orient(_viewport->camera.view_orient);
-		save.set_fred_alt_names(Fred_alt_names);
-		save.set_fred_callsigns(Fred_callsigns);
+		configureMissionSave(save);
 		save.save_autosave_file(savePath.toUtf8().constData());
 	});
 	connect(fred, &Editor::layerListChanged, this, [this]() { _tbLayerComboDirty = true; });
 
 	// Sets the initial window title
-	on_mission_loaded("");
+	on_mission_loaded("", false);
 
 	syncViewOptions();
 
@@ -317,7 +320,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			&FredView::viewIdle,
 			this,
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(_viewport->camera.hasSavedPosition()); });
-	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!saveName.isEmpty()); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionRevert->setEnabled(!fred->currentMissionPath().isEmpty()); });
 	// Scene Browser dock panel
 	_browserPanel = new SceneBrowserPanel(this, _viewport);
 	addDockWidget(Qt::LeftDockWidgetArea, _browserPanel);
@@ -360,30 +363,22 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	_contextToolBar->setFixedHeight(qMax(28, ui->toolBar->sizeHint().height()));
 }
 
-void FredView::loadMissionFile(const QString& pathName, int flags) {
+void FredView::loadMissionFile(const QString& pathName, int flags, bool offerAutosaveRecovery) {
 	if (!maybePromptToSaveMissionChanges(tr("loading another mission"))) {
 		return;
 	}
 
 	statusBar()->showMessage(tr("Loading mission %1").arg(pathName));
-	try {
-		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+	auto restoreCursor = ::util::finally([] { QApplication::restoreOverrideCursor(); });
 
-		// probably good to clear selections in qtFRED too
-		fred->clean_up_selections();
+	// probably good to clear selections in qtFRED too
+	fred->clean_up_selections();
 
-		auto pathToLoad = pathName.toStdString();
-		if (!(flags & MPF_IS_TEMPLATE) && _viewport->Offer_autosave_recovery)
-			fred->maybeUseAutosave(pathToLoad);
-
-		fred->loadMission(pathToLoad, flags);
-
-		QApplication::restoreOverrideCursor();
+	// On failure, loadMission() shows the error and creates a new, untitled mission.
+	if (fred->loadMission(pathName.toStdString(), flags, offerAutosaveRecovery && _viewport->Offer_autosave_recovery)) {
 		autoRunErrorChecker();
-	} catch (const fso::fred::mission_load_error&) {
-		QApplication::restoreOverrideCursor();
-
-		QMessageBox::critical(this, tr("Failed loading mission."), tr("Could not parse the mission."));
+	} else {
 		statusBar()->clearMessage();
 	}
 }
@@ -479,15 +474,7 @@ bool FredView::performPreSaveCheck(int* outFixCount) {
 	}
 }
 
-bool FredView::saveMissionToCurrentPath() {
-	if (saveName.isEmpty())
-		return saveMissionAs();
-
-	int fixCount = -1;
-	if (!performPreSaveCheck(&fixCount))
-		return false;
-
-	Fred_mission_save save;
+void FredView::configureMissionSave(Fred_mission_save& save) const {
 	save.set_save_format(_missionSaveFormat);
 	save.set_always_save_display_names(_viewport->Always_save_display_names);
 	save.set_create_bak_file(_viewport->Create_bak_on_save);
@@ -495,11 +482,25 @@ bool FredView::saveMissionToCurrentPath() {
 	save.set_view_orient(_viewport->camera.view_orient);
 	save.set_fred_alt_names(Fred_alt_names);
 	save.set_fred_callsigns(Fred_callsigns);
+}
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
+bool FredView::writeMissionFile(const QString& path) {
+	Fred_mission_save save;
+	configureMissionSave(save);
+
+	// save_mission_file() returns 0 on success. On failure it only writes to the log, so tell the user here.
+	if (save.save_mission_file(path.toUtf8().constData()) != 0) {
+		QMessageBox::critical(this, tr("Save Failed"),
+			tr("QtFRED could not write the mission to\n%1\n\nThe mission is not saved.").arg(path));
+		return false;
+	}
+
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
+	return true;
+}
 
+void FredView::reportPreSaveFixes(int fixCount) {
 	if (fixCount > 0)
 		QMessageBox::information(this, tr("Auto-corrections Applied"),
 			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
@@ -510,7 +511,21 @@ bool FredView::saveMissionToCurrentPath() {
 	// Keep the persistent error checker in sync if it is already open.
 	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
 		_errorCheckerDialog->runCheck();
+}
 
+bool FredView::saveMissionToCurrentPath() {
+	const QString path = fred->currentMissionPath();
+	if (path.isEmpty())
+		return saveMissionAs();
+
+	int fixCount = -1;
+	if (!performPreSaveCheck(&fixCount))
+		return false;
+
+	if (!writeMissionFile(path))
+		return false;
+
+	reportPreSaveFixes(fixCount);
 	return true;
 }
 
@@ -522,38 +537,22 @@ bool FredView::saveMissionAs() {
 		return false;
 
 	const QString lastDir = fso::fred::util::getLastDir("missions/saveMission", CF_TYPE_MISSIONS);
-	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
-	if (saveName.isEmpty())
+	// Use a local variable, so that a cancelled dialog does not clear the current file name.
+	QString newSaveName = QFileDialog::getSaveFileName(this, tr("Save mission"), lastDir, tr("FS2 missions (*.fs2)"));
+	if (newSaveName.isEmpty())
 		return false;
 
-	fso::fred::util::saveLastDir("missions/saveMission", saveName);
+	fso::fred::util::saveLastDir("missions/saveMission", newSaveName);
+	newSaveName.replace('/', DIR_SEPARATOR_CHAR);
 
-	Fred_mission_save save;
-	save.set_save_format(_missionSaveFormat);
-	save.set_always_save_display_names(_viewport->Always_save_display_names);
-	save.set_create_bak_file(_viewport->Create_bak_on_save);
-	save.set_view_pos(_viewport->camera.view_pos);
-	save.set_view_orient(_viewport->camera.view_orient);
-	save.set_fred_alt_names(Fred_alt_names);
-	save.set_fred_callsigns(Fred_callsigns);
+	// On failure, keep the old file name and the modified flag.
+	if (!writeMissionFile(newSaveName))
+		return false;
 
-	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
-	_missionModified = false;
-	setLastSaved(QDateTime::currentDateTime());
-
-	if (fixCount > 0)
-		QMessageBox::information(this, tr("Auto-corrections Applied"),
-			tr("%n issue(s) were automatically corrected before saving.", "", fixCount));
-	else if (fixCount == 0)
-		QMessageBox::information(this, tr("No Auto-corrections Applied"),
-			tr("No issues could be automatically corrected. The mission was saved with existing errors."));
-
-	// Keep the persistent error checker in sync if it is already open.
-	if (_errorCheckerDialog && _errorCheckerDialog->isVisible())
-		_errorCheckerDialog->runCheck();
-
-	fred->setCurrentMissionPath(saveName);
-	restartAutosaveTimer();
+	reportPreSaveFixes(fixCount);
+	fred->setCurrentMissionPath(newSaveName);
+	showCurrentMissionFile();
+	addToRecentFiles(newSaveName);
 	return true;
 }
 
@@ -644,7 +643,9 @@ void FredView::on_actionSave_As_Template_triggered(bool) {
 }
 
 void FredView::on_actionRevert_triggered(bool) {
-	if (saveName.isEmpty()) {
+	// A copy, because the load changes the current mission path.
+	const QString path = fred->currentMissionPath();
+	if (path.isEmpty()) {
 		QMessageBox::information(this, tr("Revert"), tr("Mission has not been saved yet."));
 		return;
 	}
@@ -656,7 +657,8 @@ void FredView::on_actionRevert_triggered(bool) {
 		return;
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
-	loadMissionFile(saveName);
+	// Revert discards the changes. Do not offer the autosave, because it can contain those changes.
+	loadMissionFile(path, 0, false);
 }
 
 void FredView::on_actionFS2_Open_triggered(bool) {
@@ -722,13 +724,7 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		destPath += filename;
 
 		Fred_mission_save fileSave;
-		fileSave.set_save_format(_missionSaveFormat);
-		fileSave.set_always_save_display_names(_viewport->Always_save_display_names);
-		fileSave.set_create_bak_file(_viewport->Create_bak_on_save);
-		fileSave.set_view_pos(_viewport->camera.view_pos);
-		fileSave.set_view_orient(_viewport->camera.view_orient);
-		fileSave.set_fred_alt_names(Fred_alt_names);
-		fileSave.set_fred_callsigns(Fred_callsigns);
+		configureMissionSave(fileSave);
 
 		if (fileSave.save_mission_file(destPath.c_str()) == 0) {
 			++successes;
@@ -809,7 +805,7 @@ void FredView::on_actionRun_FreeSpace_2_Open_triggered(bool) {
 	}
 }
 
-void FredView::on_mission_loaded(const std::string& filepath) {
+void FredView::on_mission_loaded(const std::string& filepath, bool hasUnsavedContent) {
 	// Clear browsed head ANIs so the new mission's message scan starts fresh.
 	fso::fred::dialogs::MissionEventsDialogModel::clearBrowsedHeadAnis();
 
@@ -825,40 +821,32 @@ void FredView::on_mission_loaded(const std::string& filepath) {
 		_tbLayerComboDirty = true;
 	}
 
-	QString filename = "Untitled";
-	if (!filepath.empty()) {
-		filename = QFileInfo(QString::fromStdString(filepath)).fileName();
-	}
+	// filepath is Editor::currentMissionPath(). It is empty for a new mission, a template, and an FS1 import.
+	showCurrentMissionFile();
+	if (!filepath.empty())
+		addToRecentFiles(QString::fromStdString(filepath));
 
-	// The "[*]" is the placeholder for showing the modified state of the window
-	auto title = tr("%1[*]").arg(filename);
-
-	setWindowTitle(title);
-	// This will add some additional features on platforms that make use of this information
-	setWindowFilePath(QString::fromStdString(filepath));
-
-	if (!filepath.empty()) {
-		auto qpath = QString::fromStdString(filepath);
-		// Templates are loaded to edit, not saved back to their original path
-		if (!qpath.endsWith(".fst", Qt::CaseInsensitive)) {
-			saveName = qpath;
-		}
-		addToRecentFiles(qpath);
-	} else {
-		saveName = QString();
-	}
-
-	// Update autosave path and start/stop timer based on whether we have a named file.
-	fred->setCurrentMissionPath(saveName);
-	restartAutosaveTimer();
-
-	_missionModified = false;
+	// A recovered autosave is not in the mission file yet.
+	_missionModified = hasUnsavedContent;
 
 	if (filepath.empty()) {
 		statusBar()->showMessage(tr("Every great mission starts here. No pressure."));
 	} else {
 		statusBar()->clearMessage();
 	}
+}
+
+void FredView::showCurrentMissionFile() {
+	const QString& path = fred->currentMissionPath();
+	const QString filename = path.isEmpty() ? QStringLiteral("Untitled") : QFileInfo(path).fileName();
+
+	// The "[*]" is the placeholder for showing the modified state of the window
+	setWindowTitle(tr("%1[*]").arg(filename));
+	// This will add some additional features on platforms that make use of this information
+	setWindowFilePath(path);
+
+	// The autosave file name depends on the mission path, so start the interval again.
+	restartAutosaveTimer();
 }
 
 QSurface* FredView::getRenderSurface() {
@@ -904,22 +892,20 @@ void FredView::updateRecentFileList() {
 	QSettings settings;
 	auto recentFiles = settings.value("FredView/recentFiles").toStringList();
 
-	if (recentFiles.empty()) {
-		// If there are no files, clear the menu and disable it
-		ui->menuRe_cent_Files->clear();
-		ui->menuRe_cent_Files->setEnabled(false);
-	} else {
-		// Reset the menu in case there was something there before and enable it
-		ui->menuRe_cent_Files->clear();
-		ui->menuRe_cent_Files->setEnabled(true);
+	// Remove the old actions. A recent-file action can call this function while it sends its own triggered()
+	// signal, so use a deferred delete. Before, the actions had this window as parent, and each update leaked them.
+	for (auto* action : ui->menuRe_cent_Files->actions()) {
+		ui->menuRe_cent_Files->removeAction(action);
+		action->deleteLater();
+	}
+	ui->menuRe_cent_Files->setEnabled(!recentFiles.empty());
 
-		// Now add the individual files as actions
-		for (auto& path : recentFiles) {
-			auto action = new QAction(path, this);
-			connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
+	// Now add the individual files as actions
+	for (auto& path : recentFiles) {
+		auto action = new QAction(path, ui->menuRe_cent_Files);
+		connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
 
-			ui->menuRe_cent_Files->addAction(action);
-		}
+		ui->menuRe_cent_Files->addAction(action);
 	}
 }
 
@@ -2260,6 +2246,17 @@ void FredView::changeEvent(QEvent* event) {
 		menuBar()->update();
 	}
 }
+QList<QWidget*> FredView::editorWindows() const {
+	// Only dialogs and the campaign editor (a QMainWindow) are editor windows. Menus and floating dock
+	// widgets are also top-level children, but this window owns them until it is destroyed.
+	QList<QWidget*> windows;
+	for (auto* child : findChildren<QWidget*>(QString(), Qt::FindDirectChildrenOnly)) {
+		if (child->isWindow() && (qobject_cast<QDialog*>(child) != nullptr || qobject_cast<QMainWindow*>(child) != nullptr))
+			windows.append(child);
+	}
+	return windows;
+}
+
 void FredView::closeEvent(QCloseEvent* event) {
 	QSettings settings;
 	settings.setValue("FredView/mainWindowState",      saveState());
@@ -2268,12 +2265,27 @@ void FredView::closeEvent(QCloseEvent* event) {
 	settings.setValue("FredView/transformLocalRotate", _tbLocalRotate);
 	// Camera speeds are persisted on change in onUpdateViewSpeeds(), so no need to save them here.
 
+	// Close the editor windows before the mission prompt. A window can ask about its own unsaved changes.
+	// If the user keeps the changes, they go into the mission, and the mission prompt then includes them.
+	// A cancel in a window stops the exit. A window that closed before the cancel stays closed, because
+	// the user already answered its prompt, and its model is not usable again after apply() or reject().
+	for (auto* window : editorWindows()) {
+		if (window->isVisible() && !window->close()) {
+			event->ignore();
+			return;
+		}
+	}
+
 	if (!maybePromptToSaveMissionChanges(tr("closing QtFRED"))) {
 		event->ignore();
 		return;
 	}
 	disconnect();
 	QMainWindow::closeEvent(event);
+
+	// The editor windows hold SEXP trees and pointers into mission data. WA_DeleteOnClose only schedules a
+	// deferred delete, which runs after shutdown() frees that data. Delete them now.
+	qDeleteAll(editorWindows());
 
 	// gr_close() destroys this window, so this must be the last thing we do here
 	shutdown();
@@ -2910,34 +2922,26 @@ void FredView::on_actionDelete_Wing_triggered(bool) {
 	}
 }
 void FredView::initializeGroupActions() {
-	// This is a bit ugly but it's easier than iterating though all actions in the menu...
-	connect(ui->actionGroup_1, &QAction::triggered, this, [this]() { onGroupSelected(1); });
-	connect(ui->actionGroup_2, &QAction::triggered, this, [this]() { onGroupSelected(2); });
-	connect(ui->actionGroup_3, &QAction::triggered, this, [this]() { onGroupSelected(3); });
-	connect(ui->actionGroup_4, &QAction::triggered, this, [this]() { onGroupSelected(4); });
-	connect(ui->actionGroup_5, &QAction::triggered, this, [this]() { onGroupSelected(5); });
-	connect(ui->actionGroup_6, &QAction::triggered, this, [this]() { onGroupSelected(6); });
-	connect(ui->actionGroup_7, &QAction::triggered, this, [this]() { onGroupSelected(7); });
-	connect(ui->actionGroup_8, &QAction::triggered, this, [this]() { onGroupSelected(8); });
-	connect(ui->actionGroup_9, &QAction::triggered, this, [this]() { onGroupSelected(9); });
+	const std::array<QAction*, 9> selectActions{ui->actionGroup_1, ui->actionGroup_2, ui->actionGroup_3,
+		ui->actionGroup_4, ui->actionGroup_5, ui->actionGroup_6, ui->actionGroup_7, ui->actionGroup_8,
+		ui->actionGroup_9};
+	const std::array<QAction*, 9> setActions{ui->actionSetGroup_1, ui->actionSetGroup_2, ui->actionSetGroup_3,
+		ui->actionSetGroup_4, ui->actionSetGroup_5, ui->actionSetGroup_6, ui->actionSetGroup_7, ui->actionSetGroup_8,
+		ui->actionSetGroup_9};
 
-
-	connect(ui->actionSetGroup_1, &QAction::triggered, this, [this]() { onSetGroup(1); });
-	connect(ui->actionSetGroup_2, &QAction::triggered, this, [this]() { onSetGroup(2); });
-	connect(ui->actionSetGroup_3, &QAction::triggered, this, [this]() { onSetGroup(3); });
-	connect(ui->actionSetGroup_4, &QAction::triggered, this, [this]() { onSetGroup(4); });
-	connect(ui->actionSetGroup_5, &QAction::triggered, this, [this]() { onSetGroup(5); });
-	connect(ui->actionSetGroup_6, &QAction::triggered, this, [this]() { onSetGroup(6); });
-	connect(ui->actionSetGroup_7, &QAction::triggered, this, [this]() { onSetGroup(7); });
-	connect(ui->actionSetGroup_8, &QAction::triggered, this, [this]() { onSetGroup(8); });
-	connect(ui->actionSetGroup_9, &QAction::triggered, this, [this]() { onSetGroup(9); });
+	// Each group is one bit of ship::group, the same as in FRED2.
+	for (size_t i = 0; i < selectActions.size(); ++i) {
+		const int bit = 1 << static_cast<int>(i);
+		connect(selectActions[i], &QAction::triggered, this, [this, bit]() { onGroupSelected(bit); });
+		connect(setActions[i], &QAction::triggered, this, [this, bit]() { onSetGroup(bit); });
+	}
 }
 void FredView::onGroupSelected(int group) {
 	fred->unmark_all();
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->type == OBJ_SHIP) {
-			if (Ships[objp->instance].group & group) {
+			if (ship_in_editor_group(Ships[objp->instance], group)) {
 				fred->markObject(OBJ_INDEX(objp));
 			}
 		}
@@ -2948,15 +2952,15 @@ void FredView::onGroupSelected(int group) {
 void FredView::onSetGroup(int group) {
 	bool err = false;
 
-	for (auto i = 0; i < MAX_SHIPS; i++) {
-		Ships[i].group &= ~group;
+	for (auto& shipp : Ships) {
+		ship_set_editor_group(shipp, group, false);
 	}
 
 	auto objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if (objp->flags[Object::Object_Flags::Marked]) {
 			if (objp->type == OBJ_SHIP) {
-				Ships[objp->instance].group |= group;
+				ship_set_editor_group(Ships[objp->instance], group, true);
 
 			} else {
 				err = true;

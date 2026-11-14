@@ -433,9 +433,7 @@ int ErrorChecker::checkShips() {
 				error("Ship \"%s\" has a negative departure delay", Ships[i].ship_name);
 			}
 
-			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION &&
-				Ships[i].arrival_location != ArrivalLocation::FROM_DOCK_BAY &&
-				Ships[i].arrival_distance <= 0) {
+			if (arrival_location_uses_distance(Ships[i].arrival_location) && Ships[i].arrival_distance <= 0) {
 				error("Arrival distance for ship \"%s\" must be greater than 0", Ships[i].ship_name);
 			}
 
@@ -708,9 +706,7 @@ int ErrorChecker::checkWings() {
 				error("Wing \"%s\" has a negative departure delay", Wings[i].name);
 			}
 
-			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION &&
-				Wings[i].arrival_location != ArrivalLocation::FROM_DOCK_BAY &&
-				Wings[i].arrival_distance <= 0) {
+			if (arrival_location_uses_distance(Wings[i].arrival_location) && Wings[i].arrival_distance <= 0) {
 				error("Arrival distance for wing \"%s\" must be greater than 0", Wings[i].name);
 			}
 
