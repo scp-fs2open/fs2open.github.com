@@ -271,7 +271,9 @@ icon_fade_info	Fading_icons[MAX_FADING_ICONS];
 int				Num_fade_icons;
 
 // voice id's for briefing text
-int Brief_voices[MAX_BRIEF_STAGES];
+// (the scripted briefing never calls brief_voice_init(), so these must start out invalid)
+int Brief_voices[] = { -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+static_assert(sizeof(Brief_voices) / sizeof(Brief_voices[0]) == MAX_BRIEF_STAGES, "Brief_voices must have one entry per briefing stage!");
 
 cmd_brief *Cur_cmd_brief;
 cmd_brief Cmd_briefs[MAX_TVT_TEAMS];
