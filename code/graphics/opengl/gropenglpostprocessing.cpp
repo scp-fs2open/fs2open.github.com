@@ -758,7 +758,9 @@ void gr_opengl_post_process_set_defaults()
 	// reset all effects to their default values
 	for (idx = 0; idx < postEffects.size(); idx++) {
 		postEffects[idx].intensity = postEffects[idx].default_intensity;
+		postEffects[idx].rgb = postEffects[idx].default_rgb;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 
 	Post_active_shader_index = -1;
 }

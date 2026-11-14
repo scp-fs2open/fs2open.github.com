@@ -159,6 +159,7 @@ bool PostProcessingManager::parse_table()
 				if (optional_string("$RGB:")) {
 					stuff_vec3d(&eff.rgb);
 				}
+				eff.default_rgb = eff.rgb;
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (m_postEffects.size() < 32) {
@@ -223,6 +224,7 @@ bool PostProcessingManager::parse_table()
 				falloff *= m_lightshaftParams.falloff;	// this replaces pow(falloff, i)
 			}
 		}
+		m_defaultLightshaftParams = m_lightshaftParams;
 
 		required_string("#End");
 
@@ -237,6 +239,7 @@ void PostProcessingManager::clear()
 {
 	m_postEffects.clear();
 	m_lightshaftParams = lightshaft_parameters();
+	m_defaultLightshaftParams = lightshaft_parameters();
 }
 
 const SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() const { return m_postEffects; }
@@ -244,6 +247,7 @@ SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() { r
 
 const lightshaft_parameters& PostProcessingManager::getLightshaftParams() const { return m_lightshaftParams; }
 lightshaft_parameters& PostProcessingManager::getLightshaftParams() { return m_lightshaftParams; }
+void PostProcessingManager::resetLightshaftParams() { m_lightshaftParams = m_defaultLightshaftParams; }
 
 bool PostProcessingManager::bloomShadersOk() const
 {

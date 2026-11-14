@@ -34,6 +34,7 @@ struct post_effect_t {
 	float add{0.0f};
 
 	vec3d rgb = vmd_zero_vector;
+	vec3d default_rgb = vmd_zero_vector;
 
 	bool always_on{false};
 };
@@ -59,6 +60,7 @@ class PostProcessingManager {
 
 	const lightshaft_parameters& getLightshaftParams() const;
 	lightshaft_parameters& getLightshaftParams();
+	void resetLightshaftParams();
 
 	bool bloomShadersOk() const;
 	void setBloomShadersOk(bool ok);
@@ -67,6 +69,7 @@ class PostProcessingManager {
 	SCP_vector<post_effect_t> m_postEffects;
 
 	lightshaft_parameters m_lightshaftParams;
+	lightshaft_parameters m_defaultLightshaftParams;
 	bool m_bloomShadersOk = true;
 };
 
