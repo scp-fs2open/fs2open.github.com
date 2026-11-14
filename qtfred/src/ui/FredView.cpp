@@ -3372,9 +3372,9 @@ void FredView::onSetGroup(int group) {
 	using GroupState = SCP_vector<std::pair<int, int>>; // (signature, group bits)
 	auto captureGroups = []() {
 		GroupState st;
-		for (int i = 0; i < MAX_SHIPS; i++) {
-			if (Ships[i].objnum >= 0)
-				st.emplace_back(Objects[Ships[i].objnum].signature, Ships[i].group);
+		for (const auto& shipp : Ships) {
+			if (shipp.objnum >= 0)
+				st.emplace_back(Objects[shipp.objnum].signature, shipp.group);
 		}
 		return st;
 	};

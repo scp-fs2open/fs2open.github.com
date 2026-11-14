@@ -1784,8 +1784,8 @@ void DeleteWingCommand::undo()
 {
 	// If delete_wing() refused outright on redo, the wing is still there; don't
 	// build a second one with the same name.
-	for (int i = 0; i < MAX_WINGS; i++) {
-		if (Wings[i].wave_count > 0 && !stricmp(Wings[i].name, _savedWing.name))
+	for (const auto& wing : Wings) {
+		if (wing.wave_count > 0 && !stricmp(wing.name, _savedWing.name))
 			return;
 	}
 
@@ -2202,11 +2202,9 @@ bool SexpCueEditCommand::isNoOp() const
 		return dup;
 	};
 	const QByteArray after = serializeCue(liveForm(_afterDup));
-	for (const auto& o : _owners) {
-		if (serializeCue(liveForm(o.beforeDup)) != after)
-			return false;
-	}
-	return true;
+	return std::all_of(_owners.begin(), _owners.end(), [&](const auto& o) {
+		return serializeCue(liveForm(o.beforeDup)) == after;
+	});
 }
 
 void SexpCueEditCommand::freeCurrentCues()
