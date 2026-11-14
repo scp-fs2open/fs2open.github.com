@@ -661,15 +661,16 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 	const auto not_applied = [&]() {
 		SCP_vector<const options::OptionBase*> unapplied;
 		const bool on_display = window != nullptr && SDL_GetDisplayForWindow(window) == display;
-		if (display_changed && !on_display) {
-			unapplied.push_back(VideoDisplayOption.get());
-		}
 		// A monitor with no mode of the window's size leaves fullscreen on the display of the last fullscreen mode
 		const bool fullscreen_elsewhere =
 			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
 		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
 		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
-		if ((mode_changed && viewport == nullptr) || wrong_mode || fullscreen_elsewhere) {
+		// The prompt names only options the player changed, so a mode the move broke counts against Display
+		if (display_changed && (!on_display || (wrong_mode && !mode_changed))) {
+			unapplied.push_back(VideoDisplayOption.get());
+		}
+		if (mode_changed && (viewport == nullptr || wrong_mode || fullscreen_elsewhere)) {
 			unapplied.push_back(WindowModeOption.get());
 		}
 		return unapplied;
