@@ -120,9 +120,11 @@ public:
 	float	Get_Default_Volume() { return m_lDefaultVolume; }
 	uint	Get_Samples_Committed();
 	int	Is_looping() { return m_bLooping; }
+	void	Print_Status(int index);
 	int	status;
 	int	type;
 	bool paused_via_sexp_or_script;
+	SCP_string filename;
 
 protected:
 	bool prepareOpened(const char *filename);
@@ -863,6 +865,25 @@ double AudioStream::Get_Duration()
 	return m_fileProps.duration;
 }
 
+void AudioStream::Print_Status(int index)
+{
+	const char *type_name;
+	switch (type)
+	{
+		case ASF_SOUNDFX:		type_name = "SOUNDFX"; break;
+		case ASF_EVENTMUSIC:	type_name = "EVENTMUSIC"; break;
+		case ASF_MENUMUSIC:		type_name = "MENUMUSIC"; break;
+		case ASF_VOICE:			type_name = "VOICE"; break;
+		default:				type_name = "NONE"; break;
+	}
+
+	mprintf(("  stream %2d: %-10s %-32s%s%s%s%s\n", index, type_name, filename.c_str(),
+		m_fPlaying ? " playing" : "",
+		m_bIsPaused ? " paused" : "",
+		m_bFade ? " fading" : "",
+		m_bDestroy_when_faded ? " destroy-pending" : ""));
+}
+
 bool AudioStream::PlaybackDone()
 {
 	ALint state = 0;
@@ -975,11 +996,22 @@ static int audiostream_use_next_free( int type )
 		if (Audio_streams[i].status == ASF_FREE)
 			break;
 
+	// only print the streams on the first failure since the last success, since callers may retry
+	static bool reported_exhaustion = false;
+
 	if (i == MAX_AUDIO_STREAMS) {
 		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
+
+		if (!reported_exhaustion) {
+			reported_exhaustion = true;
+			mprintf(("All %d audio streams are in use:\n", MAX_AUDIO_STREAMS));
+			for (int j = 0; j < MAX_AUDIO_STREAMS; j++)
+				Audio_streams[j].Print_Status(j);
+		}
 		return -1;
 	}
 
+	reported_exhaustion = false;
 	Audio_streams[i].status = ASF_USED;
 	Audio_streams[i].type = type;
 
@@ -1047,6 +1079,7 @@ int audiostream_open( const char *filename, int type )
 			return -1;
 	}
 
+	Audio_streams[i].filename = fname;
 	int rc = Audio_streams[i].Create(fname);
 
 	if ( rc == 0 ) {
@@ -1075,6 +1108,7 @@ int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type )
 	if ( i == -1 )
 		return -1;
 
+	Audio_streams[i].filename = "<memory>";
 	int rc = Audio_streams[i].CreateMem(snddata, snd_len);
 
 	if ( rc == 0 ) {
