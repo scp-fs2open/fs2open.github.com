@@ -10,6 +10,7 @@
 
 #include <globalincs/linklist.h>
 #include <mission/object.h>
+#include <qobject.h>
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
@@ -174,18 +175,25 @@ void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)
 void ShipInitialStatusDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
+
 	auto value = _model->getVelocity();
 	if (value != BLANKFIELD) {
+		ui->velocitySpinBox->setSpecialValueText(QString());
 		ui->velocitySpinBox->setValue(value);
 	} else {
 		ui->velocitySpinBox->setSpecialValueText("-");
+		ui->velocitySpinBox->setValue(ui->velocitySpinBox->minimum());
 	}
+
 	value = _model->getHull();
 	if (value != BLANKFIELD) {
+		ui->hullSpinBox->setSpecialValueText(QString());
 		ui->hullSpinBox->setValue(value);
 	} else {
 		ui->hullSpinBox->setSpecialValueText("-");
+		ui->hullSpinBox->setValue(ui->hullSpinBox->minimum());
 	}
+
 	value = _model->getHasShield();
 	ui->hasShieldCheckBox->setCheckState(Qt::CheckState(value));
 	if (_model->getHasShield()) {
@@ -193,12 +201,16 @@ void ShipInitialStatusDialog::updateUi()
 	} else {
 		ui->shieldHullSpinBox->setEnabled(false);
 	}
+
 	value = _model->getShieldHull();
 	if (value != BLANKFIELD) {
+		ui->shieldHullSpinBox->setSpecialValueText(QString());
 		ui->shieldHullSpinBox->setValue(value);
 	} else {
 		ui->shieldHullSpinBox->setSpecialValueText("-");
+		ui->shieldHullSpinBox->setValue(ui->shieldHullSpinBox->minimum());
 	}
+
 	ui->guardianSpinBox->setValue(_model->getGuardian());
 	updateFlags();
 	updateDocks();
