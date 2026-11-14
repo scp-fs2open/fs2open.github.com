@@ -319,7 +319,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT));
 		u = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK));
 
-		control_get_axes_readings(axis, flRealframetime);
+		control_get_axes_readings(axis, flRealframetime, false);
 
 		// Does the same thing as t and u but for the joystick input 
 		h = f2fl(axis[Action::HEADING]);
@@ -640,13 +640,15 @@ void player_control_reset_ci( control_info *ci )
 	ci->forward_cruise_percent = oldspeed;
 }
 
+// reset at mission start, so that the analog throttle applies on the first frame
+static float analog_throttle_last = 9e9f;
+static int override_analog_throttle = 0;
+
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
 	int axis[Action::NUM_VALUES];
 	static int afterburner_last = 0;
-	static float analog_throttle_last = 9e9f;
-	static int override_analog_throttle = 0; 
 	static float savedspeed = ci->forward_cruise_percent;	//Backslash
 	int centering_speed = 7; // the scale speed in which the camera will smoothly center when the player presses Center View
 
@@ -1456,6 +1458,8 @@ void player_level_init()
 {
 	toggle_glide = 0;
 	press_glide = 0;
+	analog_throttle_last = 9e9f;
+	override_analog_throttle = 0;
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;

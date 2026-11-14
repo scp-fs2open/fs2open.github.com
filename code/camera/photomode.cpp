@@ -373,7 +373,7 @@ void photo_mode_do_frame(float frame_time)
 	float bank = check_control_timef(BANK_LEFT) - check_control_timef(BANK_RIGHT);
 
 	int axis[Action::NUM_VALUES] = {0};
-	control_get_axes_readings(axis, flRealframetime);
+	control_get_axes_readings(axis, flRealframetime, false);
 	pitch += -f2fl(axis[Action::PITCH]);
 	heading += f2fl(axis[Action::HEADING]);
 	bank -= f2fl(axis[Action::BANK]);
