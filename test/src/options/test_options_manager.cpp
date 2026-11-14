@@ -369,6 +369,26 @@ TEST_F(OptionsManagerPersistHook, HookReceivesTheOptionsThisPersistNotified)
 	EXPECT_EQ(received[0], _option.get());
 }
 
+// persistOptionChanges() returns one bool for its own option, so another option a hook reports only reaches the log
+TEST_F(OptionsManagerPersistHook, PersistOneOptionReportsOnlyThatOption)
+{
+	auto* mgr = OptionsManager::instance();
+	auto* other = mgr->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(other, nullptr);
+
+	const OptionBase* reported = _option.get();
+	const int hook = mgr->addPostPersistHook(
+		[&reported](const SCP_vector<const OptionBase*>&) { return SCP_vector<const OptionBase*>{reported}; });
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
+
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_FALSE(mgr->persistOptionChanges(_option.get()));
+
+	reported = other;
+	mgr->setConfigValue("Test.Hook.Changed", std::unique_ptr<json_t>(json_integer(1)));
+	EXPECT_TRUE(mgr->persistOptionChanges(_option.get()));
+}
+
 // Graphics.RenderAPI only exists in builds compiled with Vulkan support (code/graphics/2d.cpp gates the whole
 // option definition on #ifdef WITH_VULKAN) -- in an OpenGL-only build there's nothing to choose between, so
 // gr_get_configured_render_api() just returns GraphicsAPI::Default and no option is registered at all.
