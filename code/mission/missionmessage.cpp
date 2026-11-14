@@ -1793,7 +1793,7 @@ void message_queue_process()
 		goto all_done;
 	}
 	// G5K 4-26-20: Can't send messages if comm is destroyed
-	if ( The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && (provisional_message_shipnum >= 0) && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
+	if ( The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && (provisional_message_shipnum >= 0) && hud_communications_state(&Ships[provisional_message_shipnum], (q->builtin_type == MESSAGE_WINGMAN_SCREAM)) == COMM_DESTROYED ) {
 		goto all_done;
 	}
 
@@ -2750,7 +2750,7 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream)
 
 	int other_comm_state = hud_communications_state(&Ships[other_shipnum], for_death_scream);
 
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships])
+	if (The_mission.ai_profile()->flags[AI::Profile_Flags::Check_comms_for_non_player_ships])
 	{
 		return MIN(player_comm_state, other_comm_state);
 	}

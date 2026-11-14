@@ -21,8 +21,6 @@
 
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL 0
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_AWARE 1
-	
-#define MAX_AI_PROFILES	8
 
 class ai_profile_t {
 public:
@@ -159,11 +157,8 @@ public:
 };
 
 
-extern int Num_ai_profiles;
 extern int Default_ai_profile;
-extern ai_profile_t Ai_profiles[MAX_AI_PROFILES];
-
-#define AI_PROFILES_INDEX(ai_p) (static_cast<int>((ai_p)-Ai_profiles))
+extern SCP_vector<ai_profile_t> Ai_profiles;
 
 void ai_profiles_init();
 

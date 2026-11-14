@@ -38,7 +38,8 @@ namespace Mission {
 		Preload_subspace,			// Preload the subspace tunnel for both the sexp and specs checkbox (for scripts) - MjnMixael
 		Large_ships_no_collide_by_default,	// Automatically puts all large ships in a shared collision group
 		Limited_support_rearm_pool, // Support ships can only rearm weapons while mission-level pool is available - MjnMixael
-		
+		Has_transient_ai_profile,	// Runtime only: ai_profile_index refers to a per-mission copy that is removed on reset - Goober5000
+
 		NUM_VALUES
 	};
 

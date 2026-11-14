@@ -705,7 +705,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
 	float rotation_factor_heavy = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 	if (heavy == Player_obj) {
-		rotation_factor_heavy *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+		rotation_factor_heavy *= The_mission.ai_profile()->rot_fac_multiplier_ply_collisions;
 	}
 	vm_vec_scale(&delta_rotvel_heavy, rotation_factor_heavy); // hack decrease rotation (delta_rotvel)
 	vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
@@ -731,7 +731,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		// when trying to do AI landings for certain ships
 		rotation_factor_light *= 0.0f;
 	} else if (lighter == Player_obj) {
-		rotation_factor_light *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+		rotation_factor_light *= The_mission.ai_profile()->rot_fac_multiplier_ply_collisions;
 	}
 	vm_vec_scale(&delta_rotvel_light, rotation_factor_light); // hack decrease rotation (delta_rotvel)
 	vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
@@ -1384,7 +1384,7 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 			}
 
 			int	quadrant_num = -1;
-			if (!The_mission.ai_profile->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
+			if (!The_mission.ai_profile()->flags[AI::Profile_Flags::No_shield_damage_from_ship_collisions] && !(ship_ship_hit_info.heavy->flags[Object::Object_Flags::No_shields])) {
 				quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
 				if (!ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num))
 					quadrant_num = -1;

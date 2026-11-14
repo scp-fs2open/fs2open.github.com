@@ -313,7 +313,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// which by default results in shockwave applying no damage.
 	// Provide optional fix to ensure shockwave is not killed until after this frame's damage pass has run.
 	bool sw_expired = sw->time_elapsed > sw->total_time;
-	bool sw_expire_fix = The_mission.ai_profile->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
+	bool sw_expire_fix = The_mission.ai_profile()->flags[AI::Profile_Flags::Fix_shockwave_expire_before_do_damage];
 
 	if ( sw_expired && !sw_expire_fix ) {
         shockwave_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -386,12 +386,12 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				&& Objects[shockwave_objp->parent].type == OBJ_SHIP
 				&& Ships[Objects[shockwave_objp->parent].instance].team == shipp->team) {
 				if (&Objects[shockwave_objp->parent] == objp
-					&& The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					&& The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
 					// if this is a ship shooting itself, we use the self damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
-				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					damage = MIN(damage, The_mission.ai_profile()->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
 					// otherwise we use the friendly damage cap
-					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+					damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 				}
 			}
 
@@ -415,8 +415,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			if (shockwave_objp->parent >= 0 && sw->weapon_info_index >= 0 &&
 				Objects[shockwave_objp->parent].type == OBJ_SHIP &&
 				Ships[Objects[shockwave_objp->parent].instance].team == Weapons[objp->instance].team &&
-				The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
-				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+				The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile()->weapon_friendly_damage_cap[Game_skill_level]);
 			}
 
 			objp->hull_strength -= damage;
