@@ -67,7 +67,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1944 // This is the next available ID
+// #define XSTR_SIZE	1946 // This is the next available ID
 
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
@@ -160,11 +160,11 @@ auto LanguageOption = options::OptionBuilder<int>("Game.Language",
 
 // Besides a language, the voice language can be the files as named (LCL_VOICE_ORIGINAL) or the files of the text
 // language (LCL_VOICE_TEXT_LANGUAGE).  A language is stored like Game.Language, as {name, ext}; the two other
-// values as the strings "original" and "text".
+// values as the strings "original" and "same-as-text", the words of -voice_language and $Voice language:.
 static json_t* voice_language_serializer(int lang)
 {
 	if (lang == LCL_VOICE_TEXT_LANGUAGE) {
-		return json_string("text");
+		return json_string("same-as-text");
 	}
 	if (lang < 0) {
 		return json_string("original");
@@ -176,7 +176,7 @@ static int voice_language_deserializer(const json_t* value)
 {
 	if (json_is_string(value)) {
 		const char* name = json_string_value(value);
-		if (!stricmp(name, "text")) {
+		if (!stricmp(name, "same-as-text")) {
 			return LCL_VOICE_TEXT_LANGUAGE;
 		}
 		if (!stricmp(name, "original")) {
@@ -204,15 +204,16 @@ static SCP_vector<int> voice_language_enumerator()
 static SCP_string voice_language_display(int value)
 {
 	if (value == LCL_VOICE_TEXT_LANGUAGE) {
-		return XSTR("Same as text language", 1942);
+		return XSTR("Same as text language", 1944);
 	}
 	if (value < 0) {
-		return XSTR("Original voice", 1943);
+		return XSTR("Original voice", 1945);
 	}
 	return language_display(value);
 }
 
-// -voice_language and $Voice language: take a language name, "same-as-text" or "original"
+// -voice_language and $Voice language: take a language name, "same-as-text" or "original"; the two words are
+// reserved, and a language with one of these names gets a warning when the language table is read
 static std::optional<int> voice_language_from_name(const SCP_string& name)
 {
 	if (!stricmp(name.c_str(), "original")) {
@@ -239,8 +240,8 @@ static int voice_language_mod_default()
 }
 
 auto VoiceLanguageOption = options::OptionBuilder<int>("Audio.VoiceLanguage",
-							   std::pair<const char*, int>{"Voice Language", 1940},
-							   std::pair<const char*, int>{"The language of the voice files, when the mod has them in more than one language", 1941})
+							   std::pair<const char*, int>{"Voice Language", 1942},
+							   std::pair<const char*, int>{"The language of the voice files, when the mod has them in more than one language. Voice files that are already loaded keep their language.", 1943})
 							   .deserializer(voice_language_deserializer)
 							   .serializer(voice_language_serializer)
 							   .enumerator(voice_language_enumerator)
@@ -250,6 +251,7 @@ auto VoiceLanguageOption = options::OptionBuilder<int>("Audio.VoiceLanguage",
 							   })
 							   .flags({options::OptionFlags::ForceMultiValueSelection})
 							   .category(std::make_pair("Audio", 1826))
+							   .importance(-1) // below the speech (TTS) options, which share importance 0 and would otherwise mix with it
 							   .default_func(voice_language_mod_default)
 							   .finish();
 
@@ -281,10 +283,8 @@ int lcl_get_current_lang_index()
 	return LCL_DEFAULT;
 }
 
-// get the index of the language whose voice files are used, or LCL_VOICE_ORIGINAL for the files as named.  This is
-// the one place that decides the precedence: the -voice_language flag, then the player's choice, then the mod
-// default from $Voice language:, then the files as named.  "Same as text language" is a value each of them can
-// give; it is not the default, so that nothing changes while nothing is set.
+// the language whose voice files are used, or LCL_VOICE_ORIGINAL.  Precedence: -voice_language, the player's
+// choice, $Voice language:, the files as named; "same as text" is never the default, so nothing set changes nothing
 int lcl_get_voice_lang_index()
 {
 	std::optional<int> lang;
@@ -331,23 +331,17 @@ SCP_string lcl_get_voice_filename(const char *filename, int dir_type)
 
 	SCP_string localized = filename;
 
-	// strip the file extension the way cf_find_file_location_ext() does: look only after the last directory
-	// separator (cfile takes both kinds), and a dot starts an extension only when at least two characters
-	// follow it, so that a retail name like "x_1.5" keeps its ".5"
 	auto sep = localized.find_last_of("/\\");
 	auto name_start = (sep == SCP_string::npos) ? 0 : sep + 1;
-	auto dot = localized.rfind('.');
-	if (dot != SCP_string::npos && dot >= name_start && localized.length() - dot > 2) {
-		localized.erase(dot);
-	}
+	cf_strip_extension(localized);
 	localized += "-";
 	localized += lang_ext;
-	// cf_find_file_location_ext() strips the last extension before it tries each audio extension; give it one
-	// to strip, or it takes "-<ext>" off a name like "x_1.5-tw"
+	// an extension for cf_find_file_location_ext() to strip, so that it keeps the "-<ext>" of "x_1.5-tw"
 	localized += audio_ext_list[0];
 
 	// the sound code copies file names into MAX_FILENAME_LEN buffers, and cfile asserts on the length
 	if (localized.length() >= MAX_FILENAME_LEN) {
+		mprintf(("Voice language: %s is too long for a file name, so %s plays\n", localized.c_str(), filename));
 		return filename;
 	}
 
@@ -458,8 +452,7 @@ void lcl_init(int lang_init)
 	// set the language (this function takes care of setting up file pointers)
 	lcl_set_language(lang);
 
-	// Register -voice_language as an override of the in-game option, so that the options menu shows the value the
-	// game uses and disables the control.  lcl_get_voice_lang_index() reads the flag itself; this is only for the menu.
+	// show -voice_language in the options menu and disable the control; the lookup reads the flag itself
 	if (!Cmdline_voice_lang.empty()) {
 		auto voice_lang = voice_language_from_name(Cmdline_voice_lang);
 		if (voice_lang.has_value()) {
@@ -495,6 +488,9 @@ void parse_stringstbl_quick(const char *filename)
 			while (required_string_either("#End","$Language:")) {
 				required_string("$Language:");
 				stuff_string(language.lang_name, F_RAW, LCL_LANG_NAME_LEN + 1);
+				if (!stricmp(language.lang_name, "original") || !stricmp(language.lang_name, "same-as-text")) {
+					Warning(LOCATION, "Language name '%s' is a reserved value of -voice_language and $Voice language:, so neither can select this language by name", language.lang_name);
+				}
 				if (optional_string("+XSTR:")) {
 					stuff_int(&language.xstr);
 				} else {

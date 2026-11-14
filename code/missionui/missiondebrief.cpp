@@ -924,7 +924,8 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 		// get voice file, also check for too long base file names via the return value of snprintf
 		if (snprintf(voice_dest, buf_size, NOX("%d_%s"), persona_index, voice_base) < static_cast<int>(buf_size))
 		{
-			// if it exists, as named or in the voice language, we're done
+			// if it exists, as named or in the voice language, we're done.  A persona file as named wins over the
+			// base file in the voice language, so a voice pack needs every persona file that the original has
 			if (lcl_voice_file_exists(voice_dest, CF_TYPE_VOICE_DEBRIEFINGS))
 				return;
 		}

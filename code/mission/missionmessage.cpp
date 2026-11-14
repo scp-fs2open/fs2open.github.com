@@ -1296,7 +1296,7 @@ void message_load_wave(int index, const char *filename)
 	Message_waves[index].num = snd_load(&tmp_gse, nullptr, 0);
 
 	if (!Message_waves[index].num.isValid())
-		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
+		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", tmp_gse.filename));
 }
 
 // Goober5000
@@ -2042,6 +2042,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 				if (message_filename_has_fs1_wingman_prefix(filename)) {
 					char converted[MAX_FILENAME_LEN];
 					message_filename_convert_to_command(converted, filename);
+					// a Command file as named wins over the wingman file in the voice language, as for debriefing personas
 					if (lcl_voice_file_exists(converted, CF_TYPE_VOICE_SPECIAL)) {
 						convert_to_command = true;
 					}
