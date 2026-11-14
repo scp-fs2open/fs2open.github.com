@@ -160,6 +160,12 @@ class OptionsManager {
 	// Notes what a player needs to use an option ("vulkan", "raytracing"), for describeOptions()
 	void setRequirement(const SCP_string& key, const SCP_string& requirement, const SCP_string& explanation);
 
+	// The requirement and explanation given to setRequirement() for this key, if any
+	std::optional<std::pair<SCP_string, SCP_string>> getRequirement(const SCP_string& key) const;
+
+	// Removes all requirements. For tests.
+	void clearRequirements();
+
 	// Puts back what loadInitialValues() removed and forgets its record. For tests, which share this singleton.
 	void forgetLoadedOptions();
 

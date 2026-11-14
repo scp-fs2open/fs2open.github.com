@@ -448,6 +448,17 @@ void OptionsManager::setRequirement(const SCP_string& key, const SCP_string& req
 	_requirements[key] = std::make_pair(requirement, explanation);
 }
 
+std::optional<std::pair<SCP_string, SCP_string>> OptionsManager::getRequirement(const SCP_string& key) const
+{
+	auto iter = _requirements.find(key);
+	if (iter == _requirements.end()) {
+		return std::nullopt;
+	}
+	return iter->second;
+}
+
+void OptionsManager::clearRequirements() { _requirements.clear(); }
+
 void OptionsManager::forgetLoadedOptions()
 {
 	for (const auto& item : _describedAtLoad) {
