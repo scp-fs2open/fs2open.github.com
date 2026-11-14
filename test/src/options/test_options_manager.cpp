@@ -7,6 +7,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "math/floating.h"
+#include "osapi/osregistry.h"
 #include "utils/finally.h"
 
 #include "util/FSTestFixture.h"
@@ -330,6 +331,13 @@ class OptionsManagerPersistHook : public test::FSTestFixture {
 	void SetUp() override
 	{
 		test::FSTestFixture::SetUp();
+
+		// Once any os_init finds no settings file the flag stays false with no profile, so each persist would leak one
+		_save_found = Ingame_options_save_found;
+		os_deinit_registry_stuff();
+		Ingame_options_save_found = true;
+		os_init_registry_stuff(nullptr, "Test");
+
 		_option =
 			OptionBuilder<int>("Test.Hook.Changed", SCP_string("Test.Hook.Changed"), SCP_string("Test.Hook.Changed"))
 				.default_val(0)
@@ -340,11 +348,13 @@ class OptionsManagerPersistHook : public test::FSTestFixture {
 	{
 		OptionsManager::instance()->discardChanges();
 		OptionsManager::instance()->removeOption(_option);
+		Ingame_options_save_found = _save_found;
 
 		test::FSTestFixture::TearDown();
 	}
 
 	std::shared_ptr<const Option<int>> _option;
+	bool _save_found = true;
 };
 
 TEST_F(OptionsManagerPersistHook, HookReceivesTheOptionsThisPersistNotified)
