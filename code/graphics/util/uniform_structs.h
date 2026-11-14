@@ -419,6 +419,16 @@ struct msaa_data {
 	float pad[2];
 };
 
+struct gtao_data {
+	float pixelRadius;
+	float radiusPerDepth;
+	float power;
+	int sliceCount;
+
+	int stepCount;
+	float pad[3];
+};
+
 struct blur_data {
 	float texSize;
 	int level;

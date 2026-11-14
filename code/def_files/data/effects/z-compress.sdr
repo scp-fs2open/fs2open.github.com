@@ -1,3 +1,9 @@
+// deferred-clear-f.sdr writes a compressed depth of -1000000 for empty pixels. The RGBA16F
+// position buffer stores that as -65504 or -inf, and real geometry compresses to at least
+// -65000 (the far plane). Test the raw value: the uncompressed empty-pixel depth depends on
+// $Max draw distance, and -inf would give inf - inf = NaN in distance math.
+const float EMPTY_PIXEL_COMPRESSED_Z = -65504.0;
+
 float compress_depth_value(float linear) {
 	float linear_mult;
 	float exponent_mult;	

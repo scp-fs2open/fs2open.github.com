@@ -29,7 +29,12 @@ float gtao_pixel_radius(float radius_scale, float proj11, int screen_height);
 // Only the OpenGL renderer has the pass.
 bool gtao_supported(GraphicsAPI api);
 
-// Whether the OpenGL deferred lighting runs the pass this frame. Gate all GTAO code on this.
+// Whether a deferred lighting pass runs GTAO. Only the scene pass does: the deferred cockpit
+// pass clears the position buffer to 0 instead of the empty-pixel value, and a second run
+// would double the cost for a few cockpit pixels.
+bool gtao_runs(int quality, GraphicsAPI api, bool cockpit_pass);
+
+// gtao_runs() for the current settings, renderer and lighting pass. Gate all GTAO code on this.
 bool gtao_enabled();
 
 // Record that the options need the OpenGL renderer, so that the options menu greys them

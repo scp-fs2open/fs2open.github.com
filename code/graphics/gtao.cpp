@@ -1,5 +1,6 @@
 #include "graphics/gtao.h"
 
+#include "lighting/lighting.h"
 #include "localization/localize.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
@@ -83,11 +84,16 @@ bool gtao_supported(GraphicsAPI api)
 	return gr_option_requirement_met(Gtao_requirement, api, false);  // the requirement is "opengl", which needs no ray tracing
 }
 
-bool gtao_enabled()
+bool gtao_runs(int quality, GraphicsAPI api, bool cockpit_pass)
 {
 	// Check the renderer here: an option with an unmet requirement keeps the player's
-	// stored value, so Gtao_quality can be above 0 on a renderer without the pass.
-	return Gtao_quality > 0 && gtao_supported(gr_screen.mode);
+	// stored value, so the quality can be above 0 on a renderer without the pass.
+	return quality > 0 && gtao_supported(api) && !cockpit_pass;
+}
+
+bool gtao_enabled()
+{
+	return gtao_runs(Gtao_quality, gr_screen.mode, Lighting_mode == lighting_mode::COCKPIT);
 }
 
 void gtao_set_option_requirements()
