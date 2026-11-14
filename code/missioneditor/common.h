@@ -9,6 +9,10 @@ constexpr float DEFAULT_NEBULA_RANGE = 3000.0f;
 // Smallest meaningful change in an orientation input field (degrees)
 constexpr float ORIENT_INPUT_THRESHOLD = 0.01f;
 
+// Field of view (zoom) of the editor viewport. The projection matrix and the g3 view matrix must use the same
+// value. If they do not, the labels and the mouse picking do not align with the rendered objects.
+constexpr float EDITOR_DEFAULT_FOV = 0.485f;
+
 // Normalize a degree value into the range [-180, 180]
 float normalize_degrees(float deg);
 

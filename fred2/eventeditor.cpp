@@ -1991,9 +1991,7 @@ void event_sexp_tree::OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult)
 				{
 					if (ea->r != 255 || ea->g != 255 || ea->b != 255)
 					{
-						// contrast color calculation taken from here:
-						// https://stackoverflow.com/questions/3942878/how-to-decide-font-color-in-white-or-black-depending-on-background-color
-						if ((ea->r*0.299 + ea->g*0.587 + ea->b*0.114) > 149)
+						if (annotation_text_is_dark(ea->r, ea->g, ea->b))
 							pcd->clrText = RGB(0, 0, 0);
 						else
 							pcd->clrText = RGB(255, 255, 255);

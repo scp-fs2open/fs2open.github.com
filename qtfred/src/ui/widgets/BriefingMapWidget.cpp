@@ -19,6 +19,7 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 #include "mission/missionbriefcommon.h"
+#include "missioneditor/common.h"
 
 #include <algorithm>
 #include <cmath>
@@ -612,7 +613,7 @@ void BriefingMapWidget::restoreMainViewportFrame(bool wasActive) {
 	gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
 		static_cast<int>(mainSize.second) * devicePixelRatio());
 	g3_start_frame(0);
-	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, EDITOR_DEFAULT_FOV);
 }
 
 bool BriefingMapWidget::event(QEvent* evt) {

@@ -707,7 +707,7 @@ void WingEditorDialogModel::selectPreviousWing()
 	}
 	
 	_editor->unmark_all();
-	_editor->mark_wing(prv);
+	_editor->mark_wing(prv, Editor::LockedObjects::Include);
 	reloadFromCurWing();
 }
 
@@ -730,7 +730,7 @@ void WingEditorDialogModel::selectNextWing()
 	}
 
 	_editor->unmark_all();
-	_editor->mark_wing(nxt);
+	_editor->mark_wing(nxt, Editor::LockedObjects::Include);
 	reloadFromCurWing();
 }
 
