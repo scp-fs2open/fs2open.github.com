@@ -260,6 +260,8 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 }
 } // namespace graphics
 
+bool Lightshafts_override = false;
+
 bool gr_lightshafts_enabled()
 {
 	if (gr_screen.mode == GraphicsAPI::Stub) {
@@ -272,6 +274,10 @@ bool gr_lightshafts_enabled()
 	}
 
 	if (!graphics::Post_processing_manager->getLightshaftParams().on) {
+		return false;
+	}
+
+	if (Lightshafts_override) {
 		return false;
 	}
 
