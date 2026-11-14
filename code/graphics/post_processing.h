@@ -44,7 +44,7 @@ struct lightshaft_parameters {
 	float weight = 0.02f;
 	float falloff = 1.0f;
 	float intensity = 0.5f;
-	float cpweight = 50 * 0.02f; // not scaled by intensity, which set-post-effect can change after parsing
+	float cpweight = 50 * 0.02f; // weight as applied to cockpit models
 	int samplenum = 50;
 };
 
