@@ -2004,8 +2004,9 @@ static void ds_check_device_connected()
 	Ds_reopen_timestamp = ui_timestamp(2 * MILLISECONDS_PER_SECOND);
 	Ds_reopen_attempts++;
 
+	// a reopen can report success while the device is still unavailable
 	const char *reopened_on = Ds_playback_device_name.c_str();
-	if (!v_alcReopenDeviceSOFT(ds_sound_device, Ds_playback_device_name.c_str(), Ds_context_attribs)) {
+	if (!v_alcReopenDeviceSOFT(ds_sound_device, Ds_playback_device_name.c_str(), Ds_context_attribs) || !ds_device_connected()) {
 		if (Ds_reopen_attempts <= DS_REOPEN_CONFIGURED_ONLY_ATTEMPTS) {
 			return;
 		}
@@ -2017,7 +2018,6 @@ static void ds_check_device_connected()
 	}
 	alcGetError(ds_sound_device);
 
-	// a reopen can report success while the device is still unavailable
 	if (!ds_device_connected()) {
 		return;
 	}
