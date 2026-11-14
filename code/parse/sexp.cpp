@@ -3273,15 +3273,16 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 
 				if (Fred_running) {
 					if (mode == sexp_mode::CAMPAIGN) {
-						for (i=0; i<Campaign.num_missions; i++)
+						for (i = 0; i < sz2i(Campaign.missions.size()); i++) {
 							if (!stricmp(CTEXT(node), Campaign.missions[i].name)) {
 								if ((i != Sexp_useful_number) && (Campaign.missions[i].level >= Campaign.missions[Sexp_useful_number].level))
 									return SEXP_CHECK_INVALID_LEVEL;
 
 								break;
 							}
+						}
 
-						if (i == Campaign.num_missions)
+						if (i == sz2i(Campaign.missions.size()))
 							return SEXP_CHECK_INVALID_MISSION_NAME;
 
 					} else {
@@ -3326,7 +3327,7 @@ int check_sexp_syntax(int node, int desired_return_type, int recursive, int *bad
 					}
 
 					// look for mission
-					count = count_items_with_string(Campaign.missions, i2sz(Campaign.num_missions), &cmission::name, CTEXT(z));
+					count = count_items_with_string(Campaign.missions, &cmission::name, CTEXT(z));
 
 					// only check for a missing mission -- it's ok if the same mission appears multiple times in the campaign
 					if (count == 0) {
@@ -15677,7 +15678,7 @@ void sexp_next_mission(int n)
 		Error( LOCATION, "Mission name is NULL in campaign file for next-mission command!");
 	}
 
-	for (int i = 0; i < Campaign.num_missions; ++i) {
+	for (int i = 0; i < sz2i(Campaign.missions.size()); ++i) {
 		if ( !stricmp(Campaign.missions[i].name, mission_name) ) {
 			Campaign.next_mission = i;
 			return;
