@@ -6400,6 +6400,9 @@ void ship_init()
 			Ship_types.erase(Ship_types.begin() + idx);
 		}
 
+		Fighter_bomber_valid = false;
+		Ship_type_fighter = Ship_type_bomber = Ship_type_fighter_bomber = -1;
+
 		// See whether this mod defines an explicit "fighter/bomber" type (which would take priority over the special usage), and if not, whether the component types exist
 		if (ship_type_name_lookup(Fighter_bomber_type_name) < 0)
 		{
@@ -6446,6 +6449,7 @@ void ship_init()
 			//Parse main TBL first
 			Removed_ships.clear();
 			Ship_info.clear();
+			Wing_formations.clear();
 			Hud_parsed_ships.clear();
 			parse_shiptbl("ships.tbl");
 
@@ -16855,9 +16859,7 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 }
 
 /**
- * Called in game_shutdown() to free malloced memory
- *
- * NOTE: do not call this function.  It is only called from ::game_shutdown()
+ * Frees the ship tables and other memory allocated by ship_init()
  */
 void ship_close()
 {
@@ -16881,6 +16883,8 @@ void ship_close()
 		Ship_types[i].ai_actively_pursues_temp.clear();
 	}
 	Ship_types.clear();
+
+	Ships_inited = false;
 }	
 
 /**

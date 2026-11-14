@@ -78,6 +78,9 @@ typedef struct {
 SCP_unordered_map<int, lcl_xstr> Xstr_table_map;
 bool Xstr_inited = false;
 
+// Distinct from Xstr_inited.  FRED and qtfred set Xstr_inited without parsing so that XSTR works without actually localizing anything.
+static bool Xstr_tables_parsed = false;
+
 
 // table/mission externalization stuff --------------------
 #define PARSE_TEXT_BUF_SIZE			PARSE_BUF_SIZE
@@ -190,26 +193,28 @@ void lcl_init(int lang_init)
 	// initialize encryption
 	encrypt_init();
 
-	// set up the first language (which should be English)
-	Lcl_languages.push_back(Lcl_builtin_languages[0]);
+	if (Lcl_languages.empty()) {
+		// set up the first language (which should be English)
+		Lcl_languages.push_back(Lcl_builtin_languages[0]);
 
-	// check string.tbl to see which languages we support
-	try
-	{
-		parse_stringstbl_quick("strings.tbl");
-	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "strings.tbl", e.what()));
-	}
+		// check string.tbl to see which languages we support
+		try
+		{
+			parse_stringstbl_quick("strings.tbl");
+		}
+		catch (const parse::ParseException& e)
+		{
+			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "strings.tbl", e.what()));
+		}
 
-	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
+		parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl_quick);
 
-	// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
-	// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
-	if (!No_built_in_languages && (static_cast<int>(Lcl_languages.size()) == 1)) {
-		for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
-			Lcl_languages.push_back(Lcl_builtin_languages[i]);
+		// if we only have one language at this point, we need to setup the builtin languages as we might be dealing with an old style strings.tbl
+		// which doesn't support anything beyond the builtin languages. Note, we start at i = 1 because we added the first language above.
+		if (!No_built_in_languages && (static_cast<int>(Lcl_languages.size()) == 1)) {
+			for (int i=1; i<NUM_BUILTIN_LANGUAGES; i++) {
+				Lcl_languages.push_back(Lcl_builtin_languages[i]);
+			}
 		}
 	}
 
@@ -279,6 +284,8 @@ void lcl_init(int lang_init)
 
 void lcl_close() {
 	lcl_xstr_close();
+
+	Lcl_languages.clear();
 }
 
 // parses the string.tbl to see which languages are supported. Doesn't read in any strings.
@@ -602,6 +609,9 @@ void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr) {
 // initialize the xstr table
 void lcl_xstr_init()
 {
+	if (Xstr_tables_parsed)
+		return;
+
 	Xstr_table_map.clear();
 
 	Assertion(Lcl_ext_str.empty() && Lcl_ext_str_explicit_default.empty(), "Localize system was not shut down properly!");
@@ -666,6 +676,7 @@ void lcl_xstr_init()
 	parse_modular_table(NOX("*-tlc.tbm"), parse_tstringstbl);
 
 
+	Xstr_tables_parsed = true;
 	Xstr_inited = true;
 
 	lcl_delayed_xstr_internal(std::nullopt);
@@ -695,6 +706,9 @@ void lcl_xstr_close()
 		}
 	}
 	Lcl_ext_str_explicit_default.clear();
+
+	Xstr_tables_parsed = false;
+	Xstr_inited = false;
 }
 
 
