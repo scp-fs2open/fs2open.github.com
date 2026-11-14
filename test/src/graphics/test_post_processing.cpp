@@ -74,6 +74,6 @@ TEST_F(PostProcessingBuiltInTableTest, ResetWithoutALightShaftsSectionGivesTheBu
 	EXPECT_FLOAT_EQ(params.density, builtin.density);
 	EXPECT_FLOAT_EQ(params.falloff, builtin.falloff);
 	EXPECT_FLOAT_EQ(params.weight, builtin.weight);
-	EXPECT_FLOAT_EQ(params.cpintensity, builtin.cpintensity);
+	EXPECT_FLOAT_EQ(params.cpweight, builtin.cpweight);
 	EXPECT_EQ(params.samplenum, builtin.samplenum);
 }
