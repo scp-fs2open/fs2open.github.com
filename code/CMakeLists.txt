@@ -52,6 +52,8 @@ TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
 target_link_libraries(code PUBLIC md5)
 
+target_link_libraries(code PUBLIC etcpak)
+
 if (FSO_BUILD_WITH_DISCORD)
 	target_link_libraries(code PUBLIC discord-rpc)
 	add_definitions(-DWITH_DISCORD)

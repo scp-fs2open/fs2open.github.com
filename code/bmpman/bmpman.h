@@ -405,6 +405,13 @@ int bm_is_valid(int handle);
 int bm_get_info(int handle, int *w = nullptr, int * h = nullptr, uint* flags = nullptr, int *nframes = nullptr, int *fps = nullptr);
 
 /**
+ * @brief Gets the dimensions before DDS conversion drops mip levels.
+ * Falls back to the current dimensions for bitmaps without source-size metadata.
+ * @returns The same handle (or first animation frame) as bm_get_info(), or -1 on failure.
+ */
+int bm_get_original_size(int handle, int* w = nullptr, int* h = nullptr);
+
+/**
  * @brief Gets 3D info on the bitmap indexed by handle.
  *
  * @param[out] depth      If non-null, gets the depth

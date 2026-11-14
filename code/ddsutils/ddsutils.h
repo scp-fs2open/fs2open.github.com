@@ -28,6 +28,8 @@
 #define DDS_CUBEMAP_DXT1				11
 #define DDS_CUBEMAP_DXT3				13
 #define DDS_CUBEMAP_DXT5				15
+#define DDS_ETC2_RGBA8					20
+#define DDS_ETC2_RGB                    21
 
 #ifndef MAKEFOURCC
 	#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
@@ -298,9 +300,12 @@ inline size_t dds_compressed_mip_size(int w, int h, int block_size) {
 #define DX10_OFFSET						DDS_OFFSET+sizeof(DDS_HEADER_DXT10)		// Unless a DX10 header is present
 
 //reads a dds header
+//optional original dimensions are taken before conversion drops mip levels
 //returns one of the error values
 //'compression_type' comes back as one of the DDS_DXTC* defines
-int dds_read_header(const char *filename, CFILE *img_cfp = NULL, int *width = 0, int *height = 0, int *bpp = 0, int *compression_type = 0, int *levels = 0, size_t *size = 0);
+int dds_read_header(const char *filename, CFILE *img_cfp = nullptr, int *width = nullptr, int *height = nullptr,
+	int *bpp = nullptr, int *compression_type = nullptr, int *levels = nullptr, size_t *size = nullptr,
+	int *original_width = nullptr, int *original_height = nullptr);
 
 //reads bitmap
 //size of the data it stored in size

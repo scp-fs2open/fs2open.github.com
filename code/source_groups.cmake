@@ -194,6 +194,12 @@ add_file_folder("ddsutils"
 	ddsutils/ddsutils.h
 )
 
+# texture transcode cache files
+add_file_folder("texcache"
+	texcache/tex_cache.cpp
+	texcache/tex_cache.h
+)
+
 # Debris files
 add_file_folder("Debris"
 	debris/debris.cpp
