@@ -803,7 +803,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		if ( reverse_time > 0.0f && afterburner_down ) {
-			ci->forward = -pi->max_rear_vel * 1.0f;
+			// Full reverse with a reverse afterburner; other ships keep the old value that retail fuel-out cruise uses
+			ci->forward = (pi->afterburner_max_reverse_vel > 0.0f) ? -1.0f : -pi->max_rear_vel;
 		}
 
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
