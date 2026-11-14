@@ -1285,23 +1285,22 @@ int CShipEditorDlg::update_ship(int ship)
 			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, target_to_anchor(z));
 
-			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
-			// greater than 2*radius of target.
-			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & ANCHOR_SPECIAL_ARRIVAL)) {
-			d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
-				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
+			// Force the arrival distance to be at least the minimum for the arrival location and target.
+			// This is the same rule as the wing editor and QtFRED.
+			d = arrival_min_distance(static_cast<ArrivalLocation>(m_arrival_location), target_to_anchor(z));
+			if ((d > 0) && (Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
+				// A minimum of 1 only prevents an invalid distance, so it needs no warning.
+				if (d > 1) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"
-						"Value has been reset to this.  Use with caution!\r\n"
-						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[ship].objnum].radius) );
-
+						"Value has been reset to this.  Use with caution!\r\n", d);
 					MessageBox(str);
-					if (Ships[ship].arrival_distance < 0)
-						Ships[ship].arrival_distance = -d;
-					else
-						Ships[ship].arrival_distance = d;
-
-					m_arrival_dist.fix(Ships[ship].arrival_distance);
 				}
+				if (Ships[ship].arrival_distance < 0)
+					Ships[ship].arrival_distance = -d;
+				else
+					Ships[ship].arrival_distance = d;
+
+				m_arrival_dist.fix(Ships[ship].arrival_distance);
 			}
 		}
 		if (m_departure_target >= 0) {
