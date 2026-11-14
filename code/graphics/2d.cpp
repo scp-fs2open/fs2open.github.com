@@ -29,11 +29,14 @@
 #include "graphics/openxr.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/post_processing.h"
+#include "graphics/software/FontManager.h"
+#include "graphics/software/NVGFont.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
 #include "graphics/shadows.h"
 #include "io/mouse.h"
+#include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -62,7 +65,9 @@
 
 #include <algorithm>
 #include <climits>
-
+#include <cmath>
+#include <cstring>
+#include <limits>
 
 #define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
 
@@ -3607,6 +3612,70 @@ gr_debug_stats gr_get_debug_stats()
 	gr_screen.gf_get_debug_stats(stats);
 
 	return stats;
+}
+
+void gr_init_imgui_font()
+{
+	// Keep the default ImGui font if no custom font is configured
+	// or no ImGui context is available.
+	if (ImGui_font.empty() || ImGui::GetCurrentContext() == nullptr) {
+		return;
+	}
+
+	auto* selectedFont = font::FontManager::getFont(ImGui_font);
+	const auto* fontData = font::FontManager::getTrueTypeFontData(ImGui_font);
+
+	if (selectedFont == nullptr || fontData == nullptr || fontData->data == nullptr || fontData->size <= 100 ||
+		fontData->size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+		Warning(LOCATION,
+			"The configured ImGui font '%s' has no usable TrueType font data. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+		return;
+	}
+
+	// Only TrueType fonts can reach this point.
+	const auto* trueTypeFont = static_cast<const font::NVGFont*>(selectedFont);
+	constexpr float defaultFontSize = 13.0f;
+
+	float fontSize = trueTypeFont->getSize();
+
+	if (!std::isfinite(fontSize) || fontSize <= 0.0f) {
+		Warning(LOCATION,
+			"ImGui font '%s' has an invalid size (%g). Using the default size of %.0f.",
+			ImGui_font.c_str(),
+			fontSize,
+			defaultFontSize);
+		fontSize = defaultFontSize;
+	}
+
+	// ImGui takes ownership of this copy, not of FSO's font data.
+	void* imguiFontData = ImGui::MemAlloc(fontData->size);
+
+	if (imguiFontData == nullptr) {
+		Warning(LOCATION,
+			"Failed to allocate memory for ImGui font '%s'. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+		return;
+	}
+
+	std::memcpy(imguiFontData, fontData->data.get(), fontData->size);
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImFont* imguiFont = io.Fonts->AddFontFromMemoryTTF(imguiFontData, static_cast<int>(fontData->size), fontSize);
+
+	if (imguiFont != nullptr) {
+		io.FontDefault = imguiFont;
+
+		mprintf(("ImGui font '%s' registered successfully.\n", ImGui_font.c_str()));
+	} else {
+		Warning(LOCATION,
+			"Failed to register ImGui font '%s'. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+	}
 }
 
 static bool Imgui_frame_active = false;

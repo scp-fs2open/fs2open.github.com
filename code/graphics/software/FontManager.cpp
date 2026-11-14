@@ -32,6 +32,23 @@ namespace font
 		return nullptr;
 	}
 
+	const TrueTypeFontData* FontManager::getTrueTypeFontData(const SCP_string& fontName)
+	{
+		const auto* selectedFont = getFont(fontName);
+
+		if (selectedFont == nullptr || selectedFont->getType() != NVG_FONT) {
+			return nullptr;
+		}
+
+		const auto iter = allocatedData.find(selectedFont->getFilename());
+
+		if (iter == allocatedData.end()) {
+			return nullptr;
+		}
+
+		return &iter->second;
+	}
+
 	FSFont* FontManager::getFontByFilename(const SCP_string& filename)
 	{
 		for (auto &iter: fonts)
