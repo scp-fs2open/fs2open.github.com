@@ -81,7 +81,8 @@ void pilotfile::csg_read_info()
 	// ship list (NOTE: may contain more ship classes than this mod defines)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	// reads at the end of the file return 0 without failing, so loops over a count from the file also stop there
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -93,7 +94,7 @@ void pilotfile::csg_read_info()
 	// weapon list (NOTE: may contain more weapon classes than this mod defines)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -105,7 +106,7 @@ void pilotfile::csg_read_info()
 	// intel list (NOTE: may contain more than MAX_INTEL_ENTRIES)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -117,7 +118,7 @@ void pilotfile::csg_read_info()
 	// medals list (NOTE: may contain more than Num_medals)
 	list_size = cfread_int(cfp);
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < list_size && !cfeof(cfp); idx++) {
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
 
 		ilist.name = t_string;
@@ -130,28 +131,44 @@ void pilotfile::csg_read_info()
 	idx = cfread_int(cfp);
 
 	// check the idx is within bounds
-	Assertion ((idx < (int)ship_list.size()), "Campaign file contains an incorrect value for the last flown ship class. No data in ship_list for ship number %d.", idx); 
-	if (idx >= (int)ship_list.size())
-		idx = -1;
-	else if (idx != -1)
+	if ((idx >= 0) && (idx < (int)ship_list.size())) {
 		p->last_ship_flown_si_index = ship_list[idx].index;
-	else
+	} else {
+		if (idx != -1) {
+			mprintf(("CSG => Parse Warning: Invalid last flown ship index (%d), clearing it.\n", idx));
+		}
 		p->last_ship_flown_si_index = -1;
+	}
 
 	// progression state
 	Campaign.prev_mission = cfread_int(cfp);
+	if (Campaign.num_missions > 0 && (Campaign.prev_mission < -1 || Campaign.prev_mission >= Campaign.num_missions)) {
+		mprintf(("CSG => Parse Warning: Invalid previous mission (%d), clearing it.\n", Campaign.prev_mission));
+		Campaign.prev_mission = -1;
+	}
 	Campaign.next_mission = cfread_int(cfp);
 
 	// check that the next mission won't be greater than the total number of missions
 	// though ensure we only flag if campaign exists and has been loaded
-	if (Campaign.num_missions > 0 && Campaign.next_mission >= Campaign.num_missions) {
+	if (Campaign.num_missions > 0 && (Campaign.next_mission < -1 || Campaign.next_mission >= Campaign.num_missions)) {
 		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
 		m_data_invalid = true; // Causes a warning popup to be displayed
 	}
 
 	// loop state
 	Campaign.loop_reentry = cfread_int(cfp);
+	bool invalid_loop_reentry =
+		Campaign.num_missions > 0 && (Campaign.loop_reentry < -1 || Campaign.loop_reentry >= Campaign.num_missions);
+	if (invalid_loop_reentry) {
+		mprintf(("CSG => Parse Warning: Invalid loop reentry (%d), leaving the loop.\n", Campaign.loop_reentry));
+		Campaign.loop_reentry = -1;
+		// also cleared before the read, in case the section ends there
+		Campaign.loop_enabled = 0;
+	}
 	Campaign.loop_enabled = cfread_int(cfp);
+	if (invalid_loop_reentry) {
+		Campaign.loop_enabled = 0;
+	}
 
 	// missions completed
 	Campaign.num_missions_completed = cfread_int(cfp);
@@ -266,14 +283,22 @@ void pilotfile::csg_read_missions()
 {
 	int i, j, idx, list_size;
 	cmission *missionp;
+	cmission discarded_mission;
+	int num_discarded = 0;
 
 	if ( !m_have_info ) {
 		throw "Missions before Info!";
 	}
 
-	for (i = 0; i < Campaign.num_missions_completed; i++) {
+	for (i = 0; i < Campaign.num_missions_completed && !cfeof(cfp); i++) {
 		idx = cfread_int(cfp);
-		missionp = &Campaign.missions[idx];
+		if ((idx < 0) || (idx >= MAX_CAMPAIGN_MISSIONS)) {
+			mprintf(("CSG => Parse Warning: Invalid mission index (%d), discarding its record.\n", idx));
+			missionp = &discarded_mission;
+			num_discarded++;
+		} else {
+			missionp = &Campaign.missions[idx];
+		}
 
 		missionp->completed = 1;
 
@@ -284,7 +309,7 @@ void pilotfile::csg_read_missions()
 		missionp->goals.clear();
 		int num_goals = cfread_int(cfp);
 
-		for (j = 0; j < num_goals; j++) {
+		for (j = 0; j < num_goals && !cfeof(cfp); j++) {
 			missionp->goals.emplace_back();
 			auto& stored_goal = missionp->goals.back();
 
@@ -296,7 +321,7 @@ void pilotfile::csg_read_missions()
 		missionp->events.clear();
 		int num_events = cfread_int(cfp);
 
-		for (j = 0; j < num_events; j++) {
+		for (j = 0; j < num_events && !cfeof(cfp); j++) {
 			missionp->events.emplace_back();
 			auto& stored_event = missionp->events.back();
 
@@ -308,7 +333,7 @@ void pilotfile::csg_read_missions()
 		missionp->variables.clear();
 		int num_variables = cfread_int(cfp);
 
-		for (j = 0; j < num_variables; j++) {
+		for (j = 0; j < num_variables && !cfeof(cfp); j++) {
 			missionp->variables.emplace_back();
 			auto& stored_variable = missionp->variables.back();
 
@@ -353,6 +378,8 @@ void pilotfile::csg_read_missions()
 			}
 		}
 	}
+
+	Campaign.num_missions_completed = i - num_discarded;
 }
 
 void pilotfile::csg_write_missions()
@@ -619,7 +646,7 @@ void pilotfile::csg_read_loadout()
 		// primary weapons
 		count = cfread_int(cfp);
 
-		for (j = 0; j < count; j++) {
+		for (j = 0; j < count && !cfeof(cfp); j++) {
 			wep_idx = cfread_int(cfp);
 
 			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
@@ -646,7 +673,7 @@ void pilotfile::csg_read_loadout()
 		// secondary weapons
 		count = cfread_int(cfp);
 
-		for (j = 0; j < count; j++) {
+		for (j = 0; j < count && !cfeof(cfp); j++) {
 			wep_idx = cfread_int(cfp);
 
 			if ( (wep_idx >= (int)weapon_list.size()) || (wep_idx < -1) ) {
@@ -830,7 +857,7 @@ void pilotfile::csg_read_redalert()
 
 		Red_alert_precursor_mission = t_string;
 
-		for (idx = 0; idx < ship_list_size; idx++) {
+		for (idx = 0; idx < ship_list_size && !cfeof(cfp); idx++) {
 			red_alert_ship_status ras;
 
 			cfread_string_len(t_string, NAME_LENGTH, cfp);
@@ -852,7 +879,7 @@ void pilotfile::csg_read_redalert()
 			// subsystem hits
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				hit = cfread_float(cfp);
 				ras.subsys_current_hits.push_back( hit );
 			}
@@ -860,7 +887,7 @@ void pilotfile::csg_read_redalert()
 			// subsystem aggregate hits
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				hit = cfread_float(cfp);
 				ras.subsys_aggregate_current_hits.push_back( hit );
 			}
@@ -868,10 +895,15 @@ void pilotfile::csg_read_redalert()
 			// primary weapon loadout and status
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				i = cfread_int(cfp);
-				weapons.index = weapon_list[i].index;
 				weapons.count = cfread_int(cfp);
+
+				if ((i < 0) || (i >= (int)weapon_list.size())) {
+					mprintf(("CSG => Parse Warning: Invalid value for red alert weapon index (%d), skipping.\n", i));
+					continue;
+				}
+				weapons.index = weapon_list[i].index;
 
 				// triggering this means something is really fubar
 				if (weapons.index < 0) {
@@ -884,10 +916,15 @@ void pilotfile::csg_read_redalert()
 			// secondary weapon loadout and status
 			count = cfread_int(cfp);
 
-			for (j = 0; j < count; j++) {
+			for (j = 0; j < count && !cfeof(cfp); j++) {
 				i = cfread_int(cfp);
-				weapons.index = weapon_list[i].index;
 				weapons.count = cfread_int(cfp);
+
+				if ((i < 0) || (i >= (int)weapon_list.size())) {
+					mprintf(("CSG => Parse Warning: Invalid value for red alert weapon index (%d), skipping.\n", i));
+					continue;
+				}
+				weapons.index = weapon_list[i].index;
 
 				// triggering this means something is really fubar
 				if (weapons.index < 0) {
@@ -914,7 +951,7 @@ void pilotfile::csg_read_redalert()
 	wing_list_size = cfread_int(cfp);
 
 	if (wing_list_size > 0) {
-		for (idx = 0; idx < wing_list_size; idx++) {
+		for (idx = 0; idx < wing_list_size && !cfeof(cfp); idx++) {
 			red_alert_wing_status rws;
 
 			cfread_string_len(t_string, NAME_LENGTH, cfp);
@@ -1085,7 +1122,7 @@ void pilotfile::csg_read_hud()
 	// gauge-specific colors
 	int num_gauges = cfread_int(cfp);
 
-	for (int idx = 0; idx < num_gauges; idx++) {
+	for (int idx = 0; idx < num_gauges && !cfeof(cfp); idx++) {
 		ubyte red = cfread_ubyte(cfp);
 		ubyte green = cfread_ubyte(cfp);
 		ubyte blue = cfread_ubyte(cfp);
@@ -1181,7 +1218,7 @@ void pilotfile::csg_read_variables()
 
 	if (num_variables > 0) {
 
-		for (idx = 0; idx < num_variables; idx++) {
+		for (idx = 0; idx < num_variables && !cfeof(cfp); idx++) {
 			sexp_variable temp_var;
 			memset(&temp_var, 0, sizeof(sexp_variable));
 			temp_var.type = cfread_int(cfp);
@@ -1206,7 +1243,7 @@ void pilotfile::csg_read_variables()
 		int redalert_num_variables = cfread_int(cfp);
 
 		if (redalert_num_variables > 0) {
-			for (idx = 0; idx < redalert_num_variables; idx++) {
+			for (idx = 0; idx < redalert_num_variables && !cfeof(cfp); idx++) {
 				sexp_variable temp_var;
 				memset(&temp_var, 0, sizeof(sexp_variable));
 				temp_var.type = cfread_int(cfp);
@@ -1426,7 +1463,7 @@ void pilotfile::csg_write_controls()
 void pilotfile::csg_read_cutscenes() {
 	size_t list_size = cfread_uint(cfp);
 
-	for(size_t i = 0; i < list_size; i++) {
+	for (size_t i = 0; i < list_size && !cfeof(cfp); i++) {
 		char tempFilename[MAX_FILENAME_LEN];
 
 		cfread_string_len(tempFilename, MAX_FILENAME_LEN, cfp);
@@ -1468,9 +1505,17 @@ void pilotfile::csg_read_lastmissions()
 	int i;
 
 	// restore list of most recently played missions
-	Num_recent_missions = cfread_int( cfp );
-	Assert(Num_recent_missions <= MAX_RECENT_MISSIONS);
-	for ( i = 0; i < Num_recent_missions; i++ ) {
+	// count each entry only once it has been read, so a short section can't leave stale names in the list
+	Num_recent_missions = 0;
+	int count = cfread_int( cfp );
+	if ((count < 0) || (count > MAX_RECENT_MISSIONS)) {
+		ReleaseWarning(LOCATION,
+			"Campaign file has invalid recent mission count %d, keeping at most %d.\n",
+			count,
+			MAX_RECENT_MISSIONS);
+		count = std::clamp(count, 0, MAX_RECENT_MISSIONS);
+	}
+	for (i = 0; i < count && !cfeof(cfp); i++) {
 		char *cp;
 
 		cfread_string_len( Recent_missions[i], MAX_FILENAME_LEN, cfp);
@@ -1478,6 +1523,7 @@ void pilotfile::csg_read_lastmissions()
 		cp = strchr(Recent_missions[i], '.');
 			if (cp)
 				*cp = 0;
+		Num_recent_missions = i + 1;
 	}
 }
 
@@ -1504,7 +1550,7 @@ void pilotfile::csg_read_containers()
 {
 	const int num_containers = cfread_int(cfp);
 
-	for (int idx = 0; idx < num_containers; idx++) {
+	for (int idx = 0; idx < num_containers && !cfeof(cfp); idx++) {
 		Campaign.persistent_containers.emplace_back();
 		auto& container = Campaign.persistent_containers.back();
 		csg_read_container(container);
@@ -1520,7 +1566,7 @@ void pilotfile::csg_read_containers()
 
 	const int redalert_num_containers = cfread_int(cfp);
 
-	for (int idx = 0; idx < redalert_num_containers; idx++) {
+	for (int idx = 0; idx < redalert_num_containers && !cfeof(cfp); idx++) {
 		Campaign.red_alert_containers.emplace_back();
 		auto& ra_container = Campaign.red_alert_containers.back();
 		csg_read_container(ra_container);
@@ -1541,7 +1587,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 	const int size = cfread_int(cfp);
 
 	if (container.is_list()) {
-		for (int i = 0; i < size; ++i) {
+		for (int i = 0; i < size && !cfeof(cfp); ++i) {
 			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
 			container.list_data.emplace_back(temp_buf);
 		}
@@ -1549,7 +1595,7 @@ void pilotfile::csg_read_container(sexp_container& container)
 		char temp_key[NAME_LENGTH];
 		memset(temp_key, 0, sizeof(temp_key));
 
-		for (int i = 0; i < size; ++i) {
+		for (int i = 0; i < size && !cfeof(cfp); ++i) {
 			cfread_string_len(temp_key, sizeof(temp_key), cfp);
 			cfread_string_len(temp_buf, sizeof(temp_buf), cfp);
 			container.map_data.emplace(temp_key, temp_buf);
@@ -1736,6 +1782,15 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 		uint section_size = cfread_uint(cfp);
 
 		size_t start_pos = cftell(cfp);
+
+		// a size of 0 would turn the read limit off, and only an empty section is written with it
+		if (section_size == 0) {
+			continue;
+		}
+		if (section_size > static_cast<size_t>(cfilelength(cfp)) - start_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Section runs past the end of the file.\n", (uint32_t)section_id));
+			break;
+		}
 
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);
@@ -2006,6 +2061,15 @@ bool pilotfile::get_csg_rank(int *rank)
 
 		size_t start_pos = cftell(cfp);
 		size_t offset_pos;
+
+		// a size of 0 would turn the read limit off, and only an empty section is written with it
+		if (section_size == 0) {
+			continue;
+		}
+		if (section_size > static_cast<size_t>(cfilelength(cfp)) - start_pos) {
+			mprintf(("CSG => Warning: (0x%04x) Section runs past the end of the file.\n", (uint32_t)section_id));
+			break;
+		}
 
 		// safety, to help protect against long reads
 		cf_set_max_read_len(cfp, section_size);

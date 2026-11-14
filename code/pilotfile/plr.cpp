@@ -350,7 +350,7 @@ void pilotfile::plr_read_variables()
 	auto list_size = handler->startArrayRead("variables");
 
 	p->variables.reserve(list_size);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+	for (size_t idx = 0; idx < list_size && !handler->atEndOfFile(); idx++, handler->nextArraySection()) {
 		sexp_variable n_var;
 		n_var.type = handler->readInt("type");
 		handler->readString("text", n_var.text, TOKEN_LENGTH);
@@ -388,7 +388,7 @@ void pilotfile::plr_read_containers()
 	const size_t list_size = handler->startArrayRead("containers");
 
 	p->containers.reserve(list_size);
-	for (size_t idx = 0; idx < list_size; idx++, handler->nextArraySection()) {
+	for (size_t idx = 0; idx < list_size && !handler->atEndOfFile(); idx++, handler->nextArraySection()) {
 		p->containers.emplace_back();
 		auto& container = p->containers.back();
 
@@ -401,12 +401,12 @@ void pilotfile::plr_read_containers()
 		Assert(size >= 0);
 
 		if (container.is_list()) {
-			for (int i = 0; i < size; ++i) {
+			for (int i = 0; i < size && !handler->atEndOfFile(); ++i) {
 				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
 				container.list_data.emplace_back(handler->readString(data_idx_str.c_str()));
 			}
 		} else if (container.is_map()) {
-			for (int i = 0; i < size; ++i) {
+			for (int i = 0; i < size && !handler->atEndOfFile(); ++i) {
 				SCP_string key_idx_str = SCP_string("key_") + std::to_string(i);
 				SCP_string data_idx_str = SCP_string("data_") + std::to_string(i);
 				SCP_string key = handler->readString(key_idx_str.c_str());

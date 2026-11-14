@@ -14,9 +14,19 @@ class PilotPlayerFileTest: public test::FSTestFixture {
 	}
 
  protected:
+	void SetUp() override {
+		FSTestFixture::SetUp();
+
+		// a leftover from a crashed run would be picked up by binaryToJSONConversion
+		cf_delete("cut.plr", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	}
+
 	void TearDown() override {
 		// Delete the converted files
 		cf_delete("asdf.json", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("cut.plr", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("cut.json", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("cut.hdp", CF_TYPE_DATA);
 
 		FSTestFixture::TearDown();
 	}
@@ -280,5 +290,123 @@ TEST_F(PilotPlayerFileTest, binaryToJSONConversion) {
 	ASSERT_EQ(binary_plr, json_plr);
 
 	// Close control_config stuff
+	control_config_common_close();
+}
+
+namespace {
+CFILE* start_cut_player(Section id, uint size)
+{
+	auto fp = cfopen("cut.plr",
+		"wb",
+		CF_TYPE_PLAYERS,
+		false,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	if (fp != nullptr) {
+		cfwrite_uint(PLR_FILE_ID, fp);
+		cfwrite_ubyte(PLR_VERSION, fp);
+		cfwrite_ushort(static_cast<ushort>(id), fp);
+		cfwrite_uint(size, fp);
+	}
+	return fp;
+}
+
+void write_container(CFILE* fp, ContainerType type, int size)
+{
+	cfwrite_string_len("c", fp);
+	cfwrite_int(static_cast<int>(type | ContainerType::STRING_DATA | ContainerType::SAVE_TO_PLAYER_FILE), fp);
+	cfwrite_int(0, fp);
+	cfwrite_int(size, fp);
+}
+
+void write_variable(CFILE* fp)
+{
+	cfwrite_int(SEXP_VARIABLE_SAVE_TO_PLAYER_FILE, fp);
+	cfwrite_string_len("t", fp);
+	cfwrite_string_len("v", fp);
+}
+
+// The last section claims two containers, the first of them 1000 entries, and holds only the first one's header
+void write_player_with_cut_container(ContainerType type)
+{
+	auto fp = start_cut_player(Section::Containers, 21);
+	ASSERT_NE(fp, nullptr);
+	cfwrite_int(2, fp);
+	write_container(fp, type, 1000);
+	cfclose(fp);
+}
+} // namespace
+
+TEST_F(PilotPlayerFileTest, list_container_without_data_stays_empty)
+{
+	control_config_common_init();
+	write_player_with_cut_container(ContainerType::LIST);
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &plr, true));
+
+	ASSERT_EQ(plr.containers.size(), static_cast<size_t>(1));
+	EXPECT_TRUE(plr.containers[0].list_data.empty());
+
+	control_config_common_close();
+}
+
+TEST_F(PilotPlayerFileTest, map_container_without_data_stays_empty)
+{
+	control_config_common_init();
+	write_player_with_cut_container(ContainerType::MAP | ContainerType::STRING_KEYS);
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &plr, true));
+
+	ASSERT_EQ(plr.containers.size(), static_cast<size_t>(1));
+	EXPECT_TRUE(plr.containers[0].map_data.empty());
+
+	control_config_common_close();
+}
+
+TEST_F(PilotPlayerFileTest, variable_count_without_data_stops_at_the_end)
+{
+	control_config_common_init();
+	auto fp = start_cut_player(Section::Variables, 18);
+	ASSERT_NE(fp, nullptr);
+	cfwrite_int(3, fp);
+	write_variable(fp);
+	cfclose(fp);
+
+	player plr;
+	plr.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &plr, true));
+
+	EXPECT_EQ(plr.variables.size(), static_cast<size_t>(1));
+
+	control_config_common_close();
+}
+
+TEST_F(PilotPlayerFileTest, json_variables_are_all_read)
+{
+	control_config_common_init();
+	player saved;
+	saved.reset();
+	strcpy_s(saved.callsign, "cut");
+	sexp_variable var;
+	var.type = SEXP_VARIABLE_SAVE_TO_PLAYER_FILE;
+	strcpy_s(var.text, "t");
+	strcpy_s(var.variable_name, "v");
+	saved.variables.push_back(var);
+	pilotfile saver;
+	ASSERT_TRUE(saver.save_player(&saved));
+
+	player loaded;
+	loaded.reset();
+	pilotfile loader;
+	ASSERT_TRUE(loader.load_player("cut", &loaded, false));
+
+	EXPECT_EQ(loaded.variables.size(), static_cast<size_t>(1));
+
 	control_config_common_close();
 }
