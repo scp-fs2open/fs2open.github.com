@@ -672,7 +672,9 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
 	// Read once per frame: a read clears the press count, so a second read on the release frame returns false
-	const bool bank_when_pressed = (Viewer_mode & VM_CAMERA_LOCKED) && check_control(BANK_WHEN_PRESSED) != 0;
+	const bool bank_when_pressed = check_control(BANK_WHEN_PRESSED) != 0;
+	const float reverse_time = check_control_timef(REVERSE_THRUST);
+	const bool afterburner_down = check_control(AFTERBURNER) != 0;
 
 	// Ship controls
 	if (Viewer_mode & VM_CAMERA_LOCKED) {
@@ -716,7 +718,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	if (!(Game_mode & GM_DEAD)) {
 		// Thrust controls
-		const float reverse_time = check_control_timef(REVERSE_THRUST);
 		ci->forward = check_control_timef(FORWARD_THRUST) - reverse_time;
 		ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST)); // for slideing-Bobboau
 		ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST)); // for slideing-Bobboau
@@ -795,8 +796,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 				override_analog_throttle = 1;
 			}
 		}
-
-		const bool afterburner_down = check_control(AFTERBURNER) != 0;
 
 		// AL 12-29-97: If afterburner key is down, player should have full forward thrust (even if afterburners run out)
 		if ( afterburner_down ) {
