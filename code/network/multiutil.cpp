@@ -1270,16 +1270,29 @@ void multi_maybe_send_ship_status()
 	}
 }
 
-int multi_find_player_by_callsign(const char *callsign)
+std::pair<int, int> multi_find_player_by_callsign(const char *callsign, bool requires_ship)
 {
 	int idx;
 	for(idx=0;idx<MAX_PLAYERS;idx++){
+		// the standalone's own player is named "server", and a pilot can have that callsign too
+		if (MULTI_STANDALONE(Net_players[idx])) {
+			continue;
+		}
+
 		if(MULTI_CONNECTED(Net_players[idx]) && (strcmp(callsign,Net_players[idx].m_player->callsign)==0)){
-			return idx;
+			if (!requires_ship) {
+				return {idx, -1};
+			}
+
+			// two pilots can share a callsign, so skip a match that has no ship
+			const int shipnum = multi_get_player_ship(idx);
+			if (shipnum >= 0) {
+				return {idx, shipnum};
+			}
 		}
 	}
 
-	return -1;
+	return {-1, -1};
 }
 
 // if Game_current_mission_filename is a builtin multiplayer mission
