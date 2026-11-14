@@ -22,6 +22,8 @@ TEST_F(PostProcessingResetTest, ResetRestoresTheTableLightshafts)
 
 	params.intensity = 0.0f;
 	params.on = false;
+	params.density = 0.1f;
+	params.samplenum = 7;
 	manager.resetLightshaftParams();
 
 	EXPECT_FLOAT_EQ(params.intensity, 0.3f);
@@ -46,4 +48,32 @@ TEST_F(PostProcessingResetTest, EachEffectKeepsItsTableColor)
 			EXPECT_TRUE(effect.default_rgb == vmd_zero_vector);
 		}
 	}
+}
+
+class PostProcessingBuiltInTableTest : public test::FSTestFixture {
+  public:
+	PostProcessingBuiltInTableTest() : test::FSTestFixture(INIT_CFILE) {}
+};
+
+// The built-in table has no #Light Shafts section, so the struct's own values are the defaults
+TEST_F(PostProcessingBuiltInTableTest, ResetWithoutALightShaftsSectionGivesTheBuiltInValues)
+{
+	graphics::PostProcessingManager manager;
+	ASSERT_TRUE(manager.parse_table());
+
+	auto& params = manager.getLightshaftParams();
+	params.intensity = 0.0f;
+	params.on = false;
+	params.density = 0.1f;
+	params.samplenum = 7;
+	manager.resetLightshaftParams();
+
+	const graphics::lightshaft_parameters builtin;
+	EXPECT_FLOAT_EQ(params.intensity, builtin.intensity);
+	EXPECT_EQ(params.on, builtin.on);
+	EXPECT_FLOAT_EQ(params.density, builtin.density);
+	EXPECT_FLOAT_EQ(params.falloff, builtin.falloff);
+	EXPECT_FLOAT_EQ(params.weight, builtin.weight);
+	EXPECT_FLOAT_EQ(params.cpintensity, builtin.cpintensity);
+	EXPECT_EQ(params.samplenum, builtin.samplenum);
 }

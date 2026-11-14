@@ -36,6 +36,7 @@ add_file_folder("Graphics"
 
 if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_post_processing.cpp
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()
