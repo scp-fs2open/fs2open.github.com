@@ -1199,6 +1199,10 @@ bool cam_set_camera(camid cid)
 		return false;
 	}
 
+	// Autopilot and scripts set the same camera again every frame
+	if (!(Viewer_mode & VM_FREECAMERA) || Current_camera.getSignature() != cid.getSignature()) {
+		gr_reset_temporal_history();
+	}
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = cid;
 

@@ -1,14 +1,34 @@
+#ifdef GL_ES
+precision highp float;
+#endif
 
 #ifdef VULKAN
 layout(location = 0) in vec4 vertPosition;
 layout(location = 1) in vec4 vertColor;
 layout(location = 2) in vec4 vertTexCoord;
 layout(location = 6) in float vertRadius;
+layout(location = 12) in vec4 vertMotion;
 
 layout(location = 0) out vec4 fragTexCoord;
 layout(location = 1) out vec4 fragColor;
 layout(location = 2) out float fragRadius;
 layout(location = 3) out vec4 fragPosition;
+layout(location = 4) out vec4 fragVelocityCurClip;
+layout(location = 5) out vec4 fragVelocityPrevClip;
+layout(location = 6) out float fragHasMotion;
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	float window_width;
+	float window_height;
+	float nearZ;
+	float farZ;
+	int linear_depth;
+	int srgb;
+	int blend_alpha;
+	mat4 velocityViewProj;
+	mat4 velocityPrevViewProj;
+	vec2 velocityUvScale;
+};
 #else
 in vec4 vertPosition;
 in vec4 vertTexCoord;
@@ -53,5 +73,11 @@ void main()
 	fragPosition = modelViewMatrix * vertPosition;
 	fragTexCoord = vec4(vertTexCoord.xyz, 0.0);
 	fragColor = vertColor;
+#endif
+#ifdef VULKAN
+	// Batched vertices are in world space
+	fragVelocityCurClip = velocityViewProj * vec4(vertPosition.xyz, 1.0);
+	fragVelocityPrevClip = velocityPrevViewProj * vec4(vertPosition.xyz - vertMotion.xyz, 1.0);
+	fragHasMotion = vertMotion.w;
 #endif
 }

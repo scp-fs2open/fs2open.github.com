@@ -52,6 +52,7 @@ bool PipelineConfig::operator==(const PipelineConfig& other) const
 	       renderPass == other.renderPass &&
 	       subpass == other.subpass &&
 	       colorAttachmentCount == other.colorAttachmentCount &&
+	       writesVelocity == other.writesVelocity &&
 	       sampleCount == other.sampleCount &&
 	       perAttachmentBlendEnabled == other.perAttachmentBlendEnabled &&
 	       [&]() {
@@ -126,6 +127,7 @@ uint64_t PipelineConfig::hash() const
 	hashCombine(h, handleToU64(static_cast<VkRenderPass>(renderPass)));
 	hashCombine(h, subpass);
 	hashCombine(h, colorAttachmentCount);
+	hashCombine(h, writesVelocity ? 1u : 0u);
 	hashCombine(h, static_cast<uint64_t>(sampleCount));
 	hashCombine(h, perAttachmentBlendEnabled ? 1u : 0u);
 	if (perAttachmentBlendEnabled) {
@@ -394,9 +396,26 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 	}
 
 	// Input assembly
+	//
+	// Primitive restart is enabled for every topology that permits it, rather than disabled
+	// outright. Metal always performs primitive restart on indexed draws and cannot turn it off, so
+	// MoltenVK rejects a strip/fan pipeline that asks to disable it -- vkCreateGraphicsPipelines
+	// fails with VK_ERROR_FEATURE_NOT_PRESENT ("Metal does not support disabling primitive
+	// restart"). getPipeline() then returns a null pipeline and the draw is skipped, which on macOS
+	// silently dropped the entire 2D/UI/HUD path (gr_bitmap and friends render quads as
+	// PRIM_TYPE_TRISTRIP; see graphics/render.cpp) while leaving ImGui -- which builds its own
+	// TRIANGLE_LIST pipeline -- as the only thing still on screen.
+	//
+	// Enabling it changes nothing for FSO's geometry: an index buffer is promoted to 32-bit as soon
+	// as a mesh reaches USHRT_MAX vertices (VB_FLAG_LARGE_INDEX, see modelinterp.cpp), so 0xFFFF is
+	// never a real 16-bit index, and 0xFFFFFFFF is unreachable for 32-bit ones. Neither restart
+	// sentinel can collide with live index data.
+	//
+	// List topologies must keep it disabled: the spec only allows primitiveRestartEnable on them
+	// with VK_EXT_primitive_topology_list_restart, which FSO does not request.
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 	inputAssembly.topology = convertPrimitiveType(config.primitiveType);
-	inputAssembly.primitiveRestartEnable = VK_FALSE;
+	inputAssembly.primitiveRestartEnable = topologySupportsPrimitiveRestart(inputAssembly.topology);
 
 	// Viewport state (dynamic)
 	vk::PipelineViewportStateCreateInfo viewportState;
@@ -436,6 +455,22 @@ vk::UniquePipeline VulkanPipelineManager::createPipeline(const PipelineConfig& c
 				config.attachmentBlends[i].blendMode, config.attachmentBlends[i].writeMask));
 		} else {
 			colorBlendAttachments.push_back(createColorBlendAttachment(config.blendMode, config.colorWriteMask));
+		}
+	}
+
+	if (config.colorAttachmentCount > PipelineConfig::VELOCITY_ATTACHMENT) {
+		auto& velocity = colorBlendAttachments[PipelineConfig::VELOCITY_ATTACHMENT];
+		velocity = vk::PipelineColorBlendAttachmentState{};
+		if (config.writesVelocity) {
+			// The shader's alpha chooses per fragment whether to replace the motion already there.
+			velocity.blendEnable = VK_TRUE;
+			velocity.srcColorBlendFactor = vk::BlendFactor::eSrcAlpha;
+			velocity.dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha;
+			velocity.colorBlendOp = vk::BlendOp::eAdd;
+			velocity.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+			velocity.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+			velocity.alphaBlendOp = vk::BlendOp::eAdd;
+			velocity.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB;
 		}
 	}
 

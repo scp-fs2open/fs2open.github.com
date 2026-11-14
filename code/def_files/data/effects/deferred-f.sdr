@@ -1,13 +1,22 @@
 //? #version 150
+#ifdef GL_ES
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp samplerCube;
+precision highp sampler2DArray;
+precision highp sampler2DArrayShadow;
+#endif
+
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "z-compress.sdr" //! #include "z-compress.sdr"
 
-#ifdef VULKAN
+#ifndef GL_ES
 layout(location = 0) out vec4 fragOut0;
 #else
-out vec4 fragOut0;
+layout(location = 5) out vec4 fragOut0; //COLOR_ATTACHMENTn is on location n in ES, here it uses COLOR_ATTACHMENT5
 #endif
 
 #ifdef VULKAN
@@ -18,13 +27,14 @@ layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
 #define SpecBuffer sTextures[3]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
+layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
 
 #ifdef ENV_MAP
 layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
 #endif
 
-#ifdef RT_SHADOWS
+#if defined(RT_SHADOWS) || defined(RTAO)
 layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
@@ -33,6 +43,7 @@ uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
 uniform sampler2DArrayShadow shadow_map;
+uniform sampler2DArray shadow_map_raw;
 
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
@@ -51,28 +62,20 @@ uniform globalDeferredData {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
+	int rtaoSampleCount;
+
+	// The ray-tracing inputs of this pass, for raytraced shadows and RTAO. See
+	// deferred_global_data in uniform_structs.h.
+	vec3 rayViewOrigin;
+	int rayCullMask;
+
+	float rayBiasMin;
+	float rayBiasMax;
+	float rtaoRadius;
+	float rtaoStrength;
 };
 
-#ifdef VULKAN
-layout(set = 0, binding = 6, std140)
-#else
-layout(std140)
-#endif
-uniform shadowCascadeParams {
-	int cascade_offset;
-	int cascade_count;
-	float rtShadowBiasMin;
-	float rtShadowBiasMax;
-
-	mat4 shadow_mv_matrix;
-
-	// See shadow_cascade_static_data (uniform_structs.h).
-	vec3 shadow_ray_view_origin;
-	int shadow_ray_cull_mask;
-	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-};
+#include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
 #ifdef VULKAN
 layout(set = 2, binding = 1, std140)
@@ -145,7 +148,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			dist = length(lightDirOut);
 			lightDist = dist;
 			// Energy conservation term
-			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
+			float alpha_adjust = clamp(alpha + (sourceRadius/(2.0*dist)), 0.0, 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			area_normalisation *= area_normalisation;
 			//end chunk
@@ -188,7 +191,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			float dist = length(lightDirOut);
 			lightDist = dist;
 			// Energy conservation term
-			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
+			float alpha_adjust = min(alpha + (sourceRadius/(2.0*dist)), 1.0);
 			area_normalisation = alpha/alpha_adjust;
 			// don't need to square as it's a line rather than a sphere.
 			//end chunk
@@ -235,11 +238,11 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 	// so let s = (2/alpha^2 - 2)
 	// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
 
-	const float ENV_REZ = 512; // Ideally this would be #define'd and shader recompiled with envmap rez changes
-	const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
+	const float ENV_REZ = 512.0; // Ideally this would be #define'd and shader recompiled with envmap rez changes
+	const float REZ_BIAS = log2(ENV_REZ * sqrt(3.0));
 
 	float alphaSqr = alpha * alpha;
-	float rough_bias = 0.5 * log2(2/alphaSqr - 1);
+	float rough_bias = 0.5 * log2(2.0/alphaSqr - 1.0);
 	float mip_bias = REZ_BIAS - rough_bias;
 
 	// Sample light, using mip bias to blur it.
@@ -257,7 +260,7 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 	// Pseudo-IBL, so use k_IBL
 	float k = alpha * alpha/ 2.0f;
 
-	float NdotL = max(dot(light_dir, normal),0);
+	float NdotL = max(dot(light_dir, normal),0.0);
 
 	float g1vNL = GeometrySchlickGGX(NdotL, k);
 	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
@@ -295,6 +298,18 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
+#ifdef RTAO
+		{
+			// Raytraced AO multiplies into the same ao term as the baked AO maps,
+			// so the env-map/IBL ambient below darkens consistently for free.
+			// Ray origin in TLAS-relative space, as for the shadow rays below.
+			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
+			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
+			float rtaoBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
+			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
+				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
+		}
+#endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
@@ -314,15 +329,22 @@ void main()
 
 		if (enable_shadows != 0) {
 #ifdef RT_SHADOWS
-			// Ray origin in TLAS-relative space; see shadow_cascade_static_data (uniform_structs.h).
+			// Ray origin in TLAS-relative space; see deferred_global_data (uniform_structs.h).
 			// Only the rotation of inv_view_matrix is used: its translation is the (large) camera
-			// world position, which shadow_ray_view_origin supplies already rebased onto the TLAS.
-			vec3 worldPos = mat3(inv_view_matrix) * position + shadow_ray_view_origin;
+			// world position, which rayViewOrigin supplies already rebased onto the TLAS.
+			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
-			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
+			float rtShadowBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
+			// Penumbra cone: for directional lights sourceRadius IS the tangent of the
+			// sun's angular radius ($SunAngularSize); for local lights the subtended
+			// half-angle follows from the physical source radius and the light distance.
+			float coneTan = (lightType == LT_DIRECTIONAL)
+				? sourceRadius
+				: sourceRadius / max(lightDist, 1e-3);
+			attenuation *= traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist,
+				rtShadowBias, uint(rayCullMask), coneTan, rtShadowSampleCount, gl_FragCoord.xy);
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];
@@ -330,7 +352,7 @@ void main()
 				fragShadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, fragShadowPos);
 			}
 
-			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+			attenuation *= getShadowValue(shadow_map, shadow_map_raw, -position.z, fragShadowUV, cascade_distances, smoothness_factors, penumbra_scale, cascade_offset, cascade_count);
 #endif
 		}
 
@@ -338,6 +360,6 @@ void main()
 		float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 		fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	}
-
+	
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

@@ -444,6 +444,39 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
 
+// One row per model subsystem flag whose effect is "if set, set the corresponding flag on the ship subsystem or its weapons."
+// Any flag whose handling needs broader context (AI profile or mission flags) is handled in the outer wrapper of resolve_subsystem_flags.
+struct subsystem_flag_mapping
+{
+	Model::Subsystem_Flags model_flag;
+	Ship::Subsystem_Flags  subsys_flag;   // or NUM_VALUES if N/A
+	Ship::Weapon_Flags     weapon_flag;   // or NUM_VALUES if N/A
+};
+
+static const subsystem_flag_mapping Subsystem_flag_targets[] =
+{
+	// Subsystem flags
+	{ Model::Subsystem_Flags::Untargetable,              Ship::Subsystem_Flags::Untargetable,              Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_ss_targeting,           Ship::Subsystem_Flags::No_SS_targeting,           Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Fov_edge_check,            Ship::Subsystem_Flags::FOV_edge_check,            Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Fov_required,              Ship::Subsystem_Flags::FOV_Required,              Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_replace,                Ship::Subsystem_Flags::No_replace,                Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_live_debris,            Ship::Subsystem_Flags::No_live_debris,            Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Ignore_if_dead,            Ship::Subsystem_Flags::Missiles_ignore_if_dead,   Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Allow_vanishing,           Ship::Subsystem_Flags::Vanished,                  Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Damage_as_hull,            Ship::Subsystem_Flags::Damage_as_hull,            Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_aggregate,              Ship::Subsystem_Flags::No_aggregate,              Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Rotates,                   Ship::Subsystem_Flags::Rotates,                   Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Translates,                Ship::Subsystem_Flags::Translates,                Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Player_turret_sound,       Ship::Subsystem_Flags::Play_sound_for_player,     Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_disappear,              Ship::Subsystem_Flags::No_disappear,              Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::Autorepair_if_disabled,    Ship::Subsystem_Flags::Autorepair_if_disabled,    Ship::Weapon_Flags::NUM_VALUES  },
+	{ Model::Subsystem_Flags::No_autorepair_if_disabled, Ship::Subsystem_Flags::No_autorepair_if_disabled, Ship::Weapon_Flags::NUM_VALUES  },
+
+	// Weapon flags
+	{ Model::Subsystem_Flags::Turret_locked,             Ship::Subsystem_Flags::NUM_VALUES,                Ship::Weapon_Flags::Turret_Lock },
+};
+
 
 flag_def_list_new<Info_Flags> Ship_flags[] = {
     { "no_collide",					Info_Flags::No_collide,				true, false },
@@ -922,12 +955,16 @@ ship_obj *get_ship_obj_ptr_from_index(int index)
  */
 int ship_get_num_ships()
 {
-	int count;
-	ship_obj *so;
+	int count = 0;
 
-	count = 0;
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
-	{
+	// Ship_obj_list is only list_init()'d by ship_obj_list_init(), which runs on entering gameplay;
+	// this can be called before that (e.g. by the profiler overlay's memory stats from the main
+	// menu), in which case GET_FIRST() returns the list head's zero-initialized null next pointer.
+	if (GET_FIRST(&Ship_obj_list) == nullptr) {
+		return count;
+	}
+
+	for (auto so : list_range(&Ship_obj_list)) {
 		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
@@ -1082,8 +1119,6 @@ const float DEFAULT_ASK_HELP_SHIELD_PERCENT = 0.1f; // percent shields at which 
 const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
-
-#define CLONE_UNIQUE_PTR(attribute) attribute = util::unique_copy(other.attribute.get(), true)
 
 void ship_info::clone(const ship_info& other)
 {
@@ -3043,7 +3078,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_int(&sip->collision_lod);
 
 		// Cap to sane values, just in case
-		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels));
+		sip->collision_lod = MAX(0, MIN(sip->collision_lod, sip->num_detail_levels - 1));
 	}
 
 	// check for optional pixel colors
@@ -6970,7 +7005,7 @@ void ship::clear()
 	
 	afterburner_fuel = 0.0f;
 	afterburner_last_engage_fuel = 0.0f;
-	afterburner_last_end_time = 0;
+	afterburner_last_end_time = TIMESTAMP::invalid();
 
 	cmeasure_count = 0;
 	current_cmeasure = -1;
@@ -7794,6 +7829,34 @@ void ship_subsys::clear()
 	info_from_server_stamp = TIMESTAMP::never();
 }
 
+static void resolve_subsystem_flags(const flagset<Model::Subsystem_Flags> &model_flags, flagset<Ship::Subsystem_Flags> &subsys_flags, flagset<Ship::Weapon_Flags> &weapon_flags)
+{
+	for (const auto &m : Subsystem_flag_targets)
+	{
+		if (!model_flags[m.model_flag])
+			continue;
+		if (m.subsys_flag != Ship::Subsystem_Flags::NUM_VALUES)
+			subsys_flags.set(m.subsys_flag);
+		if (m.weapon_flag != Ship::Weapon_Flags::NUM_VALUES)
+			weapon_flags.set(m.weapon_flag);
+	}
+}
+
+static void resolve_subsystem_flags(const model_subsystem &msp, flagset<Ship::Subsystem_Flags> &subsys_flags, flagset<Ship::Weapon_Flags> &weapon_flags)
+{
+	resolve_subsystem_flags(msp.flags, subsys_flags, weapon_flags);
+
+	// post-resolution: AI profile flags apply to all turrets
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Advanced_turret_fov_edge_checks])
+		subsys_flags.set(Ship::Subsystem_Flags::FOV_edge_check);
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Require_turret_to_have_target_in_fov])
+		subsys_flags.set(Ship::Subsystem_Flags::FOV_Required);
+
+	// post-resolution: the mission can free all beam weapons by default
+	if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default])
+		weapon_flags.set(Ship::Weapon_Flags::Beam_Free);
+}
+
 /**
  * Set subsystem
  *
@@ -7871,51 +7934,7 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->rof_scaler = ship_system->system_info->turret_rof_scaler;
 
-		// zero flags
-        ship_system->flags.reset();
-		ship_system->weapons.flags.reset();
-        ship_system->subsys_snd_flags.reset();
-
-		// Goober5000
-		if (model_system->flags[Model::Subsystem_Flags::Untargetable])
-			ship_system->flags.set(Ship::Subsystem_Flags::Untargetable);
-		// Wanderer
-		if (model_system->flags[Model::Subsystem_Flags::No_ss_targeting])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_SS_targeting);
-		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Advanced_turret_fov_edge_checks]) || (model_system->flags[Model::Subsystem_Flags::Fov_edge_check]))
-			ship_system->flags.set(Ship::Subsystem_Flags::FOV_edge_check);
-		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Require_turret_to_have_target_in_fov]) || (model_system->flags[Model::Subsystem_Flags::Fov_required]))
-			ship_system->flags.set(Ship::Subsystem_Flags::FOV_Required);
-
-		if (model_system->flags[Model::Subsystem_Flags::No_replace])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_replace);
-		if (model_system->flags[Model::Subsystem_Flags::No_live_debris])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_live_debris);
-		if (model_system->flags[Model::Subsystem_Flags::Ignore_if_dead])
-			ship_system->flags.set(Ship::Subsystem_Flags::Missiles_ignore_if_dead);
-		if (model_system->flags[Model::Subsystem_Flags::Allow_vanishing])
-			ship_system->flags.set(Ship::Subsystem_Flags::Vanished);
-        if (model_system->flags[Model::Subsystem_Flags::Damage_as_hull])
-			ship_system->flags.set(Ship::Subsystem_Flags::Damage_as_hull);
-		if (model_system->flags[Model::Subsystem_Flags::No_aggregate])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_aggregate);
-		if (model_system->flags[Model::Subsystem_Flags::Rotates])
-			ship_system->flags.set(Ship::Subsystem_Flags::Rotates);
-		if (model_system->flags[Model::Subsystem_Flags::Translates])
-			ship_system->flags.set(Ship::Subsystem_Flags::Translates);
-		if (model_system->flags[Model::Subsystem_Flags::Player_turret_sound])
-			ship_system->flags.set(Ship::Subsystem_Flags::Play_sound_for_player);
-		if (model_system->flags[Model::Subsystem_Flags::No_disappear])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_disappear);
-		if (model_system->flags[Model::Subsystem_Flags::Autorepair_if_disabled])
-			ship_system->flags.set(Ship::Subsystem_Flags::Autorepair_if_disabled);
-		if (model_system->flags[Model::Subsystem_Flags::No_autorepair_if_disabled])
-			ship_system->flags.set(Ship::Subsystem_Flags::No_autorepair_if_disabled);
-		if (model_system->flags[Model::Subsystem_Flags::Turret_locked])
-			ship_system->weapons.flags.set(Ship::Weapon_Flags::Turret_Lock);
-		// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP, and moved to subsys_set() by Asteroth
-		if (The_mission.flags[Mission::Mission_Flags::Beam_free_all_by_default]) 
-			ship_system->weapons.flags.set(Ship::Weapon_Flags::Beam_Free);
+		resolve_subsystem_flags(*model_system, ship_system->flags, ship_system->weapons.flags);
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
@@ -8284,9 +8303,10 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		eye_orient = *rot_offset * eye_orient;
 	}
 
+	// The same sway as in ship_cockpit_render_offset()
+	const vec3d sway = Disable_cockpit_sway ? vmd_zero_vector : sip->cockpit_sway_val * objp->phys_info.acceleration;
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
-	if (!Disable_cockpit_sway)
-		eye_offset += sip->cockpit_sway_val * objp->phys_info.acceleration;
+	eye_offset += sway;
 
 	fov_t fov_backup = Proj_fov;
 	if(fov_override)
@@ -8299,6 +8319,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 		gr_set_view_matrix(&leaning_position, &eye_orient);
+		gr_begin_cockpit_camera(&objp->orient, &objp->last_orient, &sway);
 
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(objp));
@@ -8313,6 +8334,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_OPAQUE);
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset, MODEL_RENDER_TRANS);
 
+		gr_end_cockpit_camera();
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 
@@ -8340,6 +8362,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
+	gr_begin_cockpit_camera(&objp->orient, &objp->last_orient, &sway);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
@@ -8444,6 +8467,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	Lighting_mode = lighting_mode::NORMAL;
 
+	gr_end_cockpit_camera();
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
@@ -9332,7 +9356,7 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 
 			switch ( objp->type ) {
 			case OBJ_SHIP:
-				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
+				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx, DamageSource::Explosion);
 				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
@@ -9389,7 +9413,7 @@ static void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
-		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1);
+		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage, -1, DamageSource::Explosion);
 
 		// do physics
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
@@ -11669,15 +11693,12 @@ static void ship_model_change(int n, int ship_type)
 	objp = &Objects[sp->objnum];
 	pmi = model_get_instance(sp->model_instance_num);
 
-	// get new model
-	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip);
-	}
+	// get new model; as in ship_create(), load even if the class already has one, so that this ship holds
+	// its own reference and the model survives a UI preview releasing the one it loaded
+	sip->model_num = model_load(sip->pof_file, sip);
 
-	if ( sip->cockpit_model_num == -1 ) {
-		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
-		}
+	if ( VALID_FNAME(sip->cockpit_pof_file) ) {
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	pm = model_get(sip->model_num);
@@ -21871,7 +21892,7 @@ void ship_render_weapon_models(model_render_params *ship_render_info, model_draw
 	ship_weapon *swp = &shipp->weapons;
 	auto ship_pm = model_get(sip->model_num);
 
-	scene->push_transform(&obj->pos, &obj->orient);
+	scene->push_transform(&obj->pos, &obj->orient, &obj->last_pos, &obj->last_orient);
 
 	auto ship_render_flags = ship_render_info->get_model_flags();
 	ship_render_info->set_flags(ship_render_flags & ~MR_SHOW_THRUSTERS);

@@ -75,6 +75,7 @@ const char *cmdline_arg_types[] =
 enum class flag_output_type {
 	Binary,
 	Json_V1,
+	Json_V2,
 };
 
 // variables
@@ -353,6 +354,7 @@ cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), req
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window resolution. Vulkan only", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -555,7 +557,12 @@ int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 bool Cmdline_window = false;
+#ifdef __ANDROID__
+// Default to borderless in the legacy window-mode path as well.
+bool Cmdline_fullscreen_window = true;
+#else
 bool Cmdline_fullscreen_window = false;
+#endif
 std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
@@ -1358,51 +1365,58 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 // external entry point into this modules
 
+static void json_add_version(json_t* root) {
+	auto version_obj = json_object();
+
+	json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
+	json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
+	json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
+	json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
+
+	json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
+	json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
+	json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
+
+	json_object_set_new(root, "version", version_obj);
+}
+
+static void json_add_easy_flags(json_t* root) {
+	auto easy_array = json_array();
+
+	for (auto& easy_flag : easy_flags) {
+		json_array_append_new(easy_array, json_string(easy_flag.name));
+	}
+
+	json_object_set_new(root, "easy_flags", easy_array);
+}
+
+static void json_add_flags(json_t* root) {
+	auto flags_array = json_array();
+
+	for (auto& flag : exe_params) {
+		auto flag_obj = json_object();
+
+		json_object_set_new(flag_obj, "name", json_string(flag.name));
+		json_object_set_new(flag_obj, "description", json_string(flag.desc));
+		json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
+		json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
+		json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
+		json_object_set_new(flag_obj, "type", json_string(flag.type));
+		json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
+
+		json_array_append_new(flags_array, flag_obj);
+	}
+
+	json_object_set_new(root, "flags", flags_array);
+}
+
 static json_t* json_get_v1() {
 	auto root = json_object();
 
-	{
-		auto version_obj = json_object();
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
 
-		json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
-		json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
-		json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
-		json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
-
-		json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
-		json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
-		json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
-
-		json_object_set_new(root, "version", version_obj);
-	}
-	{
-		auto easy_array = json_array();
-
-		for (auto& easy_flag : easy_flags) {
-			json_array_append_new(easy_array, json_string(easy_flag.name));
-		}
-
-		json_object_set_new(root, "easy_flags", easy_array);
-	}
-	{
-		auto flags_array = json_array();
-
-		for (auto& flag : exe_params) {
-			auto flag_obj = json_object();
-
-			json_object_set_new(flag_obj, "name", json_string(flag.name));
-			json_object_set_new(flag_obj, "description", json_string(flag.desc));
-			json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
-			json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
-			json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
-			json_object_set_new(flag_obj, "type", json_string(flag.type));
-			json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
-
-			json_array_append_new(flags_array, flag_obj);
-		}
-
-		json_object_set_new(root, "flags", flags_array);
-	}
 	{
 		auto caps_array = json_array();
 
@@ -1513,6 +1527,19 @@ static json_t* json_get_v1() {
 	return root;
 }
 
+// json_v2 reports version, supported flags, and the preferences path for launchers,
+// without querying graphics, audio, or joystick devices.
+static json_t* json_get_v2() {
+	auto root = json_object();
+
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
+	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
+
+	return root;
+}
+
 static void write_flags_file() {
 	FILE *fp = fopen("flags.lch","w");
 
@@ -1570,6 +1597,8 @@ static flag_output_type get_flags_output_type() {
 		return flag_output_type::Binary;
 	} else if (type == "json_v1") {
 		return flag_output_type::Json_V1;
+	} else if (type == "json_v2") {
+		return flag_output_type::Json_V2;
 	} else {
 		// This is supposed to make it easy for the launcher to recognize an unsupported type
 		printf("OUTPUT TYPE NOT SUPPORTED!\n");
@@ -1580,17 +1609,23 @@ static flag_output_type get_flags_output_type() {
 
 static void write_flags() {
 	auto type = get_flags_output_type();
-	switch(type) {
-	case flag_output_type::Binary:
-		write_flags_file();
-		break;
-	case flag_output_type::Json_V1:
-		json_t* root = json_get_v1();
 
-		json_dumpf(root, stdout, JSON_INDENT(4));
-		json_decref(root);
-		break;
+	if (type == flag_output_type::Binary) {
+		write_flags_file();
+		return;
 	}
+
+	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+
+#ifdef __ANDROID__
+	char* dumped = json_dumps(root, JSON_INDENT(4));
+	os_android_set_flags_string(dumped ? dumped : "");
+	free(dumped);
+#else
+	json_dumpf(root, stdout, JSON_INDENT(4));
+#endif
+
+	json_decref(root);
 }
 
 bool SetCmdlineParams()
@@ -1787,6 +1822,7 @@ bool SetCmdlineParams()
 		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-window");
 		Cmdline_window = true;
+		Cmdline_fullscreen_window = false;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
@@ -2090,6 +2126,16 @@ bool SetCmdlineParams()
 		options::OptionsManager::instance()->setOverride("Graphics.AAMode",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(Gr_aa_mode))),
 			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
+	}
+
+	if (fsr_mode_arg.found()) {
+		const int mode = fsr_mode_arg.get_int();
+		if (mode >= static_cast<int>(FsrMode::Off) && mode <= static_cast<int>(FsrMode::Upscale)) {
+			// What of this can run is only known once the renderer is up; gr_init settles it on the closest offered setting
+			Gr_fsr_mode = static_cast<FsrMode>(mode);
+			Gr_fsr_major_version = 0;
+			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
+		}
 	}
 
 	if (msaa_enabled_arg.found()) {
@@ -2409,10 +2455,9 @@ bool SetCmdlineParams()
 	if (gr_sync_validation_arg.found()) {
 		// Enables the Vulkan validation layer + debug messenger + synchronization
 		// validation feature (see VulkanRenderer::initializeInstance), but NOT the
-		// engine-level graphics debug output: -gr_debug additionally draws debug
-		// overlays (e.g. output_uniform_debug_data), which are unrelated to GPU
-		// sync validation and would otherwise appear as spurious on-screen
-		// artifacts. Keep this a pure GPU-validation switch.
+		// engine-level graphics debug output: -gr_debug additionally feeds extra
+		// stat groups into the ImGui frame profiler overlay (see gr_get_debug_stats),
+		// which are unrelated to GPU sync validation. Keep this a pure GPU-validation switch.
 		Cmdline_gr_sync_validation = true;
 	}
 

@@ -178,8 +178,10 @@ namespace AI {
 		Fix_standard_strafe,
 		Fix_ai_target_recovery,	// a) strafing ships that lose their target re-process their orders, like chasing ships already do
 								// b) ships parked in AIM_NONE while holding a standing chase order (attack-any etc.) re-process their orders;
-								// c) target selection skips ships outside the attacker's actively-pursues list, and self-chosen targets
-								//    outside that list are dropped rather than held forever
+								// c) target selection for pursuit (chasing, guard reactions, retaliation) skips ships outside the attacker's
+								//    actively-pursues list; targets held while not chasing are unaffected, and explicitly ordered targets are
+								//    still assigned but not chased or strafed;
+								// d) enemy_wing is reset when a new order takes over (shared with Fix_stale_ai_order_state)
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Fix_AI_shield_management_bug,
@@ -202,6 +204,10 @@ namespace AI {
 		Fix_small_ai_recover_after_engines_repaired, // ensure small ship AI can switch back to useful AI modes if engines get repaired
 		Fix_model_path_refresh_randomization,	// a subsystem path keeps its randomized point when the path is refreshed because the target moved
 		Fix_bay_speed_ramp,		// the fighterbay speed ramp covers only the bay path itself, not points that route a departing ship around the carrier, and never exceeds max speed
+		Fix_stale_ai_order_state,	// a) enemy_wing, guard_*, previous_mode, resume_goal_time, and the targeted subsystem (with its path) are reset when a new order takes over (enemy_wing is also reset under Fix_ai_target_recovery);
+									// b) a dynamic chase saves previous_mode/previous_submode; it and strafe entry leave them alone during an ongoing dynamic goal (evading a weapon still overwrites them, which is harmless since the evade resume re-processes orders);
+									// c) resuming guard duty discards any subsystem target and path left over from the interruption;
+									// d) a ship ordered to guard itself, or to guard a wing it leads (including one that becomes leader mid-mission), treats that goal as unachievable instead of holding it forever
 
 		NUM_VALUES
 	};

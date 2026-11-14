@@ -144,7 +144,7 @@ bool VulkanLDR::init(PostProcessContext& ctx, const RenderTarget& sceneColor, co
 
 	m_initialized = true;
 	nprintf(("vulkan", "VulkanLDR: LDR targets initialized (%ux%u, RGBA8)\n",
-		m_ctx->sceneExtent.width, m_ctx->sceneExtent.height));
+		m_ctx->outputExtent.width, m_ctx->outputExtent.height));
 	return true;
 }
 
@@ -154,7 +154,7 @@ bool VulkanLDR::createTargets()
 
 	// Create Scene_ldr (full resolution) — tonemapped display-referred output.
 	// fp16 in HDR (carries values above paper white), 8-bit UNORM in SDR.
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->outputExtent.width, m_ctx->outputExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdr.image, m_sceneLdr.view, m_sceneLdr.allocation)) {
@@ -162,11 +162,11 @@ bool VulkanLDR::createTargets()
 		return false;
 	}
 	m_sceneLdr.format = ldrFormat;
-	m_sceneLdr.width = m_ctx->sceneExtent.width;
-	m_sceneLdr.height = m_ctx->sceneExtent.height;
+	m_sceneLdr.width = m_ctx->outputExtent.width;
+	m_sceneLdr.height = m_ctx->outputExtent.height;
 
 	// Create Scene_luminance (full resolution) — LDR with luma in alpha for FXAA
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->outputExtent.width, m_ctx->outputExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLuminance.image, m_sceneLuminance.view, m_sceneLuminance.allocation)) {
@@ -174,13 +174,13 @@ bool VulkanLDR::createTargets()
 		return false;
 	}
 	m_sceneLuminance.format = ldrFormat;
-	m_sceneLuminance.width = m_ctx->sceneExtent.width;
-	m_sceneLuminance.height = m_ctx->sceneExtent.height;
+	m_sceneLuminance.width = m_ctx->outputExtent.width;
+	m_sceneLuminance.height = m_ctx->outputExtent.height;
 
 	// Create Scene_ldr_compressed (full resolution) — tonemapped to [0,1] using the
 	// real tone curve, purely for FXAA/SMAA edge detection while HDR output is
 	// active (see executeTonemap/getAADetectionView).
-	if (!m_ctx->createImage(m_ctx->sceneExtent.width, m_ctx->sceneExtent.height, ldrFormat,
+	if (!m_ctx->createImage(m_ctx->outputExtent.width, m_ctx->outputExtent.height, ldrFormat,
 	                 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
 	                 vk::ImageAspectFlagBits::eColor,
 	                 m_sceneLdrCompressed.image, m_sceneLdrCompressed.view, m_sceneLdrCompressed.allocation)) {
@@ -188,8 +188,8 @@ bool VulkanLDR::createTargets()
 		return false;
 	}
 	m_sceneLdrCompressed.format = ldrFormat;
-	m_sceneLdrCompressed.width = m_ctx->sceneExtent.width;
-	m_sceneLdrCompressed.height = m_ctx->sceneExtent.height;
+	m_sceneLdrCompressed.width = m_ctx->outputExtent.width;
+	m_sceneLdrCompressed.height = m_ctx->outputExtent.height;
 
 	// Create framebuffers
 	{
@@ -197,8 +197,8 @@ bool VulkanLDR::createTargets()
 		fbInfo.renderPass = m_ldrRenderPass;
 		fbInfo.attachmentCount = 1;
 		fbInfo.pAttachments = &m_sceneLdr.view;
-		fbInfo.width = m_ctx->sceneExtent.width;
-		fbInfo.height = m_ctx->sceneExtent.height;
+		fbInfo.width = m_ctx->outputExtent.width;
+		fbInfo.height = m_ctx->outputExtent.height;
 		fbInfo.layers = 1;
 
 		try {
@@ -313,7 +313,7 @@ void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 
 	// HDR scene → Scene_ldr via tonemapping shader
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLdrFB, m_ctx->sceneExtent,
+		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_TONEMAPPING,
 		m_sceneColor->view, m_ctx->linearSampler,
 		&tmData, sizeof(tmData),
@@ -328,7 +328,7 @@ void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 	// rather than re-running exposure+tonemap from Scene_color a second time.
 	if (m_ctx->hdrActive) {
 		m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
-			m_sceneLdrCompressedFB, m_ctx->sceneExtent,
+			m_sceneLdrCompressedFB, m_ctx->outputExtent,
 			SDR_TYPE_COPY,
 			m_sceneLdr.view, m_ctx->linearSampler,
 			nullptr, 0,
@@ -357,7 +357,7 @@ void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 	// alpha computed from the detection proxy, see getAADetectionView)
 	{
 		std::array<vk::ImageView, 2> views = {m_sceneLdr.view, getAADetectionView()};
-		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx->sceneExtent,
+		m_ctx->drawFullscreenTriangleMulti(cmd, m_ldrRenderPass, m_sceneLuminanceFB, m_ctx->outputExtent,
 			SDR_TYPE_POST_PROCESS_FXAA_PREPASS, views.data(), static_cast<uint32_t>(views.size()),
 			nullptr, 0);
 	}
@@ -388,13 +388,13 @@ void VulkanLDR::executeFXAA(vk::CommandBuffer cmd)
 
 	// FXAA main pass: Scene_luminance → Scene_ldr (loadOp=eLoad preserves non-edge pixels)
 	graphics::generic_data::fxaa_data fxaaData;
-	fxaaData.rt_w = static_cast<float>(m_ctx->sceneExtent.width);
-	fxaaData.rt_h = static_cast<float>(m_ctx->sceneExtent.height);
+	fxaaData.rt_w = static_cast<float>(m_ctx->outputExtent.width);
+	fxaaData.rt_h = static_cast<float>(m_ctx->outputExtent.height);
 	fxaaData.pad[0] = 0.0f;
 	fxaaData.pad[1] = 0.0f;
 
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
-		m_sceneLdrFB, m_ctx->sceneExtent,
+		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_FXAA,
 		m_sceneLuminance.view, m_ctx->linearSampler,
 		&fxaaData, sizeof(fxaaData),
@@ -493,7 +493,7 @@ bool VulkanLDR::executePostEffects(vk::CommandBuffer cmd)
 
 	// Post-effects: Scene_ldr → Scene_luminance (reusing luminance target as temp)
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
-		m_sceneLuminanceFB, m_ctx->sceneExtent,
+		m_sceneLuminanceFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_MAIN,
 		m_sceneLdr.view, m_ctx->linearSampler,
 		&uboData, sizeof(uboData),
@@ -531,6 +531,9 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 		if (dot > 0.7f) {
 			sun_x = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.rvec)) / PI * 1.5f + 0.5f;
 			sun_y = asinf_safe(vm_vec_dot(&light_dir, &Eye_matrix.vec.uvec)) / PI * 1.5f * gr_screen.clip_aspect + 0.5f;
+			// The formula above is OpenGL's, whose texture V grows upward. The Vulkan fullscreen triangle in
+			// post-v.sdr has V = 0 at the top of the screen, so flip to the space ls-f.sdr's fragTexCoord is in.
+			sun_y = 1.0f - sun_y;
 			found = true;
 			break;
 		}
@@ -590,7 +593,7 @@ void VulkanLDR::executeLightshafts(vk::CommandBuffer cmd)
 
 	// Additive blend lightshafts onto Scene_ldr
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrLoadRenderPass,
-		m_sceneLdrFB, m_ctx->sceneExtent,
+		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_LIGHTSHAFTS,
 		m_sceneDepth->view, m_ctx->linearSampler,
 		&lsData, sizeof(lsData),

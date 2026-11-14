@@ -17,6 +17,7 @@ struct batch_vertex {
 	ubyte r, g, b, a;
 	float radius;
 	vec3d uvec;
+	vec4 motion{}; // world space movement since last frame in xyz, w = 1 if it was supplied. Vulkan only.
 };
 
 struct batch_info {
@@ -87,6 +88,9 @@ public:
 
 	size_t num_verts() { return Vertices.size();  }
 
+	// Gives every vertex from first_vertex on the same movement since last frame. Null leaves them without.
+	void set_motion(size_t first_vertex, const vec3d* motion);
+
 	void clear();
 };
 
@@ -115,15 +119,17 @@ struct primitive_batch_buffer {
 primitive_batch* batching_find_batch(int texture, batch_info::material_type material_id, primitive_type prim_type = PRIM_TYPE_TRIS, bool thruster = false);
 
 void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
-void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
-void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
+// Optional motion is the world space movement since last frame, for motion vectors. Without it the effect takes the
+// motion of whatever is behind it.
+void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f, const vec3d* motion = nullptr);
+void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f, const vec3d* motion = nullptr);
 void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float width, float intensity, float offset);
 void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float intensity);
 void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEnd, color custom_color, bool translucent = true);
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha = 1.0f);
 void batching_add_volume_polygon(int texture, const vec3d* pos, const matrix* orient, float width, float height, float alpha = 1.0f);
-void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
+void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r = 255, int g = 255, int b = 255, const vec3d* motion = nullptr);
 void batching_add_quad(int texture, vertex *verts, float trapezoidal_correction = 1.0f);
 void batching_add_tri(int texture, vertex *verts);
 

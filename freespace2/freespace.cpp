@@ -212,6 +212,7 @@
 #include <stdexcept>
 
 #include "imgui.h"
+#include "implot.h"
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -989,6 +990,7 @@ void game_level_close()
 		ship_level_close();
 		hud_level_close();
 		hud_escort_clear_all();
+		common_select_level_close();	// usually already done on the state change, but not under a scripted UI
 		model_instance_free_all();
 		batch_render_close();
 
@@ -1016,11 +1018,6 @@ void game_level_close()
 
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			model_free_all();			// Free all existing models if standalone server
-
-			// clean out interp data as it's better to allocate as needed here instead
-			// of letting it use a bunch of memory
-			extern void model_deallocate_interp_data();
-			model_deallocate_interp_data();
 		}
 	}
 	else
@@ -1208,6 +1205,8 @@ void game_do_networking()
 
 int Game_loading_callback_inited = 0;
 int Game_loading_background = -1;
+int Game_loading_default_bground_w = 0;
+int Game_loading_default_bground_h = 0;
 generic_anim Game_loading_ani;
 
 static int Game_loading_ani_coords[GR_NUM_RESOLUTIONS][2] = {
@@ -1250,14 +1249,36 @@ void game_loading_callback(int count)
 		framenum = new_framenum;
 
 	if ( Game_loading_ani.num_frames > 0 )	{
+		int ani_x = Game_loading_ani_coords[gr_screen.res][0];
+		int ani_y = Game_loading_ani_coords[gr_screen.res][1];
+		float ani_scale = 1.0f;
+
 		GR_MAYBE_CLEAR_RES(Game_loading_background);
 		if ( Game_loading_background > -1 )	{
+			int bg_w, bg_h;
+			bm_get_info(Game_loading_background, &bg_w, &bg_h);
+
+			// the animation is assumed to match the default background, or the default layout if there is none
+			bool have_default = (Game_loading_default_bground_w > 0) && (Game_loading_default_bground_h > 0);
+			float ref_w = i2fl(have_default ? Game_loading_default_bground_w : gr_screen.max_w_unscaled);
+			float ref_h = i2fl(have_default ? Game_loading_default_bground_h : gr_screen.max_h_unscaled);
+
+			// fit the reference into the background the way menus are fit into the screen:
+			// scaled by the limiting dimension and centered in the other
+			ani_scale = MIN(i2fl(bg_w) / ref_w, i2fl(bg_h) / ref_h);
+			ani_x = fl2i(i2fl(ani_x) * ref_w / i2fl(gr_screen.max_w_unscaled) * ani_scale + (i2fl(bg_w) - ref_w * ani_scale) / 2.0f);
+			ani_y = fl2i(i2fl(ani_y) * ref_h / i2fl(gr_screen.max_h_unscaled) * ani_scale + (i2fl(bg_h) - ref_h * ani_scale) / 2.0f);
+
+			// set the screen scale to the background's dimensions
+			gr_set_screen_scale(bg_w, bg_h);
 			gr_set_bitmap( Game_loading_background );
 			gr_bitmap(0,0,GR_RESIZE_MENU);
 		}
 
 		gr_set_bitmap( Game_loading_ani.first_frame + framenum );
-		gr_bitmap(Game_loading_ani_coords[gr_screen.res][0],Game_loading_ani_coords[gr_screen.res][1], GR_RESIZE_MENU);
+		gr_bitmap(ani_x, ani_y, GR_RESIZE_MENU, false, ani_scale);
+
+		gr_reset_screen_scale();
 
 		do_flip = 1;
 	}
@@ -1303,9 +1324,17 @@ void game_loading_callback_init()
 	Assert( Game_loading_callback_inited==0 );
 
 	Game_loading_background = bm_load(The_mission.loading_screen[gr_screen.res]);
-	
+
 	if (Game_loading_background < 0)
 		Game_loading_background = bm_load(Game_loading_bground_fname[gr_screen.res]);
+
+	Game_loading_default_bground_w = 0;
+	Game_loading_default_bground_h = 0;
+	int default_bground = bm_load(Game_loading_bground_fname[gr_screen.res]);
+	if (default_bground >= 0) {
+		bm_get_info(default_bground, &Game_loading_default_bground_w, &Game_loading_default_bground_h);
+		bm_release(default_bground);
+	}
 
 	generic_anim_init(&Game_loading_ani, Game_loading_ani_fname[gr_screen.res]);
 	generic_anim_load(&Game_loading_ani);
@@ -1444,6 +1473,7 @@ void game_post_level_init()
 {
 	TRACE_SCOPE(tracing::LoadPostMissionLoad);
 
+	gr_reset_temporal_history();
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
@@ -1853,6 +1883,7 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 
 	Framerate_delay = 0;
 
@@ -2320,27 +2351,9 @@ void game_show_framerate()
 	}
 #endif
 
-	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
+	if ((Show_framerate && HUD_draw) || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
-
-		if (Cmdline_frame_profile) {
-			// Split frame profile into two columns if necessary to avoid losing trace data
-			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
-			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
-			size_t fp_column_break = 0;
-			auto fp_trace_str = tracing::get_frame_profile_output();
-
-			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
-				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
-			}
-
-			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
-
-			if (fp_column_break < fp_trace_str.length()) {
-				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
-			}
-		}
 
 		if (Show_framerate) {
 			if (frametotal != 0.0f)
@@ -2456,7 +2469,6 @@ void game_show_framerate()
 	modelstats_num_polys = 0;
 	modelstats_num_polys_drawn = 0;
 	modelstats_num_verts = 0;
-	modelstats_num_sortnorms = 0;
 #endif
 }
 
@@ -3288,6 +3300,9 @@ camid game_render_frame_setup()
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
 	bool camera_cut = false;
+	if (last_Viewer_mode != Viewer_mode) {
+		gr_reset_temporal_history();
+	}
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3620,6 +3635,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_capture_scene_camera();
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
@@ -4414,10 +4430,6 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	if (Cmdline_frame_profile) {
-		tracing::frame_profile_process_frame();
-	}
-
 	DEBUG_GET_TIME( total_time2 )
 
 #ifndef NDEBUG
@@ -4720,6 +4732,11 @@ int game_check_key()
 
 bool pause_if_unfocused()
 {
+	// nobody is at the keyboard in a noninteractive run, so losing focus must not stop it
+	if (Cmdline_noninteractive) {
+		return false;
+	}
+
 	if (Using_in_game_options) {
 		return UnfocusedPauseOption->getValue();
 	} else {
@@ -5259,8 +5276,8 @@ void game_process_event( int current_state, int event )
 			break;
 
 		case GS_EVENT_GAME_INIT:
-			// see if the command line option has been set to use the last pilot, and act accordingly
-			if( player_select_get_last_pilot() ) {	
+			// see if the command line has been set to select a pilot automatically, and act accordingly
+			if( player_select_try_auto_select() ) {
 				// always enter the main menu -- do the automatic network startup stuff elsewhere
 				// so that we still have valid checks for networking modes, etc.
 				gameseq_set_state(GS_STATE_MAIN_MENU);
@@ -5886,6 +5903,13 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
+	// consume the flag before any script override, so that it can't remain set for a later main hall entry
+	bool pilot_just_committed = false;
+	if (new_state == GS_STATE_MAIN_MENU) {
+		pilot_just_committed = Player_select_pilot_just_committed;
+		Player_select_pilot_just_committed = false;
+	}
+
 	if(scripting::hooks::OnStateStart->isActive()) {
 		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
 			scripting::hooks::OnStateStart->run(std::move(script_param_list));
@@ -5914,8 +5938,8 @@ void game_enter_state( int old_state, int new_state )
 			}
 
 			// determine which ship this guy is currently based on
-			// if we are seeing the main hall for the first time, allow falling back when the current campaign isn't available
-			const auto result = mission_load_up_campaign(old_state == GS_STATE_INITIAL_PLAYER_SELECT);
+			// if we have just selected a pilot, allow falling back when the current campaign isn't available
+			const auto result = mission_load_up_campaign(pilot_just_committed);
 
 			// if there was a problem, pass an empty main hall which will set up appropriate defaults
 			if (result != 0) {
@@ -7020,7 +7044,7 @@ int game_main(int argc, char *argv[])
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone && !skip_intro) {
+	if (!Is_standalone && !skip_intro && !player_select_auto_select_requested()) {
 		movie::play("intro.mve");
 	}
 
@@ -7153,6 +7177,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
 	os_cleanup();
@@ -7501,7 +7526,6 @@ void Time_model( int modelnum )
 
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
-		model_set_detail_level(0);		// use highest detail level
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();
@@ -8256,3 +8280,10 @@ int main(int argc, char *argv[])
 
 	return result;
 }
+
+#ifdef __ANDROID__
+extern "C" int android_main(int argc, char* argv[])
+{
+	return main(argc, argv);
+}
+#endif

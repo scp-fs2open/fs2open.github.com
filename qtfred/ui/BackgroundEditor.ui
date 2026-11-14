@@ -376,6 +376,41 @@
               </property>
              </widget>
             </item>
+            <item row="3" column="0">
+             <widget class="QCheckBox" name="sunAngularSizeCheckBox">
+              <property name="toolTip">
+               <string>Set the apparent diameter of this sun for this mission. When this box is clear, the sun uses the size from stars.tbl, or a size measured from its bitmap.</string>
+              </property>
+              <property name="text">
+               <string>Angular size</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QDoubleSpinBox" name="sunAngularSizeDoubleSpinBox">
+              <property name="toolTip">
+               <string>The apparent diameter in degrees. The Sun, seen from Earth, is approximately 0.53 degrees. A larger size gives softer shadows, for raytraced shadows and for shadow maps.</string>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>75</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="suffix">
+               <string>°</string>
+              </property>
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>90.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
          </layout>

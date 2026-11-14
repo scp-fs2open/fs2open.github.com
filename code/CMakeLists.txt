@@ -77,6 +77,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 target_link_libraries(code PUBLIC anl)
 
 target_link_libraries(code PUBLIC imgui)
+target_link_libraries(code PUBLIC implot)
 
 IF(FSO_BUILD_WITH_OPENXR)
 	target_link_libraries(code PUBLIC OpenXR::openxr_loader)
@@ -114,6 +115,11 @@ if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
 	target_include_directories(code PUBLIC Vulkan::Headers)
 	target_link_libraries(code PUBLIC VulkanMemoryAllocator)
+	# AMD only ships 64-bit runtimes, and 32-bit Vulkan handles aren't the pointers its API takes
+	if (FSO_BUILD_WITH_FFX AND IS_64BIT)
+		target_compile_definitions(code PRIVATE WITH_FFX)
+		target_link_libraries(code PRIVATE ffx_portable)
+	endif()
 endif()
 
 include(shaders.cmake)
@@ -129,6 +135,9 @@ set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYM
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+
+# Prevent warnings on files with no symbols on Mac
+suppress_no_symbol_warnings(code)
 
 # Prevent GCC warnings in third-party BitOp... see GitHub #4366
 suppress_file_warnings(scripting/lua/bitop/bit.c)

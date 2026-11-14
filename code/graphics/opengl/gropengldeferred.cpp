@@ -253,6 +253,9 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
+		if (Shadow_map_raw_sampler) {
+			GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
+		}
 	}
 
 	if (ENVMAP > 0) {
@@ -314,8 +317,8 @@ void gr_opengl_deferred_lighting_finish()
 		auto lp = ltp::current();
 
 		auto header = light_uniform_aligner.getHeader<deferred_global_data>();
+		shadows_fill_deferred_global_data(*header);
 		if (Shadow_quality != ShadowQuality::Disabled) {
-			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 			shadow_cascade_params_bind_deferred();
 		}
 

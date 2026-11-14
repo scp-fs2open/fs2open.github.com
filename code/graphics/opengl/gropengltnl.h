@@ -35,6 +35,15 @@ extern float shadow_fardist;
 
 extern GLuint Shadow_map_depth_texture;
 
+// Second sampler object bound to Shadow_map_depth_texture, compare mode off, for the raw
+// (uncompared) depth reads PCSS blocker search needs. Only created when
+// shadow_contact_hardening_supported() is true; 0 otherwise. See gropengltnl.cpp.
+extern GLuint Shadow_map_raw_sampler;
+
+// The texture unit of the "shadow_map_raw" sampler, in the model shaders and in the deferred
+// lighting shader. Unit 7 is the model misc map, so the raw sampler must not use it.
+constexpr GLuint SHADOW_MAP_RAW_TEXTURE_UNIT = 11;
+
 struct opengl_vertex_bind {
 	vertex_format_data::vertex_format format;
 	GLint size;
@@ -52,6 +61,22 @@ void gr_opengl_delete_buffer(gr_buffer_handle handle);
 void gr_opengl_bind_uniform_buffer(uniform_block_type bind_point, size_t offset, size_t size, gr_buffer_handle buffer);
 void* gr_opengl_map_buffer(gr_buffer_handle handle);
 void gr_opengl_flush_mapped_buffer(gr_buffer_handle handle, size_t offset, size_t size);
+
+/**
+ * @brief Gives the bytes that all live vertex and index buffers hold
+ *
+ * The profiler overlay's memory panel shows this value as the "geometry" group. Uniform buffers
+ * and texture buffers are not part of it.
+ */
+size_t opengl_get_geometry_bytes();
+
+/**
+ * @brief Gives the bytes that the shadow map texture array holds
+ *
+ * The profiler overlay's memory panel adds this value to the "render targets" group. The function
+ * gives 0 when shadows are off.
+ */
+size_t opengl_get_shadow_map_bytes();
 
 /**
  * @brief Retrieves the OpenGL handle of a generic buffer handle

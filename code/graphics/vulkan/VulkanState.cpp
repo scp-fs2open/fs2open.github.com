@@ -127,6 +127,30 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 	// recorders are ever removed.
 	m_viewportDirty = true;
 	m_scissorDirty = true;
+
+	m_screenScaleX = 1.0f;
+	m_screenScaleY = 1.0f;
+}
+
+void VulkanStateTracker::setScreenScale(float x, float y)
+{
+	m_screenScaleX = x;
+	m_screenScaleY = y;
+	m_viewportDirty = true;
+	m_scissorDirty = true;
+}
+
+vk::Rect2D VulkanStateTracker::screenToFramebuffer(const vk::Rect2D& rect) const
+{
+	if (m_screenScaleX == 1.0f && m_screenScaleY == 1.0f) {
+		return rect;
+	}
+	// Scale the edges, so that adjacent rects stay adjacent
+	const auto x0 = static_cast<int32_t>(std::lround(rect.offset.x * m_screenScaleX));
+	const auto y0 = static_cast<int32_t>(std::lround(rect.offset.y * m_screenScaleY));
+	const auto x1 = static_cast<int32_t>(std::lround((rect.offset.x + static_cast<float>(rect.extent.width)) * m_screenScaleX));
+	const auto y1 = static_cast<int32_t>(std::lround((rect.offset.y + static_cast<float>(rect.extent.height)) * m_screenScaleY));
+	return {{x0, y0}, {static_cast<uint32_t>(std::max(x1 - x0, 0)), static_cast<uint32_t>(std::max(y1 - y0, 0))}};
 }
 
 void VulkanStateTracker::invalidateExternalBindings()
@@ -165,8 +189,24 @@ vk::Rect2D VulkanStateTracker::clampToRenderArea(const vk::Rect2D& rect) const
 	return result;
 }
 
+void VulkanStateTracker::setScreenViewport(float x, float y, float width, float height)
+{
+	setViewport(x, y, width, height);
+	m_viewportInScreenUnits = true;
+	m_viewportDirty = true;
+	if (!m_scissorEnabled) {
+		m_scissorDirty = true;
+	}
+}
+
 void VulkanStateTracker::setViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
 {
+	if (m_viewportInScreenUnits) {
+		m_viewportInScreenUnits = false;
+		m_viewportDirty = true;
+		m_scissorDirty = true;
+	}
+
 	if (m_viewport.x != x || m_viewport.y != y ||
 	    m_viewport.width != width || m_viewport.height != height ||
 	    m_viewport.minDepth != minDepth || m_viewport.maxDepth != maxDepth) {
@@ -185,6 +225,14 @@ void VulkanStateTracker::setViewport(float x, float y, float width, float height
 			m_scissorDirty = true;
 		}
 	}
+}
+
+void VulkanStateTracker::setUpscalerSceneState(float jitterX, float jitterY, float lodBias)
+{
+	m_upscalerJitterX = jitterX;
+	m_upscalerJitterY = jitterY;
+	m_upscalerLodBias = lodBias;
+	m_viewportDirty = true;
 }
 
 void VulkanStateTracker::setScissor(int32_t x, int32_t y, uint32_t width, uint32_t height)
@@ -251,25 +299,47 @@ void VulkanStateTracker::bindPipeline(vk::Pipeline pipeline, vk::PipelineLayout 
 	}
 }
 
-void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set,
-                                            const SCP_vector<uint32_t>& dynamicOffsets)
+void VulkanStateTracker::bindDescriptorSet(DescriptorSetIndex setIndex,
+	vk::DescriptorSet set,
+	const uint32_t* dynamicOffsets)
 {
 	Assertion(m_cmdBuffer, "bindDescriptorSet called without active command buffer!");
 	Assertion(m_currentPipelineLayout, "bindDescriptorSet called without bound pipeline layout!");
 	Assertion(set, "bindDescriptorSet called with null descriptor set!");
 
 	auto index = static_cast<uint32_t>(setIndex);
+	const uint32_t dynCount = VulkanDescriptorManager::getDynamicOffsetCount(setIndex);
+	Assertion(dynCount == 0 || dynamicOffsets != nullptr,
+		"bindDescriptorSet: set %u declares %u dynamic descriptors but no offsets were supplied!",
+		index,
+		dynCount);
 
-	if (m_boundDescriptorSets[index] != set) {
-		m_cmdBuffer.bindDescriptorSets(
-			vk::PipelineBindPoint::eGraphics,
+	// The redundancy check has to cover the dynamic offsets too, not just the set
+	// handle: with dynamic UBOs the common case is the *same* set rebound with a new
+	// offset every draw, and skipping that bind would silently feed every draw the
+	// previous draw's uniforms.
+	auto& boundDyn = m_boundDynamicOffsets[index];
+	bool offsetsChanged = false;
+	for (uint32_t i = 0; i < dynCount; ++i) {
+		if (boundDyn[i] != dynamicOffsets[i]) {
+			offsetsChanged = true;
+			break;
+		}
+	}
+
+	if (m_boundDescriptorSets[index] != set || offsetsChanged) {
+		m_cmdBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics,
 			m_currentPipelineLayout,
 			index,
-			1, &set,
-			static_cast<uint32_t>(dynamicOffsets.size()),
-			dynamicOffsets.empty() ? nullptr : dynamicOffsets.data());
+			1,
+			&set,
+			dynCount,
+			dynCount > 0 ? dynamicOffsets : nullptr);
 
 		m_boundDescriptorSets[index] = set;
+		for (uint32_t i = 0; i < dynCount; ++i) {
+			boundDyn[i] = dynamicOffsets[i];
+		}
 	}
 }
 
@@ -291,28 +361,42 @@ void VulkanStateTracker::applyDynamicState()
 {
 	Assertion(m_cmdBuffer, "applyDynamicState called without active command buffer!");
 
+	vk::Viewport viewport = m_viewport;
+	if (m_viewportInScreenUnits) {
+		viewport.x *= m_screenScaleX;
+		viewport.y *= m_screenScaleY;
+		viewport.width *= m_screenScaleX;
+		viewport.height *= m_screenScaleY;
+	}
+
 	if (m_viewportDirty) {
-		m_cmdBuffer.setViewport(0, 1, &m_viewport);
+		vk::Viewport jittered = viewport;
+		if (isUpscaledScenePass()) {
+			jittered.x += m_upscalerJitterX;
+			jittered.y += m_upscalerJitterY;
+		}
+		m_cmdBuffer.setViewport(0, 1, &jittered);
 		m_viewportDirty = false;
 	}
 
 	if (m_scissorDirty) {
 		if (m_scissorEnabled) {
-			m_cmdBuffer.setScissor(0, 1, &m_scissor);
+			const vk::Rect2D scissor = screenToFramebuffer(m_scissor);
+			m_cmdBuffer.setScissor(0, 1, &scissor);
 		} else {
 			// Set scissor to full viewport when disabled.
 			// Handle negative viewport height (VK_KHR_maintenance1 Y-flip):
 			// when height < 0, the viewport covers [y+height, y] in framebuffer Y.
 			vk::Rect2D fullScissor;
-			float vy = m_viewport.y;
-			float vh = m_viewport.height;
+			float vy = viewport.y;
+			float vh = viewport.height;
 			if (vh < 0.0f) {
 				vy = vy + vh;
 				vh = -vh;
 			}
-			fullScissor.offset.x = static_cast<int32_t>(m_viewport.x);
+			fullScissor.offset.x = static_cast<int32_t>(viewport.x);
 			fullScissor.offset.y = static_cast<int32_t>(vy);
-			fullScissor.extent.width = static_cast<uint32_t>(m_viewport.width);
+			fullScissor.extent.width = static_cast<uint32_t>(viewport.width);
 			fullScissor.extent.height = static_cast<uint32_t>(vh);
 			m_cmdBuffer.setScissor(0, 1, &fullScissor);
 		}
@@ -351,9 +435,9 @@ void vulkan_zbias(int bias)
 	if (bias) {
 		drawManager->setDepthBiasEnabled(true);
 		if (bias < 0) {
-			stateTracker->setDepthBias(1.0f, static_cast<float>(-bias));
+			stateTracker->setDepthBias(static_cast<float>(-bias), 1.0f);
 		} else {
-			stateTracker->setDepthBias(0.0f, static_cast<float>(-bias));
+			stateTracker->setDepthBias(static_cast<float>(-bias), 0.0f);
 		}
 	} else {
 		drawManager->setDepthBiasEnabled(false);
@@ -377,7 +461,7 @@ void vulkan_set_viewport(int x, int y, int width, int height)
 	if (gr_screen.rendering_to_texture == -1) {
 		// Screen rendering: use negative viewport height for OpenGL-compatible Y-up NDC
 		// (VK_KHR_maintenance1, core since Vulkan 1.1)
-		stateTracker->setViewport(
+		stateTracker->setScreenViewport(
 			static_cast<float>(x),
 			static_cast<float>(gr_screen.max_h - y),
 			static_cast<float>(width),

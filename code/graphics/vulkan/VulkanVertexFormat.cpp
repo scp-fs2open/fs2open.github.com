@@ -32,6 +32,8 @@ const VertexFormatMapping VERTEX_FORMAT_MAPPINGS[] = {
 
 	// Matrix format (mat4 = 4 vec4s, uses locations 8-11)
 	{ vertex_format_data::MATRIX4,    vk::Format::eR32G32B32A32Sfloat, VATTRIB_MODEL_MATRIX, 16, 64 },
+
+	{ vertex_format_data::MOTION4,    vk::Format::eR32G32B32A32Sfloat, VATTRIB_EFFECT_MOTION, 4, 16 },
 };
 
 const size_t VERTEX_FORMAT_MAPPINGS_COUNT = sizeof(VERTEX_FORMAT_MAPPINGS) / sizeof(VERTEX_FORMAT_MAPPINGS[0]);

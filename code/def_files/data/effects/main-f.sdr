@@ -1,4 +1,13 @@
 //? #version 150
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+precision highp sampler2D;
+precision highp sampler2DArray;
+precision highp sampler2DArrayShadow;
+#endif
+
 #include "shadows.sdr" //! #include "shadows.sdr"
 #include "lighting.sdr" //! #include "lighting.sdr"
 #include "gamma.sdr" //! #include "gamma.sdr"
@@ -89,28 +98,28 @@ uniform modelData {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
+
+#ifdef VULKAN
+	mat4 prevModelMatrix;
+	mat4 velocityViewProj;
+	mat4 velocityPrevViewProj;
+	vec2 velocityUvScale;
+	int prev_transform_stride;
+#endif
 };
 
 #ifdef VULKAN
-layout(set = 0, binding = 6, std140)
-#else
-layout(std140)
+#include "motion-vectors.sdr"
 #endif
-uniform shadowCascadeParams {
-	int cascade_offset;
-	int cascade_count;
-	float rtShadowBiasMin;
-	float rtShadowBiasMax;
 
-	mat4 shadow_mv_matrix;
+#include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
-	// See shadow_cascade_static_data (uniform_structs.h).
-	vec3 shadow_ray_view_origin;
-	int shadow_ray_cull_mask;
-	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-};
+
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+layout(location = 2) out vec4 fragOut2;
+layout(location = 3) out vec4 fragOut3;
+layout(location = 4) out vec4 fragOut4;
 
 #ifdef VULKAN
 layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
@@ -122,6 +131,7 @@ layout(set = 1, binding = 1) uniform sampler2DArray materialTextures[16];
 #define sMiscmap materialTextures[6]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
+layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
 layout(set = 1, binding = 5) uniform sampler2D sFramebuffer;
 
 #ifdef MODEL_SDR_FLAG_RT_SHADOWS
@@ -134,18 +144,20 @@ layout(location = 0) in VertexOutput {
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+	vec4 velocityCurClip;
+	vec4 velocityPrevClip;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+    float vClipDist;
+#endif
 } vertIn;
 
-layout(location = 0) out vec4 fragOut0;
-layout(location = 1) out vec4 fragOut1;
-layout(location = 2) out vec4 fragOut2;
-layout(location = 3) out vec4 fragOut3;
-layout(location = 4) out vec4 fragOut4;
+layout(location = 6) out vec4 fragOut6;
 #else
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_DIFFUSE
 uniform sampler2DArray sBasemap;
@@ -168,6 +180,7 @@ uniform sampler2DArray sMiscmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_MISC
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 uniform sampler2DArrayShadow shadow_map;
+uniform sampler2DArray shadow_map_raw;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 
 in VertexOutput {
@@ -185,13 +198,10 @@ in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+    float vClipDist;
+#endif
 } vertIn;
-
-out vec4 fragOut0;
-out vec4 fragOut1;
-out vec4 fragOut2;
-out vec4 fragOut3;
-out vec4 fragOut4;
 #endif
 
 vec3 FresnelLazarovEnv(vec3 specColor, vec3 view, vec3 normal, float gloss)
@@ -255,7 +265,11 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		if (rtShadowsActive && lights[i].light_type == LT_DIRECTIONAL && shadowedDirectionalCount < MAX_RT_SHADOW_LIGHTS) {
 			vec3 worldSunDir = normalize((invView * vec4(lights[i].position.xyz, 0.0)).xyz);
 			float rtShadowBias = computeRtShadowBias(length(vertIn.position.xyz), rtShadowBiasMin, rtShadowBiasMax);
-			shadow = traceShadowRay(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE, rtShadowBias, uint(shadow_ray_cull_mask));
+			// For directional lights ml_sourceRadius is the tangent of the sun's
+			// angular radius ($SunAngularSize) -- 0 keeps hard shadows.
+			shadow = traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldSunDir, RT_SHADOW_MAX_DISTANCE,
+				rtShadowBias, uint(shadow_ray_cull_mask), lights[i].ml_sourceRadius,
+				rtShadowSampleCount, gl_FragCoord.xy);
 			++shadowedDirectionalCount;
 		} else {
 			shadow = 1.0;
@@ -283,6 +297,10 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 
 void main()
 {
+	#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+		if (vertIn.vClipDist < 0.0) discard;
+	#endif
+
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
 
@@ -423,7 +441,7 @@ void main()
 			// up to MAX_RT_SHADOW_LIGHTS) inside CalculateLighting()'s loop instead --
 			// this single shared `shadow` value only matters for the CSM fallback below.
 			#ifndef MODEL_SDR_FLAG_RT_SHADOWS
-				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+				shadow = getShadowValue(shadow_map, shadow_map_raw, -vertIn.position.z, vertIn.shadowUV, cascade_distances, smoothness_factors, penumbra_scale, cascade_offset, cascade_count);
 			#endif
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
@@ -464,7 +482,7 @@ void main()
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DIFFUSE
 		// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
 		// color.
-		float fogDensityFinal = clamp(1 - pow(fogDensity, vertIn.fogDist) , 0.0, 1.0);
+		float fogDensityFinal = clamp(1.0 - pow(fogDensity, vertIn.fogDist) , 0.0, 1.0);
 		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, fogDensityFinal);
 		emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
 		specColor.rgb *= fogDensityFinal;
@@ -509,11 +527,12 @@ void main()
 		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-				glossData = 0;
+				glossData = 0.0f;
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
 			// If there is no lighting then we copy the color data so far into the emissive.
 			emissiveColor.rgb += baseColor.rgb;
-			aoFactors.x = 0;
+
+			aoFactors.x = 0.0f;
 			// and leave nothing for the light pass to add on top of it
 			baseColor.rgb = vec3(0.0);
 			specColor = vec4(0.0);
@@ -521,6 +540,16 @@ void main()
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
 	fragOut0 = baseColor;
+
+#ifdef VULKAN
+	// Alpha selects whether this replaces the motion already there: faint transparent surfaces keep what's behind them.
+	vec2 velocity = motion_uv(vertIn.velocityCurClip, vertIn.velocityPrevClip, velocityUvScale);
+	float velocityAlpha = baseColor.a >= 0.5 ? 1.0 : 0.0;
+	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
+		velocityAlpha = 1.0;
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+	fragOut6 = vec4(velocity, motion_depth(vertIn.velocityCurClip), velocityAlpha);
+#endif
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
 		fragOut1 = vec4(vertIn.position.xy, compress_depth_value(vertIn.position.z), aoFactors.x);

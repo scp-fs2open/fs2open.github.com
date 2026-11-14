@@ -1,4 +1,11 @@
+#ifdef GL_ES
+#extension GL_EXT_gpu_shader5: enable
+#extension GL_EXT_clip_cull_distance: enable
+precision highp float;
+precision highp int;
+#else
 #extension GL_ARB_gpu_shader5: enable
+#endif
 
 #conditional_include +"LARGE_SHADER" "main_large.sdr"
 #conditional_include -"LARGE_SHADER" "main_small.sdr"
@@ -100,6 +107,9 @@ in VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+    float vClipDist;
+#endif
 } vertIn[];
 
 out VertexOutput {
@@ -117,6 +127,10 @@ out VertexOutput {
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
 	vec4 shadowPos;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
+
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+    float vClipDist;
+#endif
 } vertOut;
 
 #ifdef MODEL_SDR_FLAG_THICK_OUTLINES
@@ -166,8 +180,19 @@ out VertexOutput {
                 #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SHADOWS
 
 				if (use_clip_plane != 0) {
-					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+					#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+						vertOut.vClipDist = vertIn[vert].vClipDist;
+					#else
+						gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
+					#endif
+				} else {
+					#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+						vertOut.vClipDist = 1.0;
+					#else
+						gl_ClipDistance[0] = 1.0;
+					#endif
 				}
+
 				EmitVertex();
 			}
 

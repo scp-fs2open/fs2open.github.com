@@ -158,12 +158,12 @@ int collide_debris_ship( obj_pair * pair )
 						quadrant_num = -1;
 					}
 					if (apply_ship_damage) {
-						ship_apply_local_damage(debris_hit_info.heavy, debris_hit_info.light, &hitpos, ship_damage, Debris[debris_objp->instance].damage_type_idx, quadrant_num, CREATE_SPARKS, debris_hit_info.heavy_submodel_num);
+						ship_apply_local_damage(debris_hit_info.heavy, debris_hit_info.light, &hitpos, ship_damage, Debris[debris_objp->instance].damage_type_idx, quadrant_num, CREATE_SPARKS, debris_hit_info.heavy_submodel_num, nullptr, 1.f, nullptr, DamageSource::Collision);
 					}
 				} else {
 					// don't draw sparks using sphere hit position
 					if (apply_ship_damage) {
-						ship_apply_local_damage(debris_hit_info.light, debris_hit_info.heavy, &hitpos, ship_damage, Debris[debris_objp->instance].damage_type_idx, MISS_SHIELDS, NO_SPARKS);
+						ship_apply_local_damage(debris_hit_info.light, debris_hit_info.heavy, &hitpos, ship_damage, Debris[debris_objp->instance].damage_type_idx, MISS_SHIELDS, NO_SPARKS, -1, nullptr, 1.f, nullptr, DamageSource::Collision);
 					}
 				}
 
@@ -348,10 +348,10 @@ int collide_asteroid_ship( obj_pair * pair )
 						(ship_objp->flags[Object::Object_Flags::No_shields]) || !ship_is_shield_up(ship_objp, quadrant_num) ) {
 						quadrant_num = -1;
 					}
-					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, ast_damage_type, quadrant_num, CREATE_SPARKS, asteroid_hit_info.heavy_submodel_num);
+					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, ast_damage_type, quadrant_num, CREATE_SPARKS, asteroid_hit_info.heavy_submodel_num, nullptr, 1.f, nullptr, DamageSource::Collision);
 				} else {
 					// don't draw sparks (using sphere hitpos)
-					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, ast_damage_type, MISS_SHIELDS, NO_SPARKS);
+					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, ast_damage_type, MISS_SHIELDS, NO_SPARKS, -1, nullptr, 1.f, nullptr, DamageSource::Collision);
 				}
 
 				// maybe print Collision on HUD

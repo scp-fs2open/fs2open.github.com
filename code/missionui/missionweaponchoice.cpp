@@ -1248,6 +1248,22 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
 	return rval;
 }
 
+static bool wl_bank_allows_weapon(const ship_info* sip, int bank, int weapon_class)
+{
+	// an empty bank has nothing to place; this check runs on the weapon coming back from a swap
+	if (weapon_class < 0)
+		return true;
+
+	if (!eval_weapon_flag_for_game_type(sip->allowed_weapons[weapon_class]))
+		return false;
+
+	// allowed_weapons is built from the bank lists, so a class without them never gets here
+	if (!eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank]))
+		return true;
+
+	return eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank][weapon_class]) != 0;
+}
+
 /**
  * Return the weapon class shown at the given on-screen row of a scrolling icon list,
  * or -1 if that row is past the end of the list.
@@ -2048,16 +2064,13 @@ void weapon_select_init_team(int team_num)
 }
 
 /**
- * Close out what weapon_select_init_team() set up but only when we are not acutally
- * in the weapon select screen - taylor
+ * Release the icons, anims, and ship class data that weapon_select_init_team() set up
  */
-void weapon_select_close_team()
+void weapon_select_common_close()
 {
-	if (Weapon_select_open)
-		return;
-
 	wl_unload_all_teams_icons();
 	wl_unload_all_anims();
+	wl_free_ship_class_data();
 }
 
 /**
@@ -3014,11 +3027,6 @@ void weapon_select_close()
 	// unload bitmaps
 	bm_release(WeaponSelectMaskBitmap);
 
-	wl_unload_all_teams_icons();
-	wl_unload_all_anims();
-	// ...must be last...
-	wl_free_ship_class_data();
-
 	Selected_wl_class = -1;
 	Weapon_select_open = 0;
 
@@ -3692,34 +3700,30 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		ship_info *sip = &Ship_info[slot->ship_class];
 
 		// check the to-bank first
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][slot->wep[from_bank]])) {
-				SCP_string txt;
-				sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
+		if (!wl_bank_allows_weapon(sip, to_bank, slot->wep[from_bank])) {
+			SCP_string txt;
+			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[slot->wep[from_bank]].get_display_name());
 
-				if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-				} else if (pl != NULL) {
-					send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-				}
-
-				return forced_update;
+			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+			} else if (pl != nullptr) {
+				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 			}
+
+			return forced_update;
 		}
 
 		// check the from-bank
-		if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[from_bank])) {
-			if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[from_bank][slot->wep[to_bank]])) {
-				// going from "from" to "to" is valid (from previous if), but going the other way isn't...
-				// so return the "to" to the list and just move the "from"
+		if (!wl_bank_allows_weapon(sip, from_bank, slot->wep[to_bank])) {
+			// going from "from" to "to" is valid (from previous if), but going the other way isn't...
+			// so return the "to" to the list and just move the "from"
 
-				// put to_bank back into list
-				(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
-				slot->wep[to_bank] = -1;											// remove from slot
-				slot->wep_count[to_bank] = 0;
-				*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
-				forced_update = 1;					// because we can't return right away
-			}
+			// put to_bank back into list
+			(*Wl_pool)[slot->wep[to_bank]] += slot->wep_count[to_bank];			// return to list
+			slot->wep[to_bank] = -1;											// remove from slot
+			slot->wep_count[to_bank] = 0;
+			*sound=InterfaceSounds::ICON_DROP;				// unless it changes later
+			forced_update = 1;					// because we can't return right away
 		}
 	}
 
@@ -3847,19 +3851,17 @@ int wl_grab_from_list(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon...
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			SCP_string txt;
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
+	if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
+		SCP_string txt;
+		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
-			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-			}
-
-			return 0;
+		if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+		} else if (pl != nullptr) {
+			send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 		}
+
+		return 0;
 	}
 
 	// we will have some sort of success from this point
@@ -3925,19 +3927,17 @@ int wl_swap_list_slot(int from_list, int to_bank, int ship_slot, interface_snd_i
 	ship_info *sip = &Ship_info[slot->ship_class];
 
 	// ensure that this bank will accept the weapon
-	if (eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[to_bank])) {
-		if (!eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[to_bank][from_list])) {
-			SCP_string txt;
-			sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
+	if (!wl_bank_allows_weapon(sip, to_bank, from_list)) {
+		SCP_string txt;
+		sprintf(txt, XSTR("This bank is unable to carry %s weaponry", 1628), Weapon_info[from_list].get_display_name());
 
-			if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
-				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
-			} else if (pl != NULL) {
-				send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
-			}
-
-			return 0;
+		if ( !(Game_mode & GM_MULTIPLAYER) || (Netgame.host == pl) ) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, txt.c_str());
+		} else if (pl != nullptr) {
+			send_game_chat_packet(Netgame.host, txt.c_str(), MULTI_MSG_TARGET, pl, nullptr, 1);
 		}
+
+		return 0;
 	}
 
 	// dump slot weapon back into list

@@ -1,0 +1,53 @@
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 fragOut0;
+layout(location = 1) out vec4 fragOut1;
+
+// Scene depth, and the drawn geometry's motion with its inverse view depth
+layout(set = 1, binding = 1) uniform sampler2D inputs[2];
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	mat4 reprojection;
+	vec4 viewportRect; // xy = offset, zw = size, as fractions of the image
+	float sceneNear;
+	float cockpitNear;
+	float farPlane;
+	float pad;
+};
+
+void main()
+{
+	// All depth goes on the cockpit's projection: its nearer plane can express every scene distance. That depth is
+	// linear in the inverse view depth.
+	float depthScale = farPlane / (farPlane - cockpitNear);
+
+	// Whatever drew its own motion brought its depth along. That keeps the two matched where the scene's depth
+	// doesn't show what drew the motion, like the cockpit and the player's hull, which are drawn over a cleared depth.
+	vec3 drawnMotion = texture(inputs[1], fragTexCoord).xyz;
+	if (abs(drawnMotion.x) < 100.0) {
+		fragOut0 = vec4(drawnMotion.xy, 0.0, 0.0);
+		fragOut1 = vec4(clamp(depthScale * (1.0 - cockpitNear * drawnMotion.z), 0.0, 1.0), 0.0, 0.0, 0.0);
+		return;
+	}
+
+	// Anything else still holds the clear value, so only the camera moved it.
+	float sceneDepth = texture(inputs[0], fragTexCoord).r;
+	float viewDepth = farPlane * sceneNear / (farPlane - sceneDepth * (farPlane - sceneNear));
+	fragOut1 = vec4(depthScale * (1.0 - cockpitNear / viewDepth), 0.0, 0.0, 0.0);
+
+	// The projection maps +Y up onto the top of the image through a negative viewport height.
+	vec2 viewportUv = (fragTexCoord - viewportRect.xy) / viewportRect.zw;
+	vec4 ndc = vec4(viewportUv.x * 2.0 - 1.0, 1.0 - viewportUv.y * 2.0, sceneDepth, 1.0);
+
+	vec4 previous = reprojection * ndc;
+	// Behind last frame's camera, or no previous camera yet
+	if (previous.w <= 0.0) {
+		fragOut0 = vec4(0.0);
+		return;
+	}
+	previous.xy /= previous.w;
+
+	vec2 previousViewportUv = vec2(previous.x * 0.5 + 0.5, 0.5 - previous.y * 0.5);
+	vec2 previousUv = previousViewportUv * viewportRect.zw + viewportRect.xy;
+
+	fragOut0 = vec4(previousUv - fragTexCoord, 0.0, 0.0);
+}

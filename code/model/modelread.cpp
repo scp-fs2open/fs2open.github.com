@@ -264,6 +264,13 @@ void model_unload(int modelnum, int force)
 		return;
 	}
 
+	// a full id that doesn't match the slot's occupant is a stale handle to a model that has already been
+	// freed; the slot has since been reused, so unloading it would take out an unrelated model
+	if ( modelnum >= MAX_POLYGON_MODELS && pm->id != modelnum )	{
+		Warning(LOCATION, "Ignoring unload of stale model id %d: slot %d now holds '%s' (id %d). Please backtrace and investigate.\n", modelnum, num, pm->filename, pm->id);
+		return;
+	}
+
 	Assert( pm->used_this_mission >= 0 );
 
 	if (!force && (--pm->used_this_mission > 0))
@@ -402,6 +409,28 @@ void model_page_in_stop()
 	
 		model_unload(i);
 	}
+}
+
+model_memory_stats model_get_memory_stats()
+{
+	model_memory_stats stats;
+	stats.valid = true;
+
+	for (const auto pm : Polygon_models) {
+			if (pm == nullptr) {
+			continue;
+		}
+
+		stats.model_count++;
+		stats.vertex_bytes += pm->vert_source.Vertex_list_size;
+		stats.index_bytes += pm->vert_source.Index_list_size;
+
+		for (int j = 0; j < pm->n_models; j++) {
+			stats.bsp_data_bytes += pm->submodel[j].bsp_data_size;
+		}
+	}
+
+	return stats;
 }
 
 void model_init()
@@ -988,24 +1017,19 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 	}
 }
 
-// used in collision code to check if submodel rotates too far
-float get_submodel_delta_angle(const submodel_instance *smi)
+// used in collision code to check if submodel rotates too far since last frame
+static bool submodel_rotated_less_than(const submodel_instance *smi, float max_angle)
 {
-	// find the angle
-	float delta_angle = smi->cur_angle - smi->prev_angle;
-
-	// make sure we get the short way around
-	if (delta_angle > PI) {
-		delta_angle = (PI2 - delta_angle);
-	}
-
-	return delta_angle;
+	// The rotation since last frame is cur * prev^T, and a rotation by angle a has trace 1 + 2cos(a)
+	const auto& cur = smi->canonical_orient;
+	const auto& prev = smi->canonical_prev_orient;
+	const float trace = vm_vec_dot(&cur.vec.rvec, &prev.vec.rvec) + vm_vec_dot(&cur.vec.uvec, &prev.vec.uvec) + vm_vec_dot(&cur.vec.fvec, &prev.vec.fvec);
+	return trace > 1.0f + 2.0f * cosf(max_angle);
 }
 
-float get_submodel_delta_shift(const submodel_instance *smi)
+static bool submodel_shifted_less_than(const submodel_instance *smi, float max_distance)
 {
-	// this is a bit simpler
-	return std::abs(smi->cur_offset - smi->prev_offset);
+	return vm_vec_dist_squared(&smi->canonical_offset, &smi->canonical_prev_offset) < max_distance * max_distance;
 }
 
 void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
@@ -1437,8 +1461,12 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	}
 }
 
-void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *filename, bool is_rotation, bool is_turret)
+void do_movement_sanity_checks(polymodel *pm, int submodel, bool is_rotation, bool is_turret)
 {
+	auto sm = &pm->submodel[submodel];
+	auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
+	auto filename = pm->filename;
+
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
 
@@ -1469,6 +1497,9 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 			base->rotation_axis = vmd_y_vector;
 			base->rotation_type = MOVEMENT_TYPE_TURRET;
 			maybe_adjust_movement_axis(true, base);
+
+			// the base was already checked before this barrel, so its branch, including children checked since, wasn't flagged then
+			model_set_submodel_can_move(pm, sm->parent);
 		}
 
 		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
@@ -1502,11 +1533,10 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 		*movement_axis = vmd_zero_vector;
 	}
 
-	// Set the can_move field on submodels which are of a moving type or which have such a parent somewhere down the hierarchy
-	if (*movement_type != MOVEMENT_TYPE_NONE)
-		sm->flags.set(Model::Submodel_flags::Can_move);
-	else if (parent_sm && parent_sm->flags[Model::Submodel_flags::Can_move])
-		sm->flags.set(Model::Submodel_flags::Can_move);
+	// Set the can_move field on submodels which are of a moving type, and on everything below them. A flagged parent has already
+	// flagged this submodel; Can_move set during parsing (e.g. gun_rotation) predates the family tree, so pass that down here.
+	if (*movement_type != MOVEMENT_TYPE_NONE || sm->flags[Model::Submodel_flags::Can_move])
+		model_set_submodel_can_move(pm, submodel);
 }
 
 void resolve_submodel_index(const polymodel *pm, const char *requester, const char *field, int &submodel_index, const SCP_vector<SCP_string> &submodel_list)
@@ -2099,7 +2129,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					if (sm->bsp_data_size > 0) {
 						sm->bsp_data = make_shared<ubyte[]>(sm->bsp_data_size);
 						cfread(sm->bsp_data.get(), 1, sm->bsp_data_size, fp);
+						Macro_ubyte_bounds = sm->bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, sm->bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 					}
 					else {
 						sm->bsp_data = nullptr;
@@ -2115,7 +2147,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread(bsp_data.get(), 1, sm->bsp_data_size, fp);
 
 						// byte swap first thing
+						Macro_ubyte_bounds = bsp_data.get() + sm->bsp_data_size;
 						swap_bsp_data(pm, bsp_data.get());
+						Macro_ubyte_bounds = nullptr;
 
 						extern bool Cmdline_no_bsp_align;
 						if (Cmdline_no_bsp_align) {
@@ -2988,7 +3022,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
 				{
 					auto sm = &pm->submodel[submodel];
-					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
 
 					bool is_turret = false;
 					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
@@ -2998,8 +3031,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						}
 					}
 
-					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
-					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+					do_movement_sanity_checks(pm, submodel, true, is_turret);
+					do_movement_sanity_checks(pm, submodel, false, is_turret);
 				});
 		}
 	}
@@ -3449,7 +3482,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	pm->used_this_mission++;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	if(Fred_running && Parse_normal_problem_count > 0)
 	{
 		char buffer[100];
@@ -3926,7 +3959,7 @@ polymodel * model_get(int model_num)
 {
 	if ( model_num < 0 ) {
 		Warning(LOCATION, "Invalid model number %d requested. Please post the call stack where an SCP coder can see it.\n", model_num);
-		return NULL;
+		return nullptr;
 	}
 
 	int num = model_num % MAX_POLYGON_MODELS;
@@ -3937,7 +3970,7 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
 	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
-		return NULL;
+		return nullptr;
 
 	return Polygon_models[num];
 }
@@ -3952,10 +3985,37 @@ polymodel_instance* model_get_instance(int model_instance_num)
 	Assert( model_instance_num >= 0 );
 	Assert( model_instance_num < (int)Polygon_model_instances.size() );
 	if ( model_instance_num < 0 || model_instance_num >= (int)Polygon_model_instances.size() ) {
-		return NULL;
+		return nullptr;
 	} 
 
 	return Polygon_model_instances[model_instance_num];
+}
+
+void model_instance_snapshot_prev_all()
+{
+	for (auto pmi : Polygon_model_instances) {
+		if (!pmi)
+			continue;
+
+		// Submodels that can't move only change pose when set directly, which updates their previous pose right away
+		const auto pm = model_get(pmi->model_num);
+		for (int i = 0; i < pm->n_models; ++i) {
+			if (pm->submodel[i].flags[Model::Submodel_flags::Can_move]) {
+				pmi->submodel[i].canonical_prev_orient = pmi->submodel[i].canonical_orient;
+				pmi->submodel[i].canonical_prev_offset = pmi->submodel[i].canonical_offset;
+			}
+		}
+	}
+}
+
+void model_set_submodel_can_move(polymodel* pm, int submodel_num)
+{
+	auto sm = &pm->submodel[submodel_num];
+	sm->flags.set(Model::Submodel_flags::Can_move);
+
+	// Can_move covers moving because of a parent, too
+	for (int child = sm->first_child; child >= 0; child = pm->submodel[child].next_sibling)
+		model_set_submodel_can_move(pm, child);
 }
 
 // Returns zero is x1,y1,x2,y2 are valid
@@ -4160,8 +4220,6 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
 // Normalize the submodel angle and convert float angle to angles struct
 void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp)
 {
-	smi->canonical_prev_orient = smi->canonical_orient;
-
 	if (clamp)
 	{
 		// normalize the angle so that we are within a valid range:
@@ -4209,8 +4267,6 @@ void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool c
 // Convert float displacement to vector, but no normalization (clamping) is needed
 void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi)
 {
-	smi->canonical_prev_offset = smi->canonical_offset;
-
 	// get the vector
 	switch (sm->translation_axis_id)
 	{
@@ -4248,9 +4304,6 @@ void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi)
 		smi->stepped_rotation_started = _timestamp();
 
 	float elapsed_time = timestamp_since(smi->stepped_rotation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
-
-	// save last angles
-	smi->prev_angle = smi->cur_angle;
 
 	// angular displacement of one step
 	float step_size = (PI2 / psub->stepped_rotation->num_steps);
@@ -4319,9 +4372,6 @@ void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi)
 		smi->stepped_translation_started = _timestamp();
 
 	float elapsed_time = timestamp_since(smi->stepped_translation_started) / static_cast<float>(MILLISECONDS_PER_SECOND);
-
-	// save last offset
-	smi->prev_offset = smi->cur_offset;
 
 	// linear displacement of one step
 	float step_size = psub->stepped_translation->step_distance;
@@ -4395,9 +4445,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 	Assert(sm->rotation_type == MOVEMENT_TYPE_INTRINSIC);
 	Assert(sm->look_at_submodel >= 0);
 
-	// save last angles
-	smi->prev_angle = smi->cur_angle;
-	smi->canonical_prev_orient = smi->canonical_orient;
+	const float old_angle = smi->cur_angle;
 
 	//------------
 	// Calculate the destination point in world coordinates
@@ -4433,8 +4481,8 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	// calculate turn rate
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
-	if (std::abs(smi->cur_angle - smi->prev_angle) < PI)
-		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
+	if (std::abs(smi->cur_angle - old_angle) < PI)
+		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - old_angle) / flFrametime;
 
 	// and now set the other submodel fields
 	submodel_canonicalize_rotation(sm, smi, true);
@@ -4471,11 +4519,8 @@ void submodel_translate(model_subsystem *psub, submodel_instance *smi)
 }
 
 // Helper function for both rotation and translation
-void submodel_movement_calc(float &prev_value, float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
+void submodel_movement_calc(float &cur_value, float &current_rate, float desired_rate, float accel, bool instant_accel)
 {
-	// save last value
-	prev_value = cur_value;
-
 	float delta;
 
 	if (instant_accel) {
@@ -4509,13 +4554,13 @@ void submodel_movement_calc(float &prev_value, float &cur_value, float &current_
 }
 void submodel_rotate(bsp_info *sm, submodel_instance *smi)
 {
-	submodel_movement_calc(smi->prev_angle, smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
+	submodel_movement_calc(smi->cur_angle, smi->current_turn_rate, smi->desired_turn_rate, smi->turn_accel, sm->flags[Model::Submodel_flags::Instant_rotate_accel]);
 	submodel_canonicalize_rotation(sm, smi, true);
 }
 
 void submodel_translate(bsp_info *sm, submodel_instance *smi)
 {
-	submodel_movement_calc(smi->prev_offset, smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
+	submodel_movement_calc(smi->cur_offset, smi->current_shift_rate, smi->desired_shift_rate, smi->shift_accel, sm->flags[Model::Submodel_flags::Instant_translate_accel]);
 	submodel_canonicalize_translation(sm, smi);
 }
 
@@ -5016,11 +5061,9 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		}
 
 		if (child_submodel.rotation_type == MOVEMENT_TYPE_REGULAR || child_submodel.rotation_type == MOVEMENT_TYPE_INTRINSIC) {
-			float delta_angle = get_submodel_delta_angle(&child_submodel_instance);
-			isMoving |= delta_angle < MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY;
+			isMoving |= submodel_rotated_less_than(&child_submodel_instance, MAX_SUBMODEL_COLLISION_ANGULAR_VELOCITY);
 		} else if (child_submodel.translation_type == MOVEMENT_TYPE_REGULAR || child_submodel.translation_type == MOVEMENT_TYPE_INTRINSIC) {
-			float delta_shift = get_submodel_delta_shift(&child_submodel_instance);
-			isMoving |= delta_shift < MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY;
+			isMoving |= submodel_shifted_less_than(&child_submodel_instance, MAX_SUBMODEL_COLLISION_LINEAR_VELOCITY);
 		} else if (child_submodel.flags[Model::Submodel_flags::Can_move]) {
 			isMoving = true;
 		}
@@ -5109,8 +5152,6 @@ void model_clear_instance(int model_num)
 		pm->maps[i].ResetToOriginal();
 	}
 	// ---- end of stuff that should be moved into model instances at some point
-
-	interp_clear_instance();
 }
 
 void model_set_submodel_instance_motion_info(bsp_info *sm, submodel_instance *smi)
@@ -5570,14 +5611,11 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, n_norms);
-
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
 		src->xyz.y = INTEL_FLOAT( &src->xyz.y );
 		src->xyz.z = INTEL_FLOAT( &src->xyz.z );
 
-		Interp_verts[n] = src;
 		src++;	//tigital
 
 		for (i=0; i<normcount[n]; i++){
@@ -5679,32 +5717,6 @@ void swap_bsp_flatpoly( polymodel * pm, ubyte * p )
 	verts = (short *)(p+44);
 	for (i=0; i<nv*2; i++){
 		verts[i] = INTEL_SHORT( verts[i] );
-	}
-
-	if ( pm->version < 2003 )	{
-		// Set the "normal_point" part of field to be the center of the polygon
-		vec3d center_point;
-		vm_vec_zero( &center_point );
-
-		for (i=0;i<nv;i++)	{
-			vm_vec_add2( &center_point, Interp_verts[verts[i*2]] );
-		}
-
-		center_point.xyz.x /= nv;
-		center_point.xyz.y /= nv;
-		center_point.xyz.z /= nv;
-
-		*vp(p+20) = center_point;
-
-		float rad = 0.0f;
-
-		for (i=0;i<nv;i++)	{
-			float dist = vm_vec_dist( &center_point, Interp_verts[verts[i*2]] );
-			if ( dist > rad )	{
-				rad = dist;
-			}
-		}
-		fl(p+32) = rad;
 	}
 }
 

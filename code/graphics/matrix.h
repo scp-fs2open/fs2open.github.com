@@ -3,6 +3,10 @@
 #include "graphics/2d.h"
 #include "render/3d.h"
 
+namespace graphics {
+struct velocity_camera_data;
+}
+
 extern transform_stack gr_model_matrix_stack;
 extern matrix4 gr_view_matrix;
 extern matrix4 gr_model_view_matrix;
@@ -10,6 +14,22 @@ extern matrix4 gr_projection_matrix;
 extern matrix4 gr_last_projection_matrix;
 extern matrix4 gr_env_texture_matrix;
 extern float gr_near_plane;
+
+// True while the current scene writes motion vectors. Only ever set by a renderer that supports them.
+extern bool Gr_motion_vectors_active;
+
+// Records the current view and projection as the main scene's camera, once per rendered scene.
+void gr_capture_scene_camera();
+// The cockpit has its own near plane, FOV and frame, so draws between these use a separate camera. It's drawn around the
+// origin at offsets that turn with the ship and move with its sway, so the camera needs both, and the orientation last frame.
+void gr_begin_cockpit_camera(const matrix* ship_orient, const matrix* ship_last_orient, const vec3d* sway);
+void gr_end_cockpit_camera();
+// The camera that draws write motion vectors against, viewport_rect being xy offset and zw size as fractions of the target.
+void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, float viewport_rect[4]);
+void gr_get_velocity_uniforms(graphics::velocity_camera_data* out);
+// The camera moved discontinuously, so temporal effects must not reuse earlier frames.
+void gr_reset_temporal_history();
+bool gr_consume_temporal_reset();
 
 void gr_matrix_on_frame();
 

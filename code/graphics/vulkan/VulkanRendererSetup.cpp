@@ -4,6 +4,7 @@
 #include "VulkanBuffer.h"
 #include "VulkanOpenXR.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 #include "cmdline/cmdline.h"
 #include "globalincs/version.h"
@@ -326,17 +327,17 @@ vk::Extent2D windowExtent()
 	return {static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h)};
 }
 
-vk::Extent2D chooseSwapChainExtent(const PhysicalDeviceValues& values, uint32_t width, uint32_t height)
+vk::Extent2D chooseSwapChainExtent(const vk::SurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height)
 {
-	if (values.surfaceCapabilities.currentExtent.width != UINT32_MAX) {
-		return values.surfaceCapabilities.currentExtent;
+	if (capabilities.currentExtent.width != UINT32_MAX) {
+		return capabilities.currentExtent;
 	} else {
 		VkExtent2D actualExtent = {width, height};
 
-		actualExtent.width = std::max(values.surfaceCapabilities.minImageExtent.width,
-			std::min(values.surfaceCapabilities.maxImageExtent.width, actualExtent.width));
-		actualExtent.height = std::max(values.surfaceCapabilities.minImageExtent.height,
-			std::min(values.surfaceCapabilities.maxImageExtent.height, actualExtent.height));
+		actualExtent.width = std::max(capabilities.minImageExtent.width,
+			std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height,
+			std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
 		return actualExtent;
 	}
@@ -459,8 +460,11 @@ bool VulkanRenderer::initialize()
 	setTextureManager(m_textureManager.get());
 
 	// Initialize shader manager
+	if (m_deviceFeatures.shaderClipDistance != VK_TRUE) {
+		mprintf(("Vulkan: HW clip distance not supported, using software clip distance fallback\n"));
+	}
 	m_shaderManager = std::make_unique<VulkanShaderManager>();
-	if (!m_shaderManager->init(m_device.get())) {
+	if (!m_shaderManager->init(m_device.get(), m_deviceFeatures.shaderClipDistance == VK_TRUE)) {
 		nprintf(("vulkan", "Failed to initialize Vulkan shader manager!\n"));
 		return false;
 	}
@@ -532,6 +536,10 @@ bool VulkanRenderer::initialize()
 	                           m_renderExtent, m_depthFormat, m_hdrActive)) {
 		mprintf(("Warning: Failed to initialize Vulkan post-processor, post-processing will be disabled\n"));
 		m_postProcessor.reset();
+	} else if (!m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
+		mprintf(("Warning: Failed to size the Vulkan post-processor, post-processing will be disabled\n"));
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
 	} else {
 		setPostProcessor(m_postProcessor.get());
 	}
@@ -570,7 +578,7 @@ bool VulkanRenderer::initialize()
 
 bool VulkanRenderer::initDisplayDevice() const
 {
-	os::ViewPortProperties attrs;
+	os::ViewPortProperties attrs = {};
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
@@ -944,6 +952,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 			enabledExtensions.push_back(VK_EXT_HDR_METADATA_EXTENSION_NAME);
 			mprintf(("Vulkan: Enabling %s (HDR10 metadata)\n", VK_EXT_HDR_METADATA_EXTENSION_NAME));
 		}
+		// Required by the Vulkan Portability subset whenever the physical device
+		// advertises it (MoltenVK / macOS). Creating a device without it is
+		// undefined behavior and trips VUID-VkDeviceCreateInfo-pProperties-04451.
+		// The extension-name macro lives in vulkan_beta.h (VK_ENABLE_BETA_EXTENSIONS);
+		// our headers do not enable that, so use the literal string instead.
+		if (strcmp(ext.extensionName, "VK_KHR_portability_subset") == 0) {
+			enabledExtensions.push_back("VK_KHR_portability_subset");
+			mprintf(("Vulkan: Enabling VK_KHR_portability_subset\n"));
+		}
 		if (strcmp(ext.extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0) {
 			hasAccelerationStructureExt = true;
 		}
@@ -1012,6 +1029,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 	enabledFeatures.fillModeNonSolid     = supportedFeatures.fillModeNonSolid;     // wireframe (GR_FILL_MODE_WIRE -> vk::PolygonMode::eLine)
 	enabledFeatures.shaderClipDistance   = supportedFeatures.shaderClipDistance;   // gl_ClipDistance[] in main / shadow-map / default-material vertex shaders
 	enabledFeatures.textureCompressionBC = supportedFeatures.textureCompressionBC; // BC/DXT texture formats (optional; usage gated by isTextureCompressionBCSupported)
+	enabledFeatures.textureCompressionETC2 = supportedFeatures.textureCompressionETC2; // ETC2/EAC texture formats (optional)
 	enabledFeatures.depthClamp           = supportedFeatures.depthClamp;           // clamp depth in the shadow pass (optional; when absent, CAPABILITY_SHADOWS reports false and shadows are disabled)
 
 	vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelStructFeatures;
@@ -1044,6 +1062,15 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 		deviceCreateChain.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
 	}
 
+	// FSR adds to the feature set audited above, for AMD's shaders and host code. It's disabled in VR for now.
+	if (!openxr_requested()) {
+		vulkan_upscaler_prepare_device(m_vkInstance.get(),
+			deviceValues.device,
+			deviceValues.graphicsQueueIndex.index,
+			supportedFeatures,
+			deviceCreateChain.get<vk::DeviceCreateInfo>());
+	}
+
 	if (openxr_requested())
 		m_device = vulkan_openxr_create_device(deviceValues.device, deviceCreateChain.get<vk::DeviceCreateInfo>());
 	else
@@ -1051,6 +1078,7 @@ bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValue
 
 	// Load device-level function pointers for the dynamic dispatcher
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(m_device.get());
+	vulkan_upscaler_device_created(m_device.get());
 
 	// Create queues
 	m_graphicsQueue = m_device->getQueue(deviceValues.graphicsQueueIndex.index, 0);
@@ -1109,7 +1137,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = chooseSwapChainExtent(deviceValues, window.width, window.height);
+	createInfo.imageExtent = chooseSwapChainExtent(deviceValues.surfaceCapabilities, window.width, window.height);
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment
 	                      | vk::ImageUsageFlagBits::eTransferSrc
@@ -1124,7 +1152,19 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
 	}
 
-	createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	// preTransform describes the transform already applied to the rendered content.
+	// FSO does not pre-rotate it, so request identity whenever supported. If this
+	// differs from currentTransform (e.g. landscape on an Android phone), the
+	// presentation engine compensates during presentation. Passing currentTransform
+	// instead would claim that FSO had already performed that rotation.
+	auto supported = deviceValues.surfaceCapabilities.supportedTransforms;
+	if (supported & vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+		createInfo.preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
+	}
+	else {
+		createInfo.preTransform = deviceValues.surfaceCapabilities.currentTransform;
+	}
+	
 	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 	createInfo.presentMode = choosePresentMode(deviceValues);
 	createInfo.clipped = true;
@@ -1145,6 +1185,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	m_hdrActive = (surfaceFormat.colorSpace == vk::ColorSpaceKHR::eHdr10St2084EXT);
 	Gr_hdr_output_active = m_hdrActive;
 	m_swapChainExtent = createInfo.imageExtent;
+	m_swapChainPreTransform = createInfo.preTransform;
 
 	// Without -window_res the render resolution simply is the window, so follow
 	// gr_screen (which gr_screen_resize() has already updated for this
@@ -1155,6 +1196,7 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	if (!Cmdline_window_res) {
 		m_renderExtent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w), static_cast<uint32_t>(gr_screen.max_h));
 	}
+	setCompositionExtent(wantedCompositionExtent());
 
 	mprintf(("Vulkan: Swap chain output mode: %s\n", m_hdrActive ? "HDR10 (PQ/BT.2020)" : "SDR (sRGB)"));
 	mprintf(("Vulkan: Render resolution %ux%u, window/swap chain %ux%u\n",
@@ -1206,6 +1248,42 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues, v
 	return true;
 }
 
+bool VulkanRenderer::shouldRecreateSwapChain(SwapChainStatus status) const
+{
+	// An already requested rebuild also avoids redundant Android surface queries.
+	if (m_swapChainNeedsRecreation || status == SwapChainStatus::eOutOfDate) {
+		return true;
+	}
+	if (status != SwapChainStatus::eSuboptimal) {
+		return false;
+	}
+
+#ifdef __ANDROID__
+	if (m_swapChainPreTransform == vk::SurfaceTransformFlagBitsKHR::eIdentity) {
+		vk::SurfaceCapabilitiesKHR capabilities;
+		try {
+			capabilities = m_physicalDevice.getSurfaceCapabilitiesKHR(m_vkSurface.get());
+		} catch (const vk::SystemError&) {
+			// Let the normal recreation path handle a failed surface query.
+			return true;
+		}
+		if (capabilities.currentTransform != m_swapChainPreTransform &&
+			(capabilities.supportedTransforms & m_swapChainPreTransform)) {
+			const auto window = windowExtent();
+			const auto extent = chooseSwapChainExtent(capabilities, window.width, window.height);
+			if (extent == m_swapChainExtent) {
+				// Android can report SUBOPTIMAL on every present while the compositor
+				// compensates for our identity preTransform. Rebuilding with the same
+				// extent and preTransform would just repeat that condition next frame.
+				return false;
+			}
+		}
+	}
+#endif
+
+	return true;
+}
+
 bool VulkanRenderer::recreateSwapChain()
 {
 	nprintf(("vulkan", "Vulkan: Recreating swap chain...\n"));
@@ -1229,7 +1307,7 @@ bool VulkanRenderer::recreateSwapChain()
 
 	// Check for 0x0 extent (minimized window) — caller should retry later
 	const vk::Extent2D window = windowExtent();
-	auto extent = chooseSwapChainExtent(freshValues, window.width, window.height);
+	auto extent = chooseSwapChainExtent(freshValues.surfaceCapabilities, window.width, window.height);
 	if (extent.width == 0 || extent.height == 0) {
 		nprintf(("vulkan", "Vulkan: Surface extent is 0x0 (minimized), deferring swap chain recreation\n"));
 		return false;
@@ -1263,7 +1341,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Recreate the post-processor's extent-sized targets (scene color/depth,
 	// G-buffer, bloom chains, LDR/SMAA targets, ...). Its render passes and
 	// samplers are extent-independent and stay alive, keeping pipelines valid.
-	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent)) {
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
 		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
 		setPostProcessor(nullptr);
 		m_postProcessor->shutdown();
@@ -1290,6 +1368,7 @@ bool VulkanRenderer::recreateSwapChain()
 	// Reset swap chain image tracking
 	m_swapChainImageRenderImage.clear();
 	m_swapChainImageRenderImage.resize(m_swapChainImages.size(), nullptr);
+	createRenderingFinishedSemaphores();
 	m_previousSwapChainImage = UINT32_MAX;
 
 	m_swapChainNeedsRecreation = false;

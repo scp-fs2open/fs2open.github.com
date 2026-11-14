@@ -61,6 +61,7 @@ extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
 extern bool check_for_25_1_data();
+extern bool check_for_26_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -621,7 +622,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, ship &s, bool no_ship_max_shield);
 
 void mission_parse_close();
 

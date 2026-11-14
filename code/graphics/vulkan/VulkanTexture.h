@@ -165,7 +165,8 @@ public:
 	vk::Sampler getSampler(vk::Filter magFilter, vk::Filter minFilter,
 	                       vk::SamplerAddressMode addressMode,
 	                       bool enableAnisotropy, float maxAnisotropy,
-	                       bool enableMipmaps);
+	                       bool enableMipmaps, float negativeLodBias = 0.0f,
+	                       bool followTextureFilter = false);
 
 	/**
 	 * @brief Get a ready-to-use DescriptorImageInfo for the 2D fallback texture
@@ -193,6 +194,13 @@ public:
 	 * @brief Get texture slot data
 	 */
 	tcache_slot_vulkan* getTextureSlot(int handle);
+
+	/**
+	 * @brief Upload a cubemap bitmap as a cubemap if it has not been uploaded yet
+	 * @param[in] handle bitmap handle of a DDS cubemap (compressed or not) or a cubemap render target
+	 * @return true if the handle now has a cubemap image view
+	 */
+	bool ensureCubemapUploaded(int handle);
 
 	/**
 	 * @brief Bitmap handle of the render target currently bound via bm_set_render_target,
@@ -355,9 +363,9 @@ private:
 	/**
 	 * @brief Decode a get_bitmap_from_texture() readback buffer into data_out
 	 *
-	 * Handles both the BC-compressed (block-decode via bcdec) and uncompressed
-	 * (per-format channel expand/convert) cases; data_out is tightly packed
-	 * w*h pixels at outChannels (3 or 4) bytes each.
+	 * Handles BC- and ETC2-compressed textures (block-decode via bcdec/etcdec)
+	 * and uncompressed textures (per-format channel expand/convert); data_out
+	 * is tightly packed w*h pixels at outChannels (3 or 4) bytes each.
 	 */
 	static void decodeReadbackBuffer(const void* mapped, vk::Format format, bool isCompressed,
 	                          uint32_t w, uint32_t h, uint32_t blockW, uint32_t blockH,
@@ -382,6 +390,7 @@ private:
 
 	vk::Device m_device;
 	vk::PhysicalDevice m_physicalDevice;
+	uint m_failedCubemapSignature = 0;
 	VulkanMemoryManager* m_memoryManager = nullptr;
 	vk::CommandPool m_commandPool;
 	vk::Queue m_graphicsQueue;
@@ -412,6 +421,8 @@ private:
 	// Device limits
 	uint32_t m_maxTextureSize = 4096;
 	float m_maxAnisotropy = 1.0f;
+	float m_maxLodBias = 0.0f;
+	bool m_trilinearFiltering = true;
 
 	// Current render target state
 	int m_currentRenderTarget = -1;
