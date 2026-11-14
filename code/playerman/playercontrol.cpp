@@ -672,7 +672,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, centering_speed);
 
 	// Read once per frame: a read clears the press count, so a second read on the release frame returns false
-	const bool bank_when_pressed = (Viewer_mode & VM_CAMERA_LOCKED) && check_control(BANK_WHEN_PRESSED);
+	const bool bank_when_pressed = (Viewer_mode & VM_CAMERA_LOCKED) && check_control(BANK_WHEN_PRESSED) != 0;
 
 	// Ship controls
 	if (Viewer_mode & VM_CAMERA_LOCKED) {
