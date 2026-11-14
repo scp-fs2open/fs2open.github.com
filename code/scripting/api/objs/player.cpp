@@ -245,10 +245,9 @@ ADE_FUNC(getMainHallName, l_Player, NULL, "Gets player's current main hall name"
 {
 	SCP_string hallname;
 	// FS2-->Lua
-	if (Campaign.next_mission == -1) {
-		hallname = Campaign.missions[0].main_hall;
-	} else {
-		hallname = Campaign.missions[Campaign.next_mission].main_hall;
+	int idx = (Campaign.next_mission == -1) ? 0 : Campaign.next_mission;
+	if (Campaign.missions.in_bounds(idx)) {
+		hallname = Campaign.missions[idx].main_hall;
 	}
 
 	return ade_set_args(L, "s", hallname.c_str());
@@ -259,10 +258,11 @@ ADE_FUNC(getMainHallIndex, l_Player, NULL, "Gets player's current main hall numb
 {
 	int hallnum = 0;
 	//FS2-->Lua
-	if (Campaign.next_mission == -1) {
-		hallnum = main_hall_get_index(Campaign.missions[0].main_hall);
+	int idx = (Campaign.next_mission == -1) ? 0 : Campaign.next_mission;
+	if (Campaign.missions.in_bounds(idx)) {
+		hallnum = main_hall_get_index(Campaign.missions[idx].main_hall);
 	} else {
-		hallnum = main_hall_get_index(Campaign.missions[Campaign.next_mission].main_hall);
+		hallnum = main_hall_get_index("");
 	}
 
 	return ade_set_args(L, "i", hallnum);

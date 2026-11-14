@@ -2688,7 +2688,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 				return 1;
 			}
 
-			if (Campaign.num_missions > 0)
+			if (!Campaign.missions.empty())
 				return 1;
 
 			return 0;

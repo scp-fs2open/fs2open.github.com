@@ -975,8 +975,9 @@ void main_hall_do(float frametime)
 					if (Num_recent_missions > 0) {
 						strcpy_s(Game_current_mission_filename, Recent_missions[0]);
 					} else {
-						if (mission_load_up_campaign()) {
+						if (mission_load_up_campaign() || Campaign.missions.empty()) {
 							main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", 1606));
+							break;
 						}
 						strcpy_s(Game_current_mission_filename, Campaign.missions[0].name);
 					}
