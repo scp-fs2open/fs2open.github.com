@@ -44,7 +44,7 @@ int CurrentNav;
 float ramp_bias;
 NavPoint Navs[MAX_NAVPOINTS];
 NavMessage NavMsgs[NP_NUM_MESSAGES];
-int audio_handle;
+int audio_handle = -1;
 int NavLinkDistance;
 // time offsets for autonav events
 TIMESTAMP LockAPConv;
@@ -1219,7 +1219,7 @@ void send_autopilot_msg(const char *msg, const char *snd)
 		change_message("autopilot builtin message", msg, -1, 0);
 
 	// load sound
-	if ((snd != NULL) && (snd[0] != '\0' && !strcmp(snd, "none")))
+	if ((snd != nullptr) && (snd[0] != '\0' && strcmp(snd, "none") != 0))
 	{
 		audio_handle = audiostream_open(snd, ASF_MENUMUSIC );
 	}
@@ -1232,6 +1232,14 @@ void send_autopilot_msg(const char *msg, const char *snd)
 
 	if (msg[0] != '\0' && strcmp(msg, "none") != 0)
 		message_training_queue("autopilot builtin message", TIMESTAMP::immediate(), 5); // display message for five seconds
+}
+
+// ********************************************************************************************
+// Closes the Nav System's voice stream
+void NavSystem_Close()
+{
+	audiostream_close_file(audio_handle, false);
+	audio_handle = -1;
 }
 
 // ********************************************************************************************
@@ -1252,7 +1260,7 @@ void NavSystem_Init()
 	LockWeaponsDuringAutopilot = false;
 	AutoPilotEngaged = false;
 	CurrentNav = -1;
-	audio_handle = -1;
+	NavSystem_Close();
 	CinematicStarted = false;
 	UseCutsceneBars = true;
 

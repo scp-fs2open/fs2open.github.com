@@ -992,6 +992,7 @@ void game_level_close()
 		multi_interpolate_clear_all(); // object related
 		sexp_music_close();	// Goober5000
 		event_music_level_close();
+		NavSystem_Close();
 		game_stop_looped_sounds();
 		snd_stop_all();
 		obj_snd_level_close();					// uninit object-linked persistant sounds

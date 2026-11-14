@@ -127,6 +127,9 @@ void NavSystem_Do();
 // Inits the Nav System
 void NavSystem_Init();
 
+// Closes the Nav System's voice stream
+void NavSystem_Close();
+
 // parse autopilot.tbl
 void parse_autopilot_table(const char *filename);
 
