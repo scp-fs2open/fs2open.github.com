@@ -771,7 +771,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-sun-bitmap",					OP_ADD_SUN_BITMAP,						5,	6,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "add-sun-bitmap-new",				OP_ADD_SUN_BITMAP_NEW,					5,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
-	{ "set-lightshafts-override",		OP_SET_LIGHTSHAFTS_OVERRIDE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Dustinspace217
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
@@ -792,6 +791,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "config-debris-field",			OP_CONFIG_DEBRIS_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "config-field-targets",			OP_CONFIG_FIELD_TARGETS,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-lightshafts-override",		OP_SET_LIGHTSHAFTS_OVERRIDE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Dustinspace217
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -42569,7 +42569,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Dustinspace217
 	{ OP_SET_LIGHTSHAFTS_OVERRIDE, "set-lightshafts-override\r\n"
-		"\tControls whether or not lightshafts (sun god rays) are drawn for the rest of the mission, the same way "
+		"\tControls whether or not lightshafts (sun god-rays) are drawn for the rest of the mission, the same way "
 		"set-motion-debris-override works for motion debris.  True hides lightshafts even for players who have them enabled; "
 		"False removes the override and restores the player's own setting.  This cannot turn lightshafts on for a player who "
 		"has them disabled.  The override is cleared when the next mission loads.  Like set-motion-debris-override, this runs "

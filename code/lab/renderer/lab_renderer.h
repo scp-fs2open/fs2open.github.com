@@ -102,7 +102,6 @@ public:
 		Viewer_mode |= VM_FREECAMERA;
 
 		Motion_debris_override = true;
-		// the lab never runs mission_init
 		Lightshafts_override = false;
 		Num_stars = 0;
 
