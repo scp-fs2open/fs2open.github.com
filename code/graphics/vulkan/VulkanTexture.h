@@ -103,7 +103,7 @@ public:
 
 	// Mark resident images for paging, then retire unused images once bitmap
 	// paging has identified the next mission's texture set.
-	void pageInStart() const;
+	static void pageInStart();
 	void pageInPrepare() const;
 
 	// Bitmap management functions (implement gr_screen function pointers)

@@ -445,7 +445,7 @@ void VulkanTextureManager::keepTexture(tcache_slot_vulkan& texture)
 	}
 }
 
-void VulkanTextureManager::pageInStart() const
+void VulkanTextureManager::pageInStart()
 {
 	for (auto& block : bm_blocks) {
 		for (auto& slot : block) {

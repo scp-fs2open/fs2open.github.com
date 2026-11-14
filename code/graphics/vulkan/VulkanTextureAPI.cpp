@@ -149,7 +149,7 @@ bool vulkan_bm_data(int handle, bitmap* bm)
 
 void vulkan_bm_page_in_start()
 {
-	getTextureManager()->pageInStart();
+	VulkanTextureManager::pageInStart();
 }
 
 void vulkan_bm_page_in_prepare()
