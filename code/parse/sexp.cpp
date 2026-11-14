@@ -1052,7 +1052,7 @@ static int Fade_out_b = 0;
 SCP_vector<fix> Sexp_is_true_for_duration_times;
 
 // for play-music - Goober5000
-SCP_vector<int>	Sexp_music_handles;		// All handles used by all invocations of play-sound-from-file.  The default handle is in index 0.
+SCP_vector<int>	Sexp_music_signatures;		// Audio stream signatures of all invocations of play-sound-from-file.  The default signature is in index 0.
 
 // for sound environments - Goober5000/Taylor
 #define SEO_VOLUME		0
@@ -1376,7 +1376,7 @@ void init_sexp()
 	Fade_out_b = 0;
 
 	// init data structures used by certain operators
-	// (note, Sexp_music_handles are not cleared here because sexp_music_close() handled that at the end of the previous mission)
+	// (note, Sexp_music_signatures are not cleared here because sexp_music_close() handled that at the end of the previous mission)
 	Sexp_is_true_for_duration_times.clear();
 }
 
@@ -14149,23 +14149,23 @@ void multi_sexp_change_soundtrack()
 }
 
 // Goober5000
-int sexp_find_music_handle_index(int sexp_var)
+int sexp_find_music_signature(int sexp_var)
 {
 	// check the default case
 	if (sexp_var < 0)
 	{
 		// we might not have any music at this point
-		if (Sexp_music_handles.empty())
+		if (Sexp_music_signatures.empty())
 			return -1;
 
-		return 0;
+		return Sexp_music_signatures[0];
 	}
 
-	// get the handle from the variable
-	int music_handle = -1;
+	// get the signature from the variable
+	int signature = -1;
 	try
 	{
-		music_handle = std::stoi(Sexp_variables[sexp_var].text);
+		signature = std::stoi(Sexp_variables[sexp_var].text);
 	}
 	catch (const std::exception&)
 	{
@@ -14173,12 +14173,9 @@ int sexp_find_music_handle_index(int sexp_var)
 		return -1;
 	}
 
-	// find it in our collection of handles (skip index 0)
-	for (size_t i = 1; i < Sexp_music_handles.size(); ++i)
-	{
-		if (Sexp_music_handles[i] == music_handle)
-			return (int)i;
-	}
+	// find it in our collection of signatures (skip index 0)
+	if (signature > 0 && Sexp_music_signatures.size() > 1 && std::find(Sexp_music_signatures.begin() + 1, Sexp_music_signatures.end(), signature) != Sexp_music_signatures.end())
+		return signature;
 
 	return -1;
 }
@@ -14189,17 +14186,17 @@ void sexp_pause_unpause_music(bool pause, int sexp_var)
 	if (Cmdline_freespace_no_music)
 		return;
 
-	int index = sexp_find_music_handle_index(sexp_var);
-	if (index < 0)
+	int signature = sexp_find_music_signature(sexp_var);
+	if (signature < 0)
 	{
 		// bad variable, maybe
 		if (sexp_var >= 0)
-			Warning(LOCATION, "In sexp_pause_unpause_music, variable %s did not store a valid music handle!", Sexp_variables[sexp_var].variable_name);
+			Warning(LOCATION, "In sexp_pause_unpause_music, variable %s did not store a valid music signature!", Sexp_variables[sexp_var].variable_name);
 
 		return;
 	}
 
-	int music_handle = Sexp_music_handles[index];
+	int music_handle = audiostream_get_by_signature(signature);
 
 	// actually pause the music
 	if (music_handle >= 0)
@@ -14211,34 +14208,40 @@ void sexp_pause_unpause_music(bool pause, int sexp_var)
 	}
 }
 
+// Signatures are only meaningful on the local machine, so this bypasses the network synchronization in
+// sexp_modify_variable().  Clients set their own copy of the variable when they run the sexp's callback.
+static void sexp_set_music_variable(int sexp_var, int signature)
+{
+	sprintf(Sexp_variables[sexp_var].text, "%d", signature);
+	Sexp_variables[sexp_var].type |= SEXP_VARIABLE_MODIFIED;
+}
+
 // Goober5000
 void sexp_stop_music(bool fade, int sexp_var)
 {
 	if (Cmdline_freespace_no_music)
 		return;
 
-	int index = sexp_find_music_handle_index(sexp_var);
-	if (index < 0)
+	int signature = sexp_find_music_signature(sexp_var);
+	if (signature < 0)
 	{
 		// bad variable, maybe
 		if (sexp_var >= 0)
-			Warning(LOCATION, "In sexp_stop_music, variable %s did not store a valid music handle!", Sexp_variables[sexp_var].variable_name);
+			Warning(LOCATION, "In sexp_stop_music, variable %s did not store a valid music signature!", Sexp_variables[sexp_var].variable_name);
 
 		return;
 	}
 
-	int music_handle = Sexp_music_handles[index];
-
-	// actually stop the music and free the handle
-	if (music_handle >= 0)
-	{
-		audiostream_close_file(music_handle, fade);
-		Sexp_music_handles[index] = -1;
-	}
+	// actually stop the music and clear its signature
+	audiostream_close_file(audiostream_get_by_signature(signature), fade);
+	if (sexp_var < 0)
+		Sexp_music_signatures[0] = -1;
+	else
+		*std::find(Sexp_music_signatures.begin() + 1, Sexp_music_signatures.end(), signature) = -1;
 
 	// also clear the variable
 	if (sexp_var >= 0)
-		sexp_modify_variable("-1", sexp_var);
+		sexp_set_music_variable(sexp_var, -1);
 }
 
 // Goober5000
@@ -14248,9 +14251,9 @@ void sexp_music_close()
 		return;
 
 	// close all music used by this mission
-	for (auto music_handle : Sexp_music_handles)
-		audiostream_close_file(music_handle);
-	Sexp_music_handles.clear();
+	for (auto signature : Sexp_music_signatures)
+		audiostream_close_file(audiostream_get_by_signature(signature));
+	Sexp_music_signatures.clear();
 }
 
 // Goober5000
@@ -14262,21 +14265,20 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 	if (type < 0)
 		type = ASF_MENUMUSIC;
 
-	// the default music handle is always index 0, which at this point may or may not exist
-	if (Sexp_music_handles.empty())
-		Sexp_music_handles.push_back(-1);
+	// the default signature is always index 0, which at this point may or may not exist
+	if (Sexp_music_signatures.empty())
+		Sexp_music_signatures.push_back(-1);
 
-	// if a variable is supplied, we'll be creating a new handle to be stored in the variable
+	// if a variable is supplied, we'll be creating a new signature to be stored in the variable
 	int index;
 	if (sexp_var >= 0)
 	{
-		// if any handle has expired, it can be closed; and any closed or expired index can be reused
-		// (note that handles are not unique across an entire mission; any variables pointing to handles
-		// that have been closed will see those handles reused for new sounds)
-		int found_i = -1, n = sz2i(Sexp_music_handles.size());
-		for (int i = 1; i < n; ++i)	// skip the default handle
+		// if any sound has expired, it can be closed; and any closed or expired index can be reused
+		// (signatures are unique, so variables holding the signatures of closed sounds won't match the new sounds)
+		int found_i = -1, n = sz2i(Sexp_music_signatures.size());
+		for (int i = 1; i < n; ++i)	// skip the default signature
 		{
-			int this_handle = Sexp_music_handles[i];
+			int this_handle = audiostream_get_by_signature(Sexp_music_signatures[i]);
 
 			if ((this_handle < 0) || (!audiostream_is_playing(this_handle) && !audiostream_is_paused(this_handle)))
 			{
@@ -14291,54 +14293,51 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 			index = found_i;
 		else
 		{
-			index = static_cast<int>(Sexp_music_handles.size());
-			Sexp_music_handles.push_back(-1);
+			index = sz2i(Sexp_music_signatures.size());
+			Sexp_music_signatures.push_back(-1);
 		}
 	}
-	// otherwise we'll be reusing the default handle, so close anything that's already playing
+	// otherwise we'll be reusing the default signature, so close anything that's already playing
 	else
 	{
 		index = 0;
-		audiostream_close_file(Sexp_music_handles[index]);
+		audiostream_close_file(audiostream_get_by_signature(Sexp_music_signatures[index]));
 	}
 
-	// open the stream and save the handle in our list
-	Sexp_music_handles[index] = audiostream_open(filename, type);
-	if (Sexp_music_handles[index] < 0)
-		Warning(LOCATION, "In sexp_load_music, could not create audio handle for '%s'!  You might be trying to play too many sounds at once.", filename);
+	// open the stream and save its signature in our list
+	int music_handle = audiostream_open(filename, type);
+	Sexp_music_signatures[index] = (music_handle >= 0) ? audiostream_get_signature(music_handle) : -1;
+	if (music_handle < 0)
+		Warning(LOCATION, "In sexp_load_music, could not open an audio stream for '%s'!  You might be trying to play too many sounds at once.", filename);
 
 	// if we have a variable, save it there too
 	if (sexp_var >= 0)
-	{
-		char number_as_str[TOKEN_LENGTH];
-		sprintf(number_as_str, "%d", Sexp_music_handles[index]);
-		sexp_modify_variable(number_as_str, sexp_var);
-	}
+		sexp_set_music_variable(sexp_var, Sexp_music_signatures[index]);
 }
 
 // Goober5000
 void sexp_start_music(int loop, int sexp_var)
 {
-	int index = sexp_find_music_handle_index(sexp_var);
+	int signature = sexp_find_music_signature(sexp_var);
 
-	// shouldn't happen
-	if (index < 0)
+	// shouldn't happen (a default signature of -1 is reported below)
+	if (signature < 0 && (sexp_var >= 0 || Sexp_music_signatures.empty()))
 	{
 		// really shouldn't happen
 		if (sexp_var < 0)
-			Warning(LOCATION, "In sexp_start_music, unable to find a default music index?!?!");
+			Warning(LOCATION, "In sexp_start_music, unable to find a default music signature?!?!");
 		else
-			Warning(LOCATION, "In sexp_start_music, no music handle index available for variable %s!", Sexp_variables[sexp_var].variable_name);
+			Warning(LOCATION, "In sexp_start_music, no music signature available for variable %s!", Sexp_variables[sexp_var].variable_name);
 
 		return;
 	}
 
-	int music_handle = Sexp_music_handles[index];
+	int music_handle = audiostream_get_by_signature(signature);
 
 	// also shouldn't happen
 	if (music_handle < 0)
 	{
-		Warning(LOCATION, "In sexp_start_music, music handle was unavailable!");
+		Warning(LOCATION, "In sexp_start_music, music stream was unavailable!");
 		return;
 	}
 
@@ -39665,28 +39664,28 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_FILE, "play-sound-from-file\r\n"
-		"\tPlays a sound, such as a music soundtrack, from a file.  Multiple sounds can be played with this sexp by assigning each sound to a music handle stored in a variable.\r\n"
+		"\tPlays a sound, such as a music soundtrack, from a file.  Multiple sounds can be played with this sexp by storing each sound's music signature in a variable.\r\n"
 		"Takes 1 to 4 arguments...\r\n"
 		"\t1: Sound (file name)\r\n"
 		"\t2: Enter a non-zero number to loop. default is off (optional).\r\n"
 		"\t3: Enter a non-zero number to use environment effects. default is off (optional).\r\n"
-		"\t4: Numeric variable in which to store the music handle (optional).  If no variable is specified, the 'default' handle is used.  "
-		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.  NOTE: Handles are not globally unique.  If a sound "
-		"finishes playing, its handle may be reused for another sound played later in the mission.\r\n"
+		"\t4: Numeric variable in which to store the music signature (optional).  If no variable is specified, the 'default' internal storage slot is used.  "
+		"Only one 'default' track can be played at a time, but multiple variable-managed tracks can be played.  Each sound gets a unique signature, so a variable "
+		"holding the signature of a sound that has since been closed will not affect sounds played later.\r\n"
 	},
 
 	// Goober5000
 	{ OP_CLOSE_SOUND_FROM_FILE, "close-sound-from-file\r\n"
 		"\tCloses the currently playing sound started by play-sound-from-file, if there is any.  Takes 0 to 2 arguments...\r\n"
 		"\t1: Fade (optional; default is true)\r\n"
-		"\t2: Numeric variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+		"\t2: Numeric variable containing a music signature (optional).  If no variable is specified, the 'default' internal storage slot is used."
 	},
 
 	// Goober5000
 	{ OP_PAUSE_SOUND_FROM_FILE, "pause-sound-from-file\r\n"
 		"\tPauses or unpauses the currently playing sound started by play-sound-from-file, if there is any.  Takes 1 or 2 arguments...\r\n"
 		"\t1: Boolean - True to pause, False to unpause\r\n"
-		"\t2: Numeric variable containing a music handle (optional).  If no variable is specified, the 'default' handle is used."
+		"\t2: Numeric variable containing a music signature (optional).  If no variable is specified, the 'default' internal storage slot is used."
 	},
 
 	// Taylor
