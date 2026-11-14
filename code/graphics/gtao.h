@@ -15,6 +15,10 @@ extern float Gtao_radius_scale;
 // Exponent on the visibility, so a larger value gives darker AO. Bound to Graphics.SsaoIntensity.
 extern float Gtao_intensity;
 
+// Lab only: draw the blurred AO buffer in place of the lit scene. Set from the lab's
+// "Show screen-space AO buffer" checkbox; reset when the lab closes.
+extern bool Gtao_show_buffer;
+
 struct gtao_sample_counts {
 	int slices;
 	int steps; // per side of each slice

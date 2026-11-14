@@ -10,6 +10,7 @@
 int Gtao_quality = 0;
 float Gtao_radius_scale = 1.0f;
 float Gtao_intensity = 1.5f;
+bool Gtao_show_buffer = false;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto GtaoQualityOption __UNUSED = options::OptionBuilder<int>("Graphics.SsaoQuality",
