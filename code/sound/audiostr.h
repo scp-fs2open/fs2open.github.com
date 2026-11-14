@@ -41,6 +41,13 @@ int audiostream_open( const char * filename, int type );
 // Opens wave file contents previously loaded into memory but doesn't play them.
 int audiostream_open_mem( const uint8_t* snddata, size_t snd_len, int type );
 
+// Every open stream has a unique signature (0 is never valid), so code that holds on to a
+// stream can tell whether its slot has since been closed or reused.
+int audiostream_get_signature(int i);
+
+// Returns the slot of the open stream with this signature, or -1 if there is none.
+int audiostream_get_by_signature(int signature);
+
 // Closes the opened wave file.  This doesn't have to be
 // called between songs, because when you open the next
 // song, it will call this internally.

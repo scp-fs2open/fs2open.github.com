@@ -123,6 +123,7 @@ public:
 	void	Print_Status(int index);
 	int	status;
 	int	type;
+	int	signature;
 	bool paused_via_sexp_or_script;
 	SCP_string filename;
 
@@ -401,6 +402,7 @@ bool AudioStream::Destroy (void)
 	m_pwavefile = nullptr;
 
 	status = ASF_FREE;
+	signature = 0;
 
 	SDL_UnlockMutex(write_lock);
 
@@ -877,7 +879,7 @@ void AudioStream::Print_Status(int index)
 		default:				type_name = "NONE"; break;
 	}
 
-	mprintf(("  stream %2d: %-10s %-32s%s%s%s%s\n", index, type_name, filename.c_str(),
+	mprintf(("  stream %2d (sig %d): %-10s %-32s%s%s%s%s\n", index, signature, type_name, filename.c_str(),
 		m_fPlaying ? " playing" : "",
 		m_bIsPaused ? " paused" : "",
 		m_bFade ? " fading" : "",
@@ -935,6 +937,7 @@ void audiostream_init()
 		Audio_streams[i].Init_Data();
 		Audio_streams[i].status = ASF_FREE;
 		Audio_streams[i].type = ASF_NONE;
+		Audio_streams[i].signature = 0;
 		Audio_streams[i].paused_via_sexp_or_script = false;
 	}
 
@@ -986,6 +989,30 @@ void audiostream_close()
 
 }
 
+static int Audio_stream_next_signature = 1;	// 0 is bogus
+
+int audiostream_get_signature(int i)
+{
+	if ( (i < 0) || (i >= MAX_AUDIO_STREAMS) || (Audio_streams[i].status != ASF_USED) )
+		return 0;
+
+	return Audio_streams[i].signature;
+}
+
+int audiostream_get_by_signature(int signature)
+{
+	if ( signature <= 0 )
+		return -1;
+
+	for (int i = 0; i < MAX_AUDIO_STREAMS; i++)
+	{
+		if ( (Audio_streams[i].status == ASF_USED) && (Audio_streams[i].signature == signature) )
+			return i;
+	}
+
+	return -1;
+}
+
 static int audiostream_use_next_free( int type )
 {
 	if ( !Audiostream_inited || !snd_is_inited() )
@@ -1014,6 +1041,9 @@ static int audiostream_use_next_free( int type )
 	reported_exhaustion = false;
 	Audio_streams[i].status = ASF_USED;
 	Audio_streams[i].type = type;
+
+	Audio_streams[i].signature = Audio_stream_next_signature;
+	Audio_stream_next_signature = (Audio_stream_next_signature == std::numeric_limits<int>::max()) ? 1 : Audio_stream_next_signature + 1;
 
 	switch (type) {
 		case ASF_SOUNDFX: // As in: sound.cpp:590
