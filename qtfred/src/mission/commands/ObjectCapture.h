@@ -281,6 +281,16 @@ int restoreShip(CapturedShip& data, Editor* editor);
 // restoreShip() call). Removes the ship's entries from Fred_texture_replacements.
 void recaptureShipForRedo(CapturedShip& data, int objNum);
 
+// Turn the references a wing member's delete invalidated (<name>, in sexps and
+// AI goals; see Editor::invalidate_references) back into the ship's name.
+// common_object_delete only invalidates wing members' references. The stale
+// <name> texture replacements and Reinforcements entry are dropped, since
+// restoreShip() re-adds the ship's own. Call it after all of an undo's renames,
+// since a wing survivor can briefly hold the restored name. Like the wing undo,
+// it revives every <name> reference, including any left by an earlier delete of
+// a different ship with the same name.
+void restoreShipReferences(const char* name, Editor* editor);
+
 // Remove all Fred_texture_replacements entries that belong to ship_name.
 void removeShipTextureReplacements(const char* ship_name);
 

@@ -639,11 +639,11 @@ void DeleteObjectsCommand::redo()
 
 void DeleteObjectsCommand::undo()
 {
-	// KNOWN LIMITATION: delete_marked() invalidates sexp references to deleted
-	// ships (bashing them to <name>) and renumbers subsequent waypoints in
-	// referencing sexps. Undo restores the objects themselves but does not
-	// reverse those rewrites — that would require capturing every referencing
-	// tree. Fully-deleted wings are the exception (see the fixup below).
+	// Deleting a wing member bashes its references to <name>; they are restored at
+	// the end (restoreShipReferences), as are a fully deleted wing's.
+	// KNOWN LIMITATION: deleting a waypoint renumbers the later points' references
+	// in sexps, and undo does not reverse that; it would need every referencing
+	// tree captured. References to a deleted player start (<Player N>) also stay.
 	_currentObjNums.clear();
 
 	// Phase 1: restore all ships; collect (oldShipInst → newObjNum) mapping.
@@ -840,6 +840,24 @@ void DeleteObjectsCommand::undo()
 				restoreMemberDisplayName(shipIdx, wd.members[j]);
 			}
 		}
+	}
+
+	// Deleting a wing member bashed references to it to <name> (a loose ship's
+	// are left as they are); bring them back now that every rename above is done.
+	// Not for a partial delete from Wings[0]: there common_object_delete renames the
+	// survivors into the freed name before invalidating it, so <name> also holds
+	// survivors' references (and their texture and reinforcement entries) and can't
+	// be told apart; those stay invalidated, as they did before.
+	for (const auto& cs : _ships) {
+		if (cs.wingNum < 0)
+			continue;
+		if (cs.wingNum == 0) {
+			const auto wd = std::find_if(_affectedWings.begin(), _affectedWings.end(),
+			                             [](const SavedWingData& w) { return w.wingNum == 0; });
+			if (wd != _affectedWings.end() && !wd->entirelyDeleted)
+				continue;
+		}
+		restoreShipReferences(cs.ship_name, _editor);
 	}
 
 	// Restoring a ship can briefly give it a name a wing survivor still had, and
@@ -1816,6 +1834,9 @@ void DeleteWingCommand::undo()
 	_editor->ai_update_goal_references(sexp_ref_type::WING, invalidatedName, _savedWing.name);
 
 	restoreWingIntoSlot(_savedWing, slot, _editor);
+	// ... and the member ships' references, which their deletes bashed to <name>.
+	for (const auto& cs : _savedShips)
+		restoreShipReferences(cs.ship_name, _editor);
 	update_custom_wing_indexes();
 
 	// Select the restored wing (mark_wing calls unmark_all first, so markObject calls are redundant).

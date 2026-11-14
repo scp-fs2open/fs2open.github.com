@@ -725,6 +725,22 @@ int restoreShip(CapturedShip& c, Editor* editor)
 	return newObj;
 }
 
+void restoreShipReferences(const char* name, Editor* editor)
+{
+	char invalidated[NAME_LENGTH + 2];
+	sprintf(invalidated, "<%s>", name);
+	update_sexp_references(invalidated, name);
+	editor->ai_update_goal_references(sexp_ref_type::SHIP, invalidated, name);
+	// restoreShip() already put the ship's texture replacements back under its name;
+	// the <name> copies the delete left behind are stale, so drop them.
+	removeShipTextureReplacements(invalidated);
+	// Same for the Reinforcements entry: the delete renamed it to <name> before
+	// delete_reinforcement(name) could find it, and restoreShip() re-added the real one.
+	Reinforcements.erase(std::remove_if(Reinforcements.begin(), Reinforcements.end(),
+	                                    [&](const reinforcements& r) { return !stricmp(r.name, invalidated); }),
+	                     Reinforcements.end());
+}
+
 // Remove all Fred_texture_replacements entries belonging to the named ship.
 // Called from DeleteObjectsCommand::redo() before re-deleting ships.
 void removeShipTextureReplacements(const char* ship_name)
