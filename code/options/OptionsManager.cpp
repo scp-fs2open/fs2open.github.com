@@ -276,7 +276,10 @@ int OptionsManager::addPostPersistHook(std::function<SCP_vector<const options::O
 	return id;
 }
 
-void OptionsManager::removePostPersistHook(int id) { _post_persist_hooks.erase(id); }
+void OptionsManager::removePostPersistHook(int id)
+{
+	_post_persist_hooks.erase(id);
+}
 
 SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks() const
 {

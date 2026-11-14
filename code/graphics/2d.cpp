@@ -690,7 +690,8 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionsManager::instance() is a Meyers singleton
-static const int Window_placement_hook = options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
+static const int Window_placement_hook =
+	options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
 
 struct ResolutionInfo {
 	uint32_t width  = 0;
