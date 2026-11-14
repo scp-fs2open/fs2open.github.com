@@ -44,7 +44,7 @@ struct lightshaft_parameters {
 	float weight = 0.02f;
 	float falloff = 1.0f;
 	float intensity = 0.5f;
-	float cpintensity = 0.5f * 50 * 0.02f;
+	float cpweight = 50 * 0.02f; // weight as applied to cockpit models
 	int samplenum = 50;
 };
 
