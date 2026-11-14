@@ -11,13 +11,17 @@ class model_batch_buffer
 	SCP_vector<matrix4> Submodel_matrices;
 
 	size_t Current_offset = 0;
+	// While motion vectors are active, each batch's matrices are followed by the same number of previous-frame ones.
+	int Prev_stride = 0;
 
 public:
 	void reset();
 
 	size_t get_buffer_offset() const;
+	int get_prev_stride() const;
 	void set_num_models(int n_models);
 	void set_model_transform(const matrix4 &transform, int model_id);
+	void set_prev_model_transform(const matrix4 &transform, int model_id);
 
 	void submit_buffer_data();
 
@@ -30,6 +34,7 @@ protected:
 	SCP_vector<DrawEntryT> _elements;
 	SCP_vector<int> _keys;
 	transform_stack _transforms;
+	transform_stack _prev_transforms; // the same stack, as it stood last frame
 	scene_lights _lights;
 	graphics::util::UniformBuffer _dataBuffer;
 	vec3d _scale;
@@ -49,6 +54,7 @@ public:
 		_elements.clear();
 		_keys.clear();
 		_transforms.clear();
+		_prev_transforms.clear();
 		_scale.xyz.x = 1.0f;
 		_scale.xyz.y = 1.0f;
 		_scale.xyz.z = 1.0f;
@@ -59,11 +65,19 @@ public:
 	void push_transform(const vec3d* pos, const matrix* orient)
 	{
 		_transforms.push(pos, orient);
+		_prev_transforms.push(pos, orient);
+	}
+
+	void push_transform(const vec3d* pos, const matrix* orient, const vec3d* prev_pos, const matrix* prev_orient)
+	{
+		_transforms.push(pos, orient);
+		_prev_transforms.push(prev_pos, prev_orient);
 	}
 
 	void pop_transform()
 	{
 		_transforms.pop();
+		_prev_transforms.pop();
 	}
 
 	const matrix4& get_transform() const
@@ -74,6 +88,7 @@ public:
 	void clear_transforms()
 	{
 		_transforms.clear();
+		_prev_transforms.clear();
 	}
 
 	void set_scale(const vec3d* s)
@@ -94,15 +109,19 @@ public:
 
 	void add_submodel_to_batch(int model_num)
 	{
-		matrix4 transform = _transforms.get_transform();
+		const auto batch_matrix = [this](const transform_stack& stack) {
+			matrix4 transform = stack.get_transform();
 
-		vm_vec_scale(&transform.vec.rvec, _scale.xyz.x);
-		vm_vec_scale(&transform.vec.uvec, _scale.xyz.y);
-		vm_vec_scale(&transform.vec.fvec, _scale.xyz.z);
+			vm_vec_scale(&transform.vec.rvec, _scale.xyz.x);
+			vm_vec_scale(&transform.vec.uvec, _scale.xyz.y);
+			vm_vec_scale(&transform.vec.fvec, _scale.xyz.z);
 
-		transform.a1d[15] = 0.0f;
+			transform.a1d[15] = 0.0f;
+			return transform;
+		};
 
-		_batchBuffer.set_model_transform(transform, model_num);
+		_batchBuffer.set_model_transform(batch_matrix(_transforms), model_num);
+		_batchBuffer.set_prev_model_transform(batch_matrix(_prev_transforms), model_num);
 	}
 
 	void init_render(bool sort = true)

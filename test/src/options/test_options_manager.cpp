@@ -2,8 +2,12 @@
 #include "options/Option.h"
 #include "graphics/2d.h"
 #include "graphics/shadows.h"
+#include "cmdline/cmdline.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
+#include "parse/parselo.h"
 #include "math/floating.h"
+#include "osapi/osregistry.h"
 
 #include "util/FSTestFixture.h"
 
@@ -94,6 +98,143 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 	auto reason = mgr->getOverrideReason("Test.OverridePriority.Replaced");
 	ASSERT_TRUE(reason.has_value());
 	ASSERT_EQ(*reason, "-second_flag");
+}
+
+// A script can persist one option while another still has an edit pending, so a listener that reads another
+// option has to see only what was persisted.
+TEST_F(OptionsManagerOverride, CommittedValueIgnoresPendingEdit)
+{
+	auto* mgr = OptionsManager::instance();
+
+	mgr->setConfigValue("Test.Committed.Pending", std::unique_ptr<json_t>(json_integer(7)));
+
+	auto pending = mgr->getValueFromConfig("Test.Committed.Pending");
+	ASSERT_TRUE(pending.has_value());
+	ASSERT_EQ(json_integer_value(pending->get()), 7);
+
+	ASSERT_FALSE(mgr->getValueFromConfig("Test.Committed.Pending", PendingEdits::Ignore).has_value());
+}
+
+TEST_F(OptionsManagerOverride, CommittedValueStillHonorsOverride)
+{
+	auto* mgr = OptionsManager::instance();
+
+	mgr->setOverride("Test.Committed.Override", "42", "-test_flag");
+
+	auto result = mgr->getValueFromConfig("Test.Committed.Override", PendingEdits::Ignore);
+	ASSERT_TRUE(result.has_value());
+	ASSERT_EQ(json_integer_value(result->get()), 42);
+}
+
+TEST_F(OptionsManagerOverride, WindowModeCommittedValueIgnoresPendingEdit)
+{
+	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.WindowMode");
+	ASSERT_NE(opt, nullptr);
+	auto* typedOpt = static_cast<const Option<os::ViewportState>*>(opt);
+
+	class WindowStateGuard {
+	  public:
+		WindowStateGuard() : _original(Gr_configured_window_state) {}
+		~WindowStateGuard() { Gr_configured_window_state = _original; }
+
+	  private:
+		os::ViewportState _original;
+	};
+	WindowStateGuard guard;
+
+	// No override and no persisted ini value, so the committed value is the default
+	Gr_configured_window_state = os::ViewportState::Fullscreen;
+	OptionsManager::instance()->setConfigValue("Graphics.WindowMode",
+		std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))));
+
+	ASSERT_EQ(typedOpt->getValue(), os::ViewportState::Windowed);
+	ASSERT_EQ(typedOpt->getCommittedValue(), os::ViewportState::Fullscreen);
+}
+
+// The display and window mode listeners read each other's committed value, which needs a real settings profile to
+// write to and read back from. FSTestFixture runs in portable mode, so the file is test_data/data/options_settings.ini.
+class OptionsManagerPersist : public test::FSTestFixture {
+  public:
+	OptionsManagerPersist() : test::FSTestFixture(INIT_CFILE) { pushModDir("options"); }
+
+  protected:
+	void SetUp() override
+	{
+		_save_found = Ingame_options_save_found;
+		test::FSTestFixture::SetUp();
+
+		// On a fresh checkout the first init found no settings file and loaded no profile; it created the file, so
+		// load again from it
+		Ingame_options_save_found = true;
+		os_deinit_registry_stuff();
+		os_init_registry_stuff(nullptr, "Test");
+
+		_first = makeOption("Test.Persist.First", &_second_seen_by_first, "Test.Persist.Second");
+		_second = makeOption("Test.Persist.Second", &_first_seen_by_second, "Test.Persist.First");
+
+		// Start from known committed values; the file keeps whatever an earlier run wrote
+		OptionsManager::instance()->discardChanges();
+		setBoth(1);
+		ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
+		ASSERT_EQ(_first->getCommittedValue(), 1);
+		ASSERT_EQ(_second->getCommittedValue(), 1);
+		_first_seen_by_second = 0;
+		_second_seen_by_first = 0;
+	}
+	void TearDown() override
+	{
+		OptionsManager::instance()->discardChanges();
+		OptionsManager::instance()->removeOption(_first);
+		OptionsManager::instance()->removeOption(_second);
+		Ingame_options_save_found = _save_found;
+
+		test::FSTestFixture::TearDown();
+	}
+
+	static std::shared_ptr<const Option<int>> makeOption(const char* key, int* seen, const char* other_key)
+	{
+		return OptionBuilder<int>(key, SCP_string(key), SCP_string(key))
+			.default_val(0)
+			.change_listener([seen, other_key](const int&, bool) {
+				auto* other = static_cast<const Option<int>*>(OptionsManager::instance()->getOptionByKey(other_key));
+				*seen = other->getCommittedValue();
+				return true;
+			})
+			.finish();
+	}
+	static void setBoth(int value)
+	{
+		OptionsManager::instance()->setConfigValue("Test.Persist.First", std::unique_ptr<json_t>(json_integer(value)));
+		OptionsManager::instance()->setConfigValue("Test.Persist.Second", std::unique_ptr<json_t>(json_integer(value)));
+	}
+
+	std::shared_ptr<const Option<int>> _first;
+	std::shared_ptr<const Option<int>> _second;
+	int _first_seen_by_second = 0;
+	int _second_seen_by_first = 0;
+	bool _save_found = true;
+};
+
+// One Apply of several options: persistChanges() writes every value before it notifies any listener, so either
+// listener, whichever runs first, sees the other option's new value
+TEST_F(OptionsManagerPersist, PersistChangesShowsEveryNewValueToEveryListener)
+{
+	setBoth(2);
+	ASSERT_TRUE(OptionsManager::instance()->persistChanges().empty());
+
+	ASSERT_EQ(_first_seen_by_second, 2);
+	ASSERT_EQ(_second_seen_by_first, 2);
+}
+
+// A script can persist one option alone; another option's edit stays pending and its committed value stays old
+TEST_F(OptionsManagerPersist, PersistOneOptionKeepsTheOtherCommittedValueOld)
+{
+	setBoth(2);
+	ASSERT_TRUE(OptionsManager::instance()->persistOptionChanges(_second.get()));
+
+	ASSERT_EQ(_first_seen_by_second, 1);
+	ASSERT_EQ(_first->getValue(), 2);
+	ASSERT_EQ(_first->getCommittedValue(), 1);
 }
 
 // The tests above exercise getValueFromConfig() directly with synthetic keys and integer payloads. The
@@ -340,12 +481,6 @@ TEST_F(OptionsManagerOverride, FlagsetOverrideRoundTrips)
 	ASSERT_TRUE(value[FramebufferEffects::Shockwaves]);
 }
 
-// Graphics.Anisotropy is only registered in builds with the OpenGL backend compiled in
-// (its Option<float> lives in gropengltexture.cpp, which the CMake build excludes entirely
-// when FSO_BUILD_WITH_OPENGL is off) -- so, like Graphics.RenderAPI above, round-trip
-// coverage needs a build-config split rather than a single unconditional test.
-#ifdef WITH_OPENGL
-
 TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 {
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy");
@@ -360,14 +495,136 @@ TEST_F(OptionsManagerOverride, FloatOverrideRoundTrips)
 	ASSERT_FLOAT_EQ(typedOpt->getValue(), 16.0f);
 }
 
-#else
+// these globals belong to the whole process and CI shuffles test order, so put them back after each test
+class AnisotropySetting : public OptionsManagerOverride {
+  protected:
+	void SetUp() override
+	{
+		_saved_property = gr_screen.gf_get_property;
+		_saved_ingame = Using_in_game_options;
+		_saved_level = Cmdline_aniso_level;
+		gr_screen.gf_get_property = [](gr_property p, void* dest) {
+			if (p != gr_property::MAX_ANISOTROPY) {
+				return false;
+			}
+			*static_cast<float*>(dest) = 16.0f;
+			return true;
+		};
+	}
+	void TearDown() override
+	{
+		gr_screen.gf_get_property = _saved_property;
+		Using_in_game_options = _saved_ingame;
+		Cmdline_aniso_level = _saved_level;
+		OptionsManagerOverride::TearDown();
+	}
 
-TEST_F(OptionsManagerOverride, AnisotropyIsAbsentWithoutOpenGLSupport)
+  private:
+	decltype(gr_screen.gf_get_property) _saved_property;
+	bool _saved_ingame = true;
+	int _saved_level = 0;
+};
+
+TEST_F(AnisotropySetting, InGameOptionsUseTheOption)
 {
-	ASSERT_EQ(OptionsManager::instance()->getOptionByKey("Graphics.Anisotropy"), nullptr);
+	Using_in_game_options = true;
+	Cmdline_aniso_level = 0;
+	OptionsManager::instance()->setOverride("Graphics.Anisotropy", std::unique_ptr<json_t>(json_real(4.0)), "test");
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 4.0f);
 }
 
-#endif
+TEST_F(AnisotropySetting, WithoutInGameOptionsTheFlagWins)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 8;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 8.0f);
+}
+
+TEST_F(AnisotropySetting, WithNothingChosenItIsTheCardMaximum)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 16.0f);
+}
+
+TEST_F(AnisotropySetting, WithNoRendererAnswerItIsOff)
+{
+	Using_in_game_options = false;
+	Cmdline_aniso_level = 0;
+	gr_screen.gf_get_property = [](gr_property, void*) { return false; };
+	ASSERT_FLOAT_EQ(gr_anisotropy_setting(), 1.0f);
+}
+
+// the table parser writes a process-wide default, so put trilinear back after each test
+class TextureFilterSetting : public OptionsManagerOverride {
+  protected:
+	static void parseDefault(const char* value)
+	{
+		SCP_string text = SCP_string(value) + "\n";
+		reset_parse(text.data());
+		OptionsManager::instance()->getOptionByKey("Graphics.TextureFilter")->parseDefaultSetting();
+		reset_parse(nullptr);
+	}
+	void SetUp() override { _saved_ingame = Using_in_game_options; }
+	void TearDown() override
+	{
+		parseDefault("Trilinear");
+		Using_in_game_options = _saved_ingame;
+		OptionsManagerOverride::TearDown();
+	}
+
+  private:
+	bool _saved_ingame = true;
+};
+
+TEST_F(TextureFilterSetting, InGameDefaultIsTrilinear)
+{
+	Using_in_game_options = true;
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, ModTableDefaultIsUsed)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+TEST_F(TextureFilterSetting, BilinearOverrideBeatsTrilinearDefault)
+{
+	Using_in_game_options = true;
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 0);
+}
+
+// qtFRED sets an override and never loads initial values
+TEST_F(TextureFilterSetting, OverrideIsReadWithoutALoad)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+TEST_F(TextureFilterSetting, WithoutInGameOptionsTheLauncherDefaultIsTrilinear)
+{
+	Using_in_game_options = false;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(0)), "test");
+	ASSERT_EQ(gr_texture_filter_setting(), 1);
+}
+
+// texture filtering only trades quality for speed, so a mod's +Enforce does not outrank the player's choice
+TEST_F(TextureFilterSetting, OverrideBeatsAnEnforcedModValue)
+{
+	Using_in_game_options = true;
+	parseDefault("Bilinear");
+	OptionsManager::instance()->enforceOption("Graphics.TextureFilter");
+	OptionsManager::instance()->setOverride("Graphics.TextureFilter", std::unique_ptr<json_t>(json_integer(1)), "test");
+	const int filter = gr_texture_filter_setting();
+	OptionsManager::instance()->unenforceOption("Graphics.TextureFilter");
+	ASSERT_EQ(filter, 1);
+}
 
 TEST_F(OptionsManagerOverride, LanguageObjectOverrideRoundTrips)
 {

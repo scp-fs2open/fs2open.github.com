@@ -78,6 +78,7 @@ namespace GlobalBinding {
 	static constexpr uint32_t IrradianceMap = 4; // samplerCube: irradiance map
 	static constexpr uint32_t Tlas         = 5; // accelerationStructureEXT: raytraced shadow TLAS (only present when raytraced shadows are supported)
 	static constexpr uint32_t ShadowCascadeParams = 6; // UBO: shadow cascade projection matrices/distances (per-frame, shared by all consumers)
+	static constexpr uint32_t ShadowMapRaw = 7; // sampler2DArray: raw (non-compare) shadow map read, for PCSS blocker search
 }
 
 // Material Set (Set 1) bindings — per-material data
