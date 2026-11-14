@@ -7,6 +7,7 @@
 #include "mod_table/mod_table.h"
 #include "parse/parselo.h"
 #include "math/floating.h"
+#include "utils/finally.h"
 
 #include "util/FSTestFixture.h"
 
@@ -114,38 +115,44 @@ TEST_F(OptionsManagerOverride, LaterOverrideReplacesEarlierOne)
 // is exactly the contract these tests are checking anyway. The one test that must go through a display
 // function uses the OptionsManagerOverrideLocalized fixture below instead.
 
-namespace {
-// Read by the hook below, which stays registered for the rest of the run because hooks cannot be removed
-const OptionBase* Unapplied_by_hook = nullptr;
-} // namespace
-
 // The display and window mode apply in a hook after the persist; what it could not apply must reach the restart prompt
 // like an option whose listener returned false. Nothing is pending, so the test writes no settings.
 TEST_F(OptionsManagerOverride, PostPersistHookReportsWhatItCouldNotApply)
 {
-	static bool hook_added = false;
-	if (!hook_added) {
-		OptionsManager::instance()->addPostPersistHook([]() {
-			SCP_vector<const OptionBase*> unapplied;
-			if (Unapplied_by_hook != nullptr) {
-				unapplied.push_back(Unapplied_by_hook);
-			}
-			return unapplied;
-		});
-		hook_added = true;
-	}
-
-	OptionsManager::instance()->discardChanges();
-	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.VSync");
+	auto* mgr = OptionsManager::instance();
+	auto* opt = mgr->getOptionByKey("Graphics.VSync");
 	ASSERT_NE(opt, nullptr);
 
-	Unapplied_by_hook = opt;
-	const auto unchanged = OptionsManager::instance()->persistChanges();
-	Unapplied_by_hook = nullptr;
+	const OptionBase* unapplied_by_hook = opt;
+	const int hook = mgr->addPostPersistHook([&unapplied_by_hook]() {
+		SCP_vector<const OptionBase*> unapplied;
+		if (unapplied_by_hook != nullptr) {
+			unapplied.push_back(unapplied_by_hook);
+		}
+		return unapplied;
+	});
+	auto remove_hook = util::finally([mgr, hook]() { mgr->removePostPersistHook(hook); });
 
+	mgr->discardChanges();
+	const auto unchanged = mgr->persistChanges();
 	ASSERT_EQ(unchanged.size(), 1u);
 	EXPECT_EQ(unchanged[0], opt);
-	EXPECT_TRUE(OptionsManager::instance()->persistChanges().empty());
+
+	unapplied_by_hook = nullptr;
+	EXPECT_TRUE(mgr->persistChanges().empty());
+}
+
+TEST_F(OptionsManagerOverride, RemovedPostPersistHookNoLongerRuns)
+{
+	auto* mgr = OptionsManager::instance();
+	auto* opt = mgr->getOptionByKey("Graphics.VSync");
+	ASSERT_NE(opt, nullptr);
+
+	const int hook = mgr->addPostPersistHook([opt]() { return SCP_vector<const OptionBase*>{opt}; });
+	mgr->removePostPersistHook(hook);
+
+	mgr->discardChanges();
+	EXPECT_TRUE(mgr->persistChanges().empty());
 }
 
 TEST_F(OptionsManagerOverride, BoolOverrideRoundTrips)

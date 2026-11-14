@@ -264,16 +264,20 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 	return unchanged;
 }
 
-void OptionsManager::addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook)
+int OptionsManager::addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook)
 {
-	_post_persist_hooks.push_back(std::move(hook));
+	const int id = _next_post_persist_hook++;
+	_post_persist_hooks.emplace(id, std::move(hook));
+	return id;
 }
+
+void OptionsManager::removePostPersistHook(int id) { _post_persist_hooks.erase(id); }
 
 SCP_vector<const options::OptionBase*> OptionsManager::runPostPersistHooks() const
 {
 	SCP_vector<const options::OptionBase*> unapplied;
 	for (const auto& hook : _post_persist_hooks) {
-		auto result = hook();
+		auto result = hook.second();
 		unapplied.insert(unapplied.end(), result.begin(), result.end());
 	}
 	return unapplied;

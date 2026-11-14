@@ -33,7 +33,8 @@ class OptionsManager {
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
-	SCP_vector<std::function<SCP_vector<const OptionBase*>()>> _post_persist_hooks;
+	SCP_map<int, std::function<SCP_vector<const OptionBase*>()>> _post_persist_hooks;
+	int _next_post_persist_hook = 0;
 
 	SCP_vector<const OptionBase*> runPostPersistHooks() const;
 
@@ -96,8 +97,16 @@ class OptionsManager {
 	 *
 	 * @param hook Returns the options whose new value it could not apply; they are reported like options whose
 	 * listener returned false
+	 * @return An id to pass to removePostPersistHook()
 	 */
-	void addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook);
+	int addPostPersistHook(std::function<SCP_vector<const options::OptionBase*>()> hook);
+
+	/**
+	 * @brief Removes a function added with addPostPersistHook()
+	 *
+	 * @param id The id addPostPersistHook() returned
+	 */
+	void removePostPersistHook(int id);
 
 	void discardChanges();
 
