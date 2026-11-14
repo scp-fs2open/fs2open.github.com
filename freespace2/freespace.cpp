@@ -8188,6 +8188,9 @@ int main(int argc, char *argv[])
 	SDL_SetAppMetadataProperty(SDL_PROP_APP_METADATA_COPYRIGHT_STRING,
 							   "Copyright 1999 Volition, Inc. & Copyright 2002-2026 The Source Code Project.");
 
+	// FSO is not DPI-aware, so without this a scaled Wayland desktop upscales a smaller back buffer and blurs it
+	SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
+
 	crashdump::installCrashHandler();
 
 #ifdef WIN32
