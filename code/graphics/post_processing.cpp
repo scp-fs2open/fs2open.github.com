@@ -214,16 +214,14 @@ bool PostProcessingManager::parse_table()
 			required_string("$Sample Number:");
 			stuff_int(&m_lightshaftParams.samplenum);
 
-			m_lightshaftParams.cpintensity = m_lightshaftParams.weight;
+			m_lightshaftParams.cpweight = m_lightshaftParams.weight;
 
 			float falloff = m_lightshaftParams.falloff;
 			for (int i = 1; i < m_lightshaftParams.samplenum; ++i)
 			{
-				m_lightshaftParams.cpintensity += m_lightshaftParams.weight * falloff;
+				m_lightshaftParams.cpweight += m_lightshaftParams.weight * falloff;
 				falloff *= m_lightshaftParams.falloff;	// this replaces pow(falloff, i)
 			}
-
-			m_lightshaftParams.cpintensity *= m_lightshaftParams.intensity;
 		}
 
 		required_string("#End");

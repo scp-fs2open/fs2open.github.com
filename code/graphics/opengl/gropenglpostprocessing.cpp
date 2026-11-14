@@ -480,7 +480,7 @@ void opengl_post_lightshafts()
 						data->falloff      = ls_params.falloff;
 						data->weight       = ls_params.weight;
 						data->intensity    = Sun_spot * ls_params.intensity;
-						data->cp_intensity = Sun_spot * ls_params.cpintensity;
+						data->cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
