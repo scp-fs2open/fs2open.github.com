@@ -5,7 +5,6 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
-#include <algorithm>
 #include <optional>
 
 namespace {
@@ -223,9 +222,15 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 	// Always erase even if it wasn't actually changed so later persistChanges() calls don't try to save the value again
 	_changed_values.erase(iter);
 
-	const auto unapplied = runPostPersistHooks();
-	if (std::find(unapplied.begin(), unapplied.end(), option) != unapplied.end()) {
-		changed = false;
+	// This call can only report on its own option, so anything else the hooks could not apply only reaches the log
+	for (const auto* unapplied : runPostPersistHooks()) {
+		if (unapplied == option) {
+			changed = false;
+		} else {
+			mprintf(("%s did not take effect after %s was persisted\n",
+				unapplied->getConfigKey().c_str(),
+				option->getConfigKey().c_str()));
+		}
 	}
 
 	return changed;
