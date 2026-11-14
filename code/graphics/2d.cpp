@@ -688,6 +688,9 @@ static SCP_vector<const options::OptionBase*> apply_window_placement()
 	return unapplied;
 }
 
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionsManager::instance() is a Meyers singleton
+static const int Window_placement_hook = options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
+
 struct ResolutionInfo {
 	uint32_t width  = 0;
 	uint32_t height = 0;
@@ -2743,12 +2746,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	}
 
 	Gr_inited = 1;
-
-	static bool placement_hook_added = false;
-	if (!placement_hook_added) {
-		options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
-		placement_hook_added = true;
-	}
 
 	if (!gr_is_capable(gr_capability::CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
