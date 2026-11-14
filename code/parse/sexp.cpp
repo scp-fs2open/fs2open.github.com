@@ -676,6 +676,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Music and Sound Sub-Category
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000	
+	{ "force-battle-music",				OP_FORCE_BATTLE_MUSIC,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "play-sound-from-table",			OP_PLAY_SOUND_FROM_TABLE,				4,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "play-sound-from-file",			OP_PLAY_SOUND_FROM_FILE,				1,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "close-sound-from-file",			OP_CLOSE_SOUND_FROM_FILE,				0,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -14144,6 +14145,28 @@ void multi_sexp_change_soundtrack()
 	if (Current_sexp_network_packet.get_string(new_track)) {
 		event_sexp_change_soundtrack(new_track);
 	}
+}
+
+void sexp_force_battle_music(int n)
+{
+	bool force = is_sexp_true(n);
+
+	event_music_force_battle(force);
+
+	if (MULTIPLAYER_MASTER)
+	{
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_bool(force);
+		Current_sexp_network_packet.end_callback();
+	}
+}
+
+void multi_sexp_force_battle_music()
+{
+	bool force;
+
+	if (Current_sexp_network_packet.get_bool(force))
+		event_music_force_battle(force);
 }
 
 // Goober5000
@@ -29159,6 +29182,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_FORCE_BATTLE_MUSIC:
+				sexp_force_battle_music(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_PLAY_SOUND_FROM_TABLE:
 				sexp_play_sound_from_table(node);
 				sexp_val = SEXP_TRUE;
@@ -30875,6 +30903,10 @@ void multi_sexp_eval()
 				multi_sexp_change_soundtrack();
 				break; 
 
+			case OP_FORCE_BATTLE_MUSIC:
+				multi_sexp_force_battle_music();
+				break;
+
 			case OP_SET_PERSONA:
 				multi_sexp_set_persona();
 				break; 
@@ -31887,6 +31919,7 @@ int query_operator_return_type(int op)
 		case OP_SET_ARRIVAL_INFO:
 		case OP_SET_DEPARTURE_INFO:
 		case OP_CHANGE_SOUNDTRACK:
+		case OP_FORCE_BATTLE_MUSIC:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
 		case OP_PAUSE_SOUND_FROM_FILE:
@@ -33248,6 +33281,9 @@ int query_operator_argument_type(int op_index, int argnum)
 
 		case OP_CHANGE_SOUNDTRACK:
 			return OPF_SOUNDTRACK_NAME;
+
+		case OP_FORCE_BATTLE_MUSIC:
+			return OPF_BOOL;
 
 		case OP_PLAY_SOUND_FROM_TABLE:
 			if (argnum == 3)
@@ -37364,6 +37400,7 @@ int get_category(int op_id)
 		case OP_CONFIG_FIELD_TARGETS:
 		case OP_SET_WING_FORMATION:
 		case OP_SET_MOTION_DEBRIS:
+		case OP_FORCE_BATTLE_MUSIC:
 			return OP_CATEGORY_CHANGE;
 
 		case OP_AI_CHASE:
@@ -37711,6 +37748,7 @@ int get_subcategory(int op_id)
 			return CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN;
 
 		case OP_CHANGE_SOUNDTRACK:
+		case OP_FORCE_BATTLE_MUSIC:
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_PLAY_SOUND_FROM_FILE:
 		case OP_CLOSE_SOUND_FROM_FILE:
@@ -39633,6 +39671,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CHANGE_SOUNDTRACK, "change-soundtrack\r\n"
 		"\tChanges the mission music.  Takes 1 argument...\r\n"
 		"\t1: Name of the music selection (taken from music.tbl)" },
+
+	// Goober5000
+	{ OP_FORCE_BATTLE_MUSIC, "force-battle-music\r\n"
+		"\tForces the mission music to treat the player as being in battle, regardless of whether any hostile ships are present or visible.  "
+		"While this is in effect, the battle music will start and will not end on its own, and the second victory track will not play.  "
+		"Turning it off returns the music to its normal behavior.  This has no effect in training missions.  Takes 1 argument...\r\n"
+		"\t1: True to force the battle music on, false to stop forcing it" },
 
 	// Goober5000
 	{ OP_PLAY_SOUND_FROM_TABLE, "play-sound-from-table\r\n"

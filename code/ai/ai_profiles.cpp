@@ -773,6 +773,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix stale AI order state:", AI::Profile_Flags::Fix_stale_ai_order_state);
 
+				set_flag(profile, "$battle music ignores sensor visibility:", AI::Profile_Flags::Battle_music_ignores_sensor_visibility);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move

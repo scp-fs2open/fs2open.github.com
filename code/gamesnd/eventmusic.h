@@ -119,6 +119,7 @@ void	event_music_get_info(char *outbuf);
 void	event_music_get_soundtrack_name(char *outbuf);
 int	event_music_next_soundtrack(int delta);
 void event_sexp_change_soundtrack(const char *name);
+void event_music_force_battle(bool force);
 void	event_music_set_soundtrack(const char *name);
 void	event_music_set_score(int score_index, const char *name);
 int event_music_get_soundtrack_index(const char *name);
