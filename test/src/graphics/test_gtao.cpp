@@ -92,3 +92,13 @@ TEST_F(Gtao, OnlyOpenGLRunsThePass)
 	EXPECT_FALSE(gtao_supported(GraphicsAPI::Vulkan));
 	EXPECT_FALSE(gtao_supported(GraphicsAPI::Stub));
 }
+
+// The deferred cockpit pass clears the position buffer to 0, not to the empty-pixel value,
+// and would also pay for the pass twice per frame. So only the scene pass runs it.
+TEST_F(Gtao, RunsOnlyInTheScenePassOnOpenGL)
+{
+	EXPECT_TRUE(gtao_runs(2, GraphicsAPI::OpenGL, false));
+	EXPECT_FALSE(gtao_runs(2, GraphicsAPI::OpenGL, true));
+	EXPECT_FALSE(gtao_runs(0, GraphicsAPI::OpenGL, false));
+	EXPECT_FALSE(gtao_runs(2, GraphicsAPI::Vulkan, false));
+}

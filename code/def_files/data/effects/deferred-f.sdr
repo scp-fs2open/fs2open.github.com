@@ -49,6 +49,9 @@ uniform sampler2DArray shadow_map_raw;
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 #endif
+#ifdef GTAO
+uniform sampler2D AOBuffer; // half-res screen-space AO from gtao-f.sdr
+#endif
 #endif
 
 #ifdef VULKAN
@@ -273,6 +276,39 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 }
 #endif
 
+#ifdef GTAO
+// The AO buffer is half resolution. A bilinear fetch mixes AO across a silhouette, for example
+// from a capital ship into the edge of a fighter in front of it. So weight the 4 nearest AO
+// texels by how close their depth is to this pixel's depth (a bilateral upsample).
+float upsample_gtao(float z)
+{
+	// gtao-f.sdr computed AO texel t at full-res pixel 2 * t, whose center is at
+	// gl_FragCoord 2 * t + 0.5. So h = (gl_FragCoord - 0.5) / 2 puts AO texel t at integer t.
+	vec2 h = gl_FragCoord.xy * 0.5 - 0.25;
+	ivec2 base = ivec2(floor(h));
+	vec2 f = h - vec2(base);
+	ivec2 size = textureSize(AOBuffer, 0);
+	float tolerance = 0.02 * abs(z) + 0.05; // the same as the GTAO blur
+
+	float sum = 0.0;
+	float wsum = 0.0;
+	for (int i = 0; i < 4; i++) {
+		ivec2 o = ivec2(i & 1, i >> 1);
+		ivec2 t = clamp(base + o, ivec2(0), size - 1);
+		float tzRaw = texelFetch(PositionBuffer, t * 2, 0).z;
+		vec2 b = mix(1.0 - f, f, vec2(o));
+		float dz = tzRaw <= EMPTY_PIXEL_COMPRESSED_Z ? 1e9 : abs(uncompress_depth_value(tzRaw) - z);
+		// The 1e-3 keeps a tap on this surface in play even where its bilinear weight is 0.
+		float w = (b.x * b.y + 1e-3) * exp(-dz / tolerance);
+		sum += texelFetch(AOBuffer, t, 0).r * w;
+		wsum += w;
+	}
+	// No tap is on this surface (an object thinner than one AO texel, in front of another
+	// surface). Any AO here would belong to that other surface, so do not darken.
+	return wsum < 1e-4 ? 1.0 : sum / wsum;
+}
+#endif
+
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
@@ -308,6 +344,13 @@ void main()
 			float rtaoBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
 			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
 				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
+		}
+#endif
+#ifdef GTAO
+		// The baked AO map and GTAO both estimate the same occlusion, so a product would count
+		// it twice. Take the darker one, as Unity HDRP and Filament do.
+		if (position_buffer.z > EMPTY_PIXEL_COMPRESSED_Z) {
+			ao = min(ao, upsample_gtao(position.z));
 		}
 #endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
