@@ -5,6 +5,7 @@
 #include "mod_table/mod_table.h"
 #include "options/Option.h"
 #include "osapi/osapi.h"
+#include "utils/finally.h"
 
 #include <algorithm>
 #include <array>
@@ -494,11 +495,11 @@ bool device_event_handler(const SDL_Event &evt)
 				mprintf(("Failed to open connecting joystick: %s\n", SDL_GetError()));
 				return true;
 			}
+			// the Joystick opens its own handle; this one also has to close if its constructor throws
+			auto close_device = util::finally([device]() { SDL_CloseJoystick(device); });
 
 			// Add the new device to our list
 			auto added = JoystickPtr(new Joystick(joyDeviceEvent.which));
-			// the Joystick opened its own handle
-			SDL_CloseJoystick(device);
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
