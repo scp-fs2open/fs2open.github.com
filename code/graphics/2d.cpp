@@ -34,6 +34,7 @@
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
+#include "graphics/gtao.h"
 #include "graphics/shadows.h"
 #include "io/mouse.h"
 #include "mod_table/mod_table.h"
@@ -2908,6 +2909,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		}
 	}
 	shadows_mark_unsupported_options();
+	gtao_set_option_requirements();
 
 	if(Cmdline_enable_vr)
 		openxr_init();

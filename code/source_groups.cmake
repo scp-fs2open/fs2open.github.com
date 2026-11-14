@@ -485,6 +485,8 @@ add_file_folder("Graphics"
 	graphics/shader_types.h
 	graphics/render_queue.h
 	graphics/rtao.cpp
+	graphics/gtao.cpp
+	graphics/gtao.h
 	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
