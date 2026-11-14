@@ -136,4 +136,14 @@ int openal_find_capture_device_by_name(const SCP_string& device);
 #define AL_FORMAT_STEREO_FLOAT32			0x10011
 #endif
 
+#ifndef ALC_EXT_disconnect
+#define ALC_EXT_disconnect 1
+#define ALC_CONNECTED					0x313
+#endif
+
+#ifndef ALC_SOFT_reopen_device
+#define ALC_SOFT_reopen_device
+typedef ALCboolean (ALC_APIENTRY*LPALCREOPENDEVICESOFT)(ALCdevice *device, const ALCchar *deviceName, const ALCint *attribs);
+#endif
+
 #endif	// _AL_H

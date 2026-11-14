@@ -104,6 +104,7 @@ ds_sound_handle ds3d_play(int sid, int snd_id, const vec3d* pos, const vec3d* ve
                           int priority = DS_MUST_PLAY, bool is_ambient = false);
 
 void ds_do_frame();
+bool ds_device_connected();
 
 // --------------------
 //
