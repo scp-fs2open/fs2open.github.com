@@ -620,12 +620,32 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
+// Saving the display persists Display from inside the placement hook; that persist must not place the window again
+static bool Saving_fullscreen_display = false;
+
+static void save_fullscreen_display(SDL_DisplayID display)
+{
+	if (VideoDisplayOption->getValue() == display) {
+		return;
+	}
+
+	auto manager = options::OptionsManager::instance();
+	manager->setConfigValue(VideoDisplayOption->getConfigKey(),
+		std::unique_ptr<json_t>(videodisplay_serializer(display)));
+	Saving_fullscreen_display = true;
+	const bool saved = manager->persistOptionChanges(VideoDisplayOption.get());
+	Saving_fullscreen_display = false;
+	if (!saved) {
+		mprintf(("Could not save display %u as the display option\n", display));
+	}
+}
+
 static SCP_vector<const options::OptionBase*> apply_window_placement(
 	const SCP_vector<const options::OptionBase*>& changed)
 {
 	const bool display_changed = std::find(changed.begin(), changed.end(), VideoDisplayOption.get()) != changed.end();
 	const bool mode_changed = std::find(changed.begin(), changed.end(), WindowModeOption.get()) != changed.end();
-	if (!display_changed && !mode_changed) {
+	if (Saving_fullscreen_display || (!display_changed && !mode_changed)) {
 		return {};
 	}
 
@@ -681,6 +701,10 @@ static SCP_vector<const options::OptionBase*> apply_window_placement(
 	}
 	for (const auto* option : unapplied) {
 		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
+	}
+	// The next launch and the options menu should show the monitor that Fullscreen alone landed on
+	if (!display_changed && unapplied.empty() && state == os::ViewportState::Fullscreen) {
+		save_fullscreen_display(display);
 	}
 	return unapplied;
 }
