@@ -17,8 +17,8 @@
 //                                     long_name_1234567890abcde-tw.ogg (MAX_FILENAME_LEN characters)
 //   data/voice/debriefing/            9_onlytw-tw.ogg (no 9_onlytw.ogg)
 //   data/voice/special/               command_onlytw-tw.ogg (no command_onlytw.ogg)
-//   <TestName>/data/tables/           game_settings.tbl with a "$Voice language:" for the tests named ModDefault*,
-//                                     *TheModDefault and FlagBeatsModDefault
+//   ModDefault/data/tables/           game_settings.tbl with "$Voice language: Chinese"; the other tests of the
+//                                     mod default set Default_voice_language in the test
 class VoiceLanguageTest : public test::FSTestFixture {
   public:
 	VoiceLanguageTest() : test::FSTestFixture(INIT_MOD_TABLE | INIT_CFILE) { pushModDir("voice_language"); }
@@ -67,7 +67,7 @@ class VoiceLanguageTest : public test::FSTestFixture {
 			std::unique_ptr<json_t>(json_pack("{ssss}", "name", name, "ext", ext)));
 	}
 
-	// "original" or "text", the two stored values that are not a language
+	// "original" or "same-as-text", the two stored values that are not a language
 	static void set_player_voice_choice(const char* value)
 	{
 		options::OptionsManager::instance()->setConfigValue("Audio.VoiceLanguage",
@@ -146,7 +146,7 @@ TEST_F(VoiceLanguageTest, PlayerSettingPicksTheSuffixedFile)
 TEST_F(VoiceLanguageTest, PlayerSameAsTextFollowsTheTextLanguage)
 {
 	Using_in_game_options = true;
-	set_player_voice_choice("text");
+	set_player_voice_choice("same-as-text");
 
 	EXPECT_EQ(option_display(), "Same as text language");
 	EXPECT_EQ(lcl_get_voice_lang_index(), LCL_ENGLISH);
@@ -214,7 +214,7 @@ TEST_F(VoiceLanguageTest, EmptyLanguageListLeavesTheNameAlone)
 	// before lcl_init(), or after a test that cleared the list; also with "same as text", whose index is the text
 	// language's and so not negative, so that a bounds check for a negative index alone is not enough
 	Using_in_game_options = true;
-	set_player_voice_choice("text");
+	set_player_voice_choice("same-as-text");
 
 	auto languages = Lcl_languages;
 	Lcl_languages.clear();
@@ -245,7 +245,7 @@ TEST_F(VoiceLanguageTest, ModDefault)
 
 TEST_F(VoiceLanguageTest, ModDefaultSameAsText)
 {
-	ASSERT_EQ(Default_voice_language, "same-as-text");
+	Default_voice_language = "same-as-text";
 	EXPECT_EQ(lcl_get_voice_lang_index(), LCL_ENGLISH);
 	EXPECT_EQ(lcl_get_voice_filename("foo.ogg", CF_TYPE_ANY), "foo.ogg");
 
@@ -259,7 +259,7 @@ TEST_F(VoiceLanguageTest, ModDefaultSameAsText)
 
 TEST_F(VoiceLanguageTest, PlayerChoiceBeatsTheModDefault)
 {
-	ASSERT_EQ(Default_voice_language, "Chinese");
+	Default_voice_language = "Chinese";
 	Using_in_game_options = true;
 
 	// while the player has not chosen, the menu shows the mod default, which is what plays
@@ -271,7 +271,7 @@ TEST_F(VoiceLanguageTest, PlayerChoiceBeatsTheModDefault)
 	EXPECT_EQ(lcl_get_voice_lang_index(), LCL_ENGLISH);
 	EXPECT_EQ(lcl_get_voice_filename("foo.ogg", CF_TYPE_ANY), "foo.ogg");
 
-	set_player_voice_choice("text");
+	set_player_voice_choice("same-as-text");
 	EXPECT_EQ(lcl_get_voice_lang_index(), LCL_ENGLISH);
 	EXPECT_EQ(lcl_get_voice_filename("foo.ogg", CF_TYPE_ANY), "foo.ogg");
 
@@ -351,7 +351,7 @@ TEST_F(VoiceLanguageTest, DottedDirectoryKeepsItsName)
 TEST_F(VoiceLanguageTest, StaleStoredLanguageFallsBackToTheModDefault)
 {
 	// the mod default is English here, so that a stored "Chinese" with a wrong extension cannot pass by its name
-	ASSERT_EQ(Default_voice_language, "English");
+	Default_voice_language = "English";
 	Using_in_game_options = true;
 
 	// a language this mod does not have, and a known name with another extension: both count as "not chosen"
@@ -366,10 +366,10 @@ TEST_F(VoiceLanguageTest, StaleStoredLanguageFallsBackToTheModDefault)
 
 TEST_F(VoiceLanguageTest, BogusStoredStringFallsBackToTheModDefault)
 {
-	ASSERT_EQ(Default_voice_language, "Chinese");
+	Default_voice_language = "Chinese";
 	Using_in_game_options = true;
 
-	// only "original" and "text" are values; a hand-edited string counts as "not chosen"
+	// only "original" and "same-as-text" are values; a hand-edited string counts as "not chosen"
 	set_player_voice_choice("bogus");
 	EXPECT_EQ(lcl_get_voice_lang_index(), chinese());
 	EXPECT_EQ(option_display(), "Chinese");
@@ -377,7 +377,7 @@ TEST_F(VoiceLanguageTest, BogusStoredStringFallsBackToTheModDefault)
 
 TEST_F(VoiceLanguageCmdlineTest, FlagBeatsModDefault)
 {
-	ASSERT_EQ(Default_voice_language, "English");
+	Default_voice_language = "English";
 
 	// without in-game options the option's override is not read, so only the order of the branches decides
 	Using_in_game_options = false;
@@ -401,7 +401,7 @@ TEST_F(VoiceLanguageTest, UnknownFlagValueIsIgnored)
 
 TEST_F(VoiceLanguageTest, ModDefaultUnknown)
 {
-	ASSERT_EQ(Default_voice_language, "Klingon");
+	Default_voice_language = "Klingon";
 	EXPECT_EQ(lcl_get_voice_lang_index(), LCL_VOICE_ORIGINAL);
 	EXPECT_EQ(option_display(), "Original voice");
 
