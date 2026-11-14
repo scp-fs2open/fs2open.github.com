@@ -825,7 +825,7 @@ void AudioStream::Stop(int paused)
 // Stop_and_Rewind
 void AudioStream::Stop_and_Rewind (void)
 {
-	if (m_fPlaying) {
+	if (m_fPlaying || m_bIsPaused) {
 		// Stop playback
 		OpenAL_ErrorPrint( alSourceStop(m_source_id) );
 

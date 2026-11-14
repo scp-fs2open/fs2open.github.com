@@ -68,7 +68,8 @@ ADE_FUNC(unpause, l_AudioStream, nullptr, "Unpauses the audio stream", "boolean"
 ADE_FUNC(stop,
 	l_AudioStream,
 	nullptr,
-	"Stops the audio stream so that it can be started again later",
+	"Stops the audio stream so that it can be started again later. A stopped stream that was opened during a mission, "
+	"briefing, or debriefing is closed when a mission ends.",
 	"boolean",
 	"true on success, false otherwise")
 {
