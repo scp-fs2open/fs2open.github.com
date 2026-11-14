@@ -706,7 +706,7 @@ static SCP_vector<const options::OptionBase*> apply_window_placement(
 	for (const auto* option : unapplied) {
 		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
 	}
-	// The next launch and the options menu should show the monitor that Fullscreen alone landed on
+	// The saved Display follows where the game actually is, even over a Display choice waiting on a restart
 	if (!display_changed && unapplied.empty() && state == os::ViewportState::Fullscreen) {
 		save_fullscreen_display(display);
 	}
