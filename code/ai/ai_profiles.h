@@ -13,6 +13,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "ai/ai_flags.h"
+#include "utils/RandomRange.h"
 
 // AI Path types
 #define	AI_PATH_MODE_NORMAL 0
@@ -69,6 +70,8 @@ public:
 	float stalemate_dist_thresh[NUM_SKILL_LEVELS];			// SUSHI: The maximum distance the AI and target must be within for a stalemate
 	float max_aim_update_delay[NUM_SKILL_LEVELS];			// SUSHI: The maximum delay before the AI updates their aim against small ships
 	float turret_max_aim_update_delay[NUM_SKILL_LEVELS];	// SUSHI: As above, but for turrets updating their aim
+	::util::ParsedRandomFloatRange primary_select_delay[NUM_SKILL_LEVELS];				// Time in seconds before next time the AI updates its primary weapon choice
+	::util::ParsedRandomFloatRange primary_select_delay_on_change[NUM_SKILL_LEVELS];	// Same, but for special updates taking place when the target ship or subsystem changes, or target's shields change
 
 	//	Multiplicative delay factors for increasing skill levels.
 	float ship_fire_delay_scale_hostile[NUM_SKILL_LEVELS];

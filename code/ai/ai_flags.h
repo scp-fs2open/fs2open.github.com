@@ -127,6 +127,7 @@ namespace AI {
         Require_turret_to_have_target_in_fov,
         Shockwaves_damage_small_ship_subsystems,
         Smart_afterburner_management,
+		Configurable_primary_weapon_selection,
         Smart_primary_weapon_selection,
         Smart_secondary_weapon_selection,
         Smart_shield_management,
