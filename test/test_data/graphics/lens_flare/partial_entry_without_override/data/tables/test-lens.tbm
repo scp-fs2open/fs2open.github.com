@@ -1,0 +1,9 @@
+; A mod that wanted to change only the intensity of a shipped lens and forgot
+; +override. The entry has no lens stack, so the parser ignores it and warns.
+
+#Lens Systems
+
+$Name: leica_35mm
+$Intensity: 0.25
+
+#End
