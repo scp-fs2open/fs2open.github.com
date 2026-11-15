@@ -685,8 +685,8 @@ void LabUi::build_ssao_controls()
 	}
 
 	SliderInt("Screen-Space AO Quality", &Gtao_quality, 0, 3);
-	SliderFloat("Screen-Space AO Radius", &Gtao_radius_scale, 0.25f, 3.0f);
-	SliderFloat("Screen-Space AO Intensity", &Gtao_intensity, 0.5f, 4.0f);
+	SliderFloat("Screen-Space AO Radius", &Gtao_radius_scale, 0.25f, 6.0f);
+	SliderFloat("Screen-Space AO Intensity", &Gtao_intensity, 0.5f, 8.0f);
 	Checkbox("Show screen-space AO buffer", &show_ssao_buffer);
 }
 
