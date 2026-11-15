@@ -262,6 +262,10 @@ enum shader_type {
 
 	SDR_TYPE_DOF,
 
+	SDR_TYPE_DOF_TILE,
+
+	SDR_TYPE_DOF_NEIGHBOR,
+
 	NUM_SHADER_TYPES
 };
 

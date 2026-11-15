@@ -124,6 +124,14 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	// OpenGL-only
 	{ SDR_TYPE_DOF, "post-v.sdr", "dof-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Depth of field", false },
+
+	// OpenGL-only
+	{ SDR_TYPE_DOF_TILE, "post-v.sdr", "dof-tile-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Depth of field tile max", false },
+
+	// OpenGL-only
+	{ SDR_TYPE_DOF_NEIGHBOR, "post-v.sdr", "dof-neighbor-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Depth of field neighbour max", false },
 };
 // clang-format on
 

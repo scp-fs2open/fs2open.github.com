@@ -1,0 +1,52 @@
+// Shared by the depth of field passes (dof-tile-f.sdr, dof-neighbor-f.sdr, dof-f.sdr): the uniforms and the
+// CoC of a texel.
+uniform sampler2D depth_tex; // scene depth, [0,1] perspective depth
+uniform sampler2D cockpit_depth_tex; // the cockpit has its own depth buffer; 1 where there is no cockpit
+
+layout(std140) uniform genericData {
+	float nearDist; // view z (metres) where the blur starts; the blur is maxBlur at nearDist / 2
+	float maxBlur;  // circle of confusion (CoC) clamp in pixels
+	float zNear;
+	float zFar;
+
+	float samples;  // gather taps, at most MAX_SAMPLES
+	float pad0;
+	float pad1;
+	float pad2;
+};
+
+// Side of a tile of the max CoC, in pixels. DOF_TILE_SIZE in dof.h.
+const int DOF_TILE = 16;
+
+float linear_z(float d)
+{
+	return 2.0 * zNear * zFar / (zFar + zNear - (2.0 * d - 1.0) * (zFar - zNear));
+}
+
+bool in_cockpit(vec2 suv)
+{
+	return texture(cockpit_depth_tex, suv).x < 1.0;
+}
+
+// The CoC in pixels of a scene depth d. dof_coc() in dof.cpp gives the same value.
+float coc_of_depth(float d)
+{
+	// The sky has no depth: it is at infinity, where the focus is.
+	if (d >= 1.0) {
+		return 0.0;
+	}
+	return clamp(nearDist / max(linear_z(d), 1.0e-3) - 1.0, 0.0, 1.0) * maxBlur;
+}
+
+// The CoC in pixels, or -1 for the cockpit, which never blurs and is never behind anything.
+// The scene depth under the cockpit is the space behind it, so the cockpit must be tested first.
+float coc_of(vec2 suv)
+{
+	return in_cockpit(suv) ? -1.0 : coc_of_depth(texture(depth_tex, suv).x);
+}
+
+float coc_at(ivec2 p)
+{
+	return texelFetch(cockpit_depth_tex, p, 0).x < 1.0 ? -1.0 : coc_of_depth(texelFetch(depth_tex, p, 0).x);
+}
+

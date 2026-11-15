@@ -68,6 +68,11 @@ static GLuint Dof_framebuffer = 0;
 static GLuint Dof_texture     = 0;
 static int Dof_texture_width  = 0;
 static int Dof_texture_height = 0;
+// The largest near CoC of each tile ([0]) and of each tile with its neighbours ([1]), one R16F texel per tile.
+static GLuint Dof_tile_framebuffer = 0;
+static GLuint Dof_tile_textures[2] = {0, 0};
+static int Dof_tiles_x = 0;
+static int Dof_tiles_y = 0;
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -231,7 +236,16 @@ static void opengl_post_process_shutdown_dof()
 		glDeleteFramebuffers(1, &Dof_framebuffer);
 		Dof_framebuffer = 0;
 	}
+	if (Dof_tile_textures[0]) {
+		glDeleteTextures(2, Dof_tile_textures);
+		Dof_tile_textures[0] = Dof_tile_textures[1] = 0;
+	}
+	if (Dof_tile_framebuffer) {
+		glDeleteFramebuffers(1, &Dof_tile_framebuffer);
+		Dof_tile_framebuffer = 0;
+	}
 	Dof_texture_width = Dof_texture_height = 0;
+	Dof_tiles_x = Dof_tiles_y = 0;
 }
 
 // Created on first use, so a player who keeps depth of field off pays no memory for it.
@@ -262,12 +276,36 @@ static bool opengl_setup_dof_texture()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	opengl_set_object_label(GL_TEXTURE, Dof_texture, "DoF texture");
 
-	// A framebuffer object exists only after its first bind, so the label comes after it.
+	Dof_tiles_x = (Scene_texture_width + graphics::DOF_TILE_SIZE - 1) / graphics::DOF_TILE_SIZE;
+	Dof_tiles_y = (Scene_texture_height + graphics::DOF_TILE_SIZE - 1) / graphics::DOF_TILE_SIZE;
+	glGenTextures(2, Dof_tile_textures);
+	for (int i = 0; i < 2; i++) {
+		GL_state.Texture.Enable(Dof_tile_textures[i]);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, Dof_tiles_x, Dof_tiles_y, 0, GL_RED, GL_FLOAT, nullptr);
+		// The passes read single texels (texelFetch), so no filtering.
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	}
+	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[0], "DoF tile max");
+	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[1], "DoF neighbour max");
+
+	// A framebuffer object exists only after its first bind, so the labels come after it.
+	glGenFramebuffers(1, &Dof_tile_framebuffer);
+	GL_state.BindFrameBuffer(Dof_tile_framebuffer);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[0], 0);
+	opengl_set_object_label(GL_FRAMEBUFFER, Dof_tile_framebuffer, "DoF tile framebuffer");
+	const bool tiles_ok = opengl_check_framebuffer() == 0;
+
 	GL_state.BindFrameBuffer(Dof_framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_texture, 0);
 	opengl_set_object_label(GL_FRAMEBUFFER, Dof_framebuffer, "DoF framebuffer");
-	if (opengl_check_framebuffer()) {
+	if (opengl_check_framebuffer() || !tiles_ok) {
 		mprintf(("OpenGL: Unable to create the depth of field framebuffer; depth of field is off.\n"));
+		// The state cache must not keep the deleted names, or a reused id can skip a real bind.
+		GL_state.BindFrameBuffer(0);
+		GL_state.Texture.Enable(0);
 		opengl_post_process_shutdown_dof();
 		Dof_unavailable = true;
 		return false;
@@ -295,6 +333,35 @@ static void opengl_post_pass_dof()
 	// An active clip rect would leave part of the output stale; bloom disables the scissor the same way.
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
 
+	auto set_dof_data = [&frame]() {
+		opengl_set_generic_uniform_data<graphics::generic_data::dof_data>([&](graphics::generic_data::dof_data* data) {
+			data->nearDist = frame.near_dist;
+			data->maxBlur = frame.max_blur;
+			data->samples = static_cast<float>(frame.samples);
+			data->zNear = Min_draw_distance;
+			data->zFar = Max_draw_distance;
+		});
+	};
+
+	// Tile passes: the largest near CoC of each tile, then of each tile and the tiles within maxBlur of it.
+	GL_state.BindFrameBuffer(Dof_tile_framebuffer);
+	glViewport(0, 0, Dof_tiles_x, Dof_tiles_y);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[0], 0);
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_TILE, 0));
+	Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
+	Current_shader->program->Uniforms.setTextureUniform("cockpit_depth_tex", 2);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Cockpit_depth_texture);
+	set_dof_data();
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[1], 0);
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_NEIGHBOR, 0));
+	Current_shader->program->Uniforms.setTextureUniform("tile_tex", 3);
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Dof_tile_textures[0]);
+	set_dof_data();
+	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
 	GL_state.BindFrameBuffer(Dof_framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_texture, 0);
 	glViewport(0, 0, Scene_texture_width, Scene_texture_height);
@@ -303,16 +370,12 @@ static void opengl_post_pass_dof()
 	Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 	Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
 	Current_shader->program->Uniforms.setTextureUniform("cockpit_depth_tex", 2);
+	Current_shader->program->Uniforms.setTextureUniform("tile_tex", 3);
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Cockpit_depth_texture);
-	opengl_set_generic_uniform_data<graphics::generic_data::dof_data>([&](graphics::generic_data::dof_data* data) {
-		data->nearDist = frame.near_dist;
-		data->maxBlur = frame.max_blur;
-		data->samples = static_cast<float>(frame.samples);
-		data->zNear = Min_draw_distance;
-		data->zFar = Max_draw_distance;
-	});
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Dof_tile_textures[1]);
+	set_dof_data();
 	// The texture scale is 1 here: Scene_texture_u_scale and _v_scale differ from 1 only while
 	// GL_rendering_to_texture, and this pass returns early then.
 	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
@@ -1255,6 +1318,7 @@ size_t opengl_get_postprocessing_render_target_bytes()
 	}
 	if (Dof_texture != 0) {
 		bytes += static_cast<size_t>(Dof_texture_width) * static_cast<size_t>(Dof_texture_height) * RGBA16F_BYTES;
+		bytes += 2 * static_cast<size_t>(Dof_tiles_x) * static_cast<size_t>(Dof_tiles_y) * 2; // two R16F tile textures
 	}
 
 	return bytes;

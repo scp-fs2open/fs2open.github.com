@@ -7,7 +7,7 @@
 
 namespace graphics {
 
-// Blur radius in pixels at view z (metres). This is the reference for coc_of() in dof-f.sdr, which
+// Blur radius in pixels at view z (metres). This is the reference for coc_of_depth() in dof-common.sdr, which
 // repeats the formula because GLSL has no unit tests here; a change to one must change the other.
 float dof_coc(float z, float near_dist, float max_blur);
 
@@ -18,8 +18,11 @@ float dof_coc(float z, float near_dist, float max_blur);
 float dof_pixel_scale(float screen_h, float fov_y);
 
 // Gather taps for a largest blur radius: 96 up to 16 px, then more, so that the gaps between the taps
-// stay small, up to DOF_MAX_SAMPLES.
+// stay the same up to about 37 px; past DOF_MAX_SAMPLES the gaps grow and the blur gets noisier.
 constexpr int DOF_MAX_SAMPLES = 512; // the shader's MAX_SAMPLES
+
+// Side of a tile of the largest near CoC, in pixels (DOF_TILE in dof-common.sdr).
+constexpr int DOF_TILE_SIZE = 16;
 int dof_samples(float max_blur);
 
 // The renderer's view of the options for one frame.

@@ -47,7 +47,8 @@ TEST_F(Dof, BlurScalesWithResolutionAndZoom)
 	EXPECT_FLOAT_EQ(dof_pixel_scale(1080.0f, default_fov), 1.0f);
 	EXPECT_FLOAT_EQ(dof_pixel_scale(2160.0f, default_fov), 2.0f);
 	// a narrower field of view (zoom in) is a longer focal length, so more blur
-	EXPECT_GT(dof_pixel_scale(1080.0f, 0.5f * PROJ_FOV_FACTOR), 1.0f);
+	EXPECT_FLOAT_EQ(dof_pixel_scale(1080.0f, 0.5f * PROJ_FOV_FACTOR),
+		tanf(0.375f * PROJ_FOV_FACTOR) / tanf(0.25f * PROJ_FOV_FACTOR));
 }
 
 TEST_F(Dof, MoreTapsForAWiderBlur)
@@ -65,6 +66,14 @@ TEST_F(Dof, ShaderTapLimitMatchesTheHeader)
 	ASSERT_NE(shader.data, nullptr);
 	const SCP_string text(static_cast<const char*>(shader.data), shader.size);
 	EXPECT_NE(text.find("const int MAX_SAMPLES = " + std::to_string(DOF_MAX_SAMPLES) + ";"), SCP_string::npos);
+}
+
+TEST_F(Dof, ShaderTileSizeMatchesTheHeader)
+{
+	const auto shader = defaults_get_file("dof-common.sdr");
+	ASSERT_NE(shader.data, nullptr);
+	const SCP_string text(static_cast<const char*>(shader.data), shader.size);
+	EXPECT_NE(text.find("const int DOF_TILE = " + std::to_string(DOF_TILE_SIZE) + ";"), SCP_string::npos);
 }
 
 TEST_F(Dof, OptionsExistAndDefaultOff)
