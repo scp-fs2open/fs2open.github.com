@@ -37,6 +37,7 @@ add_file_folder("Globalincs"
 )
 
 add_file_folder("Graphics"
+	   graphics/test_dof.cpp
 	   graphics/test_font.cpp
 	   graphics/test_material.cpp
 	   graphics/test_post_processing.cpp
