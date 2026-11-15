@@ -12,7 +12,7 @@ layout(std140) uniform genericData {
 
 // Side of a tile of the max CoC, in pixels. DOF_TILE_SIZE in dof.h.
 const int DOF_TILE = 16;
-// The neighbour pass looks this many tiles away at most: a reach of 128 px with DOF_TILE 16.
+// The neighbour pass looks this many tiles away at most (DOF_TILE_REACH in dof.h, which clamps maxBlur to it).
 const int DOF_TILE_REACH = 8;
 
 float linear_z(float d)
@@ -22,7 +22,7 @@ float linear_z(float d)
 
 bool in_cockpit(vec2 suv)
 {
-	return texture(cockpit_depth_tex, suv).x < 1.0;
+	return textureLod(cockpit_depth_tex, suv, 0.0).x < 1.0;
 }
 
 // The CoC in pixels of a scene depth d. dof_coc() in dof.cpp gives the same value.
@@ -39,7 +39,7 @@ float coc_of_depth(float d)
 // The scene depth under the cockpit is the space behind it, so the cockpit must be tested first.
 float coc_of(vec2 suv)
 {
-	return in_cockpit(suv) ? -1.0 : coc_of_depth(texture(depth_tex, suv).x);
+	return in_cockpit(suv) ? -1.0 : coc_of_depth(textureLod(depth_tex, suv, 0.0).x);
 }
 
 float coc_at(ivec2 p)
