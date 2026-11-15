@@ -706,15 +706,25 @@ brief_icon *brief_get_closeup_icon()
 	return Closeup_icon;
 }
 
+// deletes the model instance an icon was set up with for a closeup, if any
+static void brief_delete_closeup_instance(brief_icon *bi)
+{
+	if (bi == nullptr)
+		return;
+
+	// the instance may already be gone, e.g. if all models were freed in the meantime
+	if (model_instance_exists(bi->model_instance_num))
+		model_delete_instance(bi->model_instance_num);
+
+	bi->model_instance_num = -1;
+}
+
 // stop showing the closeup view of an icon
 void brief_turn_off_closeup_icon(bool api_access)
 {
 	// turn off closeup
 	if ( Closeup_icon != NULL ) {
-		if (Closeup_icon->model_instance_num >= 0) {
-			model_delete_instance(Closeup_icon->model_instance_num);
-			Closeup_icon->model_instance_num = -1;
-		}
+		brief_delete_closeup_instance(Closeup_icon);
 
 		if (!api_access) {
 			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
@@ -768,11 +778,13 @@ void brief_set_default_closeup()
 	bs = &Briefing->stages[0];
 
 	if ( Briefing->num_stages <= 0 ) {
+		brief_delete_closeup_instance(Closeup_icon);
 		Closeup_icon = NULL;
 		return;
 	}
 
 	if ( bs->num_icons <= 0 ) {
+		brief_delete_closeup_instance(Closeup_icon);
 		Closeup_icon = NULL;
 		return;
 	}
@@ -1105,9 +1117,9 @@ void brief_render_closeup(int ship_class, float frametime)
 			gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
 		}
 
-		auto sip = &Ship_info[ship_class];
-		if (!sip->replacement_textures.empty())
-			render_info.set_replacement_textures(Closeup_icon->modelnum, sip->replacement_textures);
+		// the instance carries the ship class's replacement textures, if any
+		if (Closeup_icon->model_instance_num >= 0)
+			render_info.set_replacement_textures(model_get_instance(Closeup_icon->model_instance_num)->texture_replace);
 
 		render_info.set_flags(MR_AUTOCENTER);
 	}
@@ -1277,6 +1289,9 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	ship_info		*sip=NULL;
 	vec3d			tvec;
 
+	// only the current closeup icon should own a model instance, so let go of the previous one's before switching
+	brief_delete_closeup_instance(Closeup_icon);
+
 	Closeup_icon = bi;
 	Closeup_icon->modelnum = -1;
 	Closeup_icon->model_instance_num = -1;
@@ -1425,6 +1440,7 @@ void brief_update_closeup_icon(int mode)
 		brief_setup_closeup(bi);
 	}
 	else {
+		brief_delete_closeup_instance(Closeup_icon);
 		Closeup_icon = NULL;
 	}
 }
@@ -1941,6 +1957,15 @@ void brief_close(bool api_access)
 
 		// unload the bitmaps
 		brief_unload_bitmaps();
+
+		// delete the model instances of every icon that was set up for a closeup, in case any were orphaned
+		if (Briefing != nullptr) {
+			for (int i = 0; i < Briefing->num_stages; i++) {
+				brief_stage *bs = &Briefing->stages[i];
+				for (int j = 0; j < bs->num_icons; j++)
+					brief_delete_closeup_instance(&bs->icons[j]);
+			}
+		}
 
 		brief_common_close();
 	}
