@@ -664,6 +664,8 @@ bool VulkanRenderer::createSwapChain(VulkanPresentTarget& target,
 	return true;
 }
 
+// Not static: the __ANDROID__ branch reads m_physicalDevice and calls windowExtent().
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 bool VulkanRenderer::shouldRecreateSwapChain(const VulkanPresentTarget& target, SwapChainStatus status) const
 {
 	// An already requested rebuild also avoids redundant Android surface queries.
