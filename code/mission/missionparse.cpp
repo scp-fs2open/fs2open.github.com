@@ -7562,6 +7562,13 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 	}
 }
 
+static void warn_if_bay_anchor_absent(const char *kind, const char *name, ArrivalLocation location, anchor_t anchor)
+{
+	auto anchor_entry = ship_registry_get(anchor);
+	if (location == ArrivalLocation::FROM_DOCK_BAY && anchor_entry != nullptr && anchor_entry->shipnum < 0)
+		Warning(LOCATION, "%s %s is present at mission start but arrives from the docking bay of %s, which is not present; it starts at its placed position instead.", kind, name, anchor_entry->name);
+}
+
 /**
  * Called after a mission is parsed to set the arrival locations of all ships in the
  * mission to the apprioriate spot.  Mainly needed because ships might be in dock bays to start
@@ -7587,10 +7594,7 @@ void mission_parse_set_arrival_locations()
 
 		// call function to set arrival location for this ship.
 		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, so->objnum, shipp->arrival_path_mask, NULL, NULL);
-
-		auto anchor_entry = ship_registry_get(shipp->arrival_anchor);
-		if (shipp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && anchor_entry != nullptr && anchor_entry->shipnum < 0)
-			Warning(LOCATION, "Ship %s is present at mission start but arrives from the docking bay of %s, which is not present; it starts at its placed position instead.", shipp->ship_name, anchor_entry->name);
+		warn_if_bay_anchor_absent("Ship", shipp->ship_name, shipp->arrival_location, shipp->arrival_anchor);
 	}
 
 	// do the wings
@@ -7601,6 +7605,7 @@ void mission_parse_set_arrival_locations()
 			continue;
 
 		mission_set_wing_arrival_location( &Wings[i], Wings[i].current_count );
+		warn_if_bay_anchor_absent("Wing", Wings[i].name, Wings[i].arrival_location, Wings[i].arrival_anchor);
 	}
 }
 
