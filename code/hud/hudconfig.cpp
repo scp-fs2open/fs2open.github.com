@@ -997,14 +997,19 @@ void hud_config_commit()
 // move gauge state from on->off->popup
 void hud_cycle_gauge_status()
 {
-	if ( !HC_gauge_selected.empty() ) {
+	if ( HC_gauge_selected.empty() ) {
+		return;
+	}
+
+	// Same rule as hud_config_set_button_state(): custom gauges cannot toggle visibility or popup
+	const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
+	if (gauge == nullptr || gauge->isCustom()) {
 		return;
 	}
 
 	// gauge is off, move to popup
 	if ( !(HUD_config.is_gauge_visible(HC_gauge_selected)) ) {
-		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
-		if (gauge != nullptr && gauge->getConfigCanPopup()) {
+		if (gauge->getConfigCanPopup()) {
 			hud_config_set_gauge_flags(HC_gauge_selected, true, true);	
 		} else {
 			hud_config_set_gauge_flags(HC_gauge_selected, true, false);	
