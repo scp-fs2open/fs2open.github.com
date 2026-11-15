@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 
 #include <util/FSTestFixture.h>
+#include <util/test_util.h>
+
+#include <osapi/dialogs.h>
 
 #include <graphics/lens_flare.h>
 #include <graphics/lens_flare_internal.h>
@@ -1127,4 +1130,40 @@ TEST_F(LensFlareOverrideTbmTest, WithoutOverrideTheLensIsReplacedOutright)
 	// struct's defaults rather than inheriting them
 	EXPECT_FLOAT_EQ(ls->sensor_width, 36.0f);
 	EXPECT_EQ(ls->aperture.blades, 6);
+}
+
+// ---- diagnostics for duplicate lens names ----
+
+// Each test reads the data directory of its own name, see FSTestFixture.
+class LensFlareTableWarningTest : public test::FSTestFixture {
+  public:
+	LensFlareTableWarningTest() : test::FSTestFixture(INIT_CFILE)
+	{
+		pushModDir("graphics");
+		pushModDir("lens_flare");
+	}
+
+	void TearDown() override
+	{
+		lens_flare_close();
+		test::FSTestFixture::TearDown();
+	}
+};
+
+// A tbm entry that reuses a shipped name without +override and sets only some
+// values has no lens stack. The parser must not ignore it silently: the warning
+// tells the modder to add +override.
+TEST_F(LensFlareTableWarningTest, partial_entry_without_override)
+{
+	DEBUG_TEST();
+
+	ASSERT_THROW(lens_flare_init(), os::dialogs::WarningException);
+}
+
+// The same name twice in one table is a mistake, not a redefinition.
+TEST_F(LensFlareTableWarningTest, duplicate_name_in_one_file)
+{
+	DEBUG_TEST();
+
+	ASSERT_THROW(lens_flare_init(), os::dialogs::WarningException);
 }

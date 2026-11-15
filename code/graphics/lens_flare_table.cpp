@@ -5,6 +5,7 @@
 #include "def_files/def_files.h"
 #include "parse/parselo.h"
 
+#include <algorithm>
 #include <utility>
 
 // lens_flares.tbl / *-lens.tbm parsing. Owns no state: the systems it reads are
@@ -42,6 +43,10 @@ void parse_lens_table_core()
 
 	reset_parse();
 
+	// The names that this file defines. A second entry with the same name in one file is a mistake, and not a
+	// redefinition.
+	SCP_vector<SCP_string> names_in_file;
+
 	required_string("#Lens Systems");
 
 	// The lens a mission gets when it doesn't name one itself. Left empty by the
@@ -63,6 +68,18 @@ void parse_lens_table_core()
 		const bool overriding = optional_string("+override") != 0;
 
 		const int existing = find_system(systems, name.c_str());
+
+		const bool duplicate_in_file = std::any_of(names_in_file.begin(), names_in_file.end(),
+			[&name](const SCP_string& other) { return !stricmp(other.c_str(), name.c_str()); });
+		if (duplicate_in_file && !overriding) {
+			error_display(0,
+				"Lens system '%s' is defined twice in this table; the second entry replaces the first. Use "
+				"+override to change only some values of a lens.",
+				name.c_str());
+		}
+		if (!duplicate_in_file) {
+			names_in_file.push_back(name);
+		}
 
 		lens_system ls;
 		if (overriding) {
@@ -247,7 +264,15 @@ void parse_lens_table_core()
 		}
 
 		if (!lens_flare_precompute(ls)) {
-			error_display(0, "Lens system '%s' has an unusable prescription and will be ignored", ls.name.c_str());
+			if (existing >= 0 && !overriding) {
+				// Most likely an entry that sets only some values and forgot +override
+				error_display(0,
+					"Lens system '%s' has an unusable prescription and will be ignored; the earlier definition "
+					"stays. To change only some values of an existing lens, add +override after $Name:.",
+					ls.name.c_str());
+			} else {
+				error_display(0, "Lens system '%s' has an unusable prescription and will be ignored", ls.name.c_str());
+			}
 			continue;
 		}
 
@@ -255,6 +280,10 @@ void parse_lens_table_core()
 		// engine or an earlier tbm shipped. Committed only now, so an entry whose
 		// prescription turned out to be unusable leaves the earlier one standing.
 		if (existing >= 0) {
+			if (!overriding) {
+				mprintf(("Lens system '%s' replaces the earlier definition completely (no +override)\n",
+					ls.name.c_str()));
+			}
 			systems[existing] = std::move(ls);
 		} else {
 			systems.push_back(std::move(ls));

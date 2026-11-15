@@ -1,0 +1,20 @@
+; The same lens name twice in one table. The second entry replaces the first,
+; and the parser warns.
+
+#Lens Systems
+
+$Name: twice_lens
+$Lens Stack Start:
+$Surface: ( 60.0, 5.0, 1.62 )
+$Stop: ( 4.0 )
+$Surface: ( -60.0, 40.0, 1.0 )
+$Lens Stack End
+
+$Name: twice_lens
+$Lens Stack Start:
+$Surface: ( 55.0, 4.0, 1.62 )
+$Stop: ( 3.0 )
+$Surface: ( -55.0, 35.0, 1.0 )
+$Lens Stack End
+
+#End
