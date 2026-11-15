@@ -98,7 +98,7 @@ void main()
 		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
 		float cs_raw = coc_of(suv);
 		float cs = cs_raw > 0.0 ? dilated : cs_raw;
-		// Level 0 always: the loop is not uniform across pixels, so derivatives there are undefined.
+		// Level 0 always, here and in coc_of(): the loop is not uniform across pixels, so derivatives are undefined.
 		vec3 col = textureLod(tex, suv, 0.0).rgb;
 		if (cs_raw >= 0.0 && cs_raw < c0_raw - 0.5 && r <= c0) {
 			behind_sum += col;

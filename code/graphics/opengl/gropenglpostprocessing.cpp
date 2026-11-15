@@ -228,15 +228,23 @@ void opengl_post_pass_bloom()
 
 static void opengl_post_process_shutdown_dof()
 {
+	// GL_state forgets each name first: a texture made again can get the same name, and a stale cache entry
+	// would then skip its real bind.
 	if (Dof_texture) {
+		GL_state.Texture.Delete(Dof_texture);
 		glDeleteTextures(1, &Dof_texture);
 		Dof_texture = 0;
+	}
+	if (Dof_framebuffer || Dof_tile_framebuffer) {
+		GL_state.BindFrameBuffer(0);
 	}
 	if (Dof_framebuffer) {
 		glDeleteFramebuffers(1, &Dof_framebuffer);
 		Dof_framebuffer = 0;
 	}
 	if (Dof_tile_textures[0]) {
+		GL_state.Texture.Delete(Dof_tile_textures[0]);
+		GL_state.Texture.Delete(Dof_tile_textures[1]);
 		glDeleteTextures(2, Dof_tile_textures);
 		Dof_tile_textures[0] = Dof_tile_textures[1] = 0;
 	}
@@ -338,7 +346,6 @@ static void opengl_post_pass_dof()
 		opengl_set_generic_uniform_data<graphics::generic_data::dof_data>([&](graphics::generic_data::dof_data* data) {
 			data->nearDist = frame.near_dist;
 			data->maxBlur = frame.max_blur;
-			data->samples = static_cast<float>(frame.samples);
 			data->zNear = Min_draw_distance;
 			data->zFar = Max_draw_distance;
 		});
@@ -346,24 +353,24 @@ static void opengl_post_pass_dof()
 
 	// Tile passes: the largest near CoC of each tile, then of each tile and the tiles within maxBlur of it.
 	{
-	TRACE_SCOPE(tracing::DepthOfFieldTiles);
-	GL_state.BindFrameBuffer(Dof_tile_framebuffer);
-	glViewport(0, 0, Dof_tiles_x, Dof_tiles_y);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[0], 0);
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_TILE, 0));
-	Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
-	Current_shader->program->Uniforms.setTextureUniform("cockpit_depth_tex", 2);
-	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
-	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Cockpit_depth_texture);
-	set_dof_data();
-	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		TRACE_SCOPE(tracing::DepthOfFieldTiles);
+		GL_state.BindFrameBuffer(Dof_tile_framebuffer);
+		glViewport(0, 0, Dof_tiles_x, Dof_tiles_y);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[0], 0);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_TILE, 0));
+		Current_shader->program->Uniforms.setTextureUniform("depth_tex", 1);
+		Current_shader->program->Uniforms.setTextureUniform("cockpit_depth_tex", 2);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
+		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Cockpit_depth_texture);
+		set_dof_data();
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[1], 0);
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_NEIGHBOR, 0));
-	Current_shader->program->Uniforms.setTextureUniform("tile_tex", 3);
-	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Dof_tile_textures[0]);
-	set_dof_data();
-	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[1], 0);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DOF_NEIGHBOR, 0));
+		Current_shader->program->Uniforms.setTextureUniform("tile_tex", 3);
+		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Dof_tile_textures[0]);
+		set_dof_data();
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 
 	TRACE_SCOPE(tracing::DepthOfFieldGather);
