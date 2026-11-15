@@ -71,11 +71,10 @@ float dof_pixel_scale(float screen_h, float fov_y)
 	return (screen_h / tanf(fov_y * 0.5f)) / (DOF_REFERENCE_LINES / tanf(DOF_REFERENCE_FOV * 0.5f));
 }
 
-int dof_samples(float max_blur)
+int dof_samples(float radius)
 {
-	// The same tap density as 96 taps on 16 px needs 96 * (r / 16)^2 taps.
-	const float taps = 96.0f * (max_blur / 16.0f) * (max_blur / 16.0f);
-	return static_cast<int>(std::clamp(taps, 96.0f, static_cast<float>(DOF_MAX_SAMPLES)));
+	const float taps = 96.0f * (radius / 16.0f) * (radius / 16.0f);
+	return static_cast<int>(std::clamp(taps, 32.0f, static_cast<float>(DOF_MAX_SAMPLES)));
 }
 
 bool dof_get_frame(dof_frame* out)
@@ -87,7 +86,6 @@ bool dof_get_frame(dof_frame* out)
 	const float fov_y = std::holds_alternative<float>(Proj_fov) ? std::get<float>(Proj_fov) : DOF_REFERENCE_FOV;
 	out->near_dist = static_cast<float>(Dof_near_dist);
 	out->max_blur = static_cast<float>(Dof_max_blur) * dof_pixel_scale(static_cast<float>(gr_screen.max_h), fov_y);
-	out->samples = dof_samples(out->max_blur);
 	return true;
 }
 

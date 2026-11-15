@@ -17,20 +17,20 @@ float dof_coc(float z, float near_dist, float max_blur);
 // (Proj_fov, which is the zoom times PROJ_FOV_FACTOR).
 float dof_pixel_scale(float screen_h, float fov_y);
 
-// Gather taps for a largest blur radius: 96 up to 16 px, then more, so that the gaps between the taps
-// stay the same up to about 37 px; past that, the cap of DOF_MAX_SAMPLES taps makes the gaps grow and the blur
-// noisier.
 constexpr int DOF_MAX_SAMPLES = 512; // the shader's MAX_SAMPLES
 
 // Side of a tile of the largest near CoC, in pixels (DOF_TILE in dof-common.sdr).
 constexpr int DOF_TILE_SIZE = 16;
-int dof_samples(float max_blur);
+
+// Gather taps for a disc of this radius: the density of 96 taps on 16 px, at least 32, at most DOF_MAX_SAMPLES.
+// Past about 37 px the cap makes the gaps between the taps grow and the blur noisier. This is the reference for
+// the tap count in dof-f.sdr, which computes it per pixel from the sampled radius.
+int dof_samples(float radius);
 
 // The renderer's view of the options for one frame.
 struct dof_frame {
 	float near_dist; // metres
 	float max_blur;  // pixels on this screen
-	int samples;
 };
 
 // False when the option is off.

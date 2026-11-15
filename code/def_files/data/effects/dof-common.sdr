@@ -8,15 +8,12 @@ layout(std140) uniform genericData {
 	float maxBlur;  // circle of confusion (CoC) clamp in pixels
 	float zNear;
 	float zFar;
-
-	float samples;  // gather taps, at most MAX_SAMPLES
-	float pad0;
-	float pad1;
-	float pad2;
 };
 
 // Side of a tile of the max CoC, in pixels. DOF_TILE_SIZE in dof.h.
 const int DOF_TILE = 16;
+// The neighbour pass looks this many tiles away at most: a reach of 128 px with DOF_TILE 16.
+const int DOF_TILE_REACH = 8;
 
 float linear_z(float d)
 {

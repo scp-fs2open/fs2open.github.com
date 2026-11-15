@@ -15,8 +15,8 @@ void main()
 {
 	ivec2 tiles = textureSize(tile_tex, 0);
 	ivec2 here = ivec2(gl_FragCoord.xy);
-	// A disc of maxBlur pixels reaches this many tiles; at most 8, a reach of 128 px.
-	int reach = min(int(ceil(maxBlur / float(DOF_TILE))), 8);
+	// A disc of maxBlur pixels reaches this many tiles, DOF_TILE_REACH at most.
+	int reach = min(int(ceil(maxBlur / float(DOF_TILE))), DOF_TILE_REACH);
 	float largest = 0.0;
 	for (int y = -reach; y <= reach; y++) {
 		for (int x = -reach; x <= reach; x++) {

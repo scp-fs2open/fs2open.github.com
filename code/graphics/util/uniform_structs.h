@@ -418,9 +418,6 @@ struct dof_data {
 	float maxBlur;
 	float zNear;
 	float zFar;
-
-	float samples;
-	float pad[3];
 };
 
 struct msaa_data {
