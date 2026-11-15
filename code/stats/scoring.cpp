@@ -574,9 +574,9 @@ void scoring_level_init( scoring_struct *scp )
 
 	memset(scp->m_dogfight_kills, 0, MAX_PLAYERS * sizeof(int));
 
-	if (The_mission.ai_profile != NULL) {
-		Kill_percentage = The_mission.ai_profile->kill_percentage_scale[Game_skill_level];
-		Assist_percentage = The_mission.ai_profile->assist_percentage_scale[Game_skill_level];
+	if (Ai_profiles.in_bounds(The_mission.ai_profile_index)) {
+		Kill_percentage = The_mission.ai_profile()->kill_percentage_scale[Game_skill_level];
+		Assist_percentage = The_mission.ai_profile()->assist_percentage_scale[Game_skill_level];
 	} else {
 		Kill_percentage = 0.30f;
 		Assist_percentage = 0.15f;
@@ -1004,7 +1004,7 @@ int scoring_eval_kill(const object *ship_objp)
 		killer_sig = dead_ship->damage_ship_id[max_damage_index];
 
 		// set the scale value if we only award 100% score for 100% damage
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Kill_scoring_scales_with_damage]) {
+		if (The_mission.ai_profile()->flags[AI::Profile_Flags::Kill_scoring_scales_with_damage]) {
 			scoring_scale_by_damage = max_damage_pct;
 		}
 
@@ -1102,7 +1102,7 @@ int scoring_eval_kill(const object *ship_objp)
 						if (!(Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[dead_ship->ship_info_index].is_big_or_huge())) {
 							for (idx=0; idx<MAX_PLAYERS; idx++) {
 								if (MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.team == net_plr->p_info.team) && (&Net_players[idx] != net_plr)) {
-									assist_score = (int)(dead_ship->score * The_mission.ai_profile->assist_award_percentage_scale[Game_skill_level]);
+									assist_score = fl2i(dead_ship->score * The_mission.ai_profile()->assist_award_percentage_scale[Game_skill_level]);
 									Net_players[idx].m_player->stats.m_score += assist_score;
 
 #ifdef SCORING_DEBUG
@@ -1329,7 +1329,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 	// evaluate each damage slot to see if it did enough to give the assis
 	for(idx=0;idx<MAX_DAMAGE_SLOTS;idx++){
 		// if this slot did enough damage to get an assist
-		if(((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) || (The_mission.ai_profile->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage])){
+		if(((sp->damage_ship[idx]/sp->total_damage_received) >= Assist_percentage) || (The_mission.ai_profile()->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage])){
 			// get the player which did this damage (if any)
 			plr = NULL;
 			
@@ -1367,7 +1367,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 
 
 				// maybe award assist points based on damage
-				if (The_mission.ai_profile->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage]) {
+				if (The_mission.ai_profile()->flags[AI::Profile_Flags::Assist_scoring_scales_with_damage]) {
 					scoring_scale_by_damage = (sp->damage_ship[idx]/sp->total_damage_received);
 					assist_score = (int)(sp->score * scoring_scale_factor * scoring_scale_by_damage);
 					plr->stats.m_score += assist_score;
