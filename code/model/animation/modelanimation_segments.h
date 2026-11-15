@@ -213,6 +213,37 @@ namespace animation {
 
 	};
 
+	//This segment rotates a submodel in PBH with constant acceleration up to a target angular velocity, ending while still
+	//moving at that velocity.  Intended as the startup portion of a "seamless with startup" looping animation, typically
+	//followed by a constant-velocity $Rotation: covering one full cycle of the submodel's motion.
+	class ModelAnimationSegmentSpinUp : public ModelAnimationSegment {
+		struct instance_data {
+			angles m_actualAccel{ 0, 0, 0 };
+			angles m_accelTime{ 0, 0, 0 };
+		};
+
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+		//configurables:
+	public:
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		angles m_velocity;
+		angles m_acceleration;
+
+	private:
+		ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+
+	public:
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		ModelAnimationSegmentSpinUp(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& velocity, const angles& acceleration);
+
+	};
+
 	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
 		struct instance_data {
 			vec3d m_actualVelocity;
