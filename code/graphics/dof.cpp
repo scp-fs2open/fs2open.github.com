@@ -97,7 +97,7 @@ void dof_set_requirements()
 		DofDistanceOption};
 	for (const auto& option : dof_options) {
 		options::OptionsManager::instance()->setRequirement(option->getConfigKey(), "opengl",
-			XSTR("Depth of field is only available with the OpenGL renderer.", -1));
+			XSTR("Needs the OpenGL renderer", -1));
 	}
 }
 
