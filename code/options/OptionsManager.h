@@ -18,6 +18,11 @@ enum class OverrideSource {
 // A JSON string for text that may not be UTF-8: such text is read as Latin-1 instead of being dropped. Caller owns it.
 json_t* json_text(const SCP_string& text);
 
+enum class PendingEdits {
+	Include,
+	Ignore
+};
+
 class OptionsManager {
 	OptionsManager();
 
@@ -52,7 +57,8 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key,
+		PendingEdits pending = PendingEdits::Include) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 

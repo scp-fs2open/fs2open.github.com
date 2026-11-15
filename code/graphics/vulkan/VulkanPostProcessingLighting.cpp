@@ -13,6 +13,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "graphics/2d.h"
 #include "bmpman/bmpman.h"
@@ -509,9 +510,9 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
 		header->nearPlane = gr_near_plane;
+		shadows_fill_deferred_global_data(*header);
 
 		if (m_shadow->isInitialized() && Shadow_quality != ShadowQuality::Disabled) {
-			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 			shadow_cascade_params_bind_deferred();
 		}
 	}
@@ -687,6 +688,9 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	if (rtShadowsActive) {
 		lightShaderFlags |= SDR_FLAG_DEFERRED_RT_SHADOWS;
 	}
+	if (rtao_enabled()) {
+		lightShaderFlags |= SDR_FLAG_DEFERRED_RTAO;
+	}
 	if (envMapAvailable) {
 		lightShaderFlags |= SDR_FLAG_ENV_MAP;
 	}
@@ -754,8 +758,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	// Shadow map is depth-only, sampled with a depth-compare sampler
 	// (sampler2DArrayShadow) for hardware PCF.
 	vk::DescriptorImageInfo shadowTexInfo;
+	vk::DescriptorImageInfo shadowRawTexInfo;
 	if (m_shadow->isInitialized() && m_shadow->depthView()) {
 		shadowTexInfo = {m_shadow->compareSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+		shadowRawTexInfo = {m_shadow->rawSampler(), m_shadow->depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
 	// Shadow cascade params (projection matrices/distances) are bound per-frame via
@@ -801,6 +807,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		writer.setImage(GlobalBinding::EnvMap, envTexInfo);
 		writer.setImage(GlobalBinding::IrradianceMap, irrTexInfo);
 		writer.setBuffer(GlobalBinding::ShadowCascadeParams, shadowCascadeParamsInfo);
+		writer.setImage(GlobalBinding::ShadowMapRaw, shadowRawTexInfo);
 
 		// Set 1: Material
 		vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);

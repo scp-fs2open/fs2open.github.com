@@ -788,6 +788,8 @@ void event_music_level_close()
 			}
 			else
 				audiostream_close_file( Patterns[i].handle, 0 );
+
+			Patterns[i].handle = -1;
 		}
 	} else {
 		// close em all down then

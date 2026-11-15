@@ -1042,11 +1042,6 @@ void game_level_close()
 
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			model_free_all();			// Free all existing models if standalone server
-
-			// clean out interp data as it's better to allocate as needed here instead
-			// of letting it use a bunch of memory
-			extern void model_deallocate_interp_data();
-			model_deallocate_interp_data();
 		}
 	}
 	else
@@ -1502,6 +1497,7 @@ void game_post_level_init()
 {
 	TRACE_SCOPE(tracing::LoadPostMissionLoad);
 
+	gr_reset_temporal_history();
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
@@ -2512,7 +2508,6 @@ void game_show_framerate()
 	modelstats_num_polys = 0;
 	modelstats_num_polys_drawn = 0;
 	modelstats_num_verts = 0;
-	modelstats_num_sortnorms = 0;
 #endif
 }
 
@@ -3344,6 +3339,9 @@ camid game_render_frame_setup()
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
 	bool camera_cut = false;
+	if (last_Viewer_mode != Viewer_mode) {
+		gr_reset_temporal_history();
+	}
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3676,6 +3674,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_capture_scene_camera();
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
@@ -7566,7 +7565,6 @@ void Time_model( int modelnum )
 
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
-		model_set_detail_level(0);		// use highest detail level
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();

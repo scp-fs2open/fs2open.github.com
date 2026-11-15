@@ -180,6 +180,7 @@ namespace particle
 		if (maybe_cull_particle(new_particle))
 			return;
 
+		new_particle.last_pos = new_particle.pos;
 		Particles.push_back(new_particle);
 	}
 
@@ -189,6 +190,7 @@ namespace particle
 		if (maybe_cull_particle(new_particle))
 			return {};
 
+		new_particle.last_pos = new_particle.pos;
 		ParticlePtr new_particle_ptr = std::make_shared<particle>(new_particle);
 
 		Persistent_particles.push_back(new_particle_ptr);
@@ -268,6 +270,7 @@ namespace particle
 
 		// move as a regular particle
 		vec3d prev_pos = part->pos;
+		part->last_pos = prev_pos;
 		part->pos += (part->velocity * vel_scalar) * frametime;
 
 		const auto& curve_input = std::forward_as_tuple(*part, part_velocity * vel_scalar);
@@ -517,13 +520,15 @@ namespace particle
 
 		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 
+		const vec3d motion = p_pos - part->attachment.local_last_pos_to_global(part->last_pos);
+
 		if (part_has_length) {
 			vec3d p0 = p_pos;
-			batching_add_laser(actual_frame, &p0, radius, &p1, radius);
+			batching_add_laser(actual_frame, &p0, radius, &p1, radius, 255, 255, 255, &motion);
 		}
 		else {
 			// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-			batching_add_volume_bitmap_rotated(actual_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
+			batching_add_volume_bitmap_rotated(actual_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha, 0.0f, &motion);
 		}
 
 		return true;

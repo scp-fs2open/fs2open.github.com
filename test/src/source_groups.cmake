@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("Bmpman"
+    bmpman/test_eff.cpp
+)
+
 add_file_folder("CFile"
     cfile/cfile.cpp
 )
@@ -35,6 +39,10 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()
+
+add_file_folder("IffDefs"
+    iff_defs/test_iff_accessibility.cpp
+)
 
 add_file_folder("Math"
     math/test_vecmat.cpp
@@ -84,6 +92,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
     scripting/api/hookvars.cpp
+    scripting/api/shipclass.cpp
 )
 
 add_file_folder("Scripting\\\\Lua"
@@ -98,6 +107,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Value.cpp
 )
 
+add_file_folder("Starfield"
+    starfield/test_sun_disc.cpp
+)
+
 add_file_folder("Test Util"
     util/FSTestFixture.cpp
     util/FSTestFixture.h
@@ -110,6 +123,7 @@ add_file_folder("Tracing"
 
 add_file_folder("Utils"
     utils/HeapAllocatorTest.cpp
+    utils/test_encoding.cpp
 )
 
 add_file_folder("Weapon"

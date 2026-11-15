@@ -1212,17 +1212,18 @@ void fireball_render(object* obj, model_draw_list *scene)
 			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_scaled_factor));
 	
 	g3_transfer_vertex(&p, &obj->pos);
+	const vec3d motion = obj->pos - obj->last_pos;
 
 	switch ( fb->fireball_render_type )	{
 
 		case FIREBALL_MEDIUM_EXPLOSION: {
-			batching_add_volume_bitmap(fb->current_bitmap, &p, fb->orient, obj->radius, alpha);
+			batching_add_volume_bitmap(fb->current_bitmap, &p, fb->orient, obj->radius, alpha, 0.0f, &motion);
 		}
 		break;
 
 		case FIREBALL_LARGE_EXPLOSION: {
 			// Make the big explosions rotate with the viewer.
-			batching_add_volume_bitmap_rotated(fb->current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius, alpha);
+			batching_add_volume_bitmap_rotated(fb->current_bitmap, &p, (i2fl(fb->orient)*PI) / 180.0f, obj->radius, alpha, 0.0f, &motion);
 		}
 		break;
 
