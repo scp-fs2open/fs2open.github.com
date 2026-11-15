@@ -1,3 +1,4 @@
+#include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "util/FSTestFixture.h"
@@ -97,6 +98,24 @@ TEST_F(OsRegistryTest, ModFileKeepsEveryWriteWithoutASettingsFile)
 
 	ASSERT_STREQ(os_config_read_string("Test", "Third", "missing", true), "three");
 	ASSERT_EQ(os_config_read_uint("Test", "Fourth", 0, true), 4u);
+}
+
+// OptionsManager reads persisted options back from the mod settings profile, not from a cache
+TEST_F(OsRegistryTest, PersistedOptionsReadBackInTheSameSession)
+{
+	auto mgr = options::OptionsManager::instance();
+
+	mgr->setConfigValue("Test.First", std::unique_ptr<json_t>(json_integer(1)));
+	mgr->setConfigValue("Test.Second", std::unique_ptr<json_t>(json_integer(2)));
+	mgr->persistChanges();
+
+	auto first = mgr->getValueFromConfig("Test.First");
+	ASSERT_TRUE(first.has_value());
+	ASSERT_EQ(json_integer_value(first->get()), 1);
+
+	auto second = mgr->getValueFromConfig("Test.Second");
+	ASSERT_TRUE(second.has_value());
+	ASSERT_EQ(json_integer_value(second->get()), 2);
 }
 
 // Windows sends these writes to the registry when there is no fs2_open.ini
