@@ -303,6 +303,15 @@ public:
 	void shutdown();
 
 	/**
+	 * @brief Set the HDR color target that the flares are added to
+	 *
+	 * This is the post-processing input: the scene color, or the FSR output while FSR upscales. The flares are a
+	 * screen-space effect without motion vectors, so they go after the upscaler and not into its temporal input.
+	 * Call resize() after this, because the framebuffer attaches the target.
+	 */
+	void setSceneColor(const RenderTarget& sceneColor) { m_sceneColor = &sceneColor; }
+
+	/**
 	 * @brief Recreate the scene-color framebuffer after a resize (render pass kept)
 	 *
 	 * Device must be idle. Returns false on failure (caller should shut the
@@ -321,11 +330,12 @@ public:
 	}
 
 	/**
-	 * @brief Draw the flare instances of every flaring sun additively onto the scene color
+	 * @brief Draw the flare instances of every flaring sun additively onto the target from setSceneColor()
 	 *
-	 * No-op when no lens-equipped sun is visible. Scene color must be in
-	 * eShaderReadOnlyOptimal (the state after the scene render pass ends) and
-	 * is returned to eShaderReadOnlyOptimal, matching what bloom expects.
+	 * No-op when no lens-equipped sun is visible. The target must be in
+	 * eShaderReadOnlyOptimal (the state after the scene render pass ends, or after
+	 * the FSR dispatch) and is returned to eShaderReadOnlyOptimal, matching what
+	 * bloom expects.
 	 *
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
@@ -335,6 +345,7 @@ public:
 
 private:
 	bool createFramebuffer();
+	vk::Extent2D targetExtent() const { return {m_sceneColor->width, m_sceneColor->height}; }
 
 	/**
 	 * @brief Upload the iris/starburst textures of the mounted lens, if not already uploaded
@@ -347,7 +358,7 @@ private:
 	const RenderTarget* m_sceneColor = nullptr;
 
 	vk::RenderPass m_renderPass;      // Color-only RGBA16F, loadOp=eLoad (additive to scene)
-	vk::Framebuffer m_sceneColorFB;   // Scene color as attachment 0
+	vk::Framebuffer m_sceneColorFB;   // m_sceneColor as attachment 0
 
 	// Dedicated per-frame UBO ring: lens_flare_data (~5 KB) exceeds the shared
 	// scratch ring's slot size (see PostProcessContext::SCRATCH_UBO_SLOT_SIZE).

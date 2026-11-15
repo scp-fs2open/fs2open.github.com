@@ -108,8 +108,8 @@ bool VulkanLensFlare::createFramebuffer()
 	fbInfo.renderPass = m_renderPass;
 	fbInfo.attachmentCount = 1;
 	fbInfo.pAttachments = &m_sceneColor->view;
-	fbInfo.width = m_ctx->sceneExtent.width;
-	fbInfo.height = m_ctx->sceneExtent.height;
+	fbInfo.width = m_sceneColor->width;
+	fbInfo.height = m_sceneColor->height;
 	fbInfo.layers = 1;
 
 	try {
@@ -256,7 +256,7 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 		return;
 	}
 
-	// Scene color: eShaderReadOnlyOptimal (after scene pass) -> eColorAttachmentOptimal
+	// Target: eShaderReadOnlyOptimal (after the scene pass, or after the FSR dispatch) -> eColorAttachmentOptimal
 	{
 		vk::ImageMemoryBarrier barrier;
 		barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
@@ -285,7 +285,8 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 	rpBegin.renderPass = m_renderPass;
 	rpBegin.framebuffer = m_sceneColorFB;
 	rpBegin.renderArea.offset = vk::Offset2D(0, 0);
-	rpBegin.renderArea.extent = m_ctx->sceneExtent;
+	const vk::Extent2D extent = targetExtent();
+	rpBegin.renderArea.extent = extent;
 
 	cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 	cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
@@ -295,16 +296,16 @@ void VulkanLensFlare::execute(vk::CommandBuffer cmd)
 	// image stores the screen top at row 0 (it was rendered with the same flip)
 	vk::Viewport viewport;
 	viewport.x = 0.0f;
-	viewport.y = static_cast<float>(m_ctx->sceneExtent.height);
-	viewport.width = static_cast<float>(m_ctx->sceneExtent.width);
-	viewport.height = -static_cast<float>(m_ctx->sceneExtent.height);
+	viewport.y = static_cast<float>(extent.height);
+	viewport.width = static_cast<float>(extent.width);
+	viewport.height = -static_cast<float>(extent.height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	cmd.setViewport(0, viewport);
 
 	vk::Rect2D scissor;
 	scissor.offset = vk::Offset2D(0, 0);
-	scissor.extent = m_ctx->sceneExtent;
+	scissor.extent = extent;
 	cmd.setScissor(0, scissor);
 
 	// Set 1: Material -- the mounted lens's iris + starburst, shared by every sun,
