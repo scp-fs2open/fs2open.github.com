@@ -32,7 +32,7 @@ static auto DofOption = options::OptionBuilder<bool>("Graphics.DepthOfField",
 static auto DofMaxBlurOption = options::OptionBuilder<int>("Graphics.DepthOfFieldMaxBlur",
                      std::pair<const char*, int>{"Depth of field max blur", -1},
                      std::pair<const char*, int>{"Largest blur radius, in pixels at 1080 lines and the default field of view. "
-                                                 "The blur grows with the resolution and when the view zooms in", -1})
+                                                 "The blur grows with the resolution and when the view zooms in, up to 128 pixels", -1})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
                      .range(1, 32)
@@ -85,7 +85,8 @@ bool dof_get_frame(dof_frame* out)
 	// Limit: an asymmetric (VR) field of view uses the default field of view for the scale.
 	const float fov_y = std::holds_alternative<float>(Proj_fov) ? std::get<float>(Proj_fov) : DOF_REFERENCE_FOV;
 	out->near_dist = static_cast<float>(Dof_near_dist);
-	out->max_blur = static_cast<float>(Dof_max_blur) * dof_pixel_scale(static_cast<float>(gr_screen.max_h), fov_y);
+	out->max_blur = std::min(static_cast<float>(Dof_max_blur) * dof_pixel_scale(static_cast<float>(gr_screen.max_h), fov_y),
+		static_cast<float>(DOF_TILE_SIZE * DOF_TILE_REACH));
 	return true;
 }
 

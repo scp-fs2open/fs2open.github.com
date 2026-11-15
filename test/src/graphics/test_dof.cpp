@@ -92,11 +92,12 @@ TEST_F(Dof, MoreTapsForAWiderBlur)
 
 TEST_F(Dof, ShaderTapLimitMatchesTheHeader)
 {
-	// dof_samples() never asks for more taps than the shader's loop allows.
+	// The shader's tap cap equals DOF_MAX_SAMPLES, and its tap count uses the formula of dof_samples().
 	const auto shader = defaults_get_file("dof-f.sdr");
 	ASSERT_NE(shader.data, nullptr);
 	const SCP_string text(static_cast<const char*>(shader.data), shader.size);
 	EXPECT_NE(text.find("const int MAX_SAMPLES = " + std::to_string(DOF_MAX_SAMPLES) + ";"), SCP_string::npos);
+	EXPECT_NE(text.find("clamp(int(96.0 * (radius / 16.0) * (radius / 16.0)), 32, MAX_SAMPLES)"), SCP_string::npos);
 }
 
 TEST_F(Dof, ShaderTileSizeMatchesTheHeader)
@@ -105,6 +106,7 @@ TEST_F(Dof, ShaderTileSizeMatchesTheHeader)
 	ASSERT_NE(shader.data, nullptr);
 	const SCP_string text(static_cast<const char*>(shader.data), shader.size);
 	EXPECT_NE(text.find("const int DOF_TILE = " + std::to_string(DOF_TILE_SIZE) + ";"), SCP_string::npos);
+	EXPECT_NE(text.find("const int DOF_TILE_REACH = " + std::to_string(DOF_TILE_REACH) + ";"), SCP_string::npos);
 }
 
 TEST_F(Dof, OptionsExistAndDefaultOff)
@@ -130,6 +132,12 @@ TEST_F(Dof, FrameFollowsTheOptions)
 	ASSERT_TRUE(dof_get_frame(&frame));
 	EXPECT_FLOAT_EQ(frame.near_dist, 80.0f);
 	EXPECT_FLOAT_EQ(frame.max_blur, 24.0f); // 12 px at 1080 lines is 24 px at 2160
+
+	// a blur wider than the tile search is clamped to it
+	set_option("Graphics.DepthOfFieldMaxBlur", "32");
+	Proj_fov = 0.2f * PROJ_FOV_FACTOR;
+	ASSERT_TRUE(dof_get_frame(&frame));
+	EXPECT_FLOAT_EQ(frame.max_blur, static_cast<float>(DOF_TILE_SIZE * DOF_TILE_REACH));
 }
 
 TEST_F(Dof, EveryOptionRequiresOpenGL)

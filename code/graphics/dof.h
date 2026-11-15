@@ -22,6 +22,10 @@ constexpr int DOF_MAX_SAMPLES = 512; // the shader's MAX_SAMPLES
 // Side of a tile of the largest near CoC, in pixels (DOF_TILE in dof-common.sdr).
 constexpr int DOF_TILE_SIZE = 16;
 
+// How many tiles away the neighbour pass looks (DOF_TILE_REACH in dof-common.sdr). The max blur on screen is
+// clamped to this reach, so that the search always finds every near disc that can reach a pixel.
+constexpr int DOF_TILE_REACH = 8;
+
 // Gather taps for a disc of this radius: the density of 96 taps on 16 px, at least 32, at most DOF_MAX_SAMPLES.
 // Past about 37 px the cap makes the gaps between the taps grow and the blur noisier. This is the reference for
 // the tap count in dof-f.sdr, which computes it per pixel from the sampled radius.
