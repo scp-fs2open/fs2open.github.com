@@ -64,6 +64,14 @@ bool any_thruster_flares_enabled()
 		[](const species_info& species) { return species.thruster_flare.enabled; });
 }
 
+// Whether the camera is in a cockpit view of Viewer_obj. Keep this the same as
+// c_viewer in obj_render_all().
+bool viewer_in_cockpit_view()
+{
+	return !Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) ||
+		   (Viewer_mode & VM_TRACK);
+}
+
 // Append one source per lit, camera-facing nozzle of this ship. Nothing at all
 // when its engines are off, destroyed, or the ship isn't drawn.
 void gather_ship_nozzles(const object* objp, SCP_vector<flare_source>& out)
@@ -83,9 +91,12 @@ void gather_ship_nozzles(const object* objp, SCP_vector<flare_source>& out)
 		shipp->flags[Ship::Ship_Flags::Disabled] || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) {
 		return;
 	}
-	// The player's own ship isn't drawn from inside its own cockpit, so its
-	// engines -- a couple of metres behind the camera -- must not flare either
-	if (objp == Viewer_obj && !(Viewer_mode & VM_TOPDOWN)) {
+	// In a cockpit view, the camera is inside the viewer's ship, and its engines
+	// are behind the camera. They must not flare. This is the same test that
+	// obj_render_all() uses to draw the viewer's ship as a
+	// cockpit. In all other views (chase, external, top-down), the renderer draws
+	// the ship from outside, so its engines flare as on any other ship.
+	if (objp == Viewer_obj && viewer_in_cockpit_view()) {
 		return;
 	}
 
