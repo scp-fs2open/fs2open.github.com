@@ -349,6 +349,8 @@ namespace animation {
 			inline AnimationList() : AnimationList(-1) {}
 			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
 			int getTime() const;
+			//Milliseconds until the triggered animations in this list reach their end in their current direction
+			int getRemainingTime() const;
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
 			void setSpeed(float speed = 1.0f) const;
 			AnimationList& operator+=(const AnimationList& rhs);
