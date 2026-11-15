@@ -1,0 +1,123 @@
+// Near-field depth of field: one full-resolution gather on the HDR scene colour, before bloom and
+// tonemapping. The focus is at infinity, so only what is nearer than nearDist blurs (dof.h has the
+// model). The sky and the cockpit stay sharp. OpenGL only.
+// Limits:
+// - No depth order test: a less near object can also spread a little over a nearer one.
+// - An effect that writes no depth (a laser bolt, a particle, a thruster) takes the CoC of what is
+//   behind it.
+// ponytail: every pixel pays all taps, also with nothing near; a tile pass of the max CoC can skip them.
+#ifdef GL_ES
+precision highp float;
+precision highp sampler2D;
+#endif
+
+layout(location = 0) out vec4 fragOut0;
+
+in vec4 fragTexCoord;
+
+uniform sampler2D tex;       // HDR scene colour
+uniform sampler2D depth_tex; // scene depth, [0,1] perspective depth
+uniform sampler2D cockpit_depth_tex; // the cockpit has its own depth buffer; 1 where there is no cockpit
+
+layout(std140) uniform genericData {
+	float nearDist; // view z (metres) where the blur starts; the blur is maxBlur at nearDist / 2
+	float maxBlur;  // circle of confusion (CoC) clamp in pixels
+	float zNear;
+	float zFar;
+
+	float samples;  // gather taps, at most MAX_SAMPLES
+	float pad0;
+	float pad1;
+	float pad2;
+};
+
+const int MAX_SAMPLES = 512; // DOF_MAX_SAMPLES in dof.h
+const float GOLDEN_ANGLE = 2.39996323;
+
+float linear_z(float d)
+{
+	return 2.0 * zNear * zFar / (zFar + zNear - (2.0 * d - 1.0) * (zFar - zNear));
+}
+
+bool in_cockpit(vec2 suv)
+{
+	return texture(cockpit_depth_tex, suv).x < 1.0;
+}
+
+// The CoC in pixels, or -1 for the cockpit, which never blurs and is never behind anything.
+float coc_of(vec2 suv)
+{
+	// The scene depth under the cockpit is the space behind it, so the cockpit must be tested first.
+	if (in_cockpit(suv)) {
+		return -1.0;
+	}
+	float d = texture(depth_tex, suv).x;
+	// The sky has no depth: it is at infinity, where the focus is.
+	if (d >= 1.0) {
+		return 0.0;
+	}
+	// dof_coc() in dof.cpp gives the same value.
+	return clamp(nearDist / max(linear_z(d), 1.0e-3) - 1.0, 0.0, 1.0) * maxBlur;
+}
+
+// Colour and depth must come from the same texel. Bilinear colour next to nearest depth
+// lets a sharp ship's edge colour into the sky blur as a dark outline.
+vec2 snap_uv(vec2 suv, vec2 texel)
+{
+	return (floor(suv / texel) + 0.5) * texel;
+}
+
+void main()
+{
+	vec2 uv = fragTexCoord.xy;
+	vec2 texel = 1.0 / vec2(textureSize(depth_tex, 0));
+	vec3 centre = texture(tex, uv).rgb;
+
+	// The cockpit is nearer than any scene object, so nothing spreads over it.
+	if (in_cockpit(uv)) {
+		fragOut0 = vec4(centre, 1.0);
+		return;
+	}
+
+	// Scatter as gather. Each blurred pixel spreads its colour over its own CoC disc with a smooth falloff,
+	// 3 (1 - (r / CoC)^2)^2 times the even share, which also sums to 1 over the disc. An even disc (the
+	// bokeh of a real lens) left a visible rim at the end of each halo. The taps cover
+	// a disc of radius maxBlur, so each tap stands for maxBlur^2 / n pixels and adds that share of its own
+	// disc (1 / CoC^2 of it) when the disc reaches this pixel. The sum of the shares is the coverage: 1
+	// inside a blurred object, about 0.5 at its outline, 0 at the end of its reach.
+	// The part that no disc covers shows what is behind the near object. That is hidden, so the farther
+	// pixels within this pixel's own CoC stand for it; the cockpit is never behind anything.
+	float c0 = max(coc_of(uv), 0.0);
+	int n = min(int(samples), MAX_SAMPLES);
+	float tap_area = maxBlur * maxBlur / float(n);
+	// This pixel is a tap too; without it a near feature of one pixel can vanish at its own place.
+	float coverage = c0 > 0.0 ? 3.0 * tap_area / max(c0 * c0, 1.0) : 0.0;
+	vec3 near_sum = centre * coverage;
+	vec3 behind_sum = vec3(0.0);
+	float behind_n = 0.0;
+	for (int i = 0; i < n; i++) {
+		float r = maxBlur * sqrt((float(i) + 0.5) / float(n));
+		float a = float(i) * GOLDEN_ANGLE;
+		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
+		float cs = coc_of(suv);
+		vec3 col = texture(tex, suv).rgb;
+		if (cs >= 0.0 && cs < c0 - 0.5 && r <= c0) {
+			behind_sum += col;
+			behind_n += 1.0;
+		}
+		if (cs <= 0.0) {
+			continue;
+		}
+		float reach = max(cs, 1.0);
+		float fall = max(1.0 - (r / reach) * (r / reach), 0.0);
+		float share = 3.0 * fall * fall * tap_area / (reach * reach);
+		near_sum += col * share;
+		coverage += share;
+	}
+	if (coverage > 1.0) {
+		near_sum /= coverage;
+		coverage = 1.0;
+	}
+	vec3 behind = behind_n > 0.0 ? behind_sum / behind_n : centre;
+	fragOut0 = vec4(near_sum + behind * (1.0 - coverage), 1.0);
+}

@@ -120,6 +120,10 @@ static ShaderTypeInfo SHADER_TYPES[] = {
 	// Vulkan-only
 	{ SDR_TYPE_MOTION_VECTORS, "post-v.sdr", "motion-vector-f.sdr", nullptr,
 		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Motion vectors", false },
+
+	// OpenGL-only
+	{ SDR_TYPE_DOF, "post-v.sdr", "dof-f.sdr", nullptr,
+		{ VATTRIB_POSITION, VATTRIB_TEXCOORD }, "Depth of field", false },
 };
 // clang-format on
 
