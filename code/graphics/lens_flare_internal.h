@@ -79,6 +79,11 @@ bool lens_flare_nozzle_apparent(const glow_point& gpt, const matrix& orient, con
 // ramps that light.
 void lens_flare_gather_beam_sources(SCP_vector<flare_source>& out, int budget);
 
+// Whether the camera is in a cockpit view of Viewer_obj. In a cockpit view, the
+// camera is inside the viewer's ship. Keep this the same as c_viewer in
+// obj_render_all(), which uses it to draw the viewer's ship as a cockpit.
+bool lens_flare_viewer_in_cockpit_view();
+
 // The maximum number of visibility raycasts for each budget slot. See lens_flare_commit_candidates().
 constexpr int LENS_FLARE_RAYCASTS_PER_SLOT = 2;
 

@@ -159,14 +159,18 @@ bool pass_globally_possible()
 // times the off-axis falloff that takes the whole effect out as the sun leaves
 // the frame. `dot` is the sun direction against the view axis, `dt` the frame
 // time, and `snap` skips the smoothing when the pass hasn't run for a while.
-float sun_visibility(int sun_n, int light_idx, float dot, float dt, bool snap)
+float sun_visibility(int sun_n, const vec3d& sun_dir, float dot, float dt, bool snap)
 {
 	if (static_cast<int>(Sun_visibility.size()) <= sun_n) {
 		Sun_visibility.resize(sun_n + 1, 0.0f);
 	}
 
-	bool occluded = (dot <= 0.0f) ||
-		(light_idx >= 0 && shipfx_eye_in_shadow(&Eye_position, Viewer_obj, light_idx));
+	// In a cockpit view, the eye is inside the viewer's ship, so its hull must not hide the sun. In all
+	// other views, the viewer's ship is an object in the scene like any other.
+	object* exclude = lens_flare_viewer_in_cockpit_view() ? Viewer_obj : nullptr;
+	// This runs at the start of stars_draw(), before stars_draw_sun() adds the sun lights of this frame.
+	// The light list is empty here, so the test uses the sun direction and not the light.
+	bool occluded = (dot <= 0.0f) || shipfx_eye_in_shadow_dir(&Eye_position, exclude, &sun_dir);
 
 	float target = occluded ? 0.0f : 1.0f;
 	float& vis = Sun_visibility[sun_n];
@@ -767,6 +771,12 @@ bool lens_flare_point_visible(const vec3d& world_pos)
 	return test_line_of_sight(&Eye_position, &test_point, {}, 0.0f);
 }
 
+bool lens_flare_viewer_in_cockpit_view()
+{
+	return !Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) ||
+		   (Viewer_mode & VM_TRACK);
+}
+
 void lens_flare_commit_candidates(SCP_vector<flare_source>& out, SCP_vector<flare_source>& candidates, int budget)
 {
 	if (budget <= 0 || candidates.empty()) {
@@ -818,13 +828,7 @@ void gather_sun_sources(SCP_vector<flare_source>& out, float dt, bool snap)
 
 		float dot = vm_vec_dot(&sun_dir, &Eye_matrix.vec.fvec);
 
-		// a sun the engine gives no glare gets no flare either
-		int light_idx = light_find_for_sun(sun_n);
-		if (light_idx >= 0 && !light_has_glare(light_idx)) {
-			continue;
-		}
-
-		float total_vis = sun_visibility(sun_n, light_idx, dot, dt, snap);
+		float total_vis = sun_visibility(sun_n, sun_dir, dot, dt, snap);
 		if (total_vis < 0.005f) {
 			continue;
 		}
