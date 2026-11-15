@@ -51,8 +51,10 @@ TEST_F(Gtao, PixelRadiusScalesWithResolution)
 
 TEST_F(Gtao, PixelRadiusIsClamped)
 {
-	// Upper limit: one eighth of the screen height
-	EXPECT_FLOAT_EQ(gtao_pixel_radius(100.0f, 2.0f, 720), 90.0f);
+	// Upper limit: a quarter of the screen height
+	EXPECT_FLOAT_EQ(gtao_pixel_radius(100.0f, 2.0f, 720), 180.0f);
+	// The largest radius setting stays below the limit at proj11 = 2 (a 53 degree vertical field of view)
+	EXPECT_LT(gtao_pixel_radius(6.0f, 2.0f, 720), 180.0f);
 	// Lower limit: 2 px, so that a sample never lands on the center texel only
 	EXPECT_FLOAT_EQ(gtao_pixel_radius(0.001f, 2.0f, 720), 2.0f);
 }

@@ -29,7 +29,7 @@ static auto GtaoQualityOption __UNUSED = options::OptionBuilder<int>("Graphics.S
 static auto GtaoRadiusOption __UNUSED = options::OptionBuilder<float>("Graphics.SsaoRadius",
                      std::pair<const char*, int>{"Screen-Space Ambient Occlusion Radius", -1},
                      std::pair<const char*, int>{"Multiplier on the size of the area that screen-space ambient occlusion looks at", -1})
-                     .range(0.25f, 3.0f)
+                     .range(0.25f, 6.0f)
                      .bind_to(&Gtao_radius_scale)
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
@@ -41,7 +41,7 @@ static auto GtaoRadiusOption __UNUSED = options::OptionBuilder<float>("Graphics.
 static auto GtaoIntensityOption __UNUSED = options::OptionBuilder<float>("Graphics.SsaoIntensity",
                      std::pair<const char*, int>{"Screen-Space Ambient Occlusion Intensity", -1},
                      std::pair<const char*, int>{"How dark screen-space ambient occlusion makes the ambient light", -1})
-                     .range(0.5f, 4.0f)
+                     .range(0.5f, 8.0f)
                      .bind_to(&Gtao_intensity)
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
@@ -74,7 +74,7 @@ float gtao_pixel_radius(float radius_scale, float proj11, int screen_height)
 {
 	constexpr float radius_per_depth = 0.03f;
 	const float pixels = radius_per_depth * radius_scale * proj11 * 0.5f * static_cast<float>(screen_height);
-	return std::clamp(pixels, 2.0f, static_cast<float>(screen_height) / 8.0f);
+	return std::clamp(pixels, 2.0f, static_cast<float>(screen_height) / 4.0f);
 }
 
 // The options menu greys the options out by the same rule, see gtao_set_option_requirements().
