@@ -622,6 +622,9 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
+// A window that may be off the saved Display without the player moving it looks like one they dragged, so remember it
+static bool Display_unapplied = false;
+
 static void save_fullscreen_display(SDL_DisplayID display)
 {
 	auto manager = options::OptionsManager::instance();
@@ -657,8 +660,20 @@ static SCP_vector<const options::OptionBase*> apply_window_placement(
 	auto window = os::getSDLMainWindow();
 	const auto state = Gr_configured_window_state;
 	SDL_DisplayID display = 0;
-	if (display_changed) {
+	// An unpersisted Display edit is not the saved Display, so it can neither be aimed at nor clear the flag
+	const bool display_pending =
+		options::OptionsManager::instance()->hasPendingEdit(VideoDisplayOption->getConfigKey());
+	// Wayland places windows itself and does not reliably report where, so Fullscreen alone keeps the saved Display
+	const bool wayland = window != nullptr && !SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland");
+	const bool aim_saved = (Display_unapplied || wayland) && !display_changed && !display_pending;
+	if (display_changed || aim_saved) {
 		display = VideoDisplayOption->getValue();
+		if (aim_saved && state == os::ViewportState::Fullscreen && window != nullptr &&
+			SDL_GetDisplayForWindow(window) != display) {
+			mprintf(("Fullscreen aims at display %u, the display option, not at display %u where the window is\n",
+				display,
+				SDL_GetDisplayForWindow(window)));
+		}
 	} else if (window != nullptr) {
 		// Fullscreen picked alone stays on the monitor the player moved the window to
 		display = SDL_GetDisplayForWindow(window);
@@ -687,8 +702,9 @@ static SCP_vector<const options::OptionBase*> apply_window_placement(
 		SCP_vector<const options::OptionBase*> unapplied;
 		const bool on_display = window != nullptr && SDL_GetDisplayForWindow(window) == display;
 		// A monitor with no mode of the window's size leaves fullscreen on the display of the last fullscreen mode
-		const bool fullscreen_elsewhere =
-			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
+		// Missing the saved Display when it was the target is not a Window Mode failure
+		const bool fullscreen_elsewhere = window != nullptr && state == os::ViewportState::Fullscreen &&
+										  !display_changed && !aim_saved && !on_display;
 		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
 		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
 		// The prompt names only options in this persist, so a mode the move broke counts against Display
@@ -711,8 +727,15 @@ static SCP_vector<const options::OptionBase*> apply_window_placement(
 	for (const auto* option : unapplied) {
 		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
 	}
-	// The saved Display follows where the game actually is, even over a Display choice waiting on a restart
-	if (!display_changed && unapplied.empty() && state == os::ViewportState::Fullscreen) {
+	if (std::find(unapplied.begin(), unapplied.end(), VideoDisplayOption.get()) != unapplied.end()) {
+		Display_unapplied = true;
+	} else if (Display_unapplied && !display_pending && window != nullptr &&
+			   SDL_GetDisplayForWindow(window) == VideoDisplayOption->getValue()) {
+		mprintf(("The window reached display %u, the display option\n", VideoDisplayOption->getValue()));
+		Display_unapplied = false;
+	}
+	// The saved Display follows a window the player moved; when the saved Display was the target, it stays saved
+	if (!display_changed && !aim_saved && unapplied.empty() && state == os::ViewportState::Fullscreen) {
 		save_fullscreen_display(display);
 	}
 	return unapplied;
@@ -2703,6 +2726,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 	// now try to actually init everything...
 	if ( gr_init_sub(std::move(graphicsOps), mode, width, height, depth, center_aspect_ratio) == false ) {
 		return false;
+	}
+
+	// Compare the display the window was asked to open on, not SDL_GetDisplayForWindow(): Wayland has not told SDL yet
+	if (os::getSDLMainWindow() != nullptr) {
+		const auto window_display = gr_get_preferred_display();
+		Display_unapplied = window_display != VideoDisplayOption->getValue();
+		if (Display_unapplied) {
+			mprintf(("Window was asked to open on the global display %u, not on the display option's display %u\n",
+				window_display,
+				VideoDisplayOption->getValue()));
+		}
 	}
 
 	fsr_resolve_cmdline_setting();
