@@ -85,9 +85,12 @@ void main()
 	vec3 near_sum = centre * coverage;
 	vec3 behind_sum = vec3(0.0);
 	float behind_n = 0.0;
+	// Each pixel turns the spiral by its own angle (interleaved gradient noise, as in Jimenez 2014), so the
+	// gaps between taps do not line up from pixel to pixel into a visible pattern.
+	float spin = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
 	for (int i = 0; i < n; i++) {
 		float r = radius * sqrt((float(i) + 0.5) / float(n));
-		float a = float(i) * GOLDEN_ANGLE;
+		float a = float(i) * GOLDEN_ANGLE + spin;
 		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
 		float cs = coc_of(suv);
 		if (cs > 0.0) {
