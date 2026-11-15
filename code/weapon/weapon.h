@@ -36,7 +36,6 @@
 #include "utils/modular_curves.h"
 
 #include <optional>
-#include <tuple>
 
 class object;
 class ship;
@@ -352,13 +351,16 @@ struct ConditionalImpact {
 };
 
 enum class FiringPattern {
-	STANDARD,
-	CYCLE_FORWARD,
+	ALL_AT_ONCE,			// every firing point fires each volley (the default for primaries, per retail)
+	CYCLE_FORWARD,			// firing points take turns (the default for secondaries, per retail)
 	CYCLE_REVERSE,
-	RANDOM_EXHAUSTIVE,
-	RANDOM_NONREPEATING,
-	RANDOM_REPEATING,
+	RANDOM_EXHAUSTIVE,		// random order, but each point fires once before any point repeats
+	RANDOM_NONREPEATING,	// random order; consecutive volleys avoid repeating points where possible
+	RANDOM_REPEATING,		// fully random order every volley
 };
+
+// maps a tables string (e.g. "CYCLE FORWARD") to a firing pattern; case-insensitive
+std::optional<FiringPattern> firing_pattern_from_string(const char *name);
 
 float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
@@ -617,8 +619,8 @@ struct weapon_info
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
 	float fof_reset_rate;			//How quickly the FOF spread will reset over time (primary weapons only, this doesn't really make sense for turrets)
 	float max_fof_spread;			//The maximum fof increase that the shots can spread to
-	FiringPattern firing_pattern;
-	int	  shots;					//the number of shots that will be fired at a time, 
+	FiringPattern firing_pattern;	// see also Info_Flags::Firing_pattern_specified
+	int	  shots;					//the number of shots that will be fired at a time,
 									//only realy usefull when used with FOF to make a shot gun effect
 									//now also used for weapon point cycleing
 	int   cycle_multishot;			//ugly hack -- used to control multishot if the weapon uses any non-standard firing pattern, since $shots is used for fire point number
@@ -953,6 +955,17 @@ struct weapon_info
     inline bool is_beam()               const { return subtype == WP_BEAM || wi_flags[Weapon::Info_Flags::Beam]; }
     inline bool is_non_beam_primary()   const { return subtype == WP_LASER && !wi_flags[Weapon::Info_Flags::Beam]; }
 
+    // Fighter beams predate firing patterns, and originally cycled forward through +Shots: firing points per
+    // trigger pull, firing $Shots: beams from each.  That behavior is kept for compatibility unless the weapon
+    // tables a $Firing Pattern:, in which case the beam fires exactly like a gun would with that pattern.
+    inline bool uses_legacy_fighter_beam_firing() const { return is_beam() && b_info.beam_shots > 0 && !wi_flags[Weapon::Info_Flags::Firing_pattern_specified]; }
+
+    // Secondaries have always launched one missile from one firing point per trigger pull, and $Shots: already
+    // means something for the same weapon when it is fired from a turret.  Honoring $Shots: and $Cycle Multishot:
+    // on a secondary bank would therefore silently rebalance existing tables, so it only happens for a secondary
+    // that opts in by tabling a $Firing Pattern:.
+    inline bool uses_legacy_secondary_firing() const { return is_secondary() && !wi_flags[Weapon::Info_Flags::Firing_pattern_specified]; }
+
     inline bool is_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_heat,Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
 	inline bool is_locked_homing() const { return wi_flags.any_of(Weapon::Info_Flags::Homing_aspect,Weapon::Info_Flags::Homing_javelin); }
 	inline bool hurts_big_ships() const { return wi_flags.any_of(Weapon::Info_Flags::Bomb,Weapon::Info_Flags::Beam,Weapon::Info_Flags::Huge,Weapon::Info_Flags::Big_only); }
@@ -1044,7 +1057,8 @@ int weapon_create( const vec3d *pos,
 		0.f,
 		0.f,
 		0.f
-	});
+	},
+	bool resolve_substitution = true);
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, tracking_info &tinfo)
@@ -1052,9 +1066,10 @@ inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, track
 	weapon_set_tracking_info(weapon_objnum, parent_objnum, tinfo.objnum, tinfo.locked, tinfo.subsys);
 }
 
-// gets the substitution pattern pointer for a given weapon
-// returns [use_substitution, substituted_weapon_info_index]
-std::tuple<bool, int> get_weapon_substitution_tuple(int weapon_info_index, ship_weapon *swp, int pbank, int sbank, ship *shipp_to_check);
+// Steps the bank's $Substitute: pattern and returns the weapon class to fire: weapon_info_index itself if the
+// weapon has no pattern, or -1 if this step fires nothing.  Ship banks call this themselves (primaries once per
+// projectile, secondaries once per volley) and then pass resolve_substitution = false to weapon_create.
+int weapon_resolve_substitution(int weapon_info_index, ship_weapon *swp, int pbank, int sbank);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);
