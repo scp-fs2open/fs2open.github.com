@@ -47,10 +47,11 @@ void main()
 
 	// Scatter as gather. Each blurred pixel spreads its colour over its own CoC disc with a smooth falloff,
 	// 3 (1 - (r / CoC)^2)^2 times the even share, which also sums to 1 over the disc. An even disc (the
-	// bokeh of a real lens) left a visible rim at the end of each halo. The taps cover
-	// a disc of the sampling radius, so each tap stands for pi radius^2 / n pixels and adds that share of its
-	// own disc (1 / (pi CoC^2) of it) when the disc reaches this pixel; pi cancels, so tap_area leaves it out. The sum of the shares is the coverage: 1
-	// inside a blurred object, about 0.5 at its outline, 0 at the end of its reach.
+	// bokeh of a real lens) left a visible rim at the end of each halo. The taps cover a disc of the sampling
+	// radius, so each tap stands for pi radius^2 / n pixels and adds that share of its own disc
+	// (1 / (pi CoC^2) of it) when the disc reaches this pixel; pi cancels, so tap_area leaves it out.
+	// The sum of the shares is the coverage: 1 inside a blurred object, about 0.5 at its outline, 0 at the
+	// end of its reach.
 	// The part that no disc covers shows what is behind the near object. That is hidden, so the farther
 	// pixels within this pixel's own CoC stand for it; the cockpit is never behind anything.
 	// This is the near layer (near_sum, with coverage as its alpha) over the far layer (behind), as in

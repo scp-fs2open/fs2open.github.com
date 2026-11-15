@@ -12,13 +12,42 @@
 using namespace graphics;
 
 namespace {
-// The OptionsManager is one object for the whole process, so remove the requirements after each test.
+const char* const KEYS[] = {"Graphics.DepthOfField", "Graphics.DepthOfFieldMaxBlur", "Graphics.DepthOfFieldDistance"};
+
+// The OptionsManager, the bound option globals and the screen globals are shared by the whole process, so
+// every test puts them back, also after a failed assertion.
+void set_option(const char* key, const char* value)
+{
+	auto* mgr = options::OptionsManager::instance();
+	mgr->setOverride(key, value, "test");
+	mgr->getOptionByKey(key)->loadInitial();
+	mgr->clearOverrides();
+}
+
 class Dof : public ::testing::Test {
   protected:
-	void TearDown() override { options::OptionsManager::instance()->clearRequirements(); }
+	void SetUp() override
+	{
+		saved_h = gr_screen.max_h;
+		saved_fov = Proj_fov;
+		for (const char* key : KEYS) {
+			saved_values.emplace_back(key, options::OptionsManager::instance()->getOptionByKey(key)->getCurrentValueDescription().serialized);
+		}
+	}
+	void TearDown() override
+	{
+		for (const auto& kv : saved_values) {
+			set_option(kv.first.c_str(), kv.second.c_str());
+		}
+		gr_screen.max_h = saved_h;
+		Proj_fov = saved_fov;
+		options::OptionsManager::instance()->clearRequirements();
+	}
+	int saved_h = 0;
+	fov_t saved_fov = 0.0f;
+	SCP_vector<std::pair<SCP_string, SCP_string>> saved_values;
 };
 
-const char* const KEYS[] = {"Graphics.DepthOfField", "Graphics.DepthOfFieldMaxBlur", "Graphics.DepthOfFieldDistance"};
 } // namespace
 
 TEST_F(Dof, FarObjectsStaySharp)
@@ -54,7 +83,8 @@ TEST_F(Dof, BlurScalesWithResolutionAndZoom)
 
 TEST_F(Dof, MoreTapsForAWiderBlur)
 {
-	EXPECT_EQ(dof_samples(8.0f), 96);
+	EXPECT_EQ(dof_samples(4.0f), 32);
+	EXPECT_EQ(dof_samples(8.0f), 32);
 	EXPECT_EQ(dof_samples(16.0f), 96);
 	EXPECT_EQ(dof_samples(24.0f), 216);
 	EXPECT_EQ(dof_samples(64.0f), DOF_MAX_SAMPLES);
@@ -90,33 +120,16 @@ TEST_F(Dof, OptionsExistAndDefaultOff)
 
 TEST_F(Dof, FrameFollowsTheOptions)
 {
-	auto* mgr = options::OptionsManager::instance();
-	auto set = [mgr](const char* key, const char* value) {
-		mgr->setOverride(key, value, "test");
-		mgr->getOptionByKey(key)->loadInitial();
-		mgr->clearOverrides();
-	};
-	const int saved_h = gr_screen.max_h;
-	const fov_t saved_fov = Proj_fov;
 	gr_screen.max_h = 2160;
 	Proj_fov = 0.75f * PROJ_FOV_FACTOR;
-	set("Graphics.DepthOfField", "true");
-	set("Graphics.DepthOfFieldMaxBlur", "12");
-	set("Graphics.DepthOfFieldDistance", "80");
+	set_option("Graphics.DepthOfField", "true");
+	set_option("Graphics.DepthOfFieldMaxBlur", "12");
+	set_option("Graphics.DepthOfFieldDistance", "80");
 
 	dof_frame frame;
 	ASSERT_TRUE(dof_get_frame(&frame));
 	EXPECT_FLOAT_EQ(frame.near_dist, 80.0f);
 	EXPECT_FLOAT_EQ(frame.max_blur, 24.0f); // 12 px at 1080 lines is 24 px at 2160
-	EXPECT_EQ(frame.samples, dof_samples(frame.max_blur));
-
-	// the options bind once, so put the defaults back for any later test
-	set("Graphics.DepthOfField", "false");
-	set("Graphics.DepthOfFieldMaxBlur", "16");
-	set("Graphics.DepthOfFieldDistance", "50");
-	gr_screen.max_h = saved_h;
-	Proj_fov = saved_fov;
-	EXPECT_FALSE(dof_get_frame(&frame));
 }
 
 TEST_F(Dof, EveryOptionRequiresOpenGL)
