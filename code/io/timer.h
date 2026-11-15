@@ -109,6 +109,12 @@ extern std::uint64_t timer_get_nanoseconds();
 extern int timer_get_seconds();				// seconds since program started... not accurate, but good for long
 											//     runtimes with second-based timeouts
 
+// Optional authoritative mission clock for headless experiment runs. Wall-clock
+// timer APIs remain unchanged so profiling and UI deadlines keep real time. Like the
+// real clock it only moves forward, across missions too.
+void timer_set_simulation_clock_enabled(bool enabled);
+void timer_advance_simulation_clock(fix delta);
+
 
 //=================================================================
 //=================================================================
