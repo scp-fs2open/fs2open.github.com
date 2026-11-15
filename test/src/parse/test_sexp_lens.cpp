@@ -210,3 +210,31 @@ TEST_F(SexpLensTableTest, FlareStrengthOperatorTouchesEveryKnobItDocuments)
 
 	graphics::lens_flare_reset_for_level();
 }
+
+// set-lens-flare-strength scales against lens_flare_resolve_settings() with the
+// mission's own overrides. That baseline must ignore the overrides in force, or
+// a repeated call compounds and a call with 0 can never be undone.
+TEST_F(SexpLensTableTest, FlareStrengthBaselineIgnoresLiveOverrides)
+{
+	const int idx = graphics::lens_flare_lookup("angenieux_100mm");
+	ASSERT_GE(idx, 0);
+	graphics::lens_flare_switch_to("angenieux_100mm");
+
+	const graphics::lens_settings tabled = graphics::lens_flare_resolve_settings(idx, {});
+
+	graphics::lens_overrides mission;
+	mission.intensity = tabled.intensity * 2.0f;
+
+	// a sexp that faded the flare out to nothing
+	graphics::lens_overrides& live = graphics::lens_flare_overrides();
+	live.intensity = 0.0f;
+	live.ghost_brightness = 0.0f;
+	graphics::lens_flare_overrides_changed();
+	ASSERT_FLOAT_EQ(graphics::lens_flare_effective_settings(idx).intensity, 0.0f);
+
+	const graphics::lens_settings base = graphics::lens_flare_resolve_settings(idx, mission);
+	EXPECT_FLOAT_EQ(base.intensity, tabled.intensity * 2.0f);
+	EXPECT_FLOAT_EQ(base.ghost_brightness, tabled.ghost_brightness);
+
+	graphics::lens_flare_reset_for_level();
+}
