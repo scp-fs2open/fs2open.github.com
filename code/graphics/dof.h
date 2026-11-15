@@ -18,7 +18,8 @@ float dof_coc(float z, float near_dist, float max_blur);
 float dof_pixel_scale(float screen_h, float fov_y);
 
 // Gather taps for a largest blur radius: 96 up to 16 px, then more, so that the gaps between the taps
-// stay the same up to about 37 px; past DOF_MAX_SAMPLES the gaps grow and the blur gets noisier.
+// stay the same up to about 37 px; past that, the cap of DOF_MAX_SAMPLES taps makes the gaps grow and the blur
+// noisier.
 constexpr int DOF_MAX_SAMPLES = 512; // the shader's MAX_SAMPLES
 
 // Side of a tile of the largest near CoC, in pixels (DOF_TILE in dof-common.sdr).
