@@ -325,6 +325,7 @@ static void opengl_post_pass_dof()
 	}
 
 	GR_DEBUG_SCOPE("Depth of field");
+	TRACE_SCOPE(tracing::DepthOfField);
 
 	if (!opengl_setup_dof_texture()) {
 		return;
@@ -344,6 +345,8 @@ static void opengl_post_pass_dof()
 	};
 
 	// Tile passes: the largest near CoC of each tile, then of each tile and the tiles within maxBlur of it.
+	{
+	TRACE_SCOPE(tracing::DepthOfFieldTiles);
 	GL_state.BindFrameBuffer(Dof_tile_framebuffer);
 	glViewport(0, 0, Dof_tiles_x, Dof_tiles_y);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_tile_textures[0], 0);
@@ -361,7 +364,9 @@ static void opengl_post_pass_dof()
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Dof_tile_textures[0]);
 	set_dof_data();
 	opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+	}
 
+	TRACE_SCOPE(tracing::DepthOfFieldGather);
 	GL_state.BindFrameBuffer(Dof_framebuffer);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Dof_texture, 0);
 	glViewport(0, 0, Scene_texture_width, Scene_texture_height);
