@@ -788,6 +788,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		bool has_min_speed = false;
+
 		// allow a minimum speed to be set for the player ship (only)
 		if ( Player_ship != nullptr && Player_ship->ship_info_index >= 0 ) {
 			float z_min = Ship_info[Player_ship->ship_info_index].min_vel.xyz.z;
@@ -806,7 +807,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		// Reverse ignored with a minimum speed: thrust would swing between reverse and forward each frame at that speed
 		if ( reverse_time > 0.0f && afterburner_down && !has_min_speed ) {
-			// 0 for ships that can't reverse keeps throttle cruise after fuel runs out, as retail ship data expects
+			// 0 for ships with no reverse thrust or reverse afterburner keeps throttle cruise, as retail ship data expects
 			ci->forward = (pi->afterburner_max_reverse_vel > 0.0f || pi->max_rear_vel > 0.0f) ? -1.0f : 0.0f;
 		}
 
