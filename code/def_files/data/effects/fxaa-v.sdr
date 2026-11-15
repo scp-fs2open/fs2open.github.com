@@ -11,6 +11,7 @@ void main() {
 }
 #else
 in vec4 vertPosition;
+in vec4 vertTexCoord;
 
 out vec2 v_rcpFrame;
 #ifdef GL_ES

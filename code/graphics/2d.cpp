@@ -1146,28 +1146,6 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      })
                      .importance(77)
                      .finish();
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return {};
-	}
-
-	if (max <= 2.0f) {
-		return {};
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
 static SCP_string anisotropic_display(float val)
 {
 	if (val < 2.0f) {
@@ -1191,7 +1169,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
@@ -1309,6 +1287,29 @@ bool gr_is_fxaa_mode(AntiAliasMode mode)
 }
 bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
+}
+
+SCP_vector<float> gr_get_supported_anisotropy_levels()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
 }
 
 static void parse_post_processing_func()

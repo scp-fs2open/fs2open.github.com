@@ -123,6 +123,7 @@ EditorViewport::EditorViewport(Editor* in_editor, std::unique_ptr<FredRenderer>&
 	syncMissionLayerNames();
 
 	loadSettings();
+	view.Graphics.applyLive();
 
 	fredApp->runAfterInit([this]() { initialSetup(); });
 }
@@ -185,6 +186,8 @@ void EditorViewport::loadSettings() {
 	camera.setInvertOrbitY(settings.value("camera_invert_orbit_y", camera.getInvertOrbitY()).toBool());
 	camera.setOrbitSelectionMidpoint(settings.value("camera_orbit_selection_midpoint", camera.getOrbitSelectionMidpoint()).toBool());
 	settings.endGroup();
+
+	view.Graphics = GraphicsSettings::load();
 }
 
 void EditorViewport::saveSettings() const {
@@ -236,7 +239,10 @@ void EditorViewport::saveSettings() const {
 	settings.setValue("camera_invert_orbit_y",                  camera.getInvertOrbitY());
 	settings.setValue("camera_orbit_selection_midpoint",        camera.getOrbitSelectionMidpoint());
 	settings.endGroup();
+
+	view.Graphics.save();
 }
+
 void EditorViewport::needsUpdate() {
 	_renderer->scheduleUpdate();
 }

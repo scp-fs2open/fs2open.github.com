@@ -4,6 +4,7 @@
 #include "CameraController.h"
 #include "FredRenderer.h"
 #include "Editor.h"
+#include "GraphicsSettings.h"
 #include "IDialogProvider.h"
 #include "ui/ThemeMode.h"
 
@@ -56,12 +57,6 @@ struct ViewSettings {
 	bool Show_paths_fred = false;
 	bool Lighting_on = false;
 	bool FullDetail = false;
-	// Runs the viewport through the same HDR scene-texture + post-processing
-	// pipeline the game uses (bloom, tonemapping, lightshafts), instead of
-	// rendering straight to the default framebuffer.
-	// Off by default so existing missions keep looking exactly as they do today
-	// unless a FRED user opts in.
-	bool EnablePostProcessing = false;
 	bool Show_waypoints = true;
 	bool Show_props = true;
 	bool Show_jump_nodes = true;
@@ -69,6 +64,9 @@ struct ViewSettings {
 	bool Highlight_selectable_subsys = false;
 	int Outline_lod = 1;
 	float Label_font_scale = 1.0f;  // multiplier applied to viewport text labels
+
+	//! Preferences > Graphics. Owns its own persistence and apply rules; see GraphicsSettings.
+	GraphicsSettings Graphics;
 
 	ViewSettings();
 };
