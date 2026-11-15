@@ -1,5 +1,6 @@
 #include "math/vecmat.h"
 #include "object/object.h"
+#include "options/OptionsManager.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "util/FSTestFixture.h"
@@ -17,6 +18,9 @@ class PilotPlayerFileTest: public test::FSTestFixture {
 	void TearDown() override {
 		// Delete the converted files
 		cf_delete("asdf.json", CF_TYPE_PLAYERS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+
+		// Loading a pilot leaves its settings as pending edits, and their listeners dereference Player
+		options::OptionsManager::instance()->discardChanges();
 
 		FSTestFixture::TearDown();
 	}
