@@ -7587,6 +7587,10 @@ void mission_parse_set_arrival_locations()
 
 		// call function to set arrival location for this ship.
 		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, so->objnum, shipp->arrival_path_mask, NULL, NULL);
+
+		auto anchor_entry = ship_registry_get(shipp->arrival_anchor);
+		if (shipp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && anchor_entry != nullptr && anchor_entry->shipnum < 0)
+			Warning(LOCATION, "Ship %s is present at mission start but arrives from the docking bay of %s, which is not present; it starts at its placed position instead.", shipp->ship_name, anchor_entry->name);
 	}
 
 	// do the wings
