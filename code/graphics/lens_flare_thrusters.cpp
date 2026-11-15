@@ -100,13 +100,11 @@ void gather_ship_nozzles(const object* objp, SCP_vector<flare_source>& out)
 		return;
 	}
 
-	// How hard the engines are running, which is the same quantity the thruster
-	// geometry is stretched by -- so a nozzle flares exactly when its glow is
-	// drawn, at every throttle setting and not only under afterburner.
-	const float throttle = std::clamp(vm_vec_mag(&objp->phys_info.linear_thrust), 0.0f, 1.0f);
-	if (throttle <= 0.0f) {
-		return;
-	}
+	// How hard the main engines run. This is the same value that sizes the
+	// thruster glow: model_render_params::set_thruster_info() clamps the forward
+	// thrust to 0.1..1. Thus reverse and side thrust give the idle value, and the
+	// flare dims when the glow shrinks.
+	const float throttle = std::clamp(objp->phys_info.linear_thrust.xyz.z, 0.1f, 1.0f);
 	const bool use_ab = (objp->phys_info.flags & (PF_AFTERBURNER_ON | PF_BOOSTER_ON)) != 0;
 
 	if (sip->model_num < 0) {
