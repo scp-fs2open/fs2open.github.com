@@ -22,7 +22,7 @@ static auto GtaoQualityOption __UNUSED = options::OptionBuilder<int>("Graphics.S
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
                      .default_func([]() { return 0; })
-                     .importance(70)
+                     .importance(65)
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -34,7 +34,7 @@ static auto GtaoRadiusOption __UNUSED = options::OptionBuilder<float>("Graphics.
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
                      .default_func([]() { return 1.0f; })
-                     .importance(69)
+                     .importance(64)
                      .finish();
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -46,7 +46,7 @@ static auto GtaoIntensityOption __UNUSED = options::OptionBuilder<float>("Graphi
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
                      .default_func([]() { return 1.5f; })
-                     .importance(68)
+                     .importance(63)
                      .finish();
 
 gtao_sample_counts gtao_samples(int quality)
