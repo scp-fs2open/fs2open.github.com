@@ -728,6 +728,10 @@ static void profile_free(Profile *profile)
 static Profile *profile_update(Profile *profile, const char *section, const char *key, const char *value)
 {
 	if (profile == nullptr) {
+		/* nothing to delete */
+		if (value == nullptr)
+			return nullptr;
+
 		profile = (Profile *)vm_malloc(sizeof(Profile));
 
 		profile->sections = nullptr;
@@ -784,6 +788,11 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 	}
 
 	/* section not found */
+
+	// a null value means delete, so there is nothing to do; vm_strdup(nullptr) below would crash
+	if (value == nullptr)
+		return profile;
+
 	sp = (IniSection *)vm_malloc(sizeof(IniSection));
 	sp->next = nullptr;
 	sp->name = vm_strdup(section);
