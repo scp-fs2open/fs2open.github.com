@@ -4488,7 +4488,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// if wing is coming from docking bay, then be sure that ship we are arriving from actually exists
 		// (or will exist).
 		if ( wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
-			Assert( wingp->arrival_anchor.isValid() );
 			auto anchor_ship_entry = ship_registry_get(wingp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return 0 so we can evaluate again later.
@@ -5370,13 +5369,24 @@ void post_process_parse_names()
 }
 
 // Goober5000
-void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t anchor, int *path_mask)
+void resolve_path_masks(bool path_user_is_ship, const char *path_user, bool is_arrival, anchor_t anchor, int *path_mask)
 {
 	path_restriction_t *prp;
 
 	// if we have no restrictions, do a quick out
 	if (*path_mask < 0)
 	{
+		*path_mask = 0;
+		return;
+	}
+
+	// checked before the cache below because ships and wings with the same path names share one restriction
+	auto anchor_ship_entry = ship_registry_get(anchor);
+	if (anchor_ship_entry == nullptr)
+	{
+		auto which = is_arrival ? "arrival" : "departure";
+		parse_warning_or_record("%s %s has %s paths, but its %s anchor is not a ship in this mission — paths ignored.",
+			path_user_is_ship ? "Ship" : "Wing", path_user, which, which);
 		*path_mask = 0;
 		return;
 	}
@@ -5388,11 +5398,6 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, anchor_t 
 	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
 	{
 		int j, bay_path;
-
-		// get anchor ship
-		Assertion(anchor.isValid() && !(anchor.value() & ANCHOR_SPECIAL_ARRIVAL), "%s %s anchor %d is invalid or is a special arrival.  Get a coder!", path_user_is_ship ? "Ship" : "Wing", path_user, anchor.value());
-		auto anchor_ship_entry = ship_registry_get(anchor);
-		Assertion(anchor_ship_entry, "%s %s anchor %d could not be resolved to a ship.  Get a coder!", path_user_is_ship ? "Ship" : "Wing", path_user, anchor.value());
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		auto anchor_sip = anchor_ship_entry->sip();
@@ -5432,8 +5437,8 @@ void post_process_path_stuff()
 	// take care of parse objects (ships)
 	for (SCP_vector<p_object>::iterator pobjp = Parse_objects.begin(); pobjp != Parse_objects.end(); ++pobjp)
 	{
-		resolve_path_masks(true, pobjp->name, pobjp->arrival_anchor, &pobjp->arrival_path_mask);
-		resolve_path_masks(true, pobjp->name, pobjp->departure_anchor, &pobjp->departure_path_mask);
+		resolve_path_masks(true, pobjp->name, true, pobjp->arrival_anchor, &pobjp->arrival_path_mask);
+		resolve_path_masks(true, pobjp->name, false, pobjp->departure_anchor, &pobjp->departure_path_mask);
 	}
 
 	// take care of wings
@@ -5441,8 +5446,8 @@ void post_process_path_stuff()
 	{
 		wingp = &Wings[i];
 
-		resolve_path_masks(false, wingp->name, wingp->arrival_anchor, &wingp->arrival_path_mask);
-		resolve_path_masks(false, wingp->name, wingp->departure_anchor, &wingp->departure_path_mask);
+		resolve_path_masks(false, wingp->name, true, wingp->arrival_anchor, &wingp->arrival_path_mask);
+		resolve_path_masks(false, wingp->name, false, wingp->departure_anchor, &wingp->departure_path_mask);
 	}
 }
 
@@ -8009,9 +8014,9 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 	if ( location == ArrivalLocation::AT_LOCATION )
 		return -1;
 
-	Assert(anchor.isValid());
+	// an anchor that matches no ship arrives at its placed location
 	if (!anchor.isValid())
-		return -1;	// should never happen, but if it does, fail gracefully
+		return -1;
 
 	// this ship might possibly arrive at another location.  The location is based on the
 	// proximity of some ship (and some other special tokens)
@@ -8222,7 +8227,6 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 		// check to see if this ship is to arrive via a docking bay.  If so, and the ship to arrive from
 		// doesn't exist, don't create.
 		if ( objp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
-			Assert( objp->arrival_anchor.isValid() );
 			auto anchor_ship_entry = ship_registry_get(objp->arrival_anchor);
 
 			// see if ship is yet to arrive.  If so, then return -1 so we can evaluate again later.
