@@ -5380,12 +5380,11 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, bool is_a
 		return;
 	}
 
-	// checked before the cache below because ships and wings with the same path names share one restriction
 	auto anchor_ship_entry = ship_registry_get(anchor);
 	if (anchor_ship_entry == nullptr)
 	{
 		auto which = is_arrival ? "arrival" : "departure";
-		parse_warning_or_record("%s %s has %s paths, but its %s anchor is not a ship in this mission — paths ignored.",
+		parse_warning_or_record("%s %s has %s paths, but its %s anchor is not a ship in this mission; paths ignored.",
 			path_user_is_ship ? "Ship" : "Wing", path_user, which, which);
 		*path_mask = 0;
 		return;
@@ -5394,33 +5393,19 @@ void resolve_path_masks(bool path_user_is_ship, const char *path_user, bool is_a
 	// get path restriction info
 	prp = &Path_restrictions[*path_mask];
 
-	// uninitialized; compute the mask from scratch
-	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
+	// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
+	auto anchor_sip = anchor_ship_entry->sip();
+	anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
+
+	// resolve names to indexes
+	*path_mask = 0;
+	for (int j = 0; j < prp->num_paths; j++)
 	{
-		int j, bay_path;
+		int bay_path = model_find_bay_path(anchor_sip->model_num, prp->path_names[j]);
+		if (bay_path < 0)
+			continue;
 
-		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
-		auto anchor_sip = anchor_ship_entry->sip();
-		anchor_sip->model_num = model_load(anchor_sip->pof_file, anchor_sip);
-
-		// resolve names to indexes
-		*path_mask = 0;
-		for	(j = 0; j < prp->num_paths; j++)
-		{
-			bay_path = model_find_bay_path(anchor_sip->model_num, prp->path_names[j]);
-			if (bay_path < 0)
-				continue;
-
-			*path_mask |= (1 << bay_path);
-		}
-
-		// cache the result
-		prp->cached_mask = *path_mask;
-	}
-	// already computed; so reuse it
-	else
-	{
-		*path_mask = prp->cached_mask;
+		*path_mask |= (1 << bay_path);
 	}
 }
 
@@ -8043,7 +8028,6 @@ int mission_set_arrival_location(anchor_t anchor, ArrivalLocation location, int 
 	// arrive at its placed location
 	if (shipnum < 0)
 	{
-		Assert ( location != ArrivalLocation::FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
 		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
 		return -1;
 	}
@@ -8935,7 +8919,6 @@ int add_path_restriction()
 
 	// parse it
 	path_restriction_t temp;
-	temp.cached_mask = (1 << MAX_SHIP_BAY_PATHS);	// uninitialized value (too high)
 	temp.num_paths = (int)stuff_string_list(temp.path_names, MAX_SHIP_BAY_PATHS);
 
 	// no restriction?

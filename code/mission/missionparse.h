@@ -314,7 +314,6 @@ extern int Mission_callsign_count;
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
 	int num_paths;
-	int cached_mask;
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
