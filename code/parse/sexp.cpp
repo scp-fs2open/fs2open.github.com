@@ -17005,13 +17005,17 @@ void sexp_set_lens_flare_strength(int node)
 		[node](graphics::lens_settings& set, graphics::lens_overrides& overrides) {
 			int n = node;
 
-			// Stated against the value in force rather than a fixed constant, so
-			// "50" halves whatever the mounted lens tables instead of jumping to
-			// half of some other lens's number.
-			sexp_lens_next_scaled_pct(n, set.intensity, set.intensity, 100.0f);
-			sexp_lens_next_scaled_pct(n, set.ghost_brightness, set.ghost_brightness, 10000.0f);
-			sexp_lens_next_scaled_pct(n, set.starburst_brightness, set.starburst_brightness, 1000.0f);
-			sexp_lens_next_scaled_pct(n, set.starburst_scale, set.starburst_scale, 100.0f);
+			// The percentages are against a baseline: the mounted lens with the
+			// mission's own overrides, without changes from sexps. Thus "50" halves
+			// the value at mission start. A repeated call gives the same value, and
+			// "100" restores the baseline, also after a call with "0".
+			const graphics::lens_settings base = graphics::lens_flare_resolve_settings(
+				graphics::lens_flare_active_lens(), The_mission.camera_lens_overrides);
+
+			sexp_lens_next_scaled_pct(n, set.intensity, base.intensity, 100.0f);
+			sexp_lens_next_scaled_pct(n, set.ghost_brightness, base.ghost_brightness, 10000.0f);
+			sexp_lens_next_scaled_pct(n, set.starburst_brightness, base.starburst_brightness, 1000.0f);
+			sexp_lens_next_scaled_pct(n, set.starburst_scale, base.starburst_scale, 100.0f);
 			sexp_lens_next_int(n, set.max_ghosts, 0, graphics::MAX_LENS_FLARE_GHOSTS);
 
 			overrides.intensity = set.intensity;
@@ -42394,9 +42398,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SET_LENS_FLARE_STRENGTH, "set-lens-flare-strength\r\n"
 		"\tChanges how strongly the mounted camera lens flares, without changing the\r\n"
-		"\tshape of anything. Every value is a percentage of what is currently in force,\r\n"
-		"\tso 50 halves whatever the mounted lens tables and 100 leaves it alone --\r\n"
-		"\twhich means the same event does the same thing whichever lens is mounted.\r\n\r\n"
+		"\tshape of anything. Every value is a percentage of the value at mission start:\r\n"
+		"\tthe mounted lens with the settings of this mission, without changes from\r\n"
+		"\tsexps. Thus 50 halves that value, and 100 restores it. A repeated call gives\r\n"
+		"\tthe same result, so the same event does the same thing whichever lens is\r\n"
+		"\tmounted.\r\n\r\n"
 		"\tUnlike set-lens-aperture and its relatives, this is cheap: it changes no\r\n"
 		"\ttexture, so there is nothing to rebuild and nothing to stutter. This is the\r\n"
 		"\toperator to use when the flare should brighten or fade over time -- drive it\r\n"
@@ -42404,7 +42410,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tDoes nothing (with a warning) if no lens is mounted. Everything goes back to\r\n"
 		"\tits tabled values when the mission ends. Not sent over the network.\r\n\r\n"
 		"\tTakes 1 to 5 arguments...\r\n"
-		"\t1:\tOverall flare intensity, as a percentage of the current value.\r\n"
+		"\t1:\tOverall flare intensity, as a percentage of the value at mission start.\r\n"
 		"\t2:\t(optional) Ghost brightness, as a percentage. Scales the ghost train --\r\n"
 		"\t\tthe row of iris images strung along the flare axis -- on its own.\r\n"
 		"\t3:\t(optional) Starburst brightness, as a percentage. Scales the spikes on\r\n"

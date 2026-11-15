@@ -322,6 +322,11 @@ bool lens_flare_aperture_edit_pending();
 // defaults for an invalid index.
 lens_settings lens_flare_effective_settings(int lens_idx);
 
+// Same as lens_flare_effective_settings(), but with the given overrides instead of the overrides in force. The
+// set-lens-flare-strength sexp uses this with the mission's own overrides, to get a baseline that the sexps do not
+// change.
+lens_settings lens_flare_resolve_settings(int lens_idx, const lens_overrides& overrides);
+
 // Lazily generate (and cache) the iris/starburst textures of the effective
 // aperture of a lens. Returns nullptr for an invalid index.
 //

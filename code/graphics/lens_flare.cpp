@@ -248,6 +248,11 @@ lens_overrides& lens_flare_overrides() { return Overrides; }
 
 lens_settings lens_flare_effective_settings(int lens_idx)
 {
+	return lens_flare_resolve_settings(lens_idx, Overrides);
+}
+
+lens_settings lens_flare_resolve_settings(int lens_idx, const lens_overrides& overrides)
+{
 	lens_settings s;
 	if (const lens_system* lens = lens_flare_get_system(lens_idx)) {
 		s.aperture = lens->aperture;
@@ -261,22 +266,22 @@ lens_settings lens_flare_effective_settings(int lens_idx)
 	// Whatever the camera has been restyled with wins over what the glass tables.
 	// The two brightness figures have no per-lens baseline to fall back to -- they
 	// calibrate the energy model itself -- so lens_settings' own defaults stand in.
-	if (Overrides.aperture)
-		s.aperture = *Overrides.aperture;
-	if (Overrides.anamorphic)
-		s.anamorphic = *Overrides.anamorphic;
-	if (Overrides.intensity)
-		s.intensity = *Overrides.intensity;
-	if (Overrides.starburst)
-		s.starburst = *Overrides.starburst;
-	if (Overrides.starburst_scale)
-		s.starburst_scale = *Overrides.starburst_scale;
-	if (Overrides.max_ghosts)
-		s.max_ghosts = *Overrides.max_ghosts;
-	if (Overrides.ghost_brightness)
-		s.ghost_brightness = *Overrides.ghost_brightness;
-	if (Overrides.starburst_brightness)
-		s.starburst_brightness = *Overrides.starburst_brightness;
+	if (overrides.aperture)
+		s.aperture = *overrides.aperture;
+	if (overrides.anamorphic)
+		s.anamorphic = *overrides.anamorphic;
+	if (overrides.intensity)
+		s.intensity = *overrides.intensity;
+	if (overrides.starburst)
+		s.starburst = *overrides.starburst;
+	if (overrides.starburst_scale)
+		s.starburst_scale = *overrides.starburst_scale;
+	if (overrides.max_ghosts)
+		s.max_ghosts = *overrides.max_ghosts;
+	if (overrides.ghost_brightness)
+		s.ghost_brightness = *overrides.ghost_brightness;
+	if (overrides.starburst_brightness)
+		s.starburst_brightness = *overrides.starburst_brightness;
 
 	return s;
 }
