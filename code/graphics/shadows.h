@@ -15,6 +15,8 @@
 #include "object/object.h"
 #include "render/3d.h"
 
+#include <functional>
+
 class ship_info;
 
 namespace graphics {
@@ -174,8 +176,11 @@ bool shadow_contact_hardening_enabled();
 
 void shadows_construct_light_frustum(vec3d *min_out, vec3d *max_out, vec3d light_vec, matrix *orient, vec3d *pos, fov_t fov, float aspect, float z_near, float z_far);
 bool shadows_obj_in_frustum(object *objp, vec3d *min, vec3d *max, matrix *light_orient);
+// The optional filter limits the objects that cast shadows: an object casts no shadow if the filter
+// gives false. An empty filter permits all objects. qtFRED uses it to apply its view filters.
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
-                        const vec3d* cam_offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
+                        const vec3d* cam_offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr,
+                        const std::function<bool(object*)>& filter = {});
 
 // Origin of the TLAS coordinate frame: every TLAS instance is translated by -this, so
 // coordinates near the viewer stay small and float32-precise no matter how far the viewer

@@ -1005,7 +1005,8 @@ static void render_viewer_shadow(object* objp, const matrix* light_matrix,
 }
 
 void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
-                        const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override)
+                        const vec3d* cam_offset, const matrix* rot_offset, const fov_t* fov_override,
+                        const std::function<bool(object*)>& filter)
 {
 	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
@@ -1050,6 +1051,9 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		if ( objp->flags[Object::Object_Flags::Should_be_dead] )
 			continue;
 
+		if ( filter && !filter(objp) )
+			continue;
+
 		bool cull = true;
 		for (const auto& Shadow_frustum : Shadow_frustums) {
 			if ( shadows_obj_in_frustum(objp, &light_matrix, &Shadow_frustum.min, &Shadow_frustum.max) ) {
@@ -1060,6 +1064,9 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 		if ( cull ) continue;
 
 		switch (objp->type) {
+		// Only FRED has OBJ_START objects: player-start ships. Their instance is a ship index, the
+		// same as for OBJ_SHIP.
+		case OBJ_START:
 		case OBJ_SHIP: {
 			if (objp == Viewer_obj) {
 				continue;

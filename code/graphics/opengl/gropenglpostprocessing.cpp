@@ -478,8 +478,11 @@ void opengl_post_lightshafts()
 
 				opengl_set_generic_uniform_data<graphics::generic_data::lightshaft_data>(
 					[&](graphics::generic_data::lightshaft_data* data) {
-						data->sun_pos.x = x;
-						data->sun_pos.y = y;
+						// The pass samples only the part of the scene targets that the frame fills (see
+						// opengl_draw_full_screen_scene_texture()). Thus put the sun position in the
+						// same coordinates as the texture coordinates of the pass.
+						data->sun_pos.x = x * Scene_texture_u_scale;
+						data->sun_pos.y = y * Scene_texture_v_scale;
 
 						auto& ls_params = graphics::Post_processing_manager->getLightshaftParams();
 						data->density      = ls_params.density;
