@@ -293,7 +293,8 @@ std::array<AdjacentLabel, 4> build_adjacent_labels(const vec3d& forward, const v
 
 void OrbitCamera::handleInput(
 	int dx, int dy, int dz, bool, bool lmbPressed, bool rmbDown, int modifierKeys, int mouseX, int mouseY) {
-	if (getLabManager()->Renderer->getShowOrientationWidget() && lmbPressed && handleOrientationWidgetClick(mouseX, mouseY)) {
+	if (getLabManager()->Renderer->getShowOrientationWidget() && !getLabManager()->Renderer->getHideUI() &&
+		lmbPressed && handleOrientationWidgetClick(mouseX, mouseY)) {
 		return;
 	}
 
