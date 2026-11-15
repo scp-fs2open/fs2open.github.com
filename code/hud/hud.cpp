@@ -2614,7 +2614,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		if (line.color_override != nullptr) {
 			gr_set_color_fast(line.color_override);
 		} else {
-			setGaugeColor(line.bright_index);
+			setGaugeColor(line.bright_index, config);
 		}
 
 		renderString(line.name_x, line.name_y, line.name.c_str(), scale, config);
