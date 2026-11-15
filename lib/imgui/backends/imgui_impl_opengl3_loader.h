@@ -691,6 +691,17 @@ static GL3WglProc get_proc(const char *proc)
 #else
 #include <dlfcn.h>
 
+// OpenBSD does not use the Linux shared library version suffixes.
+#if defined(__OpenBSD__)
+#define GL3W_LIBEGL_NAME    "libEGL.so"
+#define GL3W_LIBGLX_NAME    "libGLX.so"
+#define GL3W_LIBOPENGL_NAME "libOpenGL.so"
+#else
+#define GL3W_LIBEGL_NAME    "libEGL.so.1"
+#define GL3W_LIBGLX_NAME    "libGLX.so.0"
+#define GL3W_LIBOPENGL_NAME "libOpenGL.so.0"
+#endif
+
 static void* libgl;  // OpenGL library
 static void* libglx;  // GLX library
 static void* libegl;  // EGL library
@@ -734,9 +745,9 @@ static int open_libs(void)
     // First check what's already loaded, the windowing library might have
     // already loaded either EGL or GLX and we want to use the same one.
 
-    if (is_library_loaded("libEGL.so.1", &libegl) ||
-        is_library_loaded("libGLX.so.0", &libglx)) {
-        libgl = dlopen("libOpenGL.so.0", RTLD_LAZY | RTLD_LOCAL);
+    if (is_library_loaded(GL3W_LIBEGL_NAME, &libegl) ||
+        is_library_loaded(GL3W_LIBGLX_NAME, &libglx)) {
+        libgl = dlopen(GL3W_LIBOPENGL_NAME, RTLD_LAZY | RTLD_LOCAL);
         if (libgl)
             return GL3W_OK;
         else
@@ -754,8 +765,8 @@ static int open_libs(void)
     // because it is supported under both X11 and Wayland.
 
     // Load OpenGL + EGL
-    libgl = dlopen("libOpenGL.so.0", RTLD_LAZY | RTLD_LOCAL);
-    libegl = dlopen("libEGL.so.1", RTLD_LAZY | RTLD_LOCAL);
+    libgl = dlopen(GL3W_LIBOPENGL_NAME, RTLD_LAZY | RTLD_LOCAL);
+    libegl = dlopen(GL3W_LIBEGL_NAME, RTLD_LAZY | RTLD_LOCAL);
     if (libgl && libegl)
         return GL3W_OK;
     else
