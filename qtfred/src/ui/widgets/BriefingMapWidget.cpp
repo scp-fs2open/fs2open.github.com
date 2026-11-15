@@ -6,7 +6,6 @@
 #include <QPaintEvent>
 #include <QOffscreenSurface>
 #include <QtGui/QOpenGLContext>
-#include <QtGui/QOpenGLFunctions>
 
 #include "FredApplication.h"
 #include "anim/animplay.h"
@@ -107,10 +106,33 @@ BriefingMapWidget::BriefingMapWidget(QWidget* parent,
 }
 
 BriefingMapWidget::~BriefingMapWidget() {
+	// Ordinarily already done by BriefingEditorDialog::accept()/reject() -- see releaseRenderTarget().
+	// This is the fallback for teardown paths that don't go through the dialog's accept()/reject()
+	// (e.g. the whole editor shutting down and destroying this widget directly).
+	releaseRenderTarget();
+}
+
+void BriefingMapWidget::releaseRenderTarget() {
 	_renderTimer->stop();
+
 	if (_renderTarget >= 0) {
 		bm_release(_renderTarget);
 		_renderTarget = -1;
+	}
+
+	// The briefing editor is opened with WA_DeleteOnClose, so this runs against a live renderer
+	// every time the user closes the dialog. Backends that keep GPU resources per viewport (Vulkan
+	// keeps a whole surface and swap chain) need to let go of them here -- harmless if this viewport
+	// never had one, which is the common case: renderFrame() bails out under Vulkan before ever
+	// calling gr_use_viewport() on it, so no Vulkan present target is normally created for it. This
+	// must still happen before Qt gets a chance to hide us, in case that ever changes: hiding a
+	// dialog can tear down an embedded native window's platform surface synchronously, well before
+	// ~BriefingMapWidget() runs, since WA_DeleteOnClose only posts the actual C++ destruction via
+	// deleteLater(). Calling this explicitly from BriefingEditorDialog::accept()/reject(), before the
+	// base class call that does the hiding, keeps our release strictly first.
+	if (_briefingViewport) {
+		gr_release_viewport(_briefingViewport.get());
+		_briefingViewport.reset();
 	}
 }
 
@@ -499,18 +521,26 @@ void BriefingMapWidget::renderFrame() {
 
 	_rendering = true;
 
-	// Make the engine's GL context current on our off-screen surface so we can render the briefing.
-	gr_use_viewport(_briefingViewport.get());
-	auto* context = QOpenGLContext::currentContext();
+	// Drawing into the offscreen render target still needs a current GL context under OpenGL --
+	// gr_use_viewport() is what calls makeOpenGLContextCurrent() for this off-screen surface rather
+	// than the main viewport's. Vulkan has no such requirement (command recording is never tied to a
+	// "current" surface), and _surface is a QOffscreenSurface rather than a QWindow, so
+	// gr_use_viewport() would only fail trying to build it a Vulkan present target; every other
+	// bm_set_render_target() call site in the engine (starfield env maps, ship glow textures, ...)
+	// skips it too. So restrict the call, and the context it produces, to OpenGL. Nothing below
+	// needs the context -- the readback goes through gr_read_render_target().
+	if (gr_screen.mode == GraphicsAPI::OpenGL) {
+		gr_use_viewport(_briefingViewport.get());
 
-	if (context == nullptr) {
-		if (!_loggedNoContext) {
-			mprintf(("BriefingMapWidget: no current OpenGL context after gr_use_viewport().\n"));
-			_loggedNoContext = true;
+		if (QOpenGLContext::currentContext() == nullptr) {
+			if (!_loggedNoContext) {
+				mprintf(("BriefingMapWidget: no current OpenGL context after gr_use_viewport().\n"));
+				_loggedNoContext = true;
+			}
+			restoreMainViewportFrame(mainFrameWasActive);
+			_rendering = false;
+			return;
 		}
-		restoreMainViewportFrame(mainFrameWasActive);
-		_rendering = false;
-		return;
 	}
 
 	// Reference resolution the briefing is composed at (see BriefingViewport::getSize).
@@ -582,15 +612,30 @@ void BriefingMapWidget::renderFrame() {
 
 		// Read the finished frame back while the render target is still bound. The briefing is an
 		// opaque scene, so use RGBX (ignore the alpha byte) to avoid the background reading as
-		// transparent. FSO already renders the target top-down, so no vertical flip is needed.
+		// transparent; gr_read_render_target() hands back rows top-down, which is the order FSO
+		// composed them in, so no vertical flip is needed on either backend.
+		//
+		// Whether this succeeded also decides whether the frame may be ended below:
+		// gr_end_offscreen_frame()'s precondition is that the frame's GPU work has finished, and it
+		// is the readback's host-wait that guarantees that.
 		QImage frame(resW, resH, QImage::Format_RGBX8888);
-		context->functions()->glReadPixels(0, 0, resW, resH, GL_RGBA, GL_UNSIGNED_BYTE, frame.bits());
-		_frameImage = frame.copy();
+		const bool frameCaptured = gr_read_render_target(frame.bits(), resW, resH);
+		if (frameCaptured) {
+			_frameImage = std::move(frame);
+		}
 
 		Briefing = savedBriefing;
 		bscreen = savedBscreen;
 
 		bm_set_render_target(-1);
+
+		// We just composed and read back a whole frame without ever reaching gr_flip(), so nothing
+		// that gr_flip() retires has been retired: the engine's uniform segments keep filling and
+		// the backend's per-frame pools keep growing for as long as this dialog is open. Tell the
+		// engine the frame is done -- but only if the capture actually host-waited (see above).
+		if (frameCaptured) {
+			gr_end_offscreen_frame();
+		}
 	}
 
 	// Restore the main viewport's persistent frame so its mouse-interaction helpers keep working.
@@ -609,8 +654,10 @@ void BriefingMapWidget::restoreMainViewportFrame(bool wasActive) {
 	auto* mainView = _viewport->renderer->getTargetViewport();
 	auto mainSize = mainView->getSize();
 	gr_use_viewport(mainView);
-	gr_screen_resize(static_cast<int>(mainSize.first) * devicePixelRatio(),
-		static_cast<int>(mainSize.second) * devicePixelRatio());
+	// Round rather than truncate: getSize() is in logical pixels, and Qt rounds when it sizes the
+	// native surface from them, same as FredRenderer::render_frame().
+	gr_screen_resize(static_cast<int>(std::lround(mainSize.first * devicePixelRatio())),
+		static_cast<int>(std::lround(mainSize.second * devicePixelRatio())));
 	g3_start_frame(0);
 	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
 }
