@@ -128,6 +128,59 @@ void gr_opengl_sphere(material* material_def, float  /*rad*/)
 	opengl_draw_sphere();
 }
 
+// Deletes all that opengl_setup_scene_textures() can generate. Names that are 0 are skipped, thus
+// this is safe also after a setup that stopped partway.
+static void opengl_delete_scene_render_targets()
+{
+	// Everything opengl_setup_scene_textures() generated, in the same order. Note that
+	// GammaBlit_texture is 0 when the gamma pass is aliasing Scene_ldr_texture, so the shared
+	// texture is only released once.
+	opengl_delete_render_texture(Scene_color_texture);
+	opengl_delete_render_texture(Scene_ldr_texture);
+	opengl_delete_render_texture(Scene_position_texture);
+	opengl_delete_render_texture(Scene_normal_texture);
+	opengl_delete_render_texture(Scene_specular_texture);
+	opengl_delete_render_texture(Scene_emissive_texture);
+	opengl_delete_render_texture(Scene_composite_texture);
+	opengl_delete_render_texture(Scene_luminance_texture);
+	opengl_delete_render_texture(Cockpit_depth_texture);
+	opengl_delete_render_texture(Scene_depth_texture);
+	opengl_delete_render_framebuffer(Scene_framebuffer);
+
+	opengl_delete_render_texture(Scene_color_texture_ms);
+	opengl_delete_render_texture(Scene_position_texture_ms);
+	opengl_delete_render_texture(Scene_normal_texture_ms);
+	opengl_delete_render_texture(Scene_specular_texture_ms);
+	opengl_delete_render_texture(Scene_emissive_texture_ms);
+	opengl_delete_render_texture(Scene_depth_texture_ms);
+	opengl_delete_render_framebuffer(Scene_framebuffer_ms);
+
+	opengl_delete_render_texture(Back_texture);
+	opengl_delete_render_texture(Back_depth_texture);
+	opengl_delete_render_framebuffer(Back_framebuffer);
+
+	opengl_delete_render_texture(GammaBlit_texture);
+	opengl_delete_render_framebuffer(GammaBlit_framebuffer);
+
+	opengl_delete_render_texture(Readback_texture);
+	opengl_delete_render_framebuffer(Readback_framebuffer);
+
+	opengl_delete_render_texture(Distortion_texture[0]);
+	opengl_delete_render_texture(Distortion_texture[1]);
+	opengl_delete_render_framebuffer(Distortion_framebuffer);
+}
+
+// A failed setup must not keep the targets that it allocated before the failure: with
+// Scene_texture_initialized at 0, opengl_scene_texture_shutdown() does not free them.
+static void opengl_scene_texture_setup_failed()
+{
+	GL_state.BindFrameBuffer(0);
+	opengl_delete_scene_render_targets();
+
+	Gr_post_processing_enabled = false;
+	Gr_enable_soft_particles = false;
+}
+
 extern int opengl_check_framebuffer();
 void opengl_setup_scene_textures(int width, int height)
 {
@@ -370,19 +423,7 @@ void opengl_setup_scene_textures(int width, int height)
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 
 	if ( opengl_check_framebuffer() ) {
-		GL_state.BindFrameBuffer(0);
-		opengl_delete_render_framebuffer(Scene_framebuffer);
-
-		opengl_delete_render_texture(Scene_color_texture);
-		opengl_delete_render_texture(Scene_position_texture);
-		opengl_delete_render_texture(Scene_normal_texture);
-		opengl_delete_render_texture(Scene_specular_texture);
-		opengl_delete_render_texture(Scene_emissive_texture);
-		opengl_delete_render_texture(Scene_depth_texture);
-		opengl_delete_render_texture(Scene_luminance_texture);
-
-		Gr_post_processing_enabled = false;
-		Gr_enable_soft_particles = false;
+		opengl_scene_texture_setup_failed();
 		return;
 	}
 
@@ -702,22 +743,12 @@ void opengl_setup_scene_textures(int width, int height)
 
 
 	if ( opengl_check_framebuffer() ) {
-		GL_state.BindFrameBuffer(0);
-		glDeleteFramebuffers(1, &Distortion_framebuffer);
-		Distortion_framebuffer = 0;
-
-		glDeleteTextures(2, Distortion_texture);
-		Distortion_texture[0] = 0;
-		Distortion_texture[1] = 0;
+		opengl_scene_texture_setup_failed();
 		return;
 	}
 
 	if ( opengl_check_for_errors("post_init_framebuffer()") ) {
-		Scene_color_texture = 0;
-		Scene_depth_texture = 0;
-
-		Gr_post_processing_enabled = false;
-		Gr_enable_soft_particles = false;
+		opengl_scene_texture_setup_failed();
 		return;
 	}
 
@@ -733,42 +764,7 @@ void opengl_scene_texture_shutdown()
 		return;
 	}
 
-	// Everything opengl_setup_scene_textures() generated, in the same order. Note that
-	// GammaBlit_texture is 0 when the gamma pass is aliasing Scene_ldr_texture, so the shared
-	// texture is only released once.
-	opengl_delete_render_texture(Scene_color_texture);
-	opengl_delete_render_texture(Scene_ldr_texture);
-	opengl_delete_render_texture(Scene_position_texture);
-	opengl_delete_render_texture(Scene_normal_texture);
-	opengl_delete_render_texture(Scene_specular_texture);
-	opengl_delete_render_texture(Scene_emissive_texture);
-	opengl_delete_render_texture(Scene_composite_texture);
-	opengl_delete_render_texture(Scene_luminance_texture);
-	opengl_delete_render_texture(Cockpit_depth_texture);
-	opengl_delete_render_texture(Scene_depth_texture);
-	opengl_delete_render_framebuffer(Scene_framebuffer);
-
-	opengl_delete_render_texture(Scene_color_texture_ms);
-	opengl_delete_render_texture(Scene_position_texture_ms);
-	opengl_delete_render_texture(Scene_normal_texture_ms);
-	opengl_delete_render_texture(Scene_specular_texture_ms);
-	opengl_delete_render_texture(Scene_emissive_texture_ms);
-	opengl_delete_render_texture(Scene_depth_texture_ms);
-	opengl_delete_render_framebuffer(Scene_framebuffer_ms);
-
-	opengl_delete_render_texture(Back_texture);
-	opengl_delete_render_texture(Back_depth_texture);
-	opengl_delete_render_framebuffer(Back_framebuffer);
-
-	opengl_delete_render_texture(GammaBlit_texture);
-	opengl_delete_render_framebuffer(GammaBlit_framebuffer);
-
-	opengl_delete_render_texture(Readback_texture);
-	opengl_delete_render_framebuffer(Readback_framebuffer);
-
-	opengl_delete_render_texture(Distortion_texture[0]);
-	opengl_delete_render_texture(Distortion_texture[1]);
-	opengl_delete_render_framebuffer(Distortion_framebuffer);
+	opengl_delete_scene_render_targets();
 
 	Scene_texture_initialized = 0;
 	Scene_framebuffer_in_frame = false;
@@ -827,8 +823,11 @@ void gr_opengl_resize_render_targets()
 	// targets on top of scene textures that don't exist would only make it worse, so stop here;
 	// the renderer keeps drawing without the offscreen pipeline.
 	if ( !Scene_texture_initialized ) {
-		mprintf(("Failed to allocate %dx%d render targets! The offscreen rendering pipeline has "
-			"been disabled for the rest of this session.\n", new_width, new_height));
+		// Shown one time only: with Scene_texture_initialized at 0, this function returns early
+		// from now on. The options can still show post-processing as on, so tell the user.
+		ReleaseWarning(LOCATION, "Could not allocate %dx%d render targets for the larger viewport. "
+			"Post-processing and soft particles are off for the rest of this session.",
+			new_width, new_height);
 		return;
 	}
 

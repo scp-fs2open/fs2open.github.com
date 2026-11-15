@@ -1134,7 +1134,16 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_scene_texture_begin = gr_opengl_scene_texture_begin;
 	gr_screen.gf_scene_texture_end = gr_opengl_scene_texture_end;
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
-	gr_screen.gf_resize_render_targets = gr_opengl_resize_render_targets;
+	gr_screen.gf_resize_render_targets = []() {
+		// In the game, only the main window renders the scene. Other viewports, for example the
+		// -debug_window, go through gr_use_viewport() and thus gr_screen_resize() on each frame.
+		// If they grew the targets, the scale of the game's scene would drop below 1, and Back and
+		// GammaBlit (sized from the main window) would not agree with the scene targets. qtFRED
+		// renders the scene in each of its viewports, so there all viewports can grow the targets.
+		if (Fred_running || current_viewport == nullptr || current_viewport == os::getMainViewport()) {
+			gr_opengl_resize_render_targets();
+		}
+	};
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
 	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;

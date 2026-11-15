@@ -66,6 +66,9 @@ class FredRenderer: public QObject {
 
 	void render_model_x_htl(vec3d* pos, grid* gridp, int col_scheme = 0);
 	void render_compass();
+	// True if the editor shows this object's model: the view filters, the hidden flag and the
+	// layer filter all permit it. The model pass and the shadow pass both use it.
+	bool isModelShown(object* objp);
 	void render_one_model_htl(object* objp, int cur_object_index);
 	void render_models(int cur_object_index);
 	void render_volumetric_overlay();

@@ -1,6 +1,8 @@
 #include "PreferencesDialog.h"
 #include "ui_PreferencesDialog.h"
 
+#include <cmath>
+
 #include <QFormLayout>
 #include <QKeyEvent>
 #include <QKeySequenceEdit>
@@ -8,6 +10,7 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/sexp_tree_view.h"
 
+#include <graphics/2d.h>
 #include <options/Option.h>
 #include <options/OptionsManager.h>
 
@@ -37,27 +40,6 @@ SCP_vector<options::ValueDescription> engineOptionValues(const char* configKey)
 {
 	const auto* option = findEngineOption(configKey);
 	return option ? option->getValidValues() : SCP_vector<options::ValueDescription>{};
-}
-
-// The combo index of the value that the engine uses now. This index agrees with the list that
-// engineOptionValues() gives. Returns the fallback if the option is not registered, or if its
-// value is not in the list.
-int engineOptionCurrentIndex(const char* configKey, int fallback)
-{
-	const auto* option = findEngineOption(configKey);
-	if (!option) {
-		return fallback;
-	}
-
-	const auto current = option->getCurrentValueDescription();
-	const auto values = option->getValidValues();
-	for (size_t i = 0; i < values.size(); ++i) {
-		if (values[i].serialized == current.serialized) {
-			return static_cast<int>(i);
-		}
-	}
-
-	return fallback;
 }
 
 void populateFromEngineOption(QComboBox* combo, const char* configKey)
@@ -233,22 +215,24 @@ void PreferencesDialog::updateUi() {
 	ui->gammaSpin->setValue(graphics.gamma);
 
 	// The user can leave these two settings unset. Then the engine selects the value. Show the
-	// value that the engine uses, not a value that qtFRED guesses.
+	// value that the engine uses, not a value that qtFRED guesses. gr_texture_filter_setting()
+	// and gr_anisotropy_setting() give that value, also when the in-game options are off.
+	// The combo box has the filter values in order: 0 = bilinear, 1 = trilinear.
 	ui->textureFilterCombo->setCurrentIndex(graphics.textureFilter == GraphicsSettings::NO_TEXTURE_FILTER_CHOICE
-		? engineOptionCurrentIndex("Graphics.TextureFilter", 1)
+		? gr_texture_filter_setting()
 		: graphics.textureFilter);
 
 	if (!_anisotropyLevels.empty()) {
-		// The engine option gets its list from gr_get_supported_anisotropy_levels(), the same as
-		// _anisotropyLevels. Thus the indices agree.
-		const int lastIndex = static_cast<int>(_anisotropyLevels.size()) - 1;
-		int index = engineOptionCurrentIndex("Graphics.Anisotropy", lastIndex);
-		if (graphics.anisotropy != GraphicsSettings::NO_ANISOTROPY_CHOICE) {
-			for (size_t i = 0; i < _anisotropyLevels.size(); ++i) {
-				if (_anisotropyLevels[i] == graphics.anisotropy) {
-					index = static_cast<int>(i);
-					break;
-				}
+		const float anisotropy = graphics.anisotropy == GraphicsSettings::NO_ANISOTROPY_CHOICE
+			? gr_anisotropy_setting()
+			: graphics.anisotropy;
+
+		// The level in use need not be in the list (for example, a command-line level that the
+		// GPU does not support). Then show the nearest level.
+		int index = 0;
+		for (size_t i = 1; i < _anisotropyLevels.size(); ++i) {
+			if (std::fabs(_anisotropyLevels[i] - anisotropy) < std::fabs(_anisotropyLevels[index] - anisotropy)) {
+				index = static_cast<int>(i);
 			}
 		}
 		ui->anisotropyCombo->setCurrentIndex(index);
