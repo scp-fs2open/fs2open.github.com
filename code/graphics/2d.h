@@ -260,6 +260,8 @@ enum shader_type {
 
 	SDR_TYPE_MOTION_VECTORS,
 
+	SDR_TYPE_DOF,
+
 	NUM_SHADER_TYPES
 };
 
