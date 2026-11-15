@@ -995,16 +995,17 @@ void hud_config_commit()
 }
 
 // move gauge state from on->off->popup
-void hud_cycle_gauge_status()
+// returns true if the selected gauge changed state
+bool hud_cycle_gauge_status()
 {
 	if ( HC_gauge_selected.empty() ) {
-		return;
+		return false;
 	}
 
 	// Same rule as hud_config_set_button_state(): custom gauges cannot toggle visibility or popup
 	const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
 	if (gauge == nullptr || gauge->isCustom()) {
-		return;
+		return false;
 	}
 
 	// gauge is off, move to popup
@@ -1014,17 +1015,18 @@ void hud_cycle_gauge_status()
 		} else {
 			hud_config_set_gauge_flags(HC_gauge_selected, true, false);	
 		}
-		return;
+		return true;
 	}
 
 	// if gauge is popup, move to on
 	if ( HUD_config.is_gauge_popup(HC_gauge_selected) ) {
 		hud_config_set_gauge_flags(HC_gauge_selected, true, false);
-		return;
+		return true;
 	}
 	
 	// gauge must be on, move to off
 	hud_config_set_gauge_flags(HC_gauge_selected, false, false);
+	return true;
 }
 
 // handle keyboard input while in hud config
@@ -1042,8 +1044,9 @@ void hud_config_handle_keypresses(int k)
 		hud_config_commit();
 		break;
 	case KEY_TAB:
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		hud_cycle_gauge_status();
+		if (hud_cycle_gauge_status()) {
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+		}
 		break;
 	case KEY_RIGHT:
 		hud_config_select_hud(true);
