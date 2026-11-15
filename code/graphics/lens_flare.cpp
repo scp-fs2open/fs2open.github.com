@@ -769,17 +769,22 @@ bool lens_flare_point_visible(const vec3d& world_pos)
 
 void lens_flare_commit_candidates(SCP_vector<flare_source>& out, SCP_vector<flare_source>& candidates, int budget)
 {
-	if (static_cast<int>(candidates.size()) > budget) {
-		std::partial_sort(candidates.begin(), candidates.begin() + budget, candidates.end(),
-			[](const flare_source& a, const flare_source& b) { return a.intensity > b.intensity; });
-		candidates.resize(budget);
+	if (budget <= 0 || candidates.empty()) {
+		return;
 	}
 
-	candidates.erase(std::remove_if(candidates.begin(), candidates.end(),
-						 [](const flare_source& src) { return !lens_flare_point_visible(src.pos); }),
-		candidates.end());
+	// Rank only the part of the list that the raycast limit below can reach
+	const size_t max_tests = std::min(candidates.size(), static_cast<size_t>(budget) * LENS_FLARE_RAYCASTS_PER_SLOT);
+	std::partial_sort(candidates.begin(), candidates.begin() + max_tests, candidates.end(),
+		[](const flare_source& a, const flare_source& b) { return a.intensity > b.intensity; });
 
-	out.insert(out.end(), candidates.begin(), candidates.end());
+	int committed = 0;
+	for (size_t i = 0; i < max_tests && committed < budget; i++) {
+		if (lens_flare_point_visible(candidates[i].pos)) {
+			out.push_back(candidates[i]);
+			committed++;
+		}
+	}
 }
 
 namespace {
