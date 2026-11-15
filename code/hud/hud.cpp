@@ -2611,7 +2611,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		sprintf(buf, XSTR( "%d%%", 219), line.strength);
 		hud_num_make_mono(buf, font_num);
 
-		if (line.color_override != nullptr) {
+		if (!config && line.color_override != nullptr) {
 			gr_set_color_fast(line.color_override);
 		} else {
 			setGaugeColor(line.bright_index, config);
