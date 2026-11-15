@@ -678,9 +678,14 @@ void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
 {
 	m_bloom.setSceneColor(input);
 	m_ldr.setSceneColor(input);
+	m_lensFlare.setSceneColor(input);
 	if (m_bloom.isInitialized() && !m_bloom.resize()) {
 		nprintf(("vulkan", "VulkanPostProcessor: Bloom rebuild failed, disabling bloom\n"));
 		m_bloom.shutdown();
+	}
+	if (m_lensFlare.isInitialized() && !m_lensFlare.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Lens flare rebuild failed, disabling lens flares\n"));
+		m_lensFlare.shutdown();
 	}
 }
 
@@ -768,6 +773,7 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExte
 	m_upscalerActive = false;
 	m_bloom.setSceneColor(m_sceneColor);
 	m_ldr.setSceneColor(m_sceneColor);
+	m_lensFlare.setSceneColor(m_sceneColor);
 
 	// Scene targets first: every subsystem framebuffer that wires scene
 	// color/depth needs the recreated views.
