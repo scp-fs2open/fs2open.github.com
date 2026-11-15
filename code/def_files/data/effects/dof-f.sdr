@@ -85,7 +85,8 @@ void main()
 	int n = clamp(int(96.0 * (radius / 16.0) * (radius / 16.0)), 32, MAX_SAMPLES);
 	float tap_area = radius * radius / float(n);
 	// This pixel is a tap too; without it a near feature of one pixel can vanish at its own place.
-	float coverage = c0 > 0.0 ? 3.0 * tap_area / max(c0 * c0, 1.0) : 0.0;
+	float centre_share = c0 > 0.0 ? 3.0 * tap_area / max(c0 * c0, 1.0) : 0.0;
+	float coverage = centre_share;
 	vec3 near_sum = centre * coverage;
 	vec3 behind_sum = vec3(0.0);
 	float behind_n = 0.0;
@@ -113,6 +114,11 @@ void main()
 		near_sum += col * share;
 		coverage += share;
 	}
+	// Inside a near object the shares sum to 1 + centre_share. Without this scale the coverage reached 1 a few
+	// pixels before the end of the CoC, and the last few percent of the far layer stopped there: a dark edge
+	// that sRGB makes visible.
+	near_sum /= 1.0 + centre_share;
+	coverage /= 1.0 + centre_share;
 	if (coverage > 1.0) {
 		near_sum /= coverage;
 		coverage = 1.0;
