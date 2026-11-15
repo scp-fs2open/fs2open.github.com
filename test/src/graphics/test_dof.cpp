@@ -3,6 +3,7 @@
 #include <string>
 
 #include "def_files/def_files.h"
+#include "graphics/2d.h"
 #include "graphics/dof.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
@@ -84,6 +85,37 @@ TEST_F(Dof, OptionsExistAndDefaultOff)
 	}
 	// Off by default, so the default render does not change.
 	dof_frame frame;
+	EXPECT_FALSE(dof_get_frame(&frame));
+}
+
+TEST_F(Dof, FrameFollowsTheOptions)
+{
+	auto* mgr = options::OptionsManager::instance();
+	auto set = [mgr](const char* key, const char* value) {
+		mgr->setOverride(key, value, "test");
+		mgr->getOptionByKey(key)->loadInitial();
+		mgr->clearOverrides();
+	};
+	const int saved_h = gr_screen.max_h;
+	const fov_t saved_fov = Proj_fov;
+	gr_screen.max_h = 2160;
+	Proj_fov = 0.75f * PROJ_FOV_FACTOR;
+	set("Graphics.DepthOfField", "true");
+	set("Graphics.DepthOfFieldMaxBlur", "12");
+	set("Graphics.DepthOfFieldDistance", "80");
+
+	dof_frame frame;
+	ASSERT_TRUE(dof_get_frame(&frame));
+	EXPECT_FLOAT_EQ(frame.near_dist, 80.0f);
+	EXPECT_FLOAT_EQ(frame.max_blur, 24.0f); // 12 px at 1080 lines is 24 px at 2160
+	EXPECT_EQ(frame.samples, dof_samples(frame.max_blur));
+
+	// the options bind once, so put the defaults back for any later test
+	set("Graphics.DepthOfField", "false");
+	set("Graphics.DepthOfFieldMaxBlur", "16");
+	set("Graphics.DepthOfFieldDistance", "50");
+	gr_screen.max_h = saved_h;
+	Proj_fov = saved_fov;
 	EXPECT_FALSE(dof_get_frame(&frame));
 }
 
