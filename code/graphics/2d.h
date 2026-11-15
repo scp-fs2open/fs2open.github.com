@@ -1158,9 +1158,10 @@ extern GraphicsAPI gr_get_configured_render_api();
 // a real backend, such as GraphicsAPI::Stub.
 extern const char* gr_render_api_name(GraphicsAPI api);
 
-// Whether a renderer meets an option requirement given to OptionsManager::setRequirement(). Only "opengl" and
-// "vulkan" are checked; any other requirement counts as met, so the options UI never greys out what it cannot judge.
-extern bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api);
+// Whether a renderer meets an option requirement given to OptionsManager::setRequirement(). "opengl", "vulkan" and
+// "raytracing" (Vulkan with ray-traced shadows) are checked; any other requirement counts as met, so the options UI
+// never greys out what it cannot judge.
+extern bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api, bool raytracing_supported);
 
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);

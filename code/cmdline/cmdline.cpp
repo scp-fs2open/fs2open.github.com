@@ -2477,8 +2477,8 @@ bool SetCmdlineParams()
 		Shadow_render_method = ShadowRenderMethod::Raytraced;
 
 		// No need to gate this on shadows_raytracing_supported(): that answer is only meaningful after
-		// gr_init(), which runs later, and shadows_remove_unsupported_options() then removes this option
-		// altogether on hardware that cannot raytrace, so the override never reaches the options menu there.
+		// gr_init(), which runs later. On hardware that cannot raytrace, shadows_mark_unsupported_options() then
+		// records the requirement, and the options menu shows the option greyed out with the override.
 		options::OptionsManager::instance()->setOverride("Graphics.ShadowRenderMethod",
 			std::unique_ptr<json_t>(json_integer(static_cast<int>(ShadowRenderMethod::Raytraced))), "-rt_shadows");
 	}

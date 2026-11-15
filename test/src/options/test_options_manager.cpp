@@ -248,14 +248,10 @@ TEST_F(OptionsManagerOverride, ShadowQualityDefaultFollowsTheGlobal)
 // value back to the global on the initial load, which is what made the loss silent.
 TEST_F(OptionsManagerOverride, ShadowRenderMethodDefaultFollowsTheGlobal)
 {
-	// This option is not always present: gr_init() calls shadows_remove_unsupported_options(), which removes
-	// it when the renderer cannot raytrace. Every FSTestFixture test in this binary runs gr_init() with the
-	// Stub renderer, so by the time this test runs the option is usually already gone.
+	// gr_init() keeps this option also when the renderer cannot raytrace: shadows_mark_unsupported_options() only
+	// records its requirement. So the Stub renderer of FSTestFixture leaves it in place.
 	auto* opt = OptionsManager::instance()->getOptionByKey("Graphics.ShadowRenderMethod");
-	if (opt == nullptr) {
-		GTEST_SKIP() << "Graphics.ShadowRenderMethod was removed by shadows_remove_unsupported_options(), so "
-		                "this binary cannot exercise its default_func.";
-	}
+	ASSERT_NE(opt, nullptr);
 	auto* typedOpt = static_cast<const Option<ShadowRenderMethod>*>(opt);
 
 	class ShadowRenderMethodGuard {
@@ -999,16 +995,51 @@ TEST_F(OptionsManagerOverride, RequirementIsQueryable)
 
 TEST(OptionRequirement, MetByTheMatchingRendererOnly)
 {
-	ASSERT_TRUE(gr_option_requirement_met("opengl", GraphicsAPI::OpenGL));
-	ASSERT_FALSE(gr_option_requirement_met("opengl", GraphicsAPI::Vulkan));
-	ASSERT_TRUE(gr_option_requirement_met("vulkan", GraphicsAPI::Vulkan));
-	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::OpenGL));
-	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::Stub));
+	ASSERT_TRUE(gr_option_requirement_met("opengl", GraphicsAPI::OpenGL, false));
+	ASSERT_FALSE(gr_option_requirement_met("opengl", GraphicsAPI::Vulkan, true));
+	ASSERT_TRUE(gr_option_requirement_met("vulkan", GraphicsAPI::Vulkan, false));
+	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::OpenGL, false));
+	ASSERT_FALSE(gr_option_requirement_met("vulkan", GraphicsAPI::Stub, false));
 }
 
-// A requirement the UI cannot judge (e.g. "raytracing") must never grey out a control.
+TEST(OptionRequirement, RaytracingNeedsVulkanAndTheHardware)
+{
+	ASSERT_TRUE(gr_option_requirement_met("raytracing", GraphicsAPI::Vulkan, true));
+	ASSERT_FALSE(gr_option_requirement_met("raytracing", GraphicsAPI::Vulkan, false));
+	ASSERT_FALSE(gr_option_requirement_met("raytracing", GraphicsAPI::OpenGL, true));
+}
+
+// A requirement the UI cannot judge must never grey out a control.
 TEST(OptionRequirement, UnknownRequirementCountsAsMet)
 {
-	ASSERT_TRUE(gr_option_requirement_met("raytracing", GraphicsAPI::OpenGL));
-	ASSERT_TRUE(gr_option_requirement_met("", GraphicsAPI::Vulkan));
+	ASSERT_TRUE(gr_option_requirement_met("some_future_feature", GraphicsAPI::OpenGL, false));
+	ASSERT_TRUE(gr_option_requirement_met("", GraphicsAPI::Vulkan, false));
+}
+
+// The HDR and raytraced-shadow options stay in the list on a renderer that cannot use them, with a requirement,
+// so the options menu greys them out instead of hiding them. The fixture runs gr_init() with the Stub renderer,
+// which has neither, right before the test: other fixtures clear the requirements in their TearDown.
+class OptionRequirementAfterGrInit : public test::FSTestFixture {
+  public:
+	OptionRequirementAfterGrInit() : test::FSTestFixture(INIT_CFILE | INIT_GRAPHICS) {}
+
+  protected:
+	void TearDown() override
+	{
+		OptionsManager::instance()->clearRequirements();
+		test::FSTestFixture::TearDown();
+	}
+};
+
+TEST_F(OptionRequirementAfterGrInit, UnsupportedGraphicsOptionsStayWithARequirement)
+{
+	auto* mgr = OptionsManager::instance();
+	for (const char* key : {"Graphics.HDR", "Graphics.ShadowRenderMethod"}) {
+		if (mgr->getOptionByKey(key) == nullptr) {
+			GTEST_SKIP() << key << " is not registered in this build";
+		}
+		auto requirement = mgr->getRequirement(key);
+		ASSERT_TRUE(requirement.has_value()) << key;
+		ASSERT_FALSE(gr_option_requirement_met(requirement->first, GraphicsAPI::Stub, false)) << key;
+	}
 }
