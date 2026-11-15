@@ -5,8 +5,9 @@
 // - No depth order test: a less near object can also spread a little over a nearer one.
 // - An effect that writes no depth (a laser bolt, a particle, a thruster) takes the CoC of what is
 //   behind it.
-// - Near CoC dilation takes the largest near CoC of the tiles around a pixel (up to DOF_TILE pixels farther
-//   than maxBlur), so a less near object beside a nearer one blurs as much as the nearer one.
+// - Near CoC dilation takes the largest near CoC of the tiles around a pixel (up to about 2 DOF_TILE pixels
+//   farther than maxBlur, and DOF_TILE_REACH tiles at most), so a less near object beside a nearer one blurs as
+//   much as the nearer one.
 // The two tile passes before this one (dof-tile-f.sdr, dof-neighbor-f.sdr) find the largest near CoC of each
 // tile and its neighbours, as in Call of Duty: Advanced Warfare and Unreal; a pixel in a tile with nothing near
 // in reach skips the gather.
@@ -56,14 +57,16 @@ void main()
 	// pixels within this pixel's own CoC stand for it; the cockpit is never behind anything.
 	// This is the near layer (near_sum, with coverage as its alpha) over the far layer (behind), as in
 	// two-layer depth of field, in one pass.
-	int n = min(int(samples), MAX_SAMPLES);
 
 	// Near CoC dilation: every near tap spreads with the largest near CoC around this pixel, read from the
 	// tile passes. The outline of a hull is its farthest part, so its CoC is small and its share (1 / CoC^2)
 	// large; without the dilation the coverage reached 1 within a pixel or two inside the hull and left a
 	// hard step there. The tiles see every texel, so a thin near strut is never missed, as it could be by a
 	// sparse search around the pixel.
-	float c0 = max(coc_of(uv), 0.0);
+	// The raw CoCs (before the dilation) order the pixels by depth for the far layer; with the dilated value on
+	// both sides, no near tap could ever be farther than this pixel.
+	float c0_raw = max(coc_of(uv), 0.0);
+	float c0 = c0_raw;
 	float dilated = max(c0, texelFetch(tile_tex, ivec2(gl_FragCoord.xy) / DOF_TILE, 0).x);
 	// Nothing near within reach: nothing spreads over this pixel.
 	if (dilated <= 0.0) {
@@ -76,9 +79,10 @@ void main()
 	// The taps cover the dilated CoC, not maxBlur: spread over maxBlur, too few of them fell inside a small
 	// disc, and a CoC under about 3 px did not blur at all.
 	float radius = max(dilated, 1.0);
-	// The tap count follows the area of that disc, so a small disc does not read the same texels hundreds of
-	// times. A floor of 32 keeps about one tap per pixel of a 3 px disc.
-	n = clamp(int(float(n) * (radius / maxBlur) * (radius / maxBlur)), 32, n);
+	// The tap count follows the area of that disc at the density of 96 taps on 16 px (dof_samples() in dof.cpp),
+	// so a small disc does not read the same texels hundreds of times, and a disc keeps its density when maxBlur
+	// is large. A floor of 32 keeps about one tap per pixel of a 3 px disc.
+	int n = clamp(int(96.0 * (radius / 16.0) * (radius / 16.0)), 32, MAX_SAMPLES);
 	float tap_area = radius * radius / float(n);
 	// This pixel is a tap too; without it a near feature of one pixel can vanish at its own place.
 	float coverage = c0 > 0.0 ? 3.0 * tap_area / max(c0 * c0, 1.0) : 0.0;
@@ -92,12 +96,11 @@ void main()
 		float r = radius * sqrt((float(i) + 0.5) / float(n));
 		float a = float(i) * GOLDEN_ANGLE + spin;
 		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
-		float cs = coc_of(suv);
-		if (cs > 0.0) {
-			cs = dilated;
-		}
-		vec3 col = texture(tex, suv).rgb;
-		if (cs >= 0.0 && cs < c0 - 0.5 && r <= c0) {
+		float cs_raw = coc_of(suv);
+		float cs = cs_raw > 0.0 ? dilated : cs_raw;
+		// Level 0 always: the loop is not uniform across pixels, so derivatives there are undefined.
+		vec3 col = textureLod(tex, suv, 0.0).rgb;
+		if (cs_raw >= 0.0 && cs_raw < c0_raw - 0.5 && r <= c0) {
 			behind_sum += col;
 			behind_n += 1.0;
 		}
