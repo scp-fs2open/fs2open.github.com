@@ -41,6 +41,9 @@ using namespace cutscene;
 
 struct PlaybackState {
 	bool playing = true;
+	// Skip keys whose press arrived during playback. Only their release skips the movie, so a
+	// key that was already held when the movie started (e.g. Enter in the tech room) cannot.
+	SCP_unordered_set<SDL_Keycode> skip_keys_pressed;
 
 	vec2d posTopLeft;
 	vec2d posBottomRight;
@@ -207,20 +210,30 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	// We will sleep at most half the time a frame would be displayed
 	auto sleepTime = static_cast<std::uint64_t>((1. / (4. * player->getMovieProperties().fps)) * 1000.);
 
-	auto listener = [state](const SDL_Event& event) {
-		switch (event.key.key) {
-		case SDLK_ESCAPE:
-		case SDLK_KP_ENTER:
-		case SDLK_RETURN:
-		case SDLK_SPACE:
-			state->playing = false;
-			return true;
-		default:
+	auto is_skip_key = [](SDL_Keycode key) {
+		return key == SDLK_ESCAPE || key == SDLK_KP_ENTER || key == SDLK_RETURN || key == SDLK_SPACE;
+	};
+	// Only records presses and passes them on to the other key listeners. It is registered ahead
+	// of them so that none can consume a press before it is seen. Auto-repeat is not a press.
+	auto key_down_listener = [state, is_skip_key](const SDL_Event& event) {
+		if (is_skip_key(event.key.key) && !event.key.repeat) {
+			state->skip_keys_pressed.insert(event.key.key);
+		}
+		return false;
+	};
+	// Consumes only the release that stops playback. Any other release is passed on, so the key
+	// state stays right for a key that was already held when the movie started.
+	auto key_up_listener = [state, is_skip_key](const SDL_Event& event) {
+		if (!is_skip_key(event.key.key) || state->skip_keys_pressed.erase(event.key.key) == 0) {
 			return false;
 		}
+		state->playing = false;
+		return true;
 	};
-	// Use a dedicated listener here since we want to listen for the KEYUP event
-	auto key_handle = os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, listener);
+	auto key_down_handle =
+		os::events::addEventListener(SDL_EVENT_KEY_DOWN, os::events::DEFAULT_LISTENER_WEIGHT - 20, key_down_listener);
+	auto key_up_handle =
+		os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_up_listener);
 
 	// slight hack to make sure that game_set_frametime() doesn't also try to cap the framerate
 	auto fpsCapSave = Cmdline_NoFPSCap;
@@ -263,7 +276,8 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 
 	Cmdline_NoFPSCap = fpsCapSave;
 
-	os::events::removeEventListener(key_handle);
+	os::events::removeEventListener(key_down_handle);
+	os::events::removeEventListener(key_up_handle);
 
 	// flush keys so we don't pass anything to the current state
 	key_flush();
