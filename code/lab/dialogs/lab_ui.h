@@ -3,6 +3,7 @@
 #include "model/model.h"
 #include "model/animation/modelanimation.h"
 #include "species_defs/species_defs.h"
+#include "weapon/weapon.h"
 
 enum class LabTurretAimType {
 	RANDOM,
