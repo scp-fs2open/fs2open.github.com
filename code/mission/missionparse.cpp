@@ -1342,19 +1342,15 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// <none> -- otherwise a mod adding a $Default Lens: would silently override
 	// missions that had deliberately asked for no flares. lens_flare_switch_to()
 	// resolves all of it, including the empty case.
-	The_mission.camera_lens_name.clear();
+	//
+	// This only reads the values into pm. A scan with get_mission_info() must not
+	// change the camera, so parse_mission() mounts the lens, see
+	// mount_mission_camera_lens().
+	pm->camera_lens_name.clear();
 	if (optional_string("$Camera Lens:"))
-		stuff_string(The_mission.camera_lens_name, F_NAME);
-	graphics::lens_flare_switch_to(The_mission.camera_lens_name.c_str());
+		stuff_string(pm->camera_lens_name, F_NAME);
 
-	parse_camera_lens_overrides(The_mission.camera_lens_overrides);
-
-	// One camera, so the mission's overrides simply *are* the camera's until
-	// something else (a set-lens-* sexp, the lab) restyles it again. Nothing is
-	// stamped into the mounted lens, which is why nothing has to be restored when
-	// this mission ends -- lens_flare_reset_for_level() just drops these.
-	graphics::lens_flare_overrides() = The_mission.camera_lens_overrides;
-	graphics::lens_flare_overrides_changed();
+	parse_camera_lens_overrides(pm->camera_lens_overrides);
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -6896,6 +6892,19 @@ void apply_default_custom_data(mission* pm)
 	}
 }
 
+// Mount the camera lens of a mission that is loaded, with its overrides.
+static void mount_mission_camera_lens(const mission *pm)
+{
+	graphics::lens_flare_switch_to(pm->camera_lens_name.c_str());
+
+	// One camera, so the mission's overrides simply *are* the camera's until
+	// something else (a set-lens-* sexp, the lab) restyles it again. Nothing is
+	// stamped into the mounted lens, which is why nothing has to be restored when
+	// this mission ends -- lens_flare_reset_for_level() just drops these.
+	graphics::lens_flare_overrides() = pm->camera_lens_overrides;
+	graphics::lens_flare_overrides_changed();
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -6921,6 +6930,8 @@ bool parse_mission(mission *pm, int flags)
 
 	if (flags & MPF_ONLY_MISSION_INFO)
 		return true;
+
+	mount_mission_camera_lens(pm);
 
 	parse_plot_info(pm);
 	parse_variables();
