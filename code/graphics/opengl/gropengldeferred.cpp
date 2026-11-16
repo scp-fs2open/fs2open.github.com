@@ -249,7 +249,7 @@ static void opengl_gtao_setup()
 		GL_state.Texture.SetTarget(GL_TEXTURE_2D);
 		GL_state.Texture.Enable(tex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, Gtao_width, Gtao_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
-		// Linear, so that the lighting pass upsamples the half-res result smoothly
+		// Linear for the lab's debug view of the buffer; the passes read it with texelFetch
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

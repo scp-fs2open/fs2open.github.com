@@ -9,7 +9,7 @@
 
 int Gtao_quality = 0;
 float Gtao_radius_scale = 1.0f;
-float Gtao_intensity = 1.5f;
+float Gtao_intensity = 2.2f;
 bool Gtao_show_buffer = false;
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
@@ -29,7 +29,7 @@ static auto GtaoQualityOption __UNUSED = options::OptionBuilder<int>("Graphics.S
 static auto GtaoRadiusOption __UNUSED = options::OptionBuilder<float>("Graphics.SsaoRadius",
                      std::pair<const char*, int>{"Screen-Space Ambient Occlusion Radius", -1},
                      std::pair<const char*, int>{"Multiplier on the size of the area that screen-space ambient occlusion looks at", -1})
-                     .range(0.25f, 6.0f)
+                     .range(GTAO_RADIUS_MIN, GTAO_RADIUS_MAX)
                      .bind_to(&Gtao_radius_scale)
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
@@ -37,15 +37,16 @@ static auto GtaoRadiusOption __UNUSED = options::OptionBuilder<float>("Graphics.
                      .importance(64)
                      .finish();
 
+// The default follows FinalValuePower in XeGTAO (2.2).
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 static auto GtaoIntensityOption __UNUSED = options::OptionBuilder<float>("Graphics.SsaoIntensity",
                      std::pair<const char*, int>{"Screen-Space Ambient Occlusion Intensity", -1},
                      std::pair<const char*, int>{"How dark screen-space ambient occlusion makes the ambient light", -1})
-                     .range(0.5f, 8.0f)
+                     .range(GTAO_INTENSITY_MIN, GTAO_INTENSITY_MAX)
                      .bind_to(&Gtao_intensity)
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
-                     .default_func([]() { return 1.5f; })
+                     .default_func([]() { return 2.2f; })
                      .importance(63)
                      .finish();
 
