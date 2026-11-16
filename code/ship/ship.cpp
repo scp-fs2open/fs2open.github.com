@@ -17577,7 +17577,6 @@ bool ship_can_bay_depart(ship* sp)
 	
 	if ( departure_location == DepartureLocation::TO_DOCK_BAY )
 	{
-		Assertion( departure_anchor.isValid(), "Ship %s must have a valid departure anchor", sp->ship_name );
 		auto anchor_ship_entry = ship_registry_get(departure_anchor);
 		if (anchor_ship_entry && anchor_ship_entry->has_shipp() && ship_useful_for_departure(anchor_ship_entry->shipnum, departure_path_mask)) {
 			// can bay depart at this time
