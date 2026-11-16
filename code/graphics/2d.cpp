@@ -257,6 +257,11 @@ bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api, b
 	return true;
 }
 
+bool gr_option_requirement_met_now(const SCP_string& requirement)
+{
+	return gr_option_requirement_met(requirement, gr_screen.mode, shadows_raytracing_supported());
+}
+
 // The Graphics.RenderAPI option only exists in builds that actually support choosing a backend at runtime.
 // In an OpenGL-only build there's nothing to choose between, so there's no point cluttering the options menu
 // with a one-item dropdown -- gr_get_configured_render_api() just returns the fixed default in that case.

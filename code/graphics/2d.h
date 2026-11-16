@@ -1163,6 +1163,11 @@ extern const char* gr_render_api_name(GraphicsAPI api);
 // never greys out what it cannot judge.
 extern bool gr_option_requirement_met(const SCP_string& requirement, GraphicsAPI api, bool raytracing_supported);
 
+// gr_option_requirement_met() for the running renderer and hardware. The in-game options dialog and the Lua
+// options API both call this, so that the two UIs grey out the same options. It needs a renderer: call it after
+// gr_init(). fs2_open, fred2 and qtfred start Lua only after gr_init(), and -get_options exits before Lua starts.
+extern bool gr_option_requirement_met_now(const SCP_string& requirement);
+
 extern void gr_screen_resize(int width, int height);
 extern int gr_get_resolution_class(int width, int height);
 

@@ -43,7 +43,7 @@ void OptUi::build_options_list(const char* category) const
 							options::OverrideSource::Mod;
 			// An option whose requirement the running renderer does not meet is greyed out too.
 			auto requirement = options::OptionsManager::instance()->getRequirement(thisOpt->getConfigKey());
-			const bool requirementUnmet = requirement.has_value() && !gr_option_requirement_met(requirement->first, gr_screen.mode, shadows_raytracing_supported());
+			const bool requirementUnmet = requirement.has_value() && !gr_option_requirement_met_now(requirement->first);
 			ImGui::BeginDisabled(overrideReason.has_value() || requirementUnmet);
 
 			// Selectors
