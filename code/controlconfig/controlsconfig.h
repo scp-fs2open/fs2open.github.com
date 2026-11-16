@@ -315,6 +315,8 @@ enum IoActionId : int {
 	PHOTO_MODE_PARAM_DECREASE,
 	PHOTO_MODE_PARAM_INCREASE,
 
+	VR_RECENTER,
+
 	/*!
 	 * This must always be below the last defined item
 	 */

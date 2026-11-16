@@ -233,9 +233,9 @@ void vulkan_imgui_render_draw_data()
 {
 	auto* renderer = getRendererInstance();
 	if (renderer) {
-		// The composition image is larger than ImGui's display while FSR upscales
+		// The composition image (or the screen layer) is larger than ImGui's display while FSR upscales
 		auto* drawData = ImGui::GetDrawData();
-		const auto extent = renderer->getCompositionExtent();
+		const auto extent = renderer->isScreenLayerActive() ? renderer->getScreenLayerExtent() : renderer->getCompositionExtent();
 		if (drawData && drawData->DisplaySize.x > 0.0f && drawData->DisplaySize.y > 0.0f) {
 			drawData->FramebufferScale = ImVec2(static_cast<float>(extent.width) / drawData->DisplaySize.x,
 				static_cast<float>(extent.height) / drawData->DisplaySize.y);
@@ -595,6 +595,9 @@ void init_function_pointers()
 	gr_screen.gf_sync_delete = vulkan_sync_delete;
 
 	gr_screen.gf_set_viewport = vulkan_set_viewport;
+
+	gr_screen.gf_screen_layer_begin = vulkan_screen_layer_begin;
+	gr_screen.gf_screen_layer_end = vulkan_screen_layer_end;
 
 	gr_screen.gf_openxr_get_extensions = vulkan_openxr_get_extensions;
 	gr_screen.gf_openxr_test_capabilities = vulkan_openxr_test_capabilities;

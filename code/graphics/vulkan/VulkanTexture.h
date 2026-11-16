@@ -452,6 +452,8 @@ bool vulkan_bm_data(int handle, bitmap* bm);
 void vulkan_bm_page_in_start();
 int vulkan_bm_make_render_target(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags);
 int vulkan_bm_set_render_target(int handle, int face);
+bool vulkan_screen_layer_begin(int bitmap);
+void vulkan_screen_layer_end();
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height);
 ubyte* vulkan_get_bitmap_from_texture(int bitmap_num, int* width_out, int* height_out);
 

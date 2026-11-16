@@ -168,6 +168,22 @@ int vulkan_bm_set_render_target(int handle, int face)
 	return texManager->bm_set_render_target(handle, face);
 }
 
+bool vulkan_screen_layer_begin(int bitmap)
+{
+	auto* ts = getTextureManager()->getTextureSlot(bitmap);
+	if (ts == nullptr || !ts->framebuffer) {
+		return false;
+	}
+
+	getRendererInstance()->beginScreenLayer(ts);
+	return true;
+}
+
+void vulkan_screen_layer_end()
+{
+	getRendererInstance()->endScreenLayer();
+}
+
 void vulkan_update_texture(int bitmap_handle, int bpp, const ubyte* data, int width, int height)
 {
 	auto* texManager = getTextureManager();

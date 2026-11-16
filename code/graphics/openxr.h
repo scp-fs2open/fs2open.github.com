@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <optional>
+#include <utility>
 #include "camera/camera.h"
 
 struct OpenXRTrackingInfo {
@@ -14,9 +16,8 @@ struct OpenXRTrackingInfo {
 
 /**
  * @brief Performs required Setup actions for OpenXR before actually trying to initialize the graphics
- * @param hudscale Sets the scale at which the HUD is rendered. May need to be tweakable to make the hud visible to players with small FoV
  */
-void openxr_prepare(float hudscale = 0.5f);
+void openxr_prepare();
 
 /**
  * @brief Initializes the OpenXR API and opens the XR system
@@ -55,6 +56,31 @@ bool openxr_enabled();
  * @brief Polls whether OpenXR is requested to start. Required if you need to poll for OpenXR during some initialization where it might not yet be running
  */
 bool openxr_requested();
+
+/**
+ * @brief The image size the HMD wants for each eye. Available once openxr_preinit() succeeded.
+ */
+std::optional<std::pair<int, int>> openxr_get_eye_resolution();
+
+/**
+ * @brief The field of view of the HMD's first eye, in zoom units like OpenXREyeInfo::zoom. Available once openxr_init() succeeded.
+ */
+std::optional<asymmetric_fov> openxr_get_eye_fov();
+
+/**
+ * @brief Which eye is being rendered: 0 or 1 during a stereo frame, 0 otherwise
+ */
+int openxr_get_current_eye();
+
+/**
+ * @brief Whether the eyes of a stereo frame are being rendered, from openxr_start_stereo_frame() to the second eye's flip
+ */
+bool openxr_in_stereo_frame();
+
+/**
+ * @brief Makes the current head heading and position the new forward and center, from the next frame on
+ */
+void openxr_request_recenter();
 
 /**
  * @brief Polls HMD position and sets up the OpenXR state machine to wait for and accept two frames, one for each eye.
