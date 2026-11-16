@@ -1,0 +1,78 @@
+// CORTAO prepass as a fragment shader. It writes one mip level of the CORTAO packed data buffer.
+//
+// The CORTAO reference prepass (CORTAOPrepass.h) is a compute shader that writes all mip levels in
+// one dispatch. It keeps a random one of each 2x2 texel block for the next mip level. This shader
+// gives the same result, one draw for each mip level: it follows the selection rule back to the
+// mip 0 texel that the reference prepass keeps, and packs that texel.
+//
+// The engine has no compute pipelines, so this is a fragment shader. Only the Vulkan backend uses it.
+//
+// The packed data is a uint. The target is R32_SFLOAT, so the shader writes the bits as a float.
+// The value is a positive linear depth with modified low mantissa bits, or 0. Thus it is never a
+// NaN or a denormal, and the float target keeps all bits.
+
+#ifndef VULKAN
+#error "cortao-prepass-f.sdr is only for the Vulkan backend"
+#endif
+
+#extension GL_EXT_control_flow_attributes : enable
+
+#define CORTAO_GLSL 1
+#include "CORTAOBase.h"
+#include "z-compress.sdr"
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(location = 0) in vec2 fragTexCoord;
+
+layout(set = 1, binding = 1) uniform sampler2D cortaoTex[2];
+#define PositionBuffer cortaoTex[0]
+#define NormalBuffer cortaoTex[1]
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	// Mip 0 width in the low 16 bits, mip 0 height in the high 16 bits
+	uint packedResolution;
+	uint randomSeed;
+	uint mipLevel;
+	float nearPlane;
+};
+
+void main()
+{
+	uvec2 resolution = uvec2(cortao_getResolution(packedResolution));
+	uvec2 pixel = uvec2(gl_FragCoord.xy);
+
+	// Find the mip 0 texel that the reference prepass keeps for this texel. At mip level m, the
+	// reference prepass keeps the texel c of mip m - 1 for which this test is false:
+	// ((c.x ^ n.y ^ dither.x) | (c.y ^ n.x ^ dither.y)) & 1, where n = c >> 1.
+	for (uint m = mipLevel; m > 0u; --m) {
+		uvec2 dither = uvec2(randomSeed, randomSeed) >> uvec2(m * 2u, m * 2u + 1u);
+		uvec2 child = pixel * 2u + uvec2((pixel.y ^ dither.x) & 1u, (pixel.x ^ dither.y) & 1u);
+		uvec2 childResolution = max(resolution >> (m - 1u), uvec2(1u, 1u));
+		pixel = min(child, childResolution - 1u);
+	}
+
+	uint packedData = 0u;
+
+	vec4 positionData = texelFetch(PositionBuffer, ivec2(pixel), 0);
+	vec3 position = vec3(positionData.xy, uncompress_depth_value(positionData.z));
+
+	// The deferred light pass uses the same test to find pixels without geometry.
+	// The packed value 0 marks a sky pixel for CORTAO.
+	float linearDepth = -position.z;
+	if (dot(position, position) >= nearPlane * nearPlane && linearDepth > 0.0) {
+		// Decals add to the normal buffer, so the normal is not always a unit vector.
+		vec3 normal = texelFetch(NormalBuffer, ivec2(pixel), 0).xyz;
+		float normalLengthSq = dot(normal, normal);
+		normal = normalLengthSq > 1e-8 ? normal * inversesqrt(normalLengthSq) : vec3(0.0, 0.0, 1.0);
+
+		// The same packing as cortao_prepass() in CORTAOPrepass.h
+		uint seed = cortao_hash(cortao_seed(pixel) + randomSeed);
+		vec2 dither = vec2(cortao_unpack16(seed)) * (1.0 / float(0xFFFFu));
+		uint mask = (1u << CORTAO_PACKED_NORMAL_BITS) - 1u;
+		uint packedNormal = cortao_encodeNormal(normal, dither);
+		packedData = (floatBitsToUint(linearDepth) & ~mask) | (packedNormal & mask);
+	}
+
+	fragOut0 = vec4(uintBitsToFloat(packedData), 0.0, 0.0, 0.0);
+}

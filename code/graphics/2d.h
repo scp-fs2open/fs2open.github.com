@@ -265,6 +265,9 @@ enum shader_type {
 
 	SDR_TYPE_MOTION_VECTORS,
 
+	SDR_TYPE_CORTAO_PREPASS,
+	SDR_TYPE_CORTAO_MAIN,
+
 	NUM_SHADER_TYPES
 };
 
@@ -296,6 +299,8 @@ enum shader_type {
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
 #define SDR_FLAG_DEFERRED_RTAO (1 << 2)
+#define SDR_FLAG_DEFERRED_SSAO (1 << 3)
+#define SDR_FLAG_DEFERRED_SSAO_DEBUG (1 << 4)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 

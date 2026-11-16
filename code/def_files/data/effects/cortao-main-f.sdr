@@ -1,0 +1,78 @@
+// CORTAO main pass as a fragment shader. It writes the screen-space ambient occlusion of each pixel.
+//
+// The CORTAO algorithm is in CORTAOMainPass.h, which is not changed. This file supplies the
+// callbacks that read the engine textures. Only the Vulkan backend uses it.
+
+#ifndef VULKAN
+#error "cortao-main-f.sdr is only for the Vulkan backend"
+#endif
+
+#extension GL_EXT_control_flow_attributes : enable
+
+#define CORTAO_GLSL 1
+#define CORTAO_PERSPECTIVE_PROJECTION 1
+#define CORTAO_16_BIT 0
+#define CORTAO_SAMPLE_COUNT 16
+#define CORTAO_RAY_COUNT 16
+#define CORTAO_OCCLUDER_LOOKUP_TABLE 1
+#include "CORTAOMainPass.h"
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(location = 0) in vec2 fragTexCoord;
+
+// All three textures use a sampler with NEAREST filtering, NEAREST mipmaps and a transparent black
+// border. CORTAO requires this sampler for the packed data.
+layout(set = 1, binding = 1) uniform sampler2D cortaoTex[3];
+#define PackedData cortaoTex[0]
+#define NormalBuffer cortaoTex[1]
+#define OccluderLookupTable cortaoTex[2]
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	CORTAOMainPassParameters cortaoParams;
+
+	// The occlusion is raised to this power. 1 is the physically correct value.
+	float intensity;
+};
+
+// The occluder lookup table is a 24x24x16 3D texture. It is stored as a 2D texture of 24x384 texels,
+// one 24x24 slice after the other. This function does the NEAREST, CLAMP_TO_EDGE read of the 3D
+// texture that CORTAO expects.
+const ivec3 OCCLUDER_LUT_SIZE = ivec3(24, 24, 16);
+
+cortao_uint cortao_sampleOccluderLookupTable(cortao_float3 texCoords)
+{
+	ivec3 texel = clamp(ivec3(floor(texCoords * vec3(OCCLUDER_LUT_SIZE))), ivec3(0), OCCLUDER_LUT_SIZE - 1);
+	float value = texelFetch(OccluderLookupTable, ivec2(texel.x, texel.z * OCCLUDER_LUT_SIZE.y + texel.y), 0).r;
+	// The table is R16_UNORM. See the CORTAO occluder table README for this conversion.
+	return uint(value * 65535.0 + 0.5);
+}
+
+cortao_uint cortao_samplePackedData(cortao_float2 texCoords, cortao_float mipmap)
+{
+	// The border color is 0.0, which has the bits 0u, as CORTAO requires.
+	return floatBitsToUint(textureLod(PackedData, texCoords, mipmap).r);
+}
+
+cortao_half3 cortao_loadNormal(cortao_int2 pixelCoords)
+{
+	// Decals add to the normal buffer, so the normal is not always a unit vector.
+	vec3 normal = texelFetch(NormalBuffer, pixelCoords, 0).xyz;
+	float normalLengthSq = dot(normal, normal);
+	return normalLengthSq > 1e-8 ? normal * inversesqrt(normalLengthSq) : vec3(0.0, 0.0, 1.0);
+}
+
+// cortao_mainPass() does not call cortao_writeResult() for sky pixels, so these keep 1.0.
+float cortaoOcclusion = 1.0;
+
+void cortao_writeResult(cortao_int2 pixelCoords, cortao_half occlusion, cortao_half3 bentNormal,
+	cortao_half3x3 tangentSpaceTransform, cortao_uint rayBits)
+{
+	cortaoOcclusion = occlusion;
+}
+
+void main()
+{
+	cortao_mainPass(uvec2(gl_FragCoord.xy), cortaoParams);
+	fragOut0 = vec4(pow(clamp(cortaoOcclusion, 0.0, 1.0), intensity), 0.0, 0.0, 1.0);
+}

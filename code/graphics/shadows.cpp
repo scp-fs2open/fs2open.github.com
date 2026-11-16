@@ -17,6 +17,7 @@
 #include "debris/debris.h"
 #include "graphics/matrix.h"
 #include "graphics/rtao.h"
+#include "graphics/ssao.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "math/vecmat.h"
@@ -398,6 +399,7 @@ static float shadow_clamp_smoothness(float smoothness)
 void shadows_remove_unsupported_options()
 {
 	rtao_remove_unsupported_options();
+	ssao_remove_unsupported_options();
 
 	if (!shadow_contact_hardening_supported()) {
 		// No raw-depth sampler support (pre-3.3 OpenGL): the option is inert, so drop it.

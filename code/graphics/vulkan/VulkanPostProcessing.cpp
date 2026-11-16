@@ -352,6 +352,7 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 
 	// Wire the deferred light accumulation + fog subsystems (resources are lazy).
 	m_lighting.init(m_ctx, m_sceneColor, m_deferred, m_shadow);
+	m_cortao.init(m_ctx, m_deferred);
 	m_fog.init(m_ctx, m_sceneColor, m_sceneDepth, m_sceneDepthCopy, m_deferred);
 	m_motionVectors.init(m_ctx);
 	m_upscaler.init(m_ctx);
@@ -381,6 +382,7 @@ void VulkanPostProcessor::shutdown()
 		shutdownShadowPass();
 		shadow_cascade_params_shutdown();
 		shutdownMSAA();
+		m_cortao.shutdown();
 		m_lighting.shutdown();
 		shutdownGBuffer();
 		m_smaa.shutdown();
@@ -797,6 +799,10 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExte
 	if (!m_lighting.onResize()) {
 		nprintf(("vulkan", "VulkanPostProcessor: Deferred-lighting resize failed, disabling it\n"));
 		m_lighting.shutdown();
+	}
+	if (!m_cortao.onResize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: CORTAO resize failed; the next frame tries to create it again\n"));
+		m_cortao.shutdown();
 	}
 	// The fog framebuffer attaches the (just recreated) scene color view.
 	if (!m_fog.onResize()) {

@@ -25,6 +25,8 @@ layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
 #define NormalBuffer sTextures[1]
 #define PositionBuffer sTextures[2]
 #define SpecBuffer sTextures[3]
+// Screen-space ambient occlusion from the CORTAO passes. Only bound in the SSAO variant.
+#define SsaoBuffer sTextures[4]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
 layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
@@ -310,6 +312,15 @@ void main()
 				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
 		}
 #endif
+#ifdef SSAO
+		// Screen-space AO uses the same ao term as RTAO. The engine never enables both.
+		ao *= texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0).r;
+#endif
+#ifdef SSAO_DEBUG
+		// Debug view: show only the SSAO term, without the baked AO maps.
+		fragOut0 = vec4(vec3(texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0).r), 1.0);
+		return;
+#endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
@@ -319,6 +330,11 @@ void main()
 #endif
 	}
 	else {
+#ifdef SSAO_DEBUG
+		// Debug view: the other lights add nothing.
+		fragOut0 = vec4(0.0);
+		return;
+#endif
 		float fresnel = specColor.a;
 
 		vec3 lightDir;
