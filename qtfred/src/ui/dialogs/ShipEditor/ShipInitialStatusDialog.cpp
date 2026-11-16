@@ -67,6 +67,9 @@ void ShipInitialStatusDialog::closeEvent(QCloseEvent* e)
 }
 void ShipInitialStatusDialog::on_velocitySpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->velocitySpinBox->isBlank())
+		return;
 	_model->setVelocity(value);
 }
 void ShipInitialStatusDialog::on_dockpointList_currentItemChanged(QListWidgetItem* current)
@@ -95,6 +98,9 @@ void ShipInitialStatusDialog::on_dockeePointComboBox_currentIndexChanged(int ind
 }
 void ShipInitialStatusDialog::on_hullSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->hullSpinBox->isBlank())
+		return;
 	_model->setHull(value);
 }
 void ShipInitialStatusDialog::on_hasShieldCheckBox_stateChanged(int state)
@@ -103,6 +109,9 @@ void ShipInitialStatusDialog::on_hasShieldCheckBox_stateChanged(int state)
 }
 void ShipInitialStatusDialog::on_shieldHullSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->shieldHullSpinBox->isBlank())
+		return;
 	_model->setShieldHull(value);
 }
 void ShipInitialStatusDialog::on_forceShieldsCheckBox_stateChanged(int state)
@@ -165,6 +174,9 @@ void ShipInitialStatusDialog::on_cancelPushButton_clicked() {
 }
 void ShipInitialStatusDialog::on_guardianSpinBox_valueChanged(int value)
 {
+	// "-" keeps the value of each marked ship.
+	if (ui->guardianSpinBox->isBlank())
+		return;
 	_model->setGuardian(value);
 }
 void ShipInitialStatusDialog::on_moveShipsCheckBox_toggled(bool value)

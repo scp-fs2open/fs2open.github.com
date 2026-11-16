@@ -24,8 +24,12 @@ class MixedValueSpinBox : public QSpinBox {
 	// Shows one value for all objects. This ends the mixed state.
 	void setSingleValue(int value);
 
-  protected:
+	// True while the spin box shows "-". Then value() is not a real value, so do not give it to a model.
+	bool isBlank() const;
+
 	void stepBy(int steps) override;
+
+  protected:
 	int valueFromText(const QString& text) const override;
 
   private:
