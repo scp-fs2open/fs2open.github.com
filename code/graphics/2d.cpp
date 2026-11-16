@@ -22,26 +22,32 @@
 #include "material.h"
 #include "matrix.h"
 
+#include "bmpman/bmpman.h"
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
 #include "graphics/openxr.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/post_processing.h"
+#include "graphics/software/FontManager.h"
+#include "graphics/software/NVGFont.h"
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
 #include "graphics/shadows.h"
 #include "io/mouse.h"
+#include "mod_table/mod_table.h"
 #include "model/modelrender.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "tracing/ProfilerOverlay.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
 #include "utils/string_utils.h"
@@ -59,7 +65,9 @@
 
 #include <algorithm>
 #include <climits>
-
+#include <cmath>
+#include <cstring>
+#include <limits>
 
 #define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
 
@@ -83,6 +91,8 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 	GR_CAPABILITY_ENTRY(FAST_SHADOWS),
 	GR_CAPABILITY_ENTRY(RAYTRACED_SHADOWS),
+	GR_CAPABILITY_ENTRY(SHADOW_CONTACT_HARDENING),
+	GR_CAPABILITY_ENTRY(FSR),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -295,23 +305,7 @@ os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 os::ViewportState Gr_configured_window_state = os::ViewportState::Borderless;
 #endif
 
-static bool mode_change_func(os::ViewportState state, bool initial)
-{
-	Gr_configured_window_state = state;
-
-	if (initial) {
-		return false;
-	}
-
-	auto window = os::getMainViewport();
-	if (window == nullptr) {
-		return false;
-	}
-
-	window->setState(state);
-
-	return true;
-}
+static bool mode_change_func(os::ViewportState state, bool initial);
 
 static void parse_window_mode_func()
 {
@@ -329,7 +323,7 @@ static void parse_window_mode_func()
 }
 
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
-static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
+static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
                      .category(std::make_pair("Graphics", 1825))
@@ -459,7 +453,7 @@ static SDL_DisplayID videodisplay_deserializer(const json_t* value)
 	auto displays = SDL_GetDisplays(&count);
 
 	if (displays) {
-		if (index < count) {
+		if (index >= 0 && index < count) {
 			display_id = displays[index];
 		}
 
@@ -511,20 +505,73 @@ static SCP_string videodisplay_display(SDL_DisplayID id)
 	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
+static bool fullscreen_on_display(os::Viewport* viewport, SDL_Window* window, SDL_DisplayID display)
+{
+	const bool fullscreen = viewport->getState() == os::ViewportState::Fullscreen;
+	const auto original = SDL_GetDisplayForWindow(window);
+	bool settled = true;
+	if (original == display) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
+		}
+		return settled;
+	}
+
+	// The renderer cannot be resized mid-session, so a display without a mode of the window's size needs a restart
+	// Scaled size, not pixels: SDL lists display modes in scaled units
+	int width, height;
+	SDL_DisplayMode target;
+	if (!SDL_GetWindowSize(window, &width, &height) ||
+		!SDL_GetClosestFullscreenDisplayMode(display, width, height, 0.0f, true, &target) || target.w != width ||
+		target.h != height) {
+		if (!fullscreen) {
+			viewport->setState(os::ViewportState::Fullscreen);
+			settled = SDL_SyncWindow(window);
+		}
+		return settled;
+	}
+
+	if (fullscreen) {
+		// KWin ignores a fullscreen move to another screen, and undoes one made too soon after leaving fullscreen
+		mprintf(("Leaving fullscreen to move the window to display %u\n", display));
+		if (!SDL_SetWindowFullscreen(window, false)) {
+			return settled;
+		}
+		settled = SDL_SyncWindow(window);
+		SDL_Delay(100);
+		SDL_PumpEvents();
+	}
+
+	// KWin on X11 fullscreens a window on the screen it is over; Wayland ignores this and uses the mode's display
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	settled = SDL_SyncWindow(window) && settled;
+
+	if (SDL_SetWindowFullscreenMode(window, &target) && SDL_SetWindowFullscreen(window, true)) {
+		const bool synced = SDL_SyncWindow(window);
+		// A request still pending after a timed-out sync is left to finish
+		if (!synced || viewport->getState() == os::ViewportState::Fullscreen) {
+			return synced && settled;
+		}
+	}
+
+	// Fullscreen on the starting display beats a window until the restart moves it
+	mprintf(("Could not go fullscreen on display %u; going back to display %u\n", display, original));
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(original), SDL_WINDOWPOS_CENTERED_DISPLAY(original));
+	settled = SDL_SyncWindow(window) && settled;
+	viewport->setState(os::ViewportState::Fullscreen);
+	return SDL_SyncWindow(window) && settled;
+}
+
+// The listeners run in no fixed order, so they only record the new values and apply_window_placement() acts after the
+// persist
 static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
 		return false;
 	}
 
-	auto window = os::getSDLMainWindow();
-	if (window == nullptr) {
-		return false;
-	}
-
 	set_preferred_display(display);
-
-	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
 
@@ -563,6 +610,117 @@ static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics
                      .change_listener(videodisplay_change)
                      .importance(99)
                      .finish();
+
+static bool mode_change_func(os::ViewportState state, bool initial)
+{
+	Gr_configured_window_state = state;
+
+	if (initial) {
+		return false;
+	}
+
+	return true;
+}
+
+static void save_fullscreen_display(SDL_DisplayID display)
+{
+	auto manager = options::OptionsManager::instance();
+	const auto& key = VideoDisplayOption->getConfigKey();
+	// 0 is SDL's unknown monitor, and a pending Display edit is the player's own choice still waiting to be persisted
+	if (display == 0 || manager->hasPendingEdit(key)) {
+		return;
+	}
+	const auto saved_display = VideoDisplayOption->getValue();
+	if (saved_display == display) {
+		return;
+	}
+
+	mprintf(("Fullscreen landed on display %u; saving it as the display option in place of display %u\n",
+		display,
+		saved_display));
+	manager->setConfigValue(key, std::unique_ptr<json_t>(videodisplay_serializer(display)));
+	if (!manager->persistOptionChanges(VideoDisplayOption.get())) {
+		mprintf(("Could not save display %u as the display option\n", display));
+	}
+}
+
+static SCP_vector<const options::OptionBase*> apply_window_placement(
+	const SCP_vector<const options::OptionBase*>& changed)
+{
+	const bool display_changed = std::find(changed.begin(), changed.end(), VideoDisplayOption.get()) != changed.end();
+	const bool mode_changed = std::find(changed.begin(), changed.end(), WindowModeOption.get()) != changed.end();
+	if (!display_changed && !mode_changed) {
+		return {};
+	}
+
+	auto viewport = os::getMainViewport();
+	auto window = os::getSDLMainWindow();
+	const auto state = Gr_configured_window_state;
+	SDL_DisplayID display = 0;
+	if (display_changed) {
+		display = VideoDisplayOption->getValue();
+	} else if (window != nullptr) {
+		// Fullscreen picked alone stays on the monitor the player moved the window to
+		display = SDL_GetDisplayForWindow(window);
+	}
+	bool settled = true;
+	if (viewport != nullptr && window != nullptr) {
+		if (state == os::ViewportState::Fullscreen) {
+			// A window may not have been able to reach the target display, so fullscreen can move it
+			settled = fullscreen_on_display(viewport, window, display);
+		} else {
+			if (viewport->getState() != state) {
+				viewport->setState(state);
+				settled = SDL_SyncWindow(window);
+			}
+			if (display_changed) {
+				SDL_SetWindowPosition(window,
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display),
+					SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+				settled = SDL_SyncWindow(window) && settled;
+			}
+		}
+	}
+
+	// Each option is judged by where the window ended up
+	const auto not_applied = [&]() {
+		SCP_vector<const options::OptionBase*> unapplied;
+		const bool on_display = window != nullptr && SDL_GetDisplayForWindow(window) == display;
+		// A monitor with no mode of the window's size leaves fullscreen on the display of the last fullscreen mode
+		const bool fullscreen_elsewhere =
+			window != nullptr && state == os::ViewportState::Fullscreen && !display_changed && !on_display;
+		// A display move can also leave the window out of its mode, e.g. when the new monitor refuses fullscreen
+		const bool wrong_mode = viewport != nullptr && viewport->getState() != state;
+		// The prompt names only options in this persist, so a mode the move broke counts against Display
+		if (display_changed && (!on_display || (wrong_mode && !mode_changed))) {
+			unapplied.push_back(VideoDisplayOption.get());
+		}
+		if (mode_changed && (viewport == nullptr || wrong_mode || fullscreen_elsewhere)) {
+			unapplied.push_back(WindowModeOption.get());
+		}
+		return unapplied;
+	};
+
+	// SDL gives up after 100 ms on X11, so a slow window manager gets up to half a second more
+	auto unapplied = not_applied();
+	for (int wait = 0; !settled && wait < 10 && !unapplied.empty(); ++wait) {
+		SDL_Delay(50);
+		SDL_PumpEvents();
+		unapplied = not_applied();
+	}
+	for (const auto* option : unapplied) {
+		mprintf(("%s did not take effect; asking for a restart\n", option->getConfigKey().c_str()));
+	}
+	// The saved Display follows where the game actually is, even over a Display choice waiting on a restart
+	if (!display_changed && unapplied.empty() && state == os::ViewportState::Fullscreen) {
+		save_fullscreen_display(display);
+	}
+	return unapplied;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionsManager::instance() is a Meyers singleton
+static const int Window_placement_hook __UNUSED =
+	options::OptionsManager::instance()->addPostPersistHook(apply_window_placement);
 
 struct ResolutionInfo {
 	uint32_t width  = 0;
@@ -871,6 +1029,235 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .importance(79)
                      .parser(parse_anti_aliasing_func)
                      .finish();
+
+FsrMode Gr_fsr_mode = FsrMode::Off;
+int Gr_fsr_major_version = 0;
+SCP_vector<SCP_string> Gr_fsr_versions;
+int Gr_fsr_max_output_size = 0;
+float Gr_composition_scale = 1.0f;
+
+static float fsr_window_factor()
+{
+	if (!Cmdline_window_res.has_value()) {
+		return 1.0f;
+	}
+	const float factor = std::max(i2fl(Cmdline_window_res->first) / i2fl(gr_screen.max_w),
+		i2fl(Cmdline_window_res->second) / i2fl(gr_screen.max_h));
+	if (factor <= 1.0f || std::max(gr_screen.max_w, gr_screen.max_h) * factor > Gr_fsr_max_output_size) {
+		return 1.0f;
+	}
+	return factor;
+}
+
+float gr_fsr_upscale_factor(FsrMode mode)
+{
+	return mode == FsrMode::Upscale ? fsr_window_factor() : 1.0f;
+}
+
+static int fsr_setting(FsrMode mode, int major_version)
+{
+	return mode == FsrMode::Off ? 0 : major_version * 10 + static_cast<int>(mode);
+}
+
+static SCP_vector<int> fsr_setting_enumerator()
+{
+	SCP_vector<int> out{0};
+
+	// Options are also enumerated before gr_init has set up the renderer.
+	if (gr_screen.gf_is_capable && gr_is_capable(gr_capability::CAPABILITY_FSR)) {
+		for (const auto& version : Gr_fsr_versions) {
+			const int major = atoi(version.c_str());
+			out.push_back(fsr_setting(FsrMode::AA, major));
+			if (fsr_window_factor() > 1.0f) {
+				out.push_back(fsr_setting(FsrMode::Upscale, major));
+			}
+		}
+	}
+
+	return out;
+}
+
+static SCP_string fsr_setting_display(int setting)
+{
+	const auto mode = static_cast<FsrMode>(setting % 10);
+	if (mode == FsrMode::Off) {
+		return "Off";
+	}
+
+	SCP_string label = "FSR";
+	for (const auto& name : Gr_fsr_versions) {
+		if (atoi(name.c_str()) == setting / 10) {
+			label += " " + name;
+			break;
+		}
+	}
+	return label + (mode == FsrMode::AA ? " AA" : " Upscale");
+}
+
+static void fsr_apply_setting(int setting)
+{
+	const int mode = setting % 10;
+	Gr_fsr_mode = mode <= static_cast<int>(FsrMode::Upscale) ? static_cast<FsrMode>(mode) : FsrMode::Off;
+	Gr_fsr_major_version = setting / 10;
+}
+
+// -fsr only names a mode, and what of it can run is only known once the renderer is up. Settle it on the closest
+// setting that is offered (the newest version, Upscale dropping to AA, or Off), so that both the FSR state and the
+// locked option show what actually runs.
+static void fsr_resolve_cmdline_setting()
+{
+	const auto options = options::OptionsManager::instance();
+	if (options->getOverrideReason("Graphics.FSR") != "-fsr") {
+		return;
+	}
+
+	int resolved = 0;
+	if (Gr_fsr_mode != FsrMode::Off) {
+		// The offered settings are ordered newest version first
+		const auto offered = fsr_setting_enumerator();
+		const auto newest = [&offered](FsrMode mode) {
+			const auto it = std::find_if(offered.begin(), offered.end(), [mode](int setting) { return setting % 10 == static_cast<int>(mode); });
+			return it == offered.end() ? 0 : *it;
+		};
+		resolved = newest(Gr_fsr_mode);
+		if (resolved == 0) {
+			// Upscale is only offered with a larger window
+			resolved = newest(FsrMode::AA);
+		}
+	}
+
+	fsr_apply_setting(resolved);
+	options->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(resolved)), "-fsr");
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
+                     std::pair<const char*, int>{"AMD FSR", -1},
+                     std::pair<const char*, int>{"AMD's temporal anti aliasing and upscaling. AA keeps the rendering resolution. Upscale renders the 3D scene at the configured resolution and upscales it to the window/monitor resolution.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .enumerator(fsr_setting_enumerator)
+                     .display(fsr_setting_display)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .default_func([]() { return fsr_setting(Gr_fsr_mode, Gr_fsr_major_version); } )
+                     .change_listener([](const int& setting, bool) {
+                         fsr_apply_setting(setting);
+                         return true;
+                     })
+                     .importance(77)
+                     .finish();
+static SCP_vector<float> anisotropic_value_enumerator()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
+}
+static SCP_string anisotropic_display(float val)
+{
+	if (val < 2.0f) {
+		return "None";
+	}
+
+	SCP_string out;
+	sprintf(out, "%.0fx", val);
+	return out;
+}
+static float anisotropic_default()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return 1.0f;
+	}
+	return max;
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
+                     std::pair<const char*, int>{"Anistropic filtering", 1736},
+                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
+                     .enumerator(anisotropic_value_enumerator)
+                     .category(std::make_pair("Graphics", 1825))
+                     .display(anisotropic_display)
+                     .default_func(anisotropic_default)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(78)
+                     .finish();
+
+float gr_anisotropy_setting()
+{
+	if (Using_in_game_options) {
+		return AnisotropyOption->getValue();
+	}
+	if (Cmdline_aniso_level != 0) {
+		return static_cast<float>(Cmdline_aniso_level);
+	}
+	return anisotropic_default();
+}
+
+// trilinear, which the launcher setting has always defaulted to
+static int Texture_filter = 1;
+
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
+																		                { 1, {"Trilinear", 1678}}};
+
+static void parse_texture_filtering_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	SCP_tolower(mode);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"bilinear", []() { Texture_filter = 0; }},
+		{"trilinear", []() { Texture_filter = 1; }}};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
+	}
+}
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter",
+                     std::pair<const char*, int>{"Texture Filtering", 1763},
+                     std::pair<const char*, int>{"Texture filtering option", 1764})
+                     .importance(1)
+                     .category(std::make_pair("Graphics", 1825))
+                     .values(TextureFilteringValues)
+                     .default_func([]() {return Texture_filter;})
+                     .bind_to_once(&Texture_filter)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_texture_filtering_func)
+                     .finish();
+
+int gr_texture_filter_setting()
+{
+	if (Using_in_game_options) {
+		// read live: qtFRED sets an override and never loads initial values into the bound copy
+		return TextureFilteringOption->getValue();
+	}
+	return static_cast<int>(std::min(os_config_read_uint(nullptr, "TextureFilter", 1), 1u));
+}
 
 extern int Cmdline_msaa_enabled;
 
@@ -2318,6 +2705,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		return false;
 	}
 
+	fsr_resolve_cmdline_setting();
+
 	gr_set_palette_internal(Gr_current_palette_name, NULL, 0);
 
 	bm_init();
@@ -3263,24 +3652,102 @@ void gr_set_bitmap(int bitmap_num, int alphablend_mode, int bitblt_mode, float a
 	gr_screen.current_bitmap          = bitmap_num;
 }
 
-static void output_uniform_debug_data()
+gr_debug_stats gr_get_debug_stats()
 {
-	if (gr_screen.mode == GraphicsAPI::Stub) {
+	gr_debug_stats stats;
+
+	if (!Cmdline_graphics_debug_output) {
+		return stats;
+	}
+
+	if (UniformBufferManager) {
+		stats.uniform_buffer_valid = true;
+		stats.uniform_buffer_size = UniformBufferManager->getBufferSize();
+		stats.uniform_buffer_used = UniformBufferManager->getCurrentlyUsedSize();
+	}
+
+	gr_screen.gf_get_debug_stats(stats);
+
+	return stats;
+}
+
+void gr_init_imgui_font()
+{
+	// Keep the default ImGui font if no custom font is configured
+	// or no ImGui context is available.
+	if (ImGui_font.empty() || ImGui::GetCurrentContext() == nullptr) {
 		return;
 	}
 
-	int line_height = gr_get_font_height() + 1;
+	auto* selectedFont = font::FontManager::getFont(ImGui_font);
+	const auto* fontData = font::FontManager::getTrueTypeFontData(ImGui_font);
 
-	gr_set_color_fast(&Color_bright_white);
+	if (selectedFont == nullptr || fontData == nullptr || fontData->data == nullptr || fontData->size <= 100 ||
+		fontData->size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+		Warning(LOCATION,
+			"The configured ImGui font '%s' has no usable TrueType font data. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+		return;
+	}
 
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160,
-	                    "Uniform buffer size: " SIZE_T_ARG, UniformBufferManager->getBufferSize());
-	gr_printf_no_resize(gr_screen.center_offset_x + 20, gr_screen.center_offset_y + 160 + line_height,
-	                    "Currently used data: " SIZE_T_ARG, UniformBufferManager->getCurrentlyUsedSize());
+	// Only TrueType fonts can reach this point.
+	const auto* trueTypeFont = static_cast<const font::NVGFont*>(selectedFont);
+	constexpr float defaultFontSize = 13.0f;
+
+	float fontSize = trueTypeFont->getSize();
+
+	if (!std::isfinite(fontSize) || fontSize <= 0.0f) {
+		Warning(LOCATION,
+			"ImGui font '%s' has an invalid size (%g). Using the default size of %.0f.",
+			ImGui_font.c_str(),
+			fontSize,
+			defaultFontSize);
+		fontSize = defaultFontSize;
+	}
+
+	// ImGui takes ownership of this copy, not of FSO's font data.
+	void* imguiFontData = ImGui::MemAlloc(fontData->size);
+
+	if (imguiFontData == nullptr) {
+		Warning(LOCATION,
+			"Failed to allocate memory for ImGui font '%s'. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+		return;
+	}
+
+	std::memcpy(imguiFontData, fontData->data.get(), fontData->size);
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	ImFont* imguiFont = io.Fonts->AddFontFromMemoryTTF(imguiFontData, static_cast<int>(fontData->size), fontSize);
+
+	if (imguiFont != nullptr) {
+		io.FontDefault = imguiFont;
+
+		mprintf(("ImGui font '%s' registered successfully.\n", ImGui_font.c_str()));
+	} else {
+		Warning(LOCATION,
+			"Failed to register ImGui font '%s'. "
+			"Using the default ImGui font.",
+			ImGui_font.c_str());
+	}
 }
+
+static bool Imgui_frame_active = false;
 
 void gr_imgui_begin_frame()
 {
+	if (Imgui_frame_active) {
+		return;
+	}
+
+	// The stub renderer (standalone server) never assigns the ImGui entry points.
+	if (!gr_screen.gf_imgui_new_frame || !ImGui::GetCurrentContext()) {
+		return;
+	}
+
 	gr_imgui_new_frame();      // renderer backend (OpenGL/Vulkan)
 	ImGui_ImplSDL3_NewFrame(); // platform backend, derives the display size from the SDL window
 
@@ -3298,6 +3765,23 @@ void gr_imgui_begin_frame()
 	}
 
 	ImGui::NewFrame();
+	Imgui_frame_active = true;
+}
+
+void gr_imgui_end_frame()
+{
+	if (!Imgui_frame_active) {
+		return;
+	}
+
+	ImGui::Render();
+	gr_imgui_render_draw_data();
+	Imgui_frame_active = false;
+}
+
+bool gr_imgui_frame_active()
+{
+	return Imgui_frame_active;
 }
 
 void gr_flip(bool execute_scripting)
@@ -3318,9 +3802,13 @@ void gr_flip(bool execute_scripting)
 
 	model_process_cached_ui_render_instances();
 
-	if (Cmdline_graphics_debug_output) {
-		output_uniform_debug_data();
-	}
+	// Every presented frame drains the frame profiler and contributes the overlay window to
+	// this frame's ImGui pass. Doing it here rather than per game state is what keeps the
+	// profiler's event buffer bounded: collection is global, so the drain has to be too.
+	tracing::profiler_overlay_frame();
+
+	// Closes whatever ImGui frame the overlay (or the lab, or the options screen) opened.
+	gr_imgui_end_frame();
 
 	// IMPORTANT: No rendering may happen after this point until gf_flip()/gr_setup_frame().
 	// gr_reset_immediate_buffer() resets the write offset to 0, so any subsequent immediate
@@ -3587,6 +4075,30 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	auto gpuHeap = get_gpu_heap(heap_type);
 
 	gpuHeap->freeGpuData(data_offset);
+}
+
+gr_memory_stats gr_get_memory_stats()
+{
+	gr_memory_stats stats;
+
+	// gpu_heaps[] entries stay null when gpu_heap_init() early-returned (GraphicsAPI::Stub, e.g.
+	// a build with both graphics backends disabled), so this must not assume a live heap.
+	auto vertex_heap = get_gpu_heap(GpuHeap::ModelVertex);
+	auto index_heap = get_gpu_heap(GpuHeap::ModelIndex);
+	if (vertex_heap != nullptr && index_heap != nullptr) {
+		stats.model_heap_valid = true;
+		stats.model_vertex_heap_used = vertex_heap->usedBytes();
+		stats.model_vertex_heap_size = vertex_heap->bufferSize();
+		stats.model_index_heap_used = index_heap->usedBytes();
+		stats.model_index_heap_size = index_heap->bufferSize();
+	}
+
+	stats.locked_bitmap_ram_valid = true;
+	stats.locked_bitmap_ram_bytes = bm_texture_ram;
+
+	gr_screen.gf_get_memory_stats(stats);
+
+	return stats;
 }
 
 void gr_set_gamma(float gamma)

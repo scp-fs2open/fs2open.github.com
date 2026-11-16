@@ -354,6 +354,7 @@ cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), req
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window resolution. Vulkan only", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -2127,6 +2128,16 @@ bool SetCmdlineParams()
 			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
 	}
 
+	if (fsr_mode_arg.found()) {
+		const int mode = fsr_mode_arg.get_int();
+		if (mode >= static_cast<int>(FsrMode::Off) && mode <= static_cast<int>(FsrMode::Upscale)) {
+			// What of this can run is only known once the renderer is up; gr_init settles it on the closest offered setting
+			Gr_fsr_mode = static_cast<FsrMode>(mode);
+			Gr_fsr_major_version = 0;
+			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
+		}
+	}
+
 	if (msaa_enabled_arg.found()) {
 		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
 		switch (Cmdline_msaa_enabled) {
@@ -2444,10 +2455,9 @@ bool SetCmdlineParams()
 	if (gr_sync_validation_arg.found()) {
 		// Enables the Vulkan validation layer + debug messenger + synchronization
 		// validation feature (see VulkanRenderer::initializeInstance), but NOT the
-		// engine-level graphics debug output: -gr_debug additionally draws debug
-		// overlays (e.g. output_uniform_debug_data), which are unrelated to GPU
-		// sync validation and would otherwise appear as spurious on-screen
-		// artifacts. Keep this a pure GPU-validation switch.
+		// engine-level graphics debug output: -gr_debug additionally feeds extra
+		// stat groups into the ImGui frame profiler overlay (see gr_get_debug_stats),
+		// which are unrelated to GPU sync validation. Keep this a pure GPU-validation switch.
 		Cmdline_gr_sync_validation = true;
 	}
 

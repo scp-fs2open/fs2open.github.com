@@ -40,8 +40,8 @@ protected:
 	SCP_vector<firepoint> fp;
 
 	int firepoint_size;
-	int firepoint_scale_x;
-	int firepoint_scale_y;
+	float firepoint_scale_x;
+	float firepoint_scale_y;
 	int autoaim_frame_offset;
 	bool has_autoaim_lock;
 	int flight_cursor_frame_offset;
@@ -50,7 +50,7 @@ public:
 	void render(float frametime, bool config = false) override;
 	void initBitmaps(char *fname);
 	void pageIn() override;
-	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
+	void initFirepointDisplay(bool firepoint, float scaleX, float scaleY, int size);
 	void getFirepointStatus();
 	void setAutoaimFrame(int framenum);
 	void setFlightCursorFrame(int framenum);

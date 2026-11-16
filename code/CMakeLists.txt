@@ -77,6 +77,7 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 target_link_libraries(code PUBLIC anl)
 
 target_link_libraries(code PUBLIC imgui)
+target_link_libraries(code PUBLIC implot)
 
 IF(FSO_BUILD_WITH_OPENXR)
 	target_link_libraries(code PUBLIC OpenXR::openxr_loader)
@@ -114,6 +115,11 @@ if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
 	target_include_directories(code PUBLIC Vulkan::Headers)
 	target_link_libraries(code PUBLIC VulkanMemoryAllocator)
+	# AMD only ships 64-bit runtimes, and 32-bit Vulkan handles aren't the pointers its API takes
+	if (FSO_BUILD_WITH_FFX AND IS_64BIT)
+		target_compile_definitions(code PRIVATE WITH_FFX)
+		target_link_libraries(code PRIVATE ffx_portable)
+	endif()
 endif()
 
 include(shaders.cmake)

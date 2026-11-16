@@ -4,6 +4,7 @@ precision highp float;
 precision highp int;
 precision highp sampler2D;
 precision highp samplerCube;
+precision highp sampler2DArray;
 precision highp sampler2DArrayShadow;
 #endif
 
@@ -26,13 +27,14 @@ layout(set = 1, binding = 1) uniform sampler2D sTextures[16];
 #define SpecBuffer sTextures[3]
 
 layout(set = 0, binding = 2) uniform sampler2DArrayShadow shadow_map;
+layout(set = 0, binding = 7) uniform sampler2DArray shadow_map_raw;
 
 #ifdef ENV_MAP
 layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
 #endif
 
-#ifdef RT_SHADOWS
+#if defined(RT_SHADOWS) || defined(RTAO)
 layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
@@ -41,6 +43,7 @@ uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
 uniform sampler2DArrayShadow shadow_map;
+uniform sampler2DArray shadow_map_raw;
 
 #ifdef ENV_MAP
 uniform samplerCube sEnvmap;
@@ -59,28 +62,20 @@ uniform globalDeferredData {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
+	int rtaoSampleCount;
+
+	// The ray-tracing inputs of this pass, for raytraced shadows and RTAO. See
+	// deferred_global_data in uniform_structs.h.
+	vec3 rayViewOrigin;
+	int rayCullMask;
+
+	float rayBiasMin;
+	float rayBiasMax;
+	float rtaoRadius;
+	float rtaoStrength;
 };
 
-#ifdef VULKAN
-layout(set = 0, binding = 6, std140)
-#else
-layout(std140)
-#endif
-uniform shadowCascadeParams {
-	int cascade_offset;
-	int cascade_count;
-	float rtShadowBiasMin;
-	float rtShadowBiasMax;
-
-	mat4 shadow_mv_matrix;
-
-	// See shadow_cascade_static_data (uniform_structs.h).
-	vec3 shadow_ray_view_origin;
-	int shadow_ray_cull_mask;
-	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-};
+#include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
 #ifdef VULKAN
 layout(set = 2, binding = 1, std140)
@@ -303,6 +298,18 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
+#ifdef RTAO
+		{
+			// Raytraced AO multiplies into the same ao term as the baked AO maps,
+			// so the env-map/IBL ambient below darkens consistently for free.
+			// Ray origin in TLAS-relative space, as for the shadow rays below.
+			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
+			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
+			float rtaoBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
+			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
+				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
+		}
+#endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
@@ -322,15 +329,22 @@ void main()
 
 		if (enable_shadows != 0) {
 #ifdef RT_SHADOWS
-			// Ray origin in TLAS-relative space; see shadow_cascade_static_data (uniform_structs.h).
+			// Ray origin in TLAS-relative space; see deferred_global_data (uniform_structs.h).
 			// Only the rotation of inv_view_matrix is used: its translation is the (large) camera
-			// world position, which shadow_ray_view_origin supplies already rebased onto the TLAS.
-			vec3 worldPos = mat3(inv_view_matrix) * position + shadow_ray_view_origin;
+			// world position, which rayViewOrigin supplies already rebased onto the TLAS.
+			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
 			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
 			vec3 worldLightDir = normalize((inv_view_matrix * vec4(lightDir, 0.0)).xyz);
 
-			float rtShadowBias = computeRtShadowBias(length(position), rtShadowBiasMin, rtShadowBiasMax);
-			attenuation *= traceShadowRay(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist, rtShadowBias, uint(shadow_ray_cull_mask));
+			float rtShadowBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
+			// Penumbra cone: for directional lights sourceRadius IS the tangent of the
+			// sun's angular radius ($SunAngularSize); for local lights the subtended
+			// half-angle follows from the physical source radius and the light distance.
+			float coneTan = (lightType == LT_DIRECTIONAL)
+				? sourceRadius
+				: sourceRadius / max(lightDist, 1e-3);
+			attenuation *= traceShadowRayCone(shadow_tlas, worldPos, worldNormal, worldLightDir, lightDist,
+				rtShadowBias, uint(rayCullMask), coneTan, rtShadowSampleCount, gl_FragCoord.xy);
 #else
 			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
 			vec4 fragShadowUV[NUM_SHADOW_CASCADES];
@@ -338,7 +352,7 @@ void main()
 				fragShadowUV[i] = transformToShadowMap(shadow_proj_matrix[i], i, fragShadowPos);
 			}
 
-			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowUV, cascade_distances, smoothness_factors, cascade_offset, cascade_count);
+			attenuation *= getShadowValue(shadow_map, shadow_map_raw, -position.z, fragShadowUV, cascade_distances, smoothness_factors, penumbra_scale, cascade_offset, cascade_count);
 #endif
 		}
 

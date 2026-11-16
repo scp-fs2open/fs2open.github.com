@@ -1287,7 +1287,7 @@ INT_PTR CALLBACK player_info_proc(HWND hwndDlg,UINT uMsg,WPARAM wParam,LPARAM lP
 				// get the callsign
 				if (SendMessage(Player_name_list, CB_GETLBTEXT, (WPARAM)val, (LPARAM)callsign) != CB_ERR) {
 					// lookup the player
-					player_num = multi_find_player_by_callsign(callsign);
+					player_num = multi_find_player_by_callsign(callsign).first;
 
 					// if we found him then display his info
 					if (player_num != -1) {
