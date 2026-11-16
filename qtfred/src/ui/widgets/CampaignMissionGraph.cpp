@@ -1075,6 +1075,7 @@ void CampaignMissionGraph::cancelDrag()
 	}
 
 	m_drag = DragState{}; // resets flags and clears the QPointer
+	setDragMode(QGraphicsView::ScrollHandDrag);
 }
 
 void CampaignMissionGraph::applyFocusEmphasis()
@@ -1231,7 +1232,6 @@ void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 		bool made = tryFinishConnectionAt(sp);
 
 		cancelDrag();
-		setDragMode(QGraphicsView::ScrollHandDrag);
 
 		if (made) {
 			// Edges reflect the new branch; keep viewport stable
@@ -1249,6 +1249,11 @@ void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 
 void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 {
+	// a context menu request ends a connection drag: the menu would take the left release that finishes it
+	if (m_drag.active) {
+		cancelDrag();
+	}
+
 	const QPointF sp = mapToScene(e->pos());
 
 	// Node under cursor?
