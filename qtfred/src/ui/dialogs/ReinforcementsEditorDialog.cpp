@@ -204,7 +204,8 @@ void ReinforcementsDialog::on_moveSelectionDown_clicked()
 void ReinforcementsDialog::on_useSpinBox_valueChanged(int val)
 {
 	// need to check that it's not empty so as not to pass nonsense values back to the model.
-	if (ui->chosenShipsList->selectedItems().count() > 0) {
+	// "-" keeps the value of each selected reinforcement.
+	if (ui->chosenShipsList->selectedItems().count() > 0 && !ui->useSpinBox->isBlank()) {
 		// MixedValueSpinBox keeps each value that the user enters in the real range (0 or more).
 		_model->setUseCount(val);
 	}
@@ -213,7 +214,8 @@ void ReinforcementsDialog::on_useSpinBox_valueChanged(int val)
 void ReinforcementsDialog::on_delaySpinBox_valueChanged(int val)
 {
 	// need to check that it's not empty so as not to pass nonsense values back to the model.
-	if (ui->chosenShipsList->selectedItems().count() > 0) {
+	// "-" keeps the value of each selected reinforcement.
+	if (ui->chosenShipsList->selectedItems().count() > 0 && !ui->delaySpinBox->isBlank()) {
 		// MixedValueSpinBox keeps each value that the user enters in the real range (0 or more).
 		_model->setBeforeArrivalDelay(val);
 	}
