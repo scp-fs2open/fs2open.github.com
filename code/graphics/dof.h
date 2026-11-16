@@ -19,7 +19,8 @@ float dof_pixel_scale(float screen_h, float fov_y);
 
 constexpr int DOF_MAX_SAMPLES = 512; // the shader's MAX_SAMPLES
 
-// Side of a tile of the largest near CoC, in pixels (DOF_TILE in dof-common.sdr).
+// Side of a tile, in pixels; each tile keeps the largest near CoC and the nearest view z (DOF_TILE in
+// dof-common.sdr).
 constexpr int DOF_TILE_SIZE = 16;
 
 // How many tiles away the neighbour pass looks (DOF_TILE_REACH in dof-common.sdr). The max blur on screen is

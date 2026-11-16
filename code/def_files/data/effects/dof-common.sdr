@@ -10,10 +10,12 @@ layout(std140) uniform genericData {
 	float zFar;
 };
 
-// Side of a tile of the max CoC, in pixels. DOF_TILE_SIZE in dof.h.
+// Side of a tile, in pixels; each tile keeps the largest near CoC and the nearest view z. DOF_TILE_SIZE in dof.h.
 const int DOF_TILE = 16;
 // The neighbour pass looks this many tiles away at most (DOF_TILE_REACH in dof.h, which clamps maxBlur to it).
 const int DOF_TILE_REACH = 8;
+// The nearest view z of a tile with nothing near: farther than anything that blurs.
+const float DOF_NO_NEAR_Z = 60000.0;
 
 float linear_z(float d)
 {
@@ -35,15 +37,13 @@ float coc_of_depth(float d)
 	return clamp(nearDist / max(linear_z(d), 1.0e-3) - 1.0, 0.0, 1.0) * maxBlur;
 }
 
-// The CoC in pixels, or -1 for the cockpit, which never blurs and is never behind anything.
-// The scene depth under the cockpit is the space behind it, so the cockpit must be tested first.
-float coc_of(vec2 suv)
+// The CoC and the view z of a texel; the cockpit gives a CoC of -1.
+vec2 coc_z_at(ivec2 p)
 {
-	return in_cockpit(suv) ? -1.0 : coc_of_depth(textureLod(depth_tex, suv, 0.0).x);
-}
-
-float coc_at(ivec2 p)
-{
-	return texelFetch(cockpit_depth_tex, p, 0).x < 1.0 ? -1.0 : coc_of_depth(texelFetch(depth_tex, p, 0).x);
+	if (texelFetch(cockpit_depth_tex, p, 0).x < 1.0) {
+		return vec2(-1.0, 0.0);
+	}
+	float d = texelFetch(depth_tex, p, 0).x;
+	return vec2(coc_of_depth(d), linear_z(d));
 }
 
