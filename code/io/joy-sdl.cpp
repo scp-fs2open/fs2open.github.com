@@ -1027,14 +1027,14 @@ namespace joystick
 
 			// We can also take this opportunity to map triggers to a button
 			int button = SDL_GAMEPAD_BUTTON_COUNT + (axis - SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
-			// press at half travel and let go a little lower, in the proportions the other axis buttons use
-			const bool held = _button[button].DownTimestamp.isValid();
-			bool down = held ? (value > (JOY_AXIS_BUTTON_RELEASE - JOY_AXIS_BUTTON_PRESS) * 2) : (value >= 0);
-
 			Assertion(button < numButtons(), "Gamepad trigger button is out of bounds!");
 
+			// press at half travel and let go a little lower, in the proportions the other axis buttons use
+			const bool held = _button[button].DownTimestamp.isValid();
+			const bool down = held ? (value > (JOY_AXIS_BUTTON_RELEASE - JOY_AXIS_BUTTON_PRESS) * 2) : (value >= 0);
+
 			// Count presses, not every tiny axis movement; re-arm without waiting for the count to be read
-			if (down && !_button[button].DownTimestamp.isValid()) {
+			if (down && !held) {
 				_button[button].DownTimestamp = ui_timestamp();
 				++_button[button].DownCount;
 			} else if (!down) {

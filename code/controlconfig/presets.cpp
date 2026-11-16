@@ -72,7 +72,10 @@ void load_preset_files(SCP_string clone) {
 		int version = handler->readInt("version");
 		if (version > static_cast<int>(PST_VERSION)) {
 			// a newer build may have saved bindings this build would misread
-			mprintf(("PST => `%s` has version %i, newer than this build's %u, skipping...\n", file.c_str(), version, PST_VERSION));
+			mprintf(("PST => `%s` has version %i, newer than this build's %u, skipping...\n",
+				file.c_str(),
+				version,
+				PST_VERSION));
 			continue;
 		}
 		mprintf(("PST => Loading `%s` with version %i\n", file.c_str(), version));

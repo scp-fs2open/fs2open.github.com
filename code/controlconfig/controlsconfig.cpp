@@ -409,6 +409,7 @@ DCF(cc_adjust, "UI tool Used to adjust positioning and size of the controls conf
  * from this "origin"
  */
 static int Axes_origin[CID_JOY_MAX][JOY_NUM_AXES];
+static const int AXIS_BIND_DELTA = 16384;
 
 // Rotate selItem forwards
 selItem operator++(selItem& item, int) {
@@ -520,7 +521,7 @@ void control_config_detect_axis_reset()
 CC_bind control_config_detect_axis()
 {
 	int dx, dy, dz;
-	int delta = 16384;
+	int delta = AXIS_BIND_DELTA;
 	int axes_values[CID_JOY_MAX][JOY_NUM_AXES];
 	short j;			// cid of the joy that moved
 	short axis = -1;	// index of the detected axis
@@ -596,7 +597,6 @@ CC_bind control_config_detect_axis()
  */
 static CC_bind control_config_detect_axis_button()
 {
-	const int delta = 16384;
 	int axes_values[JOY_NUM_AXES];
 
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
@@ -610,10 +610,13 @@ static CC_bind control_config_detect_axis_button()
 				continue;
 			}
 
-			// The move the axis bind asks for, from where the axis rested: a throttle left off center must not bind
+			// The move the axis bind asks for, from where the axis rested: a throttle left off center must not bind.
+			// It must also be past the press point, or the same push would press the new control after the bind.
 			const int moved = axes_values[i] - Axes_origin[j][i];
-			if (abs(moved) > delta) {
-				const char flags = static_cast<char>(CCF_AXIS_BTN | ((moved < 0) ? CCF_INVERTED : 0));
+			const int travel = abs(axes_values[i] - JOY_AXIS_CENTER);
+			const bool negative = axes_values[i] < JOY_AXIS_CENTER;
+			if ((abs(moved) > AXIS_BIND_DELTA) && (travel >= JOY_AXIS_BUTTON_PRESS)) {
+				const char flags = static_cast<char>(CCF_AXIS_BTN | (negative ? CCF_INVERTED : 0));
 				return {static_cast<CID>(j), i, flags};
 			}
 		}

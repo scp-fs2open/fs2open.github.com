@@ -1553,6 +1553,10 @@ void stuff_CCF(char& flags, size_t item_id, CID cid) {
 			flags &= ~CCF_RELATIVE;
 		}
 
+		if ((cid == CID_KEYBOARD) || (flags & CCF_BUTTON)) {
+			break;
+		}
+
 		// Must have
 		mask = flags & (CCF_AXIS | CCF_BALL);
 		if (mask == 0) {

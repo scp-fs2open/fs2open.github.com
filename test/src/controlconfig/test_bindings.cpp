@@ -157,27 +157,28 @@ TEST(ControlBindings, OutOfRangeAxisIndexIsIgnored)
 	EXPECT_EQ(out, 0);
 }
 
-TEST(ControlBindings, ReleasedKeyOnAbsoluteAxisRestsAtOneEnd)
+TEST(ControlBindings, ReleasedKeyOnAnAxis)
 {
 	int axes[CID_JOY_MAX + 1][JOY_NUM_AXES] = {{0}};
-	int plain = 0;
-	int inverted = 0;
-	int chat_entry = 0;
-	scale_invert(CC_bind(CID_KEYBOARD, KEY_A), 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &plain, true);
-	scale_invert(CC_bind(CID_KEYBOARD, KEY_A, CCF_INVERTED), 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &inverted, true);
-	scale_invert(CC_bind(CID_KEYBOARD, KEY_A, CCF_INVERTED), 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &chat_entry, false);
+	int abs_plain = 0;
+	int abs_inverted = 0;
+	int abs_inverted_keys_ignored = 0;
+	int rel_inverted = 0;
+	const CC_bind key(CID_KEYBOARD, KEY_A);
+	const CC_bind inverted_key(CID_KEYBOARD, KEY_A, CCF_INVERTED);
+	scale_invert(key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_plain, true);
+	scale_invert(inverted_key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_inverted, true);
+	scale_invert(inverted_key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_inverted_keys_ignored, false);
+	scale_invert(inverted_key, 0, CC_TYPE_AXIS_REL, 0.0f, axes, &rel_inverted, true);
 
-	EXPECT_EQ(plain, 0);
-	EXPECT_EQ(inverted, F1_0);
-	EXPECT_EQ(chat_entry, inverted);
-}
+	EXPECT_EQ(abs_plain, 0);
+	EXPECT_EQ(abs_inverted, F1_0);
+	EXPECT_EQ(abs_inverted_keys_ignored, F1_0);
+	EXPECT_EQ(rel_inverted, 0);
 
-TEST(ControlBindings, ReleasedKeyLeavesRelativeAxisAlone)
-{
-	int axes[CID_JOY_MAX + 1][JOY_NUM_AXES] = {{0}};
-	int out = 0;
-	scale_invert(CC_bind(CID_KEYBOARD, KEY_A), 0, CC_TYPE_AXIS_REL, 0.0f, axes, &out, true);
-	scale_invert(CC_bind(CID_KEYBOARD, KEY_A, CCF_INVERTED), 0, CC_TYPE_AXIS_REL, 0.0f, axes, &out, true);
-
-	EXPECT_EQ(out, 0);
+	// two binds on one control add up, as two analog binds always have
+	int abs_pair = 0;
+	scale_invert(inverted_key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_pair, true);
+	scale_invert(key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_pair, true);
+	EXPECT_EQ(abs_pair, F1_0);
 }
