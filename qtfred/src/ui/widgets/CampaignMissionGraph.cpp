@@ -47,9 +47,15 @@ QRectF MissionNodeItem::boundingRect() const
 
 QPainterPath MissionNodeItem::shape() const
 {
-	// clicks and drops hit the card only; the half of a port outside it is not hit
+	// the card and its ports, since half of each port is outside the card
+	const qreal r = m_style.portRadius;
+	const qreal centerX = m_rect.center().x();
 	QPainterPath path;
+	path.setFillRule(Qt::WindingFill);
 	path.addRect(cardRect());
+	path.addEllipse(QPointF(centerX, m_rect.top()), r, r);
+	path.addEllipse(QPointF(centerX - m_style.portOffsetX, m_rect.bottom()), r, r);
+	path.addEllipse(QPointF(centerX + m_style.portOffsetX, m_rect.bottom()), r, r);
 	return path;
 }
 
@@ -540,9 +546,11 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 CampaignMissionGraph::~CampaignMissionGraph()
 {
 	qApp->removeEventFilter(this);
-	// the scene is a child of this view and is deleted after it, when its selection changes can no longer reach us
+	// deleted here: as a child it would go after this class's part of the view, which its items can still signal
 	if (m_scene != nullptr) {
 		disconnect(m_scene, nullptr, this, nullptr);
+		delete m_scene;
+		m_scene = nullptr;
 	}
 }
 
@@ -1046,8 +1054,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 	const QPointF snapped(qRound(scenePt.x() / s) * s, qRound(scenePt.y() / s) * s);
 
 	// Don't spawn if we actually clicked on an item's body
-	if (!nodeAtScenePos(scenePt) &&
-		!(m_endSink && m_endSink->mapRectToScene(m_endSink->pillRect()).contains(scenePt))) {
+	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->contains(m_endSink->mapFromScene(scenePt)))) {
 		m_spawnPending = true;
 		Q_EMIT createMissionAtAndConnectRequested(snapped, m_drag.fromIndex, m_drag.isSpecial);
 		// return false so caller won't rebuild; dialog will rebuild after it adds the mission
@@ -1293,7 +1300,7 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 	}
 
 	// END sink under cursor? no special menu
-	if (m_endSink && m_endSink->mapRectToScene(m_endSink->pillRect()).contains(sp)) {
+	if (m_endSink && m_endSink->contains(m_endSink->mapFromScene(sp))) {
 		QGraphicsView::contextMenuEvent(e);
 		return;
 	}

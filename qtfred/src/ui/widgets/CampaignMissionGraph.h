@@ -400,11 +400,14 @@ class EndSinkItem final : public QGraphicsObject {
 		return {QPointF(0, 0), m_style.endSinkSize};
 	}
 
-	// clicks and drops hit the pill only, like the cards; the strip above it is only for repainting the port
+	// the pill and its port, like the cards; the rest of the strip above the pill is only for repainting
 	QPainterPath shape() const override
 	{
+		const QRectF pill = pillRect();
 		QPainterPath path;
-		path.addRect(pillRect());
+		path.setFillRule(Qt::WindingFill);
+		path.addRect(pill);
+		path.addEllipse(QPointF(pill.center().x(), pill.top()), m_style.portRadius, m_style.portRadius);
 		return path;
 	}
 
