@@ -92,6 +92,7 @@ add_file_folder("Scripting\\\\API"
     scripting/api/bitops.cpp
     scripting/api/enums.cpp
     scripting/api/hookvars.cpp
+    scripting/api/options.cpp
     scripting/api/shipclass.cpp
 )
 
