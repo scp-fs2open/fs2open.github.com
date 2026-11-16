@@ -23,6 +23,7 @@ add_file_folder("CFile"
 
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
+    globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
     globalincs/test_version.cpp
 )
@@ -30,14 +31,20 @@ add_file_folder("Globalincs"
 add_file_folder("Graphics"
 	   graphics/test_font.cpp
 	   graphics/test_material.cpp
+	   graphics/test_post_processing.cpp
 	   graphics/test_shader_types.cpp
 )
 
 if (FSO_BUILD_WITH_VULKAN)
 	add_file_folder("Graphics\\\\Vulkan"
+		graphics/vulkan/test_vulkan_post_processing.cpp
 		graphics/vulkan/test_vulkan_raytracing.cpp
 	)
 endif()
+
+add_file_folder("IffDefs"
+    iff_defs/test_iff_accessibility.cpp
+)
 
 add_file_folder("Math"
     math/test_vecmat.cpp
@@ -59,8 +66,16 @@ add_file_folder("model"
     model/test_modelread.cpp
 )
 
+add_file_folder("network"
+    network/test_multiutil.cpp
+)
+
 add_file_folder("Options"
     options/test_options_manager.cpp
+)
+
+add_file_folder("OSAPI"
+    osapi/test_osregistry.cpp
 )
 
 add_file_folder("Parse"
@@ -103,6 +118,7 @@ add_file_folder("Scripting\\\\Lua"
 )
 
 add_file_folder("Ship"
+    ship/ship_info.cpp
     ship/test_bank_allows_weapon.cpp
 )
 
@@ -122,6 +138,7 @@ add_file_folder("Tracing"
 
 add_file_folder("Utils"
     utils/HeapAllocatorTest.cpp
+    utils/test_encoding.cpp
 )
 
 add_file_folder("Weapon"

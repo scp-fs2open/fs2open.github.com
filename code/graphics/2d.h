@@ -92,6 +92,11 @@ extern float Gr_composition_scale;
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
 
+// not clamped: only the renderer knows what the card supports
+float gr_anisotropy_setting();
+
+int gr_texture_filter_setting();
+
 extern bool Gr_post_processing_enabled;
 
 extern bool Gr_enable_vsync;
@@ -894,6 +899,7 @@ typedef struct screen {
 	std::function<void(bitmap_slot* slot)> gf_bm_create;
 	std::function<void(bitmap_slot* slot)> gf_bm_init;
 	std::function<void()> gf_bm_page_in_start;
+	std::function<void()> gf_bm_page_in_prepare;
 	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
@@ -1405,6 +1411,15 @@ inline void gr_post_process_restore_zbuffer()
 
 #define gr_imgui_new_frame				GR_CALL(gr_screen.gf_imgui_new_frame)
 #define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
+
+/**
+ * @brief Registers the mod-defined TrueType font with ImGui
+ *
+ * @details Must be called after the FSO font system has been initialized
+ * and an ImGui context has been created. If no custom font is configured,
+ * the default ImGui font remains unchanged.
+ */
+void gr_init_imgui_font();
 
 /**
  * @brief Starts an ImGui frame, sized to the render target rather than to the OS window
