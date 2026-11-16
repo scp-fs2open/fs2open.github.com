@@ -13,6 +13,10 @@ add_file_folder("Actions\\\\Expression"
 	actions/expression/test_ExpressionParser.cpp
 )
 
+add_file_folder("AI"
+    ai/test_ailua.cpp
+)
+
 add_file_folder("Autopilot"
     autopilot/test_nav_deselect.cpp
 )
@@ -65,6 +69,7 @@ add_file_folder("menuui"
 
 add_file_folder("missioneditor"
     missioneditor/test_object_bounds.cpp
+    missioneditor/test_editor_rules.cpp
 )
 
 add_file_folder("missionui"
