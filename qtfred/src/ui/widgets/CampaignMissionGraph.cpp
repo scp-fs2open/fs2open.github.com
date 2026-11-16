@@ -48,7 +48,7 @@ QRectF MissionNodeItem::boundingRect() const
 QPainterPath MissionNodeItem::shape() const
 {
 	// the card and its ports; winding fill, or the half of each port inside the card would be a hole
-	const qreal r = m_style.portRadius;
+	const qreal r = m_style.portRadius + kMaxBorderWidth / 2;
 	const qreal centerX = m_rect.center().x();
 	QPainterPath path;
 	path.setFillRule(Qt::WindingFill);
@@ -1175,7 +1175,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 	const QPointF sp = mapToScene(ev->pos());
 
 	// If we're already dragging, ignore
-	if (!m_drag.active) {
+	if (ev->button() == Qt::LeftButton && !m_drag.active) {
 		if (auto* raw = nodeAtScenePos(sp)) {
 			QPointer<detail::MissionNodeItem> n(raw);
 
@@ -1226,7 +1226,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 {
-	if (m_drag.active) {
+	if (ev->button() == Qt::LeftButton && m_drag.active) {
 		const QPointF sp = mapToScene(ev->pos());
 		bool made = tryFinishConnectionAt(sp);
 

@@ -407,7 +407,8 @@ class EndSinkItem final : public QGraphicsObject {
 		QPainterPath path;
 		path.setFillRule(Qt::WindingFill);
 		path.addRect(pill);
-		path.addEllipse(QPointF(pill.center().x(), pill.top()), m_style.portRadius, m_style.portRadius);
+		const qreal r = m_style.portRadius + kBorderWidth / 2;
+		path.addEllipse(QPointF(pill.center().x(), pill.top()), r, r);
 		return path;
 	}
 
