@@ -159,6 +159,7 @@ bool PostProcessingManager::parse_table()
 				if (optional_string("$RGB:")) {
 					stuff_vec3d(&eff.rgb);
 				}
+				eff.default_rgb = eff.rgb;
 
 				// Post_effects index is used for flag checks, so we can't have more than 32
 				if (m_postEffects.size() < 32) {
@@ -214,17 +215,16 @@ bool PostProcessingManager::parse_table()
 			required_string("$Sample Number:");
 			stuff_int(&m_lightshaftParams.samplenum);
 
-			m_lightshaftParams.cpintensity = m_lightshaftParams.weight;
+			m_lightshaftParams.cpweight = m_lightshaftParams.weight;
 
 			float falloff = m_lightshaftParams.falloff;
 			for (int i = 1; i < m_lightshaftParams.samplenum; ++i)
 			{
-				m_lightshaftParams.cpintensity += m_lightshaftParams.weight * falloff;
+				m_lightshaftParams.cpweight += m_lightshaftParams.weight * falloff;
 				falloff *= m_lightshaftParams.falloff;	// this replaces pow(falloff, i)
 			}
-
-			m_lightshaftParams.cpintensity *= m_lightshaftParams.intensity;
 		}
+		m_defaultLightshaftParams = m_lightshaftParams;
 
 		required_string("#End");
 
@@ -239,6 +239,7 @@ void PostProcessingManager::clear()
 {
 	m_postEffects.clear();
 	m_lightshaftParams = lightshaft_parameters();
+	m_defaultLightshaftParams = lightshaft_parameters();
 }
 
 const SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() const { return m_postEffects; }
@@ -246,6 +247,7 @@ SCP_vector<graphics::post_effect_t>& PostProcessingManager::getPostEffects() { r
 
 const lightshaft_parameters& PostProcessingManager::getLightshaftParams() const { return m_lightshaftParams; }
 lightshaft_parameters& PostProcessingManager::getLightshaftParams() { return m_lightshaftParams; }
+void PostProcessingManager::resetLightshaftParams() { m_lightshaftParams = m_defaultLightshaftParams; }
 
 bool PostProcessingManager::bloomShadersOk() const
 {
@@ -257,6 +259,8 @@ void PostProcessingManager::setBloomShadersOk(bool ok)
 	m_bloomShadersOk = ok;
 }
 } // namespace graphics
+
+bool Lightshafts_override = false;
 
 bool gr_lightshafts_enabled()
 {
@@ -270,6 +274,10 @@ bool gr_lightshafts_enabled()
 	}
 
 	if (!graphics::Post_processing_manager->getLightshaftParams().on) {
+		return false;
+	}
+
+	if (Lightshafts_override) {
 		return false;
 	}
 

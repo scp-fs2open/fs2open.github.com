@@ -365,7 +365,6 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 	if (!volSlot || !volSlot->imageView) {
 		bitmap* bmp = bm_lock(volHandle, 32, BMP_TEX_XPARENT);
 		if (bmp) {
-			texMgr->bm_data(volHandle, bmp, bm_is_compressed(volHandle));
 			bm_unlock(volHandle);
 			volSlot = texMgr->getTextureSlot(volHandle);
 		}
@@ -383,7 +382,6 @@ void VulkanFog::renderVolumetric(vk::CommandBuffer cmd)
 		if (!noiseSlot || !noiseSlot->imageView) {
 			bitmap* bmp = bm_lock(noiseHandle, 32, BMP_TEX_XPARENT);
 			if (bmp) {
-				texMgr->bm_data(noiseHandle, bmp, bm_is_compressed(noiseHandle));
 				bm_unlock(noiseHandle);
 				noiseSlot = texMgr->getTextureSlot(noiseHandle);
 			}
