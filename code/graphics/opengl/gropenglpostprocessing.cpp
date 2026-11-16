@@ -68,7 +68,8 @@ static GLuint Dof_framebuffer = 0;
 static GLuint Dof_texture     = 0;
 static int Dof_texture_width  = 0;
 static int Dof_texture_height = 0;
-// The largest near CoC of each tile ([0]) and of each tile with its neighbours ([1]), one R16F texel per tile.
+// The largest near CoC and the nearest view z of each tile ([0]) and of each tile with its neighbours ([1]),
+// one RG16F texel per tile.
 static GLuint Dof_tile_framebuffer = 0;
 static GLuint Dof_tile_textures[2] = {0, 0};
 static int Dof_tiles_x = 0;
@@ -289,15 +290,15 @@ static bool opengl_setup_dof_texture()
 	glGenTextures(2, Dof_tile_textures);
 	for (int i = 0; i < 2; i++) {
 		GL_state.Texture.Enable(Dof_tile_textures[i]);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, Dof_tiles_x, Dof_tiles_y, 0, GL_RED, GL_FLOAT, nullptr);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, Dof_tiles_x, Dof_tiles_y, 0, GL_RG, GL_FLOAT, nullptr);
 		// The passes read single texels (texelFetch), so no filtering.
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
-	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[0], "DoF tile max");
-	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[1], "DoF neighbour max");
+	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[0], "DoF tile max CoC and nearest z");
+	opengl_set_object_label(GL_TEXTURE, Dof_tile_textures[1], "DoF neighbour max CoC and nearest z");
 
 	// A framebuffer object exists only after its first bind, so the labels come after it.
 	glGenFramebuffers(1, &Dof_tile_framebuffer);
@@ -351,7 +352,8 @@ static void opengl_post_pass_dof()
 		});
 	};
 
-	// Tile passes: the largest near CoC of each tile, then of each tile and the tiles within maxBlur of it.
+	// Tile passes: the largest near CoC and the nearest view z of each tile, then of each tile and the tiles within
+	// maxBlur of it.
 	{
 		TRACE_SCOPE(tracing::DepthOfFieldTiles);
 		GL_state.BindFrameBuffer(Dof_tile_framebuffer);
@@ -1330,7 +1332,7 @@ size_t opengl_get_postprocessing_render_target_bytes()
 	}
 	if (Dof_texture != 0) {
 		bytes += static_cast<size_t>(Dof_texture_width) * static_cast<size_t>(Dof_texture_height) * RGBA16F_BYTES;
-		bytes += 2 * static_cast<size_t>(Dof_tiles_x) * static_cast<size_t>(Dof_tiles_y) * 2; // two R16F tile textures
+		bytes += 2 * static_cast<size_t>(Dof_tiles_x) * static_cast<size_t>(Dof_tiles_y) * 4; // two RG16F tile textures
 	}
 
 	return bytes;
