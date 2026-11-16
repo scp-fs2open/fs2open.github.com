@@ -235,7 +235,7 @@ namespace detail {
 
 using fso::fred::dialogs::CampaignSpecialMode;
 
-// widest border the items paint; their bounds pad by it so a port's outline is repainted when dragged
+// widest border a card paints; its bounds pad by it, though a stroke only reaches half its width past the shape
 constexpr qreal kMaxBorderWidth = 2.0;
 
 /**
@@ -392,7 +392,7 @@ class EndSinkItem final : public QGraphicsObject {
 	QRectF boundingRect() const override
 	{
 		// Expand upward by port radius plus the port's pen so the top port isn't clipped
-		return pillRect().adjusted(-1.0, -(m_style.portRadius + kMaxBorderWidth), +1.0, +1.0);
+		return pillRect().adjusted(-kBorderWidth, -(m_style.portRadius + kBorderWidth), kBorderWidth, kBorderWidth);
 	}
 
 	QRectF pillRect() const
@@ -416,17 +416,17 @@ class EndSinkItem final : public QGraphicsObject {
 		p->setRenderHint(QPainter::Antialiasing, true);
 
 		// draw relative to the pill rect (not the expanded boundingRect)
-		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
+		const QRectF pill = pillRect();
 
 		// Inbound port, centered on the pill's top edge
-		QPen portPen(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		QPen portPen(m_style.endSinkBorder, kBorderWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 		p->setPen(portPen);
 		p->setBrush(m_style.inboundPortColor);
 		const QPointF portCenter(pill.center().x(), pill.top());
 		p->drawEllipse(portCenter, m_style.portRadius, m_style.portRadius);
 
 		// Pill on top
-		QPen border(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		QPen border(m_style.endSinkBorder, kBorderWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 		p->setPen(border);
 		p->setBrush(m_style.endSinkFill);
 		p->drawRoundedRect(pill, m_style.endSinkRadius, m_style.endSinkRadius);
@@ -443,12 +443,14 @@ class EndSinkItem final : public QGraphicsObject {
 	QPointF inboundAnchorScenePos() const
 	{
 		// Anchor on the pill's top-center
-		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
+		const QRectF pill = pillRect();
 		return mapToScene(QPointF(pill.center().x(), pill.top()));
 	}
 
 
   private:
+	static constexpr qreal kBorderWidth = 1.5;
+
 	CampaignGraphStyle m_style;
 };
 

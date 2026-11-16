@@ -1204,8 +1204,8 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 				// Build preview edge
 				const auto& missions = m_model->getCampaignMissions();
 
-				// quickly check for this, as we can drag the end mission sink that is not supposed to be dragged, by accident 
-				if (!SCP_vector_inbounds(missions, m_drag.fromIndex)){
+				// in case a card outlived its mission in the model
+				if (!missions.in_bounds(m_drag.fromIndex)) {
 					m_drag.active = false;
 					ev->ignore();
 					return;
