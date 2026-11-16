@@ -74,7 +74,12 @@ float pcssBlockerSearch(sampler2DArray shadow_map_raw, vec4 shadowUV, float sear
 	for (int i = 0; i < 8; i++) {
 		vec2 uv = shadowUV.xy + poissonDisc16[i * 2] * searchRadiusUV;
 		float sampled = texture(shadow_map_raw, vec3(uv, shadowUV.z)).r;
+#ifdef REVERSED_Z
+		// reversed depth stores nearer to the light as larger
+		if (sampled > shadowUV.w) {
+#else
 		if (sampled < shadowUV.w) {
+#endif
 			sum += sampled;
 			blockerCount++;
 		}
@@ -107,7 +112,11 @@ float pcssPenumbraRadius(sampler2DArrayShadow shadow_map, sampler2DArray shadow_
 		return texelFloor;
 	}
 
+#ifdef REVERSED_Z
+	float deltaDepth = max(avgBlockerDepth - shadowUV.w, 0.0);
+#else
 	float deltaDepth = max(shadowUV.w - avgBlockerDepth, 0.0);
+#endif
 	return clamp(deltaDepth * penumbraScale, texelFloor, smoothnessCeiling);
 }
 
