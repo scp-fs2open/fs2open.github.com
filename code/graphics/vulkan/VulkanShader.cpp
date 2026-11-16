@@ -8,6 +8,16 @@ namespace graphics::vulkan {
 // Global shader manager pointer
 static VulkanShaderManager* g_shaderManager = nullptr;
 
+static uint32_t vertex_input_mask(const ShaderTypeInfo* typeInfo)
+{
+	uint32_t mask = shader_vertex_input_mask(*typeInfo);
+	// Batched effects also read their motion, which the attribute lists shared with OpenGL can't hold
+	if (typeInfo->type_id == SDR_TYPE_BATCHED_BITMAP || typeInfo->type_id == SDR_TYPE_EFFECT_PARTICLE) {
+		mask |= (1u << VATTRIB_EFFECT_MOTION);
+	}
+	return mask;
+}
+
 VulkanShaderManager* getShaderManager()
 {
 	Assertion(g_shaderManager != nullptr, "Vulkan ShaderManager not initialized!");
@@ -130,7 +140,7 @@ void VulkanShaderManager::recompileAllShaders(const std::function<void(size_t, s
 						nprintf(("vulkan", "VulkanShaderManager: Failed to create vertex module: %s\n", e.what()));
 					}
 				}
-				shader.vertexInputMask = shader_vertex_input_mask(*typeInfo);
+				shader.vertexInputMask = vertex_input_mask(typeInfo);
 
 				SCP_string fragFile = typeInfo->frag;
 				auto fragSpirv = m_compiler->compile(fragFile, vk::ShaderStageFlagBits::eFragment, type, flags, requiresRaytracing);
@@ -222,7 +232,7 @@ int VulkanShaderManager::loadShader(shader_type type, unsigned int flags)
 				vertFile.c_str(), e.what()));
 		}
 	}
-	shader.vertexInputMask = shader_vertex_input_mask(*typeInfo);
+	shader.vertexInputMask = vertex_input_mask(typeInfo);
 
 	// Compile fragment shader
 	SCP_string fragFile = typeInfo->frag;

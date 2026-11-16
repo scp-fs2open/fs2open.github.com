@@ -243,7 +243,8 @@ void HudGaugeReticle::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size) {
+void HudGaugeReticle::initFirepointDisplay(bool firepoint, float scaleX, float scaleY, int size)
+{
 	firepoint_display = firepoint;
 	firepoint_scale_x = scaleX;
 	firepoint_scale_y = scaleY;
