@@ -70,6 +70,19 @@ namespace font {
 		static FSFont *getFont(const SCP_string &name);
 
 		/**
+		 * @brief Returns the raw TrueType data for a font with the specified name
+		 *
+		 * Searches for a loaded TrueType font by its name as defined in fonts.tbl.
+		 * The returned data is owned by the FontManager and must not be modified
+		 * or freed by the caller. It remains valid until FontManager::close().
+		 *
+		 * @param fontName The name of the font to retrieve
+		 * @return Pointer to the font data, or nullptr if the font does not
+		 *         exist or is not a TrueType font.
+		 */
+		static const TrueTypeFontData* getTrueTypeFontData(const SCP_string& fontName);
+
+		/**
 		* @brief Returns a pointer to the font with the specified filename
 		*
 		* Searches the internal list of fonts for the _first_ font with the filename and returns it to the caller.

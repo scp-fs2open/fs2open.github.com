@@ -10,17 +10,20 @@ enum class Encoding {
 
 /**
  * @brief Guesses the encoding of the given content by looking at the first few bytes
+ * @param buf The content to check; need not be null-terminated
+ * @param len The length of the content in bytes
  * @param assume_utf8 Set the @true true if no BOM should be treated as UTF-8 instead of ASCII
  * @return The guessed encoding of the content
  */
-Encoding guess_encoding(const SCP_string& content, bool assume_utf8 = true);
+Encoding guess_encoding(const char* buf, size_t len, bool assume_utf8 = true);
 
 /**
- * @brief Determines if the given text has a Byte Order Mark (BOM) that has to be skipped to get to the real text
- * @param content The text to check
- * @return @c true if there is a BOM, @c false otherwise
+ * @brief Gets the length of the Byte Order Mark (BOM), if any, that has to be skipped to get to the real text
+ * @param buf The content to check; need not be null-terminated
+ * @param len The length of the content in bytes
+ * @return The length of the BOM in bytes, or 0 if there is none
  */
-bool has_bom(const SCP_string& content);
+size_t bom_length(const char* buf, size_t len);
 
 /**
  * @brief Guesses if the specifies buffer contains Latin1 encoding
@@ -45,7 +48,10 @@ bool guessLatin1Encoding(const char* aBuf, size_t aLen);
  * @param filename The name of the file. Only used for possible error messages.
  * @param[out] start_offset A pointer to an int variable. If this is a valid pointer then this variable will contain the
  * offset of the first text byte from the start of the file.
- * @return The length of the file in bytes. Does not include the BOM if it exists.
+ * @param is_lenient For files that can fall back to defaults, such as config files. If true, a UTF-8 file is accepted
+ * even when Unicode mode is disabled, and an unsupported encoding produces a warning instead of an error.
+ * @return The length of the file in bytes. Does not include the BOM if it exists. If @c is_lenient is true, -1 if the
+ * encoding is not supported.
  */
-int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset = nullptr);
+int check_encoding_and_skip_bom(CFILE* file, const char* filename, int* start_offset = nullptr, bool is_lenient = false);
 }
