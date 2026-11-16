@@ -326,8 +326,5 @@ void shutdown() {
 }
 
 
-mission_load_error::mission_load_error(const char* msg) : std::runtime_error{ msg } {
-}
-
 }
 }
