@@ -47,7 +47,7 @@ QRectF MissionNodeItem::boundingRect() const
 
 QPainterPath MissionNodeItem::shape() const
 {
-	// the card and its ports, since half of each port is outside the card
+	// the card and its ports; winding fill, or the half of each port inside the card would be a hole
 	const qreal r = m_style.portRadius;
 	const qreal centerX = m_rect.center().x();
 	QPainterPath path;
@@ -546,7 +546,7 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 CampaignMissionGraph::~CampaignMissionGraph()
 {
 	qApp->removeEventFilter(this);
-	// deleted here: as a child it would go after this class's part of the view, which its items can still signal
+	// disconnect, then delete while this view is still whole: a selected card's deletion sends selectionChanged
 	if (m_scene != nullptr) {
 		disconnect(m_scene, nullptr, this, nullptr);
 		delete m_scene;
@@ -1203,13 +1203,6 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 				// Build preview edge
 				const auto& missions = m_model->getCampaignMissions();
-
-				// in case a card outlived its mission in the model
-				if (!missions.in_bounds(m_drag.fromIndex)) {
-					m_drag.active = false;
-					ev->ignore();
-					return;
-				}
 
 				const auto mode = missions[m_drag.fromIndex].special_mode_hint;
 

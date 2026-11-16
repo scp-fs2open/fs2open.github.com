@@ -235,7 +235,7 @@ namespace detail {
 
 using fso::fred::dialogs::CampaignSpecialMode;
 
-// widest border a card paints; its bounds pad by it, though a stroke only reaches half its width past the shape
+// widest border a card paints, used to pad its bounds around the ports (a stroke needs half; the rest is slack)
 constexpr qreal kMaxBorderWidth = 2.0;
 
 /**
@@ -400,7 +400,7 @@ class EndSinkItem final : public QGraphicsObject {
 		return {QPointF(0, 0), m_style.endSinkSize};
 	}
 
-	// the pill and its port, like the cards; the rest of the strip above the pill is only for repainting
+	// the pill and its port, winding fill as for the cards; the rest of the strip above is only for repainting
 	QPainterPath shape() const override
 	{
 		const QRectF pill = pillRect();
