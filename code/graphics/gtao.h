@@ -15,6 +15,13 @@ extern float Gtao_radius_scale;
 // Exponent on the visibility, so a larger value gives darker AO. Bound to Graphics.SsaoIntensity.
 extern float Gtao_intensity;
 
+// The ranges of the radius and intensity options, shared with the lab sliders.
+constexpr float GTAO_RADIUS_MIN = 0.25f;
+constexpr float GTAO_RADIUS_MAX = 6.0f;
+// This exponent is FinalValuePower in XeGTAO; 0.5 to 5 is its expected range.
+constexpr float GTAO_INTENSITY_MIN = 0.5f;
+constexpr float GTAO_INTENSITY_MAX = 5.0f;
+
 // Lab only: draw the blurred AO buffer in place of the lit scene. Set from the lab's
 // "Show screen-space AO buffer" checkbox; reset when the lab closes.
 extern bool Gtao_show_buffer;

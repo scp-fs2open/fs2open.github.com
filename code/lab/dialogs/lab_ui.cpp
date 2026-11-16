@@ -6,6 +6,7 @@
 #include "asteroid/asteroid.h"
 #include "graphics/2d.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/gtao.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "lab/labv2_internal.h"
@@ -685,8 +686,8 @@ void LabUi::build_ssao_controls()
 	}
 
 	SliderInt("Screen-Space AO Quality", &Gtao_quality, 0, 3);
-	SliderFloat("Screen-Space AO Radius", &Gtao_radius_scale, 0.25f, 6.0f);
-	SliderFloat("Screen-Space AO Intensity", &Gtao_intensity, 0.5f, 8.0f);
+	SliderFloat("Screen-Space AO Radius", &Gtao_radius_scale, GTAO_RADIUS_MIN, GTAO_RADIUS_MAX);
+	SliderFloat("Screen-Space AO Intensity", &Gtao_intensity, GTAO_INTENSITY_MIN, GTAO_INTENSITY_MAX);
 	Checkbox("Show screen-space AO buffer", &show_ssao_buffer);
 }
 

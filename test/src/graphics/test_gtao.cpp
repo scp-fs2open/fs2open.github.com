@@ -71,7 +71,10 @@ TEST_F(Gtao, OptionsAreRegisteredWithDefaults)
 	// Off by default, so the default render does not change
 	EXPECT_EQ(quality->getDefaultValueFunc()(), 0);
 	EXPECT_FLOAT_EQ(radius->getDefaultValueFunc()(), 1.0f);
-	EXPECT_FLOAT_EQ(intensity->getDefaultValueFunc()(), 1.5f);
+	EXPECT_FLOAT_EQ(intensity->getDefaultValueFunc()(), 2.2f);
+	// The lab sliders use the same constants (GTAO_*_MIN/MAX in gtao.h).
+	EXPECT_EQ(radius->getRangeValues(), std::make_pair(0.25f, 6.0f));
+	EXPECT_EQ(intensity->getRangeValues(), std::make_pair(0.5f, 5.0f));
 }
 
 // The options menu greys an option out when gr_option_requirement_met() says no for the running renderer.

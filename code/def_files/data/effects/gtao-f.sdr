@@ -159,7 +159,8 @@ void main()
 		visibility += projNLen * (iarc0 + iarc1);
 	}
 	visibility = clamp(visibility / float(sliceCount), 0.0, 1.0);
-	fragOut0 = vec4(pow(visibility, power));
+	// A visible pixel is never fully occluded; XeGTAO floors the visibility at 0.03 too.
+	fragOut0 = vec4(max(pow(visibility, power), 0.03));
 }
 
 #endif
