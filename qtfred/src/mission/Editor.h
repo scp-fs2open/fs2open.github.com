@@ -74,6 +74,13 @@ class Editor : public QObject {
 	 */
 	QString autosavePathFor(const QString& missionPath) const;
 
+	/**
+	 * @brief Deletes the autosave of a mission path, if it exists.
+	 * @details Call it when the autosave content is not necessary: after a save, a revert, or a discard.
+	 * Otherwise, the next load offers changes that are saved or that the user discarded.
+	 */
+	void removeAutosave(const QString& missionPath) const;
+
 	void startAutosaveTimer(int intervalSeconds);
 	void stopAutosaveTimer();
 	/**
@@ -287,13 +294,13 @@ class Editor : public QObject {
   private slots:
 	void performTimedAutosave();
 
+  private: // NOLINT(readability-redundant-access-specifiers)
 	/**
 	 * @brief Asks the user to load the autosave of a mission if the autosave is newer than the mission file.
 	 * @return The autosave path with native separators, or an empty string if the mission file stays.
 	 */
 	QString askToUseNewerAutosave(const QString& missionPath);
 
-  private: // NOLINT(readability-redundant-access-specifiers)
 	QTimer*  _autosaveTimer        = nullptr;
 	QString  _autosaveDirectory;
 	QString  _currentMissionPath;
