@@ -283,11 +283,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 	connect(fred, &Editor::missionLoaded, this, &FredView::on_mission_loaded);
 	connect(fred, &Editor::missionChanged, this, [this]() { _missionModified = true; });
 	connect(fred, &Editor::autosaveDue, this, [this](const QString& savePath) {
-		// Write an autosave only for unsaved changes. Otherwise the autosave is newer than the mission
-		// file, and the next load offers a recovery of content that is already in the file.
-		if (!_missionModified)
-			return;
-
+		// Write the autosave at each interval. Some editor dialogs do not set the modified flag, so the flag
+		// cannot tell if the mission has changes. A save, a revert, or a discard deletes the autosave.
 		Fred_mission_save save;
 		configureMissionSave(save);
 		save.save_autosave_file(savePath.toUtf8().constData());
@@ -497,6 +494,11 @@ bool FredView::writeMissionFile(const QString& path) {
 
 	_missionModified = false;
 	setLastSaved(QDateTime::currentDateTime());
+
+	// The file now contains the changes, so the autosave is not necessary. For Save As, also delete the
+	// autosave of the old path (or of the untitled mission).
+	fred->removeAutosave(path);
+	fred->removeAutosave(fred->currentMissionPath());
 	return true;
 }
 
@@ -525,6 +527,8 @@ bool FredView::saveMissionToCurrentPath() {
 	if (!writeMissionFile(path))
 		return false;
 
+	// Start the interval again. Thus the next autosave comes one full interval after the save.
+	restartAutosaveTimer();
 	reportPreSaveFixes(fixCount);
 	return true;
 }
@@ -657,7 +661,8 @@ void FredView::on_actionRevert_triggered(bool) {
 		return;
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
-	// Revert discards the changes. Do not offer the autosave, because it can contain those changes.
+	// Revert discards the changes. Delete the autosave, because it can contain those changes.
+	fred->removeAutosave(path);
 	loadMissionFile(path, 0, false);
 }
 
@@ -1711,6 +1716,8 @@ bool FredView::maybePromptToSaveMissionChanges(const QString& actionDescription)
 	case QMessageBox::Save:
 		return saveMissionToCurrentPath();
 	case QMessageBox::Discard:
+		// The user discards the changes, so the next load must not offer them from the autosave.
+		fred->removeAutosave(fred->currentMissionPath());
 		return true;
 	case QMessageBox::Cancel:
 	default:

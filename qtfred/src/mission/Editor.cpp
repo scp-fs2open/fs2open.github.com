@@ -41,6 +41,7 @@
 #include <QDateTime>
 #include <QCryptographicHash>
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QStandardPaths>
 
@@ -163,6 +164,11 @@ QString Editor::autosavePathFor(const QString& missionPath) const
 	const auto hash = QCryptographicHash::hash(key.toUtf8(), QCryptographicHash::Md5).toHex().left(8);
 
 	return _autosaveDirectory + info.completeBaseName() + "." + QString::fromLatin1(hash) + "." + info.suffix();
+}
+
+void Editor::removeAutosave(const QString& missionPath) const
+{
+	QFile::remove(autosavePathFor(missionPath));
 }
 
 QString Editor::askToUseNewerAutosave(const QString& missionPath)
