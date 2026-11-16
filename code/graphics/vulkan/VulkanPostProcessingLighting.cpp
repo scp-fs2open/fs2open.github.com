@@ -507,8 +507,12 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	{
 		auto* header = reinterpret_cast<graphics::deferred_global_data*>(uboMapped + regionBase);
 		memset(header, 0, sizeof(graphics::deferred_global_data));
-		header->invScreenWidth = 1.0f / gr_screen.max_w;
-		header->invScreenHeight = 1.0f / gr_screen.max_h;
+		// Same as the OpenGL backend: deferred-f.sdr normalizes gl_FragCoord against these to
+		// sample the G-buffer, so they must describe the G-buffer, not gr_screen. resize() keeps
+		// sceneExtent equal to gr_screen today, which is why deriving it from the extent is a
+		// no-op here -- but it states the actual requirement instead of relying on that.
+		header->invScreenWidth = 1.0f / static_cast<float>(m_ctx->sceneExtent.width);
+		header->invScreenHeight = 1.0f / static_cast<float>(m_ctx->sceneExtent.height);
 		header->nearPlane = gr_near_plane;
 		shadows_fill_deferred_global_data(*header);
 
@@ -773,7 +777,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 		auto* drawManager = getDrawManager();
 		const auto& pending = drawManager->getPendingUniformBinding(static_cast<size_t>(uniform_block_type::ShadowCascadeParams));
 		if (pending.valid) {
-			vk::Buffer buf = bufferMgr->getVkBuffer(pending.bufferHandle);
+			// Resolved through getVkBufferForBinding() like applyMaterial's own pending UBOs: the
+			// block lives in a streaming buffer, so a binding made in an earlier frame no longer
+			// points at anything and has to fall back to the placeholder rather than assert.
+			vk::Buffer buf = bufferMgr->getVkBufferForBinding(pending.bufferHandle);
 			if (buf) {
 				shadowCascadeParamsInfo = vk::DescriptorBufferInfo(buf, pending.offset, pending.size);
 			}

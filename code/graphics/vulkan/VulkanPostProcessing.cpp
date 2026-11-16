@@ -329,6 +329,11 @@ bool VulkanPostProcessor::init(vk::Device device, vk::PhysicalDevice physDevice,
 		nprintf(("vulkan", "VulkanPostProcessor: Bloom initialization failed (non-fatal)\n"));
 	}
 
+	// Initialize the physically-based lens flare pass (non-fatal if it fails)
+	if (!m_lensFlare.init(m_ctx, m_sceneColor)) {
+		nprintf(("vulkan", "VulkanPostProcessor: Lens flare initialization failed (non-fatal)\n"));
+	}
+
 	// Initialize LDR targets for tonemapping + FXAA (non-fatal if it fails)
 	if (!m_ldr.init(m_ctx, m_sceneColor, m_sceneDepth, m_bloom)) {
 		nprintf(("vulkan", "VulkanPostProcessor: LDR target initialization failed (non-fatal)\n"));
@@ -382,6 +387,7 @@ void VulkanPostProcessor::shutdown()
 		shutdownGBuffer();
 		m_smaa.shutdown();
 		m_ldr.shutdown();
+		m_lensFlare.shutdown();
 		shutdownBloom();
 
 		m_ctx.shutdownScratchUBO();
@@ -669,9 +675,14 @@ void VulkanPostProcessor::setPostProcessInput(const RenderTarget& input)
 {
 	m_bloom.setSceneColor(input);
 	m_ldr.setSceneColor(input);
+	m_lensFlare.setSceneColor(input);
 	if (m_bloom.isInitialized() && !m_bloom.resize()) {
 		nprintf(("vulkan", "VulkanPostProcessor: Bloom rebuild failed, disabling bloom\n"));
 		m_bloom.shutdown();
+	}
+	if (m_lensFlare.isInitialized() && !m_lensFlare.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Lens flare rebuild failed, disabling lens flares\n"));
+		m_lensFlare.shutdown();
 	}
 }
 
@@ -748,6 +759,7 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExte
 	m_upscalerActive = false;
 	m_bloom.setSceneColor(m_sceneColor);
 	m_ldr.setSceneColor(m_sceneColor);
+	m_lensFlare.setSceneColor(m_sceneColor);
 
 	// Scene targets first: every subsystem framebuffer that wires scene
 	// color/depth needs the recreated views.
@@ -763,6 +775,11 @@ bool VulkanPostProcessor::resize(vk::Extent2D newExtent, vk::Extent2D outputExte
 	if (m_bloom.isInitialized() && !m_bloom.resize()) {
 		nprintf(("vulkan", "VulkanPostProcessor: Bloom resize failed, disabling bloom\n"));
 		m_bloom.shutdown();
+	}
+	// The lens flare framebuffer attaches the (just recreated) scene color view.
+	if (m_lensFlare.isInitialized() && !m_lensFlare.resize()) {
+		nprintf(("vulkan", "VulkanPostProcessor: Lens flare resize failed, disabling lens flares\n"));
+		m_lensFlare.shutdown();
 	}
 	if (m_ldr.isInitialized() && !m_ldr.resize()) {
 		nprintf(("vulkan", "VulkanPostProcessor: LDR resize failed, disabling LDR + SMAA\n"));

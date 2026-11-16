@@ -18,6 +18,7 @@
 #include "model/model.h"
 #include "sound/ds.h"
 #include "hud/hud.h"
+#include "graphics/lens_flare.h"
 #include "graphics/software/FontManager.h"
 #include "hud/hudsquadmsg.h"
 #include "controlconfig/controlsconfig.h"
@@ -1150,6 +1151,21 @@ sexp_list_item *SexpTreeOPF::get_listing_opf_post_effect()
 		head.add_data(ppe_name.c_str());
 	}
 	head.add_data("lightshafts");
+
+	return head.next;
+}
+
+sexp_list_item *SexpTreeOPF::get_listing_opf_lens_system()
+{
+	sexp_list_item head;
+
+	// the two magic values set-camera-lens accepts in place of a real lens
+	head.add_data(LENS_NAME_NONE);
+	head.add_data(LENS_NAME_DEFAULT);
+
+	for (int i = 0; i < graphics::lens_flare_num_systems(); i++) {
+		head.add_data(graphics::lens_flare_get_system(i)->name.c_str());
+	}
 
 	return head.next;
 }
@@ -2318,6 +2334,10 @@ sexp_list_item *SexpTreeOPF::get_listing_opf(int opf, int parent_node, int arg_i
 			list = get_listing_opf_post_effect();
 			break;
 
+		case OPF_LENS_SYSTEM:
+			list = get_listing_opf_lens_system();
+			break;
+
 		case OPF_FONT:
 			list = get_listing_opf_font();
 			break;
@@ -2584,6 +2604,7 @@ int SexpTreeOPF::query_default_argument_available(int op, int i) const
 		case OPF_TURRET_TARGET_ORDER:
 		case OPF_TURRET_TYPE:
 		case OPF_POST_EFFECT:
+		case OPF_LENS_SYSTEM:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPE:
 		case OPF_DAMAGE_TYPE:
@@ -3207,6 +3228,10 @@ int SexpTreeOPF::get_default_value(sexp_list_item* item, int op, int i) const
 
 		case OPF_POST_EFFECT:
 			str = "<Effect Name>";
+			break;
+
+		case OPF_LENS_SYSTEM:
+			str = LENS_NAME_DEFAULT;
 			break;
 
 		case OPF_CUSTOM_HUD_GAUGE:

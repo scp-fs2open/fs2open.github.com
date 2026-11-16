@@ -1,0 +1,54 @@
+; Exercises every aperture field of a lens entry (see the shipped
+; lens_flares.tbl for what they mean). Fields are parsed sequentially, so this
+; doubles as the reference for the order they have to appear in.
+;
+; Every value here is deliberately distinct and non-default so a mis-wired
+; stuff_float() shows up as a specific field carrying the wrong number.
+
+#Lens Systems
+
+$Name: aperture_test_lens
+$Entrance Pupil Radius: 20.0
+$Aperture Radius: 14.0
+$Sensor Width: 36.0
+$Anamorphic Squeeze: 1.75
+$Anamorphic Streak: 0.81
++Length: 0.82
++Thickness: 0.083
++Tint: ( 0.84, 0.85, 0.86 )
+$Coating Wavelength: 500
+$Aperture Blades: 11
++Blade Rotation: 21.0
++Blade Curvature: 0.31
++Edge Softness: 0.041
+$Aperture Grating: 0.51
++Density: 0.52
++Length: 0.53
++Width: 0.54
++Softness: 0.055
+$Aperture Scratches: 0.61
++Density: 0.62
++Length: 0.63
++Width: 0.64
++Rotation: 65.0
++Rotation Variation: 0.66
++Softness: 0.067
+$Aperture Dust: 0.71
++Density: 0.72
++Radius: 0.73
++Softness: 0.074
+$Starburst: NO
++Starburst Scale: 0.9
+$Intensity: 0.25
+$Max Ghosts: 7
+$Lens Stack Start:
+$Surface: ( 100.0, 5.0, 1.6 )
++Abbe: 55.0
+$Surface: ( -200.0, 3.0, 1.0 )
+$Stop: ( 4.0 )
+$Surface: ( 150.0, 4.0, 1.62 )
++Abbe: 45.0
+$Surface: ( -120.0, 40.0, 1.0 )
+$Lens Stack End
+
+#End

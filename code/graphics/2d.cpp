@@ -1146,28 +1146,6 @@ static auto FsrOption __UNUSED = options::OptionBuilder<int>("Graphics.FSR",
                      })
                      .importance(77)
                      .finish();
-static SCP_vector<float> anisotropic_value_enumerator()
-{
-	float max;
-	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
-		return {};
-	}
-
-	if (max <= 2.0f) {
-		return {};
-	}
-
-	SCP_vector<float> out;
-
-	// We assume here that the anisotropy levels are powers of two...
-	float current = 1.0f;
-	while (current <= max) {
-		out.push_back(current);
-		current *= 2.0f;
-	}
-
-	return out;
-}
 static SCP_string anisotropic_display(float val)
 {
 	if (val < 2.0f) {
@@ -1191,7 +1169,7 @@ static float anisotropic_default()
 static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
                      std::pair<const char*, int>{"Anistropic filtering", 1736},
                      std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
-                     .enumerator(anisotropic_value_enumerator)
+                     .enumerator(gr_get_supported_anisotropy_levels)
                      .category(std::make_pair("Graphics", 1825))
                      .display(anisotropic_display)
                      .default_func(anisotropic_default)
@@ -1309,6 +1287,29 @@ bool gr_is_fxaa_mode(AntiAliasMode mode)
 }
 bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
+}
+
+SCP_vector<float> gr_get_supported_anisotropy_levels()
+{
+	float max;
+	if (!gr_get_property(gr_property::MAX_ANISOTROPY, &max)) {
+		return {};
+	}
+
+	if (max <= 2.0f) {
+		return {};
+	}
+
+	SCP_vector<float> out;
+
+	// We assume here that the anisotropy levels are powers of two...
+	float current = 1.0f;
+	while (current <= max) {
+		out.push_back(current);
+		current *= 2.0f;
+	}
+
+	return out;
 }
 
 static void parse_post_processing_func()
@@ -2094,6 +2095,13 @@ void gr_screen_resize(int width, int height)
 	gr_screen.save_max_h_unscaled_zoomed = gr_screen.max_h_unscaled_zoomed;
 
 	gr_setup_viewport();
+
+	// Whatever the backend sized to the old gr_screen is now wrong; let it catch up before anything
+	// renders at the new size. This can discard the frame in progress -- see the warning on the
+	// declaration of this function.
+	if (gr_screen.gf_viewport_size_changed) {
+		gr_screen.gf_viewport_size_changed();
+	}
 }
 
 void gr_window_to_render_pos(float& x, float& y)
@@ -2627,11 +2635,15 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, GraphicsAPI 
 		center_aspect_ratio = -1.0f;
 	}
 
-	// FRED doesn't support Vulkan yet (see qtfred/README.md for what's needed to change that), so it always
-	// falls back to OpenGL regardless of what was requested. This must happen before gr_init_function_pointers()
-	// below, since that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
+	// Vulkan needs more from the windowing implementation than an OpenGL context does, and not every
+	// implementation can provide it -- the MFC editor can't, and neither can a qtFRED built against a
+	// Qt without Vulkan support or running on a platform plugin we have no surface extension for.
+	// Fall back rather than fail. This must happen before gr_init_function_pointers() below, since
+	// that's what binds gr_screen's gf_* dispatch table to the chosen API; doing the override any
 	// later (e.g. in gr_init_sub()) would leave the dispatch table pointing at the wrong backend.
-	if (Fred_running) {
+	if (mode == GraphicsAPI::Vulkan && (graphicsOps == nullptr || graphicsOps->getVulkanSupport() == nullptr)) {
+		mprintf(("Vulkan was requested but this windowing implementation cannot present through it; "
+		         "falling back to OpenGL.\n"));
 		mode = GraphicsAPI::OpenGL;
 	}
 
@@ -3890,6 +3902,37 @@ static void uniform_buffer_managers_retire_buffers()
 	}
 
 	UniformBufferManager->onFrameEnd();
+}
+
+bool gr_read_render_target(ubyte* out_rgba, int width, int height)
+{
+	if (out_rgba == nullptr || width <= 0 || height <= 0) {
+		return false;
+	}
+
+	if (!gr_screen.gf_read_render_target) {
+		return false;
+	}
+
+	return gr_screen.gf_read_render_target(out_rgba, width, height);
+}
+
+void gr_end_offscreen_frame()
+{
+	if (gr_screen.mode == GraphicsAPI::Stub) {
+		return;
+	}
+
+	// Same two things gr_flip() does for a presented frame, minus the presentation: retire the
+	// uniform segments so the next frame starts writing at offset 0 again, then let the backend
+	// recycle whatever per-frame pools it keeps. Order matters -- the backend rewinding its
+	// allocator while the engine still thinks it is part-way through a segment would just make
+	// the next allocation larger than the last.
+	uniform_buffer_managers_retire_buffers();
+
+	if (gr_screen.gf_end_offscreen_frame) {
+		gr_screen.gf_end_offscreen_frame();
+	}
 }
 
 graphics::util::UniformBuffer gr_get_uniform_buffer(uniform_block_type type, size_t num_elements, size_t element_size_override)
