@@ -44,6 +44,7 @@ vec2 snap_uv(vec2 suv, vec2 texel)
 vec4 fg = vec4(0.0);   // foreground layer: colour times weight, and the weight
 vec4 bg = vec4(0.0);   // background layer
 vec4 hole = vec4(0.0); // background-layer taps near the centre, by how far each is in the background
+float spacing;         // distance between neighbouring spiral taps, in pixels
 
 // How far a view z is in the background layer, from 0 (foreground) to 1.
 float background(float z, float nearest)
@@ -51,10 +52,13 @@ float background(float z, float nearest)
 	return smoothstep(0.0, 1.0, (z - nearest) / (LAYER_DEPTH * nearDist));
 }
 
-// One tap at distance r from this pixel. It spreads over its own CoC disc with a smooth falloff,
-// 3 (1 - (r / CoC)^2)^2 over pi CoC^2 of it, which sums to 1 over the disc; an even disc left a visible rim at
-// the end of each halo. A spiral tap stands for pi tap_area pixels, so pi cancels in the foreground alpha and is
-// left out; the centre is one pixel, so it comes with weight 1 / (pi tap_area).
+// One tap at distance r from this pixel. As in Jimenez (SampleAlpha and SpreadCmp), it spreads evenly over its own
+// CoC disc, so that a near outline fades over the whole CoC outside it. The edge of the disc fades over one tap
+// spacing, so that the outline does not step from one ring of taps to the next; below one spacing of CoC the disc
+// is a cone. The fade lies inside the disc and the share is divided by its area, so every tap adds up to 1
+// whatever its CoC and the tile radius, and a small near object does not grow past its blur.
+// A spiral tap stands for pi tap_area pixels, so pi cancels in the foreground alpha and is left out; the centre
+// is one pixel, so it comes with weight 1 / (pi tap_area).
 void add_tap(vec3 col, vec2 suv, float r, float nearest, float hole_radius, float weight)
 {
 	if (in_cockpit(suv)) {
@@ -73,8 +77,10 @@ void add_tap(vec3 col, vec2 suv, float r, float nearest, float hole_radius, floa
 		return;
 	}
 	float reach = max(coc, 1.0);
-	float fall = max(1.0 - (r / reach) * (r / reach), 0.0);
-	float share = 3.0 * fall * fall / (reach * reach) * weight;
+	float fade = min(spacing, reach);
+	float spread = clamp((reach - r) / fade, 0.0, 1.0);
+	// The area of the disc with its fade, over pi.
+	float share = spread / (reach * reach - reach * fade + fade * fade / 3.0) * weight;
 	fg += vec4(col, 1.0) * share * (1.0 - back);
 	bg += vec4(col, 1.0) * share * back;
 }
@@ -101,6 +107,7 @@ void main()
 	float radius = max(tile.x, 1.0);
 	int n = clamp(int(96.0 * (radius / 16.0) * (radius / 16.0)), 32, MAX_SAMPLES);
 	float tap_area = radius * radius / float(n);
+	spacing = sqrt(3.14159265 * tap_area);
 
 	// This pixel is a tap too; without it a near feature of one pixel can vanish at its own place.
 	float centre_d = textureLod(depth_tex, uv, 0.0).x;
@@ -111,16 +118,21 @@ void main()
 	// Each pixel turns the spiral by its own angle (interleaved gradient noise, as in Jimenez 2014), so the
 	// gaps between taps do not line up from pixel to pixel into a visible pattern.
 	float spin = 6.2831853 * fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
+	vec2 centre_uv = snap_uv(uv, texel);
 	for (int i = 0; i < n; i++) {
 		float r = radius * sqrt((float(i) + 0.5) / float(n));
 		float a = float(i) * GOLDEN_ANGLE + spin;
 		vec2 suv = snap_uv(uv + vec2(cos(a), sin(a)) * r * texel, texel);
+		// At a small radius the inner taps fall on this pixel, which the centre tap already counts.
+		if (suv == centre_uv) {
+			continue;
+		}
 		// Level 0 always, here and in add_tap(): the loop is not uniform across pixels, so derivatives are undefined.
 		add_tap(textureLod(tex, suv, 0.0).rgb, suv, r, tile.y, hole_radius, 1.0);
 	}
 
-	// The sum of the foreground shares is its coverage: 0.5 on the outline of a near object. Twice that is the
-	// alpha, so the foreground is opaque up to its outline and fades out over its CoC outside it (Jimenez's
+	// The sum of the foreground shares times tap_area is its coverage: 0.5 on the outline of a near object. Twice
+	// that is the alpha, so the foreground is opaque up to its outline and fades out over its CoC outside it (Jimenez's
 	// near-field shift). Where a foreground centre is not opaque (a thin feature, a corner), the background
 	// taps around it stand for what it hides: fully once they add up to one tap, and less as the centre itself
 	// moves into the background layer, so that no step follows a depth line.
