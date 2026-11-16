@@ -61,6 +61,11 @@ struct PipelineConfig {
 	// Color attachment count (for multiple render targets)
 	uint32_t colorAttachmentCount = 1;
 
+	// Motion vector output location on passes that have one (colorAttachmentCount above it). Everything else
+	// must leave it alone: a shader that doesn't write a location leaves the attachment undefined.
+	static constexpr uint32_t VELOCITY_ATTACHMENT = 6;
+	bool writesVelocity = false;
+
 	// MSAA sample count (default e1 = no multisampling)
 	vk::SampleCountFlagBits sampleCount = vk::SampleCountFlagBits::e1;
 
@@ -120,6 +125,12 @@ public:
 	 * @return Pipeline handle, or null handle on failure
 	 */
 	vk::Pipeline getPipeline(const PipelineConfig& config, const vertex_layout& vertexLayout);
+
+	/**
+	 * @brief Destroy all cached pipelines; later getPipeline calls build them again
+	 * @note No submitted or recording command buffer may still use them
+	 */
+	void forgetAllPipelines() { m_pipelines.clear(); }
 
 	/**
 	 * @brief Get the common pipeline layout

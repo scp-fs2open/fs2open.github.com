@@ -1,6 +1,6 @@
 
 if (MSVC)
-    if (MSVC_USE_RUNTIME_DLL)
+    if (FSO_MSVC_RUNTIME_DLL)
         set(WITH_STATIC_CRT OFF)
     else()
         set(WITH_STATIC_CRT ON)

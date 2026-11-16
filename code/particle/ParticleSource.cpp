@@ -74,8 +74,12 @@ bool ParticleSource::process() {
 				// Some of these
 				float freqMult = effect.processSource(interp, *this, i, vel, attachment, parent_lifetime, parent_radius, particleMultiplier);
 
-				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
-				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() / freqMult * MILLISECONDS_PER_SECOND), 1);
+				// we need to clamp this in both directions:
+				// While in float, towards the upper end, as to avoid an overflow in the int with very low frequencies from sources like curves. An hour should suffice as the lowest sensible frequency
+				// Once in int, to 1 because a spawn delay of 0 ms causes trouble. We also need to ensure that it does not take longer than the minimum delay to actually spawn it, otherwise this loops infinitely
+				float requestedNextSpawn = std::min(effect.getNextSpawnDelay() / freqMult, 3.6e3f);
+				auto time_diff_ms = std::max(fl2i(requestedNextSpawn * MILLISECONDS_PER_SECOND), 1);
+
 				timing.m_nextCreation = timestamp_delta(timing.m_nextCreation, time_diff_ms);
 
 				bool isDone = effect.isOnetime() || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;

@@ -18,6 +18,9 @@ enum VertexAttributeLocation : uint32_t {
 	VATTRIB_MODEL_MATRIX = 8,   // Occupies locations 8-11
 
 	NUM_VERTEX_ATTRIBS   = 9,
+
+	// Vulkan only, and not listed in ShaderTypeInfo::attributes, which OpenGL indexes its attribute tables with
+	VATTRIB_EFFECT_MOTION = 12, // vec4
 };
 
 // Shared shader type info — matches the original opengl_shader_type_t layout.
@@ -54,6 +57,14 @@ const ShaderTypeInfo* shader_get_type_info(shader_type type);
 
 // Lookup helper: find variant info by (type, flag). Returns nullptr if not found.
 const ShaderVariantInfo* shader_get_variant_info(shader_type type, int flag);
+
+/**
+ * @brief Bitmask of the vertex attribute locations a shader type reads.
+ *
+ * One bit per location; VATTRIB_MODEL_MATRIX contributes bits 8-11 because a
+ * mat4 input occupies four consecutive locations.
+ */
+uint32_t shader_vertex_input_mask(const ShaderTypeInfo& info);
 
 // Iterate all variants matching type whose flag bit is set in flags.
 void shader_for_each_active_variant(shader_type type, unsigned int flags, const std::function<void(const ShaderVariantInfo&)>& fn);

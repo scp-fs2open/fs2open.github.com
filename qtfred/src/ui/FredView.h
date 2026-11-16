@@ -62,6 +62,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void restartAutosaveTimer();
 
+	// Switches between the grouped menus and FRED2's classic Editors and Misc menus.
+	void applyMenuLayout(bool classic);
+
  public slots:
 	void openLoadMissionDialog();
 

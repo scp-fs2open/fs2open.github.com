@@ -178,10 +178,20 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 
 #ifndef USE_OPENGL_ES
 	sflags << "#version " << GLSL_version << " core\n";
+	if (GLSL_version < 330) {
+		sflags << "#extension GL_ARB_explicit_attrib_location : enable\n";
+	}
 #else
 	sflags << "#version " << GLSL_version << " es\n";
 #endif
 	sflags << "#define OPENGL\n";
+
+#ifdef USE_OPENGL_ES
+	if (!GLAD_GL_EXT_clip_cull_distance) {
+		sflags << "#define SDR_FLAG_SW_CLIP_FALLBACK\n";
+	}
+#endif
+
 	sflags << shader_get_shadow_cascade_defines();
 	sflags << shader_get_rt_shadow_light_limit_define();
 
@@ -423,6 +433,7 @@ static void opengl_set_default_uniforms(const opengl_shader_t& sdr) {
 		Current_shader->program->Uniforms.setTextureUniform("PositionBuffer", 2);
 		Current_shader->program->Uniforms.setTextureUniform("SpecBuffer", 3);
 		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 4);
+		Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", SHADOW_MAP_RAW_TEXTURE_UNIT);
 		break;
 
 	case SDR_TYPE_PASSTHROUGH_RENDER:

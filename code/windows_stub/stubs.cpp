@@ -49,6 +49,7 @@ int filelength(int fd)
 
 SCP_string dump_stacktrace()
 {
+#ifndef __ANDROID__
 #ifdef SCP_HAVE_EXECINFO_H
 	// The following is adapted from here: https://panthema.net/2008/0901-stacktrace-demangled/
 	const int ADDR_SIZE = 64;
@@ -138,6 +139,9 @@ SCP_string dump_stacktrace()
 	return stackstream.str();
 #else
 	return "No stacktrace available";
+#endif
+#else
+return "No stacktrace available";
 #endif
 }
 

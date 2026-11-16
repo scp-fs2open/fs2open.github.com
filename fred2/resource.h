@@ -1311,6 +1311,8 @@
 #define IDC_MESSAGE_MOVE_DOWN           1744
 #define IDC_MESSAGE_MOVE_TO_BOTTOM      1745
 #define IDC_INSERT_MSG                  1746
+#define IDC_SUN1_ANGULAR_SIZE_OVERRIDE  1747
+#define IDC_SUN1_ANGULAR_SIZE           1748
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1626,6 +1628,7 @@
 #define ID_LABEL_FONT_SCALE_300         33121
 #define ID_LABEL_FONT_SCALE_350         33122
 #define ID_LABEL_FONT_SCALE_400         33123
+#define ID_MISC_ROTATE_SELECTION_MIDPOINT 33124
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1638,8 +1641,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        340
-#define _APS_NEXT_CONTROL_VALUE         1747
-#define _APS_NEXT_COMMAND_VALUE         33124
+#define _APS_NEXT_CONTROL_VALUE         1749
+#define _APS_NEXT_COMMAND_VALUE         33125
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

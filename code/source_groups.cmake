@@ -259,6 +259,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main_large.sdr
 	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/motion-vector-f.sdr
+	def_files/data/effects/motion-vectors.sdr
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
@@ -269,6 +271,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/post-v.sdr
 	def_files/data/effects/rocketui-f.sdr
 	def_files/data/effects/rocketui-v.sdr
+	def_files/data/effects/shadow_cascade_params.sdr
 	def_files/data/effects/shadow_map-f.sdr
 	def_files/data/effects/shadow_map-g.sdr
 	def_files/data/effects/shadow_map-v.sdr
@@ -481,6 +484,8 @@ add_file_folder("Graphics"
 	graphics/shader_types.cpp
 	graphics/shader_types.h
 	graphics/render_queue.h
+	graphics/rtao.cpp
+	graphics/rtao.h
 	graphics/shadows.cpp
 	graphics/shadows.h
 	graphics/tmapper.h
@@ -627,6 +632,7 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanPostProcessingLighting.cpp
 		graphics/vulkan/VulkanPostProcessingMSAA.cpp
 		graphics/vulkan/VulkanPostProcessingSMAA.cpp
+		graphics/vulkan/VulkanPostProcessingMotion.cpp
 		graphics/vulkan/VulkanPostProcessingShadow.cpp
 		graphics/vulkan/VulkanQuery.cpp
 		graphics/vulkan/VulkanQuery.h
@@ -647,6 +653,8 @@ if (FSO_BUILD_WITH_VULKAN)
 		graphics/vulkan/VulkanShaderCompiler.h
 		graphics/vulkan/VulkanState.cpp
 		graphics/vulkan/VulkanState.h
+		graphics/vulkan/VulkanUpscaler.cpp
+		graphics/vulkan/VulkanUpscaler.h
 		graphics/vulkan/VulkanTexture.cpp
 		graphics/vulkan/VulkanTexture.h
 		graphics/vulkan/VulkanTextureAPI.cpp
@@ -1760,6 +1768,8 @@ add_file_folder("Starfield"
 	starfield/nebula.h
 	starfield/starfield.cpp
 	starfield/starfield.h
+	starfield/sun_disc.cpp
+	starfield/sun_disc.h
 	starfield/supernova.cpp
 	starfield/supernova.h
 	starfield/starfield_flags.h
@@ -1791,6 +1801,8 @@ add_file_folder("Tracing"
 	tracing/MainFrameTimer.cpp
 	tracing/Monitor.h
 	tracing/Monitor.cpp
+	tracing/ProfilerOverlay.h
+	tracing/ProfilerOverlay.cpp
 	tracing/scopes.cpp
 	tracing/scopes.h
 	tracing/ThreadedEventProcessor.h
