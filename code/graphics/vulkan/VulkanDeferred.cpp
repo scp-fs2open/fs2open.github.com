@@ -47,16 +47,18 @@ static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
                                   vk::AccessFlags2 depthSrcAccess, vk::AccessFlags2 depthDstAccess,
                                   vk::PipelineStageFlags2 srcStage, vk::PipelineStageFlags2 dstStage)
 {
-	std::array<ImageBarrier2, 6> barriers;
+	std::array<ImageBarrier2, 7> barriers;
 
-	std::array<vk::Image, 5> msaaImages = {
+	std::array<vk::Image, 6> msaaImages = {
 		pp->deferred().msaaColorImage(),
 		pp->deferred().msaaPositionImage(),
 		pp->deferred().msaaNormalImage(),
 		pp->deferred().msaaSpecularImage(),
 		pp->deferred().msaaEmissiveImage(),
+		pp->deferred().msaaVelocityImage(),
 	};
-	for (size_t i = 0; i < msaaImages.size(); ++i) {
+	const size_t colorCount = pp->deferred().velocityActive() ? 6 : 5;
+	for (size_t i = 0; i < colorCount; ++i) {
 		barriers[i].image = msaaImages[i];
 		barriers[i].levelCount = 1;
 		barriers[i].layerCount = 1;
@@ -68,18 +70,19 @@ static void transitionMsaaImages(vk::CommandBuffer cmd, VulkanPostProcessor* pp,
 		barriers[i].dstAccess = colorDstAccess;
 	}
 
-	barriers[5].image = pp->deferred().msaaDepthImage();
-	barriers[5].aspectMask = imageAspectFromFormat(pp->getDepthFormat());
-	barriers[5].levelCount = 1;
-	barriers[5].layerCount = 1;
-	barriers[5].oldLayout = depthOldLayout;
-	barriers[5].newLayout = depthNewLayout;
-	barriers[5].srcStage = srcStage;
-	barriers[5].srcAccess = depthSrcAccess;
-	barriers[5].dstStage = dstStage;
-	barriers[5].dstAccess = depthDstAccess;
+	auto& depthBarrier = barriers[colorCount];
+	depthBarrier.image = pp->deferred().msaaDepthImage();
+	depthBarrier.aspectMask = imageAspectFromFormat(pp->getDepthFormat());
+	depthBarrier.levelCount = 1;
+	depthBarrier.layerCount = 1;
+	depthBarrier.oldLayout = depthOldLayout;
+	depthBarrier.newLayout = depthNewLayout;
+	depthBarrier.srcStage = srcStage;
+	depthBarrier.srcAccess = depthSrcAccess;
+	depthBarrier.dstStage = dstStage;
+	depthBarrier.dstAccess = depthDstAccess;
 
-	cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), barriers.size()));
+	cmdImageBarriers(cmd, ArrayView<const ImageBarrier2>(barriers.data(), colorCount + 1));
 }
 
 // ========== Deferred Lighting ==========
@@ -170,17 +173,20 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 			clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			if (pp->deferred().velocityActive()) {
+				clearValues[VulkanDeferredGBuffer::msaaVelocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+			}
+			clearValues[pp->deferred().msaaDepthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 			stateTracker->setRenderPass(pp->deferred().msaaRenderPass(), 0);
-			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setColorAttachmentCount(pp->deferred().msaaColorAttachmentCount());
 			stateTracker->setCurrentSampleCount(renderer->getMsaaSampleCount());
 		}
 	} else {
@@ -230,15 +236,15 @@ void vulkan_deferred_lighting_begin(bool clearNonColorBufs)
 			rpBegin.framebuffer = pp->deferred().framebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+			clearValues[pp->deferred().depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 			stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
 			// The G-buffer pass has multiple color attachments; pipelines built while
 			// it is bound must match, or deferred-on cockpits render incorrectly.
-			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setColorAttachmentCount(pp->deferred().colorAttachmentCount());
 		}
 
 		// Optionally clear non-color G-buffer attachments
@@ -315,9 +321,9 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.framebuffer = pp->deferred().msaaResolveFramebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
-		// 6 attachments: 5 color + depth. loadOp=eDontCare for all (fully overwritten).
-		std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		// 5 color, optionally motion vectors, then depth. Color and depth are fully overwritten.
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+		clearValues[pp->deferred().msaaDepthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -348,7 +354,8 @@ void vulkan_deferred_lighting_msaa()
 		config.cullEnabled = false;
 		config.depthWriteEnabled = true;
 		config.renderPass = pp->deferred().msaaResolveRenderPass();
-		config.colorAttachmentCount = 5;
+		config.colorAttachmentCount = pp->deferred().msaaColorAttachmentCount();
+		config.writesVelocity = pp->deferred().velocityActive();
 
 		vertex_layout emptyLayout;
 		vk::Pipeline pipeline = pipelineMgr->getPipeline(config, emptyLayout);
@@ -377,7 +384,7 @@ void vulkan_deferred_lighting_msaa()
 			writer.writeSet(DescriptorSetIndex::Global, globalSet);
 
 			// Material set: All 6 MSAA textures in binding 1 array (elements 0-5)
-			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth
+			// [0]=color, [1]=position, [2]=normal, [3]=specular, [4]=emissive, [5]=depth, [6]=motion vectors if active
 			vk::DescriptorSet materialSet = descriptorMgr->allocateFrameSet(DescriptorSetIndex::Material);
 			Assert(materialSet);
 			writer.writeSet(DescriptorSetIndex::Material, materialSet);
@@ -397,6 +404,9 @@ void vulkan_deferred_lighting_msaa()
 			texImages[3] = {nearestSampler, pp->deferred().msaaSpecularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[4] = {nearestSampler, pp->deferred().msaaEmissiveView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 			texImages[5] = {nearestSampler, pp->deferred().msaaDepthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			if (pp->deferred().velocityActive()) {
+				texImages[6] = {nearestSampler, pp->deferred().msaaVelocityView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+			}
 			writer.setImageArray(MaterialBinding::TextureArray, texImages);
 
 			// PerDraw set: GenericData UBO with {samples, fov} at binding 0
@@ -494,13 +504,13 @@ void vulkan_deferred_lighting_msaa()
 		rpBegin.framebuffer = pp->deferred().framebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
-		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+		clearValues[pp->deferred().depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 		stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
+		stateTracker->setColorAttachmentCount(pp->deferred().colorAttachmentCount());
 	}
 }
 
@@ -596,7 +606,7 @@ void vulkan_deferred_lighting_finish()
 	// only write to fragOut0 — using the G-buffer pass would leave undefined
 	// values at attachment locations 1-5.
 	renderer->setUseGbufRenderPass(false);
-	stateTracker->setColorAttachmentCount(1);
+	stateTracker->setColorAttachmentCount(pp->sceneColorAttachmentCount());
 
 	// Resume scene render pass (loadOp=eLoad) with depth preserved
 	{
@@ -606,9 +616,7 @@ void vulkan_deferred_lighting_finish()
 		rpBegin.framebuffer = pp->getSceneFramebuffer();
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		const auto clearValues = pp->sceneClearValues();
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
@@ -683,10 +691,7 @@ void vulkan_shadow_map_start(matrix4* shadow_view_matrix, const matrix* light_ma
 			}
 		}
 
-		// vulkan_build_shadow_tlas() (called just before this, every frame shadows
-		// are enabled) already ends whatever render pass was active -- TLAS builds
-		// are illegal inside a render pass instance -- and nulls out the tracked
-		// render pass. Only end it here if that didn't already happen.
+		// End the active render pass, if the state tracker has one.
 		if (stateTracker->getCurrentRenderPass()) {
 			cmd.endRenderPass();
 		}
@@ -778,13 +783,13 @@ void vulkan_shadow_map_end()
 			rpBegin.framebuffer = pp->deferred().msaaFramebuffer();
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
-			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-			clearValues[VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+			clearValues[pp->deferred().msaaDepthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 			stateTracker->setRenderPass(pp->deferred().msaaRenderPassLoad(), 0);
-			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::MSAA_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setColorAttachmentCount(pp->deferred().msaaColorAttachmentCount());
 			stateTracker->setCurrentSampleCount(getRendererInstance()->getMsaaSampleCount());
 		} else {
 			// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
@@ -818,35 +823,39 @@ void vulkan_shadow_map_end()
 			rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 			rpBegin.renderArea.extent = extent;
 
-			std::array<vk::ClearValue, 7> clearValues{};
-			clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+			std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+			clearValues[pp->deferred().depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 			rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			rpBegin.pClearValues = clearValues.data();
 
 			cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 			stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
-			stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
+			stateTracker->setColorAttachmentCount(pp->deferred().colorAttachmentCount());
 		}
 	} else {
 		renderer->resumeSceneRendering();
 	}
 
-	// Restore viewport and scissor to scene size
-	{
-		vk::Viewport viewport;
-		viewport.x = static_cast<float>(gr_screen.offset_x);
-		viewport.y = static_cast<float>(gr_screen.offset_y);
-		viewport.width = static_cast<float>(gr_screen.clip_width);
-		viewport.height = static_cast<float>(gr_screen.clip_height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		cmd.setViewport(0, viewport);
+	vulkan_restore_scene_viewport();
+}
 
-		vk::Rect2D scissor;
-		scissor.offset = vk::Offset2D(gr_screen.offset_x, gr_screen.offset_y);
-		scissor.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.clip_width), static_cast<uint32_t>(gr_screen.clip_height));
-		cmd.setScissor(0, scissor);
-	}
+void vulkan_restore_scene_viewport()
+{
+	vk::CommandBuffer cmd = getStateTracker()->getCommandBuffer();
+
+	vk::Viewport viewport;
+	viewport.x = static_cast<float>(gr_screen.offset_x);
+	viewport.y = static_cast<float>(gr_screen.offset_y);
+	viewport.width = static_cast<float>(gr_screen.clip_width);
+	viewport.height = static_cast<float>(gr_screen.clip_height);
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	cmd.setViewport(0, viewport);
+
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(gr_screen.offset_x, gr_screen.offset_y);
+	scissor.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.clip_width), static_cast<uint32_t>(gr_screen.clip_height));
+	cmd.setScissor(0, scissor);
 }
 
 // ========== Decal Pass ==========
@@ -903,14 +912,14 @@ void vulkan_start_decal_pass()
 		rpBegin.renderArea.offset = vk::Offset2D(0, 0);
 		rpBegin.renderArea.extent = extent;
 
-		std::array<vk::ClearValue, 7> clearValues{};
-		clearValues[6].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+		clearValues[pp->deferred().depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 		rpBegin.clearValueCount = static_cast<uint32_t>(clearValues.size());
 		rpBegin.pClearValues = clearValues.data();
 
 		cmd.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 		stateTracker->setRenderPass(pp->deferred().renderPassLoad(), 0);
-		stateTracker->setColorAttachmentCount(VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT);
+		stateTracker->setColorAttachmentCount(pp->deferred().colorAttachmentCount());
 	}
 
 	// Restore viewport (Y-flipped for Vulkan scene rendering)

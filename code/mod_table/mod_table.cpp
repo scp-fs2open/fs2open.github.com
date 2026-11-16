@@ -89,6 +89,7 @@ bool No_built_in_languages;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
 std::array<int, 4> Movie_subtitle_rgba;
+SCP_string ImGui_font;
 bool Enable_scripts_in_fred; // By default FRED does not initialize the scripting system
 SCP_string Window_icon_path;
 bool Disable_built_in_translations;
@@ -854,6 +855,12 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			// Per-cascade shadow map filter radius, in shadow map UV units, for a
+			// Sol-sized sun. It is no longer the final width: shadow_cascade_params_bind()
+			// scales these by the sun's apparent size relative to Sol, so that the same
+			// $SunAngularSize: drives both shadow-mapped and raytraced softness. A mod that
+			// tuned these against retail/MediaVPs sun art keeps the look it tuned for --
+			// see shadow_smoothness_scale() in shadows.cpp for why Sol is the reference.
 			if (optional_string("$Shadow Smoothness Factor:")) {
 				SCP_vector<float> smoothness;
 				stuff_float_list(smoothness);
@@ -1293,6 +1300,12 @@ void parse_mod_table(const char *filename)
 						Movie_subtitle_rgba[i] = rgba[i];
 					}
 				}
+			}
+
+			if (optional_string("$ImGui font:")) {
+				// Fonts have not been parsed yet, so validation must be deferred
+				// until the font system has been initialized.
+				stuff_string(ImGui_font, F_NAME);
 			}
 
 			if (optional_string("$Disable built-in translations:")) {
@@ -1926,6 +1939,7 @@ void mod_table_reset()
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "";
 	Movie_subtitle_rgba = std::array<int, 4>{-1, -1, -1, -1};
+	ImGui_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;

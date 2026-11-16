@@ -1312,6 +1312,8 @@
 #define IDC_MESSAGE_MOVE_DOWN           1744
 #define IDC_MESSAGE_MOVE_TO_BOTTOM      1745
 #define IDC_INSERT_MSG                  1746
+#define IDC_SUN1_ANGULAR_SIZE_OVERRIDE  1747
+#define IDC_SUN1_ANGULAR_SIZE           1748
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774

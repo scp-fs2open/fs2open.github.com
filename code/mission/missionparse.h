@@ -58,6 +58,7 @@ extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
 extern bool check_for_25_1_data();
+extern bool check_for_26_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -310,7 +311,6 @@ extern int Mission_callsign_count;
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
 	int num_paths;
-	int cached_mask;
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
