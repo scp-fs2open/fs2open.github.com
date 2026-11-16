@@ -91,10 +91,6 @@ bool initialize(const std::string& cfilepath,
 
 void shutdown();
 
-struct mission_load_error: public std::runtime_error {
-	mission_load_error(const char* msg);
-};
-
 }
 }
 

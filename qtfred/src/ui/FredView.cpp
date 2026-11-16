@@ -906,7 +906,7 @@ void FredView::updateRecentFileList() {
 	ui->menuRe_cent_Files->setEnabled(!recentFiles.empty());
 
 	// Now add the individual files as actions
-	for (auto& path : recentFiles) {
+	for (const auto& path : recentFiles) {
 		auto action = new QAction(path, ui->menuRe_cent_Files);
 		connect(action, &QAction::triggered, this, &FredView::recentFileOpened);
 
@@ -2276,6 +2276,7 @@ void FredView::closeEvent(QCloseEvent* event) {
 	// If the user keeps the changes, they go into the mission, and the mission prompt then includes them.
 	// A cancel in a window stops the exit. A window that closed before the cancel stays closed, because
 	// the user already answered its prompt, and its model is not usable again after apply() or reject().
+	// A cancel at the mission prompt also stops the exit. The windows that closed before it also stay closed.
 	for (auto* window : editorWindows()) {
 		if (window->isVisible() && !window->close()) {
 			event->ignore();

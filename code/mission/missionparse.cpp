@@ -9006,9 +9006,6 @@ continue_outer_loop:
 	return index;
 }
 
-/**
- * Look for \<any friendly\>, \<any hostile player\>, etc.
- */
 bool arrival_location_uses_distance(ArrivalLocation location)
 {
 	switch (location) {
@@ -9027,6 +9024,9 @@ bool arrival_location_uses_distance(ArrivalLocation location)
 	return false;
 }
 
+/**
+ * Look for \<any friendly\>, \<any hostile player\>, etc.
+ */
 anchor_t get_special_anchor(const char *name)
 {
 	char tmp[NAME_LENGTH + 15];
