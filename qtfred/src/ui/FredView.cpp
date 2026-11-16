@@ -2982,7 +2982,8 @@ void FredView::onSetGroup(int group) {
 			"These illegal objects you marked were not placed in the group", { DialogButton::Ok });
 	}
 
-	fred->updateAllViewports();
+	// The mission file contains the groups. missionChanged() also updates the viewports.
+	fred->missionChanged();
 }
 void FredView::on_actionControl_Object_triggered(bool) {
 	_viewport->camera.toggleControlMode();
