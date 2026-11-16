@@ -482,9 +482,13 @@ ADE_FUNC(isWeaponAllowedOnShip,
 			return ade_set_error(L, "b", false);
 	};
 	bank--; // Convert from Lua
+	// The restriction lists keep secondaries at MAX_SHIP_PRIMARY_BANKS onward, not right after this class's primaries
+	if (bank >= Ship_info[idx].num_primary_banks)
+		bank += MAX_SHIP_PRIMARY_BANKS - Ship_info[idx].num_primary_banks;
 
 	bool retv = false;
-	if ((bank >= 0) && (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
+	if ((bank >= 0) && !Ship_info[idx].restricted_loadout_flag.empty() &&
+		(eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
 		if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_bank_restricted_weapons[bank][wepidx]))
 			retv = true;
 	} else if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_weapons[wepidx])) {

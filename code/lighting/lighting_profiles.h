@@ -61,6 +61,13 @@ class profile {
 	TonemapperAlgorithm tonemapper;
 	piecewise_power_curve_values ppc_values;
 	float exposure;
+	// Raytraced ambient occlusion tuning (only sampled when rtao_enabled(), see
+	// graphics/rtao.h). Radius is the AO ray length in world units -- it is
+	// content-scale-dependent (fighters vs. capships), which is why it lives in
+	// the mod-owned lighting profile rather than a user option. Strength is an
+	// exponent on the occlusion term (1 = physical, >1 darkens, <1 lightens).
+	float rtao_radius;
+	float rtao_strength;
 	adjustment missile_light_brightness;
 	adjustment missile_light_radius;
 	adjustment laser_light_brightness;
@@ -106,7 +113,11 @@ constexpr float MAX_GLOW_MAP_VALUE = 100.0f;
 
 float current_glow_map_intensity();
 float current_glow_map_hdr_multiplier(float intensity);
+float current_rtao_radius();
+float current_rtao_strength();
 void lab_set_exposure(float exIn);
+void lab_set_rtao_radius(float radius);
+void lab_set_rtao_strength(float strength);
 void lab_set_tonemapper(TonemapperAlgorithm tnin);
 void lab_set_ppc(const piecewise_power_curve_values &ppcin);
 const piecewise_power_curve_values &lab_get_ppc();
