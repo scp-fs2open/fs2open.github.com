@@ -24,6 +24,8 @@
 
 #include <QtWidgets>
 
+#include <algorithm>
+
 namespace fso::fred::dialogs {
 ShipEditorDialogModel::ShipEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
@@ -1193,12 +1195,6 @@ bool ShipEditorDialogModel::arrivalNeedsDistance() const
 	return arrival_location_uses_distance(getArrivalLocation());
 }
 
-int ShipEditorDialogModel::computeArrivalMinDist() const
-{
-	// The same rule as the wing editor and FRED2: the radius of the target ship sets the minimum.
-	return arrival_min_distance(getArrivalLocation(), target_to_anchor(_arrivalTarget));
-}
-
 void ShipEditorDialogModel::writeArrivalDistance(int value)
 {
 	_arrivalDist = value;
@@ -1213,19 +1209,33 @@ void ShipEditorDialogModel::writeArrivalDistance(int value)
 
 void ShipEditorDialogModel::enforceArrivalMinDist()
 {
-	const int min_dist = computeArrivalMinDist();
-	if (min_dist <= 0 || _arrivalDist >= min_dist)
-		return;
+	// The marked ships can have different arrival locations and targets, so use the values of each ship.
+	// The same rule as the wing editor and FRED2: the radius of the target ship sets the minimum.
+	int largest_raise = 0;
+	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
+		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
+			auto& shipp = Ships[ptr->instance];
+			if (shipp.wingnum >= 0)
+				continue;
+
+			const int min_dist = arrival_min_distance(shipp.arrival_location, shipp.arrival_anchor);
+			if (shipp.arrival_distance < min_dist) {
+				shipp.arrival_distance = min_dist;
+				largest_raise = std::max(largest_raise, min_dist);
+			}
+			// The dialog shows the distance of the last marked ship, the same as initializeData().
+			_arrivalDist = shipp.arrival_distance;
+		}
+	}
 
 	// A minimum of 1 only prevents an invalid distance, so it needs no warning.
-	if (min_dist > 1) {
+	if (largest_raise > 1) {
 		QMessageBox::warning(nullptr,
 		    tr("Arrival Distance"),
 		    tr("Ship must arrive at least %1 meters away from target.\n"
 		       "Value has been reset to this.  Use with caution!")
-		        .arg(min_dist));
+		        .arg(largest_raise));
 	}
-	writeArrivalDistance(min_dist);
 }
 
 void ShipEditorDialogModel::setArrivalTarget(const int value)
@@ -1234,11 +1244,6 @@ void ShipEditorDialogModel::setArrivalTarget(const int value)
 		return;
 	_arrivalTarget = value;
 
-	// Re-validate the existing arrival distance now that the target has changed.
-	// A target change from a special anchor to a real ship can make a previously
-	// acceptable distance too close.
-	enforceArrivalMinDist();
-
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 			if (Ships[ptr->instance].wingnum < 0 && value >= 0) {
@@ -1246,6 +1251,10 @@ void ShipEditorDialogModel::setArrivalTarget(const int value)
 			}
 		}
 	}
+
+	// Examine the arrival distance again with the new target. A change from a special anchor to a real ship
+	// can make a distance too small. The ships must have the new anchor before this call.
+	enforceArrivalMinDist();
 	setModified();
 	_editor->missionChanged();
 	modelChanged();

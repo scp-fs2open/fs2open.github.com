@@ -166,10 +166,10 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void shipAltNameClose(int baseShip);
 	void shipCallsignClose(int baseShip);
 	static int makeShipList(int* arr);
-	int computeArrivalMinDist() const;
 	// Writes the arrival distance to the dialog and to each marked ship that is not in a wing.
 	void writeArrivalDistance(int value);
-	// Raises the arrival distance to computeArrivalMinDist() if it is smaller.
+	// For each marked ship that is not in a wing, raises the arrival distance to the minimum for the arrival
+	// location and target of that ship. A ship with a sufficient distance keeps it.
 	void enforceArrivalMinDist();
 
 	int _noDepartureWarp;
