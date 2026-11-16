@@ -31,6 +31,98 @@ static bool matrix_uniform_up_to_date = false;
 static bool  gr_ortho_override_active   = false;
 static float gr_ortho_override_distance = 0.0f;
 
+bool Gr_motion_vectors_active = false;
+
+namespace {
+struct velocity_camera {
+	matrix4 view_proj;
+	matrix4 previous_view_proj;
+
+	void capture()
+	{
+		previous_view_proj = view_proj;
+		vm_matrix4_x_matrix4(&view_proj, &gr_projection_matrix, &gr_view_matrix);
+	}
+};
+}
+
+static velocity_camera Scene_camera;
+static velocity_camera Cockpit_camera;
+static const velocity_camera* Current_velocity_camera = &Scene_camera;
+static float Scene_viewport_rect[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+static bool Temporal_reset_requested = true;
+
+void gr_reset_temporal_history()
+{
+	Temporal_reset_requested = true;
+}
+
+bool gr_consume_temporal_reset()
+{
+	const bool requested = Temporal_reset_requested;
+	Temporal_reset_requested = false;
+	return requested;
+}
+
+static matrix4 Cockpit_last_view_proj;
+static vec3d Cockpit_sway = vmd_zero_vector;
+static vec3d Cockpit_last_sway = vmd_zero_vector;
+
+void gr_capture_scene_camera()
+{
+	Scene_camera.capture();
+	Cockpit_last_view_proj = Cockpit_camera.view_proj;
+	Cockpit_last_sway = Cockpit_sway;
+
+	Scene_viewport_rect[0] = i2fl(gr_screen.offset_x) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[1] = i2fl(gr_screen.offset_y) / i2fl(gr_screen.max_h);
+	Scene_viewport_rect[2] = i2fl(gr_screen.clip_width) / i2fl(gr_screen.max_w);
+	Scene_viewport_rect[3] = i2fl(gr_screen.clip_height) / i2fl(gr_screen.max_h);
+}
+
+void gr_begin_cockpit_camera(const matrix* ship_orient, const matrix* ship_last_orient, const vec3d* sway)
+{
+	vm_matrix4_x_matrix4(&Cockpit_camera.view_proj, &gr_projection_matrix, &gr_view_matrix);
+	Cockpit_sway = *sway;
+
+	// Everything drawn here hangs off the ship's rotation plus the sway offset, so last frame's position of a point is
+	// its current one moved by the change of that frame.
+	matrix current = *ship_orient;
+	matrix last = *ship_last_orient;
+	matrix4 current_frame, inverse_current, last_frame, frame_change;
+	vm_matrix4_set_transform(&current_frame, &current, &Cockpit_sway);
+	vm_matrix4_set_transform(&last_frame, &last, &Cockpit_last_sway);
+	vm_inverse_matrix4(&inverse_current, &current_frame);
+	vm_matrix4_x_matrix4(&frame_change, &last_frame, &inverse_current);
+	vm_matrix4_x_matrix4(&Cockpit_camera.previous_view_proj, &Cockpit_last_view_proj, &frame_change);
+
+	Current_velocity_camera = &Cockpit_camera;
+}
+
+void gr_end_cockpit_camera()
+{
+	Current_velocity_camera = &Scene_camera;
+}
+
+void gr_get_velocity_camera(matrix4* view_proj, matrix4* previous_view_proj, float viewport_rect[4])
+{
+	*view_proj = Current_velocity_camera->view_proj;
+	*previous_view_proj = Current_velocity_camera->previous_view_proj;
+	memcpy(viewport_rect, Scene_viewport_rect, sizeof(Scene_viewport_rect));
+}
+
+void gr_get_velocity_uniforms(graphics::velocity_camera_data* out)
+{
+	// Only shaders writing motion vectors read this, and those only run in a scene that has them
+	if (!Gr_motion_vectors_active) {
+		return;
+	}
+	out->viewProj = Current_velocity_camera->view_proj;
+	out->prevViewProj = Current_velocity_camera->previous_view_proj;
+	out->uvScale[0] = Scene_viewport_rect[2];
+	out->uvScale[1] = Scene_viewport_rect[3];
+}
+
 static matrix4 create_view_matrix(const vec3d* pos, const matrix* orient)
 {
 	vec3d scaled_pos;

@@ -68,8 +68,34 @@ enum class AntiAliasMode {
 extern AntiAliasMode Gr_aa_mode;
 extern AntiAliasMode Gr_aa_mode_last_frame;
 
+// AA renders at 1:1. Upscale upscales the scene from the render resolution to the window resolution, and everything
+// drawn after it then draws at that size.
+enum class FsrMode {
+	Off = 0,
+	AA = 1,
+	Upscale = 2,
+};
+extern FsrMode Gr_fsr_mode;
+// The chosen FSR major version, or 0 for the newest the renderer offers
+extern int Gr_fsr_major_version;
+// The FSR versions the renderer offers, newest first, such as "4.1.2". Empty without FSR.
+extern SCP_vector<SCP_string> Gr_fsr_versions;
+// The largest image side the renderer supports, which limits the upscale factor. 0 without FSR.
+extern int Gr_fsr_max_output_size;
+
+// Scales the render resolution to cover the window in both axes, keeping its aspect ratio; the final blit squeezes the
+// rest. 1 for Off and AA, and when the window isn't larger than the render resolution.
+float gr_fsr_upscale_factor(FsrMode mode);
+// Framebuffer pixels per gr_screen unit for what's drawn after the scene. Above 1 only while FSR upscales.
+extern float Gr_composition_scale;
+
 bool gr_is_fxaa_mode(AntiAliasMode mode);
 bool gr_is_smaa_mode(AntiAliasMode mode);
+
+// not clamped: only the renderer knows what the card supports
+float gr_anisotropy_setting();
+
+int gr_texture_filter_setting();
 
 extern bool Gr_post_processing_enabled;
 
@@ -243,6 +269,8 @@ enum shader_type {
 
 	SDR_TYPE_GAMMA_BLIT,
 
+	SDR_TYPE_MOTION_VECTORS,
+
 	NUM_SHADER_TYPES
 };
 
@@ -273,6 +301,7 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
+#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
 
 #define SDR_FLAG_SHADOW_FALLBACK (1 << 0)
 
@@ -312,6 +341,7 @@ struct vertex_format_data
 		RADIUS,
 		UVEC,
 		MATRIX4,
+		MOTION4, // Vulkan only. OpenGL's attribute tables have no slot for it.
 	};
 
 	vertex_format format_type;
@@ -381,7 +411,13 @@ enum class gr_capability {
 	CAPABILITY_INSTANCED_RENDERING,
 	CAPABILITY_FAST_SHADOWS,
 	CAPABILITY_QUERIES_REUSABLE,
-	CAPABILITY_RAYTRACED_SHADOWS
+	CAPABILITY_RAYTRACED_SHADOWS,
+	// A second, non-compare sampler bound to the shadow map for raw depth reads, needed by
+	// the shadow-map PCSS blocker search. Vulkan always has this (samplers are independent
+	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
+	// otherwise texture-object state shared by every sampler bound to that texture.
+	CAPABILITY_SHADOW_CONTACT_HARDENING,
+	CAPABILITY_FSR
 };
 
 struct gr_capability_def {
@@ -874,6 +910,7 @@ typedef struct screen {
 	std::function<void(bitmap_slot* slot)> gf_bm_create;
 	std::function<void(bitmap_slot* slot)> gf_bm_init;
 	std::function<void()> gf_bm_page_in_start;
+	std::function<void()> gf_bm_page_in_prepare;
 	std::function<bool(int handle, bitmap* bm)> gf_bm_data;
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
@@ -889,13 +926,6 @@ typedef struct screen {
 	// backends that don't need them (OpenGL, stub) don't have to assign anything.
 	std::function<void(int pm_id)> gf_model_loaded = [](int) {};
 	std::function<void(int pm_id)> gf_model_unloaded = [](int) {};
-
-	// Rebuilds the raytraced-shadow top-level acceleration structure for the
-	// current frame from the live shadow-casting object set. Called once per
-	// frame from shadows_render_all(), alongside the cascaded shadow map pass --
-	// the shading pass picks between the two per shadows_use_raytracing().
-	// No-op default.
-	std::function<void()> gf_build_shadow_tlas = []() {};
 
 	std::function<void(gr_buffer_handle handle, size_t size, const void* data)> gf_update_buffer_data;
 	std::function<void(gr_buffer_handle handle, size_t offset, size_t size, const void* data)>
@@ -1338,8 +1368,6 @@ inline void gr_model_unloaded(int pm_id)
 	gr_screen.gf_model_unloaded(pm_id);
 }
 
-#define gr_build_shadow_tlas GR_CALL(gr_screen.gf_build_shadow_tlas)
-
 #define gr_update_buffer_data GR_CALL(gr_screen.gf_update_buffer_data)
 #define gr_update_buffer_data_offset GR_CALL(gr_screen.gf_update_buffer_data_offset)
 inline void* gr_map_buffer(gr_buffer_handle handle)
@@ -1394,6 +1422,15 @@ inline void gr_post_process_restore_zbuffer()
 
 #define gr_imgui_new_frame				GR_CALL(gr_screen.gf_imgui_new_frame)
 #define gr_imgui_render_draw_data		GR_CALL(gr_screen.gf_imgui_render_draw_data)
+
+/**
+ * @brief Registers the mod-defined TrueType font with ImGui
+ *
+ * @details Must be called after the FSO font system has been initialized
+ * and an ImGui context has been created. If no custom font is configured,
+ * the default ImGui font remains unchanged.
+ */
+void gr_init_imgui_font();
 
 /**
  * @brief Starts an ImGui frame, sized to the render target rather than to the OS window

@@ -39,7 +39,8 @@ void PathRenderer::beginFrame() {
 	Assertion(!m_inFrame,
 			  "beginFrame() was called withoug ending previous frame! Check your path renderer calls or get a coder!");
 
-	nvgBeginFrame(m_context, gr_screen.max_w, gr_screen.max_h, 1.0f);
+	// The pixel ratio makes text and curves rasterize at the resolution they're drawn at
+	nvgBeginFrame(m_context, gr_screen.max_w, gr_screen.max_h, Gr_composition_scale);
 	m_inFrame = true;
 }
 

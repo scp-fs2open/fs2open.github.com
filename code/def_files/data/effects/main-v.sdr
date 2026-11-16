@@ -7,6 +7,7 @@
 precision highp float;
 precision highp int;
 precision highp samplerBuffer;
+precision highp sampler2DArray;
 precision highp sampler2DArrayShadow;
 #else
 #extension GL_ARB_gpu_shader5: enable
@@ -113,28 +114,17 @@ uniform modelData {
 	float alphaMult;
 
 	int flags;
-};
 
 #ifdef VULKAN
-layout(set = 0, binding = 6, std140)
-#else
-layout(std140)
+	mat4 prevModelMatrix;
+	mat4 velocityViewProj;
+	mat4 velocityPrevViewProj;
+	vec2 velocityUvScale;
+	int prev_transform_stride;
 #endif
-uniform shadowCascadeParams {
-	int cascade_offset;
-	int cascade_count;
-	float rtShadowBiasMin;
-	float rtShadowBiasMax;
-
-	mat4 shadow_mv_matrix;
-
-	// See shadow_cascade_static_data (uniform_structs.h). Unused here; declared for block layout.
-	vec3 shadow_ray_view_origin;
-	int shadow_ray_cull_mask;
-	mat4 shadow_proj_matrix[NUM_SHADOW_CASCADES];
-	vec4 cascade_distances[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
-	vec4 smoothness_factors[(NUM_SHADOW_CASCADES + 4 - 1) / 4];
 };
+
+#include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
 
 #ifdef VULKAN
 // Transform buffer for batched submodel rendering
@@ -150,6 +140,8 @@ layout(location = 0) out VertexOutput {
 	vec4 texCoord;
 	mat3 tangentMatrix;
 	float fogDist;
+	vec4 velocityCurClip;
+	vec4 velocityPrevClip;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SHADOWS
 	vec4 shadowUV[NUM_SHADOW_CASCADES];
@@ -206,6 +198,9 @@ void main()
 	vec3 normal;
 	vec4 texCoord;
 	mat4 orient = mat4(1.0);
+#ifdef VULKAN
+	mat4 prevOrient = mat4(1.0);
+#endif
 	bool clipModel = false;
 
 	// Transform loading
@@ -215,6 +210,11 @@ void main()
 		orient = transformBuf.transforms[buffer_matrix_offset + id];
 		clipModel = (orient[3].w >= 0.9);
 		orient[3].w = 1.0;
+		prevOrient = orient;
+		if (prev_transform_stride > 0) {
+			prevOrient = transformBuf.transforms[buffer_matrix_offset + prev_transform_stride + id];
+			prevOrient[3].w = 1.0;
+		}
 #else
 		getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
 #endif
@@ -234,6 +234,10 @@ void main()
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
 		gl_Position = projMatrix * position;
+#ifdef VULKAN
+	vertOut.velocityCurClip = velocityViewProj * modelMatrix * orient * vertex;
+	vertOut.velocityPrevClip = velocityPrevViewProj * prevModelMatrix * prevOrient * vertex;
+#endif
 	#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowPos = shadowPos;

@@ -11,6 +11,7 @@
 #include "VulkanTexture.h"
 #include "VulkanRenderer.h"
 #include "VulkanPostProcessing.h"
+#include "VulkanDeferred.h"
 #include "VulkanDescriptorManager.h"
 #include "VulkanDeletionQueue.h"
 #include "VulkanMemory.h"
@@ -216,7 +217,30 @@ void vulkan_scene_texture_begin()
 
 	// Switch to HDR scene render pass when post-processing is enabled
 	auto* pp = getPostProcessor();
-	if (pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override) {
+	const bool useSceneTarget = pp && pp->isInitialized() && Gr_post_processing_enabled && !PostProcessing_override;
+
+	// Build the ray-tracing TLAS for this frame here, one time, before the scene draws start.
+	// The camera and the objects are final at this point. A TLAS build must be outside a render
+	// pass. The scene pass starts below, so the build adds no pass break to that path.
+	if (vulkan_frame_tlas_pending() && !renderer->isSceneRendering()) {
+		renderer->endCurrentRenderPass();
+		vulkan_build_frame_tlas();
+
+		if (!useSceneTarget) {
+			// No scene pass follows, so resume the pass that the build interrupted.
+			auto* texMgr = getTextureManager();
+			const int rtHandle = (renderer->isRenderTargetActive() && texMgr) ? texMgr->getCurrentRenderTarget() : -1;
+			auto* rtSlot = rtHandle >= 0 ? texMgr->getTextureSlot(rtHandle) : nullptr;
+			if (rtSlot != nullptr) {
+				renderer->resumeRenderTargetPass(rtSlot);
+			} else {
+				renderer->resumeSwapChainPass();
+			}
+			vulkan_restore_scene_viewport();
+		}
+	}
+
+	if (useSceneTarget) {
 		renderer->beginSceneRendering();
 		High_dynamic_range = true;
 	} else {
@@ -236,7 +260,7 @@ void vulkan_scene_texture_begin()
 		clearRect.rect.offset = vk::Offset2D(0, 0);
 		clearRect.rect.extent = vk::Extent2D(static_cast<uint32_t>(gr_screen.max_w),
 		                                      static_cast<uint32_t>(gr_screen.max_h));
-		clearRect.rect = stateTracker->clampToRenderArea(clearRect.rect);
+		clearRect.rect = stateTracker->clampToRenderArea(stateTracker->screenToFramebuffer(clearRect.rect));
 		clearRect.baseArrayLayer = 0;
 		clearRect.layerCount = 1;
 
@@ -401,8 +425,10 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 		                                     sizeof(graphics::generic_data::effect_data));
 		auto* data = buffer.aligner().addTypedElement<graphics::generic_data::effect_data>();
 
-		data->window_width  = static_cast<float>(gr_screen.max_w);
-		data->window_height = static_cast<float>(gr_screen.max_h);
+		// The shader divides gl_FragCoord by these, so they're the pass's size, which is larger than gr_screen on the
+		// composition image while FSR upscales
+		data->window_width  = static_cast<float>(getStateTracker()->getRenderArea().width);
+		data->window_height = static_cast<float>(getStateTracker()->getRenderArea().height);
 		data->nearZ         = Min_draw_distance;
 		data->farZ          = Max_draw_distance;
 		data->srgb          = High_dynamic_range ? 1 : 0;
@@ -411,6 +437,7 @@ void vulkan_render_primitives_particle(particle_material* material_info,
 		// so linear_depth=1 reads .z directly (matches OpenGL behavior).
 		// Otherwise use the NDC conversion path with the hardware depth copy.
 		data->linear_depth  = usePosTexture ? 1 : 0;
+		gr_get_velocity_uniforms(&data->velocity);
 
 		buffer.submitData();
 		gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
@@ -459,8 +486,8 @@ void vulkan_render_primitives_distortion(distortion_material* material_info,
 		                                     sizeof(graphics::generic_data::effect_distort_data));
 		auto* data = buffer.aligner().addTypedElement<graphics::generic_data::effect_distort_data>();
 
-		data->window_width  = static_cast<float>(gr_screen.max_w);
-		data->window_height = static_cast<float>(gr_screen.max_h);
+		data->window_width  = static_cast<float>(getStateTracker()->getRenderArea().width);
+		data->window_height = static_cast<float>(getStateTracker()->getRenderArea().height);
 		data->use_offset    = material_info->get_thruster_rendering() ? 1.0f : 0.0f;
 
 		buffer.submitData();
@@ -546,6 +573,7 @@ void vulkan_render_primitives_batched(batched_bitmap_material* material_info,
 	auto* data = buffer.aligner().addTypedElement<graphics::generic_data::batched_data>();
 	data->intensity = material_info->get_color_scale();
 	data->color     = material_info->get_color();
+	gr_get_velocity_uniforms(&data->velocity);
 	buffer.submitData();
 	gr_bind_uniform_buffer(uniform_block_type::GenericData, buffer.getBufferOffset(0),
 	                       sizeof(graphics::generic_data::batched_data), buffer.bufferHandle());
