@@ -12,6 +12,7 @@
 #include "osapi/osapi.h"
 #include "cmdline/cmdline.h"
 #include "osregistry.h"
+#include "utils/encoding.h"
 
 
 #ifdef WIN32
@@ -614,6 +615,16 @@ static Profile *profile_read(const char *file)
 	if (fp == nullptr)
 		return nullptr;
 
+	// Defaults aren't a safe fallback here, since the next settings save would overwrite the file
+	char probe[4];
+	auto probe_len = fread(probe, 1, sizeof(probe), fp);
+	auto encoding = util::guess_encoding(probe, probe_len, false);
+	if (encoding != util::Encoding::ASCII && encoding != util::Encoding::UTF8)
+		Error(LOCATION, "%s is in an Unicode/UTF format that cannot be read by FreeSpace Open. Please convert it to UTF-8\n", file);
+
+	// some editors save a UTF-8 byte order mark, which would hide the first section header
+	fseek(fp, static_cast<long>(util::bom_length(probe, probe_len)), SEEK_SET);
+
 	Profile *profile = (Profile *)vm_malloc(sizeof(Profile));
 	profile->sections = nullptr;
 
@@ -717,6 +728,10 @@ static void profile_free(Profile *profile)
 static Profile *profile_update(Profile *profile, const char *section, const char *key, const char *value)
 {
 	if (profile == nullptr) {
+		/* nothing to delete */
+		if (value == nullptr)
+			return nullptr;
+
 		profile = (Profile *)vm_malloc(sizeof(Profile));
 
 		profile->sections = nullptr;
@@ -773,6 +788,11 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 	}
 
 	/* section not found */
+
+	// a null value means delete, so there is nothing to do; vm_strdup(nullptr) below would crash
+	if (value == nullptr)
+		return profile;
+
 	sp = (IniSection *)vm_malloc(sizeof(IniSection));
 	sp->next = nullptr;
 	sp->name = vm_strdup(section);
@@ -1075,18 +1095,18 @@ void os_config_write_string(const char* section, const char* name, const char* v
 		return;
 	}
 #endif
-	Profile* profile = Osreg_profile;
+	Profile** profile = &Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_settings_profile;
+		profile = &Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
 	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	profile = profile_update(profile, section, name, value);
-	profile_save(profile, file);
+	*profile = profile_update(*profile, section, name, value);
+	profile_save(*profile, file);
 }
 
 void os_config_write_uint(const char* section, const char* name, unsigned int value, bool use_mod_file)
@@ -1099,10 +1119,10 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 		return;
 	}
 #endif
-	Profile* profile = Osreg_profile;
+	Profile** profile = &Osreg_profile;
 	const char* file = Osreg_config_file_name;
 	if (use_mod_file) {
-		profile = Mod_settings_profile;
+		profile = &Mod_settings_profile;
 		file = Mod_options_file_name.c_str();
 	}
 
@@ -1113,7 +1133,7 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 
 	snprintf(buf, 21, "%u", value);
 
-	profile = profile_update(profile, section, name, buf);
-	profile_save(profile, file);
+	*profile = profile_update(*profile, section, name, buf);
+	profile_save(*profile, file);
 }
 
