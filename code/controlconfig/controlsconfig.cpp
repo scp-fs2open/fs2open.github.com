@@ -596,6 +596,7 @@ CC_bind control_config_detect_axis()
  */
 static CC_bind control_config_detect_axis_button()
 {
+	const int delta = 16384;
 	int axes_values[JOY_NUM_AXES];
 
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
@@ -609,16 +610,11 @@ static CC_bind control_config_detect_axis_button()
 				continue;
 			}
 
-			// Same test as in play, and a side the axis already rested past when the bind started doesn't count
-			const int value = axes_values[i] - JOY_AXIS_CENTER;
-			const int origin = Axes_origin[j][i] - JOY_AXIS_CENTER;
-			for (int side = 0; side < 2; ++side) {
-				const int travel = (side == 0) ? value : -value;
-				const int origin_travel = (side == 0) ? origin : -origin;
-				if ((travel >= JOY_AXIS_BUTTON_PRESS) && (origin_travel < JOY_AXIS_BUTTON_PRESS)) {
-					const char flags = static_cast<char>(CCF_AXIS_BTN | ((side == 1) ? CCF_INVERTED : 0));
-					return {static_cast<CID>(j), i, flags};
-				}
+			// The move the axis bind asks for, from where the axis rested: a throttle left off center must not bind
+			const int moved = axes_values[i] - Axes_origin[j][i];
+			if (abs(moved) > delta) {
+				const char flags = static_cast<char>(CCF_AXIS_BTN | ((moved < 0) ? CCF_INVERTED : 0));
+				return {static_cast<CID>(j), i, flags};
 			}
 		}
 	}
@@ -2126,8 +2122,8 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!ccb.empty()) {
 			Axis_override = ccb;
 			bind = true;
-		} else if (Control_config[ctrl].type == CC_TYPE_AXIS_REL) {
-			// A key or button drives a relative axis at a fixed value; ENTER keeps cancelling the bind
+		} else {
+			// A key or button drives an axis at a fixed value; ENTER keeps cancelling the bind
 			const int key = k & KEY_MASK;
 			const bool is_modifier =
 				(key == KEY_LSHIFT) || (key == KEY_RSHIFT) || (key == KEY_LALT) || (key == KEY_RALT);
@@ -3128,9 +3124,9 @@ void scale_invert(const CC_bind &bind,
 	// Only keys and BUTTON-flagged binds are buttons here: a flagless joystick bind on an axis control has always meant
 	// that axis
 	if ((cid == CID_KEYBOARD) || (bind.get_flags() & CCF_BUTTON)) {
-		if (buttons_live && (type == CC_TYPE_AXIS_REL) && button_bind_held(bind)) {
-			axis_out[action] += bind.is_inverted() ? -F1_0 : F1_0;
-		}
+		dx = (buttons_live && button_bind_held(bind)) ? F1_0 : 0;
+		maybe_invert(bind.is_inverted(), type, dx);
+		axis_out[action] += dx;
 		return;
 	}
 

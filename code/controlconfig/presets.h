@@ -40,7 +40,7 @@
 			}
 		},
 	},
-	"version": 0
+	"version": 1
  }
 
 
@@ -48,7 +48,7 @@
 namespace io {
 namespace presets {
 
-static const unsigned int PST_VERSION = 0;
+static const unsigned int PST_VERSION = 1;
 static const unsigned int PST_FILE_ID = 0x5f545350;  // "PST_" in file
 
 enum class Section {
