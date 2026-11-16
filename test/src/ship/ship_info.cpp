@@ -4,6 +4,7 @@
 
 #include "hud/hud.h"
 #include "particle/ParticleManager.h"
+#include "radar/radarngon.h"
 #include "ship/ship.h"
 
 class ShipInfoCloneTest : public test::FSTestFixture {
@@ -40,6 +41,7 @@ TEST_F(ShipInfoCloneTest, copies_members) {
 	strcpy_s(src.subsystems[1].subobj_name, "turret01");
 
 	src.hud_gauges.push_back(SCP_polymorphic<HudGauge>::make<HudGauge>());
+	src.hud_gauges.push_back(SCP_polymorphic<HudGauge>::make<HudGaugeRadarNgon>(6, 0.0f));
 
 	ship_info dest;
 	dest.clone(src);
@@ -59,6 +61,10 @@ TEST_F(ShipInfoCloneTest, copies_members) {
 	EXPECT_STREQ(dest.subsystems[1].subobj_name, "turret01");
 	EXPECT_NE(dest.subsystems.data(), src.subsystems.data());
 
-	ASSERT_EQ(dest.hud_gauges.size(), 1u);
+	ASSERT_EQ(dest.hud_gauges.size(), 2u);
 	EXPECT_NE(dest.hud_gauges[0].get(), src.hud_gauges[0].get());
+	EXPECT_NE(dest.hud_gauges[1].get(), src.hud_gauges[1].get());
+
+	// the copy of a derived gauge must not be sliced to its base class
+	EXPECT_NE(dynamic_cast<HudGaugeRadarNgon*>(dest.hud_gauges[1].get()), nullptr);
 }

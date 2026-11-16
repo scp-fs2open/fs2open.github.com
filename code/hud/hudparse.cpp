@@ -1421,8 +1421,9 @@ void adjust_for_multimonitor(int *base_res, bool set_position, int *coords)
 	}
 }
 
-// A gauge being set up, accessed as type T.  The gauge itself always keeps its exact type, so it may be accessed as a
-// base class of it without copies made of it for ship classes being sliced.
+// A newly created gauge, used as a T while it is set up.  T may be a base class of the gauge's real type: the n-gon
+// radar is set up as a standard radar.  The gauge still knows its real type, so the copies gauge_assign_common makes
+// for each ship class that uses the gauge are complete n-gon radars, not just their standard radar part.
 template<class T>
 struct new_gauge {
 	SCP_polymorphic<HudGauge> gauge;
