@@ -480,7 +480,7 @@ void opengl_post_lightshafts()
 						data->falloff      = ls_params.falloff;
 						data->weight       = ls_params.weight;
 						data->intensity    = Sun_spot * ls_params.intensity;
-						data->cp_intensity = Sun_spot * ls_params.cpintensity;
+						data->cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
@@ -758,7 +758,9 @@ void gr_opengl_post_process_set_defaults()
 	// reset all effects to their default values
 	for (idx = 0; idx < postEffects.size(); idx++) {
 		postEffects[idx].intensity = postEffects[idx].default_intensity;
+		postEffects[idx].rgb = postEffects[idx].default_rgb;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 
 	Post_active_shader_index = -1;
 }

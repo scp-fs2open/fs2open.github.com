@@ -599,7 +599,6 @@ void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orie
 	g3_start_frame(1);		// Turn on zbuffering
 	hud_save_restore_camera_data(1);
 	g3_set_view_matrix( camera_eye, camera_orient, zoom);	
-	model_set_detail_level(1);		// use medium detail level
 
 	setClip(position[0] + Viewport_offsets[0], position[1] + Viewport_offsets[1], Viewport_w, Viewport_h);
 
