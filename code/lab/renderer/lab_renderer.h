@@ -5,6 +5,7 @@
 #include "graphics/2d.h"
 #include "graphics/rtao.h"
 #include "graphics/shadows.h"
+#include "graphics/ssao.h"
 #include "lighting/lighting_profiles.h"
 #include "camera/camera.h"
 #include "cmdline/cmdline.h"
@@ -184,6 +185,17 @@ public:
 	// persisted Raytraced Ambient Occlusion option. See Rtao_samples in rtao.h.
 	static void setRtaoSamples(int samples) {
 		Rtao_samples = samples;
+	}
+
+	// Session-only override, same as setRtaoSamples -- does not touch the persisted
+	// Screen-Space Ambient Occlusion option. See Ssao_quality in ssao.h.
+	static void setSsaoQuality(int quality) {
+		Ssao_quality = quality;
+	}
+
+	// Session-only change of the SSAO tuning values. See Ssao_settings in ssao.h.
+	static void setSsaoSettings(const ssao_settings& settings) {
+		Ssao_settings = settings;
 	}
 
 	// Session-only override, same as setRtaoSamples -- does not touch the persisted

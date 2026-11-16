@@ -8,6 +8,7 @@
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
+#include "graphics/ssao.h"
 #include "lab/labv2_internal.h"
 #include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
@@ -676,6 +677,35 @@ void LabUi::build_rtao_sliders()
 	}
 }
 
+void LabUi::build_ssao_controls()
+{
+	if (!ssao_supported()) {
+		return;
+	}
+
+	bool enabled = Ssao_quality > 0;
+	if (Checkbox("Screen-Space Ambient Occlusion", &enabled)) {
+		LabRenderer::setSsaoQuality(enabled ? 1 : 0);
+	}
+	if (!enabled) {
+		return;
+	}
+	if (rtao_enabled()) {
+		TextUnformatted("RTAO is on, so SSAO has no effect.");
+	}
+
+	ssao_settings settings = Ssao_settings;
+	bool changed = false;
+	changed |= SliderFloat("SSAO Screen Radius", &settings.screen_radius, 0.01f, 0.5f);
+	changed |= SliderFloat("SSAO Max Radius", &settings.max_radius, 1.0f, 1.0e6f, "%.0f", ImGuiSliderFlags_Logarithmic);
+	// pow(occlusion, 0) is not defined for an occlusion of 0, so the minimum is above 0.
+	changed |= SliderFloat("SSAO Intensity", &settings.intensity, 0.05f, 4.0f);
+	changed |= Checkbox("SSAO Animated Noise", &settings.animate_noise);
+	changed |= Checkbox("Show SSAO Only (set the emissive factor to 0)", &settings.debug_view);
+	if (changed) {
+		LabRenderer::setSsaoSettings(settings);
+	}
+}
 
 namespace ltp = lighting_profiles;
 using namespace ltp;
@@ -784,6 +814,8 @@ void LabUi::show_render_options()
 			build_shadow_penumbra_sliders();
 
 			build_rtao_sliders();
+
+			build_ssao_controls();
 
 			build_tone_mapper_combobox();
 

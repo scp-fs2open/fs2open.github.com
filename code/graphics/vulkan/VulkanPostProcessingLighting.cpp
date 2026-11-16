@@ -15,6 +15,7 @@
 #include "graphics/matrix.h"
 #include "graphics/rtao.h"
 #include "graphics/shadows.h"
+#include "graphics/ssao.h"
 #include "graphics/2d.h"
 #include "bmpman/bmpman.h"
 #include "lighting/lighting_profiles.h"
@@ -361,7 +362,7 @@ static graphics::deferred_light_data* prepare_light_uniforms(light& l, uint8_t* 
 	return light_data;
 }
 
-void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
+void VulkanDeferredLighting::render(vk::CommandBuffer cmd, vk::ImageView ssaoView)
 {
 	TRACE_SCOPE(tracing::ApplyLights);
 
@@ -690,6 +691,11 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	}
 	if (rtao_enabled()) {
 		lightShaderFlags |= SDR_FLAG_DEFERRED_RTAO;
+	} else if (ssaoView) {
+		lightShaderFlags |= SDR_FLAG_DEFERRED_SSAO;
+		if (Ssao_settings.debug_view) {
+			lightShaderFlags |= SDR_FLAG_DEFERRED_SSAO_DEBUG;
+		}
 	}
 	if (envMapAvailable) {
 		lightShaderFlags |= SDR_FLAG_ENV_MAP;
@@ -753,6 +759,10 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd)
 	gbufTexArray[1] = {m_ctx->linearSampler, m_gbuffer->normalView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	gbufTexArray[2] = {m_ctx->linearSampler, m_gbuffer->positionView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	gbufTexArray[3] = {m_ctx->linearSampler, m_gbuffer->specularView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	if (ssaoView) {
+		// SsaoBuffer in deferred-f.sdr. The shader reads it with texelFetch.
+		gbufTexArray[4] = {m_ctx->linearSampler, ssaoView, vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
 
 	// Pre-build shadow/env/irr image infos (shared across all light draws).
 	// Shadow map is depth-only, sampled with a depth-compare sampler
