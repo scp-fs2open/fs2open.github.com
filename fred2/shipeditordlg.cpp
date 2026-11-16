@@ -1284,25 +1284,27 @@ int CShipEditorDlg::update_ship(int ship)
 		if (m_arrival_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET))->GetItemData(m_arrival_target);
 			MODIFY(Ships[ship].arrival_anchor, target_to_anchor(z));
-
-			// Force the arrival distance to be at least the minimum for the arrival location and target.
-			// This is the same rule as the wing editor and QtFRED.
-			d = arrival_min_distance(static_cast<ArrivalLocation>(m_arrival_location), target_to_anchor(z));
-			if ((d > 0) && (Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
-				// A minimum of 1 only prevents an invalid distance, so it needs no warning.
-				if (d > 1) {
-					str.Format("Ship must arrive at least %d meters away from target.\n"
-						"Value has been reset to this.  Use with caution!\r\n", d);
-					MessageBox(str);
-				}
-				if (Ships[ship].arrival_distance < 0)
-					Ships[ship].arrival_distance = -d;
-				else
-					Ships[ship].arrival_distance = d;
-
-				m_arrival_dist.fix(Ships[ship].arrival_distance);
-			}
 		}
+
+		// Force the arrival distance to be at least the minimum for the arrival location and target.
+		// This is the same rule as the wing editor and QtFRED. In multi-edit mode, the marked ships can have
+		// different locations and targets, so use the values of this ship.
+		d = arrival_min_distance(Ships[ship].arrival_location, Ships[ship].arrival_anchor);
+		if (Ships[ship].arrival_distance < d) {
+			// A minimum of 1 only prevents an invalid distance, so it needs no warning.
+			if (d > 1) {
+				str.Format("Ship must arrive at least %d meters away from target.\n"
+					"Value has been reset to this.  Use with caution!\r\n", d);
+				MessageBox(str);
+			}
+			Ships[ship].arrival_distance = d;
+
+			// In multi-edit mode, save() copies the field to each marked ship. The field must not get the
+			// minimum of one ship, because the minimum of each ship can be different.
+			if (!multi_edit)
+				m_arrival_dist.fix(Ships[ship].arrival_distance);
+		}
+
 		if (m_departure_target >= 0) {
 			z = (int)((CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET))->GetItemData(m_departure_target);
 			MODIFY(Ships[ship].departure_anchor, target_to_anchor(z));
