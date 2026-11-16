@@ -27,6 +27,8 @@ struct PostProcessContext {
 	vk::Device device;
 	VulkanMemoryManager* memoryManager = nullptr;
 	vk::Extent2D sceneExtent;
+	// Everything from tonemapping to the final blit. Larger than the scene while FSR upscales.
+	vk::Extent2D outputExtent;
 	vk::Format depthFormat = vk::Format::eUndefined;
 
 	// True when the renderer negotiated an HDR10 swap chain. Drives fp16 LDR
@@ -113,7 +115,9 @@ struct PostProcessContext {
 	                                 vk::Framebuffer framebuffer, vk::Extent2D extent,
 	                                 int shaderType,
 	                                 const vk::ImageView* views, uint32_t viewCount,
-	                                 const void* uboData, size_t uboSize);
+	                                 const void* uboData, size_t uboSize,
+	                                 vk::Sampler sampler = nullptr,
+	                                 uint32_t colorAttachmentCount = 1);
 
 	/**
 	 * @brief Generate a mip chain for an image (transitions mip 0 first)
@@ -204,6 +208,7 @@ public:
 	vk::ImageView depthView() const { return m_depth.view; }
 	vk::Image depthImage() const { return m_depth.image; }
 	vk::Sampler compareSampler() const { return m_compareSampler; }
+	vk::Sampler rawSampler() const { return m_rawSampler; }
 	vk::RenderPass renderPass() const { return m_renderPass; }
 	vk::Framebuffer framebuffer() const { return m_framebuffer; }
 
@@ -211,6 +216,7 @@ private:
 	PostProcessContext* m_ctx = nullptr;
 	RenderTarget m_depth;   // D32F, 2D array (Num_shadow_cascades + Num_cockpit_shadow_cascades layers)
 	vk::Sampler m_compareSampler; // Depth-compare sampler for hardware PCF (sampler2DArrayShadow)
+	vk::Sampler m_rawSampler;     // Non-compare sampler on the same view, for PCSS blocker search
 	vk::RenderPass m_renderPass;
 	vk::Framebuffer m_framebuffer;
 	int m_textureSize = 0;
@@ -234,6 +240,9 @@ public:
 	 */
 	bool init(PostProcessContext& ctx, const RenderTarget& sceneColor);
 	void shutdown();
+
+	// The caller follows up with resize(), which rebuilds the framebuffer around it.
+	void setSceneColor(const RenderTarget& sceneColor) { m_sceneColor = &sceneColor; }
 
 	/**
 	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
@@ -298,6 +307,8 @@ public:
 
 	static constexpr uint32_t GBUF_COLOR_ATTACHMENT_COUNT = 6; // Full layout (with composite)
 	static constexpr uint32_t MSAA_COLOR_ATTACHMENT_COUNT = 5; // MSAA layout (without composite)
+	// With motion vectors the subpass has this many color locations, in both layouts. MSAA leaves location 5 unused.
+	static constexpr uint32_t VELOCITY_COLOR_LOCATION_COUNT = 7;
 
 	static constexpr vk::Format GBUF_FORMAT_COLOR     = vk::Format::eR16G16B16A16Sfloat;
 	static constexpr vk::Format GBUF_FORMAT_POSITION  = vk::Format::eR16G16B16A16Sfloat;
@@ -330,6 +341,21 @@ public:
 	bool isInitialized() const { return m_gbufInitialized; }
 	bool isMsaaInitialized() const { return m_msaaInitialized; }
 
+	/**
+	 * @brief Selects the render pass variants with a motion vector attachment for this frame
+	 * @param drawnMotion The single-sample image to write into. Null selects the plain variants.
+	 * @return false if the resources couldn't be created, in which case the plain variants stay selected
+	 */
+	bool setVelocityTarget(const RenderTarget* drawnMotion);
+	bool velocityActive() const { return m_velocityActive; }
+	uint32_t colorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : GBUF_COLOR_ATTACHMENT_COUNT; }
+	uint32_t msaaColorAttachmentCount() const { return m_velocityActive ? VELOCITY_COLOR_LOCATION_COUNT : MSAA_COLOR_ATTACHMENT_COUNT; }
+	// Attachment indices into the clear values, since the unused MSAA location takes no attachment
+	static uint32_t velocityAttachmentIndex() { return GBUF_COLOR_ATTACHMENT_COUNT; }
+	uint32_t depthAttachmentIndex() const { return GBUF_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
+	static uint32_t msaaVelocityAttachmentIndex() { return MSAA_COLOR_ATTACHMENT_COUNT; }
+	uint32_t msaaDepthAttachmentIndex() const { return MSAA_COLOR_ATTACHMENT_COUNT + (m_velocityActive ? 1 : 0); }
+
 	// Mid-frame layout transitions / copies (all outside a render pass)
 	void transitionForResume(vk::CommandBuffer cmd);
 	void copyNormal(vk::CommandBuffer cmd);
@@ -337,9 +363,9 @@ public:
 	void transitionMsaaForResume(vk::CommandBuffer cmd);
 
 	// G-buffer accessors
-	vk::RenderPass renderPass() const { return m_gbufRenderPass; }
-	vk::RenderPass renderPassLoad() const { return m_gbufRenderPassLoad; }
-	vk::Framebuffer framebuffer() const { return m_gbufFramebuffer; }
+	vk::RenderPass renderPass() const { return m_velocityActive ? m_velocityRenderPass : m_gbufRenderPass; }
+	vk::RenderPass renderPassLoad() const { return m_velocityActive ? m_velocityRenderPassLoad : m_gbufRenderPassLoad; }
+	vk::Framebuffer framebuffer() const { return m_velocityActive ? m_velocityFramebuffer : m_gbufFramebuffer; }
 	vk::ImageView positionView() const { return m_gbufPosition.view; }
 	vk::ImageView normalView() const { return m_gbufNormal.view; }
 	vk::ImageView specularView() const { return m_gbufSpecular.view; }
@@ -351,11 +377,13 @@ public:
 	vk::Image normalImage() const { return m_gbufNormal.image; }
 
 	// MSAA accessors
-	vk::RenderPass msaaRenderPass() const { return m_msaaGbufRenderPass; }
-	vk::RenderPass msaaRenderPassLoad() const { return m_msaaGbufRenderPassLoad; }
-	vk::Framebuffer msaaFramebuffer() const { return m_msaaGbufFramebuffer; }
-	vk::RenderPass msaaResolveRenderPass() const { return m_msaaResolveRenderPass; }
-	vk::Framebuffer msaaResolveFramebuffer() const { return m_msaaResolveFramebuffer; }
+	vk::RenderPass msaaRenderPass() const { return m_velocityActive ? m_velocityMsaaRenderPass : m_msaaGbufRenderPass; }
+	vk::RenderPass msaaRenderPassLoad() const { return m_velocityActive ? m_velocityMsaaRenderPassLoad : m_msaaGbufRenderPassLoad; }
+	vk::Framebuffer msaaFramebuffer() const { return m_velocityActive ? m_velocityMsaaFramebuffer : m_msaaGbufFramebuffer; }
+	vk::RenderPass msaaResolveRenderPass() const { return m_velocityActive ? m_velocityResolveRenderPass : m_msaaResolveRenderPass; }
+	vk::Framebuffer msaaResolveFramebuffer() const { return m_velocityActive ? m_velocityResolveFramebuffer : m_msaaResolveFramebuffer; }
+	vk::ImageView msaaVelocityView() const { return m_msaaVelocity.view; }
+	vk::Image msaaVelocityImage() const { return m_msaaVelocity.image; }
 	vk::RenderPass msaaEmissiveCopyRenderPass() const { return m_msaaEmissiveCopyRenderPass; }
 	vk::Framebuffer msaaEmissiveCopyFramebuffer() const { return m_msaaEmissiveCopyFramebuffer; }
 	vk::ImageView msaaColorView() const { return m_msaaColor.view; }
@@ -382,10 +410,16 @@ private:
 		vk::ImageLayout depthInitialLayout;
 		bool useResolveDependency = false;
 		SCP_unordered_map<uint32_t, vk::AttachmentLoadOp> attachmentLoadOpOverrides = {};
+		bool includeVelocity = false;
+		vk::AttachmentLoadOp velocityLoadOp = vk::AttachmentLoadOp::eClear;
 	};
 	vk::RenderPass createGbufRenderPass(const GbufRenderPassConfig& config);
 	vk::Framebuffer createGbufFramebuffer(vk::RenderPass renderPass, bool includeComposite,
-	                                      bool useMsaaImages);
+	                                      bool useMsaaImages, const RenderTarget* velocity = nullptr);
+	bool createVelocityRenderPasses();
+	bool createVelocityTargets(const RenderTarget& drawnMotion);
+	void destroyVelocityTargets();
+	void destroyVelocityRenderPasses();
 
 	bool createTargets();
 	void destroyTargets();
@@ -425,6 +459,92 @@ private:
 	vk::RenderPass m_msaaEmissiveCopyRenderPass;   // 1 MS color att (for upsample)
 	vk::Framebuffer m_msaaEmissiveCopyFramebuffer;
 	bool m_msaaInitialized = false;
+
+	// ---- Variants with a motion vector attachment, created on first use ----
+	bool m_velocityActive = false;
+	RenderTarget m_msaaVelocity;
+	vk::RenderPass m_velocityRenderPass;
+	vk::RenderPass m_velocityRenderPassLoad;
+	vk::Framebuffer m_velocityFramebuffer;
+	vk::RenderPass m_velocityMsaaRenderPass;
+	vk::RenderPass m_velocityMsaaRenderPassLoad;
+	vk::Framebuffer m_velocityMsaaFramebuffer;
+	vk::RenderPass m_velocityResolveRenderPass;
+	vk::Framebuffer m_velocityResolveFramebuffer;
+};
+
+/**
+ * @brief Per-pixel screen motion for FSR
+ *
+ * Holds the total motion of each pixel since last frame, in image UV units, unjittered, pointing at where the
+ * pixel was. Resources are created on first use, because most configurations never need them.
+ */
+class VulkanMotionVectors {
+public:
+	static constexpr vk::Format FORMAT = vk::Format::eR16G16Sfloat;
+	// What geometry draws: its motion in xy, and in z the inverse of its view depth, 1/w of its clip position. The
+	// depth comes along so that it always belongs to whatever drew the motion, on any projection.
+	static constexpr vk::Format DRAWN_FORMAT = vk::Format::eR16G16B16A16Sfloat;
+	static constexpr vk::Format DEPTH_FORMAT = vk::Format::eR32Sfloat;
+	// Well outside any real motion. Tested in motion-vector-f.sdr and msaa-f.sdr.
+	static constexpr float NO_MOTION_WRITTEN = 1000.0f;
+
+	static bool wanted();
+
+	void init(PostProcessContext& ctx);
+	void destroyTargets();
+	void shutdown();
+
+	bool createResources();
+	const RenderTarget& drawnMotion() const { return m_drawnMotion; }
+
+	// Outside a render pass, with the drawn motion attachment still in eColorAttachmentOptimal and sceneDepthCopy
+	// holding this frame's final depth.
+	void execute(vk::CommandBuffer cmd, vk::ImageView sceneDepthCopy);
+
+	const RenderTarget& motion() const { return m_target; }
+	const RenderTarget& depth() const { return m_depth; }
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	RenderTarget m_drawnMotion;  // what geometry wrote during the scene
+	RenderTarget m_target;       // the drawn motion, with camera motion filled in everywhere else
+	RenderTarget m_depth;        // the depth that motion belongs to, including the cockpit, on the cockpit's projection
+	vk::RenderPass m_renderPass;
+	vk::Framebuffer m_framebuffer;
+};
+
+/**
+ * @brief FSR: temporal reconstruction of the HDR scene, ahead of bloom and tonemapping
+ *
+ * Owns AMD's context and the image FSR writes. Resources are created on first use.
+ */
+class VulkanUpscaler {
+public:
+	void init(PostProcessContext& ctx) { m_ctx = &ctx; }
+	void destroyTargets();
+
+	static bool wanted();
+	// The context was made for a different version than the one now chosen
+	bool versionChanged() const { return m_context && m_contextMajorVersion != Gr_fsr_major_version; }
+	bool createResources();
+	const RenderTarget& output() const { return m_output; }
+
+	// Before the scene's first pass. The image offset to draw this frame with, and the texture LOD bias to go with it.
+	void beginFrame(float& imageOffsetX, float& imageOffsetY, float& lodBias);
+	// Outside a render pass, with all inputs in eShaderReadOnlyOptimal. Leaves the output in eShaderReadOnlyOptimal.
+	// False if FSR failed, in which case the output holds nothing usable.
+	bool dispatch(vk::CommandBuffer cmd, const RenderTarget& color, const RenderTarget& depth, const RenderTarget& motion);
+
+private:
+	PostProcessContext* m_ctx = nullptr;
+	RenderTarget m_output;
+	void* m_context = nullptr; // ffxContext
+	int m_contextMajorVersion = 0;
+	int m_jitterPhaseCount = 1;
+	int m_jitterIndex = 0;
+	float m_jitterX = 0.0f;
+	float m_jitterY = 0.0f;
 };
 
 /**
@@ -603,6 +723,8 @@ public:
 	          const VulkanBloom& bloom);
 	void shutdown();
 
+	void setSceneColor(const RenderTarget& sceneColor) { m_sceneColor = &sceneColor; }
+
 	/**
 	 * @brief Recreate the extent-sized targets/framebuffers (render passes kept)
 	 *
@@ -776,14 +898,16 @@ public:
 	/**
 	 * @brief Recreate all extent-sized targets/framebuffers for a new resolution
 	 *
-	 * Called from VulkanRenderer::recreateSwapChain() after the device-idle
-	 * wait. Render passes, samplers, and the scratch UBO ring are extent-
+	 * Called by VulkanRenderer after a device-idle wait, when the swap chain or
+	 * the FSR output size changes. Render passes, samplers, and the scratch UBO ring are extent-
 	 * independent and kept alive, so every cached pipeline stays valid.
 	 * Individual subsystem failures are non-fatal (the subsystem is disabled,
 	 * matching init()); returns false only if the core scene targets could not
 	 * be recreated.
+	 *
+	 * @param outputExtent Size from tonemapping on, which FSR upscales the scene to
 	 */
-	bool resize(vk::Extent2D newExtent);
+	bool resize(vk::Extent2D newExtent, vk::Extent2D outputExtent);
 
 	/**
 	 * @brief Per-frame reset (called from VulkanRenderer::setupFrame after the frame fence wait)
@@ -801,7 +925,7 @@ public:
 	 * This render pass has RGBA16F color + depth attachments with loadOp=eClear.
 	 * Used between scene_texture_begin() and scene_texture_end().
 	 */
-	vk::RenderPass getSceneRenderPass() const { return m_sceneRenderPass; }
+	vk::RenderPass getSceneRenderPass() const { return m_velocityActive ? m_velocitySceneRenderPass : m_sceneRenderPass; }
 
 	/**
 	 * @brief Get the HDR scene render pass with loadOp=eLoad
@@ -810,12 +934,12 @@ public:
 	 * the same framebuffer. Used to resume scene rendering after
 	 * copy_effect_texture interrupts the pass.
 	 */
-	vk::RenderPass getSceneRenderPassLoad() const { return m_sceneRenderPassLoad; }
+	vk::RenderPass getSceneRenderPassLoad() const { return m_velocityActive ? m_velocitySceneRenderPassLoad : m_sceneRenderPassLoad; }
 
 	/**
 	 * @brief Get the HDR scene framebuffer
 	 */
-	vk::Framebuffer getSceneFramebuffer() const { return m_sceneFramebuffer; }
+	vk::Framebuffer getSceneFramebuffer() const { return m_velocityActive ? m_velocitySceneFramebuffer : m_sceneFramebuffer; }
 
 	/**
 	 * @brief Get the scene rendering extent
@@ -924,6 +1048,29 @@ public:
 	 * @param cmd Active command buffer (must be outside a render pass)
 	 */
 	void executeSMAA(vk::CommandBuffer cmd) { m_smaa.execute(cmd); }
+
+	// Selects whether this frame's scene writes motion vectors. Before the scene's first render pass.
+	void prepareMotionVectors();
+
+	void executeMotionVectors(vk::CommandBuffer cmd)
+	{
+		if (m_velocityActive) {
+			copySceneDepth(cmd);
+			m_motionVectors.execute(cmd, m_sceneDepthCopy.view);
+		}
+	}
+
+	// Selects whether FSR runs for this frame's scene. After prepareMotionVectors(), which it depends on.
+	void prepareUpscaler();
+
+	void executeUpscaler(vk::CommandBuffer cmd);
+
+	uint32_t sceneColorAttachmentCount() const
+	{
+		return m_velocityActive ? VulkanDeferredGBuffer::VELOCITY_COLOR_LOCATION_COUNT : 1;
+	}
+	// Attachment count is 2 or 3. The extra clear value is ignored on the plain passes.
+	std::array<vk::ClearValue, 3> sceneClearValues() const;
 
 	/**
 	 * @brief Execute post-processing effects (saturation, brightness, etc.)
@@ -1111,6 +1258,16 @@ public:
 		return {m_shadow.compareSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
 	}
 
+	/**
+	 * @brief Get a ready-to-use DescriptorImageInfo for raw (uncompared) shadow map reads
+	 *
+	 * Same image view as getShadowTextureInfo(), but with compare mode off, for the PCSS
+	 * blocker search (which needs actual depth values, not a compare result).
+	 */
+	vk::DescriptorImageInfo getShadowRawTextureInfo() const {
+		return {m_shadow.rawSampler(), m_shadow.depthView(), vk::ImageLayout::eShaderReadOnlyOptimal};
+	}
+
 	// ========== Fog / Volumetric Nebula ==========
 
 	/**
@@ -1217,6 +1374,17 @@ private:
 
 	// ---- Fog / volumetric nebula (self-contained subsystem) ----
 	VulkanFog m_fog;
+	VulkanMotionVectors m_motionVectors;
+	bool createVelocitySceneResources();
+	bool m_velocityActive = false;
+	vk::RenderPass m_velocitySceneRenderPass;
+	vk::RenderPass m_velocitySceneRenderPassLoad;
+	vk::Framebuffer m_velocitySceneFramebuffer;
+	VulkanUpscaler m_upscaler;
+	bool m_upscalerActive = false;
+	// Bloom and tonemapping read from here, which is FSR's output while FSR runs
+	const RenderTarget& postProcessInput() const { return m_upscalerActive ? m_upscaler.output() : m_sceneColor; }
+	void setPostProcessInput(const RenderTarget& input);
 
 	// ---- Distortion (ping-pong textures, self-contained subsystem) ----
 	VulkanDistortion m_distortion;

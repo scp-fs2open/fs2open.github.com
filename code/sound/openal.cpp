@@ -335,7 +335,7 @@ static void find_playback_device(OpenALInformation* info)
 		alcGetError(device);
 
 		// check how many sources we can create
-		static const int MIN_SOURCES = 48;	// MAX_CHANNELS + 16 spare
+		static const int MIN_SOURCES = 48;	// the 32 channels of no_enhanced_sound + 16 spare
 		int si = 0;
 
 		for (si = 0; si < MIN_SOURCES; si++) {

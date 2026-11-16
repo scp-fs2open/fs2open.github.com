@@ -59,14 +59,34 @@ extern vec3d G3_user_clip_point;
 extern bool Envmap_override;
 extern bool Shadow_override;
 
-size_t GL_vertex_data_in = 0;
+// Running total of the bytes held by live vertex and index buffers, for the profiler overlay's
+// memory panel (see opengl_get_geometry_bytes()). Uniform buffers and texture buffers stay out of
+// this total, which keeps it equal to the "geometry" group of the Vulkan backend.
+static size_t GL_geometry_bytes_used = 0;
+
+// Tells if a buffer of this OpenGL type counts as geometry for GL_geometry_bytes_used.
+static bool opengl_buffer_is_geometry(GLenum type)
+{
+	return (type == GL_ARRAY_BUFFER) || (type == GL_ELEMENT_ARRAY_BUFFER);
+}
+
+size_t opengl_get_geometry_bytes()
+{
+	return GL_geometry_bytes_used;
+}
 
 GLint GL_max_elements_vertices = 4096;
 GLint GL_max_elements_indices = 4096;
 
 GLuint Shadow_map_depth_texture = 0;
+GLuint Shadow_map_raw_sampler = 0;
 GLuint shadow_fbo = 0;
 int Shadow_texture_size = 0;
+
+// Number of layers in the shadow map texture array, kept from the moment
+// opengl_init_shadow_framebuffer() created the array. opengl_get_shadow_map_bytes() uses it, thus
+// a later change of the cascade counts cannot make that value wrong.
+static int Shadow_texture_layers = 0;
 
 gr_buffer_handle Transform_buffer_handle;
 
@@ -275,9 +295,11 @@ void gr_opengl_update_buffer_data(gr_buffer_handle handle, size_t size, const vo
 		glBufferData(buffer_obj.type, size, data, buffer_obj.gl_usage);
 	}
 
-	GL_vertex_data_in -= buffer_obj.size;
+	if (opengl_buffer_is_geometry(buffer_obj.type)) {
+		GL_geometry_bytes_used -= buffer_obj.size;
+		GL_geometry_bytes_used += size;
+	}
 	buffer_obj.size = size;
-	GL_vertex_data_in += buffer_obj.size;
 }
 
 void gr_opengl_update_buffer_data_offset(gr_buffer_handle handle, size_t offset, size_t size, const void* data)
@@ -365,7 +387,12 @@ void gr_opengl_delete_buffer(gr_buffer_handle handle)
 		glDeleteTextures(1, &buffer_obj.texture);
 	}
 
-	GL_vertex_data_in -= buffer_obj.size;
+	if (opengl_buffer_is_geometry(buffer_obj.type)) {
+		GL_geometry_bytes_used -= buffer_obj.size;
+	}
+	// The size must go to 0 here. opengl_destroy_all_buffers() calls this function for every
+	// handle, thus a buffer that the game already deleted comes through a second time.
+	buffer_obj.size = 0;
 
 	glDeleteBuffers(1, &buffer_obj.buffer_id);
 }
@@ -487,6 +514,25 @@ static bool opengl_init_shadow_framebuffer(int size)
 		// Everything is fine
 		mprintf(("Shadow framebuffer created successfully.\n"));
 		Shadow_texture_size = size;
+		Shadow_texture_layers = Num_shadow_cascades + Num_cockpit_shadow_cascades;
+
+		// Second sampler for Shadow_map_depth_texture, compare mode off, so PCSS blocker
+		// search (shadows.sdr) can read raw depth off the same texture that the compare
+		// sampler reads filtered visibility off -- see shadow_contact_hardening_supported()
+		// for why this needs a sampler object rather than a second glTexParameteri call.
+		if (shadow_contact_hardening_supported()) {
+			glGenSamplers(1, &Shadow_map_raw_sampler);
+			// GL_NEAREST: the blocker search wants the actual stored per-texel depth, not a
+			// hardware-filtered blend across the compare boundary -- deliberately different
+			// from the compare sampler's GL_LINEAR.
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+			glSamplerParameteri(Shadow_map_raw_sampler, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+		}
+
 		return true;
 	}
 
@@ -517,29 +563,28 @@ static bool opengl_init_shadow_framebuffer(int size)
 	return false;
 }
 
+size_t opengl_get_shadow_map_bytes()
+{
+	if (Shadow_map_depth_texture == 0) {
+		return 0;
+	}
+
+	// opengl_init_shadow_framebuffer() gives the texture array the internal format
+	// GL_DEPTH_COMPONENT24, which the driver holds in 4 bytes for each texel.
+	constexpr size_t DEPTH_COMPONENT24_BYTES = 4;
+
+	const auto size = static_cast<size_t>(Shadow_texture_size);
+	const auto layers = static_cast<size_t>(Shadow_texture_layers);
+
+	return size * size * layers * DEPTH_COMPONENT24_BYTES;
+}
+
 void opengl_tnl_init()
 {
 	Transform_buffer_handle = opengl_create_texture_buffer_object();
 
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		int size;
-		switch (Shadow_quality) {
-		case ShadowQuality::Low:
-			size = 512;
-			break;
-		case ShadowQuality::Medium:
-			size = 1024;
-			break;
-		case ShadowQuality::High:
-			size = 2048;
-			break;
-		case ShadowQuality::Ultra:
-			size = 4096;
-			break;
-		default:
-			size = 256;
-			break;
-		}
+		const int size = shadows_map_resolution();
 
 		if (!opengl_init_shadow_framebuffer(size)) {
 			mprintf(("Failed to create either shadow framebuffer. Disabling shadow support.\n"));
@@ -564,6 +609,15 @@ void opengl_tnl_shutdown()
 	gr_opengl_deferred_shutdown();
 
 	shadow_cascade_params_shutdown();
+
+	if ( Shadow_map_raw_sampler ) {
+		// Clear the tracked bindings before deleting -- glDeleteSamplers silently unbinds
+		// the sampler from every unit on the GL side, which would leave GL_state's tracking
+		// stale (BindSampler() would then skip a rebind of a since-deleted sampler name).
+		GL_state.Texture.BindSampler(SHADOW_MAP_RAW_TEXTURE_UNIT, 0);
+		glDeleteSamplers(1, &Shadow_map_raw_sampler);
+		Shadow_map_raw_sampler = 0;
+	}
 
 	if ( Shadow_map_depth_texture ) {
 		glDeleteTextures(1, &Shadow_map_depth_texture);
@@ -917,8 +971,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_MISC))
 			Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
-		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SHADOWS))
+		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SHADOWS)) {
 			Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
+			// SHADOW_MAP_RAW_TEXTURE_UNIT is reserved for this -- see the raw-sampler bind alongside
+			// "shadow_map" below. Set unconditionally (even when contact hardening is unsupported) for the
+			// same AMD unbound-uniform reason as the rest of this block; the shader's own
+			// penumbra_scale sentinel check is what prevents the read at runtime.
+			Current_shader->program->Uniforms.setTextureUniform("shadow_map_raw", SHADOW_MAP_RAW_TEXTURE_UNIT);
+		}
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_TRANSFORM))
 			Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
@@ -1001,6 +1061,9 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 		if (material_info->is_shadow_receiving()) {
 			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
+			if (Shadow_map_raw_sampler) {
+				GL_state.Texture.Enable(SHADOW_MAP_RAW_TEXTURE_UNIT, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture, Shadow_map_raw_sampler);
+			}
 		}
 
 		if (material_info->get_animated_effect() >= 0) {
