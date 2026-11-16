@@ -143,8 +143,10 @@ void ship_set_editor_group(ship& shipp, int group_bit, bool in_group)
 	if (in_group) {
 		shipp.group = (shipp.group < 0 ? 0 : shipp.group) | group_bit;
 	} else if (shipp.group >= 0) {
-		// A ship in no group keeps -1, so that the mission save writes no group data for it.
 		shipp.group &= ~group_bit;
+		// A ship in no group has -1, so that the mission save writes no group data for it.
+		if (shipp.group == 0)
+			shipp.group = -1;
 	}
 }
 
