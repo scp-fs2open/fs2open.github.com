@@ -20,11 +20,23 @@ void object_moved(object *objp)
 	{
 		// reset the already-handled flag (inefficient, but it's FRED, so who cares)
 		for (int i = 0; i < MAX_OBJECTS; i++)
-			Objects[i].flags.set(Object::Object_Flags::Docked_already_handled);
+			Objects[i].flags.remove(Object::Object_Flags::Docked_already_handled);
 
 		// move all docked objects docked to me
 		dock_move_docked_objects(objp);
 	}
+}
+
+int marked_objects_moved()
+{
+	int count = 0;
+	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Marked]) {
+			object_moved(objp);
+			count++;
+		}
+	}
+	return count;
 }
 
 bool query_valid_object(int index)

@@ -203,12 +203,16 @@ class Editor : public QObject {
 	 */
 	int create_wing();
 
+	enum class LockedObjects { Include, Skip };
+
 	/**
 	 * @brief Mark all ships within this wing
 	 *
 	 * @param[in] wing Index of the wing to mark
+	 * @param[in] locked Skip for the Select Wing commands: like a click in the viewport, they do not select
+	 *                   a locked ship. Include for a selection of the wing by name, for example in the Wing Editor.
 	 */
-	void mark_wing(int wing);
+	void mark_wing(int wing, LockedObjects locked);
 
 	bool query_single_wing_marked();
 
@@ -275,6 +279,8 @@ class Editor : public QObject {
 	void initialSetup();
 
 	void setupCurrentObjectIndices(int obj);
+	// Next or previous object: moves the selection one object forward or back in obj_used_list
+	void select_adjacent_object(bool forward);
 
 	SCP_vector<std::unique_ptr<EditorViewport>> _viewports;
 	EditorViewport* _lastActiveViewport = nullptr;

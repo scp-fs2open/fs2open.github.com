@@ -189,6 +189,10 @@ void RenderWidget::mouseDoubleClickEvent(QMouseEvent* event) {
 	event->ignore();
 }
 void RenderWidget::mousePressEvent(QMouseEvent* event) {
+	// RenderWindow forwards the mouse events with sendEvent(). Qt does not move the focus for such an event, so a
+	// click in the viewport did not take the focus from a toolbar box.
+	setFocus(Qt::MouseFocusReason);
+
 	// Orbit camera: middle button
 	if (event->button() == Qt::MiddleButton) {
 		if (_viewport != nullptr && _viewport->camera.getViewpoint() == 0 && _viewport->camera.getControlMode() == 0) {

@@ -27,6 +27,7 @@
 #include <graphics/light.h>
 #include <mod_table/mod_table.h>
 #include <cfile/cfile.h>
+#include <missioneditor/common.h>
 
 #include "mission/object.h"
 #include "prop/prop.h"
@@ -36,14 +37,14 @@
 namespace {
 const float CONVERT_DEGREES = 57.29578f; // conversion factor from radians to degrees
 
-const float FRED_DEFAULT_HTL_FOV = 0.485f;
 const float FRED_DEAFULT_HTL_DRAW_DIST = 300000.0f;
 
 const int FRED_COLOUR_WHITE = 0xffffff;
 const int FRED_COLOUR_YELLOW_GREEN = 0xc8ff00;
 
 void enable_htl() {
-	gr_set_proj_matrix((4.0f / 9.0f) * PI * FRED_DEFAULT_HTL_FOV,
+	// g3_set_view_matrix() sets Proj_fov from its zoom, so the projection always uses the field of view of the g3 view
+	gr_set_proj_matrix(Proj_fov,
 					   gr_screen.aspect * static_cast<float>(gr_screen.clip_width)
 						   / static_cast<float>(gr_screen.clip_height),
 					   1.0f,
@@ -993,7 +994,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	font::set_font(font::FONT1);
 	light_reset();
 
-	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, EDITOR_DEFAULT_FOV);
 
 	// Force max star detail so the editor always shows the full Num_stars count
 	// regardless of the player's graphics quality setting (Detail.num_stars can be 0).
@@ -1126,7 +1127,7 @@ void FredRenderer::render_frame(int cur_object_index,
 	gr_reset_clip();
 
 	g3_start_frame(0); // ** Accounted for
-	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, 0.5f);
+	g3_set_view_matrix(&_viewport->camera.eye_pos, &_viewport->camera.eye_orient, EDITOR_DEFAULT_FOV);
 }
 void FredRenderer::resize(int width, int height) {
 	// Make sure the following call targets the right view port

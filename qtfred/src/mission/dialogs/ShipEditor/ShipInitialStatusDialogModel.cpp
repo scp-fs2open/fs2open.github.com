@@ -336,19 +336,27 @@ void ShipInitialStatusDialogModel::undock(object* objp1, object* objp2)
 	ship_num = get_ship_from_obj(OBJ_INDEX(objp1));
 	other_ship_num = get_ship_from_obj(OBJ_INDEX(objp2));
 
+	object* moved_objp = nullptr;
 	if (_moveShipsWhenUndocking) {
 		if (ship_class_compare(Ships[ship_num].ship_info_index, Ships[other_ship_num].ship_info_index) <= 0) {
 			vm_vec_scale_add2(&objp2->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp2->instance].ship_info_index]));
+			moved_objp = objp2;
 		} else {
 			vm_vec_scale_add2(&objp1->pos,
 				&v,
 				ship_class_get_length(&Ship_info[Ships[objp1->instance].ship_info_index]) * -1.0f);
+			moved_objp = objp1;
 		}
 	}
 
 	ai_do_objects_undocked_stuff(objp1, objp2);
+
+	// The moved ship can have other docked partners. Move them after the undock, so that the
+	// ship that stays does not move too.
+	if (moved_objp != nullptr)
+		object_moved(moved_objp);
 
 	// check to see if one of these ships has an arrival cue of false.  If so, then
 	// reset it back to default value of true.  be sure to correctly update before

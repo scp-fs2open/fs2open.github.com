@@ -3,6 +3,7 @@
 #include "mission/Editor.h"
 #include "mission/EditorViewport.h"
 #include "mission/object.h"
+#include "missioneditor/sexp_annotation_model.h"
 
 #include <ui/util/menu.h>
 #include <ui/util/SignalBlockers.h>
@@ -2048,9 +2049,14 @@ void sexp_tree_view::applyVisuals(QTreeWidgetItem* it)
 	const auto color = it->data(0, BgColorRole).value<QColor>();
 	it->setToolTip(0, note);
 
-	// Background color for the entire row
 	if (color.isValid()) {
 		it->setBackground(0, QBrush(color));
+		// The text color of the theme can be unreadable on the annotation color
+		it->setForeground(0, QBrush(annotation_text_is_dark(color.red(), color.green(), color.blue()) ? Qt::black : Qt::white));
+	} else {
+		// Give the row the colors of the theme again
+		it->setData(0, Qt::BackgroundRole, QVariant());
+		it->setData(0, Qt::ForegroundRole, QVariant());
 	}
 }
 

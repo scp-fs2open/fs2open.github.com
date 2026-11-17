@@ -416,6 +416,9 @@ void SceneBrowserModel::selectAll()
 			if (!_filterIff.isEmpty() && team >= 0 && team < _filterIff.size() && !_filterIff[team])
 				continue;
 		}
+		// Like a click in the viewport, Select All does not select a locked object
+		if (ptr->flags[Object::Object_Flags::Locked_from_editing])
+			continue;
 		_editor->markObject(OBJ_INDEX(ptr));
 	}
 	_updatingFromBrowser = false;
@@ -442,7 +445,7 @@ void SceneBrowserModel::invertSelection()
 		int objNum = OBJ_INDEX(ptr);
 		if (ptr->flags[Object::Object_Flags::Marked])
 			_editor->unmarkObject(objNum);
-		else
+		else if (!ptr->flags[Object::Object_Flags::Locked_from_editing])
 			_editor->markObject(objNum);
 	}
 	_updatingFromBrowser = false;
