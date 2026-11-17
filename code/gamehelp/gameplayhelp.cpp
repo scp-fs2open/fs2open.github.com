@@ -126,7 +126,7 @@ SCP_vector<gameplay_help_section> Help_text;
 
 void gameplay_help_init_control_line(int id, gameplay_help_section &thisHelp)
 {
-	char buf[256];
+	SCP_string buf;
 
 	auto ci = &Control_config[id];
 
@@ -135,20 +135,18 @@ void gameplay_help_init_control_line(int id, gameplay_help_section &thisHelp)
 		return;
 	}
 
-	buf[0] = 0;
-
-	strcpy_s(buf, ci->first.textify().c_str());
+	buf = ci->first.textify();
 
 	if (!ci->second.empty()) {
-		strcat_s(buf, XSTR(", ", 129));
-		strcat_s(buf, ci->second.textify().c_str());
+		buf += XSTR(", ", 129);
+		buf += ci->second.textify();
 	}
 
 	if (ci->empty()) {
-		strcpy_s(buf, XSTR("no binding", 130));
+		buf = XSTR("no binding", 130);
 	}
 
-	thisHelp.key.push_back(buf);
+	thisHelp.key.push_back(std::move(buf));
 	thisHelp.text.push_back(XSTR(ci->text.c_str(), CONTROL_CONFIG_XSTR + id));
 }
 

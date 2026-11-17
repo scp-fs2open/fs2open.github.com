@@ -614,14 +614,13 @@ int translate_key_to_index(const char *key, bool find_override)
 	return -1;
 }
 
-const char *translate_key(char *key)
+bool translate_key(const char *key, SCP_string &out)
 {
 	int index = -1;
-	static char text[BTN_MSG_LEN] = {""};
 
 	index = translate_key_to_index(key, false);
 	if (index < 0) {
-		return nullptr;
+		return false;
 	}
 
 	const CC_bind &first = Control_config[index].first;
@@ -630,23 +629,23 @@ const char *translate_key(char *key)
 	Failed_key_index = index;
 
 	if (!first.empty() && !second.empty()) {
-		strcpy_s(text, first.textify().c_str());
-		strcat_s(text, " ");
-		strcat_s(text, XSTR("or", 1672));
-		strcat_s(text, " ");
-		strcat_s(text, second.textify().c_str());
+		out = first.textify();
+		out += " ";
+		out += XSTR("or", 1672);
+		out += " ";
+		out += second.textify();
 
 	} else if (!first.empty()) {
-		strcpy_s(text, first.textify().c_str());
+		out = first.textify();
 
 	} else if (!second.empty()) {
-		strcpy_s(text, second.textify().c_str());
+		out = second.textify();
 
 	} else {
-			strcpy_s(text, XSTR("None", 1673));
+			out = XSTR("None", 1673);
 	}
 
-	return text;
+	return true;
 }
 
 const char *textify_scancode(int code)
