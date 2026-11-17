@@ -86,7 +86,22 @@ SCP_string getJoystickGUID(SDL_Joystick* stick)
 	return joystickGUID;
 }
 
-bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
+// Identical sticks share a GUID, so a saved setting also keeps which of them it was: its place among them in our list
+int sameModelIndex(const Joystick* stick)
+{
+	int index = 0;
+	for (auto& other : joysticks) {
+		if (other.get() == stick) {
+			return index;
+		}
+		if (other->getGUID() == stick->getGUID()) {
+			++index;
+		}
+	}
+	return -1;
+}
+
+bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int model_index)
 {
 	if (guid.empty()) {
 		return false;
@@ -121,7 +136,12 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 	}
 
 	// Multiple sticks of the same model -> use the only one that's plugged in
-	return num_attached == 1 && testStick->isAttached();
+	if (num_attached == 1) {
+		return testStick->isAttached();
+	}
+
+	// Otherwise the saved place among them picks one
+	return model_index >= 0 && sameModelIndex(testStick) == model_index;
 }
 
 /**
@@ -169,7 +189,7 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 		GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
 	}
 
-	return joystickMatchesGuid(testStick, GUID);
+	return joystickMatchesGuid(testStick, GUID, -1);
 }
 
 /**
@@ -190,8 +210,12 @@ Joystick* joystick_deserialize(const json_t* value)
 		return nullptr;
 	}
 
+	// "id" can't carry this: older builds saved SDL's device index there, and Knossos saves the instance ID
+	auto model_index_json = json_object_get(value, "model_index");
+	int model_index = json_is_integer(model_index_json) ? static_cast<int>(json_integer_value(model_index_json)) : -1;
+
 	for (auto& test_stick : joysticks) {
-		if (joystickMatchesGuid(test_stick.get(), guid)) {
+		if (joystickMatchesGuid(test_stick.get(), guid, model_index)) {
 			return test_stick.get();
 		}
 	}
@@ -208,7 +232,13 @@ json_t* joystick_serializer(Joystick* joystick)
 		return json_null();
 	}
 
-	return json_pack("{sssi}", "guid", joystick->getGUID().c_str(), "id", -1);
+	return json_pack("{sssisi}",
+		"guid",
+		joystick->getGUID().c_str(),
+		"id",
+		-1,
+		"model_index",
+		sameModelIndex(joystick));
 }
 
 /**
@@ -255,6 +285,21 @@ SCP_string joystick_display(Joystick* stick)
 {
 	if (stick == nullptr) {
 		return XSTR("None", 1673);
+	}
+
+	// Sticks with the same name can't be told apart in the list, so it numbers them
+	int number = 0;
+	int count = 0;
+	for (auto& other : joysticks) {
+		if (other->getName() == stick->getName()) {
+			++count;
+			if (other.get() == stick) {
+				number = count;
+			}
+		}
+	}
+	if (count > 1) {
+		return stick->getName() + " (" + std::to_string(number) + ")";
 	}
 	return stick->getName();
 }
@@ -540,7 +585,10 @@ bool device_event_handler(const SDL_Event &evt)
 			
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
-				if (value[i] == addedStick)
+				// A new twin can shift which stick a saved setting means, so it never replaces one still plugged in
+				bool slot_free =
+					(pJoystick[i] == nullptr) || (pJoystick[i] == addedStick) || !pJoystick[i]->isAttached();
+				if (value[i] == addedStick && slot_free)
 				{
 					mprintf(("Joystick %i connected\n", i));
 					setPlayerJoystick(addedStick, i);
