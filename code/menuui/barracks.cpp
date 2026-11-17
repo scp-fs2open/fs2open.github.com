@@ -1618,7 +1618,7 @@ void barracks_do_frame(float  /*frametime*/)
 			if (Pilot_images[Pic_number] >= 0) {
 				int w, h;
 
-				bm_get_info(Pilot_images[Pic_number], &w, &h, NULL);
+				bm_get_original_size(Pilot_images[Pic_number], &w, &h);
 				// check for invalid pilot pic file
 				if ((w != PLAYER_PILOT_PIC_W) || (h != PLAYER_PILOT_PIC_H)) {
 					bm_release(Pilot_images[Pic_number]);
@@ -1637,7 +1637,7 @@ void barracks_do_frame(float  /*frametime*/)
 			if (Pilot_squad_images[Pic_squad_number] >= 0) {
 				int w, h;
 
-				bm_get_info(Pilot_squad_images[Pic_squad_number], &w, &h, NULL);
+				bm_get_original_size(Pilot_squad_images[Pic_squad_number], &w, &h);
 				// check for invalid pilot pic file
 				if ((w != PLAYER_SQUAD_PIC_W) || (h != PLAYER_SQUAD_PIC_H)) {
 					bm_release(Pilot_squad_images[Pic_squad_number]);

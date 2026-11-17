@@ -1775,7 +1775,7 @@ ADE_FUNC(drawImage,
 		return ade_set_error(L, "b", false);
 
 	int w, h;
-	if(bm_get_info(idx, &w, &h) < 0)
+	if(bm_get_original_size(idx, &w, &h) < 0)
 		return ADE_RETURN_FALSE;
 
 	if(x2!=INT_MAX)
@@ -1867,7 +1867,7 @@ ADE_FUNC(drawImageCentered,
 		return ade_set_error(L, "b", false);
 
 	int original_w, original_h;
-	if(bm_get_info(idx, &original_w, &original_h) < 0)
+	if(bm_get_original_size(idx, &original_w, &original_h) < 0)
 		return ADE_RETURN_FALSE;
 
 	if(w==INT_MAX)
@@ -1964,7 +1964,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "number", "Image width, or 0 if filename is invalid")
+ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets the original image width", "number", "Image width, or 0 if filename is invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1977,11 +1977,11 @@ ADE_FUNC(getImageWidth, l_Graphics, "string Filename", "Gets image width", "numb
 	if(idx < 0)
 		return ade_set_error(L, "i", 0);
 
-	bm_get_info(idx, &w);
+	bm_get_original_size(idx, &w);
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number", "Image height, or 0 if filename is invalid")
+ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets the original image height", "number", "Image height, or 0 if filename is invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
@@ -1994,7 +1994,7 @@ ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number
 	if(idx < 0)
 		return ade_set_error(L, "i", 0);
 
-	bm_get_info(idx, NULL, &h);
+	bm_get_original_size(idx, nullptr, &h);
 	return ade_set_args(L, "i", h);
 }
 

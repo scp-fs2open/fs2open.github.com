@@ -254,7 +254,7 @@ void loop_brief_do(float frametime)
 		int x;
 		int y;
 
-		bm_get_info((Loop_anim.streaming) ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y, NULL, NULL, NULL);
+		bm_get_original_size(Loop_anim.streaming ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y);
 		x = Loop_brief_anim_center_coords[gr_screen.res][0] - x / 2;
 		y = Loop_brief_anim_center_coords[gr_screen.res][1] - y / 2;
 		generic_anim_render(&Loop_anim, frametime, x, y, true);
@@ -264,7 +264,7 @@ void loop_brief_do(float frametime)
 		int x;
 		int y;
 
-		bm_get_info((Loop_anim.streaming) ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y, NULL, NULL, NULL);
+		bm_get_original_size(Loop_anim.streaming ? Loop_anim.bitmap_id : Loop_anim.first_frame, &x, &y);
 		x = Loop_brief_anim_center_coords[gr_screen.res][0] - x / 2;
 		y = Loop_brief_anim_center_coords[gr_screen.res][1] - y / 2;
 		generic_anim_render(&Loop_anim, frametime, x, y, true);

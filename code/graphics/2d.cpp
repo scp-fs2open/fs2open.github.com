@@ -2938,7 +2938,9 @@ void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 		return;
 	}
 
-	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
+	if (bm_get_original_size(gr_screen.current_bitmap, &_w, &_h) < 0) {
+		return;
+	}
 
 	if (scale_factor != 1.0f) {
 		_w = static_cast<int>(_w * scale_factor);

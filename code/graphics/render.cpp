@@ -1327,9 +1327,9 @@ static void draw_bitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, 
 	for (int i = 0; i < n_bm; i++) {
 		bitmap_2d_list* l = &list[i].screen_rect;
 
-		// if no valid hight or width values were given get some from the bitmap
+		// Default the destination rectangle to the bitmap's original size.
 		if ((l->w <= 0) || (l->h <= 0)) {
-			bm_get_info(gr_screen.current_bitmap, &l->w, &l->h, nullptr, nullptr, nullptr);
+			bm_get_original_size(gr_screen.current_bitmap, &l->w, &l->h);
 		}
 
 		if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {

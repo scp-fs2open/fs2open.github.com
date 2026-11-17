@@ -1619,7 +1619,7 @@ bool gr_compare_color_values(const color& clr1, const color& clr2);
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
-// new bitmap functions
+// Draw the full bitmap at its original dimensions, adjusted by scale_factor and resize_mode.
 void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
 

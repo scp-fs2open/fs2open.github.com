@@ -5,6 +5,7 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "ktxutils/etcdec.h"
+#include "scripting/scripting.h"
 #include "util/FSTestFixture.h"
 
 #include <algorithm>
@@ -301,6 +302,36 @@ TEST_F(DDSBitmapOriginalSizeTest, reload_updates_original_size_after_validation)
 	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
 	EXPECT_EQ(256, original_width);
 	EXPECT_EQ(256, original_height);
+	bm_release(handle);
+}
+
+TEST_F(DDSBitmapOriginalSizeTest, lua_reports_the_original_size_after_dropping_a_mip)
+{
+	std::unique_ptr<CFILE> fp(cfopen(source_name, "wb", CF_TYPE_CACHE));
+	ASSERT_NE(nullptr, fp);
+	write_header(fp.get(), 512, 1024, 2);
+	const SCP_vector<ubyte> blocks(dds_compressed_mip_size(512, 1024, 8) + dds_compressed_mip_size(256, 512, 8), 0);
+	ASSERT_EQ(static_cast<int>(blocks.size()), cfwrite(blocks.data(), 1, static_cast<int>(blocks.size()), fp.get()));
+	fp.reset();
+
+	const int handle = bm_load(source_name);
+	ASSERT_GE(handle, 0);
+	int width = 0, height = 0;
+	ASSERT_GE(bm_get_info(handle, &width, &height), 0);
+	ASSERT_EQ(256, width);
+	ASSERT_EQ(512, height);
+
+	script_state lua("DDS image size test");
+	ASSERT_NE(0, lua.CreateLuaState());
+	const auto script = SCP_string("local name = '") + source_name + "'\n" + R"(
+		assert(gr.getImageWidth(name) == 512)
+		assert(gr.getImageHeight(name) == 1024)
+		local tex = gr.loadTexture(name)
+		assert(tex:getWidth() == 512)
+		assert(tex:getHeight() == 1024)
+		tex:unload()
+	)";
+	EXPECT_TRUE(lua.EvalString(script.c_str()));
 	bm_release(handle);
 }
 

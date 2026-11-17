@@ -773,7 +773,8 @@ void techroom_anim_render(float frametime)
 	if(Current_list->at(Cur_entry).animation.num_frames > 0)
 	{
 		//grab dimensions
-		bm_get_info((Current_list->at(Cur_entry).animation.streaming) ? Current_list->at(Cur_entry).animation.bitmap_id : Current_list->at(Cur_entry).animation.first_frame, &x, &y, nullptr, nullptr, nullptr);
+		const auto& animation = Current_list->at(Cur_entry).animation;
+		bm_get_original_size(animation.streaming ? animation.bitmap_id : animation.first_frame, &x, &y);
 		//get the centre point - adjust
 		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
 		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;
@@ -782,7 +783,7 @@ void techroom_anim_render(float frametime)
 	// if our active item has a bitmap instead of an animation, draw it
 	else if((Cur_entry >= 0) && (Current_list->at(Cur_entry).bitmap >= 0)){
 		//grab dimensions
-		bm_get_info(Current_list->at(Cur_entry).bitmap, &x, &y, nullptr, nullptr, nullptr);
+		bm_get_original_size(Current_list->at(Cur_entry).bitmap, &x, &y);
 		//get the centre point - adjust
 		x = Tech_ani_centre_coords[gr_screen.res][0] - x / 2;
 		y = Tech_ani_centre_coords[gr_screen.res][1] - y / 2;

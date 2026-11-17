@@ -819,8 +819,8 @@ void credits_do_frame(float  /*frametime*/)
 		Assert(percent >= 0 && percent <= 100);
 
 		// get width and height
-		bm_get_info(bm1, &bw1, &bh1, NULL, NULL, NULL);	
-		bm_get_info(bm2, &bw2, &bh2, NULL, NULL, NULL);	
+		bm_get_original_size(bm1, &bw1, &bh1);
+		bm_get_original_size(bm2, &bw2, &bh2);
 	
 		// determine where to draw the coords
 		bx1 = Credits_image_coords[gr_screen.res][CREDITS_X_COORD] + ((Credits_image_coords[gr_screen.res][CREDITS_W_COORD] - bw1)/2);
