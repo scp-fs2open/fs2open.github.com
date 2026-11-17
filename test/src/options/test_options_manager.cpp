@@ -686,27 +686,39 @@ TEST_F(OptionsManagerOverride, HudFlagOptionsAreRegistered)
 	}
 }
 
-// These four are read once when the HUD is built, so a change after startup must ask for a restart.
+// These three are read once when the HUD is built, so a change after startup must ask for a restart.
 TEST_F(OptionsManagerOverride, HudStartupOptionsApplyOnlyOnInitialLoad)
 {
 	HudOptionGlobalsGuard guard;
 	Cmdline_orb_radar = 0;
 	Cmdline_dualscanlines = 0;
 	Cmdline_rearm_timer = 0;
-	Extra_target_info = false;
 
-	for (const char* key : {"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer", "HUD.TargetInfo"}) {
+	for (const char* key : {"HUD.OrbRadar", "HUD.DualScanLines", "HUD.RearmTimer"}) {
 		auto* opt = OptionsManager::instance()->getOptionByKey(key);
 		ASSERT_NE(opt, nullptr) << key;
 		OptionsManager::instance()->setOverride(key, std::unique_ptr<json_t>(json_true()), "-test_flag");
 		opt->loadInitial();
 		ASSERT_FALSE(opt->valueChanged(json_false())) << key;
+		ASSERT_TRUE(opt->getIsOnce()) << key;
 	}
 
 	ASSERT_EQ(Cmdline_orb_radar, 1);
 	ASSERT_EQ(Cmdline_dualscanlines, 1);
 	ASSERT_EQ(Cmdline_rearm_timer, 1);
+}
+
+TEST_F(OptionsManagerOverride, TargetInfoOptionAppliesLive)
+{
+	HudOptionGlobalsGuard guard;
+	auto* opt = OptionsManager::instance()->getOptionByKey("HUD.TargetInfo");
+	ASSERT_NE(opt, nullptr);
+
+	Extra_target_info = false;
+	ASSERT_TRUE(opt->valueChanged(json_true()));
 	ASSERT_TRUE(Extra_target_info);
+	ASSERT_TRUE(opt->valueChanged(json_false()));
+	ASSERT_FALSE(Extra_target_info);
 }
 
 TEST_F(OptionsManagerOverride, BallisticGaugeOptionAppliesLive)
