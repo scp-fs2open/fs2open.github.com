@@ -181,12 +181,12 @@ TEST_F(DDSConversionResizeTest, resized_dxt5_skips_top_mip_and_writes_rgba8_bloc
 	EXPECT_EQ(32, bpp);
 	EXPECT_TRUE(std::all_of(data.begin() + expected_size, data.end(), [](ubyte value) { return value == sentinel; }));
 
-	const auto check_block = [&data](size_t offset, ubyte color, ubyte alpha) {
+	const auto check_block = [&data](size_t offset, ubyte expected_color, ubyte alpha) {
 		SCOPED_TRACE(::testing::Message() << "ETC2 block at byte " << offset);
 		alignas(uint) std::array<ubyte, 4 * 4 * 4> rgba{};
 		etcdec_eac_rgba(data.data() + offset, rgba.data(), 4 * 4);
 		for (size_t channel = 0; channel < 3; ++channel) {
-			EXPECT_NEAR(color, rgba[channel], 8);
+			EXPECT_NEAR(expected_color, rgba[channel], 8);
 		}
 		EXPECT_NEAR(alpha, rgba[3], 8);
 	};
