@@ -25,6 +25,7 @@
 #include "io/key.h"
 #include "io/timer.h"
 #include "jpgutils/jpgutils.h"
+#include "mod_table/mod_table.h"
 #include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "pcxutils/pcxutils.h"
@@ -883,6 +884,16 @@ const char *bm_get_filename(int handle) {
 	return entry->filename;
 }
 
+const char *bm_get_image_filename(int handle) {
+	auto entry = bm_get_entry(handle);
+
+	// an EFF entry stores the file of its individual image separately
+	if (entry->type == BM_TYPE_EFF)
+		return entry->info.ani.eff.filename;
+
+	return entry->filename;
+}
+
 void bm_get_filename(int bitmapnum, char *filename) {
 	if (!bm_is_valid(bitmapnum)) {
 		strcpy(filename, "");
@@ -1391,12 +1402,20 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	int frames = 0, fps = 30, keyframe = 0;
 	char ext[8];
 	BM_TYPE c_type = BM_TYPE_NONE;
-	char file_text[1024];
-	char file_text_raw[1024];
 
 	memset(ext, 0, sizeof(ext));
-	memset(file_text, 0, sizeof(file_text));
-	memset(file_text_raw, 0, sizeof(file_text_raw));
+
+	// cf_find_file_location reports the stored size, which is smaller than the text for a compressed file
+	CFILE* eff_cfp = cfopen(filename, "rb", dir_type);
+	const size_t file_len = (eff_cfp != nullptr) ? static_cast<size_t>(std::max(cfilelength(eff_cfp), 0)) : 0;
+	if (eff_cfp != nullptr) {
+		cfclose(eff_cfp);
+	}
+
+	// encrypted text unpacks 7 bytes into 8, and outside Unicode mode processing can turn one character into two
+	const size_t raw_len = file_len + file_len / 7 + 16;
+	SCP_vector<char> file_text_raw(raw_len, '\0');
+	SCP_vector<char> file_text(Unicode_text_mode ? raw_len : raw_len * 2, '\0');
 
 	// pause anything that may happen to be parsing right now
 	pause_parse();
@@ -1404,8 +1423,8 @@ bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int
 	try
 	{
 		// now start parsing the EFF
-		read_file_text(filename, dir_type, file_text, file_text_raw);
-		reset_parse(file_text);
+		read_file_text(filename, dir_type, file_text.data(), file_text_raw.data());
+		reset_parse(file_text.data());
 
 		required_string("$Type:");
 		stuff_string(ext, F_NAME, sizeof(ext));
@@ -3093,6 +3112,43 @@ int bm_reload(int bitmap_handle, const char* filename) {
 
 	if (entry->ref_count) {
 		nprintf(("BmpMan", "Trying to reload a bitmap that is still locked. Filename: %s, ref_count: %d", entry->filename, entry->ref_count));
+		return -1;
+	}
+
+	// locking fills a buffer sized for the slot's current image, so a file that differs from it is refused
+	int type_idx = -1;
+	for (int i = 0; i < BM_NUM_TYPES; i++) {
+		if (bm_type_list[i] == entry->type) {
+			type_idx = i;
+			break;
+		}
+	}
+	if (type_idx < 0 || strlen(filename) > MAX_FILENAME_LEN - 5) {
+		return -1;
+	}
+
+	char full_name[MAX_FILENAME_LEN];
+	strcpy_s(full_name, filename);
+	strcat_s(full_name, bm_ext_list[type_idx]);
+
+	CFILE* img_cfp = cfopen(full_name, "rb", entry->dir_type);
+	if (img_cfp == nullptr) {
+		return -1;
+	}
+
+	int w = 0, h = 0, bpp = 0, mm_lvl = 0;
+	BM_TYPE c_type = BM_TYPE_NONE;
+	size_t size = 0;
+	const int rc = bm_load_info(entry->type, full_name, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &size);
+	cfclose(img_cfp);
+	if (rc != 0) {
+		return -1;
+	}
+
+	// compared instead of mem_taken, which bm_lock_pcx rewrites to the size it locked at
+	if (w != entry->bm.w || h != entry->bm.h || bpp != entry->bm.true_bpp || c_type != entry->comp_type ||
+		mm_lvl != entry->num_mipmaps) {
+		mprintf(("BMPMAN: '%s' differs in size or format from '%s', not reloading\n", full_name, entry->filename));
 		return -1;
 	}
 

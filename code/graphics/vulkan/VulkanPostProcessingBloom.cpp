@@ -139,8 +139,9 @@ bool VulkanBloom::init(PostProcessContext& ctx, const RenderTarget& sceneColor)
 
 bool VulkanBloom::createTargets()
 {
-	m_width = m_ctx->sceneExtent.width / 2;
-	m_height = m_ctx->sceneExtent.height / 2;
+	// Sized from the input, which is FSR's output while it runs and the scene otherwise
+	m_width = m_sceneColor->width / 2;
+	m_height = m_sceneColor->height / 2;
 
 	const uint32_t mipLevels = MAX_MIP_BLUR_LEVELS;
 
@@ -238,8 +239,8 @@ bool VulkanBloom::createTargets()
 		fbInfo.renderPass = m_compositeRenderPass;
 		fbInfo.attachmentCount = 1;
 		fbInfo.pAttachments = &m_sceneColor->view;
-		fbInfo.width = m_ctx->sceneExtent.width;
-		fbInfo.height = m_ctx->sceneExtent.height;
+		fbInfo.width = m_sceneColor->width;
+		fbInfo.height = m_sceneColor->height;
 		fbInfo.layers = 1;
 
 		try {
@@ -405,7 +406,7 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 
 		m_ctx->drawFullscreenTriangle(cmd, m_compositeRenderPass,
 			m_sceneColorFB,
-			m_ctx->sceneExtent,
+			vk::Extent2D(m_sceneColor->width, m_sceneColor->height),
 			SDR_TYPE_POST_PROCESS_BLOOM_COMP,
 			m_tex[0].fullView, m_ctx->mipmapSampler,
 			&compData, sizeof(compData),

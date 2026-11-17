@@ -27,6 +27,7 @@ extern void shockwave_page_in();
 extern void shield_hit_page_in();
 extern void asteroid_page_in();
 extern void neb2_page_in();
+extern void nebl_page_in();
 extern void message_pagein_mission_messages();
 extern void model_page_in_stop();
 
@@ -57,6 +58,7 @@ void level_page_in()
 	shield_hit_page_in();
 	asteroid_page_in();
 	neb2_page_in();
+	nebl_page_in();
 
 	// preload mission messages if NOT running low-memory (greater than 48MB)
 	if (game_using_low_mem() == false) {

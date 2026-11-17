@@ -25,6 +25,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "graphics/post_processing.h"
 #include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
@@ -6181,6 +6182,14 @@ void parse_one_background(background_t *background)
 		sle.div_x = 1;
 		sle.div_y = 1;
 
+		// apparent diameter in degrees, overriding both the sun's stars.tbl entry and the
+		// size that would otherwise be measured from its bitmap. Optional, so missions
+		// written before 26.3 simply don't have it
+		if (optional_string("+AngularSize:")) {
+			stuff_float(&sle.angular_size);
+			sle.angular_size = stars_check_angular_size(sle.angular_size, "+AngularSize:", sle.filename);
+		}
+
 		// add it
 		background->suns.push_back(sle);
 	}
@@ -7391,6 +7400,7 @@ void mission_init(mission *pm, bool quick_init)
 
 	// This could be set with a sexp, so we should reset it here
 	Motion_debris_override = false;
+	Lightshafts_override = false;
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();
@@ -9690,6 +9700,22 @@ bool check_for_25_1_data()
 	{
 		if (Wings[wingnum].has_display_name())
 			return true;
+	}
+
+	return false;
+}
+
+bool check_for_26_3_data()
+{
+	// a sun that carries its own apparent diameter (+AngularSize:) can't be represented
+	// in an older mission file
+	for (const auto &background : Backgrounds)
+	{
+		for (const auto &sun : background.suns)
+		{
+			if (sun.angular_size >= 0.0f)
+				return true;
+		}
 	}
 
 	return false;
