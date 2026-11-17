@@ -1,9 +1,11 @@
 
 #include <cfile/cfile.h>
 #include <cfile/cfilesystem.h>
+#include <cmdline/cmdline.h>
 #include <globalincs/systemvars.h>
 #include <graphics/font.h>
 #include <gtest/gtest.h>
+#include <localization/localize.h>
 #include <osapi/dialogs.h>
 #include <utils/finally.h>
 
@@ -215,6 +217,99 @@ TEST_F(CFileTest, subfolder_list)
 	table_files.clear();
 	ASSERT_EQ(2, cf_get_file_list(table_files, CF_TYPE_TABLES, "*\\*.tbl", CF_SORT_NAME));
 	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
+}
+
+// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, which define the languages gr and tw.
+// In the test data, a file of 4 bytes ("base") is the original and a file of 9 bytes ("localized") is in a
+// language subfolder.
+class CFileLanguageSubdirTest : public test::FSTestFixture
+{
+ public:
+	CFileLanguageSubdirTest() : test::FSTestFixture(INIT_NONE) {}
+
+ protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+
+		SCP_string test_dir = "cfile";
+		test_dir += DIR_SEPARATOR_CHAR;
+		test_dir += ::testing::UnitTest::GetInstance()->current_test_info()->name();
+		test_dir += DIR_SEPARATOR_CHAR;
+
+		// Cmdline_mod is a list of null-terminated names, ended by an empty name
+		SCP_string modlist = test_dir + "pack";
+		modlist += '\0';
+		modlist += test_dir + "base";
+		modlist += '\0';
+
+		delete[] Cmdline_mod;
+		Cmdline_mod = new char[modlist.size() + 1];
+		memcpy(Cmdline_mod, modlist.c_str(), modlist.size() + 1);
+
+		SCP_string cfile_dir(TEST_DATA_PATH);
+		cfile_dir += DIR_SEPARATOR_CHAR;
+		cfile_dir += "test"; // Cfile expects something after the path
+
+		ASSERT_FALSE(cfile_init(cfile_dir.c_str()));
+
+		lcl_init(-1);
+	}
+
+	void TearDown() override
+	{
+		test::FSTestFixture::TearDown();
+
+		cfile_close();
+	}
+};
+
+TEST_F(CFileLanguageSubdirTest, language_subdir_other_root)
+{
+	// the localized files can be found by naming the subfolder
+	auto loc = cf_find_file_location("gr/font01.vf", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	loc = cf_find_file_location("tw/brief1.ogg", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	// a bare name should find the original in the lower-priority root, not the localized file in the pack
+	loc = cf_find_file_location("font01.vf", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(4u, loc.size) << "found " << loc.full_name;
+
+	loc = cf_find_file_location("brief1.ogg", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(4u, loc.size) << "found " << loc.full_name;
+}
+
+TEST_F(CFileLanguageSubdirTest, language_subdir_only_localized)
+{
+	// only gr/only_gr.vf exists, so the bare name finds nothing
+	EXPECT_FALSE(cf_find_file_location("only_gr.vf", CF_TYPE_ANY).found);
+
+	auto loc = cf_find_file_location("gr/only_gr.vf", CF_TYPE_FONT);
+	ASSERT_TRUE(loc.found);
+	EXPECT_EQ(9u, loc.size);
+
+	SCP_vector<SCP_string> fonts;
+	cf_get_file_list(fonts, CF_TYPE_FONT, "*.vf", CF_SORT_NAME);
+	EXPECT_FALSE(fonts.empty());
+	EXPECT_EQ(std::find(fonts.begin(), fonts.end(), "only_gr"), fonts.end());
+
+	// listing the language subfolder includes the subfolder in each name, which SCPUI's font loading relies on
+	fonts.clear();
+	cf_get_file_list(fonts, CF_TYPE_FONT, "gr/*.vf", CF_SORT_NAME);
+	EXPECT_NE(std::find(fonts.begin(), fonts.end(), "gr" DIR_SEPARATOR_STR "only_gr"), fonts.end());
+
+	constexpr int max_fonts = 64;
+	char font_arr[max_fonts][MAX_FILENAME_LEN];
+	int num_fonts = cf_get_file_list_preallocated(max_fonts, font_arr, nullptr, CF_TYPE_FONT, "*.vf");
+	EXPECT_GT(num_fonts, 0);
+	for (int i = 0; i < num_fonts; ++i)
+		EXPECT_STRNE("only_gr", font_arr[i]);
 }
 
 namespace {
