@@ -69,6 +69,19 @@ class VulkanStateTracker {
 	 */
 	void setViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f);
 
+	// In gr_screen units, scaled by the screen scale
+	void setScreenViewport(float x, float y, float width, float height);
+
+	// Framebuffer pixels per gr_screen unit for engine-issued viewports, scissors and clears. Above 1 only in the
+	// composition pass while FSR upscales; every render pass begin resets it to 1.
+	void setScreenScale(float x, float y);
+	vk::Rect2D screenToFramebuffer(const vk::Rect2D& rect) const;
+
+	// FSR's subpixel jitter and texture LOD bias, applied only in the scene's own passes. Jittering the viewport rather
+	// than the projection also moves CPU-projected backgrounds, and leaves the matrices motion vectors and the HUD use.
+	void setUpscalerSceneState(float jitterX, float jitterY, float lodBias);
+	float getMaterialLodBias() const { return isUpscaledScenePass() ? m_upscalerLodBias : 0.0f; }
+
 	/**
 	 * @brief Set scissor rectangle (dynamic state)
 	 */
@@ -134,10 +147,15 @@ class VulkanStateTracker {
 
 	/**
 	 * @brief Bind descriptor set
+	 *
+	 * @param dynamicOffsets Offsets for the set layout's eUniformBufferDynamic
+	 *        bindings, ordered by binding number. Must point to at least
+	 *        VulkanDescriptorManager::getDynamicOffsetCount(setIndex) entries
+	 *        (DescriptorWriter::dynamicOffsets() produces exactly that); may be
+	 *        null only for a set that declares none.
 	 */
-	void bindDescriptorSet(DescriptorSetIndex setIndex,
-		vk::DescriptorSet set,
-		const SCP_vector<uint32_t>& dynamicOffsets = {});
+	void
+	bindDescriptorSet(DescriptorSetIndex setIndex, vk::DescriptorSet set, const uint32_t* dynamicOffsets);
 
 	// ========== Buffer Binding ==========
 
@@ -293,7 +311,7 @@ class VulkanStateTracker {
 	 *
 	 * Must be called before every draw command to ensure dirty dynamic state
 	 * (viewport, scissor, depth bias, stencil ref, line width) is flushed.
-	 * applyMaterial() sets depth bias/stencil AFTER bindPipeline(), so if
+	 * applyMaterial() sets the stencil reference AFTER bindPipeline(), so if
 	 * the pipeline didn't change, those changes would be lost without this.
 	 */
 	void applyDynamicState();
@@ -312,6 +330,22 @@ class VulkanStateTracker {
 
 	// Descriptor sets
 	std::array<vk::DescriptorSet, static_cast<size_t>(DescriptorSetIndex::Count)> m_boundDescriptorSets;
+	// Dynamic offsets the currently-bound set was bound with, so an offset-only
+	// change still forces a rebind (see bindDescriptorSet).
+	std::array<std::array<uint32_t, DescriptorWriter::MAX_DYNAMIC_OFFSETS_PER_SET>,
+		static_cast<size_t>(DescriptorSetIndex::Count)>
+		m_boundDynamicOffsets{};
+
+	// Only the scene's passes have the motion vector location the upscaler requires.
+	bool isUpscaledScenePass() const { return m_colorAttachmentCount > PipelineConfig::VELOCITY_ATTACHMENT; }
+
+	float m_screenScaleX = 1.0f;
+	float m_screenScaleY = 1.0f;
+	bool m_viewportInScreenUnits = false;
+
+	float m_upscalerJitterX = 0.0f;
+	float m_upscalerJitterY = 0.0f;
+	float m_upscalerLodBias = 0.0f;
 
 	// Dynamic state
 	vk::Viewport m_viewport;

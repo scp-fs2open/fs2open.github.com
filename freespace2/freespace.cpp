@@ -63,6 +63,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/debug_sphere.h"
+#include "graphics/2d.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -212,6 +213,7 @@
 #include <stdexcept>
 
 #include "imgui.h"
+#include "implot.h"
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -1017,11 +1019,6 @@ void game_level_close()
 
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			model_free_all();			// Free all existing models if standalone server
-
-			// clean out interp data as it's better to allocate as needed here instead
-			// of letting it use a bunch of memory
-			extern void model_deallocate_interp_data();
-			model_deallocate_interp_data();
 		}
 	}
 	else
@@ -1477,6 +1474,7 @@ void game_post_level_init()
 {
 	TRACE_SCOPE(tracing::LoadPostMissionLoad);
 
+	gr_reset_temporal_history();
 	HUD_init();
 	hud_setup_escort_list();
 	mission_hotkey_set_defaults();	// set up the default hotkeys (from mission file)
@@ -1886,6 +1884,7 @@ void game_init()
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
 	ImGui::CreateContext();
+	ImPlot::CreateContext();
 
 	Framerate_delay = 0;
 
@@ -2063,6 +2062,9 @@ void game_init()
 
 	font::init();					// loads up all fonts
 	font::checkFontOptions();
+
+	// Initialize the mod-defined ImGui font after the font tables have been loaded.
+	gr_init_imgui_font();
 	
 	// add title screen
 	game_title_screen_display();
@@ -2353,27 +2355,9 @@ void game_show_framerate()
 	}
 #endif
 
-	if ((Show_framerate && HUD_draw) || Cmdline_frame_profile || Cmdline_bmpman_usage) {
+	if ((Show_framerate && HUD_draw) || Cmdline_bmpman_usage) {
 
 		gr_set_color_fast(&HUD_color_debug);
-
-		if (Cmdline_frame_profile) {
-			// Split frame profile into two columns if necessary to avoid losing trace data
-			int fp_start_y = gr_screen.center_offset_y + 100 + line_height;
-			int fp_line_limit = (gr_screen.max_h - fp_start_y) / line_height;
-			size_t fp_column_break = 0;
-			auto fp_trace_str = tracing::get_frame_profile_output();
-
-			for (int i = 0; i < fp_line_limit && fp_column_break < fp_trace_str.length(); i++) {
-				fp_column_break = fp_trace_str.find_first_of('\n', fp_column_break+1);
-			}
-
-			gr_string(gr_screen.center_offset_x + 20, fp_start_y, fp_trace_str.substr(0,fp_column_break).c_str(), GR_RESIZE_NONE);
-
-			if (fp_column_break < fp_trace_str.length()) {
-				gr_string(gr_screen.max_w / 2, fp_start_y, fp_trace_str.substr(fp_column_break, fp_trace_str.npos).c_str(), GR_RESIZE_NONE);
-			}
-		}
 
 		if (Show_framerate) {
 			if (frametotal != 0.0f)
@@ -2489,7 +2473,6 @@ void game_show_framerate()
 	modelstats_num_polys = 0;
 	modelstats_num_polys_drawn = 0;
 	modelstats_num_verts = 0;
-	modelstats_num_sortnorms = 0;
 #endif
 }
 
@@ -3321,6 +3304,9 @@ camid game_render_frame_setup()
 	// This code is supposed to detect camera "cuts"... like going between
 	// different views.
 	bool camera_cut = false;
+	if (last_Viewer_mode != Viewer_mode) {
+		gr_reset_temporal_history();
+	}
 	if ( (last_Viewer_mode != Viewer_mode)
 		|| (last_Game_mode != Game_mode)
 		|| (fov_changed)
@@ -3653,6 +3639,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_capture_scene_camera();
 
 	if ( Game_subspace_effect )	{
 		stars_draw(0,0,0,1,0);
@@ -4447,10 +4434,6 @@ void game_frame(bool paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	if (Cmdline_frame_profile) {
-		tracing::frame_profile_process_frame();
-	}
-
 	DEBUG_GET_TIME( total_time2 )
 
 #ifndef NDEBUG
@@ -4753,6 +4736,11 @@ int game_check_key()
 
 bool pause_if_unfocused()
 {
+	// nobody is at the keyboard in a noninteractive run, so losing focus must not stop it
+	if (Cmdline_noninteractive) {
+		return false;
+	}
+
 	if (Using_in_game_options) {
 		return UnfocusedPauseOption->getValue();
 	} else {
@@ -7193,6 +7181,7 @@ void game_shutdown(void)
 		std_deinit_standalone();
 	}
 
+	ImPlot::DestroyContext();
 	ImGui::DestroyContext();
 
 	os_cleanup();
@@ -7206,7 +7195,7 @@ void game_shutdown(void)
 		Cmdline_mod = nullptr;
 	}
 
-	lcl_xstr_close();
+	lcl_close();
 
 	threading::shut_down_task_pool();
 }
@@ -7541,7 +7530,6 @@ void Time_model( int modelnum )
 
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
-		model_set_detail_level(0);		// use highest detail level
 		model_render_immediate( &render_info, modelnum, &model_orient, &model_pos );	//|MR_NO_POLYS );
 
 		g3_end_frame();
@@ -8296,3 +8284,10 @@ int main(int argc, char *argv[])
 
 	return result;
 }
+
+#ifdef __ANDROID__
+extern "C" int android_main(int argc, char* argv[])
+{
+	return main(argc, argv);
+}
+#endif

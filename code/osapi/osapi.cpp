@@ -15,6 +15,7 @@
 #include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "io/joy_ff.h"
+#include "tracing/tracing.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -28,6 +29,20 @@
 #elif defined(WIN32)
 #include <sys/stat.h>
 #include <sys/types.h>
+#endif
+
+#ifdef __ANDROID__
+#include <SDL3/SDL_system.h>
+#include <SDL3/SDL.h>
+#include <jni.h>
+#include "options/Option.h"
+#include "utils/finally.h"
+#endif
+
+#if defined(__APPLE__)
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <unistd.h>
 #endif
 
 namespace
@@ -246,6 +261,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <psapi.h>
 #include <backends/imgui_impl_sdl3.h>
 
 // go through all windows and try and find the one that matches the search string
@@ -825,18 +841,23 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+	// The profiler overlay is drawn from gr_flip(), so it can be on screen in any state — it
+	// needs input forwarded wherever it is active, not in a fixed list of states.
+	const bool imgui_state = (gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS);
+	if (imgui_state || tracing::frame_profiling_active()) {
 		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
 		const SDL_Event imgui_event = scale_imgui_mouse_event(event);
 		ImGui_ImplSDL3_ProcessEvent(&imgui_event);
 
+		// In other states, the game also needs mouse motion while the pointer is over the overlay.
+		// If the overlay consumed the motion, mouse flight would stop there.
 		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
 									(event.type == SDL_EventType::SDL_EVENT_KEY_UP ||
 									 event.type == SDL_EventType::SDL_EVENT_KEY_DOWN)) ||
 							   (ImGui::GetIO().WantCaptureMouse &&
 									(event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_UP ||
 				 					 event.type == SDL_EventType::SDL_EVENT_MOUSE_BUTTON_DOWN||
-									 event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION));
+									 (imgui_state && event.type == SDL_EventType::SDL_EVENT_MOUSE_MOTION)));
 	}
 
 	if (!imgui_processed_this) {
@@ -923,5 +944,210 @@ SCP_string os_get_config_path(const SCP_string& subpath)
 	ss << getPreferencesPath() << compatiblePath;
 
 	return ss.str();
+}
+
+/*
+	  Special functions for Android
+*/
+
+#ifdef __ANDROID__
+static bool android_check_exception(JNIEnv* env, const char* operation)
+{
+	if (!env->ExceptionCheck()) {
+		return false;
+	}
+
+	mprintf(("OSAPI: JNI exception in %s.\n", operation));
+	env->ExceptionDescribe();
+	env->ExceptionClear();
+	return true;
+}
+
+template <typename Callback>
+static void android_with_static_method(const char* name, const char* signature, Callback&& callback)
+{
+	JNIEnv* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+	if (env == nullptr) {
+		mprintf(("OSAPI: Couldn't get JNI environment for %s.\n", name));
+		return;
+	}
+	if (android_check_exception(env, name)) {
+		return;
+	}
+
+	if (env->PushLocalFrame(4) < 0) {
+		android_check_exception(env, "PushLocalFrame");
+		mprintf(("OSAPI: Couldn't create JNI local frame for %s.\n", name));
+		return;
+	}
+	// Release the activity, class, and temporary strings on every exit path.
+	auto local_frame = util::finally([env]() { env->PopLocalFrame(nullptr); });
+
+	jobject activity = static_cast<jobject>(SDL_GetAndroidActivity());
+	if (android_check_exception(env, "SDL_GetAndroidActivity") || activity == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity for %s.\n", name));
+		return;
+	}
+
+	jclass activity_class = env->GetObjectClass(activity);
+	if (android_check_exception(env, "GetObjectClass") || activity_class == nullptr) {
+		mprintf(("OSAPI: Couldn't get Android activity class for %s.\n", name));
+		return;
+	}
+
+	jmethodID method = env->GetStaticMethodID(activity_class, name, signature);
+	if (android_check_exception(env, name) || method == nullptr) {
+		mprintf(("OSAPI: Couldn't find static method %s with signature %s.\n", name, signature));
+		return;
+	}
+
+	callback(env, activity_class, method);
+	android_check_exception(env, name);
+}
+
+void os_android_set_flags_string(const char* json)
+{
+	android_with_static_method("setFlagsJson", "(Ljava/lang/String;)V",
+		[json](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = env->NewStringUTF(json ? json : "");
+			if (android_check_exception(env, "NewStringUTF") || value == nullptr) {
+				return;
+			}
+			env->CallStaticVoidMethod(activity_class, method, value);
+		});
+}
+
+SCP_string os_android_get_working_folder_path()
+{
+	SCP_string wfp{};
+	android_with_static_method("getWorkingFolder", "()Ljava/lang/String;",
+		[&wfp](JNIEnv* env, jclass activity_class, jmethodID method) {
+			jstring value = static_cast<jstring>(env->CallStaticObjectMethod(activity_class, method));
+			if (android_check_exception(env, "getWorkingFolder") || value == nullptr) {
+				return;
+			}
+
+			const char* working_folder = env->GetStringUTFChars(value, nullptr);
+			if (android_check_exception(env, "GetStringUTFChars") || working_folder == nullptr) {
+				return;
+			}
+			auto release_chars = util::finally([env, value, working_folder]() {
+				env->ReleaseStringUTFChars(value, working_folder);
+			});
+			wfp = working_folder;
+		});
+
+	if (wfp.empty()) {
+		mprintf(("Couldn't get working folder path from Java class, reverting to SDL default.\n"));
+		// SDL's external storage path already includes the app's files directory.
+		const char* fallbackPath = SDL_GetAndroidExternalStoragePath();
+		if (fallbackPath) {
+			wfp = SCP_string(fallbackPath);
+		}
+	}
+	
+	// Ensure path ends with a dir separator
+	if (!wfp.empty() && (wfp.back() != DIR_SEPARATOR_CHAR)) {
+		wfp += DIR_SEPARATOR_CHAR;
+	}
+	mprintf(("Using working folder: %s\n", wfp.c_str()));
+	return wfp;
+}
+
+void os_android_touch_overlay_toggle(bool status)
+{
+	android_with_static_method(status ? "enableOverlay" : "disableOverlay", "()V",
+		[](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method);
+		});
+}
+
+void os_android_touch_overlay_set_opacity(int opacity)
+{
+	android_with_static_method("setOverlayOpacity", "(F)V",
+		[opacity](JNIEnv* env, jclass activity_class, jmethodID method) {
+			env->CallStaticVoidMethod(activity_class, method, static_cast<jfloat>(opacity) / 100.0f);
+		});
+}
+
+static bool touch_ui_change(bool new_val, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_toggle(new_val);
+	return true;
+}
+
+static auto TouchOverlayOption = options::OptionBuilder<bool>("Input.TouchOverlay",
+	std::pair<const char*, int>{"Touch Overlay", 1936},
+	std::pair<const char*, int>{"Enable or disable the touch overlay", 1937})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.change_listener(touch_ui_change)
+	.default_val(true)
+	.importance(2)
+	.finish();
+
+static bool touch_ui_opacity_change(int new_val, bool initial)
+{
+	Assertion(new_val >= 0 && new_val <= 100, "Invalid value %d supplied by options system!", new_val);
+	if (initial) {
+		return false;
+	}
+	os_android_touch_overlay_set_opacity(new_val);
+	return true;
+}
+
+static auto TouchOverlayOpacityOption = options::OptionBuilder<int>("Input.TouchOverlayOpacity",
+	std::pair<const char*, int>{"Touch Overlay Opacity", 1938},
+	std::pair<const char*, int>{"Set the opacity of the touch overlay", 1939})
+	.category(std::make_pair("Input", 1827))
+	.level(options::ExpertLevel::Beginner)
+	.range(0, 100)
+	.default_val(20)
+	.flags({ options::OptionFlags::RangeTypeInteger })
+	.change_listener(touch_ui_opacity_change)
+	.importance(1)
+	.finish();
+	
+void os_android_touch_overlay_init()
+{
+	os_android_touch_overlay_toggle(TouchOverlayOption->getValue());
+	os_android_touch_overlay_set_opacity(TouchOverlayOpacityOption->getValue());
+}
+#endif
+
+os_memory_stats os_get_memory_stats()
+{
+	os_memory_stats stats;
+
+#if defined(WIN32)
+	PROCESS_MEMORY_COUNTERS counters;
+	if (GetProcessMemoryInfo(GetCurrentProcess(), &counters, sizeof(counters))) {
+		stats.valid = true;
+		stats.resident_bytes = counters.WorkingSetSize;
+	}
+#elif defined(__APPLE__)
+	mach_task_basic_info_data_t info;
+	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+	if (task_info(mach_task_self(), MACH_TASK_BASIC_INFO, reinterpret_cast<task_info_t>(&info), &count) ==
+		KERN_SUCCESS) {
+		stats.valid = true;
+		stats.resident_bytes = info.resident_size;
+	}
+#elif defined(__linux__)
+	// Field 2 of /proc/self/statm is the resident set size, in pages -- see proc(5).
+	if (FILE* statm = fopen("/proc/self/statm", "r")) {
+		long resident_pages = 0;
+		if (fscanf(statm, "%*d %ld", &resident_pages) == 1) {
+			stats.valid = true;
+			stats.resident_bytes = static_cast<size_t>(resident_pages) * static_cast<size_t>(sysconf(_SC_PAGESIZE));
+		}
+		fclose(statm);
+	}
+#endif
+
+	return stats;
 }
 

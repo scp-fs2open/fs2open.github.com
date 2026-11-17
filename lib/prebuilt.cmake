@@ -3,6 +3,7 @@
 #       without setting Qt6 up project wide
 
 set(PREBUILT_VERSION_NAME "b561f6e8" CACHE INTERNAL "")
+set(ANDROID_PREBUILT_VERSION_NAME "android-prebuilts-v1" CACHE INTERNAL "")
 
 set(FSO_PREBUILT_OVERRIDE "" CACHE PATH "Path to the prebuilt binaries, if empty the binaries will be downloaded.")
 set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt" CACHE INTERNAL "")
@@ -14,15 +15,9 @@ function(get_prebuilt_path OUT_VAR)
         return()
     endif()
 
-    if (IS_DIRECTORY "${PREBUILT_LIB_DIR}")
-        if ("${DOWNLOADED_PREBUILT_VERSION}" STREQUAL "${PREBUILT_VERSION_NAME}")
-            # Libraries already downloaded and up-to-date
-            set(${OUT_VAR} "${PREBUILT_LIB_DIR}" PARENT_SCOPE)
-            return()
-        endif()
-    endif()
-    
     set(PREBUILT_PATH)
+    set(PREBUILT_CACHE_KEY "${PREBUILT_VERSION_NAME}")
+    set(DOWNLOAD_HASH_ARGS)
     set(TAG_NAME "bin-${PREBUILT_VERSION_NAME}")
     if(PLATFORM_WINDOWS)
         if (IS_ARM64)
@@ -34,6 +29,22 @@ function(get_prebuilt_path OUT_VAR)
         endif()
     elseif(PLATFORM_MAC)
         set(FILENAME "bin-mac.tar.gz")
+    elseif(ANDROID)
+        if(ANDROID_ABI STREQUAL "arm64-v8a")
+            set(FILENAME "bin-android-arm64.tar.gz")
+            set(PREBUILT_SHA256 "d56464fba097c16c6034ae483215045353078c0a339bb1566f0f7e20d063ca52")
+        elseif(ANDROID_ABI STREQUAL "x86_64")
+            set(FILENAME "bin-android-x64.tar.gz")
+            set(PREBUILT_SHA256 "ab030d21200fb3ef799bb08d7a27ae973274a239dd244f51d68304e90a4021d5")
+        elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+            set(FILENAME "bin-android-arm32.tar.gz")
+            set(PREBUILT_SHA256 "8c040685cb4e91cf1e95d106200aa8d852f4f32859e3d1fe6d8e995168b122b6")
+        elseif(ANDROID_ABI STREQUAL "x86")
+            set(FILENAME "bin-android-x86.tar.gz")
+            set(PREBUILT_SHA256 "020bf41dc8c1d7414c12c050b2e3abc0a701795073ed48b18706b2a89c30e473")
+        else()
+            message(FATAL_ERROR "Unsupported Android ABI for prebuilt libraries: ${ANDROID_ABI}")
+        endif()
     else()
         # Use Linux binaries...
         if (IS_ARM64)
@@ -42,7 +53,23 @@ function(get_prebuilt_path OUT_VAR)
             set(FILENAME "bin-linux.tar.gz")
         endif()
     endif()
-    set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
+    if(ANDROID) # TODO: REMOVE THIS ONCE ANDROID PREBUILTS ARE IN THE SCP-PREBUILT REPO
+        set(TAG_NAME "${ANDROID_PREBUILT_VERSION_NAME}")
+        set(DOWNLOAD_URL "https://github.com/Shivansps/Fso-Android-Prebuilts/releases/download/${TAG_NAME}/${FILENAME}")
+        set(DOWNLOAD_HASH_ARGS EXPECTED_HASH "SHA256=${PREBUILT_SHA256}")
+        # Re-download when the Android release, ABI, or expected archive changes.
+        set(PREBUILT_CACHE_KEY "${TAG_NAME}/${ANDROID_ABI}/${PREBUILT_SHA256}")
+    else()
+        set(DOWNLOAD_URL "https://github.com/scp-fs2open/scp-prebuilt/releases/download/${TAG_NAME}/${FILENAME}")
+    endif()
+
+    if (IS_DIRECTORY "${PREBUILT_LIB_DIR}")
+        if ("${DOWNLOADED_PREBUILT_VERSION}" STREQUAL "${PREBUILT_CACHE_KEY}")
+            # Libraries already downloaded and up-to-date
+            set(${OUT_VAR} "${PREBUILT_LIB_DIR}" PARENT_SCOPE)
+            return()
+        endif()
+    endif()
     set(DOWNLOAD_FILE "${CURRENT_ROOT}/${FILENAME}")
 
     set(MAX_RETRIES 5)
@@ -53,7 +80,8 @@ function(get_prebuilt_path OUT_VAR)
         endif()
 
         message(STATUS "Downloading prebuilt libraries from \"${DOWNLOAD_URL}\" (try ${i}/${MAX_RETRIES})")
-        file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON STATUS DOWNLOAD_STATUS_LIST)
+        file(DOWNLOAD "${DOWNLOAD_URL}" "${DOWNLOAD_FILE}" SHOW_PROGRESS TLS_VERIFY ON
+            ${DOWNLOAD_HASH_ARGS} STATUS DOWNLOAD_STATUS_LIST)
 
         list(GET DOWNLOAD_STATUS_LIST 0 DOWNLOAD_STATUS)
         list(GET DOWNLOAD_STATUS_LIST 1 DOWNLOAD_ERROR)
@@ -95,6 +123,6 @@ function(get_prebuilt_path OUT_VAR)
     file(REMOVE "${DOWNLOAD_FILE}")
     
     # We are done now. Set the cache variables and return the result
-    set(DOWNLOADED_PREBUILT_VERSION "${PREBUILT_VERSION_NAME}" CACHE INTERNAL "")
+    set(DOWNLOADED_PREBUILT_VERSION "${PREBUILT_CACHE_KEY}" CACHE INTERNAL "")
     set(${OUT_VAR} "${PREBUILT_LIB_DIR}" PARENT_SCOPE)
 endfunction(get_prebuilt_path)

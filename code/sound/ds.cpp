@@ -12,6 +12,7 @@
 #include "cfile/cfile.h"
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
+#include "io/timer.h"
 #include "osapi/osapi.h"
 #include "sound/audiostr.h"
 #include "sound/channel.h"
@@ -168,6 +169,54 @@ ALAUXILIARYEFFECTSLOTFV v_alAuxiliaryEffectSlotfv = NULL;
 
 ALCdevice *ds_sound_device = NULL;
 ALCcontext *ds_sound_context = NULL;
+
+static ALCint Ds_context_attribs[] = { ALC_FREQUENCY, 22050, 0 };
+
+static SCP_string Ds_playback_device_name;
+static bool Ds_disconnect_supported = false;
+static LPALCREOPENDEVICESOFT v_alcReopenDeviceSOFT = nullptr;
+static bool Ds_device_disconnected = false;
+static UI_TIMESTAMP Ds_reopen_timestamp;
+static int Ds_reopen_attempts = 0;
+
+// a re-enumerated device can come back within a few seconds, so don't fall back to the default device right away
+static const int DS_REOPEN_CONFIGURED_ONLY_ATTEMPTS = 3;
+
+/**
+ * Query the playback device's connection state.  Safe to call from the stream service thread.
+ */
+bool ds_device_connected()
+{
+	if (!Ds_disconnect_supported || (ds_sound_device == nullptr)) {
+		return true;
+	}
+
+	ALCint connected = ALC_TRUE;
+	alcGetIntegerv(ds_sound_device, ALC_CONNECTED, 1, &connected);
+	return connected != ALC_FALSE;
+}
+
+/**
+ * Main thread only: returns whether the playback device is lost, latching the state until it is reopened
+ */
+static bool ds_poll_disconnect()
+{
+	if (Ds_device_disconnected) {
+		return true;
+	}
+
+	if (ds_device_connected()) {
+		return false;
+	}
+
+	Ds_device_disconnected = true;
+	Ds_reopen_timestamp = UI_TIMESTAMP::immediate();
+	Ds_reopen_attempts = 0;
+
+	mprintf(("OpenAL playback device disconnected; will try to reopen it.\n"));
+
+	return true;
+}
 
 ALuint AL_EFX_aux_id = 0;
 
@@ -330,16 +379,19 @@ void ds_init_channels()
 	if (Cmdline_no_enhanced_sound)
 		MAX_CHANNELS = 32; // Old sound code limts
 	else {
-		ALCint size;
+		ALCint size = 0;
 		alcGetIntegerv(ds_sound_device, ALC_ATTRIBUTES_SIZE, 1, &size);
-		std::vector<ALCint> attrs(size);
-		alcGetIntegerv(ds_sound_device, ALC_ALL_ATTRIBUTES, size, &attrs[0]);
-		for (size_t i = 0; i < attrs.size(); ++i) {
-			//We reserve a portion of the reported channels to avoid colliding with other types of sound
-			//Using the 32 channels of the no_enhanced_sound as a floor.
-			if (attrs[i] == ALC_MONO_SOURCES && attrs[i+1] - DS_RESERVED_CHANNELS > 32) {
-				MAX_CHANNELS = attrs[i + 1] - DS_RESERVED_CHANNELS;
-				mprintf(("  ALC reported %i available sources, setting max to use at %i ", attrs[i + 1],MAX_CHANNELS));
+		if (size > 0) {
+			std::vector<ALCint> attrs(size);
+			alcGetIntegerv(ds_sound_device, ALC_ALL_ATTRIBUTES, size, attrs.data());
+			// the list is zero-terminated key/value pairs
+			for (size_t i = 0; i + 1 < attrs.size() && attrs[i] != 0; i += 2) {
+				//We reserve a portion of the reported channels to avoid colliding with other types of sound
+				//Using the 32 channels of the no_enhanced_sound as a floor.
+				if (attrs[i] == ALC_MONO_SOURCES && attrs[i+1] - DS_RESERVED_CHANNELS > 32) {
+					MAX_CHANNELS = attrs[i + 1] - DS_RESERVED_CHANNELS;
+					mprintf(("  ALC reported %i available sources, setting max to use at %i ", attrs[i + 1],MAX_CHANNELS));
+				}
 			}
 		}
 	}
@@ -391,7 +443,6 @@ bool ds_check_for_openal_soft()
 int ds_init()
 {
 	ALfloat list_orien[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
-	ALCint attrList[] = { ALC_FREQUENCY, 22050, 0 };
 	unsigned int sample_rate = 22050;
 
 	mprintf(("Initializing OpenAL...\n"));
@@ -415,7 +466,7 @@ int ds_init()
 
 	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
 
-	attrList[1] = sample_rate;
+	Ds_context_attribs[1] = sample_rate;
 	SCP_string playback_device;
 	SCP_string capture_device;
 
@@ -431,11 +482,11 @@ int ds_init()
 		goto AL_InitError;
 	}
 
-	ds_sound_context = alcCreateContext(ds_sound_device, attrList);
+	ds_sound_context = alcCreateContext(ds_sound_device, Ds_context_attribs);
 
 	if (ds_sound_context == NULL) {
 		mprintf(("  Failed to create context for playback_device (%s) with attrList = { 0x%x, %d, %d } returning error (%s)\n",
-			playback_device.c_str(), attrList[0], attrList[1], attrList[2], openal_error_string(1)));
+			playback_device.c_str(), Ds_context_attribs[0], Ds_context_attribs[1], Ds_context_attribs[2], openal_error_string(1)));
 		goto AL_InitError;
 	}
 
@@ -464,6 +515,25 @@ int ds_init()
 	if ( alIsExtensionPresent( (const ALchar*)"AL_EXT_float32" ) == AL_TRUE ) {
 		mprintf(("  Found extension \"AL_EXT_float32\".\n"));
 		Ds_float_supported = 1;
+	}
+
+	Ds_playback_device_name = playback_device;
+	Ds_disconnect_supported = false;
+	v_alcReopenDeviceSOFT = nullptr;
+	Ds_device_disconnected = false;
+
+	if ( alcIsExtensionPresent(ds_sound_device, (const ALCchar*)"ALC_SOFT_reopen_device") == ALC_TRUE ) {
+		v_alcReopenDeviceSOFT = reinterpret_cast<LPALCREOPENDEVICESOFT>(alcGetProcAddress(ds_sound_device, "alcReopenDeviceSOFT"));
+		if (v_alcReopenDeviceSOFT) {
+			mprintf(("  Found extension \"ALC_SOFT_reopen_device\".\n"));
+		}
+	}
+
+	if ( alcIsExtensionPresent(ds_sound_device, (const ALCchar*)"ALC_EXT_disconnect") == ALC_TRUE ) {
+		mprintf(("  Found extension \"ALC_EXT_disconnect\".\n"));
+
+		// holding streams and loops through an outage only helps if the device can be reopened afterward
+		Ds_disconnect_supported = (v_alcReopenDeviceSOFT != nullptr);
 	}
 
 	Ds_use_eax = 0;
@@ -528,7 +598,7 @@ int ds_init()
 
 	{
 	ALCint freq = 0;
-	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, sizeof(ALCint), &freq) );
+	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, 1, &freq) );
 
 	mprintf(("  Sample rate: %d (%d)\n", freq, sample_rate));
 	}
@@ -626,6 +696,7 @@ void ds_close_channel_fast(int i)
 		Channels[i].sid = -1;
 		Channels[i].sig    = ds_sound_handle::invalid();
 		Channels[i].snd_id = -1;
+		Channels[i].looping = 0;
 	}
 }
 
@@ -753,6 +824,9 @@ int ds_get_free_channel_retail(float new_volume, int snd_id, int priority)
 		break;
 	}
 
+	// loops stopped by a lost device are kept so they can be restarted on reopen
+	bool disconnected = ds_poll_disconnect();
+
 	// Look for a channel to use to play this sample
 	for ( i = 0; i < MAX_CHANNELS; i++ ) {
 		chp = &Channels[i];
@@ -775,7 +849,7 @@ int ds_get_free_channel_retail(float new_volume, int snd_id, int priority)
 
 		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), goto continue_channels );
 
-		if ( (status == AL_INITIAL) || (status == AL_STOPPED) ) {
+		if ( ((status == AL_INITIAL) || (status == AL_STOPPED)) && !(chp->looping && disconnected) ) {
 			ds_close_channel_fast(i);
 
 			if (first_free_channel == -1) {
@@ -867,6 +941,9 @@ int ds_get_free_channel_enhanced(float new_volume, int snd_id, int enhanced_prio
 	instance_count = 0;
 	first_free_channel = -1;
 
+	// loops stopped by a lost device are kept so they can be restarted on reopen
+	bool disconnected = ds_poll_disconnect();
+
 	// Look for a channel to use to play this sample
 	for ( i = 0; i < MAX_CHANNELS; i++ ) {
 		chp = &Channels[i];
@@ -889,7 +966,7 @@ int ds_get_free_channel_enhanced(float new_volume, int snd_id, int enhanced_prio
 
 		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), goto continue_channels );
 
-		if ( (status == AL_INITIAL) || (status == AL_STOPPED) ) {
+		if ( ((status == AL_INITIAL) || (status == AL_STOPPED)) && !(chp->looping && disconnected) ) {
 			ds_close_channel_fast(i);
 
 			if (first_free_channel == -1) {
@@ -1068,6 +1145,7 @@ void ds_stop_easy(int sid)
 	if (cid != -1) {
 		ALuint source_id = Channels[cid].source_id;
 		OpenAL_ErrorPrint( alSourceStop(source_id) );
+		Channels[cid].looping = 0;
 	}
 }
 
@@ -1207,7 +1285,12 @@ int ds_is_channel_playing(int channel_id)
 
 		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_SOURCE_STATE, &status) );
 
-		return (status == AL_PLAYING);
+		if (status == AL_PLAYING) {
+			return TRUE;
+		}
+
+		// a loop stopped by a lost device still belongs to its owner and is restarted on reopen
+		return (Channels[channel_id].looping && ds_poll_disconnect()) ? TRUE : FALSE;
 	}
 
 	return 0;
@@ -1238,6 +1321,7 @@ void ds_stop_channel(int channel_id)
 {
 	if ( Channels[channel_id].source_id != 0 ) {
 		OpenAL_ErrorPrint( alSourceStop(Channels[channel_id].source_id) );
+		Channels[channel_id].looping = 0;
 	}
 }
 
@@ -1273,6 +1357,7 @@ void ds_stop_channel_all()
 	for ( i=0; i<MAX_CHANNELS; i++ ) {
 		if ( Channels[i].source_id != 0 ) {
 			OpenAL_ErrorPrint( alSourceStop(Channels[i].source_id) );
+			Channels[i].looping = 0;
 		}
 	}
 }
@@ -1907,13 +1992,68 @@ int ds_eax_is_inited()
 }
 
 /**
- * Called once per game frame to make sure voice messages aren't looping
+ * Detect a lost playback device (e.g. unplugged headphones) and reopen it, or the current default device if it stays gone
+ */
+static void ds_check_device_connected()
+{
+	if (!ds_poll_disconnect()) {
+		return;
+	}
+
+	if (!ui_timestamp_elapsed(Ds_reopen_timestamp)) {
+		return;
+	}
+
+	Ds_reopen_timestamp = ui_timestamp(2 * MILLISECONDS_PER_SECOND);
+	Ds_reopen_attempts++;
+
+	// a reopen can report success while the device is still unavailable
+	const char *reopened_on = Ds_playback_device_name.c_str();
+	if (!v_alcReopenDeviceSOFT(ds_sound_device, Ds_playback_device_name.c_str(), Ds_context_attribs) || !ds_device_connected()) {
+		if (Ds_reopen_attempts <= DS_REOPEN_CONFIGURED_ONLY_ATTEMPTS) {
+			return;
+		}
+
+		reopened_on = "the default device";
+		if (!v_alcReopenDeviceSOFT(ds_sound_device, nullptr, Ds_context_attribs)) {
+			return;
+		}
+	}
+	alcGetError(ds_sound_device);
+
+	if (!ds_device_connected()) {
+		return;
+	}
+
+	mprintf(("OpenAL playback device reopened on %s.\n", reopened_on));
+	Ds_device_disconnected = false;
+
+	// disconnecting stops every source and reopening doesn't restart them
+	audiostream_resume_after_device_loss();
+
+	for (int i = 0; i < MAX_CHANNELS; i++) {
+		if (Channels[i].source_id == 0 || !Channels[i].looping) {
+			continue;
+		}
+
+		ALint state = AL_STOPPED;
+		OpenAL_ErrorPrint( alGetSourcei(Channels[i].source_id, AL_SOURCE_STATE, &state) );
+		if (state == AL_STOPPED) {
+			OpenAL_ErrorPrint( alSourcePlay(Channels[i].source_id) );
+		}
+	}
+}
+
+/**
+ * Called once per game frame to make sure voice messages aren't looping and the playback device is still connected
  */
 void ds_do_frame()
 {
 	if (!ds_initialized) {
 		return;
 	}
+
+	ds_check_device_connected();
 
 	int i;
 	channel *cp = NULL;

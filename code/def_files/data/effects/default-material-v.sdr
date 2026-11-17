@@ -1,3 +1,9 @@
+#ifdef GL_ES
+#extension GL_EXT_clip_cull_distance : enable
+precision highp float;
+precision highp int;
+#endif
+
 #ifdef VULKAN
 layout(set = 2, binding = 0, std140)
 #else
@@ -38,10 +44,15 @@ layout(location = 2) in vec4 vertTexCoord;
 
 layout(location = 0) out vec4 fragTexCoord;
 layout(location = 1) out vec4 fragColor;
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+layout(location = 2) out float vClipDist;
+#endif
 
 #else
 
-out float gl_ClipDistance[1];
+#ifdef SDR_FLAG_SW_CLIP_FALLBACK
+out float vClipDist;
+#endif
 
 out vec4 fragTexCoord;
 in vec4 vertTexCoord;
@@ -58,13 +69,16 @@ void main()
 	gl_Position = projMatrix * modelViewMatrix * vertPosition;
 
 	if (clipEnabled != 0u) {
+		#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 		gl_ClipDistance[0] = dot(clipEquation, modelMatrix * vertPosition);
+		#else
+		vClipDist = dot(clipEquation, modelMatrix * vertPosition);
+		#endif
 	} else {
-#ifdef VULKAN
-		// Vulkan has no glEnable(GL_CLIP_DISTANCE0) equivalent — clip distances are
-		// always evaluated when declared in the shader.  Must write a positive value
-		// when clipping is disabled to prevent undefined-value vertex culling.
+		#ifndef SDR_FLAG_SW_CLIP_FALLBACK
 		gl_ClipDistance[0] = 1.0;
-#endif
+		#else
+		vClipDist = 1.0;
+		#endif
 	}
 }

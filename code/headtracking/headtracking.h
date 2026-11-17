@@ -12,6 +12,7 @@ namespace headtracking
 		float y;
 		float z;
 
+		// Rotations are normalized: -1 to 1 maps to -180 to 180 degrees
 		float pitch;
 		float roll;
 		float yaw;

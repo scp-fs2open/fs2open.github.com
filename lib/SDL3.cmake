@@ -66,7 +66,7 @@ else()
         message(STATUS "Using pre-built SDL3 library.")
 
         unset(SDL3_LOCATION CACHE)
-        find_library(SDL3_LOCATION NAMES SDL3 SDL3-3.0 PATHS "${SDL3_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+        find_library(SDL3_LOCATION NAMES SDL3 SDL3-3.0 PATHS "${SDL3_ROOT_DIR}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH)
 
         get_filename_component(FULL_LIB_PATH "${SDL3_LOCATION}" REALPATH)
         ADD_IMPORTED_LIB(sdl3 "${SDL3_ROOT_DIR}/include" "${FULL_LIB_PATH}")
