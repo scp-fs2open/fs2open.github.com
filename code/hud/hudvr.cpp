@@ -35,8 +35,7 @@ void hud_vr_init()
 	}
 
 	// As many pixels per angle as the eye's own image at its center: as sharp as the HMD can show, and no more
-	const asymmetric_fov eye = *eye_fov * PROJ_FOV_FACTOR;
-	const float eye_tan_height = tanf(eye.up) - tanf(eye.down);
+	const float eye_tan_height = tanf(eye_fov->up) - tanf(eye_fov->down);
 	const float panel_tan_height = 2.0f * tanf(PANEL_FOV * PROJ_FOV_FACTOR * 0.5f);
 	gr_screen_layer_init(panel_tan_height / eye_tan_height);
 }

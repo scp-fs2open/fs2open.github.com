@@ -279,7 +279,7 @@ static void openxr_recenter() {
 	const XrQuaternionf heading{ 0, sinf(yaw * 0.5f), 0, cosf(yaw * 0.5f) };
 
 	const XrPosef old_pose = xr_space_pose;
-	const XrSpace old_space = xr_space;
+	XrSpace old_space = xr_space;
 	xr_space_pose.orientation = openxr_quat_multiply(old_pose.orientation, heading);
 
 	if (openxr_init_space()) {
@@ -429,7 +429,11 @@ std::optional<asymmetric_fov> openxr_get_eye_fov() {
 		return std::nullopt;
 	}
 	const auto& fov = xr_views[0].fov;
-	return asymmetric_fov{ fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown } * (1.0f / PROJ_FOV_FACTOR);
+	// Still all zero if the views could not be located at startup
+	if (fov.angleUp <= fov.angleDown) {
+		return std::nullopt;
+	}
+	return asymmetric_fov{ fov.angleLeft, fov.angleRight, fov.angleUp, fov.angleDown };
 }
 
 int openxr_get_current_eye() {

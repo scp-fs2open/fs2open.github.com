@@ -558,7 +558,7 @@ void opengl_setup_scene_textures()
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, back_w, back_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, back_w, back_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Back_texture, 0);
 		opengl_set_object_label(GL_TEXTURE, Back_texture, "Backbuffer texture");
@@ -1350,6 +1350,7 @@ void opengl_draw_full_screen_textured(GLfloat u1, GLfloat v1, GLfloat u2, GLfloa
 }
 
 static GLuint Screen_layer_framebuffer = 0;
+static GLint Screen_layer_saved_viewport[4];
 
 bool gr_opengl_screen_layer_begin(int bitmap)
 {
@@ -1364,6 +1365,7 @@ bool gr_opengl_screen_layer_begin(int bitmap)
 
 	int tex_w, tex_h;
 	bm_get_info(bitmap, &tex_w, &tex_h);
+	glGetIntegerv(GL_VIEWPORT, Screen_layer_saved_viewport);
 	glViewport(0, 0, tex_w, tex_h);
 
 	const GLboolean scissor = GL_state.ScissorTest(GL_FALSE);
@@ -1390,7 +1392,8 @@ void gr_opengl_screen_layer_end()
 	Screen_layer_framebuffer = 0;
 	GL_state.PopFramebufferState();
 
-	glViewport(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height());
+	glViewport(Screen_layer_saved_viewport[0], Screen_layer_saved_viewport[1], Screen_layer_saved_viewport[2],
+		Screen_layer_saved_viewport[3]);
 }
 
 bool opengl_screen_layer_active()
@@ -1442,8 +1445,10 @@ GLuint opengl_screen_readback_framebuffer()
 
 	GL_state.PushFramebufferState();
 	GL_state.BindFrameBufferBoth(Back_framebuffer, Readback_framebuffer);
+	const GLboolean scissor = GL_state.ScissorTest(GL_FALSE);
 	glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, gr_screen.max_w, gr_screen.max_h,
 		GL_COLOR_BUFFER_BIT, GL_LINEAR);
+	GL_state.ScissorTest(scissor);
 	GL_state.PopFramebufferState();
 
 	return Readback_framebuffer;

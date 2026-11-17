@@ -1588,7 +1588,7 @@ inline void gr_set_viewport(int x, int y, int width, int height)
  */
 void gr_screen_layer_init(float relative_scale);
 
-// Remakes the screen layer for the current Gr_composition_scale. Renderers call this when they change it.
+// Remakes the screen layer for the current Gr_composition_scale. Renderers that change Gr_composition_scale while running call this.
 void gr_screen_layer_resize();
 
 /**

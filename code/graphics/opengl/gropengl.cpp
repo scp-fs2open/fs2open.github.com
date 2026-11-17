@@ -1053,7 +1053,8 @@ static void gr_opengl_imgui_new_frame()
 static void gr_opengl_imgui_render_draw_data()
 {
 	auto* drawData = ImGui::GetDrawData();
-	if (drawData) {
+	// Otherwise the target is SDL's drawable, whose (HiDPI) scale the platform backend already set
+	if (drawData && (Cmdline_window_res || opengl_screen_layer_active())) {
 		drawData->FramebufferScale = ImVec2(Gr_composition_scale, Gr_composition_scale);
 	}
 	ImGui_ImplOpenGL3_RenderDrawData(drawData);

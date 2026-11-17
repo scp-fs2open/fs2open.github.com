@@ -233,7 +233,7 @@ void vulkan_imgui_render_draw_data()
 {
 	auto* renderer = getRendererInstance();
 	if (renderer) {
-		// The composition image (or the screen layer) is larger than ImGui's display while FSR upscales
+		// The composition image (or the screen layer) is larger than ImGui's display while it is above gr_screen size
 		auto* drawData = ImGui::GetDrawData();
 		const auto extent = renderer->isScreenLayerActive() ? renderer->getScreenLayerExtent() : renderer->getCompositionExtent();
 		if (drawData && drawData->DisplaySize.x > 0.0f && drawData->DisplaySize.y > 0.0f) {

@@ -208,7 +208,7 @@ bool gr_opengl_openxr_acquire_swapchain_buffers() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, nullptr);
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, xr_swap_tex, 0);
 	opengl_set_object_label(GL_TEXTURE, xr_swap_tex, "XR Swap Texture");

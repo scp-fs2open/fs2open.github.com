@@ -63,7 +63,7 @@ bool openxr_requested();
 std::optional<std::pair<int, int>> openxr_get_eye_resolution();
 
 /**
- * @brief The field of view of the HMD's first eye, in zoom units like OpenXREyeInfo::zoom. Available once openxr_init() succeeded.
+ * @brief The field of view of the HMD's first eye, in radians. Available once openxr_init() succeeded.
  */
 std::optional<asymmetric_fov> openxr_get_eye_fov();
 

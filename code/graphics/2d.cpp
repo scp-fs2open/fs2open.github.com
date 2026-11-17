@@ -927,7 +927,9 @@ void gr_screen_layer_resize()
 		return;
 	}
 
-	const float scale = Gr_composition_scale * Screen_layer_relative_scale;
+	// Within the GPU's limit, so it never has to shrink one side and break the aspect ratio
+	const float scale = std::min(Gr_composition_scale * Screen_layer_relative_scale,
+		i2fl(Gr_max_output_size) / i2fl(std::max(gr_screen.max_w, gr_screen.max_h)));
 	const int w = static_cast<int>(std::lround(gr_screen.max_w * scale));
 	const int h = static_cast<int>(std::lround(gr_screen.max_h * scale));
 	if (Screen_layer >= 0) {
@@ -951,7 +953,6 @@ int gr_screen_layer_begin()
 		return -1;
 	}
 
-	// The texture can be smaller than requested if the GPU limits it
 	int w, h;
 	bm_get_info(Screen_layer, &w, &h);
 	Screen_layer_saved_scale = Gr_composition_scale;
