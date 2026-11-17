@@ -6,25 +6,26 @@
 // write an occlusion target, and the deferred ambient light pass (SSAO shader variant of
 // deferred-f.sdr) multiplies it into the same `ao` term as the baked AO maps and RTAO.
 //
-// This is a prototype. Only the Vulkan backend has it, and it has one quality level, no filter
-// pass and no temporal filter. See documentation/plans/cortao-integration-plan.md.
+// Only the Vulkan backend has it. The radius and the intensity are content-scale-dependent and
+// therefore mod-owned: see $SSAO Max Radius:, $SSAO Screen Radius: and $SSAO Intensity: in
+// lighting_profiles.h. See also documentation/plans/cortao-integration-plan.md.
 
-// 0 disables SSAO. Other values enable it. The value is the "Screen-Space Ambient Occlusion" option.
-extern int Ssao_quality;
+// CORTAO samples per pixel. 0 (the default) disables SSAO. The shader has variants for 4, 8 and 16.
+// This is the "Screen-Space Ambient Occlusion" option.
+extern int Ssao_samples;
 
-// The tuning values of the prototype. The F3 lab can change them for the current session.
+// How the CORTAO filter pass runs. Auto selects from whether a temporal filter (FSR) runs: the
+// 5-tap filter with FSR, the 13-tap filter without it.
+enum class SsaoFilterMode { Auto, Off, Small, Large };
+
+// The noise pattern of CORTAO. Auto selects from whether a temporal filter (FSR) runs: animated
+// with FSR, which removes the noise, and constant without it, which flickers less.
+enum class SsaoNoiseMode { Auto, Constant, Animated };
+
+// Session settings for tests and debugging. Only the F3 lab changes them.
 struct ssao_settings {
-	// The maximum occlusion radius in world units. The large default lets screen_radius control
-	// the radius, because ship sizes go from a few meters to kilometers.
-	float max_radius = 1.0e6f;
-	// The maximum occlusion radius as a fraction of the screen height (CORTAO
-	// maxScreenspaceRadiusHeightRatio). CORTAO recommends 0.1 to 0.25.
-	float screen_radius = 0.2f;
-	// The occlusion is raised to this power. 1 is the physically correct value.
-	float intensity = 1.0f;
-	// Change the noise pattern each frame. This is only correct when a temporal filter (FSR)
-	// removes the noise. Without one, a constant pattern flickers less.
-	bool animate_noise = false;
+	SsaoFilterMode filter = SsaoFilterMode::Auto;
+	SsaoNoiseMode noise = SsaoNoiseMode::Auto;
 	// Debug view: the ambient light shows only the SSAO term, and the other lights add nothing.
 	// Set the lab emissive factor to 0 to see the occlusion alone.
 	bool debug_view = false;
@@ -38,6 +39,16 @@ bool ssao_supported();
 // Whether the deferred ambient pass applies SSAO this frame. RTAO has priority, because the two
 // write the same term. Gate all SSAO work on this function.
 bool ssao_enabled();
+
+// The sample count for the CORTAO main pass: 4, 8 or 16. Only valid when ssao_enabled().
+int ssao_sample_count();
+
+// The filter pass size for this frame, with Auto resolved. temporalFilterActive is true when a
+// temporal filter (FSR) runs after the scene. Never returns Auto.
+SsaoFilterMode ssao_filter_mode(bool temporalFilterActive);
+
+// Whether the noise pattern changes each frame, with Auto resolved as for ssao_filter_mode().
+bool ssao_animate_noise(bool temporalFilterActive);
 
 // Remove the SSAO option from the options list when the renderer cannot run the CORTAO passes.
 void ssao_remove_unsupported_options();

@@ -13,6 +13,7 @@
 #include "graphics/grinternal.h"
 #include "graphics/matrix.h"
 #include "graphics/ssao.h"
+#include "lighting/lighting_profiles.h"
 
 namespace graphics::vulkan {
 
@@ -21,14 +22,16 @@ namespace {
 constexpr vk::Format PACKED_FORMAT = vk::Format::eR32Sfloat;
 constexpr vk::Format AO_FORMAT = vk::Format::eR8Unorm;
 
-// The CORTAO configuration values that the prototype does not change. These are the defaults that
+// The CORTAO configuration values that the engine does not change. These are the defaults that
 // CORTAOParameters.h recommends.
 constexpr float CORTAO_MIP_BIAS = -4.0f;
 constexpr float CORTAO_MAX_SLOPE_COMPENSATION = 4.0f;
 constexpr float CORTAO_BACKFACE_THRESHOLD = 0.5f;
 constexpr float CORTAO_BACKFACE_BOOST = 0.0f;
+constexpr float CORTAO_FILTER_DEPTH_SENSITIVITY = 512.0f;
+constexpr float CORTAO_FILTER_NORMAL_SENSITIVITY = 128.0f;
 
-// A constant seed gives a constant noise pattern. See ssao_settings::animate_noise.
+// A constant seed gives a constant noise pattern. See SsaoNoiseMode.
 constexpr uint32_t CORTAO_CONSTANT_SEED = 0x6a09e667u;
 
 // The std140 layout of the genericData block in cortao-prepass-f.sdr
@@ -62,6 +65,14 @@ struct CortaoMainUniforms {
 	float padding1[3];
 };
 static_assert(sizeof(CortaoMainUniforms) == 96, "CortaoMainUniforms must match the std140 layout of cortao-main-f.sdr");
+
+// The std140 layout of CORTAOFilterPassParameters (CORTAOFilterPass.h) in cortao-filter-f.sdr
+struct CortaoFilterUniforms {
+	uint32_t packedResolution;
+	float depthSensitivity;
+	float normalSensitivity;
+	uint32_t padding0;
+};
 
 uint32_t hash_frame_number(uint64_t frame)
 {
@@ -104,7 +115,7 @@ void fill_main_uniforms(CortaoMainUniforms& out, uint32_t width, uint32_t height
 	out.packedResolution = width | (height << 16u);
 	out.randomSeed = seed;
 	out.normalBias = invX / static_cast<float>(width) * std::sqrt(2.0f);
-	out.radius = Ssao_settings.max_radius;
+	out.radius = lighting_profiles::current_ssao_max_radius();
 
 	out.unprojectParams[0] = +2.0f * invX;
 	out.unprojectParams[1] = -2.0f * invY;
@@ -116,7 +127,7 @@ void fill_main_uniforms(CortaoMainUniforms& out, uint32_t width, uint32_t height
 	out.projectionParams[2] = -0.5f + 0.5f * projOffsetX;
 	out.projectionParams[3] = -0.5f - 0.5f * projOffsetY;
 
-	const float maxApparentCircleRadius = invY * Ssao_settings.screen_radius * 2.0f;
+	const float maxApparentCircleRadius = invY * lighting_profiles::current_ssao_screen_radius() * 2.0f;
 	out.maxApparentCircleRadiusCoefficient =
 		maxApparentCircleRadius / std::sqrt(maxApparentCircleRadius * maxApparentCircleRadius + 1.0f);
 	out.mipBias = std::log2(projY * static_cast<float>(height) * 0.5f) + CORTAO_MIP_BIAS;
@@ -124,7 +135,7 @@ void fill_main_uniforms(CortaoMainUniforms& out, uint32_t width, uint32_t height
 	out.backfaceThreshold = CORTAO_BACKFACE_THRESHOLD;
 	out.backfaceBoost = CORTAO_BACKFACE_BOOST;
 
-	out.intensity = Ssao_settings.intensity;
+	out.intensity = lighting_profiles::current_ssao_intensity();
 }
 
 } // namespace
@@ -337,27 +348,28 @@ bool VulkanCortao::createTargets()
 		}
 	}
 
-	if (!m_ctx->createImage(w, h, AO_FORMAT,
-			vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
-			vk::ImageAspectFlagBits::eColor, m_ao.image, m_ao.view, m_ao.allocation)) {
-		nprintf(("vulkan", "VulkanCortao: Failed to create occlusion image\n"));
-		return false;
-	}
-	m_ao.format = AO_FORMAT;
-	m_ao.width = w;
-	m_ao.height = h;
+	// The main pass writes m_aoRaw, and the filter pass writes m_ao.
+	for (auto* target : {&m_aoRaw, &m_ao}) {
+		if (!m_ctx->createImage(w, h, AO_FORMAT,
+				vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled,
+				vk::ImageAspectFlagBits::eColor, target->image, target->view, target->allocation)) {
+			nprintf(("vulkan", "VulkanCortao: Failed to create occlusion image\n"));
+			return false;
+		}
+		target->format = AO_FORMAT;
+		target->width = w;
+		target->height = h;
 
-	{
 		vk::FramebufferCreateInfo fbInfo;
 		fbInfo.renderPass = m_aoRenderPass;
 		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = &m_ao.view;
+		fbInfo.pAttachments = &target->view;
 		fbInfo.width = w;
 		fbInfo.height = h;
 		fbInfo.layers = 1;
 
 		try {
-			m_aoFramebuffer = m_ctx->device.createFramebuffer(fbInfo);
+			(target == &m_aoRaw ? m_aoRawFramebuffer : m_aoFramebuffer) = m_ctx->device.createFramebuffer(fbInfo);
 		} catch (const vk::SystemError& e) {
 			nprintf(("vulkan", "VulkanCortao: Failed to create occlusion framebuffer: %s\n", e.what()));
 			return false;
@@ -371,11 +383,14 @@ void VulkanCortao::destroyTargets()
 {
 	auto device = m_ctx->device;
 
-	if (m_aoFramebuffer) {
-		device.destroyFramebuffer(m_aoFramebuffer);
-		m_aoFramebuffer = nullptr;
+	for (auto* fb : {&m_aoFramebuffer, &m_aoRawFramebuffer}) {
+		if (*fb) {
+			device.destroyFramebuffer(*fb);
+			*fb = nullptr;
+		}
 	}
 	m_ctx->destroyTarget(m_ao);
+	m_ctx->destroyTarget(m_aoRaw);
 
 	for (auto& fb : m_packedMipFramebuffers) {
 		if (fb) {
@@ -458,15 +473,15 @@ bool VulkanCortao::onResize()
 }
 
 void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk::Framebuffer framebuffer,
-                            vk::Extent2D extent, int shaderType, const vk::ImageView* views, uint32_t viewCount,
-                            vk::DeviceSize uboOffset, vk::DeviceSize uboSize)
+                            vk::Extent2D extent, int shaderType, unsigned int shaderFlags,
+                            const vk::ImageView* views, uint32_t viewCount, vk::DeviceSize uboOffset, vk::DeviceSize uboSize)
 {
 	auto* pipelineMgr = getPipelineManager();
 	auto* descriptorMgr = getDescriptorManager();
 
 	PipelineConfig config;
 	config.shaderType = static_cast<shader_type>(shaderType);
-	config.shaderFlags = 0;
+	config.shaderFlags = shaderFlags;
 	config.vertexLayoutHash = 0;
 	config.primitiveType = PRIM_TYPE_TRIS;
 	config.depthMode = ZBUFFER_TYPE_NONE;
@@ -538,7 +553,7 @@ void VulkanCortao::drawPass(vk::CommandBuffer cmd, vk::RenderPass renderPass, vk
 	cmd.endRenderPass();
 }
 
-vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd)
+vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterActive)
 {
 	if (!m_ctx || !m_gbuffer || !m_gbuffer->isInitialized() || !ssao_enabled() || m_initFailed) {
 		return nullptr;
@@ -560,15 +575,29 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd)
 
 	const uint32_t w = m_ctx->sceneExtent.width;
 	const uint32_t h = m_ctx->sceneExtent.height;
-	const uint32_t seed = Ssao_settings.animate_noise
+	const uint32_t seed = ssao_animate_noise(temporalFilterActive)
 		? hash_frame_number(getRendererInstance()->getCurrentFrameNumber())
 		: CORTAO_CONSTANT_SEED;
+	const SsaoFilterMode filterMode = ssao_filter_mode(temporalFilterActive);
+
+	unsigned int mainFlags = 0;
+	switch (ssao_sample_count()) {
+	case 4:
+		mainFlags = SDR_FLAG_CORTAO_SAMPLES_4;
+		break;
+	case 8:
+		mainFlags = SDR_FLAG_CORTAO_SAMPLES_8;
+		break;
+	default:
+		break; // 16 samples: the shader default
+	}
 
 	// The UBO region of this (frame in flight, lighting mode). See UBO_REGIONS.
 	const uint32_t regionIndex = descriptorMgr->getCurrentFrame() * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES)
 	                           + static_cast<uint32_t>(Lighting_mode);
 	const vk::DeviceSize regionBase = regionIndex * m_uboBlockSize * UBO_BLOCKS_PER_REGION;
 	const vk::DeviceSize mainBlockOffset = regionBase + MAX_MIP_LEVELS * m_uboBlockSize;
+	const vk::DeviceSize filterBlockOffset = mainBlockOffset + m_uboBlockSize;
 
 	{
 		auto* mapped = static_cast<uint8_t*>(m_ctx->memoryManager->mapMemory(m_uboAlloc));
@@ -589,6 +618,13 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd)
 		fill_main_uniforms(mainUniforms, w, h, seed);
 		memcpy(mapped + mainBlockOffset, &mainUniforms, sizeof(mainUniforms));
 
+		CortaoFilterUniforms filterUniforms;
+		filterUniforms.packedResolution = w | (h << 16u);
+		filterUniforms.depthSensitivity = CORTAO_FILTER_DEPTH_SENSITIVITY;
+		filterUniforms.normalSensitivity = CORTAO_FILTER_NORMAL_SENSITIVITY;
+		filterUniforms.padding0 = 0;
+		memcpy(mapped + filterBlockOffset, &filterUniforms, sizeof(filterUniforms));
+
 		m_ctx->memoryManager->flushMemory(m_uboAlloc, regionBase, m_uboBlockSize * UBO_BLOCKS_PER_REGION);
 		m_ctx->memoryManager->unmapMemory(m_uboAlloc);
 	}
@@ -598,7 +634,7 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd)
 		const std::array<vk::ImageView, 2> views = {m_gbuffer->positionView(), m_gbuffer->normalView()};
 		for (uint32_t mip = 0; mip < m_mipLevels; ++mip) {
 			const vk::Extent2D extent(std::max(1u, w >> mip), std::max(1u, h >> mip));
-			drawPass(cmd, m_packedRenderPass, m_packedMipFramebuffers[mip], extent, SDR_TYPE_CORTAO_PREPASS,
+			drawPass(cmd, m_packedRenderPass, m_packedMipFramebuffers[mip], extent, SDR_TYPE_CORTAO_PREPASS, 0,
 				views.data(), static_cast<uint32_t>(views.size()), regionBase + mip * m_uboBlockSize, m_uboBlockSize);
 		}
 	}
@@ -606,8 +642,21 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd)
 	{
 		GR_DEBUG_SCOPE("CORTAO main pass");
 		const std::array<vk::ImageView, 3> views = {m_packedFullView, m_gbuffer->normalView(), m_lutView};
-		drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN,
+		drawPass(cmd, m_aoRenderPass, m_aoRawFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN, mainFlags,
 			views.data(), static_cast<uint32_t>(views.size()), mainBlockOffset, m_uboBlockSize);
+	}
+
+	if (filterMode == SsaoFilterMode::Off) {
+		return m_aoRaw.view;
+	}
+
+	{
+		GR_DEBUG_SCOPE("CORTAO filter pass");
+		// The filter reads only mip 0 of the packed data, with texelFetch().
+		const std::array<vk::ImageView, 2> views = {m_packedFullView, m_aoRaw.view};
+		const unsigned int filterFlags = (filterMode == SsaoFilterMode::Large) ? SDR_FLAG_CORTAO_LARGE_FILTER : 0;
+		drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_FILTER, filterFlags,
+			views.data(), static_cast<uint32_t>(views.size()), filterBlockOffset, m_uboBlockSize);
 	}
 
 	return m_ao.view;
