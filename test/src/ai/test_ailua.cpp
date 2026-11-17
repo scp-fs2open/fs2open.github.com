@@ -17,7 +17,13 @@ class AiLuaGoalTest : public test::FSTestFixture {
 	void SetUp() override {
 		test::FSTestFixture::SetUp();
 
-		ai_lua_init();
+		// ai_lua_init() adds a handler to the global Script_system, and nothing removes it. Add it only one
+		// time, so that more tests or --gtest_repeat do not add more handlers.
+		static bool lua_ai_initialized = false;
+		if (!lua_ai_initialized) {
+			ai_lua_init();
+			lua_ai_initialized = true;
+		}
 		Script_system.CreateLuaState();
 	}
 
