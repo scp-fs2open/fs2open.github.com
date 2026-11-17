@@ -340,6 +340,21 @@ TEST_F(CFileLanguageSubdirTest, localize_filename)
 	// the localized name would be MAX_FILENAME_LEN characters
 	EXPECT_EQ("long_name_0123456789abcde.ogg", localize("long_name_0123456789abcde.ogg"));
 
+	// cfopen() with localize; 9 bytes is the localized copy, 4 the original
+	auto opened_size = [](const char* filename, uint32_t location_flags = CF_LOCATION_ALL) {
+		auto fp = cfopen(filename, "rb", CF_TYPE_ANY, true, location_flags);
+		if (fp == nullptr)
+			return -1;
+		int size = cfilelength(fp);
+		cfclose(fp);
+		return size;
+	};
+	EXPECT_EQ(9, opened_size("same.ogg"));
+
+	// the localized copy is only in base, which the location flags rule out, so the pack's original opens
+	EXPECT_EQ(9, opened_size("override.ogg"));
+	EXPECT_EQ(4, opened_size("override.ogg", CF_LOCATION_TYPE_PRIMARY_MOD));
+
 	lcl_set_language(LCL_DEFAULT);
 	EXPECT_EQ("same.ogg", localize("same.ogg"));
 }
