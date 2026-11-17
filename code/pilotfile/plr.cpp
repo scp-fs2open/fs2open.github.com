@@ -914,7 +914,7 @@ void pilotfile::plr_read_settings()
 
 	Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
 	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
-	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZome", Joy_dead_zone_size);
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 
 	// detail
 	//Preset not handled by OptionsManager
