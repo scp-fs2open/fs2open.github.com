@@ -3144,9 +3144,11 @@ int bm_reload(int bitmap_handle, const char* filename) {
 	}
 
 	int w = 0, h = 0, bpp = 0, mm_lvl = 0;
+	int original_width = 0, original_height = 0;
 	BM_TYPE c_type = BM_TYPE_NONE;
 	size_t size = 0;
-	const int rc = bm_load_info(entry->type, full_name, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &size);
+	const int rc = bm_load_info(entry->type, full_name, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &size,
+		&original_width, &original_height);
 	cfclose(img_cfp);
 	if (rc != 0) {
 		return -1;
@@ -3164,6 +3166,8 @@ int bm_reload(int bitmap_handle, const char* filename) {
 		bm_free_data(bm_get_slot(bitmap_handle));
 		strcpy_s(entry->filename, filename);
 	}
+	entry->original_width = original_width;
+	entry->original_height = original_height;
 	return bitmap_handle;
 }
 

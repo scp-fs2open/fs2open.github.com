@@ -265,6 +265,45 @@ TEST_F(DDSBitmapOriginalSizeTest, original_size_is_available_before_pixel_loadin
 	bm_release(handle);
 }
 
+TEST_F(DDSBitmapOriginalSizeTest, reload_updates_original_size_after_validation)
+{
+	const auto write_texture = [this](uint side, uint levels) {
+		std::unique_ptr<CFILE> fp(cfopen(source_name, "wb", CF_TYPE_CACHE));
+		ASSERT_NE(nullptr, fp);
+		write_header(fp.get(), side, side, levels);
+		for (uint level = 0; level < levels; ++level) {
+			const int mip_side = static_cast<int>(side >> level);
+			const auto bytes = dds_compressed_mip_size(mip_side, mip_side, 8);
+			const SCP_vector<ubyte> blocks(bytes, 0);
+			ASSERT_EQ(static_cast<int>(bytes), cfwrite(blocks.data(), 1, static_cast<int>(bytes), fp.get()));
+		}
+	};
+
+	ASSERT_NO_FATAL_FAILURE(write_texture(512, 2));
+	const int handle = bm_load(source_name, CF_TYPE_CACHE);
+	ASSERT_GE(handle, 0);
+	int original_width = 0, original_height = 0;
+	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
+	EXPECT_EQ(512, original_width);
+	EXPECT_EQ(512, original_height);
+
+	const SCP_string filename = source_name;
+	const auto reload_name = filename.substr(0, filename.find_last_of('.'));
+	// Both files load as 256x256 ETC2 with one mip, so the reload can reuse the slot.
+	ASSERT_NO_FATAL_FAILURE(write_texture(256, 1));
+	ASSERT_EQ(handle, bm_reload(handle, reload_name.c_str()));
+	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
+	EXPECT_EQ(256, original_width);
+	EXPECT_EQ(256, original_height);
+
+	ASSERT_NO_FATAL_FAILURE(write_texture(128, 1));
+	EXPECT_EQ(-1, bm_reload(handle, reload_name.c_str()));
+	ASSERT_GE(bm_get_original_size(handle, &original_width, &original_height), 0);
+	EXPECT_EQ(256, original_width);
+	EXPECT_EQ(256, original_height);
+	bm_release(handle);
+}
+
 using DDSEffStreamTest = DDSBitmapOriginalSizeTest;
 
 TEST_F(DDSEffStreamTest, streams_bc1_frames_as_color_or_hud_pixels)
