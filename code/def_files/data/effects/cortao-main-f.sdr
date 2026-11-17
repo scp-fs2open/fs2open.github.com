@@ -12,7 +12,14 @@
 #define CORTAO_GLSL 1
 #define CORTAO_PERSPECTIVE_PROJECTION 1
 #define CORTAO_16_BIT 0
+// The SAMPLES_4 and SAMPLES_8 variants select the quality level. See ssao_sample_count().
+#if defined(SAMPLES_4)
+#define CORTAO_SAMPLE_COUNT 4
+#elif defined(SAMPLES_8)
+#define CORTAO_SAMPLE_COUNT 8
+#else
 #define CORTAO_SAMPLE_COUNT 16
+#endif
 #define CORTAO_RAY_COUNT 16
 #define CORTAO_OCCLUDER_LOOKUP_TABLE 1
 #include "CORTAOMainPass.h"

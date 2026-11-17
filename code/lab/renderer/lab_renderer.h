@@ -188,12 +188,12 @@ public:
 	}
 
 	// Session-only override, same as setRtaoSamples -- does not touch the persisted
-	// Screen-Space Ambient Occlusion option. See Ssao_quality in ssao.h.
-	static void setSsaoQuality(int quality) {
-		Ssao_quality = quality;
+	// Screen-Space Ambient Occlusion option. See Ssao_samples in ssao.h.
+	static void setSsaoSamples(int samples) {
+		Ssao_samples = samples;
 	}
 
-	// Session-only change of the SSAO tuning values. See Ssao_settings in ssao.h.
+	// Session-only change of the SSAO test settings. See Ssao_settings in ssao.h.
 	static void setSsaoSettings(const ssao_settings& settings) {
 		Ssao_settings = settings;
 	}

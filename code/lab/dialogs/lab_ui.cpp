@@ -683,24 +683,56 @@ void LabUi::build_ssao_controls()
 		return;
 	}
 
-	bool enabled = Ssao_quality > 0;
-	if (Checkbox("Screen-Space Ambient Occlusion", &enabled)) {
-		LabRenderer::setSsaoQuality(enabled ? 1 : 0);
+	// The same values as the "Screen-Space Ambient Occlusion" option
+	static const int sample_counts[] = {0, 4, 8, 16};
+	static const char* sample_names[] = {"Off", "Low (4 samples)", "Medium (8 samples)", "High (16 samples)"};
+	int quality_index = 0;
+	for (int i = 0; i < IM_ARRAYSIZE(sample_counts); ++i) {
+		if (Ssao_samples >= sample_counts[i]) {
+			quality_index = i;
+		}
 	}
-	if (!enabled) {
+	if (Combo("Screen-Space Ambient Occlusion", &quality_index, sample_names, IM_ARRAYSIZE(sample_names))) {
+		LabRenderer::setSsaoSamples(sample_counts[quality_index]);
+	}
+	if (Ssao_samples <= 0) {
 		return;
 	}
 	if (rtao_enabled()) {
 		TextUnformatted("RTAO is on, so SSAO has no effect.");
 	}
 
+	// The mod-owned lighting-profile values ($SSAO Max Radius: and the others). These override the
+	// active profile for this session only, as the RTAO sliders do.
+	float screen_radius = lighting_profiles::current_ssao_screen_radius();
+	if (SliderFloat("SSAO Screen Radius", &screen_radius, 0.01f, 0.5f)) {
+		lighting_profiles::lab_set_ssao_screen_radius(screen_radius);
+	}
+	float max_radius = lighting_profiles::current_ssao_max_radius();
+	if (SliderFloat("SSAO Max Radius", &max_radius, 1.0f, 1.0e6f, "%.0f", ImGuiSliderFlags_Logarithmic)) {
+		lighting_profiles::lab_set_ssao_max_radius(max_radius);
+	}
+	// pow(occlusion, 0) is not defined for an occlusion of 0, so the minimum is above 0.
+	float intensity = lighting_profiles::current_ssao_intensity();
+	if (SliderFloat("SSAO Intensity", &intensity, 0.05f, 4.0f)) {
+		lighting_profiles::lab_set_ssao_intensity(intensity);
+	}
+
 	ssao_settings settings = Ssao_settings;
 	bool changed = false;
-	changed |= SliderFloat("SSAO Screen Radius", &settings.screen_radius, 0.01f, 0.5f);
-	changed |= SliderFloat("SSAO Max Radius", &settings.max_radius, 1.0f, 1.0e6f, "%.0f", ImGuiSliderFlags_Logarithmic);
-	// pow(occlusion, 0) is not defined for an occlusion of 0, so the minimum is above 0.
-	changed |= SliderFloat("SSAO Intensity", &settings.intensity, 0.05f, 4.0f);
-	changed |= Checkbox("SSAO Animated Noise", &settings.animate_noise);
+	static const char* filter_names[] = {"Auto", "Off", "5 taps", "13 taps"};
+	int filter = static_cast<int>(settings.filter);
+	if (Combo("SSAO Filter", &filter, filter_names, IM_ARRAYSIZE(filter_names))) {
+		settings.filter = static_cast<SsaoFilterMode>(filter);
+		changed = true;
+	}
+	static const char* noise_names[] = {"Auto", "Constant", "Animated"};
+	int noise = static_cast<int>(settings.noise);
+	if (Combo("SSAO Noise", &noise, noise_names, IM_ARRAYSIZE(noise_names))) {
+		settings.noise = static_cast<SsaoNoiseMode>(noise);
+		changed = true;
+	}
+	TextUnformatted("Auto: 5 taps and animated noise with FSR, 13 taps and constant noise without.");
 	changed |= Checkbox("Show SSAO Only (set the emissive factor to 0)", &settings.debug_view);
 	if (changed) {
 		LabRenderer::setSsaoSettings(settings);

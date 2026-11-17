@@ -30,7 +30,7 @@ struct LabSavedSettings {
 	int rt_shadow_samples_override;
 	float sun_angular_size_override;
 	int rtao_samples;
-	int ssao_quality;
+	int ssao_samples;
 	ssao_settings ssao;
 	bool shadow_contact_hardening_enabled;
 };
@@ -51,7 +51,7 @@ void lab_init() {
 		Rt_shadow_samples_override,
 		Sun_angular_size_override,
 		Rtao_samples,
-		Ssao_quality,
+		Ssao_samples,
 		Ssao_settings,
 		Shadow_contact_hardening_enabled};
 	Lab_settings_saved = true;
@@ -68,7 +68,7 @@ void lab_close(bool reset) {
 		Rt_shadow_samples_override = Lab_saved_settings.rt_shadow_samples_override;
 		Sun_angular_size_override = Lab_saved_settings.sun_angular_size_override;
 		Rtao_samples = Lab_saved_settings.rtao_samples;
-		Ssao_quality = Lab_saved_settings.ssao_quality;
+		Ssao_samples = Lab_saved_settings.ssao_samples;
 		Ssao_settings = Lab_saved_settings.ssao;
 		Shadow_contact_hardening_enabled = Lab_saved_settings.shadow_contact_hardening_enabled;
 		Lab_settings_saved = false;

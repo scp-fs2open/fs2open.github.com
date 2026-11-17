@@ -1,0 +1,90 @@
+// CORTAO filter pass as a fragment shader. It applies the sparse bilateral blur of CORTAO to the
+// occlusion of the main pass.
+//
+// The CORTAO algorithm is in CORTAOFilterPass.h, which is not changed. The reference filter is a
+// compute shader in which each thread writes a block of 2x2 pixels. Here, each fragment calculates
+// the block that contains it and keeps only its own pixel. This does 4 times the work of the
+// reference filter, but the filter is the cheapest CORTAO pass. Only the Vulkan backend uses it.
+
+#ifndef VULKAN
+#error "cortao-filter-f.sdr is only for the Vulkan backend"
+#endif
+
+#extension GL_EXT_control_flow_attributes : enable
+
+#define CORTAO_GLSL 1
+#define CORTAO_16_BIT 0
+#define CORTAO_FILTER_BENT_NORMAL 0
+#ifdef LARGE_FILTER
+#define CORTAO_LARGE_FILTER 1
+#endif
+#include "CORTAOFilterPass.h"
+
+layout(location = 0) out vec4 fragOut0;
+
+layout(location = 0) in vec2 fragTexCoord;
+
+layout(set = 1, binding = 1) uniform sampler2D cortaoTex[2];
+#define PackedData cortaoTex[0]
+#define SsaoBuffer cortaoTex[1]
+
+layout(std140, set = 2, binding = 0) uniform genericData {
+	CORTAOFilterPassParameters cortaoParams;
+};
+
+// The reference filter reads with textureGatherOffset() and offsets that are not constant. In
+// Vulkan, that needs the shaderImageGatherExtended feature. These functions read the same four
+// texels with texelFetch(), in the component order of a gather: x = (0, 1), y = (1, 1), z = (1, 0)
+// and w = (0, 0) from the top-left texel of the 2x2 block. A texel outside the image reads as 0,
+// as with the transparent black border that CORTAO requires.
+ivec2 gatherTopLeft(vec2 texCoords, ivec2 offset)
+{
+	vec2 resolution = vec2(cortao_getResolution(cortaoParams.packedResolution));
+	return ivec2(floor(texCoords * resolution - 0.5)) + offset;
+}
+
+bool insideImage(ivec2 texel)
+{
+	ivec2 resolution = ivec2(cortao_getResolution(cortaoParams.packedResolution));
+	return all(greaterThanEqual(texel, ivec2(0))) && all(lessThan(texel, resolution));
+}
+
+uint fetchPackedData(ivec2 texel)
+{
+	return insideImage(texel) ? floatBitsToUint(texelFetch(PackedData, texel, 0).r) : 0u;
+}
+
+float fetchSsao(ivec2 texel)
+{
+	return insideImage(texel) ? texelFetch(SsaoBuffer, texel, 0).r : 0.0;
+}
+
+cortao_uint4 cortao_gatherPackedData(cortao_float2 texCoords, cortao_int2 offset)
+{
+	ivec2 t = gatherTopLeft(texCoords, offset);
+	return uvec4(fetchPackedData(t + ivec2(0, 1)), fetchPackedData(t + ivec2(1, 1)),
+		fetchPackedData(t + ivec2(1, 0)), fetchPackedData(t));
+}
+
+cortao_half4 cortao_gatherSSAO(cortao_float2 texCoords, cortao_int2 offset)
+{
+	ivec2 t = gatherTopLeft(texCoords, offset);
+	return vec4(fetchSsao(t + ivec2(0, 1)), fetchSsao(t + ivec2(1, 1)), fetchSsao(t + ivec2(1, 0)), fetchSsao(t));
+}
+
+// cortao_filterPass() does not write sky pixels, so these keep 1.0.
+float filteredOcclusion = 1.0;
+
+void cortao_writeFilterOutput(cortao_int2 pixelCoords, cortao_half ssao)
+{
+	if (all(equal(pixelCoords, ivec2(gl_FragCoord.xy)))) {
+		filteredOcclusion = ssao;
+	}
+}
+
+void main()
+{
+	// The reference filter has one thread for each 2x2 pixel block.
+	cortao_filterPass(uvec2(gl_FragCoord.xy) >> 1u, cortaoParams);
+	fragOut0 = vec4(filteredOcclusion, 0.0, 0.0, 1.0);
+}
