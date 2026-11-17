@@ -68,13 +68,10 @@ void OptUi::build_options_list(const char* category) const
 					{
 						for (int n = 0; n < static_cast<int>(values.size()); n++) {
 							bool is_selected = (values[n].serialized == val.serialized);
-							// Two values can show the same text, such as identical joysticks
-							PushID(n);
 							if (Selectable(values[n].display.c_str(), is_selected)) {
 								thisOpt->setValueDescription(values[n]);
 								getOptConfigurator()->options_changed = true;
 							}
-							PopID();
 							if (is_selected) {
 								SetItemDefaultFocus();
 							}

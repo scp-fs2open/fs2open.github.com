@@ -86,22 +86,7 @@ SCP_string getJoystickGUID(SDL_Joystick* stick)
 	return joystickGUID;
 }
 
-// Identical sticks share a GUID, so a saved setting also keeps which of them it was: its place among them in our list
-int sameModelIndex(const Joystick* stick)
-{
-	int index = 0;
-	for (auto& other : joysticks) {
-		if (other.get() == stick) {
-			return index;
-		}
-		if (other->getGUID() == stick->getGUID()) {
-			++index;
-		}
-	}
-	return -1;
-}
-
-bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int model_index)
+bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid)
 {
 	if (guid.empty()) {
 		return false;
@@ -136,12 +121,7 @@ bool joystickMatchesGuid(Joystick* testStick, const SCP_string& guid, int model_
 	}
 
 	// Multiple sticks of the same model -> use the only one that's plugged in
-	if (num_attached == 1) {
-		return testStick->isAttached();
-	}
-
-	// Otherwise the saved place among them picks one
-	return model_index >= 0 && sameModelIndex(testStick) == model_index;
+	return num_attached == 1 && testStick->isAttached();
 }
 
 /**
@@ -189,7 +169,50 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 		GUID = os_config_read_string(nullptr, "CurrentJoystickGUID", "");
 	}
 
-	return joystickMatchesGuid(testStick, GUID, -1);
+	return joystickMatchesGuid(testStick, GUID);
+}
+
+bool pathNamesDevice(const SCP_string& path)
+{
+#ifdef _WIN32
+	// Windows device paths name the device and its port; XInput's only names a slot, handed out in connection order
+	return !path.empty() && path.rfind("XInput#", 0) != 0;
+#else
+	// Not trusted elsewhere: on Linux it's /dev/input/eventN, handed out in plug-in order
+	SCP_UNUSED(path);
+	return false;
+#endif
+}
+
+// Identical sticks share a GUID; their serial, or failing that a path that names the device, tells them apart
+Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, const SCP_string& path)
+{
+	Joystick* by_serial = nullptr;
+	Joystick* by_path = nullptr;
+	int serial_hits = 0;
+	int path_hits = 0;
+	for (auto& stick : joysticks) {
+		if (!stick->isAttached() || stick->getGUID() != guid) {
+			continue;
+		}
+		if (!serial.empty() && stick->getSerial() == serial) {
+			by_serial = stick.get();
+			++serial_hits;
+		}
+		if (pathNamesDevice(path) && stick->getPath() == path) {
+			by_path = stick.get();
+			++path_hits;
+		}
+	}
+
+	if (serial_hits == 1) {
+		return by_serial;
+	}
+	// A saved serial that no plugged-in stick has means that device is away, not that the path should decide
+	if ((serial.empty() || serial_hits > 1) && path_hits == 1) {
+		return by_path;
+	}
+	return nullptr;
 }
 
 /**
@@ -210,12 +233,20 @@ Joystick* joystick_deserialize(const json_t* value)
 		return nullptr;
 	}
 
-	// "id" can't carry this: older builds saved SDL's device index there, and Knossos saves the instance ID
-	auto model_index_json = json_object_get(value, "model_index");
-	int model_index = json_is_integer(model_index_json) ? static_cast<int>(json_integer_value(model_index_json)) : -1;
+	// Settings from older builds and from launchers don't have these
+	auto serial_json = json_object_get(value, "serial");
+	auto path_json = json_object_get(value, "path");
+	SCP_string guid_str(guid);
+	SCP_toupper(guid_str);
+	auto saved = findSavedStick(guid_str,
+		json_is_string(serial_json) ? json_string_value(serial_json) : "",
+		json_is_string(path_json) ? json_string_value(path_json) : "");
+	if (saved != nullptr) {
+		return saved;
+	}
 
 	for (auto& test_stick : joysticks) {
-		if (joystickMatchesGuid(test_stick.get(), guid, model_index)) {
+		if (joystickMatchesGuid(test_stick.get(), guid)) {
 			return test_stick.get();
 		}
 	}
@@ -232,13 +263,15 @@ json_t* joystick_serializer(Joystick* joystick)
 		return json_null();
 	}
 
-	return json_pack("{sssisi}",
+	return json_pack("{sssissss}",
 		"guid",
 		joystick->getGUID().c_str(),
 		"id",
 		-1,
-		"model_index",
-		sameModelIndex(joystick));
+		"serial",
+		joystick->getSerial().c_str(),
+		"path",
+		joystick->getPath().c_str());
 }
 
 /**
@@ -585,14 +618,11 @@ bool device_event_handler(const SDL_Event &evt)
 			
 			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 			{
-				// A new twin can shift which stick a saved setting means, so it never replaces one still plugged in
-				bool slot_free =
-					(pJoystick[i] == nullptr) || (pJoystick[i] == addedStick) || !pJoystick[i]->isAttached();
-				if (value[i] == addedStick && slot_free)
+				// Plugging in one of several identical sticks can change which one another slot's setting means
+				if (value[i] != nullptr && value[i] != pJoystick[i] && value[i]->isAttached())
 				{
 					mprintf(("Joystick %i connected\n", i));
-					setPlayerJoystick(addedStick, i);
-					break;
+					setPlayerJoystick(value[i], i);
 				}
 			}
 		}
@@ -851,6 +881,19 @@ namespace joystick
 	SCP_string Joystick::getName() const
 	{
 		return _name;
+	}
+
+	// Read when needed: some devices only send their serial a moment after they are opened
+	SCP_string Joystick::getSerial() const
+	{
+		auto serial = SDL_GetJoystickSerial(_joystick);
+		return (serial != nullptr) ? serial : "";
+	}
+
+	SCP_string Joystick::getPath() const
+	{
+		auto path = SDL_GetJoystickPath(_joystick);
+		return (path != nullptr) ? path : "";
 	}
 
 	SDL_JoystickID Joystick::getID() const
