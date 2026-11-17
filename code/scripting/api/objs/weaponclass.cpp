@@ -140,13 +140,10 @@ ADE_VIRTVAR(Description, l_Weaponclass, "string", "Weapon class description stri
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		wip->desc = util::unique_copy(s, true);
+		wip->desc = coalesce(s, "");
 	}
 
-	if(wip->desc != nullptr)
-		return ade_set_args(L, "s", wip->desc.get());
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", wip->desc.c_str());
 }
 
 ADE_VIRTVAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title", "string", "Tech title, or empty string if handle is invalid")
@@ -234,13 +231,10 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		wip->tech_desc = util::unique_copy(s, true);
+		wip->tech_desc = coalesce(s, "");
 	}
 
-	if(wip->tech_desc != nullptr)
-		return ade_set_args(L, "s", wip->tech_desc.get());
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", wip->tech_desc.c_str());
 }
 
 ADE_VIRTVAR(Model, l_Weaponclass, "model", "Model", "model", "Weapon class model, or invalid model handle if weaponclass handle is invalid")

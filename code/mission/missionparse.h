@@ -417,21 +417,9 @@ struct alt_class {
 		variable_index = -1;
 		default_to_this_class = false;
 	}
-	alt_class(const alt_class& a) {
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-	}
 	bool operator==(const alt_class& a) const
 	{
 		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
-	}
-	alt_class& operator=(const alt_class& a)
-	{
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-		return *this;
 	}
 };
 
