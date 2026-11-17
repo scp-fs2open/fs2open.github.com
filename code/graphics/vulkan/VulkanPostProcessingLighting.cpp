@@ -14,7 +14,6 @@
 #include "graphics/grinternal.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
-#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "graphics/cortao_params.h"
 #include "graphics/ssao.h"
@@ -692,9 +691,7 @@ void VulkanDeferredLighting::render(vk::CommandBuffer cmd, vk::ImageView ssaoVie
 	if (rtShadowsActive) {
 		lightShaderFlags |= SDR_FLAG_DEFERRED_RT_SHADOWS;
 	}
-	if (rtao_enabled()) {
-		lightShaderFlags |= SDR_FLAG_DEFERRED_RTAO;
-	} else if (ssaoView) {
+	if (ssaoView) {
 		lightShaderFlags |= cortao_deferred_shader_flags();
 	}
 	if (envMapAvailable) {

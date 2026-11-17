@@ -32,10 +32,10 @@ struct deferred_global_data {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
-	// RTAO rays for each pixel. 0 when RTAO is off.
-	int rtaoSampleCount;
+	// Fills the std140 slot before the vec3, so that rayViewOrigin starts on a 16-byte boundary.
+	int padding0;
 
-	// The ray-tracing inputs of the deferred pass, for raytraced shadows and RTAO. They are
+	// The ray-tracing inputs of the deferred pass, for raytraced shadows. They are
 	// here and not in shadowCascadeParams, because the deferred pass always binds this block,
 	// also when shadows are off. shadows_fill_deferred_global_data() (shadows.cpp) sets them.
 	// rayViewOrigin has the same meaning as shadow_cascade_static_data::shadow_ray_view_origin.
@@ -45,10 +45,8 @@ struct deferred_global_data {
 
 	float rayBiasMin;
 	float rayBiasMax;
-	float rtaoRadius;
-	float rtaoStrength;
 };
-static_assert(offsetof(deferred_global_data, rayViewOrigin) == 80 && sizeof(deferred_global_data) == 112,
+static_assert(offsetof(deferred_global_data, rayViewOrigin) == 80 && sizeof(deferred_global_data) == 104,
 	"deferred_global_data must match the std140 layout of the globalDeferredData block in deferred-f.sdr");
 
 /**

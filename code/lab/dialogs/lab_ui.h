@@ -48,7 +48,6 @@ class LabUi {
 	static void build_max_rt_shadow_lights_slider();
 	static void build_rt_shadow_bias_sliders();
 	static void build_shadow_penumbra_sliders();
-	static void build_rtao_sliders();
 	static void build_ssao_controls();
 	void build_tone_mapper_combobox();
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;

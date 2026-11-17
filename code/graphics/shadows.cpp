@@ -16,10 +16,8 @@
 #include "cmdline/cmdline.h"
 #include "debris/debris.h"
 #include "graphics/matrix.h"
-#include "graphics/rtao.h"
 #include "graphics/ssao.h"
 #include "lighting/lighting.h"
-#include "lighting/lighting_profiles.h"
 #include "math/vecmat.h"
 #include "mod_table/mod_table.h"
 #include "model/model.h"
@@ -398,7 +396,6 @@ static float shadow_clamp_smoothness(float smoothness)
 
 void shadows_remove_unsupported_options()
 {
-	rtao_remove_unsupported_options();
 	ssao_remove_unsupported_options();
 
 	if (!shadow_contact_hardening_supported()) {
@@ -433,7 +430,7 @@ bool shadows_use_raytracing()
 
 bool shadows_rt_scene_needed()
 {
-	return rtao_enabled() || (shadows_use_raytracing() && Shadow_quality != ShadowQuality::Disabled);
+	return shadows_use_raytracing() && Shadow_quality != ShadowQuality::Disabled;
 }
 
 bool shadows_use_raytraced_local_lights()
@@ -1017,7 +1014,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos,
 	TRACE_SCOPE(tracing::BuildShadowMap);
 
 	// The deferred pass reads this matrix in each frame, also when no shadow map renders (for
-	// example, RTAO in a mission with no sun). Thus write it before the early returns below.
+	// example, in a mission with no sun). Thus write it before the early returns below.
 	Shadow_view_matrix_render = gr_view_matrix;
 
 	if ( Static_light.empty() ) {
@@ -1343,10 +1340,6 @@ void shadows_fill_deferred_global_data(graphics::deferred_global_data& data) {
 	data.rayCullMask = ray.cull_mask;
 	data.rayBiasMin = Rt_shadow_bias_min;
 	data.rayBiasMax = Rt_shadow_bias_max;
-
-	data.rtaoSampleCount = Rtao_samples;
-	data.rtaoRadius = lighting_profiles::current_rtao_radius();
-	data.rtaoStrength = lighting_profiles::current_rtao_strength();
 }
 
 bool shadows_cockpit_casts_shadow(const ship_info* sip) {
