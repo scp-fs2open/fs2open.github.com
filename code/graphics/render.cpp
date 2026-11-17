@@ -93,11 +93,12 @@ static void bitmap_ex_internal(int x,
 							   int h,
 							   int sx,
 							   int sy,
+							   int bw,
+							   int bh,
 							   int resize_mode,
 							   bool aabitmap,
 							   bool mirror,
-							   color* clr,
-							   float scale_factor = 1.0f) {
+							   color* clr) {
 	if ((w < 1) || (h < 1)) {
 		return;
 	}
@@ -108,20 +109,11 @@ static void bitmap_ex_internal(int x,
 
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
-	int bw, bh;
-
 	bool do_resize;
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
 	} else {
 		do_resize = false;
-	}
-
-	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
-
-	if (scale_factor != 1.0f) {
-		bw = static_cast<int>(bw * scale_factor);
-		bh = static_cast<int>(bh * scale_factor);
 	}
 
 	u0 = (i2fl(sx) / i2fl(bw));
@@ -166,7 +158,7 @@ static void bitmap_ex_internal(int x,
 	draw_textured_quad(&render_mat, x1, y1, u0, v0, x2, y2, u1, v1);
 }
 
-void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor) {
+void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor, bool use_original_size) {
 	if (gr_screen.mode == GraphicsAPI::Stub) {
 		return;
 	}
@@ -175,7 +167,11 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 
 	int w, h, do_resize;
 
-	bm_get_info(gr_screen.current_bitmap, &w, &h);
+	const int bitmap_handle = gr_screen.current_bitmap;
+	const int result = use_original_size ? bm_get_original_size(bitmap_handle, &w, &h) : bm_get_info(bitmap_handle, &w, &h);
+	if (result < 0) {
+		return;
+	}
 
 	if (scale_factor != 1.0f) {
 		w = static_cast<int>(w * scale_factor);
@@ -247,11 +243,12 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   (dy2 - dy1 + 1),
 					   sx,
 					   sy,
+					   w,
+					   h,
 					   resize_mode,
 					   true,
 					   mirror,
-					   &GR_CURRENT_COLOR,
-					   scale_factor);
+					   &GR_CURRENT_COLOR);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
 	if (gr_screen.mode == GraphicsAPI::Stub) {
@@ -398,11 +395,12 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		(dy2 - dy1 + 1),
 		sx,
 		sy,
+		bw,
+		bh,
 		resize_mode,
 		true,
 		mirror,
-		&GR_CURRENT_COLOR,
-		scale_factor);
+		&GR_CURRENT_COLOR);
 }
 //these are penguins bitmap functions
 void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
@@ -547,7 +545,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, b
 	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, false, mirror, &clr, scale_factor);
+	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, bw, bh, resize_mode, false, mirror, &clr);
 }
 
 #define MAX_VERTS_PER_DRAW 300

@@ -362,7 +362,7 @@ public:
 	void setGaugeFrame(int frame_offset);
 
 	// rendering functions
-	void renderBitmap(int x, int y, float scale = 1.0f, bool config = false) const;
+	void renderBitmap(int x, int y, float scale = 1.0f, bool config = false, bool use_original_size = false) const;
 	void renderBitmap(int frame, int x, int y, float scale = 1.0f, bool config = false) const;
 	void renderBitmapColor(int frame, int x, int y, float scale = 1.0f, bool config = false) const;
 	void renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy, float scale = 1.0f, bool config = false) const;

@@ -26,8 +26,9 @@ void gr_flash_alpha(int r, int g, int b, int a);
  * @param resize_mode The resize mode for translating the coordinated
  * @param mirror @c true to mirror the image
  * @param scale_factor a multiplier for the width and height of the bitmap
+ * @param use_original_size Use the original bitmap dimensions when the texture was resized on load
  */
-void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
+void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f, bool use_original_size = false);
 /**
  * @brief Draws a grey-scale bitmap multiplied with the current color
  * @param x The x-coordinate of the draw call
