@@ -544,7 +544,7 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 }
 #endif
 
-int cf_rename(const char* old_name, const char* name, int dir_type, int location_flags)
+int cf_rename(const char* old_name, const char* name, int dir_type, uint32_t location_flags)
 {
 	Assert(CF_TYPE_SPECIFIED(dir_type));
 

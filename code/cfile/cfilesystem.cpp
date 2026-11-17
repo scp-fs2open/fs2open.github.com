@@ -1946,6 +1946,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 
 				if (info) {
 					tinfo.write_time = f->write_time;
+					tinfo.size = f->size;
 					info->push_back( tinfo );
 				}
 			}
