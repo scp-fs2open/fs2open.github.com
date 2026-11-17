@@ -165,7 +165,7 @@ void gr_opengl_flip()
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glDrawBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+		glBlitFramebuffer(0, 0, opengl_screen_pixel_width(), opengl_screen_pixel_height(), 0, 0, Cmdline_window_res->first, Cmdline_window_res->second, GL_COLOR_BUFFER_BIT, gr_upscale_nearest() ? GL_NEAREST : GL_LINEAR);
 		glDrawBuffer(GL_NONE);
 
 		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);

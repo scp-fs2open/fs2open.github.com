@@ -1283,6 +1283,29 @@ float gr_anisotropy_setting()
 	return anisotropic_default();
 }
 
+static int Upscale_filter = 0;
+
+static const SCP_vector<std::pair<int, std::pair<const char*, int>>> UpscaleFilterValues = {{0, {"Linear", -1}},
+                                                                                           {1, {"Nearest", -1}}};
+
+// coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
+static auto UpscaleFilterOption __UNUSED = options::OptionBuilder<int>("Graphics.UpscaleFilter",
+                     std::pair<const char*, int>{"Upscale Filter", -1},
+                     std::pair<const char*, int>{"OpenGL only. How the frame is scaled to the window when the window size differs from the render resolution. Nearest keeps sharp pixels, square at whole-number scales. Vulkan always uses nearest, after FSR when FSR is on. VR output does not change.", -1})
+                     .category(std::make_pair("Graphics", 1825))
+                     .level(options::ExpertLevel::Advanced)
+                     .values(UpscaleFilterValues)
+                     .default_val(0)
+                     .bind_to(&Upscale_filter)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .importance(0)
+                     .finish();
+
+bool gr_upscale_nearest()
+{
+	return Using_in_game_options && Upscale_filter == 1;
+}
+
 // trilinear, which the launcher setting has always defaulted to
 static int Texture_filter = 1;
 
