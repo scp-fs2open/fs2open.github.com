@@ -826,9 +826,6 @@ SCP_string message_translate_tokens(const char *text)
  */
 int message_play_training_voice(int index)
 {
-	int len;
-	CFILE *fp;
-
 	if (index < 0) {
 		if (Training_voice >= 0) {
 			if (Training_voice_type) {
@@ -845,13 +842,12 @@ int message_play_training_voice(int index)
 	}
 
 	if (!Message_waves[index].num.isValid()) {
-		fp = cfopen(Message_waves[index].name, "rb");
-		if (!fp)
+		// check the size of the file: large files get streamed, small files get played as sounds
+		auto res = cf_find_file_location_ext(Message_waves[index].name, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY);
+		if (!res.found)
 			return -1;
 
-		len = cfilelength(fp);
-		cfclose(fp);
-		if (len > 100000) {
+		if (res.size > 100000) {
 			if ((Training_voice < 0) || !Training_voice_type || (Training_voice != index)) {
 				if (Training_voice >= 0) {
 					if (Training_voice_type) {
