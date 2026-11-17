@@ -31,6 +31,7 @@ add_file_folder("DDS Utils"
 
 add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
+    globalincs/test_polymorphic.cpp
     globalincs/test_safe_strings.cpp
     globalincs/test_version.cpp
 )
@@ -81,6 +82,10 @@ add_file_folder("Options"
     options/test_options_manager.cpp
 )
 
+add_file_folder("OSAPI"
+    osapi/test_osregistry.cpp
+)
+
 add_file_folder("Parse"
     parse/test_parselo.cpp
     parse/test_replace.cpp
@@ -118,6 +123,10 @@ add_file_folder("Scripting\\\\Lua"
     scripting/lua/Thread.cpp
     scripting/lua/Util.cpp
     scripting/lua/Value.cpp
+)
+
+add_file_folder("Ship"
+    ship/ship_info.cpp
 )
 
 add_file_folder("Starfield"

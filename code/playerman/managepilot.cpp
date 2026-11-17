@@ -599,7 +599,7 @@ void player::assign(const player *other)
 	memcpy(&bi, &other->bi, sizeof(button_info));
 	memcpy(&ci, &other->ci, sizeof(control_info));
 
-	stats.assign(other->stats);
+	stats = other->stats;
 
 	friendly_hits = other->friendly_hits;
 	friendly_damage = other->friendly_damage;
