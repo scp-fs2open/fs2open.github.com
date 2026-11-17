@@ -5,17 +5,18 @@
 // gives the same result, one draw for each mip level: it follows the selection rule back to the
 // mip 0 texel that the reference prepass keeps, and packs that texel.
 //
-// The engine has no compute pipelines, so this is a fragment shader. Only the Vulkan backend uses it.
+// The engine has no compute pipelines, so this is a fragment shader. The Vulkan and the OpenGL
+// backends use it. OpenGL needs GLSL 4.20 (see CAPABILITY_SCREEN_SPACE_AO).
 //
 // The packed data is a uint. The target is R32_SFLOAT, so the shader writes the bits as a float.
 // The value is a positive linear depth with modified low mantissa bits, or 0. Thus it is never a
 // NaN or a denormal, and the float target keeps all bits.
 
-#ifndef VULKAN
-#error "cortao-prepass-f.sdr is only for the Vulkan backend"
-#endif
-
+// CORTAOBase.h uses [[unroll]] when the GL_EXT_control_flow_attributes macro is defined. The
+// macro can be defined while the extension is not enabled, so enable it whenever it is there.
+#ifdef GL_EXT_control_flow_attributes
 #extension GL_EXT_control_flow_attributes : enable
+#endif
 
 #define CORTAO_GLSL 1
 #include "CORTAOBase.h"
@@ -23,13 +24,23 @@
 
 layout(location = 0) out vec4 fragOut0;
 
+#ifdef VULKAN
 layout(location = 0) in vec2 fragTexCoord;
 
 layout(set = 1, binding = 1) uniform sampler2D cortaoTex[2];
 #define PositionBuffer cortaoTex[0]
 #define NormalBuffer cortaoTex[1]
 
-layout(std140, set = 2, binding = 0) uniform genericData {
+layout(std140, set = 2, binding = 0)
+#else
+in vec4 fragTexCoord;
+
+uniform sampler2D PositionBuffer;
+uniform sampler2D NormalBuffer;
+
+layout(std140)
+#endif
+uniform genericData {
 	// Mip 0 width in the low 16 bits, mip 0 height in the high 16 bits
 	uint packedResolution;
 	uint randomSeed;

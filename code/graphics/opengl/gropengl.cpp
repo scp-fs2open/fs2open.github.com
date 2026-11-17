@@ -16,6 +16,7 @@
 #include "gropengl.h"
 #include "ShaderProgram.h"
 #include "gropenglbmpman.h"
+#include "gropenglcortao.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
 #include "gropenglopenxr.h"
@@ -518,6 +519,7 @@ void gr_opengl_shutdown()
 	opengl_tcache_shutdown();
 	opengl_tnl_shutdown();
 	opengl_scene_texture_shutdown();
+	opengl_cortao_shutdown();
 	opengl_post_process_shutdown();
 	opengl_shader_shutdown();
 
@@ -1645,6 +1647,12 @@ bool gr_opengl_is_capable(gr_capability capability)
 #endif
 	case gr_capability::CAPABILITY_FSR:
 		return false;
+	case gr_capability::CAPABILITY_SCREEN_SPACE_AO:
+#ifdef USE_OPENGL_ES
+		return false;
+#else
+		return GLSL_version >= 420;
+#endif
 	}
 
 

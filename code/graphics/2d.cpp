@@ -93,6 +93,7 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(RAYTRACED_SHADOWS),
 	GR_CAPABILITY_ENTRY(SHADOW_CONTACT_HARDENING),
 	GR_CAPABILITY_ENTRY(FSR),
+	GR_CAPABILITY_ENTRY(SCREEN_SPACE_AO),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);

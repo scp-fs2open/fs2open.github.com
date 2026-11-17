@@ -143,6 +143,8 @@ bool vulkan_is_capable(gr_capability capability)
 		return true;
 	case gr_capability::CAPABILITY_FSR:
 		return vulkan_upscaler_available();
+	case gr_capability::CAPABILITY_SCREEN_SPACE_AO:
+		return true;
 	}
 	return false;
 }

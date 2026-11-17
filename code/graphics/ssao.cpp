@@ -33,7 +33,7 @@ auto SsaoQualityOption = options::OptionBuilder<int>("Graphics.SsaoQuality",
 
 bool ssao_supported()
 {
-	return gr_screen.mode == GraphicsAPI::Vulkan;
+	return gr_is_capable(gr_capability::CAPABILITY_SCREEN_SPACE_AO);
 }
 
 bool ssao_enabled()

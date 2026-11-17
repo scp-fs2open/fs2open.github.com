@@ -418,7 +418,10 @@ enum class gr_capability {
 	// of images there); OpenGL needs GL 3.3 (glGenSamplers/glBindSampler), since the compare mode is
 	// otherwise texture-object state shared by every sampler bound to that texture.
 	CAPABILITY_SHADOW_CONTACT_HARDENING,
-	CAPABILITY_FSR
+	CAPABILITY_FSR,
+	// The CORTAO screen-space ambient occlusion passes (graphics/ssao.h). OpenGL needs GLSL 4.20:
+	// 4.00 for fma() and bitCount(), and 4.20 for the scalar swizzles in CORTAOFilterPass.h.
+	CAPABILITY_SCREEN_SPACE_AO
 };
 
 struct gr_capability_def {
