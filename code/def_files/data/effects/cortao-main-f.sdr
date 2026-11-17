@@ -1,13 +1,13 @@
 // CORTAO main pass as a fragment shader. It writes the screen-space ambient occlusion of each pixel.
 //
 // The CORTAO algorithm is in CORTAOMainPass.h, which is not changed. This file supplies the
-// callbacks that read the engine textures. Only the Vulkan backend uses it.
+// callbacks that read the engine textures. The Vulkan and the OpenGL backends use it.
 
-#ifndef VULKAN
-#error "cortao-main-f.sdr is only for the Vulkan backend"
-#endif
-
+// CORTAOBase.h uses [[unroll]] when the GL_EXT_control_flow_attributes macro is defined. The
+// macro can be defined while the extension is not enabled, so enable it whenever it is there.
+#ifdef GL_EXT_control_flow_attributes
 #extension GL_EXT_control_flow_attributes : enable
+#endif
 
 #define CORTAO_GLSL 1
 #define CORTAO_PERSPECTIVE_PROJECTION 1
@@ -26,16 +26,27 @@
 
 layout(location = 0) out vec4 fragOut0;
 
+// The packed data must use NEAREST filtering, NEAREST mipmaps and a transparent black border, as
+// CORTAO requires. The other textures are read with texelFetch().
+#ifdef VULKAN
 layout(location = 0) in vec2 fragTexCoord;
 
-// All three textures use a sampler with NEAREST filtering, NEAREST mipmaps and a transparent black
-// border. CORTAO requires this sampler for the packed data.
 layout(set = 1, binding = 1) uniform sampler2D cortaoTex[3];
 #define PackedData cortaoTex[0]
 #define NormalBuffer cortaoTex[1]
 #define OccluderLookupTable cortaoTex[2]
 
-layout(std140, set = 2, binding = 0) uniform genericData {
+layout(std140, set = 2, binding = 0)
+#else
+in vec4 fragTexCoord;
+
+uniform sampler2D PackedData;
+uniform sampler2D NormalBuffer;
+uniform sampler2D OccluderLookupTable;
+
+layout(std140)
+#endif
+uniform genericData {
 	CORTAOMainPassParameters cortaoParams;
 
 	// The occlusion is raised to this power. 1 is the physically correct value.

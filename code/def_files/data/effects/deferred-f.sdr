@@ -44,6 +44,8 @@ uniform sampler2D ColorBuffer;
 uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
+// Screen-space ambient occlusion from the CORTAO passes. Only used in the SSAO variant.
+uniform sampler2D SsaoBuffer;
 uniform sampler2DArrayShadow shadow_map;
 uniform sampler2DArray shadow_map_raw;
 

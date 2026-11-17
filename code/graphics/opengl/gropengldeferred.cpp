@@ -1,6 +1,7 @@
 
 
 #include "gropengldeferred.h"
+#include "gropenglcortao.h"
 #include "graphics/util/primitives.h"
 
 #include "ShaderProgram.h"
@@ -12,6 +13,7 @@
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
+#include "graphics/ssao.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -225,13 +227,23 @@ void gr_opengl_deferred_lighting_finish()
 		return;
 	}
 
+	// The CORTAO passes run first, because they change the shader, the blend mode and the textures.
+	const GLuint ssao_texture = opengl_cortao_execute();
+
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	// GL_state.DepthFunc(GL_GREATER);
 	// GL_state.DepthMask(GL_FALSE);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
+	unsigned int light_shader_flags = ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0;
+	if (ssao_texture != 0) {
+		light_shader_flags |= SDR_FLAG_DEFERRED_SSAO;
+		if (Ssao_settings.debug_view) {
+			light_shader_flags |= SDR_FLAG_DEFERRED_SSAO_DEBUG;
+		}
+	}
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, light_shader_flags));
 	
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
@@ -251,6 +263,10 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
+	if (ssao_texture != 0) {
+		Current_shader->program->Uniforms.setTextureUniform("SsaoBuffer", SSAO_TEXTURE_UNIT);
+		GL_state.Texture.Enable(SSAO_TEXTURE_UNIT, GL_TEXTURE_2D, ssao_texture);
+	}
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_depth_texture);
 		if (Shadow_map_raw_sampler) {

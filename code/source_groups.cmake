@@ -467,6 +467,8 @@ add_file_folder("Graphics"
 	graphics/color.cpp
 	graphics/color.h
 	graphics/cortao_occluder_lut.h
+	graphics/cortao_params.cpp
+	graphics/cortao_params.h
 	graphics/grbatch.cpp
 	graphics/grbatch.h
 	graphics/grinternal.cpp
@@ -511,6 +513,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL CPPs"
 		graphics/opengl/gropengl.cpp
 		graphics/opengl/gropenglbmpman.cpp
+		graphics/opengl/gropenglcortao.cpp
 		graphics/opengl/gropengldeferred.cpp
 		graphics/opengl/gropengldraw.cpp
 		graphics/opengl/gropenglopenxr.cpp
@@ -528,6 +531,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_file_folder("Graphics\\\\OpenGLGr\\\\OpenGL Headers"
 		graphics/opengl/gropengl.h
 		graphics/opengl/gropenglbmpman.h
+		graphics/opengl/gropenglcortao.h
 		graphics/opengl/gropengldeferred.h
 		graphics/opengl/gropengldraw.h
 		graphics/opengl/gropenglopenxr.h

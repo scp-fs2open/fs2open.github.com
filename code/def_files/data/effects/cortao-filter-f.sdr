@@ -4,13 +4,14 @@
 // The CORTAO algorithm is in CORTAOFilterPass.h, which is not changed. The reference filter is a
 // compute shader in which each thread writes a block of 2x2 pixels. Here, each fragment calculates
 // the block that contains it and keeps only its own pixel. This does 4 times the work of the
-// reference filter, but the filter is the cheapest CORTAO pass. Only the Vulkan backend uses it.
+// reference filter, but the filter is the cheapest CORTAO pass. The Vulkan and the OpenGL backends
+// use it.
 
-#ifndef VULKAN
-#error "cortao-filter-f.sdr is only for the Vulkan backend"
-#endif
-
+// CORTAOBase.h uses [[unroll]] when the GL_EXT_control_flow_attributes macro is defined. The
+// macro can be defined while the extension is not enabled, so enable it whenever it is there.
+#ifdef GL_EXT_control_flow_attributes
 #extension GL_EXT_control_flow_attributes : enable
+#endif
 
 #define CORTAO_GLSL 1
 #define CORTAO_16_BIT 0
@@ -22,13 +23,23 @@
 
 layout(location = 0) out vec4 fragOut0;
 
+#ifdef VULKAN
 layout(location = 0) in vec2 fragTexCoord;
 
 layout(set = 1, binding = 1) uniform sampler2D cortaoTex[2];
 #define PackedData cortaoTex[0]
 #define SsaoBuffer cortaoTex[1]
 
-layout(std140, set = 2, binding = 0) uniform genericData {
+layout(std140, set = 2, binding = 0)
+#else
+in vec4 fragTexCoord;
+
+uniform sampler2D PackedData;
+uniform sampler2D SsaoBuffer;
+
+layout(std140)
+#endif
+uniform genericData {
 	CORTAOFilterPassParameters cortaoParams;
 };
 

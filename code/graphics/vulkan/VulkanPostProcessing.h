@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "graphics/cortao_params.h"
 #include "lighting/lighting.h"
 #include "VulkanMemory.h"
 #include "VulkanConstants.h"
@@ -705,8 +706,7 @@ private:
 	              vk::Extent2D extent, int shaderType, unsigned int shaderFlags,
 	              const vk::ImageView* views, uint32_t viewCount, vk::DeviceSize uboOffset, vk::DeviceSize uboSize);
 
-	// The prepass writes at most this many mip levels. This is also the CORTAO maximum.
-	static constexpr uint32_t MAX_MIP_LEVELS = 8;
+	static constexpr uint32_t MAX_MIP_LEVELS = CORTAO_MAX_MIP_LEVELS;
 	// One UBO block for each prepass mip level, one for the main pass and one for the filter pass.
 	static constexpr uint32_t UBO_BLOCKS_PER_REGION = MAX_MIP_LEVELS + 2;
 	// One region for each (frame in flight, lighting mode), because the scene and the cockpit

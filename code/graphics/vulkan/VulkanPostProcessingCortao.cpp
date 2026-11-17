@@ -1,7 +1,6 @@
 #include "VulkanPostProcessing.h"
 
 #include <array>
-#include <cmath>
 
 #include "gr_vulkan.h"
 #include "VulkanRenderer.h"
@@ -10,10 +9,10 @@
 #include "VulkanDescriptorManager.h"
 #include "graphics/2d.h"
 #include "graphics/cortao_occluder_lut.h"
+#include "graphics/cortao_params.h"
 #include "graphics/grinternal.h"
 #include "graphics/matrix.h"
 #include "graphics/ssao.h"
-#include "lighting/lighting_profiles.h"
 
 namespace graphics::vulkan {
 
@@ -21,122 +20,6 @@ namespace {
 
 constexpr vk::Format PACKED_FORMAT = vk::Format::eR32Sfloat;
 constexpr vk::Format AO_FORMAT = vk::Format::eR8Unorm;
-
-// The CORTAO configuration values that the engine does not change. These are the defaults that
-// CORTAOParameters.h recommends.
-constexpr float CORTAO_MIP_BIAS = -4.0f;
-constexpr float CORTAO_MAX_SLOPE_COMPENSATION = 4.0f;
-constexpr float CORTAO_BACKFACE_THRESHOLD = 0.5f;
-constexpr float CORTAO_BACKFACE_BOOST = 0.0f;
-constexpr float CORTAO_FILTER_DEPTH_SENSITIVITY = 512.0f;
-constexpr float CORTAO_FILTER_NORMAL_SENSITIVITY = 128.0f;
-
-// A constant seed gives a constant noise pattern. See SsaoNoiseMode.
-constexpr uint32_t CORTAO_CONSTANT_SEED = 0x6a09e667u;
-
-// The std140 layout of the genericData block in cortao-prepass-f.sdr
-struct CortaoPrepassUniforms {
-	uint32_t packedResolution;
-	uint32_t randomSeed;
-	uint32_t mipLevel;
-	float nearPlane;
-};
-
-// The std140 layout of the genericData block in cortao-main-f.sdr: CORTAOMainPassParameters
-// (CORTAOMainPass.h), then the intensity.
-struct CortaoMainUniforms {
-	uint32_t packedResolution;
-	uint32_t randomSeed;
-	float normalBias;
-	float radius;
-
-	float unprojectParams[4];
-	float projectionParams[4];
-
-	float maxApparentCircleRadiusCoefficient;
-	float mipBias;
-	float inverseMaxSlopeCompensation;
-	float backfaceThreshold;
-
-	float backfaceBoost;
-	uint32_t padding0[3];
-
-	float intensity;
-	float padding1[3];
-};
-static_assert(sizeof(CortaoMainUniforms) == 96, "CortaoMainUniforms must match the std140 layout of cortao-main-f.sdr");
-
-// The std140 layout of CORTAOFilterPassParameters (CORTAOFilterPass.h) in cortao-filter-f.sdr
-struct CortaoFilterUniforms {
-	uint32_t packedResolution;
-	float depthSensitivity;
-	float normalSensitivity;
-	uint32_t padding0;
-};
-
-uint32_t hash_frame_number(uint64_t frame)
-{
-	// A 32-bit integer hash (lowbias32, Chris Wellons)
-	auto x = static_cast<uint32_t>(frame);
-	x ^= x >> 16;
-	x *= 0x7feb352du;
-	x ^= x >> 15;
-	x *= 0x846ca68bu;
-	x ^= x >> 16;
-	return x;
-}
-
-/**
- * @brief Fill the main pass parameters from the current projection matrix
- *
- * This does the work of CORTAO::populateMainPassParameters() in CORTAOParameters.h with flipY = true.
- * We do not compile CORTAOParameters.h, because it uses std::sqrtf, which libstdc++ does not have.
- *
- * flipY is true because the G-buffer pass uses a negative viewport height: NDC +Y is texel row 0.
- */
-void fill_main_uniforms(CortaoMainUniforms& out, uint32_t width, uint32_t height, uint32_t seed)
-{
-	// gr_projection_matrix is column-major. The main pass uses only the X and Y terms, so the
-	// different near planes of the scene and cockpit passes do not change the result.
-	// A render-to-texture projection can have a negative Y scale for its Y-flip. The G-buffer row
-	// order does not change, so use the magnitude. A negative value would make the mip bias NaN.
-	const float projX = std::fabs(gr_projection_matrix.a1d[0]);
-	const float projY = std::fabs(gr_projection_matrix.a1d[5]);
-	const float projOffsetX = gr_projection_matrix.a1d[8];
-	const float projOffsetY = gr_projection_matrix.a1d[9];
-
-	// The terms of the inverse projection matrix that CORTAO uses
-	const float invX = 1.0f / projX;
-	const float invY = 1.0f / projY;
-	const float invOffsetX = projOffsetX / projX;
-	const float invOffsetY = projOffsetY / projY;
-
-	memset(&out, 0, sizeof(out));
-	out.packedResolution = width | (height << 16u);
-	out.randomSeed = seed;
-	out.normalBias = invX / static_cast<float>(width) * std::sqrt(2.0f);
-	out.radius = lighting_profiles::current_ssao_max_radius();
-
-	out.unprojectParams[0] = +2.0f * invX;
-	out.unprojectParams[1] = -2.0f * invY;
-	out.unprojectParams[2] = -invX + invOffsetX;
-	out.unprojectParams[3] = +invY + invOffsetY;
-
-	out.projectionParams[0] = +0.5f * projX;
-	out.projectionParams[1] = -0.5f * projY;
-	out.projectionParams[2] = -0.5f + 0.5f * projOffsetX;
-	out.projectionParams[3] = -0.5f - 0.5f * projOffsetY;
-
-	const float maxApparentCircleRadius = invY * lighting_profiles::current_ssao_screen_radius() * 2.0f;
-	out.maxApparentCircleRadiusCoefficient =
-		maxApparentCircleRadius / std::sqrt(maxApparentCircleRadius * maxApparentCircleRadius + 1.0f);
-	out.mipBias = std::log2(projY * static_cast<float>(height) * 0.5f) + CORTAO_MIP_BIAS;
-	out.inverseMaxSlopeCompensation = 1.0f / CORTAO_MAX_SLOPE_COMPENSATION;
-	out.backfaceThreshold = CORTAO_BACKFACE_THRESHOLD;
-	out.backfaceBoost = CORTAO_BACKFACE_BOOST;
-
-	out.intensity = lighting_profiles::current_ssao_intensity();
-}
 
 } // namespace
 
@@ -247,7 +130,7 @@ bool VulkanCortao::initResources()
 
 	{
 		const auto align = static_cast<vk::DeviceSize>(getRendererInstance()->getMinUniformBufferOffsetAlignment());
-		const vk::DeviceSize largest = std::max(sizeof(CortaoPrepassUniforms), sizeof(CortaoMainUniforms));
+		const vk::DeviceSize largest = std::max({sizeof(cortao_prepass_uniforms), sizeof(cortao_main_uniforms), sizeof(cortao_filter_uniforms)});
 		m_uboBlockSize = (largest + align - 1) / align * align;
 
 		vk::BufferCreateInfo bufInfo;
@@ -283,11 +166,7 @@ bool VulkanCortao::createTargets()
 	const uint32_t w = m_ctx->sceneExtent.width;
 	const uint32_t h = m_ctx->sceneExtent.height;
 
-	// One mip level for each halving of the larger side, at most MAX_MIP_LEVELS.
-	m_mipLevels = 1;
-	while (m_mipLevels < MAX_MIP_LEVELS && (std::max(w, h) >> m_mipLevels) > 0) {
-		++m_mipLevels;
-	}
+	m_mipLevels = cortao_mip_levels(w, h);
 
 	{
 		vk::ImageCreateInfo imageInfo;
@@ -575,22 +454,9 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 
 	const uint32_t w = m_ctx->sceneExtent.width;
 	const uint32_t h = m_ctx->sceneExtent.height;
-	const uint32_t seed = ssao_animate_noise(temporalFilterActive)
-		? hash_frame_number(getRendererInstance()->getCurrentFrameNumber())
-		: CORTAO_CONSTANT_SEED;
+	const uint32_t seed =
+		cortao_random_seed(ssao_animate_noise(temporalFilterActive), getRendererInstance()->getCurrentFrameNumber());
 	const SsaoFilterMode filterMode = ssao_filter_mode(temporalFilterActive);
-
-	unsigned int mainFlags = 0;
-	switch (ssao_sample_count()) {
-	case 4:
-		mainFlags = SDR_FLAG_CORTAO_SAMPLES_4;
-		break;
-	case 8:
-		mainFlags = SDR_FLAG_CORTAO_SAMPLES_8;
-		break;
-	default:
-		break; // 16 samples: the shader default
-	}
 
 	// The UBO region of this (frame in flight, lighting mode). See UBO_REGIONS.
 	const uint32_t regionIndex = descriptorMgr->getCurrentFrame() * static_cast<uint32_t>(lighting_mode::MAX_LIGHTING_MODES)
@@ -606,23 +472,20 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 		}
 
 		for (uint32_t mip = 0; mip < m_mipLevels; ++mip) {
-			CortaoPrepassUniforms prepass;
-			prepass.packedResolution = w | (h << 16u);
-			prepass.randomSeed = seed;
-			prepass.mipLevel = mip;
-			prepass.nearPlane = gr_near_plane;
+			cortao_prepass_uniforms prepass;
+			cortao_fill_prepass_uniforms(prepass, w, h, seed, mip);
 			memcpy(mapped + regionBase + mip * m_uboBlockSize, &prepass, sizeof(prepass));
 		}
 
-		CortaoMainUniforms mainUniforms;
-		fill_main_uniforms(mainUniforms, w, h, seed);
+		// The Vulkan screen passes use a negative viewport height, so NDC +Y is texel row 0. A
+		// render-to-texture pass uses a positive viewport height and puts the Y-flip into the
+		// projection (a negative Y scale). The sign of the Y scale thus tells which case applies.
+		cortao_main_uniforms mainUniforms;
+		cortao_fill_main_uniforms(mainUniforms, w, h, seed, gr_projection_matrix.a1d[5] > 0.0f);
 		memcpy(mapped + mainBlockOffset, &mainUniforms, sizeof(mainUniforms));
 
-		CortaoFilterUniforms filterUniforms;
-		filterUniforms.packedResolution = w | (h << 16u);
-		filterUniforms.depthSensitivity = CORTAO_FILTER_DEPTH_SENSITIVITY;
-		filterUniforms.normalSensitivity = CORTAO_FILTER_NORMAL_SENSITIVITY;
-		filterUniforms.padding0 = 0;
+		cortao_filter_uniforms filterUniforms;
+		cortao_fill_filter_uniforms(filterUniforms, w, h);
 		memcpy(mapped + filterBlockOffset, &filterUniforms, sizeof(filterUniforms));
 
 		m_ctx->memoryManager->flushMemory(m_uboAlloc, regionBase, m_uboBlockSize * UBO_BLOCKS_PER_REGION);
@@ -642,7 +505,7 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 	{
 		GR_DEBUG_SCOPE("CORTAO main pass");
 		const std::array<vk::ImageView, 3> views = {m_packedFullView, m_gbuffer->normalView(), m_lutView};
-		drawPass(cmd, m_aoRenderPass, m_aoRawFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN, mainFlags,
+		drawPass(cmd, m_aoRenderPass, m_aoRawFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_MAIN, cortao_main_shader_flags(),
 			views.data(), static_cast<uint32_t>(views.size()), mainBlockOffset, m_uboBlockSize);
 	}
 

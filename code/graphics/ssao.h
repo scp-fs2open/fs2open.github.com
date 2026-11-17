@@ -6,9 +6,9 @@
 // write an occlusion target, and the deferred ambient light pass (SSAO shader variant of
 // deferred-f.sdr) multiplies it into the same `ao` term as the baked AO maps and RTAO.
 //
-// Only the Vulkan backend has it. The radius and the intensity are content-scale-dependent and
-// therefore mod-owned: see $SSAO Max Radius:, $SSAO Screen Radius: and $SSAO Intensity: in
-// lighting_profiles.h. See also documentation/plans/cortao-integration-plan.md.
+// The Vulkan and the OpenGL backends have it. The radius and the intensity are
+// content-scale-dependent and therefore mod-owned: see $SSAO Max Radius:, $SSAO Screen Radius:
+// and $SSAO Intensity: in lighting_profiles.h. See also documentation/plans/cortao-integration-plan.md.
 
 // CORTAO samples per pixel. 0 (the default) disables SSAO. The shader has variants for 4, 8 and 16.
 // This is the "Screen-Space Ambient Occlusion" option.
@@ -33,7 +33,7 @@ struct ssao_settings {
 
 extern ssao_settings Ssao_settings;
 
-// Whether the renderer can run the CORTAO passes. Only the Vulkan backend can do this now.
+// Whether the renderer can run the CORTAO passes. See CAPABILITY_SCREEN_SPACE_AO.
 bool ssao_supported();
 
 // Whether the deferred ambient pass applies SSAO this frame. RTAO has priority, because the two
