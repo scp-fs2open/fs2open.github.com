@@ -289,6 +289,7 @@ void ShipEditorDialogModel::initializeData()
 	_arrivalTreeFormula = _departureTreeFormula = -1;
 	_arrivalLocation = -1;
 	_arrivalDist = -1;
+	_arrivalDistMixed = false;
 	_arrivalTarget = -1;
 	_arrivalDelay = -1;
 	_departureLocation = -1;
@@ -372,6 +373,9 @@ void ShipEditorDialogModel::initializeData()
 									_departureLocation = -1;
 								}
 
+								if (Ships[i].arrival_distance != _arrivalDist) {
+									_arrivalDistMixed = true;
+								}
 								_arrivalDist = Ships[i].arrival_distance;
 								_arrivalDelay = Ships[i].arrival_delay;
 								_departureDelay = Ships[i].departure_delay;
@@ -548,6 +552,7 @@ void ShipEditorDialogModel::initializeData()
 		_arrivalDelay = 0;
 		_departureDelay = 0;
 		_arrivalDist = 0;
+		_arrivalDistMixed = false;
 		_arrivalTarget = -1;
 		_departureTarget = -1;
 		_noArrivalWarp = false;
@@ -1198,6 +1203,7 @@ bool ShipEditorDialogModel::arrivalNeedsDistance() const
 void ShipEditorDialogModel::writeArrivalDistance(int value)
 {
 	_arrivalDist = value;
+	_arrivalDistMixed = false;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 			if (Ships[ptr->instance].wingnum < 0) {
@@ -1212,6 +1218,7 @@ void ShipEditorDialogModel::enforceArrivalMinDist()
 	// The marked ships can have different arrival locations and targets, so use the values of each ship.
 	// The same rule as the wing editor and FRED2: the radius of the target ship sets the minimum.
 	int largest_raise = 0;
+	bool first = true;
 	for (auto* ptr = GET_FIRST(&obj_used_list); ptr != END_OF_LIST(&obj_used_list); ptr = GET_NEXT(ptr)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
 			auto& shipp = Ships[ptr->instance];
@@ -1223,7 +1230,14 @@ void ShipEditorDialogModel::enforceArrivalMinDist()
 				shipp.arrival_distance = min_dist;
 				largest_raise = std::max(largest_raise, min_dist);
 			}
-			// The dialog shows the distance of the last marked ship, the same as initializeData().
+			// The ships can now have different distances. Then the dialog shows the mixed state, the same as
+			// initializeData(), and a value that the user enters goes to each ship.
+			if (first) {
+				_arrivalDistMixed = false;
+				first = false;
+			} else if (shipp.arrival_distance != _arrivalDist) {
+				_arrivalDistMixed = true;
+			}
 			_arrivalDist = shipp.arrival_distance;
 		}
 	}
@@ -1267,7 +1281,8 @@ int ShipEditorDialogModel::getArrivalTarget() const
 
 void ShipEditorDialogModel::setArrivalDistance(const int value)
 {
-	if (_arrivalDist == value)
+	// In the mixed state, the same value as _arrivalDist is a change for the other ships.
+	if (!_arrivalDistMixed && _arrivalDist == value)
 		return;
 
 	writeArrivalDistance(value);
@@ -1280,6 +1295,11 @@ void ShipEditorDialogModel::setArrivalDistance(const int value)
 int ShipEditorDialogModel::getArrivalDistance() const
 {
 	return _arrivalDist;
+}
+
+bool ShipEditorDialogModel::getArrivalDistanceMixed() const
+{
+	return _arrivalDistMixed;
 }
 
 void ShipEditorDialogModel::setArrivalDelay(const int value)

@@ -827,9 +827,10 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 		const auto& targets = getArrivalTargetList();
 
 		if (targets.empty()) {
-			// No targets available, set to -1
+			// No targets available, set to -1. The distance gets the minimum without a target, the same as the
+			// ship editor.
 			modify(w->arrival_anchor, anchor_t::invalid());
-			modify(w->arrival_distance, 0);
+			modify(w->arrival_distance, getMinArrivalDistance());
 			return;
 		}
 

@@ -44,6 +44,8 @@ class CShipEditorDlg : public CDialog
 private:
 	int make_ship_list(int *arr);
 	int update_ship(int ship);
+	// The largest arrival distance that update_ship() raised a ship to. update_data() shows one warning for it.
+	int largest_arrival_raise = 0;
 	int initialized;
 	int multi_edit;
 	int always_on_top;

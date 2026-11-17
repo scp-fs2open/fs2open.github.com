@@ -333,8 +333,11 @@ void ShipEditorDialog::updateUi()
 	}
 	ui->arrivalLocationCombo->setCurrentIndex(ui->arrivalLocationCombo->findData(arrivalLocation));
 
-	ui->arrivalDistanceEdit->clear();
-	ui->arrivalDistanceEdit->setValue(_model->getArrivalDistance());
+	if (_model->getArrivalDistanceMixed()) {
+		ui->arrivalDistanceEdit->setMixed();
+	} else {
+		ui->arrivalDistanceEdit->setSingleValue(_model->getArrivalDistance());
+	}
 	ui->arrivalDelaySpinBox->setValue(_model->getArrivalDelay());
 
 	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
@@ -844,6 +847,9 @@ void ShipEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int index)
 }
 void ShipEditorDialog::on_arrivalDistanceEdit_valueChanged(int value)
 {
+	// "-" is not a real value. Each ship keeps its own distance.
+	if (ui->arrivalDistanceEdit->isBlank())
+		return;
 	_model->setArrivalDistance(value);
 }
 void ShipEditorDialog::on_arrivalDelaySpinBox_valueChanged(int value)

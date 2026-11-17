@@ -79,6 +79,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setArrivalDistance(int distance);
 	int getArrivalDistance() const;
+	// True if the marked ships have different arrival distances. Then getArrivalDistance() is not a real value.
+	bool getArrivalDistanceMixed() const;
 
 	void setArrivalDelay(int delay);
 	int getArrivalDelay() const;
@@ -199,6 +201,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _score;
 	int _assistScore;
 	int _arrivalDist;
+	bool _arrivalDistMixed = false;
 	int _arrivalTarget;
 	int _departureTarget;
 	int _persona;

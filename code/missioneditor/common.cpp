@@ -128,6 +128,8 @@ int arrival_min_distance(ArrivalLocation location, anchor_t anchor)
 	if (shipnum < 0 || shipnum >= MAX_SHIPS || Ships[shipnum].objnum < 0)
 		return 1;
 
+	// The minimum is 2 * the target radius, but not more than MIN_TARGET_ARRIVAL_DISTANCE. Thus that constant
+	// is the largest minimum, not a lower limit. A large target does not need an arrival distance above it.
 	const float radius_distance = std::round(MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[shipnum].objnum].radius);
 	return std::max(1, static_cast<int>(std::min(MIN_TARGET_ARRIVAL_DISTANCE, radius_distance)));
 }
