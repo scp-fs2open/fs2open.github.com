@@ -13,7 +13,8 @@ constexpr GLuint SSAO_TEXTURE_UNIT = 12;
  * @brief Write the occlusion of the current G-buffer, if SSAO is enabled
  *
  * Call before the deferred light shader is bound. This function changes the shader, the blend mode,
- * the texture units 0 to 2 and the uniform buffer bindings. It restores the framebuffer and the viewport.
+ * the texture units 0 to 2 and the uniform buffer bindings. It restores the framebuffer, the viewport
+ * and the color mask.
  *
  * @return The occlusion texture for the deferred light pass, or 0 when SSAO is not active
  */

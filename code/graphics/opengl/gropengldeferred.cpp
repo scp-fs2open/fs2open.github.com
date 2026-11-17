@@ -13,7 +13,7 @@
 #include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
-#include "graphics/ssao.h"
+#include "graphics/cortao_params.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
@@ -238,10 +238,7 @@ void gr_opengl_deferred_lighting_finish()
 
 	unsigned int light_shader_flags = ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0;
 	if (ssao_texture != 0) {
-		light_shader_flags |= SDR_FLAG_DEFERRED_SSAO;
-		if (Ssao_settings.debug_view) {
-			light_shader_flags |= SDR_FLAG_DEFERRED_SSAO_DEBUG;
-		}
+		light_shader_flags |= graphics::cortao_deferred_shader_flags();
 	}
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, light_shader_flags));
 	

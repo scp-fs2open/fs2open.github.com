@@ -153,11 +153,17 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO_DEBUG, "SSAO_DEBUG", {}, "Show only the CORTAO occlusion (debug view)"},
 
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL, "SSAO_BENT_NORMAL", {}, "Use the CORTAO bent normal for the irradiance map lookup"},
+
 	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_SAMPLES_4, "SAMPLES_4", {}, "CORTAO main pass with 4 samples"},
 
 	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_SAMPLES_8, "SAMPLES_8", {}, "CORTAO main pass with 8 samples"},
 
+	{SDR_TYPE_CORTAO_MAIN, false, SDR_FLAG_CORTAO_MAIN_BENT_NORMAL, "BENT_NORMAL", {}, "CORTAO main pass also writes the bent normal"},
+
 	{SDR_TYPE_CORTAO_FILTER, false, SDR_FLAG_CORTAO_LARGE_FILTER, "LARGE_FILTER", {}, "CORTAO 13-tap filter instead of the 5-tap filter"},
+
+	{SDR_TYPE_CORTAO_FILTER, false, SDR_FLAG_CORTAO_FILTER_BENT_NORMAL, "BENT_NORMAL", {}, "CORTAO filter pass also filters the bent normal"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 

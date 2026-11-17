@@ -1,5 +1,6 @@
 #include "graphics/ssao.h"
 
+#include "bmpman/bmpman.h"
 #include "graphics/2d.h"
 #include "graphics/rtao.h"
 #include "options/Option.h"
@@ -74,6 +75,11 @@ bool ssao_animate_noise(bool temporalFilterActive)
 	default:
 		return temporalFilterActive;
 	}
+}
+
+bool ssao_bent_normals_active()
+{
+	return Ssao_settings.bent_normals && ENVMAP > 0;
 }
 
 void ssao_remove_unsupported_options()

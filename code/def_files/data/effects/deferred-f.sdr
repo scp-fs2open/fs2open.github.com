@@ -233,7 +233,8 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 }
 
 #ifdef ENV_MAP
-void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
+// irrNormal is the direction of the irradiance map lookup: the surface normal, or the SSAO bent normal.
+void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec3 irrNormal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
 	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
 	// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
 	// to determine the mip bias.
@@ -271,7 +272,7 @@ void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 no
 
 	vec3 kD = vec3(1.0)-fresnel;
 	kD *= (vec3(1.0) - specColor.rgb);
-	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(normal, 0.0))).rgb);
+	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(irrNormal, 0.0))).rgb);
 	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * ao;
 	envLight = (specEnvLighting + diffEnvLighting) * baseColor.a;
 }
@@ -302,6 +303,7 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
+		vec3 irrNormal = normal;
 #ifdef RTAO
 		{
 			// Raytraced AO multiplies into the same ao term as the baked AO maps,
@@ -316,18 +318,28 @@ void main()
 #endif
 #ifdef SSAO
 		// Screen-space AO uses the same ao term as RTAO. The engine never enables both.
-		ao *= texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0).r;
+		// SsaoBuffer: RGB is the view-space bent normal as n * 0.5 + 0.5, A is the occlusion.
+		vec4 ssaoData = texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0);
+		ao *= ssaoData.a;
+#ifdef SSAO_BENT_NORMAL
+		// The average unoccluded direction gives a better irradiance lookup than the normal. The
+		// filter pass averages bent normals, so normalize again. Keep the normal if it is too short.
+		vec3 bentNormal = ssaoData.rgb * 2.0 - 1.0;
+		if (dot(bentNormal, bentNormal) > 0.01) {
+			irrNormal = normalize(bentNormal);
+		}
+#endif
 #endif
 #ifdef SSAO_DEBUG
 		// Debug view: show only the SSAO term, without the baked AO maps.
-		fragOut0 = vec4(vec3(texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0).r), 1.0);
+		fragOut0 = vec4(vec3(ssaoData.a), 1.0);
 		return;
 #endif
 		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 
 #ifdef ENV_MAP
 		vec3 envLight;
-		ComputeEnvLight(alpha, ao, reflectDir, eyeDir, normal, diffuse, specColor, envLight);
+		ComputeEnvLight(alpha, ao, reflectDir, eyeDir, normal, irrNormal, diffuse, specColor, envLight);
 		fragmentColor.rgb += envLight;
 #endif
 	}

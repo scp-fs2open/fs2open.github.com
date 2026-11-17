@@ -15,7 +15,12 @@
 
 #define CORTAO_GLSL 1
 #define CORTAO_16_BIT 0
+// The BENT_NORMAL variant filters the bent normal too
+#ifdef BENT_NORMAL
+#define CORTAO_FILTER_BENT_NORMAL 1
+#else
 #define CORTAO_FILTER_BENT_NORMAL 0
+#endif
 #ifdef LARGE_FILTER
 #define CORTAO_LARGE_FILTER 1
 #endif
@@ -65,9 +70,15 @@ uint fetchPackedData(ivec2 texel)
 	return insideImage(texel) ? floatBitsToUint(texelFetch(PackedData, texel, 0).r) : 0u;
 }
 
-float fetchSsao(ivec2 texel)
+// The main pass target is RGBA8: RGB holds the bent normal as n * 0.5 + 0.5, A holds the occlusion.
+// CORTAO wants vec4(occlusion, bent normal), so this decodes and reorders the texel.
+vec4 fetchSsao(ivec2 texel)
 {
-	return insideImage(texel) ? texelFetch(SsaoBuffer, texel, 0).r : 0.0;
+	if (!insideImage(texel)) {
+		return vec4(0.0);
+	}
+	vec4 data = texelFetch(SsaoBuffer, texel, 0);
+	return vec4(data.a, data.rgb * 2.0 - 1.0);
 }
 
 cortao_uint4 cortao_gatherPackedData(cortao_float2 texCoords, cortao_int2 offset)
@@ -77,25 +88,45 @@ cortao_uint4 cortao_gatherPackedData(cortao_float2 texCoords, cortao_int2 offset
 		fetchPackedData(t + ivec2(1, 0)), fetchPackedData(t));
 }
 
+#if CORTAO_FILTER_BENT_NORMAL
+cortao_half4x4 cortao_gatherSSAO(cortao_float2 texCoords, cortao_int2 offset)
+{
+	ivec2 t = gatherTopLeft(texCoords, offset);
+	return mat4(fetchSsao(t + ivec2(0, 1)), fetchSsao(t + ivec2(1, 1)), fetchSsao(t + ivec2(1, 0)), fetchSsao(t));
+}
+#else
 cortao_half4 cortao_gatherSSAO(cortao_float2 texCoords, cortao_int2 offset)
 {
 	ivec2 t = gatherTopLeft(texCoords, offset);
-	return vec4(fetchSsao(t + ivec2(0, 1)), fetchSsao(t + ivec2(1, 1)), fetchSsao(t + ivec2(1, 0)), fetchSsao(t));
+	return vec4(fetchSsao(t + ivec2(0, 1)).x, fetchSsao(t + ivec2(1, 1)).x, fetchSsao(t + ivec2(1, 0)).x,
+		fetchSsao(t).x);
 }
+#endif
 
-// cortao_filterPass() does not write sky pixels, so these keep 1.0.
-float filteredOcclusion = 1.0;
+// The output has the same layout as the main pass target. cortao_filterPass() does not write sky
+// pixels, so these keep the default: no occlusion.
+vec4 filteredResult = vec4(0.5, 0.5, 1.0, 1.0);
 
+#if CORTAO_FILTER_BENT_NORMAL
+void cortao_writeFilterOutput(cortao_int2 pixelCoords, cortao_half4 ssao)
+{
+	if (all(equal(pixelCoords, ivec2(gl_FragCoord.xy)))) {
+		// The filtered bent normal is not a unit vector. The deferred light pass normalizes it.
+		filteredResult = vec4(clamp(ssao.yzw, -1.0, 1.0) * 0.5 + 0.5, ssao.x);
+	}
+}
+#else
 void cortao_writeFilterOutput(cortao_int2 pixelCoords, cortao_half ssao)
 {
 	if (all(equal(pixelCoords, ivec2(gl_FragCoord.xy)))) {
-		filteredOcclusion = ssao;
+		filteredResult.a = ssao;
 	}
 }
+#endif
 
 void main()
 {
 	// The reference filter has one thread for each 2x2 pixel block.
 	cortao_filterPass(uvec2(gl_FragCoord.xy) >> 1u, cortaoParams);
-	fragOut0 = vec4(filteredOcclusion, 0.0, 0.0, 1.0);
+	fragOut0 = filteredResult;
 }

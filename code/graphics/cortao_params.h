@@ -3,6 +3,8 @@
 // The uniform data of the CORTAO passes (graphics/ssao.h), shared by the Vulkan and OpenGL backends.
 // Each struct is the std140 layout of the genericData block of one CORTAO shader.
 
+#include "graphics/ssao.h"
+
 #include <cstdint>
 
 namespace graphics {
@@ -58,8 +60,14 @@ uint32_t cortao_mip_levels(uint32_t width, uint32_t height);
 // See ssao_animate_noise().
 uint32_t cortao_random_seed(bool animate, uint64_t frameNumber);
 
-// The shader flags of the main pass for the sample count of ssao_sample_count()
+// The shader flags of the main pass: the sample count of ssao_sample_count() and the bent normals
 unsigned int cortao_main_shader_flags();
+
+// The shader flags of the filter pass for a filter mode that is not Off
+unsigned int cortao_filter_shader_flags(SsaoFilterMode mode);
+
+// The SSAO shader flags of the deferred light pass, when the CORTAO passes wrote an occlusion target
+unsigned int cortao_deferred_shader_flags();
 
 void cortao_fill_prepass_uniforms(cortao_prepass_uniforms& out, uint32_t width, uint32_t height, uint32_t seed,
 	uint32_t mipLevel);

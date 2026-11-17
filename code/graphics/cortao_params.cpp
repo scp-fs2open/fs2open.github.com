@@ -57,14 +57,36 @@ uint32_t cortao_random_seed(bool animate, uint64_t frameNumber)
 
 unsigned int cortao_main_shader_flags()
 {
+	unsigned int flags = ssao_bent_normals_active() ? SDR_FLAG_CORTAO_MAIN_BENT_NORMAL : 0;
 	switch (ssao_sample_count()) {
 	case 4:
-		return SDR_FLAG_CORTAO_SAMPLES_4;
+		return flags | SDR_FLAG_CORTAO_SAMPLES_4;
 	case 8:
-		return SDR_FLAG_CORTAO_SAMPLES_8;
+		return flags | SDR_FLAG_CORTAO_SAMPLES_8;
 	default:
-		return 0; // 16 samples: the shader default
+		return flags; // 16 samples: the shader default
 	}
+}
+
+unsigned int cortao_filter_shader_flags(SsaoFilterMode mode)
+{
+	unsigned int flags = ssao_bent_normals_active() ? SDR_FLAG_CORTAO_FILTER_BENT_NORMAL : 0;
+	if (mode == SsaoFilterMode::Large) {
+		flags |= SDR_FLAG_CORTAO_LARGE_FILTER;
+	}
+	return flags;
+}
+
+unsigned int cortao_deferred_shader_flags()
+{
+	unsigned int flags = SDR_FLAG_DEFERRED_SSAO;
+	if (Ssao_settings.debug_view) {
+		flags |= SDR_FLAG_DEFERRED_SSAO_DEBUG;
+	}
+	if (ssao_bent_normals_active()) {
+		flags |= SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL;
+	}
+	return flags;
 }
 
 void cortao_fill_prepass_uniforms(cortao_prepass_uniforms& out, uint32_t width, uint32_t height, uint32_t seed,
