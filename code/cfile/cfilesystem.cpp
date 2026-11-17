@@ -39,6 +39,7 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "def_files/def_files.h"
+#include "localization/localize.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 
@@ -1223,11 +1224,32 @@ static bool is_absolute_path(const char *path)
 #endif
 }
 
+// whether the innermost folder of a sub path (which ends with a separator) is named after a language extension
+static bool is_language_sub_path(const SCP_string &sub_path)
+{
+	if (sub_path.size() < 2)
+		return false;
+
+	size_t end = sub_path.size() - 1;
+	auto sep = sub_path.rfind(DIR_SEPARATOR_CHAR, end - 1);
+	size_t start = (sep == SCP_string::npos) ? 0 : sep + 1;
+	size_t len = end - start;
+
+	for (const auto& language : Lcl_languages)
+	{
+		if (strlen(language.lang_ext) == len && !strnicmp(sub_path.c_str() + start, language.lang_ext, len))
+			return true;
+	}
+
+	return false;
+}
+
 static bool sub_path_match(const SCP_string &search, const SCP_string &index)
 {
-	// if search path is empty then we only care about the file name
+	// if search path is empty then we only care about the file name,
+	// except that localized files are only found by naming their language subfolder
 	if (search.empty()) {
-		return true;
+		return index.empty() || !is_language_sub_path(index);
 	}
 
 	// if we have search but no index then fail
@@ -2309,6 +2331,11 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 				break;
 
 			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
+				continue;
+			}
+
+			// sub paths aren't supported here, so this only skips language subfolders
+			if ( !sub_path_match("", f->sub_path) ) {
 				continue;
 			}
 
