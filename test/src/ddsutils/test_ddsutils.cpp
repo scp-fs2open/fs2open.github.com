@@ -4,7 +4,11 @@
 #include "ddsutils/ddsutils.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
+#include "ktxutils/etcdec.h"
 #include "util/FSTestFixture.h"
+
+#include <algorithm>
+#include <array>
 
 class DDSConversionResizeTest : public test::FSTestFixture {
 protected:
@@ -34,9 +38,9 @@ protected:
 		test::FSTestFixture::TearDown();
 	}
 
-	static void write_header(CFILE* fp, uint width, uint height, uint mips)
+	static void write_header(CFILE* fp, uint width, uint height, uint mips, uint fourcc = FOURCC_DXT1)
 	{
-		// A standard 124-byte DDS header with a DXT1 pixel format.
+		// A standard 124-byte DDS header with a FourCC pixel format.
 		uint header[31] = {};
 		header[0] = 124;
 		header[1] = DDSD_CAPS | DDSD_WIDTH | DDSD_HEIGHT | DDSD_PIXELFORMAT | DDSD_MIPMAPCOUNT;
@@ -46,7 +50,7 @@ protected:
 		header[6] = mips;
 		header[18] = 32;
 		header[19] = DDPF_FOURCC;
-		header[20] = FOURCC_DXT1;
+		header[20] = fourcc;
 		header[26] = DDSCAPS_TEXTURE | DDSCAPS_COMPLEX | DDSCAPS_MIPMAP;
 		cfwrite_uint(DDS_FILECODE, fp);
 		for (auto field : header) {
@@ -129,6 +133,67 @@ TEST_F(DDSConversionResizeTest, small_etc2_bitmap_matches_the_reported_header_si
 	for (size_t i = size; i < data.size(); ++i) {
 		EXPECT_EQ(0xcd, data[i]);
 	}
+}
+
+TEST_F(DDSConversionResizeTest, resized_dxt5_skips_top_mip_and_writes_rgba8_blocks)
+{
+	constexpr size_t block_size = 16;
+	constexpr std::array<ubyte, 3> colors = {0, 255, 0};
+	constexpr std::array<ubyte, 3> alphas = {255, 192, 64};
+	constexpr std::array<size_t, 3> block_counts = {128 * 128, 64 * 64, 32 * 32};
+
+	{
+		std::unique_ptr<CFILE> fp(cfopen(source_name, "wb", CF_TYPE_CACHE));
+		ASSERT_NE(nullptr, fp);
+		write_header(fp.get(), 512, 512, 3, FOURCC_DXT5);
+		for (size_t mip = 0; mip < block_counts.size(); ++mip) {
+			// BC3 uses an alpha block followed by an RGB565 color block. All selectors are zero.
+			const std::array<ubyte, block_size> block = {
+				alphas[mip], alphas[mip], 0, 0, 0, 0, 0, 0, colors[mip], colors[mip], 0, 0, 0, 0, 0, 0
+			};
+			const SCP_vector<std::array<ubyte, block_size>> blocks(block_counts[mip], block);
+			const auto bytes = static_cast<int>(blocks.size() * block_size);
+			ASSERT_EQ(bytes, cfwrite(blocks.data(), 1, bytes, fp.get()));
+		}
+	}
+
+	constexpr size_t first_mip_size = block_counts[1] * block_size;
+	constexpr size_t expected_size = first_mip_size + block_counts[2] * block_size;
+	{
+		std::unique_ptr<CFILE> fp(cfopen(source_name, "rb", CF_TYPE_CACHE));
+		ASSERT_NE(nullptr, fp);
+		int width, height, format, levels;
+		size_t size = 0;
+		ASSERT_EQ(DDS_ERROR_NONE, dds_read_header(nullptr, fp.get(), &width, &height, nullptr, &format, &levels, &size));
+		EXPECT_EQ(256, width);
+		EXPECT_EQ(256, height);
+		EXPECT_EQ(DDS_ETC2_RGBA8, format);
+		EXPECT_EQ(2, levels);
+		ASSERT_EQ(expected_size, size);
+	}
+
+	// Leave room for the original top mip so an unexpected extra write trips the sentinel.
+	static constexpr ubyte sentinel = 0xcd;
+	SCP_vector<ubyte> data(expected_size + block_counts[0] * block_size, sentinel);
+	ubyte bpp = 0;
+	ASSERT_EQ(DDS_ERROR_NONE, dds_read_bitmap(source_name, data.data(), &bpp, CF_TYPE_CACHE));
+	EXPECT_EQ(32, bpp);
+	EXPECT_TRUE(std::all_of(data.begin() + expected_size, data.end(), [](ubyte value) { return value == sentinel; }));
+
+	const auto check_block = [&data](size_t offset, ubyte color, ubyte alpha) {
+		SCOPED_TRACE(::testing::Message() << "ETC2 block at byte " << offset);
+		alignas(uint) std::array<ubyte, 4 * 4 * 4> rgba{};
+		etcdec_eac_rgba(data.data() + offset, rgba.data(), 4 * 4);
+		for (size_t channel = 0; channel < 3; ++channel) {
+			EXPECT_NEAR(color, rgba[channel], 8);
+		}
+		EXPECT_NEAR(alpha, rgba[3], 8);
+	};
+	// Check both ends of each retained mip to verify the source offset and the output block stride.
+	check_block(0, colors[1], alphas[1]);
+	check_block(first_mip_size - block_size, colors[1], alphas[1]);
+	check_block(first_mip_size, colors[2], alphas[2]);
+	check_block(expected_size - block_size, colors[2], alphas[2]);
 }
 
 
