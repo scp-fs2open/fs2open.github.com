@@ -145,15 +145,14 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 
+	// A -reflect (spec-gloss) map wins over a legacy -shine map, as both texture binds do
 	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
 		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
 		data_out->gammaSpec = 1;
 		data_out->alphaGloss = 1;
 
-	} 
-
-	if (material.get_texture_map(TM_SPECULAR_TYPE) >= 0) {
+	} else if (material.get_texture_map(TM_SPECULAR_TYPE) >= 0) {
 		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
 		data_out->gammaSpec = 0;
