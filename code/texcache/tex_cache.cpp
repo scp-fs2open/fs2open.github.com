@@ -1,5 +1,6 @@
 #include "texcache/tex_cache.h"
 #include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
 #include "options/Option.h"
 #include "cmdline/cmdline.h"
 
@@ -34,6 +35,11 @@ static SCP_string tex_cache_filename(const SCP_string &key)
 static SCP_string tex_cache_temp_filename(const SCP_string &key)
 {
 	return SCP_string("tex-") + key + ".cache.tmp";
+}
+
+bool tex_cache_is_enabled()
+{
+	return tex_cache_size > TEX_CACHE_OPTION_MIN_SIZE && !Cmdline_no_transcode_cache;
 }
 
 SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size)
@@ -74,7 +80,7 @@ SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_typ
 
 bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expected_height, uint expected_mips, int expected_format, size_t expected_size, ubyte *out_data)
 {
-	if (tex_cache_size <= TEX_CACHE_OPTION_MIN_SIZE || Cmdline_no_transcode_cache) //Cache disabled
+	if (!tex_cache_is_enabled())
 		return false;
 
 	const SCP_string name = tex_cache_filename(key);
@@ -112,15 +118,14 @@ bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expecte
 
 	if (!header_ok) {
 		cfclose(fp);
+		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
 	}
 
 	SCP_vector<ubyte> stored(stored_size);
 	const int got = cfread(stored.data(), 1, (int)stored_size, fp);
 
-	cfclose(fp);
-
-	if (got != (int)stored_size) {
+	if (cfclose(fp) != 0 || got != (int)stored_size) {
 		cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
 		return false;
 	}
@@ -162,10 +167,10 @@ bool tex_cache_try_load(const SCP_string &key, uint expected_width, uint expecte
 
 void tex_cache_store(const SCP_string &key, uint width, uint height, uint mips, int format, const ubyte *payload, size_t payload_size)
 {
-	if (tex_cache_size <= TEX_CACHE_OPTION_MIN_SIZE || Cmdline_no_transcode_cache) //Cache disabled
+	if (!tex_cache_is_enabled())
 		return;
 
-	if (payload == nullptr || payload_size == 0) {
+	if (payload == nullptr || payload_size == 0 || payload_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
 		return;
 	}
 
@@ -198,27 +203,21 @@ void tex_cache_store(const SCP_string &key, uint width, uint height, uint mips, 
 		return;
 	}
 
-	cfwrite_uint(TEX_CACHE_MAGIC, fp);
-	cfwrite_uint(TEX_CACHE_VERSION, fp);
-	cfwrite_uint(flags, fp);
-	cfwrite_uint((uint)format, fp);
-	cfwrite_uint(width, fp);
-	cfwrite_uint(height, fp);
-	cfwrite_uint(mips, fp);
-	cfwrite_uint((uint)payload_size, fp);
-	cfwrite_uint((uint)out_size, fp);
-	cfwrite_uint(payload_crc, fp);
-
-	const int written = cfwrite(out_buf, 1, (int)out_size, fp);
-
-	cfclose(fp);
-
-	if (written != (int)out_size) {
-		cf_delete(temp_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
-		return;
+	const uint header[] = {TEX_CACHE_MAGIC, TEX_CACHE_VERSION, flags, static_cast<uint>(format), width,
+		height, mips, static_cast<uint>(payload_size), static_cast<uint>(out_size), payload_crc};
+	bool write_ok = true;
+	for (const auto field : header) {
+		if (cfwrite_uint(field, fp) != 1) {
+			write_ok = false;
+			break;
+		}
 	}
-
-	cf_rename(temp_name.c_str(), final_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+	write_ok = write_ok && cfwrite(out_buf, 1, static_cast<int>(out_size), fp) == static_cast<int>(out_size);
+	const int close_result = cfclose(fp);
+	if (!write_ok || close_result != 0 ||
+		cf_rename(temp_name.c_str(), final_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS) != CF_RENAME_SUCCESS) {
+		cf_delete(temp_name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+	}
 }
 
 auto CacheSizeLimit = options::OptionBuilder<float>("Graphics.TexCacheSize",
@@ -248,62 +247,67 @@ auto CacheSizeLimit = options::OptionBuilder<float>("Graphics.TexCacheSize",
 
 void tex_cache_prune()
 {
-	// Clear any incomplete .tmp file
-	SCP_vector<SCP_string> temps;
-
-	cf_get_file_list(temps, CF_TYPE_CACHE, "tex-*.cache.tmp", CF_SORT_NONE, nullptr, CACHE_LOCATION_FLAGS);
-
-	for (const auto& temp : temps) {
-		const SCP_string tname = temp + ".tmp";
-		cf_delete(tname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS);
+	// List the same loose files that can be removed from the writable cache directory.
+	SCP_string cache_dir;
+	if (!cf_create_default_path_string(cache_dir, CF_TYPE_CACHE, nullptr, CACHE_LOCATION_FLAGS)) {
+		return;
 	}
 
-	// unlimited cache
-	if (tex_cache_size >= TEX_CACHE_OPTION_MAX_SIZE)
-		return;
-
-	auto max_bytes = (size_t)(tex_cache_size * 1000000000);
-
-	// Check and clear cache
+	size_t removed_files = 0;
+	uint64_t removed_bytes = 0;
 	SCP_vector<SCP_string> names;
 	SCP_vector<file_list_info> info;
 
-	cf_get_file_list(names, CF_TYPE_CACHE, "tex-*.cache", CF_SORT_NONE, &info, CACHE_LOCATION_FLAGS);
-
-	const size_t count = names.size();
-
-	if (count == 0) {
-		return;
-	}
-
-	size_t total = 0;
-	for (size_t i = 0; i < count; ++i) {
-		total += info[i].size;
-	}
-
-	if (total <= max_bytes) {
-		return;
-	}
-
-	// Free a minimum of 20%, not the entire cache. If the cache is disabled clear it completely
-	const size_t target = max_bytes > 0 ? (max_bytes / 5) * 4 : 0;
-
-	SCP_vector<size_t> order(count);
-	for (size_t i = 0; i < count; ++i) {
-		order[i] = i;
-	}
-
-	std::sort(order.begin(), order.end(), [&info](size_t a, size_t b) {
-		return info[a].write_time < info[b].write_time;
-	});
-
-	for (size_t k = 0; (k < count) && (total > target); ++k) {
-		const size_t idx = order[k];
-		const SCP_string fname = names[idx] + ".cache";
-
-		if (cf_delete(fname.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS)) {
-			total -= info[idx].size;
+	const auto delete_entry = [&](const SCP_string& name, size_t size) {
+		if (!cf_delete(name.c_str(), CF_TYPE_CACHE, CACHE_LOCATION_FLAGS)) {
+			return false;
 		}
+		++removed_files;
+		removed_bytes += size;
+		return true;
+	};
+
+	const SCP_string temp_pattern = cache_dir + "tex-*.cache.tmp";
+	cf_get_file_list(names, CF_TYPE_CACHE, temp_pattern.c_str(), CF_SORT_NONE, &info);
+	for (size_t i = 0; i < names.size(); ++i) {
+		delete_entry(names[i] + ".tmp", info[i].size);
+	}
+
+	if (tex_cache_size < TEX_CACHE_OPTION_MAX_SIZE) {
+		const auto max_bytes = static_cast<uint64_t>(std::max(0.0f, tex_cache_size) * 1'000'000'000.0);
+		names.clear();
+		info.clear();
+		const SCP_string cache_pattern = cache_dir + "tex-*.cache";
+		cf_get_file_list(names, CF_TYPE_CACHE, cache_pattern.c_str(), CF_SORT_NONE, &info);
+
+		uint64_t total = 0;
+		for (const auto& entry : info) {
+			total += entry.size;
+		}
+		const bool clear_cache = max_bytes == 0;
+		if (clear_cache || total > max_bytes) {
+			// Trim to 80% of the cap, or clear all entries when the cap is zero.
+			const uint64_t target = (max_bytes / 5) * 4;
+			SCP_vector<size_t> order(names.size());
+			for (size_t i = 0; i < order.size(); ++i) {
+				order[i] = i;
+			}
+			std::sort(order.begin(), order.end(), [&info](size_t a, size_t b) {
+				return info[a].write_time < info[b].write_time;
+			});
+			for (const auto idx : order) {
+				if (!clear_cache && total <= target) {
+					break;
+				}
+				if (delete_entry(names[idx] + ".cache", info[idx].size)) {
+					total -= info[idx].size;
+				}
+			}
+		}
+	}
+
+	if (removed_files > 0) {
+		mprintf(("Texture cache: pruned " SIZE_T_ARG " files (" UINT64_T_ARG " bytes)\n", removed_files, removed_bytes));
 	}
 }
 

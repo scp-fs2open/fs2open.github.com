@@ -1,6 +1,8 @@
+#include "cfile/cfilesystem.h"
 #include "texcache/tex_cache.h"
 #include "util/FSTestFixture.h"
 
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <limits>
@@ -22,6 +24,7 @@ protected:
 	void TearDown() override
 	{
 		cf_delete("tex-unittest-texture-cache.cache", CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+		cf_delete("tex-unittest-texture-cache.cache.tmp", CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		cf_delete("tex-unittest-texture-cache-cold.cache", CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		cf_delete(source_name, CF_TYPE_CACHE, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 		tex_cache_size = saved_cache_size;
@@ -61,9 +64,21 @@ TEST_F(TextureCacheTest, portable_round_trip_and_prune)
 	ASSERT_TRUE(tex_cache_try_load(key, 32, 32, 1, 0, loaded.size(), loaded.data()));
 	EXPECT_EQ(payload, loaded);
 
+	const char* temp_name = "tex-unittest-texture-cache.cache.tmp";
+	auto* pending = cfopen(temp_name, "wb", CF_TYPE_CACHE, false, CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	ASSERT_NE(nullptr, pending);
+	ASSERT_EQ(0, cfclose(pending));
+
 	tex_cache_size = 0.0f;
+	EXPECT_FALSE(tex_cache_is_enabled());
+	EXPECT_FALSE(tex_cache_try_load(key, 32, 32, 1, 0, loaded.size(), loaded.data()));
+	tex_cache_store("unittest-texture-cache-cold", 32, 32, 1, 0, payload.data(), payload.size());
+	EXPECT_FALSE(cf_find_file_location("tex-unittest-texture-cache-cold.cache", CF_TYPE_CACHE,
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT).found);
 	tex_cache_prune();
 	EXPECT_FALSE(cf_find_file_location("tex-unittest-texture-cache.cache", CF_TYPE_CACHE,
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT).found);
+	EXPECT_FALSE(cf_find_file_location(temp_name, CF_TYPE_CACHE,
 		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT).found);
 }
 
@@ -87,7 +102,7 @@ TEST_F(TextureCacheTest, repaint_after_checksum_window_changes_key)
 	EXPECT_NE(original_key, source_key());
 }
 
-TEST_F(TextureCacheTest, oversized_stored_payload_is_rejected)
+TEST_F(TextureCacheTest, oversized_stored_payload_is_rejected_and_rebuilt)
 {
 	std::unique_ptr<CFILE> fp(cfopen("tex-unittest-texture-cache.cache", "wb", CF_TYPE_CACHE, false,
 		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT));
@@ -100,6 +115,28 @@ TEST_F(TextureCacheTest, oversized_stored_payload_is_rejected)
 
 	ubyte loaded[16] = {};
 	EXPECT_FALSE(tex_cache_try_load(key, 4, 4, 1, 0, sizeof(loaded), loaded));
+	EXPECT_FALSE(cf_find_file_location("tex-unittest-texture-cache.cache", CF_TYPE_CACHE,
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT).found);
+
+	const SCP_vector<ubyte> payload(sizeof(loaded), 42);
+	tex_cache_store(key, 4, 4, 1, 0, payload.data(), payload.size());
+	ASSERT_TRUE(tex_cache_try_load(key, 4, 4, 1, 0, sizeof(loaded), loaded));
+	EXPECT_TRUE(std::equal(payload.begin(), payload.end(), loaded));
+}
+
+TEST_F(TextureCacheTest, failed_rename_cleans_up_temporary_file)
+{
+	SCP_string final_path;
+	ASSERT_TRUE(cf_create_default_path_string(final_path, CF_TYPE_CACHE, "tex-unittest-texture-cache.cache",
+		CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT));
+	const std::filesystem::path destination(final_path.c_str());
+	ASSERT_TRUE(std::filesystem::create_directories(destination));
+
+	const SCP_vector<ubyte> payload(16, 42);
+	tex_cache_store(key, 4, 4, 1, 0, payload.data(), payload.size());
+	EXPECT_FALSE(std::filesystem::exists(destination.string() + ".tmp"));
+	EXPECT_TRUE(std::filesystem::is_directory(destination));
+	EXPECT_TRUE(std::filesystem::remove(destination));
 }
 
 TEST_F(TextureCacheTest, cache_hit_refreshes_mtime_and_survives_pruning)

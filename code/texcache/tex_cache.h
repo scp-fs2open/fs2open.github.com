@@ -15,6 +15,9 @@ void tex_cache_prune();
 // Disable the transcode cache option from the configuration menu
 void tex_cache_disable_option();
 
+// Whether transcoded textures can be read from or written to the cache.
+bool tex_cache_is_enabled();
+
 // Get the MD5 key hash for the dds texture
 SCP_string tex_cache_make_key(CFILE *dds, const char *source_name, tex_cache_type cache_type, uint src_fourcc, int dst_format, uint tex_size);
 

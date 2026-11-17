@@ -536,10 +536,10 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 			etc2_size += (size_t)((w + 3) / 4) * ((h + 3) / 4) * out_block_bytes;
 		}
 
-		extern bool Cmdline_no_transcode_cache;
+		const bool cache_enabled = tex_cache_is_enabled();
 		SCP_string key;
 
-		if (!Cmdline_no_transcode_cache) {
+		if (cache_enabled) {
 			//Build the cache MD5 hash
 			key = tex_cache_make_key(cfp, real_name, TEX_CACHE_TYPE_ETC2, dds_header.ddspf.dwFourCC, cache_fmt, static_cast<uint>(etc2_size));
 
@@ -629,7 +629,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 			out_offset += (size_t)blocks * out_block_bytes;
 		}
 
-		if (!Cmdline_no_transcode_cache) {
+		if (cache_enabled) {
 			//Save to cache
 			tex_cache_store(key, dds_header.dwWidth, dds_header.dwHeight, out_mips, cache_fmt, data, etc2_size);
 		}
