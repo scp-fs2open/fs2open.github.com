@@ -245,7 +245,7 @@ TEST_F(ControlPresetFile, CrossTypeBindsStayOutOfTheFieldsOlderBuildsRead)
 	CFILE* fp = cfopen("xtypetest.json", "rb", CF_TYPE_PLAYER_BINDS, false, PRESET_LOCATION);
 	ASSERT_NE(fp, nullptr);
 	SCP_string text(static_cast<size_t>(cfilelength(fp)), '\0');
-	ASSERT_EQ(cfread(&text[0], 1, static_cast<int>(text.size()), fp), static_cast<int>(text.size()));
+	ASSERT_EQ(cfread(text.data(), 1, static_cast<int>(text.size()), fp), static_cast<int>(text.size()));
 	cfclose(fp);
 
 	json_error_t err;
