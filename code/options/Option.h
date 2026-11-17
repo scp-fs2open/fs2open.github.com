@@ -578,7 +578,7 @@ class OptionBuilder {
 	template <typename U>
 	OptionBuilder& bind_to_once(U* dest)
 	{
-		static_assert(std::is_same<T, bool>::value && std::is_integral<U>::value,
+		static_assert(std::is_same_v<T, bool> && std::is_integral_v<U>,
 			"only a bool option can bind to an integer variable");
 		_instance.setIsOnce(true);
 		return change_listener([dest](const T& val, bool initial) {
