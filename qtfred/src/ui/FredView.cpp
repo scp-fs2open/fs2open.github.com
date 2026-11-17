@@ -498,7 +498,8 @@ bool FredView::writeMissionFile(const QString& path) {
 	// The file now contains the changes, so the autosave is not necessary. For Save As, also delete the
 	// autosave of the old path (or of the untitled mission).
 	fred->removeAutosave(path);
-	fred->removeAutosave(fred->currentMissionPath());
+	if (fred->currentMissionPath() != path)
+		fred->removeAutosave(fred->currentMissionPath());
 	return true;
 }
 
@@ -661,7 +662,9 @@ void FredView::on_actionRevert_triggered(bool) {
 		return;
 	// Clear modified flag so loadMissionFile doesn't prompt to save again
 	_missionModified = false;
-	// Revert discards the changes. Delete the autosave, because it can contain those changes.
+	// Revert discards the changes. Delete the autosave, because it can contain those changes. Stop the timer,
+	// so that it does not write the changes again while the recovery question is open. The load starts it again.
+	fred->stopAutosaveTimer();
 	fred->removeAutosave(path);
 	loadMissionFile(path, 0, false);
 }
@@ -690,8 +693,11 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		fso::fred::util::getLastDir("missions/importFS1Source", QDir::homePath()),
 		tr("FreeSpace Missions (*.fsm)"));
 
-	if (srcPaths.isEmpty())
+	// A discard at the prompt stopped the autosave timer. If the user cancels here, the mission stays open.
+	if (srcPaths.isEmpty()) {
+		restartAutosaveTimer();
 		return;
+	}
 
 	fso::fred::util::saveLastDir("missions/importFS1Source", srcPaths.first());
 
@@ -699,8 +705,10 @@ void FredView::on_actionFS1_Mission_triggered(bool) {
 		tr("Select destination folder for converted missions"),
 		fso::fred::util::getLastDir("missions/importFS1Dest", CF_TYPE_MISSIONS));
 
-	if (destDir.isEmpty())
+	if (destDir.isEmpty()) {
+		restartAutosaveTimer();
 		return;
+	}
 
 	fso::fred::util::saveLastDir("missions/importFS1Dest", destDir);
 
@@ -1716,7 +1724,10 @@ bool FredView::maybePromptToSaveMissionChanges(const QString& actionDescription)
 	case QMessageBox::Save:
 		return saveMissionToCurrentPath();
 	case QMessageBox::Discard:
-		// The user discards the changes, so the next load must not offer them from the autosave.
+		// The user discards the changes, so the next load must not offer them from the autosave. Stop the
+		// timer, so that it does not write the changes again while a file dialog or a question is open. The
+		// next load or new mission starts it again. A caller that stops after a discard must start it again.
+		fred->stopAutosaveTimer();
 		fred->removeAutosave(fred->currentMissionPath());
 		return true;
 	case QMessageBox::Cancel:

@@ -223,24 +223,24 @@ bool Editor::loadMission(const std::string& mission_name, int flags, bool offerA
 	if (QString::fromStdString(mission_name).endsWith(".fst", Qt::CaseInsensitive))
 		flags |= MPF_IS_TEMPLATE;
 
+	// Find the mission file in the CFile system. If it is a "real" file (not in a VP), use its absolute path.
+	// Then the "recent mission" menu has correct file names, Save writes to that file, and the autosave
+	// path is the same for each name of the file.
+	std::string missionPath = mission_name;
+	auto res = cf_find_file_location(missionPath.c_str(), CF_TYPE_MISSIONS);
+	if (res.found && res.offset == 0)
+		missionPath = res.full_name;
+
 	// A template is not a mission file that the user edits, so it has no autosave.
 	QString autosavePath;
 	if (offerAutosaveRecovery && !(flags & MPF_IS_TEMPLATE))
-		autosavePath = askToUseNewerAutosave(QString::fromStdString(mission_name));
+		autosavePath = askToUseNewerAutosave(QString::fromStdString(missionPath));
 	const bool recovered = !autosavePath.isEmpty();
 
 	clearMission(flags & MPF_FAST_RELOAD);
 
-	std::string filepath = recovered ? autosavePath.toStdString() : mission_name;
-	auto res = cf_find_file_location(filepath.c_str(), CF_TYPE_MISSIONS);
-	if (res.found) {
-		// We found this file in the CFile system
-		if (res.offset == 0) {
-			// This is a "real" file. Since we now have an absolute path we can use that to make sure we only deal with
-			// absolute paths which makes sure that the "recent mission" menu has correct file names
-			filepath = res.full_name;
-		}
-	}
+	// The autosave path is already absolute.
+	const std::string filepath = recovered ? autosavePath.toStdString() : missionPath;
 
 	// message 1: required version
 	if (!parse_main(filepath.c_str(), flags)) {
@@ -440,12 +440,14 @@ bool Editor::loadMission(const std::string& mission_name, int flags, bool offerA
 
 	// The path that Save writes to. A template and an FS1 import have no such file: the user must give a
 	// name with Save As. An autosave belongs to the mission file that it came from.
-	if (recovered)
-		setCurrentMissionPath(QString::fromStdString(mission_name));
-	else if (flags & (MPF_IS_TEMPLATE | MPF_IMPORT_FSM))
+	// An untitled mission has no recovery offer, so its autosave is not necessary after the user leaves it.
+	if (_currentMissionPath.isEmpty())
+		removeAutosave({});
+
+	if (flags & (MPF_IS_TEMPLATE | MPF_IMPORT_FSM))
 		setCurrentMissionPath({});
 	else
-		setCurrentMissionPath(QString::fromStdString(filepath));
+		setCurrentMissionPath(QString::fromStdString(missionPath));
 
 	missionLoaded(_currentMissionPath.toStdString(), recovered);
 
