@@ -82,7 +82,8 @@ GLuint create_ao_texture(const char* label)
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, Cortao_width, Cortao_height, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+	// RGB: the bent normal as n * 0.5 + 0.5, A: the occlusion. See cortao-main-f.sdr.
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Cortao_width, Cortao_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -239,6 +240,8 @@ GLuint opengl_cortao_execute()
 	GL_state.PushFramebufferState();
 	GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 	gr_zbuffer_set(GR_ZBUFF_NONE);
+	// gr_opengl_deferred_lighting_end() masks the alpha channel, but the occlusion is in alpha.
+	const bvec4 savedColorMask = GL_state.ColorMask(true, true, true, true);
 
 	bool ok = true;
 	{
@@ -281,8 +284,7 @@ GLuint opengl_cortao_execute()
 	GLuint result = ok ? Cortao_ao_raw_texture : 0;
 	if (ok && filterMode != SsaoFilterMode::Off) {
 		GR_DEBUG_SCOPE("CORTAO filter pass");
-		const unsigned int flags = (filterMode == SsaoFilterMode::Large) ? SDR_FLAG_CORTAO_LARGE_FILTER : 0;
-		if (set_shader(SDR_TYPE_CORTAO_FILTER, flags)) {
+		if (set_shader(SDR_TYPE_CORTAO_FILTER, cortao_filter_shader_flags(filterMode))) {
 			Current_shader->program->Uniforms.setTextureUniform("PackedData", 0);
 			Current_shader->program->Uniforms.setTextureUniform("SsaoBuffer", 1);
 			GL_state.Texture.Enable(0, GL_TEXTURE_2D, Cortao_packed_texture);
@@ -298,6 +300,7 @@ GLuint opengl_cortao_execute()
 
 	GL_state.PopFramebufferState();
 	glViewport(savedViewport[0], savedViewport[1], savedViewport[2], savedViewport[3]);
+	GL_state.ColorMask(savedColorMask.x, savedColorMask.y, savedColorMask.z, savedColorMask.w);
 
 	return result;
 }

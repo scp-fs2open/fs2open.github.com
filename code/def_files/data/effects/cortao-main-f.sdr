@@ -80,17 +80,30 @@ cortao_half3 cortao_loadNormal(cortao_int2 pixelCoords)
 	return normalLengthSq > 1e-8 ? normal * inversesqrt(normalLengthSq) : vec3(0.0, 0.0, 1.0);
 }
 
-// cortao_mainPass() does not call cortao_writeResult() for sky pixels, so these keep 1.0.
-float cortaoOcclusion = 1.0;
+// The output target is RGBA8. RGB holds the bent normal as n * 0.5 + 0.5 in view space (BENT_NORMAL
+// variant only), and A holds the occlusion. cortao_mainPass() does not call cortao_writeResult()
+// for sky pixels, so these keep the default: no occlusion.
+vec4 cortaoResult = vec4(0.5, 0.5, 1.0, 1.0);
 
 void cortao_writeResult(cortao_int2 pixelCoords, cortao_half occlusion, cortao_half3 bentNormal,
 	cortao_half3x3 tangentSpaceTransform, cortao_uint rayBits)
 {
-	cortaoOcclusion = occlusion;
+	float tweakedOcclusion = pow(clamp(occlusion, 0.0, 1.0), intensity);
+#ifdef BENT_NORMAL
+	// When all rays are occluded, the bent normal is the normalized sum of no vectors, which is NaN.
+	// Use the surface normal (the Z axis of the tangent space) then. The test is false for NaN.
+	vec3 normal = tangentSpaceTransform[2];
+	if (dot(bentNormal, bentNormal) > 0.25) {
+		normal = normalize(bentNormal);
+	}
+	cortaoResult = vec4(normal * 0.5 + 0.5, tweakedOcclusion);
+#else
+	cortaoResult = vec4(0.5, 0.5, 1.0, tweakedOcclusion);
+#endif
 }
 
 void main()
 {
 	cortao_mainPass(uvec2(gl_FragCoord.xy), cortaoParams);
-	fragOut0 = vec4(pow(clamp(cortaoOcclusion, 0.0, 1.0), intensity), 0.0, 0.0, 1.0);
+	fragOut0 = cortaoResult;
 }

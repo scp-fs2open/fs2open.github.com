@@ -648,8 +648,8 @@ private:
  *
  * Runs the CORTAO prepass, main pass and filter pass as fullscreen fragment passes on the G-buffer,
  * before the deferred light pass. The prepass writes each mip level of the packed data buffer
- * (R32_SFLOAT that holds uint bits). The main pass writes the raw occlusion (R8_UNORM), and the
- * optional filter pass writes the filtered occlusion (R8_UNORM). The ambient light reads the last one.
+ * (R32_SFLOAT that holds uint bits). The main pass writes the raw occlusion and bent normal
+ * (R8G8B8A8_UNORM), and the optional filter pass filters them. The ambient light reads the last one.
  *
  * GPU resources are created on the first execute(), so a session without SSAO does not use memory
  * for them.
@@ -700,7 +700,7 @@ private:
 
 	// Extent-independent resources
 	vk::RenderPass m_packedRenderPass;  // R32_SFLOAT, final layout eShaderReadOnlyOptimal
-	vk::RenderPass m_aoRenderPass;      // R8_UNORM, final layout eShaderReadOnlyOptimal
+	vk::RenderPass m_aoRenderPass;      // R8G8B8A8_UNORM, final layout eShaderReadOnlyOptimal
 	vk::Sampler m_nearestBorderSampler; // NEAREST filter and mipmaps, transparent black border
 	vk::Image m_lutImage;
 	vk::ImageView m_lutView;

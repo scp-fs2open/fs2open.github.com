@@ -733,6 +733,7 @@ void LabUi::build_ssao_controls()
 		changed = true;
 	}
 	TextUnformatted("Auto: 5 taps and animated noise with FSR, 13 taps and constant noise without.");
+	changed |= Checkbox("SSAO Bent Normals (needs an environment map)", &settings.bent_normals);
 	changed |= Checkbox("Show SSAO Only (set the emissive factor to 0)", &settings.debug_view);
 	if (changed) {
 		LabRenderer::setSsaoSettings(settings);

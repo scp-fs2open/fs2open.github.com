@@ -26,6 +26,9 @@ enum class SsaoNoiseMode { Auto, Constant, Animated };
 struct ssao_settings {
 	SsaoFilterMode filter = SsaoFilterMode::Auto;
 	SsaoNoiseMode noise = SsaoNoiseMode::Auto;
+	// Use the CORTAO bent normals for the irradiance map lookup of the ambient light. See
+	// ssao_bent_normals_active().
+	bool bent_normals = true;
 	// Debug view: the ambient light shows only the SSAO term, and the other lights add nothing.
 	// Set the lab emissive factor to 0 to see the occlusion alone.
 	bool debug_view = false;
@@ -49,6 +52,11 @@ SsaoFilterMode ssao_filter_mode(bool temporalFilterActive);
 
 // Whether the noise pattern changes each frame, with Auto resolved as for ssao_filter_mode().
 bool ssao_animate_noise(bool temporalFilterActive);
+
+// Whether the CORTAO passes write bent normals this frame. Only the irradiance map lookup of the
+// ambient light uses them, so they are only active when an environment map is present.
+// Only valid when ssao_enabled().
+bool ssao_bent_normals_active();
 
 // Remove the SSAO option from the options list when the renderer cannot run the CORTAO passes.
 void ssao_remove_unsupported_options();

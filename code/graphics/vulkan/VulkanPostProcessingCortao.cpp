@@ -19,7 +19,8 @@ namespace graphics::vulkan {
 namespace {
 
 constexpr vk::Format PACKED_FORMAT = vk::Format::eR32Sfloat;
-constexpr vk::Format AO_FORMAT = vk::Format::eR8Unorm;
+// RGB: the bent normal as n * 0.5 + 0.5, A: the occlusion. See cortao-main-f.sdr.
+constexpr vk::Format AO_FORMAT = vk::Format::eR8G8B8A8Unorm;
 
 } // namespace
 
@@ -517,8 +518,8 @@ vk::ImageView VulkanCortao::execute(vk::CommandBuffer cmd, bool temporalFilterAc
 		GR_DEBUG_SCOPE("CORTAO filter pass");
 		// The filter reads only mip 0 of the packed data, with texelFetch().
 		const std::array<vk::ImageView, 2> views = {m_packedFullView, m_aoRaw.view};
-		const unsigned int filterFlags = (filterMode == SsaoFilterMode::Large) ? SDR_FLAG_CORTAO_LARGE_FILTER : 0;
-		drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_FILTER, filterFlags,
+		drawPass(cmd, m_aoRenderPass, m_aoFramebuffer, m_ctx->sceneExtent, SDR_TYPE_CORTAO_FILTER,
+			cortao_filter_shader_flags(filterMode),
 			views.data(), static_cast<uint32_t>(views.size()), filterBlockOffset, m_uboBlockSize);
 	}
 
