@@ -112,6 +112,10 @@ TEST_F(ArrivalMinDistanceTest, twice_the_target_radius) {
 	// The value is rounded, not truncated.
 	Objects[OBJNUM].radius = 100.3f;
 	EXPECT_EQ(arrival_min_distance(ArrivalLocation::ABOVE_SHIP, targetAnchor()), 201);
+
+	// The value is rounded down when the fraction is small. The ceiling gives 201.
+	Objects[OBJNUM].radius = 100.2f;
+	EXPECT_EQ(arrival_min_distance(ArrivalLocation::ABOVE_SHIP, targetAnchor()), 200);
 }
 
 TEST_F(ArrivalMinDistanceTest, limit_of_500) {
