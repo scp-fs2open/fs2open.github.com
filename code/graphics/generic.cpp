@@ -1,14 +1,10 @@
 #include "anim/packunpack.h"
+#include "ddsutils/ddsutils.h"
 #include "globalincs/globals.h"
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
-#ifdef _WIN32
-#include <windows.h>	// for MAX_PATH
-#else
-#define MAX_PATH	255
-#endif
 //#define TIMER
 #ifdef TIMER
 #include "io/timer.h"
@@ -154,6 +150,20 @@ int generic_anim_load(generic_anim *ga)
 	return 0;
 }
 
+static void copy_dds_stream_pixels(const SCP_vector<ubyte>& bgra, ubyte* frame, bool use_hud_color)
+{
+	if (!use_hud_color) {
+		memcpy(frame, bgra.data(), bgra.size());
+		return;
+	}
+
+	// Use the same luminance and alpha as the OpenGL HUD texture update.
+	for (size_t src = 0; src < bgra.size(); src += 4) {
+		const auto luminance = (bgra[src] + bgra[src + 1] + bgra[src + 2]) / 3;
+		frame[src / 4] = static_cast<ubyte>(luminance * bgra[src + 3] / 255);
+	}
+}
+
 int generic_anim_stream(generic_anim *ga, const bool cache)
 {
 	CFILE *img_cfp = NULL;
@@ -237,10 +247,10 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		ga->bitmap_id = bm_create(ga->png.anim->bpp, ga->width, ga->height, ga->buffer, 0);
 	}
 	else {
-		bpp = 32;
-		if(ga->use_hud_color)
-			bpp = 8;
-		bm_load_and_parse_eff(ga->filename, CF_TYPE_ANY, &ga->num_frames, &anim_fps, &ga->keyframe, 0);
+		if (!bm_load_and_parse_eff(ga->filename, CF_TYPE_ANY, &ga->num_frames, &anim_fps, &ga->keyframe, nullptr)
+			|| ga->num_frames <= 0) {
+			return -1;
+		}
 		char *p = strrchr( ga->filename, '.' );
 		if ( p )
 			*p = 0;
@@ -254,12 +264,34 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 			mprintf(("Cannot find first frame for eff streaming. eff Filename: %s\n", ga->filename));
 			return -1;
 		}
-		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename) >= MAX_FILENAME_LEN) {
-			// Make sure the string is null terminated
-			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		ga->eff.next_frame = -1;
+		if (bm_get_type(ga->bitmap_id) == BM_TYPE_DDS) {
+			SCP_vector<ubyte> bgra;
+			const auto result = dds_decompress_top_mip_bgra(frame_name, CF_TYPE_ANY, &ga->width, &ga->height, bgra);
+			if (result == DDS_ERROR_NONE) {
+				// Streaming updates require an uncompressed destination, even when the GPU supports BCn.
+				bm_release(ga->bitmap_id);
+				bpp = ga->use_hud_color ? 8 : 32;
+				ga->buffer = static_cast<ubyte*>(vm_malloc(bgra.size() / (ga->use_hud_color ? 4 : 1)));
+				copy_dds_stream_pixels(bgra, ga->buffer, ga->use_hud_color);
+				ga->bitmap_id = bm_create(bpp, ga->width, ga->height, ga->buffer, ga->use_hud_color ? BMP_AABITMAP : 0);
+				if (ga->bitmap_id < 0) {
+					vm_free(ga->buffer);
+					ga->buffer = nullptr;
+					return -1;
+				}
+			} else if (result != DDS_ERROR_UNSUPPORTED || bm_is_compressed(ga->bitmap_id) || bm_is_cubemap(ga->bitmap_id)) {
+				mprintf(("Cannot decode first DDS frame for EFF streaming: %s\n", frame_name));
+				bm_release(ga->bitmap_id);
+				ga->bitmap_id = -1;
+				return -1;
+			}
 		}
-		ga->eff.next_frame = bm_load(frame_name);
-		bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
+		if (!ga->buffer) {
+			snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+			ga->eff.next_frame = bm_load(frame_name);
+			bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
+		}
 		ga->previous_frame = 0;
 	}
 
@@ -331,6 +363,11 @@ void generic_anim_unload(generic_anim *ga)
 					bm_release(ga->eff.next_frame);
 				if(ga->bitmap_id >= 0)
 					bm_release(ga->bitmap_id);
+				if (ga->buffer) {
+					// Compressed DDS streams own the pixels backing their user bitmap.
+					vm_free(ga->buffer);
+					ga->buffer = nullptr;
+				}
 			}
 			if(ga->type == BM_TYPE_PNG) {
 				if(ga->bitmap_id >= 0)
@@ -373,9 +410,24 @@ void generic_render_eff_stream(generic_anim *ga)
 			// Make sure the string is null terminated
 			frame_name[MAX_FILENAME_LEN - 1] = '\0';
 		}
-		if(bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
+		if (ga->buffer) {
+			SCP_vector<ubyte> bgra;
+			int width, height;
+			if (dds_decompress_top_mip_bgra(frame_name, CF_TYPE_ANY, &width, &height, bgra) == DDS_ERROR_NONE
+				&& width == ga->width && height == ga->height) {
+				copy_dds_stream_pixels(bgra, ga->buffer, ga->use_hud_color);
+				gr_update_texture(ga->bitmap_id, bpp, ga->buffer, width, height);
+			}
+			return;
+		}
+		if (ga->eff.next_frame >= 0 && bm_reload(ga->eff.next_frame, frame_name) == ga->eff.next_frame)
 		{
+			// A stream that started with an uncompressed frame cannot upload compressed DDS blocks.
+			if (bm_get_type(ga->eff.next_frame) == BM_TYPE_DDS && bm_is_compressed(ga->eff.next_frame))
+				return;
 			bitmap* next_frame_bmp = bm_lock(ga->eff.next_frame, bpp, (bpp==8)?BMP_AABITMAP:BMP_TEX_NONCOMP, true);
+			if (!next_frame_bmp)
+				return;
 			if(next_frame_bmp->data)
 				gr_update_texture(ga->bitmap_id, bpp, (ubyte*)next_frame_bmp->data, ga->width, ga->height);
 			bm_unlock(ga->eff.next_frame);

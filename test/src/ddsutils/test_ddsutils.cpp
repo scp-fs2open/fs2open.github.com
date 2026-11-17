@@ -3,6 +3,7 @@
 #include "globalincs/systemvars.h"
 #include "ddsutils/ddsutils.h"
 #include "graphics/2d.h"
+#include "graphics/generic.h"
 #include "util/FSTestFixture.h"
 
 class DDSConversionResizeTest : public test::FSTestFixture {
@@ -197,4 +198,80 @@ TEST_F(DDSBitmapOriginalSizeTest, original_size_is_available_before_pixel_loadin
 	EXPECT_EQ(512, width);
 	EXPECT_EQ(512, height);
 	bm_release(handle);
+}
+
+using DDSEffStreamTest = DDSBitmapOriginalSizeTest;
+
+TEST_F(DDSEffStreamTest, streams_bc1_frames_as_color_or_hud_pixels)
+{
+	const char* eff_name = "unittest-dds-stream.eff";
+	const char* frame_names[] = {"unittest-dds-stream_0000.dds", "unittest-dds-stream_0001.dds"};
+	const auto cleanup_files = [&](const char*) {
+		cf_delete(eff_name, CF_TYPE_CACHE);
+		for (const auto* name : frame_names) {
+			cf_delete(name, CF_TYPE_CACHE);
+		}
+	};
+	std::unique_ptr<const char, decltype(cleanup_files)> files(eff_name, cleanup_files);
+	{
+		std::unique_ptr<CFILE> fp(cfopen(eff_name, "wb", CF_TYPE_CACHE));
+		ASSERT_NE(nullptr, fp);
+		const char eff[] = "$Type: DDS\n$Frames: 2\n$FPS: 2\n";
+		ASSERT_EQ(static_cast<int>(sizeof(eff) - 1), cfwrite(eff, 1, sizeof(eff) - 1, fp.get()));
+	}
+
+	// Solid red, then white, encoded as BC1 blocks. The ETC2 path would drop the top mip.
+	for (size_t i = 0; i < 2; ++i) {
+		std::unique_ptr<CFILE> fp(cfopen(frame_names[i], "wb", CF_TYPE_CACHE));
+		ASSERT_NE(nullptr, fp);
+		write_header(fp.get(), 512, 512, 2);
+		SCP_vector<uint> blocks((dds_compressed_mip_size(512, 512, 8) + dds_compressed_mip_size(256, 256, 8)) / sizeof(uint));
+		for (size_t block = 0; block < blocks.size(); block += 2) {
+			blocks[block] = INTEL_INT(i == 0 ? 0xf800u : 0xffffu);
+		}
+		ASSERT_EQ(static_cast<int>(blocks.size()), cfwrite(blocks.data(), sizeof(uint), static_cast<int>(blocks.size()), fp.get()));
+	}
+
+	for (const bool native_bc : {false, true}) {
+		gr_screen.gf_is_capable = [native_bc](gr_capability capability) {
+			return capability == (native_bc ? gr_capability::CAPABILITY_S3TC : gr_capability::CAPABILITY_ETC2);
+		};
+		for (const bool hud : {false, true}) {
+			SCOPED_TRACE(::testing::Message() << "native BC: " << native_bc << ", HUD: " << hud);
+			generic_anim anim{};
+			generic_anim_init(&anim, "unittest-dds-stream");
+			anim.use_hud_color = hud;
+			std::unique_ptr<generic_anim, decltype(&generic_anim_unload)> stream(&anim, generic_anim_unload);
+
+			const auto saved_create = gr_screen.gf_bm_create;
+			gr_screen.gf_bm_create = [](bitmap_slot*) {};
+			const auto result = generic_anim_stream(&anim);
+			gr_screen.gf_bm_create = saved_create;
+			ASSERT_EQ(0, result);
+			EXPECT_EQ(BM_TYPE_USER, bm_get_type(anim.bitmap_id));
+			ASSERT_NE(nullptr, anim.buffer);
+			EXPECT_EQ(512, anim.width);
+			EXPECT_EQ(512, anim.height);
+			EXPECT_EQ(hud ? 85 : 0, anim.buffer[0]);
+			if (!hud) {
+				EXPECT_EQ(255, anim.buffer[2]);
+				EXPECT_EQ(255, anim.buffer[3]);
+			}
+
+			bool updated = false;
+			const auto saved_update = gr_screen.gf_update_texture;
+			gr_screen.gf_update_texture = [&](int handle, int bpp, const ubyte* data, int width, int height) {
+				updated = true;
+				EXPECT_EQ(anim.bitmap_id, handle);
+				ASSERT_EQ(hud ? 8 : 32, bpp);
+				ASSERT_EQ(512, width);
+				ASSERT_EQ(512, height);
+				EXPECT_EQ(255, data[0]);
+				EXPECT_EQ(255, data[width * height * (bpp / 8) - 1]);
+			};
+			generic_anim_bitmap_set(&anim, 0.75f);
+			gr_screen.gf_update_texture = saved_update;
+			EXPECT_TRUE(updated);
+		}
+	}
 }
