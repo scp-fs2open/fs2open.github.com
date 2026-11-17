@@ -151,7 +151,7 @@ ADE_FUNC(getFilename, l_Texture, NULL, "Returns filename for texture", "string",
 	return ade_set_args(L, "s", bm_get_filename(th->handle));
 }
 
-ADE_FUNC(getWidth, l_Texture, NULL, "Gets the original texture width", "number", "Texture width, or 0 if handle is invalid")
+ADE_FUNC(getWidth, l_Texture, nullptr, "Gets the original texture width", "number", "Texture width, or 0 if handle is invalid")
 {
 	texture_h* th;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
@@ -168,7 +168,7 @@ ADE_FUNC(getWidth, l_Texture, NULL, "Gets the original texture width", "number",
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(getHeight, l_Texture, NULL, "Gets the original texture height", "number", "Texture height, or 0 if handle is invalid")
+ADE_FUNC(getHeight, l_Texture, nullptr, "Gets the original texture height", "number", "Texture height, or 0 if handle is invalid")
 {
 	texture_h* th;
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&th)))
