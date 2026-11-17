@@ -255,9 +255,10 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		if ( p )
 			*p = 0;
 		char frame_name[MAX_FILENAME_LEN];
-		if (snprintf(frame_name, MAX_FILENAME_LEN, "%s_0000", ga->filename) >= MAX_FILENAME_LEN) {
-			// Make sure the string is null terminated
-			frame_name[MAX_FILENAME_LEN - 1] = '\0';
+		const int frame_name_length = snprintf(frame_name, sizeof(frame_name), "%s_0000", ga->filename);
+		if (frame_name_length < 0 || frame_name_length >= MAX_FILENAME_LEN) {
+			mprintf(("Cannot format first frame name for EFF streaming: %s\n", ga->filename));
+			return -1;
 		}
 		ga->bitmap_id = bm_load(frame_name);
 		if(ga->bitmap_id < 0) {
@@ -288,7 +289,8 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 			}
 		}
 		if (!ga->buffer) {
-			snprintf(frame_name, MAX_FILENAME_LEN, "%s_0001", ga->filename);
+			// Reuse the validated frame name and change its suffix from _0000 to _0001.
+			frame_name[frame_name_length - 1] = '1';
 			ga->eff.next_frame = bm_load(frame_name);
 			bm_get_info(ga->bitmap_id, &ga->width, &ga->height);
 		}
