@@ -14,6 +14,7 @@ const SCP_vector<std::pair<Section, const char*>> SectionMapping {
 	std::pair<Section, const char*>(Section::Actions, "actions"),
 	std::pair<Section, const char*>(Section::Primary, "primary"),
 	std::pair<Section, const char*>(Section::Secondary, "secondary"),
+	std::pair<Section, const char*>(Section::V1, "v1"),
 };
 
 const char * lookupSectionName(Section id) {
@@ -35,6 +36,61 @@ Section lookupSectionValue(const char* name) {
 		}
 	}
 	return Section::Invalid;
+}
+
+// Older builds take a bind's meaning from its control's type, so a button on an axis control reads as that axis number
+static bool misread_by_older_builds(const CC_bind& bind, bool axis_control)
+{
+	if (bind.empty()) {
+		return false;
+	}
+
+	if (axis_control) {
+		return (bind.get_cid() == CID_KEYBOARD) || ((bind.get_flags() & CCF_BUTTON) != 0);
+	}
+
+	return (bind.get_flags() & CCF_AXIS_BTN) != 0;
+}
+
+static void write_bind_fields(PresetFileHandler& handler, const CC_bind& bind)
+{
+	handler.writeString("cid", ValToCID(bind.get_cid()));
+	handler.writeString("flags", ValToCCF(bind.get_flags()));
+	handler.writeString("input", ValToInput(bind));
+}
+
+// A bind older builds would misread goes in the slot's "v1" section, and the fields they read say unbound
+static void write_bind(PresetFileHandler& handler, const CC_bind& bind, bool axis_control)
+{
+	if (!misread_by_older_builds(bind, axis_control)) {
+		write_bind_fields(handler, bind);
+		return;
+	}
+
+	write_bind_fields(handler, CC_bind());
+	handler.beginSectionWrite(Section::V1);
+	write_bind_fields(handler, bind);
+	handler.endSectionWrite(); // V1
+}
+
+static CC_bind read_bind(PresetFileHandler& handler)
+{
+	const bool v1 = handler.sectionExists(Section::V1);
+	if (v1) {
+		handler.beginSectionRead(Section::V1);
+	}
+
+	const auto cid = CIDToVal(handler.readString("cid").c_str());
+	const auto flags = CCFToVal(handler.readString("flags").c_str());
+	const auto btn = InputToVal(cid, handler.readString("input").c_str());
+
+	if (v1) {
+		handler.endSectionRead(); // V1
+	}
+
+	CC_bind bind;
+	bind.take(cid, btn, flags);
+	return bind;
 }
 
 void load_preset_files(SCP_string clone) {
@@ -106,29 +162,12 @@ void load_preset_files(SCP_string clone) {
 			auto &item = preset.bindings[id];
 
 			handler->beginSectionRead(Section::Primary);
-			str = handler->readString("cid");
-			auto cid = CIDToVal(str.c_str());
-
-			str = handler->readString("flags");
-			auto flags = CCFToVal(str.c_str());
-
-			str = handler->readString("input");
-			auto btn = InputToVal(cid, str.c_str());
-			item.first.take(cid, btn, flags);
-
+			item.first = read_bind(*handler);
 			handler->endSectionRead(); // Primary
 
 
 			handler->beginSectionRead(Section::Secondary);
-			str = handler->readString("cid");
-			cid = CIDToVal(str.c_str());
-
-			str = handler->readString("flags");
-			flags = CCFToVal(str.c_str());
-
-			str = handler->readString("input");
-			btn = InputToVal(cid, str.c_str());
-			item.second.take(cid, btn, flags);
+			item.second = read_bind(*handler);
 			handler->endSectionRead(); // Secondary
 
 			//handler->endSectionRead(); // Unnamed
@@ -230,22 +269,17 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	handler->beginArrayWrite(Section::Actions);
 	for (int i = 0; static_cast<size_t>(i) < preset.bindings.size(); ++i) {
 		const auto& item = preset.bindings[i];
-		const auto& first = item.first;
-		const auto& second = item.second;
+		const bool axis_control = Control_config[i].is_axis();
 
 		handler->beginSectionWrite(Section::Unnamed);
 		handler->writeString("bind", ValToAction(i));
 
 		handler->beginSectionWrite(Section::Primary);
-		handler->writeString("cid",   ValToCID(first.get_cid()));
-		handler->writeString("flags", ValToCCF(first.get_flags()));
-		handler->writeString("input", ValToInput(first));
+		write_bind(*handler, item.first, axis_control);
 		handler->endSectionWrite(); // Primary
 
 		handler->beginSectionWrite(Section::Secondary);
-		handler->writeString("cid", ValToCID(second.get_cid()));
-		handler->writeString("flags", ValToCCF(second.get_flags()));
-		handler->writeString("input", ValToInput(second));
+		write_bind(*handler, item.second, axis_control);
 		handler->endSectionWrite(); // Secondary
 
 		handler->endSectionWrite();	// Control_config[i]
@@ -303,6 +337,10 @@ PresetFileHandler::~PresetFileHandler() {
 	cfclose(_cfp);
 	_cfp = nullptr;
 };
+
+bool PresetFileHandler::sectionExists(Section s) {
+	return exists(lookupSectionName(s));
+}
 
 bool PresetFileHandler::beginSectionRead(Section s) {
 	const char * sectionName = lookupSectionName(s);

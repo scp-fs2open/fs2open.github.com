@@ -1,8 +1,12 @@
+#include "cfile/cfile.h"
 #include "controlconfig/controlsconfig.h"
+#include "controlconfig/presets.h"
 #include "io/joy.h"
 #include "io/key.h"
+#include "util/FSTestFixture.h"
 
 #include <gtest/gtest.h>
+#include <jansson.h>
 
 TEST(ControlBindings, FlagNamesRoundTrip)
 {
@@ -181,4 +185,105 @@ TEST(ControlBindings, ReleasedKeyOnAnAxis)
 	scale_invert(inverted_key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_pair, true);
 	scale_invert(key, 0, CC_TYPE_AXIS_ABS, 0.0f, axes, &abs_pair, true);
 	EXPECT_EQ(abs_pair, F1_0);
+}
+
+class ControlPresetFile : public test::FSTestFixture {
+  public:
+	ControlPresetFile() : test::FSTestFixture(INIT_CFILE) {}
+
+  protected:
+	void SetUp() override
+	{
+		test::FSTestFixture::SetUp();
+		control_config_common_init();
+	}
+
+	void TearDown() override
+	{
+		cf_delete("xtypetest.json", CF_TYPE_PLAYER_BINDS, PRESET_LOCATION);
+		control_config_common_close();
+		test::FSTestFixture::TearDown();
+	}
+
+	static const uint32_t PRESET_LOCATION = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
+};
+
+static json_t* preset_slot(json_t* root, const char* action, const char* slot)
+{
+	json_t* actions = json_object_get(root, "actions");
+	size_t index;
+	json_t* entry;
+	json_array_foreach(actions, index, entry) {
+		const char* name = json_string_value(json_object_get(entry, "bind"));
+		if ((name != nullptr) && (strcmp(name, action) == 0)) {
+			return json_object_get(entry, slot);
+		}
+	}
+	return nullptr;
+}
+
+static const char* slot_field(json_t* slot, const char* field)
+{
+	const char* value = json_string_value(json_object_get(slot, field));
+	return (value != nullptr) ? value : "(missing)";
+}
+
+// Builds up to 26.2 read only a slot's outer fields and take a bind's meaning from the control's type, so a bind
+// they would misread has to say unbound there
+TEST_F(ControlPresetFile, CrossTypeBindsStayOutOfTheFieldsOlderBuildsRead)
+{
+	CC_preset preset;
+	preset.name = "xtypetest";
+	preset.type = Preset_t::pst;
+	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+	preset.bindings[JOY_HEADING_AXIS].first = CC_bind(CID_KEYBOARD, KEY_D);
+	preset.bindings[JOY_HEADING_AXIS].second = CC_bind(CID_KEYBOARD, KEY_J, CCF_INVERTED);
+	preset.bindings[JOY_PITCH_AXIS].first = CC_bind(CID_JOY0, iHAT_UP, CCF_BUTTON);
+	preset.bindings[JOY_BANK_AXIS].first = CC_bind(CID_JOY0, JOY_RX_AXIS, CCF_AXIS);
+	preset.bindings[RIGHT_SLIDE_THRUST].first = CC_bind(CID_KEYBOARD, KEY_E);
+	preset.bindings[RIGHT_SLIDE_THRUST].second = CC_bind(CID_JOY0, JOY_X_AXIS, CCF_AXIS_BTN);
+	ASSERT_TRUE(save_preset_file(preset, true));
+
+	CFILE* fp = cfopen("xtypetest.json", "rb", CF_TYPE_PLAYER_BINDS, false, PRESET_LOCATION);
+	ASSERT_NE(fp, nullptr);
+	SCP_string text(static_cast<size_t>(cfilelength(fp)), '\0');
+	ASSERT_EQ(cfread(&text[0], 1, static_cast<int>(text.size()), fp), static_cast<int>(text.size()));
+	cfclose(fp);
+
+	json_error_t err;
+	json_t* root = json_loads(text.c_str(), 0, &err);
+	ASSERT_NE(root, nullptr) << err.text;
+
+	const std::pair<const char*, const char*> hidden[] = {{"JOY_HEADING_AXIS", "primary"},
+		{"JOY_HEADING_AXIS", "secondary"},
+		{"JOY_PITCH_AXIS", "primary"},
+		{"RIGHT_SLIDE_THRUST", "secondary"}};
+	for (const auto& where : hidden) {
+		json_t* slot = preset_slot(root, where.first, where.second);
+		ASSERT_NE(slot, nullptr) << where.first << " " << where.second;
+		EXPECT_STREQ(slot_field(slot, "cid"), "CID_NONE") << where.first << " " << where.second;
+		EXPECT_STREQ(slot_field(slot, "flags"), "NONE") << where.first << " " << where.second;
+		EXPECT_STREQ(slot_field(slot, "input"), "NONE") << where.first << " " << where.second;
+		EXPECT_TRUE(json_is_object(json_object_get(slot, "v1"))) << where.first << " " << where.second;
+	}
+
+	const std::pair<const char*, const char*> plain[] = {{"JOY_BANK_AXIS", "primary"}, {"RIGHT_SLIDE_THRUST", "primary"}};
+	for (const auto& where : plain) {
+		json_t* slot = preset_slot(root, where.first, where.second);
+		ASSERT_NE(slot, nullptr) << where.first << " " << where.second;
+		EXPECT_STRNE(slot_field(slot, "cid"), "CID_NONE") << where.first << " " << where.second;
+		EXPECT_EQ(json_object_get(slot, "v1"), nullptr) << where.first << " " << where.second;
+	}
+	json_decref(root);
+
+	Control_config_presets.resize(1);
+	load_preset_files();
+	auto loaded = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [](const CC_preset& p) {
+		return p.name == "xtypetest";
+	});
+	ASSERT_NE(loaded, Control_config_presets.end());
+	for (const IoActionId id : {JOY_HEADING_AXIS, JOY_PITCH_AXIS, JOY_BANK_AXIS, RIGHT_SLIDE_THRUST}) {
+		EXPECT_TRUE(loaded->bindings[id].first == preset.bindings[id].first) << "action " << id << " first";
+		EXPECT_TRUE(loaded->bindings[id].second == preset.bindings[id].second) << "action " << id << " second";
+	}
 }
