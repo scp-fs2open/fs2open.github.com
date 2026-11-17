@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <localization/localize.h>
 #include <osapi/dialogs.h>
+#include <sound/audiostr.h>
 #include <utils/finally.h>
 
 #include "util/FSTestFixture.h"
@@ -219,7 +220,7 @@ TEST_F(CFileTest, subfolder_list)
 	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
 }
 
-// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, which define the languages gr and tw.
+// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, whose tables define the test languages.
 // In the test data, a file of 4 bytes ("base") is the original and a file of 9 bytes ("localized") is in a
 // language subfolder.
 class CFileLanguageSubdirTest : public test::FSTestFixture
@@ -310,6 +311,37 @@ TEST_F(CFileLanguageSubdirTest, language_subdir_only_localized)
 	EXPECT_GT(num_fonts, 0);
 	for (int i = 0; i < num_fonts; ++i)
 		EXPECT_STRNE("only_gr", font_arr[i]);
+}
+
+TEST_F(CFileLanguageSubdirTest, localize_filename)
+{
+	auto restore_language = util::finally([] { lcl_set_language(LCL_DEFAULT); });
+
+	int german = lcl_find_lang_index_by_name("German");
+	ASSERT_GE(german, 0);
+	lcl_set_language(german);
+
+	auto localize = [](const char* filename) {
+		return cf_localize_filename(filename, CF_TYPE_ANY, NUM_AUDIO_EXT, audio_ext_list);
+	};
+	const SCP_string gr = "gr" DIR_SEPARATOR_STR;
+
+	EXPECT_EQ(gr + "same.ogg", localize("same.ogg"));
+
+	// a mod's override of the original doesn't hide the base game's localized copy
+	EXPECT_EQ(gr + "override.ogg", localize("override.ogg"));
+
+	EXPECT_EQ(gr + "only_localized.ogg", localize("only_localized.ogg"));
+	EXPECT_EQ("not_localized.ogg", localize("not_localized.ogg"));
+
+	// any audio extension counts, and the name keeps the one asked for
+	EXPECT_EQ(gr + "mismatch.wav", localize("mismatch.wav"));
+
+	// the localized name would be MAX_FILENAME_LEN characters
+	EXPECT_EQ("long_name_0123456789abcde.ogg", localize("long_name_0123456789abcde.ogg"));
+
+	lcl_set_language(LCL_DEFAULT);
+	EXPECT_EQ("same.ogg", localize("same.ogg"));
 }
 
 namespace {
