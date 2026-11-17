@@ -36,7 +36,7 @@ layout(set = 0, binding = 3) uniform samplerCube sEnvmap;
 layout(set = 0, binding = 4) uniform samplerCube sIrrmap;
 #endif
 
-#if defined(RT_SHADOWS) || defined(RTAO)
+#ifdef RT_SHADOWS
 layout(set = 0, binding = 5) uniform accelerationStructureEXT shadow_tlas;
 #endif
 #else
@@ -66,17 +66,15 @@ uniform globalDeferredData {
 	float invScreenWidth;
 	float invScreenHeight;
 	float nearPlane;
-	int rtaoSampleCount;
+	int padding0;
 
-	// The ray-tracing inputs of this pass, for raytraced shadows and RTAO. See
-	// deferred_global_data in uniform_structs.h.
+	// The ray-tracing inputs of this pass, for raytraced shadows. See deferred_global_data in
+	// uniform_structs.h.
 	vec3 rayViewOrigin;
 	int rayCullMask;
 
 	float rayBiasMin;
 	float rayBiasMax;
-	float rtaoRadius;
-	float rtaoStrength;
 };
 
 #include "shadow_cascade_params.sdr" //! #include "shadow_cascade_params.sdr"
@@ -304,20 +302,9 @@ void main()
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
 		vec3 irrNormal = normal;
-#ifdef RTAO
-		{
-			// Raytraced AO multiplies into the same ao term as the baked AO maps,
-			// so the env-map/IBL ambient below darkens consistently for free.
-			// Ray origin in TLAS-relative space, as for the shadow rays below.
-			vec3 worldPos = mat3(inv_view_matrix) * position + rayViewOrigin;
-			vec3 worldNormal = normalize((inv_view_matrix * vec4(normal, 0.0)).xyz);
-			float rtaoBias = computeRtShadowBias(length(position), rayBiasMin, rayBiasMax);
-			ao *= traceAmbientOcclusion(shadow_tlas, worldPos, worldNormal,
-				rtaoRadius, rtaoStrength, rtaoSampleCount, rtaoBias, uint(rayCullMask), gl_FragCoord.xy);
-		}
-#endif
 #ifdef SSAO
-		// Screen-space AO uses the same ao term as RTAO. The engine never enables both.
+		// Screen-space AO multiplies into the same ao term as the baked AO maps, so the
+		// env-map ambient below gets the occlusion too.
 		// SsaoBuffer: RGB is the view-space bent normal as n * 0.5 + 0.5, A is the occlusion.
 		vec4 ssaoData = texelFetch(SsaoBuffer, ivec2(gl_FragCoord.xy), 0);
 		ao *= ssaoData.a;

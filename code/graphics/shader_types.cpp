@@ -147,8 +147,6 @@ static ShaderVariantInfo SHADER_VARIANTS[] = {
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RT_SHADOWS, "RT_SHADOWS", {}, "Use raytraced (TLAS ray query) shadows instead of cascaded shadow maps"},
 
-	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_RTAO, "RTAO", {}, "Trace raytraced ambient occlusion in the ambient light pass"},
-
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO, "SSAO", {}, "Apply the CORTAO screen-space ambient occlusion in the ambient light pass"},
 
 	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_DEFERRED_SSAO_DEBUG, "SSAO_DEBUG", {}, "Show only the CORTAO occlusion (debug view)"},
@@ -253,7 +251,7 @@ bool shader_variant_requires_raytracing(shader_type type, unsigned int flags)
 	case SDR_TYPE_MODEL:
 		return (flags & MODEL_SDR_FLAG_RT_SHADOWS) != 0;
 	case SDR_TYPE_DEFERRED_LIGHTING:
-		return (flags & (SDR_FLAG_DEFERRED_RT_SHADOWS | SDR_FLAG_DEFERRED_RTAO)) != 0;
+		return (flags & SDR_FLAG_DEFERRED_RT_SHADOWS) != 0;
 	default:
 		return false;
 	}

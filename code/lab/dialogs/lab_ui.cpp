@@ -650,33 +650,6 @@ void LabUi::build_shadow_penumbra_sliders()
 	}
 }
 
-void LabUi::build_rtao_sliders()
-{
-	// Unlike the RT shadow sliders, RTAO (raytraced ambient occlusion) does not depend on
-	// the shadow method or the shadow quality. It only needs ray-query support.
-	if (!rtao_supported()) {
-		return;
-	}
-
-	int samples = Rtao_samples;
-	if (SliderInt("Ambient Occlusion Rays", &samples, 0, 16)) {
-		LabRenderer::setRtaoSamples(samples);
-	}
-
-	// Radius/strength are the mod-owned lighting-profile values ($RTAO Radius /
-	// $RTAO Strength); these override the active profile for this session only,
-	// same as the exposure/tonemapper controls below.
-	float radius = lighting_profiles::current_rtao_radius();
-	if (SliderFloat("Ambient Occlusion Radius", &radius, 0.0f, 200.0f)) {
-		lighting_profiles::lab_set_rtao_radius(radius);
-	}
-
-	float strength = lighting_profiles::current_rtao_strength();
-	if (SliderFloat("Ambient Occlusion Strength", &strength, 0.0f, 2.0f)) {
-		lighting_profiles::lab_set_rtao_strength(strength);
-	}
-}
-
 void LabUi::build_ssao_controls()
 {
 	if (!ssao_supported()) {
@@ -698,12 +671,8 @@ void LabUi::build_ssao_controls()
 	if (Ssao_samples <= 0) {
 		return;
 	}
-	if (rtao_enabled()) {
-		TextUnformatted("RTAO is on, so SSAO has no effect.");
-	}
-
 	// The mod-owned lighting-profile values ($SSAO Max Radius: and the others). These override the
-	// active profile for this session only, as the RTAO sliders do.
+	// active profile for this session only, as the exposure and tonemapper controls do.
 	float screen_radius = lighting_profiles::current_ssao_screen_radius();
 	if (SliderFloat("SSAO Screen Radius", &screen_radius, 0.01f, 0.5f)) {
 		lighting_profiles::lab_set_ssao_screen_radius(screen_radius);
@@ -845,8 +814,6 @@ void LabUi::show_render_options()
 			build_rt_shadow_bias_sliders();
 
 			build_shadow_penumbra_sliders();
-
-			build_rtao_sliders();
 
 			build_ssao_controls();
 

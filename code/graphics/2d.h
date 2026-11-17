@@ -294,10 +294,9 @@ enum shader_type {
 
 #define SDR_FLAG_ENV_MAP (1 << 0)
 #define SDR_FLAG_DEFERRED_RT_SHADOWS (1 << 1)
-#define SDR_FLAG_DEFERRED_RTAO (1 << 2)
-#define SDR_FLAG_DEFERRED_SSAO (1 << 3)
-#define SDR_FLAG_DEFERRED_SSAO_DEBUG (1 << 4)
-#define SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL (1 << 5)
+#define SDR_FLAG_DEFERRED_SSAO (1 << 2)
+#define SDR_FLAG_DEFERRED_SSAO_DEBUG (1 << 3)
+#define SDR_FLAG_DEFERRED_SSAO_BENT_NORMAL (1 << 4)
 
 // CORTAO main pass sample count. Without either flag, the main pass uses 16 samples.
 #define SDR_FLAG_CORTAO_SAMPLES_4 (1 << 0)

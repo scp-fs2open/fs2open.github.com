@@ -2,7 +2,6 @@
 
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
-#include "graphics/rtao.h"
 #include "options/Option.h"
 
 int Ssao_samples = 0;
@@ -11,7 +10,7 @@ ssao_settings Ssao_settings;
 // coverity[GLOBAL_INIT_ORDER] -- safe; OptionBuilder::finish() uses Meyers singleton
 auto SsaoQualityOption = options::OptionBuilder<int>("Graphics.SsaoQuality",
                      std::pair<const char*, int>{"Screen-Space Ambient Occlusion", -1},
-                     std::pair<const char*, int>{"Ambient occlusion from the screen contents (CORTAO); raytraced ambient occlusion has priority when it is on", -1})
+                     std::pair<const char*, int>{"Ambient occlusion from the screen contents (CORTAO)", -1})
                      .enumerator([]() -> SCP_vector<int> {
                          if (ssao_supported()) {
                              return {0, 4, 8, 16};
@@ -39,7 +38,7 @@ bool ssao_supported()
 
 bool ssao_enabled()
 {
-	return Ssao_samples > 0 && ssao_supported() && !rtao_enabled();
+	return Ssao_samples > 0 && ssao_supported();
 }
 
 int ssao_sample_count()

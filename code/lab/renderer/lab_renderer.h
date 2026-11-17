@@ -3,7 +3,6 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
 #include "graphics/2d.h"
-#include "graphics/rtao.h"
 #include "graphics/shadows.h"
 #include "graphics/ssao.h"
 #include "lighting/lighting_profiles.h"
@@ -181,13 +180,7 @@ public:
 		Sun_angular_size_override = degrees;
 	}
 
-	// Session-only override, same as setRtShadowSamples -- does not touch the
-	// persisted Raytraced Ambient Occlusion option. See Rtao_samples in rtao.h.
-	static void setRtaoSamples(int samples) {
-		Rtao_samples = samples;
-	}
-
-	// Session-only override, same as setRtaoSamples -- does not touch the persisted
+	// Session-only override, same as setRtShadowSamples -- does not touch the persisted
 	// Screen-Space Ambient Occlusion option. See Ssao_samples in ssao.h.
 	static void setSsaoSamples(int samples) {
 		Ssao_samples = samples;
@@ -198,7 +191,7 @@ public:
 		Ssao_settings = settings;
 	}
 
-	// Session-only override, same as setRtaoSamples -- does not touch the persisted
+	// Session-only override, same as setRtShadowSamples -- does not touch the persisted
 	// Shadow Contact Hardening option. See Shadow_contact_hardening_enabled in shadows.h.
 	static void setShadowContactHardening(bool enabled) {
 		Shadow_contact_hardening_enabled = enabled;

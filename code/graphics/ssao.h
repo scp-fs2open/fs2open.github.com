@@ -4,7 +4,7 @@
 //
 // The CORTAO passes read the G-buffer position and normal targets after the G-buffer pass. They
 // write an occlusion target, and the deferred ambient light pass (SSAO shader variant of
-// deferred-f.sdr) multiplies it into the same `ao` term as the baked AO maps and RTAO.
+// deferred-f.sdr) multiplies it into the same `ao` term as the baked AO maps.
 //
 // The Vulkan and the OpenGL backends have it. The radius and the intensity are
 // content-scale-dependent and therefore mod-owned: see $SSAO Max Radius:, $SSAO Screen Radius:
@@ -39,8 +39,7 @@ extern ssao_settings Ssao_settings;
 // Whether the renderer can run the CORTAO passes. See CAPABILITY_SCREEN_SPACE_AO.
 bool ssao_supported();
 
-// Whether the deferred ambient pass applies SSAO this frame. RTAO has priority, because the two
-// write the same term. Gate all SSAO work on this function.
+// Whether the deferred ambient pass applies SSAO this frame. Gate all SSAO work on this function.
 bool ssao_enabled();
 
 // The sample count for the CORTAO main pass: 4, 8 or 16. Only valid when ssao_enabled().

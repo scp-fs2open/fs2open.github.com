@@ -97,16 +97,6 @@ float current_exposure()
 	return _current.exposure;
 }
 
-float current_rtao_radius()
-{
-	return _current.rtao_radius;
-}
-
-float current_rtao_strength()
-{
-	return _current.rtao_strength;
-}
-
 float current_ssao_max_radius()
 {
 	return _current.ssao_max_radius;
@@ -234,16 +224,6 @@ SCP_string tonemapper_to_name(TonemapperAlgorithm tnm)
 void lab_set_exposure(float exIn)
 {
 	_current.exposure = exIn;
-}
-
-void lab_set_rtao_radius(float radius)
-{
-	_current.rtao_radius = radius;
-}
-
-void lab_set_rtao_strength(float strength)
-{
-	_current.rtao_strength = strength;
 }
 
 void lab_set_ssao_max_radius(float radius)
@@ -431,20 +411,6 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 		parsed |= parse_optional_float_into("$PPC Shoulder Angle:", &ppc_values.shoulder_angle);
 		parsed |= parse_optional_float_into("$Exposure:", &exposure);
 
-		if (parse_optional_float_into("$RTAO Radius:", &rtao_radius)) {
-			parsed = true;
-			if (rtao_radius < 0.0f) {
-				error_display(0, "$RTAO Radius: must be >= 0 (got %f); using 0.", rtao_radius);
-				rtao_radius = 0.0f;
-			}
-		}
-		if (parse_optional_float_into("$RTAO Strength:", &rtao_strength)) {
-			parsed = true;
-			if (rtao_strength < 0.0f) {
-				error_display(0, "$RTAO Strength: must be >= 0 (got %f); using 0.", rtao_strength);
-				rtao_strength = 0.0f;
-			}
-		}
 		if (parse_optional_float_into("$SSAO Max Radius:", &ssao_max_radius)) {
 			parsed = true;
 			if (ssao_max_radius <= 0.0f) {
@@ -529,9 +495,6 @@ void profile::reset()
 	ppc_values.shoulder_angle = 0.1f;
 
 	exposure = 4.0f;
-
-	rtao_radius = 20.0f;
-	rtao_strength = 1.0f;
 
 	// The CORTAO recommendations: a screen radius of 0.1 to 0.25 of the screen height
 	ssao_max_radius = 1.0e6f;
