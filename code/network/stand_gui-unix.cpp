@@ -691,7 +691,7 @@ static void *webserverCallback(enum mg_event event, struct mg_connection *conn) 
             sendResponse(conn, std::string(), HTTP_404_NOT_FOUND);
             return const_cast<char*>("");
         }
-        return NULL;
+        return nullptr;
     }
     default:
         break;
