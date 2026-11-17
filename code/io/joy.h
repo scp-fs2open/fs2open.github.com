@@ -225,8 +225,8 @@ namespace io
 			SCP_string getSerial() const;
 
 			/**
-			 * @brief Gets the platform's path to the device
-			 * @return The path, or an empty string if the platform gives none
+			 * @brief Gets the platform's path to the device; on Linux, the /dev/input/by-path link of its USB port
+			 * @return The path, or an empty string if there is none
 			 */
 			SCP_string getPath() const;
 
@@ -289,6 +289,9 @@ namespace io
 
 			SCP_string _guidStr;    //!< The GUID string
 			SCP_string _name;       //!< The joystick name
+#ifdef __linux__
+			SCP_string _path;       //!< The by-path link found when the stick was opened, empty if it has none
+#endif
 			bool _isHaptic = false; //!< If this joystick supports haptic feedback
 			bool _isGamepad = false; //!< If this joystick is considered a gamepad
 

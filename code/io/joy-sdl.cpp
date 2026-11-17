@@ -13,6 +13,15 @@
 #include <memory>
 #include <utility>
 
+#ifdef __linux__
+#include <dirent.h>
+
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
+#endif
+
 #include "libs/jansson.h"
 
 using namespace io::joystick;
@@ -177,12 +186,46 @@ bool pathNamesDevice(const SCP_string& path)
 #ifdef _WIN32
 	// Windows device paths name the device and its port; XInput's only names a slot, handed out in connection order
 	return !path.empty() && path.rfind("XInput#", 0) != 0;
+#elif defined(__linux__)
+	return path.rfind("/dev/input/by-path/", 0) == 0;
 #else
-	// Not trusted elsewhere: on Linux it's /dev/input/eventN, handed out in plug-in order
 	SCP_UNUSED(path);
 	return false;
 #endif
 }
+
+#ifdef __linux__
+// Linux numbers /dev/input/eventN in plug-in order, so a stick is named by the by-path link of its USB port instead.
+// Virtual and Bluetooth devices have no such link and get an empty path.
+SCP_string linuxPortPath(const char* node)
+{
+	const SCP_string dir = "/dev/input/by-path";
+	char target[PATH_MAX];
+	DIR* dirp = (realpath(node, target) != nullptr) ? opendir(dir.c_str()) : nullptr;
+	if (dirp == nullptr) {
+		return "";
+	}
+
+	SCP_string found;
+	char link_target[PATH_MAX];
+	errno = 0;
+	for (auto entry = readdir(dirp); entry != nullptr; entry = readdir(dirp)) {
+		SCP_string link = dir + "/" + entry->d_name;
+		if (entry->d_name[0] != '.' && realpath(link.c_str(), link_target) != nullptr &&
+			strcmp(link_target, target) == 0) {
+			// One device can have both a usb and a usbv2 link; keep the usbv2 one, which can't collide across root hubs
+			if (link > found) {
+				found = link;
+			}
+		}
+		errno = 0;
+	}
+	// A scan that failed partway could have missed the link we want
+	bool failed = (errno != 0);
+	closedir(dirp);
+	return failed ? "" : found;
+}
+#endif
 
 // Identical sticks share a GUID; their serial, or failing that a path that names the device, tells them apart
 Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, const SCP_string& path)
@@ -191,6 +234,7 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, const
 	Joystick* by_path = nullptr;
 	int serial_hits = 0;
 	int path_hits = 0;
+	bool path_ambiguous = false;
 	for (auto& stick : joysticks) {
 		if (!stick->isAttached() || stick->getGUID() != guid) {
 			continue;
@@ -203,13 +247,17 @@ Joystick* findSavedStick(const SCP_string& guid, const SCP_string& serial, const
 			by_path = stick.get();
 			++path_hits;
 		}
+		// Two nodes of one device can share a single Linux port link, and only one of them gets it
+		if (!pathNamesDevice(stick->getPath())) {
+			path_ambiguous = true;
+		}
 	}
 
 	if (serial_hits == 1) {
 		return by_serial;
 	}
 	// A saved serial that no plugged-in stick has means that device is away, not that the path should decide
-	if ((serial.empty() || serial_hits > 1) && path_hits == 1) {
+	if ((serial.empty() || serial_hits > 1) && path_hits == 1 && !path_ambiguous) {
 		return by_path;
 	}
 	return nullptr;
@@ -892,8 +940,12 @@ namespace joystick
 
 	SCP_string Joystick::getPath() const
 	{
+#ifdef __linux__
+		return _path;
+#else
 		auto path = SDL_GetJoystickPath(_joystick);
 		return (path != nullptr) ? path : "";
+#endif
 	}
 
 	SDL_JoystickID Joystick::getID() const
@@ -908,6 +960,10 @@ namespace joystick
 
 		_name.assign(SDL_GetJoystickName(_joystick));
 		_guidStr = getJoystickGUID(_joystick);
+#ifdef __linux__
+		auto path = SDL_GetJoystickPath(_joystick);
+		_path = (path != nullptr) ? linuxPortPath(path) : "";
+#endif
 		_isHaptic = SDL_IsJoystickHaptic(_joystick);
 		_isGamepad = SDL_IsGamepad(_id);
 
