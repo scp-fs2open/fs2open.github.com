@@ -368,8 +368,27 @@ TEST_F(CFileLanguageSubdirTest, localize_filename)
 	EXPECT_EQ(gr + "same.ogg", cf_localize_filename("same.ogg", CF_TYPE_ANY));
 	EXPECT_EQ("mismatch.wav", cf_localize_filename("mismatch.wav", CF_TYPE_ANY));
 
+	// cfopen() with localize; 9 bytes is the localized copy, 4 the original
+	auto opened_size = [](const char* filename, bool localize_param, uint32_t location_flags = CF_LOCATION_ALL) {
+		auto fp = cfopen(filename, "rb", CF_TYPE_ANY, localize_param, location_flags);
+		if (fp == nullptr)
+			return -1;
+		int size = cfilelength(fp);
+		cfclose(fp);
+		return size;
+	};
+	EXPECT_EQ(9, opened_size("same.ogg", true));
+	EXPECT_EQ(4, opened_size("same.ogg", false));
+	EXPECT_EQ(9, opened_size("only_localized.ogg", true));
+	EXPECT_EQ(4, opened_size("not_localized.ogg", true));
+
+	// the localized copy is only in base, which the location flags rule out, so the pack's original opens
+	EXPECT_EQ(9, opened_size("override.ogg", true));
+	EXPECT_EQ(4, opened_size("override.ogg", true, CF_LOCATION_TYPE_PRIMARY_MOD));
+
 	lcl_set_language(LCL_DEFAULT);
 	EXPECT_EQ("same.ogg", localize("same.ogg"));
+	EXPECT_EQ(4, opened_size("same.ogg", true));
 }
 
 namespace {

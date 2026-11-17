@@ -176,7 +176,8 @@ const char *cf_get_filename(const CFILE *cfile);
 int cf_get_dir_type(const CFILE *cfile);
 
 // Opens the file.  If no path is given, use the extension to look into the
-// default path.  If mode is NULL, delete the file.
+// default path.  If mode is NULL, delete the file.  When reading, localize
+// opens the copy in the current language's subfolder if there is one.
 CFILE* _cfopen(const char* source_file, int line, const char* filename, const char* mode,
                int dir_type = CF_TYPE_ANY, bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
 #define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function

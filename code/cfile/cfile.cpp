@@ -637,7 +637,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 //
 
 CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int dir_type,
-               bool /* localize */, uint32_t location_flags)
+               bool localize, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -723,7 +723,14 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	auto find_res = cf_find_file_location(file_path, dir_type, location_flags);
+	CFileLocation find_res;
+
+	// the localized copy has to satisfy location_flags too, or the original is opened
+	if (localize)
+		find_res = cf_find_file_location(cf_localize_filename(file_path, dir_type).c_str(), dir_type, location_flags);
+
+	if (!find_res.found)
+		find_res = cf_find_file_location(file_path, dir_type, location_flags);
 
 	if ( find_res.found ) {
 		// Fount it, now create a cfile out of it
