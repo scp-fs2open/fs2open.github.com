@@ -44,7 +44,7 @@ enum class DepartureLocation;
 #define DEFAULT_AMBIENT_LIGHT_LEVEL			0x00787878
 
 #define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
-#define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
+#define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but not more than MIN_TARGET_ARRIVAL_DISTANCE
 
 anchor_t get_special_anchor(const char *name);
 void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<anchor_t> &anchors_checked, anchor_t anchor, const char *other_name, bool other_is_ship, bool is_arrival);

@@ -610,12 +610,15 @@
             <item row="2" column="1">
              <layout class="QHBoxLayout" name="arrivalDistanceLayout">
               <item>
-               <widget class="QSpinBox" name="arrivalDistanceEdit">
+               <widget class="fso::fred::MixedValueSpinBox" name="arrivalDistanceEdit">
                 <property name="toolTip">
                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Distance from target&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                 <property name="buttonSymbols">
                  <enum>QAbstractSpinBox::NoButtons</enum>
+                </property>
+                <property name="maximum">
+                 <number>16777215</number>
                 </property>
                </widget>
               </item>
@@ -940,6 +943,11 @@
   </layout>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>fso::fred::MixedValueSpinBox</class>
+   <extends>QSpinBox</extends>
+   <header>ui/widgets/MixedValueSpinBox.h</header>
+  </customwidget>
   <customwidget>
    <class>fso::fred::ShipFlagCheckbox</class>
    <extends>QCheckBox</extends>
