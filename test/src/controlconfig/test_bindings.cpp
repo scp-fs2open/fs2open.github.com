@@ -232,9 +232,7 @@ static const char* slot_field(json_t* slot, const char* field)
 // they would misread has to say unbound there
 TEST_F(ControlPresetFile, CrossTypeBindsStayOutOfTheFieldsOlderBuildsRead)
 {
-	CC_preset preset;
-	preset.name = "xtypetest";
-	preset.type = Preset_t::pst;
+	CC_preset preset("xtypetest", Preset_t::pst);
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 	preset.bindings[JOY_HEADING_AXIS].first = CC_bind(CID_KEYBOARD, KEY_D);
 	preset.bindings[JOY_HEADING_AXIS].second = CC_bind(CID_KEYBOARD, KEY_J, CCF_INVERTED);
@@ -276,7 +274,7 @@ TEST_F(ControlPresetFile, CrossTypeBindsStayOutOfTheFieldsOlderBuildsRead)
 	}
 	json_decref(root);
 
-	Control_config_presets.resize(1);
+	Control_config_presets.erase(Control_config_presets.begin() + 1, Control_config_presets.end());
 	load_preset_files();
 	auto loaded = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [](const CC_preset& p) {
 		return p.name == "xtypetest";
