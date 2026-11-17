@@ -1684,6 +1684,33 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 	return CFileLocationExt();
 }
 
+SCP_string cf_localize_filename(const char *filename, int pathtype, int num_ext, const char **ext_list)
+{
+	Assertion(filename != nullptr, "filename must not be null!");
+
+	int lang = lcl_get_current_lang_index();
+	if (!Lcl_languages.in_bounds(lang) || Lcl_languages[lang].lang_ext[0] == '\0')
+		return filename;
+
+	SCP_string localized = filename;
+	lcl_add_dir_to_path_with_filename(localized);
+
+	// cf_find_file_location_ext() and the sound code's buffers are limited to MAX_FILENAME_LEN
+	if (localized.length() >= MAX_FILENAME_LEN)
+	{
+		mprintf(("CFILE: localized file name %s is too long, so %s will be used\n", localized.c_str(), filename));
+		return filename;
+	}
+
+	bool found;
+	if (num_ext > 0)
+		found = cf_find_file_location_ext(localized.c_str(), num_ext, ext_list, pathtype).found;
+	else
+		found = cf_find_file_location(localized.c_str(), pathtype).found;
+
+	return found ? localized : SCP_string(filename);
+}
+
 
 // Returns true if filename matches filespec, else zero if not
 int cf_matches_spec(const char *filespec, const char *filename)

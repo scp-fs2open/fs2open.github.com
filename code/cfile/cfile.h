@@ -420,6 +420,10 @@ struct CFileLocationExt : public CFileLocation {
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
 CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype);
 
+// the localized version of a file (in the current language's subfolder) if it exists, otherwise the file as given
+// the language folder goes directly before the filename, so for a bare name it must be directly inside the path type's folder
+SCP_string cf_localize_filename(const char* filename, int pathtype, int num_ext = 0, const char** ext_list = nullptr);
+
 // Functions to change directories
 int cfile_chdir(const char *dir);
 

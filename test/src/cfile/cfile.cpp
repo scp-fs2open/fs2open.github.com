@@ -7,6 +7,7 @@
 #include <gtest/gtest.h>
 #include <localization/localize.h>
 #include <osapi/dialogs.h>
+#include <sound/audiostr.h>
 #include <utils/finally.h>
 
 #include "util/FSTestFixture.h"
@@ -219,7 +220,7 @@ TEST_F(CFileTest, subfolder_list)
 	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
 }
 
-// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, which define the languages gr and tw.
+// Stacks two mods, cfile/<test name>/pack over cfile/<test name>/base, whose tables define the test languages.
 // In the test data, a file of 4 bytes ("base") is the original and a file of 9 bytes ("localized") is in a
 // language subfolder.
 class CFileLanguageSubdirTest : public test::FSTestFixture
@@ -331,6 +332,44 @@ TEST_F(CFileLanguageSubdirTest, language_subdir_same_root)
 	loc = cf_find_file_location("zfont.vf", CF_TYPE_FONT);
 	ASSERT_TRUE(loc.found);
 	EXPECT_EQ(4u, loc.size) << "found " << loc.full_name;
+}
+
+TEST_F(CFileLanguageSubdirTest, localize_filename)
+{
+	auto restore_language = util::finally([] { lcl_set_language(LCL_DEFAULT); });
+
+	int german = lcl_find_lang_index_by_name("German");
+	ASSERT_GE(german, 0);
+	lcl_set_language(german);
+
+	auto localize = [](const char* filename, int pathtype = CF_TYPE_ANY) {
+		return cf_localize_filename(filename, pathtype, NUM_AUDIO_EXT, audio_ext_list);
+	};
+	const SCP_string gr = "gr" DIR_SEPARATOR_STR;
+
+	EXPECT_EQ(gr + "same.ogg", localize("same.ogg"));
+
+	// a mod's override of the original doesn't hide the base game's localized copy
+	EXPECT_EQ(gr + "override.ogg", localize("override.ogg"));
+
+	EXPECT_EQ(gr + "pack_over_base.ogg", localize("pack_over_base.ogg"));
+	EXPECT_EQ(gr + "only_localized.ogg", localize("only_localized.ogg"));
+	EXPECT_EQ("not_localized.ogg", localize("not_localized.ogg"));
+
+	// any audio extension counts, and the name keeps the one asked for
+	EXPECT_EQ(gr + "mismatch.wav", localize("mismatch.wav"));
+
+	// the localized name would be MAX_FILENAME_LEN characters
+	EXPECT_EQ("long_name_0123456789abcde.ogg", localize("long_name_0123456789abcde.ogg"));
+
+	EXPECT_EQ(gr + "debrief_only.ogg", localize("debrief_only.ogg", CF_TYPE_VOICE_DEBRIEFINGS));
+
+	// without an extension list, the name must match exactly
+	EXPECT_EQ(gr + "same.ogg", cf_localize_filename("same.ogg", CF_TYPE_ANY));
+	EXPECT_EQ("mismatch.wav", cf_localize_filename("mismatch.wav", CF_TYPE_ANY));
+
+	lcl_set_language(LCL_DEFAULT);
+	EXPECT_EQ("same.ogg", localize("same.ogg"));
 }
 
 namespace {
