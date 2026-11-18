@@ -937,6 +937,20 @@ void mc_check_subobj( int mn )
 	
 	sm = &Mc_pm->submodel[mn];
 	if (sm->flags[Model::Submodel_flags::No_collisions]) return; // don't do collisions
+
+	bsp_info* lod_sm = sm;
+	if (Mc->lod > 0 && sm->num_details > 0) {
+		for (i = Mc->lod - 1; i >= 0; i--) {
+			if (sm->details[i] != -1) {
+				lod_sm = &Mc_pm->submodel[sm->details[i]];
+
+				// mprintf(("Checking %s collision for %s using %s instead\n", Mc_pm->filename, sm->name,
+				// lod_sm->name));
+				break;
+			}
+		}
+	}
+
 	if (sm->flags[Model::Submodel_flags::Nocollide_this_only]) goto NoHit; // Don't collide for this model, but keep checking others
 
 	if (Mc->flags & MC_RESPECT_DETAIL_BOX_SPHERE) {
@@ -1011,23 +1025,7 @@ void mc_check_subobj( int mn )
 		} else {
 			// The ray intersects this bounding box, so we have to check all the
 			// polygons in this submodel.
-			if (Mc->lod > 0 && sm->num_details > 0) {
-				bsp_info* lod_sm = sm;
-
-				for (i = Mc->lod - 1; i >= 0; i--) {
-					if (sm->details[i] != -1) {
-						lod_sm = &Mc_pm->submodel[sm->details[i]];
-
-						// mprintf(("Checking %s collision for %s using %s instead\n", Mc_pm->filename, sm->name,
-						// lod_sm->name));
-						break;
-					}
-				}
-
-				model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
-			} else {
-				model_collide_bsp(model_get_bsp_collision_tree(sm->collision_tree_index), 0);
-			}
+			model_collide_bsp(model_get_bsp_collision_tree(lod_sm->collision_tree_index), 0);
 		}
 	}
 
@@ -1040,42 +1038,51 @@ NoHit:
 
 	
 	// If this subobject doesn't have any children, we're done checking it.
-	if ( sm->num_children < 1 ) return;
+	if (sm->num_children < 1 && lod_sm->num_children < 1)
+		return;
 	
 	// Save instance (Mc_orient, Mc_base, Mc_point_base)
 	matrix saved_orient = Mc_orient;
 	vec3d saved_base = Mc_base;
 	
-	// Check all of this subobject's children
-	i = sm->first_child;
-	while ( i >= 0 )	{
-		auto csm = &Mc_pm->submodel[i];
-		matrix instance_orient = vmd_identity_matrix;
-		vec3d instance_offset = csm->offset;
-		bool blown_off = false;
-		bool collision_checked = false;
-		
-		if ( Mc_pmi ) {
-			auto csmi = &Mc_pmi->submodel[i];
-			instance_orient = csmi->canonical_orient;
-			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
+	// Check all of this subobject's children, plus its collision LOD's children that no detail0 piece leads to
+	for (auto parent : {sm, lod_sm}) {
+		i = parent->first_child;
+		while ( i >= 0 )	{
+			auto csm = &Mc_pm->submodel[i];
+			matrix instance_orient = vmd_identity_matrix;
+			vec3d instance_offset = csm->offset;
+			bool blown_off = false;
+			bool collision_checked = false;
+			bool reached_through_partner = parent != sm && csm->flags[Model::Submodel_flags::Is_lod];
+			
+			if ( Mc_pmi ) {
+				auto csmi = &Mc_pmi->submodel[i];
+				instance_orient = csmi->canonical_orient;
+				vm_vec_add2(&instance_offset, &csmi->canonical_offset);
 
-			blown_off = csmi->blown_off;
-			collision_checked = !Mc->collision_checked.empty() && Mc->collision_checked[i];
+				blown_off = csmi->blown_off;
+				collision_checked = !Mc->collision_checked.empty() && Mc->collision_checked[i];
+			}
+
+			// Don't check it or its children if it is destroyed
+			// or if it's set to no collision
+			if (!blown_off && !collision_checked && !reached_through_partner &&
+				!csm->flags[Model::Submodel_flags::No_collisions]) {
+				vm_vec_unrotate(&Mc_base, &instance_offset, &saved_orient);
+				vm_vec_add2(&Mc_base, &saved_base);
+
+				vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);
+
+				mc_check_subobj( i );
+			}
+
+			i = csm->next_sibling;
 		}
 
-		// Don't check it or its children if it is destroyed
-		// or if it's set to no collision
-		if ( !blown_off && !collision_checked && !csm->flags[Model::Submodel_flags::No_collisions] )	{
-			vm_vec_unrotate(&Mc_base, &instance_offset, &saved_orient);
-			vm_vec_add2(&Mc_base, &saved_base);
-
-			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);
-
-			mc_check_subobj( i );
+		if (lod_sm == sm) {
+			break;
 		}
-
-		i = csm->next_sibling;
 	}
 
 }
