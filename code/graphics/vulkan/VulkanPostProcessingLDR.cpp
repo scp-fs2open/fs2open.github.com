@@ -9,6 +9,7 @@
 #include "graphics/post_processing.h"
 #include "graphics/grinternal.h"
 #include "graphics/2d.h"
+#include "graphics/openxr.h"
 #include "io/timer.h"
 #include "lighting/lighting_profiles.h"
 #include "lighting/lighting.h"
@@ -311,13 +312,15 @@ void VulkanLDR::executeTonemap(vk::CommandBuffer cmd)
 		tmData.hdr_peak_nits = Gr_hdr_peak_nits;
 	}
 
-	// HDR scene → Scene_ldr via tonemapping shader
+	// HDR scene → Scene_ldr via tonemapping shader. OpenXR runtimes take float swapchains as linear and encode them
+	// themselves, as in OpenGL.
 	m_ctx->drawFullscreenTriangle(cmd, m_ldrRenderPass,
 		m_sceneLdrFB, m_ctx->outputExtent,
 		SDR_TYPE_POST_PROCESS_TONEMAPPING,
 		m_sceneColor->view, m_ctx->linearSampler,
 		&tmData, sizeof(tmData),
-		ALPHA_BLEND_NONE);
+		ALPHA_BLEND_NONE,
+		openxr_enabled() ? SDR_FLAG_TONEMAPPING_LINEAR_OUT : 0);
 
 	// While HDR is active, Scene_ldr carries extended-range values (the
 	// HdrScene tonemapper only clamps to headroom, not [0,1]), which breaks

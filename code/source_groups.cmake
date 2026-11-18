@@ -720,6 +720,8 @@ add_file_folder("Hud"
 	hud/hudtarget.h
 	hud/hudtargetbox.cpp
 	hud/hudtargetbox.h
+	hud/hudvr.cpp
+	hud/hudvr.h
 	hud/hudwingmanstatus.cpp
 	hud/hudwingmanstatus.h
 )

@@ -415,6 +415,10 @@ void copyImageToImage(
 	{
 		auto [srcAccess, srcStage] = layoutInfo(srcOldLayout, true);
 		auto [dstAccess, dstStage] = layoutInfo(dstOldLayout, true);
+		// The image may have been the source of an earlier copy, still being read (e.g. a depth backup restored by the
+		// other VR eye in the same command buffer). Its old layout says nothing about that, so wait for copies too.
+		srcStage |= vk::PipelineStageFlagBits2::eAllTransfer;
+		dstStage |= vk::PipelineStageFlagBits2::eAllTransfer;
 
 		std::array<ImageBarrier2, 2> barriers;
 

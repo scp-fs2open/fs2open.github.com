@@ -274,6 +274,9 @@ void control_config_common_init_bindings() {
 	(PHOTO_MODE_PARAM_DECREASE,                                 KEY_LEFT, -1, COMPUTER_TAB, 1912, "Photo Mode Decrease Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 	(PHOTO_MODE_PARAM_INCREASE,                                KEY_RIGHT, -1, COMPUTER_TAB, 1913, "Photo Mode Increase Selected Parameter", CC_TYPE_TRIGGER, false, CONFLICT_GROUP_PHOTO_MODE)
 
+	// VR
+	(VR_RECENTER,                       -1, -1, COMPUTER_TAB, 1942, "Recenter VR View",                  CC_TYPE_TRIGGER)
+
 	// Custom Controls
 	(CUSTOM_CONTROL_1,                  KEY_ALTED | KEY_SHIFTED | KEY_1, -1, COMPUTER_TAB, 1784, "Custom Control 1", CC_TYPE_TRIGGER, true)
 	(CUSTOM_CONTROL_2,                  KEY_ALTED | KEY_SHIFTED | KEY_2, -1, COMPUTER_TAB, 1785, "Custom Control 2", CC_TYPE_TRIGGER, true)
@@ -1169,6 +1172,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_FILTER_RESET)
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_DECREASE)
 	ADD_ENUM_TO_ACTION_MAP(PHOTO_MODE_PARAM_INCREASE)
+	ADD_ENUM_TO_ACTION_MAP(VR_RECENTER)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TOPDOWN)
 	ADD_ENUM_TO_ACTION_MAP(VIEW_TRACK_TARGET)
 

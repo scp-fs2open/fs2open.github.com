@@ -130,6 +130,7 @@ void VulkanStateTracker::setRenderPass(vk::RenderPass renderPass, uint32_t subpa
 
 	m_screenScaleX = 1.0f;
 	m_screenScaleY = 1.0f;
+	m_coverageAlpha = false;
 }
 
 void VulkanStateTracker::setScreenScale(float x, float y)
