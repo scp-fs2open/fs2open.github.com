@@ -8943,7 +8943,6 @@ void ship_actually_depart(int shipnum, int method)
 		"Invalid departure method '%i' passed to ship_actually_depart for ship %s!", method, Ships[shipnum].ship_name);
 
 	dock_function_info dfi;
-	dfi.parameter_variables.bool_value = (method == SHIP_VANISHED ? true:false);
 	dfi.parameter_variables.int_value = method;
 
 	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
