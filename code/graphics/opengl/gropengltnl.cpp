@@ -827,8 +827,13 @@ void gr_opengl_shadow_map_end()
 	Glowpoint_override = Glowpoint_override_save;
 	gr_htl_projection_matrix_set = false;
 
-	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
-	glScissor(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+	const int bottom = gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height;
+	gr_opengl_set_viewport(gr_screen.offset_x, bottom, gr_screen.clip_width, gr_screen.clip_height);
+
+	const GLint left_px = opengl_screen_to_pixels(gr_screen.offset_x);
+	const GLint bottom_px = opengl_screen_to_pixels(bottom);
+	glScissor(left_px, bottom_px, opengl_screen_to_pixels(gr_screen.offset_x + gr_screen.clip_width) - left_px,
+		opengl_screen_to_pixels(bottom + gr_screen.clip_height) - bottom_px);
 }
 
 void opengl_tnl_set_material(material* material_info, bool set_base_map, bool set_clipping)
@@ -1285,7 +1290,9 @@ void opengl_tnl_set_rocketui_material(interface_material* material_info)
 }
 
 void gr_opengl_set_viewport(int x, int y, int width, int height) {
-	glViewport(x, y, width, height);
+	const GLint left = opengl_screen_to_pixels(x);
+	const GLint bottom = opengl_screen_to_pixels(y);
+	glViewport(left, bottom, opengl_screen_to_pixels(x + width) - left, opengl_screen_to_pixels(y + height) - bottom);
 }
 
 void opengl_bind_vertex_component(const vertex_format_data &vert_component, size_t base_offset)

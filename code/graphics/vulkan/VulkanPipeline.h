@@ -33,6 +33,7 @@ struct PipelineConfig {
 	primitive_type primitiveType = PRIM_TYPE_TRIS;
 	gr_zbuffer_type depthMode = ZBUFFER_TYPE_NONE;
 	gr_alpha_blend blendMode = ALPHA_BLEND_NONE;
+	bool coverageAlpha = false;  // see createColorBlendAttachment()
 	bool cullEnabled = true;
 	bool frontFaceCW = false;  // Match OpenGL default (CCW); models override to CW
 	bool depthWriteEnabled = true;

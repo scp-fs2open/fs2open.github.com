@@ -233,33 +233,42 @@ bool VulkanBloom::createTargets()
 		}
 	}
 
-	// Create scene color framebuffer for bloom composite (wraps the scene color as attachment)
-	{
-		vk::FramebufferCreateInfo fbInfo;
-		fbInfo.renderPass = m_compositeRenderPass;
-		fbInfo.attachmentCount = 1;
-		fbInfo.pAttachments = &m_sceneColor->view;
-		fbInfo.width = m_sceneColor->width;
-		fbInfo.height = m_sceneColor->height;
-		fbInfo.layers = 1;
+	return static_cast<bool>(sceneColorFramebuffer());
+}
 
-		try {
-			m_sceneColorFB = m_ctx->device.createFramebuffer(fbInfo);
-		} catch (const vk::SystemError& e) {
-			nprintf(("vulkan", "VulkanBloom: Failed to create scene color bloom framebuffer: %s\n", e.what()));
-			return false;
+vk::Framebuffer VulkanBloom::sceneColorFramebuffer()
+{
+	for (const auto& [view, framebuffer] : m_sceneColorFBs) {
+		if (view == m_sceneColor->view) {
+			return framebuffer;
 		}
 	}
 
-	return true;
+	// Wraps the scene color as attachment for the bloom composite
+	vk::FramebufferCreateInfo fbInfo;
+	fbInfo.renderPass = m_compositeRenderPass;
+	fbInfo.attachmentCount = 1;
+	fbInfo.pAttachments = &m_sceneColor->view;
+	fbInfo.width = m_sceneColor->width;
+	fbInfo.height = m_sceneColor->height;
+	fbInfo.layers = 1;
+
+	try {
+		const auto framebuffer = m_ctx->device.createFramebuffer(fbInfo);
+		m_sceneColorFBs.emplace_back(m_sceneColor->view, framebuffer);
+		return framebuffer;
+	} catch (const vk::SystemError& e) {
+		nprintf(("vulkan", "VulkanBloom: Failed to create scene color bloom framebuffer: %s\n", e.what()));
+		return nullptr;
+	}
 }
 
 void VulkanBloom::destroyTargets()
 {
-	if (m_sceneColorFB) {
-		m_ctx->device.destroyFramebuffer(m_sceneColorFB);
-		m_sceneColorFB = nullptr;
+	for (const auto& entry : m_sceneColorFBs) {
+		m_ctx->device.destroyFramebuffer(entry.second);
 	}
+	m_sceneColorFBs.clear();
 
 	for (auto& bt : m_tex) {
 		for (size_t mip = 0; mip < bt.mipFramebuffers.size(); mip++) {
@@ -405,7 +414,7 @@ void VulkanBloom::execute(vk::CommandBuffer cmd)
 		compData.pad[1] = 0.0f;
 
 		m_ctx->drawFullscreenTriangle(cmd, m_compositeRenderPass,
-			m_sceneColorFB,
+			sceneColorFramebuffer(),
 			vk::Extent2D(m_sceneColor->width, m_sceneColor->height),
 			SDR_TYPE_POST_PROCESS_BLOOM_COMP,
 			m_tex[0].fullView, m_ctx->mipmapSampler,
