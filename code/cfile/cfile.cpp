@@ -544,7 +544,7 @@ void cf_attrib(const char *filename, int set, int clear, int dir_type)
 }
 #endif
 
-int cf_rename(const char *old_name, const char *name, int dir_type)
+int cf_rename(const char *old_name, const char *name, int dir_type, bool replace_existing)
 {
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
@@ -554,6 +554,20 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 	
 	cf_create_default_path_string(old_longname, dir_type, old_name);
 	cf_create_default_path_string(new_longname, dir_type, name);
+
+#ifdef _WIN32
+	if (replace_existing) {
+		if (MoveFileExA(old_longname.c_str(), new_longname.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+			return CF_RENAME_SUCCESS;
+		}
+		const auto error = GetLastError();
+		return (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND) ? CF_RENAME_FAIL_EXIST
+		                                                                        : CF_RENAME_FAIL_ACCESS;
+	}
+#else
+	// POSIX rename() always replaces a file that exists.
+	SCP_UNUSED(replace_existing);
+#endif
 
 	ret_code = rename(old_longname.c_str(), new_longname.c_str());
 	if(ret_code != 0){
