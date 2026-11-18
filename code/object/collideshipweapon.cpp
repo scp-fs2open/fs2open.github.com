@@ -262,6 +262,15 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	mc_hull.p1 = &weapon_end_pos;
 	mc_hull.lod = sip->collision_lod;
 
+	int hull_flags = MC_CHECK_MODEL;
+	// model_collide rejects a zero radius; auto-spread ships keep the line so their shield sphere stays outermost.
+	if (wip->wi_flags[Weapon::Info_Flags::Use_radius_for_ship_collisions] && weapon_objp->radius > 0.0f &&
+		!sip->flags[Ship::Info_Flags::Auto_spread_shields]) {
+		hull_flags |= MC_CHECK_SPHERELINE;
+		mc_hull.radius = weapon_objp->radius;
+	}
+	int shield_flags = MC_CHECK_SHIELD | (hull_flags & MC_CHECK_SPHERELINE);
+
 	// (btw, these are leftover comments from below...)
 	//
 	//	Note: This code is obviously stupid. We want to add the shield point if there is shield to hit, but:
@@ -391,13 +400,13 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		} else if (sip->flags[Ship::Info_Flags::Surface_shields]) {
 			if (pm->shield.ntris > 0) {
 				// If there is a shield mesh, we need to check that first
-				mc_shield.flags = MC_CHECK_SHIELD;
+				mc_shield.flags = shield_flags;
 				shield_collision = model_collide(&mc_shield);
 			}
 
 			if (!shield_collision) {
 				// But if no shield mesh or it was missed, check for a hull collision
-				mc_shield.flags = MC_CHECK_MODEL;
+				mc_shield.flags = hull_flags;
 				shield_collision = model_collide(&mc_shield);
 
 				// Because we used MC_CHECK_MODEL, the returned hit position might be
@@ -409,14 +418,14 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			}
 		} else {
 			// Normal collision check against a shield mesh
-			mc_shield.flags = MC_CHECK_SHIELD;
+			mc_shield.flags = shield_flags;
 			shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
 		}
 	}
 
 	// If we found a shield collision but were only checking for a simple model
 	// collision, we can re-use the same collision info for the hull as well
-	if (shield_collision && mc_shield.flags == MC_CHECK_MODEL) {
+	if (shield_collision && mc_shield.flags == hull_flags) {
 		mc_hull = mc_shield;
 		hull_collision = shield_collision;
 
@@ -426,7 +435,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 			shield_collision = 0;
 		}
 	} else {
-		mc_hull.flags = MC_CHECK_MODEL;
+		mc_hull.flags = hull_flags;
 		hull_collision = model_collide(&mc_hull);
 	}
 

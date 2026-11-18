@@ -294,7 +294,11 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
-			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
+			float reach = other->radius;
+			if (wip->wi_flags[Weapon::Info_Flags::Use_radius_for_ship_collisions]) {
+				reach += obj_weapon->radius;
+			}
+			delta_t = (reach + 10.0f) / max_vel_other; // time to get from center to radius of other obj
 			delta_x_dot_vl = vm_vec_dot( &delta_x, &obj_weapon->phys_info.vel);
 
 			a = max_vel_weapon * max_vel_weapon - max_vel_other*max_vel_other;
