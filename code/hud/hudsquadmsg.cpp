@@ -161,9 +161,9 @@ const SCP_set<size_t> target_messages = []() {
 // order_to values in the squad message history for orders that went to every small craft of a given
 // flavor rather than to one ship or wing.  Real recipients are stored as get_parse_name_index(), which
 // is always >= 0, so these can never collide with one.
-#define ORDER_TO_ALL_FIGHTERS_BOMBERS	-1
-#define ORDER_TO_ALL_FIGHTERS			-2
-#define ORDER_TO_ALL_BOMBERS			-3
+static constexpr int ORDER_TO_ALL_FIGHTERS_BOMBERS = -1;
+static constexpr int ORDER_TO_ALL_FIGHTERS = -2;
+static constexpr int ORDER_TO_ALL_BOMBERS = -3;
 
 static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavor) {
 	switch (flavor) {
