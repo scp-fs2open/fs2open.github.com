@@ -1808,10 +1808,10 @@ void hud_squadmsg_type_select( )
 	{
 
 		if (i < sz2i(Comm_order_types.size())) {
-			MsgItems.push_back({Comm_order_types[i].first, 1, Comm_order_types[i].second}); // assume active
+			MsgItems.push_back({static_cast<int>(Comm_order_types[i].first), 1, Comm_order_types[i].second}); // assume active
 		} else {
 			// tag these so they can't be mistaken for a built-in order type below
-			MsgItems.push_back({CommOrderType::LUA_GENERAL_CATEGORY, 1, lua_cat_list[i - sz2i(Comm_order_types.size())]}); // assume active
+			MsgItems.push_back({static_cast<int>(CommOrderType::LUA_GENERAL_CATEGORY), 1, lua_cat_list[i - sz2i(Comm_order_types.size())]}); // assume active
 		}
 	}
 
@@ -1825,14 +1825,15 @@ void hud_squadmsg_type_select( )
 	}
 
 	for ( auto &item : MsgItems ) {
+		const auto item_type = static_cast<CommOrderType>(item.instance);
 		if (((hud_communications_state(Player_ship) != COMM_OK)
 			|| ((Game_mode & GM_MULTIPLAYER) && !multi_can_message(Net_player)))
-			&& (item.instance != CommOrderType::REARM_REPAIR)
-			&& (item.instance != CommOrderType::ABORT_REARM)) {
+			&& (item_type != CommOrderType::REARM_REPAIR)
+			&& (item_type != CommOrderType::ABORT_REARM)) {
 			item.active = 0;
 			continue;
 		}
-		switch (item.instance) {
+		switch (item_type) {
 			case CommOrderType::MSG_SHIPS:
 				item.active = hud_squadmsg_count_ships(0);
 				break;
@@ -1873,6 +1874,10 @@ void hud_squadmsg_type_select( )
 						&& Msg_shortcut_command == -1;
 				}
 				break;
+			// Lua categories are checked by the loop below
+			case CommOrderType::LUA_GENERAL_CATEGORY:
+			case CommOrderType::MAX_COMM_ORDER_TYPES:
+				break;
 		}
 	}
 
@@ -1888,25 +1893,26 @@ do_main_menu:
 	k = hud_squadmsg_get_key();
 	if ( k != -1 ) {							// when k != -1, we have a key that associates with menu item
 		Assert ( k < sz2i(MsgItems.size()) );
-		if ( MsgItems[k].instance == CommOrderType::MSG_SHIPS ){
+		const auto item_type = static_cast<CommOrderType>(MsgItems[k].instance);
+		if ( item_type == CommOrderType::MSG_SHIPS ){
 			hud_squadmsg_do_mode( SM_MODE_SHIP_SELECT );
-		} else if ( MsgItems[k].instance == CommOrderType::MSG_WINGS ) {
+		} else if ( item_type == CommOrderType::MSG_WINGS ) {
 			hud_squadmsg_do_mode( SM_MODE_WING_SELECT );
-		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS ) {
+		} else if ( item_type == CommOrderType::MSG_ALL_FIGHTERS_AND_BOMBERS ) {
 			hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS_BOMBERS );
-		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_FIGHTERS ) {
+		} else if ( item_type == CommOrderType::MSG_ALL_FIGHTERS ) {
 			hud_squadmsg_do_mode( SM_MODE_ALL_FIGHTERS );
-		} else if ( MsgItems[k].instance == CommOrderType::MSG_ALL_BOMBERS) {
+		} else if ( item_type == CommOrderType::MSG_ALL_BOMBERS) {
 			hud_squadmsg_do_mode( SM_MODE_ALL_BOMBERS );
 		} else if ( Msg_shortcut_command == -1 ) {
-			if ( MsgItems[k].instance == CommOrderType::REINFORCEMENTS ) {
+			if ( item_type == CommOrderType::REINFORCEMENTS ) {
 				hud_squadmsg_do_mode( SM_MODE_REINFORCEMENTS );
 				player_set_next_all_alone_msg_timestamp();
-			} else if (MsgItems[k].instance == CommOrderType::REARM_REPAIR && !Hide_main_rearm_items_in_comms_gauge) {
+			} else if (item_type == CommOrderType::REARM_REPAIR && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
-			} else if (MsgItems[k].instance == CommOrderType::ABORT_REARM && !Hide_main_rearm_items_in_comms_gauge) {
+			} else if (item_type == CommOrderType::ABORT_REARM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
-			} else if (MsgItems[k].instance == CommOrderType::LUA_GENERAL_CATEGORY) {
+			} else if (item_type == CommOrderType::LUA_GENERAL_CATEGORY) {
 				Lua_sqd_msg_cat = lua_cat_list[k - sz2i(Comm_order_types.size())];
 				hud_squadmsg_do_mode( SM_MODE_GENERAL );
 			}
@@ -3000,13 +3006,9 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		char text[MAX_MENU_ITEM_TEXT_SIZE];
 
 		// in config mode we are previewing the first page of the Comms Menu, and MsgItems is empty
-		int item_instance;
 		if (!config) {
-			const mmode_item &item = MsgItems[First_menu_item + i];
-			item_instance = item.instance;
-			strcpy_s(text, item.text.c_str());
+			strcpy_s(text, MsgItems[First_menu_item + i].text.c_str());
 		} else {
-			item_instance = Comm_order_types[i].first;
 			strcpy_s(text, Comm_order_types[i].second.c_str());
 		}
 
@@ -3029,7 +3031,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		}
 
 		bool item_visible = config
-			? (!Hide_main_rearm_items_in_comms_gauge) || ((item_instance != CommOrderType::REARM_REPAIR) && (item_instance != CommOrderType::ABORT_REARM))
+			? (!Hide_main_rearm_items_in_comms_gauge) || ((Comm_order_types[i].first != CommOrderType::REARM_REPAIR) && (Comm_order_types[i].first != CommOrderType::ABORT_REARM))
 			: (MsgItems[First_menu_item + i].active >= 0);
 		if (item_visible) {
 			// first print an icon to indicate selected item

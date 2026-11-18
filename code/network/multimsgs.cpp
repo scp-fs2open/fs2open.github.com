@@ -4548,7 +4548,8 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 	} else if ( type == SQUAD_MSG_ALL ) {
 		// here the index is the SmallCraftFlavor; validate it, since it came off the wire
 		auto flavor = SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS;
-		if ( (index >= SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) && (index <= SmallCraftFlavor::ALL_BOMBERS) ) {
+		if ( (index >= static_cast<int>(SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS))
+			&& (index <= static_cast<int>(SmallCraftFlavor::ALL_BOMBERS)) ) {
 			flavor = static_cast<SmallCraftFlavor>(index);
 		} else {
 			mprintf(("Received player order packet with invalid small craft flavor %d; assuming all fighters and bombers\n", index));

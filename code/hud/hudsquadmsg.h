@@ -76,13 +76,13 @@ struct reinforcements;
 #define MAX_MENU_DISPLAY 10 // max number that can be displayed
 #define MAX_MENU_ITEM_TEXT_SIZE 256
 
-enum SmallCraftFlavor : int {
+enum class SmallCraftFlavor : int {
 	ALL_FIGHTERS_AND_BOMBERS,
 	ALL_FIGHTERS,
 	ALL_BOMBERS,
 };
 
-enum CommOrderType : int {
+enum class CommOrderType : int {
 	MSG_SHIPS,
 	MSG_WINGS,
 	MSG_ALL_FIGHTERS_AND_BOMBERS,
