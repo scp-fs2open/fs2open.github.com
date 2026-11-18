@@ -499,7 +499,7 @@ void parse_mod_table(const char *filename)
 				while (optional_string("+Order Type:")) {
 					stuff_string(order_type, F_NAME);
 					required_string("+Text:");
-					// sized to the comms gauge's buffer, so overlong text is truncated with a warning, not fatal there
+					// sized to the comms gauge's buffer, so overlong text is cut here instead of failing in the gauge
 					stuff_string(text, F_NAME, MAX_MENU_ITEM_TEXT_SIZE);
 					if (!stricmp(order_type.c_str(), "MESSAGE SHIPS")) {
 						Parsed_comm_orders.emplace_back(CommOrderType::MSG_SHIPS, text);

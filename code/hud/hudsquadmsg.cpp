@@ -178,15 +178,15 @@ static bool is_smallcraft_flavor(const ship_info *sinfop, SmallCraftFlavor flavo
 	return false;
 }
 
-static bool wing_takes_flavor_order_as_unit(const wing &wingp, SmallCraftFlavor flavor)
+static bool wing_takes_flavor_order_as_unit(const wing& wing_entry, SmallCraftFlavor flavor)
 {
 	// retail behavior: a fighters-and-bombers order classifies each wing by its leader alone
 	if (flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) {
 		return true;
 	}
 
-	for (int j = 0; j < wingp.current_count; j++) {
-		int shipnum = wingp.ship_index[j];
+	for (int j = 0; j < wing_entry.current_count; j++) {
+		int shipnum = wing_entry.ship_index[j];
 		if ((shipnum >= 0) && !is_smallcraft_flavor(&Ship_info[Ships[shipnum].ship_info_index], flavor)) {
 			return false;
 		}
@@ -1042,6 +1042,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 
 	send_message = 1;									// internal flag to dictate who sends message
 	bool history_written = false;
+	bool wing_taken[MAX_WINGS] = {};
 	aip = Player_ai;
 
 	if ( player_num != -1 )
@@ -1067,8 +1068,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if ( (Wings[i].flags[Ship::Wing_Flags::Gone]) || (Wings[i].current_count == 0) )
 			continue;
 
-		// a wing order reaches every member, so a wing with any non-matching craft is left to the
-		// per-ship pass below, which orders only its matching members
+		// a wing order reaches every member, so a wing with any non-matching craft goes to the per-ship pass
 		if ( !wing_takes_flavor_order_as_unit(Wings[i], flavor) )
 			continue;
 
@@ -1100,6 +1100,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 
 		// send the command to the wing
 		if ( Wings[i].current_count > 0 ) {
+			wing_taken[i] = true;
 			if (!history_written) {
 				hud_add_issued_order(flavor, command);
 				history_written = true;
@@ -1127,8 +1128,8 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if ( (shipp == ordering_shipp) || is_instructor(objp) )
 			continue;
 
-		// members of wings that take the order as a unit are left to the wing pass above
-		if ( (shipp->wingnum != -1) && wing_takes_flavor_order_as_unit(Wings[shipp->wingnum], flavor) )
+		// retail leaves every wing member to the wing pass; the narrower flavors skip only wings ordered there
+		if ( (shipp->wingnum != -1) && ((flavor == SmallCraftFlavor::ALL_FIGHTERS_AND_BOMBERS) || wing_taken[shipp->wingnum]) )
 			continue;
 
 		// ...and members of mixed wings still get the wing-level checks the wing pass would have made
@@ -1154,8 +1155,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 			history_written = true;
 		}
 
-		// the wing pass picks its responder with SHIP_GET_UNSILENCED, which skips player ships and silenced
-		// ships; skip them here too, so that one of them receiving the order first can't swallow the reply
+		// skip player and silenced ships as SHIP_GET_UNSILENCED does, so they can't swallow the reply
 		const bool responds = send_message && !(objp->flags[Object::Object_Flags::Player_ship])
 			&& !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]);
 		if ( hud_squadmsg_send_ship_command(objp->instance, command, responds ? 1 : 0, SQUADMSG_HISTORY_UPDATE,
@@ -2697,6 +2697,10 @@ void hud_add_issued_order(SmallCraftFlavor flavor, int order)
 
 void hud_update_last_order(const char *target, int order_source, int special_index)
 {
+	// an order hook can run reset-orders between the push and this update
+	if (Squadmsg_history.empty()) {
+		return;
+	}
 	squadmsg_history *latest_order = &Squadmsg_history.back(); 
 	if (target) {
 		latest_order->target = get_parse_name_index(target);
@@ -3058,7 +3062,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 			}
 
 			// then the text
-			font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
+			font::force_fit_string(text, MAX_MENU_ITEM_TEXT_SIZE - 1, fl2i(Ship_name_max_width * scale), scale);
 			renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
 			sy += fl2i(Item_h * scale);
 		}
