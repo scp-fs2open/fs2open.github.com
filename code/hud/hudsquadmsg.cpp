@@ -1041,6 +1041,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 	}
 
 	send_message = 1;									// internal flag to dictate who sends message
+	bool history_written = false;
 	aip = Player_ai;
 
 	if ( player_num != -1 )
@@ -1099,14 +1100,12 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 
 		// send the command to the wing
 		if ( Wings[i].current_count > 0 ) {
-			if (send_message) {
+			if (!history_written) {
 				hud_add_issued_order(flavor, command);
-				if ( hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_UPDATE, player_num) ) {
-					send_message = 0;
-				}
+				history_written = true;
 			}
-			else {
-				hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_NO_UPDATE, player_num);
+			if ( hud_squadmsg_send_wing_command(i, command, send_message, SQUADMSG_HISTORY_UPDATE, player_num) ) {
+				send_message = 0;
 			}
 		}
 	}
@@ -1150,17 +1149,18 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num, SmallCraftF
 		if (!shipp->orders_accepted.contains(command))
 			continue;
 
-		// the wing pass picks its responder with SHIP_GET_UNSILENCED, which never picks a player ship;
-		// don't let one respond here either.  It still receives the order -- we just keep looking for
-		// an AI ship to acknowledge it.
-		if ( send_message && !(objp->flags[Object::Object_Flags::Player_ship]) ) {
+		if (!history_written) {
 			hud_add_issued_order(flavor, command);
-			if ( hud_squadmsg_send_ship_command(objp->instance, command, 1, SQUADMSG_HISTORY_UPDATE, player_num) ) {
-				send_message = 0;
-			}
+			history_written = true;
 		}
-		else {
-			hud_squadmsg_send_ship_command(objp->instance, command, 0, SQUADMSG_HISTORY_NO_UPDATE, player_num);
+
+		// the wing pass picks its responder with SHIP_GET_UNSILENCED, which skips player ships and silenced
+		// ships; skip them here too, so that one of them receiving the order first can't swallow the reply
+		const bool responds = send_message && !(objp->flags[Object::Object_Flags::Player_ship])
+			&& !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]);
+		if ( hud_squadmsg_send_ship_command(objp->instance, command, responds ? 1 : 0, SQUADMSG_HISTORY_UPDATE,
+				player_num) ) {
+			send_message = 0;
 		}
 	}
 
