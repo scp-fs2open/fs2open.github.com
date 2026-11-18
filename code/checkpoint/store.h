@@ -13,6 +13,9 @@ bool store_save(int index, const Buffer& buffer);
 // Reads the checkpoint stored under an index.  Returns false if there is none.
 bool store_load(int index, Buffer& buffer);
 
+// Reads all checkpoints of the current mission, by index.
+void store_load_all(SCP_map<int, Buffer>& slots);
+
 // Whether a checkpoint is stored under an index, or under any index if index is negative.  The mission defaults to the
 // current one; it may be given with or without its extension.
 bool store_has(int index, const char* mission = nullptr);

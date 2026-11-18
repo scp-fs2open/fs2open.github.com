@@ -40,8 +40,21 @@
 namespace checkpoint {
 
 // Saves the mission into checkpoint index at the end of the frame.  The checkpoint is stored in the pilot's file for
-// this mission.  Excluded ships, wings, variables and containers get their mission-start state when it is loaded.
-void request_save(int index, SCP_vector<SCP_string> excluded = {});
+// this mission.  Excluded ships, wings, variables and containers get their mission-start state when it is loaded.  The
+// checkpoint is shown under the given name when offered for loading; an empty name takes the one set with
+// set_pending_name(), and without one it is shown as "Checkpoint <index>".
+void request_save(int index, SCP_vector<SCP_string> excluded = {}, SCP_string name = {});
+
+// Names the next checkpoint saved without a name of its own (savestate-set-name).  Cleared once used, and when a
+// mission starts or a checkpoint is loaded.
+void set_pending_name(const SCP_string& name);
+
+// The name checkpoint index of this mission was saved with, or an empty string.
+SCP_string slot_name(int index);
+
+// Up to max checkpoints of this mission that can be loaded, by ascending index, with their names (or "Checkpoint
+// <index>" for unnamed ones).
+SCP_vector<std::pair<int, SCP_string>> list_checkpoints(int max);
 
 // Reloads the mission and restores checkpoint index, at the end of the frame.  Returns false, and does nothing, if
 // there is no such checkpoint or if it is requested in the first frame after a checkpoint was loaded (it comes from an

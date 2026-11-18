@@ -803,6 +803,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "savestate-assist",				OP_SAVESTATE_ASSIST,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "savestate-clear",				OP_SAVESTATE_CLEAR,						0,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "savestate-get-next-free-index",	OP_SAVESTATE_GET_NEXT_FREE_INDEX,		0,	0,			SEXP_INTEGER_OPERATOR,	},
+	{ "savestate-set-name",				OP_SAVESTATE_SET_NAME,					1,	1,			SEXP_ACTION_OPERATOR,	},
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -30357,6 +30358,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_savestate_clear(node);
 				break;
 
+			case OP_SAVESTATE_SET_NAME:
+				sexp_val = SEXP_TRUE;
+				checkpoint::set_pending_name(CTEXT(node));
+				break;
+
 			case OP_SAVESTATE_SHIPSTATUS:
 				sexp_val = sexp_savestate_shipstatus(node);
 				break;
@@ -32339,6 +32345,7 @@ int query_operator_return_type(int op)
 		case OP_SAVESTATE_LOAD:
 		case OP_SAVESTATE_ASSIST:
 		case OP_SAVESTATE_CLEAR:
+		case OP_SAVESTATE_SET_NAME:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 		case OP_TURRET_SET_FORCED_TARGET:
@@ -35248,6 +35255,9 @@ int query_operator_argument_type(int op_index, int argnum)
 		case OP_SAVESTATE_CLEAR:
 			return OPF_POSITIVE;
 
+		case OP_SAVESTATE_SET_NAME:
+			return OPF_STRING;
+
 		case OP_SAVESTATE_SHIPSTATUS:
 			return (argnum == 0) ? OPF_SHIP_WING : OPF_POSITIVE;
 
@@ -37570,6 +37580,7 @@ int get_category(int op_id)
 		case OP_SAVESTATE_ASSIST:
 		case OP_SAVESTATE_CLEAR:
 		case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
+		case OP_SAVESTATE_SET_NAME:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_SCRIPT_EVAL_STRING:
@@ -38076,6 +38087,7 @@ int get_subcategory(int op_id)
 		case OP_SAVESTATE_ASSIST:
 		case OP_SAVESTATE_CLEAR:
 		case OP_SAVESTATE_GET_NEXT_FREE_INDEX:
+		case OP_SAVESTATE_SET_NAME:
 			return CHANGE_SUBCATEGORY_CHECKPOINTS;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -42862,6 +42874,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"start resets the whole docked group.  The player's ship and wing can't be excluded.\r\n\r\n"
 		"An excluded ship destroyed or departed before saving comes back with no record of having left (operators like "
 		"is-destroyed treat it as never destroyed), but the mission log still lists its departure.\r\n\r\n"
+		"With the mission flag \"Offer Checkpoints\", the game offers the pilot's checkpoints of the mission by itself: once "
+		"the player has entered the mission, and through a \"Load Checkpoint\" button in the death popup (not in red alert "
+		"missions, which use that button for the previous mission).  The offer lists \"Start from beginning\" and the "
+		"checkpoints with the lowest indexes, up to five, under the names given with savestate-set-name, and is skipped "
+		"if there are none.  It isn't shown in a mission loaded from a checkpoint.\r\n\r\n"
 		"Differences from SaveLoadX's lua-savestate-save: everything is saved, not only ships and variables.  Events about "
 		"excluded ships keep their saved state (an excluded ship destroyed before saving comes back, while the event that saw "
 		"it destroyed stays true); flag such events \"not checkpointed\" in the event editor to reset them as well.  "
@@ -42912,7 +42929,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t- A ship that is dying when the checkpoint is saved is still dying when it is loaded, and is destroyed; SaveLoadX "
 		"saved it as alive.\r\n"
 		"\t- Script (Lua) state is neither saved nor reset by a load; scripts keep what they need with mn.Checkpoints.setData.  "
-		"Scripted prompts that remember a choice still remember it after the load.\r\n\r\n"
+		"Scripted prompts that remember a choice still remember it after the load.\r\n"
+		"\t- A scripted prompt at mission start that asks which save state to load (e.g. lua-call-prompt followed by events "
+		"calling lua-savestate-load) can be replaced by the mission flag \"Offer Checkpoints\" (see savestate-save) and "
+		"savestate-set-name, which also offers the checkpoints when the player dies.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tIndex of the checkpoint to load.\r\n"
 	},
@@ -42970,6 +42990,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns the lowest index from 1 up that has no checkpoint in this mission, so savestate-save can store a new "
 		"checkpoint without replacing one.\r\n\r\n"
 		"Takes no arguments.\r\n"
+	},
+
+	{ OP_SAVESTATE_SET_NAME, "savestate-set-name\r\n"
+		"\tNames the next checkpoint saved with savestate-save.  The name is shown when the game offers the pilot's "
+		"checkpoints of this mission (mission flag \"Offer Checkpoints\").  It applies to one save only, and is forgotten "
+		"when the mission starts or a checkpoint is loaded; a checkpoint saved without a name is shown as \"Checkpoint\" "
+		"followed by its index.  Like all sexp text, the name can have at most 31 characters; scripts can give longer "
+		"names with mn.Checkpoints.save.  Names that don't fit their button are shortened.  Not part of SaveLoadX.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tName of the checkpoint (at most 31 characters).\r\n"
 	},
 
 	// Goober5000

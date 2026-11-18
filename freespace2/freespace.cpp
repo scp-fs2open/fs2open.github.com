@@ -46,6 +46,7 @@
 #include "cfile/cfile.h"
 #include "cheats_table/cheats_table.h"
 #include "checkpoint/checkpoint.h"
+#include "checkpoint/prompt.h"
 #include "checkpoint/registry.h"
 #include "checkpoint/serialize.h"
 #include "cmdline/cmdline.h"
@@ -4024,16 +4025,19 @@ void game_maybe_do_dead_popup(float frametime)
 				gameseq_post_event(GS_EVENT_START_GAME);
 				break;
 
-			// this should only happen during a red alert mission
-			case 3:			
-				Assertion(The_mission.flags[Mission::Mission_Flags::Red_alert], "FSO tried to replay the previous mission without first being in a Red_alert mission.");
+			// replay the previous mission in a red alert mission, otherwise load a checkpoint
+			case 3:
 				if (The_mission.flags[Mission::Mission_Flags::Red_alert])
 				{
 					// choose the previous mission
 					mission_campaign_previous_mission();
+					gameseq_post_event(GS_EVENT_START_GAME);
 				}
-
-				gameseq_post_event(GS_EVENT_START_GAME);
+				else
+				{
+					// the popup offering the checkpoints can't run while the frame is being drawn
+					checkpoint::offer_after_death();
+				}
 				break;
 
 			default:
@@ -4414,6 +4418,7 @@ void game_frame(bool paused)
 		if (Pre_player_entry && Missiontime > Entry_delay_time) {
 			Pre_player_entry = false;
 			event_music_set_start_delay();
+			checkpoint::player_entered();
 		}
 
 		//	Note: These are done even before the player enters, else buffers can overflow.
@@ -4427,6 +4432,7 @@ void game_frame(bool paused)
 			if (! (Game_mode & GM_STANDALONE_SERVER) ) {
 
 				if( (!popup_running_state()) && (!popupdead_is_active()) ){
+					checkpoint::process_offer();
 					game_process_keys();
 					read_player_controls( Player_obj, flFrametime);
 				}

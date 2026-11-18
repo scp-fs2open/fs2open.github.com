@@ -118,6 +118,11 @@ bool store_load(int index, Buffer& buffer)
 	return true;
 }
 
+void store_load_all(SCP_map<int, Buffer>& slots)
+{
+	slots = read_file();
+}
+
 bool store_has(int index, const char* mission)
 {
 	auto slots = read_file(mission);

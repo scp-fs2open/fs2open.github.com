@@ -17,6 +17,7 @@
 
 #define POPUPDEAD_NUM_CHOICES_MAX		4
 
+#include "checkpoint/prompt.h"
 #include "freespace.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
@@ -178,6 +179,12 @@ void popupdead_start()
 			Popupdead_button_text[1] = XSTR( "Return To Flight Deck", 106);
 			Popupdead_button_text[2] = XSTR( "Return To Briefing", 107);
 			Popupdead_num_choices = POPUPDEAD_NUM_CHOICES;
+
+			// the fourth button, which red alert missions use for the previous mission
+			if (checkpoint::can_offer_checkpoints()) {
+				Popupdead_button_text[3] = XSTR( "Load Checkpoint", -1);
+				Popupdead_num_choices = POPUPDEAD_NUM_CHOICES_MAX;
+			}
 		}
 	} else {
 		// in multiplayer, we have different choices depending on respawn mode, etc.

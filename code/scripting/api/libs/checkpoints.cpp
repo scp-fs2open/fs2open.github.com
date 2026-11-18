@@ -26,17 +26,35 @@ ADE_LIB_DERIV(l_Mission_Checkpoints, "Checkpoints", nullptr,
 	"Checkpoints of the mission, stored per pilot and mission.  The functions match the savestate-* sexps.",
 	l_Mission);
 
-ADE_FUNC(save, l_Mission_Checkpoints, "number index, string... excluded",
-	"Saves a checkpoint of the mission under the index, at the end of the frame.  Ships, wings, variables and "
-	"containers named after the index are put back to their mission-start state when the checkpoint is loaded.  The "
-	"On Checkpoint Save hook runs just before saving.",
+ADE_FUNC(save, l_Mission_Checkpoints, "number index, [string name, string... excluded]",
+	"Saves a checkpoint of the mission under the index, at the end of the frame.  The name is shown when the game offers "
+	"the checkpoints of this mission; nil or an empty string saves it without a name of its own (it then takes one set "
+	"with the savestate-set-name sexp, or is shown as \"Checkpoint <index>\").  Ships, wings, variables and containers "
+	"named after the name are put back to their mission-start state when the checkpoint is loaded; to exclude names "
+	"without naming the checkpoint, pass nil as the name.  The On Checkpoint Save hook runs just before saving.",
 	nullptr, nullptr)
 {
 	int index = 0;
 	if (!ade_get_args(L, "i", &index))
 		return ADE_RETURN_NIL;
-	checkpoint::request_save(index, string_args(L, 2));
+	SCP_string name;
+	if (lua_gettop(L) >= 2 && lua_isstring(L, 2))
+		name = lua_tostring(L, 2);
+	checkpoint::request_save(index, string_args(L, 3), std::move(name));
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getName, l_Mission_Checkpoints, "number index",
+	"The name the checkpoint with this index of this mission was saved with.",
+	"string", "The name, or nil if the checkpoint doesn't exist or has no name")
+{
+	int index = 0;
+	if (!ade_get_args(L, "i", &index))
+		return ADE_RETURN_NIL;
+	auto name = checkpoint::slot_name(index);
+	if (name.empty())
+		return ADE_RETURN_NIL;
+	return ade_set_args(L, "s", name.c_str());
 }
 
 ADE_FUNC(load, l_Mission_Checkpoints, "number index",

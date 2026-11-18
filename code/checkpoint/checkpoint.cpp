@@ -18,6 +18,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
+#include "localization/localize.h"
 #include "math/curve.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -94,6 +95,7 @@ struct Request {
 	int frames = 0;
 	SCP_vector<SCP_string> excluded;
 	int replay_event = -1;	// a load: the event to run again once the checkpoint is loaded, see request_load()
+	SCP_string name;		// a save: the checkpoint's name, or empty to use the pending one
 };
 
 Request Pending_request;
@@ -117,6 +119,9 @@ AssistSettings Assist;
 // data scripts keep in checkpoints
 SCP_map<SCP_string, SCP_string> Script_data;
 CHECKPOINT_GLOBAL(Script_data);
+
+// the name the next checkpoint saved is given, see set_pending_name()
+SCP_string Pending_name;
 
 // a load in progress: set when the mission reload is started, cleared when the restore is done
 std::optional<Buffer> Pending_restore;
@@ -436,7 +441,7 @@ void report_load(const Header& header, const LoadContext& context)
 
 // --- saving ----------------------------------------------------------------------------------------------------------
 
-Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {})
+Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}, const SCP_string& name = {})
 {
 	// objects created this frame are still on the create list; they are saved like all others
 	obj_merge_created_list();
@@ -497,6 +502,11 @@ Buffer save_checkpoint(Trace* trace, const SCP_vector<SCP_string>& excluded = {}
 	// the names to put back to their mission-start state when loading
 	begin_section(w, "excluded", at);
 	save(w, excluded);
+	w.end_block(at);
+
+	// read without restoring anything, to list checkpoints; see read_name()
+	begin_section(w, "name", at);
+	save(w, name);
 	w.end_block(at);
 
 	begin_section(w, "random", at);
@@ -764,6 +774,22 @@ void start_stepping()
 }
 
 // Reads one registered global from a saved checkpoint.
+// The name a checkpoint was saved with; empty for one without a name, or one saved before names existed.
+SCP_string read_name(const Buffer& buffer)
+{
+	Reader r(buffer);
+	Header header;
+	if (!read_header(r, header))
+		return {};
+	auto sections = read_sections(r);
+	auto it = sections.find(name_hash("name"));
+	if (r.failed() || it == sections.end())
+		return {};
+	SCP_string name;
+	load(it->second, name);
+	return it->second.failed() ? SCP_string() : name;
+}
+
 template <typename T>
 bool read_saved_global(const Buffer& buffer, const char* name, T& value)
 {
@@ -852,7 +878,9 @@ void handle_request(const Request& request)
 		// scripts store what they need in the checkpoint now
 		if (scripting::hooks::OnCheckpointSave->isActive())
 			scripting::hooks::OnCheckpointSave->run(scripting::hook_param_list(scripting::hook_param("Index", 'i', request.slot)));
-		auto buffer = save_checkpoint(nullptr, request.excluded);
+		auto name = request.name.empty() ? Pending_name : request.name;
+		Pending_name.clear();
+		auto buffer = save_checkpoint(nullptr, request.excluded, name);
 		if (store_save(request.slot, buffer))
 			mprintf(("Checkpoint: saved checkpoint %d (%d bytes)\n", request.slot, static_cast<int>(buffer.size())));
 		else
@@ -948,9 +976,44 @@ void register_object_type(ObjectTypeHandler handler)
 
 // --- public interface ------------------------------------------------------------------------------------------------
 
-void request_save(int index, SCP_vector<SCP_string> excluded)
+void request_save(int index, SCP_vector<SCP_string> excluded, SCP_string name)
 {
-	Pending_request = {RequestType::Save, index, 0, std::move(excluded)};
+	Pending_request = {RequestType::Save, index, 0, std::move(excluded), -1, std::move(name)};
+}
+
+void set_pending_name(const SCP_string& name)
+{
+	Pending_name = name;
+}
+
+SCP_string slot_name(int index)
+{
+	Buffer buffer;
+	if (!store_load(index, buffer))
+		return {};
+	return read_name(buffer);
+}
+
+SCP_vector<std::pair<int, SCP_string>> list_checkpoints(int max)
+{
+	SCP_vector<std::pair<int, SCP_string>> list;
+	SCP_map<int, Buffer> slots;
+	store_load_all(slots);
+	for (const auto& slot : slots) {
+		if (static_cast<int>(list.size()) >= max)
+			break;
+		// a checkpoint that can't be loaded any more, e.g. after the mission was changed, isn't offered
+		if (slot.first < 1 || !check_header(slot.second).empty())
+			continue;
+		auto name = read_name(slot.second);
+		if (name.empty()) {
+			char buf[NAME_LENGTH + 32];
+			sprintf(buf, XSTR("Checkpoint %d", -1), slot.first);
+			name = buf;
+		}
+		list.emplace_back(slot.first, std::move(name));
+	}
+	return list;
 }
 
 bool request_load(int index, int replay_event)
@@ -967,7 +1030,7 @@ bool request_load(int index, int replay_event)
 		mprintf(("Checkpoint: there is no checkpoint %d in this mission\n", index));
 		return false;
 	}
-	Pending_request = {RequestType::Load, index, 0, {}, replay_event};
+	Pending_request = {RequestType::Load, index, 0, {}, replay_event, {}};
 	return true;
 }
 
@@ -978,7 +1041,7 @@ bool is_replaying_event()
 
 void request_verify(int frames)
 {
-	Pending_request = {RequestType::Verify, 0, frames, {}};
+	Pending_request = {RequestType::Verify, 0, frames, {}, -1, {}};
 }
 
 bool has_slot(int index, const char* mission)
@@ -1112,6 +1175,7 @@ void apply_pending_restore()
 
 	Loaded_index = Pending_index;
 	First_frame_after_restore = true;
+	Pending_name.clear();
 	collect_status(Ship_registry, Wings, Num_wings, Loaded_status);
 	apply_assist();
 	if (scripting::hooks::OnCheckpointLoad->isActive())
@@ -1153,6 +1217,7 @@ void record_mission_structure()
 		Loaded_status.clear();
 		Assist = AssistSettings();
 		Script_data.clear();
+		Pending_name.clear();
 	}
 }
 

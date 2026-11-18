@@ -72,7 +72,12 @@
 // typical usage:
 //
 //	rval = popup(0, 2, POPUP_YES, POPUP_NO, "Hey %s, do you want to quit", pl->callsign);
+//
+// Up to 6 choices are allowed; with more than 3, they are shown in two columns, the first three on the left.
 int popup(int flags, int nchoices, ... );
+
+// Same, for a number of choices known only at run time.  The text is used as it is, not as a format string.
+int popup(int flags, const SCP_vector<SCP_string>& choices, const char *text);
 
 // popup with cancel button and conditional funcrion.
 // input:   condition   =>   function to call every frame, if condition() returns FALSE, the popup

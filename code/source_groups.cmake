@@ -136,6 +136,8 @@ add_file_folder("Checkpoint"
 	checkpoint/fresh_state.h
 	checkpoint/model_instance.cpp
 	checkpoint/model_instance.h
+	checkpoint/prompt.cpp
+	checkpoint/prompt.h
 	checkpoint/registry.h
 	checkpoint/rules.h
 	checkpoint/serialize.h
