@@ -199,7 +199,7 @@ static int model_collide_nearest(mc_info* mc)
 			(hit ? vm_vec_dot(&line.hit_point_world, &dir) < vm_vec_dot(&mc->hit_point_world, &dir)
 				 : line.hit_dist <= 1.0f)) {
 			if (hit) {
-				line.hit_dist = mc->hit_dist;
+				line.hit_dist = std::min(line.hit_dist, mc->hit_dist);
 			}
 			line.flags = mc->flags;
 			*mc = line;
