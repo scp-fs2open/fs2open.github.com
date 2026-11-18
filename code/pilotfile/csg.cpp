@@ -146,16 +146,28 @@ void pilotfile::csg_read_info()
 	Campaign.prev_mission = cfread_int(cfp);
 	Campaign.next_mission = cfread_int(cfp);
 
-	// check that the next mission won't be greater than the total number of missions
-	// though ensure we only flag if campaign exists and has been loaded
-	if (!Csg_campaign_mismatch && !Campaign.missions.empty() && !Campaign.missions.in_bounds(Campaign.next_mission) && (Campaign.next_mission != -1)) {
-		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
-		m_data_invalid = true; // Causes a warning popup to be displayed
-	}
-
 	// loop state
 	Campaign.loop_reentry = cfread_int(cfp);
 	Campaign.loop_enabled = cfread_int(cfp);
+
+	// check that the mission indexes are within the campaign's missions (-1 for next or reentry means the campaign ends there)
+	// though ensure we only flag if campaign exists and has been loaded
+	if (!Campaign.missions.in_bounds(Campaign.prev_mission)) {
+		Campaign.prev_mission = -1;
+	}
+	if (!Campaign.missions.empty()) {
+		if (!Campaign.missions.in_bounds(Campaign.next_mission) && (Campaign.next_mission != -1)) {
+			Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
+			if (!Csg_campaign_mismatch)
+				m_data_invalid = true; // Causes a warning popup to be displayed
+		}
+		if (!Campaign.missions.in_bounds(Campaign.loop_reentry) && (Campaign.loop_reentry != -1)) {
+			Campaign.loop_reentry = 0;
+			// loop_reentry isn't reset when a loop ends, so a stale value only matters during a loop
+			if (!Csg_campaign_mismatch && Campaign.loop_enabled)
+				m_data_invalid = true;
+		}
+	}
 
 	// missions completed
 	Campaign.num_missions_completed = cfread_int(cfp);
@@ -276,7 +288,9 @@ void pilotfile::csg_read_missions()
 		throw "Missions before Info!";
 	}
 
-	for (i = 0; i < Campaign.num_missions_completed; i++) {
+	const int num_records = Campaign.num_missions_completed;
+
+	for (i = 0; i < num_records; i++) {
 		idx = cfread_int(cfp);
 		if (Csg_campaign_mismatch) {
 			missionp = &discarded_mission;
@@ -285,6 +299,8 @@ void pilotfile::csg_read_missions()
 		} else {
 			mprintf(("CSG => Discarding data for invalid mission index %d\n", idx));
 			missionp = &discarded_mission;
+			// the count is written as the number of saved records, so it must not include this one
+			Campaign.num_missions_completed--;
 		}
 
 		missionp->completed = 1;

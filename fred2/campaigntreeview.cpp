@@ -491,23 +491,30 @@ void campaign_tree_view::sort_links()
 		for (j=0; j<from_count-1; j++)
 			for (k=j+1; k<from_count; k++) {
 				swap = 0;
-				z = Campaign.missions[Links[from_list[j]].to].pos -
-					Campaign.missions[Links[from_list[k]].to].pos;
+				if ((Links[from_list[j]].to < 0) || (Links[from_list[k]].to < 0)) {
+					// end-of-campaign links have no mission to sort by, so they go after the others
+					if (Links[from_list[k]].to >= 0)
+						swap = 1;
 
-				if (z > 0)
-					swap = 1;
-					
-				else if (!z) {
-					z = Campaign.missions[Links[from_list[j]].to].level -
-						Campaign.missions[Links[from_list[k]].to].level;
+				} else {
+					z = Campaign.missions[Links[from_list[j]].to].pos -
+						Campaign.missions[Links[from_list[k]].to].pos;
 
-					if (Campaign.missions[i].pos < Campaign.missions[Links[from_list[j]].to].pos) {
-						if (z < 0)
-							swap = 1;
+					if (z > 0)
+						swap = 1;
 
-					} else {
-						if (z > 0)
-							swap = 1;
+					else if (!z) {
+						z = Campaign.missions[Links[from_list[j]].to].level -
+							Campaign.missions[Links[from_list[k]].to].level;
+
+						if (Campaign.missions[i].pos < Campaign.missions[Links[from_list[j]].to].pos) {
+							if (z < 0)
+								swap = 1;
+
+						} else {
+							if (z > 0)
+								swap = 1;
+						}
 					}
 				}
 
@@ -1137,7 +1144,7 @@ void campaign_tree_view::correct_position(int num)
 	for (i = 0; i < sz2i(Links.size()); i++)
 		if (Links[i].from == num) {
 			z = Links[i].to;
-			if ( (num != z) && (Campaign.missions[num].level >= Campaign.missions[z].level) ) {
+			if ( (z >= 0) && (num != z) && (Campaign.missions[num].level >= Campaign.missions[z].level) ) {
 				Campaign.missions[z].level = Campaign.missions[num].level + 1;
 				correct_position(z);
 			}
@@ -1197,6 +1204,11 @@ void campaign_tree_view::delete_link(int num)
 	sexp_unmark_persistent(Links[num].sexp);
 	free_sexp2(Links[num].sexp);
 	Links.erase(Links.begin() + num);
+
+	if (Cur_campaign_link == num)
+		Cur_campaign_link = -1;
+	else if (Cur_campaign_link > num)
+		Cur_campaign_link--;
 
 	sort_links();
 	Invalidate();
@@ -1297,6 +1309,8 @@ void campaign_tree_view::remove_mission(int m)
 			box->SetWindowText("");
 
 		Campaign_tree_formp->load_tree(0);
+	} else if (Cur_campaign_mission == z) {
+		Cur_campaign_mission = m;
 	}
 
 	Campaign_modified = 1;
