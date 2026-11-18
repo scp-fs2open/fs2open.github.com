@@ -102,6 +102,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void initializeUi();
 	void updateUi();
+	void updateArrivalDistanceField();
 	void enableDisable();
 
 	// column one
