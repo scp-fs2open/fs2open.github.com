@@ -181,6 +181,8 @@ bool isPlayerJoystick(Joystick* testStick, short cid) {
 	return joystickMatchesGuid(testStick, GUID);
 }
 
+// Platform split: whether a saved path names one device depends on the OS, because SDL's paths mean different things.
+// Windows gives a HID device path; on Linux only the by-path port link counts (see linuxPortPath); elsewhere none does.
 bool pathNamesDevice(const SCP_string& path)
 {
 #ifdef _WIN32
@@ -938,6 +940,8 @@ namespace joystick
 		return (serial != nullptr) ? serial : "";
 	}
 
+	// Platform split: on Linux SDL's path is a /dev/input/eventN node that changes with plug-in order, so the stick's
+	// port link is looked up once in fillValues() and kept; other platforms use SDL's path as is.
 	SCP_string Joystick::getPath() const
 	{
 #ifdef __linux__
@@ -961,6 +965,7 @@ namespace joystick
 		_name.assign(SDL_GetJoystickName(_joystick));
 		_guidStr = getJoystickGUID(_joystick);
 #ifdef __linux__
+		// Linux only: see getPath() for why the port link is cached here
 		auto path = SDL_GetJoystickPath(_joystick);
 		_path = (path != nullptr) ? linuxPortPath(path) : "";
 #endif
