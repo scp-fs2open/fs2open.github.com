@@ -12,6 +12,8 @@
 // Checkpoints are stored per pilot and mission (see checkpoint/store.h) and used through the savestate-* sexps, which
 // follow SaveLoadX's lua-savestate-* ones, or through mn.Checkpoints in Lua.  Names excluded when saving, and events
 // flagged as not checkpointed, get their mission-start state when a checkpoint is loaded (see checkpoint/fresh_state.h).
+// A savestate-load skips the rest of its event; if that event is flagged as not checkpointed, it runs again on the
+// loaded mission and then counts as fired, as with SaveLoadX (see the savestate-load help text).
 //
 // A checkpoint restores what matters to gameplay; it isn't an exact recreation.  Known limitations:
 // - Visual effects are dropped: fireballs, particles, trails, decals, small debris, lightning bolts, shield impacts.
@@ -41,9 +43,14 @@ namespace checkpoint {
 // this mission.  Excluded ships, wings, variables and containers get their mission-start state when it is loaded.
 void request_save(int index, SCP_vector<SCP_string> excluded = {});
 
-// Reloads the mission and restores checkpoint index, at the end of the frame.  Requests made in the first frame after
-// a checkpoint was loaded are ignored, since they come from events that would otherwise load again and again.
-void request_load(int index);
+// Reloads the mission and restores checkpoint index, at the end of the frame.  Returns false, and does nothing, if
+// there is no such checkpoint or if it is requested in the first frame after a checkpoint was loaded (it comes from an
+// event that would otherwise load again and again).  replay_event is a "not checkpointed" event that is run again on
+// the loaded mission and then counts as having fired (see savestate-load), or -1.
+bool request_load(int index, int replay_event = -1);
+
+// True while the event that loaded a checkpoint runs again on the loaded mission.
+bool is_replaying_event();
 
 // Debugging aid.  With frames == 0: saves, loads the save and saves again, then reports every field that differs
 // (errors in saving or restoring).  With frames > 0: additionally runs that many frames at a fixed frame time after

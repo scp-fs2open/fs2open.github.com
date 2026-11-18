@@ -1458,6 +1458,13 @@ extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
 extern int Sexp_useful_number;  // a variable to pass useful info in from external modules
 extern bool Assume_event_is_current;
+// Set once savestate-load has requested a load: the remaining actions of the event are skipped.  Cleared by whoever
+// started the evaluation (mission_process_event, run_sexp).
+extern bool Sexp_actions_stopped;
+
+// Runs the actions of an event whose operator is when or every-time, without evaluating its condition.  Used to run the
+// event that loaded a checkpoint again once the checkpoint is loaded.
+void sexp_replay_event_actions(int event);
 extern int Sexp_clipboard;  // used by Fred
 
 extern SCP_vector<int> Current_sexp_operator;

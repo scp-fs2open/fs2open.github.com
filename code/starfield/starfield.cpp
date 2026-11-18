@@ -3327,13 +3327,13 @@ void stars_set_dynamic_environment(bool dynamic) {
 // the suns and bitmaps shown, then the skybox's model, texture, flags, alpha and orientation, and the dynamic environment
 using starfield_checkpoint_state = std::tuple<background_t, SCP_string, SCP_string, uint64_t, float, matrix, bool>;
 
-static void starfield_entries_from_instances(const SCP_vector<starfield_bitmap_instance>& instances, SCP_vector<starfield_list_entry>& entries)
+static void starfield_entries_from_instances(const SCP_vector<starfield_bitmap_instance>& instances, const SCP_vector<starfield_bitmap>& bitmaps, SCP_vector<starfield_list_entry>& entries)
 {
 	for (const auto& sbi : instances) {
-		if (sbi.star_bitmap_index < 0)
+		if (!SCP_vector_inbounds(bitmaps, sbi.star_bitmap_index))
 			continue;
 		starfield_list_entry sle;
-		strcpy_s(sle.filename, Starfield_bitmaps[sbi.star_bitmap_index].filename);
+		strcpy_s(sle.filename, bitmaps[sbi.star_bitmap_index].filename);
 		sle.scale_x = sbi.scale_x;
 		sle.scale_y = sbi.scale_y;
 		sle.div_x = sbi.div_x;
@@ -3347,8 +3347,8 @@ static void starfield_entries_from_instances(const SCP_vector<starfield_bitmap_i
 static starfield_checkpoint_state starfield_checkpoint_capture()
 {
 	background_t shown;
-	starfield_entries_from_instances(Suns, shown.suns);
-	starfield_entries_from_instances(Starfield_bitmap_instances, shown.bitmaps);
+	starfield_entries_from_instances(Suns, Sun_bitmaps, shown.suns);
+	starfield_entries_from_instances(Starfield_bitmap_instances, Starfield_bitmaps, shown.bitmaps);
 	return {shown,
 		Nmodel_num >= 0 ? model_get(Nmodel_num)->filename : "",
 		Nmodel_bitmap >= 0 ? bm_get_filename(Nmodel_bitmap) : "",

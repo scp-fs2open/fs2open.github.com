@@ -174,6 +174,10 @@ static SCP_vector<int> ship_arrival_list_checkpoint_capture()
 
 static void ship_arrival_list_checkpoint_apply(const SCP_vector<int>& indexes)
 {
+	// The links aren't saved, so parse objects keep the ones from the reloaded mission; those that arrived before the
+	// checkpoint would otherwise still count as on the list (see parse_object_on_arrival_list).
+	for (auto& p_obj : Parse_objects)
+		p_obj.next = p_obj.prev = nullptr;
 	list_init(&Ship_arrival_list);
 	for (int index : indexes) {
 		if (SCP_vector_inbounds(Parse_objects, index))

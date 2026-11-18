@@ -289,10 +289,23 @@ void remove_ship(const char* name)
 		remove_ship(shipnum);
 }
 
+// Exit records of a ship that is reset would otherwise still be found by its name or wing.  They are blanked rather than
+// removed, since ship registry entries refer to them by index.
+void forget_exit_records(const char* name, int wingnum)
+{
+	for (auto& entry : Ships_exited) {
+		if ((name != nullptr && !stricmp(entry.ship_name, name)) || (wingnum >= 0 && entry.wingnum == wingnum)) {
+			entry.ship_name[0] = '\0';
+			entry.wingnum = -1;
+		}
+	}
+}
+
 // Puts a parse object, its registry entry and its trees back to mission start, before the ship is created.
 void restore_parse_object(const ShipReset& reset)
 {
 	auto& p_objp = Parse_objects[reset.pobj_index];
+	forget_exit_records(p_objp.name, -1);
 	decode(reset.p_object, p_objp);
 	p_objp.created_object = nullptr;
 	p_objp.arrival_cue = allocate_tree(reset.arrival_cue);
@@ -334,6 +347,7 @@ void apply_wing(const WingReset& reset)
 	}
 	for (int shipnum : members)
 		remove_ship(shipnum);
+	forget_exit_records(nullptr, reset.wingnum);
 
 	decode(reset.wing, *wingp);
 	wingp->arrival_cue = allocate_tree(reset.arrival_cue);
@@ -381,6 +395,14 @@ void apply_ships()
 		parse_create_object(&p_objp);
 	}
 	Game_restoring = 0;
+
+	// parse_create_object() doesn't take the ships it creates off the arrival list, as mission start never has them on it
+	for (const auto& reset : Fresh.ships) {
+		auto& p_objp = Parse_objects[reset.pobj_index];
+		if (p_objp.created_object != nullptr && parse_object_on_arrival_list(&p_objp))
+			list_remove(&Ship_arrival_list, &p_objp);
+	}
+
 	for (const auto& reset : Fresh.ships)
 		restore_goals(reset);
 }

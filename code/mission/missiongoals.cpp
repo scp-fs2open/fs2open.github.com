@@ -878,6 +878,8 @@ void mission_event_set_completion_sound_timestamp()
 	Mission_directive_sound_timestamp = _timestamp(DIRECTIVE_SOUND_DELAY);
 }
 
+static bool mission_event_apply_result(int event, int result, int sindex);
+
 // function which evaluates and processes the given event
 void mission_process_event( int event )
 {
@@ -886,8 +888,8 @@ void mission_process_event( int event )
 	int store_count = Mission_events[event].count;
 
 	int result, sindex;
-	bool bump_timestamp = false; 
 	Log_event = false;
+	Sexp_actions_stopped = false;
 
 	Directive_count = 0;
 	Event_index = event;
@@ -1009,8 +1011,30 @@ void mission_process_event( int event )
 	}
 
 	Log_event = false;
+	Sexp_actions_stopped = false;
 
 	Event_index = -1;
+	if (mission_event_apply_result(event, result, sindex))
+		return;
+
+	// see if anything has changed
+	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
+		send_event_update_packet(event);
+	}
+}
+
+void mission_event_set_fired(int event)
+{
+	Mission_events[event].flags |= MEF_CURRENT;
+	mission_event_apply_result(event, 1, -1);
+}
+
+// Records the result of evaluating an event: timestamps, repeat and trigger counts, completion and score.  Returns true
+// if the event became known false, which has already been sent to multiplayer clients.
+static bool mission_event_apply_result(int event, int result, int sindex)
+{
+	bool bump_timestamp = false;
+
 	Mission_events[event].result = result;
 
 	// if the sexpression is known false, then no need to evaluate anymore
@@ -1027,7 +1051,7 @@ void mission_process_event( int event )
 		if (MULTIPLAYER_MASTER) {
 			send_event_update_packet(event);
 		}
-		return;
+		return true;
 	}
 
 	if (result && !Mission_events[event].satisfied_time.isValid()) {
@@ -1081,10 +1105,7 @@ void mission_process_event( int event )
 		}
 	}
 
-	// see if anything has changed	
-	if(MULTIPLAYER_MASTER && ((store_flags != Mission_events[event].flags) || (store_result != Mission_events[event].result) || (store_count != Mission_events[event].count)) ){
-		send_event_update_packet(event);
-	}
+	return false;
 }
 
 // Maybe play a directive success sound... need to poll since the sound is delayed from when

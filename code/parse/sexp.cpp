@@ -1035,6 +1035,7 @@ const char *Skybox_flags[] = {
 int	Directive_count;
 int	Sexp_useful_number = 1;  // a variable to pass useful info in from external modules
 bool Assume_event_is_current = true;
+bool Sexp_actions_stopped = false;
 int	Locked_sexp_true = -1;
 int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
@@ -10902,13 +10903,16 @@ void eval_when_for_each_special_argument( int cur_node )
 
 		// execute sexp... CTEXT will insert the argument as necessary
 		eval_sexp(cur_node);
-		
+
 		// clean up any special sexp stuff
 		Sexp_applicable_argument_list.clear_nesting_level();
 		Sexp_current_argument_nesting_level--;
 
-		// remove the argument 
-		Sexp_replacement_arguments.pop_back(); 
+		// remove the argument
+		Sexp_replacement_arguments.pop_back();
+
+		if (Sexp_actions_stopped)
+			break;
 
 		// continue along argument list
 		ptr = ptr->get_next();
@@ -10932,8 +10936,12 @@ void do_action_for_each_special_argument( int cur_node )
 		// (since these are all actions, they don't return any meaningful values)
 		eval_sexp(cur_node);
 
-		// remove the argument 
-		Sexp_replacement_arguments.pop_back(); 
+		// remove the argument
+		Sexp_replacement_arguments.pop_back();
+
+		if (Sexp_actions_stopped)
+			break;
+
 		// continue along argument list
 		ptr = ptr->get_next();
 	}
@@ -11055,10 +11063,10 @@ void eval_when_do_one_exp(int exp)
 				break; 
 			}
 
-			do_node = CDR(exp); 
-			while (do_node != -1) {
-				do_action_for_each_special_argument(do_node); 
-				do_node = CDR(do_node); 
+			do_node = CDR(exp);
+			while (do_node != -1 && !Sexp_actions_stopped) {
+				do_action_for_each_special_argument(do_node);
+				do_node = CDR(do_node);
 			}
 			break;
 
@@ -11097,21 +11105,21 @@ void eval_when_do_all_exp(int all_actions, int when_op_num)
 	// loop through all the supplied arguments
 	ptr = Sexp_applicable_argument_list.get_next();
 
-	while (ptr != nullptr)
-	{	
+	while (ptr != nullptr && !Sexp_actions_stopped)
+	{
 		// acquire argument to be used
 		Sexp_replacement_arguments.emplace_back(ptr->text, ptr->node);
-		actions = all_actions; 
+		actions = all_actions;
 
-		while (actions != -1)
-		{	
-			exp = CAR(actions);	
+		while (actions != -1 && !Sexp_actions_stopped)
+		{
+			exp = CAR(actions);
 
 			op_num = get_operator_const(exp);
 
 			if (op_num == OP_DO_FOR_VALID_ARGUMENTS) {
-				int do_node = CDR(exp); 
-				while (do_node != -1) {
+				int do_node = CDR(exp);
+				while (do_node != -1 && !Sexp_actions_stopped) {
 					eval_sexp(do_node); 
 					do_node = CDR(do_node); 
 				}
@@ -11238,7 +11246,7 @@ int eval_perform_actions(int n, int op_num)
 		// perform all the actions in the rest of the sexp
 		// (Since we are technically inside a boolean condition already, no special argument handling is needed.  The special argument, if any,
 		// will have been provided by a higher level of nesting.)
-		while (actions != -1)
+		while (actions != -1 && !Sexp_actions_stopped)
 		{
 			// get the operator
 			int exp = CAR(actions);
@@ -11335,10 +11343,10 @@ int eval_when(int n, int when_op_num)
 				eval_when_do_all_exp(actions, when_op_num);
 			}
 		}
-		// without the mod.tbl setting (or if there are no arguments in this SEXP) we loop 
+		// without the mod.tbl setting (or if there are no arguments in this SEXP) we loop
 		// through every action performing them for all arguments
 		else {
-			while (actions != -1)
+			while (actions != -1 && !Sexp_actions_stopped)
 			{
 				// get the operator
 				exp = CAR(actions);
@@ -11361,7 +11369,7 @@ int eval_when(int n, int when_op_num)
 		actions = CDR(actions);
 
 		// loop through every action
-		while (actions != -1)
+		while (actions != -1 && !Sexp_actions_stopped)
 		{
 			// get the operator
 			int exp = CAR(actions);
@@ -11427,7 +11435,7 @@ int eval_cond(int n)
 
 			val = SEXP_FALSE;
 			actions = CDR(node);
-			while (actions >= 0)
+			while (actions >= 0 && !Sexp_actions_stopped)
 			{
 				exp = CAR(actions);
 				if (exp >= -1)
@@ -28019,10 +28027,49 @@ void sexp_savestate_save(int node)
 
 void sexp_savestate_load(int node)
 {
+	// the event that loaded the checkpoint is run again once the checkpoint is loaded, and doesn't load a second time
+	if (checkpoint::is_replaying_event())
+		return;
+
 	bool is_nan, is_nan_forever;
 	int index = eval_num(node, is_nan, is_nan_forever);
-	if (!is_nan && !is_nan_forever)
-		checkpoint::request_load(index);
+	if (is_nan || is_nan_forever)
+		return;
+
+	int replay_event = -1;
+	if (Event_index >= 0 && (Mission_events[Event_index].flags & MEF_NOT_CHECKPOINTED)) {
+		int op = get_operator_const(Mission_events[Event_index].formula);
+		if (op == OP_WHEN || op == OP_EVERY_TIME)
+			replay_event = Event_index;
+		else
+			Warning(LOCATION, "Event \"%s\" loads a checkpoint and is flagged \"not checkpointed\", but only such events whose "
+				"operator is when or every-time are run again after the load.", Mission_events[Event_index].name.c_str());
+	}
+
+	if (checkpoint::request_load(index, replay_event))
+		Sexp_actions_stopped = true;
+}
+
+void sexp_replay_event_actions(int event)
+{
+	int formula = Mission_events[event].formula;
+	int op = get_operator_const(formula);
+	if (op != OP_WHEN && op != OP_EVERY_TIME)
+		return;
+
+	int saved_event_index = Event_index;
+	Event_index = event;
+	Sexp_actions_stopped = false;
+
+	// the actions of a when or every-time follow its condition
+	for (int actions = CDDR(formula); actions != -1 && !Sexp_actions_stopped; actions = CDR(actions)) {
+		int exp = CAR(actions);
+		if (exp != -1)
+			eval_when_do_one_exp(exp);
+	}
+
+	Sexp_actions_stopped = false;
+	Event_index = saved_event_index;
 }
 
 int sexp_savestate_shipstatus(int node)
@@ -31467,6 +31514,9 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	}
 
 	Mp = oldMp;
+	// inside an event, a load requested here also ends that event; mission_process_event clears the flag then
+	if (Event_index < 0)
+		Sexp_actions_stopped = false;
 
 	return sexp_val;
 }
@@ -42810,10 +42860,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"mission start is created again as at mission start; one that arrives later waits for its arrival cue again.  "
 		"Excluding a ship that is part of a wing resets the whole wing, and excluding a ship docked to others at mission "
 		"start resets the whole docked group.  The player's ship and wing can't be excluded.\r\n\r\n"
+		"An excluded ship destroyed or departed before saving comes back with no record of having left (operators like "
+		"is-destroyed treat it as never destroyed), but the mission log still lists its departure.\r\n\r\n"
 		"Differences from SaveLoadX's lua-savestate-save: everything is saved, not only ships and variables.  Events about "
 		"excluded ships keep their saved state (an excluded ship destroyed before saving comes back, while the event that saw "
 		"it destroyed stays true); flag such events \"not checkpointed\" in the event editor to reset them as well.  "
-		"Listing a wing's ships in addition to the wing is not needed.\r\n\r\n"
+		"Listing a wing's ships in addition to the wing is not needed.  A ship that is dying when the checkpoint is saved "
+		"(e.g. in its death roll) is still dying when it is loaded and is then destroyed, whereas SaveLoadX saved it as "
+		"alive.  See savestate-load for migrating a mission from SaveLoadX.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1:\tIndex to save the checkpoint under.  Use savestate-get-next-free-index to avoid replacing a checkpoint.\r\n"
 		"\tRest:\t(optional) Names of ships, wings, variables or containers to exclude.\r\n"
@@ -42821,17 +42875,44 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SAVESTATE_LOAD, "savestate-load\r\n"
 		"\tLoads the checkpoint saved under the given index in this mission.  The mission is loaded again and put into the "
-		"saved state at the end of the current frame, so actions after this one in the same event run in the mission as it is "
-		"now and are then discarded.  If there is no such checkpoint, nothing happens.\r\n\r\n"
-		"Differences from SaveLoadX's lua-savestate-load: the complete mission is restored, including events, their timers "
-		"and the mission time.  Ships destroyed or departed before saving stay gone, so arrival cues no longer need "
-		"savestate-shipstatus, and ships not yet arrived arrive by their own arrival cues.  Wings are restored exactly, waves "
-		"included.  lua-savestate-load-external and lua-savestate-load-external-var have no counterpart, since checkpoints "
-		"belong to one mission.\r\n\r\n"
+		"saved state at the end of the current frame.  If there is no such checkpoint, nothing happens and the event goes on "
+		"with its next action.\r\n\r\n"
+		"Once a load is requested, the rest of the event is skipped: no action after this one runs, at any nesting level.  "
+		"What happens to the event after the load depends on its \"not checkpointed\" flag:\r\n"
+		"\t- Not flagged: the event has the state it had when the checkpoint was saved, like every other checkpointed "
+		"event.  The actions after savestate-load never run.\r\n"
+		"\t- Flagged \"not checkpointed\": once the checkpoint is loaded, the event runs all of its actions again on the "
+		"loaded mission, without evaluating its condition and skipping this savestate-load, and then counts as having fired "
+		"(it is true, and one repetition is used up).  Actions before savestate-load therefore run twice: once before the "
+		"mission is reloaded, where their effect is lost (except savestate-assist, which is meant for this), and once after.  "
+		"This only works for events whose operator is when or every-time; other flagged events (e.g. when-argument) behave as "
+		"if not flagged, with a warning.  It runs after the On Checkpoint Load scripting hook.\r\n\r\n"
 		"Pitfall: an event like \"when savestate-check 1, savestate-load 1\" that hasn't fired yet when the checkpoint is "
 		"saved is restored as not fired, fires right away and would load again and again.  Loads requested in the first frame "
 		"after a checkpoint was loaded are therefore ignored with a warning.  Better, flag such events \"not checkpointed\", "
 		"or check savestate-getindex, or limit them to the start of the mission (e.g. mission-time below 1 second).\r\n\r\n"
+		"Migrating from SaveLoadX:\r\n"
+		"\t- Replace each lua-savestate-* operator by the savestate-* one of the same name; the arguments are the same.  "
+		"lua-savestate-load-external and lua-savestate-load-external-var have no counterpart, since checkpoints belong to one "
+		"mission.\r\n"
+		"\t- SaveLoadX never saved events, so missions using it are built around events starting over when a save state is "
+		"loaded after a restart.  Flag every event \"not checkpointed\" in the event editor: they then start over as at "
+		"mission start when the checkpoint is loaded, and the event that loads it runs and becomes true as described above, "
+		"so events and arrival cues that check it keep working.  Missions built for checkpoints leave events checkpointed and "
+		"never need to remember that a checkpoint was loaded.\r\n"
+		"\t- Everything else is restored as saved: all ships (including support ships and ships being destroyed), wings "
+		"with their waves, AI orders including waypoints, weapons in flight, goals, variables, messages, music, background and "
+		"the mission time.  Hull, ammunition and positions are exact rather than SaveLoadX's whole percentages.\r\n"
+		"\t- The mission time is the one saved in the checkpoint, not the time since the restart.  In events that start "
+		"over, conditions on mission-time or has-time-elapsed see the checkpoint's time: an event limited to the first second "
+		"of the mission doesn't fire again, and one waiting for a time already past fires right away.\r\n"
+		"\t- Ships destroyed or departed before saving stay gone and ships not yet arrived wait for their arrival cues, so "
+		"savestate-shipstatus is no longer needed in arrival cues.  See savestate-shipstatus for a difference to old SaveLoadX "
+		"versions.\r\n"
+		"\t- A ship that is dying when the checkpoint is saved is still dying when it is loaded, and is destroyed; SaveLoadX "
+		"saved it as alive.\r\n"
+		"\t- Script (Lua) state is neither saved nor reset by a load; scripts keep what they need with mn.Checkpoints.setData.  "
+		"Scripted prompts that remember a choice still remember it after the load.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tIndex of the checkpoint to load.\r\n"
 	},
@@ -42840,8 +42921,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the ship or wing is in the mission or yet to arrive in the checkpoint the mission was loaded from, "
 		"or in the given checkpoint, and false if it was destroyed or departed.  Returns true if no checkpoint was loaded, if "
 		"the checkpoint doesn't exist, or if the ship or wing isn't in it.\r\n\r\n"
-		"Differences from SaveLoadX's lua-savestate-shipstatus: none in what it returns.  Since a loaded checkpoint restores "
-		"the arrival state of every ship and wing, using it in arrival cues is no longer necessary.\r\n\r\n"
+		"Differences from SaveLoadX's lua-savestate-shipstatus: none compared to SaveLoadX since September 2026.  Older "
+		"versions (e.g. the one included with Shepherds 1.2.1) returned false for a ship or wing that had not arrived yet when "
+		"the save state was made, contrary to their documentation.  Missions relying on that, e.g. with hidden ships whose "
+		"arrival cue is \"the load event is true and lua-savestate-shipstatus\" to remember that something had happened, need "
+		"those cues changed: such ships now arrive.  Since a loaded checkpoint restores the arrival state of every ship and "
+		"wing, using savestate-shipstatus in arrival cues is no longer necessary.\r\n\r\n"
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tShip or wing to check.\r\n"
 		"\t2:\t(optional) Index of a checkpoint of this mission to look at instead of the loaded one.\r\n"

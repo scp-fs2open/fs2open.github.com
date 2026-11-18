@@ -167,6 +167,9 @@ void mission_event_unset_directive_special(int event);
 // Cyborg - set the directive completion sound timestamp
 void mission_event_set_completion_sound_timestamp();
 
+// Updates an event as if it had just been evaluated as true, without evaluating it.
+void mission_event_set_fired(int event);
+
 // Maybe play a directive success sound... need to poll since the sound is delayed from when
 // the directive is actually satisfied.
 void mission_maybe_play_directive_success_sound();

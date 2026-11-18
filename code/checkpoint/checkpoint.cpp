@@ -25,6 +25,7 @@
 #include "mission/missionparse.h"
 #include "object/objcollide.h"
 #include "object/waypoint.h"
+#include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "prop/prop.h"
@@ -92,6 +93,7 @@ struct Request {
 	int slot = 0;
 	int frames = 0;
 	SCP_vector<SCP_string> excluded;
+	int replay_event = -1;	// a load: the event to run again once the checkpoint is loaded, see request_load()
 };
 
 Request Pending_request;
@@ -100,6 +102,8 @@ Request Pending_request;
 // starts without one.
 int Loaded_index = 0;							// the checkpoint this mission was resumed from, or 0
 int Pending_index = 0;							// the checkpoint a load in progress restores
+int Pending_replay_event = -1;					// the event a load in progress runs again once it is restored
+bool Replaying_event = false;
 bool First_frame_after_restore = false;			// loads requested in that frame are ignored, see request_load()
 SCP_unordered_map<SCP_string, bool, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Loaded_status;	// ships and wings: still in the mission or yet to arrive
 
@@ -836,8 +840,10 @@ void start_load(Buffer buffer)
 
 void handle_request(const Request& request)
 {
+	// Requests come from sexps and scripts too, so nothing here may use dc_printf: the console's buffer is empty until
+	// the console has been opened once.
 	if (Game_mode & GM_MULTIPLAYER) {
-		dc_printf("Checkpoints are not available in multiplayer.\n");
+		mprintf(("Checkpoint: checkpoints are not available in multiplayer\n"));
 		return;
 	}
 
@@ -858,7 +864,6 @@ void handle_request(const Request& request)
 		Buffer buffer;
 		if (!store_load(request.slot, buffer)) {
 			mprintf(("Checkpoint: there is no checkpoint %d in this mission\n", request.slot));
-			dc_printf("There is no checkpoint %d in this mission.\n", request.slot);
 			return;
 		}
 		auto problem = check_header(buffer);
@@ -867,12 +872,14 @@ void handle_request(const Request& request)
 			return;
 		}
 		Pending_index = request.slot;
+		Pending_replay_event = request.replay_event;
 		start_load(std::move(buffer));
 		break;
 	}
 
 	case RequestType::Verify:
 		Pending_index = Loaded_index;	// verifying doesn't change which checkpoint the mission was resumed from
+		Pending_replay_event = -1;
 		Verify = VerifyRun();
 		Verify.frames = request.frames;
 		if (request.frames <= 0) {
@@ -946,7 +953,7 @@ void request_save(int index, SCP_vector<SCP_string> excluded)
 	Pending_request = {RequestType::Save, index, 0, std::move(excluded)};
 }
 
-void request_load(int index)
+bool request_load(int index, int replay_event)
 {
 	// An event that loads a checkpoint as soon as one exists, e.g. when savestate-check 1 -> savestate-load 1, may
 	// still have been waiting when the checkpoint was saved, and would load it again right away, endlessly.
@@ -954,9 +961,19 @@ void request_load(int index)
 		Warning(LOCATION, "A checkpoint load was requested in the first frame after loading checkpoint %d, and is ignored. "
 			"The event requesting it probably fires again after each load; flag it \"not checkpointed\" or check the loaded index.",
 			Loaded_index);
-		return;
+		return false;
 	}
-	Pending_request = {RequestType::Load, index, 0, {}};
+	if (!store_has(index, nullptr)) {
+		mprintf(("Checkpoint: there is no checkpoint %d in this mission\n", index));
+		return false;
+	}
+	Pending_request = {RequestType::Load, index, 0, {}, replay_event};
+	return true;
+}
+
+bool is_replaying_event()
+{
+	return Replaying_event;
 }
 
 void request_verify(int frames)
@@ -1086,6 +1103,7 @@ void apply_pending_restore()
 		if (mission_changed)
 			Error(LOCATION, "Restoring the checkpoint failed after the mission was cleared; the game cannot continue.");
 		Verify = VerifyRun();
+		Pending_replay_event = -1;
 		set_loading(false);
 		Warning(LOCATION, "Restoring the checkpoint failed; the mission continues from its start.");
 		return;
@@ -1098,6 +1116,17 @@ void apply_pending_restore()
 	apply_assist();
 	if (scripting::hooks::OnCheckpointLoad->isActive())
 		scripting::hooks::OnCheckpointLoad->run(scripting::hook_param_list(scripting::hook_param("Index", 'i', Loaded_index)));
+
+	// A "not checkpointed" event that loaded the checkpoint was reset with the other such events; it runs again on the
+	// loaded mission, as it did when SaveLoadX applied a save state, and then counts as having fired.
+	int replay_event = Pending_replay_event;
+	Pending_replay_event = -1;
+	if (SCP_vector_inbounds(Mission_events, replay_event)) {
+		Replaying_event = true;
+		sexp_replay_event_actions(replay_event);
+		mission_event_set_fired(replay_event);
+		Replaying_event = false;
+	}
 
 	if (Verify.stage == VerifyStage::AwaitingRestore) {
 		if (Verify.frames <= 0) {
