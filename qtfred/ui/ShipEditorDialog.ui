@@ -617,6 +617,9 @@
                 <property name="buttonSymbols">
                  <enum>QAbstractSpinBox::NoButtons</enum>
                 </property>
+                <property name="keyboardTracking">
+                 <bool>false</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>

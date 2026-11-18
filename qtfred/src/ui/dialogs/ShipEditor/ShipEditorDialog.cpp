@@ -15,6 +15,7 @@
 #include <ui/dialogs/General/CheckBoxListDialog.h>
 #include <QVariant>
 #include <QShortcut>
+#include <QSignalBlocker>
 
 namespace fso::fred::dialogs {
 
@@ -54,7 +55,11 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	initializeUi();
 	updateUi();
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { initializeUi(); });
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] {
+		initializeUi();
+		// The model can raise the distances to the minimum, or the marked ships can now have different distances.
+		updateArrivalDistanceField();
+	});
 	connect(_model.get(), &ShipEditorDialogModel::shipMarkingChanged, this, [this] {
 		initializeUi();
 		updateUi();
@@ -333,11 +338,7 @@ void ShipEditorDialog::updateUi()
 	}
 	ui->arrivalLocationCombo->setCurrentIndex(ui->arrivalLocationCombo->findData(arrivalLocation));
 
-	if (_model->getArrivalDistanceMixed()) {
-		ui->arrivalDistanceEdit->setMixed();
-	} else {
-		ui->arrivalDistanceEdit->setSingleValue(_model->getArrivalDistance());
-	}
+	updateArrivalDistanceField();
 	ui->arrivalDelaySpinBox->setValue(_model->getArrivalDelay());
 
 	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
@@ -844,6 +845,18 @@ void ShipEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int index)
 {
 	auto arrivalLocationIdx = ui->arrivalTargetCombo->itemData(index).toInt();
 	_model->setArrivalTarget(arrivalLocationIdx);
+}
+// Shows the arrival distance of the model. If the field already shows that value, the field does not change.
+void ShipEditorDialog::updateArrivalDistanceField()
+{
+	QSignalBlocker blocker(ui->arrivalDistanceEdit);
+	auto* field = ui->arrivalDistanceEdit;
+	if (_model->getArrivalDistanceMixed()) {
+		if (!field->isBlank())
+			field->setMixed();
+	} else if (field->isBlank() || field->value() != _model->getArrivalDistance()) {
+		field->setSingleValue(_model->getArrivalDistance());
+	}
 }
 void ShipEditorDialog::on_arrivalDistanceEdit_valueChanged(int value)
 {
