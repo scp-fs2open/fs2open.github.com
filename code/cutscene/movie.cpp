@@ -232,8 +232,9 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	};
 	auto key_down_handle =
 		os::events::addEventListener(SDL_EVENT_KEY_DOWN, os::events::DEFAULT_LISTENER_WEIGHT - 20, key_down_listener);
+	// Run at -20 before the scripted UI at -10 can consume the release; equal weights have no defined order.
 	auto key_up_handle =
-		os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_up_listener);
+		os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 20, key_up_listener);
 
 	// slight hack to make sure that game_set_frametime() doesn't also try to cap the framerate
 	auto fpsCapSave = Cmdline_NoFPSCap;
