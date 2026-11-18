@@ -128,6 +128,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_chain_delay = 0;
 	m_chained = FALSE;
 	m_use_msecs = FALSE;
+	m_not_checkpointed = FALSE;
 	m_obj_text = _T("");
 	m_obj_key_text = _T("");
 	m_avi_filename = _T("");
@@ -177,6 +178,7 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_CHAIN_DELAY, m_chain_delay);
 	DDX_Check(pDX, IDC_CHAINED, m_chained);
 	DDX_Check(pDX, IDC_USE_MSECS, m_use_msecs);
+	DDX_Check(pDX, IDC_NOT_CHECKPOINTED, m_not_checkpointed);
 	DDX_Text(pDX, IDC_OBJ_TEXT, m_obj_text);
 	DDV_MaxChars(pDX, m_obj_text, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_OBJ_KEY_TEXT, m_obj_key_text);
@@ -967,6 +969,8 @@ void event_editor::save_event(int e)
 	m_events[e].flags = 0;
 	if (m_use_msecs)
 		m_events[e].flags |= MEF_USE_MSECS;
+	if (m_not_checkpointed)
+		m_events[e].flags |= MEF_NOT_CHECKPOINTED;
 
 	// handle event log flags
 	m_events[e].mission_log_flags = 0;
@@ -1050,6 +1054,7 @@ void event_editor::update_cur_event()
 		m_obj_text.Empty();
 		m_obj_key_text.Empty();
 		m_use_msecs = FALSE;
+		m_not_checkpointed = FALSE;
 
 		m_log_true = FALSE;
 		m_log_false = FALSE;
@@ -1070,6 +1075,7 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_OBJ_TEXT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_OBJ_KEY_TEXT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_USE_MSECS)->EnableWindow(FALSE);
+		GetDlgItem(IDC_NOT_CHECKPOINTED)->EnableWindow(FALSE);
 
 		GetDlgItem(IDC_MISSION_LOG_TRUE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_MISSION_LOG_FALSE)->EnableWindow(FALSE);
@@ -1109,6 +1115,7 @@ void event_editor::update_cur_event()
 	GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(TRUE);
 
 	GetDlgItem(IDC_USE_MSECS)->EnableWindow(TRUE);
+	GetDlgItem(IDC_NOT_CHECKPOINTED)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MISSION_LOG_TRUE)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MISSION_LOG_FALSE)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MISSION_LOG_ALWAYS_FALSE)->EnableWindow(TRUE);
@@ -1136,6 +1143,7 @@ void event_editor::update_cur_event()
 
 	// handle event flags
 	m_use_msecs = (m_events[cur_event].flags & MEF_USE_MSECS) ? TRUE : FALSE;
+	m_not_checkpointed = (m_events[cur_event].flags & MEF_NOT_CHECKPOINTED) ? TRUE : FALSE;
 
 	// handle event log flags
 	m_log_true = (m_events[cur_event].mission_log_flags & MLF_SEXP_TRUE) ? TRUE : FALSE;

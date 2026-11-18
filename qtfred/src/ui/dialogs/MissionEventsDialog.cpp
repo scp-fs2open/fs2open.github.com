@@ -421,6 +421,8 @@ void MissionEventsDialog::updateEventUi() {
 		ui->chainDelayBox->setEnabled(false);
 		ui->useMsecsCheckBox->setChecked(false);
 		ui->useMsecsCheckBox->setEnabled(false);
+		ui->notCheckpointedCheckBox->setChecked(false);
+		ui->notCheckpointedCheckBox->setEnabled(false);
 		ui->teamCombo->setEnabled(false);
 		ui->editDirectiveText->setEnabled(false);
 		ui->editDirectiveKeypressText->setEnabled(false);
@@ -444,6 +446,7 @@ void MissionEventsDialog::updateEventUi() {
 		ui->chainDelayBox->setEnabled(false);
 	}
 	ui->useMsecsCheckBox->setChecked(_model->getUseMsecs());
+	ui->notCheckpointedCheckBox->setChecked(_model->getNotCheckpointed());
 
 	ui->editDirectiveText->setText(QString::fromStdString(_model->getEventDirectiveText()));
 	ui->editDirectiveKeypressText->setText(QString::fromStdString(_model->getEventDirectiveKeyText()));
@@ -462,6 +465,7 @@ void MissionEventsDialog::updateEventUi() {
 	ui->scoreBox->setEnabled(true);
 	ui->chainedCheckBox->setEnabled(true);
 	ui->useMsecsCheckBox->setEnabled(true);
+	ui->notCheckpointedCheckBox->setEnabled(true);
 	ui->editDirectiveText->setEnabled(true);
 	ui->editDirectiveKeypressText->setEnabled(true);
 	ui->teamCombo->setEnabled(_model->getMissionIsMultiTeam());
@@ -784,6 +788,11 @@ void MissionEventsDialog::on_chainDelayBox_valueChanged(int value)
 void MissionEventsDialog::on_useMsecsCheckBox_stateChanged(int state)
 {
 	_model->setUseMsecs(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_notCheckpointedCheckBox_stateChanged(int state)
+{
+	_model->setNotCheckpointed(state == Qt::Checked);
 }
 
 void MissionEventsDialog::on_scoreBox_valueChanged(int value)

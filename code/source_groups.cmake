@@ -132,11 +132,15 @@ add_file_folder("Checkpoint"
 	checkpoint/checkpoint_fields.cpp
 	checkpoint/checkpoint_structs.txt
 	checkpoint/codec.h
+	checkpoint/fresh_state.cpp
+	checkpoint/fresh_state.h
 	checkpoint/model_instance.cpp
 	checkpoint/model_instance.h
 	checkpoint/registry.h
 	checkpoint/rules.h
 	checkpoint/serialize.h
+	checkpoint/store.cpp
+	checkpoint/store.h
 )
 
 # CFile files
@@ -1449,6 +1453,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/bitops.h
 	scripting/api/libs/cfile.cpp
 	scripting/api/libs/cfile.h
+	scripting/api/libs/checkpoints.cpp
+	scripting/api/libs/checkpoints.h
 	scripting/api/libs/controls.cpp
 	scripting/api/libs/controls.h
 	scripting/api/libs/engine.cpp

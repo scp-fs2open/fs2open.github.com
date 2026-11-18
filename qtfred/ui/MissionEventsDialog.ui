@@ -411,6 +411,17 @@ in Milliseconds</string>
              </widget>
             </item>
             <item>
+             <widget class="QCheckBox" name="notCheckpointedCheckBox">
+              <property name="toolTip">
+               <string>When a checkpoint is loaded, this event starts over as at mission start instead of continuing where it was when the checkpoint was saved.</string>
+              </property>
+              <property name="text">
+               <string>Reset on
+checkpoint load</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QLabel" name="scoreLabel">
               <property name="text">
                <string>Score</string>
@@ -892,6 +903,7 @@ in Milliseconds</string>
   <tabstop>chainedCheckBox</tabstop>
   <tabstop>chainDelayBox</tabstop>
   <tabstop>useMsecsCheckBox</tabstop>
+  <tabstop>notCheckpointedCheckBox</tabstop>
   <tabstop>scoreBox</tabstop>
   <tabstop>teamCombo</tabstop>
   <tabstop>editDirectiveText</tabstop>

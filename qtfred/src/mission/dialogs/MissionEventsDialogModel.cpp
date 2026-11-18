@@ -742,6 +742,28 @@ void MissionEventsDialogModel::setUseMsecs(bool useMsecs)
 	set_modified();
 }
 
+bool MissionEventsDialogModel::getNotCheckpointed() const
+{
+	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+		return false;
+	}
+	return (m_events[m_cur_event].flags & MEF_NOT_CHECKPOINTED) != 0;
+}
+
+void MissionEventsDialogModel::setNotCheckpointed(bool notCheckpointed)
+{
+	if (!SCP_vector_inbounds(m_events, m_cur_event)) {
+		return;
+	}
+	auto& event = m_events[m_cur_event];
+	if (notCheckpointed) {
+		event.flags |= MEF_NOT_CHECKPOINTED;
+	} else {
+		event.flags &= ~MEF_NOT_CHECKPOINTED;
+	}
+	set_modified();
+}
+
 int MissionEventsDialogModel::getEventScore() const
 {
 	if (!SCP_vector_inbounds(m_events, m_cur_event)) {

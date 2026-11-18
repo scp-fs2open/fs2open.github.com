@@ -25,6 +25,7 @@
 #endif
 
 #include "checkpoint/registry.h"
+#include "checkpoint/store.h"
 #include "freespace.h"
 #include "missioncampaign.h"
 #include "cfile/cfile.h"
@@ -829,6 +830,8 @@ void mission_campaign_delete_all_savefiles(char *pilot_name)
 		strcat_s(filename, ext);
 		cf_delete(filename, dir_type, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	}
+
+	checkpoint::store_delete_pilot_files(pilot_name);
 }
 
 /**

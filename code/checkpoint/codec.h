@@ -210,6 +210,7 @@ class Reader {
 
 	bool at_end() const { return m_pos >= m_end; }
 	ptrdiff_t remaining() const { return m_end - m_pos; }
+	const ubyte* position() const { return m_pos; }
 	bool failed() const { return m_failed; }
 	void fail() { m_failed = true; }
 	LoadContext* context() const { return m_context; }

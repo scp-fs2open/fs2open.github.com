@@ -82,6 +82,16 @@ const std::shared_ptr<Hook<>> OnMissionStart = Hook<>::Factory("On Mission Start
 	"Invoked when a mission starts.",
 	{ {"Player", "object", "The player object."} });
 
+const std::shared_ptr<Hook<>> OnCheckpointSave = Hook<>::Factory("On Checkpoint Save",
+	"Invoked when a checkpoint is about to be saved.  Script state that should be part of the checkpoint can be stored "
+	"with mn.Checkpoints.setData now.",
+	{ {"Index", "number", "The index the checkpoint is saved under."} });
+
+const std::shared_ptr<Hook<>> OnCheckpointLoad = Hook<>::Factory("On Checkpoint Load",
+	"Invoked once a checkpoint has been loaded and the mission restored.  No other hooks run while a checkpoint is "
+	"loaded, including the mission start hooks; data stored with mn.Checkpoints.setData is available again now.",
+	{ {"Index", "number", "The index of the loaded checkpoint."} });
+
 const std::shared_ptr<Hook<>> OnGameplayStart = Hook<>::Factory("On Gameplay Start",
 	"Invoked when the gameplay portion of a mission starts.",
 	{ {"Player", "object", "The player object."} });

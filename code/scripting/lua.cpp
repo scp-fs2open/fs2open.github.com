@@ -75,6 +75,7 @@ extern "C" {
 #include "scripting/api/libs/base.h"
 #include "scripting/api/libs/bitops.h"
 #include "scripting/api/libs/cfile.h"
+#include "scripting/api/libs/checkpoints.h"
 #include "scripting/api/libs/controls.h"
 #include "scripting/api/libs/engine.h"
 #include "scripting/api/libs/globals.h"

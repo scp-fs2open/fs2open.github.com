@@ -809,6 +809,7 @@ const size_t Num_parse_prop_flag_descriptions = sizeof(Parse_prop_flag_descripti
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
 	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
+	{ "not checkpointed", MEF_NOT_CHECKPOINTED, 0 },
 };
 int Num_mission_event_flags = sizeof(Mission_event_flags) / sizeof(flag_def_list);
 
