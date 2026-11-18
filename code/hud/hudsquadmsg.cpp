@@ -1730,6 +1730,18 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 }
 
 
+static bool hud_squadmsg_reinforcement_can_arrive(const reinforcements &reinforcement, int arrival_cue)
+{
+	if (Sexp_nodes[arrival_cue].value == SEXP_KNOWN_FALSE)
+		return false;
+
+	// in multiplayer, clients never re-evaluate arrival cues, so check the server's availability flag instead.
+	if (MULTIPLAYER_CLIENT)
+		return (reinforcement.flags & RF_IS_AVAILABLE) != 0;
+
+	return Sexp_nodes[arrival_cue].value != SEXP_FALSE;
+}
+
 // return number of available reinforcements, 0 if none available
 int hud_squadmsg_reinforcements_available(int team)
 {
@@ -1752,8 +1764,7 @@ int hud_squadmsg_reinforcements_available(int team)
 		// a reinforcement menu containing no valid selections.
 		if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 			Assert ( Wings[wingnum].arrival_cue >= 0 );
-			if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
-				|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
+			if ( !hud_squadmsg_reinforcement_can_arrive(reinforcement, Wings[wingnum].arrival_cue) ){
 				continue;
 			}
 		} else {
@@ -1761,8 +1772,7 @@ int hud_squadmsg_reinforcements_available(int team)
 
 			p_objp = mission_parse_get_arrival_ship( reinforcement.name );
 			if ( p_objp != NULL ) {
-				if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
-					|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
+				if ( !hud_squadmsg_reinforcement_can_arrive(reinforcement, p_objp->arrival_cue) ){
 					continue;
 				}
 			} else {
@@ -2085,8 +2095,7 @@ void hud_squadmsg_reinforcement_select()
 			const char *r_name;
 			if (int wingnum = wing_name_lookup(reinforcement.name, 1); wingnum != -1) {
 				Assert ( Wings[wingnum].arrival_cue >= 0 );
-				if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
-					|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
+				if ( !hud_squadmsg_reinforcement_can_arrive(reinforcement, Wings[wingnum].arrival_cue) ){
 					continue;
 				}
 
@@ -2096,8 +2105,7 @@ void hud_squadmsg_reinforcement_select()
 				
 				p_objp = mission_parse_get_arrival_ship(reinforcement.name );
 				if ( p_objp != NULL ) {
-					if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
-						|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
+					if ( !hud_squadmsg_reinforcement_can_arrive(reinforcement, p_objp->arrival_cue) ){
 						continue;
 					}
 				} else {
@@ -2904,9 +2912,10 @@ bool HudGaugeSquadMessage::canRender() const
 	}
 
 	if (render_for_cockpit_toggle > 0) {
-		if (!(Viewer_mode & VM_CHASE) && Cockpit_active && (render_for_cockpit_toggle == 2)) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}

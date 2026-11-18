@@ -839,6 +839,26 @@ int ErrorChecker::checkPlayerWings() {
 			  Starting_wing_names[0], TVT_wing_names[0]);
 	}
 
+	// The wing containing the player start must be present at mission start, so a custom arrival cue
+	// is only useful for controlling the arrival of subsequent waves.  Flag a single-wave wing with a
+	// custom cue as a potential issue, but never change the cue itself.
+	for (auto &w : Wings) {
+		if (!w.wave_count || w.num_waves > 1)
+			continue;
+		if (w.arrival_cue == Locked_sexp_true)
+			continue;
+
+		bool contains_player_start = false;
+		for (int j = 0; j < w.wave_count; j++)
+			if (Objects[Ships[w.ship_index[j]].objnum].type == OBJ_START)
+				contains_player_start = true;
+
+		if (contains_player_start) {
+			potential("Wing \"%s\" contains a player start and a custom arrival cue, but only one wave.  The arrival cue must evaluate to true at mission start, or the player will not be created.",
+					  w.name);
+		}
+	}
+
 	auto checkMixedSpecies = [this](int w) {
 		int species = -1;
 		bool mixed = false;

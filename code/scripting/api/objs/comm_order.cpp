@@ -6,6 +6,7 @@ namespace scripting::api {
 
 //**********HANDLE: mission goals
 ADE_OBJ_NO_MULTI(l_Comm_Item, int, "comm_item", "Comm Item handle");
+ADE_OBJ_VALIDATOR(l_Comm_Item, idx, MsgItems.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Comm_Item, nullptr, "The name of the comm item", "string", "The comm item name")
 {
@@ -71,16 +72,6 @@ ADE_FUNC(selectItem, l_Comm_Item, nullptr, "Selects the item and either proceeds
 	Hud_set_lua_key(current);
 
 	return ADE_RETURN_TRUE;
-}
-
-ADE_FUNC(isValid, l_Comm_Item, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
-{
-	int current = -1;
-
-	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
-		return ADE_RETURN_FALSE;
-
-	return ade_set_args(L, "b", MsgItems.in_bounds(current));
 }
 
 } // namespace scripting::api

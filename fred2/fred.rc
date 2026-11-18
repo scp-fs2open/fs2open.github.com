@@ -436,6 +436,7 @@ BEGIN
         MENUITEM "Adjust Grid",                 33032
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Rotate Around Selection Midpoint", ID_MISC_ROTATE_SELECTION_MIDPOINT
         MENUITEM SEPARATOR
         MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
@@ -664,6 +665,7 @@ BEGIN
         MENUITEM "Calculate Relative Coordinates", 33030
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
+        MENUITEM "Rotate Around Selection Midpoint", ID_MISC_ROTATE_SELECTION_MIDPOINT
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
@@ -1806,6 +1808,8 @@ BEGIN
     EDITTEXT        IDC_SUN1_H,349,87,31,14,ES_AUTOHSCROLL
     CONTROL         "Spin2",IDC_SUN1_H_SPIN,"msctls_updown32",UDS_ARROWKEYS,381,87,11,14
     EDITTEXT        IDC_SUN1_SCALE,362,105,31,14,ES_AUTOHSCROLL
+    CONTROL         "Size",IDC_SUN1_ANGULAR_SIZE_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,338,123,32,10
+    EDITTEXT        IDC_SUN1_ANGULAR_SIZE,374,121,31,14,ES_AUTOHSCROLL
     CONTROL         "Full Nebula",IDC_FULLNEB,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,62,10
     EDITTEXT        IDC_NEB2_INTENSITY,68,201,63,12,ES_AUTOHSCROLL
     COMBOBOX        IDC_NEB2_TEXTURE,68,217,63,88,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
@@ -3891,6 +3895,8 @@ STRINGTABLE
 BEGIN
     ID_MISC_MOVESHIPSWHENUNDOCKING 
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
+    ID_MISC_ROTATE_SELECTION_MIDPOINT
+                            "When several objects are marked, rotate the view around the midpoint of the selection instead of the current object"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
     ID_EDIT_LOCK_MARKED_OBJECTS

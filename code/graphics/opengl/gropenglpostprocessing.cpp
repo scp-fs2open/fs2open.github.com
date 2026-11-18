@@ -480,7 +480,7 @@ void opengl_post_lightshafts()
 						data->falloff      = ls_params.falloff;
 						data->weight       = ls_params.weight;
 						data->intensity    = Sun_spot * ls_params.intensity;
-						data->cp_intensity = Sun_spot * ls_params.cpintensity;
+						data->cp_intensity = Sun_spot * ls_params.cpweight * ls_params.intensity;
 					});
 
 				Current_shader->program->Uniforms.setTextureUniform("scene", 0);
@@ -758,7 +758,9 @@ void gr_opengl_post_process_set_defaults()
 	// reset all effects to their default values
 	for (idx = 0; idx < postEffects.size(); idx++) {
 		postEffects[idx].intensity = postEffects[idx].default_intensity;
+		postEffects[idx].rgb = postEffects[idx].default_rgb;
 	}
+	graphics::Post_processing_manager->resetLightshaftParams();
 
 	Post_active_shader_index = -1;
 }
@@ -1091,6 +1093,53 @@ void opengl_post_process_shutdown_bloom()
 		glDeleteFramebuffers(1, &Bloom_framebuffer);
 		Bloom_framebuffer = 0;
 	}
+}
+
+size_t opengl_get_postprocessing_render_target_bytes()
+{
+	// The bytes for each pixel come from the internal formats at the creation sites in this file:
+	// GL_RGBA16F holds 8 bytes and GL_RGBA8 holds 4. Keep these values equal to those formats.
+	constexpr size_t RGBA16F_BYTES = 8;
+	constexpr size_t RGBA8_BYTES = 4;
+
+	size_t bytes = 0;
+
+	// The bloom textures are half the size of the post-processing textures. opengl_setup_bloom_textures()
+	// calls glGenerateMipmap() before it sets GL_TEXTURE_MAX_LEVEL, thus the driver holds the full
+	// mipmap chain, not only MAX_MIP_BLUR_LEVELS levels.
+	for (GLuint bloom_texture : Bloom_textures) {
+		if (bloom_texture == 0) {
+			continue;
+		}
+
+		auto width = static_cast<size_t>(std::max(1, Post_texture_width >> 1));
+		auto height = static_cast<size_t>(std::max(1, Post_texture_height >> 1));
+		while (true) {
+			bytes += width * height * RGBA16F_BYTES;
+			if ((width == 1) && (height == 1)) {
+				break;
+			}
+			width = std::max<size_t>(1, width >> 1);
+			height = std::max<size_t>(1, height >> 1);
+		}
+	}
+
+	// The SMAA area and search textures stay out of this total. They hold lookup data of a fixed
+	// small size, thus they are not render targets.
+	const auto post_w = static_cast<size_t>(Post_texture_width);
+	const auto post_h = static_cast<size_t>(Post_texture_height);
+
+	if (Smaa_edges_tex != 0) {
+		bytes += post_w * post_h * RGBA8_BYTES;
+	}
+	if (Smaa_blend_tex != 0) {
+		bytes += post_w * post_h * RGBA8_BYTES;
+	}
+	if (Smaa_output_tex != 0) {
+		bytes += post_w * post_h * RGBA8_BYTES;
+	}
+
+	return bytes;
 }
 
 void opengl_post_process_init()

@@ -331,6 +331,12 @@ void	ss_set_carried_icon(int from_slot, int ship_class);
 #define SHIP_DESC_X	445
 #define SHIP_DESC_Y	273
 
+// ship class strings that were not set are empty; the tooltip handler reports them as missing
+static const char *null_if_empty(const SCP_string &str)
+{
+	return str.empty() ? nullptr : str.c_str();
+}
+
 const char *ss_tooltip_handler(const char *str)
 {
 	if (Selected_ss_class < 0)
@@ -340,22 +346,22 @@ const char *ss_tooltip_handler(const char *str)
 		return Ship_info[Selected_ss_class].name;
 
 	} else if (!stricmp(str, NOX("@ship_type"))) {
-		return Ship_info[Selected_ss_class].type_str.get();
+		return null_if_empty(Ship_info[Selected_ss_class].type_str);
 
 	} else if (!stricmp(str, NOX("@ship_maneuverability"))) {
-		return Ship_info[Selected_ss_class].maneuverability_str.get();
+		return null_if_empty(Ship_info[Selected_ss_class].maneuverability_str);
 
 	} else if (!stricmp(str, NOX("@ship_armor"))) {
-		return Ship_info[Selected_ss_class].armor_str.get();
+		return null_if_empty(Ship_info[Selected_ss_class].armor_str);
 
 	} else if (!stricmp(str, NOX("@ship_manufacturer"))) {
-		return Ship_info[Selected_ss_class].manufacturer_str.get();
+		return null_if_empty(Ship_info[Selected_ss_class].manufacturer_str);
 
 	} else if (!stricmp(str, NOX("@ship_desc"))) {
-		char *str2;
+		const char *str2;
 		int x, y, w, h;
 
-		str2 = Ship_info[Selected_ss_class].desc.get();
+		str2 = null_if_empty(Ship_info[Selected_ss_class].desc);
 		if (str2 == NULL)
 			return NULL;
 
@@ -852,8 +858,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->type_str){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str.get(), GR_RESIZE_MENU);
+	if(!sip->type_str.empty()){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str.c_str(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -866,15 +872,15 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->ship_length){
+	if(!sip->ship_length.empty()){
 		if (Lcl_gr || Lcl_pl) {
 			// in german and polish, drop the s from Meters and make sure M is caps
-			char *sp = strstr(sip->ship_length.get(), "Meters");
-			if (sp) {
-				sp[5] = ' ';		// make the old s a space now
+			auto pos = sip->ship_length.find("Meters");
+			if (pos != SCP_string::npos) {
+				sip->ship_length[pos + 5] = ' ';		// make the old s a space now
 			}
 		}
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length.get(), GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length.c_str(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -903,8 +909,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->maneuverability_str){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str.get(), GR_RESIZE_MENU);
+	if(!sip->maneuverability_str.empty()){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str.c_str(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -937,8 +943,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->armor_str){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str.get(), GR_RESIZE_MENU);
+	if(!sip->armor_str.empty()){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str.c_str(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -973,12 +979,12 @@ void ship_select_blit_ship_info()
 
 	// blit the gun mounts 
 	gr_set_color_fast(header_clr);
-	if(sip->gun_mounts)
+	if(!sip->gun_mounts.empty())
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
 		y_start += line_height;
 		gr_set_color_fast(text);
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts.get(), GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts.c_str(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -1021,8 +1027,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->missile_banks){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks.get(), GR_RESIZE_MENU);
+	if(!sip->missile_banks.empty()){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks.c_str(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -1086,8 +1092,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if(sip->manufacturer_str){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str.get(), GR_RESIZE_MENU);
+	if(!sip->manufacturer_str.empty()){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str.c_str(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -1098,7 +1104,7 @@ void ship_select_blit_ship_info()
 	// blit the _short_ text description, if it exists
 	// split the text info up	
 	
-	if (!sip->desc || !sip->desc[0])
+	if (sip->desc.empty())
 		return;
 
 	gr_set_color_fast(header_clr);
@@ -1112,7 +1118,7 @@ void ship_select_blit_ship_info()
 	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
 	int Ship_select_ship_info_line_count;
 
-	strcpy_s(Ship_select_ship_info_text, sip->desc.get());
+	strcpy_s(Ship_select_ship_info_text, sip->desc.c_str());
 	
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
@@ -1323,7 +1329,7 @@ void ship_select_do(float frametime)
 	ss_maybe_drop_icon();
 
 	Assert( Ss_icons != NULL );
-
+		
 	if ( !Background_playing ) {	
 		GR_MAYBE_CLEAR_RES(Ship_select_background_bitmap);
 		gr_set_bitmap(Ship_select_background_bitmap);
@@ -1463,6 +1469,16 @@ void ship_select_do(float frametime)
 }
 
 
+// release the ship select model, if one is loaded
+static void ss_unload_select_model()
+{
+	if (ShipSelectModelNum >= 0)
+	{
+		model_unload(ShipSelectModelNum);
+		ShipSelectModelNum = -1;
+	}
+}
+
 // ------------------------------------------------------------------------
 //	ship_select_close() is called once when the ship select screen is exited
 //
@@ -1470,8 +1486,6 @@ void ship_select_do(float frametime)
 void ship_select_close()
 {
 	key_flush();
-
-	ship_select_common_close();
 
 	if ( !Ship_select_open ) {
 		nprintf(("Alan","ship_select_close() returning without doing anything\n"));
@@ -1636,7 +1650,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 
 	if (ship_class < 0) {
 		mprintf(("No ship class passed in to start_ship_animation\n"));
-		ShipSelectModelNum = -1;
+		ss_unload_select_model();
 		return;
 	}
     
@@ -1652,8 +1666,13 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 			Ship_anim_class = -1;
 		}
 
-		// Load the necessary model file
+		// Load the necessary model file; the previous one is released only afterwards so that
+		// re-selecting the same ship doesn't free and reload it
+		int previous_model = ShipSelectModelNum;
 		ShipSelectModelNum = model_load(sip, true);
+		if (previous_model >= 0) {
+			model_unload(previous_model);
+		}
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
@@ -1670,10 +1689,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 		}
 
 		//If there was a model loaded for the previous ship, unload it
-		if (ShipSelectModelNum >= 0 ) {
-			model_unload(ShipSelectModelNum);
-			ShipSelectModelNum = -1;
-		}
+		ss_unload_select_model();
 
 		//unload the previous anim
 		if(Ship_anim_class > 0 && (*Ss_icons)[Ship_anim_class].ss_anim.num_frames > 0)
@@ -3136,6 +3152,8 @@ void ship_select_common_close()
 		ss_unload_team_icons(team_icons);
 		team_icons.clear();
 	}
+
+	ss_unload_select_model();
 }
 
 // change any interface data based on updated Wss_slots[] and Ss_pool[]

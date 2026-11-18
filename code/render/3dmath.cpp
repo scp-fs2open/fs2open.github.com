@@ -230,7 +230,7 @@ int g3_project_vertex(vertex *p)
 		p->screen.xyw.x = 0.0;
 		p->screen.xyw.y = 0.0;
 		p->screen.xyw.w = 0.0; 
-		p->flags |= PF_OVERFLOW & PF_PROJECTED;
+		p->flags |= PF_OVERFLOW | PF_PROJECTED;
 		return p->flags;
 	}
 	

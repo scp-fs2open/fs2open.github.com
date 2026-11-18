@@ -171,23 +171,5 @@ ADE_FUNC(stop, l_MoviePlayer, nullptr,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(isValid, l_MoviePlayer, nullptr, "Determines if this handle is valid", "boolean",
-         "true if valid, false otherwise")
-{
-	movie_player_h* ph = nullptr;
-	if (!ade_get_args(L, "o", l_MoviePlayer.GetPtr(&ph)))
-		return ADE_RETURN_FALSE;
-
-	if (ph == nullptr) {
-		return ADE_RETURN_FALSE;
-	}
-
-	if (!ph->isValid()) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ADE_RETURN_TRUE;
-}
-
 } // namespace api
 } // namespace scripting

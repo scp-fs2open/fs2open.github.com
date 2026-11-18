@@ -31,15 +31,6 @@ bool hotkey_h::isValid() const
 //**********HANDLE: help section
 ADE_OBJ(l_Hotkey, hotkey_h, "hotkey_ship", "Hotkey handle");
 
-ADE_FUNC(isValid, l_Hotkey, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	hotkey_h current;
-	if (!ade_get_args(L, "o", l_Hotkey.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "The text")
 {
 	hotkey_h current;

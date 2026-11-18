@@ -80,6 +80,24 @@ void SupportRearmDialogModel::setAllowWeaponPrecedence(bool value)
 	modify(_working.allowWeaponPrecedence, value);
 }
 
+void SupportRearmDialogModel::storeWeaponPoolEntry(int team, int weaponClass, int amount)
+{
+	auto &teamPool = _working.rearmWeaponPool[team];
+	const int normalized = Weapon_info[weaponClass].disallow_rearm ? 0 : ((amount < 0) ? -1 : amount);
+
+	if (normalized == teamPool.value_or(weaponClass, _working.rearmPoolDefault())) {
+		return;
+	}
+
+	// don't store the default value; absence means the default
+	if (normalized == _working.rearmPoolDefault()) {
+		teamPool.erase(weaponClass);
+	} else {
+		teamPool[weaponClass] = normalized;
+	}
+	set_modified();
+}
+
 void SupportRearmDialogModel::setWeaponPoolEntry(int team, int weaponClass, int amount)
 {
 	if (team < 0 || team >= MAX_TVT_TEAMS) {
@@ -89,8 +107,7 @@ void SupportRearmDialogModel::setWeaponPoolEntry(int team, int weaponClass, int 
 		return;
 	}
 
-	const int normalized = Weapon_info[weaponClass].disallow_rearm ? 0 : ((amount < 0) ? -1 : amount);
-	modify(_working.rearmWeaponPool[team][weaponClass], normalized);
+	storeWeaponPoolEntry(team, weaponClass, amount);
 }
 
 void SupportRearmDialogModel::setAllVisibleWeaponPoolEntries(int team, int amount)
@@ -100,8 +117,7 @@ void SupportRearmDialogModel::setAllVisibleWeaponPoolEntries(int team, int amoun
 	}
 
 	for (auto cls : _visibleWeaponClasses) {
-		const int normalized = Weapon_info[cls].disallow_rearm ? 0 : ((amount < 0) ? -1 : amount);
-		modify(_working.rearmWeaponPool[team][cls], normalized);
+		storeWeaponPoolEntry(team, cls, amount);
 	}
 }
 

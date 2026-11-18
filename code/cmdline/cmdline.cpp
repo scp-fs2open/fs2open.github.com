@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/2d.h"
 #include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
@@ -74,6 +75,7 @@ const char *cmdline_arg_types[] =
 enum class flag_output_type {
 	Binary,
 	Json_V1,
+	Json_V2,
 };
 
 // variables
@@ -352,6 +354,7 @@ cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), req
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
+cmdline_parm fsr_mode_arg("-fsr", "AMD FSR: 0 off, 1 AA only, 2 upscale to the window resolution. Vulkan only", AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
@@ -554,7 +557,12 @@ int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
 bool Cmdline_window = false;
+#ifdef __ANDROID__
+// Default to borderless in the legacy window-mode path as well.
+bool Cmdline_fullscreen_window = true;
+#else
 bool Cmdline_fullscreen_window = false;
+#endif
 std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
@@ -1357,51 +1365,58 @@ static void handle_unix_modlist(char **modlist, size_t *len)
 
 // external entry point into this modules
 
+static void json_add_version(json_t* root) {
+	auto version_obj = json_object();
+
+	json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
+	json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
+	json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
+	json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
+
+	json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
+	json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
+	json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
+
+	json_object_set_new(root, "version", version_obj);
+}
+
+static void json_add_easy_flags(json_t* root) {
+	auto easy_array = json_array();
+
+	for (auto& easy_flag : easy_flags) {
+		json_array_append_new(easy_array, json_string(easy_flag.name));
+	}
+
+	json_object_set_new(root, "easy_flags", easy_array);
+}
+
+static void json_add_flags(json_t* root) {
+	auto flags_array = json_array();
+
+	for (auto& flag : exe_params) {
+		auto flag_obj = json_object();
+
+		json_object_set_new(flag_obj, "name", json_string(flag.name));
+		json_object_set_new(flag_obj, "description", json_string(flag.desc));
+		json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
+		json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
+		json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
+		json_object_set_new(flag_obj, "type", json_string(flag.type));
+		json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
+
+		json_array_append_new(flags_array, flag_obj);
+	}
+
+	json_object_set_new(root, "flags", flags_array);
+}
+
 static json_t* json_get_v1() {
 	auto root = json_object();
 
-	{
-		auto version_obj = json_object();
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
 
-		json_object_set_new(version_obj, "full", json_string(FS_VERSION_FULL));
-		json_object_set_new(version_obj, "major", json_integer(FS_VERSION_MAJOR));
-		json_object_set_new(version_obj, "minor", json_integer(FS_VERSION_MINOR));
-		json_object_set_new(version_obj, "build", json_integer(FS_VERSION_BUILD));
-
-		json_object_set_new(version_obj, "has_revision", json_boolean(FS_VERSION_HAS_REVIS));
-		json_object_set_new(version_obj, "revision", json_integer(FS_VERSION_REVIS));
-		json_object_set_new(version_obj, "revision_str", json_string(FS_VERSION_REVIS_STR));
-
-		json_object_set_new(root, "version", version_obj);
-	}
-	{
-		auto easy_array = json_array();
-
-		for (auto& easy_flag : easy_flags) {
-			json_array_append_new(easy_array, json_string(easy_flag.name));
-		}
-
-		json_object_set_new(root, "easy_flags", easy_array);
-	}
-	{
-		auto flags_array = json_array();
-
-		for (auto& flag : exe_params) {
-			auto flag_obj = json_object();
-
-			json_object_set_new(flag_obj, "name", json_string(flag.name));
-			json_object_set_new(flag_obj, "description", json_string(flag.desc));
-			json_object_set_new(flag_obj, "fso_only", json_boolean(flag.fso_only));
-			json_object_set_new(flag_obj, "on_flags", json_integer(flag.on_flags));
-			json_object_set_new(flag_obj, "off_flags", json_integer(flag.off_flags));
-			json_object_set_new(flag_obj, "type", json_string(flag.type));
-			json_object_set_new(flag_obj, "web_url", json_string(flag.web_url));
-
-			json_array_append_new(flags_array, flag_obj);
-		}
-
-		json_object_set_new(root, "flags", flags_array);
-	}
 	{
 		auto caps_array = json_array();
 
@@ -1512,6 +1527,19 @@ static json_t* json_get_v1() {
 	return root;
 }
 
+// json_v2 reports version, supported flags, and the preferences path for launchers,
+// without querying graphics, audio, or joystick devices.
+static json_t* json_get_v2() {
+	auto root = json_object();
+
+	json_add_version(root);
+	json_add_easy_flags(root);
+	json_add_flags(root);
+	json_object_set_new(root, "pref_path", json_string(os_get_config_path().c_str()));
+
+	return root;
+}
+
 static void write_flags_file() {
 	FILE *fp = fopen("flags.lch","w");
 
@@ -1569,6 +1597,8 @@ static flag_output_type get_flags_output_type() {
 		return flag_output_type::Binary;
 	} else if (type == "json_v1") {
 		return flag_output_type::Json_V1;
+	} else if (type == "json_v2") {
+		return flag_output_type::Json_V2;
 	} else {
 		// This is supposed to make it easy for the launcher to recognize an unsupported type
 		printf("OUTPUT TYPE NOT SUPPORTED!\n");
@@ -1579,17 +1609,23 @@ static flag_output_type get_flags_output_type() {
 
 static void write_flags() {
 	auto type = get_flags_output_type();
-	switch(type) {
-	case flag_output_type::Binary:
-		write_flags_file();
-		break;
-	case flag_output_type::Json_V1:
-		json_t* root = json_get_v1();
 
-		json_dumpf(root, stdout, JSON_INDENT(4));
-		json_decref(root);
-		break;
+	if (type == flag_output_type::Binary) {
+		write_flags_file();
+		return;
 	}
+
+	json_t* root = (type == flag_output_type::Json_V1) ? json_get_v1() : json_get_v2();
+
+#ifdef __ANDROID__
+	char* dumped = json_dumps(root, JSON_INDENT(4));
+	os_android_set_flags_string(dumped ? dumped : "");
+	free(dumped);
+#else
+	json_dumpf(root, stdout, JSON_INDENT(4));
+#endif
+
+	json_decref(root);
 }
 
 bool SetCmdlineParams()
@@ -1780,38 +1816,45 @@ bool SetCmdlineParams()
 	}
 
 	// d3d windowed
+	// We need to set both the raw global (for the legacy !Using_in_game_options path) and the
+	// Option<T> override (for the modern path) since either backend may be the one actually consulted.
 	if(window_arg.found()) {
-		// We need to set both values since we don't know if we are going to use the new config system
-		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-window");
 		Cmdline_window = true;
+		Cmdline_fullscreen_window = false;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
-		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Borderless))),
+			"-fullscreen_window");
 		Cmdline_fullscreen_window = true;
 		Cmdline_window = false; /* Make sure no-one sets both */
 	}
 
 	if(render_res_arg.found() || deprecated_res_arg.found()){
+		const char* res_flag_name;
 		if (render_res_arg.found()) {
 			Cmdline_res = render_res_arg.str();
+			res_flag_name = "-render_res";
 		}
 		else {
 			Cmdline_res = deprecated_res_arg.str();
+			res_flag_name = "-res";
 			mprintf(("Deprecated -res argument. Use -render_res instead...\n"));
 		}
 
-		/*int width = 0;
+		int width = 0;
 		int height = 0;
 
 		if (sscanf(Cmdline_res, "%dx%d", &width, &height) == 2) {
-			SCP_string override;
-			sprintf(override, "{\"width\":%d,\"height\":%d}", width, height);
-			options::OptionsManager::instance()->setOverride("Graphics.Resolution", override);
+			options::OptionsManager::instance()->setOverride("Graphics.Resolution",
+				std::unique_ptr<json_t>(json_pack("{s:i, s:i}", "width", width, "height", height)), res_flag_name);
 		} else {
 			Warning(LOCATION, "Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res);
-		}*/
+		}
 	}
 	if(window_res_arg.found()){
 		int width = 0;
@@ -1829,15 +1872,17 @@ bool SetCmdlineParams()
 	}
 	if (hdr_nits_arg.found()) {
 		// presence of the flag alone forces HDR output on, overriding the in-game HDR setting
-		options::OptionsManager::instance()->setOverride("Graphics.HDR", "true");
+		options::OptionsManager::instance()->setOverride("Graphics.HDR",
+			std::unique_ptr<json_t>(json_true()), "-hdr");
 
 		if (hdr_nits_arg.has_param()) {
 			float paperwhite_nits = 0.0f, peak_nits = 0.0f;
 			if (sscanf(hdr_nits_arg.str(), "%f,%f", &paperwhite_nits, &peak_nits) == 2 && paperwhite_nits > 0.0f && peak_nits > 0.0f) {
-				// std::to_string always includes a decimal point, so this is a valid JSON real
-				// (json_unpack's "f" format rejects a bare integer like "400")
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite", std::to_string(paperwhite_nits));
-				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance", std::to_string(peak_nits));
+				// json_real keeps these JSON reals; json_unpack's "f" format rejects a bare integer like "400"
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPaperWhite",
+					std::unique_ptr<json_t>(json_real(paperwhite_nits)), "-hdr");
+				options::OptionsManager::instance()->setOverride("Graphics.HDRPeakLuminance",
+					std::unique_ptr<json_t>(json_real(peak_nits)), "-hdr");
 			} else {
 				Warning(LOCATION, "Failed to parse -hdr parameter \"%s\". Must be in format \"<paperwhite_nits>,<peak_nits>\".\n", hdr_nits_arg.str());
 			}
@@ -1935,17 +1980,20 @@ bool SetCmdlineParams()
 
 	if ( fov_arg.found() ) {
 		auto val = fov_arg.get_float();
-		if (val > 0.1) {
-			VIEWER_ZOOM_DEFAULT = val;
-		} else {
-			VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
+		if (val <= 0.1f) {
+			val = DEFAULT_FOV;
 		}
+		VIEWER_ZOOM_DEFAULT = val;
+		options::OptionsManager::instance()->setOverride("Graphics.FOV",
+			std::unique_ptr<json_t>(json_real(val)), "-fov");
 	}
 
 	if ( fov_cockpit_arg.found() ) {
 		auto val = fov_cockpit_arg.get_float();
-		if (val > 0.1) {
+		if (val > 0.1f) {
 			COCKPIT_ZOOM_DEFAULT = val;
+			options::OptionsManager::instance()->setOverride("Graphics.CockpitFOV",
+				std::unique_ptr<json_t>(json_real(val)), "-fov_cockpit");
 		}
 		else {
 			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
@@ -1968,13 +2016,18 @@ bool SetCmdlineParams()
 
 		Cmdline_fullscreen_window = false;
 		Cmdline_window = true; /* Make sure no-one sets both */
-		removeWindowModeOption();
+		// These replace the removeWindowModeOption()/removeVSyncOption() calls that used to hide these two
+		// options in VR. An override keeps them visible but disabled in the options menu, with the tooltip
+		// naming -vr as the reason, which tells the player more than the control simply not being there.
+		options::OptionsManager::instance()->setOverride("Graphics.WindowMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(os::ViewportState::Windowed))), "-vr");
 
 		// Turn off VSync, since we definitely don't want to be capped by the main monitor
 		// the OpenXR runtime should have a buffered wait which will behave, effectively,
 		// as a VSync to VR goggle driver
 		Gr_enable_vsync = false;
-		removeVSyncOption();
+		options::OptionsManager::instance()->setOverride("Graphics.VSync",
+			std::unique_ptr<json_t>(json_false()), "-vr");
 
 		openxr_prepare();
 	}
@@ -2029,6 +2082,8 @@ bool SetCmdlineParams()
 	if(no_vsync_arg.found() )
 	{
 		Gr_enable_vsync = false;
+		options::OptionsManager::instance()->setOverride("Graphics.VSync",
+			std::unique_ptr<json_t>(json_false()), "-no_vsync");
 	}
 
 	if ( normal_arg.found() ) {
@@ -2062,10 +2117,24 @@ bool SetCmdlineParams()
 			case 5: 
 				Gr_aa_mode = AntiAliasMode::SMAA_High;
 				break;
-			case 6: 
+			case 6:
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
 			}
+		}
+
+		options::OptionsManager::instance()->setOverride("Graphics.AAMode",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(Gr_aa_mode))),
+			post_process_aa_preset_arg.found() ? "-aa_preset" : "-aa");
+	}
+
+	if (fsr_mode_arg.found()) {
+		const int mode = fsr_mode_arg.get_int();
+		if (mode >= static_cast<int>(FsrMode::Off) && mode <= static_cast<int>(FsrMode::Upscale)) {
+			// What of this can run is only known once the renderer is up; gr_init settles it on the closest offered setting
+			Gr_fsr_mode = static_cast<FsrMode>(mode);
+			Gr_fsr_major_version = 0;
+			options::OptionsManager::instance()->setOverride("Graphics.FSR", std::unique_ptr<json_t>(json_integer(mode)), "-fsr");
 		}
 	}
 
@@ -2082,6 +2151,9 @@ bool SetCmdlineParams()
 			Cmdline_msaa_enabled = 0;
 			break;
 		}
+
+		options::OptionsManager::instance()->setOverride("Graphics.MSAASamples",
+			std::unique_ptr<json_t>(json_integer(Cmdline_msaa_enabled)), "-msaa");
 	}
 
 	if ( glow_arg.found() )
@@ -2207,6 +2279,8 @@ bool SetCmdlineParams()
 	if ( softparticles_arg.found() )
 	{
 		Cmdline_softparticles = 1;
+		options::OptionsManager::instance()->setOverride("Graphics.SoftParticles",
+			std::unique_ptr<json_t>(json_true()), "-soft_particles");
 	}
 
 	if ( fb_explosions_arg.found() )
@@ -2214,14 +2288,31 @@ bool SetCmdlineParams()
 		Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves, true);
 	}
 
-    if (fb_thrusters_arg.found()) 
+    if (fb_thrusters_arg.found())
     {
 	    Gr_framebuffer_effects.set(FramebufferEffects::Thrusters, true);
     }
 
+	if (fb_explosions_arg.found() || fb_thrusters_arg.found()) {
+		SCP_string reason;
+		if (fb_explosions_arg.found()) {
+			reason = "-fb_explosions";
+		}
+		if (fb_thrusters_arg.found()) {
+			if (!reason.empty()) {
+				reason += " ";
+			}
+			reason += "-fb_thrusters";
+		}
+		options::OptionsManager::instance()->setOverride("Graphics.FramebufferEffects",
+			std::unique_ptr<json_t>(json_integer(static_cast<json_int_t>(Gr_framebuffer_effects.to_u64()))), reason);
+	}
+
 	if ( no_postprocess_arg.found() )
 	{
 		Gr_post_processing_enabled = false;
+		options::OptionsManager::instance()->setOverride("Graphics.PostProcessing",
+			std::unique_ptr<json_t>(json_false()), "-no_post_process");
 	}
 
 	if( reparse_mainhall_arg.found() )
@@ -2235,12 +2326,19 @@ bool SetCmdlineParams()
 		Shadow_quality_uses_mod_option = true;
 
 		Shadow_quality = ShadowQuality::Medium;
+
+		// Deliberately not calling setOverride() here: mod_table_init() (which runs after cmdline parsing but
+		// before OptionsManager::loadInitialValues()) may still adjust Shadow_quality via game_settings.tbl's
+		// "$Shadow Quality Default:" when Shadow_quality_uses_mod_option is set, and an override registered now
+		// would freeze in the Medium fallback and ignore that later adjustment. Graphics.Shadows' default_func
+		// reads Shadow_quality instead, so this value reaches the in-game options path that way, and the
+		// player keeps the ability to change it.
 	}
 
 	if( shadow_quality_arg.found() )
 	{
 		// set that we are not using default shadow quality level --wookieejedi
-		Shadow_quality_uses_mod_option = false; 
+		Shadow_quality_uses_mod_option = false;
 
 		switch (shadow_quality_arg.get_int()) {
 		case 0:
@@ -2263,6 +2361,11 @@ bool SetCmdlineParams()
 			Shadow_quality = ShadowQuality::Disabled;
 			break;
 		}
+
+		// Unlike `-enable_shadows` alone, an explicit quality level is an unambiguous hard override that
+		// nothing else (mod defaults included) should be able to silently override.
+		options::OptionsManager::instance()->setOverride("Graphics.Shadows",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(Shadow_quality))), "-shadow_quality");
 	}
 
 	if( rt_shadows_arg.found() )
@@ -2271,21 +2374,34 @@ bool SetCmdlineParams()
 		// has no effect if the renderer/hardware doesn't support
 		// CAPABILITY_RAYTRACED_SHADOWS -- the CSM path is used either way.
 		Shadow_render_method = ShadowRenderMethod::Raytraced;
+
+		// No need to gate this on shadows_raytracing_supported(): that answer is only meaningful after
+		// gr_init(), which runs later, and shadows_remove_unsupported_options() then removes this option
+		// altogether on hardware that cannot raytrace, so the override never reaches the options menu there.
+		options::OptionsManager::instance()->setOverride("Graphics.ShadowRenderMethod",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(ShadowRenderMethod::Raytraced))), "-rt_shadows");
 	}
 
 	if( no_deferred_lighting_arg.found() )
 	{
 		Cmdline_no_deferred_lighting = 1;
+		options::OptionsManager::instance()->setOverride("Graphics.DeferredLighting",
+			std::unique_ptr<json_t>(json_false()), "-no_deferred");
 	}
 
 	if( deferred_lighting_cockpit_arg.found() )
 	{
 		Cmdline_deferred_lighting_cockpit = true;
+		options::OptionsManager::instance()->setOverride("Graphics.DeferredCockpitLighting",
+			std::unique_ptr<json_t>(json_true()), "-deferred_cockpit");
 	}
 
-	if (anisotropy_level_arg.found()) 
+	if (anisotropy_level_arg.found())
 	{
 		Cmdline_aniso_level = anisotropy_level_arg.get_int();
+
+		options::OptionsManager::instance()->setOverride("Graphics.Anisotropy",
+			std::unique_ptr<json_t>(json_real(static_cast<double>(Cmdline_aniso_level))), "-anisotropic_filter");
 	}
 
 	if (frame_profile_write_file.found())
@@ -2339,10 +2455,9 @@ bool SetCmdlineParams()
 	if (gr_sync_validation_arg.found()) {
 		// Enables the Vulkan validation layer + debug messenger + synchronization
 		// validation feature (see VulkanRenderer::initializeInstance), but NOT the
-		// engine-level graphics debug output: -gr_debug additionally draws debug
-		// overlays (e.g. output_uniform_debug_data), which are unrelated to GPU
-		// sync validation and would otherwise appear as spurious on-screen
-		// artifacts. Keep this a pure GPU-validation switch.
+		// engine-level graphics debug output: -gr_debug additionally feeds extra
+		// stat groups into the ImGui frame profiler overlay (see gr_get_debug_stats),
+		// which are unrelated to GPU sync validation. Keep this a pure GPU-validation switch.
 		Cmdline_gr_sync_validation = true;
 	}
 
@@ -2372,9 +2487,13 @@ bool SetCmdlineParams()
 
 	if (vulkan.found()) {
 		Cmdline_graphics_api = GraphicsAPI::Vulkan;
+		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(GraphicsAPI::Vulkan))), "-vulkan");
 	}
 	else if (opengl.found()) {
 		Cmdline_graphics_api = GraphicsAPI::OpenGL;
+		options::OptionsManager::instance()->setOverride("Graphics.RenderAPI",
+			std::unique_ptr<json_t>(json_integer(static_cast<int>(GraphicsAPI::OpenGL))), "-opengl");
 	}
 
 	//Deprecated flags - CommanderDJ

@@ -11,6 +11,7 @@ namespace api {
 
 //**********HANDLE: Species
 ADE_OBJ(l_Species, int, "species", "Species handle");
+ADE_OBJ_VALIDATOR(l_Species, idx, Species_info.in_bounds(idx));
 
 ADE_VIRTVAR(Name, l_Species, "string", "Species name", "string", "Species name, or empty string if handle is invalid")
 {
@@ -32,18 +33,6 @@ ADE_VIRTVAR(Name, l_Species, "string", "Species name", "string", "Species name, 
 	}
 
 	return ade_set_args(L, "s", Species_info[idx].species_name);
-}
-
-ADE_FUNC(isValid, l_Species, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Species.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= (int)Species_info.size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 

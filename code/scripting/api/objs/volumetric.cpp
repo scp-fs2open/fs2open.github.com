@@ -38,21 +38,6 @@ void volumetric_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entr
 	new(data_ptr) volumetric_h(index);
 }
 
-ADE_FUNC(isValid,
-	l_Volumetric,
-	nullptr,
-	"Determines if this handle is valid",
-	"boolean",
-	"true if valid, false otherwise")
-{
-	volumetric_h* vh = nullptr;
-	if (!ade_get_args(L, "o", l_Volumetric.GetPtr(&vh))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", vh != nullptr && vh->isValid());
-}
-
 ADE_VIRTVAR(POF,
 	l_Volumetric,
 	nullptr,

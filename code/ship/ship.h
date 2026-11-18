@@ -42,6 +42,7 @@ class WarpEffect;
 
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
+
 //	States for player death sequence, stuffed in Player_died_state.
 #define	PDS_NONE		1
 #define	PDS_DIED		2
@@ -265,7 +266,12 @@ public:
 
 extern SCP_vector<ArmorType> Armor_types;
 
-void set_guard_range_ship(float range, const int target_ship_index, ship* shipp);
+// Caps how far the guarder will stray from the guarded ship while guarding it; range <= 0 removes the cap
+void set_guard_range_ship(float range, int guarded_shipnum, ship* guarder_shipp);
+// Returns the guarder's cap for the guarded ship, or -1 if there is none
+float get_guard_range_ship(int guarded_shipnum, const ship* guarder_shipp);
+// Removes the caps that all ships have for the guarded ship
+void clear_guard_ranges_for_ship(int guarded_shipnum);
 
 //**************************************************************
 //WMC - Damage type handling code
@@ -306,7 +312,6 @@ typedef struct cockpit_display {
 
 extern bool Disable_cockpits;
 extern bool Disable_cockpit_sway;
-extern bool Cockpit_active;
 
 extern SCP_vector<cockpit_display> Player_displays;
 
@@ -349,11 +354,13 @@ typedef struct lock_info {
 	float lock_gauge_time_elapsed;
 	float lock_anim_time_elapsed;
 } lock_info;
+
 struct guard_range_entry {
 	float range;
 	int shipnum;
 	guard_range_entry(float _range, int _shipnum) : range(_range), shipnum(_shipnum) {}
 };
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -698,9 +705,8 @@ public:
 	float max_weapon_regen_per_second;		// wookieejedi - make this a ship object variable
 
 	int ship_guardian_threshold;	// Goober5000 - now also determines whether ship is guardian'd
-	
-	SCP_vector<guard_range_entry>
-		max_guard_ranges; // Optional clamp for guard engagement/resume ranges;
+	SCP_vector<guard_range_entry> max_guard_ranges;	// per-guarded-ship caps on this ship's guard engagement/resume range
+	float max_guard_radius;	// cap for every ship guarding this one, used when the guarder has no cap of its own; <= 0 means unused
 
 
 	char	ship_name[NAME_LENGTH];
@@ -750,7 +756,7 @@ public:
 	float	afterburner_fuel;					// amount of afterburner fuel remaining (capacity is stored
 												// as afterburner_fuel_capacity in ship_info).
 	float   afterburner_last_engage_fuel;      // the fuel level when the afterburners were last engaged
-	int   afterburner_last_end_time;         // timestamp when the ship last stopped its afterburner
+	TIMESTAMP afterburner_last_end_time;     // when the ship last stopped its afterburner
 
 	int cmeasure_count;						//	Number of charges of countermeasures this ship can hold.
 	int current_cmeasure;					//	Currently selected countermeasure.
@@ -974,6 +980,7 @@ struct ai_target_priority {
     flagset<Ship::Info_Flags> sif_flags;
 	flagset<Weapon::Info_Flags> wif_flags;
 };
+
 extern SCP_vector <ai_target_priority> Ai_tp_list;
 
 void parse_ai_target_priorities();
@@ -1255,17 +1262,17 @@ public:
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
 
-	std::unique_ptr<char[]> type_str;							// type string used by tooltips
-	std::unique_ptr<char[]> maneuverability_str;			// string used by tooltips
-	std::unique_ptr<char[]> armor_str;							// string used by tooltips
-	std::unique_ptr<char[]> manufacturer_str;				// string used by tooltips
-	std::unique_ptr<char[]> desc;								// string used by tooltips
-	std::unique_ptr<char[]> tech_desc;							// string used by tech database
+	SCP_string type_str;							// type string used by tooltips
+	SCP_string maneuverability_str;			// string used by tooltips
+	SCP_string armor_str;							// string used by tooltips
+	SCP_string manufacturer_str;				// string used by tooltips
+	SCP_string desc;								// string used by tooltips
+	SCP_string tech_desc;							// string used by tech database
 	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
-	std::unique_ptr<char[]> ship_length;						// string used by multiplayer ship desc
-	std::unique_ptr<char[]> gun_mounts;			         // string used by multiplayer ship desc
-	std::unique_ptr<char[]> missile_banks;					// string used by multiplayer ship desc
+	SCP_string ship_length;						// string used by multiplayer ship desc
+	SCP_string gun_mounts;			         // string used by multiplayer ship desc
+	SCP_string missile_banks;					// string used by multiplayer ship desc
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
@@ -1325,6 +1332,7 @@ public:
 	int death_fx_count;
 	int	shockwave_count;					// the # of total shockwaves
 	SCP_vector<int> explosion_bitmap_anims;
+	bool disable_main_fireball;
 	float skip_deathroll_chance;					
 
 	particle::ParticleEffectHandle		impact_spew;
@@ -1370,7 +1378,7 @@ public:
 	// (n_subsystems describes the subsystems array; the wrapper keeps it
 	// consistent with the array by resetting it to 0 in a moved-from ship_info)
 	util::reset_on_move<int> n_subsystems;			// this number comes from ships.tbl
-	std::unique_ptr<model_subsystem[]> subsystems;	// see model.h for structure definition
+	SCP_vector<model_subsystem> subsystems;	// see model.h for structure definition
 	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
@@ -1596,7 +1604,7 @@ public:
 
 	int damage_lightning_type;
 
-	SCP_vector<std::unique_ptr<HudGauge>> hud_gauges;
+	SCP_vector<SCP_polymorphic<HudGauge>> hud_gauges;
 	bool hud_enabled;
 	bool hud_retail;
 
@@ -1613,14 +1621,17 @@ public:
 
 	ship_info();
 	~ship_info() = default;
-	void clone(const ship_info& other);
+	void clone(const ship_info& other) { *this = other; }
 
 	ship_info(ship_info&& other) = default;					// NOLINT(performance-noexcept-move-constructor) - not declared noexcept because the implicit exception specification differs by standard library
 	ship_info &operator=(ship_info&& other) = default;		// NOLINT(performance-noexcept-move-constructor) - ditto
 
-	// Deleted so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
-	ship_info(const ship_info& other) = delete;
-	ship_info &operator=(const ship_info& other) = delete;
+  private:
+	// Private so nobody copies a ship class by accident; use clone() for a deliberate deep copy.
+	ship_info(const ship_info& other) = default;
+	ship_info &operator=(const ship_info& other) = default;
+
+  public:
 
     //Helper functions
     
@@ -1797,8 +1808,21 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
+// whether this ship class shows a cockpit at all: it has a cockpit model and the player hasn't turned cockpits off
+extern bool ship_cockpit_enabled(const ship_info* sip);
+// whether the cockpit model is rendered for this ship class when it is the viewer
+extern bool ship_render_player_cockpit(const ship_info* sip);
+// whether the viewer's cockpit is being rendered this frame
+extern bool ship_render_player_cockpit_active();
 extern bool ship_render_player_ship_casts_shadow_on_cockpit();
 extern bool ship_render_player_has_closeup_visuals();
+// The cockpit model's render offset: sip->cockpit_offset rotated into world orientation,
+// plus acceleration-driven sway (unless Disable_cockpit_sway). This is the camera-relative
+// offset used to draw the cockpit model, NOT combined with objp->pos -- callers that need
+// a world-space position must add objp->pos themselves. Shared by every path that draws or
+// otherwise anchors the cockpit model: ship_render_player_ship(), render_viewer_shadow()
+// (shadows.cpp), and gatherCockpitShadowCasterInstance() (VulkanRaytracingTlas.cpp).
+extern vec3d ship_cockpit_render_offset(const ship_info* sip, const object* objp);
 extern void ship_render_player_ship( object * objp, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
@@ -1854,6 +1878,9 @@ extern int get_available_primary_weapons(object *objp, int *outlist, int *outban
 
 extern int get_available_secondary_weapons(object *objp, int *outlist, int *outbanklist);
 extern void ship_recalc_subsys_strength( ship *shipp );
+
+// switch a subsystem's looping sounds between its alive and dead sets, according to its hitpoints
+extern void ship_update_subsys_sounds(const ship *shipp, ship_subsys *ss);
 extern void physics_ship_init(object *objp);
 
 //	Note: This is not a general purpose routine.
@@ -1952,7 +1979,7 @@ extern void	ship_wing_cleanup( int shipnum, wing *wingp );
 extern void wing_maybe_cleanup( wing *wingp, int team = -1 );
 
 extern int ship_find_repair_ship( object *requester_obj, object **ship_we_found = NULL );
-extern void ship_close();	// called in game_shutdown() to free malloced memory
+extern void ship_close();	// frees the ship tables
 
 
 extern void ship_assign_sound_all();

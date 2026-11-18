@@ -66,6 +66,7 @@
 #include "particle/volumes/PointVolume.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
+#include "utils/string_utils.h"
 #include "weapon.h"
 #include "model/modelrender.h"
 
@@ -854,11 +855,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			return -1;
 		}
 
-		// Check if there are too many weapon classes
-		if (Weapon_info.size() >= MAX_WEAPON_TYPES) {
-			Error(LOCATION, "Too many weapon classes before '%s'; maximum is %d.\n", fname, MAX_WEAPON_TYPES);
-		}
-
 		w_id = weapon_info_size();
 		Weapon_info.push_back(weapon_info());
 		wip = &Weapon_info.back();
@@ -926,10 +922,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("+Description:")) {
-		stuff_string(wip->desc, F_MULTITEXT, true);
+		stuff_string(wip->desc, F_MULTITEXT);
 
 		// Check if the text exceeds the limits
-		auto current_line = wip->desc.get();
+		auto current_line = wip->desc.c_str();
 		size_t num_lines = 0;
 		while (current_line != nullptr) {
 			auto line_end = strchr(current_line, '\n');
@@ -959,7 +955,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("+Tech Description:")) {
-		stuff_string(wip->tech_desc, F_MULTITEXT, true);
+		stuff_string(wip->tech_desc, F_MULTITEXT);
 	}
 
 	if (optional_string("$Turret Name:")) {
@@ -4207,7 +4203,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Failure Rate:")) {
 		stuff_float(&wip->failure_rate);
 		if (optional_string("+Failure Substitute:")) {
-			stuff_string(wip->failure_sub_name, F_NAME, true);
+			stuff_string(wip->failure_sub_name, F_NAME);
 		}
 	}
 
@@ -4955,25 +4951,25 @@ void weapon_generate_indexes_for_substitution() {
 		}
 
 		if (wip->failure_rate > 0.0f) {
-			if (VALID_FNAME(wip->failure_sub_name.get())) {
-				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.get());
+			if (VALID_FNAME(wip->failure_sub_name.c_str())) {
+				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.c_str());
 
 				if (wip->failure_sub == -1) { // invalid sub weapon
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-						wip->name, wip->failure_sub_name.get());
+						wip->name, wip->failure_sub_name.c_str());
 					wip->failure_rate = 0.0f;
 				}
 
 				if (Weapon_info[wip->failure_sub].subtype != wip->subtype) {
 					// Check to make sure secondaries can't be launched by primaries and vice versa
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
-						wip->name, wip->failure_sub_name.get());
+						wip->name, wip->failure_sub_name.c_str());
 					wip->failure_sub = -1;
 					wip->failure_rate = 0.0f;
 				}
 			}
 
-			wip->failure_sub_name.reset();
+			wip->failure_sub_name.clear();
 		}
 	}
 }
@@ -5155,6 +5151,9 @@ void weapon_init()
 {
 	if ( !Weapons_inited ) {
 		Spawn_names.clear();
+		Pending_proximity_type_names.clear();
+		Pending_proximity_class_names.clear();
+		Default_cmeasure_name[0] = '\0';
 
 		// parse weapons.tbl
 		Removed_weapons.clear();
@@ -5179,15 +5178,15 @@ void weapon_init()
 
 
 /**
- * Call from game_shutdown() only!!
+ * Frees the weapon tables
  */
 void weapon_close()
 {
 	int i;
 
 	for (i = 0; i < weapon_info_size(); i++) {
-		Weapon_info[i].desc.reset();
-		Weapon_info[i].tech_desc.reset();
+		Weapon_info[i].desc.clear();
+		Weapon_info[i].tech_desc.clear();
 	}
 
 	if (used_weapons != NULL) {
@@ -5196,6 +5195,8 @@ void weapon_close()
 	}
 
 	Spawn_names.clear();
+
+	Weapons_inited = false;
 }
 
 /**
@@ -9252,7 +9253,8 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 
 	r = (int)(r * head_alpha);   g = (int)(g * head_alpha);   b = (int)(b * head_alpha);
 
-	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b);
+	const vec3d motion = wep_objp->pos - wep_objp->last_pos;
+	batching_add_laser(bitmap, headp, width1, tailp, width2, r, g, b, &motion);
 
 	return side_alpha;
 }
@@ -9299,6 +9301,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
+			const vec3d motion = obj->pos - obj->last_pos;
 			float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
 
 			if (wip->laser_length_by_frametime) {
@@ -9449,7 +9452,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 					scaled_head_radius,
 					&tailp,
 					scaled_tail_radius,
-					bitmap_r, bitmap_g, bitmap_b);
+					bitmap_r, bitmap_g, bitmap_b,
+					&motion);
 			}
 
 			// maybe draw laser glow bitmap
@@ -9547,7 +9551,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 						scaled_head_radius * wip->laser_glow_head_scale,
 						&tailp2,
 						scaled_tail_radius * wip->laser_glow_tail_scale,
-						r, g, b);
+						r, g, b,
+						&motion);
 					r = fl2i(i2fl(c.red) * glow_r_mult * alphaf * main_bitmap_alpha_mult);
 					g = fl2i(i2fl(c.green) * glow_g_mult * alphaf * main_bitmap_alpha_mult);
 					b = fl2i(i2fl(c.blue) * glow_b_mult * alphaf * main_bitmap_alpha_mult);
@@ -9559,7 +9564,8 @@ void weapon_render(object* obj, model_draw_list *scene)
 					scaled_head_radius * wip->laser_glow_head_scale,
 					&tailp2,
 					scaled_tail_radius * wip->laser_glow_tail_scale,
-					r, g, b);
+					r, g, b,
+					&motion);
 			}
 
 			break;
@@ -9759,7 +9765,7 @@ void weapon_info::reset()
 	memset(this->name, 0, sizeof(this->name));
 	this->display_name.clear();
 	memset(this->title, 0, sizeof(this->title));
-	this->desc = nullptr;
+	this->desc.clear();
 	memset(this->altSubsysName, 0, sizeof(this->altSubsysName));
 
 	memset(this->pofbitmap_name, 0, sizeof(this->pofbitmap_name));
@@ -9767,7 +9773,7 @@ void weapon_info::reset()
 	memset(this->external_model_name, 0, sizeof(this->external_model_name));
 	this->external_model_num = -1;
 
-	this->tech_desc = nullptr;
+	this->tech_desc.clear();
 	memset(this->tech_anim_filename, 0, sizeof(this->tech_anim_filename));
 	memset(this->tech_title, 0, sizeof(this->tech_title));
 	memset(this->tech_model, 0, sizeof(this->tech_model));
@@ -10145,7 +10151,7 @@ void weapon_info::reset()
 		this->targeting_priorities[i] = -1;
 
 	this->failure_rate = 0.0f;
-	this->failure_sub_name.reset();
+	this->failure_sub_name.clear();
 	this->failure_sub = -1;
 
 	this->num_substitution_patterns = 0;
@@ -10704,4 +10710,26 @@ float weapon_get_apparent_size(const weapon& wp) {
 		wep_objp->radius * 2.0f,
 		g3_get_hfov(Eye_fov),
 		gr_screen.max_w) / i2fl(gr_screen.max_w);
+}
+
+float weapon_get_target_dot(const weapon& wp) {
+	const object* wep_objp = &Objects[wp.objnum];
+
+	vec3d target_pos;
+
+	if (wp.homing_object != &obj_used_list && (wp.homing_object->type != OBJ_NONE) && (!IS_VEC_NULL(&wp.homing_pos))) {
+		target_pos = wp.homing_pos;
+	} else if(wp.target_num > -1 && Objects[wp.target_num].type != OBJ_NONE && Objects[wp.target_num].signature == wp.target_sig)	{
+		target_pos = Objects[wp.target_num].pos;
+	} else {
+		return 1.f;
+	}
+	vec3d dir;
+	vm_vec_sub(&dir, &target_pos, &wep_objp->pos);
+	if (vm_vec_mag(&dir) == 0) {
+		return 1.f;
+	} else {
+		vm_vec_normalize(&dir);
+		return vm_vec_dot(&dir, &wep_objp->orient.vec.fvec);	
+	}
 }

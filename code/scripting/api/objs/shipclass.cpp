@@ -28,6 +28,7 @@ namespace api {
 
 //**********HANDLE: default primary
 ADE_OBJ(l_Default_Primary, int, "default_primary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Primary, ship_info_size());
 
 ADE_INDEXER(l_Default_Primary,
 	"number idx",
@@ -70,6 +71,7 @@ ADE_FUNC(__len,
 
 //**********HANDLE: default secondary
 ADE_OBJ(l_Default_Secondary, int, "default_secondary", "weapon index");
+ADE_OBJ_VALIDATOR_RANGE(l_Default_Secondary, ship_info_size());
 
 ADE_INDEXER(l_Default_Secondary,
 	"number idx",
@@ -112,6 +114,7 @@ ADE_FUNC(__len,
 	
 //**********HANDLE: Shipclass
 ADE_OBJ(l_Shipclass, int, "shipclass", "Ship class handle");
+ADE_OBJ_VALIDATOR_RANGE(l_Shipclass, ship_info_size());
 
 ADE_FUNC(__tostring, l_Shipclass, NULL, "Ship class name", "string", "Ship class name, or an empty string if handle is invalid")
 {
@@ -180,7 +183,7 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 	return ade_set_args(L, "s", Ship_info[idx].short_name);
 }
 
-static int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[]> ship_info::*optional_string_field)
+static int handle_ship_class_optional_string(lua_State *L, SCP_string ship_info::*optional_string_field)
 {
 	int idx;
 	const char* s = nullptr;
@@ -193,10 +196,10 @@ static int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[
 	auto sip = &Ship_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		sip->*optional_string_field = util::unique_copy(s, true);
+		sip->*optional_string_field = coalesce(s, "");
 	}
 
-	return ade_set_args(L, "s", coalesce((sip->*optional_string_field).get(), ""));
+	return ade_set_args(L, "s", (sip->*optional_string_field).c_str());
 }
 
 ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string", "Type string, or empty string if handle is invalid")
@@ -479,9 +482,13 @@ ADE_FUNC(isWeaponAllowedOnShip,
 			return ade_set_error(L, "b", false);
 	};
 	bank--; // Convert from Lua
+	// The restriction lists keep secondaries at MAX_SHIP_PRIMARY_BANKS onward, not right after this class's primaries
+	if (bank >= Ship_info[idx].num_primary_banks)
+		bank += MAX_SHIP_PRIMARY_BANKS - Ship_info[idx].num_primary_banks;
 
 	bool retv = false;
-	if ((bank >= 0) && (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
+	if ((bank >= 0) && !Ship_info[idx].restricted_loadout_flag.empty() &&
+		(eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
 		if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_bank_restricted_weapons[bank][wepidx]))
 			retv = true;
 	} else if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_weapons[wepidx])) {
@@ -1115,18 +1122,6 @@ ADE_FUNC(hasCustomStrings,
 
 	bool result = !sip->custom_strings.empty();
 	return ade_set_args(L, "b", result);
-}
-
-ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
-		return ADE_RETURN_NIL;
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ADE_RETURN_FALSE;
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is available in the techroom", "boolean", "Whether ship has been revealed in the techroom, false if handle is invalid")

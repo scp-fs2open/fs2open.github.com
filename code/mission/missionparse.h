@@ -10,6 +10,7 @@
 #ifndef _PARSE_H
 #define _PARSE_H
 
+#include <array>
 #include <csetjmp>
 #include <set>
 
@@ -60,6 +61,7 @@ extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
 extern bool check_for_24_3_data();
 extern bool check_for_25_1_data();
+extern bool check_for_26_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -116,7 +118,14 @@ struct support_ship_info
 	bool	disallow_rearm;                      // if true, support ships can only repair and will not rearm weapons
 	bool	allow_rearm_weapon_precedence;       // if true, support ships may swap to precedence weapons when rearm pool is empty
 	bool	rearm_pool_from_loadout;             // initialize rearm pool from mission loadout after filling starting loadout ships
-	int     rearm_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES]; // mission stockpile used to limit support ship rearming
+
+	// mission stockpile used to limit support ship rearming: weapon class -> amount remaining
+	// (-1 = unlimited, 0 = not rearmable, >0 = limited); an absent entry means rearm_pool_default()
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> rearm_weapon_pool;
+
+	// the default for weapon classes without a pool entry: normally unlimited, but when the pool
+	// is seeded from the mission loadout, any weapon not in the loadout cannot be rearmed
+	int rearm_pool_default() const { return rearm_pool_from_loadout ? 0 : -1; }
 
 	void reset();
 };
@@ -305,7 +314,6 @@ extern int Mission_callsign_count;
 #define MAX_PATH_RESTRICTIONS		10
 typedef struct path_restriction_t {
 	int num_paths;
-	int cached_mask;
 	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
 } path_restriction_t;
 
@@ -409,21 +417,9 @@ struct alt_class {
 		variable_index = -1;
 		default_to_this_class = false;
 	}
-	alt_class(const alt_class& a) {
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-	}
 	bool operator==(const alt_class& a) const
 	{
 		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
-	}
-	alt_class& operator=(const alt_class& a)
-	{
-		ship_class = a.ship_class;
-		variable_index = a.variable_index;
-		default_to_this_class = a.default_to_this_class;
-		return *this;
 	}
 };
 
@@ -613,7 +609,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
-void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
+void resolve_parse_flags(const flagset<Mission::Parse_Object_Flags> &parse_flags, ship &s, bool no_ship_max_shield);
 
 void mission_parse_close();
 

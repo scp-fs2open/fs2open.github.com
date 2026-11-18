@@ -48,20 +48,5 @@ ADE_FUNC(determineState,
 	}
 }
 
-ADE_FUNC(isValid,
-	l_ExecutionContext,
-	nullptr,
-	"Determines if the handle is valid",
-	"boolean",
-	"true if valid, false otherwise")
-{
-	execution_context_h* context = nullptr;
-	if (!ade_get_args(L, "o", l_ExecutionContext.GetPtr(&context))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", context != nullptr && context->isValid());
-}
-
 } // namespace api
 } // namespace scripting

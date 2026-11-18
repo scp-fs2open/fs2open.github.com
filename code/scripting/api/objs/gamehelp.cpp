@@ -24,15 +24,6 @@ bool help_section_h::isValid() const
 //**********HANDLE: help section
 ADE_OBJ(l_Help_Section, help_section_h, "help_section", "Help Section handle");
 
-ADE_FUNC(isValid, l_Help_Section, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	help_section_h current;
-	if (!ade_get_args(L, "o", l_Help_Section.Get(&current)))
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 ADE_VIRTVAR(Title, l_Help_Section, nullptr, "The title of the help section", "string", "The title")
 {
 	help_section_h current;

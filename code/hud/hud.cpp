@@ -59,7 +59,7 @@
 #include "weapon/weapon.h"
 
 // This contains not only the retail HUD gauges but also any custom HUD gauges that are not specific to a ship.
-SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
+SCP_vector<SCP_polymorphic<HudGauge>> default_hud_gauges;
 
 // new values for HUD alpha
 #define HUD_NEW_ALPHA_DIM				80	
@@ -1413,11 +1413,10 @@ bool HudGauge::canRender() const
 	}
 	
 	if (render_for_cockpit_toggle > 0) {
-		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
-			return true;
-		} else if (Cockpit_active && (render_for_cockpit_toggle == 2)) {
+		bool cockpit_active = ship_render_player_cockpit_active();
+		if (cockpit_active && (render_for_cockpit_toggle == 2)) {
 			return false;
-		} else if (!Cockpit_active && (render_for_cockpit_toggle == 1)) {
+		} else if (!cockpit_active && (render_for_cockpit_toggle == 1)) {
 			return false;
 		}
 	}
@@ -2612,10 +2611,10 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		sprintf(buf, XSTR( "%d%%", 219), line.strength);
 		hud_num_make_mono(buf, font_num);
 
-		if (line.color_override != nullptr) {
+		if (!config && line.color_override != nullptr) {
 			gr_set_color_fast(line.color_override);
 		} else {
-			setGaugeColor(line.bright_index);
+			setGaugeColor(line.bright_index, config);
 		}
 
 		renderString(line.name_x, line.name_y, line.name.c_str(), scale, config);

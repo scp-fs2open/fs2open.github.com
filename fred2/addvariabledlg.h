@@ -55,9 +55,9 @@ public:
 protected:
 	
 	// tooltips
-	CToolTipCtrl* m_ProgressToolTip;
-	CToolTipCtrl* m_CloseToolTip;
-	CToolTipCtrl* m_EternalToolTip;
+	CToolTipCtrl m_ProgressToolTip;
+	CToolTipCtrl m_CloseToolTip;
+	CToolTipCtrl m_EternalToolTip;
 
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL

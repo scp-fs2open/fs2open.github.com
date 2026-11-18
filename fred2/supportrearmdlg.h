@@ -21,6 +21,7 @@ class CSupportRearmDlg : public CDialog {
 	afx_msg void OnSetAllPoolZero();
 	afx_msg void OnSelchangePoolTeam();
 	afx_msg void OnOptionChanged();
+	afx_msg void OnRearmPoolFromLoadoutChanged();
 	afx_msg void OnDrawItem(int nIDCtl, LPDRAWITEMSTRUCT lpDrawItemStruct);
 	DECLARE_MESSAGE_MAP()
 
@@ -32,7 +33,9 @@ class CSupportRearmDlg : public CDialog {
 	int get_selected_weapon_class() const;
 	void set_selected_weapon_amount(int amount);
 	void set_all_weapon_amount(int amount);
+	void set_weapon_pool_entry(int weapon_class, int amount);
 	CString format_weapon_pool_entry(int weapon_class) const;
+	int rearm_pool_default() const { return m_rearm_pool_from_loadout ? 0 : -1; }
 
 	BOOL m_disallow_support_ships;
 	BOOL m_limit_rearm_to_pool;
@@ -44,5 +47,7 @@ class CSupportRearmDlg : public CDialog {
 	float m_max_subsys_repair_val;
 	int m_weapon_pool_amount;
 	int m_rearm_pool_team;
-	int m_rearm_weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+
+	// weapon class -> amount; absent = rearm_pool_default(), mirroring the mission struct
+	std::array<SCP_map<int, int>, MAX_TVT_TEAMS> m_rearm_weapon_pool;
 };

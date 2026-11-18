@@ -437,6 +437,13 @@ void bm_get_filename(int bitmapnum, char *filename);
 const char *bm_get_filename(int handle);
 
 /**
+ * @brief Gets the name of the file that holds the pixels of this bitmap
+ *
+ * This is the same as bm_get_filename(), except for an EFF. For an EFF it is the file of the individual image.
+ */
+const char *bm_get_image_filename(int handle);
+
+/**
  * @brief Unloads all used bitmaps, should only ever be called by game_shutdown()
  *
  * @todo Maybe move this declaration into bmpman.cpp and then extern this function within game_shutdown() to
@@ -593,6 +600,14 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
  * @brief Returns the compression type of the bitmap indexed by handle
  */
 int bm_is_compressed(int handle);
+
+/**
+ * @brief Returns true if the bitmap indexed by handle was loaded from a cubemap image file
+ *
+ * @note Render targets return false, even cubemap ones, and so do BC7 (DX10) DDS cubemaps, whose cube flag the DDS
+ * loader does not keep
+ */
+bool bm_is_cubemap(int handle);
 
 /**
  * @brief Gets the correct TCACHE_TYPE for compressed graphics (uncompressed are assumed TCACHE_TYPE_NORMAL)

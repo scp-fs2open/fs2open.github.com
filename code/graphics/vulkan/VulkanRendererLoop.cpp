@@ -3,10 +3,12 @@
 #include "VulkanBarrier.h"
 #include "VulkanBuffer.h"
 #include "VulkanTexture.h"
+#include "VulkanUpscaler.h"
 
 
 #include "backends/imgui_impl_vulkan.h"
 #include "graphics/2d.h"
+#include "graphics/matrix.h"
 #include "lighting/lighting.h"
 
 extern float flFrametime;
@@ -26,6 +28,11 @@ void VulkanRenderer::beginTrackedRenderPass(const PassBeginDesc& desc)
 	m_currentCommandBuffer.beginRenderPass(rpBegin, vk::SubpassContents::eInline);
 
 	m_stateTracker->setRenderPass(desc.renderPass, 0);
+	if (desc.renderPass == m_renderPass.get() || desc.renderPass == m_renderPassLoad.get()) {
+		// Everything the engine draws onto the composition image is in gr_screen units
+		m_stateTracker->setScreenScale(static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width),
+			static_cast<float>(m_compositionExtent.height) / static_cast<float>(m_renderExtent.height));
+	}
 	m_stateTracker->setColorAttachmentCount(desc.colorAttachmentCount);
 	m_stateTracker->setCurrentSampleCount(desc.sampleCount);
 	m_stateTracker->setRenderArea(desc.extent);
@@ -81,7 +88,7 @@ void VulkanRenderer::acquireNextSwapChainImage()
 			MAX_ACQUIRE_ATTEMPTS);
 	}
 
-	if (status == SwapChainStatus::eSuboptimal) {
+	if (shouldRecreateSwapChain(status)) {
 		m_swapChainNeedsRecreation = true;
 	}
 
@@ -94,11 +101,68 @@ void VulkanRenderer::acquireNextSwapChainImage()
 	// Reserve the image as in use
 	m_swapChainImageRenderImage[m_currentSwapChainImage] = m_frames[m_currentFrame].get();
 }
+vk::Extent2D VulkanRenderer::wantedCompositionExtent() const
+{
+	const float factor = vulkan_upscaler_usable() ? gr_fsr_upscale_factor(Gr_fsr_mode) : 1.0f;
+	return {static_cast<uint32_t>(std::lround(m_renderExtent.width * factor)),
+		static_cast<uint32_t>(std::lround(m_renderExtent.height * factor))};
+}
+
+void VulkanRenderer::setCompositionExtent(vk::Extent2D extent)
+{
+	m_compositionExtent = extent;
+	Gr_composition_scale = static_cast<float>(m_compositionExtent.width) / static_cast<float>(m_renderExtent.width);
+}
+
+void VulkanRenderer::updateCompositionExtent()
+{
+	const auto wanted = wantedCompositionExtent();
+	if (wanted == m_compositionExtent) {
+		return;
+	}
+
+	m_device->waitIdle();
+	setCompositionExtent(wanted);
+	mprintf(("Vulkan: Composition resolution %ux%u for render resolution %ux%u\n",
+		m_compositionExtent.width, m_compositionExtent.height, m_renderExtent.width, m_renderExtent.height));
+
+	destroyDepthResources();
+	createDepthResources();
+	createCompositionResources();
+	createFrameBuffers();
+
+	if (m_postProcessor && !m_postProcessor->resize(m_renderExtent, m_compositionExtent)) {
+		mprintf(("Vulkan: post-processor resize failed, disabling post-processing!\n"));
+		setPostProcessor(nullptr);
+		m_postProcessor->shutdown();
+		m_postProcessor.reset();
+	}
+	if (m_drawManager) {
+		m_drawManager->onResize();
+	}
+	m_previousSwapChainImage = UINT32_MAX;
+}
+
 void VulkanRenderer::setupFrame()
 {
 	if (m_frameInProgress) {
 		Warning(LOCATION, "VulkanRenderer::setupFrame called while frame already in progress!");
 		return;
+	}
+
+	// before recording: the recompile can run mid-frame, while the frame being recorded still holds old pipelines
+	if (m_pipelinesStale) {
+		mprintf(("Vulkan: shaders were recompiled, rebuilding pipelines\n"));
+		m_device->waitIdle();
+		m_pipelineManager->forgetAllPipelines();
+		m_pipelinesStale = false;
+	}
+
+	updateCompositionExtent();
+
+	// before recording: in VR both eyes record into one command buffer, which must not hold a pipeline destroyed here
+	if (Gr_aa_mode_last_frame != Gr_aa_mode) {
+		rebuildAntiAliasingShaders();
 	}
 
 	// Free completed texture upload command buffers
@@ -139,6 +203,7 @@ void VulkanRenderer::setupFrame()
 
 	// Reset per-frame flags
 	m_sceneDepthCopiedThisFrame = false;
+	m_sceneDepthSaved = false;
 
 	// Reset per-frame draw statistics
 	Assertion(m_drawManager, "Vulkan DrawManager not initialized in setupFrame!");
@@ -152,7 +217,7 @@ void VulkanRenderer::setupFrame()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPass.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
 
@@ -173,7 +238,9 @@ void VulkanRenderer::flip()
 	// End the composition render pass (composition image is now in
 	// eShaderReadOnlyOptimal) and run the final output-encode pass that writes
 	// the actual swap chain image (SDR passthrough or HDR10 PQ/BT.2020).
-	m_currentCommandBuffer.endRenderPass();
+	// Tolerates the pass having already been ended: the OpenXR flip has to end
+	// it itself to record its swapchain blit before handing off to us.
+	endCurrentRenderPass();
 
 #ifdef __APPLE__
 	// MoltenVK: the encode render pass's VK_SUBPASS_EXTERNAL dependency (see
@@ -215,9 +282,10 @@ void VulkanRenderer::flip()
 	});
 
 	// Submit and present
-	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers);
+	auto presentStatus = m_frames[m_currentFrame]->submitAndPresent(m_currentCommandBuffers,
+		m_renderingFinishedSemaphores[m_currentSwapChainImage].get());
 
-	if (presentStatus == SwapChainStatus::eSuboptimal || presentStatus == SwapChainStatus::eOutOfDate) {
+	if (shouldRecreateSwapChain(presentStatus)) {
 		m_swapChainNeedsRecreation = true;
 	}
 
@@ -261,8 +329,12 @@ void VulkanRenderer::beginSceneRendering()
 		return;
 	}
 
-	// End the current swap chain render pass
-	m_currentCommandBuffer.endRenderPass();
+	// End the current swap chain render pass. vulkan_scene_texture_begin() can end it before
+	// this call, for the TLAS build, so end it only when it is still open.
+	endCurrentRenderPass();
+
+	m_postProcessor->prepareMotionVectors();
+	m_postProcessor->prepareUpscaler();
 
 	// Use G-buffer render pass when deferred lighting is enabled and G-buffer is ready
 	m_useGbufRenderPass = m_postProcessor->deferred().isInitialized() && light_deferred_enabled();
@@ -272,29 +344,33 @@ void VulkanRenderer::beginSceneRendering()
 	pass.extent = m_postProcessor->getSceneExtent();
 
 	if (m_useGbufRenderPass) {
-		// Clear values: 6 color + depth
-		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
+		const auto& gbuffer = m_postProcessor->deferred();
+
+		// Clear values: 6 color, optionally motion vectors, then depth. Extras are ignored by the plain pass.
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COLOR].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_POSITION].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_NORMAL].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_SPECULAR].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_EMISSIVE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
 		clearValues[VulkanDeferredGBuffer::GBUF_ATT_COMPOSITE].color.setFloat32({0.0f, 0.0f, 0.0f, 0.0f});
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		if (gbuffer.velocityActive()) {
+			clearValues[VulkanDeferredGBuffer::velocityAttachmentIndex()].color.setFloat32({VulkanMotionVectors::NO_MOTION_WRITTEN, 0.0f, 0.0f, 0.0f});
+		}
+		clearValues[gbuffer.depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
 
-		pass.renderPass = m_postProcessor->deferred().renderPass();
-		pass.framebuffer = m_postProcessor->deferred().framebuffer();
+		pass.renderPass = gbuffer.renderPass();
+		pass.framebuffer = gbuffer.framebuffer();
 		pass.clearValues = clearValues;
-		pass.colorAttachmentCount = VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT;
+		pass.colorAttachmentCount = gbuffer.colorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	} else {
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		auto clearValues = m_postProcessor->sceneClearValues();
 
 		pass.renderPass = m_postProcessor->getSceneRenderPass();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 		pass.clearValues = clearValues;
+		pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	}
 
@@ -307,7 +383,23 @@ void VulkanRenderer::resumeSceneRendering()
 	pass.renderPass = m_postProcessor->getSceneRenderPassLoad();
 	pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 	pass.extent = m_postProcessor->getSceneExtent();
+	pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::rebuildAntiAliasingShaders()
+{
+	mprintf(("Vulkan: anti-aliasing preset changed, rebuilding its shaders\n"));
+	// the preset is compiled into these shaders, and earlier frames may still be drawing with their pipelines
+	m_device->waitIdle();
+	for (auto type : {SDR_TYPE_POST_PROCESS_FXAA,
+			 SDR_TYPE_POST_PROCESS_SMAA_EDGE,
+			 SDR_TYPE_POST_PROCESS_SMAA_BLENDING_WEIGHT,
+			 SDR_TYPE_POST_PROCESS_SMAA_NEIGHBORHOOD_BLENDING}) {
+		m_pipelineManager->forgetPipelinesOfShaderType(type);
+		m_shaderManager->forgetShaderType(type);
+	}
+	Gr_aa_mode_last_frame = Gr_aa_mode;
 }
 
 void VulkanRenderer::endSceneRendering()
@@ -321,6 +413,12 @@ void VulkanRenderer::endSceneRendering()
 
 	// End HDR scene render pass (transitions scene color to eShaderReadOnlyOptimal)
 	m_currentCommandBuffer.endRenderPass();
+
+	// Nothing drawn after the scene, like the HUD, has motion vectors
+	Gr_motion_vectors_active = false;
+
+	m_postProcessor->executeMotionVectors(m_currentCommandBuffer);
+	m_postProcessor->executeUpscaler(m_currentCommandBuffer);
 
 	// Update distortion ping-pong textures (every ~30ms, matching OpenGL)
 	if (Gr_framebuffer_effects.any_set()) {
@@ -345,7 +443,7 @@ void VulkanRenderer::endSceneRendering()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	pass.viewport = PassViewport::NoFlip;
 	beginTrackedRenderPass(pass);
@@ -355,9 +453,9 @@ void VulkanRenderer::endSceneRendering()
 
 	// Restore Y-flipped viewport for HUD rendering
 	m_stateTracker->setViewport(0.0f,
-		static_cast<float>(m_swapChainExtent.height),
-		static_cast<float>(m_swapChainExtent.width),
-		-static_cast<float>(m_swapChainExtent.height));
+		static_cast<float>(m_compositionExtent.height),
+		static_cast<float>(m_compositionExtent.width),
+		-static_cast<float>(m_compositionExtent.height));
 
 	m_sceneRendering = false;
 	m_useGbufRenderPass = false;
@@ -396,23 +494,24 @@ void VulkanRenderer::resumeScenePassAfterCopy()
 	pass.extent = m_postProcessor->getSceneExtent();
 
 	if (m_useGbufRenderPass) {
-		// Clear values ignored for eLoad but array must cover all attachments
-		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 1> clearValues{};
-		clearValues[VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		const auto& gbuffer = m_postProcessor->deferred();
 
-		pass.renderPass = m_postProcessor->deferred().renderPassLoad();
-		pass.framebuffer = m_postProcessor->deferred().framebuffer();
+		// Clear values ignored for eLoad but array must cover all attachments
+		std::array<vk::ClearValue, VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT + 2> clearValues{};
+		clearValues[gbuffer.depthAttachmentIndex()].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+		pass.renderPass = gbuffer.renderPassLoad();
+		pass.framebuffer = gbuffer.framebuffer();
 		pass.clearValues = clearValues;
-		pass.colorAttachmentCount = VulkanDeferredGBuffer::GBUF_COLOR_ATTACHMENT_COUNT;
+		pass.colorAttachmentCount = gbuffer.colorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	} else {
-		std::array<vk::ClearValue, 2> clearValues;
-		clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+		auto clearValues = m_postProcessor->sceneClearValues();
 
 		pass.renderPass = m_postProcessor->getSceneRenderPassLoad();
 		pass.framebuffer = m_postProcessor->getSceneFramebuffer();
 		pass.clearValues = clearValues;
+		pass.colorAttachmentCount = m_postProcessor->sceneColorAttachmentCount();
 		beginTrackedRenderPass(pass);
 	}
 }
@@ -431,9 +530,18 @@ void VulkanRenderer::copySceneDepthForParticles()
 	// Copy scene depth → samplable depth copy (handles all depth image transitions)
 	m_postProcessor->copySceneDepth(m_currentCommandBuffer);
 
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthCopiedThisFrame = true;
+}
+
+// Shared tail of every mid-scene copy that touches only depth: put the color
+// attachments back the way the resumed loadOp=eLoad pass expects them, then resume.
+void VulkanRenderer::resumeScenePassAfterDepthCopy()
+{
 	// Transition scene color: eShaderReadOnlyOptimal → eColorAttachmentOptimal
 	// (needed for the resumed render pass with loadOp=eLoad, which expects
-	// initialLayout=eColorAttachmentOptimal; copySceneDepth only touches depth)
+	// initialLayout=eColorAttachmentOptimal; a depth copy only touches depth)
 	{
 		ImageBarrier2 barrier;
 		barrier.image = m_postProcessor->getSceneColorImage();
@@ -460,8 +568,59 @@ void VulkanRenderer::copySceneDepthForParticles()
 
 	// Resume the scene render pass with loadOp=eLoad
 	resumeScenePassAfterCopy();
+}
 
-	m_sceneDepthCopiedThisFrame = true;
+// Head of every mid-scene depth copy: end the scene (or G-buffer) pass, which leaves the color
+// attachments in eShaderReadOnlyOptimal and depth in eDepthStencilAttachmentOptimal.
+// resumeScenePassAfterCopy() knows the scene pass and the non-MSAA G-buffer pass only. The
+// player-ship callers run between one deferred pass and the next, so the multisampled G-buffer
+// pass is never live -- resuming the wrong pass would desync the state tracker.
+void VulkanRenderer::endScenePassForDepthCopy()
+{
+	Assertion(m_stateTracker->getCurrentSampleCount() == vk::SampleCountFlagBits::e1,
+		"Tried to copy the scene depth while a multisampled render pass was active!");
+	m_currentCommandBuffer.endRenderPass();
+}
+
+// The cockpit model is rendered around the camera, inside the ship hull that the scene
+// pass already drew, so it needs a depth buffer that does not know about that hull --
+// otherwise the hull wins the depth test and shows through the cockpit. OpenGL swaps
+// the depth attachment to Cockpit_depth_texture for the duration; Vulkan bakes the
+// attachment into the framebuffer, so the scene depth is copied aside and cleared
+// instead. Only the scene depth image is parked: with MSAA the cockpit renders against
+// the multisampled depth, which the G-buffer pass clears on its own, and
+// gr_deferred_lighting_msaa() resolves back into the scene depth before restore runs.
+void VulkanRenderer::saveSceneDepth()
+{
+	if (m_sceneDepthSaved || !m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	endScenePassForDepthCopy();
+	m_postProcessor->saveSceneDepth(m_currentCommandBuffer);
+	resumeScenePassAfterDepthCopy();
+
+	m_sceneDepthSaved = true;
+}
+
+void VulkanRenderer::restoreSceneDepth()
+{
+	if (!m_sceneDepthSaved) {
+		return;
+	}
+
+	// Cleared first: a scene that ends between the save and the restore (a failed
+	// resize dropping the post-processor, say) must not leave the flag set for the
+	// next frame's restore to act on stale content.
+	m_sceneDepthSaved = false;
+
+	if (!m_sceneRendering || !m_postProcessor || !m_postProcessor->isInitialized()) {
+		return;
+	}
+
+	endScenePassForDepthCopy();
+	m_postProcessor->restoreSceneDepth(m_currentCommandBuffer);
+	resumeScenePassAfterDepthCopy();
 }
 
 void VulkanRenderer::beginRenderTarget(tcache_slot_vulkan* ts, int face)
@@ -539,9 +698,33 @@ void VulkanRenderer::resumeSwapChainPass()
 	PassBeginDesc pass;
 	pass.renderPass = m_renderPassLoad.get();
 	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
-	pass.extent = m_swapChainExtent;
+	pass.extent = m_compositionExtent;
 	pass.clearValues = clearValues;
 	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::restartCompositionPass()
+{
+	std::array<vk::ClearValue, 2> clearValues;
+	clearValues[0].color.setFloat32({0.0f, 0.0f, 0.0f, 1.0f});
+	clearValues[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0);
+
+	PassBeginDesc pass;
+	pass.renderPass = m_renderPass.get();
+	pass.framebuffer = m_swapChainFramebuffers[m_currentSwapChainImage].get();
+	pass.extent = m_compositionExtent;
+	pass.clearValues = clearValues;
+	beginTrackedRenderPass(pass);
+}
+
+void VulkanRenderer::endCurrentRenderPass()
+{
+	if (!m_stateTracker->getCurrentRenderPass()) {
+		return;
+	}
+
+	m_currentCommandBuffer.endRenderPass();
+	m_stateTracker->setRenderPass(vk::RenderPass());
 }
 
 void VulkanRenderer::resumeRenderTargetPass(tcache_slot_vulkan* ts)

@@ -21,6 +21,7 @@
 void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), ubyte *visited_bitstring);
 void dock_move_docked_children_tree(object *objp, object *parent_objp);
 void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop);
+void dock_clear_already_handled_helper(object *objp, dock_function_info *infop);
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop);
 void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop);
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop);
@@ -587,6 +588,26 @@ void dock_move_docked_objects(object *objp)
 	dock_move_docked_children_tree(fastest_objp, NULL);
 }
 
+void dock_move_docked_objects_to(object *root_objp)
+{
+	Assert(root_objp != nullptr);
+
+	if (root_objp->type != OBJ_SHIP)
+		return;
+
+	if (!object_is_docked(root_objp))
+		return;
+
+	dock_function_info dfi;
+
+	// special-case: clear the handled flag, then perform a one-time move using the same process that is normally handled by obj_move_all
+	dock_evaluate_all_docked_objects(root_objp, &dfi, dock_clear_already_handled_helper);
+	dock_move_docked_children_tree(root_objp, nullptr);
+
+	// clear the flag again so that it's ready for *this* frame's obj_move_all
+	dock_evaluate_all_docked_objects(root_objp, &dfi, dock_clear_already_handled_helper);
+}
+
 void dock_move_docked_children_tree(object *objp, object *parent_objp)
 {
 	// has this object been handled already?
@@ -619,6 +640,11 @@ void dock_count_total_docked_objects_helper(object * /*objp*/, dock_function_inf
 {
 	// increment count
 	infop->maintained_variables.int_value++;
+}
+
+void dock_clear_already_handled_helper(object *objp, dock_function_info * /*infop*/)
+{
+	objp->flags.remove(Object::Object_Flags::Docked_already_handled);
 }
 
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop)

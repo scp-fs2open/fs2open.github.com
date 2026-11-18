@@ -293,8 +293,8 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h)
 
 			headtracking::HeadTrackingStatus* status = headtracking::getStatus();
 
-			ma->h = -PI2*(status->yaw);
-			ma->p = PI2*(status->pitch);
+			ma->h = -PI*(status->yaw);
+			ma->p = PI*(status->pitch);
 
 			trans.xyz.x = -0.4f*status->x;
 			trans.xyz.y = 0.4f*status->y;
@@ -1459,6 +1459,8 @@ void player_level_init()
 	memset(&(Player->ci), 0, sizeof(control_info) );		// set the controls to 0
 
 	Viewer_slew_angles.p = 0.0f;	Viewer_slew_angles.b = 0.0f;	Viewer_slew_angles.h = 0.0f;
+	reset_angles(&chase_slew_angles);
+	reset_angles(&Viewer_slew_angles_delta);
 	Viewer_external_info.angles.p = 0.0f;
 	Viewer_external_info.angles.b = 0.0f;
 	Viewer_external_info.angles.h = 0.0f;
@@ -1477,7 +1479,10 @@ void player_level_init()
 	{
 		Viewer_mode = 0;
 	}
- 
+
+	Perspective_locked = false;
+	Slew_locked = false;
+
 	Player_obj = NULL;
 	Player_ship = NULL;
 	Player_ai = NULL;

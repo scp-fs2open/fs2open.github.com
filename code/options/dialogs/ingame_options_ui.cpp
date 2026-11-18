@@ -33,7 +33,13 @@ void OptUi::build_options_list(const char* category) const
 		if (!stricmp(thisOpt->getCategory().c_str(), category)) {
 
 			auto val = thisOpt->getCurrentValueDescription();
-			
+
+			// An overridden option (currently only from a command line flag) is not editable: OptionsManager
+			// always returns the override, so an edit here would never take effect. Show the control greyed out
+			// with the override source in its tooltip instead of letting the player change a dead value.
+			auto overrideReason = options::OptionsManager::instance()->getOverrideReason(thisOpt->getConfigKey());
+			ImGui::BeginDisabled(overrideReason.has_value());
+
 			// Selectors
 			if (thisOpt->getType() == options::OptionType::Selection) {
 				auto values = thisOpt->getValidValues();
@@ -116,9 +122,29 @@ void OptUi::build_options_list(const char* category) const
 				}
 			}
 
+			// Capture hover state now, since the last ImGui item is still the control itself -- adding the
+			// override marker below would otherwise become the "last item" and break IsItemHovered() for the
+			// tooltip. AllowWhenDisabled is needed because the tooltip explains why the control is disabled.
+			bool isHovered = ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay |
+												  ImGuiHoveredFlags_AllowWhenDisabled);
+
+			// End the disabled scope before the marker so that the marker itself stays legible
+			ImGui::EndDisabled();
+
+			if (overrideReason.has_value()) {
+				ImGui::SameLine();
+				ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.2f, 1.0f), "%s", XSTR("(cmdline)", 1933));
+			}
+
 			// Add a tooltip with the option description on mouseover
-			if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay))
-				ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
+			if (isHovered) {
+				if (overrideReason.has_value()) {
+					ImGui::SetTooltip(XSTR("%s\n\nSet on the command line by %s; it cannot be changed here.", 1934),
+						thisOpt->getDescription().c_str(), overrideReason->c_str());
+				} else {
+					ImGui::SetTooltip("%s", thisOpt->getDescription().c_str());
+				}
+			}
 		}
 	}
 }

@@ -225,15 +225,5 @@ ADE_FUNC(hasCustomData, l_TechRoomCutscene, nullptr, "Detects whether the cutsce
 	return ade_set_args(L, "b", result);
 }
 
-ADE_FUNC(isValid, l_TechRoomCutscene, NULL, "Detects whether cutscene is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
-{
-	cutscene_info_h current;
-	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
-		return ADE_RETURN_NIL;
-	}
-
-	return ade_set_args(L, "b", current.isValid());
-}
-
 } // namespace api
 } // namespace scripting

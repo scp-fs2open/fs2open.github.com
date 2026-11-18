@@ -1035,6 +1035,17 @@ int Fred_mission_save::save_bitmaps()
 			required_string_fred("+Scale:");
 			parse_comments();
 			fout(" %f", sle->scale_x);
+
+			// apparent diameter, only written when this mission actually sets one; see
+			// check_for_26_3_data()
+			fso_comment_push(";;FSO 26.3.0;;");
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+AngularSize:",
+				1,
+				";;FSO 26.3.0;;",
+				SUN_ANGULAR_SIZE_UNSPECIFIED,
+				" %f",
+				sle->angular_size);
+			fso_comment_pop();
 		}
 
 		// save background bitmaps by filename
@@ -3171,7 +3182,15 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 	auto version_24_1 = gameversion::version(24, 1);
 	auto version_24_3 = gameversion::version(24, 3);
 	auto version_25_1 = gameversion::version(25, 1);
-	if (MISSION_VERSION >= version_25_1) {
+	auto version_26_3 = gameversion::version(26, 3);
+	if (MISSION_VERSION >= version_26_3) {
+		Warning(LOCATION,
+			"Notify an SCP coder: now that the required mission version is at least 26.3, the check_for_26_3_data(), "
+			"check_for_25_1_data(), check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can "
+			"be removed");
+	} else if (check_for_26_3_data()) {
+		The_mission.required_fso_version = version_26_3;
+	} else if (MISSION_VERSION >= version_25_1) {
 		Warning(LOCATION,
 			"Notify an SCP coder: now that the required mission version is at least 25.1, the check_for_25_1_data(), "
 			"check_for_24_3_data(), check_for_24_1_data(), and check_for_23_3_data() code can be removed");
@@ -4326,7 +4345,7 @@ int Fred_mission_save::save_objects()
 int Fred_mission_save::save_players()
 {
 	bool wrote_fso_data = false;
-	int i, j;
+	int i;
 	int var_idx;
 	SCP_map<int, int> used_pool;
 
@@ -4525,18 +4544,17 @@ int Fred_mission_save::save_players()
 		// version-gated support options; see also check_for_25_1_data()
 		auto more_support_options_version = gameversion::version(25, 1);
 
+		// a savable pool entry is one on a rearmable player-allowed weapon with a non-default (!= -1) amount
+		auto is_savable_rearm_pool_entry = [](const std::pair<const int, int> &entry) {
+			return Weapon_info[entry.first].wi_flags[Weapon::Info_Flags::Player_allowed] &&
+				   !Weapon_info[entry.first].disallow_rearm && entry.second != -1;
+		};
+
+		const auto &team_rearm_pool = The_mission.support_ships.rearm_weapon_pool[i];
+
 		bool has_rearm_pool_entries = false;
 		if (save_config.save_format != MissionFormat::RETAIL && The_mission.required_fso_version >= more_support_options_version && !The_mission.support_ships.rearm_pool_from_loadout) {
-			for (j = 0; j < weapon_info_size(); j++) {
-				// mirror the skip conditions used when writing the pool below
-				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed] || Weapon_info[j].disallow_rearm) {
-					continue;
-				}
-				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
-					has_rearm_pool_entries = true;
-					break;
-				}
-			}
+			has_rearm_pool_entries = std::any_of(team_rearm_pool.begin(), team_rearm_pool.end(), is_savable_rearm_pool_entry);
 		}
 		if (has_rearm_pool_entries) {
 			if (optional_string_fred("+Support Rearm Pool:", "$Starting Shipname:")) {
@@ -4545,17 +4563,11 @@ int Fred_mission_save::save_players()
 				fout("\n\n+Support Rearm Pool:");
 			}
 
+			// the map iterates in ascending weapon class order, matching the old full scan
 			fout(" (\n");
-			for (j = 0; j < weapon_info_size(); j++) {
-				if (!Weapon_info[j].wi_flags[Weapon::Info_Flags::Player_allowed]) {
-					continue;
-				}
-				// Default is -1 (unlimited). Skip disallow_rearm weapons too, parse normalizes them to 0 anyway.
-				if (Weapon_info[j].disallow_rearm) {
-					continue;
-				}
-				if (The_mission.support_ships.rearm_weapon_pool[i][j] != -1) {
-					fout("\t\"%s\"\t%d\n", Weapon_info[j].name, The_mission.support_ships.rearm_weapon_pool[i][j]);
+			for (const auto &entry : team_rearm_pool) {
+				if (is_savable_rearm_pool_entry(entry)) {
+					fout("\t\"%s\"\t%d\n", Weapon_info[entry.first].name, entry.second);
 				}
 			}
 			fout(")");

@@ -333,14 +333,14 @@ IDB_GOAL_FAIL           BITMAP  DISCARDABLE     "goal_fail.bmp"
 
 #ifndef _VC08
  /* Non-VS2008 builds get one of two icons */
- #ifdef _DEBUG
+ #ifndef NDEBUG
   IDI_APP_ICON            ICON    DISCARDABLE     "dbg_icon.ico"
  #else
   IDI_APP_ICON            ICON    DISCARDABLE     "app_icon.ico"
  #endif
 #else
  /* VS2008 builds get cool icons */
- #ifdef _DEBUG
+ #ifndef NDEBUG
   #ifdef _SSE2
    IDI_APP_ICON            ICON    DISCARDABLE     "V_sse-d.ico"
   #else

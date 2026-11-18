@@ -44,7 +44,6 @@ BEGIN_MESSAGE_MAP(sexp_tree_view, CTreeCtrl)
 	ON_NOTIFY_REFLECT(TVN_BEGINDRAG, OnBegindrag)
 	ON_WM_MOUSEMOVE()
 	ON_WM_LBUTTONUP()
-	ON_WM_DESTROY()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_CHAR()
 	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeyDown)
@@ -1592,7 +1591,7 @@ const static UINT Numbered_data_bitmaps[] = {
 // with all node type bitmaps (operator, data, variable, root, numbered data, etc.).
 void sexp_tree_view::setup(CEdit *ptr)
 {
-	CImageList *pimagelist;
+	CImageList *pimagelist = &m_image_list;
 	CBitmap bitmap;
 
 	help_box = ptr;
@@ -1602,9 +1601,8 @@ void sexp_tree_view::setup(CEdit *ptr)
 		help_box -> SetTabStops(2, (LPINT) stops);
 	}
 
-	pimagelist = GetImageList(TVSIL_NORMAL);
-	if (!pimagelist) {
-		pimagelist = new CImageList();
+	// the image list outlives the window, which is recreated when (for example) the ship editor is reopened
+	if (pimagelist->GetSafeHandle() == nullptr) {
 		pimagelist->Create(16, 16, TRUE/*bMask*/, 2, 22);
 
 		//*****Add generic images
@@ -1665,9 +1663,9 @@ void sexp_tree_view::setup(CEdit *ptr)
 		bitmap.LoadBitmap(IDB_CONTAINER_DATA);
 		pimagelist->Add(&bitmap, (COLORREF)0xFF00FF);
 		bitmap.DeleteObject();
-
-		SetImageList(pimagelist, TVSIL_NORMAL);
 	}
+
+	SetImageList(pimagelist, TVSIL_NORMAL);
 }
 
 // Thin wrapper around CTreeCtrl::InsertItem for inserting a tree item with icon images.
@@ -1675,20 +1673,6 @@ HTREEITEM sexp_tree_view::insert(LPCTSTR lpszItem, int image, int sel_image, HTR
 {
 	return InsertItem(lpszItem, image, sel_image, hParent, hInsertAfter);
 
-}
-
-// MFC destroy handler: cleans up the image list to prevent resource leaks.
-void sexp_tree_view::OnDestroy()
-{
-	CImageList *pimagelist;
-
-	pimagelist = GetImageList(TVSIL_NORMAL);
-	if (pimagelist) {
-		pimagelist->DeleteImageList();
-		delete pimagelist;
-	}
-
-	CTreeCtrl::OnDestroy();
 }
 
 // Returns the HTREEITEM handle for a given tree_nodes[] index.

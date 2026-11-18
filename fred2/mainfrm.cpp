@@ -15,10 +15,12 @@
 #include "MainFrm.h"
 #include "FREDDoc.h"
 #include "FREDView.h"
+#include "EventEditor.h"
 #include "MessageEditorDlg.h"
 #include "ShipClassEditorDlg.h"
 #include "MissionNotesDlg.h"
 #include "Grid.h"
+#include "Management.h"
 
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
@@ -169,6 +171,20 @@ void CMainFrame::init_tools()
 	m_new_prop_type_combo_box.SetCurSel(0);
 }
 
+// The modeless editors are allocated on the heap and only delete themselves when they are closed, so any that
+// are still open when FRED exits must be deleted here.  Their DestroyWindow() overrides clear the global pointer.
+template <typename T>
+static void destroy_modeless_editor(T *&dlg)
+{
+	if (dlg == nullptr)
+		return;
+
+	T *ptr = dlg;
+	ptr->DestroyWindow();
+	delete ptr;
+	dlg = nullptr;
+}
+
 void CMainFrame::OnClose()
 {
 	// CFrameWnd::OnClose() doesn't provide a way for the caller to tell that the close has been cancelled,
@@ -182,8 +198,16 @@ void CMainFrame::OnClose()
 	// do the closing stuff
 	theApp.write_ini_file();
 	SaveBarState("Tools state");
+
+	// any changes still pending in these editors are discarded
+	destroy_modeless_editor(Event_editor_dlg);
+	destroy_modeless_editor(Message_editor_dlg);
+	destroy_modeless_editor(Briefing_dialog);
+	destroy_modeless_editor(Debriefing_dialog);
+	destroy_modeless_editor(Bg_bitmap_dialog);
+
 	CFrameWnd::OnClose();
-	gr_close();
+	fred_shutdown();
 }
 
 int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
@@ -195,7 +219,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
 	if (!m_wndToolBar.Create(this) ||
 		!m_wndToolBar.LoadToolBar(IDR_MAINFRAME)) {
-		TRACE0("Failed to create toolbar\n");
+		mprintf(("Failed to create toolbar\n"));
 		return -1;      // fail to create
 	}
 
@@ -206,7 +230,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	rect.top = 3;
 	rect.bottom = rect.top + 20;
 	if (!m_ship_label.Create(_T("Objects"), WS_VISIBLE | WS_CHILD, rect, &m_wndToolBar)) {
-		TRACE0("Failed to create 'Objects' label\n");
+		mprintf(("Failed to create 'Objects' label\n"));
 		return -1;
 	}
 
@@ -222,7 +246,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	rect.bottom = rect.top + 550;
 	if (!m_new_ship_type_combo_box.Create(CBS_DROPDOWNLIST | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS | LBS_OWNERDRAWFIXED,
 		rect, &m_wndToolBar, ID_NEW_SHIP_TYPE)) {
-		TRACE0("Failed to create new ship type combo-box\n");
+		mprintf(("Failed to create new ship type combo-box\n"));
 		return FALSE;
 	}
 
@@ -233,7 +257,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	rect.top = 3;
 	rect.bottom = rect.top + 20;
 	if (!m_prop_label.Create(_T("Props"), WS_VISIBLE | WS_CHILD, rect, &m_wndToolBar)) {
-		TRACE0("Failed to create 'Props' label\n");
+		mprintf(("Failed to create 'Props' label\n"));
 		return -1;
 	}
 
@@ -249,7 +273,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	rect.bottom = rect.top + 550;
 	if (!m_new_prop_type_combo_box.Create(CBS_DROPDOWNLIST | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS | LBS_OWNERDRAWFIXED,
 		rect, &m_wndToolBar, ID_NEW_PROP_TYPE)) {
-		TRACE0("Failed to create new prop type combo-box\n");
+		mprintf(("Failed to create new prop type combo-box\n"));
 		return FALSE;
 	}
 
@@ -257,7 +281,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 			!m_wndStatusBar.SetIndicators(indicators,
 			sizeof(indicators)/sizeof(UINT)))
 			{
-			TRACE0("Failed to create status bar\n");
+			mprintf(("Failed to create status bar\n"));
 			return -1;      // fail to create
 			}
 			*/
@@ -268,7 +292,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators, sizeof(indicators) / sizeof(UINT))) {
-		TRACE0("Failed to create status bar\n");
+		mprintf(("Failed to create status bar\n"));
 		return -1;
 
 	} else {
@@ -458,7 +482,7 @@ int color_combo_box_prop::CalcMinimumItemHeight()
 		CClientDC dc(this);
 		CFont* pOldFont = dc.SelectObject(GetFont());
 		TEXTMETRIC tm;
-		VERIFY(dc.GetTextMetrics(&tm));
+		Verify(dc.GetTextMetrics(&tm));
 		dc.SelectObject(pOldFont);
 
 		nResult = tm.tmHeight;
@@ -473,7 +497,7 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	CString strText;
 
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
 
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 
@@ -515,7 +539,7 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		}
 
 		if (m_cyText == 0) {
-			VERIFY(cyItem >= CalcMinimumItemHeight());
+			Verify(cyItem >= CalcMinimumItemHeight());
 		}
 
 		if (pip != nullptr) {
@@ -548,7 +572,7 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 void color_combo_box_prop::MeasureItem(LPMEASUREITEMSTRUCT)
 {
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
 }
 
 int color_combo_box_prop::GetPropClass(int item_index)
@@ -575,7 +599,7 @@ int color_combo_box::CalcMinimumItemHeight() {
 		CClientDC dc(this);
 		CFont* pOldFont = dc.SelectObject(GetFont());
 		TEXTMETRIC tm;
-		VERIFY(dc.GetTextMetrics(&tm));
+		Verify(dc.GetTextMetrics(&tm));
 		dc.SelectObject(pOldFont);
 
 		nResult = tm.tmHeight;
@@ -589,7 +613,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 	CString strText;
 
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
 		   (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
 
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
@@ -628,7 +652,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 		}
 
 		if (m_cyText == 0)
-			VERIFY(cyItem >= CalcMinimumItemHeight());
+			Verify(cyItem >= CalcMinimumItemHeight());
 
 		if (sip != nullptr)
 			strText = _T(sip->name);
@@ -653,7 +677,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 void color_combo_box::MeasureItem(LPMEASUREITEMSTRUCT) {
 	// You must override DrawItem and MeasureItem for LBS_OWNERDRAWVARIABLE
-	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
+	Assert((GetStyle() & (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS)) ==
 		   (LBS_OWNERDRAWFIXED | CBS_HASSTRINGS));
 }
 
