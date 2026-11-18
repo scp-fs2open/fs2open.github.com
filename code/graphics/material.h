@@ -100,6 +100,11 @@ public:
 
 	void set_texture_map(int tex_type, int texture_num);
 	int get_texture_map(int tex_type) const;
+
+	// Returns the -reflect map if present; otherwise returns the -shine slot value (-1 when absent).
+	// If supplied, is_spec_gloss reports whether the chosen texture uses specular/gloss encoding.
+	int get_specular_map(bool* is_spec_gloss = nullptr) const;
+
 	bool is_textured() const;
 
 	void set_texture_type(texture_type t_type);
